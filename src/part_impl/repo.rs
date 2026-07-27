@@ -1,3 +1,4 @@
+/// In-memory repository adapter used by tests.
 #[cfg(test)]
 pub mod mock_impl;
 

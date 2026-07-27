@@ -88,11 +88,11 @@ fn benchmark_aggregation_operations(criterion: &mut Criterion) {
 
     let mut unit_group = criterion.benchmark_group("unit");
 
-    unit_group.bench_function("build_index_updates_10000", |bencher| {
+    unit_group.bench_function("order_visible_ids_100", |bencher| {
         bencher.iter_batched(
-            benchmark::unit_index_input,
-            |unit_index_input| {
-                assert!(benchmark::build_unit_index_updates(unit_index_input));
+            benchmark::unit_order_input,
+            |unit_order_input| {
+                assert!(benchmark::order_visible_unit_ids(unit_order_input));
             },
             BatchSize::SmallInput,
         );

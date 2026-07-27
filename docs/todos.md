@@ -14,3 +14,4 @@
 - [x] Export info of archived comics.
 - [ ] Unexpected left `drive`.
 - [ ] Split _event_ and _override data_.
+- [ ] is\_\* format boolean fields.

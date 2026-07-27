@@ -10,7 +10,8 @@ use crate::model::assignment::AssignmentInfo;
 use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
 use crate::model::page::PageInfo;
-use crate::model::unit::UnitInfo;
+use crate::model::read::proj::unit::UnitInfo;
+use crate::model::shared::unit::UnitCoord;
 use crate::model::user::UserToken;
 use crate::model::workset::WorksetInfo;
 use crate::part_impl::repo::mock_impl::Mock;
@@ -146,22 +147,25 @@ fn page(
     }
 }
 
-fn unit(id: &str, page_id: &str, index: i32, text: &str) -> UnitInfo {
+fn unit(id: &str, page_id: &str, _index: i32, text: &str) -> UnitInfo {
     //
     let time = OffsetDateTime::now_utc();
 
     UnitInfo {
         id: id.into(),
         page_id: page_id.into(),
-        index,
+        next_id: None,
         is_bubble: true,
         is_proofread: false,
-        x_coord: 0.25,
-        y_coord: 0.75,
+        coord: UnitCoord {
+            x_coord: 0.25,
+            y_coord: 0.75,
+        },
         translated_text: Some(text.into()),
         last_translator_id: Some("translator-1".into()),
         proofread_text: None,
         last_proofreader_id: None,
+        hidden_at: None,
         created_at: time,
         updated_at: time,
     }
@@ -229,13 +233,14 @@ async fn import_label_plus_material_updates_units_and_counters() {
     let first_unit = snapshot
         .units
         .iter()
-        .find(|unit_info| unit_info.page_id == "page-1" && unit_info.index == 0)
+        .find(|unit_info| unit_info.page_id == "page-1")
         .unwrap();
 
     let last_unit = snapshot
         .units
         .iter()
-        .find(|unit_info| unit_info.page_id == "page-9" && unit_info.index == 8)
+        .filter(|unit_info| unit_info.page_id == "page-9")
+        .last()
         .unwrap();
 
     let chapter_info = snapshot

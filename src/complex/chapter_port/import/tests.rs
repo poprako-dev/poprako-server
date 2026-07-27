@@ -1,5 +1,5 @@
 // parse_label_plus(parse_label_plus)(positive): parses the real LabelPlus material.
-// parse_poprako(parse_poprako)(positive): preserves PopRaKo one-based unit indexes.
+// parse_poprako(parse_poprako)(positive): normalizes PopRaKo one-based unit indexes.
 
 use super::*;
 
@@ -35,7 +35,7 @@ fn parse_label_plus_parses_real_material() {
 }
 
 #[test]
-fn parse_poprako_preserves_one_based_indexes() {
+fn parse_poprako_normalizes_one_based_indexes() {
     //
     let pages = ChapterImportComplex::parse_poprako(
         r#"{
@@ -68,5 +68,5 @@ fn parse_poprako_preserves_one_based_indexes() {
         Err(_) => panic!("expected PopRaKo parse success"),
     };
 
-    assert_eq!(pages[0].units[0].index, 7);
+    assert_eq!(pages[0].units[0].index, 6);
 }

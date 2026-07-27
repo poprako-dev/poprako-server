@@ -13,6 +13,7 @@ use crate::result::{BaseError, BaseResult, accept};
 
 /// Result helpers for Diesel-backed shared internals.
 pub mod result;
+/// RDB test-container helpers.
 #[cfg(all(
     test,
     feature = "rdb",

@@ -34,11 +34,9 @@ pub mod team;
 pub mod term;
 /// Termbase permission checks and cascade rules.
 pub mod termbase;
-/// Unit ordering and diff business rules.
+/// Unit ordering, mutation, and permission rules.
 pub mod unit;
 /// User business rules and permission checks.
 pub mod user;
 /// Workset lifecycle business rules and permission checks.
 pub mod workset;
-
-pub mod unit_v2;

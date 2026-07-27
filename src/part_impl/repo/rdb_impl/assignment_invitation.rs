@@ -3,5 +3,6 @@
 mod step_impl;
 
 mod orchestra;
+/// Assignment invitation RDB integration tests.
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;

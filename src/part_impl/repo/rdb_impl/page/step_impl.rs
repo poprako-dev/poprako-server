@@ -11,7 +11,7 @@ use crate::complex::page::PageComplex;
 use crate::model::page::{
     PageEntry, PageImageReservation, PageInfo, PageManifestUpdate,
 };
-use crate::model::unit::UnitCounters;
+use crate::model::read::proj::unit::UnitCounters;
 use crate::part_impl::repo::rdb_impl::entity::page::{
     PageAspect, PageRow, PageRowEntry,
 };

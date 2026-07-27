@@ -312,7 +312,7 @@ fn truncate_title(title: &str, max_chars: usize) -> String {
     //
     let mut chars = title.chars();
 
-    let short_title: String = chars.by_ref().take(max_chars).collect();
+    let short_title = chars.by_ref().take(max_chars).collect::<String>();
 
     match chars.next() {
         //

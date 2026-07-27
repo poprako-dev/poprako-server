@@ -66,6 +66,7 @@ use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 pub use list::list_infos;
 
 mod list;
+/// Comic use-case test helpers.
 #[cfg(test)]
 pub mod tests;
 
@@ -413,7 +414,7 @@ where
 
             batch_delays.push(Some(Duration::from_secs(15 * 60)));
 
-            let batch_tasks: Vec<Task<'_, String, TaskPayload>> = batch_ids
+            let batch_tasks = batch_ids
                 .iter()
                 .zip(batch_payloads.iter())
                 .zip(batch_delays.iter())
@@ -422,7 +423,7 @@ where
                     payload,
                     delay: *delay,
                 })
-                .collect();
+                .collect::<Vec<Task<'_, String, TaskPayload>>>();
 
             prom.step(context, &DeferBatch::new(&batch_tasks)).await?;
 

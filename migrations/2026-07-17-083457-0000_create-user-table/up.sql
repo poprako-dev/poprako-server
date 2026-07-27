@@ -18,7 +18,5 @@ CREATE TABLE IF NOT EXISTS "t_user" (
     "f_last_active_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     "f_created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    "f_updated_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-
-    CHECK (octet_length("f_avatar_hash") = 32)
+    "f_updated_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

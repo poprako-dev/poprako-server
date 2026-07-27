@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::HashSet;
 
 use poprako_orchestra::{Nucl, run_proxy};
 use tracing::instrument;
@@ -9,15 +9,17 @@ use crate::complex::chapter::ChapterComplex;
 use crate::complex::chapter_port::{
     ChapterImportComplex, ChapterPortPermComplex,
 };
-use crate::complex::unit::UnitComplex;
+use crate::complex::unit::{UnitComplex, UnitPermComplex};
 use crate::data::chapter_port::{
     ImportChapterTranslationParams, ImportChapterTranslationPayload,
 };
-use crate::model::assignment::AssignmentInfo;
 use crate::model::page::PageInfo;
-use crate::model::unit::{UnitCounterDelta, UnitCounters, UnitInfo};
+use crate::model::read::proj::unit::{
+    UnitCounterDelta, UnitCounters, UnitOrder,
+};
 use crate::model::unit_port::UnitTranslationImport;
 use crate::model::user::UserToken;
+use crate::model::write::unit::UnitEdit;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
@@ -26,21 +28,147 @@ use crate::part::repo::oper::chapter::{
     AdjustChapterUnitCounters, GetChapterInfoExcluded,
 };
 use crate::part::repo::oper::comic::TouchComicLastActive;
-use crate::part::repo::oper::page::{ListPageInfos, SetPageUnitCounters};
-use crate::part::repo::oper::unit::{
-    CountUnits, ListUnitIndexes, ListUnitInfos, SaveUnit, UpdateUnitIndexes,
+use crate::part::repo::oper::page::{
+    GetPageInfoExcluded, ListPageInfos, SetPageUnitCounters,
 };
+use crate::part::repo::oper::unit::{ApplyUnitEdits, ListUnitOrders};
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::usecase::stage::spawn_starts;
+use crate::util::PatchField;
+use crate::value::chapter::Stage;
 use crate::value::chapter_port::TranslationFormat;
 use crate::value::role::RoleField;
+use crate::value::unit::UnitEditPerm;
 
 #[cfg(test)]
 mod tests;
 
-/// Imports chapter translation text into existing pages.
+fn visible_unit_ids(unit_orders: &[UnitOrder]) -> Vec<String> {
+    unit_orders
+        .iter()
+        .filter(|unit_order| !unit_order.is_hidden)
+        .map(|unit_order| unit_order.id.clone())
+        .collect()
+}
+
+fn invalid_unit_edit_err() -> BaseError {
+    BaseError::Expected {
+        variant: ExpectedVariant::Args,
+        message: trl("error-invalid-unit-oper"),
+    }
+}
+
+fn move_unit_order(
+    unit_orders: &mut Vec<UnitOrder>,
+    id: &str,
+    next_id: Option<&String>,
+) -> BaseResult<()> {
+    //
+    let Some(position) = unit_orders
+        .iter()
+        .position(|unit_order| unit_order.id == id)
+    else {
+        return Err(invalid_unit_edit_err());
+    };
+
+    let unit_order = unit_orders.remove(position);
+
+    let target = match next_id {
+        //
+        Some(next_id) => unit_orders
+            .iter()
+            .position(|candidate| candidate.id == *next_id)
+            .ok_or_else(invalid_unit_edit_err)?,
+
+        None => unit_orders.len(),
+    };
+
+    unit_orders.insert(target, unit_order);
+
+    accept(())
+}
+
+fn relink_unit_orders(unit_orders: &mut [UnitOrder]) {
+    for index in 0..unit_orders.len() {
+        unit_orders[index].next_id = unit_orders
+            .get(index + 1)
+            .map(|unit_order| unit_order.id.clone());
+    }
+}
+
+fn apply_unit_order_edits(
+    unit_orders: &mut Vec<UnitOrder>,
+    edits: &[UnitEdit],
+) -> BaseResult<()> {
+    //
+    for edit in edits {
+        match edit {
+            //
+            UnitEdit::Delete { id } => {
+                //
+                let Some(unit_order) = unit_orders
+                    .iter_mut()
+                    .find(|unit_order| unit_order.id == *id)
+                else {
+                    return Err(invalid_unit_edit_err());
+                };
+
+                unit_order.is_hidden = true;
+            }
+
+            UnitEdit::Save { id, next_id, .. } => {
+                //
+                let position = unit_orders
+                    .iter()
+                    .position(|unit_order| unit_order.id == *id);
+
+                match position {
+                    //
+                    Some(position) => {
+                        unit_orders[position].is_hidden = false;
+                    }
+
+                    None => unit_orders.push(UnitOrder {
+                        id: id.clone(),
+                        next_id: None,
+                        is_hidden: false,
+                    }),
+                }
+
+                match next_id {
+                    //
+                    PatchField::Skip => {}
+
+                    PatchField::Clear => {
+                        move_unit_order(unit_orders, id, None)?;
+                    }
+
+                    PatchField::Assign(next_id) => {
+                        move_unit_order(unit_orders, id, Some(next_id))?;
+                    }
+                }
+            }
+        }
+    }
+
+    relink_unit_orders(unit_orders);
+
+    let visible_count = unit_orders
+        .iter()
+        .filter(|unit_order| !unit_order.is_hidden)
+        .count();
+
+    if visible_count > 100 {
+        return Err(invalid_unit_edit_err());
+    }
+
+    accept(())
+}
+
 #[instrument(level = "info", err(Debug), skip(nucl, repo))]
+/// Imports chapter translation content through the Unit edit pipeline.
 pub async fn import<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
@@ -55,8 +183,10 @@ where
         + ComicRepo<C>
         + PageRepo<C>
         + UnitRepo<C>
+        + Clone
         + Send
-        + Sync,
+        + Sync
+        + 'static,
 {
     ChapterPortPermComplex::ensure_user_can_import(
         &mut run_proxy! {
@@ -75,6 +205,15 @@ where
         .await?
         .ok_or_else(unit_edit_permission_err)?;
 
+    let edit_perm = UnitEditPerm {
+        can_translate: assignment_info
+            .roles
+            .has_any_role(&[RoleField::TRANSLATOR]),
+        can_proofread: assignment_info
+            .roles
+            .has_any_role(&[RoleField::PROOFREADER]),
+    };
+
     let label_plus = matches!(params.format, TranslationFormat::LabelPlus);
 
     let imported_pages = match params.format {
@@ -88,7 +227,9 @@ where
         }
     };
 
-    let imported = nucl
+    let stage_chapter_id = chapter_id.clone();
+
+    let import_payload = nucl
         .coord(async move |context| {
             //
             let chapter_info = repo
@@ -103,7 +244,7 @@ where
 
             ChapterComplex::ensure_chapter_writable(&chapter_info)?;
 
-            let page_infos = repo
+            let page_scopes = repo
                 .step(
                     context,
                     &ListPageInfos {
@@ -114,94 +255,59 @@ where
 
             ChapterImportComplex::validate_page_count(
                 imported_pages.len(),
-                page_infos.len(),
+                page_scopes.len(),
             )?;
 
             let mut imported_unit_count = 0;
 
-            for (page_info, imported_page) in
-                page_infos.iter().zip(imported_pages.iter())
+            for (page_scope, imported_page) in
+                page_scopes.iter().zip(imported_pages.iter())
             {
-                let old_counters = page_counters(page_info);
+                let page_info = repo
+                    .step(context, &GetPageInfoExcluded { id: &page_scope.id })
+                    .await?;
 
-                let existing_unit_infos = repo
+                let mut positions = repo
                     .step(
                         context,
-                        &ListUnitInfos {
+                        &ListUnitOrders {
                             page_id: &page_info.id,
                         },
                     )
                     .await?;
 
-                let existing_by_id = existing_unit_infos
-                    .iter()
-                    .map(|unit_info| (unit_info.id.as_str(), unit_info))
-                    .collect::<HashMap<_, _>>();
-
-                let existing_by_index = existing_unit_infos
-                    .iter()
-                    .map(|unit_info| (unit_info.index, unit_info))
-                    .collect::<HashMap<_, _>>();
-
-                for imported_unit in &imported_page.units {
-                    //
-                    let unit_id =
-                        resolve_unit_id(imported_unit, &existing_by_index);
-
-                    let existing_unit = existing_by_id
-                        .get(unit_id.as_str())
-                        .copied()
-                        .or_else(|| {
-                            existing_by_index.get(&imported_unit.index).copied()
-                        });
-
-                    let unit_payload = ChapterImportComplex::build_unit_payload(
-                        imported_unit,
-                        existing_unit,
-                        &token.user_id,
-                        has_proofreader_role(&assignment_info),
-                        label_plus,
-                    );
-
-                    repo.step(
-                        context,
-                        &SaveUnit {
-                            page_id: &page_info.id,
-                            id: &unit_id,
-                            payload: &unit_payload,
-                        },
-                    )
-                    .await?;
+                if imported_page.units.is_empty() {
+                    continue;
                 }
 
-                let current_indexes = repo
-                    .step(
-                        context,
-                        &ListUnitIndexes {
-                            page_id: &page_info.id,
-                        },
-                    )
-                    .await?;
+                let edits = build_page_edits(
+                    &imported_page.units,
+                    &positions,
+                    &token.user_id,
+                    edit_perm,
+                    label_plus,
+                )?;
 
-                let index_updates =
-                    UnitComplex::build_index_updates(current_indexes);
+                UnitPermComplex::ensure_user_can_edit_fields(
+                    edit_perm, &edits,
+                )?;
 
-                if !index_updates.is_empty() {
-                    repo.step(
-                        context,
-                        &UpdateUnitIndexes {
-                            page_id: &page_info.id,
-                            updates: &index_updates,
-                        },
-                    )
-                    .await?;
-                }
+                let base_ids = positions
+                    .iter()
+                    .map(|position| position.id.as_str())
+                    .collect::<Vec<_>>();
+
+                let edits = UnitComplex::normalize_edits(&base_ids, edits)?;
+
+                apply_unit_order_edits(&mut positions, &edits)?;
 
                 let counters = repo
                     .step(
                         context,
-                        &CountUnits {
+                        &ApplyUnitEdits {
                             page_id: &page_info.id,
+                            orders: &positions,
+                            edits: &edits,
                         },
                     )
                     .await?;
@@ -215,7 +321,7 @@ where
                 )
                 .await?;
 
-                let delta = counter_delta(old_counters, counters);
+                let delta = counter_delta(page_counters(&page_info), counters);
 
                 repo.step(
                     context,
@@ -238,16 +344,77 @@ where
             .await?;
 
             accept(ImportChapterTranslationPayload {
-                imported_page_count: page_infos.len() as i32,
+                imported_page_count: page_scopes.len() as i32,
                 imported_unit_count,
             })
         })
         .await?;
 
-    accept(imported)
+    let stages = import_stages(edit_perm);
+
+    spawn_starts(((*repo).clone(),), stage_chapter_id, stages);
+
+    accept(import_payload)
 }
 
-/// Extracts unit counters from a [`PageInfo`].
+fn build_page_edits(
+    imported_units: &[UnitTranslationImport],
+    positions: &[UnitOrder],
+    user_id: &str,
+    edit_perm: UnitEditPerm,
+    label_plus: bool,
+) -> BaseResult<Vec<UnitEdit>> {
+    //
+    let visible_ids = visible_unit_ids(positions);
+
+    let known_ids = positions
+        .iter()
+        .map(|position| position.id.as_str())
+        .collect::<HashSet<_>>();
+
+    let mut edits = Vec::with_capacity(imported_units.len());
+
+    for imported_unit in imported_units {
+        //
+        let candidate_id = imported_unit
+            .id
+            .as_deref()
+            .filter(|id| known_ids.contains(*id))
+            .map(str::to_string)
+            .or_else(|| {
+                usize::try_from(imported_unit.index)
+                    .ok()
+                    .and_then(|index| visible_ids.get(index).cloned())
+            });
+
+        let (unit_id, next_id) = match candidate_id {
+            //
+            Some(unit_id) => (unit_id, PatchField::Skip),
+
+            None => {
+                //
+                let unit_id = UnitComplex::gen_id();
+
+                (unit_id, PatchField::Clear)
+            }
+        };
+
+        let edit = ChapterImportComplex::build_unit_edit(
+            imported_unit,
+            unit_id,
+            next_id,
+            user_id,
+            edit_perm.can_translate,
+            edit_perm.can_proofread,
+            label_plus,
+        );
+
+        edits.push(edit);
+    }
+
+    accept(edits)
+}
+
 fn page_counters(page_info: &PageInfo) -> UnitCounters {
     UnitCounters {
         total_unit_count: page_info.total_unit_count,
@@ -256,36 +423,6 @@ fn page_counters(page_info: &PageInfo) -> UnitCounters {
     }
 }
 
-/// Resolves the unit ID from an import — uses the provided ID, falls back to
-/// an existing unit with the same index, or generates a new one.
-fn resolve_unit_id(
-    imported_unit: &UnitTranslationImport,
-    existing_by_index: &HashMap<i32, &UnitInfo>,
-) -> String {
-    //
-    if let Some(id) = imported_unit
-        .id
-        .as_deref()
-        .filter(|id| !id.trim().is_empty())
-    {
-        return id.trim().into();
-    }
-
-    if let Some(unit_info) = existing_by_index.get(&imported_unit.index) {
-        return unit_info.id.clone();
-    }
-
-    UnitComplex::gen_id()
-}
-
-/// Returns true if the assignment grants a PROOFREADER role.
-fn has_proofreader_role(assignment_info: &AssignmentInfo) -> bool {
-    assignment_info
-        .roles
-        .has_any_role(&[RoleField::PROOFREADER])
-}
-
-/// Computes the per-counter delta between old and new unit counters.
 fn counter_delta(
     old_counters: UnitCounters,
     new_counters: UnitCounters,
@@ -300,7 +437,21 @@ fn counter_delta(
     }
 }
 
-/// Constructs a permission error for missing unit edit access.
+fn import_stages(edit_perm: UnitEditPerm) -> Vec<Stage> {
+    //
+    let mut stages = Vec::with_capacity(2);
+
+    if edit_perm.can_translate {
+        stages.push(Stage::Translate);
+    }
+
+    if edit_perm.can_proofread {
+        stages.push(Stage::Proofread);
+    }
+
+    stages
+}
+
 fn unit_edit_permission_err() -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Perm,

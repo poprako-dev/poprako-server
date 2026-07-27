@@ -2,6 +2,8 @@
 
 use std::sync::OnceLock;
 
+use serde::{Deserialize, Deserializer, Serialize};
+
 #[cfg(test)]
 mod tests;
 
@@ -79,14 +81,63 @@ fn load_snowflake_node_id() -> u16 {
     }
 }
 
+/// One transport-independent patch field.
+///
+/// `Skip` preserves the stored value, `Clear` resets it, and `Assign` replaces
+/// it with the carried value.
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub enum PatchField<T> {
+    /// Resets the stored field.
     Clear,
+
+    /// Replaces the stored field with the carried value.
     Assign(T),
+
+    /// Preserves the stored field.
     Skip,
 }
 
 impl<T> PatchField<T> {
+    /// Maps an assigned value while preserving Clear and Skip.
+    pub fn map<U, F>(self, assign: F) -> PatchField<U>
+    where
+        F: FnOnce(T) -> U,
+    {
+        match self {
+            //
+            Self::Clear => PatchField::Clear,
+
+            Self::Assign(value) => PatchField::Assign(assign(value)),
+
+            Self::Skip => PatchField::Skip,
+        }
+    }
+
+    /// Reports whether this patch leaves the stored value unchanged.
     pub const fn is_skip(&self) -> bool {
         matches!(self, Self::Skip)
+    }
+}
+
+impl<'de, T> Deserialize<'de> for PatchField<T>
+where
+    T: Deserialize<'de>,
+{
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        match Option::<T>::deserialize(deserializer)? {
+            //
+            Some(value) => Ok(Self::Assign(value)),
+
+            None => Ok(Self::Clear),
+        }
+    }
+}
+
+impl<T> Default for PatchField<T> {
+    fn default() -> Self {
+        Self::Skip
     }
 }

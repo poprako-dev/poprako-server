@@ -1,399 +1,226 @@
-//! Complex-domain opers for page units.
+//! Domain rules and permission checks for page Units.
 
-use std::collections::{HashMap, HashSet};
-
-use poprako_orchestra::Proxy;
+use std::collections::HashSet;
 
 use poprako_util::i18n::trl;
 
-use crate::complex::util::{
-    check_user_is_chapter_assignee,
-    check_user_is_chapter_translator_or_proofreader,
-    check_user_is_team_member_by_chapter,
-};
-use crate::model::unit::{
-    UnitApplyAck, UnitBody, UnitDiff, UnitIdMapper, UnitIndex, UnitIndexUpdate,
-    UnitMdf,
-};
-use crate::part::repo::oper::assignment::FindAssignmentInfo;
-use crate::part::repo::oper::chapter::GetChapterInfo;
-use crate::part::repo::oper::comic::GetComicInfo;
-use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part::repo::oper::workset::GetWorksetInfo;
+use crate::model::write::unit::UnitEdit;
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
-use crate::util::next_snowflake_id;
+use crate::util::{PatchField, next_snowflake_id};
 
+pub use perm::UnitPermComplex;
+
+mod perm;
 #[cfg(test)]
 mod tests;
 
-/// Domain opers for page units.
+/// Pure Unit mutation and linked-list rules.
 pub struct UnitComplex;
 
 impl UnitComplex {
-    /// Generates a unique unit identifier backed by a snowflake value.
+    /// Generates one permanent Unit ID.
     pub fn gen_id() -> String {
         next_snowflake_id()
     }
 
-    /// Validates one compact difference and resolves local create ids.
-    pub fn prepare_diff(diff: UnitDiff) -> BaseResult<UnitApplyAck> {
+    /// Normalizes one Unit edit batch against the persisted Unit IDs.
+    pub fn normalize_edits(
+        base_ids: &[&str],
+        mut edits: Vec<UnitEdit>,
+    ) -> BaseResult<Vec<UnitEdit>> {
         //
-        validate_page_id(&diff.page_id)?;
-
-        let mut local_ids = HashSet::new();
-
-        let mut local_id_map = Vec::new();
-
-        let mut opers = Vec::with_capacity(diff.mdfs.len());
-
-        for unit_oper in diff.mdfs {
-            match unit_oper {
-                //
-                UnitMdf::Create {
-                    id,
-                    body: payload,
-                    before_id,
-                } => {
-                    //
-                    validate_optional_id(&before_id)?;
-
-                    validate_id(&id)?;
-
-                    validate_payload(&payload)?;
-
-                    if !local_ids.insert(id.clone()) {
-                        return Err(unit_invalid_oper_err());
-                    }
-
-                    let unit_id = Self::gen_id();
-
-                    local_id_map.push(UnitIdMapper {
-                        local_id: id,
-                        unit_id: unit_id.clone(),
-                    });
-
-                    opers.push(UnitMdf::Create {
-                        id: unit_id,
-                        body: payload,
-                        before_id,
-                    });
-                }
-
-                UnitMdf::Save {
-                    id,
-                    body: payload,
-                    before_id,
-                } => {
-                    //
-                    validate_id(&id)?;
-
-                    validate_optional_id(&before_id)?;
-
-                    validate_payload(&payload)?;
-
-                    opers.push(UnitMdf::Save {
-                        id,
-                        body: payload,
-                        before_id,
-                    });
-                }
-
-                UnitMdf::Delete { id } => {
-                    //
-                    validate_id(&id)?;
-
-                    opers.push(UnitMdf::Delete { id });
-                }
-            }
+        if !(1..=100).contains(&edits.len()) {
+            return Err(invalid_unit_edit_err());
         }
 
-        accept(UnitApplyAck {
-            opers,
-            local_id_map,
-        })
-    }
-
-    /// Applies the ordered opers to the surviving server order in memory and
-    /// returns the final id sequence.
-    ///
-    /// Each save places its unit before `before_id`; `None` or a `before_id`
-    /// absent from the surviving order appends the unit to the tail. Delete
-    /// removes the unit. Units untouched by the diff keep their relative order.
-    pub fn apply_opers_to_order(
-        opers: &[UnitMdf],
-        mut current_order: Vec<String>,
-    ) -> Vec<String> {
-        //
-        for oper in opers {
-            match oper {
-                //
-                UnitMdf::Create { id, before_id, .. }
-                | UnitMdf::Save { before_id, id, .. } => {
-                    //
-                    current_order.retain(|surviving_id| surviving_id != id);
-
-                    insert_before(&mut current_order, id, before_id);
-                }
-
-                UnitMdf::Delete { id } => {
-                    current_order.retain(|surviving_id| surviving_id != id);
-                }
-            }
-        }
-
-        current_order
-    }
-
-    /// Builds compact index updates from a final id order and the current
-    /// persisted indexes.
-    pub fn build_index_updates_from_order(
-        final_order: &[String],
-        current_indexes: &[UnitIndex],
-    ) -> Vec<UnitIndexUpdate> {
-        //
-        let current_map: HashMap<&String, i32> = current_indexes
-            .iter()
-            .map(|unit_index| (&unit_index.id, unit_index.index))
-            .collect();
-
-        final_order
-            .iter()
-            .enumerate()
-            .filter_map(|(index, id)| {
-                //
-                let index = index as i32;
-
-                if current_map.get(id).copied() == Some(index) {
-                    return None;
-                }
-
-                Some(UnitIndexUpdate {
-                    id: id.clone(),
-                    index,
-                })
-            })
-            .collect()
-    }
-
-    /// Builds compact index updates by compacting the current server order.
-    pub fn build_index_updates(
-        current_indexes: Vec<UnitIndex>,
-    ) -> Vec<UnitIndexUpdate> {
-        //
-        let mut sorted_indexes = current_indexes;
-
-        sorted_indexes.sort_by(|left, right| {
-            left.index
-                .cmp(&right.index)
-                .then_with(|| left.id.cmp(&right.id))
+        stable_prior(&mut edits, |edit| {
+            matches!(edit, UnitEdit::Delete { .. })
         });
 
-        compact_index_updates_from_order(sorted_indexes)
+        Self::compress_edits(&mut edits);
+
+        Self::final_validate_edits(base_ids, &edits)?;
+
+        accept(edits)
     }
-}
 
-/// Permission-gate opers for page units.
-pub struct UnitPermComplex;
+    fn compress_edits(edits: &mut Vec<UnitEdit>) {
+        //
+        let mut last = edits.len();
 
-impl UnitPermComplex {
-    /// Verify the caller may list units on a chapter page.
-    pub async fn ensure_user_can_list_infos<P>(
-        proxy: &mut P,
-        user_id: &str,
-        chapter_id: &str,
-    ) -> BaseResult<()>
-    where
-        P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
-            + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
-            + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
-            + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>
-            + for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
-    {
-        let member_check =
-            check_user_is_team_member_by_chapter(proxy, user_id, chapter_id)
-                .await;
-
-        if member_check.is_ok() {
-            return accept(());
-        }
-
-        match check_user_is_chapter_assignee(proxy, user_id, chapter_id).await {
+        while last > 0 {
             //
-            Ok(()) => accept(()),
+            last -= 1;
 
-            Err(BaseError::Expected {
-                variant: ExpectedVariant::Perm,
-                ..
-            }) => Err(unit_list_permission_err()),
+            let id = match &edits[last] {
+                UnitEdit::Delete { id } | UnitEdit::Save { id, .. } => {
+                    id.clone()
+                }
+            };
 
-            Err(e) => Err(e),
+            let mut prev = last;
+
+            while prev > 0 {
+                //
+                prev -= 1;
+
+                match &edits[prev] {
+                    //
+                    UnitEdit::Delete { id: prev_id } if prev_id == &id => {
+                        //
+                        edits.remove(prev);
+
+                        last -= 1;
+                    }
+
+                    UnitEdit::Save { id: prev_id, .. } if prev_id == &id => {
+                        //
+                        {
+                            let (head, tail) = edits.split_at_mut(last);
+
+                            Self::merge_edits(&mut head[prev], &mut tail[0]);
+                        }
+
+                        edits.remove(prev);
+
+                        last -= 1;
+                    }
+
+                    _ => {}
+                }
+            }
         }
     }
 
-    /// Verify the caller may edit units on a chapter page.
-    pub async fn ensure_user_can_save_infos<P>(
-        proxy: &mut P,
-        user_id: &str,
-        chapter_id: &str,
-    ) -> BaseResult<()>
-    where
-        P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
-    {
-        match check_user_is_chapter_translator_or_proofreader(
-            proxy, user_id, chapter_id,
-        )
-        .await
-        {
-            Ok(()) => accept(()),
-
-            Err(BaseError::Expected {
-                variant: ExpectedVariant::Perm,
-                ..
-            }) => Err(unit_edit_permission_err()),
-
-            Err(e) => Err(e),
-        }
-    }
-}
-
-/// Validate a page ID string (delegates to [`validate_id`]).
-fn validate_page_id(page_id: &str) -> BaseResult<()> {
-    validate_id(page_id)
-}
-
-/// Validate a non-empty identifier, returning an args error for empty strings.
-fn validate_id(id: &str) -> BaseResult<()> {
-    //
-    if id.is_empty() {
-        return Err(unit_invalid_oper_err());
-    }
-
-    accept(())
-}
-
-/// Validate an optional identifier — rejects `Some("")` but allows `None`.
-fn validate_optional_id(id: &Option<String>) -> BaseResult<()> {
-    //
-    if id.as_ref().map(|id| id.is_empty()).unwrap_or(false) {
-        return Err(unit_invalid_oper_err());
-    }
-
-    accept(())
-}
-
-/// Validate editor identifiers required by non-empty unit text fields.
-fn validate_payload(payload: &UnitBody) -> BaseResult<()> {
-    //
-    validate_text_editor(
-        &payload.translated_text,
-        &payload.last_translator_id,
-    )?;
-
-    validate_text_editor(
-        &payload.proofread_text,
-        &payload.last_proofreader_id,
-    )?;
-
-    accept(())
-}
-
-/// Require a non-empty editor identifier when text is non-empty.
-fn validate_text_editor(
-    text: &Option<String>,
-    editor_id: &Option<String>,
-) -> BaseResult<()> {
-    //
-    let has_text = text.as_ref().map(|text| !text.is_empty()).unwrap_or(false);
-
-    match (has_text, editor_id.as_deref()) {
+    fn merge_edits(earlier: &mut UnitEdit, later: &mut UnitEdit) {
         //
-        (true, Some(editor_id)) => validate_id(editor_id),
+        let (
+            UnitEdit::Save {
+                id: earlier_id,
+                next_id: earlier_next_id,
+                is_bubble: earlier_is_bubble,
+                coord: earlier_coord,
+                translation: earlier_translation,
+                revision: earlier_revision,
+            },
+            UnitEdit::Save {
+                id: later_id,
+                next_id: later_next_id,
+                is_bubble: later_is_bubble,
+                coord: later_coord,
+                translation: later_translation,
+                revision: later_revision,
+            },
+        ) = (earlier, later)
+        else {
+            unreachable!("only Unit Save edits can be merged");
+        };
 
-        (true, None) => Err(unit_invalid_oper_err()),
+        debug_assert_eq!(earlier_id, later_id);
 
-        (false, _) => accept(()),
+        inherit_option(earlier_is_bubble, later_is_bubble);
+
+        inherit_option(earlier_coord, later_coord);
+
+        inherit_patch(earlier_next_id, later_next_id);
+
+        inherit_patch(earlier_translation, later_translation);
+
+        inherit_patch(earlier_revision, later_revision);
     }
-}
 
-/// Insert `id` before `before_id` in the order vector. Appends to the end
-/// when `before_id` is `None`, equals `id`, or is not found.
-fn insert_before(
-    order: &mut Vec<String>,
-    id: &str,
-    before_id: &Option<String>,
-) {
-    //
-    let Some(before_id) = before_id else {
+    fn final_validate_edits(
+        base_ids: &[&str],
+        edits: &[UnitEdit],
+    ) -> BaseResult<()> {
         //
-        order.push(id.to_string());
+        let base_ids = base_ids.iter().copied().collect::<HashSet<_>>();
 
-        return;
-    };
+        let (deleted_ids, saved_ids) = edits.iter().fold(
+            (HashSet::new(), HashSet::new()),
+            |(mut deleted, mut saved), edit| {
+                //
+                match edit {
+                    //
+                    UnitEdit::Delete { id } => {
+                        deleted.insert(id.as_str());
+                    }
 
-    if before_id == id {
-        //
-        order.push(id.to_string());
+                    UnitEdit::Save { id, .. } => {
+                        saved.insert(id.as_str());
+                    }
+                }
 
-        return;
-    }
+                (deleted, saved)
+            },
+        );
 
-    let Some(position) = order
-        .iter()
-        .position(|surviving_id| surviving_id == before_id)
-    else {
-        //
-        order.push(id.to_string());
-
-        return;
-    };
-
-    order.insert(position, id.to_string());
-}
-
-/// Build index updates by enumerating sorted unit indexes and emitting
-/// updates only for positions that differ from the stored index.
-fn compact_index_updates_from_order(
-    unit_indexes: Vec<UnitIndex>,
-) -> Vec<UnitIndexUpdate> {
-    unit_indexes
-        .into_iter()
-        .enumerate()
-        .filter_map(|(index, unit_index)| {
+        edits.iter().try_for_each(|edit| {
             //
-            let index = index as i32;
+            match edit {
+                //
+                UnitEdit::Delete { id } if !base_ids.contains(id.as_str()) => {
+                    return Err(invalid_unit_edit_err());
+                }
 
-            if unit_index.index == index {
-                return None;
+                _ => {}
             }
 
-            Some(UnitIndexUpdate {
-                id: unit_index.id,
-                index,
-            })
+            let UnitEdit::Save {
+                id,
+                next_id: PatchField::Assign(next_id),
+                ..
+            } = edit
+            else {
+                return accept(());
+            };
+
+            if next_id == id
+                || (!base_ids.contains(next_id.as_str())
+                    && !saved_ids.contains(next_id.as_str()))
+                || deleted_ids.contains(next_id.as_str())
+            {
+                return Err(invalid_unit_edit_err());
+            }
+
+            accept(())
         })
-        .collect()
+    }
 }
 
-/// Construct an "invalid unit operation" args error.
-fn unit_invalid_oper_err() -> BaseError {
+fn stable_prior<T, P>(slice: &mut [T], mut pred: P) -> usize
+where
+    P: FnMut(&T) -> bool,
+{
+    let mut tail = 0;
+
+    for current in 0..slice.len() {
+        if pred(&slice[current]) {
+            //
+            slice[tail..=current].rotate_right(1);
+
+            tail += 1;
+        }
+    }
+
+    tail
+}
+
+fn inherit_option<T>(earlier: &mut Option<T>, later: &mut Option<T>) {
+    if later.is_none() {
+        *later = earlier.take();
+    }
+}
+
+fn inherit_patch<T>(earlier: &mut PatchField<T>, later: &mut PatchField<T>) {
+    if matches!(later, PatchField::Skip) {
+        *later = std::mem::replace(earlier, PatchField::Skip);
+    }
+}
+
+fn invalid_unit_edit_err() -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Args,
         message: trl("error-invalid-unit-oper"),
-    }
-}
-
-/// Construct a "unit list permission required" error.
-fn unit_list_permission_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Perm,
-        message: trl("error-unit-list-permission-required"),
-    }
-}
-
-/// Construct a "unit edit permission required" error.
-fn unit_edit_permission_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Perm,
-        message: trl("error-unit-edit-permission-required"),
     }
 }

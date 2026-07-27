@@ -1,67 +1,121 @@
 use super::*;
 
-// create_unit(create_unit)(positive): a new id is inserted once.
-// create_unit(create_unit)(negative): an existing id is rejected without mutation.
-// save_unit(save_unit)(positive): a missing id is created and an existing id is updated.
+use crate::model::shared::unit::{UnitCoord, UnitRevision, UnitTranslation};
+use crate::result::BaseError;
 
-fn payload(text: &str, proofread: bool) -> UnitBody {
-    UnitBody {
-        is_bubble: true,
-        is_proofread: proofread,
-        x_coord: 1.0,
-        y_coord: 2.0,
-        translated_text: Some(text.into()),
-        last_translator_id: Some("user-1".into()),
-        proofread_text: None,
-        last_proofreader_id: None,
+fn create_edit(id: &str, text: &str) -> UnitEdit {
+    UnitEdit::Save {
+        id: id.to_string(),
+        next_id: PatchField::Clear,
+        is_bubble: Some(true),
+        coord: Some(UnitCoord {
+            x_coord: 1.0,
+            y_coord: 2.0,
+        }),
+        translation: PatchField::Assign(UnitTranslation {
+            translated_text: text.to_string(),
+            last_translator_id: "translator-1".to_string(),
+        }),
+        revision: PatchField::Clear,
     }
 }
 
 #[test]
-fn create_unit_inserts_once_and_rejects_duplicate() {
+fn apply_edits_soft_deletes_and_restores_a_unit() {
     //
     let mut state = MockState::default();
 
-    let unit_payload = payload("translated", false);
+    let create = create_edit("unit-1", "translated");
 
-    let first_result =
-        create_unit(&mut state, "page-1", "unit-1", &unit_payload);
+    let create_order = [UnitOrder {
+        id: "unit-1".to_string(),
+        next_id: None,
+        is_hidden: false,
+    }];
 
-    assert!(first_result.is_ok());
+    let counters =
+        apply_edits(&mut state, "page-1", &create_order, &[create]).unwrap();
 
-    let duplicate_result =
-        create_unit(&mut state, "page-1", "unit-1", &unit_payload);
+    assert_eq!(counters.total_unit_count, 1);
 
-    assert!(duplicate_result.is_err());
+    let hidden_order = [UnitOrder {
+        id: "unit-1".to_string(),
+        next_id: None,
+        is_hidden: true,
+    }];
 
-    assert_eq!(state.units.len(), 1);
+    let hidden = apply_edits(
+        &mut state,
+        "page-1",
+        &hidden_order,
+        &[UnitEdit::Delete {
+            id: "unit-1".to_string(),
+        }],
+    )
+    .unwrap();
 
-    assert_eq!(
-        state.units[0].translated_text.as_deref(),
-        Some("translated")
-    );
+    assert_eq!(hidden.total_unit_count, 0);
+
+    assert!(state.units[0].hidden_at.is_some());
+
+    let restore = UnitEdit::Save {
+        id: "unit-1".to_string(),
+        next_id: PatchField::Skip,
+        is_bubble: None,
+        coord: None,
+        translation: PatchField::Skip,
+        revision: PatchField::Assign(UnitRevision {
+            is_proofread: true,
+            proofread_text: Some("proofread".to_string()),
+            last_proofreader_id: "proofreader-1".to_string(),
+        }),
+    };
+
+    let visible_order = [UnitOrder {
+        id: "unit-1".to_string(),
+        next_id: None,
+        is_hidden: false,
+    }];
+
+    let restored =
+        apply_edits(&mut state, "page-1", &visible_order, &[restore]).unwrap();
+
+    assert_eq!(restored.total_unit_count, 1);
+
+    assert_eq!(restored.translated_unit_count, 1);
+
+    assert_eq!(restored.proofread_unit_count, 1);
+
+    assert!(state.units[0].hidden_at.is_none());
 }
 
 #[test]
-fn save_unit_creates_missing_and_updates_existing() {
+fn order_unit_orders_rejects_a_forked_chain() {
     //
-    let mut state = MockState::default();
+    let mut unit_orders = vec![
+        UnitOrder {
+            id: "a".to_string(),
+            next_id: Some("c".to_string()),
+            is_hidden: false,
+        },
+        UnitOrder {
+            id: "b".to_string(),
+            next_id: Some("c".to_string()),
+            is_hidden: false,
+        },
+        UnitOrder {
+            id: "c".to_string(),
+            next_id: None,
+            is_hidden: false,
+        },
+    ];
 
-    let initial_payload = payload("initial", false);
+    let error = order_units(
+        &mut unit_orders,
+        |unit_order| unit_order.id.as_str(),
+        |unit_order| unit_order.next_id.as_deref(),
+    )
+    .unwrap_err();
 
-    save_unit(&mut state, "page-1", "unit-1", &initial_payload)
-        .ok()
-        .unwrap();
-
-    let updated_payload = payload("updated", true);
-
-    save_unit(&mut state, "page-1", "unit-1", &updated_payload)
-        .ok()
-        .unwrap();
-
-    assert_eq!(state.units.len(), 1);
-
-    assert_eq!(state.units[0].translated_text.as_deref(), Some("updated"));
-
-    assert!(state.units[0].is_proofread);
+    assert!(matches!(error, BaseError::Unrecoverable { .. }));
 }

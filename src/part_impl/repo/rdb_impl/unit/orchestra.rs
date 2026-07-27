@@ -1,103 +1,48 @@
 use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
-use crate::model::unit::{UnitCounters, UnitIndex, UnitInfo};
+use crate::model::read::proj::unit::{UnitCounters, UnitInfo, UnitOrder};
 use crate::part::repo::oper::unit::{
-    CountUnits, CreateUnit, DeleteUnit, ListUnitIndexes, ListUnitInfos,
-    SaveUnit, UpdateUnitIndexes,
+    ApplyUnitEdits, ListUnitInfos, ListUnitOrders,
 };
 use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::unit::step_impl::{
-    count_by_page_id, create_unit, delete_by_id_in_page,
-    list_indexes_by_page_id, list_infos, save_unit, update_indexes_by_page_id,
+    apply_edits, list_infos, list_positions_for_update,
 };
 use crate::part_impl::shared::RdbContext;
 use crate::result::{BaseError, BaseResult};
 
 impl Run<ListUnitInfos<'_>> for RdbRepo {
     type Error = BaseError;
+
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(&self, oper: &ListUnitInfos<'_>) -> BaseResult<Vec<UnitInfo>> {
         submit_query!(self.core, list_infos, oper.page_id)
     }
 }
 
-impl Step<ListUnitInfos<'_>, RdbContext> for RdbRepo {
+impl Step<ListUnitOrders<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
+
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &ListUnitInfos<'_>,
-    ) -> BaseResult<Vec<UnitInfo>> {
-        list_infos(context.conn(), oper.page_id).await
+        oper: &ListUnitOrders<'_>,
+    ) -> BaseResult<Vec<UnitOrder>> {
+        list_positions_for_update(context.conn(), oper.page_id).await
     }
 }
 
-impl Step<CreateUnit<'_>, RdbContext> for RdbRepo {
+impl Step<ApplyUnitEdits<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
+
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &CreateUnit<'_>,
-    ) -> BaseResult<()> {
-        create_unit(context.conn(), oper.page_id, oper.id, oper.payload).await
-    }
-}
-impl Step<SaveUnit<'_>, RdbContext> for RdbRepo {
-    type Error = BaseError;
-    #[instrument(level = "info", err(Debug), skip_all)]
-    async fn step(
-        &self,
-        context: &mut RdbContext,
-        oper: &SaveUnit<'_>,
-    ) -> BaseResult<()> {
-        save_unit(context.conn(), oper.page_id, oper.id, oper.payload).await
-    }
-}
-impl Step<DeleteUnit<'_>, RdbContext> for RdbRepo {
-    type Error = BaseError;
-    #[instrument(level = "info", err(Debug), skip_all)]
-    async fn step(
-        &self,
-        context: &mut RdbContext,
-        oper: &DeleteUnit<'_>,
-    ) -> BaseResult<()> {
-        delete_by_id_in_page(context.conn(), oper.page_id, oper.id).await
-    }
-}
-impl Step<ListUnitIndexes<'_>, RdbContext> for RdbRepo {
-    type Error = BaseError;
-    #[instrument(level = "info", err(Debug), skip_all)]
-    async fn step(
-        &self,
-        context: &mut RdbContext,
-        oper: &ListUnitIndexes<'_>,
-    ) -> BaseResult<Vec<UnitIndex>> {
-        list_indexes_by_page_id(context.conn(), oper.page_id).await
-    }
-}
-impl Step<UpdateUnitIndexes<'_>, RdbContext> for RdbRepo {
-    type Error = BaseError;
-    #[instrument(level = "info", err(Debug), skip_all)]
-    async fn step(
-        &self,
-        context: &mut RdbContext,
-        oper: &UpdateUnitIndexes<'_>,
-    ) -> BaseResult<()> {
-        update_indexes_by_page_id(context.conn(), oper.page_id, oper.updates)
-            .await
-    }
-}
-impl Step<CountUnits<'_>, RdbContext> for RdbRepo {
-    type Error = BaseError;
-    #[instrument(level = "info", err(Debug), skip_all)]
-    async fn step(
-        &self,
-        context: &mut RdbContext,
-        oper: &CountUnits<'_>,
+        oper: &ApplyUnitEdits<'_>,
     ) -> BaseResult<UnitCounters> {
-        count_by_page_id(context.conn(), oper.page_id).await
+        apply_edits(context.conn(), oper.page_id, oper.orders, oper.edits).await
     }
 }

@@ -298,13 +298,14 @@ fn build_page_payloads(
                 units: page_snapshot
                     .unit_infos
                     .iter()
-                    .map(|unit_info| ArchivedUnitPayload {
+                    .enumerate()
+                    .map(|(index, unit_info)| ArchivedUnitPayload {
                         source_unit_id: unit_info.id.clone(),
-                        index: unit_info.index,
+                        index: index as i32,
                         is_bubble: unit_info.is_bubble,
                         is_proofread: unit_info.is_proofread,
-                        x_coord: unit_info.x_coord,
-                        y_coord: unit_info.y_coord,
+                        x_coord: unit_info.coord.x_coord,
+                        y_coord: unit_info.coord.y_coord,
                         translated_text: unit_info.translated_text.clone(),
                         last_translator_id: unit_info
                             .last_translator_id

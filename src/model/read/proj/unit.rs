@@ -1,47 +1,92 @@
+//! Unit read projections.
+
 use time::OffsetDateTime;
 
 use crate::model::shared::unit::UnitCoord;
 
+/// One Unit node in the complete persisted page chain.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UnitOrder {
+    //
+    /// Permanent Unit ID.
     pub id: String,
+    /// Permanent ID of the following Unit.
     pub next_id: Option<String>,
 
+    /// Whether this Unit is a tombstone.
     pub is_hidden: bool,
 }
 
-/// A persisted page unit in final page order.
-#[cfg_attr(test, derive(Clone))]
+/// A persisted page Unit.
+#[derive(Debug, Clone)]
 pub struct UnitInfo {
     //
-    /// Server-assigned unique identifier for this unit.
+    /// Permanent Unit ID.
     pub id: String,
 
-    /// Foreign key referencing the page this unit belongs to.
-    ///
-    /// NOTE: the order(or index) should be revealed by the
-    /// order of array in which this unit is stored.
+    /// Owning Page ID.
     pub page_id: String,
-    /// Whether this unit is a speech bubble contour.
+    /// Permanent ID of the following Unit.
+    pub next_id: Option<String>,
+
+    /// Whether this Unit identifies a speech bubble.
     pub is_bubble: bool,
 
+    /// Page-relative coordinate.
     pub coord: UnitCoord,
 
-    /// Translated text content, absent when not yet translated.
+    /// Current translated text.
     pub translated_text: Option<String>,
-    /// User who last modified the translated text.
+    /// ID of the translator who last assigned translation content.
     pub last_translator_id: Option<String>,
 
-    /// Whether the proofread text has been reviewed and accepted.
+    /// Whether the current revision is approved.
     pub is_proofread: bool,
-    /// Proofread (reviewed) text content, absent when not yet proofread.
+    /// Current proofread text.
     pub proofread_text: Option<String>,
-    /// User who last modified the proofread text.
+    /// ID of the proofreader who last assigned revision content.
     pub last_proofreader_id: Option<String>,
 
+    /// Tombstone creation time, or none while visible.
     pub hidden_at: Option<OffsetDateTime>,
 
-    /// Timestamp when this unit was first inserted.
+    /// Creation time.
     pub created_at: OffsetDateTime,
-    /// Timestamp when this unit was last modified.
+    /// Last update time.
     pub updated_at: OffsetDateTime,
+}
+
+impl UnitInfo {
+    /// Reports whether this Unit has usable translation or revision text.
+    pub fn is_translated(&self) -> bool {
+        has_text(&self.translated_text) || has_text(&self.proofread_text)
+    }
+}
+
+/// Unit counters stored on a Page and its Chapter.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct UnitCounters {
+    //
+    /// Number of visible Units.
+    pub total_unit_count: i32,
+    /// Number of visible translated Units.
+    pub translated_unit_count: i32,
+    /// Number of visible proofread Units.
+    pub proofread_unit_count: i32,
+}
+
+/// Counter change applied to a Chapter after one Page mutation.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct UnitCounterDelta {
+    //
+    /// Visible Unit count change.
+    pub total_unit_count: i32,
+    /// Visible translated Unit count change.
+    pub translated_unit_count: i32,
+    /// Visible proofread Unit count change.
+    pub proofread_unit_count: i32,
+}
+
+fn has_text(text: &Option<String>) -> bool {
+    text.as_ref().is_some_and(|value| !value.trim().is_empty())
 }

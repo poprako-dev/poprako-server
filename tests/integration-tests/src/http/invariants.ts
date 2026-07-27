@@ -228,7 +228,10 @@ export async function assertPageUnitInvariant(api: ApiClient, pageId: string): P
 
         assert.equal(unit.page_id, pageId);
 
-        if (unit.translated_text != null && unit.translated_text !== "") {
+        if (
+            (unit.translated_text != null && unit.translated_text.trim() !== "") ||
+            (unit.proofread_text != null && unit.proofread_text.trim() !== "")
+        ) {
             translatedByText += 1;
         }
 
@@ -243,11 +246,11 @@ export async function assertPageUnitInvariant(api: ApiClient, pageId: string): P
         `total_unit_count ${units.total_unit_count} != unit_infos.length ${units.unit_infos.length}`,
     );
 
-    // translated count must match non-empty translated_text count
+    // Translated means either translation or revision has non-empty text.
     assert.equal(
         units.translated_unit_count,
         translatedByText,
-        `translated_unit_count ${units.translated_unit_count} != non-empty translated_text ${translatedByText}`,
+        `translated_unit_count ${units.translated_unit_count} != translated/revision text ${translatedByText}`,
     );
 
     // proofread count must match is_proofread flag count (NOT proofread_text != null)

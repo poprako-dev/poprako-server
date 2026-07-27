@@ -32,7 +32,6 @@ import type {
     ReserveChapterPagesVal,
     ReservedPageVal,
     ReserveImagePayload,
-    SavePageUnitsVal,
     SystemMailInfoVal,
     TeamInfoVal,
     UnitInfoVal,
@@ -686,98 +685,130 @@ export async function deleteChapterPages(api: ApiClient, chapterId: string): Pro
 
 // ---------- unit ----------
 
-export interface UnitCreateOper {
-    oper: "create";
+export interface UnitCoordInput {
+    x_coord: number;
+    y_coord: number;
+}
+
+export interface UnitTranslationInput {
+    translated_text: string;
+}
+
+export interface UnitRevisionInput {
+    is_proofread: boolean;
+    proofread_text?: string | null;
+}
+
+export interface UnitCreateEdit {
+    edit: "create";
     local_id: string;
-    before_id?: string | null;
+    next_id?: string | null;
     is_bubble: boolean;
-    is_proofread: boolean;
-    x_coord: number;
-    y_coord: number;
-    translated_text?: string | null;
-    last_translator_id?: string | null;
-    proofread_text?: string | null;
-    last_proofreader_id?: string | null;
+    coord: UnitCoordInput;
+    translation?: UnitTranslationInput | null;
+    revision?: UnitRevisionInput | null;
 }
 
-export interface UnitSaveOper {
-    oper: "save";
+export interface UnitPatchEdit {
+    edit: "patch";
     id: string;
-    before_id?: string | null;
-    is_bubble: boolean;
-    is_proofread: boolean;
-    x_coord: number;
-    y_coord: number;
-    translated_text?: string | null;
-    last_translator_id?: string | null;
-    proofread_text?: string | null;
-    last_proofreader_id?: string | null;
+    next_id?: string | null;
+    is_bubble?: boolean | null;
+    coord?: UnitCoordInput | null;
+    translation?: UnitTranslationInput | null;
+    revision?: UnitRevisionInput | null;
 }
 
-export interface UnitDeleteOper {
-    oper: "delete";
+export interface UnitDeleteEdit {
+    edit: "delete";
     id: string;
 }
 
-export type UnitOper = UnitCreateOper | UnitSaveOper | UnitDeleteOper;
+export type UnitEdit = UnitCreateEdit | UnitPatchEdit | UnitDeleteEdit;
 
-// Build a save oper for a brand-new bubble unit with no translation yet.
+// Build a Create edit for a brand-new bubble Unit with no translation yet.
 export function newBubbleUnit(
     localId: string,
     xCoord: number,
     yCoord: number,
-): UnitCreateOper {
+): UnitCreateEdit {
     return {
-        oper: "create",
+        edit: "create",
         local_id: localId,
-        before_id: null,
+        next_id: null,
         is_bubble: true,
-        is_proofread: false,
-        x_coord: xCoord,
-        y_coord: yCoord,
-        translated_text: null,
-        last_translator_id: null,
-        proofread_text: null,
-        last_proofreader_id: null,
+        coord: {
+            x_coord: xCoord,
+            y_coord: yCoord,
+        },
     };
 }
 
-// Build a save oper that updates an existing unit (by server id) without
-// changing its position.
-export function updateUnit(unitId: string, patch: Partial<Omit<UnitSaveOper, "oper" | "id">>): UnitSaveOper {
-    return {
-        oper: "save",
+export interface UnitPatchFixture {
+    next_id?: string | null;
+    is_bubble?: boolean | null;
+    x_coord?: number;
+    y_coord?: number;
+    translated_text?: string | null;
+    proofread_text?: string | null;
+    is_proofread?: boolean;
+}
+
+export function updateUnit(unitId: string, patch: UnitPatchFixture): UnitPatchEdit {
+    const edit: UnitPatchEdit = {
+        edit: "patch",
         id: unitId,
-        is_bubble: patch.is_bubble ?? true,
-        is_proofread: patch.is_proofread ?? false,
-        x_coord: patch.x_coord ?? 0,
-        y_coord: patch.y_coord ?? 0,
-        translated_text: patch.translated_text ?? null,
-        last_translator_id: patch.last_translator_id ?? null,
-        proofread_text: patch.proofread_text ?? null,
-        last_proofreader_id: patch.last_proofreader_id ?? null,
     };
+
+    if ("next_id" in patch) {
+        edit.next_id = patch.next_id ?? null;
+    }
+
+    if ("is_bubble" in patch) {
+        edit.is_bubble = patch.is_bubble;
+    }
+
+    if ("x_coord" in patch || "y_coord" in patch) {
+        edit.coord = {
+            x_coord: patch.x_coord ?? 0,
+            y_coord: patch.y_coord ?? 0,
+        };
+    }
+
+    if ("translated_text" in patch) {
+        edit.translation =
+            patch.translated_text == null
+                ? null
+                : { translated_text: patch.translated_text };
+    }
+
+    if ("proofread_text" in patch || patch.is_proofread === true) {
+        edit.revision = {
+            is_proofread: patch.is_proofread ?? false,
+            proofread_text: patch.proofread_text ?? null,
+        };
+    }
+
+    return edit;
 }
 
-export function deleteUnit(unitId: string): UnitDeleteOper {
-    return { oper: "delete", id: unitId };
+export function deleteUnit(unitId: string): UnitDeleteEdit {
+    return { edit: "delete", id: unitId };
 }
 
 export async function savePageUnits(
     api: ApiClient,
     pageId: string,
-    opers: UnitOper[],
-): Promise<SavePageUnitsVal> {
-    return expectSuccessData(
-        await api.post<SuccessBody<SavePageUnitsVal>>(`/api/v1/pages/${pageId}/units/save`, {
-            diff: {
-                opers,
-                page_id: pageId,
-            },
-            page_id: pageId,
-        }),
-        200,
+    edits: UnitEdit[],
+): Promise<ListPageUnitInfosVal> {
+    expectNoContent(
+        await api.post<null>(
+            `/api/v1/pages/${pageId}/units/save`,
+            edits,
+        ),
     );
+
+    return listPageUnits(api, pageId);
 }
 
 export async function listPageUnits(api: ApiClient, pageId: string): Promise<ListPageUnitInfosVal> {

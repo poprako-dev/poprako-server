@@ -164,7 +164,7 @@ where
         })
         .collect::<Vec<_>>();
 
-    let tasks: Vec<Task<'_, String, TaskPayload>> = delete_ids
+    let tasks = delete_ids
         .iter()
         .zip(payloads.iter())
         .map(|(id, payload)| Task {
@@ -172,7 +172,7 @@ where
             payload,
             delay: None,
         })
-        .collect();
+        .collect::<Vec<Task<'_, String, TaskPayload>>>();
 
     proxy.exec(&DeferBatch::new(&tasks)).await?;
 

@@ -15,7 +15,5 @@ CREATE TABLE IF NOT EXISTS "t_page" (
     "f_proofread_unit_count"       INTEGER     NOT NULL DEFAULT 0,
 
     "f_created_at"                 TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    "f_updated_at"                 TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-
-    CHECK (octet_length("f_image_hash") = 32)
+    "f_updated_at"                 TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

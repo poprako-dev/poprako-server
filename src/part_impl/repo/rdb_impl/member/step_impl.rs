@@ -255,7 +255,7 @@ pub async fn list_infos(
                 .map_err(diesel)?,
         };
 
-    let mut infos: Vec<MemberInfo> = rows.into_iter().map(Into::into).collect();
+    let mut infos = rows.into_iter().map(Into::into).collect::<Vec<MemberInfo>>();
 
     incl::member::populate_member_incls(conn, &mut infos, spec.incl_opt())
         .await?;
