@@ -8,7 +8,6 @@ use crate::model::shared::unit::{UnitCoord, UnitRevision, UnitTranslation};
 use crate::model::unit_port::UnitTranslationImport;
 use crate::model::write::unit::UnitEdit;
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
-use crate::util::PatchField;
 
 #[cfg(test)]
 mod tests;
@@ -130,39 +129,30 @@ impl ChapterImportComplex {
         accept(())
     }
 
-    /// Builds one Unit edit while enforcing the caller's import roles.
-    pub fn build_unit_edit(
+    /// Builds one Unit Create from parsed import content.
+    pub fn build_unit_create(
         parsed_unit: &UnitTranslationImport,
         unit_id: String,
-        next_id: PatchField<String>,
         user_id: &str,
         can_translate: bool,
         can_proofread: bool,
         label_plus: bool,
     ) -> UnitEdit {
         //
-        let translation = build_translation_patch(
-            parsed_unit,
-            user_id,
-            can_translate,
-            label_plus,
-        );
+        let translation =
+            build_translation(parsed_unit, user_id, can_translate, label_plus);
 
-        let revision = build_revision_patch(
-            parsed_unit,
-            user_id,
-            can_proofread,
-            label_plus,
-        );
+        let revision =
+            build_revision(parsed_unit, user_id, can_proofread, label_plus);
 
-        UnitEdit::Save {
+        UnitEdit::Create {
             id: unit_id,
-            next_id,
-            is_bubble: Some(parsed_unit.is_bubble),
-            coord: Some(UnitCoord {
+            next_id: None,
+            is_bubble: parsed_unit.is_bubble,
+            coord: UnitCoord {
                 x_coord: parsed_unit.x_coord,
                 y_coord: parsed_unit.y_coord,
-            }),
+            },
             translation,
             revision,
         }
@@ -304,7 +294,6 @@ fn flush_label_plus_unit(
     let main_text = normalize_string(main_text_lines.join("\n"));
 
     page_units.push(UnitTranslationImport {
-        id: None,
         index: label_plus_unit.index,
         x_coord: label_plus_unit.x_coord,
         y_coord: label_plus_unit.y_coord,
@@ -353,7 +342,6 @@ fn parse_poprako_page(
         }
 
         units.push(UnitTranslationImport {
-            id: Some(unit.id),
             index: unit.index_in_page - 1,
             x_coord: unit.x,
             y_coord: unit.y,
@@ -387,15 +375,15 @@ fn normalize_string(text: String) -> Option<String> {
     Some(text)
 }
 
-fn build_translation_patch(
+fn build_translation(
     parsed_unit: &UnitTranslationImport,
     user_id: &str,
     can_translate: bool,
     label_plus: bool,
-) -> PatchField<UnitTranslation> {
+) -> Option<UnitTranslation> {
     //
     if !can_translate {
-        return PatchField::Skip;
+        return None;
     }
 
     let translated_text = match label_plus {
@@ -407,26 +395,24 @@ fn build_translation_patch(
 
     match translated_text {
         //
-        Some(translated_text) => PatchField::Assign(UnitTranslation {
+        Some(translated_text) => Some(UnitTranslation {
             translated_text,
             last_translator_id: user_id.to_string(),
         }),
 
-        None if label_plus => PatchField::Clear,
-
-        None => PatchField::Skip,
+        None => None,
     }
 }
 
-fn build_revision_patch(
+fn build_revision(
     parsed_unit: &UnitTranslationImport,
     user_id: &str,
     can_proofread: bool,
     label_plus: bool,
-) -> PatchField<UnitRevision> {
+) -> Option<UnitRevision> {
     //
     if !can_proofread {
-        return PatchField::Skip;
+        return None;
     }
 
     let proofread_text = match label_plus {
@@ -440,15 +426,10 @@ fn build_revision_patch(
         label_plus && proofread_text.is_some() || parsed_unit.is_proofread;
 
     if proofread_text.is_none() && !is_proofread {
-        return match label_plus {
-            //
-            true => PatchField::Clear,
-
-            false => PatchField::Skip,
-        };
+        return None;
     }
 
-    PatchField::Assign(UnitRevision {
+    Some(UnitRevision {
         is_proofread,
         proofread_text,
         last_proofreader_id: user_id.to_string(),

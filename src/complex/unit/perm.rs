@@ -14,7 +14,7 @@ use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
-use crate::util::PatchField;
+use crate::util::Patch;
 use crate::value::unit::UnitEditPerm;
 
 /// Permission gates for Unit reads and edits.
@@ -67,28 +67,54 @@ impl UnitPermComplex {
 
         for edit in edits {
             //
-            let UnitEdit::Save {
-                translation,
-                revision,
-                ..
-            } = edit
-            else {
-                continue;
+            match edit {
+                //
+                UnitEdit::Create {
+                    translation,
+                    revision,
+                    ..
+                } => {
+                    //
+                    check_optional_content_perm(
+                        translation,
+                        perm.can_translate,
+                    )?;
+
+                    check_optional_content_perm(revision, perm.can_proofread)?;
+                }
+
+                UnitEdit::Save {
+                    translation,
+                    revision,
+                    ..
+                } => {
+                    //
+                    check_content_perm(translation, perm.can_translate)?;
+
+                    check_content_perm(revision, perm.can_proofread)?;
+                }
+
+                UnitEdit::Delete { .. } => {}
             };
-
-            check_content_perm(translation, perm.can_translate)?;
-
-            check_content_perm(revision, perm.can_proofread)?;
         }
 
         accept(())
     }
 }
 
-fn check_content_perm<T>(
-    field: &PatchField<T>,
+fn check_optional_content_perm<T>(
+    field: &Option<T>,
     allowed: bool,
 ) -> BaseResult<()> {
+    //
+    if field.is_some() && !allowed {
+        return Err(unit_edit_permission_err());
+    }
+
+    accept(())
+}
+
+fn check_content_perm<T>(field: &Patch<T>, allowed: bool) -> BaseResult<()> {
     //
     if !field.is_skip() && !allowed {
         return Err(unit_edit_permission_err());

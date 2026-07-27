@@ -7,7 +7,7 @@ use crate::part::repo::oper::unit::{
 };
 use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::unit::step_impl::{
-    apply_edits, list_infos, list_positions_for_update,
+    apply_edits, list_infos, list_orders_for_update,
 };
 use crate::part_impl::shared::RdbContext;
 use crate::result::{BaseError, BaseResult};
@@ -30,7 +30,7 @@ impl Step<ListUnitOrders<'_>, RdbContext> for RdbRepo {
         context: &mut RdbContext,
         oper: &ListUnitOrders<'_>,
     ) -> BaseResult<Vec<UnitOrder>> {
-        list_positions_for_update(context.conn(), oper.page_id).await
+        list_orders_for_update(context.conn(), oper.page_id).await
     }
 }
 

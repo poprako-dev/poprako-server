@@ -1,5 +1,6 @@
 // parse_label_plus(parse_label_plus)(positive): parses the real LabelPlus material.
 // parse_poprako(parse_poprako)(positive): normalizes PopRaKo one-based unit indexes.
+// build_unit_create(build_unit_create)(positive): import always produces a complete Unit Create.
 
 use super::*;
 
@@ -69,4 +70,31 @@ fn parse_poprako_normalizes_one_based_indexes() {
     };
 
     assert_eq!(pages[0].units[0].index, 6);
+}
+
+#[test]
+fn build_unit_create_produces_a_complete_create() {
+    //
+    let pages =
+        ChapterImportComplex::parse_label_plus(LABEL_PLUS_MATERIAL).unwrap();
+
+    let edit = ChapterImportComplex::build_unit_create(
+        &pages[0].units[0],
+        "unit-new".to_string(),
+        "proofreader-1",
+        false,
+        true,
+        true,
+    );
+
+    assert!(matches!(
+        edit,
+        UnitEdit::Create {
+            id,
+            next_id: None,
+            is_bubble: true,
+            revision: Some(_),
+            ..
+        } if id == "unit-new"
+    ));
 }

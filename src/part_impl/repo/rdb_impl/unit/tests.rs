@@ -12,7 +12,7 @@ use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
 use crate::part_impl::shared::RdbCore;
 use crate::result::accept;
-use crate::util::PatchField;
+use crate::util::Patch;
 
 const PREFIX: &str = "rdb-test-unit-domain-";
 
@@ -58,7 +58,7 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
                 context,
                 &ApplyUnitEdits {
                     page_id: &page_fixture.page_entry.id,
-                    orders: &create_orders,
+                    orders: &[],
                     edits: &create_edits,
                 },
             )
@@ -75,12 +75,6 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
         id: first_id.clone(),
     }];
 
-    let delete_orders = [UnitOrder {
-        id: first_id.clone(),
-        next_id: Some(second_id.clone()),
-        is_hidden: true,
-    }];
-
     nucl.coord(async |context| {
         //
         let counters = repo
@@ -88,7 +82,7 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
                 context,
                 &ApplyUnitEdits {
                     page_id: &page_fixture.page_entry.id,
-                    orders: &delete_orders,
+                    orders: &create_orders,
                     edits: &delete_edits,
                 },
             )
@@ -96,7 +90,7 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
 
         assert_eq!(counters.total_unit_count, 1);
 
-        let positions = repo
+        let orders = repo
             .step(
                 context,
                 &ListUnitOrders {
@@ -105,20 +99,31 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
             )
             .await?;
 
-        assert_eq!(positions.len(), 2);
+        assert_eq!(orders.len(), 2);
 
         accept(())
     })
     .await
     .unwrap();
 
+    let unit_infos = repo
+        .run(&ListUnitInfos {
+            page_id: &page_fixture.page_entry.id,
+        })
+        .await
+        .unwrap();
+
+    assert_eq!(unit_infos.len(), 2);
+
+    assert!(unit_infos[0].hidden_at.is_some());
+
     let restore_edits = [UnitEdit::Save {
         id: first_id.clone(),
-        next_id: PatchField::Clear,
+        next_id: Patch::Clear,
         is_bubble: None,
         coord: None,
-        translation: PatchField::Skip,
-        revision: PatchField::Assign(UnitRevision {
+        translation: Patch::Skip,
+        revision: Patch::Assign(UnitRevision {
             is_proofread: true,
             proofread_text: Some("proofread".to_string()),
             last_proofreader_id: creator_id,
@@ -127,12 +132,12 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let restore_orders = [
         UnitOrder {
-            id: second_id.clone(),
-            next_id: Some(first_id.clone()),
-            is_hidden: false,
+            id: first_id.clone(),
+            next_id: Some(second_id.clone()),
+            is_hidden: true,
         },
         UnitOrder {
-            id: first_id.clone(),
+            id: second_id.clone(),
             next_id: None,
             is_hidden: false,
         },
@@ -183,18 +188,18 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
 }
 
 fn create_edit(id: &str, user_id: &str, text: &str) -> UnitEdit {
-    UnitEdit::Save {
+    UnitEdit::Create {
         id: id.to_string(),
-        next_id: PatchField::Clear,
-        is_bubble: Some(true),
-        coord: Some(UnitCoord {
+        next_id: None,
+        is_bubble: true,
+        coord: UnitCoord {
             x_coord: 1.0,
             y_coord: 2.0,
-        }),
-        translation: PatchField::Assign(UnitTranslation {
+        },
+        translation: Some(UnitTranslation {
             translated_text: text.to_string(),
             last_translator_id: user_id.to_string(),
         }),
-        revision: PatchField::Clear,
+        revision: None,
     }
 }

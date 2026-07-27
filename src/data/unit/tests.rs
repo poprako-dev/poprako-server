@@ -47,11 +47,11 @@ fn patch_fields_distinguish_missing_null_and_value() {
         panic!("patch must become Save");
     };
 
-    assert!(matches!(next_id, PatchField::Skip));
+    assert!(matches!(next_id, Patch::Skip));
 
-    assert!(matches!(translation, PatchField::Skip));
+    assert!(matches!(translation, Patch::Skip));
 
-    assert!(matches!(revision, PatchField::Skip));
+    assert!(matches!(revision, Patch::Skip));
 
     let UnitEdit::Save {
         next_id,
@@ -63,11 +63,11 @@ fn patch_fields_distinguish_missing_null_and_value() {
         panic!("patch must become Save");
     };
 
-    assert!(matches!(next_id, PatchField::Clear));
+    assert!(matches!(next_id, Patch::Clear));
 
-    assert!(matches!(translation, PatchField::Clear));
+    assert!(matches!(translation, Patch::Clear));
 
-    assert!(matches!(revision, PatchField::Clear));
+    assert!(matches!(revision, Patch::Clear));
 
     let UnitEdit::Save {
         next_id,
@@ -81,18 +81,18 @@ fn patch_fields_distinguish_missing_null_and_value() {
 
     assert!(matches!(
         next_id,
-        PatchField::Assign(id) if id == "unit-2"
+        Patch::Assign(id) if id == "unit-2"
     ));
 
     assert!(matches!(
         translation,
-        PatchField::Assign(value)
+        Patch::Assign(value)
             if value.last_translator_id == "editor-1"
     ));
 
     assert!(matches!(
         revision,
-        PatchField::Assign(value)
+        Patch::Assign(value)
             if value.last_proofreader_id == "editor-1"
     ));
 }
@@ -144,9 +144,9 @@ fn create_requires_structure_and_resolves_local_references() {
 
     assert!(matches!(
         &edits[0],
-        UnitEdit::Save {
+        UnitEdit::Create {
             id,
-            next_id: PatchField::Assign(anchor),
+            next_id: Some(anchor),
             ..
         } if id == "server-1" && anchor == "server-2"
     ));

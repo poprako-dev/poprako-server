@@ -1,12 +1,14 @@
 //! In-memory implementation of Unit repository operations.
 
+use std::collections::HashSet;
+
 use crate::model::read::proj::unit::{UnitCounters, UnitInfo, UnitOrder};
 use crate::model::write::unit::UnitEdit;
 use crate::part_impl::repo::mock_impl::{
     MockState, expected, now, unrecoverable,
 };
 use crate::result::{BaseResult, accept};
-use crate::util::PatchField;
+use crate::util::Patch;
 
 mod orchestra;
 
@@ -28,17 +30,12 @@ fn list_infos(state: &MockState, page_id: &str) -> BaseResult<Vec<UnitInfo>> {
         |unit_info| unit_info.next_id.as_deref(),
     )?;
 
-    unit_infos.retain(|unit_info| unit_info.hidden_at.is_none());
-
     accept(unit_infos)
 }
 
-fn list_positions(
-    state: &MockState,
-    page_id: &str,
-) -> BaseResult<Vec<UnitOrder>> {
+fn list_orders(state: &MockState, page_id: &str) -> BaseResult<Vec<UnitOrder>> {
     //
-    let mut unit_orders = state
+    let mut orders = state
         .units
         .iter()
         .filter(|unit_info| unit_info.page_id == page_id)
@@ -50,12 +47,12 @@ fn list_positions(
         .collect::<Vec<_>>();
 
     order_units(
-        &mut unit_orders,
-        |unit_order| unit_order.id.as_str(),
-        |unit_order| unit_order.next_id.as_deref(),
+        &mut orders,
+        |order| order.id.as_str(),
+        |order| order.next_id.as_deref(),
     )?;
 
-    accept(unit_orders)
+    accept(orders)
 }
 
 fn apply_edits(
@@ -65,9 +62,22 @@ fn apply_edits(
     edits: &[UnitEdit],
 ) -> BaseResult<UnitCounters> {
     //
+    let ordered_ids = apply_order_edits(orders, edits)?;
+
     for edit in edits {
         match edit {
             //
+            UnitEdit::Create { id, .. } => {
+                //
+                let unit_info = unit_from_edit(page_id, edit)?;
+
+                if state.units.iter().any(|unit_info| unit_info.id == *id) {
+                    return Err(expected("error-unit-duplicate"));
+                }
+
+                state.units.push(unit_info);
+            }
+
             UnitEdit::Delete { id } => {
                 //
                 let unit_info = find_unit_mut(state, page_id, id)?;
@@ -78,23 +88,21 @@ fn apply_edits(
             }
 
             UnitEdit::Save { id, .. } => {
-                save_edit(state, page_id, id, edit)?;
+                //
+                let unit_info = find_unit_mut(state, page_id, id)?;
+
+                write_edit(unit_info, edit);
             }
         }
     }
 
-    for order in orders {
+    for (index, id) in ordered_ids.iter().enumerate() {
         //
-        let unit_info = find_unit_mut(state, page_id, &order.id)?;
+        let next_id = ordered_ids.get(index + 1);
 
-        unit_info.next_id = order.next_id.clone();
+        let unit_info = find_unit_mut(state, page_id, id)?;
 
-        unit_info.hidden_at = match order.is_hidden {
-            //
-            true => unit_info.hidden_at.or_else(|| Some(now())),
-
-            false => None,
-        };
+        unit_info.next_id = next_id.map(|next_id| (*next_id).to_string());
 
         unit_info.updated_at = now();
     }
@@ -104,42 +112,12 @@ fn apply_edits(
     accept(count_infos(&unit_infos))
 }
 
-fn save_edit(
-    state: &mut MockState,
-    page_id: &str,
-    id: &str,
-    edit: &UnitEdit,
-) -> BaseResult<()> {
+fn unit_from_edit(page_id: &str, edit: &UnitEdit) -> BaseResult<UnitInfo> {
     //
-    let position = state.units.iter().position(|unit_info| unit_info.id == id);
-
-    let Some(position) = position else {
-        //
-        let unit_info = unit_from_edit(page_id, id, edit)?;
-
-        state.units.push(unit_info);
-
-        return accept(());
-    };
-
-    if state.units[position].page_id != page_id {
-        return Err(expected("error-unit-duplicate"));
-    }
-
-    write_edit(&mut state.units[position], edit);
-
-    accept(())
-}
-
-fn unit_from_edit(
-    page_id: &str,
-    id: &str,
-    edit: &UnitEdit,
-) -> BaseResult<UnitInfo> {
-    //
-    let UnitEdit::Save {
-        is_bubble: Some(is_bubble),
-        coord: Some(coord),
+    let UnitEdit::Create {
+        id,
+        is_bubble,
+        coord,
         translation,
         revision,
         ..
@@ -150,29 +128,29 @@ fn unit_from_edit(
 
     let (translated_text, last_translator_id) = match translation {
         //
-        PatchField::Assign(translation) => (
+        Some(translation) => (
             Some(translation.translated_text.clone()),
             Some(translation.last_translator_id.clone()),
         ),
 
-        PatchField::Clear | PatchField::Skip => (None, None),
+        None => (None, None),
     };
 
     let (is_proofread, proofread_text, last_proofreader_id) = match revision {
         //
-        PatchField::Assign(revision) => (
+        Some(revision) => (
             revision.is_proofread,
             revision.proofread_text.clone(),
             Some(revision.last_proofreader_id.clone()),
         ),
 
-        PatchField::Clear | PatchField::Skip => (false, None, None),
+        None => (false, None, None),
     };
 
     let current_time = now();
 
     accept(UnitInfo {
-        id: id.to_string(),
+        id: id.clone(),
         page_id: page_id.to_string(),
         next_id: None,
         is_bubble: *is_bubble,
@@ -213,14 +191,14 @@ fn write_edit(unit_info: &mut UnitInfo, edit: &UnitEdit) {
 
     match translation {
         //
-        PatchField::Clear => {
+        Patch::Clear => {
             //
             unit_info.translated_text = None;
 
             unit_info.last_translator_id = None;
         }
 
-        PatchField::Assign(translation) => {
+        Patch::Assign(translation) => {
             //
             unit_info.translated_text =
                 Some(translation.translated_text.clone());
@@ -229,12 +207,12 @@ fn write_edit(unit_info: &mut UnitInfo, edit: &UnitEdit) {
                 Some(translation.last_translator_id.clone());
         }
 
-        PatchField::Skip => {}
+        Patch::Skip => {}
     }
 
     match revision {
         //
-        PatchField::Clear => {
+        Patch::Clear => {
             //
             unit_info.is_proofread = false;
 
@@ -243,7 +221,7 @@ fn write_edit(unit_info: &mut UnitInfo, edit: &UnitEdit) {
             unit_info.last_proofreader_id = None;
         }
 
-        PatchField::Assign(revision) => {
+        Patch::Assign(revision) => {
             //
             unit_info.is_proofread = revision.is_proofread;
 
@@ -253,7 +231,7 @@ fn write_edit(unit_info: &mut UnitInfo, edit: &UnitEdit) {
                 Some(revision.last_proofreader_id.clone());
         }
 
-        PatchField::Skip => {}
+        Patch::Skip => {}
     }
 
     unit_info.updated_at = now();
@@ -272,9 +250,10 @@ fn find_unit_mut<'a>(
 }
 
 fn count_infos(unit_infos: &[UnitInfo]) -> UnitCounters {
-    unit_infos.iter().fold(
-        UnitCounters::default(),
-        |mut counters, unit_info| {
+    unit_infos
+        .iter()
+        .filter(|unit_info| unit_info.hidden_at.is_none())
+        .fold(UnitCounters::default(), |mut counters, unit_info| {
             //
             counters.total_unit_count += 1;
 
@@ -287,8 +266,107 @@ fn count_infos(unit_infos: &[UnitInfo]) -> UnitCounters {
             }
 
             counters
-        },
-    )
+        })
+}
+
+fn find_order_pos(ordered_ids: &[&str], id: &str) -> Option<usize> {
+    ordered_ids
+        .iter()
+        .enumerate()
+        .find_map(|(pos, candidate)| (*candidate == id).then_some(pos))
+}
+
+fn move_order<'a>(
+    ordered_ids: &mut Vec<&'a str>,
+    id: &'a str,
+    next_id: Option<&str>,
+) -> BaseResult<()> {
+    //
+    let Some(pos) = find_order_pos(ordered_ids, id) else {
+        return Err(expected("error-invalid-unit-oper"));
+    };
+
+    let id = ordered_ids.remove(pos);
+
+    let pos = match next_id {
+        //
+        Some(next_id) => find_order_pos(ordered_ids, next_id)
+            .ok_or_else(|| expected("error-invalid-unit-oper"))?,
+
+        None => ordered_ids.len(),
+    };
+
+    ordered_ids.insert(pos, id);
+
+    accept(())
+}
+
+fn apply_order_edits<'a>(
+    orders: &'a [UnitOrder],
+    edits: &'a [UnitEdit],
+) -> BaseResult<Vec<&'a str>> {
+    //
+    let mut ordered_ids = orders
+        .iter()
+        .map(|order| order.id.as_str())
+        .collect::<Vec<_>>();
+
+    let mut hidden_ids = orders
+        .iter()
+        .filter(|order| order.is_hidden)
+        .map(|order| order.id.as_str())
+        .collect::<HashSet<_>>();
+
+    for edit in edits {
+        match edit {
+            //
+            UnitEdit::Create { id, next_id, .. } => {
+                //
+                if find_order_pos(&ordered_ids, id).is_some() {
+                    return Err(expected("error-invalid-unit-oper"));
+                }
+
+                ordered_ids.push(id);
+
+                hidden_ids.remove(id.as_str());
+
+                move_order(&mut ordered_ids, id, next_id.as_deref())?;
+            }
+
+            UnitEdit::Save { id, next_id, .. } => {
+                //
+                hidden_ids.remove(id.as_str());
+
+                match next_id {
+                    //
+                    Patch::Skip => {}
+
+                    Patch::Clear => {
+                        move_order(&mut ordered_ids, id, None)?;
+                    }
+
+                    Patch::Assign(next_id) => {
+                        move_order(&mut ordered_ids, id, Some(next_id))?;
+                    }
+                }
+            }
+
+            UnitEdit::Delete { id } => {
+                hidden_ids.insert(id);
+            }
+        }
+    }
+
+    let visible_count = ordered_ids
+        .iter()
+        .filter(|id| !hidden_ids.contains(**id))
+        .count();
+
+    if visible_count > 100 {
+        return Err(expected("error-invalid-unit-oper"));
+    }
+
+    accept(ordered_ids)
 }
 
 fn order_units<T, I, N>(
@@ -314,7 +392,7 @@ where
         }
     }
 
-    let mut head_position = None;
+    let mut head_pos = None;
 
     for candidate in 0..units.len() {
         //
@@ -327,29 +405,32 @@ where
             continue;
         }
 
-        if head_position.replace(candidate).is_some() {
+        if head_pos.replace(candidate).is_some() {
             return Err(unrecoverable("persisted Unit chain is corrupt"));
         }
     }
 
-    let Some(head_position) = head_position else {
+    let Some(head_pos) = head_pos else {
         return Err(unrecoverable("persisted Unit chain is corrupt"));
     };
 
-    units.swap(0, head_position);
+    units.swap(0, head_pos);
 
     for index in 0..units.len() - 1 {
         //
-        let next_position = units[index + 1..].iter().position(|candidate| {
-            next_id_of(&units[index])
-                .is_some_and(|next_id| next_id == id_of(candidate))
-        });
+        let next_pos = units[index + 1..].iter().enumerate().find_map(
+            |(pos, candidate)| {
+                next_id_of(&units[index])
+                    .is_some_and(|next_id| next_id == id_of(candidate))
+                    .then_some(pos)
+            },
+        );
 
-        let Some(next_position) = next_position else {
+        let Some(next_pos) = next_pos else {
             return Err(unrecoverable("persisted Unit chain is corrupt"));
         };
 
-        units.swap(index + 1, index + 1 + next_position);
+        units.swap(index + 1, index + 1 + next_pos);
     }
 
     if units.last().is_some_and(|unit| next_id_of(unit).is_some()) {

@@ -7,7 +7,7 @@ use crate::model::read::proj::unit::UnitInfo;
 use crate::model::shared::unit::UnitCoord;
 use crate::model::write::unit::UnitEdit;
 use crate::part_impl::repo::rdb_impl::schema::t_unit;
-use crate::util::PatchField;
+use crate::util::Patch;
 
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_unit)]
@@ -85,16 +85,12 @@ pub struct UnitEntry<'a> {
 }
 
 impl<'a> UnitEntry<'a> {
-    pub fn from_edit(
-        page_id: &'a str,
-        next_id: Option<&'a str>,
-        edit: &'a UnitEdit,
-    ) -> Option<Self> {
+    pub fn from_edit(page_id: &'a str, edit: &'a UnitEdit) -> Option<Self> {
         //
-        let UnitEdit::Save {
+        let UnitEdit::Create {
             id,
-            is_bubble: Some(is_bubble),
-            coord: Some(coord),
+            is_bubble,
+            coord,
             translation,
             revision,
             ..
@@ -105,23 +101,23 @@ impl<'a> UnitEntry<'a> {
 
         let (translated_text, last_translator_id) = match translation {
             //
-            PatchField::Assign(translation) => (
+            Some(translation) => (
                 Some(translation.translated_text.as_str()),
                 Some(translation.last_translator_id.as_str()),
             ),
 
-            PatchField::Clear | PatchField::Skip => (None, None),
+            None => (None, None),
         };
 
         let (is_proofread, proofread_text, last_proofreader_id) = match revision
         {
-            PatchField::Assign(revision) => (
+            Some(revision) => (
                 revision.is_proofread,
                 revision.proofread_text.as_deref(),
                 Some(revision.last_proofreader_id.as_str()),
             ),
 
-            PatchField::Clear | PatchField::Skip => (false, None, None),
+            None => (false, None, None),
         };
 
         let now = OffsetDateTime::now_utc();
@@ -129,7 +125,7 @@ impl<'a> UnitEntry<'a> {
         Some(Self {
             f_id: id,
             f_page_id: page_id,
-            f_next_id: next_id,
+            f_next_id: None,
             f_hidden_at: None,
             f_is_bubble: *is_bubble,
             f_is_proofread: is_proofread,
@@ -224,14 +220,14 @@ impl<'a> UnitAspect<'a> {
 
         match translation {
             //
-            PatchField::Clear => {
+            Patch::Clear => {
                 //
                 self.f_translated_text = Some(None);
 
                 self.f_last_translator_id = Some(None);
             }
 
-            PatchField::Assign(translation) => {
+            Patch::Assign(translation) => {
                 //
                 self.f_translated_text =
                     Some(Some(translation.translated_text.as_str()));
@@ -240,12 +236,12 @@ impl<'a> UnitAspect<'a> {
                     Some(Some(translation.last_translator_id.as_str()));
             }
 
-            PatchField::Skip => {}
+            Patch::Skip => {}
         }
 
         match revision {
             //
-            PatchField::Clear => {
+            Patch::Clear => {
                 //
                 self.f_is_proofread = Some(false);
 
@@ -254,7 +250,7 @@ impl<'a> UnitAspect<'a> {
                 self.f_last_proofreader_id = Some(None);
             }
 
-            PatchField::Assign(revision) => {
+            Patch::Assign(revision) => {
                 //
                 self.f_is_proofread = Some(revision.is_proofread);
 
@@ -265,7 +261,7 @@ impl<'a> UnitAspect<'a> {
                     Some(Some(revision.last_proofreader_id.as_str()));
             }
 
-            PatchField::Skip => {}
+            Patch::Skip => {}
         }
 
         self

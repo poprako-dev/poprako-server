@@ -8,7 +8,8 @@ use super::*;
 use time::OffsetDateTime;
 
 use crate::data::unit::{
-    UnitCoordVal, UnitEditVal, UnitRevisionVal, UnitTranslationVal,
+    ListPageUnitInfosParams, SavePageUnitEditsParams, UnitCoordVal,
+    UnitEditVal, UnitRevisionVal, UnitTranslationVal,
 };
 use crate::model::assignment::AssignmentInfo;
 use crate::model::chapter::ChapterInfo;
@@ -17,8 +18,8 @@ use crate::model::page::PageInfo;
 use crate::model::user::UserToken;
 use crate::model::workset::WorksetInfo;
 use crate::part_impl::repo::mock_impl::Mock;
-use crate::result::ExpectedVariant;
-use crate::util::PatchField;
+use crate::result::{BaseError, ExpectedVariant};
+use crate::util::Patch;
 use crate::value::chapter::StageMask;
 use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
@@ -86,11 +87,11 @@ async fn delete_then_patch_restores_the_tombstone() {
         token("translator-1"),
         save_params(vec![UnitEditVal::Patch {
             id: unit_id,
-            next_id: PatchField::Skip,
+            next_id: Patch::Skip,
             is_bubble: Some(false),
             coord: None,
-            translation: PatchField::Skip,
-            revision: PatchField::Skip,
+            translation: Patch::Skip,
+            revision: Patch::Skip,
         }]),
     )
     .await
@@ -125,11 +126,11 @@ async fn translator_revision_edit_is_rejected_without_mutation() {
         token("translator-1"),
         save_params(vec![UnitEditVal::Patch {
             id: before.units[0].id.clone(),
-            next_id: PatchField::Skip,
+            next_id: Patch::Skip,
             is_bubble: None,
             coord: None,
-            translation: PatchField::Skip,
-            revision: PatchField::Assign(UnitRevisionVal {
+            translation: Patch::Skip,
+            revision: Patch::Assign(UnitRevisionVal {
                 is_proofread: true,
                 proofread_text: Some("proofread".to_string()),
             }),

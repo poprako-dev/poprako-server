@@ -4,19 +4,19 @@ use crate::model::shared::unit::{UnitCoord, UnitRevision, UnitTranslation};
 use crate::result::BaseError;
 
 fn create_edit(id: &str, text: &str) -> UnitEdit {
-    UnitEdit::Save {
+    UnitEdit::Create {
         id: id.to_string(),
-        next_id: PatchField::Clear,
-        is_bubble: Some(true),
-        coord: Some(UnitCoord {
+        next_id: None,
+        is_bubble: true,
+        coord: UnitCoord {
             x_coord: 1.0,
             y_coord: 2.0,
-        }),
-        translation: PatchField::Assign(UnitTranslation {
+        },
+        translation: Some(UnitTranslation {
             translated_text: text.to_string(),
             last_translator_id: "translator-1".to_string(),
         }),
-        revision: PatchField::Clear,
+        revision: None,
     }
 }
 
@@ -33,21 +33,14 @@ fn apply_edits_soft_deletes_and_restores_a_unit() {
         is_hidden: false,
     }];
 
-    let counters =
-        apply_edits(&mut state, "page-1", &create_order, &[create]).unwrap();
+    let counters = apply_edits(&mut state, "page-1", &[], &[create]).unwrap();
 
     assert_eq!(counters.total_unit_count, 1);
-
-    let hidden_order = [UnitOrder {
-        id: "unit-1".to_string(),
-        next_id: None,
-        is_hidden: true,
-    }];
 
     let hidden = apply_edits(
         &mut state,
         "page-1",
-        &hidden_order,
+        &create_order,
         &[UnitEdit::Delete {
             id: "unit-1".to_string(),
         }],
@@ -58,27 +51,33 @@ fn apply_edits_soft_deletes_and_restores_a_unit() {
 
     assert!(state.units[0].hidden_at.is_some());
 
+    let unit_infos = list_infos(&state, "page-1").unwrap();
+
+    assert_eq!(unit_infos.len(), 1);
+
+    assert!(unit_infos[0].hidden_at.is_some());
+
     let restore = UnitEdit::Save {
         id: "unit-1".to_string(),
-        next_id: PatchField::Skip,
+        next_id: Patch::Skip,
         is_bubble: None,
         coord: None,
-        translation: PatchField::Skip,
-        revision: PatchField::Assign(UnitRevision {
+        translation: Patch::Skip,
+        revision: Patch::Assign(UnitRevision {
             is_proofread: true,
             proofread_text: Some("proofread".to_string()),
             last_proofreader_id: "proofreader-1".to_string(),
         }),
     };
 
-    let visible_order = [UnitOrder {
+    let hidden_order = [UnitOrder {
         id: "unit-1".to_string(),
         next_id: None,
-        is_hidden: false,
+        is_hidden: true,
     }];
 
     let restored =
-        apply_edits(&mut state, "page-1", &visible_order, &[restore]).unwrap();
+        apply_edits(&mut state, "page-1", &hidden_order, &[restore]).unwrap();
 
     assert_eq!(restored.total_unit_count, 1);
 

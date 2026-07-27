@@ -13,7 +13,7 @@ use crate::model::read::proj::unit::{UnitCounters, UnitInfo};
 use crate::model::shared::unit::{UnitCoord, UnitRevision, UnitTranslation};
 use crate::model::write::unit::UnitEdit;
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
-use crate::util::PatchField;
+use crate::util::Patch;
 
 #[cfg(test)]
 mod tests;
@@ -107,7 +107,11 @@ impl ListPageUnitInfosPayload {
         counters: UnitCounters,
     ) -> Self {
         Self {
-            unit_infos: unit_infos.into_iter().map(UnitInfoVal::from).collect(),
+            unit_infos: unit_infos
+                .into_iter()
+                .filter(|unit_info| unit_info.hidden_at.is_none())
+                .map(UnitInfoVal::from)
+                .collect(),
             total_unit_count: counters.total_unit_count,
             translated_unit_count: counters.translated_unit_count,
             proofread_unit_count: counters.proofread_unit_count,
@@ -166,7 +170,7 @@ pub enum UnitEditVal {
             feature = "swagger",
             schema(value_type = Option<String>)
         )]
-        next_id: PatchField<String>,
+        next_id: Patch<String>,
 
         /// Optional speech-bubble flag replacement.
         #[serde(default)]
@@ -181,14 +185,14 @@ pub enum UnitEditVal {
             feature = "swagger",
             schema(value_type = Option<UnitTranslationVal>)
         )]
-        translation: PatchField<UnitTranslationVal>,
+        translation: Patch<UnitTranslationVal>,
         /// Three-state revision patch.
         #[serde(default)]
         #[cfg_attr(
             feature = "swagger",
             schema(value_type = Option<UnitRevisionVal>)
         )]
-        revision: PatchField<UnitRevisionVal>,
+        revision: Patch<UnitRevisionVal>,
     },
 
     /// Soft-deletes one permanent Unit.
@@ -295,22 +299,28 @@ impl UnitEditVal {
                 //
                 let id = resolve_id(local_id, local_id_map)?;
 
-                let next_id = match next_id {
-                    //
-                    Some(next_id) => {
-                        PatchField::Assign(resolve_id(next_id, local_id_map)?)
-                    }
+                let next_id = next_id
+                    .map(|next_id| resolve_id(next_id, local_id_map))
+                    .transpose()?;
 
-                    None => PatchField::Clear,
-                };
+                let translation = translation.map(|value| UnitTranslation {
+                    translated_text: value.translated_text,
+                    last_translator_id: user_id.to_string(),
+                });
 
-                accept(UnitEdit::Save {
+                let revision = revision.map(|value| UnitRevision {
+                    is_proofread: value.is_proofread,
+                    proofread_text: value.proofread_text,
+                    last_proofreader_id: user_id.to_string(),
+                });
+
+                accept(UnitEdit::Create {
                     id,
                     next_id,
-                    is_bubble: Some(is_bubble),
-                    coord: Some(coord.into()),
-                    translation: translation_to_patch(translation, user_id),
-                    revision: revision_to_patch(revision, user_id),
+                    is_bubble,
+                    coord: coord.into(),
+                    translation,
+                    revision,
                 })
             }
 
@@ -351,50 +361,19 @@ impl UnitEditVal {
     }
 }
 
-fn translation_to_patch(
-    translation: Option<UnitTranslationVal>,
-    user_id: &str,
-) -> PatchField<UnitTranslation> {
-    match translation {
-        //
-        Some(value) => PatchField::Assign(UnitTranslation {
-            translated_text: value.translated_text,
-            last_translator_id: user_id.to_string(),
-        }),
-
-        None => PatchField::Skip,
-    }
-}
-
-fn revision_to_patch(
-    revision: Option<UnitRevisionVal>,
-    user_id: &str,
-) -> PatchField<UnitRevision> {
-    match revision {
-        //
-        Some(value) => PatchField::Assign(UnitRevision {
-            is_proofread: value.is_proofread,
-            proofread_text: value.proofread_text,
-            last_proofreader_id: user_id.to_string(),
-        }),
-
-        None => PatchField::Skip,
-    }
-}
-
 fn resolve_patch_id(
-    value: PatchField<String>,
+    value: Patch<String>,
     local_id_map: &HashMap<String, String>,
-) -> BaseResult<PatchField<String>> {
+) -> BaseResult<Patch<String>> {
     match value {
         //
-        PatchField::Clear => accept(PatchField::Clear),
+        Patch::Clear => accept(Patch::Clear),
 
-        PatchField::Assign(id) => {
-            accept(PatchField::Assign(resolve_id(id, local_id_map)?))
+        Patch::Assign(id) => {
+            accept(Patch::Assign(resolve_id(id, local_id_map)?))
         }
 
-        PatchField::Skip => accept(PatchField::Skip),
+        Patch::Skip => accept(Patch::Skip),
     }
 }
 

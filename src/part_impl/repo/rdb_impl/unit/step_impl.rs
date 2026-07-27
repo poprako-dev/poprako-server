@@ -1,5 +1,7 @@
 //! RDB-backed Unit operations.
 
+use std::collections::HashSet;
+
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
@@ -14,6 +16,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::*;
 use crate::part_impl::shared::RdbConn;
 use crate::part_impl::shared::result::{diesel, expected};
 use crate::result::{BaseError, BaseResult, accept};
+use crate::util::Patch;
 
 #[cfg(test)]
 mod tests;
@@ -41,7 +44,7 @@ where
         }
     }
 
-    let mut head_position = None;
+    let mut head_pos = None;
 
     for candidate in 0..units.len() {
         //
@@ -54,29 +57,32 @@ where
             continue;
         }
 
-        if head_position.replace(candidate).is_some() {
+        if head_pos.replace(candidate).is_some() {
             return Err(corrupt_unit_chain_err());
         }
     }
 
-    let Some(head_position) = head_position else {
+    let Some(head_pos) = head_pos else {
         return Err(corrupt_unit_chain_err());
     };
 
-    units.swap(0, head_position);
+    units.swap(0, head_pos);
 
     for index in 0..units.len() - 1 {
         //
-        let next_position = units[index + 1..].iter().position(|candidate| {
-            next_id_of(&units[index])
-                .is_some_and(|next_id| next_id == id_of(candidate))
-        });
+        let next_pos = units[index + 1..].iter().enumerate().find_map(
+            |(pos, candidate)| {
+                next_id_of(&units[index])
+                    .is_some_and(|next_id| next_id == id_of(candidate))
+                    .then_some(pos)
+            },
+        );
 
-        let Some(next_position) = next_position else {
+        let Some(next_pos) = next_pos else {
             return Err(corrupt_unit_chain_err());
         };
 
-        units.swap(index + 1, index + 1 + next_position);
+        units.swap(index + 1, index + 1 + next_pos);
     }
 
     if units.last().is_some_and(|unit| next_id_of(unit).is_some()) {
@@ -115,19 +121,17 @@ pub async fn list_infos(
         |unit_info| unit_info.next_id.as_deref(),
     )?;
 
-    unit_infos.retain(|unit_info| unit_info.hidden_at.is_none());
-
     accept(unit_infos)
 }
 
 #[instrument(level = "info", err(Debug), skip_all)]
 /// Locks and lists the complete Unit chain, including tombstones.
-pub async fn list_positions_for_update(
+pub async fn list_orders_for_update(
     conn: &mut RdbConn,
     page_id: &str,
 ) -> BaseResult<Vec<UnitOrder>> {
     //
-    let positions = t_unit
+    let rows = t_unit
         .filter(f_page_id.eq(page_id))
         .select((f_id, f_next_id, f_hidden_at))
         .for_update()
@@ -135,7 +139,7 @@ pub async fn list_positions_for_update(
         .await
         .map_err(diesel)?;
 
-    let mut unit_orders = positions
+    let mut orders = rows
         .into_iter()
         .map(|(id, next_id, hidden_at)| UnitOrder {
             id,
@@ -145,12 +149,112 @@ pub async fn list_positions_for_update(
         .collect::<Vec<_>>();
 
     order_units(
-        &mut unit_orders,
-        |unit_order| unit_order.id.as_str(),
-        |unit_order| unit_order.next_id.as_deref(),
+        &mut orders,
+        |order| order.id.as_str(),
+        |order| order.next_id.as_deref(),
     )?;
 
-    accept(unit_orders)
+    accept(orders)
+}
+
+fn find_order_pos(ordered_ids: &[&str], id: &str) -> Option<usize> {
+    ordered_ids
+        .iter()
+        .enumerate()
+        .find_map(|(pos, candidate)| (*candidate == id).then_some(pos))
+}
+
+fn move_order<'a>(
+    ordered_ids: &mut Vec<&'a str>,
+    id: &'a str,
+    next_id: Option<&str>,
+) -> BaseResult<()> {
+    //
+    let Some(pos) = find_order_pos(ordered_ids, id) else {
+        return Err(expected("error-invalid-unit-oper"));
+    };
+
+    let id = ordered_ids.remove(pos);
+
+    let pos = match next_id {
+        //
+        Some(next_id) => find_order_pos(ordered_ids, next_id)
+            .ok_or_else(|| expected("error-invalid-unit-oper"))?,
+
+        None => ordered_ids.len(),
+    };
+
+    ordered_ids.insert(pos, id);
+
+    accept(())
+}
+
+fn apply_order_edits<'a>(
+    orders: &'a [UnitOrder],
+    edits: &'a [UnitEdit],
+) -> BaseResult<Vec<&'a str>> {
+    //
+    let mut ordered_ids = orders
+        .iter()
+        .map(|order| order.id.as_str())
+        .collect::<Vec<_>>();
+
+    let mut hidden_ids = orders
+        .iter()
+        .filter(|order| order.is_hidden)
+        .map(|order| order.id.as_str())
+        .collect::<HashSet<_>>();
+
+    for edit in edits {
+        match edit {
+            //
+            UnitEdit::Create { id, next_id, .. } => {
+                //
+                if find_order_pos(&ordered_ids, id).is_some() {
+                    return Err(expected("error-invalid-unit-oper"));
+                }
+
+                ordered_ids.push(id);
+
+                hidden_ids.remove(id.as_str());
+
+                move_order(&mut ordered_ids, id, next_id.as_deref())?;
+            }
+
+            UnitEdit::Save { id, next_id, .. } => {
+                //
+                hidden_ids.remove(id.as_str());
+
+                match next_id {
+                    //
+                    Patch::Skip => {}
+
+                    Patch::Clear => {
+                        move_order(&mut ordered_ids, id, None)?;
+                    }
+
+                    Patch::Assign(next_id) => {
+                        move_order(&mut ordered_ids, id, Some(next_id))?;
+                    }
+                }
+            }
+
+            UnitEdit::Delete { id } => {
+                hidden_ids.insert(id);
+            }
+        }
+    }
+
+    let visible_count = ordered_ids
+        .iter()
+        .filter(|id| !hidden_ids.contains(**id))
+        .count();
+
+    if visible_count > 100 {
+        return Err(expected("error-invalid-unit-oper"));
+    }
+
+    accept(ordered_ids)
 }
 
 #[instrument(level = "info", err(Debug), skip_all)]
@@ -162,9 +266,24 @@ pub async fn apply_edits(
     edits: &[UnitEdit],
 ) -> BaseResult<UnitCounters> {
     //
+    let ordered_ids = apply_order_edits(orders, edits)?;
+
     for edit in edits {
         match edit {
             //
+            UnitEdit::Create { .. } => {
+                //
+                let Some(entry) = UnitEntry::from_edit(page_id, edit) else {
+                    return Err(expected("error-invalid-unit-oper"));
+                };
+
+                diesel::insert_into(t_unit)
+                    .values(entry)
+                    .execute(conn)
+                    .await
+                    .map_err(diesel)?;
+            }
+
             UnitEdit::Delete { id } => {
                 //
                 let affected = diesel::update(
@@ -190,32 +309,30 @@ pub async fn apply_edits(
                 .await
                 .map_err(diesel)?;
 
-                if affected == 1 {
-                    continue;
-                }
-
-                let Some(entry) = UnitEntry::from_edit(page_id, None, edit)
-                else {
+                if affected != 1 {
                     return Err(expected("error-invalid-unit-oper"));
-                };
-
-                diesel::insert_into(t_unit)
-                    .values(entry)
-                    .execute(conn)
-                    .await
-                    .map_err(diesel)?;
+                }
             }
         }
     }
 
-    for order in orders {
+    for (index, id) in ordered_ids.iter().enumerate() {
         //
+        let next_id = ordered_ids.get(index + 1).copied();
+
+        let unchanged = orders
+            .iter()
+            .find(|order| order.id == **id)
+            .is_some_and(|order| order.next_id.as_deref() == next_id);
+
+        if unchanged {
+            continue;
+        }
+
         let affected = diesel::update(
-            t_unit
-                .filter(f_page_id.eq(page_id))
-                .filter(f_id.eq(order.id.as_str())),
+            t_unit.filter(f_page_id.eq(page_id)).filter(f_id.eq(*id)),
         )
-        .set(UnitAspect::new().order(order.next_id.as_deref()))
+        .set(UnitAspect::new().order(next_id))
         .execute(conn)
         .await
         .map_err(diesel)?;
@@ -231,9 +348,10 @@ pub async fn apply_edits(
 }
 
 fn count_infos(unit_infos: &[UnitInfo]) -> UnitCounters {
-    unit_infos.iter().fold(
-        UnitCounters::default(),
-        |mut counters, unit_info| {
+    unit_infos
+        .iter()
+        .filter(|unit_info| unit_info.hidden_at.is_none())
+        .fold(UnitCounters::default(), |mut counters, unit_info| {
             //
             counters.total_unit_count += 1;
 
@@ -246,6 +364,5 @@ fn count_infos(unit_infos: &[UnitInfo]) -> UnitCounters {
             }
 
             counters
-        },
-    )
+        })
 }

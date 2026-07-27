@@ -191,7 +191,11 @@ fn get_snapshot_excluded(
                         .cloned()
                         .collect();
 
-                    let unit_infos = order_unit_infos(unordered_unit_infos)?;
+                    let mut unit_infos =
+                        order_unit_infos(unordered_unit_infos)?;
+
+                    unit_infos
+                        .retain(|unit_info| unit_info.hidden_at.is_none());
 
                     accept(ComicArchivePageSnapshot {
                         page_info,

@@ -87,6 +87,19 @@ pub struct UnitCounterDelta {
     pub proofread_unit_count: i32,
 }
 
+impl UnitCounters {
+    /// Calculates the counter delta from this snapshot to the next snapshot.
+    pub fn calc_delta(self, next: Self) -> UnitCounterDelta {
+        UnitCounterDelta {
+            total_unit_count: next.total_unit_count - self.total_unit_count,
+            translated_unit_count: next.translated_unit_count
+                - self.translated_unit_count,
+            proofread_unit_count: next.proofread_unit_count
+                - self.proofread_unit_count,
+        }
+    }
+}
+
 fn has_text(text: &Option<String>) -> bool {
     text.as_ref().is_some_and(|value| !value.trim().is_empty())
 }

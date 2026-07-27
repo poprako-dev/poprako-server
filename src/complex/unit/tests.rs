@@ -3,14 +3,14 @@ use super::*;
 use crate::model::shared::unit::UnitCoord;
 use crate::result::ExpectedVariant;
 
-fn save(id: &str, next_id: PatchField<String>) -> UnitEdit {
+fn save(id: &str, next_id: Patch<String>) -> UnitEdit {
     UnitEdit::Save {
         id: id.to_string(),
         next_id,
         is_bubble: None,
         coord: None,
-        translation: PatchField::Skip,
-        revision: PatchField::Skip,
+        translation: Patch::Skip,
+        revision: Patch::Skip,
     }
 }
 
@@ -18,20 +18,20 @@ fn save(id: &str, next_id: PatchField<String>) -> UnitEdit {
 fn normalize_compresses_delete_and_field_patches_into_one_save() {
     //
     let edits = vec![
-        save("a", PatchField::Clear),
+        save("a", Patch::Clear),
         UnitEdit::Delete {
             id: "a".to_string(),
         },
         UnitEdit::Save {
             id: "a".to_string(),
-            next_id: PatchField::Skip,
+            next_id: Patch::Skip,
             is_bubble: Some(false),
             coord: Some(UnitCoord {
                 x_coord: 2.0,
                 y_coord: 3.0,
             }),
-            translation: PatchField::Skip,
-            revision: PatchField::Skip,
+            translation: Patch::Skip,
+            revision: Patch::Skip,
         },
     ];
 
@@ -42,7 +42,7 @@ fn normalize_compresses_delete_and_field_patches_into_one_save() {
     assert!(matches!(
         &edits[0],
         UnitEdit::Save {
-            next_id: PatchField::Clear,
+            next_id: Patch::Clear,
             is_bubble: Some(false),
             coord: Some(_),
             ..
@@ -55,7 +55,7 @@ fn normalize_rejects_invalid_anchors_and_unknown_targets() {
     //
     let self_anchor = UnitComplex::normalize_edits(
         &["a"],
-        vec![save("a", PatchField::Assign("a".to_string()))],
+        vec![save("a", Patch::Assign("a".to_string()))],
     );
 
     assert_args(self_anchor.unwrap_err());
