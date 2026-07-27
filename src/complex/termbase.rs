@@ -15,7 +15,7 @@ use crate::part::repo::oper::termbase::{
     DeleteTermbase, GetTermbaseInfoExcluded, ListTermbaseInfosExcluded,
 };
 use crate::part::repo::oper::workset::GetWorksetInfo;
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 
 // Build an args-level error when a termbase name is empty.
@@ -35,7 +35,7 @@ fn invalid_scope_err() -> BaseError {
 }
 
 // Trim a termbase name and reject empty values.
-fn normalize_name(name: String) -> BaseResult<String> {
+fn normalize_name(name: String) -> BaseRest<String> {
     //
     let name = name.trim().to_string();
 
@@ -77,7 +77,7 @@ impl TermbaseComplex {
         name: String,
         description: Option<String>,
         creator_id: String,
-    ) -> BaseResult<TermbaseEntry> {
+    ) -> BaseRest<TermbaseEntry> {
         //
         match (&team_id, &comic_id) {
             //
@@ -105,7 +105,7 @@ impl TermbaseComplex {
         id: String,
         name: String,
         description: Option<String>,
-    ) -> BaseResult<TermbaseInfoUpdate> {
+    ) -> BaseRest<TermbaseInfoUpdate> {
         //
         let name = normalize_name(name)?;
 
@@ -119,7 +119,7 @@ impl TermbaseComplex {
     }
 
     /// Delete one terminology base and all of its child terms.
-    pub async fn delete_cascade<P>(proxy: &mut P, id: &str) -> BaseResult<()>
+    pub async fn delete_cascade<P>(proxy: &mut P, id: &str) -> BaseRest<()>
     where
         P: for<'a> Proxy<GetTermbaseInfoExcluded<'a>, Error = BaseError>
             + for<'a> Proxy<DeleteTerms<'a>, Error = BaseError>
@@ -146,7 +146,7 @@ impl TermbaseComplex {
     pub async fn delete_team_cascade<P>(
         proxy: &mut P,
         team_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a> Proxy<ListTermbaseInfosExcluded<'a>, Error = BaseError>
             + for<'a> Proxy<GetTermbaseInfoExcluded<'a>, Error = BaseError>
@@ -168,7 +168,7 @@ impl TermbaseComplex {
     pub async fn delete_comic_cascade<P>(
         proxy: &mut P,
         comic_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a> Proxy<ListTermbaseInfosExcluded<'a>, Error = BaseError>
             + for<'a> Proxy<GetTermbaseInfoExcluded<'a>, Error = BaseError>
@@ -195,7 +195,7 @@ impl TermbasePermComplex {
     pub async fn resolve_team_id_from_comic<P>(
         proxy: &mut P,
         comic_id: &str,
-    ) -> BaseResult<String>
+    ) -> BaseRest<String>
     where
         P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
             + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>,
@@ -220,7 +220,7 @@ impl TermbasePermComplex {
     pub async fn resolve_team_id<P>(
         proxy: &mut P,
         termbase_info: &TermbaseInfo,
-    ) -> BaseResult<String>
+    ) -> BaseRest<String>
     where
         P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
             + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>,
@@ -241,7 +241,7 @@ impl TermbasePermComplex {
         proxy: &mut P,
         user_id: &str,
         team_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
@@ -253,7 +253,7 @@ impl TermbasePermComplex {
         proxy: &mut P,
         user_id: &str,
         team_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
@@ -265,7 +265,7 @@ impl TermbasePermComplex {
         proxy: &mut P,
         user_id: &str,
         termbase_info: &TermbaseInfo,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
             + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
@@ -281,7 +281,7 @@ impl TermbasePermComplex {
         proxy: &mut P,
         user_id: &str,
         termbase_info: &TermbaseInfo,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
             + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>

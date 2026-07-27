@@ -15,7 +15,7 @@ use crate::part::repo::comment::CommentRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::comment::{CreateComment, ListCommentInfos};
 use crate::part::repo::oper::member::FindMemberInfo;
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 
 #[cfg(test)]
 // Unit tests that validate comment lifecycle and visibility constraints.
@@ -27,7 +27,7 @@ pub async fn list_infos<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
     params: ListCommentInfosParams,
-) -> BaseResult<Vec<CommentInfoVal>>
+) -> BaseRest<Vec<CommentInfoVal>>
 where
     R: CommentRepo<C> + MemberRepo<C> + Sync,
     I: ImagePool,
@@ -65,7 +65,7 @@ pub async fn create<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
     params: CreateCommentParams,
-) -> BaseResult<CreateCommentPayload>
+) -> BaseRest<CreateCommentPayload>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,

@@ -26,7 +26,7 @@ use crate::part::repo::team::TeamRepo;
 use crate::part::repo::term::TermRepo;
 use crate::part::repo::termbase::TermbaseRepo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 
 #[cfg(test)]
 // Unit tests for terminology base definitions and search access.
@@ -38,7 +38,7 @@ pub async fn create<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
     params: CreateTermbaseParams,
-) -> BaseResult<CreateTermbasePayload>
+) -> BaseRest<CreateTermbasePayload>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -130,7 +130,7 @@ pub async fn get_info<C, R>(
     (repo,): (&R,),
     token: UserToken,
     id: String,
-) -> BaseResult<TermbaseInfoVal>
+) -> BaseRest<TermbaseInfoVal>
 where
     R: TermbaseRepo<C> + ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
 {
@@ -157,7 +157,7 @@ pub async fn list_team_infos<C, R>(
     (repo,): (&R,),
     token: UserToken,
     params: ListTeamTermbaseInfosParams,
-) -> BaseResult<Vec<TermbaseInfoVal>>
+) -> BaseRest<Vec<TermbaseInfoVal>>
 where
     R: TermbaseRepo<C> + MemberRepo<C> + Sync,
 {
@@ -192,7 +192,7 @@ pub async fn list_comic_infos<C, R>(
     (repo,): (&R,),
     token: UserToken,
     params: ListComicTermbaseInfosParams,
-) -> BaseResult<Vec<TermbaseInfoVal>>
+) -> BaseRest<Vec<TermbaseInfoVal>>
 where
     R: TermbaseRepo<C> + ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
 {
@@ -242,7 +242,7 @@ pub async fn update_info<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
     params: UpdateTermbaseInfoParams,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -304,7 +304,7 @@ pub async fn delete<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
     id: String,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,

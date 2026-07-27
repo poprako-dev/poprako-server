@@ -18,14 +18,14 @@ use crate::part::repo::oper::comic::{
 use crate::part::repo::oper::page::{
     ClearPageImagesForPublish, DeletePages, ListPageInfos,
 };
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 
 impl ChapterComplex {
     /// Appends page image deletes inside an existing transaction context.
     pub async fn clean_uploaded_images<P>(
         proxy: &mut P,
         chapter_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a> Proxy<ClearPageImagesForPublish<'a>, Error = BaseError>
             + for<'t, 'a> Proxy<
@@ -41,7 +41,7 @@ impl ChapterComplex {
     }
 
     /// Deletes a chapter subtree inside an existing transaction context.
-    pub async fn delete_cascade<P>(proxy: &mut P, id: &str) -> BaseResult<()>
+    pub async fn delete_cascade<P>(proxy: &mut P, id: &str) -> BaseRest<()>
     where
         P: for<'a, 'b> Proxy<GetChapterInfoExcluded<'a, 'b>, Error = BaseError>
             + for<'a> Proxy<ListPageInfos<'a>, Error = BaseError>
@@ -124,7 +124,7 @@ impl ChapterComplex {
 async fn defer_image_deletes<P>(
     proxy: &mut P,
     object_keys: Vec<String>,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     P: for<'t, 'a> Proxy<
             DeferBatch<'t, 'a, String, TaskPayload, ()>,
@@ -163,7 +163,7 @@ where
 async fn prom_image_deletes<P>(
     proxy: &mut P,
     chapter_id: &str,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     P: for<'a> Proxy<ListPageInfos<'a>, Error = BaseError>
         + for<'t, 'a> Proxy<
@@ -186,7 +186,7 @@ where
 async fn repin_latest_chapter<P>(
     proxy: &mut P,
     comic_id: &str,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     P: for<'a> Proxy<ListChapterInfosExcluded<'a>, Error = BaseError>
         + for<'a> Proxy<UpdateChapter<'a>, Error = BaseError>

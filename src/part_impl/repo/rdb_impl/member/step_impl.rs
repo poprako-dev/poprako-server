@@ -15,7 +15,7 @@ use crate::part_impl::repo::rdb_impl::incl;
 use crate::part_impl::repo::rdb_impl::schema::t_member::dsl::*;
 use crate::part_impl::shared::RdbConn;
 use crate::part_impl::shared::result::{diesel, expected};
-use crate::result::{BaseResult, accept};
+use crate::result::{BaseRest, accept};
 use crate::value::member::MemberInclOpt;
 use crate::value::role::{RoleField, RoleMask};
 
@@ -27,7 +27,7 @@ pub async fn find_info_by_user_id_and_team_id(
     conn: &mut RdbConn,
     user_id: &str,
     team_id: &str,
-) -> BaseResult<Option<MemberInfo>> {
+) -> BaseRest<Option<MemberInfo>> {
     //
     let row: Option<MemberRow> = t_member
         .filter(f_user_id.eq(user_id))
@@ -46,7 +46,7 @@ pub async fn find_info_by_user_id_and_team_id(
 pub async fn list_infos(
     conn: &mut RdbConn,
     spec: &MemberListSpec,
-) -> BaseResult<Vec<MemberInfo>> {
+) -> BaseRest<Vec<MemberInfo>> {
     //
     let rows: Vec<MemberRow> =
         match spec {
@@ -155,7 +155,7 @@ pub async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
     incl_opt: &[MemberInclOpt],
-) -> BaseResult<MemberInfo> {
+) -> BaseRest<MemberInfo> {
     //
     let row: MemberRow = t_member
         .filter(f_id.eq(id))
@@ -183,7 +183,7 @@ pub async fn get_info_by_id(
 pub async fn create(
     conn: &mut RdbConn,
     entry: &MemberEntry,
-) -> BaseResult<MemberInfo> {
+) -> BaseRest<MemberInfo> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -205,7 +205,7 @@ pub async fn update_user_nickname(
     conn: &mut RdbConn,
     user_id: &str,
     nickname: &str,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -225,7 +225,7 @@ pub async fn update_user_nickname(
 pub async fn list_infos_by_user_id_excluded(
     conn: &mut RdbConn,
     user_id: &str,
-) -> BaseResult<Vec<MemberInfo>> {
+) -> BaseRest<Vec<MemberInfo>> {
     //
     let rows: Vec<MemberRow> = t_member
         .filter(f_user_id.eq(user_id))
@@ -243,7 +243,7 @@ pub async fn list_infos_by_user_id_excluded(
 pub async fn list_infos_by_team_id_excluded(
     conn: &mut RdbConn,
     team_id: &str,
-) -> BaseResult<Vec<MemberInfo>> {
+) -> BaseRest<Vec<MemberInfo>> {
     //
     let rows: Vec<MemberRow> = t_member
         .filter(f_team_id.eq(team_id))
@@ -261,7 +261,7 @@ pub async fn list_infos_by_team_id_excluded(
 pub async fn list_infos_by_user_id(
     conn: &mut RdbConn,
     user_id: &str,
-) -> BaseResult<Vec<MemberInfo>> {
+) -> BaseRest<Vec<MemberInfo>> {
     //
     let rows: Vec<MemberRow> = t_member
         .filter(f_user_id.eq(user_id))
@@ -278,7 +278,7 @@ pub async fn list_infos_by_user_id(
 pub async fn update_role(
     conn: &mut RdbConn,
     update: &MemberRoleUpdate,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -295,7 +295,7 @@ pub async fn update_role(
 
 /// Delete a member by ID.
 #[instrument(level = "info", err(Debug), skip_all)]
-pub async fn delete(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
+pub async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
     diesel::delete(t_member.filter(f_id.eq(id)))
         .execute(conn)

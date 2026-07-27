@@ -8,7 +8,7 @@ use crate::model::team::TeamInfo;
 use crate::model::user::UserInfo;
 use crate::model::workset::WorksetInfo;
 use crate::part_impl::repo::mock_impl::{MockState, expected, now};
-use crate::result::{BaseResult, accept};
+use crate::result::{BaseRest, accept};
 use crate::value::chapter::{ChapterInclOpt, StageMask};
 use crate::value::incl::expand_incl_opts;
 
@@ -21,7 +21,7 @@ pub fn get_chapter_by_id(
     state: &MockState,
     id: &str,
     incl_opt: &[ChapterInclOpt],
-) -> BaseResult<ChapterInfo> {
+) -> BaseRest<ChapterInfo> {
     //
     let mut chapter_info = state
         .chapters
@@ -54,7 +54,7 @@ pub fn list_infos(state: &MockState, comic_id: &str) -> Vec<ChapterInfo> {
 pub fn create_chapter(
     state: &mut MockState,
     chapter_entry: &ChapterEntry,
-) -> BaseResult<ChapterInfo> {
+) -> BaseRest<ChapterInfo> {
     //
     if state
         .chapters

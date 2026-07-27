@@ -8,7 +8,7 @@ use poprako_util::i18n::trl;
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::value::incl::InclOpt;
 
 // Keep chapter-specific tests colocated with the value-level invariants they verify.
@@ -87,7 +87,7 @@ pub enum StageOper {
 pub fn try_modify_stage(
     current: (Stage, StagePhase),
     oper: StageOper,
-) -> BaseResult<StagePhase> {
+) -> BaseRest<StagePhase> {
     //
     let (stage, phase) = current;
 
@@ -208,7 +208,7 @@ impl TryFrom<u8> for StagePhaseField {
     type Error = BaseError;
 
     // Validate and construct a stage phase field from raw DB/API code.
-    fn try_from(value: u8) -> BaseResult<Self> {
+    fn try_from(value: u8) -> BaseRest<Self> {
         //
         if !Self::VALID_VALUES.contains(&value) {
             return Err(BaseError::Expected {
@@ -273,7 +273,7 @@ impl StageMask {
     ///
     /// Filter masks may use `IGNORE` fields as wildcards, but they still
     /// reject stage-phase combinations that are impossible for real workflow.
-    pub fn try_filter_from(value: u32) -> BaseResult<Self> {
+    pub fn try_filter_from(value: u32) -> BaseRest<Self> {
         //
         Self::validate_mask_value(value, true)?;
 
@@ -297,7 +297,7 @@ impl StageMask {
         &self,
         stage: Stage,
         phase: StagePhase,
-    ) -> BaseResult<Self> {
+    ) -> BaseRest<Self> {
         //
         if !is_valid_stage_phase(stage, phase) {
             return Err(BaseError::Expected {
@@ -362,7 +362,7 @@ impl StageMask {
     }
 
     // Validate an entire packed mask, including reserved bits and per-stage limits.
-    fn validate_mask_value(value: u32, allow_ignore: bool) -> BaseResult<()> {
+    fn validate_mask_value(value: u32, allow_ignore: bool) -> BaseRest<()> {
         //
         if value & !Self::VALID_BITS != 0 {
             return Err(BaseError::Expected {
@@ -408,7 +408,7 @@ impl StageMask {
     fn field_for_stage_value(
         value: u32,
         stage: Stage,
-    ) -> BaseResult<StagePhaseField> {
+    ) -> BaseRest<StagePhaseField> {
         StagePhaseField::try_from(
             ((value >> Self::stage_shift(stage)) & 0b11) as u8,
         )
@@ -421,7 +421,7 @@ impl StageMask {
         stage: Stage,
         field: StagePhaseField,
         allow_ignore: bool,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         //
         if field == StagePhaseField::IGNORE {
             //
@@ -458,7 +458,7 @@ impl TryFrom<u32> for StageMask {
     type Error = BaseError;
 
     // Validate packed bits and build a concrete mask value.
-    fn try_from(value: u32) -> BaseResult<Self> {
+    fn try_from(value: u32) -> BaseRest<Self> {
         //
         Self::validate_mask_value(value, false)?;
 

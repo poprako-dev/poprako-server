@@ -14,7 +14,7 @@ use crate::part_impl::repo::rdb_impl::assignment_invitation::step_impl::{
     get_info_by_id, list_infos, mark_pending_as_used, purge_pending,
 };
 use crate::part_impl::shared::RdbContext;
-use crate::result::{BaseError, BaseResult};
+use crate::result::{BaseError, BaseRest};
 
 impl Run<ListAssignmentInvitationInfos<'_>> for RdbRepo {
     // Non-transactional path that lists invitation infos for a list spec.
@@ -25,7 +25,7 @@ impl Run<ListAssignmentInvitationInfos<'_>> for RdbRepo {
     async fn run(
         &self,
         oper: &ListAssignmentInvitationInfos<'_>,
-    ) -> BaseResult<Vec<AssignmentInvitationInfo>> {
+    ) -> BaseRest<Vec<AssignmentInvitationInfo>> {
         submit_query!(self.core, list_infos, oper.spec)
     }
 }
@@ -37,7 +37,7 @@ impl Run<GetAssignmentInvitationInfo<'_>> for RdbRepo {
     async fn run(
         &self,
         oper: &GetAssignmentInvitationInfo<'_>,
-    ) -> BaseResult<AssignmentInvitationInfo> {
+    ) -> BaseRest<AssignmentInvitationInfo> {
         match oper {
             GetAssignmentInvitationInfo::Id { id } => {
                 submit_query!(self.core, get_info_by_id, id)
@@ -54,7 +54,7 @@ impl Step<CreateAssignmentInvitation<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &CreateAssignmentInvitation<'_>,
-    ) -> BaseResult<AssignmentInvitationInfo> {
+    ) -> BaseRest<AssignmentInvitationInfo> {
         create(context.conn(), oper.entry).await
     }
 }
@@ -67,7 +67,7 @@ impl Step<GetAssignmentInvitationInfo<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &GetAssignmentInvitationInfo<'_>,
-    ) -> BaseResult<AssignmentInvitationInfo> {
+    ) -> BaseRest<AssignmentInvitationInfo> {
         match oper {
             GetAssignmentInvitationInfo::Id { id } => {
                 get_info_by_id(context.conn(), id).await
@@ -84,7 +84,7 @@ impl Step<GetAssignmentInvitationInfoExcluded<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &GetAssignmentInvitationInfoExcluded<'_>,
-    ) -> BaseResult<AssignmentInvitationInfo> {
+    ) -> BaseRest<AssignmentInvitationInfo> {
         get_info_by_code_excluded(context.conn(), oper.code).await
     }
 }
@@ -97,7 +97,7 @@ impl Step<MarkAssignmentInvitationUsed<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &MarkAssignmentInvitationUsed<'_>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         mark_pending_as_used(context.conn(), oper.id).await
     }
 }
@@ -112,7 +112,7 @@ impl Step<PurgeExpiredAssignmentInvitation<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &PurgeExpiredAssignmentInvitation<'_>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         purge_pending(context.conn(), oper.id).await
     }
 }
@@ -126,7 +126,7 @@ impl Run<PurgeExpiredAssignmentInvitation<'_>> for RdbRepo {
     async fn run(
         &self,
         oper: &PurgeExpiredAssignmentInvitation<'_>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         submit_query!(self.core, purge_pending, oper.id)
     }
 }
@@ -142,7 +142,7 @@ impl Step<DeleteAssignmentInvitations<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &DeleteAssignmentInvitations<'_>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         match oper {
             //
             DeleteAssignmentInvitations::Id { id } => {

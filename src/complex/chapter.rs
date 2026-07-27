@@ -28,7 +28,7 @@ use crate::part::repo::oper::chapter::GetChapterInfo;
 use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::workset::GetWorksetInfo;
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 use crate::value::chapter::{Stage, StageOper, StagePhase, try_modify_stage};
 use crate::value::index::stored_index_to_user_index;
@@ -61,7 +61,7 @@ impl ChapterComplex {
         chapter_info: &ChapterInfo,
         stage: Stage,
         oper: StageOper,
-    ) -> BaseResult<ChapterStageUpdate> {
+    ) -> BaseRest<ChapterStageUpdate> {
         //
         let current_phase = get_phase(chapter_info, stage);
 
@@ -78,7 +78,7 @@ impl ChapterComplex {
     /// Rejects user mutations once a chapter has been published.
     pub fn ensure_chapter_writable(
         chapter_info: &ChapterInfo,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         //
         if chapter_info
             .stages
@@ -108,7 +108,7 @@ impl ChapterPermComplex {
         proxy: &mut P,
         user_id: &str,
         comic_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
             + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
@@ -122,7 +122,7 @@ impl ChapterPermComplex {
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
             + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
@@ -139,7 +139,7 @@ impl ChapterPermComplex {
         proxy: &mut P,
         user_id: &str,
         comic_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
             + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
@@ -154,7 +154,7 @@ impl ChapterPermComplex {
         user_id: &str,
         comic_id: &str,
         preset_assignment_roles: Option<RoleMask>,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
             + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
@@ -176,7 +176,7 @@ impl ChapterPermComplex {
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
     {
@@ -190,7 +190,7 @@ impl ChapterPermComplex {
         chapter_id: &str,
         stage: Stage,
         oper: StageOper,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>
             + for<'a, 'b> Proxy<ListAssignmentInfos<'a, 'b>, Error = BaseError>,
@@ -208,7 +208,7 @@ impl ChapterPermComplex {
         user_id: &str,
         chapter_info: &ChapterInfo,
         roles: RoleMask,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
             + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
@@ -222,7 +222,7 @@ impl ChapterPermComplex {
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
             + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
@@ -243,7 +243,7 @@ fn get_phase(chapter_info: &ChapterInfo, stage: Stage) -> StagePhase {
 async fn resolve_team_id_from_comic<P>(
     proxy: &mut P,
     comic_id: &str,
-) -> BaseResult<String>
+) -> BaseRest<String>
 where
     P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
         + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>,
@@ -319,7 +319,7 @@ async fn check_team_member_by_comic<P>(
     proxy: &mut P,
     user_id: &str,
     comic_id: &str,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
         + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
@@ -335,7 +335,7 @@ async fn check_team_admin_by_comic<P>(
     proxy: &mut P,
     user_id: &str,
     comic_id: &str,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
         + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
@@ -372,7 +372,7 @@ async fn check_chapter_has_role_holder<P>(
     proxy: &mut P,
     chapter_id: &str,
     stage: Stage,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     P: for<'a, 'b> Proxy<ListAssignmentInfos<'a, 'b>, Error = BaseError>,
 {
@@ -411,7 +411,7 @@ async fn check_team_member_by_chapter<P>(
     proxy: &mut P,
     user_id: &str,
     chapter_id: &str,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
         + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
@@ -433,7 +433,7 @@ async fn check_team_admin_by_chapter<P>(
     proxy: &mut P,
     user_id: &str,
     chapter_id: &str,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
         + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
@@ -455,7 +455,7 @@ async fn check_admin<P>(
     proxy: &mut P,
     user_id: &str,
     chapter_id: &str,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
 {
@@ -491,7 +491,7 @@ async fn check_workflow_role<P>(
     chapter_id: &str,
     stage: Stage,
     oper: StageOper,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>
         + for<'a, 'b> Proxy<ListAssignmentInfos<'a, 'b>, Error = BaseError>,
@@ -544,7 +544,7 @@ async fn check_join_role<P>(
     user_id: &str,
     chapter_info: &ChapterInfo,
     roles: RoleMask,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
         + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>

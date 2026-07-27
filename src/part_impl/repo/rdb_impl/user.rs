@@ -21,7 +21,7 @@ use crate::part_impl::repo::rdb_impl::entity::user::{
 use crate::part_impl::repo::rdb_impl::schema::t_user::dsl::*;
 use crate::part_impl::shared::result::{diesel, expected, next_version};
 use crate::part_impl::shared::{RdbConn, RdbContext};
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 use crate::value::image::{ImageExt, ImageHash};
 
 /// User RDB integration tests.
@@ -32,7 +32,7 @@ pub mod tests;
 
 // Remove a user row from persistence.
 #[instrument(level = "info", err(Debug), skip_all)]
-async fn delete(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
+async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
     // Execute hard delete and map DB errors to repository error type.
     diesel::delete(t_user.filter(f_id.eq(id)))
@@ -48,7 +48,7 @@ async fn delete(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
 async fn get_credential_by_qid(
     conn: &mut RdbConn,
     qid: &str,
-) -> BaseResult<UserCredential> {
+) -> BaseRest<UserCredential> {
     //
     // Query only credential columns and convert them to user credential DTO.
     let row: UserCredentialRow = t_user
@@ -68,7 +68,7 @@ async fn get_credential_by_qid(
 async fn find_info_by_qid(
     conn: &mut RdbConn,
     qid: &str,
-) -> BaseResult<Option<UserInfo>> {
+) -> BaseRest<Option<UserInfo>> {
     //
     // Keep lookup soft-fail to allow callers to branch on existence.
     let row: Option<UserRow> = t_user
@@ -84,7 +84,7 @@ async fn find_info_by_qid(
 
 // Insert a new user row and return the persisted info payload.
 #[instrument(level = "info", err(Debug), skip_all)]
-async fn create(conn: &mut RdbConn, entry: &UserEntry) -> BaseResult<UserInfo> {
+async fn create(conn: &mut RdbConn, entry: &UserEntry) -> BaseRest<UserInfo> {
     //
     // Populate required identity and timestamp columns, then fetch created row.
     let now = OffsetDateTime::now_utc();
@@ -116,7 +116,7 @@ async fn update_info(
     id: &str,
     qid: &str,
     nickname: &str,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     // Apply one write that updates both fields and returns success when DB update succeeds.
     let now = OffsetDateTime::now_utc();
@@ -138,7 +138,7 @@ async fn update_password_hash(
     conn: &mut RdbConn,
     id: &str,
     password_hash: &str,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     // Persist credential changes and bump `f_updated_at` in one SQL statement.
     let now = OffsetDateTime::now_utc();
@@ -159,7 +159,7 @@ async fn reserve_avatar(
     id: &str,
     image_hash: &ImageHash,
     image_ext: ImageExt,
-) -> BaseResult<UserAvatarReservation> {
+) -> BaseRest<UserAvatarReservation> {
     //
     // Lock the target row, compare hash/ext, then either reuse or advance avatar version.
     let now = OffsetDateTime::now_utc();
@@ -244,7 +244,7 @@ async fn mark_avatar_uploaded(
     version: u32,
     avatar_key: Option<&str>,
     avatar_uploaded: bool,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     // Only write when version (and optional key) match; return mismatch error if stale.
     let now = OffsetDateTime::now_utc();
@@ -285,7 +285,7 @@ async fn mark_avatar_uploaded(
 
 // Touch `last_active_at` for heartbeat and usage tracking.
 #[instrument(level = "info", err(Debug), skip_all)]
-async fn touch_last_active(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
+async fn touch_last_active(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
     // Keep access timestamp current for activity-driven features.
     let now = OffsetDateTime::now_utc();
@@ -306,7 +306,7 @@ async fn touch_last_active(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
 async fn get_info_by_id_excluded(
     conn: &mut RdbConn,
     id: &str,
-) -> BaseResult<UserInfo> {
+) -> BaseRest<UserInfo> {
     //
     // Use a row lock so later mutation in the same transaction is serialized.
     let row: UserRow = t_user
@@ -324,7 +324,7 @@ async fn get_info_by_id_excluded(
 
 // Load one user info row by primary key and map DB row into response model.
 #[instrument(level = "info", err(Debug), skip_all)]
-async fn get_info_by_id(conn: &mut RdbConn, id: &str) -> BaseResult<UserInfo> {
+async fn get_info_by_id(conn: &mut RdbConn, id: &str) -> BaseRest<UserInfo> {
     //
     // Query `t_user` by `f_id`, fail with `error-user-not-found` when absent.
     let row: UserRow = t_user
@@ -399,7 +399,7 @@ impl Run<UpdateUser<'_>> for RdbRepo {
 
     // Map each update variant to a dedicated helper with explicit argument flow.
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn run(&self, oper: &UpdateUser<'_>) -> BaseResult<()> {
+    async fn run(&self, oper: &UpdateUser<'_>) -> BaseRest<()> {
         match oper {
             //
             UpdateUser::TouchLastActive { id } => {
@@ -448,7 +448,7 @@ impl Step<CreateUser<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &CreateUser<'_>,
-    ) -> BaseResult<UserInfo> {
+    ) -> BaseRest<UserInfo> {
         create(context.conn(), oper.entry).await
     }
 }
@@ -463,7 +463,7 @@ impl Step<FindUserInfo<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &FindUserInfo<'_>,
-    ) -> BaseResult<Option<UserInfo>> {
+    ) -> BaseRest<Option<UserInfo>> {
         match oper {
             FindUserInfo::Qid { qid } => {
                 find_info_by_qid(context.conn(), qid).await
@@ -482,7 +482,7 @@ impl Step<UpdateUser<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &UpdateUser<'_>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         match oper {
             //
             UpdateUser::Info { id, qid, nickname } => {
@@ -526,7 +526,7 @@ impl Step<ReserveUserAvatar<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &ReserveUserAvatar<'_>,
-    ) -> BaseResult<UserAvatarReservation> {
+    ) -> BaseRest<UserAvatarReservation> {
         reserve_avatar(context.conn(), oper.id, oper.image_hash, oper.image_ext)
             .await
     }
@@ -542,7 +542,7 @@ impl Step<GetUserInfoExcluded<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &GetUserInfoExcluded<'_>,
-    ) -> BaseResult<UserInfo> {
+    ) -> BaseRest<UserInfo> {
         match oper {
             GetUserInfoExcluded::Id { id } => {
                 get_info_by_id_excluded(context.conn(), id).await
@@ -561,7 +561,7 @@ impl Step<DeleteUser<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &DeleteUser<'_>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         delete(context.conn(), oper.id).await
     }
 }

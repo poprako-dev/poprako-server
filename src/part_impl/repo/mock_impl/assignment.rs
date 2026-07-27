@@ -14,7 +14,7 @@ use crate::part::repo::oper::assignment::{
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 use crate::value::assignment::AssignmentInclOpt;
 
 // Internal organization of the `incl` module.
@@ -170,7 +170,7 @@ fn get_assignment(
     state: &MockState,
     id: &str,
     incl_opt: &[AssignmentInclOpt],
-) -> BaseResult<AssignmentInfo> {
+) -> BaseRest<AssignmentInfo> {
     //
     // Internal implementation detail.
     // Internal implementation detail.
@@ -242,7 +242,7 @@ fn find_assignment(
 fn create_assignment(
     state: &mut MockState,
     entry: &AssignmentEntry,
-) -> BaseResult<AssignmentInfo> {
+) -> BaseRest<AssignmentInfo> {
     //
     // Internal implementation detail.
     // Internal implementation detail.
@@ -280,7 +280,7 @@ fn create_assignment(
 }
 
 // Internal implementation of `delete_assignment_by_id`.
-fn delete_assignment_by_id(state: &mut MockState, id: &str) -> BaseResult<()> {
+fn delete_assignment_by_id(state: &mut MockState, id: &str) -> BaseRest<()> {
     //
     // Internal implementation detail.
     // Internal implementation detail.
@@ -299,7 +299,7 @@ fn delete_assignment_by_id(state: &mut MockState, id: &str) -> BaseResult<()> {
 fn delete_assignments_by_chapter_id(
     state: &mut MockState,
     chapter_id: &str,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     // Internal implementation detail.
     // Internal implementation detail.

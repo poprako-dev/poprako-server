@@ -65,7 +65,7 @@ use crate::part::repo::termbase::TermbaseRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::part::repo::user::UserRepo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::value::role::{RoleField, RoleMask};
 
 #[cfg(test)]
@@ -86,7 +86,7 @@ pub async fn create<N, C, R, I>(
     (nucl, repo, image_pool): (&N, &R, &I),
     token: UserToken,
     params: CreateTeamParams,
-) -> BaseResult<TeamInfoVal>
+) -> BaseRest<TeamInfoVal>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -155,7 +155,7 @@ where
 pub async fn get_info<C, R, I>(
     (repo, image_pool): (&R, &I),
     id: String,
-) -> BaseResult<TeamInfoVal>
+) -> BaseRest<TeamInfoVal>
 where
     R: TeamRepo<C>,
     I: ImagePool,
@@ -182,7 +182,7 @@ pub async fn list_infos<C, R, I>(
     token: UserToken,
     // FIXME: use try_into()?
     params: ListTeamInfosParams,
-) -> BaseResult<Vec<TeamInfoVal>>
+) -> BaseRest<Vec<TeamInfoVal>>
 where
     R: TeamRepo<C> + UserRepo<C> + Sync,
     I: ImagePool,
@@ -231,7 +231,7 @@ where
     )
     .await
     .into_iter()
-    .collect::<BaseResult<Vec<_>>>()?;
+    .collect::<BaseRest<Vec<_>>>()?;
 
     accept(team_info_vals)
 }
@@ -249,7 +249,7 @@ pub async fn update_info<C, R>(
     (repo,): (&R,),
     token: UserToken,
     params: UpdateTeamInfoParams,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     R: TeamRepo<C> + MemberRepo<C> + Sync,
 {
@@ -298,7 +298,7 @@ pub async fn reserve_avatar<N, C, R, P, I>(
     token: UserToken,
     id: String,
     params: ReserveTeamAvatarParams,
-) -> BaseResult<ReserveTeamAvatarPayload>
+) -> BaseRest<ReserveTeamAvatarPayload>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -445,7 +445,7 @@ pub async fn mark_avatar_uploaded<N, C, R, I>(
     token: UserToken,
     id: String,
     params: MarkTeamAvatarUploadedParams,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -544,7 +544,7 @@ pub async fn delete<N, C, R, P>(
     (nucl, repo, prom): (&N, &R, &P),
     token: UserToken,
     id: String,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,

@@ -36,7 +36,7 @@ use crate::part::repo::oper::workset::{
     DeleteWorkset, GetWorksetInfoExcluded, ListWorksetInfosExcluded,
     UpdateWorksetComicCount,
 };
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 
 /// Domain opers for team entities.
@@ -58,7 +58,7 @@ impl TeamComplex {
     }
 
     /// Deletes a team subtree inside an existing transaction context.
-    pub async fn delete_cascade<P>(proxy: &mut P, id: &str) -> BaseResult<()>
+    pub async fn delete_cascade<P>(proxy: &mut P, id: &str) -> BaseRest<()>
     where
         P: for<'a> Proxy<GetTeamInfoExcluded<'a>, Error = BaseError>
             + for<'a> Proxy<ListWorksetInfosExcluded<'a>, Error = BaseError>
@@ -159,7 +159,7 @@ impl TeamPermComplex {
         proxy: &mut P,
         user_id: &str,
         team_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
@@ -171,7 +171,7 @@ impl TeamPermComplex {
         proxy: &mut P,
         user_id: &str,
         team_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
@@ -183,7 +183,7 @@ impl TeamPermComplex {
         proxy: &mut P,
         user_id: &str,
         team_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
@@ -195,7 +195,7 @@ impl TeamPermComplex {
         proxy: &mut P,
         user_id: &str,
         team_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
@@ -206,7 +206,7 @@ impl TeamPermComplex {
     pub async fn ensure_user_can_create<P>(
         proxy: &mut P,
         user_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a> Proxy<GetUserInfo<'a>, Error = BaseError>,
     {
@@ -217,7 +217,7 @@ impl TeamPermComplex {
     pub async fn ensure_user_can_list_infos<P>(
         proxy: &mut P,
         user_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a> Proxy<GetUserInfo<'a>, Error = BaseError>,
     {
@@ -228,7 +228,7 @@ impl TeamPermComplex {
     async fn check_user_is_sadmin<P>(
         proxy: &mut P,
         user_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a> Proxy<GetUserInfo<'a>, Error = BaseError>,
     {

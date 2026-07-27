@@ -61,7 +61,7 @@ use crate::part::repo::term::TermRepo;
 use crate::part::repo::termbase::TermbaseRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
 pub use list::list_infos;
 
@@ -87,7 +87,7 @@ pub async fn create<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
     params: CreateComicParams,
-) -> BaseResult<CreateComicPayload>
+) -> BaseRest<CreateComicPayload>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -237,7 +237,7 @@ pub async fn get_info<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
     id: String,
-) -> BaseResult<ComicInfoVal>
+) -> BaseRest<ComicInfoVal>
 where
     R: ComicRepo<C>
         + WorksetRepo<C>
@@ -292,7 +292,7 @@ pub async fn update_info<C, R>(
     (repo,): (&R,),
     token: UserToken,
     params: UpdateComicInfoParams,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     R: ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
 {
@@ -330,7 +330,7 @@ pub async fn reserve_cover<N, C, R, P, I>(
     token: UserToken,
     id: String,
     params: ReserveComicCoverParams,
-) -> BaseResult<ReserveComicCoverPayload>
+) -> BaseRest<ReserveComicCoverPayload>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -468,7 +468,7 @@ pub async fn mark_cover_uploaded<N, C, R, I>(
     token: UserToken,
     id: String,
     params: MarkComicCoverUploadedParams,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -566,7 +566,7 @@ pub async fn delete<N, C, R, P>(
     (nucl, repo, prom): (&N, &R, &P),
     token: UserToken,
     id: String,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,

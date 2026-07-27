@@ -17,7 +17,7 @@ use crate::part_impl::prom::rdb_impl::entity::{
 use crate::part_impl::repo::rdb_impl::schema::t_local_message;
 use crate::part_impl::shared::RdbContext;
 use crate::part_impl::shared::result::diesel;
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 
 /// RDB prom repository integration tests.
 #[cfg(all(test, feature = "rdb", feature = "prom_impl"))]
@@ -236,7 +236,7 @@ where
         &self,
         context: &mut RdbContext,
         _oper: &PollPending,
-    ) -> BaseResult<Vec<LocalMessageRow>> {
+    ) -> BaseRest<Vec<LocalMessageRow>> {
         //
         // Internal implementation detail.
         use diesel::prelude::*;
@@ -299,7 +299,7 @@ where
         &self,
         context: &mut RdbContext,
         oper: &ClaimPending<'a>,
-    ) -> BaseResult<bool> {
+    ) -> BaseRest<bool> {
         //
         // Internal implementation detail.
         use diesel::prelude::*;
@@ -341,7 +341,7 @@ where
         &self,
         context: &mut RdbContext,
         oper: &CompleteMessage<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         //
         // Internal implementation detail.
         use diesel::prelude::*;
@@ -383,7 +383,7 @@ where
         &self,
         context: &mut RdbContext,
         oper: &FailMessage<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         //
         // Internal implementation detail.
         use diesel::prelude::*;
@@ -425,7 +425,7 @@ where
         &self,
         context: &mut RdbContext,
         oper: &RetryMessage<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         //
         // Internal implementation detail.
         use diesel::prelude::*;
@@ -470,7 +470,7 @@ where
         &self,
         context: &mut RdbContext,
         oper: &ResetStuck<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         //
         // Internal implementation detail.
         use diesel::prelude::*;
@@ -532,7 +532,7 @@ where
         &self,
         context: &mut RdbContext,
         oper: &PurgeCompleted<'a>,
-    ) -> BaseResult<usize> {
+    ) -> BaseRest<usize> {
         //
         // Internal implementation detail.
         use diesel::prelude::*;

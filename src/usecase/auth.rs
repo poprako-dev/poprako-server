@@ -24,7 +24,7 @@ use crate::part::repo::oper::member_invitation::{
 };
 use crate::part::repo::oper::user::{CreateUser, GetUserCredential};
 use crate::part::repo::user::UserRepo;
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
 #[cfg(test)]
 mod tests;
@@ -66,7 +66,7 @@ mod tests;
 pub async fn register<N, C, R, A, V>(
     (nucl, repo, auth, develop): (&N, &R, &A, &V),
     params: RegisterAuthParams,
-) -> BaseResult<RegisterAuthPayload>
+) -> BaseRest<RegisterAuthPayload>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -183,7 +183,7 @@ where
 pub async fn login<C, R, A>(
     (repo, auth): (&R, &A),
     params: LoginAuthParams,
-) -> BaseResult<LoginAuthPayload>
+) -> BaseRest<LoginAuthPayload>
 where
     R: UserRepo<C>,
     A: TokenAuth,

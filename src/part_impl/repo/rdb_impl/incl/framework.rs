@@ -38,7 +38,7 @@ use crate::part_impl::repo::rdb_impl::schema::{
 };
 use crate::part_impl::shared::RdbConn;
 use crate::part_impl::shared::result::diesel;
-use crate::result::{BaseResult, accept};
+use crate::result::{BaseRest, accept};
 
 // ── BatchByIds trait ────────────────────────────────────────────────────────
 
@@ -56,10 +56,10 @@ pub trait BatchByIds {
     fn load(
         conn: &mut RdbConn,
         ids: Vec<&str>,
-    ) -> impl Future<Output = BaseResult<Vec<Self::Row>>> + Send;
+    ) -> impl Future<Output = BaseRest<Vec<Self::Row>>> + Send;
 
     /// Convert a row into its id key and domain info.
-    fn into_entry(row: Self::Row) -> BaseResult<(String, Self::Info)>;
+    fn into_entry(row: Self::Row) -> BaseRest<(String, Self::Info)>;
 }
 
 // ── Incl trait ──────────────────────────────────────────────────────────────
@@ -97,7 +97,7 @@ pub trait Incl {
 pub async fn populate<I: Incl>(
     conn: &mut RdbConn,
     infos: &mut [I::Owner],
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     let mut key_counts = HashMap::new();
 
@@ -157,7 +157,7 @@ fn take_loaded_related<Related: Clone>(
 async fn batch_load<B: BatchByIds>(
     conn: &mut RdbConn,
     ids: Vec<&str>,
-) -> BaseResult<HashMap<String, B::Info>> {
+) -> BaseRest<HashMap<String, B::Info>> {
     //
     let rows = B::load(conn, ids).await?;
 

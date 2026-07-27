@@ -26,7 +26,7 @@ use crate::part::repo::oper::team::LockTeam;
 use crate::part::repo::oper::user::GetUserInfoExcluded;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
 #[cfg(test)]
 // Unit tests for team membership and invitation boundary conditions.
@@ -41,7 +41,7 @@ pub async fn create<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
     params: CreateMemberParams,
-) -> BaseResult<CreateMemberPayload>
+) -> BaseRest<CreateMemberPayload>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -131,7 +131,7 @@ pub async fn join_team<N, C, R, I>(
     (nucl, repo, image_pool): (&N, &R, &I),
     token: UserToken,
     params: JoinTeamParams,
-) -> BaseResult<MemberInfoVal>
+) -> BaseRest<MemberInfoVal>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -220,7 +220,7 @@ pub async fn list_infos<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
     params: ListMemberInfosParams,
-) -> BaseResult<Vec<MemberInfoVal>>
+) -> BaseRest<Vec<MemberInfoVal>>
 where
     R: MemberRepo<C> + Sync,
     I: ImagePool,
@@ -262,7 +262,7 @@ pub async fn update_roles<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
     params: UpdateMemberRolesParams,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -316,7 +316,7 @@ pub async fn delete<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
     id: String,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,

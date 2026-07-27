@@ -36,7 +36,7 @@ use crate::part::repo::oper::termbase::{
 use crate::part::repo::oper::workset::{
     GetWorksetInfo, UpdateWorksetComicCount,
 };
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 use crate::util::next_snowflake_id;
 use crate::value::index::stored_index_to_user_index;
 use crate::value::role::RoleMask;
@@ -67,7 +67,7 @@ impl ComicComplex {
     pub async fn resolve_fallback_cover_keys<P>(
         proxy: &mut P,
         comic_ids: &[String],
-    ) -> BaseResult<HashMap<String, String>>
+    ) -> BaseRest<HashMap<String, String>>
     where
         P: for<'a> Proxy<ListPinnedChapterInfos<'a>, Error = BaseError>
             + for<'a> Proxy<ListFirstPageInfos<'a>, Error = BaseError>,
@@ -111,7 +111,7 @@ impl ComicComplex {
     }
 
     /// Deletes a comic subtree inside an existing transaction context.
-    pub async fn delete_cascade<P>(proxy: &mut P, id: &str) -> BaseResult<()>
+    pub async fn delete_cascade<P>(proxy: &mut P, id: &str) -> BaseRest<()>
     where
         P: for<'a, 'b> Proxy<GetComicInfoExcluded<'a, 'b>, Error = BaseError>
             + for<'a> Proxy<ListChapterInfosExcluded<'a>, Error = BaseError>
@@ -198,7 +198,7 @@ impl ComicPermComplex {
         user_id: &str,
         workset_id: &str,
         preset_assignment_roles: Option<RoleMask>,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
             + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
@@ -220,7 +220,7 @@ impl ComicPermComplex {
         proxy: &mut P,
         user_id: &str,
         workset_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
             + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
@@ -236,7 +236,7 @@ impl ComicPermComplex {
         proxy: &mut P,
         user_id: &str,
         comic_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
             + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
@@ -252,7 +252,7 @@ impl ComicPermComplex {
         proxy: &mut P,
         user_id: &str,
         comic_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
             + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
@@ -268,7 +268,7 @@ impl ComicPermComplex {
         proxy: &mut P,
         user_id: &str,
         comic_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
             + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
@@ -284,7 +284,7 @@ impl ComicPermComplex {
         proxy: &mut P,
         user_id: &str,
         comic_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
             + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
@@ -300,7 +300,7 @@ impl ComicPermComplex {
         proxy: &mut P,
         user_id: &str,
         comic_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
             + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
@@ -315,7 +315,7 @@ impl ComicPermComplex {
     async fn resolve_team_id_from_workset<P>(
         proxy: &mut P,
         workset_id: &str,
-    ) -> BaseResult<String>
+    ) -> BaseRest<String>
     where
         P: for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>,
     {
@@ -329,7 +329,7 @@ impl ComicPermComplex {
     async fn resolve_team_id_from_comic<P>(
         proxy: &mut P,
         comic_id: &str,
-    ) -> BaseResult<String>
+    ) -> BaseRest<String>
     where
         P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
             + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>,

@@ -10,7 +10,7 @@ use poprako_util::time::ToUnixMilli;
 use crate::data::image::ImageUploadSlotVal;
 use crate::model::page::{PageImageSpec, PageInfo};
 use crate::part::image::ImagePool;
-use crate::result::{BaseResult, accept};
+use crate::result::{BaseRest, accept};
 use crate::value::image::{ImageExt, ImageHash};
 
 #[cfg(test)]
@@ -60,7 +60,7 @@ impl PageInfoVal {
     pub async fn from_model<P>(
         image_pool: &P,
         model: PageInfo,
-    ) -> BaseResult<Self>
+    ) -> BaseRest<Self>
     where
         P: ImagePool,
     {

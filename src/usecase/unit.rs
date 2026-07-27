@@ -31,7 +31,7 @@ use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 use crate::usecase::stage::spawn_starts;
 use crate::value::role::RoleField;
 use crate::value::unit::UnitEditPerm;
@@ -46,7 +46,7 @@ pub async fn list_infos<C, R>(
     (repo,): (&R,),
     token: UserToken,
     params: ListPageUnitInfosParams,
-) -> BaseResult<ListPageUnitInfosPayload>
+) -> BaseRest<ListPageUnitInfosPayload>
 where
     R: PageRepo<C>
         + UnitRepo<C>
@@ -98,7 +98,7 @@ pub async fn save_edits<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
     params: SavePageUnitEditsParams,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,

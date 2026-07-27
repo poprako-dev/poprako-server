@@ -27,31 +27,6 @@ pub fn next_snowflake_u64() -> u64 {
     k_snowflake::create_snowflake().to_decimal() as u64
 }
 
-// pub fn to_roman_style(mut num: u8) -> String {
-//     const TABLE: &[(u8, &str)] = &[
-//         (100, "c"),
-//         (90, "xc"),
-//         (50, "l"),
-//         (40, "xl"),
-//         (10, "x"),
-//         (9, "ix"),
-//         (5, "v"),
-//         (4, "iv"),
-//         (1, "i"),
-//     ];
-//
-//     let mut ret = String::new();
-//
-//     for &(value, symbol) in TABLE {
-//         while num >= value {
-//             ret.push_str(symbol);
-//             num -= value;
-//         }
-//     }
-//
-//     ret
-// }
-
 // Initialise the global snowflake instance once from the
 // `POPRAKO_SNOWFLAKE_NODE_ID` env var (defaults to 0).
 fn ensure_snowflake_init() {

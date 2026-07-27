@@ -30,7 +30,7 @@ use crate::part::repo::oper::page::{
 use crate::part::repo::oper::unit::{ApplyUnitEdits, ListUnitOrders};
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::unit::UnitRepo;
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::stage::spawn_starts;
 use crate::value::chapter::Stage;
 use crate::value::chapter_port::TranslationFormat;
@@ -48,7 +48,7 @@ pub async fn import<N, C, R>(
     token: UserToken,
     params: ImportChapterTranslationParams,
     chapter_id: String,
-) -> BaseResult<ImportChapterTranslationPayload>
+) -> BaseRest<ImportChapterTranslationPayload>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,

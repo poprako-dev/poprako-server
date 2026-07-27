@@ -18,7 +18,7 @@ use crate::part_impl::repo::mock_impl::chapter::{
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 use crate::value::chapter::{ChapterInclOpt, Stage, StagePhase};
 
 // Internal implementation of `list_chapter_infos`.
@@ -121,7 +121,7 @@ impl<'a> Run<ListChapterInfos<'a>> for Mock {
     async fn run(
         &self,
         oper: &ListChapterInfos<'a>,
-    ) -> BaseResult<Vec<ChapterInfo>> {
+    ) -> BaseRest<Vec<ChapterInfo>> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -140,7 +140,7 @@ impl<'a, 'b> Run<GetChapterInfo<'a, 'b>> for Mock {
     async fn run(
         &self,
         oper: &GetChapterInfo<'a, 'b>,
-    ) -> BaseResult<ChapterInfo> {
+    ) -> BaseRest<ChapterInfo> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -159,7 +159,7 @@ impl<'a, 'b> Run<FindPinnedChapterInfo<'a, 'b>> for Mock {
     async fn run(
         &self,
         oper: &FindPinnedChapterInfo<'a, 'b>,
-    ) -> BaseResult<Option<ChapterInfo>> {
+    ) -> BaseRest<Option<ChapterInfo>> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -178,7 +178,7 @@ impl<'a> Run<ListPinnedChapterInfos<'a>> for Mock {
     async fn run(
         &self,
         oper: &ListPinnedChapterInfos<'a>,
-    ) -> BaseResult<HashMap<String, ChapterInfo>> {
+    ) -> BaseRest<HashMap<String, ChapterInfo>> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -194,7 +194,7 @@ impl<'a> Run<StartChapterStage<'a>> for Mock {
 
     #[instrument(level = "info", err(Debug), skip_all)]
     // Internal implementation of `run`.
-    async fn run(&self, oper: &StartChapterStage<'a>) -> BaseResult<bool> {
+    async fn run(&self, oper: &StartChapterStage<'a>) -> BaseRest<bool> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -241,7 +241,7 @@ impl<'a> Run<CompleteChapterRawProvide<'a>> for Mock {
     async fn run(
         &self,
         oper: &CompleteChapterRawProvide<'a>,
-    ) -> BaseResult<bool> {
+    ) -> BaseRest<bool> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -299,7 +299,7 @@ impl<'a> Step<CompleteChapterRawProvide<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &CompleteChapterRawProvide<'a>,
-    ) -> BaseResult<bool> {
+    ) -> BaseRest<bool> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -357,7 +357,7 @@ impl<'a> Step<ResetChapterRawProvide<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &ResetChapterRawProvide<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -388,7 +388,7 @@ impl<'a, 'b> Step<GetChapterInfo<'a, 'b>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &GetChapterInfo<'a, 'b>,
-    ) -> BaseResult<ChapterInfo> {
+    ) -> BaseRest<ChapterInfo> {
         get_chapter_by_id(&context.state, oper.id, oper.incls)
     }
 }
@@ -403,7 +403,7 @@ impl<'a, 'b> Step<GetChapterInfoExcluded<'a, 'b>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &GetChapterInfoExcluded<'a, 'b>,
-    ) -> BaseResult<ChapterInfo> {
+    ) -> BaseRest<ChapterInfo> {
         get_chapter_by_id(&context.state, oper.id, oper.incls)
     }
 }
@@ -418,7 +418,7 @@ impl<'a> Step<ListChapterInfosExcluded<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &ListChapterInfosExcluded<'a>,
-    ) -> BaseResult<Vec<ChapterInfo>> {
+    ) -> BaseRest<Vec<ChapterInfo>> {
         accept(list_infos(&context.state, oper.comic_id))
     }
 }
@@ -433,7 +433,7 @@ impl<'a> Step<LockChapters<'a>, MockContext> for Mock {
         &self,
         _: &mut MockContext,
         _: &LockChapters<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         accept(())
     }
 }
@@ -448,7 +448,7 @@ impl<'a, 'b> Step<FindPinnedChapterInfo<'a, 'b>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &FindPinnedChapterInfo<'a, 'b>,
-    ) -> BaseResult<Option<ChapterInfo>> {
+    ) -> BaseRest<Option<ChapterInfo>> {
         accept(find_pinned_chapter_info(
             &context.state,
             oper.comic_id,
@@ -467,7 +467,7 @@ impl<'a> Step<CreateChapter<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &CreateChapter<'a>,
-    ) -> BaseResult<ChapterInfo> {
+    ) -> BaseRest<ChapterInfo> {
         create_chapter(&mut context.state, oper.entry)
     }
 }
@@ -482,7 +482,7 @@ impl<'a> Step<UpdateChapter<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &UpdateChapter<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -517,7 +517,7 @@ impl<'a> Step<UpdateChapterStage<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &UpdateChapterStage<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -546,7 +546,7 @@ impl<'a> Step<SetChapterPageCounters<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &SetChapterPageCounters<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -581,7 +581,7 @@ impl<'a> Step<AdjustChapterUnitCounters<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &AdjustChapterUnitCounters<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -614,7 +614,7 @@ impl<'a> Step<UnpinOtherChapters<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &UnpinOtherChapters<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -642,7 +642,7 @@ impl<'a> Step<DeleteChapter<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &DeleteChapter<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         //
         // Internal implementation detail.
         // Internal implementation detail.

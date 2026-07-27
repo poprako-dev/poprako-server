@@ -28,7 +28,7 @@ use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::{BaseResult, accept};
+use crate::result::{BaseRest, accept};
 use crate::usecase::stage::spawn_starts;
 use crate::value::chapter::Stage;
 
@@ -42,7 +42,7 @@ pub async fn export<C, R>(
     (repo,): (&R,),
     token: UserToken,
     chapter_id: String,
-) -> BaseResult<ExportChapterTranslationPayload>
+) -> BaseRest<ExportChapterTranslationPayload>
 where
     R: ChapterRepo<C>
         + ComicRepo<C>
@@ -142,7 +142,7 @@ pub async fn export_label_plus<C, R>(
     (repo,): (&R,),
     token: UserToken,
     chapter_id: String,
-) -> BaseResult<String>
+) -> BaseRest<String>
 where
     R: ChapterRepo<C>
         + ComicRepo<C>

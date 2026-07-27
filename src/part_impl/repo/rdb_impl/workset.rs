@@ -19,7 +19,7 @@ use crate::part_impl::repo::rdb_impl::entity::workset::{
 use crate::part_impl::repo::rdb_impl::schema::t_workset::dsl::*;
 use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::shared::{RdbConn, RdbContext};
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 
 /// Workset RDB integration tests.
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
@@ -27,7 +27,7 @@ pub mod tests;
 
 #[instrument(level = "info", err(Debug), skip_all)]
 // Remove one workset row by id.
-async fn delete(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
+async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
     // Hard-delete the row; no additional business side-effects in this layer.
     diesel::delete(t_workset.filter(f_id.eq(id)))
@@ -40,7 +40,7 @@ async fn delete(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
 
 #[instrument(level = "info", err(Debug), skip_all)]
 // Load one workset by id and return a rich info view.
-async fn get_info(conn: &mut RdbConn, id: &str) -> BaseResult<WorksetInfo> {
+async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<WorksetInfo> {
     //
     // Fetch the row by primary key and map missing rows to `error-workset-not-found`.
     let row: WorksetRow = t_workset
@@ -60,7 +60,7 @@ async fn get_info(conn: &mut RdbConn, id: &str) -> BaseResult<WorksetInfo> {
 async fn list_infos(
     conn: &mut RdbConn,
     oper: &ListWorksetInfos<'_>,
-) -> BaseResult<Vec<WorksetInfo>> {
+) -> BaseRest<Vec<WorksetInfo>> {
     //
     // Apply pagination and team filter so consumers can page team worksets.
     let query = t_workset
@@ -81,7 +81,7 @@ async fn list_infos(
 async fn update_info(
     conn: &mut RdbConn,
     update: &WorksetInfoUpdate,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     // Build an aspect object and persist nickname/description updates with timestamp.
     let now = OffsetDateTime::now_utc();
@@ -104,7 +104,7 @@ async fn update_info(
 async fn list_infos_excluded(
     conn: &mut RdbConn,
     team_id: &str,
-) -> BaseResult<Vec<WorksetInfo>> {
+) -> BaseRest<Vec<WorksetInfo>> {
     //
     // Lock rows selected by team to support follow-up serial updates.
     let rows: Vec<WorksetRow> = t_workset
@@ -123,7 +123,7 @@ async fn list_infos_excluded(
 async fn get_info_excluded(
     conn: &mut RdbConn,
     id: &str,
-) -> BaseResult<WorksetInfo> {
+) -> BaseRest<WorksetInfo> {
     //
     // Return `error-workset-not-found` when locked read sees no row.
     let row: WorksetRow = t_workset
@@ -144,7 +144,7 @@ async fn get_info_excluded(
 async fn create(
     conn: &mut RdbConn,
     workset_entry: &WorksetEntry,
-) -> BaseResult<WorksetInfo> {
+) -> BaseRest<WorksetInfo> {
     //
     // Convert API entry into row form and read back generated values.
     let entry = WorksetRowEntry::from(workset_entry);
@@ -161,7 +161,7 @@ async fn create(
 
 #[instrument(level = "info", err(Debug), skip_all)]
 // Allocate next comic index atomically for a workset.
-async fn alloc_comic_index(conn: &mut RdbConn, id: &str) -> BaseResult<i32> {
+async fn alloc_comic_index(conn: &mut RdbConn, id: &str) -> BaseRest<i32> {
     //
     // Increment and return previous next-index value in a single statement.
     let index: i32 = diesel::update(t_workset.filter(f_id.eq(id)))
@@ -180,7 +180,7 @@ async fn update_comic_count(
     conn: &mut RdbConn,
     id: &str,
     delta: i32,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     // Keep a monotonic counter aligned with comic membership updates.
     diesel::update(t_workset.filter(f_id.eq(id)))
@@ -198,7 +198,7 @@ impl Run<GetWorksetInfo<'_>> for RdbRepo {
 
     // Map `GetWorksetInfo` lookup to one repository query helper.
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn run(&self, oper: &GetWorksetInfo<'_>) -> BaseResult<WorksetInfo> {
+    async fn run(&self, oper: &GetWorksetInfo<'_>) -> BaseRest<WorksetInfo> {
         submit_query!(self.core, get_info, oper.id)
     }
 }
@@ -212,7 +212,7 @@ impl Run<ListWorksetInfos<'_>> for RdbRepo {
     async fn run(
         &self,
         oper: &ListWorksetInfos<'_>,
-    ) -> BaseResult<Vec<WorksetInfo>> {
+    ) -> BaseRest<Vec<WorksetInfo>> {
         submit_query!(self.core, list_infos, oper)
     }
 }
@@ -223,7 +223,7 @@ impl Run<UpdateWorkset<'_>> for RdbRepo {
 
     // Route update DTO directly into update helper.
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn run(&self, oper: &UpdateWorkset<'_>) -> BaseResult<()> {
+    async fn run(&self, oper: &UpdateWorkset<'_>) -> BaseRest<()> {
         submit_query!(self.core, update_info, oper.update)
     }
 }
@@ -238,7 +238,7 @@ impl Step<GetWorksetInfo<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &GetWorksetInfo<'_>,
-    ) -> BaseResult<WorksetInfo> {
+    ) -> BaseRest<WorksetInfo> {
         get_info(context.conn(), oper.id).await
     }
 }
@@ -253,7 +253,7 @@ impl Step<ListWorksetInfos<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &ListWorksetInfos<'_>,
-    ) -> BaseResult<Vec<WorksetInfo>> {
+    ) -> BaseRest<Vec<WorksetInfo>> {
         list_infos(context.conn(), oper).await
     }
 }
@@ -268,7 +268,7 @@ impl Step<GetWorksetInfoExcluded<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &GetWorksetInfoExcluded<'_>,
-    ) -> BaseResult<WorksetInfo> {
+    ) -> BaseRest<WorksetInfo> {
         get_info_excluded(context.conn(), oper.id).await
     }
 }
@@ -283,7 +283,7 @@ impl Step<ListWorksetInfosExcluded<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &ListWorksetInfosExcluded<'_>,
-    ) -> BaseResult<Vec<WorksetInfo>> {
+    ) -> BaseRest<Vec<WorksetInfo>> {
         list_infos_excluded(context.conn(), oper.team_id).await
     }
 }
@@ -298,7 +298,7 @@ impl Step<CreateWorkset<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &CreateWorkset<'_>,
-    ) -> BaseResult<WorksetInfo> {
+    ) -> BaseRest<WorksetInfo> {
         create(context.conn(), oper.entry).await
     }
 }
@@ -313,7 +313,7 @@ impl Step<DeleteWorkset<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &DeleteWorkset<'_>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         delete(context.conn(), oper.id).await
     }
 }
@@ -328,7 +328,7 @@ impl Step<AllocWorksetComicIndex<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &AllocWorksetComicIndex<'_>,
-    ) -> BaseResult<i32> {
+    ) -> BaseRest<i32> {
         alloc_comic_index(context.conn(), oper.id).await
     }
 }
@@ -343,7 +343,7 @@ impl Step<UpdateWorksetComicCount<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &UpdateWorksetComicCount<'_>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         update_comic_count(context.conn(), oper.id, oper.delta).await
     }
 }

@@ -21,7 +21,7 @@ use crate::part_impl::repo::rdb_impl::entity::term::{TermRow, TermRowEntry};
 use crate::part_impl::repo::rdb_impl::schema::t_term::dsl::*;
 use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::shared::{RdbConn, RdbContext};
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 
 /// Term RDB integration tests.
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
@@ -33,7 +33,7 @@ impl Run<GetTermInfo<'_>> for RdbRepo {
 
     // Resolve one term info by id through the submit-query entrypoint.
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn run(&self, oper: &GetTermInfo<'_>) -> BaseResult<TermInfo> {
+    async fn run(&self, oper: &GetTermInfo<'_>) -> BaseRest<TermInfo> {
         submit_query!(self.core, get_info, oper.id)
     }
 }
@@ -44,7 +44,7 @@ impl Run<ListTermInfos<'_>> for RdbRepo {
 
     // Resolve a pageable list from the supplied term list spec.
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn run(&self, oper: &ListTermInfos<'_>) -> BaseResult<Vec<TermInfo>> {
+    async fn run(&self, oper: &ListTermInfos<'_>) -> BaseRest<Vec<TermInfo>> {
         submit_query!(self.core, list_infos, oper.spec)
     }
 }
@@ -59,7 +59,7 @@ impl Step<CreateTerm<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &CreateTerm<'_>,
-    ) -> BaseResult<TermInfo> {
+    ) -> BaseRest<TermInfo> {
         create(context.conn(), oper.entry).await
     }
 }
@@ -74,7 +74,7 @@ impl Step<GetTermInfoExcluded<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &GetTermInfoExcluded<'_>,
-    ) -> BaseResult<TermInfo> {
+    ) -> BaseRest<TermInfo> {
         get_info_excluded(context.conn(), oper.id).await
     }
 }
@@ -89,7 +89,7 @@ impl Step<LockTerm<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &LockTerm<'_>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         lock_term(context.conn(), oper.id).await
     }
 }
@@ -104,7 +104,7 @@ impl Step<UpdateTerm<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &UpdateTerm<'_>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         update_info(context.conn(), oper.update).await
     }
 }
@@ -119,7 +119,7 @@ impl Step<DeleteTerm<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &DeleteTerm<'_>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         delete(context.conn(), oper.id).await
     }
 }
@@ -134,14 +134,14 @@ impl Step<DeleteTerms<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &DeleteTerms<'_>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         delete_terms(context.conn(), oper.termbase_id).await
     }
 }
 
 // Delete one term by id.
 #[instrument(level = "info", err(Debug), skip_all)]
-async fn delete(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
+async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
     // Remove the single term row and return once persistence succeeds.
     diesel::delete(t_term.filter(f_id.eq(id)))
@@ -162,7 +162,7 @@ fn escape_ilike_pattern(input: &str) -> String {
 
 // Delete all terms that belong to one termbase.
 #[instrument(level = "info", err(Debug), skip_all)]
-async fn delete_terms(conn: &mut RdbConn, termbase_id: &str) -> BaseResult<()> {
+async fn delete_terms(conn: &mut RdbConn, termbase_id: &str) -> BaseRest<()> {
     //
     // Remove dependency rows in bulk when the parent termbase is being cleaned up.
     diesel::delete(t_term.filter(f_termbase_id.eq(termbase_id)))
@@ -178,7 +178,7 @@ async fn delete_terms(conn: &mut RdbConn, termbase_id: &str) -> BaseResult<()> {
 async fn create(
     conn: &mut RdbConn,
     term_entry: &TermEntry,
-) -> BaseResult<TermInfo> {
+) -> BaseRest<TermInfo> {
     //
     // Convert API entry to DB row shape and rely on returning() to fetch the saved state.
     let entry = TermRowEntry::from(term_entry);
@@ -195,10 +195,7 @@ async fn create(
 
 // Load one term row by id in a lock-compatible path and convert it to response info.
 #[instrument(level = "info", err(Debug), skip_all)]
-async fn get_info_excluded(
-    conn: &mut RdbConn,
-    id: &str,
-) -> BaseResult<TermInfo> {
+async fn get_info_excluded(conn: &mut RdbConn, id: &str) -> BaseRest<TermInfo> {
     //
     // Use `for_update()` to prevent concurrent updates while resolving this term.
     let row: TermRow = t_term
@@ -216,7 +213,7 @@ async fn get_info_excluded(
 
 // Locks a term row for mutation safety.
 #[instrument(level = "info", err(Debug), skip_all)]
-async fn lock_term(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
+async fn lock_term(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
     // Confirm existence and keep the row locked until the current transaction ends.
     let _: String = t_term
@@ -237,7 +234,7 @@ async fn lock_term(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
 async fn update_info(
     conn: &mut RdbConn,
     update: &TermInfoUpdate,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     // Prepare nullable target entries and write all requested fields in one update.
     let targets = update
@@ -265,7 +262,7 @@ async fn update_info(
 async fn list_infos(
     conn: &mut RdbConn,
     spec: &TermInfoListSpec,
-) -> BaseResult<Vec<TermInfo>> {
+) -> BaseRest<Vec<TermInfo>> {
     //
     // Start with a termbase constraint, then apply optional fuzzy source matching.
     let mut query = t_term
@@ -295,7 +292,7 @@ async fn list_infos(
 
 // Load one term row by id and convert it into response info.
 #[instrument(level = "info", err(Debug), skip_all)]
-async fn get_info(conn: &mut RdbConn, id: &str) -> BaseResult<TermInfo> {
+async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<TermInfo> {
     //
     // Read the row with strict id match and convert it to a rich term view.
     let row: TermRow = t_term

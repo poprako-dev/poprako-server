@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use crate::model::page::{PageEntry, PageInfo};
 use crate::part_impl::repo::mock_impl::{MockState, expected, now};
-use crate::result::BaseResult;
+use crate::result::BaseRest;
 
 // Internal organization of the `orchestra` module.
 mod orchestra;
@@ -28,7 +28,7 @@ fn list_infos(state: &MockState, chapter_id: &str) -> Vec<PageInfo> {
 }
 
 // Read detailed info by page primary key.
-fn get_page_by_id(state: &MockState, id: &str) -> BaseResult<PageInfo> {
+fn get_page_by_id(state: &MockState, id: &str) -> BaseRest<PageInfo> {
     state
         .pages
         .iter()

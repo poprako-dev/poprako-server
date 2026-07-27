@@ -14,7 +14,7 @@ use crate::model::comic_archive::{
 use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::workset::GetWorksetInfo;
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 use crate::util::next_snowflake_id;
 use crate::value::comic_archive::{
     ArchivedAssignmentPayload, ArchivedChapterPayload, ArchivedComicPayload,
@@ -31,7 +31,7 @@ impl ComicArchiveComplex {
         comic_archive_snapshot: ComicArchiveSnapshot,
         archiver_id: String,
         archived_at: OffsetDateTime,
-    ) -> BaseResult<(ComicArchiveEntry, Vec<String>)> {
+    ) -> BaseRest<(ComicArchiveEntry, Vec<String>)> {
         tokio::task::spawn_blocking(move || {
             //
             let image_keys = collect_image_keys(&comic_archive_snapshot);
@@ -60,7 +60,7 @@ impl ComicArchivePermComplex {
         proxy: &mut P,
         user_id: &str,
         team_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
@@ -72,7 +72,7 @@ impl ComicArchivePermComplex {
         proxy: &mut P,
         user_id: &str,
         comic_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
             + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
@@ -145,7 +145,7 @@ fn build_page_payloads(
 // Convert the comic and directly loaded workset into the archive payload.
 fn build_comic_payload(
     comic_archive_snapshot: &ComicArchiveSnapshot,
-) -> BaseResult<ArchivedComicPayload> {
+) -> BaseRest<ArchivedComicPayload> {
     //
     let comic_info = &comic_archive_snapshot.comic_info;
 
@@ -155,7 +155,7 @@ fn build_comic_payload(
         .chapter_snapshots
         .iter()
         .map(build_chapter_payload)
-        .collect::<BaseResult<Vec<_>>>()?;
+        .collect::<BaseRest<Vec<_>>>()?;
 
     accept(ArchivedComicPayload {
         source_comic_id: comic_info.id.clone(),
@@ -187,7 +187,7 @@ fn build_comic_payload(
 // Convert an assignment and its directly loaded user into archive data.
 fn build_assignment_payload(
     assignment_info: &AssignmentInfo,
-) -> BaseResult<ArchivedAssignmentPayload> {
+) -> BaseRest<ArchivedAssignmentPayload> {
     //
     let user_info = assignment_info.user.as_ref().ok_or_else(|| {
         BaseError::Unrecoverable {
@@ -219,7 +219,7 @@ fn build_assignment_payload(
 // Convert a chapter and its assignments into the archive payload.
 fn build_chapter_payload(
     chapter_snapshot: &ComicArchiveChapterSnapshot,
-) -> BaseResult<ArchivedChapterPayload> {
+) -> BaseRest<ArchivedChapterPayload> {
     //
     let chapter_info = &chapter_snapshot.chapter_info;
 
@@ -227,7 +227,7 @@ fn build_chapter_payload(
         .assignment_infos
         .iter()
         .map(build_assignment_payload)
-        .collect::<BaseResult<Vec<_>>>()?;
+        .collect::<BaseRest<Vec<_>>>()?;
 
     accept(ArchivedChapterPayload {
         source_chapter_id: chapter_info.id.clone(),
@@ -278,7 +278,7 @@ fn build_entry(
     comic_archive_snapshot: ComicArchiveSnapshot,
     archiver_id: String,
     archived_at: OffsetDateTime,
-) -> BaseResult<ComicArchiveEntry> {
+) -> BaseRest<ComicArchiveEntry> {
     //
     let archived_comic_id = next_snowflake_id();
 

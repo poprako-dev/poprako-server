@@ -36,7 +36,7 @@ use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::user::UserRepo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
 #[cfg(test)]
 // Unit tests that cover assignment orchestration invariants.
@@ -48,7 +48,7 @@ pub async fn list_infos<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
     params: ListAssignmentInfosParams,
-) -> BaseResult<Vec<AssignmentInfoVal>>
+) -> BaseRest<Vec<AssignmentInfoVal>>
 where
     R: AssignmentRepo<C>
         + ChapterRepo<C>
@@ -130,7 +130,7 @@ pub async fn join<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
     params: JoinChapterAssignmentParams,
-) -> BaseResult<AssignmentInfoVal>
+) -> BaseRest<AssignmentInfoVal>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -250,7 +250,7 @@ pub async fn update_roles<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
     params: UpdateAssignmentRolesParams,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -396,7 +396,7 @@ pub async fn delete<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
     id: String,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,

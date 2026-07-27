@@ -50,7 +50,7 @@ pub fn accept<T>(v: T) -> Result<T> {
 pub type BaseError = Error;
 
 /// Alias for [`Result`] used at module boundary layers.
-pub type BaseResult<T> = Result<T>;
+pub type BaseRest<T> = Result<T>;
 
 impl<BE, E> From<NuclError<BE, E>> for Error
 where

@@ -18,7 +18,7 @@ use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, schema};
 use crate::part_impl::shared::RdbCore;
 use crate::part_impl::shared::result::diesel as diesel_error;
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 
 pub use self::form::{
     chapter_entry, comic_entry, page_entry, team_entry, user_entry,
@@ -74,7 +74,7 @@ pub async fn reset(shared: &RdbCore, prefix: &str) {
     assert_no_leftovers(shared, prefix).await.unwrap();
 }
 
-pub async fn cleanup(shared: &RdbCore, prefix: &str) -> BaseResult<()> {
+pub async fn cleanup(shared: &RdbCore, prefix: &str) -> BaseRest<()> {
     //
     let mut conn = shared.get().await?;
 
@@ -216,7 +216,7 @@ pub async fn cleanup(shared: &RdbCore, prefix: &str) -> BaseResult<()> {
 pub async fn assert_no_leftovers(
     shared: &RdbCore,
     prefix: &str,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     let mut conn = shared.get().await?;
 

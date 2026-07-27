@@ -53,7 +53,7 @@ async fn defer_payload(
     context: &mut MockContext,
     id: &str,
     payload: TaskPayload,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     // Internal implementation detail.
     let id = id.to_string();

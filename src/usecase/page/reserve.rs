@@ -37,7 +37,7 @@ use crate::part::repo::oper::page::{
     UpdatePageManifest,
 };
 use crate::part::repo::page::PageRepo;
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 use crate::value::image::{ImageExt, ImageHash};
 
@@ -46,7 +46,7 @@ use crate::value::image::{ImageExt, ImageHash};
 /// The maximum is 200 because page reservation for a single chapter can never
 /// exceed this number — the manifest-based flow sets a hard cap for practical
 /// upload and review capacity.
-pub fn validate_page_count(page_count: i32) -> BaseResult<()> {
+pub fn validate_page_count(page_count: i32) -> BaseRest<()> {
     //
     if !(1..=200).contains(&page_count) {
         return Err(BaseError::Expected {
@@ -64,7 +64,7 @@ pub async fn reserve_chapter_pages<N, C, R, P, I>(
     (nucl, repo, prom, image_pool): (&N, &R, &P, &I),
     token: UserToken,
     params: ReserveChapterPagesParams,
-) -> BaseResult<ReserveChapterPagesPayload>
+) -> BaseRest<ReserveChapterPagesPayload>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -528,7 +528,7 @@ where
     ))
     .await
     .into_iter()
-    .collect::<BaseResult<Vec<_>>>()?;
+    .collect::<BaseRest<Vec<_>>>()?;
 
     accept(ReserveChapterPagesPayload { pages })
 }

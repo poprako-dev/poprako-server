@@ -7,7 +7,7 @@ use crate::complex::util::{
 };
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::member_invitation::GetMemberInvitationInfo;
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 use crate::util::next_snowflake_id;
 
 /// Domain opers for member invitations.
@@ -39,7 +39,7 @@ impl MemberInvitationPermComplex {
         proxy: &mut P,
         user_id: &str,
         team_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
@@ -51,7 +51,7 @@ impl MemberInvitationPermComplex {
         proxy: &mut P,
         user_id: &str,
         team_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
@@ -63,7 +63,7 @@ impl MemberInvitationPermComplex {
         proxy: &mut P,
         user_id: &str,
         invitation_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a, 'b> Proxy<
                 GetMemberInvitationInfo<'a, 'b>,
@@ -80,7 +80,7 @@ impl MemberInvitationPermComplex {
         proxy: &mut P,
         user_id: &str,
         invitation_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a, 'b> Proxy<
                 GetMemberInvitationInfo<'a, 'b>,
@@ -96,7 +96,7 @@ impl MemberInvitationPermComplex {
     async fn resolve_team_id<P>(
         proxy: &mut P,
         invitation_id: &str,
-    ) -> BaseResult<String>
+    ) -> BaseRest<String>
     where
         P: for<'a, 'b> Proxy<
                 GetMemberInvitationInfo<'a, 'b>,

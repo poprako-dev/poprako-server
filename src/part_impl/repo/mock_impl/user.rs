@@ -14,14 +14,11 @@ use crate::part::repo::oper::user::{
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 use crate::value::image::{ImageExt, ImageHash};
 
 // Insert a new user entry into mock state and mirror it into credentials.
-fn create_user(
-    state: &mut MockState,
-    entry: &UserEntry,
-) -> BaseResult<UserInfo> {
+fn create_user(state: &mut MockState, entry: &UserEntry) -> BaseRest<UserInfo> {
     //
     // Validate unique id/qid before inserting to avoid inconsistent fixture state.
     if state.users.iter().any(|user| user.id == entry.id)
@@ -58,7 +55,7 @@ fn create_user(
 }
 
 // Load one user info from mock state by id.
-fn get_user_info(state: &MockState, id: &str) -> BaseResult<UserInfo> {
+fn get_user_info(state: &MockState, id: &str) -> BaseRest<UserInfo> {
     state
         .users
         .iter()
@@ -80,7 +77,7 @@ fn find_user_info(state: &MockState, qid: &str) -> Option<UserInfo> {
 fn get_user_credential(
     state: &MockState,
     qid: &str,
-) -> BaseResult<UserCredential> {
+) -> BaseRest<UserCredential> {
     //
     // Resolve user first, then locate corresponding credential row.
     let user_info = state
@@ -98,7 +95,7 @@ fn get_user_credential(
 }
 
 // Apply a domain update mutation to the in-memory user store.
-fn update_user(state: &mut MockState, oper: &UpdateUser<'_>) -> BaseResult<()> {
+fn update_user(state: &mut MockState, oper: &UpdateUser<'_>) -> BaseRest<()> {
     //
     // Dispatch variant to a single mutable flow with optional identity/hash branches.
     let (id, update) = match oper {
@@ -194,7 +191,7 @@ impl<'a> Run<GetUserInfo<'a>> for Mock {
 
     // Resolve `GetUserInfo` against the locked mock state.
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn run(&self, oper: &GetUserInfo<'a>) -> BaseResult<UserInfo> {
+    async fn run(&self, oper: &GetUserInfo<'a>) -> BaseRest<UserInfo> {
         //
         // Lock state immutably for read-only user info lookup.
         let state = self.state.lock().unwrap();
@@ -214,7 +211,7 @@ impl<'a> Run<GetUserCredential<'a>> for Mock {
     async fn run(
         &self,
         oper: &GetUserCredential<'a>,
-    ) -> BaseResult<UserCredential> {
+    ) -> BaseRest<UserCredential> {
         //
         // Lock state immutably for safe credential read.
         let state = self.state.lock().unwrap();
@@ -231,10 +228,7 @@ impl<'a> Run<FindUserInfo<'a>> for Mock {
 
     // Resolve optional user info by qid in shared state.
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn run(
-        &self,
-        oper: &FindUserInfo<'a>,
-    ) -> BaseResult<Option<UserInfo>> {
+    async fn run(&self, oper: &FindUserInfo<'a>) -> BaseRest<Option<UserInfo>> {
         //
         // Lock state immutably for optional find-by-qid.
         let state = self.state.lock().unwrap();
@@ -251,7 +245,7 @@ impl<'a> Run<UpdateUser<'a>> for Mock {
 
     // Apply update user mutations under mutable lock.
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn run(&self, oper: &UpdateUser<'a>) -> BaseResult<()> {
+    async fn run(&self, oper: &UpdateUser<'a>) -> BaseRest<()> {
         //
         // Lock mutable state and reuse shared update helper.
         let mut state = self.state.lock().unwrap();
@@ -270,7 +264,7 @@ impl<'a> Step<CreateUser<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &CreateUser<'a>,
-    ) -> BaseResult<UserInfo> {
+    ) -> BaseRest<UserInfo> {
         create_user(&mut context.state, oper.entry)
     }
 }
@@ -285,7 +279,7 @@ impl<'a> Step<FindUserInfo<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &FindUserInfo<'a>,
-    ) -> BaseResult<Option<UserInfo>> {
+    ) -> BaseRest<Option<UserInfo>> {
         match oper {
             FindUserInfo::Qid { qid } => {
                 accept(find_user_info(&context.state, qid))
@@ -304,7 +298,7 @@ impl<'a> Step<UpdateUser<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &UpdateUser<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         update_user(&mut context.state, oper)
     }
 }
@@ -319,7 +313,7 @@ impl<'a> Step<ReserveUserAvatar<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &ReserveUserAvatar<'a>,
-    ) -> BaseResult<UserAvatarReservation> {
+    ) -> BaseRest<UserAvatarReservation> {
         //
         // Locate user and branch on same-hash reuse or new hash allocation.
         let user_info = context
@@ -395,7 +389,7 @@ impl<'a> Step<GetUserInfoExcluded<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &GetUserInfoExcluded<'a>,
-    ) -> BaseResult<UserInfo> {
+    ) -> BaseRest<UserInfo> {
         match oper {
             GetUserInfoExcluded::Id { id } => get_user_info(&context.state, id),
         }
@@ -412,7 +406,7 @@ impl<'a> Step<DeleteUser<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &DeleteUser<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         //
         // Remove user row and all related linked state for the same user id.
         let position = context

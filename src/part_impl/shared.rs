@@ -9,7 +9,7 @@ use diesel_async::pooled_connection::deadpool::{Object, Pool};
 use tracing::instrument;
 
 use self::result::{pool_build, pool_get};
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 
 /// Result helpers for Diesel-backed shared internals.
 pub mod result;
@@ -62,7 +62,7 @@ impl RdbCore {
     }
 
     /// Creates a connection pool from a raw database URL string.
-    pub fn from_database_url(database_url: &str) -> BaseResult<Self> {
+    pub fn from_database_url(database_url: &str) -> BaseRest<Self> {
         //
         let manager = AsyncDieselConnectionManager::<AsyncPgConnection>::new(
             database_url,
@@ -77,7 +77,7 @@ impl RdbCore {
 
     #[instrument(level = "info", err(Debug), skip_all)]
     /// Retrieves a pooled connection, blocking until one is available.
-    pub async fn get(&self) -> BaseResult<RdbPooledConn> {
+    pub async fn get(&self) -> BaseRest<RdbPooledConn> {
         self.pool.get().await.map_err(pool_get)
     }
 }

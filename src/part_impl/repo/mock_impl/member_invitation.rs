@@ -16,7 +16,7 @@ use crate::part::repo::oper::member_invitation::{
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected,
 };
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 use crate::value::member_invitation::MemberInvitationInclOpt;
 
 // Internal implementation of `find_user`.
@@ -111,7 +111,7 @@ fn list_member_invitation_infos(
 fn get_member_invitation_info(
     state: &MockState,
     oper: &GetMemberInvitationInfo<'_, '_>,
-) -> BaseResult<MemberInvitationInfo> {
+) -> BaseRest<MemberInvitationInfo> {
     match oper {
         //
         // Internal state field `GetMemberInvitationInfo`.
@@ -155,7 +155,7 @@ fn get_member_invitation_info(
 fn create_member_invitation(
     state: &mut MockState,
     entry: &MemberInvitationEntry,
-) -> BaseResult<MemberInvitationInfo> {
+) -> BaseRest<MemberInvitationInfo> {
     //
     // Internal implementation detail.
     // Internal implementation detail.
@@ -201,7 +201,7 @@ fn create_member_invitation(
 fn update_member_invitation(
     state: &mut MockState,
     oper: &UpdateMemberInvitation<'_>,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     // Internal implementation detail.
     // Internal implementation detail.
@@ -253,7 +253,7 @@ impl<'a> Run<ListMemberInvitationInfos<'a>> for Mock {
     async fn run(
         &self,
         oper: &ListMemberInvitationInfos<'a>,
-    ) -> BaseResult<Vec<MemberInvitationInfo>> {
+    ) -> BaseRest<Vec<MemberInvitationInfo>> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -272,7 +272,7 @@ impl<'a, 'b> Run<GetMemberInvitationInfo<'a, 'b>> for Mock {
     async fn run(
         &self,
         oper: &GetMemberInvitationInfo<'a, 'b>,
-    ) -> BaseResult<MemberInvitationInfo> {
+    ) -> BaseRest<MemberInvitationInfo> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -292,7 +292,7 @@ impl<'a> Step<CreateMemberInvitation<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &CreateMemberInvitation<'a>,
-    ) -> BaseResult<MemberInvitationInfo> {
+    ) -> BaseRest<MemberInvitationInfo> {
         create_member_invitation(&mut context.state, oper.entry)
     }
 }
@@ -307,7 +307,7 @@ impl<'a, 'b> Step<GetMemberInvitationInfo<'a, 'b>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &GetMemberInvitationInfo<'a, 'b>,
-    ) -> BaseResult<MemberInvitationInfo> {
+    ) -> BaseRest<MemberInvitationInfo> {
         get_member_invitation_info(&context.state, oper)
     }
 }
@@ -322,7 +322,7 @@ impl<'a> Step<UpdateMemberInvitation<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &UpdateMemberInvitation<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         update_member_invitation(&mut context.state, oper)
     }
 }
@@ -337,7 +337,7 @@ impl<'a> Step<GetMemberInvitationInfoExcluded<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &GetMemberInvitationInfoExcluded<'a>,
-    ) -> BaseResult<MemberInvitationInfo> {
+    ) -> BaseRest<MemberInvitationInfo> {
         match oper {
             GetMemberInvitationInfoExcluded::Code { code } => {
                 get_member_invitation_info(
@@ -359,7 +359,7 @@ impl<'a> Step<DeleteMemberInvitation<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &DeleteMemberInvitation<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -388,7 +388,7 @@ impl<'a> Step<PurgeExpiredMemberInvitation<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &PurgeExpiredMemberInvitation<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -413,7 +413,7 @@ impl<'a> Run<PurgeExpiredMemberInvitation<'a>> for Mock {
     async fn run(
         &self,
         oper: &PurgeExpiredMemberInvitation<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         //
         // Internal implementation detail.
         // Internal implementation detail.

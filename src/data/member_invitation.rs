@@ -11,7 +11,7 @@ use futures::future::OptionFuture;
 use crate::data::user::UserInfoVal;
 use crate::model::member_invitation::MemberInvitationInfo;
 use crate::part::image::ImagePool;
-use crate::result::{BaseResult, accept};
+use crate::result::{BaseRest, accept};
 use crate::value::member_invitation::MemberInvitationInclOpt;
 use crate::value::role::RoleMask;
 
@@ -117,7 +117,7 @@ impl MemberInvitationInfoVal {
     pub async fn from_model<P>(
         image_pool: &P,
         model: MemberInvitationInfo,
-    ) -> BaseResult<Self>
+    ) -> BaseRest<Self>
     where
         P: ImagePool,
     {

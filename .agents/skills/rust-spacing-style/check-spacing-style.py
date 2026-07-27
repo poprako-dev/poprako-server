@@ -201,7 +201,12 @@ class RustSpacingChecker:
         # 单 statement / 单 arm block 也不要求 `//`。
         if (
             len(units) >= 2
-            and container.type in (BLOCK_CONTAINERS | STRUCT_FIELD_CONTAINERS)
+            and container.type
+            in (
+                BLOCK_CONTAINERS
+                | STRUCT_FIELD_CONTAINERS
+                | ENUM_VARIANT_CONTAINERS
+            )
             and not line_is_only_open_brace(lines, brace)
             and not separator_rows
         ):
@@ -247,7 +252,12 @@ class RustSpacingChecker:
         # }
         if (
             len(units) == 1
-            and container.type in (BLOCK_CONTAINERS | STRUCT_FIELD_CONTAINERS)
+            and container.type
+            in (
+                BLOCK_CONTAINERS
+                | STRUCT_FIELD_CONTAINERS
+                | ENUM_VARIANT_CONTAINERS
+            )
             and separator_rows
         ):
             diagnostics.append(

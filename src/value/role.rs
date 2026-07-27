@@ -9,7 +9,7 @@ use utoipa::ToSchema;
 
 use poprako_util::i18n::trl;
 
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
 // Test fixtures for role conversion, permission, and serde behavior.
 #[cfg(test)]
@@ -77,7 +77,7 @@ impl TryFrom<u32> for RoleField {
     type Error = BaseError;
 
     // Validate and convert one raw bit mask into a single role field.
-    fn try_from(value: u32) -> BaseResult<Self> {
+    fn try_from(value: u32) -> BaseRest<Self> {
         //
         if value == 0
             || !Self::VALID_VALUES.contains(&value)
@@ -184,7 +184,7 @@ impl TryFrom<u32> for RoleMask {
     type Error = BaseError;
 
     // Validate and convert a raw bitmask into a role mask.
-    fn try_from(value: u32) -> BaseResult<Self> {
+    fn try_from(value: u32) -> BaseRest<Self> {
         //
         if value == 0 || value & !Self::VALID_BITS != 0 {
             return Err(BaseError::Expected {

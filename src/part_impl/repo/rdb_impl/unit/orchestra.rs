@@ -10,7 +10,7 @@ use crate::part_impl::repo::rdb_impl::unit::step_impl::{
     apply_edits, list_infos, list_orders_for_update,
 };
 use crate::part_impl::shared::RdbContext;
-use crate::result::{BaseError, BaseResult};
+use crate::result::{BaseError, BaseRest};
 
 impl Run<ListUnitInfos<'_>> for RdbRepo {
     // Error type for the Run trait impl on unit list query.
@@ -18,7 +18,7 @@ impl Run<ListUnitInfos<'_>> for RdbRepo {
 
     // Lists visible Units in verified linked-list order for the given page.
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn run(&self, oper: &ListUnitInfos<'_>) -> BaseResult<Vec<UnitInfo>> {
+    async fn run(&self, oper: &ListUnitInfos<'_>) -> BaseRest<Vec<UnitInfo>> {
         submit_query!(self.core, list_infos, oper.page_id)
     }
 }
@@ -33,7 +33,7 @@ impl Step<ListUnitOrders<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &ListUnitOrders<'_>,
-    ) -> BaseResult<Vec<UnitOrder>> {
+    ) -> BaseRest<Vec<UnitOrder>> {
         list_orders_for_update(context.conn(), oper.page_id).await
     }
 }
@@ -48,7 +48,7 @@ impl Step<ApplyUnitEdits<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &ApplyUnitEdits<'_>,
-    ) -> BaseResult<UnitCounters> {
+    ) -> BaseRest<UnitCounters> {
         apply_edits(context.conn(), oper.page_id, oper.orders, oper.edits).await
     }
 }
