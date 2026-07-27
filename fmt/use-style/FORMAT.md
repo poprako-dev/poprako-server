@@ -23,11 +23,10 @@ chunks, including outer attributes and documentation comments, into canonical
 item order and iterates until import grouping and item ordering both converge.
 
 ```bash
-# Canonicalize imports through the Rust AST, then run `cargo fmt --all`.
-# This is what `just fmt-check` runs.
+# Check imports without rewriting source. This is what `just fmt-check` runs.
 uv run fmt/use-style/check.py
 
-# Inspect violations without rewriting.
-uv run fmt/use-style/check.py --no-fix
+# Canonicalize imports through the Rust AST, then run `cargo fmt --all`.
+uv run fmt/use-style/check.py --fix
 uv run fmt/use-style/check.py --self-test
 ```

@@ -113,10 +113,14 @@ def leading_attributes(node: tree_sitter.Node) -> tuple[tree_sitter.Node, ...]:
     attrs: list[tree_sitter.Node] = []
 
     for sibling in reversed(siblings[:index]):
-        if sibling.type != "attribute_item":
-            break
+        if sibling.type == "attribute_item":
+            attrs.append(sibling)
+            continue
 
-        attrs.append(sibling)
+        if sibling.type in {"line_comment", "block_comment"}:
+            continue
+
+        break
 
     return tuple(reversed(attrs))
 
@@ -1040,8 +1044,8 @@ def main() -> int:
     parser.add_argument(
         "--fix",
         action=argparse.BooleanOptionalAction,
-        default=True,
-        help="rewrite use declarations, then format them with cargo fmt (default: enabled)",
+        default=False,
+        help="rewrite use declarations, then format them with cargo fmt",
     )
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
