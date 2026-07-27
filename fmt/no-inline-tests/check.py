@@ -53,6 +53,9 @@ def leading_attributes(node: tree_sitter.Node) -> list[tree_sitter.Node]:
             attributes.append(sibling)
             continue
 
+        if sibling.type in {"line_comment", "block_comment"}:
+            continue
+
         if not sibling.is_named:
             continue
 
@@ -263,6 +266,7 @@ def self_test() -> int:
         (source_dir / "things.rs").write_text(
             "pub fn do_thing() {}\n"
             "#[cfg(test)]\n"
+            "// Tests remain in a sibling file.\n"
             "mod tests;\n",
         )
 
@@ -271,6 +275,21 @@ def self_test() -> int:
         if diagnostics:
             print("self-test: valid separate-file test mod was rejected", file=sys.stderr)
             print("\n".join(diagnostics), file=sys.stderr)
+            return 1
+
+        (source_dir / "things.rs").write_text(
+            "pub fn do_thing() {}\n"
+            "#[cfg(test)]\n"
+            "// This comment belongs to the test module.\n"
+            "mod tests {\n"
+            "    use super::*;\n"
+            "}\n",
+        )
+
+        diagnostics = check_root(root)
+
+        if not diagnostics:
+            print("self-test: commented inline test module was not rejected", file=sys.stderr)
             return 1
 
         (source_dir / "lib.rs").write_text(
