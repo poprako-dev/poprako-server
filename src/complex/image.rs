@@ -3,7 +3,7 @@
 use poprako_util::i18n::trl;
 
 use crate::part::prom::payload::image::ResourceKind;
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 
 /// Domain opers for image lifecycle management: generates unique identifiers for scheduled image deletion and integrity check tasks.
@@ -21,7 +21,7 @@ impl ImageComplex {
     pub fn ensure_byte_length(
         byte_length: u64,
         kind: ResourceKind,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         //
         let max_length = match kind {
             //

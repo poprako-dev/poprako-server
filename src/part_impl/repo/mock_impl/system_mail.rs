@@ -15,7 +15,7 @@ use crate::part::repo::system_mail::SystemMailRepo;
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
 impl SystemMailRepo<MockContext> for Mock {}
 
@@ -35,7 +35,7 @@ fn insert_mail(state: &mut MockState, entry: &SystemMailEntry) {
 fn send_system_mail(
     state: &mut MockState,
     entry: &SystemMailEntry,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     // Internal implementation detail.
     // Internal implementation detail.
@@ -56,7 +56,7 @@ fn send_system_mail(
 fn send_system_mails(
     state: &mut MockState,
     entries: &[SystemMailEntry],
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     // Internal implementation detail.
     // Internal implementation detail.
@@ -128,7 +128,7 @@ fn mark_system_mail_read(
     state: &mut MockState,
     id: &str,
     user_id: &str,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     // Internal implementation detail.
     // Internal implementation detail.
@@ -156,7 +156,7 @@ impl Run<SendSystemMail<'_>> for Mock {
 
     #[instrument(level = "info", err(Debug), skip_all)]
     // Internal implementation of `run`.
-    async fn run(&self, oper: &SendSystemMail<'_>) -> BaseResult<()> {
+    async fn run(&self, oper: &SendSystemMail<'_>) -> BaseRest<()> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -172,7 +172,7 @@ impl Run<SendSystemMails<'_>> for Mock {
 
     #[instrument(level = "info", err(Debug), skip_all)]
     // Internal implementation of `run`.
-    async fn run(&self, oper: &SendSystemMails<'_>) -> BaseResult<()> {
+    async fn run(&self, oper: &SendSystemMails<'_>) -> BaseRest<()> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -191,7 +191,7 @@ impl Run<ListSystemMailInfos<'_>> for Mock {
     async fn run(
         &self,
         oper: &ListSystemMailInfos<'_>,
-    ) -> BaseResult<Vec<SystemMailInfo>> {
+    ) -> BaseRest<Vec<SystemMailInfo>> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -207,7 +207,7 @@ impl Run<MarkSystemMailRead<'_>> for Mock {
 
     #[instrument(level = "info", err(Debug), skip_all)]
     // Internal implementation of `run`.
-    async fn run(&self, oper: &MarkSystemMailRead<'_>) -> BaseResult<()> {
+    async fn run(&self, oper: &MarkSystemMailRead<'_>) -> BaseRest<()> {
         //
         // Internal implementation detail.
         // Internal implementation detail.

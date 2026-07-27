@@ -19,7 +19,7 @@ use crate::part::repo::oper::announcement::{
     CreateAnnouncement, ListAnnouncementInfos,
 };
 use crate::part::repo::oper::member::FindMemberInfo;
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 
 #[cfg(test)]
 // Unit tests for announcement usecase behavior.
@@ -31,7 +31,7 @@ pub async fn list_infos<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
     params: ListAnnouncementInfosParams,
-) -> BaseResult<Vec<AnnouncementInfoVal>>
+) -> BaseRest<Vec<AnnouncementInfoVal>>
 where
     R: AnnouncementRepo<C> + MemberRepo<C> + Sync,
     I: ImagePool,
@@ -72,7 +72,7 @@ pub async fn create<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
     params: CreateAnnouncementParams,
-) -> BaseResult<CreateAnnouncementPayload>
+) -> BaseRest<CreateAnnouncementPayload>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,

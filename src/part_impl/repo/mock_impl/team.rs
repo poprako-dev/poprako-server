@@ -17,14 +17,11 @@ use crate::part::repo::oper::team::{
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 use crate::value::image::{ImageExt, ImageHash};
 
 // Internal implementation of `create_team`.
-fn create_team(
-    state: &mut MockState,
-    entry: &TeamEntry,
-) -> BaseResult<TeamInfo> {
+fn create_team(state: &mut MockState, entry: &TeamEntry) -> BaseRest<TeamInfo> {
     //
     // Internal implementation detail.
     // Internal implementation detail.
@@ -53,7 +50,7 @@ fn create_team(
 }
 
 // Internal implementation of `get_team_info`.
-fn get_team_info(state: &MockState, id: &str) -> BaseResult<TeamInfo> {
+fn get_team_info(state: &MockState, id: &str) -> BaseRest<TeamInfo> {
     state
         .teams
         .iter()
@@ -113,7 +110,7 @@ fn list_team_infos(
 }
 
 // Internal implementation of `update_team`.
-fn update_team(state: &mut MockState, oper: &UpdateTeam<'_>) -> BaseResult<()> {
+fn update_team(state: &mut MockState, oper: &UpdateTeam<'_>) -> BaseRest<()> {
     //
     // Internal implementation detail.
     // Internal implementation detail.
@@ -171,7 +168,7 @@ fn update_team(state: &mut MockState, oper: &UpdateTeam<'_>) -> BaseResult<()> {
 fn reserve_team_avatar(
     state: &mut MockState,
     oper: &ReserveTeamAvatar<'_>,
-) -> BaseResult<TeamAvatarReservation> {
+) -> BaseRest<TeamAvatarReservation> {
     //
     // Internal implementation detail.
     // Internal implementation detail.
@@ -237,7 +234,7 @@ fn reserve_team_avatar(
 }
 
 // Internal implementation of `delete_team`.
-fn delete_team(state: &mut MockState, id: &str) -> BaseResult<()> {
+fn delete_team(state: &mut MockState, id: &str) -> BaseRest<()> {
     //
     // Internal implementation detail.
     // Internal implementation detail.
@@ -313,7 +310,7 @@ impl<'a> Run<CreateTeam<'a>> for Mock {
 
     #[instrument(level = "info", err(Debug), skip_all)]
     // Internal implementation of `run`.
-    async fn run(&self, oper: &CreateTeam<'a>) -> BaseResult<TeamInfo> {
+    async fn run(&self, oper: &CreateTeam<'a>) -> BaseRest<TeamInfo> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -329,7 +326,7 @@ impl<'a> Run<GetTeamInfo<'a>> for Mock {
 
     #[instrument(level = "info", err(Debug), skip_all)]
     // Internal implementation of `run`.
-    async fn run(&self, oper: &GetTeamInfo<'a>) -> BaseResult<TeamInfo> {
+    async fn run(&self, oper: &GetTeamInfo<'a>) -> BaseRest<TeamInfo> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -347,7 +344,7 @@ impl<'a> Run<ListTeamInfos<'a>> for Mock {
 
     #[instrument(level = "info", err(Debug), skip_all)]
     // Internal implementation of `run`.
-    async fn run(&self, oper: &ListTeamInfos<'a>) -> BaseResult<Vec<TeamInfo>> {
+    async fn run(&self, oper: &ListTeamInfos<'a>) -> BaseRest<Vec<TeamInfo>> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -363,7 +360,7 @@ impl<'a> Run<UpdateTeam<'a>> for Mock {
 
     #[instrument(level = "info", err(Debug), skip_all)]
     // Internal implementation of `run`.
-    async fn run(&self, oper: &UpdateTeam<'a>) -> BaseResult<()> {
+    async fn run(&self, oper: &UpdateTeam<'a>) -> BaseRest<()> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -383,7 +380,7 @@ impl<'a> Step<CreateTeam<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &CreateTeam<'a>,
-    ) -> BaseResult<TeamInfo> {
+    ) -> BaseRest<TeamInfo> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -405,7 +402,7 @@ impl<'a> Step<UpdateTeam<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &UpdateTeam<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         update_team(&mut context.state, oper)
     }
 }
@@ -420,7 +417,7 @@ impl<'a> Step<ReserveTeamAvatar<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &ReserveTeamAvatar<'a>,
-    ) -> BaseResult<TeamAvatarReservation> {
+    ) -> BaseRest<TeamAvatarReservation> {
         reserve_team_avatar(&mut context.state, oper)
     }
 }
@@ -435,7 +432,7 @@ impl<'a> Step<GetTeamInfoExcluded<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &GetTeamInfoExcluded<'a>,
-    ) -> BaseResult<TeamInfo> {
+    ) -> BaseRest<TeamInfo> {
         match oper {
             GetTeamInfoExcluded::Id { id } => get_team_info(&context.state, id),
         }
@@ -452,7 +449,7 @@ impl<'a> Step<LockTeam<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &LockTeam<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -472,7 +469,7 @@ impl<'a> Step<DeleteTeam<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &DeleteTeam<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         delete_team(&mut context.state, oper.id)
     }
 }
@@ -487,7 +484,7 @@ impl<'a> Step<AllocTeamWorksetIndex<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &AllocTeamWorksetIndex<'a>,
-    ) -> BaseResult<i32> {
+    ) -> BaseRest<i32> {
         //
         // Internal implementation detail.
         // Internal implementation detail.

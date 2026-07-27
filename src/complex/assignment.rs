@@ -14,7 +14,7 @@ use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::user::GetUserInfo;
 use crate::part::repo::oper::workset::GetWorksetInfo;
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 use crate::value::role::{RoleField, RoleMask};
 
@@ -88,7 +88,7 @@ impl AssignmentPermComplex {
         proxy: &mut P,
         user_id: &str,
         assignment_list_spec: &AssignmentInfoListSpec,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
             + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
@@ -116,7 +116,7 @@ impl AssignmentPermComplex {
         subject_user_id: &str,
         chapter_id: &str,
         roles: RoleMask,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
             + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
@@ -145,7 +145,7 @@ impl AssignmentPermComplex {
         proxy: &mut P,
         current_user_id: &str,
         assignment_info: &AssignmentInfo,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
     {
@@ -162,7 +162,7 @@ impl AssignmentPermComplex {
         user_id: &str,
         chapter_id: &str,
         roles: RoleMask,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
             + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
@@ -177,7 +177,7 @@ impl AssignmentPermComplex {
 async fn resolve_team_id<P>(
     proxy: &mut P,
     chapter_id: &str,
-) -> BaseResult<String>
+) -> BaseRest<String>
 where
     P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
         + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
@@ -252,7 +252,7 @@ async fn check_list_by_chapter<P>(
     proxy: &mut P,
     user_id: &str,
     chapter_id: &str,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
         + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
@@ -289,7 +289,7 @@ async fn check_list_by_user<P>(
     proxy: &mut P,
     current_user_id: &str,
     owner_id: &str,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     P: for<'a> Proxy<GetUserInfo<'a>, Error = BaseError>,
 {
@@ -315,7 +315,7 @@ async fn check_admin<P>(
     proxy: &mut P,
     user_id: &str,
     chapter_id: &str,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
 {
@@ -346,7 +346,7 @@ async fn check_self_reduce<P>(
     subject_user_id: &str,
     chapter_id: &str,
     roles: RoleMask,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
 {
@@ -379,7 +379,7 @@ async fn check_target_roles<P>(
     user_id: &str,
     chapter_id: &str,
     roles: RoleMask,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
         + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>

@@ -18,7 +18,7 @@ use poprako_util::i18n::trl;
 use crate::part::image::{
     ImageManager, ImagePool, ImageUploadSlot, ImageUploadSpec,
 };
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
 #[cfg(test)]
 // Executes lightweight unit tests for URL generation and upload content handling.
@@ -107,7 +107,7 @@ impl R2ImagePool {
 impl ImagePool for R2ImagePool {
     #[instrument(level = "info", err(Debug), skip_all)]
     // Internal implementation of `gen_download_url`.
-    async fn gen_download_url(&self, key: &str) -> BaseResult<Url> {
+    async fn gen_download_url(&self, key: &str) -> BaseRest<Url> {
         build_public_url(&self.domain, key, "gen_download_url")
     }
 
@@ -116,7 +116,7 @@ impl ImagePool for R2ImagePool {
     async fn gen_thumbnail_download_url(
         &self,
         original_key: &str,
-    ) -> BaseResult<Url> {
+    ) -> BaseRest<Url> {
         //
         // Internal implementation detail.
         let thumbnail_path =
@@ -131,7 +131,7 @@ impl ImagePool for R2ImagePool {
 
     #[instrument(level = "info", err(Debug), skip_all)]
     // Internal implementation of `get_upload_url`.
-    async fn get_upload_url(&self, key: &str) -> BaseResult<Url> {
+    async fn get_upload_url(&self, key: &str) -> BaseRest<Url> {
         //
         // Internal implementation detail.
         let content_type =
@@ -176,7 +176,7 @@ impl ImagePool for R2ImagePool {
     async fn get_upload_slot(
         &self,
         spec: ImageUploadSpec<'_>,
-    ) -> BaseResult<ImageUploadSlot> {
+    ) -> BaseRest<ImageUploadSlot> {
         //
         // Internal implementation detail.
         let content_length =
@@ -234,7 +234,7 @@ impl ImagePool for R2ImagePool {
 impl ImageManager for R2ImagePool {
     #[instrument(level = "info", err(Debug), skip_all)]
     // Removes a previously uploaded object from the R2 bucket.
-    async fn delete_object(&self, key: &str) -> BaseResult<()> {
+    async fn delete_object(&self, key: &str) -> BaseRest<()> {
         self.client
             .delete_object()
             .bucket(&self.bucket)
@@ -252,7 +252,7 @@ impl ImageManager for R2ImagePool {
 
     #[instrument(level = "info", err(Debug), skip_all)]
     // Performs a HEAD request to determine whether an object exists in R2.
-    async fn object_exists(&self, key: &str) -> BaseResult<bool> {
+    async fn object_exists(&self, key: &str) -> BaseRest<bool> {
         match self
             .client
             .head_object()
@@ -284,7 +284,7 @@ fn build_public_url(
     domain: &str,
     path: &str,
     operation: &str,
-) -> BaseResult<Url> {
+) -> BaseRest<Url> {
     //
     // Internal implementation detail.
     if domain.is_empty() {

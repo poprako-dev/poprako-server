@@ -4,7 +4,7 @@ use poprako_orchestra::Proxy;
 
 use crate::complex::util::check_user_is_team_member;
 use crate::part::repo::oper::member::FindMemberInfo;
-use crate::result::{BaseError, BaseResult};
+use crate::result::{BaseError, BaseRest};
 use crate::util::next_snowflake_id;
 
 /// Domain opers for comments.
@@ -26,7 +26,7 @@ impl CommentPermComplex {
         proxy: &mut P,
         user_id: &str,
         team_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
@@ -38,7 +38,7 @@ impl CommentPermComplex {
         proxy: &mut P,
         user_id: &str,
         team_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {

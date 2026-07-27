@@ -26,7 +26,7 @@ use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::term::TermRepo;
 use crate::part::repo::termbase::TermbaseRepo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 
 #[cfg(test)]
 // Unit tests for term lifecycle, ownership, and conflict guards.
@@ -38,7 +38,7 @@ pub async fn create<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
     params: CreateTermParams,
-) -> BaseResult<CreateTermPayload>
+) -> BaseRest<CreateTermPayload>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -109,7 +109,7 @@ pub async fn get_info<C, R>(
     (repo,): (&R,),
     token: UserToken,
     id: String,
-) -> BaseResult<TermInfoVal>
+) -> BaseRest<TermInfoVal>
 where
     R: TermbaseRepo<C>
         + TermRepo<C>
@@ -147,7 +147,7 @@ pub async fn list_infos<C, R>(
     (repo,): (&R,),
     token: UserToken,
     params: ListTermInfosParams,
-) -> BaseResult<Vec<TermInfoVal>>
+) -> BaseRest<Vec<TermInfoVal>>
 where
     R: TermbaseRepo<C>
         + TermRepo<C>
@@ -196,7 +196,7 @@ pub async fn update_info<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
     params: UpdateTermInfoParams,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -282,7 +282,7 @@ pub async fn delete<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
     id: String,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,

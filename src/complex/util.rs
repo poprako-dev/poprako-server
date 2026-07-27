@@ -9,7 +9,7 @@ use crate::part::repo::oper::chapter::GetChapterInfo;
 use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::workset::GetWorksetInfo;
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::value::role::{RoleField, RoleMask};
 
 /// Verify the user is a member of the given team; returns `Perm` error if not.
@@ -17,7 +17,7 @@ pub async fn check_user_is_team_member<P>(
     proxy: &mut P,
     user_id: &str,
     team_id: &str,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
 {
@@ -40,7 +40,7 @@ pub async fn check_user_is_team_proofreader<P>(
     proxy: &mut P,
     user_id: &str,
     team_id: &str,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
 {
@@ -71,7 +71,7 @@ pub async fn check_user_is_team_admin_with_roles<P>(
     user_id: &str,
     team_id: &str,
     required_roles: Option<RoleMask>,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
 {
@@ -110,7 +110,7 @@ pub async fn check_user_is_team_admin<P>(
     proxy: &mut P,
     user_id: &str,
     team_id: &str,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
 {
@@ -122,7 +122,7 @@ pub async fn check_user_is_team_member_by_chapter<P>(
     proxy: &mut P,
     user_id: &str,
     chapter_id: &str,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
         + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
@@ -157,7 +157,7 @@ pub async fn check_user_is_chapter_assignee<P>(
     proxy: &mut P,
     user_id: &str,
     chapter_id: &str,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
 {
@@ -180,7 +180,7 @@ pub async fn check_user_is_chapter_translator_or_proofreader<P>(
     proxy: &mut P,
     user_id: &str,
     chapter_id: &str,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
 {

@@ -28,7 +28,7 @@ use crate::part::repo::oper::comic_archive::{
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 use crate::util::next_snowflake_id;
 use crate::value::comic_archive::ComicArchiveMonth;
 
@@ -42,7 +42,7 @@ pub async fn export<C, R>(
     token: UserToken,
     team_id: String,
     params: ExportComicArchivesParams,
-) -> BaseResult<ExportComicArchivesPayload>
+) -> BaseRest<ExportComicArchivesPayload>
 where
     R: ComicArchiveRepo<C> + MemberRepo<C> + Sync,
 {
@@ -97,7 +97,7 @@ pub async fn archive<N, C, R, P>(
     (nucl, repo, prom): (&N, &R, &P),
     token: UserToken,
     comic_id: String,
-) -> BaseResult<ArchiveComicPayload>
+) -> BaseRest<ArchiveComicPayload>
 where
     N: Nucl<Context = C, Error = BaseError>,
     R: ComicRepo<C>

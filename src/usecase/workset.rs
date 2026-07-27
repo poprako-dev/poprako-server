@@ -45,7 +45,7 @@ use crate::part::repo::term::TermRepo;
 use crate::part::repo::termbase::TermbaseRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 
 /// Workset use-case test helpers.
 #[cfg(test)]
@@ -57,7 +57,7 @@ pub async fn create<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
     params: CreateWorksetParams,
-) -> BaseResult<CreateWorksetPayload>
+) -> BaseRest<CreateWorksetPayload>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -114,7 +114,7 @@ pub async fn get_info<C, R>(
     (repo,): (&R,),
     token: UserToken,
     id: String,
-) -> BaseResult<WorksetInfoVal>
+) -> BaseRest<WorksetInfoVal>
 where
     R: WorksetRepo<C> + MemberRepo<C> + Sync,
 {
@@ -140,7 +140,7 @@ pub async fn list_infos<C, R>(
     (repo,): (&R,),
     token: UserToken,
     params: ListWorksetInfosParams,
-) -> BaseResult<Vec<WorksetInfoVal>>
+) -> BaseRest<Vec<WorksetInfoVal>>
 where
     R: WorksetRepo<C> + MemberRepo<C> + Sync,
 {
@@ -170,7 +170,7 @@ pub async fn update_info<C, R>(
     (repo,): (&R,),
     token: UserToken,
     params: UpdateWorksetInfoParams,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     R: WorksetRepo<C> + MemberRepo<C> + Sync,
 {
@@ -205,7 +205,7 @@ pub async fn delete<N, C, R, P>(
     (nucl, repo, prom): (&N, &R, &P),
     token: UserToken,
     id: String,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,

@@ -5,7 +5,7 @@ use time::OffsetDateTime;
 
 use crate::model::user::{UserCredential, UserInfo};
 use crate::part_impl::repo::rdb_impl::schema::t_user;
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 use crate::value::image::{ImageExt, ImageHash};
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
@@ -162,7 +162,7 @@ impl<'a> UserAspect<'a> {
 impl TryFrom<UserRow> for UserInfo {
     type Error = BaseError;
 
-    fn try_from(v: UserRow) -> BaseResult<Self> {
+    fn try_from(v: UserRow) -> BaseRest<Self> {
         //
         let avatar_hash_bytes: [u8; 32] =
             v.f_avatar_hash.try_into().map_err(|_| {

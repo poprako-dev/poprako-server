@@ -13,13 +13,13 @@ use crate::part::repo::oper::assignment_invitation::{
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 
 // Internal implementation of `get_info`.
 fn get_info(
     state: &MockState,
     oper: &GetAssignmentInvitationInfo<'_>,
-) -> BaseResult<AssignmentInvitationInfo> {
+) -> BaseRest<AssignmentInvitationInfo> {
     state
         .assignment_invitations
         .iter()
@@ -89,7 +89,7 @@ impl<'a> Run<ListAssignmentInvitationInfos<'a>> for Mock {
     async fn run(
         &self,
         oper: &ListAssignmentInvitationInfos<'a>,
-    ) -> BaseResult<Vec<AssignmentInvitationInfo>> {
+    ) -> BaseRest<Vec<AssignmentInvitationInfo>> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -106,7 +106,7 @@ impl<'a> Run<GetAssignmentInvitationInfo<'a>> for Mock {
     async fn run(
         &self,
         oper: &GetAssignmentInvitationInfo<'a>,
-    ) -> BaseResult<AssignmentInvitationInfo> {
+    ) -> BaseRest<AssignmentInvitationInfo> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -124,7 +124,7 @@ impl<'a> Step<CreateAssignmentInvitation<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &CreateAssignmentInvitation<'a>,
-    ) -> BaseResult<AssignmentInvitationInfo> {
+    ) -> BaseRest<AssignmentInvitationInfo> {
         match context.state.assignment_invitations.iter().any(|info| {
             info.id == oper.entry.id
                 || (info.chapter_id == oper.entry.chapter_id
@@ -170,7 +170,7 @@ impl<'a> Step<GetAssignmentInvitationInfo<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &GetAssignmentInvitationInfo<'a>,
-    ) -> BaseResult<AssignmentInvitationInfo> {
+    ) -> BaseRest<AssignmentInvitationInfo> {
         get_info(&context.state, oper)
     }
 }
@@ -183,7 +183,7 @@ impl<'a> Step<GetAssignmentInvitationInfoExcluded<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &GetAssignmentInvitationInfoExcluded<'a>,
-    ) -> BaseResult<AssignmentInvitationInfo> {
+    ) -> BaseRest<AssignmentInvitationInfo> {
         context
             .state
             .assignment_invitations
@@ -202,7 +202,7 @@ impl<'a> Step<MarkAssignmentInvitationUsed<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &MarkAssignmentInvitationUsed<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -229,7 +229,7 @@ impl<'a> Step<DeleteAssignmentInvitations<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &DeleteAssignmentInvitations<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         match oper {
             //
             // Internal implementation detail.
@@ -275,7 +275,7 @@ impl<'a> Step<PurgeExpiredAssignmentInvitation<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &PurgeExpiredAssignmentInvitation<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -297,7 +297,7 @@ impl<'a> Run<PurgeExpiredAssignmentInvitation<'a>> for Mock {
     async fn run(
         &self,
         oper: &PurgeExpiredAssignmentInvitation<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         //
         // Internal implementation detail.
         // Internal implementation detail.

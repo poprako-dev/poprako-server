@@ -33,7 +33,7 @@ use crate::part::repo::oper::user::{
     ReserveUserAvatar, UpdateUser,
 };
 use crate::part::repo::user::UserRepo;
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
 #[cfg(test)]
 // Unit tests for account, role, and membership operations.
@@ -56,7 +56,7 @@ pub async fn get_info<C, R, I, V>(
     (repo, image_pool, develop): (&R, &I, &V),
     token: UserToken,
     id: String,
-) -> BaseResult<UserInfoVal>
+) -> BaseRest<UserInfoVal>
 where
     R: UserRepo<C>,
     I: ImagePool,
@@ -97,7 +97,7 @@ pub async fn update_info<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
     params: UpdateUserInfoParams,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -151,7 +151,7 @@ pub async fn update_password<N, C, R>(
     token: UserToken,
     user_id: String,
     params: UpdateUserPasswordParams,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -230,7 +230,7 @@ pub async fn reserve_avatar<N, C, R, P, I>(
     (nucl, repo, prom, image_pool): (&N, &R, &P, &I),
     token: UserToken,
     params: ReserveUserAvatarParams,
-) -> BaseResult<ReserveUserAvatarPayload>
+) -> BaseRest<ReserveUserAvatarPayload>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -366,7 +366,7 @@ pub async fn mark_avatar_uploaded<N, C, R, I>(
     token: UserToken,
     id: String,
     params: MarkUserAvatarUploadedParams,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -466,7 +466,7 @@ pub async fn delete<N, C, R, P>(
     (nucl, repo, prom): (&N, &R, &P),
     token: UserToken,
     id: String,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,

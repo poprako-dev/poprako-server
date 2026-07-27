@@ -27,7 +27,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::{
 use crate::part_impl::repo::rdb_impl::schema::t_comic::dsl::*;
 use crate::part_impl::shared::RdbConn;
 use crate::part_impl::shared::result::{diesel, expected, next_version};
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 use crate::value::chapter::{Stage, StageMask, StagePhase};
 use crate::value::comic::ComicInclOpt;
 use crate::value::image::{ImageExt, ImageHash};
@@ -39,7 +39,7 @@ pub async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
     incl_opt: &[ComicInclOpt],
-) -> BaseResult<ComicInfo> {
+) -> BaseRest<ComicInfo> {
     //
     let row: ComicRow = t_comic
         .filter(f_id.eq(id))
@@ -67,7 +67,7 @@ pub async fn get_info_by_id(
 pub async fn list_infos(
     conn: &mut RdbConn,
     spec: &ComicInfoListSpec,
-) -> BaseResult<Vec<ComicInfo>> {
+) -> BaseRest<Vec<ComicInfo>> {
     //
     let stage_comic_ids = match &spec.kind {
         //
@@ -111,7 +111,7 @@ pub async fn list_infos(
     let mut infos: Vec<ComicInfo> = rows
         .into_iter()
         .map(TryInto::try_into)
-        .collect::<BaseResult<_>>()?;
+        .collect::<BaseRest<_>>()?;
 
     incl::comic::populate_comic_incls(conn, &mut infos, &spec.incl_opt).await?;
 
@@ -123,7 +123,7 @@ pub async fn list_infos(
 pub async fn update_info(
     conn: &mut RdbConn,
     update: &ComicInfoUpdate,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -158,7 +158,7 @@ pub async fn mark_cover_uploaded(
     version: u32,
     cover_key: Option<&str>,
     cover_uploaded: bool,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -201,7 +201,7 @@ pub async fn mark_cover_uploaded(
 pub async fn create(
     conn: &mut RdbConn,
     comic_entry: &ComicEntry,
-) -> BaseResult<ComicInfo> {
+) -> BaseRest<ComicInfo> {
     //
     let entry = ComicRowEntry::from(comic_entry);
 
@@ -221,7 +221,7 @@ pub async fn get_info_excluded(
     conn: &mut RdbConn,
     id: &str,
     incls: &[ComicInclOpt],
-) -> BaseResult<ComicInfo> {
+) -> BaseRest<ComicInfo> {
     //
     let row: ComicRow = t_comic
         .filter(f_id.eq(id))
@@ -250,7 +250,7 @@ pub async fn get_info_excluded(
 pub async fn list_infos_excluded(
     conn: &mut RdbConn,
     spec: &ComicInfoListSpec,
-) -> BaseResult<Vec<ComicInfo>> {
+) -> BaseRest<Vec<ComicInfo>> {
     //
     macro_rules! load_rows {
         ($query:expr) => {
@@ -337,7 +337,7 @@ pub async fn list_infos_excluded(
     let mut comic_infos = rows
         .into_iter()
         .map(TryInto::try_into)
-        .collect::<BaseResult<Vec<_>>>()?;
+        .collect::<BaseRest<Vec<_>>>()?;
 
     incl::comic::populate_comic_incls(conn, &mut comic_infos, &spec.incl_opt)
         .await?;
@@ -352,7 +352,7 @@ pub async fn reserve_cover(
     id: &str,
     image_hash: &ImageHash,
     image_ext: ImageExt,
-) -> BaseResult<ComicCoverReservation> {
+) -> BaseRest<ComicCoverReservation> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -429,7 +429,7 @@ pub async fn reserve_cover(
 
 /// Deletes a single comic row by ID.
 #[instrument(level = "info", err(Debug), skip_all)]
-pub async fn delete(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
+pub async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
     diesel::delete(t_comic.filter(f_id.eq(id)))
         .execute(conn)
@@ -444,7 +444,7 @@ pub async fn delete(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
 pub async fn incr_chapter_next_index(
     conn: &mut RdbConn,
     id: &str,
-) -> BaseResult<i32> {
+) -> BaseRest<i32> {
     //
     let prev: i32 = diesel::update(t_comic.filter(f_id.eq(id)))
         .set(f_chapter_next_index.eq(f_chapter_next_index + 1))
@@ -462,7 +462,7 @@ pub async fn update_chapter_count(
     conn: &mut RdbConn,
     id: &str,
     delta: i32,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     diesel::update(t_comic.filter(f_id.eq(id)))
         .set(f_chapter_count.eq(f_chapter_count + delta))
@@ -475,7 +475,7 @@ pub async fn update_chapter_count(
 
 /// Updates the `last_active_at` timestamp on a comic row to now.
 #[instrument(level = "info", err(Debug), skip_all)]
-pub async fn touch_last_active(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
+pub async fn touch_last_active(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -494,7 +494,7 @@ pub async fn touch_last_active(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
 async fn list_matching_stage_comic_ids(
     conn: &mut RdbConn,
     stage_mask: StageMask,
-) -> BaseResult<Option<Vec<String>>> {
+) -> BaseRest<Option<Vec<String>>> {
     //
     let stages = StageMask::stages()
         .iter()

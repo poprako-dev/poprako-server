@@ -21,7 +21,7 @@ use crate::part_impl::prom::rdb_impl::handler::image::identity::ImageIdentity;
 use crate::part_impl::prom::rdb_impl::handler::image::resource::ResourceState;
 use crate::part_impl::prom::rdb_impl::handler::task_flow::TaskFlow;
 use crate::part_impl::shared::RdbContext;
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
 // Internal organization of the `identity` module.
 mod identity;
@@ -189,7 +189,7 @@ where
         (true, true) => {}
     }
 
-    let outcome: BaseResult<()> = nucl
+    let outcome: BaseRest<()> = nucl
         .coord(async move |context| {
             //
             // Internal implementation detail.
@@ -327,7 +327,7 @@ where
         (true, true) => {}
     }
 
-    let outcome: BaseResult<()> = nucl
+    let outcome: BaseRest<()> = nucl
         .coord(async move |context| {
             //
             // Internal implementation detail.

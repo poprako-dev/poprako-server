@@ -23,7 +23,7 @@ use crate::part::repo::oper::page::{
 use crate::part::repo::oper::team::{GetTeamInfoExcluded, UpdateTeam};
 use crate::part::repo::oper::user::{GetUserInfoExcluded, UpdateUser};
 use crate::part_impl::repo::mock_impl::{Mock, MockContext};
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
 // Internal organization of the `chapter` module.
 mod chapter;
@@ -176,7 +176,7 @@ impl<'t, 'a> Step<DeferBatch<'t, 'a, String, TaskPayload, ()>, MockContext>
 ///
 /// Call this after a usecase has enqueued prom records to exercise
 /// the full deferred-action chain within an integration test.
-pub async fn process_pending(mock: &Mock) -> BaseResult<()> {
+pub async fn process_pending(mock: &Mock) -> BaseRest<()> {
     //
     // Internal implementation detail.
     let snapshot = mock.snapshot();
@@ -213,7 +213,7 @@ pub async fn process_pending(mock: &Mock) -> BaseResult<()> {
 async fn process_image_task(
     image_pool: &Mock,
     task: &image::ImagePayload,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     match task {
         //
         // Internal implementation detail.
@@ -308,7 +308,7 @@ async fn process_existing_image(
     mock: &Mock,
     image_identity: ImageIdentity<'_>,
     image_uploaded: bool,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     // Internal implementation detail.
     let resource_state = mock
@@ -351,7 +351,7 @@ async fn mark_page_image_unverified(
     resource_id: &str,
     object_key: &str,
     image_version: u32,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     // Internal implementation detail.
     let page_info = mock
@@ -427,7 +427,7 @@ async fn classify_expected_mark(
     mock: &Mock,
     context: &mut MockContext,
     image_identity: ImageIdentity<'_>,
-) -> BaseResult<ResourceState> {
+) -> BaseRest<ResourceState> {
     match image_identity.kind {
         //
         // Internal implementation detail.
@@ -558,7 +558,7 @@ async fn mark_uploaded(
     context: &mut MockContext,
     image_identity: ImageIdentity<'_>,
     image_uploaded: bool,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     match image_identity.kind {
         //
         // Internal implementation detail.
@@ -643,7 +643,7 @@ async fn mark_uploaded(
 fn classify_current_identity(
     current_identity: CurrentImageIdentity<'_>,
     image_identity: ImageIdentity<'_>,
-) -> BaseResult<ResourceState> {
+) -> BaseRest<ResourceState> {
     match (
         current_identity.version == image_identity.version,
         current_identity.object_key == Some(image_identity.object_key),

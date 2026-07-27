@@ -18,7 +18,7 @@ use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
 use crate::part_impl::prom::rdb_impl::handler::image::identity::ImageIdentity;
 use crate::part_impl::shared::RdbContext;
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 
 /// Classification of a deferred image payload against persisted identity.
 pub enum ResourceState {
@@ -53,7 +53,7 @@ pub async fn mark_current_or_classify<N, R>(
     repo: &R,
     image_identity: ImageIdentity<'_>,
     image_uploaded: bool,
-) -> BaseResult<ResourceState>
+) -> BaseRest<ResourceState>
 where
     N: Nucl<Context = RdbContext, Error = BaseError>,
     R: UserRepo<RdbContext>
@@ -94,7 +94,7 @@ async fn classify_expected_mark<R>(
     repo: &R,
     context: &mut RdbContext,
     image_identity: ImageIdentity<'_>,
-) -> BaseResult<ResourceState>
+) -> BaseRest<ResourceState>
 where
     R: UserRepo<RdbContext>
         + TeamRepo<RdbContext>
@@ -235,7 +235,7 @@ async fn mark_uploaded_by_kind<R>(
     context: &mut RdbContext,
     image_identity: ImageIdentity<'_>,
     image_uploaded: bool,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     R: UserRepo<RdbContext>
         + TeamRepo<RdbContext>
@@ -304,7 +304,7 @@ where
 fn classify_current_identity(
     current_identity: CurrentImageIdentity<'_>,
     image_identity: ImageIdentity<'_>,
-) -> BaseResult<ResourceState> {
+) -> BaseRest<ResourceState> {
     match (
         current_identity.version == image_identity.version,
         current_identity.object_key == Some(image_identity.object_key),

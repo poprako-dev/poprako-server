@@ -61,7 +61,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_workset::dsl::{
 };
 use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::shared::{RdbConn, RdbContext};
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 use crate::value::comic_archive::ComicArchiveMonth;
 
 /// Comic archive RDB integration tests.
@@ -76,7 +76,7 @@ fn corrupt_unit_chain_err() -> BaseError {
 }
 
 // Reorder chained unit infos by next_id links and return only visible units.
-fn order_unit_infos(unit_infos: Vec<UnitInfo>) -> BaseResult<Vec<UnitInfo>> {
+fn order_unit_infos(unit_infos: Vec<UnitInfo>) -> BaseRest<Vec<UnitInfo>> {
     //
     if unit_infos.is_empty() {
         return accept(Vec::new());
@@ -153,7 +153,7 @@ async fn list_payloads(
     conn: &mut RdbConn,
     team_id: &str,
     months: &[ComicArchiveMonth],
-) -> BaseResult<Vec<(OffsetDateTime, String)>> {
+) -> BaseRest<Vec<(OffsetDateTime, String)>> {
     //
     #[derive(Queryable)]
     struct ArchivePayloadRow {
@@ -206,7 +206,7 @@ async fn list_payloads(
 async fn get_snapshot_excluded(
     conn: &mut RdbConn,
     source_comic_id: &str,
-) -> BaseResult<ComicArchiveSnapshot> {
+) -> BaseRest<ComicArchiveSnapshot> {
     //
     let comic_row: ComicRow = t_comic
         .filter(comic_id.eq(source_comic_id))
@@ -244,7 +244,7 @@ async fn get_snapshot_excluded(
     let chapter_infos: Vec<ChapterInfo> = chapter_rows
         .into_iter()
         .map(ChapterInfo::try_from)
-        .collect::<BaseResult<Vec<_>>>()?;
+        .collect::<BaseRest<Vec<_>>>()?;
 
     let source_chapter_ids = chapter_infos
         .iter()
@@ -270,7 +270,7 @@ async fn get_snapshot_excluded(
     let assignment_infos = assignment_rows
         .into_iter()
         .map(AssignmentInfo::try_from)
-        .collect::<BaseResult<Vec<_>>>()?;
+        .collect::<BaseRest<Vec<_>>>()?;
 
     let assigned_user_ids = assignment_infos
         .iter()
@@ -293,7 +293,7 @@ async fn get_snapshot_excluded(
 
             Ok((user_info.id.clone(), user_info))
         })
-        .collect::<BaseResult<HashMap<_, _>>>()?;
+        .collect::<BaseRest<HashMap<_, _>>>()?;
 
     let page_rows: Vec<PageRow> = t_page
         .filter(page_chapter_id.eq_any(&source_chapter_ids))
@@ -307,7 +307,7 @@ async fn get_snapshot_excluded(
     let page_infos: Vec<PageInfo> = page_rows
         .into_iter()
         .map(TryInto::try_into)
-        .collect::<BaseResult<_>>()?;
+        .collect::<BaseRest<_>>()?;
 
     let source_page_ids = page_infos
         .iter()
@@ -405,7 +405,7 @@ async fn get_snapshot_excluded(
 async fn commit(
     conn: &mut RdbConn,
     comic_archive_entry: &ComicArchiveEntry,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     let comic_archive_row = ComicArchiveRow::from(&comic_archive_entry.record);
 
@@ -472,7 +472,7 @@ impl Step<GetComicArchiveSnapshotExcluded<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &GetComicArchiveSnapshotExcluded<'_>,
-    ) -> BaseResult<ComicArchiveSnapshot> {
+    ) -> BaseRest<ComicArchiveSnapshot> {
         get_snapshot_excluded(context.conn(), oper.comic_id).await
     }
 }
@@ -486,7 +486,7 @@ impl Run<ListComicArchivePayloads<'_>> for RdbRepo {
     async fn run(
         &self,
         oper: &ListComicArchivePayloads<'_>,
-    ) -> BaseResult<Vec<(OffsetDateTime, String)>> {
+    ) -> BaseRest<Vec<(OffsetDateTime, String)>> {
         submit_query!(self.core, list_payloads, oper.team_id, oper.months)
     }
 }
@@ -501,7 +501,7 @@ impl Step<CommitComicArchive<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &CommitComicArchive<'_>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         commit(context.conn(), oper.entry).await
     }
 }

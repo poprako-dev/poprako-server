@@ -13,7 +13,7 @@ use crate::part::repo::oper::chapter::{
 };
 use crate::part_impl::prom::rdb_impl::handler::task_flow::TaskFlow;
 use crate::part_impl::shared::RdbContext;
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 use crate::value::chapter::Stage;
 
 /// Attempts raw-provision completion once and completes even while uploads remain pending.
@@ -48,7 +48,7 @@ where
     R: ChapterRepo<RdbContext> + Send + Sync,
     V: EffectDevelop + Sync,
 {
-    let outcome: BaseResult<bool> = nucl
+    let outcome: BaseRest<bool> = nucl
         .coord(async move |context| {
             //
             // Internal implementation detail.

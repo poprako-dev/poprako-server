@@ -13,7 +13,7 @@ use crate::part::repo::oper::system_mail::{
     ListSystemMailInfos, MarkSystemMailRead,
 };
 use crate::part::repo::system_mail::SystemMailRepo;
-use crate::result::{BaseResult, accept};
+use crate::result::{BaseRest, accept};
 
 #[cfg(test)]
 mod tests;
@@ -36,7 +36,7 @@ pub async fn list_infos<C, R>(
     (repo,): (&R,),
     token: UserToken,
     params: ListSystemMailInfosParams,
-) -> BaseResult<Vec<SystemMailInfoVal>>
+) -> BaseRest<Vec<SystemMailInfoVal>>
 where
     R: SystemMailRepo<C>,
 {
@@ -91,7 +91,7 @@ pub async fn mark_read<C, R>(
     (repo,): (&R,),
     token: UserToken,
     ids: Vec<String>,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     R: SystemMailRepo<C>,
 {

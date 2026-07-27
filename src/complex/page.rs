@@ -12,7 +12,7 @@ use crate::part::repo::oper::chapter::GetChapterInfo;
 use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::workset::GetWorksetInfo;
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 use crate::value::role::RoleField;
 
@@ -51,7 +51,7 @@ impl PagePermComplex {
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
     {
@@ -63,7 +63,7 @@ impl PagePermComplex {
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
             + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
@@ -107,7 +107,7 @@ impl PagePermComplex {
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
     {
@@ -119,7 +119,7 @@ impl PagePermComplex {
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
             + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
@@ -172,7 +172,7 @@ async fn check_reserve_role<P>(
     proxy: &mut P,
     user_id: &str,
     chapter_id: &str,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
 {
@@ -203,7 +203,7 @@ async fn check_upload_role<P>(
     proxy: &mut P,
     user_id: &str,
     chapter_id: &str,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
 {
@@ -233,7 +233,7 @@ async fn check_any_assignment<P>(
     proxy: &mut P,
     user_id: &str,
     chapter_id: &str,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
 {

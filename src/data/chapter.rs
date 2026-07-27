@@ -13,7 +13,7 @@ use crate::data::comic::ComicInfoVal;
 use crate::data::user::UserInfoVal;
 use crate::model::chapter::ChapterInfo;
 use crate::part::image::ImagePool;
-use crate::result::{BaseResult, accept};
+use crate::result::{BaseRest, accept};
 use crate::value::chapter::{ChapterInclOpt, Stage, StageMask, StageOper};
 use crate::value::role::RoleMask;
 
@@ -79,7 +79,7 @@ impl ChapterInfoVal {
         image_pool: &P,
         model: ChapterInfo,
         fallback_cover_key: Option<&str>,
-    ) -> BaseResult<Self>
+    ) -> BaseRest<Self>
     where
         P: ImagePool,
     {

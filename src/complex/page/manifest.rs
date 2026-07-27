@@ -6,7 +6,7 @@ use std::collections::HashSet;
 use poprako_util::i18n::trl;
 
 use crate::model::page::{PageImageSpec, PageInfo};
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
 #[cfg(test)]
 mod tests;
@@ -31,7 +31,7 @@ pub fn build(
     chapter_id: &str,
     existing_page_infos: &[PageInfo],
     page_specs: &[PageImageSpec],
-) -> BaseResult<ManifestPlan> {
+) -> BaseRest<ManifestPlan> {
     //
     let mut assigned_existing_indexes = vec![None; page_specs.len()];
 

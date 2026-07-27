@@ -5,7 +5,7 @@ use std::collections::HashSet;
 use poprako_util::i18n::trl;
 
 use crate::model::write::unit::UnitEdit;
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::{Patch, next_snowflake_id};
 use crate::value::chapter::Stage;
 
@@ -73,7 +73,7 @@ impl UnitComplex {
     pub fn normalize_edits(
         base_ids: &[&str],
         mut edits: Vec<UnitEdit>,
-    ) -> BaseResult<Vec<UnitEdit>> {
+    ) -> BaseRest<Vec<UnitEdit>> {
         //
         if !(1..=100).contains(&edits.len()) {
             return Err(invalid_unit_edit_err());
@@ -143,7 +143,7 @@ impl UnitComplex {
     fn final_validate_edits(
         base_ids: &[&str],
         edits: &[UnitEdit],
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         //
         let base_ids = base_ids.iter().copied().collect::<HashSet<_>>();
 

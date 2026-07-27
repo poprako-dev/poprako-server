@@ -47,7 +47,7 @@ use crate::part::repo::oper::page::{
 use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 use crate::value::chapter::{Stage, StageOper, StagePhase};
 
 pub use delete::delete;
@@ -64,7 +64,7 @@ pub async fn list_infos<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
     params: ListChapterInfosParams,
-) -> BaseResult<Vec<ChapterInfoVal>>
+) -> BaseRest<Vec<ChapterInfoVal>>
 where
     R: ChapterRepo<C>
         + ComicRepo<C>
@@ -140,7 +140,7 @@ pub async fn get_info<C, R>(
     (repo,): (&R,),
     token: UserToken,
     id: String,
-) -> BaseResult<ChapterInfoVal>
+) -> BaseRest<ChapterInfoVal>
 where
     R: ChapterRepo<C> + ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
 {
@@ -173,7 +173,7 @@ pub async fn get_pinned<C, R>(
     (repo,): (&R,),
     token: UserToken,
     comic_id: String,
-) -> BaseResult<Option<ChapterInfoVal>>
+) -> BaseRest<Option<ChapterInfoVal>>
 where
     R: ChapterRepo<C> + ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
 {
@@ -205,7 +205,7 @@ pub async fn create<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
     params: CreateChapterParams,
-) -> BaseResult<CreateChapterPayload>
+) -> BaseRest<CreateChapterPayload>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -329,7 +329,7 @@ pub async fn update_info<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
     params: UpdateChapterInfoParams,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -417,7 +417,7 @@ pub async fn update_stage<N, C, R, P, V>(
     (nucl, repo, prom, develop): (&N, &R, &P, &V),
     token: UserToken,
     params: UpdateChapterStageParams,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,

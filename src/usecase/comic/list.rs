@@ -25,7 +25,7 @@ use crate::part::repo::oper::page::ListFirstPageInfos;
 use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::value::comic::ComicWithOpt;
 
 /// Lists comics for a workset with optional filters and derived data.
@@ -34,7 +34,7 @@ pub async fn list_infos<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
     params: ListComicInfosParams,
-) -> BaseResult<ListComicInfosPayload>
+) -> BaseRest<ListComicInfosPayload>
 where
     R: ComicRepo<C>
         + WorksetRepo<C>

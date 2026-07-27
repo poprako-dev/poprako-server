@@ -40,7 +40,7 @@ use crate::part::repo::oper::page::{
 use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 
 pub use reserve::reserve_chapter_pages;
@@ -58,7 +58,7 @@ pub async fn reserve_image<N, C, R, P, I>(
     token: UserToken,
     id: String,
     params: ReservePageImageParams,
-) -> BaseResult<ReservedPagePayload>
+) -> BaseRest<ReservedPagePayload>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -272,7 +272,7 @@ pub async fn list_infos<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
     params: ListPageInfosParams,
-) -> BaseResult<Vec<PageInfoVal>>
+) -> BaseRest<Vec<PageInfoVal>>
 where
     R: PageRepo<C>
         + ChapterRepo<C>
@@ -319,7 +319,7 @@ pub async fn get_info<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
     id: String,
-) -> BaseResult<PageInfoVal>
+) -> BaseRest<PageInfoVal>
 where
     R: PageRepo<C>
         + ChapterRepo<C>
@@ -356,7 +356,7 @@ pub async fn mark_image_uploaded<N, C, R, I>(
     token: UserToken,
     id: String,
     params: MarkPageImageUploadedParams,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -452,7 +452,7 @@ pub async fn delete<N, C, R, P>(
     (nucl, repo, prom): (&N, &R, &P),
     token: UserToken,
     chapter_id: String,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,

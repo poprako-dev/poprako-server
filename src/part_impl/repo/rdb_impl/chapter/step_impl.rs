@@ -20,7 +20,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::*;
 use crate::part_impl::repo::rdb_impl::schema::t_page;
 use crate::part_impl::shared::RdbConn;
 use crate::part_impl::shared::result::{diesel, expected};
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 use crate::value::chapter::{ChapterInclOpt, Stage};
 
 /// Queries a single chapter row by ID and populates its includes.
@@ -29,7 +29,7 @@ pub async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
     incl_opt: &[ChapterInclOpt],
-) -> BaseResult<ChapterInfo> {
+) -> BaseRest<ChapterInfo> {
     //
     let row: ChapterRow = t_chapter
         .filter(f_id.eq(id))
@@ -58,7 +58,7 @@ pub async fn get_info_excluded(
     conn: &mut RdbConn,
     id: &str,
     incl_opt: &[ChapterInclOpt],
-) -> BaseResult<ChapterInfo> {
+) -> BaseRest<ChapterInfo> {
     //
     let row: ChapterRow = t_chapter
         .filter(f_id.eq(id))
@@ -87,7 +87,7 @@ pub async fn get_info_excluded(
 pub async fn list_infos(
     conn: &mut RdbConn,
     spec: &ChapterInfoListSpec,
-) -> BaseResult<Vec<ChapterInfo>> {
+) -> BaseRest<Vec<ChapterInfo>> {
     //
     let rows: Vec<ChapterRow> = t_chapter
         .filter(f_comic_id.eq(spec.comic_id.as_str()))
@@ -112,7 +112,7 @@ pub async fn list_infos(
 pub async fn list_infos_excluded(
     conn: &mut RdbConn,
     comic_id: &str,
-) -> BaseResult<Vec<ChapterInfo>> {
+) -> BaseRest<Vec<ChapterInfo>> {
     //
     let rows: Vec<ChapterRow> = t_chapter
         .filter(f_comic_id.eq(comic_id))
@@ -128,10 +128,7 @@ pub async fn list_infos_excluded(
 
 /// Locks all chapter rows belonging to a comic.
 #[instrument(level = "info", err(Debug), skip_all)]
-pub async fn lock_chapters(
-    conn: &mut RdbConn,
-    comic_id: &str,
-) -> BaseResult<()> {
+pub async fn lock_chapters(conn: &mut RdbConn, comic_id: &str) -> BaseRest<()> {
     //
     let _: Vec<String> = t_chapter
         .filter(f_comic_id.eq(comic_id))
@@ -150,7 +147,7 @@ pub async fn find_pinned_info_by_comic_id(
     conn: &mut RdbConn,
     comic_id: &str,
     incl_opt: &[ChapterInclOpt],
-) -> BaseResult<Option<ChapterInfo>> {
+) -> BaseRest<Option<ChapterInfo>> {
     //
     let row: Option<ChapterRow> = t_chapter
         .filter(f_comic_id.eq(comic_id))
@@ -182,7 +179,7 @@ pub async fn find_pinned_info_by_comic_id(
 pub async fn list_pinned_infos_by_comic_ids(
     conn: &mut RdbConn,
     comic_ids: &[String],
-) -> BaseResult<HashMap<String, ChapterInfo>> {
+) -> BaseRest<HashMap<String, ChapterInfo>> {
     //
     if comic_ids.is_empty() {
         return accept(HashMap::new());
@@ -213,7 +210,7 @@ pub async fn list_pinned_infos_by_comic_ids(
 pub async fn create(
     conn: &mut RdbConn,
     chapter_entry: &ChapterEntry,
-) -> BaseResult<ChapterInfo> {
+) -> BaseRest<ChapterInfo> {
     //
     let entry = ChapterRowEntry::from(chapter_entry);
 
@@ -232,7 +229,7 @@ pub async fn create(
 pub async fn update_info(
     conn: &mut RdbConn,
     update: &ChapterInfoUpdate,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -260,7 +257,7 @@ pub async fn update_info(
 pub async fn update_stage(
     conn: &mut RdbConn,
     update: &ChapterStageUpdate,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -281,7 +278,7 @@ pub async fn start_stage(
     conn: &mut RdbConn,
     id: &str,
     stage: Stage,
-) -> BaseResult<bool> {
+) -> BaseRest<bool> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -342,7 +339,7 @@ pub async fn start_stage(
 pub async fn complete_raw_provide(
     conn: &mut RdbConn,
     id: &str,
-) -> BaseResult<bool> {
+) -> BaseRest<bool> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -367,7 +364,7 @@ pub async fn complete_raw_provide(
 
 /// Clears raw-provision completion while preserving every other stage.
 #[instrument(level = "info", err(Debug), skip_all)]
-pub async fn reset_raw_provide(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
+pub async fn reset_raw_provide(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -392,7 +389,7 @@ pub async fn set_page_counters(
     total_unit_count: i32,
     translated_unit_count: i32,
     proofread_unit_count: i32,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -417,7 +414,7 @@ pub async fn adjust_unit_counters(
     conn: &mut RdbConn,
     id: &str,
     delta: &UnitCounterDelta,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -443,7 +440,7 @@ pub async fn unpin_others(
     conn: &mut RdbConn,
     comic_id: &str,
     excluded_id: &str,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -462,7 +459,7 @@ pub async fn unpin_others(
 
 /// Deletes a single chapter row by ID.
 #[instrument(level = "info", err(Debug), skip_all)]
-pub async fn delete(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
+pub async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
     diesel::delete(t_chapter.filter(f_id.eq(id)))
         .execute(conn)
@@ -473,11 +470,11 @@ pub async fn delete(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
 }
 
 // Converts a single `ChapterRow` into a `ChapterInfo`.
-fn row_into_info(row: ChapterRow) -> BaseResult<ChapterInfo> {
+fn row_into_info(row: ChapterRow) -> BaseRest<ChapterInfo> {
     row.try_into()
 }
 
 // Converts a vector of `ChapterRow` values into `ChapterInfo`.
-fn rows_into_infos(rows: Vec<ChapterRow>) -> BaseResult<Vec<ChapterInfo>> {
+fn rows_into_infos(rows: Vec<ChapterRow>) -> BaseRest<Vec<ChapterInfo>> {
     rows.into_iter().map(row_into_info).collect()
 }

@@ -9,7 +9,7 @@ use poprako_util::time::ToUnixMilli;
 
 use crate::model::team::TeamInfo;
 use crate::part::image::ImagePool;
-use crate::result::{BaseResult, accept};
+use crate::result::{BaseRest, accept};
 
 pub use crate::data::image::{
     MarkImageUploadedParams as MarkTeamAvatarUploadedParams,
@@ -59,7 +59,7 @@ impl TeamInfoVal {
     pub async fn from_model<P>(
         image_pool: &P,
         model: TeamInfo,
-    ) -> BaseResult<Self>
+    ) -> BaseRest<Self>
     where
         P: ImagePool,
     {

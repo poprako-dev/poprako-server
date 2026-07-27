@@ -12,7 +12,7 @@ use poprako_util::time::ToUnixMilli;
 use crate::data::user::UserInfoVal;
 use crate::model::comment::{CommentInfo, CommentListSpec};
 use crate::part::image::ImagePool;
-use crate::result::{BaseResult, accept};
+use crate::result::{BaseRest, accept};
 use crate::value::comment::CommentInclOpt;
 
 /// Presentation-ready team board comment information.
@@ -44,7 +44,7 @@ impl CommentInfoVal {
     pub async fn from_model<P>(
         image_pool: &P,
         model: CommentInfo,
-    ) -> BaseResult<Self>
+    ) -> BaseRest<Self>
     where
         P: ImagePool,
     {

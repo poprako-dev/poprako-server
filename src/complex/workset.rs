@@ -30,7 +30,7 @@ use crate::part::repo::oper::workset::{
     DeleteWorkset, GetWorksetInfo, GetWorksetInfoExcluded,
     UpdateWorksetComicCount,
 };
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 use crate::util::next_snowflake_id;
 
 /// Domain opers for workset entities.
@@ -43,7 +43,7 @@ impl WorksetComplex {
     }
 
     /// Deletes a workset subtree inside an existing transaction context.
-    pub async fn delete_cascade<P>(proxy: &mut P, id: &str) -> BaseResult<()>
+    pub async fn delete_cascade<P>(proxy: &mut P, id: &str) -> BaseRest<()>
     where
         P: for<'a> Proxy<GetWorksetInfoExcluded<'a>, Error = BaseError>
             + for<'a> Proxy<ListComicInfosExcluded<'a>, Error = BaseError>
@@ -125,7 +125,7 @@ impl WorksetPermComplex {
         proxy: &mut P,
         user_id: &str,
         team_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
@@ -137,7 +137,7 @@ impl WorksetPermComplex {
         proxy: &mut P,
         user_id: &str,
         team_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
@@ -149,7 +149,7 @@ impl WorksetPermComplex {
         proxy: &mut P,
         user_id: &str,
         workset_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
             + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
@@ -164,7 +164,7 @@ impl WorksetPermComplex {
         proxy: &mut P,
         user_id: &str,
         workset_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
             + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
@@ -179,7 +179,7 @@ impl WorksetPermComplex {
         proxy: &mut P,
         user_id: &str,
         workset_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
             + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
@@ -193,7 +193,7 @@ impl WorksetPermComplex {
     async fn resolve_team_id<P>(
         proxy: &mut P,
         workset_id: &str,
-    ) -> BaseResult<String>
+    ) -> BaseRest<String>
     where
         P: for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>,
     {

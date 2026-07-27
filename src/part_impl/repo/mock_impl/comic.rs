@@ -17,7 +17,7 @@ use crate::part::repo::oper::comic::{
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 use crate::value::comic::ComicInclOpt;
 use crate::value::image::{ImageExt, ImageHash};
 use crate::value::incl::expand_incl_opts;
@@ -186,7 +186,7 @@ fn mark_comic_cover_uploaded(
     cover_version: u32,
     cover_key: Option<&str>,
     cover_uploaded: bool,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     let comic = state
         .comics
@@ -214,7 +214,7 @@ fn get_comic_info(
     state: &MockState,
     id: &str,
     incls: &[ComicInclOpt],
-) -> BaseResult<ComicInfo> {
+) -> BaseRest<ComicInfo> {
     //
     let mut comic_info = state
         .comics

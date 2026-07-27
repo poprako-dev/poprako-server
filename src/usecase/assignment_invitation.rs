@@ -47,7 +47,7 @@ use crate::part::repo::oper::user::{FindUserInfo, GetUserInfoExcluded};
 use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::user::UserRepo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 use crate::value::role::{RoleField, RoleMask};
 
@@ -64,7 +64,7 @@ pub async fn list_infos<C, R>(
     (repo,): (&R,),
     token: UserToken,
     params: ListAssignmentInvitationInfosParams,
-) -> BaseResult<Vec<AssignmentInvitationInfoVal>>
+) -> BaseRest<Vec<AssignmentInvitationInfoVal>>
 where
     R: AssignmentInvitationRepo<C> + AssignmentRepo<C> + Sync,
 {
@@ -106,7 +106,7 @@ pub async fn create<N, C, R, P>(
     (nucl, repo, prom): (&N, &R, &P),
     token: UserToken,
     params: CreateAssignmentInvitationParams,
-) -> BaseResult<CreateAssignmentInvitationPayload>
+) -> BaseRest<CreateAssignmentInvitationPayload>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -221,7 +221,7 @@ pub async fn delete<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
     id: String,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -262,7 +262,7 @@ pub async fn join<N, C, R, I>(
     (nucl, repo, image_pool): (&N, &R, &I),
     token: UserToken,
     params: JoinAssignmentInvitationParams,
-) -> BaseResult<AssignmentInfoVal>
+) -> BaseRest<AssignmentInfoVal>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -427,7 +427,7 @@ async fn ensure_user_admin<C, R>(
     repo: &R,
     current_user_id: &str,
     chapter_id: &str,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     R: AssignmentRepo<C>,
 {
@@ -450,7 +450,7 @@ where
 }
 
 // Validates that the roles mask is non-empty and does not contain ADMIN.
-fn validate_roles(roles: RoleMask) -> BaseResult<()> {
+fn validate_roles(roles: RoleMask) -> BaseRest<()> {
     //
     if u32::from(roles) == 0 || roles.has_any_role(&[RoleField::ADMIN]) {
         return Err(assignment_role_not_assignable_args_err());

@@ -16,7 +16,7 @@ use utoipa::ToSchema;
 use crate::model::read::proj::unit::{UnitCounters, UnitInfo};
 use crate::model::shared::unit::{UnitCoord, UnitRevision, UnitTranslation};
 use crate::model::write::unit::UnitEdit;
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::Patch;
 
 #[cfg(test)]
@@ -259,7 +259,7 @@ pub fn into_unit_edits<F>(
     edits: Vec<UnitEditVal>,
     user_id: &str,
     mut gen_id: F,
-) -> BaseResult<Vec<UnitEdit>>
+) -> BaseRest<Vec<UnitEdit>>
 where
     F: FnMut() -> String,
 {
@@ -283,7 +283,7 @@ where
     let edits = edits
         .into_iter()
         .map(|edit| edit.into_model(user_id, &local_id_map))
-        .collect::<BaseResult<Vec<_>>>()?;
+        .collect::<BaseRest<Vec<_>>>()?;
 
     accept(edits)
 }
@@ -294,7 +294,7 @@ impl UnitEditVal {
         self,
         user_id: &str,
         local_id_map: &HashMap<String, String>,
-    ) -> BaseResult<UnitEdit> {
+    ) -> BaseRest<UnitEdit> {
         match self {
             //
             Self::Create {
@@ -371,7 +371,7 @@ impl UnitEditVal {
 }
 
 // Validate a unit edit local reference id is non-empty.
-fn validate_id(id: &str) -> BaseResult<()> {
+fn validate_id(id: &str) -> BaseRest<()> {
     //
     if id.is_empty() {
         return Err(invalid_unit_edit_err());
@@ -392,7 +392,7 @@ fn invalid_unit_edit_err() -> BaseError {
 fn resolve_id(
     id: String,
     local_id_map: &HashMap<String, String>,
-) -> BaseResult<String> {
+) -> BaseRest<String> {
     //
     validate_id(&id)?;
 
@@ -408,7 +408,7 @@ fn resolve_id(
 fn resolve_patch_id(
     value: Patch<String>,
     local_id_map: &HashMap<String, String>,
-) -> BaseResult<Patch<String>> {
+) -> BaseRest<Patch<String>> {
     match value {
         //
         Patch::Clear => accept(Patch::Clear),

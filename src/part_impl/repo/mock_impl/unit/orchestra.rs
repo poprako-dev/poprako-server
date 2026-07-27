@@ -9,7 +9,7 @@ use crate::part_impl::repo::mock_impl::unit::{
     apply_edits, list_infos, list_orders,
 };
 use crate::part_impl::repo::mock_impl::{Mock, MockContext};
-use crate::result::{BaseError, BaseResult};
+use crate::result::{BaseError, BaseRest};
 
 impl Run<ListUnitInfos<'_>> for Mock {
     // Internal type alias for `Error`.
@@ -17,7 +17,7 @@ impl Run<ListUnitInfos<'_>> for Mock {
 
     #[instrument(level = "info", err(Debug), skip_all)]
     // Internal implementation of `run`.
-    async fn run(&self, oper: &ListUnitInfos<'_>) -> BaseResult<Vec<UnitInfo>> {
+    async fn run(&self, oper: &ListUnitInfos<'_>) -> BaseRest<Vec<UnitInfo>> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -37,7 +37,7 @@ impl Step<ListUnitOrders<'_>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &ListUnitOrders<'_>,
-    ) -> BaseResult<Vec<UnitOrder>> {
+    ) -> BaseRest<Vec<UnitOrder>> {
         list_orders(&context.state, oper.page_id)
     }
 }
@@ -52,7 +52,7 @@ impl Step<ApplyUnitEdits<'_>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &ApplyUnitEdits<'_>,
-    ) -> BaseResult<UnitCounters> {
+    ) -> BaseRest<UnitCounters> {
         apply_edits(&mut context.state, oper.page_id, oper.orders, oper.edits)
     }
 }

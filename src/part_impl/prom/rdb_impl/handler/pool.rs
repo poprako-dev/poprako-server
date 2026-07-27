@@ -24,7 +24,7 @@ use crate::part_impl::prom::rdb_impl::repo::{
 };
 use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::shared::RdbContext;
-use crate::result::BaseResult;
+use crate::result::BaseRest;
 
 #[cfg(all(test, feature = "rdb", feature = "prom_impl"))]
 // Internal organization of the `tests` module.
@@ -322,7 +322,7 @@ where
 
     #[instrument(level = "info", err(Debug), skip_all)]
     // Internal implementation of `poll`.
-    async fn poll(&self) -> BaseResult<Vec<LocalMessageRow>> {
+    async fn poll(&self) -> BaseRest<Vec<LocalMessageRow>> {
         //
         // Internal implementation detail.
         let conn = self.core.get().await?;
@@ -389,7 +389,7 @@ where
 
     #[instrument(level = "info", err(Debug), skip_all)]
     // Internal implementation of `complete`.
-    async fn complete(&self, id: &str, lease: i64) -> BaseResult<()> {
+    async fn complete(&self, id: &str, lease: i64) -> BaseRest<()> {
         //
         // Internal implementation detail.
         let conn = self.core.get().await?;
@@ -403,12 +403,7 @@ where
 
     #[instrument(level = "info", err(Debug), skip_all)]
     // Internal implementation of `retry`.
-    async fn retry(
-        &self,
-        id: &str,
-        lease: i64,
-        message: &str,
-    ) -> BaseResult<()> {
+    async fn retry(&self, id: &str, lease: i64, message: &str) -> BaseRest<()> {
         //
         // Internal implementation detail.
         let conn = self.core.get().await?;
@@ -427,12 +422,7 @@ where
 
     #[instrument(level = "info", err(Debug), skip_all)]
     // Internal implementation of `fail`.
-    async fn fail(
-        &self,
-        id: &str,
-        lease: i64,
-        message: &str,
-    ) -> BaseResult<()> {
+    async fn fail(&self, id: &str, lease: i64, message: &str) -> BaseRest<()> {
         //
         // Internal implementation detail.
         let conn = self.core.get().await?;
@@ -446,7 +436,7 @@ where
 
     #[instrument(level = "info", err(Debug), skip_all)]
     // Internal implementation of `reset_stuck`.
-    async fn reset_stuck(&self) -> BaseResult<()> {
+    async fn reset_stuck(&self) -> BaseRest<()> {
         //
         // Internal implementation detail.
         let conn = self.core.get().await?;
@@ -462,7 +452,7 @@ where
 
     #[instrument(level = "info", err(Debug), skip_all)]
     // Internal implementation of `purge_completed`.
-    async fn purge_completed(&self) -> BaseResult<usize> {
+    async fn purge_completed(&self) -> BaseRest<usize> {
         //
         // Internal implementation detail.
         let conn = self.core.get().await?;
@@ -483,7 +473,7 @@ where
 
     #[instrument(level = "info", err(Debug), skip_all)]
     // Internal implementation of `claim`.
-    async fn claim(&self, id: &str, lease: i64) -> BaseResult<bool> {
+    async fn claim(&self, id: &str, lease: i64) -> BaseRest<bool> {
         //
         // Internal implementation detail.
         let conn = self.core.get().await?;
