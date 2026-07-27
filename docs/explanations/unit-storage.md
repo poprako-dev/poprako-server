@@ -39,9 +39,11 @@ Page 响应同时返回：
 Edit 使用 `edit` 标签：
 
 - `create`：包含批内 `local_id`、必填 `is_bubble` 与 `coord`；
-  `next_id` 缺失或 null 表示尾插；translation/revision 可缺失或 null。
+  `next_id` 缺失表示尾插；translation/revision 可缺失。
 - `patch`：包含永久 `id`；`is_bubble`、`coord` 缺失或 null 表示不修改；
-  `next_id`、`translation`、`revision` 支持 Skip/Clear/Assign 三态。
+  `next_id`、`translation`、`revision` 缺失或 null 表示 Skip，使用
+  `{ "type": "clear" }` 表示 Clear，使用 `{ "type": "assign", "value": ... }`
+  表示 Assign。
 - `delete`：只包含永久 `id`，将 Unit 转为 tombstone。
 
 Create 先为全部 `local_id` 生成永久 ID，再解析同批次主体与 `next_id`
@@ -50,7 +52,7 @@ Create 先为全部 `local_id` 生成永久 ID，再解析同批次主体与 `ne
 同一批 edits 会先规范化：Delete 稳定前置、重复 Delete 去重、同 ID 的
 Save 按字段合并，Delete 与 Save 同时出现时收敛为 Save。Patch 会恢复
 hidden Unit。移动时先从包含 tombstone 的完整链摘除主体，再插入
-`next_id` 前方；Clear 表示尾部，Skip 保持位置。
+`next_id` 前方；显式 Clear 表示尾部，Skip 保持位置。
 
 最终 visible Unit 不得超过 100；tombstone 不占容量。
 
