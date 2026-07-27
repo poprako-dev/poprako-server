@@ -26,10 +26,14 @@ impl RdbDrive {
 }
 
 impl Nucl for RdbDrive {
+    // Transaction error type propagated through the Nucl trait.
     type Error = BaseError;
 
+    // Transaction context wrapping a pooled Diesel connection.
     type Context = RdbContext;
 
+    // Coordinates a closure within a database transaction, committing on success
+    // and rolling back on error.
     #[instrument(level = "info", skip_all)]
     async fn coord<F, T, E>(&self, f: F) -> Result<T, NuclError<Self::Error, E>>
     where

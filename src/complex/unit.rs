@@ -11,6 +11,7 @@ use crate::value::chapter::Stage;
 
 pub use perm::UnitPermComplex;
 
+// Permission gates for Unit reads and edit fields.
 mod perm;
 #[cfg(test)]
 mod tests;
@@ -89,6 +90,7 @@ impl UnitComplex {
         accept(edits)
     }
 
+    // Merge adjacent or contradictory edit operations into canonical forms.
     fn compress_edits(edits: &mut Vec<UnitEdit>) {
         //
         let mut last = edits.len();
@@ -137,43 +139,7 @@ impl UnitComplex {
         }
     }
 
-    fn merge_edits(earlier: &mut UnitEdit, later: &mut UnitEdit) {
-        //
-        let (
-            UnitEdit::Save {
-                id: earlier_id,
-                next_id: earlier_next_id,
-                is_bubble: earlier_is_bubble,
-                coord: earlier_coord,
-                translation: earlier_translation,
-                revision: earlier_revision,
-            },
-            UnitEdit::Save {
-                id: later_id,
-                next_id: later_next_id,
-                is_bubble: later_is_bubble,
-                coord: later_coord,
-                translation: later_translation,
-                revision: later_revision,
-            },
-        ) = (earlier, later)
-        else {
-            unreachable!("only Unit Save edits can be merged");
-        };
-
-        debug_assert_eq!(earlier_id, later_id);
-
-        inherit_option(earlier_is_bubble, later_is_bubble);
-
-        inherit_option(earlier_coord, later_coord);
-
-        inherit_patch(earlier_next_id, later_next_id);
-
-        inherit_patch(earlier_translation, later_translation);
-
-        inherit_patch(earlier_revision, later_revision);
-    }
-
+    // Validate cross-edit consistency: create/delete/patch order and pointer validity.
     fn final_validate_edits(
         base_ids: &[&str],
         edits: &[UnitEdit],
@@ -261,8 +227,47 @@ impl UnitComplex {
             accept(())
         })
     }
+
+    // Merge a prior save edit into a later save edit for the same unit.
+    fn merge_edits(earlier: &mut UnitEdit, later: &mut UnitEdit) {
+        //
+        let (
+            UnitEdit::Save {
+                id: earlier_id,
+                next_id: earlier_next_id,
+                is_bubble: earlier_is_bubble,
+                coord: earlier_coord,
+                translation: earlier_translation,
+                revision: earlier_revision,
+            },
+            UnitEdit::Save {
+                id: later_id,
+                next_id: later_next_id,
+                is_bubble: later_is_bubble,
+                coord: later_coord,
+                translation: later_translation,
+                revision: later_revision,
+            },
+        ) = (earlier, later)
+        else {
+            unreachable!("only Unit Save edits can be merged");
+        };
+
+        debug_assert_eq!(earlier_id, later_id);
+
+        inherit_option(earlier_is_bubble, later_is_bubble);
+
+        inherit_option(earlier_coord, later_coord);
+
+        inherit_patch(earlier_next_id, later_next_id);
+
+        inherit_patch(earlier_translation, later_translation);
+
+        inherit_patch(earlier_revision, later_revision);
+    }
 }
 
+// Move all items matching `pred` to the front while preserving stable order.
 fn stable_prior<T, P>(slice: &mut [T], mut pred: P) -> usize
 where
     P: FnMut(&T) -> bool,
@@ -281,18 +286,21 @@ where
     tail
 }
 
+// Copy the older optional value only when the newer optional is empty.
 fn inherit_option<T>(earlier: &mut Option<T>, later: &mut Option<T>) {
     if later.is_none() {
         *later = earlier.take();
     }
 }
 
+// Replace skipped newer patch values with previous values while keeping skips in place.
 fn inherit_patch<T>(earlier: &mut Patch<T>, later: &mut Patch<T>) {
     if matches!(later, Patch::Skip) {
         *later = std::mem::replace(earlier, Patch::Skip);
     }
 }
 
+// Build a shared unit edit validation error.
 fn invalid_unit_edit_err() -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Args,

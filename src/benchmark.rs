@@ -24,8 +24,11 @@ use crate::value::chapter::StageMask;
 use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
+// Number of chapters generated in the synthetic benchmark archive payload.
 const CHAPTER_COUNT: usize = 8;
+// Number of pages included in each benchmark chapter snapshot.
 const PAGE_COUNT: usize = 8;
+// Number of units included on each benchmark page.
 const UNIT_COUNT: usize = 48;
 
 /// Benchmarks archive preparation for a large comic snapshot.
@@ -144,6 +147,7 @@ pub fn order_visible_unit_ids(unit_order_input: UnitOrderInput) -> bool {
     visible_count == 100 && orders_by_id.is_empty()
 }
 
+// Builds one large benchmark archive snapshot with deterministic content.
 fn archive_snapshot() -> Option<ComicArchiveSnapshot> {
     //
     let stages = StageMask::try_from(0).ok()?;
@@ -269,58 +273,7 @@ fn archive_snapshot() -> Option<ComicArchiveSnapshot> {
     })
 }
 
-fn user_info(archived_at: OffsetDateTime) -> UserInfo {
-    UserInfo {
-        id: "user-1".into(),
-        qid: "benchmark-qid".into(),
-        nickname: "benchmark-user".into(),
-        avatar_key: None,
-        avatar_uploaded: false,
-        avatar_version: 0,
-        avatar_hash: ImageHash::default(),
-        avatar_ext: ImageExt::Png,
-        is_sadmin: false,
-        last_active_at: archived_at,
-        created_at: archived_at,
-        updated_at: archived_at,
-    }
-}
-
-fn unit_info(
-    page_id: &str,
-    chapter_index: usize,
-    page_index: usize,
-    unit_index: usize,
-    archived_at: OffsetDateTime,
-) -> UnitInfo {
-    UnitInfo {
-        id: format!("unit-{}-{}-{}", chapter_index, page_index, unit_index),
-        page_id: page_id.into(),
-        next_id: (unit_index + 1 < UNIT_COUNT).then(|| {
-            format!("unit-{}-{}-{}", chapter_index, page_index, unit_index + 1,)
-        }),
-        is_bubble: unit_index.is_multiple_of(2),
-        is_proofread: true,
-        coord: UnitCoord {
-            x_coord: unit_index as f64,
-            y_coord: page_index as f64,
-        },
-        translated_text: Some(format!(
-            "Translated text for chapter {}, page {}, unit {}.",
-            chapter_index, page_index, unit_index,
-        )),
-        last_translator_id: Some("user-1".into()),
-        proofread_text: Some(format!(
-            "Proofread text for chapter {}, page {}, unit {}.",
-            chapter_index, page_index, unit_index,
-        )),
-        last_proofreader_id: Some("user-1".into()),
-        hidden_at: None,
-        created_at: archived_at,
-        updated_at: archived_at,
-    }
-}
-
+// Returns cached benchmark LabelPlus text for parse benchmarks.
 fn label_plus_content() -> &'static str {
     //
     static CONTENT: OnceLock<String> = OnceLock::new();
@@ -332,6 +285,7 @@ fn label_plus_content() -> &'static str {
         .as_str()
 }
 
+// Loads benchmark Poprako payload text used by import benchmarks.
 fn poprako_content() -> &'static str {
     //
     static CONTENT: OnceLock<String> = OnceLock::new();
@@ -359,6 +313,7 @@ fn poprako_content() -> &'static str {
         .as_str()
 }
 
+// Builds a deterministic large payload reused by export benchmarks.
 fn export_input() -> LabelPlusExportInput {
     //
     let archived_at = OffsetDateTime::UNIX_EPOCH;
@@ -399,5 +354,59 @@ fn export_input() -> LabelPlusExportInput {
     LabelPlusExportInput {
         pages,
         units_by_page_id,
+    }
+}
+
+// Builds a deterministic user profile used in generated archive fixtures.
+fn user_info(archived_at: OffsetDateTime) -> UserInfo {
+    UserInfo {
+        id: "user-1".into(),
+        qid: "benchmark-qid".into(),
+        nickname: "benchmark-user".into(),
+        avatar_key: None,
+        avatar_uploaded: false,
+        avatar_version: 0,
+        avatar_hash: ImageHash::default(),
+        avatar_ext: ImageExt::Png,
+        is_sadmin: false,
+        last_active_at: archived_at,
+        created_at: archived_at,
+        updated_at: archived_at,
+    }
+}
+
+// Builds one deterministic page unit used by both archive and export fixtures.
+fn unit_info(
+    page_id: &str,
+    chapter_index: usize,
+    page_index: usize,
+    unit_index: usize,
+    archived_at: OffsetDateTime,
+) -> UnitInfo {
+    UnitInfo {
+        id: format!("unit-{}-{}-{}", chapter_index, page_index, unit_index),
+        page_id: page_id.into(),
+        next_id: (unit_index + 1 < UNIT_COUNT).then(|| {
+            format!("unit-{}-{}-{}", chapter_index, page_index, unit_index + 1,)
+        }),
+        is_bubble: unit_index.is_multiple_of(2),
+        is_proofread: true,
+        coord: UnitCoord {
+            x_coord: unit_index as f64,
+            y_coord: page_index as f64,
+        },
+        translated_text: Some(format!(
+            "Translated text for chapter {}, page {}, unit {}.",
+            chapter_index, page_index, unit_index,
+        )),
+        last_translator_id: Some("user-1".into()),
+        proofread_text: Some(format!(
+            "Proofread text for chapter {}, page {}, unit {}.",
+            chapter_index, page_index, unit_index,
+        )),
+        last_proofreader_id: Some("user-1".into()),
+        hidden_at: None,
+        created_at: archived_at,
+        updated_at: archived_at,
     }
 }

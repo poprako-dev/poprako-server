@@ -1,4 +1,7 @@
 //! Reusable traits and helpers shared across domain modules.
+//!
+//! This module currently hosts common value-object helpers that are used by
+//! many layers (model conversion, storage identifiers, and partial updates).
 
 use std::sync::OnceLock;
 
@@ -49,21 +52,18 @@ pub fn next_snowflake_u64() -> u64 {
 //     ret
 // }
 
-/// Initialise the global snowflake instance once from the
-/// `POPRAKO_SNOWFLAKE_NODE_ID` env var (defaults to 0).
-/// Initialise the global snowflake instance once from the
-/// `POPRAKO_SNOWFLAKE_NODE_ID` env var (defaults to 0).
+// Initialise the global snowflake instance once from the
+// `POPRAKO_SNOWFLAKE_NODE_ID` env var (defaults to 0).
 fn ensure_snowflake_init() {
     //
     // Only init snowflake instance once.
-    static INIT_GURAD: OnceLock<()> = OnceLock::new();
+    static INIT_GUARD: OnceLock<()> = OnceLock::new();
 
-    INIT_GURAD
+    INIT_GUARD
         .get_or_init(|| k_snowflake::set_instance(load_snowflake_node_id()));
 }
 
-/// Load the snowflake node ID from the `POPRAKO_SNOWFLAKE_NODE_ID` env var.
-/// Load the snowflake node ID from the `POPRAKO_SNOWFLAKE_NODE_ID` env var.
+// Load the snowflake node ID from the `POPRAKO_SNOWFLAKE_NODE_ID` env var.
 fn load_snowflake_node_id() -> u16 {
     //
     let value = match std::env::var("POPRAKO_SNOWFLAKE_NODE_ID") {
@@ -85,7 +85,7 @@ fn load_snowflake_node_id() -> u16 {
 ///
 /// `Skip` preserves the stored value, `Clear` resets it, and `Assign` replaces
 /// it with the carried value.
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize)]
 pub enum Patch<T> {
     /// Resets the stored field.
     Clear,
@@ -94,6 +94,7 @@ pub enum Patch<T> {
     Assign(T),
 
     /// Preserves the stored field.
+    #[default]
     Skip,
 }
 
@@ -123,6 +124,7 @@ impl<'de, T> Deserialize<'de> for Patch<T>
 where
     T: Deserialize<'de>,
 {
+    // Deserializes `null` → Clear, `"value"` → Assign(value).
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -133,11 +135,5 @@ where
 
             None => Ok(Self::Clear),
         }
-    }
-}
-
-impl<T> Default for Patch<T> {
-    fn default() -> Self {
-        Self::Skip
     }
 }

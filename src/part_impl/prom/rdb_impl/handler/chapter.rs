@@ -36,6 +36,7 @@ where
     }
 }
 
+// Internal implementation of `handle_raw_provide`.
 async fn handle_raw_provide<N, R, V>(
     nucl: &N,
     repo: &R,
@@ -50,6 +51,7 @@ where
     let outcome: BaseResult<bool> = nucl
         .coord(async move |context| {
             //
+            // Internal implementation detail.
             // NOTE: Chapter -> Page is the shared lock order that prevents
             // both deadlocks and chapter upload-summary races.
             repo.step(
@@ -72,8 +74,10 @@ where
 
     match outcome {
         //
+        // Internal implementation detail.
         Ok(true) => {
             //
+            // Internal implementation detail.
             develop
                 .develop(Event::ChapterWorkflowCompleted(
                     ChapterWorkflowCompletedPayload {

@@ -38,6 +38,7 @@ pub struct TermInfoVal {
 }
 
 impl From<TermInfo> for TermInfoVal {
+    // Convert terminology entry persistence model into response value.
     fn from(model: TermInfo) -> Self {
         Self {
             id: model.id,

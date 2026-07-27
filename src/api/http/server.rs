@@ -11,6 +11,31 @@ use crate::api::http::shared::prometheus::init_prometheus;
 use crate::api::http::state::AppHarn;
 
 /// Installs Ctrl+C and (on unix) SIGTERM handlers that stop the server.
+/// Binds `addr`, builds the router, and serves until shutdown.
+pub async fn serve<A>(harn: AppHarn, addr: A) -> anyhow::Result<()>
+where
+    A: ToSocketAddrs + std::fmt::Debug,
+{
+    init_prometheus()?;
+
+    let listener = TcpListener::bind(&addr)
+        .await
+        .with_context(|| format!("failed to bind listener on {:?}", addr))?;
+
+    tracing::info!(addr = ?addr, "listening");
+
+    let app = router::new(harn.clone()).with_state(harn);
+
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .with_graceful_shutdown(shutdown_signal())
+    .await
+    .with_context(|| "server error")
+}
+
+// Installs Ctrl+C and (on unix) SIGTERM handlers that stop the server.
 async fn shutdown_signal() {
     //
     let ctrl_c = async {
@@ -40,28 +65,4 @@ async fn shutdown_signal() {
     }
 
     tracing::info!("shutdown signal received, starting graceful shutdown");
-}
-
-/// Binds `addr`, builds the router, and serves until shutdown.
-pub async fn serve<A>(harn: AppHarn, addr: A) -> anyhow::Result<()>
-where
-    A: ToSocketAddrs + std::fmt::Debug,
-{
-    init_prometheus()?;
-
-    let listener = TcpListener::bind(&addr)
-        .await
-        .with_context(|| format!("failed to bind listener on {:?}", addr))?;
-
-    tracing::info!(addr = ?addr, "listening");
-
-    let app = router::new(harn.clone()).with_state(harn);
-
-    axum::serve(
-        listener,
-        app.into_make_service_with_connect_info::<SocketAddr>(),
-    )
-    .with_graceful_shutdown(shutdown_signal())
-    .await
-    .with_context(|| "server error")
 }

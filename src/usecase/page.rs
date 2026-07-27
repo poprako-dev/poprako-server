@@ -45,8 +45,10 @@ use crate::util::next_snowflake_id;
 
 pub use reserve::reserve_chapter_pages;
 
+// Page reservation workflow and related orchestration.
 mod reserve;
 #[cfg(test)]
+// Unit tests for page metadata and upload reservation flows.
 mod tests;
 
 /// Reserves a replacement image upload slot for one page.

@@ -72,28 +72,6 @@ pub struct ChapterInfoVal {
     pub updated_at: i64,
 }
 
-impl From<ChapterInfo> for ChapterInfoVal {
-    fn from(model: ChapterInfo) -> Self {
-        Self {
-            id: model.id,
-            comic_id: model.comic_id,
-            comic: None,
-            is_pinned: model.is_pinned,
-            index: model.index,
-            subtitle: model.subtitle,
-            page_count: model.page_count,
-            total_unit_count: model.total_unit_count,
-            translated_unit_count: model.translated_unit_count,
-            proofread_unit_count: model.proofread_unit_count,
-            stages: model.stages,
-            creator_id: model.creator_id,
-            creator: None,
-            created_at: model.created_at.to_unix_milli(),
-            updated_at: model.updated_at.to_unix_milli(),
-        }
-    }
-}
-
 impl ChapterInfoVal {
     /// Converts a chapter model into a presentation-ready value,
     /// resolving included creator avatar when present.
@@ -134,6 +112,29 @@ impl ChapterInfoVal {
             created_at: model.created_at.to_unix_milli(),
             updated_at: model.updated_at.to_unix_milli(),
         })
+    }
+}
+
+impl From<ChapterInfo> for ChapterInfoVal {
+    // Copy persisted chapter fields into the API value shape.
+    fn from(model: ChapterInfo) -> Self {
+        Self {
+            id: model.id,
+            comic_id: model.comic_id,
+            comic: None,
+            is_pinned: model.is_pinned,
+            index: model.index,
+            subtitle: model.subtitle,
+            page_count: model.page_count,
+            total_unit_count: model.total_unit_count,
+            translated_unit_count: model.translated_unit_count,
+            proofread_unit_count: model.proofread_unit_count,
+            stages: model.stages,
+            creator_id: model.creator_id,
+            creator: None,
+            created_at: model.created_at.to_unix_milli(),
+            updated_at: model.updated_at.to_unix_milli(),
+        }
     }
 }
 

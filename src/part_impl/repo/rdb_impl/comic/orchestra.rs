@@ -18,8 +18,10 @@ use crate::part_impl::shared::RdbContext;
 use crate::result::{BaseError, BaseResult};
 
 impl Run<GetComicInfo<'_, '_>> for RdbRepo {
+    // Maps the `GetComicInfo` repository operation to non-transactional execution.
     type Error = BaseError;
 
+    // Fetches one comic through `submit_query!` and applies caller-defined includes.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(&self, oper: &GetComicInfo<'_, '_>) -> BaseResult<ComicInfo> {
         submit_query!(self.core, get_info_by_id, oper.id, oper.incls)
@@ -27,8 +29,10 @@ impl Run<GetComicInfo<'_, '_>> for RdbRepo {
 }
 
 impl Run<ListComicInfos<'_>> for RdbRepo {
+    // Maps the `ListComicInfos` repository operation to non-transactional execution.
     type Error = BaseError;
 
+    // Loads matching comics and returns the list view for the requested spec.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
@@ -39,8 +43,10 @@ impl Run<ListComicInfos<'_>> for RdbRepo {
 }
 
 impl Run<UpdateComic<'_>> for RdbRepo {
+    // Maps the `UpdateComic` repository operation to non-transactional execution.
     type Error = BaseError;
 
+    // Writes the provided comic updates using the step-level `update_info` flow.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(&self, oper: &UpdateComic<'_>) -> BaseResult<()> {
         submit_query!(self.core, update_info, oper.update)
@@ -48,8 +54,10 @@ impl Run<UpdateComic<'_>> for RdbRepo {
 }
 
 impl Run<MarkComicCoverUploaded<'_>> for RdbRepo {
+    // Maps the `MarkComicCoverUploaded` repository operation to non-transactional execution.
     type Error = BaseError;
 
+    // Persists cover upload state (version/key/flag) and returns no payload.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(&self, oper: &MarkComicCoverUploaded<'_>) -> BaseResult<()> {
         submit_query!(
@@ -64,8 +72,10 @@ impl Run<MarkComicCoverUploaded<'_>> for RdbRepo {
 }
 
 impl Step<GetComicInfo<'_, '_>, RdbContext> for RdbRepo {
+    // Resolves a single comic record inside an existing DB transaction context.
     type Error = BaseError;
 
+    // Loads one comic with requested includes by delegating to the step helper.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
@@ -77,8 +87,10 @@ impl Step<GetComicInfo<'_, '_>, RdbContext> for RdbRepo {
 }
 
 impl Step<ListComicInfos<'_>, RdbContext> for RdbRepo {
+    // Resolves a comic list inside an existing DB transaction context.
     type Error = BaseError;
 
+    // Applies the list spec in the transaction and returns matching comic infos.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
@@ -90,8 +102,10 @@ impl Step<ListComicInfos<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<GetComicInfoExcluded<'_, '_>, RdbContext> for RdbRepo {
+    // Resolves one comic with excluded include payload inside a transaction.
     type Error = BaseError;
 
+    // Loads the comic while excluding non-essential relation expansion.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
@@ -103,8 +117,10 @@ impl Step<GetComicInfoExcluded<'_, '_>, RdbContext> for RdbRepo {
 }
 
 impl Step<ListComicInfosExcluded<'_>, RdbContext> for RdbRepo {
+    // Resolves a filtered excluded-comic list inside a transaction.
     type Error = BaseError;
 
+    // Applies excluded-list spec within transaction scope.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
@@ -116,8 +132,10 @@ impl Step<ListComicInfosExcluded<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<CreateComic<'_>, RdbContext> for RdbRepo {
+    // Creates one comic inside an active transaction context.
     type Error = BaseError;
 
+    // Inserts the comic entry payload and returns the persisted comic info.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
@@ -129,8 +147,10 @@ impl Step<CreateComic<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<ReserveComicCover<'_>, RdbContext> for RdbRepo {
+    // Reserves a comic cover upload slot inside an active transaction.
     type Error = BaseError;
 
+    // Creates reservation metadata for cover upload and returns claim details.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
@@ -143,8 +163,10 @@ impl Step<ReserveComicCover<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<MarkComicCoverUploaded<'_>, RdbContext> for RdbRepo {
+    // Marks cover upload state inside an active transaction.
     type Error = BaseError;
 
+    // Writes uploaded-cover state and persists metadata changes for the comic.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
@@ -163,8 +185,10 @@ impl Step<MarkComicCoverUploaded<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<DeleteComic<'_>, RdbContext> for RdbRepo {
+    // Deletes one comic inside an active transaction context.
     type Error = BaseError;
 
+    // Removes the comic record identified by id and returns after completion.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
@@ -176,8 +200,10 @@ impl Step<DeleteComic<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<AllocComicChapterIndex<'_>, RdbContext> for RdbRepo {
+    // Allocates the next chapter index inside an active transaction context.
     type Error = BaseError;
 
+    // Increments and returns the next chapter index for the comic.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
@@ -189,8 +215,10 @@ impl Step<AllocComicChapterIndex<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<UpdateComicChapterCount<'_>, RdbContext> for RdbRepo {
+    // Updates chapter-count totals inside an active transaction context.
     type Error = BaseError;
 
+    // Applies a chapter-count delta to keep denormalized counters synchronized.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
@@ -202,8 +230,10 @@ impl Step<UpdateComicChapterCount<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<TouchComicLastActive<'_>, RdbContext> for RdbRepo {
+    // Touches last-active timestamp inside an active transaction context.
     type Error = BaseError;
 
+    // Updates comic activity marker so last-access timing stays fresh.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,

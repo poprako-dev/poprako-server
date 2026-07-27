@@ -29,6 +29,7 @@ pub enum ComicInclOpt {
 }
 
 impl InclOpt for ComicInclOpt {
+    // Expand comic include options into required dependency path segments.
     fn path(self) -> &'static [Self] {
         match self {
             //

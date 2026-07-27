@@ -23,6 +23,7 @@ use crate::value::image::{ImageExt, ImageHash};
 use crate::value::incl::expand_incl_opts;
 use crate::value::index::user_index_to_stored_index;
 
+// Find and clone a workset from mock storage by id.
 fn find_workset(state: &MockState, workset_id: &str) -> Option<WorksetInfo> {
     state
         .worksets
@@ -31,6 +32,7 @@ fn find_workset(state: &MockState, workset_id: &str) -> Option<WorksetInfo> {
         .cloned()
 }
 
+// Resolve the team owner of a workset for relation enrichment.
 fn find_team_for_workset(
     state: &MockState,
     workset: &WorksetInfo,
@@ -42,6 +44,7 @@ fn find_team_for_workset(
         .cloned()
 }
 
+// Resolve a user from mock state for creator relation enrichment.
 fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
     state
         .users
@@ -50,6 +53,7 @@ fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
         .cloned()
 }
 
+// Populate workset field when workset include is requested.
 fn apply_workset_incl(
     state: &MockState,
     comic_info: &mut ComicInfo,
@@ -63,6 +67,7 @@ fn apply_workset_incl(
     }
 }
 
+// Populate team field when team include is requested.
 fn apply_team_incl(
     state: &MockState,
     comic_info: &mut ComicInfo,
@@ -82,6 +87,7 @@ fn apply_team_incl(
     comic_info.team = find_team_for_workset(state, workset_info);
 }
 
+// Populate creator/workset/team fields according to include options.
 fn apply_creator_incl(
     state: &MockState,
     comic_info: &mut ComicInfo,
@@ -95,6 +101,7 @@ fn apply_creator_incl(
     }
 }
 
+// Apply relation includes to a comic summary in a stable order.
 fn apply_comic_incls(
     state: &MockState,
     comic_info: &mut ComicInfo,
@@ -125,26 +132,7 @@ fn apply_comic_incls(
     }
 }
 
-fn comic_matches_kind(
-    state: &MockState,
-    comic_info: &ComicInfo,
-    kind: &ComicInfoListKind,
-) -> bool {
-    match kind {
-        //
-        ComicInfoListKind::All => true,
-
-        ComicInfoListKind::Stages(stage_mask) => state
-            .chapters
-            .iter()
-            .find(|chapter_info| {
-                chapter_info.comic_id == comic_info.id && chapter_info.is_pinned
-            })
-            .map(|chapter_info| chapter_info.stages.matches_filter(*stage_mask))
-            .unwrap_or(false),
-    }
-}
-
+// Check title/index fuzzy condition for list filtering.
 fn comic_matches_fuzzy(comic_info: &ComicInfo, fuzzy_title: &str) -> bool {
     //
     let composed_title = ComicComplex::compose_title(
@@ -170,8 +158,28 @@ fn comic_matches_fuzzy(comic_info: &ComicInfo, fuzzy_title: &str) -> bool {
     }
 }
 
-/// Updates a comic record to mark its cover as uploaded, verifying the cover version
-/// to detect stale uploads.
+// Check whether a comic matches list scope constraints.
+fn comic_matches_kind(
+    state: &MockState,
+    comic_info: &ComicInfo,
+    kind: &ComicInfoListKind,
+) -> bool {
+    match kind {
+        //
+        ComicInfoListKind::All => true,
+
+        ComicInfoListKind::Stages(stage_mask) => state
+            .chapters
+            .iter()
+            .find(|chapter_info| {
+                chapter_info.comic_id == comic_info.id && chapter_info.is_pinned
+            })
+            .map(|chapter_info| chapter_info.stages.matches_filter(*stage_mask))
+            .unwrap_or(false),
+    }
+}
+
+// Validate optimistic fields and toggle comic cover uploaded flag.
 fn mark_comic_cover_uploaded(
     state: &mut MockState,
     id: &str,
@@ -201,6 +209,7 @@ fn mark_comic_cover_uploaded(
     accept(())
 }
 
+// Load one comic and hydrate include fields.
 fn get_comic_info(
     state: &MockState,
     id: &str,
@@ -219,6 +228,7 @@ fn get_comic_info(
     accept(comic_info)
 }
 
+// Build filtered, sorted and paginated comic lists.
 fn list_comic_infos(
     state: &MockState,
     spec: &ComicInfoListSpec,
@@ -267,9 +277,11 @@ fn list_comic_infos(
 }
 
 impl<'a, 'b> Run<GetComicInfo<'a, 'b>> for Mock {
+    // Use base error type for get-by-id read operation.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Load locked state and delegate to shared helper.
     async fn run(
         &self,
         oper: &GetComicInfo<'a, 'b>,
@@ -282,9 +294,11 @@ impl<'a, 'b> Run<GetComicInfo<'a, 'b>> for Mock {
 }
 
 impl<'a> Run<ListComicInfos<'a>> for Mock {
+    // Use base error type for list operation.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Load locked state and execute listing helper.
     async fn run(
         &self,
         oper: &ListComicInfos<'a>,
@@ -297,9 +311,11 @@ impl<'a> Run<ListComicInfos<'a>> for Mock {
 }
 
 impl<'a> Run<UpdateComic<'a>> for Mock {
+    // Use base error type for full-run metadata updates.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Apply mutable field updates and touch updated_at.
     async fn run(&self, oper: &UpdateComic<'a>) -> Result<(), Self::Error> {
         //
         let mut state = self.state.lock().unwrap();
@@ -323,9 +339,11 @@ impl<'a> Run<UpdateComic<'a>> for Mock {
 }
 
 impl<'a> Run<MarkComicCoverUploaded<'a>> for Mock {
+    // Use base error type for cover upload mark operations.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Validate and apply cover upload transition under lock.
     async fn run(
         &self,
         oper: &MarkComicCoverUploaded<'a>,
@@ -344,9 +362,11 @@ impl<'a> Run<MarkComicCoverUploaded<'a>> for Mock {
 }
 
 impl<'a> Step<CreateComic<'a>, MockContext> for Mock {
+    // Use base errors for create step inside transaction context.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Check id collision, then insert a new comic model and return snapshot.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -393,9 +413,11 @@ impl<'a> Step<CreateComic<'a>, MockContext> for Mock {
 }
 
 impl<'a, 'b> Step<GetComicInfo<'a, 'b>, MockContext> for Mock {
+    // Use base errors for mocked transaction get.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Load one comic and resolve its requested includes.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -406,9 +428,11 @@ impl<'a, 'b> Step<GetComicInfo<'a, 'b>, MockContext> for Mock {
 }
 
 impl<'a, 'b> Step<GetComicInfoExcluded<'a, 'b>, MockContext> for Mock {
+    // Use base errors for excluded projection get operation.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Reuse shared read helper, applying exclusion-aware include list.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -419,9 +443,11 @@ impl<'a, 'b> Step<GetComicInfoExcluded<'a, 'b>, MockContext> for Mock {
 }
 
 impl<'a> Step<ListComicInfosExcluded<'a>, MockContext> for Mock {
+    // Use base errors for transaction list operation.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Return list built by shared helper for excluded projection.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -432,9 +458,11 @@ impl<'a> Step<ListComicInfosExcluded<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<ListComicInfos<'a>, MockContext> for Mock {
+    // Use base errors for transaction list operation.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Return list using shared filtering/sorting/page helper.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -445,9 +473,11 @@ impl<'a> Step<ListComicInfos<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<ReserveComicCover<'a>, MockContext> for Mock {
+    // Use base errors for cover reservation steps.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Reuse cover key/version state and return existing or new reservation.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -517,9 +547,11 @@ impl<'a> Step<ReserveComicCover<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<MarkComicCoverUploaded<'a>, MockContext> for Mock {
+    // Use base errors for mock cover upload updates.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Apply cover upload state changes using shared helper after lock resolution.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -536,9 +568,11 @@ impl<'a> Step<MarkComicCoverUploaded<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<DeleteComic<'a>, MockContext> for Mock {
+    // Use base errors for mocked deletion operations.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Remove comic and cascade related in-memory entities.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -586,16 +620,18 @@ impl<'a> Step<DeleteComic<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<AllocComicChapterIndex<'a>, MockContext> for Mock {
+    // Use base errors for chapter index allocation in mock.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Validate existence and compute next chapter index from current count.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &AllocComicChapterIndex<'a>,
     ) -> Result<i32, Self::Error> {
         //
-        // verify the comic exists
+        // Validate comic exists before computing chapter count.
         context
             .state
             .comics
@@ -615,15 +651,18 @@ impl<'a> Step<AllocComicChapterIndex<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<UpdateComicChapterCount<'a>, MockContext> for Mock {
+    // Use base errors for chapter count updates in mock.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Update chapter count with delta and refresh the timestamp.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &UpdateComicChapterCount<'a>,
     ) -> Result<(), Self::Error> {
         //
+        // Locate comic row and apply chapter count delta.
         let comic = context
             .state
             .comics
@@ -640,15 +679,18 @@ impl<'a> Step<UpdateComicChapterCount<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<TouchComicLastActive<'a>, MockContext> for Mock {
+    // Use base errors for updating comic heartbeat timestamps.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Refresh last-active and updated timestamps for heartbeat signals.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &TouchComicLastActive<'a>,
     ) -> Result<(), Self::Error> {
         //
+        // Update both heartbeat and updated timestamps.
         let comic = context
             .state
             .comics

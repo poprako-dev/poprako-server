@@ -42,6 +42,9 @@ from pathlib import Path
 import tree_sitter
 import tree_sitter_rust
 
+sys.path.insert(0, str(Path(__file__).parents[1]))
+from production_source import production_source
+
 
 ROOT = Path(__file__).parents[2]
 PARSER = tree_sitter.Parser(tree_sitter.Language(tree_sitter_rust.language()))
@@ -65,8 +68,7 @@ ITEM_KINDS = (
 
 
 def _is_excluded_path(path: Path, root: Path) -> bool:
-    """Return True for test fixtures, generated code, operation descriptors,
-    and similar files whose missing doc comments are not worth flagging."""
+    """Return True for test fixtures and generated code."""
 
     relative = path.relative_to(root)
     parts = relative.parts
@@ -75,9 +77,6 @@ def _is_excluded_path(path: Path, root: Path) -> bool:
         return True
 
     if "entity" in parts:
-        return True
-
-    if "oper" in parts:
         return True
 
     if any(part.startswith("test_") for part in parts):
@@ -274,7 +273,7 @@ def has_comment(
 
 
 def check_file(path: Path, root: Path) -> list[str]:
-    source = path.read_bytes()
+    source = production_source(path, root)
     tree = PARSER.parse(source)
     diagnostics: list[str] = []
 

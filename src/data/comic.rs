@@ -250,8 +250,10 @@ pub struct ListComicInfosParams {
 }
 
 impl TryFrom<ListComicInfosParams> for ComicInfoListSpec {
+    // The error type for invalid listing parameters.
     type Error = BaseError;
 
+    // Convert validated query parameters into the domain list spec.
     fn try_from(params: ListComicInfosParams) -> BaseResult<Self> {
         //
         let stages =

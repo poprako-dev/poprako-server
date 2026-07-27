@@ -27,20 +27,32 @@ use crate::part_impl::shared::RdbContext;
 use crate::result::BaseResult;
 
 #[cfg(all(test, feature = "rdb", feature = "prom_impl"))]
+// Internal organization of the `tests` module.
 mod tests;
 
+// Constant definition for `WORKER_COUNT`.
 const WORKER_COUNT: usize = 4;
+// Constant definition for `POLL_INTERVAL`.
 const POLL_INTERVAL: StdDuration = StdDuration::from_secs(60);
+// Constant definition for `STUCK_RESET_INTERVAL`.
 const STUCK_RESET_INTERVAL: Duration = Duration::minutes(1);
+// Constant definition for `RETRY_DELAY`.
 const RETRY_DELAY: Duration = Duration::minutes(5);
+// Constant definition for `PROCESSING_TIMEOUT`.
 const PROCESSING_TIMEOUT: Duration = Duration::minutes(15);
+// Constant definition for `COMPLETED_RETENTION`.
 const COMPLETED_RETENTION: Duration = Duration::days(7);
+// Constant definition for `DEAD_RETENTION`.
 const DEAD_RETENTION: Duration = Duration::days(30);
+// Constant definition for `COMPLETED_PURGE_INTERVAL`.
 const COMPLETED_PURGE_INTERVAL: Duration = Duration::hours(1);
 
+// Constant definition for `FNV_OFFSET_BASIS`.
 const FNV_OFFSET_BASIS: u64 = 14_695_981_039_346_656_037;
+// Constant definition for `FNV_PRIME`.
 const FNV_PRIME: u64 = 1_099_511_628_211;
 
+// Internal type alias for `WorkerSender`.
 type WorkerSender = mpsc::UnboundedSender<LocalMessageRow>;
 
 /// Enforces the retry limit for a task flow.
@@ -54,6 +66,7 @@ pub fn enforce_retry_limit(
 ) -> TaskFlow {
     match (task_flow, retried_count >= 3) {
         //
+        // Internal implementation detail.
         (TaskFlow::Retry(error), true) => TaskFlow::Dead(error),
 
         (task_flow, _) => task_flow,
@@ -69,6 +82,7 @@ where
     #[instrument(level = "info", skip_all)]
     pub async fn run(self) {
         //
+        // Internal implementation detail.
         let handler = Arc::new(self);
 
         let completed = Arc::new(Notify::new());
@@ -92,17 +106,20 @@ where
         }
     }
 
+    // Internal implementation of `spawn_workers`.
     fn spawn_workers(
         self: &Arc<Self>,
         completed: Arc<Notify>,
     ) -> (Vec<WorkerSender>, Vec<JoinHandle<()>>) {
         //
+        // Internal implementation detail.
         let mut worker_senders = Vec::with_capacity(WORKER_COUNT);
 
         let mut worker_handles = Vec::with_capacity(WORKER_COUNT);
 
         for worker_index in 0..WORKER_COUNT {
             //
+            // Internal implementation detail.
             let (worker_sender, mut worker_receiver) =
                 mpsc::unbounded_channel();
 
@@ -112,8 +129,10 @@ where
 
             let worker_handle = tokio::spawn(async move {
                 //
+                // Internal implementation detail.
                 while let Some(row) = worker_receiver.recv().await {
                     //
+                    // Internal implementation detail.
                     handler.process_row(&row).await;
 
                     completed.notify_one();
@@ -133,18 +152,21 @@ where
         (worker_senders, worker_handles)
     }
 
+    // Internal implementation of `run_supervisor`.
     async fn run_supervisor(
         &self,
         worker_senders: &[WorkerSender],
         completed: &Notify,
     ) {
         //
+        // Internal implementation detail.
         let mut next_stuck_reset_at = OffsetDateTime::now_utc();
 
         let mut next_completed_purge_at = OffsetDateTime::now_utc();
 
         loop {
             //
+            // Internal implementation detail.
             if self.token.is_cancelled() {
                 break;
             }
@@ -153,6 +175,7 @@ where
 
             if now >= next_stuck_reset_at {
                 //
+                // Internal implementation detail.
                 self.log_reset_stuck().await;
 
                 next_stuck_reset_at = now + STUCK_RESET_INTERVAL;
@@ -160,6 +183,7 @@ where
 
             if now >= next_completed_purge_at {
                 //
+                // Internal implementation detail.
                 self.log_purge_completed().await;
 
                 next_completed_purge_at = now + COMPLETED_PURGE_INTERVAL;
@@ -167,10 +191,12 @@ where
 
             let dispatched = match self.poll().await {
                 //
+                // Internal implementation detail.
                 Ok(rows) => self.dispatch_rows(worker_senders, rows).await,
 
                 Err(error) => {
                     //
+                    // Internal implementation detail.
                     tracing::error!(
                         error = ?error,
                         "[RdbPromHandler::run] poll failed",
@@ -193,68 +219,11 @@ where
         }
     }
 
-    async fn dispatch_rows(
-        &self,
-        worker_senders: &[WorkerSender],
-        rows: Vec<LocalMessageRow>,
-    ) -> bool {
-        //
-        let mut dispatched = false;
-
-        for row in rows {
-            //
-            let claimed = match self.claim(&row.f_id, row.f_lease).await {
-                //
-                Ok(claimed) => claimed,
-
-                Err(error) => {
-                    //
-                    tracing::error!(
-                        id = %row.f_id,
-                        error = ?error,
-                        "[RdbPromHandler::dispatch_rows] claim failed",
-                    );
-
-                    continue;
-                }
-            };
-
-            if !claimed {
-                continue;
-            }
-
-            let worker_index = topic_worker_index(&row.f_topic);
-
-            match worker_senders[worker_index].send(row) {
-                //
-                Ok(()) => dispatched = true,
-
-                Err(error) => {
-                    tracing::error!(
-                        id = %error.0.f_id,
-                        worker_index,
-                        "[RdbPromHandler::dispatch_rows] worker channel closed",
-                    );
-                }
-            }
-        }
-
-        dispatched
-    }
-
-    #[instrument(level = "info", err(Debug), skip_all)]
-    async fn poll(&self) -> BaseResult<Vec<LocalMessageRow>> {
-        //
-        let conn = self.core.get().await?;
-
-        let mut context = RdbContext::new(conn);
-
-        self.repo.step(&mut context, &PollPending).await
-    }
-
     #[instrument(level = "info", skip_all)]
+    // Internal implementation of `process_row`.
     async fn process_row(&self, row: &LocalMessageRow) {
         //
+        // Internal implementation detail.
         let task_flow = dispatch_payload(
             &self.nucl,
             self.repo.inner(),
@@ -269,6 +238,7 @@ where
 
         match task_flow {
             //
+            // Internal implementation detail.
             TaskFlow::Complete => {
                 if let Err(error) = self.complete(&row.f_id, row.f_lease).await
                 {
@@ -295,6 +265,7 @@ where
 
             TaskFlow::Dead(error) => {
                 //
+                // Internal implementation detail.
                 tracing::error!(
                     id = %row.f_id,
                     topic = %row.f_topic,
@@ -316,69 +287,7 @@ where
         }
     }
 
-    #[instrument(level = "info", err(Debug), skip_all)]
-    async fn claim(&self, id: &str, lease: i64) -> BaseResult<bool> {
-        //
-        let conn = self.core.get().await?;
-
-        let mut context = RdbContext::new(conn);
-
-        self.repo
-            .step(&mut context, &ClaimPending::new(id, lease))
-            .await
-    }
-
-    #[instrument(level = "info", err(Debug), skip_all)]
-    async fn complete(&self, id: &str, lease: i64) -> BaseResult<()> {
-        //
-        let conn = self.core.get().await?;
-
-        let mut context = RdbContext::new(conn);
-
-        self.repo
-            .step(&mut context, &CompleteMessage::new(id, lease))
-            .await
-    }
-
-    #[instrument(level = "info", err(Debug), skip_all)]
-    async fn fail(
-        &self,
-        id: &str,
-        lease: i64,
-        message: &str,
-    ) -> BaseResult<()> {
-        //
-        let conn = self.core.get().await?;
-
-        let mut context = RdbContext::new(conn);
-
-        self.repo
-            .step(&mut context, &FailMessage::new(id, lease, message))
-            .await
-    }
-
-    #[instrument(level = "info", err(Debug), skip_all)]
-    async fn retry(
-        &self,
-        id: &str,
-        lease: i64,
-        message: &str,
-    ) -> BaseResult<()> {
-        //
-        let conn = self.core.get().await?;
-
-        let mut context = RdbContext::new(conn);
-
-        let visible_at = OffsetDateTime::now_utc() + RETRY_DELAY;
-
-        self.repo
-            .step(
-                &mut context,
-                &RetryMessage::new(id, lease, message, &visible_at),
-            )
-            .await
-    }
-
+    // Internal implementation of `log_reset_stuck`.
     async fn log_reset_stuck(&self) {
         if let Err(error) = self.reset_stuck().await {
             tracing::error!(
@@ -388,23 +297,11 @@ where
         }
     }
 
-    #[instrument(level = "info", err(Debug), skip_all)]
-    async fn reset_stuck(&self) -> BaseResult<()> {
-        //
-        let conn = self.core.get().await?;
-
-        let mut context = RdbContext::new(conn);
-
-        let before = OffsetDateTime::now_utc() - PROCESSING_TIMEOUT;
-
-        self.repo
-            .step(&mut context, &ResetStuck::new(&before))
-            .await
-    }
-
+    // Internal implementation of `log_purge_completed`.
     async fn log_purge_completed(&self) {
         match self.purge_completed().await {
             //
+            // Internal implementation detail.
             Ok(purged_count) => {
                 if purged_count > 0 {
                     tracing::info!(
@@ -424,8 +321,150 @@ where
     }
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `poll`.
+    async fn poll(&self) -> BaseResult<Vec<LocalMessageRow>> {
+        //
+        // Internal implementation detail.
+        let conn = self.core.get().await?;
+
+        let mut context = RdbContext::new(conn);
+
+        self.repo.step(&mut context, &PollPending).await
+    }
+
+    // Internal implementation of `dispatch_rows`.
+    async fn dispatch_rows(
+        &self,
+        worker_senders: &[WorkerSender],
+        rows: Vec<LocalMessageRow>,
+    ) -> bool {
+        //
+        // Internal implementation detail.
+        let mut dispatched = false;
+
+        for row in rows {
+            //
+            // Internal implementation detail.
+            let claimed = match self.claim(&row.f_id, row.f_lease).await {
+                //
+                // Internal implementation detail.
+                Ok(claimed) => claimed,
+
+                Err(error) => {
+                    //
+                    // Internal implementation detail.
+                    tracing::error!(
+                        id = %row.f_id,
+                        error = ?error,
+                        "[RdbPromHandler::dispatch_rows] claim failed",
+                    );
+
+                    continue;
+                }
+            };
+
+            if !claimed {
+                continue;
+            }
+
+            let worker_index = topic_worker_index(&row.f_topic);
+
+            match worker_senders[worker_index].send(row) {
+                //
+                // Internal implementation detail.
+                Ok(()) => dispatched = true,
+
+                Err(error) => {
+                    tracing::error!(
+                        id = %error.0.f_id,
+                        worker_index,
+                        "[RdbPromHandler::dispatch_rows] worker channel closed",
+                    );
+                }
+            }
+        }
+
+        dispatched
+    }
+
+    #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `complete`.
+    async fn complete(&self, id: &str, lease: i64) -> BaseResult<()> {
+        //
+        // Internal implementation detail.
+        let conn = self.core.get().await?;
+
+        let mut context = RdbContext::new(conn);
+
+        self.repo
+            .step(&mut context, &CompleteMessage::new(id, lease))
+            .await
+    }
+
+    #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `retry`.
+    async fn retry(
+        &self,
+        id: &str,
+        lease: i64,
+        message: &str,
+    ) -> BaseResult<()> {
+        //
+        // Internal implementation detail.
+        let conn = self.core.get().await?;
+
+        let mut context = RdbContext::new(conn);
+
+        let visible_at = OffsetDateTime::now_utc() + RETRY_DELAY;
+
+        self.repo
+            .step(
+                &mut context,
+                &RetryMessage::new(id, lease, message, &visible_at),
+            )
+            .await
+    }
+
+    #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `fail`.
+    async fn fail(
+        &self,
+        id: &str,
+        lease: i64,
+        message: &str,
+    ) -> BaseResult<()> {
+        //
+        // Internal implementation detail.
+        let conn = self.core.get().await?;
+
+        let mut context = RdbContext::new(conn);
+
+        self.repo
+            .step(&mut context, &FailMessage::new(id, lease, message))
+            .await
+    }
+
+    #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `reset_stuck`.
+    async fn reset_stuck(&self) -> BaseResult<()> {
+        //
+        // Internal implementation detail.
+        let conn = self.core.get().await?;
+
+        let mut context = RdbContext::new(conn);
+
+        let before = OffsetDateTime::now_utc() - PROCESSING_TIMEOUT;
+
+        self.repo
+            .step(&mut context, &ResetStuck::new(&before))
+            .await
+    }
+
+    #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `purge_completed`.
     async fn purge_completed(&self) -> BaseResult<usize> {
         //
+        // Internal implementation detail.
         let conn = self.core.get().await?;
 
         let mut context = RdbContext::new(conn);
@@ -441,10 +480,26 @@ where
             )
             .await
     }
+
+    #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `claim`.
+    async fn claim(&self, id: &str, lease: i64) -> BaseResult<bool> {
+        //
+        // Internal implementation detail.
+        let conn = self.core.get().await?;
+
+        let mut context = RdbContext::new(conn);
+
+        self.repo
+            .step(&mut context, &ClaimPending::new(id, lease))
+            .await
+    }
 }
 
+// Internal implementation of `topic_worker_index`.
 fn topic_worker_index(topic: &str) -> usize {
     //
+    // Internal implementation detail.
     let hash = topic.bytes().fold(FNV_OFFSET_BASIS, |hash, byte| {
         (hash ^ u64::from(byte)).wrapping_mul(FNV_PRIME)
     });

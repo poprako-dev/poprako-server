@@ -16,15 +16,16 @@ use crate::part::repo::system_mail::SystemMailRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
 
-/// Chapter event handlers.
+// Chapter event handlers.
 mod chapter;
-/// Event dispatch logic.
+// Event dispatch logic.
 mod dispatch;
-/// Background event handler runner.
+// Background event handler runner.
 mod handler;
 #[cfg(test)]
+// Mock and integration tests for async dispatcher behavior.
 mod tests;
-/// User event handlers.
+// User event handlers.
 mod user;
 
 /// Async side-effect dispatcher backed by a bounded channel.
@@ -35,22 +36,13 @@ mod user;
 /// events gracefully.
 pub struct AsyncEffectDevelop {
     //
+    // Internal state field `send`.
     /// Bounded channel sender for enqueueing events.
     send: Sender<Event>,
     /// Cancellation token to signal graceful shutdown.
     token: CancellationToken,
     /// Watch receiver that signals when background processing completes.
     done: watch::Receiver<bool>,
-}
-
-impl Clone for AsyncEffectDevelop {
-    fn clone(&self) -> Self {
-        Self {
-            send: self.send.clone(),
-            token: self.token.clone(),
-            done: self.done.clone(),
-        }
-    }
 }
 
 impl AsyncEffectDevelop {
@@ -78,6 +70,7 @@ impl AsyncEffectDevelop {
 
         tokio::spawn(async move {
             //
+            // Internal implementation detail.
             handler.run().await;
 
             done_send.send_replace(true);
@@ -90,6 +83,7 @@ impl AsyncEffectDevelop {
     #[instrument(level = "info", skip_all)]
     pub async fn close(&self) {
         //
+        // Internal implementation detail.
         self.token.cancel();
 
         let mut done = self.done.clone();
@@ -103,8 +97,20 @@ impl AsyncEffectDevelop {
     }
 }
 
+impl Clone for AsyncEffectDevelop {
+    // Internal implementation of `clone`.
+    fn clone(&self) -> Self {
+        Self {
+            send: self.send.clone(),
+            token: self.token.clone(),
+            done: self.done.clone(),
+        }
+    }
+}
+
 impl EffectDevelop for AsyncEffectDevelop {
     #[instrument(level = "info", skip_all)]
+    // Internal implementation of `develop`.
     async fn develop<I>(&self, iter: I)
     where
         I: EventIter + Send,
@@ -117,11 +123,12 @@ impl EffectDevelop for AsyncEffectDevelop {
             if let Err(e) = self.send.try_send(event) {
                 match e {
                     //
+                    // Internal implementation detail.
                     TrySendError::Full(_) if self.token.is_cancelled() => {
                         break;
                     }
 
-                    //
+                    // Internal implementation detail.
                     TrySendError::Full(event) => {
                         tracing::warn!(
                             event = event_name(&event),
@@ -135,6 +142,7 @@ impl EffectDevelop for AsyncEffectDevelop {
 
                     TrySendError::Closed(event) => {
                         //
+                        // Internal implementation detail.
                         tracing::warn!(
                             event = event_name(&event),
                             "[AsyncEffectDevelop::develop] event queue is closed, dropping event",
@@ -149,15 +157,18 @@ impl EffectDevelop for AsyncEffectDevelop {
 }
 
 impl Drop for AsyncEffectDevelop {
+    // Internal implementation of `drop`.
     fn drop(&mut self) {
         self.token.cancel();
     }
 }
 
 /// Returns a human-readable label for a domain event variant.
+// Used by queue diagnostics when logging full/closed queue drop events.
 fn event_name(event: &Event) -> &'static str {
     match event {
         //
+        // Internal state field Event.
         Event::UserActive(_) => "user_active",
 
         Event::UserSignedUp(_) => "user_signed_up",

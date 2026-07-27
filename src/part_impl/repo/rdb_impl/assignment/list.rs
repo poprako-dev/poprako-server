@@ -12,16 +12,6 @@ use crate::part_impl::shared::result::diesel;
 use crate::result::{BaseResult, accept};
 use crate::value::role::RoleField;
 
-fn row_into_info(row: AssignmentRow) -> BaseResult<AssignmentInfo> {
-    row.try_into()
-}
-
-fn rows_into_infos(
-    rows: Vec<AssignmentRow>,
-) -> BaseResult<Vec<AssignmentInfo>> {
-    rows.into_iter().map(row_into_info).collect()
-}
-
 /// Queries assignment infos selected by the repository operation.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos(
@@ -29,6 +19,8 @@ pub async fn list_infos(
     oper: &ListAssignmentInfos<'_, '_>,
 ) -> BaseResult<Vec<AssignmentInfo>> {
     //
+    // Build the query shape from the operation mode first so the same pipeline can be reused
+    // for all list variants.
     let (role, incl_opt, page, mut query) = match oper {
         //
         ListAssignmentInfos::Spec { spec } => match spec {
@@ -87,6 +79,7 @@ pub async fn list_infos(
         ),
     };
 
+    // Apply a role filter only when the caller explicitly requests one.
     if let Some(role) = role {
         query = match role {
             //
@@ -128,6 +121,7 @@ pub async fn list_infos(
         .select(AssignmentRow::as_select())
         .order_by((f_created_at.desc(), f_id.asc()));
 
+    // Pull one page when pagination is set; otherwise return the full list.
     let rows: Vec<AssignmentRow> = match page {
         //
         Some((offset, limit)) => {
@@ -142,10 +136,24 @@ pub async fn list_infos(
     }
     .map_err(diesel)?;
 
+    // Convert DB rows to domain values, then hydrate the configured eager relations.
     let mut infos = rows_into_infos(rows)?;
 
     incl::assignment::populate_assignment_incls(conn, &mut infos, incl_opt)
         .await?;
 
     accept(infos)
+}
+
+// Map query rows into public-facing assignment infos by converting each row and
+// bubbling mapping errors immediately.
+fn rows_into_infos(
+    rows: Vec<AssignmentRow>,
+) -> BaseResult<Vec<AssignmentInfo>> {
+    rows.into_iter().map(row_into_info).collect()
+}
+
+// Convert one persisted assignment row into the API-facing info DTO.
+fn row_into_info(row: AssignmentRow) -> BaseResult<AssignmentInfo> {
+    row.try_into()
 }

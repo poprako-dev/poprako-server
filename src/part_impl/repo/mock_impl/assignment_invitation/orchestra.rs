@@ -15,6 +15,7 @@ use crate::part_impl::repo::mock_impl::{
 };
 use crate::result::{BaseError, BaseResult, accept};
 
+// Internal implementation of `get_info`.
 fn get_info(
     state: &MockState,
     oper: &GetAssignmentInvitationInfo<'_>,
@@ -32,11 +33,14 @@ fn get_info(
             }
         })
 }
+// Internal implementation of `list_infos`.
 fn list_infos(
     state: &MockState,
     oper: &ListAssignmentInvitationInfos<'_>,
 ) -> Vec<AssignmentInvitationInfo> {
     //
+    // Internal implementation detail.
+    // Internal implementation detail.
     let mut infos = state
         .assignment_invitations
         .iter()
@@ -44,6 +48,8 @@ fn list_infos(
             info.chapter_id == oper.spec.chapter_id
                 && match &oper.spec.kind {
                     //
+                    // Internal state field `AssignmentInvitationListKind`.
+                    // Internal implementation detail.
                     AssignmentInvitationListKind::All => true,
 
                     AssignmentInvitationListKind::Pending => info.pending,
@@ -67,6 +73,8 @@ fn list_infos(
 
     match offset >= infos.len() {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         true => Vec::new(),
 
         false => infos[offset..end].to_vec(),
@@ -74,34 +82,44 @@ fn list_infos(
 }
 
 impl<'a> Run<ListAssignmentInvitationInfos<'a>> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `run`.
     async fn run(
         &self,
         oper: &ListAssignmentInvitationInfos<'a>,
     ) -> BaseResult<Vec<AssignmentInvitationInfo>> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
         accept(list_infos(&state, oper))
     }
 }
 impl<'a> Run<GetAssignmentInvitationInfo<'a>> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `run`.
     async fn run(
         &self,
         oper: &GetAssignmentInvitationInfo<'a>,
     ) -> BaseResult<AssignmentInvitationInfo> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
         get_info(&state, oper)
     }
 }
 impl<'a> Step<CreateAssignmentInvitation<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -114,10 +132,14 @@ impl<'a> Step<CreateAssignmentInvitation<'a>, MockContext> for Mock {
                     && info.pending)
         }) {
             //
+            // Internal implementation detail.
+            // Internal implementation detail.
             true => Err(expected("error-already-exists")),
 
             false => {
                 //
+                // Internal implementation detail.
+                // Internal implementation detail.
                 let time = now();
 
                 let info = AssignmentInvitationInfo {
@@ -140,8 +162,10 @@ impl<'a> Step<CreateAssignmentInvitation<'a>, MockContext> for Mock {
     }
 }
 impl<'a> Step<GetAssignmentInvitationInfo<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -151,8 +175,10 @@ impl<'a> Step<GetAssignmentInvitationInfo<'a>, MockContext> for Mock {
     }
 }
 impl<'a> Step<GetAssignmentInvitationInfoExcluded<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -168,14 +194,18 @@ impl<'a> Step<GetAssignmentInvitationInfoExcluded<'a>, MockContext> for Mock {
     }
 }
 impl<'a> Step<MarkAssignmentInvitationUsed<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &MarkAssignmentInvitationUsed<'a>,
     ) -> BaseResult<()> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let info = context
             .state
             .assignment_invitations
@@ -191,8 +221,10 @@ impl<'a> Step<MarkAssignmentInvitationUsed<'a>, MockContext> for Mock {
     }
 }
 impl<'a> Step<DeleteAssignmentInvitations<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -200,8 +232,12 @@ impl<'a> Step<DeleteAssignmentInvitations<'a>, MockContext> for Mock {
     ) -> BaseResult<()> {
         match oper {
             //
+            // Internal implementation detail.
+            // Internal implementation detail.
             DeleteAssignmentInvitations::Id { id } => {
                 //
+                // Internal implementation detail.
+                // Internal implementation detail.
                 let position = context
                     .state
                     .assignment_invitations
@@ -216,6 +252,8 @@ impl<'a> Step<DeleteAssignmentInvitations<'a>, MockContext> for Mock {
 
             DeleteAssignmentInvitations::Chapter { chapter_id } => {
                 //
+                // Internal implementation detail.
+                // Internal implementation detail.
                 context
                     .state
                     .assignment_invitations
@@ -228,15 +266,19 @@ impl<'a> Step<DeleteAssignmentInvitations<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<PurgeExpiredAssignmentInvitation<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &PurgeExpiredAssignmentInvitation<'a>,
     ) -> BaseResult<()> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         context
             .state
             .assignment_invitations
@@ -247,14 +289,18 @@ impl<'a> Step<PurgeExpiredAssignmentInvitation<'a>, MockContext> for Mock {
 }
 
 impl<'a> Run<PurgeExpiredAssignmentInvitation<'a>> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `run`.
     async fn run(
         &self,
         oper: &PurgeExpiredAssignmentInvitation<'a>,
     ) -> BaseResult<()> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let mut state = self.state.lock().unwrap();
 
         state

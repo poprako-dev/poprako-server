@@ -30,7 +30,7 @@ impl SystemMailRepo<RdbContext> for RdbRepo {}
 
 // ── Free functions ──────────────────────────────────────────────────────────
 
-/// Send a single system mail by inserting its row.
+// Insert one system mail row and return nothing when persistence succeeds.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn send(conn: &mut RdbConn, entry: &SystemMailEntry) -> BaseResult<()> {
     //
@@ -45,7 +45,7 @@ async fn send(conn: &mut RdbConn, entry: &SystemMailEntry) -> BaseResult<()> {
     accept(())
 }
 
-/// Batch-send system mail by inserting rows for every entry.
+// Insert one or more system mail rows with a single bulk database write.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn send_batch(
     conn: &mut RdbConn,
@@ -66,7 +66,7 @@ async fn send_batch(
     accept(())
 }
 
-/// Query system mail selected by a list specification.
+// Query mails for the receiver, applying read-state filters and pagination.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn list_infos(
     conn: &mut RdbConn,
@@ -98,7 +98,7 @@ async fn list_infos(
     accept(rows.into_iter().map(Into::into).collect())
 }
 
-/// Mark a system mail as read, authorizing by the owning receiver.
+// Validate ownership, then flip `read` for a mail belonging to the receiver.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn mark_read(
     conn: &mut RdbConn,
@@ -133,27 +133,33 @@ async fn mark_read(
 }
 
 impl Run<SendSystemMail<'_>> for RdbRepo {
+    // Reuse base error type for send operations.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Persist one outbound system mail entry in the request-scoped transaction.
     async fn run(&self, oper: &SendSystemMail<'_>) -> BaseResult<()> {
         submit_query!(self.core, send, oper.entry)
     }
 }
 
 impl Run<SendSystemMails<'_>> for RdbRepo {
+    // Reuse base error type for bulk send operations.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Persist multiple outbound system mails in one request scope.
     async fn run(&self, oper: &SendSystemMails<'_>) -> BaseResult<()> {
         submit_query!(self.core, send_batch, oper.entries)
     }
 }
 
 impl Run<ListSystemMailInfos<'_>> for RdbRepo {
+    // Reuse base error type for listing operations.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Query and return a paginated view of user-targeted system mails.
     async fn run(
         &self,
         oper: &ListSystemMailInfos<'_>,
@@ -163,9 +169,11 @@ impl Run<ListSystemMailInfos<'_>> for RdbRepo {
 }
 
 impl Run<MarkSystemMailRead<'_>> for RdbRepo {
+    // Reuse base error type for read-mark operations.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Verify receiver ownership then set the target mail as read.
     async fn run(&self, oper: &MarkSystemMailRead<'_>) -> BaseResult<()> {
         submit_query!(self.core, mark_read, oper.id, oper.user_id)
     }

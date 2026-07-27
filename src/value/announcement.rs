@@ -20,6 +20,7 @@ pub enum AnnouncementInclOpt {
 }
 
 impl InclOpt for AnnouncementInclOpt {
+    // Announcement include path expands to its own self reference only.
     fn path(self) -> &'static [Self] {
         match self {
             Self::User => &[Self::User],

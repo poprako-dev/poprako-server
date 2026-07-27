@@ -1,4 +1,8 @@
 //! Data transfer objects for page Unit use cases.
+//!
+//! Types in this module describe how client-supplied edit payloads are
+//! represented and how persisted Unit rows are projected back into API-facing
+//! response types.
 
 use std::collections::HashMap;
 
@@ -59,6 +63,7 @@ pub struct UnitInfoVal {
 }
 
 impl From<UnitInfo> for UnitInfoVal {
+    // Map persisted unit info model into API value shape.
     fn from(model: UnitInfo) -> Self {
         Self {
             id: model.id,
@@ -215,6 +220,7 @@ pub struct UnitCoordVal {
 }
 
 impl From<UnitCoordVal> for UnitCoord {
+    // Convert API coordinate value into domain coordinate.
     fn from(value: UnitCoordVal) -> Self {
         Self {
             x_coord: value.x_coord,
@@ -247,6 +253,8 @@ pub struct UnitRevisionVal {
 }
 
 /// Converts transport edits into domain Saves and Deletes.
+///
+/// The returned list preserves input order and maps request-local references.
 pub fn into_unit_edits<F>(
     edits: Vec<UnitEditVal>,
     user_id: &str,
@@ -281,6 +289,7 @@ where
 }
 
 impl UnitEditVal {
+    // Convert one transport edit operation into a repository edit command.
     fn into_model(
         self,
         user_id: &str,
@@ -361,22 +370,25 @@ impl UnitEditVal {
     }
 }
 
-fn resolve_patch_id(
-    value: Patch<String>,
-    local_id_map: &HashMap<String, String>,
-) -> BaseResult<Patch<String>> {
-    match value {
-        //
-        Patch::Clear => accept(Patch::Clear),
+// Validate a unit edit local reference id is non-empty.
+fn validate_id(id: &str) -> BaseResult<()> {
+    //
+    if id.is_empty() {
+        return Err(invalid_unit_edit_err());
+    }
 
-        Patch::Assign(id) => {
-            accept(Patch::Assign(resolve_id(id, local_id_map)?))
-        }
+    accept(())
+}
 
-        Patch::Skip => accept(Patch::Skip),
+// Construct the error returned for invalid unit edit payloads.
+fn invalid_unit_edit_err() -> BaseError {
+    BaseError::Expected {
+        variant: ExpectedVariant::Args,
+        message: trl("error-invalid-unit-oper"),
     }
 }
 
+// Resolve a local reference id or return it as-is if it is already a real id.
 fn resolve_id(
     id: String,
     local_id_map: &HashMap<String, String>,
@@ -392,18 +404,19 @@ fn resolve_id(
     }
 }
 
-fn validate_id(id: &str) -> BaseResult<()> {
-    //
-    if id.is_empty() {
-        return Err(invalid_unit_edit_err());
-    }
+// Resolve a patch id, handling Clear, Assign, and Skip variants.
+fn resolve_patch_id(
+    value: Patch<String>,
+    local_id_map: &HashMap<String, String>,
+) -> BaseResult<Patch<String>> {
+    match value {
+        //
+        Patch::Clear => accept(Patch::Clear),
 
-    accept(())
-}
+        Patch::Assign(id) => {
+            accept(Patch::Assign(resolve_id(id, local_id_map)?))
+        }
 
-fn invalid_unit_edit_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        message: trl("error-invalid-unit-oper"),
+        Patch::Skip => accept(Patch::Skip),
     }
 }

@@ -18,13 +18,7 @@ use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 
-fn invalid_scope_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        message: trl("error-invalid-termbase-scope"),
-    }
-}
-
+// Build an args-level error when a termbase name is empty.
 fn empty_name_err() -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Args,
@@ -32,6 +26,15 @@ fn empty_name_err() -> BaseError {
     }
 }
 
+// Build an args-level error for unsupported termbase scope combinations.
+fn invalid_scope_err() -> BaseError {
+    BaseError::Expected {
+        variant: ExpectedVariant::Args,
+        message: trl("error-invalid-termbase-scope"),
+    }
+}
+
+// Trim a termbase name and reject empty values.
 fn normalize_name(name: String) -> BaseResult<String> {
     //
     let name = name.trim().to_string();
@@ -43,6 +46,7 @@ fn normalize_name(name: String) -> BaseResult<String> {
     accept(name)
 }
 
+// Normalize an optional string by trimming whitespace; empty strings become `None`.
 fn normalize_optional(value: Option<String>) -> Option<String> {
     value.and_then(|value| {
         //

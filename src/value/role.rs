@@ -11,6 +11,7 @@ use poprako_util::i18n::trl;
 
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 
+// Test fixtures for role conversion, permission, and serde behavior.
 #[cfg(test)]
 mod tests;
 
@@ -56,6 +57,7 @@ impl RoleField {
     /// Bot role.
     pub const BOT: Self = Self(1 << 8);
 
+    // All valid role flag bit values in canonical order.
     const VALID_VALUES: &'static [u32] = &[
         1 << 0,
         1 << 1,
@@ -67,6 +69,58 @@ impl RoleField {
         1 << 7,
         1 << 8,
     ];
+}
+
+/// Convert a raw `u32` to a [`RoleBit`], validating it is a single valid bit.
+impl TryFrom<u32> for RoleField {
+    // Error returned when value does not describe a single valid role bit.
+    type Error = BaseError;
+
+    // Validate and convert one raw bit mask into a single role field.
+    fn try_from(value: u32) -> BaseResult<Self> {
+        //
+        if value == 0
+            || !Self::VALID_VALUES.contains(&value)
+            || value.count_ones() != 1
+        {
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: trl("error-invalid-role"),
+            });
+        }
+
+        accept(Self(value))
+    }
+}
+
+impl Serialize for RoleField {
+    // Serialize [`RoleField`] as its numeric raw form.
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_u32(u32::from(*self))
+    }
+}
+
+impl<'de> Deserialize<'de> for RoleField {
+    // Deserialize a validated [`RoleField`] from raw `u32`.
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let bits = u32::deserialize(deserializer)?;
+
+        Self::try_from(bits)
+            .map_err(|_| D::Error::custom(trl("error-invalid-role")))
+    }
+}
+
+impl From<RoleField> for u32 {
+    // Convert a [`RoleField`] into the underlying `u32` bit value.
+    fn from(value: RoleField) -> Self {
+        value.0
+    }
 }
 
 /// A composite bitmask combining multiple role permission flags.
@@ -92,6 +146,7 @@ impl RoleField {
 pub struct RoleMask(u32);
 
 impl RoleMask {
+    // Bitmask bit-width used by role values in storage and transport.
     const VALID_BITS: u32 = (1 << 8) - 1;
 
     /// Check if the mask contains any of the given role bits.
@@ -117,67 +172,18 @@ impl RoleMask {
     }
 }
 
-/// Convert a raw `u32` to a [`RoleBit`], validating it is a single valid bit.
-impl TryFrom<u32> for RoleField {
-    type Error = BaseError;
-
-    fn try_from(value: u32) -> BaseResult<Self> {
-        //
-        if value == 0
-            || !Self::VALID_VALUES.contains(&value)
-            || value.count_ones() != 1
-        {
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message: trl("error-invalid-role"),
-            });
-        }
-
-        accept(Self(value))
-    }
-}
-
-/// Convert a [`RoleBit`] to its underlying `u32` representation.
-impl From<RoleField> for u32 {
-    fn from(value: RoleField) -> Self {
-        value.0
-    }
-}
-
-/// Serialize a [`RoleBit`] as its raw `u32` value.
-impl Serialize for RoleField {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        serializer.serialize_u32(u32::from(*self))
-    }
-}
-
-/// Deserialize a [`RoleBit`] from a raw `u32`.
-impl<'de> Deserialize<'de> for RoleField {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let bits = u32::deserialize(deserializer)?;
-
-        Self::try_from(bits)
-            .map_err(|_| D::Error::custom(trl("error-invalid-role")))
-    }
-}
-
-/// Convert a [`RoleBit`] to a single-bit [`RoleMask`].
 impl From<RoleField> for RoleMask {
+    // Promote a single-role field into a single-bit role mask.
     fn from(value: RoleField) -> Self {
         Self(u32::from(value))
     }
 }
 
-/// Convert a raw `u32` to a [`RoleMask`], validating it contains only valid bits.
 impl TryFrom<u32> for RoleMask {
+    // Error returned when role-mask bits are empty or contain invalid fields.
     type Error = BaseError;
 
+    // Validate and convert a raw bitmask into a role mask.
     fn try_from(value: u32) -> BaseResult<Self> {
         //
         if value == 0 || value & !Self::VALID_BITS != 0 {
@@ -191,15 +197,8 @@ impl TryFrom<u32> for RoleMask {
     }
 }
 
-/// Convert a [`RoleMask`] to its underlying `u32` representation.
-impl From<RoleMask> for u32 {
-    fn from(value: RoleMask) -> Self {
-        value.0
-    }
-}
-
-/// Serialize a [`RoleMask`] as its raw `u32` value.
 impl Serialize for RoleMask {
+    // Serialize role masks using raw bitset representation.
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -208,8 +207,8 @@ impl Serialize for RoleMask {
     }
 }
 
-/// Deserialize a [`RoleMask`] from a raw `u32`.
 impl<'de> Deserialize<'de> for RoleMask {
+    // Deserialize a validated role mask from a raw bitmask value.
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -218,5 +217,12 @@ impl<'de> Deserialize<'de> for RoleMask {
 
         Self::try_from(bits)
             .map_err(|_| D::Error::custom(trl("error-invalid-role")))
+    }
+}
+
+impl From<RoleMask> for u32 {
+    // Convert a mask back into raw `u32` bits.
+    fn from(value: RoleMask) -> Self {
+        value.0
     }
 }

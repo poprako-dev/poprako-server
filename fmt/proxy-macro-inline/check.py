@@ -19,6 +19,9 @@ from pathlib import Path
 import tree_sitter
 import tree_sitter_rust
 
+sys.path.insert(0, str(Path(__file__).parents[1]))
+from production_source import production_source
+
 
 DEFAULT_ROOT = Path(__file__).parents[2]
 PARSER = tree_sitter.Parser(tree_sitter.Language(tree_sitter_rust.language()))
@@ -65,7 +68,7 @@ def is_inline_argument(node: tree_sitter.Node) -> bool:
 
 
 def check_file(path: Path, root: Path) -> list[str]:
-    source = path.read_bytes()
+    source = production_source(path, root)
     tree = PARSER.parse(source)
     diagnostics: list[str] = []
 

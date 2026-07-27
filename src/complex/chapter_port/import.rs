@@ -10,6 +10,7 @@ use crate::model::write::unit::UnitEdit;
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 
 #[cfg(test)]
+// Test cases for chapter-import parsing, translation assembly, and validation.
 mod tests;
 
 /// Chapter import parsing and payload merge rules.
@@ -159,70 +160,56 @@ impl ChapterImportComplex {
     }
 }
 
-/// Internal representation of a parsed LabelPlus unit header containing
-/// the unit's page-relative index, coordinates, and bubble flag.
+// Internal representation of a parsed LabelPlus unit header containing
+// the unit's page-relative index, coordinates, and bubble flag.
 struct LabelPlusUnit {
     //
+    // 0-based index of unit inside the current page.
     index: i32,
+
+    // X-axis coordinate resolved from the unit header text.
     x_coord: f64,
+
+    // Y-axis coordinate resolved from the unit header text.
     y_coord: f64,
+
+    // Bubble flag from the header (`true` for bubble, `false` for narration).
     is_bubble: bool,
 }
 
-/// Validate the LabelPlus header: version line starting with a digit,
-/// a `-` separator line, content lines ending with a `-` separator,
-/// and at least one trailing line.
-fn validate_label_plus_header<'a, I>(lines: &mut I) -> BaseResult<()>
-where
-    I: Iterator<Item = &'a str>,
-{
-    let Some(version_line) = lines.next() else {
-        return Err(args_err("error-invalid-chapter-import-content"));
-    };
-
-    if !version_line
-        .chars()
-        .next()
-        .map(|value| value.is_ascii_digit())
-        .unwrap_or(false)
-    {
-        return Err(args_err("error-invalid-chapter-import-content"));
+// Construct an `Expected::Args` error with the given i18n message key.
+fn args_err(key: &str) -> BaseError {
+    BaseError::Expected {
+        variant: ExpectedVariant::Args,
+        message: trl(key),
     }
-
-    if lines.next() != Some("-") {
-        return Err(args_err("error-invalid-chapter-import-content"));
-    }
-
-    let mut found_separator = false;
-
-    for line in lines.by_ref() {
-        if line == "-" {
-            //
-            found_separator = true;
-
-            break;
-        }
-    }
-
-    if !found_separator {
-        return Err(args_err("error-invalid-chapter-import-content"));
-    }
-
-    if lines.next().is_none() {
-        return Err(args_err("error-invalid-chapter-import-content"));
-    }
-
-    accept(())
 }
 
-/// Check whether a text line matches the LabelPlus page header format
-/// (`>>>>>>>>[...]<<<<<<<<`).
+// Normalize a string, returning `None` when the trimmed result is empty
+// or whitespace-only.
+fn normalize_string(text: String) -> Option<String> {
+    //
+    if text.trim().is_empty() {
+        return None;
+    }
+
+    Some(text)
+}
+
+// Normalize an optional string, returning `None` for empty/whitespace-only
+// values.
+fn normalize_option(text: Option<String>) -> Option<String> {
+    text.and_then(normalize_string)
+}
+
+// Check whether a text line matches the LabelPlus page header format
+// (`>>>>>>>>[...]<<<<<<<<`).
 fn is_label_plus_page_header(line: &str) -> bool {
     line.starts_with(">>>>>>>>[") && line.ends_with("]<<<<<<<<")
 }
 
-/// Parse a LabelPlus unit header line into its index, coordinates, and
-/// bubble flag (`1` = bubble, `2` = non-bubble).
+// Parse a LabelPlus unit header line into its index, coordinates, and
+// bubble flag (`1` = bubble, `2` = non-bubble).
 fn parse_label_plus_unit_header(
     line: &str,
 ) -> BaseResult<Option<LabelPlusUnit>> {
@@ -274,9 +261,9 @@ fn parse_label_plus_unit_header(
     }))
 }
 
-/// Flush the buffered LabelPlus unit into the current page's unit list,
-/// building a [`UnitTranslationImport`] from the parsed header and
-/// accumulated main text lines.
+// Flush the buffered LabelPlus unit into the current page's unit list,
+// building a [`UnitTranslationImport`] from the parsed header and
+// accumulated main text lines.
 fn flush_label_plus_unit(
     current_page: &mut Option<Vec<UnitTranslationImport>>,
     current_unit: &mut Option<LabelPlusUnit>,
@@ -309,8 +296,8 @@ fn flush_label_plus_unit(
     accept(())
 }
 
-/// Parse a single PopRaKo JSON page import into a [`PageTranslationImport`],
-/// validating required fields, unique indexes, and finite coordinates.
+// Parse a single PopRaKo JSON page import into a [`PageTranslationImport`],
+// validating required fields, unique indexes, and finite coordinates.
 fn parse_poprako_page(
     page: PoprakoPageImport,
 ) -> BaseResult<PageTranslationImport> {
@@ -358,23 +345,54 @@ fn parse_poprako_page(
     accept(PageTranslationImport { units })
 }
 
-/// Normalize an optional string, returning `None` for empty/whitespace-only
-/// values.
-fn normalize_option(text: Option<String>) -> Option<String> {
-    text.and_then(normalize_string)
-}
+// Validate the LabelPlus header: version line starting with a digit,
+// a `-` separator line, content lines ending with a `-` separator,
+// and at least one trailing line.
+fn validate_label_plus_header<'a, I>(lines: &mut I) -> BaseResult<()>
+where
+    I: Iterator<Item = &'a str>,
+{
+    let Some(version_line) = lines.next() else {
+        return Err(args_err("error-invalid-chapter-import-content"));
+    };
 
-/// Normalize a string, returning `None` when the trimmed result is empty
-/// or whitespace-only.
-fn normalize_string(text: String) -> Option<String> {
-    //
-    if text.trim().is_empty() {
-        return None;
+    if !version_line
+        .chars()
+        .next()
+        .map(|value| value.is_ascii_digit())
+        .unwrap_or(false)
+    {
+        return Err(args_err("error-invalid-chapter-import-content"));
     }
 
-    Some(text)
+    if lines.next() != Some("-") {
+        return Err(args_err("error-invalid-chapter-import-content"));
+    }
+
+    let mut found_separator = false;
+
+    for line in lines.by_ref() {
+        if line == "-" {
+            //
+            found_separator = true;
+
+            break;
+        }
+    }
+
+    if !found_separator {
+        return Err(args_err("error-invalid-chapter-import-content"));
+    }
+
+    if lines.next().is_none() {
+        return Err(args_err("error-invalid-chapter-import-content"));
+    }
+
+    accept(())
 }
 
+// Build translated text for a parsed unit when translation is allowed.
+// For LabelPlus imports, source text is reused as translation text.
 fn build_translation(
     parsed_unit: &UnitTranslationImport,
     user_id: &str,
@@ -393,17 +411,14 @@ fn build_translation(
         false => parsed_unit.translated_text.clone(),
     };
 
-    match translated_text {
-        //
-        Some(translated_text) => Some(UnitTranslation {
-            translated_text,
-            last_translator_id: user_id.to_string(),
-        }),
-
-        None => None,
-    }
+    translated_text.map(|translated_text| UnitTranslation {
+        translated_text,
+        last_translator_id: user_id.to_string(),
+    })
 }
 
+// Build revision payload for a parsed unit when proofread is allowed.
+// For LabelPlus imports, source text is also used as proofread text.
 fn build_revision(
     parsed_unit: &UnitTranslationImport,
     user_id: &str,
@@ -434,12 +449,4 @@ fn build_revision(
         proofread_text,
         last_proofreader_id: user_id.to_string(),
     })
-}
-
-/// Construct an `Expected::Args` error with the given i18n message key.
-fn args_err(key: &str) -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        message: trl(key),
-    }
 }

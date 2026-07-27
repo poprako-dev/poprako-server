@@ -19,20 +19,26 @@ use crate::part_impl::repo::mock_impl::{Mock, MockContext, expected, now};
 use crate::result::{BaseError, BaseResult, accept};
 
 impl<'a> Run<GetPageInfo<'a>> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `run`.
     async fn run(&self, oper: &GetPageInfo<'a>) -> BaseResult<PageInfo> {
         //
+        // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
         get_page_by_id(&state, oper.id)
     }
 }
 impl<'a> Run<ListPageInfos<'a>> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `run`.
     async fn run(&self, oper: &ListPageInfos<'a>) -> BaseResult<Vec<PageInfo>> {
         //
+        // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
         accept(list_infos(&state, oper.chapter_id))
@@ -40,22 +46,27 @@ impl<'a> Run<ListPageInfos<'a>> for Mock {
 }
 
 impl<'a> Run<ListFirstPageInfos<'a>> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `run`.
     async fn run(
         &self,
         oper: &ListFirstPageInfos<'a>,
     ) -> BaseResult<HashMap<String, PageInfo>> {
         //
+        // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
         accept(list_first_pages(&state, oper.chapter_ids))
     }
 }
 impl<'a> Step<GetPageInfo<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -65,8 +76,10 @@ impl<'a> Step<GetPageInfo<'a>, MockContext> for Mock {
     }
 }
 impl<'a> Step<ListPageInfos<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -77,9 +90,11 @@ impl<'a> Step<ListPageInfos<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<ListPageInfosExcluded<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -89,14 +104,17 @@ impl<'a> Step<ListPageInfosExcluded<'a>, MockContext> for Mock {
     }
 }
 impl<'a> Step<CreatePages<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &CreatePages<'a>,
     ) -> BaseResult<Vec<PageInfo>> {
         //
+        // Internal implementation detail.
         if oper.entries.iter().any(|page_entry| {
             context
                 .state
@@ -116,8 +134,10 @@ impl<'a> Step<CreatePages<'a>, MockContext> for Mock {
     }
 }
 impl<'a> Step<GetPageInfoExcluded<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -127,14 +147,17 @@ impl<'a> Step<GetPageInfoExcluded<'a>, MockContext> for Mock {
     }
 }
 impl<'a> Step<ReservePageImage<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &ReservePageImage<'a>,
     ) -> BaseResult<PageImageReservation> {
         //
+        // Internal implementation detail.
         let page_info = context
             .state
             .pages
@@ -167,14 +190,17 @@ impl<'a> Step<ReservePageImage<'a>, MockContext> for Mock {
     }
 }
 impl<'a> Step<MarkPageImageUploaded<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &MarkPageImageUploaded<'a>,
     ) -> BaseResult<()> {
         //
+        // Internal implementation detail.
         let page_info = context
             .state
             .pages
@@ -198,14 +224,17 @@ impl<'a> Step<MarkPageImageUploaded<'a>, MockContext> for Mock {
     }
 }
 impl<'a> Step<SetPageImageUploaded<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &SetPageImageUploaded<'a>,
     ) -> BaseResult<()> {
         //
+        // Internal implementation detail.
         let page_info = context
             .state
             .pages
@@ -227,14 +256,17 @@ impl<'a> Step<SetPageImageUploaded<'a>, MockContext> for Mock {
     }
 }
 impl<'a> Step<SetPageUnitCounters<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &SetPageUnitCounters<'a>,
     ) -> BaseResult<()> {
         //
+        // Internal implementation detail.
         let page_info = context
             .state
             .pages
@@ -255,19 +287,23 @@ impl<'a> Step<SetPageUnitCounters<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<ShiftPageIndexesTemporary<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &ShiftPageIndexesTemporary<'a>,
     ) -> BaseResult<()> {
         //
+        // Internal implementation detail.
         for page_info in context.state.pages.iter_mut().filter(|page_info| {
             page_info.chapter_id == oper.chapter_id && page_info.index >= 0
         }) {
             //
+            // Internal implementation detail.
             page_info.index = -page_info.index - 1;
 
             page_info.updated_at = now();
@@ -278,15 +314,18 @@ impl<'a> Step<ShiftPageIndexesTemporary<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<UpdatePageManifest<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &UpdatePageManifest<'a>,
     ) -> BaseResult<PageInfo> {
         //
+        // Internal implementation detail.
         let page_info = context
             .state
             .pages
@@ -313,15 +352,18 @@ impl<'a> Step<UpdatePageManifest<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<ClearPageImagesForPublish<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &ClearPageImagesForPublish<'a>,
     ) -> BaseResult<Vec<String>> {
         //
+        // Internal implementation detail.
         let mut object_keys = Vec::new();
 
         for page_info in context
@@ -352,8 +394,10 @@ impl<'a> Step<ClearPageImagesForPublish<'a>, MockContext> for Mock {
     }
 }
 impl<'a> Step<DeletePages<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -361,8 +405,10 @@ impl<'a> Step<DeletePages<'a>, MockContext> for Mock {
     ) -> BaseResult<()> {
         match oper {
             //
+            // Internal implementation detail.
             DeletePages::Chapter { chapter_id } => {
                 //
+                // Internal implementation detail.
                 let ids = context
                     .state
                     .pages
@@ -386,6 +432,7 @@ impl<'a> Step<DeletePages<'a>, MockContext> for Mock {
 
             DeletePages::Ids { ids } => {
                 //
+                // Internal implementation detail.
                 context
                     .state
                     .units

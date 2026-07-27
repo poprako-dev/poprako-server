@@ -19,6 +19,7 @@ use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 
 impl SystemMailRepo<MockContext> for Mock {}
 
+// Internal implementation of `insert_mail`.
 fn insert_mail(state: &mut MockState, entry: &SystemMailEntry) {
     state.system_mails.push(SystemMailInfo {
         id: entry.id.clone(),
@@ -30,11 +31,14 @@ fn insert_mail(state: &mut MockState, entry: &SystemMailEntry) {
     });
 }
 
+// Internal implementation of `send_system_mail`.
 fn send_system_mail(
     state: &mut MockState,
     entry: &SystemMailEntry,
 ) -> BaseResult<()> {
     //
+    // Internal implementation detail.
+    // Internal implementation detail.
     if state
         .system_mails
         .iter()
@@ -48,13 +52,18 @@ fn send_system_mail(
     accept(())
 }
 
+// Internal implementation of `send_system_mails`.
 fn send_system_mails(
     state: &mut MockState,
     entries: &[SystemMailEntry],
 ) -> BaseResult<()> {
     //
+    // Internal implementation detail.
+    // Internal implementation detail.
     for system_mail_entry in entries {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let persisted = state.system_mails.iter().any(|system_mail_info| {
             system_mail_info.id == system_mail_entry.id
         });
@@ -77,11 +86,14 @@ fn send_system_mails(
     accept(())
 }
 
+// Internal implementation of `list_system_mail_infos`.
 fn list_system_mail_infos(
     state: &MockState,
     oper: &ListSystemMailInfos<'_>,
 ) -> Vec<SystemMailInfo> {
     //
+    // Internal implementation detail.
+    // Internal implementation detail.
     let mut system_mail_infos = state
         .system_mails
         .iter()
@@ -89,6 +101,8 @@ fn list_system_mail_infos(
             system_mail_info.receiver_id == oper.spec.receiver_id
                 && match &oper.spec.kind {
                     //
+                    // Internal state field `SystemMailInfoListKind`.
+                    // Internal implementation detail.
                     SystemMailInfoListKind::All => true,
 
                     SystemMailInfoListKind::Read => system_mail_info.read,
@@ -109,12 +123,15 @@ fn list_system_mail_infos(
         .collect()
 }
 
+// Internal implementation of `mark_system_mail_read`.
 fn mark_system_mail_read(
     state: &mut MockState,
     id: &str,
     user_id: &str,
 ) -> BaseResult<()> {
     //
+    // Internal implementation detail.
+    // Internal implementation detail.
     let system_mail_info = state
         .system_mails
         .iter_mut()
@@ -134,11 +151,15 @@ fn mark_system_mail_read(
 }
 
 impl Run<SendSystemMail<'_>> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `run`.
     async fn run(&self, oper: &SendSystemMail<'_>) -> BaseResult<()> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let mut state = self.state.lock().unwrap();
 
         send_system_mail(&mut state, oper.entry)
@@ -146,11 +167,15 @@ impl Run<SendSystemMail<'_>> for Mock {
 }
 
 impl Run<SendSystemMails<'_>> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `run`.
     async fn run(&self, oper: &SendSystemMails<'_>) -> BaseResult<()> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let mut state = self.state.lock().unwrap();
 
         send_system_mails(&mut state, oper.entries)
@@ -158,14 +183,18 @@ impl Run<SendSystemMails<'_>> for Mock {
 }
 
 impl Run<ListSystemMailInfos<'_>> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `run`.
     async fn run(
         &self,
         oper: &ListSystemMailInfos<'_>,
     ) -> BaseResult<Vec<SystemMailInfo>> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
         accept(list_system_mail_infos(&state, oper))
@@ -173,11 +202,15 @@ impl Run<ListSystemMailInfos<'_>> for Mock {
 }
 
 impl Run<MarkSystemMailRead<'_>> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `run`.
     async fn run(&self, oper: &MarkSystemMailRead<'_>) -> BaseResult<()> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let mut state = self.state.lock().unwrap();
 
         mark_system_mail_read(&mut state, oper.id, oper.user_id)

@@ -68,6 +68,14 @@ use crate::value::comic_archive::ComicArchiveMonth;
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;
 
+// Standardize chain-corruption failures for unit graph validation.
+fn corrupt_unit_chain_err() -> BaseError {
+    BaseError::Unrecoverable {
+        message: "persisted Unit chain is corrupt".to_string(),
+    }
+}
+
+// Reorder chained unit infos by next_id links and return only visible units.
 fn order_unit_infos(unit_infos: Vec<UnitInfo>) -> BaseResult<Vec<UnitInfo>> {
     //
     if unit_infos.is_empty() {
@@ -139,13 +147,8 @@ fn order_unit_infos(unit_infos: Vec<UnitInfo>) -> BaseResult<Vec<UnitInfo>> {
     accept(visible_infos)
 }
 
-fn corrupt_unit_chain_err() -> BaseError {
-    BaseError::Unrecoverable {
-        message: "persisted Unit chain is corrupt".to_string(),
-    }
-}
-
 #[instrument(level = "info", err(Debug), skip_all)]
+// Load archive payloads by month window and return timestamped serialized blobs.
 async fn list_payloads(
     conn: &mut RdbConn,
     team_id: &str,
@@ -156,6 +159,7 @@ async fn list_payloads(
     struct ArchivePayloadRow {
         //
         created_at: OffsetDateTime,
+        // Serialized payload snapshot JSON for a retention slot.
         payload: String,
     }
 
@@ -198,6 +202,7 @@ async fn list_payloads(
 
 /// Lock every active descendant needed by an archive transaction.
 #[instrument(level = "info", err(Debug), skip_all)]
+// Build a full snapshot of all descendants and lock them for commit safety.
 async fn get_snapshot_excluded(
     conn: &mut RdbConn,
     source_comic_id: &str,
@@ -395,7 +400,7 @@ async fn get_snapshot_excluded(
     })
 }
 
-/// Insert one archive row and remove the active comic subtree without touching workset counters.
+// Store archive payload and hard-delete source comic descendants.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn commit(
     conn: &mut RdbConn,
@@ -458,9 +463,11 @@ async fn commit(
 }
 
 impl Step<GetComicArchiveSnapshotExcluded<'_>, RdbContext> for RdbRepo {
+    // Use base errors for snapshot reads in comic archive transactions.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Resolve the snapshot while holding transaction locks.
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -471,9 +478,11 @@ impl Step<GetComicArchiveSnapshotExcluded<'_>, RdbContext> for RdbRepo {
 }
 
 impl Run<ListComicArchivePayloads<'_>> for RdbRepo {
+    // Use base errors for payload-list operations.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Route to shared payload query with team-month filters.
     async fn run(
         &self,
         oper: &ListComicArchivePayloads<'_>,
@@ -483,9 +492,11 @@ impl Run<ListComicArchivePayloads<'_>> for RdbRepo {
 }
 
 impl Step<CommitComicArchive<'_>, RdbContext> for RdbRepo {
+    // Use base errors for commit operations.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Persist archive entry and delete source entities in a single transaction.
     async fn step(
         &self,
         context: &mut RdbContext,

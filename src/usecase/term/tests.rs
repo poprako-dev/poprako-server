@@ -18,12 +18,14 @@ use crate::test_util::fixture::team;
 use crate::value::role::{RoleField, RoleMask};
 
 fn token(user_id: &str) -> UserToken {
+    // Build a token fixture for term-level authorisation and mutation checks.
     UserToken {
         user_id: user_id.into(),
     }
 }
 
 fn member(user_id: &str, roles: RoleMask) -> MemberInfo {
+    // Build a team member fixture with explicit proofreader role bits.
     MemberInfo {
         id: format!("member-{}", user_id),
         user_id: user_id.into(),
@@ -38,6 +40,7 @@ fn member(user_id: &str, roles: RoleMask) -> MemberInfo {
 
 fn termbase() -> TermbaseInfo {
     //
+    // Build a shared glossary container fixture.
     let time = OffsetDateTime::now_utc();
 
     TermbaseInfo {

@@ -52,8 +52,10 @@ use crate::util::next_snowflake_id;
 use crate::value::role::{RoleField, RoleMask};
 
 #[cfg(test)]
+// Unit tests for assignment invitation acceptance rules.
 mod tests;
 
+// Assignment invitation code expiration window.
 const EXPIRY_DELAY: Duration = Duration::from_secs(3 * 24 * 60 * 60);
 
 /// Lists assignment invitations under one chapter.
@@ -419,7 +421,7 @@ where
     AssignmentInfoVal::from_model(image_pool, assignment_info, None).await
 }
 
-/// Verifies that the current user is assigned as a chapter administrator.
+// Verifies that the current user is assigned as a chapter administrator.
 #[instrument(level = "info", err(Debug), skip(repo))]
 async fn ensure_user_admin<C, R>(
     repo: &R,
@@ -447,12 +449,30 @@ where
     accept(())
 }
 
-/// Generates a snowflake ID for a new invitation.
+// Validates that the roles mask is non-empty and does not contain ADMIN.
+fn validate_roles(roles: RoleMask) -> BaseResult<()> {
+    //
+    if u32::from(roles) == 0 || roles.has_any_role(&[RoleField::ADMIN]) {
+        return Err(assignment_role_not_assignable_args_err());
+    }
+
+    accept(())
+}
+
+// Constructs an args error for an already assigned invitee.
+fn invitee_assigned_err() -> BaseError {
+    BaseError::Expected {
+        variant: ExpectedVariant::Args,
+        message: trl("error-assignment-already-exists"),
+    }
+}
+
+// Generates a snowflake ID for a new invitation.
 fn gen_assignment_invitation_id() -> String {
     next_snowflake_id()
 }
 
-/// Generates a short numeric code from a snowflake ID.
+// Generates a short numeric code from a snowflake ID.
 fn gen_code() -> String {
     //
     let id = next_snowflake_id();
@@ -466,17 +486,7 @@ fn gen_code() -> String {
     id[len - 6..].to_string()
 }
 
-/// Validates that the roles mask is non-empty and does not contain ADMIN.
-fn validate_roles(roles: RoleMask) -> BaseResult<()> {
-    //
-    if u32::from(roles) == 0 || roles.has_any_role(&[RoleField::ADMIN]) {
-        return Err(assignment_role_not_assignable_args_err());
-    }
-
-    accept(())
-}
-
-/// Constructs an args error for an invalid invitation code.
+// Constructs an args error for an invalid invitation code.
 fn invalid_invitation_err() -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Args,
@@ -484,15 +494,15 @@ fn invalid_invitation_err() -> BaseError {
     }
 }
 
-/// Constructs an args error for an already assigned invitee.
-fn invitee_assigned_err() -> BaseError {
+// Constructs a permission error for unassignable chapter roles.
+fn assignment_role_not_assignable_perm_err() -> BaseError {
     BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        message: trl("error-assignment-already-exists"),
+        variant: ExpectedVariant::Perm,
+        message: trl("error-chapter-role-not-assignable"),
     }
 }
 
-/// Constructs a permission error when the caller is not a chapter admin.
+// Constructs a permission error when the caller is not a chapter admin.
 fn chapter_admin_err() -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Perm,
@@ -500,18 +510,10 @@ fn chapter_admin_err() -> BaseError {
     }
 }
 
-/// Constructs an args error for unassignable chapter roles.
+// Constructs an args error for unassignable chapter roles.
 fn assignment_role_not_assignable_args_err() -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Args,
-        message: trl("error-chapter-role-not-assignable"),
-    }
-}
-
-/// Constructs a permission error for unassignable chapter roles.
-fn assignment_role_not_assignable_perm_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Perm,
         message: trl("error-chapter-role-not-assignable"),
     }
 }

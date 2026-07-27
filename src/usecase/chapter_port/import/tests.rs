@@ -22,17 +22,21 @@ use crate::value::chapter_port::TranslationFormat;
 use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
+// LabelPlus fixture content used for chapter import integration tests.
 const LABEL_PLUS_MATERIAL: &str =
     include_str!("../../../../tests/materials/translations.lp.txt");
 
+// Build a token fixture for chapter import authorization.
 fn token(user_id: &str) -> UserToken {
     UserToken {
         user_id: user_id.into(),
     }
 }
 
+// Build comic fixture referenced by imported chapter.
 fn comic(id: &str) -> ComicInfo {
     //
+    // Compose a stable comic fixture used by chapter/import permission checks.
     let time = OffsetDateTime::now_utc();
 
     ComicInfo {
@@ -58,8 +62,10 @@ fn comic(id: &str) -> ComicInfo {
     }
 }
 
+// Build workset fixture for chapter import scenarios.
 fn workset(id: &str) -> WorksetInfo {
     //
+    // Compose a stable workset fixture for assignment and chapter binding.
     let time = OffsetDateTime::now_utc();
 
     WorksetInfo {
@@ -74,12 +80,14 @@ fn workset(id: &str) -> WorksetInfo {
     }
 }
 
+// Build chapter fixture with provided unit and proofread counters.
 fn chapter(
     page_count: i32,
     total_unit_count: i32,
     proofread_unit_count: i32,
 ) -> ChapterInfo {
     //
+    // Build a chapter fixture with configurable unit counters.
     let time = OffsetDateTime::now_utc();
 
     ChapterInfo {
@@ -101,12 +109,14 @@ fn chapter(
     }
 }
 
+// Build assignment fixture for import permission checks.
 fn assignment(
     chapter_id: &str,
     user_id: &str,
     role_mask: RoleMask,
 ) -> AssignmentInfo {
     //
+    // Create a member assignment record for import permission scenarios.
     let time = OffsetDateTime::now_utc();
 
     AssignmentInfo {
@@ -121,6 +131,7 @@ fn assignment(
     }
 }
 
+// Build page fixture and image metadata for import material.
 fn page(
     id: &str,
     index: i32,
@@ -128,6 +139,7 @@ fn page(
     proofread_unit_count: i32,
 ) -> PageInfo {
     //
+    // Build one page fixture and pre-seed image metadata.
     let time = OffsetDateTime::now_utc();
 
     PageInfo {
@@ -147,6 +159,7 @@ fn page(
     }
 }
 
+// Build unit fixture with translator metadata and optional translated content.
 fn unit(id: &str, page_id: &str, _index: i32, text: &str) -> UnitInfo {
     //
     let time = OffsetDateTime::now_utc();
@@ -171,6 +184,7 @@ fn unit(id: &str, page_id: &str, _index: i32, text: &str) -> UnitInfo {
     }
 }
 
+// Seed workset/comic/chapter/assignment baseline for chapter import.
 fn seed_base(
     mock: &Mock,
     page_count: i32,
@@ -178,6 +192,7 @@ fn seed_base(
     proofread_unit_count: i32,
 ) {
     //
+    // Seed the minimal base graph (workset, comic, chapter, assignment).
     mock.seed_workset(workset("workset-1"));
 
     mock.seed_comic(comic("comic-1"));
@@ -195,6 +210,7 @@ fn seed_base(
     ));
 }
 
+// Seed a full set of placeholder pages used by import material input.
 fn seed_material_pages(mock: &Mock) {
     for index in 0..9 {
         mock.seed_page(page(&format!("page-{}", index + 1), index, 0, 0));
@@ -204,6 +220,7 @@ fn seed_material_pages(mock: &Mock) {
 #[tokio::test]
 async fn import_label_plus_material_updates_units_and_counters() {
     //
+    // Verify import applies unit text/proofread content and updates chapter counters.
     let mock = Mock::new();
 
     seed_base(&mock, 9, 0, 0);
@@ -223,6 +240,7 @@ async fn import_label_plus_material_updates_units_and_counters() {
 
     let imported = match imported {
         //
+        // Convert transport errors into explicit panics in this happy-path unit test.
         Ok(imported) => imported,
 
         Err(_) => panic!("expected import success"),
@@ -272,6 +290,7 @@ async fn import_label_plus_material_updates_units_and_counters() {
 #[tokio::test]
 async fn import_rejects_page_count_mismatch_without_mutation() {
     //
+    // Verify mismatched page counts fail atomically and avoid mutating seeded data.
     let mock = Mock::new();
 
     seed_base(&mock, 2, 1, 0);

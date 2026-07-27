@@ -10,6 +10,7 @@ use crate::part_impl::repo::mock_impl::Mock;
 /// Collected events are stored in the mock's internal event buffer and can
 /// be drained via [Mock::drain_events] for assertion.
 impl EffectDevelop for Mock {
+    // Collect emitted events into the mock event buffer during tests.
     async fn develop<I>(&self, iter: I)
     where
         I: EventIter + Send,

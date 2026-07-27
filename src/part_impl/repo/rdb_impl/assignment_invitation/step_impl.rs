@@ -18,20 +18,6 @@ use crate::part_impl::shared::RdbConn;
 use crate::part_impl::shared::result::{diesel, expected};
 use crate::result::{BaseResult, accept};
 
-/// Converts a single `AssignmentInvitationRow` into an `AssignmentInvitationInfo`.
-fn row_into_info(
-    row: AssignmentInvitationRow,
-) -> BaseResult<AssignmentInvitationInfo> {
-    row.try_into()
-}
-
-/// Converts a vector of `AssignmentInvitationRow` values into `AssignmentInvitationInfo`.
-fn rows_into_infos(
-    rows: Vec<AssignmentInvitationRow>,
-) -> BaseResult<Vec<AssignmentInvitationInfo>> {
-    rows.into_iter().map(row_into_info).collect()
-}
-
 /// Queries assignment invitation rows selected by a list specification.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos(
@@ -195,4 +181,18 @@ pub async fn delete_by_chapter_id(
         .map_err(diesel)?;
 
     accept(())
+}
+
+// Converts a vector of `AssignmentInvitationRow` values into `AssignmentInvitationInfo`.
+fn rows_into_infos(
+    rows: Vec<AssignmentInvitationRow>,
+) -> BaseResult<Vec<AssignmentInvitationInfo>> {
+    rows.into_iter().map(row_into_info).collect()
+}
+
+// Converts a single `AssignmentInvitationRow` into an `AssignmentInvitationInfo`.
+fn row_into_info(
+    row: AssignmentInvitationRow,
+) -> BaseResult<AssignmentInvitationInfo> {
+    row.try_into()
 }

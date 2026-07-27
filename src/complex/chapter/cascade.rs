@@ -119,29 +119,8 @@ impl ChapterComplex {
     }
 }
 
-/// Schedule image deletion tasks for all uploaded page images belonging
-/// to the given chapter.
-async fn prom_image_deletes<P>(
-    proxy: &mut P,
-    chapter_id: &str,
-) -> BaseResult<()>
-where
-    P: for<'a> Proxy<ListPageInfos<'a>, Error = BaseError>
-        + for<'t, 'a> Proxy<
-            DeferBatch<'t, 'a, String, TaskPayload, ()>,
-            Error = BaseError,
-        >,
-{
-    let page_infos = proxy.exec(&ListPageInfos { chapter_id }).await?;
-
-    let object_keys = page_infos
-        .into_iter()
-        .filter_map(|page_info| page_info.image_key)
-        .collect();
-
-    defer_image_deletes(proxy, object_keys).await
-}
-
+// Build and schedule image delete tasks for a collected object-key list.
+// Schedule concrete image delete payloads for deletion workers.
 async fn defer_image_deletes<P>(
     proxy: &mut P,
     object_keys: Vec<String>,
@@ -179,8 +158,31 @@ where
     accept(())
 }
 
-/// After deleting a pinned chapter, repin the most recent remaining chapter
-/// (by list order) for the same comic.
+// Schedule image deletion tasks for all uploaded page images belonging
+// to the given chapter.
+async fn prom_image_deletes<P>(
+    proxy: &mut P,
+    chapter_id: &str,
+) -> BaseResult<()>
+where
+    P: for<'a> Proxy<ListPageInfos<'a>, Error = BaseError>
+        + for<'t, 'a> Proxy<
+            DeferBatch<'t, 'a, String, TaskPayload, ()>,
+            Error = BaseError,
+        >,
+{
+    let page_infos = proxy.exec(&ListPageInfos { chapter_id }).await?;
+
+    let object_keys = page_infos
+        .into_iter()
+        .filter_map(|page_info| page_info.image_key)
+        .collect();
+
+    defer_image_deletes(proxy, object_keys).await
+}
+
+// After deleting a pinned chapter, repin the most recent remaining chapter
+// (by list order) for the same comic.
 async fn repin_latest_chapter<P>(
     proxy: &mut P,
     comic_id: &str,

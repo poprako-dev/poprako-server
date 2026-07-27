@@ -37,6 +37,7 @@ use crate::value::role::RoleField;
 use crate::value::unit::UnitEditPerm;
 
 #[cfg(test)]
+// Unit tests for unit creation, editing, and transition rules.
 mod tests;
 
 #[instrument(level = "info", err(Debug), skip(repo))]

@@ -55,6 +55,7 @@ pub struct PageInfoVal {
 }
 
 impl PageInfoVal {
+    /// Materialize page image URLs when uploaded, then render API payload fields.
     /// Converts a [`PageInfo`] into a presentation-ready value.
     pub async fn from_model<P>(
         image_pool: &P,
@@ -120,6 +121,7 @@ pub struct PageImageParams {
 }
 
 impl From<PageImageParams> for PageImageSpec {
+    // Map page image parameters directly to the domain spec.
     fn from(params: PageImageParams) -> Self {
         Self {
             page_id: params.page_id,

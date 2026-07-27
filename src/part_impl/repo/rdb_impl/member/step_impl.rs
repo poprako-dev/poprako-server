@@ -19,123 +19,6 @@ use crate::result::{BaseResult, accept};
 use crate::value::member::MemberInclOpt;
 use crate::value::role::{RoleField, RoleMask};
 
-/// Per-role assignment timestamps extracted from a [`RoleMask`].
-struct RoleTimestamps {
-    //
-    raw_provider: Option<OffsetDateTime>,
-    translator: Option<OffsetDateTime>,
-    proofreader: Option<OffsetDateTime>,
-    typesetter: Option<OffsetDateTime>,
-    redrawer: Option<OffsetDateTime>,
-    reviewer: Option<OffsetDateTime>,
-    publisher: Option<OffsetDateTime>,
-    admin: Option<OffsetDateTime>,
-    bot: Option<OffsetDateTime>,
-}
-
-/// Compute a [`RoleTimestamps`] from a [`RoleMask`], setting each role's
-/// timestamp to `now` when that role is present in the mask.
-fn role_timestamps_from_mask(
-    roles: RoleMask,
-    now: OffsetDateTime,
-) -> RoleTimestamps {
-    //
-    let timestamp_fn = |field: RoleField| -> Option<OffsetDateTime> {
-        roles.has_any_role(&[field]).then_some(now)
-    };
-
-    RoleTimestamps {
-        raw_provider: timestamp_fn(RoleField::RAW_PROVIDER),
-        translator: timestamp_fn(RoleField::TRANSLATOR),
-        proofreader: timestamp_fn(RoleField::PROOFREADER),
-        typesetter: timestamp_fn(RoleField::TYPESETTER),
-        redrawer: timestamp_fn(RoleField::REDRAWER),
-        reviewer: timestamp_fn(RoleField::REVIEWER),
-        publisher: timestamp_fn(RoleField::PUBLISHER),
-        admin: timestamp_fn(RoleField::ADMIN),
-        bot: None,
-    }
-}
-
-/// Build a [`MemberRowEntry`] for insertion from a [`MemberEntry`] and the
-/// current timestamp.
-fn entity_from_entry<'a>(
-    entry: &'a MemberEntry,
-    now: OffsetDateTime,
-) -> MemberRowEntry<'a> {
-    //
-    let timestamps = role_timestamps_from_mask(entry.roles, now);
-
-    MemberRowEntry {
-        f_id: &entry.id,
-        f_user_id: &entry.user_id,
-        f_user_nickname: &entry.user_nickname,
-        f_team_id: &entry.team_id,
-        f_assigned_raw_provider_at: timestamps.raw_provider,
-        f_assigned_translator_at: timestamps.translator,
-        f_assigned_proofreader_at: timestamps.proofreader,
-        f_assigned_typesetter_at: timestamps.typesetter,
-        f_assigned_redrawer_at: timestamps.redrawer,
-        f_assigned_reviewer_at: timestamps.reviewer,
-        f_assigned_publisher_at: timestamps.publisher,
-        f_assigned_admin_at: timestamps.admin,
-        f_assigned_bot_at: timestamps.bot,
-        f_user_last_active_at: now,
-        f_created_at: now,
-        f_updated_at: now,
-    }
-}
-
-/// Build a [`MemberAspect`] from a [`MemberRoleUpdate`], stamping each
-/// assigned role's timestamp to `now`.
-fn aspect_from_role_update(
-    update: &MemberRoleUpdate,
-    now: OffsetDateTime,
-) -> MemberAspect<'_> {
-    //
-    let timestamps = role_timestamps_from_mask(update.roles, now);
-
-    let mut aspect = MemberAspect::new(now);
-
-    aspect = aspect
-        .assigned_raw_provider_at(timestamps.raw_provider)
-        .assigned_translator_at(timestamps.translator)
-        .assigned_proofreader_at(timestamps.proofreader)
-        .assigned_typesetter_at(timestamps.typesetter)
-        .assigned_redrawer_at(timestamps.redrawer)
-        .assigned_reviewer_at(timestamps.reviewer)
-        .assigned_publisher_at(timestamps.publisher)
-        .assigned_admin_at(timestamps.admin)
-        .assigned_bot_at(timestamps.bot);
-
-    aspect
-}
-
-/// Escape PostgreSQL `ILIKE` wildcard characters in a user-supplied search term.
-///
-/// The characters `%`, `_`, and `\` have special meaning in `LIKE`/`ILIKE`
-/// patterns and must be escaped to prevent accidental (or malicious) wildcard
-/// injection when the term is embedded in a pattern like `"%{}%"`.
-fn escape_ilike_pattern(input: &str) -> String {
-    //
-    let mut escaped = String::with_capacity(input.len());
-
-    for ch in input.chars() {
-        match ch {
-            //
-            '\\' => escaped.push_str("\\\\"),
-
-            '%' => escaped.push_str("\\%"),
-
-            '_' => escaped.push_str("\\_"),
-
-            _ => escaped.push(ch),
-        }
-    }
-
-    escaped
-}
-
 // ── Free functions ──────────────────────────────────────────────────────────
 
 /// Look up a member by user and team IDs.
@@ -420,4 +303,131 @@ pub async fn delete(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
         .map_err(diesel)?;
 
     accept(())
+}
+
+// Escape SQL ILIKE wildcards so user input remains literal.
+fn escape_ilike_pattern(input: &str) -> String {
+    //
+    let mut escaped = String::with_capacity(input.len());
+
+    for ch in input.chars() {
+        match ch {
+            //
+            '\\' => escaped.push_str("\\\\"),
+
+            '%' => escaped.push_str("\\%"),
+
+            '_' => escaped.push_str("\\_"),
+
+            _ => escaped.push(ch),
+        }
+    }
+
+    escaped
+}
+
+// Track per-role assignment timestamps captured from a role mask.
+struct RoleTimestamps {
+    //
+    // Timestamp of raw provider assignment; absent means role not enabled.
+    raw_provider: Option<OffsetDateTime>,
+
+    // Timestamp of translator assignment; absent means role not enabled.
+    translator: Option<OffsetDateTime>,
+
+    // Timestamp of proofreader assignment; absent means role not enabled.
+    proofreader: Option<OffsetDateTime>,
+
+    // Timestamp of typesetter assignment; absent means role not enabled.
+    typesetter: Option<OffsetDateTime>,
+
+    // Timestamp of redrawer assignment; absent means role not enabled.
+    redrawer: Option<OffsetDateTime>,
+
+    // Timestamp of reviewer assignment; absent means role not enabled.
+    reviewer: Option<OffsetDateTime>,
+
+    // Timestamp of publisher assignment; absent means role not enabled.
+    publisher: Option<OffsetDateTime>,
+
+    // Timestamp of admin assignment; absent means role not enabled.
+    admin: Option<OffsetDateTime>,
+
+    // Timestamp of bot assignment; absent means role not enabled.
+    bot: Option<OffsetDateTime>,
+}
+
+// Convert MemberEntry into insert payload, including per-role timestamp defaults.
+fn entity_from_entry<'a>(
+    entry: &'a MemberEntry,
+    now: OffsetDateTime,
+) -> MemberRowEntry<'a> {
+    //
+    let timestamps = role_timestamps_from_mask(entry.roles, now);
+
+    MemberRowEntry {
+        f_id: &entry.id,
+        f_user_id: &entry.user_id,
+        f_user_nickname: &entry.user_nickname,
+        f_team_id: &entry.team_id,
+        f_assigned_raw_provider_at: timestamps.raw_provider,
+        f_assigned_translator_at: timestamps.translator,
+        f_assigned_proofreader_at: timestamps.proofreader,
+        f_assigned_typesetter_at: timestamps.typesetter,
+        f_assigned_redrawer_at: timestamps.redrawer,
+        f_assigned_reviewer_at: timestamps.reviewer,
+        f_assigned_publisher_at: timestamps.publisher,
+        f_assigned_admin_at: timestamps.admin,
+        f_assigned_bot_at: timestamps.bot,
+        f_user_last_active_at: now,
+        f_created_at: now,
+        f_updated_at: now,
+    }
+}
+
+// Build update aspect from role change payload, applying now-stamped enabled roles.
+fn aspect_from_role_update(
+    update: &MemberRoleUpdate,
+    now: OffsetDateTime,
+) -> MemberAspect<'_> {
+    //
+    let timestamps = role_timestamps_from_mask(update.roles, now);
+
+    let mut aspect = MemberAspect::new(now);
+
+    aspect = aspect
+        .assigned_raw_provider_at(timestamps.raw_provider)
+        .assigned_translator_at(timestamps.translator)
+        .assigned_proofreader_at(timestamps.proofreader)
+        .assigned_typesetter_at(timestamps.typesetter)
+        .assigned_redrawer_at(timestamps.redrawer)
+        .assigned_reviewer_at(timestamps.reviewer)
+        .assigned_publisher_at(timestamps.publisher)
+        .assigned_admin_at(timestamps.admin)
+        .assigned_bot_at(timestamps.bot);
+
+    aspect
+}
+
+// Convert role mask into assignment timestamps by stamping enabled roles with now.
+fn role_timestamps_from_mask(
+    roles: RoleMask,
+    now: OffsetDateTime,
+) -> RoleTimestamps {
+    //
+    let timestamp_fn = |field: RoleField| -> Option<OffsetDateTime> {
+        roles.has_any_role(&[field]).then_some(now)
+    };
+
+    RoleTimestamps {
+        raw_provider: timestamp_fn(RoleField::RAW_PROVIDER),
+        translator: timestamp_fn(RoleField::TRANSLATOR),
+        proofreader: timestamp_fn(RoleField::PROOFREADER),
+        typesetter: timestamp_fn(RoleField::TYPESETTER),
+        redrawer: timestamp_fn(RoleField::REDRAWER),
+        reviewer: timestamp_fn(RoleField::REVIEWER),
+        publisher: timestamp_fn(RoleField::PUBLISHER),
+        admin: timestamp_fn(RoleField::ADMIN),
+        bot: None,
+    }
 }

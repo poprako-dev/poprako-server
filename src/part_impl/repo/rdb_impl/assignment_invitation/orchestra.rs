@@ -17,8 +17,11 @@ use crate::part_impl::shared::RdbContext;
 use crate::result::{BaseError, BaseResult};
 
 impl Run<ListAssignmentInvitationInfos<'_>> for RdbRepo {
+    // Non-transactional path that lists invitation infos for a list spec.
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Delegate to `submit_query!` to run the list query outside transaction
+    // boundaries and return all matching invitation summaries.
     async fn run(
         &self,
         oper: &ListAssignmentInvitationInfos<'_>,
@@ -27,8 +30,10 @@ impl Run<ListAssignmentInvitationInfos<'_>> for RdbRepo {
     }
 }
 impl Run<GetAssignmentInvitationInfo<'_>> for RdbRepo {
+    // Non-transactional path for loading one invitation info by id.
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Dispatch a single-id fetch through submit-query macro and return full info.
     async fn run(
         &self,
         oper: &GetAssignmentInvitationInfo<'_>,
@@ -41,8 +46,10 @@ impl Run<GetAssignmentInvitationInfo<'_>> for RdbRepo {
     }
 }
 impl Step<CreateAssignmentInvitation<'_>, RdbContext> for RdbRepo {
+    // Create invitation rows and return resulting invitation info in tx scope.
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Execute creation in the provided DB context and return created info payload.
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -52,8 +59,10 @@ impl Step<CreateAssignmentInvitation<'_>, RdbContext> for RdbRepo {
     }
 }
 impl Step<GetAssignmentInvitationInfo<'_>, RdbContext> for RdbRepo {
+    // Transactional fetch for one invitation info by id.
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Route a non-code lookup to `step_impl` and load exactly one record.
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -67,8 +76,10 @@ impl Step<GetAssignmentInvitationInfo<'_>, RdbContext> for RdbRepo {
     }
 }
 impl Step<GetAssignmentInvitationInfoExcluded<'_>, RdbContext> for RdbRepo {
+    // Transactional lookup for invitation by code while skipping soft-excluded rows.
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Fetch by raw code and keep exclusion semantics required by this branch.
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -78,8 +89,10 @@ impl Step<GetAssignmentInvitationInfoExcluded<'_>, RdbContext> for RdbRepo {
     }
 }
 impl Step<MarkAssignmentInvitationUsed<'_>, RdbContext> for RdbRepo {
+    // Transactional state transition that marks a pending invitation as used.
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Perform state update for the given invitation id within the current tx.
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -90,9 +103,11 @@ impl Step<MarkAssignmentInvitationUsed<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<PurgeExpiredAssignmentInvitation<'_>, RdbContext> for RdbRepo {
+    // Transactional delete/update behavior for purging expired invitations.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Purge expired invitation entries identified by invitation id.
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -103,9 +118,11 @@ impl Step<PurgeExpiredAssignmentInvitation<'_>, RdbContext> for RdbRepo {
 }
 
 impl Run<PurgeExpiredAssignmentInvitation<'_>> for RdbRepo {
+    // Non-transactional interface for purging expired invitations.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Delegate expiration purge to a shared query execution helper.
     async fn run(
         &self,
         oper: &PurgeExpiredAssignmentInvitation<'_>,
@@ -115,8 +132,12 @@ impl Run<PurgeExpiredAssignmentInvitation<'_>> for RdbRepo {
 }
 
 impl Step<DeleteAssignmentInvitations<'_>, RdbContext> for RdbRepo {
+    // Transactional delete for invitation records.
+    //
+    // Deletes by invitation id or all invitations under a chapter.
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Branch on request variant and execute the matching deletion statement.
     async fn step(
         &self,
         context: &mut RdbContext,

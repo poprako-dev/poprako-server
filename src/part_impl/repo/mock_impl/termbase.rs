@@ -16,15 +16,7 @@ use crate::part_impl::repo::mock_impl::{
 };
 use crate::result::{BaseError, BaseResult, accept};
 
-fn get_info(state: &MockState, id: &str) -> BaseResult<TermbaseInfo> {
-    state
-        .termbases
-        .iter()
-        .find(|termbase_info| termbase_info.id == id)
-        .cloned()
-        .ok_or_else(|| expected("error-termbase-not-found"))
-}
-
+// Internal implementation of `same_owner`.
 fn same_owner(
     termbase_info: &TermbaseInfo,
     team_id: Option<&str>,
@@ -34,6 +26,25 @@ fn same_owner(
         && termbase_info.comic_id.as_deref() == comic_id
 }
 
+// Internal implementation of `page_infos`.
+fn page_infos(
+    mut termbase_infos: Vec<TermbaseInfo>,
+    offset: u32,
+    limit: u32,
+) -> Vec<TermbaseInfo> {
+    //
+    // Internal implementation detail.
+    // Internal implementation detail.
+    termbase_infos.sort_by_key(|right| Reverse(right.updated_at));
+
+    termbase_infos
+        .into_iter()
+        .skip(offset as usize)
+        .take(limit as usize)
+        .collect()
+}
+
+// Internal implementation of `name_conflicts`.
 fn name_conflicts(
     state: &MockState,
     id: Option<&str>,
@@ -48,28 +59,18 @@ fn name_conflicts(
     })
 }
 
-fn page_infos(
-    mut termbase_infos: Vec<TermbaseInfo>,
-    offset: u32,
-    limit: u32,
-) -> Vec<TermbaseInfo> {
-    //
-    termbase_infos.sort_by_key(|right| Reverse(right.updated_at));
-
-    termbase_infos
-        .into_iter()
-        .skip(offset as usize)
-        .take(limit as usize)
-        .collect()
-}
-
+// Internal implementation of `list_infos`.
 fn list_infos(
     state: &MockState,
     spec: &TermbaseInfoListSpec,
 ) -> Vec<TermbaseInfo> {
     //
+    // Internal implementation detail.
+    // Internal implementation detail.
     let (mut termbase_infos, fuzzy_name, offset, limit) = match spec {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         TermbaseInfoListSpec::Team {
             team_id,
             fuzzy_name,
@@ -113,6 +114,8 @@ fn list_infos(
 
     if let Some(fuzzy_name) = fuzzy_name {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let fuzzy_name = fuzzy_name.to_lowercase();
 
         termbase_infos.retain(|termbase_info| {
@@ -123,15 +126,29 @@ fn list_infos(
     page_infos(termbase_infos, offset, limit)
 }
 
+// Resolve one termbase by id and return it with expected-args missing error.
+fn get_info(state: &MockState, id: &str) -> BaseResult<TermbaseInfo> {
+    state
+        .termbases
+        .iter()
+        .find(|termbase_info| termbase_info.id == id)
+        .cloned()
+        .ok_or_else(|| expected("error-termbase-not-found"))
+}
+
 impl<'a> Run<GetTermbaseInfo<'a>> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `run`.
     async fn run(
         &self,
         oper: &GetTermbaseInfo<'a>,
     ) -> BaseResult<TermbaseInfo> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
         get_info(&state, oper.id)
@@ -139,14 +156,18 @@ impl<'a> Run<GetTermbaseInfo<'a>> for Mock {
 }
 
 impl<'a> Run<ListTermbaseInfos<'a>> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `run`.
     async fn run(
         &self,
         oper: &ListTermbaseInfos<'a>,
     ) -> BaseResult<Vec<TermbaseInfo>> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
         accept(list_infos(&state, oper.spec))
@@ -154,15 +175,19 @@ impl<'a> Run<ListTermbaseInfos<'a>> for Mock {
 }
 
 impl<'a> Step<CreateTermbase<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &CreateTermbase<'a>,
     ) -> BaseResult<TermbaseInfo> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         if name_conflicts(
             &context.state,
             None,
@@ -194,9 +219,11 @@ impl<'a> Step<CreateTermbase<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<GetTermbaseInfo<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -207,9 +234,11 @@ impl<'a> Step<GetTermbaseInfo<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<GetTermbaseInfoExcluded<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -220,21 +249,27 @@ impl<'a> Step<GetTermbaseInfoExcluded<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<ListTermbaseInfosExcluded<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &ListTermbaseInfosExcluded<'a>,
     ) -> BaseResult<Vec<TermbaseInfo>> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let termbase_infos = context
             .state
             .termbases
             .iter()
             .filter(|termbase_info| match oper {
                 //
+                // Internal implementation detail.
+                // Internal implementation detail.
                 ListTermbaseInfosExcluded::Team { team_id } => {
                     termbase_info.team_id.as_deref() == Some(*team_id)
                 }
@@ -251,15 +286,19 @@ impl<'a> Step<ListTermbaseInfosExcluded<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<UpdateTermbase<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &UpdateTermbase<'a>,
     ) -> BaseResult<()> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let current = get_info(&context.state, &oper.update.id)?;
 
         if name_conflicts(
@@ -290,15 +329,19 @@ impl<'a> Step<UpdateTermbase<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<UpdateTermbaseTermCount<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &UpdateTermbaseTermCount<'a>,
     ) -> BaseResult<()> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let termbase_info = context
             .state
             .termbases
@@ -321,15 +364,19 @@ impl<'a> Step<UpdateTermbaseTermCount<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<TouchTermbase<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &TouchTermbase<'a>,
     ) -> BaseResult<()> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let termbase_info = context
             .state
             .termbases
@@ -344,15 +391,19 @@ impl<'a> Step<TouchTermbase<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<DeleteTermbase<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &DeleteTermbase<'a>,
     ) -> BaseResult<()> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let position = context
             .state
             .termbases

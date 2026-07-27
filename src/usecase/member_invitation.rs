@@ -39,8 +39,10 @@ use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 
 #[cfg(test)]
+// Unit tests for member invitation creation and cancellation semantics.
 mod tests;
 
+// Default invitation validity window for member invite tokens.
 const EXPIRY_DELAY: Duration = Duration::from_secs(5 * 24 * 60 * 60);
 
 /// Creates a pending invitation for a team.

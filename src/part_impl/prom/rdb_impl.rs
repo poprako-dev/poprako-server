@@ -28,12 +28,17 @@ use crate::part_impl::shared::result::diesel;
 use crate::part_impl::shared::{RdbContext, RdbCore};
 use crate::result::{BaseError, BaseResult, accept};
 
+// Internal organization of the `entity` module.
 mod entity;
+// Internal organization of the `handler` module.
 mod handler;
+// Internal organization of the `repo` module.
 mod repo;
 #[cfg(all(test, feature = "rdb", feature = "prom_impl"))]
+// Internal organization of the `test_shared` module.
 mod test_shared;
 #[cfg(all(test, feature = "rdb", feature = "prom_impl"))]
+// Internal organization of the `tests` module.
 mod tests;
 
 // ── Handle type ────────────────────────────────────────────────────────────
@@ -48,6 +53,7 @@ mod tests;
 /// gracefully. Pending records remain durable for the next worker start.
 pub struct RdbProm {
     //
+    // Internal state field `token`.
     /// Cancellation token to signal graceful shutdown of the prom processor.
     token: CancellationToken,
     /// Watch receiver that signals when background processing drains.
@@ -84,6 +90,7 @@ impl RdbProm {
 
         tokio::spawn(async move {
             //
+            // Internal implementation detail.
             handler.run().await;
 
             done_send.send_replace(true);
@@ -97,6 +104,7 @@ impl RdbProm {
     #[instrument(level = "info", skip_all)]
     pub async fn close(&self) {
         //
+        // Internal implementation detail.
         self.token.cancel();
 
         let mut done = self.done.clone();
@@ -111,21 +119,25 @@ impl RdbProm {
 }
 
 impl Drop for RdbProm {
+    // Internal implementation of `drop`.
     fn drop(&mut self) {
         self.token.cancel();
     }
 }
 
 impl<'a> Step<Defer<'a, String, TaskPayload, ()>, RdbContext> for RdbProm {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &Defer<'a, String, TaskPayload, ()>,
     ) -> BaseResult<()> {
         //
+        // Internal implementation detail.
         let now = OffsetDateTime::now_utc();
 
         let entry = LocalMessageEntry::from_task(&oper.task, now)?;
@@ -143,15 +155,18 @@ impl<'a> Step<Defer<'a, String, TaskPayload, ()>, RdbContext> for RdbProm {
 impl<'t, 'a> Step<DeferBatch<'t, 'a, String, TaskPayload, ()>, RdbContext>
     for RdbProm
 {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &DeferBatch<'t, 'a, String, TaskPayload, ()>,
     ) -> BaseResult<()> {
         //
+        // Internal implementation detail.
         if oper.tasks.is_empty() {
             return accept(());
         }

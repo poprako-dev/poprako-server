@@ -32,7 +32,20 @@ pub mod tests;
 
 // ── Free functions ──────────────────────────────────────────────────────────
 
-/// Query member invitations matching the given list spec, with optional includes.
+// Delete a member invitation by ID.
+#[instrument(level = "info", err(Debug), skip_all)]
+async fn delete(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
+    //
+    // Delete the raw invitation row by primary key.
+    diesel::delete(t_member_invitation.filter(f_id.eq(id)))
+        .execute(conn)
+        .await
+        .map_err(diesel)?;
+
+    accept(())
+}
+
+// Query member invitations matching the given list spec, with optional includes.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn list_infos(
     conn: &mut RdbConn,
@@ -77,7 +90,7 @@ async fn list_infos(
     accept(infos)
 }
 
-/// Load a single invitation info by ID with optional includes.
+// Load a single invitation info by ID with optional includes.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn get_info_by_id(
     conn: &mut RdbConn,
@@ -106,7 +119,7 @@ async fn get_info_by_id(
     accept(info)
 }
 
-/// Create a new member invitation and return its info.
+// Create a new member invitation and return its info.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn create(
     conn: &mut RdbConn,
@@ -125,7 +138,7 @@ async fn create(
     row.try_into()
 }
 
-/// Look up a pending invitation by code.
+// Look up a pending invitation by code.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn get_info_by_code(
     conn: &mut RdbConn,
@@ -145,7 +158,7 @@ async fn get_info_by_code(
     row.try_into()
 }
 
-/// Look up a pending invitation by code, locking the row for update.
+// Look up a pending invitation by code, locking the row for update.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn get_info_by_code_excluded(
     conn: &mut RdbConn,
@@ -166,7 +179,7 @@ async fn get_info_by_code_excluded(
     row.try_into()
 }
 
-/// Mark a pending invitation as used.
+// Mark a pending invitation as used.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn mark_pending_as_used(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
     //
@@ -183,7 +196,7 @@ async fn mark_pending_as_used(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
     accept(())
 }
 
-/// Update the roles on an existing invitation.
+// Update the roles on an existing invitation.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn update_info(
     conn: &mut RdbConn,
@@ -205,19 +218,7 @@ async fn update_info(
     accept(())
 }
 
-/// Delete a member invitation by ID.
-#[instrument(level = "info", err(Debug), skip_all)]
-async fn delete(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
-    //
-    diesel::delete(t_member_invitation.filter(f_id.eq(id)))
-        .execute(conn)
-        .await
-        .map_err(diesel)?;
-
-    accept(())
-}
-
-/// Deletes a member invitation only while it remains pending.
+// Deletes a member invitation only while it remains pending.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn purge_pending(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
     //
@@ -234,8 +235,10 @@ async fn purge_pending(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
 }
 
 impl Run<ListMemberInvitationInfos<'_>> for RdbRepo {
+    // Map list filters into shared query layer for member invitation collections.
     type Error = BaseError;
 
+    // Execute list query through list_infos helper.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
@@ -246,8 +249,10 @@ impl Run<ListMemberInvitationInfos<'_>> for RdbRepo {
 }
 
 impl Run<GetMemberInvitationInfo<'_, '_>> for RdbRepo {
+    // Resolve invite info by id/code in non-transactional context.
     type Error = BaseError;
 
+    // Support direct lookup via id or one-time code resolution.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
@@ -267,8 +272,10 @@ impl Run<GetMemberInvitationInfo<'_, '_>> for RdbRepo {
 }
 
 impl Step<CreateMemberInvitation<'_>, RdbContext> for RdbRepo {
+    // Keep transactional create failures in base error type.
     type Error = BaseError;
 
+    // Create invitation record in current transaction and return full info.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
@@ -280,8 +287,10 @@ impl Step<CreateMemberInvitation<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<GetMemberInvitationInfo<'_, '_>, RdbContext> for RdbRepo {
+    // Keep transactional read failures in base error type.
     type Error = BaseError;
 
+    // Resolve invitation by id/code with optional include hydration when needed.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
@@ -302,8 +311,10 @@ impl Step<GetMemberInvitationInfo<'_, '_>, RdbContext> for RdbRepo {
 }
 
 impl Step<UpdateMemberInvitation<'_>, RdbContext> for RdbRepo {
+    // Keep transactional update failures in base error type.
     type Error = BaseError;
 
+    // Apply either metadata updates or used-state transition by variant.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
@@ -325,8 +336,10 @@ impl Step<UpdateMemberInvitation<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<GetMemberInvitationInfoExcluded<'_>, RdbContext> for RdbRepo {
+    // Keep transactional exclusive-read failures in base error type.
     type Error = BaseError;
 
+    // Fetch invitation by code with lock, used when mutation follows.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
@@ -342,8 +355,10 @@ impl Step<GetMemberInvitationInfoExcluded<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<DeleteMemberInvitation<'_>, RdbContext> for RdbRepo {
+    // Keep transactional delete failures in base error type.
     type Error = BaseError;
 
+    // Remove invitation by id as part of current transaction.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
@@ -355,8 +370,10 @@ impl Step<DeleteMemberInvitation<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<PurgeExpiredMemberInvitation<'_>, RdbContext> for RdbRepo {
+    // Keep transactional purge failures in base error type.
     type Error = BaseError;
 
+    // Purge only pending invitations using id filter.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
@@ -368,8 +385,10 @@ impl Step<PurgeExpiredMemberInvitation<'_>, RdbContext> for RdbRepo {
 }
 
 impl Run<PurgeExpiredMemberInvitation<'_>> for RdbRepo {
+    // Keep non-transactional purge failures in base error type.
     type Error = BaseError;
 
+    // Route expired purge operation to shared query helper.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,

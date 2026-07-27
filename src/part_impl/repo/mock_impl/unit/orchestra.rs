@@ -12,11 +12,15 @@ use crate::part_impl::repo::mock_impl::{Mock, MockContext};
 use crate::result::{BaseError, BaseResult};
 
 impl Run<ListUnitInfos<'_>> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `run`.
     async fn run(&self, oper: &ListUnitInfos<'_>) -> BaseResult<Vec<UnitInfo>> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
         list_infos(&state, oper.page_id)
@@ -24,9 +28,11 @@ impl Run<ListUnitInfos<'_>> for Mock {
 }
 
 impl Step<ListUnitOrders<'_>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -37,9 +43,11 @@ impl Step<ListUnitOrders<'_>, MockContext> for Mock {
 }
 
 impl Step<ApplyUnitEdits<'_>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,

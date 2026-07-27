@@ -17,5 +17,6 @@ __pycache__/
 *.py[cod]
 *.pyo
 .venv/
+.uv-cache/
 
 worktrees/

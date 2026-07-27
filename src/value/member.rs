@@ -23,6 +23,7 @@ pub enum MemberInclOpt {
 }
 
 impl InclOpt for MemberInclOpt {
+    // Expand each include request into its dependency-ordered chain.
     fn path(self) -> &'static [Self] {
         match self {
             //

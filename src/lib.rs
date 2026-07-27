@@ -22,37 +22,38 @@ pub use part_impl::repo::rdb_impl::RdbRepo;
 pub use part_impl::sched::GeneralSched;
 pub use part_impl::shared::RdbCore;
 
-/// HTTP API layer (handlers, middleware, server, router, OpenAPI).
+// HTTP API layer (handlers, middleware, server, router, OpenAPI).
 mod api;
 /// Benchmark entry points.
 #[cfg(feature = "benchmark")]
 #[doc(hidden)]
 pub mod benchmark;
-/// Core business-logic helpers that coordinate domain rules across models.
+// Core business-logic helpers that coordinate domain rules across models.
 mod complex;
-/// Application configuration parsing and access.
+// Application configuration parsing and access.
 mod config;
-/// Inbound request and outbound response DTOs for the HTTP API layer.
+// Inbound request and outbound response DTOs for the HTTP API layer.
 mod data;
-/// Application harness wiring all ports together for production and test use.
+// Application harness wiring all ports together for production and test use.
 mod harn;
-/// Tracing-subscriber initialisation shared across binaries.
+// Tracing-subscriber initialisation shared across binaries.
 mod log;
-/// Persisted business entity model definitions backed by database tables.
+// Persisted business entity model definitions backed by database tables.
 mod model;
-/// Port trait definitions (repo, auth, image, prom, effect) for the application
-/// core.
+// Port trait definitions (repo, auth, image, prom, effect) for the application
+// core.
 mod part;
-/// Concrete port implementations: repo, auth, prom, image, effect, drive.
+// Concrete port implementations: repo, auth, prom, image, effect, drive.
 mod part_impl;
-/// Root error and result types used across all layers.
+// Root error and result types used across all layers.
 mod result;
 #[cfg(test)]
+// Internal tests utility helpers for fixtures and assertions.
 mod test_util;
-/// Application use cases orchestrating the ports-and-transaction-steps core.
+// Application use cases orchestrating the ports-and-transaction-steps core.
 mod usecase;
-/// Shared utility functions (snowflake ID generation, etc.).
+// Shared utility functions (snowflake ID generation, etc.).
 mod util;
-/// Domain value types, enums, and small typed concepts shared by models and use
-/// cases.
+// Domain value types, enums, and small typed concepts shared by models and use
+// cases.
 mod value;

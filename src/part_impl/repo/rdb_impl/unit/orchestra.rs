@@ -13,8 +13,10 @@ use crate::part_impl::shared::RdbContext;
 use crate::result::{BaseError, BaseResult};
 
 impl Run<ListUnitInfos<'_>> for RdbRepo {
+    // Error type for the Run trait impl on unit list query.
     type Error = BaseError;
 
+    // Lists visible Units in verified linked-list order for the given page.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(&self, oper: &ListUnitInfos<'_>) -> BaseResult<Vec<UnitInfo>> {
         submit_query!(self.core, list_infos, oper.page_id)
@@ -22,8 +24,10 @@ impl Run<ListUnitInfos<'_>> for RdbRepo {
 }
 
 impl Step<ListUnitOrders<'_>, RdbContext> for RdbRepo {
+    // Error type for the Step trait impl on unit order list.
     type Error = BaseError;
 
+    // Locks and lists the complete Unit chain, including tombstones, within a transaction.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
@@ -35,8 +39,10 @@ impl Step<ListUnitOrders<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<ApplyUnitEdits<'_>, RdbContext> for RdbRepo {
+    // Error type for the Step trait impl on unit edit application.
     type Error = BaseError;
 
+    // Applies normalized Unit edits and returns the latest visible counters within a transaction.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,

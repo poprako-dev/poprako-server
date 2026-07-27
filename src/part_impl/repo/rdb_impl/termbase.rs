@@ -30,6 +30,21 @@ use crate::result::{BaseError, BaseResult, accept};
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;
 
+// Escape `%` and `_` wildcard symbols so fuzzy search stays literal-safe.
+#[instrument(level = "info", err(Debug), skip_all)]
+// Remove one termbase row by id.
+async fn delete(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
+    //
+    // Execute hard delete as the finalization action in repositories.
+    diesel::delete(t_termbase.filter(f_id.eq(id)))
+        .execute(conn)
+        .await
+        .map_err(diesel)?;
+
+    accept(())
+}
+
+// Escape wildcard and escape characters before constructing ILIKE patterns.
 fn escape_ilike_pattern(input: &str) -> String {
     input
         .replace('\\', "\\\\")
@@ -38,8 +53,10 @@ fn escape_ilike_pattern(input: &str) -> String {
 }
 
 #[instrument(level = "info", err(Debug), skip_all)]
+// Load one termbase row by id and map DB entity into response shape.
 async fn get_info(conn: &mut RdbConn, id: &str) -> BaseResult<TermbaseInfo> {
     //
+    // Return explicit not-found error when the target termbase does not exist.
     let row: TermbaseRow = t_termbase
         .filter(f_id.eq(id))
         .select(TermbaseRow::as_select())
@@ -53,11 +70,13 @@ async fn get_info(conn: &mut RdbConn, id: &str) -> BaseResult<TermbaseInfo> {
 }
 
 #[instrument(level = "info", err(Debug), skip_all)]
+// Load one termbase row by id with row lock for transactional mutation.
 async fn get_info_excluded(
     conn: &mut RdbConn,
     id: &str,
 ) -> BaseResult<TermbaseInfo> {
     //
+    // Take `FOR UPDATE` lock and keep semantics aligned with locked read paths.
     let row: TermbaseRow = t_termbase
         .filter(f_id.eq(id))
         .select(TermbaseRow::as_select())
@@ -72,11 +91,13 @@ async fn get_info_excluded(
 }
 
 #[instrument(level = "info", err(Debug), skip_all)]
+// List termbase rows with team/comic filter and optional fuzzy name.
 async fn list_infos(
     conn: &mut RdbConn,
     spec: &TermbaseInfoListSpec,
 ) -> BaseResult<Vec<TermbaseInfo>> {
     //
+    // Build one query path that branches on scope and optional fuzzy name.
     let mut query = t_termbase.select(TermbaseRow::as_select()).into_boxed();
 
     let (fuzzy_name, offset, limit) = match spec {
@@ -129,11 +150,13 @@ async fn list_infos(
 }
 
 #[instrument(level = "info", err(Debug), skip_all)]
+// List all termbases for team/comic with row lock for later mutation.
 async fn list_infos_excluded(
     conn: &mut RdbConn,
     oper: &ListTermbaseInfosExcluded<'_>,
 ) -> BaseResult<Vec<TermbaseInfo>> {
     //
+    // Lock candidate rows so subsequent writes in caller transaction stay safe.
     let rows: Vec<TermbaseRow> = match oper {
         //
         ListTermbaseInfosExcluded::Team { team_id } => t_termbase
@@ -157,11 +180,13 @@ async fn list_infos_excluded(
 }
 
 #[instrument(level = "info", err(Debug), skip_all)]
+// Insert a new termbase and return created info.
 async fn create(
     conn: &mut RdbConn,
     termbase_entry: &TermbaseEntry,
 ) -> BaseResult<TermbaseInfo> {
     //
+    // Convert API entry into insert row shape and fetch persisted row.
     let entry = TermbaseRowEntry::from(termbase_entry);
 
     let row: TermbaseRow = diesel::insert_into(t_termbase)
@@ -175,11 +200,13 @@ async fn create(
 }
 
 #[instrument(level = "info", err(Debug), skip_all)]
+// Update termbase descriptive fields.
 async fn update_info(
     conn: &mut RdbConn,
     update: &TermbaseInfoUpdate,
 ) -> BaseResult<()> {
     //
+    // Keep `updated_at` current while applying partial name/description updates.
     diesel::update(t_termbase.filter(f_id.eq(&update.id)))
         .set((
             f_name.eq(&update.name),
@@ -194,12 +221,14 @@ async fn update_info(
 }
 
 #[instrument(level = "info", err(Debug), skip_all)]
+// Adjust term count atomically by signed delta.
 async fn update_term_count(
     conn: &mut RdbConn,
     id: &str,
     delta: i32,
 ) -> BaseResult<()> {
     //
+    // Use SQL delta update to avoid read-modify-write races.
     diesel::update(t_termbase.filter(f_id.eq(id)))
         .set((
             f_term_count.eq(f_term_count + delta),
@@ -213,8 +242,10 @@ async fn update_term_count(
 }
 
 #[instrument(level = "info", err(Debug), skip_all)]
+// Touch updated_at to indicate activity without changing business fields.
 async fn touch(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
     //
+    // Keep liveness and stale-checking aligned for external schedulers.
     diesel::update(t_termbase.filter(f_id.eq(id)))
         .set(f_updated_at.eq(OffsetDateTime::now_utc()))
         .execute(conn)
@@ -224,20 +255,11 @@ async fn touch(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
     accept(())
 }
 
-#[instrument(level = "info", err(Debug), skip_all)]
-async fn delete(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
-    //
-    diesel::delete(t_termbase.filter(f_id.eq(id)))
-        .execute(conn)
-        .await
-        .map_err(diesel)?;
-
-    accept(())
-}
-
 impl Run<GetTermbaseInfo<'_>> for RdbRepo {
+    // Use BaseError for non-transactional read failures.
     type Error = BaseError;
 
+    // Load one termbase info by id through shared query path.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
@@ -248,8 +270,10 @@ impl Run<GetTermbaseInfo<'_>> for RdbRepo {
 }
 
 impl Run<ListTermbaseInfos<'_>> for RdbRepo {
+    // Use BaseError for non-transactional list failures.
     type Error = BaseError;
 
+    // Load paged termbase list by spec through shared query path.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
@@ -260,8 +284,10 @@ impl Run<ListTermbaseInfos<'_>> for RdbRepo {
 }
 
 impl Step<CreateTermbase<'_>, RdbContext> for RdbRepo {
+    // Use BaseError for transactional creation failures.
     type Error = BaseError;
 
+    // Insert termbase row inside transaction context and return persisted info.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
@@ -273,8 +299,10 @@ impl Step<CreateTermbase<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<GetTermbaseInfo<'_>, RdbContext> for RdbRepo {
+    // Use BaseError for transactional read failures.
     type Error = BaseError;
 
+    // Read one locked? or unlocked termbase info in step context.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
@@ -286,8 +314,10 @@ impl Step<GetTermbaseInfo<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<GetTermbaseInfoExcluded<'_>, RdbContext> for RdbRepo {
+    // Use BaseError for transactional lock-bound reads.
     type Error = BaseError;
 
+    // Read one termbase row with `FOR UPDATE` for subsequent writes.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
@@ -299,8 +329,10 @@ impl Step<GetTermbaseInfoExcluded<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<ListTermbaseInfosExcluded<'_>, RdbContext> for RdbRepo {
+    // Use BaseError for transactional collection reads.
     type Error = BaseError;
 
+    // Read and lock all rows for a team/comic scope.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
@@ -312,8 +344,10 @@ impl Step<ListTermbaseInfosExcluded<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<UpdateTermbase<'_>, RdbContext> for RdbRepo {
+    // Use BaseError for transactional update failures.
     type Error = BaseError;
 
+    // Apply name/description changes in one update statement.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
@@ -325,8 +359,10 @@ impl Step<UpdateTermbase<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<UpdateTermbaseTermCount<'_>, RdbContext> for RdbRepo {
+    // Use BaseError for transactional aggregate count updates.
     type Error = BaseError;
 
+    // Update term count with delta while keeping updated_at fresh.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
@@ -338,8 +374,10 @@ impl Step<UpdateTermbaseTermCount<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<TouchTermbase<'_>, RdbContext> for RdbRepo {
+    // Use BaseError for transactional touch/update timestamp failures.
     type Error = BaseError;
 
+    // Refresh termbase updated_at in transactional flow.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
@@ -351,8 +389,10 @@ impl Step<TouchTermbase<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<DeleteTermbase<'_>, RdbContext> for RdbRepo {
+    // Use BaseError for transactional deletion failures.
     type Error = BaseError;
 
+    // Delete termbase row as part of transaction flow.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,

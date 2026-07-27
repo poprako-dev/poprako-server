@@ -2,6 +2,7 @@
 
 #[macro_use]
 mod macros;
+// Generic batch-include framework with per-table loaders.
 mod framework;
 
 /// Include logic for announcements.

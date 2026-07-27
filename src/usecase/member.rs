@@ -29,6 +29,7 @@ use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 
 #[cfg(test)]
+// Unit tests for team membership and invitation boundary conditions.
 mod tests;
 
 /// Creates one member under a team.
@@ -350,7 +351,7 @@ where
     accept(())
 }
 
-/// Constructs an args error for an invalid invitation code.
+// Constructs an args error for an invalid invitation code.
 fn invalid_invitation_err() -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Args,
@@ -358,7 +359,7 @@ fn invalid_invitation_err() -> BaseError {
     }
 }
 
-/// Constructs an args error for a user already in the team.
+// Constructs an args error for a user already in the team.
 fn already_team_member_err() -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Args,

@@ -76,6 +76,7 @@ impl UserComplex {
     }
 }
 
+// Hashes a plaintext password with the Argon2id algorithm on the current thread.
 fn hash_password_sync(password: &str) -> BaseResult<String> {
     //
     let salt = SaltString::generate(OsRng);
@@ -91,6 +92,7 @@ fn hash_password_sync(password: &str) -> BaseResult<String> {
         })
 }
 
+// Verifies a plaintext password against an Argon2id hash on the current thread.
 fn verify_password_sync(password: &str, password_hash: &str) -> bool {
     //
     let Ok(parsed) = PasswordHash::new(password_hash) else {

@@ -26,8 +26,23 @@ use crate::result::{BaseError, BaseResult, accept};
 pub mod tests;
 
 #[instrument(level = "info", err(Debug), skip_all)]
+// Remove one workset row by id.
+async fn delete(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
+    //
+    // Hard-delete the row; no additional business side-effects in this layer.
+    diesel::delete(t_workset.filter(f_id.eq(id)))
+        .execute(conn)
+        .await
+        .map_err(diesel)?;
+
+    accept(())
+}
+
+#[instrument(level = "info", err(Debug), skip_all)]
+// Load one workset by id and return a rich info view.
 async fn get_info(conn: &mut RdbConn, id: &str) -> BaseResult<WorksetInfo> {
     //
+    // Fetch the row by primary key and map missing rows to `error-workset-not-found`.
     let row: WorksetRow = t_workset
         .filter(f_id.eq(id))
         .select(WorksetRow::as_select())
@@ -41,11 +56,13 @@ async fn get_info(conn: &mut RdbConn, id: &str) -> BaseResult<WorksetInfo> {
 }
 
 #[instrument(level = "info", err(Debug), skip_all)]
+// List worksets for one team with stable index ordering.
 async fn list_infos(
     conn: &mut RdbConn,
     oper: &ListWorksetInfos<'_>,
 ) -> BaseResult<Vec<WorksetInfo>> {
     //
+    // Apply pagination and team filter so consumers can page team worksets.
     let query = t_workset
         .filter(f_team_id.eq(oper.team_id))
         .select(WorksetRow::as_select())
@@ -60,11 +77,13 @@ async fn list_infos(
 }
 
 #[instrument(level = "info", err(Debug), skip_all)]
+// Update mutable metadata for an existing workset.
 async fn update_info(
     conn: &mut RdbConn,
     update: &WorksetInfoUpdate,
 ) -> BaseResult<()> {
     //
+    // Build an aspect object and persist nickname/description updates with timestamp.
     let now = OffsetDateTime::now_utc();
 
     let aspect = WorksetAspect::new(now)
@@ -81,11 +100,13 @@ async fn update_info(
 }
 
 #[instrument(level = "info", err(Debug), skip_all)]
+// List worksets for team-level operations while excluding other readers.
 async fn list_infos_excluded(
     conn: &mut RdbConn,
     team_id: &str,
 ) -> BaseResult<Vec<WorksetInfo>> {
     //
+    // Lock rows selected by team to support follow-up serial updates.
     let rows: Vec<WorksetRow> = t_workset
         .filter(f_team_id.eq(team_id))
         .select(WorksetRow::as_select())
@@ -98,11 +119,13 @@ async fn list_infos_excluded(
 }
 
 #[instrument(level = "info", err(Debug), skip_all)]
+// Load one workset with row lock for mutation flows.
 async fn get_info_excluded(
     conn: &mut RdbConn,
     id: &str,
 ) -> BaseResult<WorksetInfo> {
     //
+    // Return `error-workset-not-found` when locked read sees no row.
     let row: WorksetRow = t_workset
         .filter(f_id.eq(id))
         .select(WorksetRow::as_select())
@@ -117,11 +140,13 @@ async fn get_info_excluded(
 }
 
 #[instrument(level = "info", err(Debug), skip_all)]
+// Insert a new workset and return its public info record.
 async fn create(
     conn: &mut RdbConn,
     workset_entry: &WorksetEntry,
 ) -> BaseResult<WorksetInfo> {
     //
+    // Convert API entry into row form and read back generated values.
     let entry = WorksetRowEntry::from(workset_entry);
 
     let row: WorksetRow = diesel::insert_into(t_workset)
@@ -135,19 +160,10 @@ async fn create(
 }
 
 #[instrument(level = "info", err(Debug), skip_all)]
-async fn delete(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
-    //
-    diesel::delete(t_workset.filter(f_id.eq(id)))
-        .execute(conn)
-        .await
-        .map_err(diesel)?;
-
-    accept(())
-}
-
-#[instrument(level = "info", err(Debug), skip_all)]
+// Allocate next comic index atomically for a workset.
 async fn alloc_comic_index(conn: &mut RdbConn, id: &str) -> BaseResult<i32> {
     //
+    // Increment and return previous next-index value in a single statement.
     let index: i32 = diesel::update(t_workset.filter(f_id.eq(id)))
         .set(f_comic_next_index.eq(f_comic_next_index + 1))
         .returning(f_comic_next_index - 1)
@@ -159,12 +175,14 @@ async fn alloc_comic_index(conn: &mut RdbConn, id: &str) -> BaseResult<i32> {
 }
 
 #[instrument(level = "info", err(Debug), skip_all)]
+// Update comic count by a delta value.
 async fn update_comic_count(
     conn: &mut RdbConn,
     id: &str,
     delta: i32,
 ) -> BaseResult<()> {
     //
+    // Keep a monotonic counter aligned with comic membership updates.
     diesel::update(t_workset.filter(f_id.eq(id)))
         .set(f_comic_count.eq(f_comic_count + delta))
         .execute(conn)
@@ -175,8 +193,10 @@ async fn update_comic_count(
 }
 
 impl Run<GetWorksetInfo<'_>> for RdbRepo {
+    // Use BaseError to keep run-level errors consistent.
     type Error = BaseError;
 
+    // Map `GetWorksetInfo` lookup to one repository query helper.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(&self, oper: &GetWorksetInfo<'_>) -> BaseResult<WorksetInfo> {
         submit_query!(self.core, get_info, oper.id)
@@ -184,8 +204,10 @@ impl Run<GetWorksetInfo<'_>> for RdbRepo {
 }
 
 impl Run<ListWorksetInfos<'_>> for RdbRepo {
+    // Use BaseError to keep run-level errors consistent.
     type Error = BaseError;
 
+    // Map list request into paged, team-scoped query helper.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
@@ -196,8 +218,10 @@ impl Run<ListWorksetInfos<'_>> for RdbRepo {
 }
 
 impl Run<UpdateWorkset<'_>> for RdbRepo {
+    // Use BaseError to keep run-level errors consistent.
     type Error = BaseError;
 
+    // Route update DTO directly into update helper.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(&self, oper: &UpdateWorkset<'_>) -> BaseResult<()> {
         submit_query!(self.core, update_info, oper.update)
@@ -205,8 +229,10 @@ impl Run<UpdateWorkset<'_>> for RdbRepo {
 }
 
 impl Step<GetWorksetInfo<'_>, RdbContext> for RdbRepo {
+    // Use BaseError for transactional context operations.
     type Error = BaseError;
 
+    // Resolve one workset info inside transaction-scoped connection.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
@@ -218,8 +244,10 @@ impl Step<GetWorksetInfo<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<ListWorksetInfos<'_>, RdbContext> for RdbRepo {
+    // Use BaseError for transactional context operations.
     type Error = BaseError;
 
+    // Resolve multiple worksets for team with pagination under transaction context.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
@@ -231,8 +259,10 @@ impl Step<ListWorksetInfos<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<GetWorksetInfoExcluded<'_>, RdbContext> for RdbRepo {
+    // Use BaseError for transactional context operations.
     type Error = BaseError;
 
+    // Resolve locked workset row for mutation chains.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
@@ -244,8 +274,10 @@ impl Step<GetWorksetInfoExcluded<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<ListWorksetInfosExcluded<'_>, RdbContext> for RdbRepo {
+    // Use BaseError for transactional context operations.
     type Error = BaseError;
 
+    // List rows locked by team id to coordinate dependent writes.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
@@ -257,8 +289,10 @@ impl Step<ListWorksetInfosExcluded<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<CreateWorkset<'_>, RdbContext> for RdbRepo {
+    // Use BaseError for transactional context operations.
     type Error = BaseError;
 
+    // Create workset row and return inserted info representation.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
@@ -270,8 +304,10 @@ impl Step<CreateWorkset<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<DeleteWorkset<'_>, RdbContext> for RdbRepo {
+    // Use BaseError for transactional context operations.
     type Error = BaseError;
 
+    // Delete workset row as part of the current transaction.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
@@ -283,8 +319,10 @@ impl Step<DeleteWorkset<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<AllocWorksetComicIndex<'_>, RdbContext> for RdbRepo {
+    // Use BaseError for transactional context operations.
     type Error = BaseError;
 
+    // Allocate and return the next comic index for the workset.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
@@ -296,8 +334,10 @@ impl Step<AllocWorksetComicIndex<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<UpdateWorksetComicCount<'_>, RdbContext> for RdbRepo {
+    // Use BaseError for transactional context operations.
     type Error = BaseError;
 
+    // Apply comic count delta to workset within transaction.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,

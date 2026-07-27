@@ -29,6 +29,7 @@ use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseError, BaseResult, accept};
 
 #[cfg(test)]
+// Unit tests for term lifecycle, ownership, and conflict guards.
 mod tests;
 
 /// Creates a terminology entry inside a terminology base.

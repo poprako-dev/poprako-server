@@ -33,116 +33,6 @@ use crate::value::comic::ComicInclOpt;
 use crate::value::image::{ImageExt, ImageHash};
 use crate::value::index::user_index_to_stored_index;
 
-/// Resolves comic IDs whose pinned chapter matches every requested workflow phase.
-async fn list_matching_stage_comic_ids(
-    conn: &mut RdbConn,
-    stage_mask: StageMask,
-) -> BaseResult<Option<Vec<String>>> {
-    //
-    let stages = StageMask::stages()
-        .iter()
-        .copied()
-        .filter(|stage| !stage_mask.ignores_stage(*stage))
-        .collect::<Vec<_>>();
-
-    if stages.is_empty() {
-        return accept(None);
-    }
-
-    let mut query = t_chapter
-        .filter(chapter_is_pinned.eq(true))
-        .select(chapter_comic_id)
-        .distinct()
-        .into_boxed();
-
-    for stage in stages {
-        //
-        let phase = stage_mask.get_phase(stage);
-
-        query = match (stage, phase) {
-            //
-            (Stage::RawProvide, StagePhase::Pending) => {
-                query.filter(chapter_uploaded_at.is_null())
-            }
-
-            (Stage::RawProvide, StagePhase::Completed) => {
-                query.filter(chapter_uploaded_at.is_not_null())
-            }
-
-            (Stage::Translate, StagePhase::Pending) => query
-                .filter(chapter_translating_at.is_null())
-                .filter(chapter_translated_at.is_null()),
-
-            (Stage::Translate, StagePhase::Active) => query
-                .filter(chapter_translating_at.is_not_null())
-                .filter(chapter_translated_at.is_null()),
-
-            (Stage::Translate, StagePhase::Completed) => {
-                query.filter(chapter_translated_at.is_not_null())
-            }
-
-            (Stage::Proofread, StagePhase::Pending) => query
-                .filter(chapter_proofreading_at.is_null())
-                .filter(chapter_proofread_at.is_null()),
-
-            (Stage::Proofread, StagePhase::Active) => query
-                .filter(chapter_proofreading_at.is_not_null())
-                .filter(chapter_proofread_at.is_null()),
-
-            (Stage::Proofread, StagePhase::Completed) => {
-                query.filter(chapter_proofread_at.is_not_null())
-            }
-
-            (Stage::TypesetRedraw, StagePhase::Pending) => query
-                .filter(chapter_typesetting_at.is_null())
-                .filter(chapter_typeset_at.is_null()),
-
-            (Stage::TypesetRedraw, StagePhase::Active) => query
-                .filter(chapter_typesetting_at.is_not_null())
-                .filter(chapter_typeset_at.is_null()),
-
-            (Stage::TypesetRedraw, StagePhase::Completed) => {
-                query.filter(chapter_typeset_at.is_not_null())
-            }
-
-            (Stage::Review, StagePhase::Pending) => {
-                query.filter(chapter_reviewed_at.is_null())
-            }
-
-            (Stage::Review, StagePhase::Completed) => {
-                query.filter(chapter_reviewed_at.is_not_null())
-            }
-
-            (Stage::Publish, StagePhase::Pending) => {
-                query.filter(chapter_published_at.is_null())
-            }
-
-            (Stage::Publish, StagePhase::Completed) => {
-                query.filter(chapter_published_at.is_not_null())
-            }
-
-            (
-                Stage::RawProvide | Stage::Review | Stage::Publish,
-                StagePhase::Active,
-            ) => return accept(Some(Vec::new())),
-        };
-    }
-
-    let comic_ids = query.load(conn).await.map_err(diesel)?;
-
-    accept(Some(comic_ids))
-}
-
-/// Parses a fuzzy title value as an integer and converts to a stored index.
-fn stored_index_from_numeric_fuzzy(fuzzy_title_value: &str) -> Option<i32> {
-    match fuzzy_title_value.trim().parse() {
-        //
-        Ok(index) => user_index_to_stored_index(index),
-
-        Err(_) => None,
-    }
-}
-
 /// Queries a single comic row by ID and populates its includes.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn get_info_by_id(
@@ -598,4 +488,114 @@ pub async fn touch_last_active(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
         .map_err(diesel)?;
 
     accept(())
+}
+
+// Resolves comic IDs whose pinned chapter matches every requested workflow phase.
+async fn list_matching_stage_comic_ids(
+    conn: &mut RdbConn,
+    stage_mask: StageMask,
+) -> BaseResult<Option<Vec<String>>> {
+    //
+    let stages = StageMask::stages()
+        .iter()
+        .copied()
+        .filter(|stage| !stage_mask.ignores_stage(*stage))
+        .collect::<Vec<_>>();
+
+    if stages.is_empty() {
+        return accept(None);
+    }
+
+    let mut query = t_chapter
+        .filter(chapter_is_pinned.eq(true))
+        .select(chapter_comic_id)
+        .distinct()
+        .into_boxed();
+
+    for stage in stages {
+        //
+        let phase = stage_mask.get_phase(stage);
+
+        query = match (stage, phase) {
+            //
+            (Stage::RawProvide, StagePhase::Pending) => {
+                query.filter(chapter_uploaded_at.is_null())
+            }
+
+            (Stage::RawProvide, StagePhase::Completed) => {
+                query.filter(chapter_uploaded_at.is_not_null())
+            }
+
+            (Stage::Translate, StagePhase::Pending) => query
+                .filter(chapter_translating_at.is_null())
+                .filter(chapter_translated_at.is_null()),
+
+            (Stage::Translate, StagePhase::Active) => query
+                .filter(chapter_translating_at.is_not_null())
+                .filter(chapter_translated_at.is_null()),
+
+            (Stage::Translate, StagePhase::Completed) => {
+                query.filter(chapter_translated_at.is_not_null())
+            }
+
+            (Stage::Proofread, StagePhase::Pending) => query
+                .filter(chapter_proofreading_at.is_null())
+                .filter(chapter_proofread_at.is_null()),
+
+            (Stage::Proofread, StagePhase::Active) => query
+                .filter(chapter_proofreading_at.is_not_null())
+                .filter(chapter_proofread_at.is_null()),
+
+            (Stage::Proofread, StagePhase::Completed) => {
+                query.filter(chapter_proofread_at.is_not_null())
+            }
+
+            (Stage::TypesetRedraw, StagePhase::Pending) => query
+                .filter(chapter_typesetting_at.is_null())
+                .filter(chapter_typeset_at.is_null()),
+
+            (Stage::TypesetRedraw, StagePhase::Active) => query
+                .filter(chapter_typesetting_at.is_not_null())
+                .filter(chapter_typeset_at.is_null()),
+
+            (Stage::TypesetRedraw, StagePhase::Completed) => {
+                query.filter(chapter_typeset_at.is_not_null())
+            }
+
+            (Stage::Review, StagePhase::Pending) => {
+                query.filter(chapter_reviewed_at.is_null())
+            }
+
+            (Stage::Review, StagePhase::Completed) => {
+                query.filter(chapter_reviewed_at.is_not_null())
+            }
+
+            (Stage::Publish, StagePhase::Pending) => {
+                query.filter(chapter_published_at.is_null())
+            }
+
+            (Stage::Publish, StagePhase::Completed) => {
+                query.filter(chapter_published_at.is_not_null())
+            }
+
+            (
+                Stage::RawProvide | Stage::Review | Stage::Publish,
+                StagePhase::Active,
+            ) => return accept(Some(Vec::new())),
+        };
+    }
+
+    let comic_ids = query.load(conn).await.map_err(diesel)?;
+
+    accept(Some(comic_ids))
+}
+
+// Parses a fuzzy title value as an integer and converts to a stored index.
+fn stored_index_from_numeric_fuzzy(fuzzy_title_value: &str) -> Option<i32> {
+    match fuzzy_title_value.trim().parse() {
+        //
+        Ok(index) => user_index_to_stored_index(index),
+
+        Err(_) => None,
+    }
 }

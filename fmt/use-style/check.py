@@ -21,6 +21,9 @@ from pathlib import Path
 import tree_sitter
 import tree_sitter_rust
 
+sys.path.insert(0, str(Path(__file__).parents[1]))
+from production_source import production_source
+
 
 ROOT = Path(__file__).parents[2]
 PARSER = tree_sitter.Parser(tree_sitter.Language(tree_sitter_rust.language()))
@@ -761,7 +764,7 @@ def check_single_test_module(
 
 
 def check_file(path: Path, root: Path, local_crates: set[str]) -> tuple[list[str], list[tuple[int, int, bytes]]]:
-    source = path.read_bytes()
+    source = production_source(path, root)
     statements = collect_uses(path, source)
     masked = masked_source(source, statements)
     diagnostics: list[str] = []

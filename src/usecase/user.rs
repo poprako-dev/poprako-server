@@ -36,6 +36,7 @@ use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 
 #[cfg(test)]
+// Unit tests for account, role, and membership operations.
 mod tests;
 
 /// Fetches a user's profile with avatar URL resolution.

@@ -18,6 +18,7 @@ use crate::part::repo::oper::member::FindMemberInfo;
 use crate::result::{BaseError, BaseResult, accept};
 
 #[cfg(test)]
+// Unit tests that validate comment lifecycle and visibility constraints.
 mod tests;
 
 /// Lists comments under a team.

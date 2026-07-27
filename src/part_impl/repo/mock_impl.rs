@@ -35,42 +35,44 @@ use crate::part_impl::prom::mock_impl::MockPromRecord;
 use crate::result::{BaseError, ExpectedVariant};
 use crate::value::role::{RoleField, RoleMask};
 
-/// Mock implementations for announcement repository opers.
+/// Mock in-memory implementations for announcement repository operations.
 pub mod announcement;
-/// Mock implementations for assignment repository opers.
+/// Mock in-memory implementations for assignment repository operations.
 pub mod assignment;
-/// Mock implementations for assignment invitation repository opers.
+/// Mock in-memory implementations for assignment invitation repository operations.
 pub mod assignment_invitation;
-/// Mock implementations for chapter repository operations.
+/// Mock in-memory implementations for chapter repository operations.
 pub mod chapter;
-/// Mock implementations for comic repository operations.
+/// Mock in-memory implementations for comic repository operations.
 pub mod comic;
-/// Mock implementations for immutable comic archive repository operations.
+/// Mock in-memory implementations for immutable comic archive repository operations.
 pub mod comic_archive;
-/// Mock implementations for comment repository opers.
+/// Mock in-memory implementations for comment repository operations.
 pub mod comment;
-/// Mock implementations for member repository opers.
+/// Mock in-memory implementations for member repository operations.
 pub mod member;
-/// Mock implementations for member invitation repository opers.
+/// Mock in-memory implementations for member invitation repository operations.
 pub mod member_invitation;
+// Mock helper for in-memory nucl-related types.
 mod nucl;
-/// Mock implementations for page repository opers.
+/// Mock implementations for page repository operations.
 pub mod page;
-/// Mock implementations for system mail repository opers.
+/// Mock implementations for system mail repository operations.
 pub mod system_mail;
-/// Mock implementations for team repository opers.
+/// Mock implementations for team repository operations.
 pub mod team;
-/// Mock implementations for term repository opers.
+/// Mock implementations for term repository operations.
 pub mod term;
-/// Mock implementations for termbase repository opers.
+/// Mock in-memory implementations for termbase repository operations.
 pub mod termbase;
+// Mock-only tests and fixtures for repository adapter scenarios.
 #[cfg(test)]
 mod tests;
-/// Mock implementations for unit repository opers.
+/// Mock implementations for unit repository operations.
 pub mod unit;
-/// Mock implementations for user repository opers.
+/// Mock implementations for user repository operations.
 pub mod user;
-/// Mock implementations for workset repository opers.
+/// Mock implementations for workset repository operations.
 pub mod workset;
 
 /// In-memory state holding all mock repository records.
@@ -166,6 +168,8 @@ pub struct MockSnapshot {
 }
 
 impl From<MockState> for MockSnapshot {
+    // Build a test snapshot by moving all mutable collections into a stable
+    // assertion-friendly shape.
     fn from(state: MockState) -> Self {
         Self {
             users: state.users,

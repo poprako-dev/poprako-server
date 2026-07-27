@@ -37,6 +37,7 @@ use crate::value::chapter_port::TranslationFormat;
 use crate::value::role::RoleField;
 use crate::value::unit::UnitEditPerm;
 
+// Test suite for chapter import mapping and permission checks.
 #[cfg(test)]
 mod tests;
 
@@ -223,12 +224,14 @@ where
     accept(import_payload)
 }
 
+// Builds page edits from imported units for scenario coverage.
 fn build_page_edits(
     imported_units: &[UnitTranslationImport],
     user_id: &str,
     edit_perm: UnitEditPerm,
     label_plus: bool,
 ) -> Vec<UnitEdit> {
+    // Build minimal page edits used by import scenario coverage.
     imported_units
         .iter()
         .map(|imported_unit| {
@@ -244,7 +247,9 @@ fn build_page_edits(
         .collect()
 }
 
+// Computes unit counters from page info for consistency checks.
 fn page_counters(page_info: &PageInfo) -> UnitCounters {
+    // Count page-level totals for consistency checks after import.
     UnitCounters {
         total_unit_count: page_info.total_unit_count,
         translated_unit_count: page_info.translated_unit_count,
@@ -252,8 +257,10 @@ fn page_counters(page_info: &PageInfo) -> UnitCounters {
     }
 }
 
+// Builds the repository execution stages required for import with permissions.
 fn import_stages(edit_perm: UnitEditPerm) -> Vec<Stage> {
     //
+    // Build the repository execution stages required for import with permissions.
     let mut stages = Vec::with_capacity(2);
 
     if edit_perm.can_translate {
@@ -267,7 +274,9 @@ fn import_stages(edit_perm: UnitEditPerm) -> Vec<Stage> {
     stages
 }
 
+// Returns a permission error for unauthorized unit edits.
 fn unit_edit_permission_err() -> BaseError {
+    // Return a standardized permission error for unauthorized unit edits.
     BaseError::Expected {
         variant: ExpectedVariant::Perm,
         message: trl("error-unit-edit-permission-required"),

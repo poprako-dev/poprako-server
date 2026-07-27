@@ -43,6 +43,7 @@ pub struct TermbaseInfoVal {
 }
 
 impl From<TermbaseInfo> for TermbaseInfoVal {
+    // Convert terminology base model into response payload.
     fn from(model: TermbaseInfo) -> Self {
         Self {
             id: model.id,
