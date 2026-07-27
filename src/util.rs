@@ -129,13 +129,17 @@ where
     where
         D: Deserializer<'de>,
     {
+        // Discriminant-only tagged representation for Patch deserialization.
         #[derive(Deserialize)]
         #[serde(tag = "type", content = "value", rename_all = "snake_case")]
         enum PatchVal<T> {
+            /// Explicit clear — discard the current value.
             Clear,
 
+            /// Explicit assign — replace with the given value.
             Assign(T),
 
+            /// Explicit skip or absent — leave the current value unchanged.
             Skip,
         }
 
