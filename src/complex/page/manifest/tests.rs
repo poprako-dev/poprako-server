@@ -4,6 +4,7 @@ use time::OffsetDateTime;
 
 use crate::value::image::{ImageExt, ImageHash};
 
+// Build a lightweight page fixture with deterministic metadata.
 fn page(
     id: &str,
     index: i32,
@@ -28,6 +29,7 @@ fn page(
     }
 }
 
+// Build an input spec fixture with optional explicit identity and deterministic hash.
 fn input(page_id: Option<&str>, hash: u8) -> PageImageSpec {
     PageImageSpec {
         page_id: page_id.map(Into::into),

@@ -31,21 +31,27 @@ use crate::value::chapter::{Stage, StageMask, StagePhase};
 use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
+// Build a token fixture for invitation test requests.
 fn token(user_id: &str) -> UserToken {
+    // Build a caller token for assignment-invitation API tests.
     UserToken {
         user_id: user_id.into(),
     }
 }
 
+// Build a stable credential fixture for authentication setup.
 fn credential(user_id: &str) -> UserCredential {
+    // Build a credential fixture with fixed digest for login assertions.
     UserCredential {
         user_id: user_id.into(),
         password_hash: "hash".into(),
     }
 }
 
+// Build a user fixture used by invitation creator/invitee flows.
 fn user(id: &str, qid: &str, nickname: &str) -> UserInfo {
     //
+    // Build a minimal user fixture used by invitation creator/invitee paths.
     let time = now();
 
     UserInfo {
@@ -64,8 +70,10 @@ fn user(id: &str, qid: &str, nickname: &str) -> UserInfo {
     }
 }
 
+// Build a team fixture used as owner context for invitations.
 fn team(id: &str) -> TeamInfo {
     //
+    // Build a team fixture used as ownership anchor for invitations.
     let time = now();
 
     TeamInfo {
@@ -82,8 +90,10 @@ fn team(id: &str) -> TeamInfo {
     }
 }
 
+// Build a workset fixture with fixed team ownership.
 fn workset(id: &str, team_id: &str) -> WorksetInfo {
     //
+    // Build a workset fixture shared by comic and chapter test entities.
     let time = now();
 
     WorksetInfo {
@@ -98,8 +108,10 @@ fn workset(id: &str, team_id: &str) -> WorksetInfo {
     }
 }
 
+// Build a comic fixture attached to given workset.
 fn comic(id: &str, workset_id: &str) -> ComicInfo {
     //
+    // Build a comic fixture under the chosen workset.
     let time = now();
 
     ComicInfo {
@@ -125,8 +137,10 @@ fn comic(id: &str, workset_id: &str) -> ComicInfo {
     }
 }
 
+// Build a chapter fixture with an initialized stage mask.
 fn chapter(id: &str, comic_id: &str) -> ChapterInfo {
     //
+    // Build a chapter fixture for invitation lifecycle tests.
     let time = now();
 
     ChapterInfo {
@@ -148,7 +162,9 @@ fn chapter(id: &str, comic_id: &str) -> ChapterInfo {
     }
 }
 
+// Build a member fixture with deterministic role assignment.
 fn member(user_id: &str, role_mask: RoleMask) -> MemberInfo {
+    // Build a team member fixture with a stable role assignment.
     MemberInfo {
         id: format!("member-{}", user_id),
         user_id: user_id.into(),
@@ -161,12 +177,14 @@ fn member(user_id: &str, role_mask: RoleMask) -> MemberInfo {
     }
 }
 
+// Build an assignment fixture for role-merge/duplication assertions.
 fn assignment(
     chapter_id: &str,
     user_id: &str,
     role_mask: RoleMask,
 ) -> AssignmentInfo {
     //
+    // Build an active assignment fixture for duplicate or merge-role assertions.
     let time = now();
 
     AssignmentInfo {
@@ -181,12 +199,14 @@ fn assignment(
     }
 }
 
+// Build a pending invitation fixture for list/create/join scenarios.
 fn invitation(
     id: &str,
     invitee_qid: &str,
     role_mask: RoleMask,
 ) -> AssignmentInvitationInfo {
     //
+    // Build an invitation fixture with deterministic code and role payload.
     let time = now();
 
     AssignmentInvitationInfo {
@@ -202,10 +222,13 @@ fn invitation(
     }
 }
 
+// Build a one-role mask for invitation payloads.
 fn role(role_field: RoleField) -> RoleMask {
+    // Build a single-role bitmask used by invitation payloads.
     RoleMask::from(role_field)
 }
 
+// Build list params that fetch current pending invitation list.
 fn list_data() -> ListAssignmentInvitationInfosParams {
     ListAssignmentInvitationInfosParams {
         chapter_id: "chapter-1".into(),
@@ -215,6 +238,7 @@ fn list_data() -> ListAssignmentInvitationInfosParams {
     }
 }
 
+// Build create params targeting a specific invitee qid.
 fn create_data(invitee_qid: &str) -> CreateAssignmentInvitationParams {
     CreateAssignmentInvitationParams {
         chapter_id: "chapter-1".into(),
@@ -223,12 +247,14 @@ fn create_data(invitee_qid: &str) -> CreateAssignmentInvitationParams {
     }
 }
 
+// Build join params with a deterministic invitation code.
 fn join_data() -> JoinAssignmentInvitationParams {
     JoinAssignmentInvitationParams {
         code: "AINV123".into(),
     }
 }
 
+// Seed shared team/workset/comic/chapter references for all invitation tests.
 fn seed_scope(mock: &Mock) {
     //
     mock.seed_team(team("team-1"));
@@ -240,6 +266,7 @@ fn seed_scope(mock: &Mock) {
     mock.seed_chapter(chapter("chapter-1", "comic-1"));
 }
 
+// Seed an admin assignment baseline used by invite/reject checks.
 fn seed_admin(mock: &Mock) {
     mock.seed_assignment(assignment(
         "chapter-1",

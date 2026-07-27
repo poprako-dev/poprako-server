@@ -52,7 +52,9 @@ use crate::value::chapter::{Stage, StageOper, StagePhase};
 
 pub use delete::delete;
 
+// Chapter deletion use cases (internal).
 mod delete;
+
 #[cfg(test)]
 mod tests;
 

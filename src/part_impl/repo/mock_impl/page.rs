@@ -6,19 +6,15 @@ use crate::model::page::{PageEntry, PageInfo};
 use crate::part_impl::repo::mock_impl::{MockState, expected, now};
 use crate::result::BaseResult;
 
+// Internal organization of the `orchestra` module.
 mod orchestra;
 
-fn get_page_by_id(state: &MockState, id: &str) -> BaseResult<PageInfo> {
-    state
-        .pages
-        .iter()
-        .find(|page_info| page_info.id == id)
-        .cloned()
-        .ok_or_else(|| expected("error-page-not-found"))
-}
-
+// Internal implementation of `list_infos`.
+// Look up page info by primary key; returns a business error on miss.
 fn list_infos(state: &MockState, chapter_id: &str) -> Vec<PageInfo> {
     //
+    // Internal implementation detail.
+    // Internal implementation detail.
     let mut page_infos = state
         .pages
         .iter()
@@ -31,6 +27,17 @@ fn list_infos(state: &MockState, chapter_id: &str) -> Vec<PageInfo> {
     page_infos
 }
 
+// Read detailed info by page primary key.
+fn get_page_by_id(state: &MockState, id: &str) -> BaseResult<PageInfo> {
+    state
+        .pages
+        .iter()
+        .find(|page_info| page_info.id == id)
+        .cloned()
+        .ok_or_else(|| expected("error-page-not-found"))
+}
+
+// Internal implementation of `list_first_pages`.
 fn list_first_pages(
     state: &MockState,
     chapter_ids: &[String],
@@ -46,8 +53,11 @@ fn list_first_pages(
         .collect()
 }
 
+// Internal implementation of `page_from_entry`.
 fn page_from_entry(entry: &PageEntry) -> PageInfo {
     //
+    // Internal implementation detail.
+    // Internal implementation detail.
     let time = now();
 
     PageInfo {

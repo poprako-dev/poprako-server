@@ -13,13 +13,10 @@ rules:
    relative order.
 
 The checker scans source under `src/`. Test-only `#[cfg(test)]` items and the
-generated Diesel schema are excluded. It supports automatic repair by moving
-complete declarations, including directly attached doc comments and
-attributes. It never rewrites a function body:
+generated Diesel schema are excluded:
 
 ```bash
 fmt/.venv/bin/python fmt/item-layout/check.py
-fmt/.venv/bin/python fmt/item-layout/check.py --fix
 fmt/.venv/bin/python fmt/item-layout/check.py --self-test
 ```
 

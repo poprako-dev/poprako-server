@@ -21,84 +21,6 @@ use crate::util::Patch;
 #[cfg(test)]
 mod tests;
 
-fn order_units<T, I, N>(
-    units: &mut [T],
-    id_of: I,
-    next_id_of: N,
-) -> BaseResult<()>
-where
-    I: for<'a> Fn(&'a T) -> &'a str,
-    N: for<'a> Fn(&'a T) -> Option<&'a str>,
-{
-    //
-    if units.is_empty() {
-        return accept(());
-    }
-
-    for index in 0..units.len() {
-        if units[index + 1..]
-            .iter()
-            .any(|unit| id_of(unit) == id_of(&units[index]))
-        {
-            return Err(corrupt_unit_chain_err());
-        }
-    }
-
-    let mut head_pos = None;
-
-    for candidate in 0..units.len() {
-        //
-        let has_predecessor = units.iter().any(|unit| {
-            next_id_of(unit)
-                .is_some_and(|next_id| next_id == id_of(&units[candidate]))
-        });
-
-        if has_predecessor {
-            continue;
-        }
-
-        if head_pos.replace(candidate).is_some() {
-            return Err(corrupt_unit_chain_err());
-        }
-    }
-
-    let Some(head_pos) = head_pos else {
-        return Err(corrupt_unit_chain_err());
-    };
-
-    units.swap(0, head_pos);
-
-    for index in 0..units.len() - 1 {
-        //
-        let next_pos = units[index + 1..].iter().enumerate().find_map(
-            |(pos, candidate)| {
-                next_id_of(&units[index])
-                    .is_some_and(|next_id| next_id == id_of(candidate))
-                    .then_some(pos)
-            },
-        );
-
-        let Some(next_pos) = next_pos else {
-            return Err(corrupt_unit_chain_err());
-        };
-
-        units.swap(index + 1, index + 1 + next_pos);
-    }
-
-    if units.last().is_some_and(|unit| next_id_of(unit).is_some()) {
-        return Err(corrupt_unit_chain_err());
-    }
-
-    accept(())
-}
-
-fn corrupt_unit_chain_err() -> BaseError {
-    BaseError::Unrecoverable {
-        message: "persisted Unit chain is corrupt".to_string(),
-    }
-}
-
-#[instrument(level = "info", err(Debug), skip_all)]
 /// Lists visible Units in verified linked-list order.
 pub async fn list_infos(
     conn: &mut RdbConn,
@@ -155,106 +77,6 @@ pub async fn list_orders_for_update(
     )?;
 
     accept(orders)
-}
-
-fn find_order_pos(ordered_ids: &[&str], id: &str) -> Option<usize> {
-    ordered_ids
-        .iter()
-        .enumerate()
-        .find_map(|(pos, candidate)| (*candidate == id).then_some(pos))
-}
-
-fn move_order<'a>(
-    ordered_ids: &mut Vec<&'a str>,
-    id: &'a str,
-    next_id: Option<&str>,
-) -> BaseResult<()> {
-    //
-    let Some(pos) = find_order_pos(ordered_ids, id) else {
-        return Err(expected("error-invalid-unit-oper"));
-    };
-
-    let id = ordered_ids.remove(pos);
-
-    let pos = match next_id {
-        //
-        Some(next_id) => find_order_pos(ordered_ids, next_id)
-            .ok_or_else(|| expected("error-invalid-unit-oper"))?,
-
-        None => ordered_ids.len(),
-    };
-
-    ordered_ids.insert(pos, id);
-
-    accept(())
-}
-
-fn apply_order_edits<'a>(
-    orders: &'a [UnitOrder],
-    edits: &'a [UnitEdit],
-) -> BaseResult<Vec<&'a str>> {
-    //
-    let mut ordered_ids = orders
-        .iter()
-        .map(|order| order.id.as_str())
-        .collect::<Vec<_>>();
-
-    let mut hidden_ids = orders
-        .iter()
-        .filter(|order| order.is_hidden)
-        .map(|order| order.id.as_str())
-        .collect::<HashSet<_>>();
-
-    for edit in edits {
-        match edit {
-            //
-            UnitEdit::Create { id, next_id, .. } => {
-                //
-                if find_order_pos(&ordered_ids, id).is_some() {
-                    return Err(expected("error-invalid-unit-oper"));
-                }
-
-                ordered_ids.push(id);
-
-                hidden_ids.remove(id.as_str());
-
-                move_order(&mut ordered_ids, id, next_id.as_deref())?;
-            }
-
-            UnitEdit::Save { id, next_id, .. } => {
-                //
-                hidden_ids.remove(id.as_str());
-
-                match next_id {
-                    //
-                    Patch::Skip => {}
-
-                    Patch::Clear => {
-                        move_order(&mut ordered_ids, id, None)?;
-                    }
-
-                    Patch::Assign(next_id) => {
-                        move_order(&mut ordered_ids, id, Some(next_id))?;
-                    }
-                }
-            }
-
-            UnitEdit::Delete { id } => {
-                hidden_ids.insert(id);
-            }
-        }
-    }
-
-    let visible_count = ordered_ids
-        .iter()
-        .filter(|id| !hidden_ids.contains(**id))
-        .count();
-
-    if visible_count > 100 {
-        return Err(expected("error-invalid-unit-oper"));
-    }
-
-    accept(ordered_ids)
 }
 
 #[instrument(level = "info", err(Debug), skip_all)]
@@ -347,6 +169,148 @@ pub async fn apply_edits(
     accept(count_infos(&unit_infos))
 }
 
+// Orders units in linked-list order, detecting cycles and multiple heads.
+fn order_units<T, I, N>(
+    units: &mut [T],
+    id_of: I,
+    next_id_of: N,
+) -> BaseResult<()>
+where
+    I: for<'a> Fn(&'a T) -> &'a str,
+    N: for<'a> Fn(&'a T) -> Option<&'a str>,
+{
+    //
+    if units.is_empty() {
+        return accept(());
+    }
+
+    for index in 0..units.len() {
+        if units[index + 1..]
+            .iter()
+            .any(|unit| id_of(unit) == id_of(&units[index]))
+        {
+            return Err(corrupt_unit_chain_err());
+        }
+    }
+
+    let mut head_pos = None;
+
+    for candidate in 0..units.len() {
+        //
+        let has_predecessor = units.iter().any(|unit| {
+            next_id_of(unit)
+                .is_some_and(|next_id| next_id == id_of(&units[candidate]))
+        });
+
+        if has_predecessor {
+            continue;
+        }
+
+        if head_pos.replace(candidate).is_some() {
+            return Err(corrupt_unit_chain_err());
+        }
+    }
+
+    let Some(head_pos) = head_pos else {
+        return Err(corrupt_unit_chain_err());
+    };
+
+    units.swap(0, head_pos);
+
+    for index in 0..units.len() - 1 {
+        //
+        let next_pos = units[index + 1..].iter().enumerate().find_map(
+            |(pos, candidate)| {
+                next_id_of(&units[index])
+                    .is_some_and(|next_id| next_id == id_of(candidate))
+                    .then_some(pos)
+            },
+        );
+
+        let Some(next_pos) = next_pos else {
+            return Err(corrupt_unit_chain_err());
+        };
+
+        units.swap(index + 1, index + 1 + next_pos);
+    }
+
+    if units.last().is_some_and(|unit| next_id_of(unit).is_some()) {
+        return Err(corrupt_unit_chain_err());
+    }
+
+    accept(())
+}
+
+// Applies normalized Unit edits to produce the final ordered id list.
+fn apply_order_edits<'a>(
+    orders: &'a [UnitOrder],
+    edits: &'a [UnitEdit],
+) -> BaseResult<Vec<&'a str>> {
+    //
+    let mut ordered_ids = orders
+        .iter()
+        .map(|order| order.id.as_str())
+        .collect::<Vec<_>>();
+
+    let mut hidden_ids = orders
+        .iter()
+        .filter(|order| order.is_hidden)
+        .map(|order| order.id.as_str())
+        .collect::<HashSet<_>>();
+
+    for edit in edits {
+        match edit {
+            //
+            UnitEdit::Create { id, next_id, .. } => {
+                //
+                if find_order_pos(&ordered_ids, id).is_some() {
+                    return Err(expected("error-invalid-unit-oper"));
+                }
+
+                ordered_ids.push(id);
+
+                hidden_ids.remove(id.as_str());
+
+                move_order(&mut ordered_ids, id, next_id.as_deref())?;
+            }
+
+            UnitEdit::Save { id, next_id, .. } => {
+                //
+                hidden_ids.remove(id.as_str());
+
+                match next_id {
+                    //
+                    Patch::Skip => {}
+
+                    Patch::Clear => {
+                        move_order(&mut ordered_ids, id, None)?;
+                    }
+
+                    Patch::Assign(next_id) => {
+                        move_order(&mut ordered_ids, id, Some(next_id))?;
+                    }
+                }
+            }
+
+            UnitEdit::Delete { id } => {
+                hidden_ids.insert(id);
+            }
+        }
+    }
+
+    let visible_count = ordered_ids
+        .iter()
+        .filter(|id| !hidden_ids.contains(**id))
+        .count();
+
+    if visible_count > 100 {
+        return Err(expected("error-invalid-unit-oper"));
+    }
+
+    accept(ordered_ids)
+}
+
+// Computes visible Unit counters from the ordered unit info list.
 fn count_infos(unit_infos: &[UnitInfo]) -> UnitCounters {
     unit_infos
         .iter()
@@ -365,4 +329,45 @@ fn count_infos(unit_infos: &[UnitInfo]) -> UnitCounters {
 
             counters
         })
+}
+
+// Returns an unrecoverable error for a corrupt Unit chain.
+fn corrupt_unit_chain_err() -> BaseError {
+    BaseError::Unrecoverable {
+        message: "persisted Unit chain is corrupt".to_string(),
+    }
+}
+
+// Finds the position of an id in the ordered list.
+fn find_order_pos(ordered_ids: &[&str], id: &str) -> Option<usize> {
+    ordered_ids
+        .iter()
+        .enumerate()
+        .find_map(|(pos, candidate)| (*candidate == id).then_some(pos))
+}
+
+// Moves an id to a new position in the ordered list by setting its next_id.
+fn move_order<'a>(
+    ordered_ids: &mut Vec<&'a str>,
+    id: &'a str,
+    next_id: Option<&str>,
+) -> BaseResult<()> {
+    //
+    let Some(pos) = find_order_pos(ordered_ids, id) else {
+        return Err(expected("error-invalid-unit-oper"));
+    };
+
+    let id = ordered_ids.remove(pos);
+
+    let pos = match next_id {
+        //
+        Some(next_id) => find_order_pos(ordered_ids, next_id)
+            .ok_or_else(|| expected("error-invalid-unit-oper"))?,
+
+        None => ordered_ids.len(),
+    };
+
+    ordered_ids.insert(pos, id);
+
+    accept(())
 }

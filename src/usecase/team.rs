@@ -69,6 +69,7 @@ use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 use crate::value::role::{RoleField, RoleMask};
 
 #[cfg(test)]
+// Unit and integration tests for team management policies.
 mod tests;
 
 /// Creates a new team.

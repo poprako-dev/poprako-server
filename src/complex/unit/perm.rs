@@ -102,6 +102,23 @@ impl UnitPermComplex {
     }
 }
 
+// Return a permission error for unit edit operations.
+fn unit_edit_permission_err() -> BaseError {
+    BaseError::Expected {
+        variant: ExpectedVariant::Perm,
+        message: trl("error-unit-edit-permission-required"),
+    }
+}
+
+// Return a permission error for list operations.
+fn unit_list_permission_err() -> BaseError {
+    BaseError::Expected {
+        variant: ExpectedVariant::Perm,
+        message: trl("error-unit-list-permission-required"),
+    }
+}
+
+// Validate optional content is only provided when the caller is allowed.
 fn check_optional_content_perm<T>(
     field: &Option<T>,
     allowed: bool,
@@ -114,6 +131,7 @@ fn check_optional_content_perm<T>(
     accept(())
 }
 
+// Validate patch content is only assigned when the caller has permission.
 fn check_content_perm<T>(field: &Patch<T>, allowed: bool) -> BaseResult<()> {
     //
     if !field.is_skip() && !allowed {
@@ -121,18 +139,4 @@ fn check_content_perm<T>(field: &Patch<T>, allowed: bool) -> BaseResult<()> {
     }
 
     accept(())
-}
-
-fn unit_list_permission_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Perm,
-        message: trl("error-unit-list-permission-required"),
-    }
-}
-
-fn unit_edit_permission_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Perm,
-        message: trl("error-unit-edit-permission-required"),
-    }
 }

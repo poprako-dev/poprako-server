@@ -27,6 +27,9 @@ from pathlib import Path
 import tree_sitter
 import tree_sitter_rust
 
+sys.path.insert(0, str(Path(__file__).parents[1]))
+from production_source import production_source
+
 
 ROOT = Path(__file__).parents[2]
 PARSER = tree_sitter.Parser(tree_sitter.Language(tree_sitter_rust.language()))
@@ -261,8 +264,9 @@ def main() -> int:
 
     for path in paths:
         source = path.read_bytes()
+        visible_source = production_source(path, root)
 
-        if args.fix:
+        if args.fix and source == visible_source:
             fixed, changed = fix_file(path, source)
 
             if changed:
@@ -270,7 +274,9 @@ def main() -> int:
                 # Re-read and check after fix
                 source = path.read_bytes()
 
-        violations = check_file(path, source)
+            visible_source = source
+
+        violations = check_file(path, visible_source)
         all_violations.extend(violations)
 
     if all_violations:

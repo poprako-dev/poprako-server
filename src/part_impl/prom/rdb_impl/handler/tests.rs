@@ -17,12 +17,14 @@ use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::schema::t_local_message;
 use crate::part_impl::shared::RdbCore;
 
+// Constant definition for `PREFIX`.
 const PREFIX: &str = "rdb-test-prom-handler-";
 
 /// Verifies that payloads stored by the RDB defer path are decoded and
 /// dispatched by their topic.
 pub async fn image_payloads_from_rdb_dispatch(shared: RdbCore) {
     //
+    // Internal state field test_shared.
     test_shared::reset(&shared, PREFIX).await;
 
     let delete_id = "rdb-test-prom-handler-delete".to_string();
@@ -144,6 +146,7 @@ pub async fn image_payloads_from_rdb_dispatch(shared: RdbCore) {
 #[test]
 fn fourth_failure_becomes_dead() {
     //
+    // Internal implementation detail.
     let task_flow = enforce_retry_limit(TaskFlow::Retry("failed".into()), 3);
 
     assert!(matches!(task_flow, TaskFlow::Dead(_)));
@@ -153,6 +156,7 @@ fn fourth_failure_becomes_dead() {
 fn first_three_failures_remain_retryable() {
     for retried_count in 0..3 {
         //
+        // Internal implementation detail.
         let task_flow = enforce_retry_limit(
             TaskFlow::Retry("failed".into()),
             retried_count,

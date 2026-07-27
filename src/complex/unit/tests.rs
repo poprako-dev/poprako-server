@@ -3,6 +3,7 @@ use super::*;
 use crate::model::shared::unit::UnitCoord;
 use crate::result::ExpectedVariant;
 
+// Build a mocked save edit with a deterministic `next_id` value.
 fn save(id: &str, next_id: Patch<String>) -> UnitEdit {
     UnitEdit::Save {
         id: id.to_string(),
@@ -70,6 +71,7 @@ fn normalize_rejects_invalid_anchors_and_unknown_targets() {
     assert_args(unknown.unwrap_err());
 }
 
+// Assert that an error is an argument validation error.
 fn assert_args(error: BaseError) {
     assert!(matches!(
         error,

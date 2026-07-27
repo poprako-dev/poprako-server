@@ -294,6 +294,7 @@ async fn concurrent_same_anchor_inserts_preserve_all_nodes() {
     );
 }
 
+// Build save request params for a fixed page id.
 fn save_params(edits: Vec<UnitEditVal>) -> SavePageUnitEditsParams {
     SavePageUnitEditsParams {
         page_id: "page-1".to_string(),
@@ -301,6 +302,7 @@ fn save_params(edits: Vec<UnitEditVal>) -> SavePageUnitEditsParams {
     }
 }
 
+// Build a create-unit edit fixture for a page.
 fn create(
     local_id: &str,
     next_id: Option<String>,
@@ -321,14 +323,17 @@ fn create(
     }
 }
 
+// Build token payload used by unit-edit authorization checks.
 fn token(user_id: &str) -> UserToken {
     UserToken {
         user_id: user_id.to_string(),
     }
 }
 
+// Build a mock scope with workset/chapter/page/assignment fixtures for tests.
 fn save_scope(roles: RoleMask) -> Mock {
     //
+    // Build a minimal snapshot scope with one chapter/page/assignment setup.
     let mock = Mock::new();
 
     mock.seed_workset(workset());
@@ -344,8 +349,10 @@ fn save_scope(roles: RoleMask) -> Mock {
     mock
 }
 
+// Build baseline workset fixture consumed by other local entity builders.
 fn workset() -> WorksetInfo {
     //
+    // Build a baseline workset fixture.
     let current_time = OffsetDateTime::now_utc();
 
     WorksetInfo {
@@ -360,8 +367,10 @@ fn workset() -> WorksetInfo {
     }
 }
 
+// Build baseline comic fixture tied to the default workset.
 fn comic() -> ComicInfo {
     //
+    // Build a baseline comic fixture linked to the default workset.
     let current_time = OffsetDateTime::now_utc();
 
     ComicInfo {
@@ -387,8 +396,10 @@ fn comic() -> ComicInfo {
     }
 }
 
+// Build baseline chapter fixture with one-page expectation.
 fn chapter() -> ChapterInfo {
     //
+    // Build a baseline chapter fixture for unit-level operations.
     let current_time = OffsetDateTime::now_utc();
 
     ChapterInfo {
@@ -410,8 +421,10 @@ fn chapter() -> ChapterInfo {
     }
 }
 
+// Build baseline page fixture with zero-unit counters.
 fn page() -> PageInfo {
     //
+    // Build a baseline page fixture for unit-chain assembly.
     let current_time = OffsetDateTime::now_utc();
 
     PageInfo {
@@ -431,8 +444,10 @@ fn page() -> PageInfo {
     }
 }
 
+// Build baseline assignment fixture for user-role scenarios.
 fn assignment(roles: RoleMask) -> AssignmentInfo {
     //
+    // Build an assignment fixture tied to the test translator.
     let current_time = OffsetDateTime::now_utc();
 
     AssignmentInfo {

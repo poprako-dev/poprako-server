@@ -10,12 +10,19 @@ use serde::Serialize;
 use utoipa::ToSchema;
 
 #[cfg(test)]
+// Shared metric tests stay behind module-private helpers.
 mod tests;
 
+// One hour of one-minute buckets gives a full recent-hour window.
 const BUCKET_COUNT: usize = 60;
+
+// Recent-graph depth keeps the latest 30 minutes visible to clients.
 const RECENT_MINUTE_COUNT: usize = 30;
+
+// Each bucket covers one minute of wall-clock time.
 const SECONDS_PER_BUCKET: u64 = 60;
 
+// Sliding metric window singleton shared by HTTP metrics entry points.
 static METRIC_WINDOW: LazyLock<MetricWindow> = LazyLock::new(MetricWindow::new);
 
 /// Aggregate metrics for the current time window.
@@ -40,6 +47,20 @@ pub struct MetricTotal {
     pub minutes: Vec<MetricMinute>,
 }
 
+impl MetricTotal {
+    // Builds an empty aggregation snapshot for accumulation.
+    fn new() -> Self {
+        Self {
+            total: 0,
+            average_latency_ms: 0.0,
+            total_latency_micros: 0,
+            by_error: HashMap::new(),
+            by_path: HashMap::new(),
+            minutes: Vec::new(),
+        }
+    }
+}
+
 /// Aggregate metrics for one minute in the recent sliding window.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
@@ -53,34 +74,44 @@ pub struct MetricMinute {
     pub average_latency_ms: f64,
 }
 
-#[derive(Default)]
-struct MetricBucket {
-    //
-    minute: u64,
-    total: u64,
-    total_latency_micros: u64,
-    by_error: HashMap<u16, u64>,
-    by_path: HashMap<String, u64>,
-}
+impl MetricMinute {
+    // Builds one minute bucket snapshot from a raw bucket state.
+    fn from_bucket(minute: u64, bucket: &MetricBucket) -> Self {
+        //
+        let (total, total_latency_micros) = match bucket.minute == minute {
+            //
+            // Keep latency and count aligned with the requested minute.
+            true => (bucket.total, bucket.total_latency_micros),
 
-struct MetricWindow {
-    buckets: [Mutex<MetricBucket>; BUCKET_COUNT],
-}
+            false => (0, 0),
+        };
 
-impl MetricTotal {
-    fn new() -> Self {
         Self {
-            total: 0,
-            average_latency_ms: 0.0,
-            total_latency_micros: 0,
-            by_error: HashMap::new(),
-            by_path: HashMap::new(),
-            minutes: Vec::new(),
+            minute,
+            total,
+            average_latency_ms: average_latency_ms(total_latency_micros, total),
         }
     }
 }
 
+#[derive(Default)]
+// One sliding bucket that stores request counters and latency for one minute.
+struct MetricBucket {
+    //
+    // Bucket minute key, used for modulo rotation.
+    minute: u64,
+    // Total request count in this bucket.
+    total: u64,
+    // Accumulated latency, in microseconds, for this bucket.
+    total_latency_micros: u64,
+    // Error status histogram for this bucket.
+    by_error: HashMap<u16, u64>,
+    // Path histogram for this bucket.
+    by_path: HashMap<String, u64>,
+}
+
 impl MetricBucket {
+    // Resets a bucket for a new minute before new writes.
     fn reset(&mut self, minute: u64) {
         //
         self.minute = minute;
@@ -95,7 +126,14 @@ impl MetricBucket {
     }
 }
 
+// Sliding window composed of fixed buckets rotated by minute index.
+struct MetricWindow {
+    // One slot per bucket index, protected by a mutex for concurrency safety.
+    buckets: [Mutex<MetricBucket>; BUCKET_COUNT],
+}
+
 impl MetricWindow {
+    // Creates an initialized window with zeroed buckets.
     fn new() -> Self {
         Self {
             buckets: std::array::from_fn(|_| {
@@ -104,6 +142,25 @@ impl MetricWindow {
         }
     }
 
+    // Builds a full window snapshot and fills all minute buckets.
+    fn read_recent_minutes(&self, minute: u64) -> Vec<MetricMinute> {
+        //
+        let first_minute =
+            minute.saturating_sub(RECENT_MINUTE_COUNT as u64 - 1);
+
+        (first_minute..=minute)
+            .map(|window_minute| {
+                //
+                let bucket_index = window_minute as usize % BUCKET_COUNT;
+
+                let bucket = lock_bucket(&self.buckets[bucket_index]);
+
+                MetricMinute::from_bucket(window_minute, &bucket)
+            })
+            .collect()
+    }
+
+    // Records one request into the correct minute slot.
     fn record(
         &self,
         minute: u64,
@@ -129,6 +186,7 @@ impl MetricWindow {
 
         if status >= 400 {
             //
+            // Count bad/failed statuses for quick error visibility.
             let err_total = bucket.by_error.entry(status).or_default();
 
             *err_total = err_total.saturating_add(1);
@@ -144,6 +202,7 @@ impl MetricWindow {
         *path_total = path_total.saturating_add(1);
     }
 
+    // Reads and aggregates the current 60-minute window values.
     fn read(&self, minute: u64) -> MetricTotal {
         //
         let mut metric_total = MetricTotal::new();
@@ -179,41 +238,6 @@ impl MetricWindow {
 
         metric_total
     }
-
-    fn read_recent_minutes(&self, minute: u64) -> Vec<MetricMinute> {
-        //
-        let first_minute =
-            minute.saturating_sub(RECENT_MINUTE_COUNT as u64 - 1);
-
-        (first_minute..=minute)
-            .map(|window_minute| {
-                //
-                let bucket_index = window_minute as usize % BUCKET_COUNT;
-
-                let bucket = lock_bucket(&self.buckets[bucket_index]);
-
-                MetricMinute::from_bucket(window_minute, &bucket)
-            })
-            .collect()
-    }
-}
-
-impl MetricMinute {
-    fn from_bucket(minute: u64, bucket: &MetricBucket) -> Self {
-        //
-        let (total, total_latency_micros) = match bucket.minute == minute {
-            //
-            true => (bucket.total, bucket.total_latency_micros),
-
-            false => (0, 0),
-        };
-
-        Self {
-            minute,
-            total,
-            average_latency_ms: average_latency_ms(total_latency_micros, total),
-        }
-    }
 }
 
 /// Records one response in the current minute bucket.
@@ -239,6 +263,7 @@ pub fn read_total() -> MetricTotal {
     METRIC_WINDOW.read(curr_minute())
 }
 
+// Gets the current minute bucket key from UNIX epoch seconds.
 fn curr_minute() -> u64 {
     //
     let elapsed = SystemTime::now()
@@ -248,6 +273,7 @@ fn curr_minute() -> u64 {
     elapsed.as_secs() / SECONDS_PER_BUCKET
 }
 
+// Locks and returns the metric bucket mutex, handling poisoned states.
 fn lock_bucket(bucket: &Mutex<MetricBucket>) -> MutexGuard<'_, MetricBucket> {
     match bucket.lock() {
         //
@@ -257,6 +283,7 @@ fn lock_bucket(bucket: &Mutex<MetricBucket>) -> MutexGuard<'_, MetricBucket> {
     }
 }
 
+// Converts total latency microseconds into a millisecond average.
 fn average_latency_ms(total_latency_micros: u64, total: u64) -> f64 {
     match total {
         //
@@ -266,6 +293,7 @@ fn average_latency_ms(total_latency_micros: u64, total: u64) -> f64 {
     }
 }
 
+// Merges per-key counters from one map into another without losing existing values.
 fn merge_totals<K>(target: &mut HashMap<K, u64>, source: &HashMap<K, u64>)
 where
     K: Clone + Eq + Hash,

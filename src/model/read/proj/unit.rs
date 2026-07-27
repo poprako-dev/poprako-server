@@ -75,18 +75,6 @@ pub struct UnitCounters {
     pub proofread_unit_count: i32,
 }
 
-/// Counter change applied to a Chapter after one Page mutation.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub struct UnitCounterDelta {
-    //
-    /// Visible Unit count change.
-    pub total_unit_count: i32,
-    /// Visible translated Unit count change.
-    pub translated_unit_count: i32,
-    /// Visible proofread Unit count change.
-    pub proofread_unit_count: i32,
-}
-
 impl UnitCounters {
     /// Calculates the counter delta from this snapshot to the next snapshot.
     pub fn calc_delta(self, next: Self) -> UnitCounterDelta {
@@ -100,6 +88,20 @@ impl UnitCounters {
     }
 }
 
+/// Counter change applied to a Chapter after one Page mutation.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct UnitCounterDelta {
+    //
+    /// Visible Unit count change.
+    pub total_unit_count: i32,
+    /// Visible translated Unit count change.
+    pub translated_unit_count: i32,
+    /// Visible proofread Unit count change.
+    pub proofread_unit_count: i32,
+}
+
+// Reports whether a text field contains non-whitespace content.
 fn has_text(text: &Option<String>) -> bool {
+    // Ignore purely-whitespace values so counters only count usable content.
     text.as_ref().is_some_and(|value| !value.trim().is_empty())
 }

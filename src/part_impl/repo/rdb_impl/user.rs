@@ -30,29 +30,27 @@ pub mod tests;
 
 // ── Free functions ──────────────────────────────────────────────────────────
 
-/// Load a single user info by ID.
+// Remove a user row from persistence.
 #[instrument(level = "info", err(Debug), skip_all)]
-async fn get_info_by_id(conn: &mut RdbConn, id: &str) -> BaseResult<UserInfo> {
+async fn delete(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
     //
-    let row: UserRow = t_user
-        .filter(f_id.eq(id))
-        .select(UserRow::as_select())
-        .get_result(conn)
+    // Execute hard delete and map DB errors to repository error type.
+    diesel::delete(t_user.filter(f_id.eq(id)))
+        .execute(conn)
         .await
-        .optional()
-        .map_err(diesel)?
-        .ok_or_else(|| expected("error-user-not-found"))?;
+        .map_err(diesel)?;
 
-    row.try_into()
+    accept(())
 }
 
-/// Load credential information (password hash etc.) for a user by QID.
+// Load credential material for authentication operations from the same backing row.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn get_credential_by_qid(
     conn: &mut RdbConn,
     qid: &str,
 ) -> BaseResult<UserCredential> {
     //
+    // Query only credential columns and convert them to user credential DTO.
     let row: UserCredentialRow = t_user
         .filter(f_qid.eq(qid))
         .select(UserCredentialRow::as_select())
@@ -65,13 +63,14 @@ async fn get_credential_by_qid(
     accept(row.into())
 }
 
-/// Look up a user info by QID, returning None when not found.
+// Return user info by QID, yielding `None` instead of an error when missing.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn find_info_by_qid(
     conn: &mut RdbConn,
     qid: &str,
 ) -> BaseResult<Option<UserInfo>> {
     //
+    // Keep lookup soft-fail to allow callers to branch on existence.
     let row: Option<UserRow> = t_user
         .filter(f_qid.eq(qid))
         .select(UserRow::as_select())
@@ -83,10 +82,11 @@ async fn find_info_by_qid(
     row.map(TryInto::try_into).transpose()
 }
 
-/// Insert a new user and return its info.
+// Insert a new user row and return the persisted info payload.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn create(conn: &mut RdbConn, entry: &UserEntry) -> BaseResult<UserInfo> {
     //
+    // Populate required identity and timestamp columns, then fetch created row.
     let now = OffsetDateTime::now_utc();
 
     let entry = UserRowEntry {
@@ -109,7 +109,7 @@ async fn create(conn: &mut RdbConn, entry: &UserEntry) -> BaseResult<UserInfo> {
     row.try_into()
 }
 
-/// Update a user's QID and nickname.
+// Update mutable identity fields (`qid`, `nickname`) for an existing user.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn update_info(
     conn: &mut RdbConn,
@@ -118,6 +118,7 @@ async fn update_info(
     nickname: &str,
 ) -> BaseResult<()> {
     //
+    // Apply one write that updates both fields and returns success when DB update succeeds.
     let now = OffsetDateTime::now_utc();
 
     let aspect = UserAspect::new(now).nickname(nickname).qid(qid);
@@ -131,7 +132,7 @@ async fn update_info(
     accept(())
 }
 
-/// Replace a user's password hash.
+// Replace a user's password hash and refresh the row-level update timestamp.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn update_password_hash(
     conn: &mut RdbConn,
@@ -139,6 +140,7 @@ async fn update_password_hash(
     password_hash: &str,
 ) -> BaseResult<()> {
     //
+    // Persist credential changes and bump `f_updated_at` in one SQL statement.
     let now = OffsetDateTime::now_utc();
 
     diesel::update(t_user.filter(f_id.eq(id)))
@@ -150,8 +152,7 @@ async fn update_password_hash(
     accept(())
 }
 
-/// Reserve a new avatar slot for a user: bump version, generate object key,
-/// and return the reservation with previous key for cleanup.
+// Reserve an avatar object version, reusing existing key when hash unchanged.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn reserve_avatar(
     conn: &mut RdbConn,
@@ -160,6 +161,7 @@ async fn reserve_avatar(
     image_ext: ImageExt,
 ) -> BaseResult<UserAvatarReservation> {
     //
+    // Lock the target row, compare hash/ext, then either reuse or advance avatar version.
     let now = OffsetDateTime::now_utc();
 
     let (prev_key, uploaded, raw_version, stored_hash, stored_ext): (
@@ -234,7 +236,7 @@ async fn reserve_avatar(
     })
 }
 
-/// Mark a user avatar as uploaded, checking version staleness.
+// Mark upload result for an avatar with optimistic-version guarding.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn mark_avatar_uploaded(
     conn: &mut RdbConn,
@@ -244,6 +246,7 @@ async fn mark_avatar_uploaded(
     avatar_uploaded: bool,
 ) -> BaseResult<()> {
     //
+    // Only write when version (and optional key) match; return mismatch error if stale.
     let now = OffsetDateTime::now_utc();
 
     let affected = match avatar_key {
@@ -280,10 +283,11 @@ async fn mark_avatar_uploaded(
     accept(())
 }
 
-/// Update the last-active timestamp for a user.
+// Touch `last_active_at` for heartbeat and usage tracking.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn touch_last_active(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
     //
+    // Keep access timestamp current for activity-driven features.
     let now = OffsetDateTime::now_utc();
 
     let aspect = UserAspect::new(now).last_active_at(now);
@@ -297,13 +301,14 @@ async fn touch_last_active(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
     accept(())
 }
 
-/// Load a user info by ID, locking the row for update.
+// Load one user info row with `FOR UPDATE` lock for follow-up writes.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn get_info_by_id_excluded(
     conn: &mut RdbConn,
     id: &str,
 ) -> BaseResult<UserInfo> {
     //
+    // Use a row lock so later mutation in the same transaction is serialized.
     let row: UserRow = t_user
         .filter(f_id.eq(id))
         .select(UserRow::as_select())
@@ -317,21 +322,28 @@ async fn get_info_by_id_excluded(
     row.try_into()
 }
 
-/// Delete a user by ID.
+// Load one user info row by primary key and map DB row into response model.
 #[instrument(level = "info", err(Debug), skip_all)]
-async fn delete(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
+async fn get_info_by_id(conn: &mut RdbConn, id: &str) -> BaseResult<UserInfo> {
     //
-    diesel::delete(t_user.filter(f_id.eq(id)))
-        .execute(conn)
+    // Query `t_user` by `f_id`, fail with `error-user-not-found` when absent.
+    let row: UserRow = t_user
+        .filter(f_id.eq(id))
+        .select(UserRow::as_select())
+        .get_result(conn)
         .await
-        .map_err(diesel)?;
+        .optional()
+        .map_err(diesel)?
+        .ok_or_else(|| expected("error-user-not-found"))?;
 
-    accept(())
+    row.try_into()
 }
 
 impl Run<GetUserInfo<'_>> for RdbRepo {
+    // Use `BaseError` for non-transactional repository reads.
     type Error = BaseError;
 
+    // Route read by ID into the shared `submit_query!` orchestration.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
@@ -346,8 +358,10 @@ impl Run<GetUserInfo<'_>> for RdbRepo {
 }
 
 impl Run<GetUserCredential<'_>> for RdbRepo {
+    // Use `BaseError` for non-transactional credential reads.
     type Error = BaseError;
 
+    // Route credential read by QID to the shared repository query path.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
@@ -362,8 +376,10 @@ impl Run<GetUserCredential<'_>> for RdbRepo {
 }
 
 impl Run<FindUserInfo<'_>> for RdbRepo {
+    // Use `BaseError` for non-transactional optional reads.
     type Error = BaseError;
 
+    // Route optional user lookup by QID to shared query layer.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
@@ -378,8 +394,10 @@ impl Run<FindUserInfo<'_>> for RdbRepo {
 }
 
 impl Run<UpdateUser<'_>> for RdbRepo {
+    // Use `BaseError` for non-transactional user mutations.
     type Error = BaseError;
 
+    // Map each update variant to a dedicated helper with explicit argument flow.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(&self, oper: &UpdateUser<'_>) -> BaseResult<()> {
         match oper {
@@ -421,8 +439,10 @@ impl Run<UpdateUser<'_>> for RdbRepo {
 }
 
 impl Step<CreateUser<'_>, RdbContext> for RdbRepo {
+    // Keep transaction-scoped operations on one repository error type.
     type Error = BaseError;
 
+    // Insert new user rows inside provided transaction context.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
@@ -434,8 +454,10 @@ impl Step<CreateUser<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<FindUserInfo<'_>, RdbContext> for RdbRepo {
+    // Keep transaction-scoped reads on one repository error type.
     type Error = BaseError;
 
+    // Resolve soft-miss lookup inside caller-owned transaction context.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
@@ -451,8 +473,10 @@ impl Step<FindUserInfo<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<UpdateUser<'_>, RdbContext> for RdbRepo {
+    // Keep transaction-scoped updates on one repository error type.
     type Error = BaseError;
 
+    // Dispatch each mutable user operation to one explicit DB helper.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
@@ -493,8 +517,10 @@ impl Step<UpdateUser<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<ReserveUserAvatar<'_>, RdbContext> for RdbRepo {
+    // Keep transaction-scoped reservation on one repository error type.
     type Error = BaseError;
 
+    // Reserve avatar key/version atomically inside the current transaction.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
@@ -507,8 +533,10 @@ impl Step<ReserveUserAvatar<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<GetUserInfoExcluded<'_>, RdbContext> for RdbRepo {
+    // Keep transaction-scoped exclusive reads on one repository error type.
     type Error = BaseError;
 
+    // Read user row with lock for callers that mutate next.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
@@ -524,8 +552,10 @@ impl Step<GetUserInfoExcluded<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<DeleteUser<'_>, RdbContext> for RdbRepo {
+    // Keep transaction-scoped deletion on one repository error type.
     type Error = BaseError;
 
+    // Execute user deletion as part of ongoing transaction flow.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,

@@ -38,8 +38,11 @@ use crate::value::chapter::{ChapterInclOpt, Stage};
 use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
+// Shared fixture setup helpers for chapter test suites.
 mod fixture;
+// Preset-assignment scenarios and permission transitions.
 mod preset_assignment;
+// Workflow-stage transition assertions for chapter usecases.
 mod stage;
 
 #[tokio::test]

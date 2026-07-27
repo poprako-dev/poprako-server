@@ -39,6 +39,7 @@ use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 
 #[cfg(test)]
+// Unit tests that cover assignment orchestration invariants.
 mod tests;
 
 /// Lists assignments by chapter or owner user.
@@ -389,14 +390,6 @@ where
     accept(())
 }
 
-/// Constructs a permission error for admin-role removal.
-fn assignment_admin_required_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Perm,
-        message: trl("error-forbidden"),
-    }
-}
-
 /// Deletes one assignment by identifier.
 #[instrument(level = "info", err(Debug), skip(nucl, repo))]
 pub async fn delete<N, C, R>(
@@ -438,4 +431,12 @@ where
     let () = ();
 
     accept(())
+}
+
+// Constructs a permission error for admin-role removal.
+fn assignment_admin_required_err() -> BaseError {
+    BaseError::Expected {
+        variant: ExpectedVariant::Perm,
+        message: trl("error-forbidden"),
+    }
 }

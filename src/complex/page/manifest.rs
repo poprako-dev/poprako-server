@@ -26,23 +26,6 @@ pub struct ManifestPlan {
     pub deleted_existing_indexes: Vec<usize>,
 }
 
-fn args_err(key: &str) -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        message: trl(key),
-    }
-}
-
-fn candidate_order(left: &PageInfo, right: &PageInfo) -> Ordering {
-    right
-        .total_unit_count
-        .gt(&0)
-        .cmp(&left.total_unit_count.gt(&0))
-        .then_with(|| right.image_uploaded.cmp(&left.image_uploaded))
-        .then_with(|| left.index.cmp(&right.index))
-        .then_with(|| left.id.cmp(&right.id))
-}
-
 /// Matches explicit identities first, then consumes automatic hash candidates.
 pub fn build(
     chapter_id: &str,
@@ -113,4 +96,23 @@ pub fn build(
         matches,
         deleted_existing_indexes,
     })
+}
+
+// Build an args-level error using a translation key.
+fn args_err(key: &str) -> BaseError {
+    BaseError::Expected {
+        variant: ExpectedVariant::Args,
+        message: trl(key),
+    }
+}
+
+// Compare two candidates by translated state, upload time, and index for stable matching.
+fn candidate_order(left: &PageInfo, right: &PageInfo) -> Ordering {
+    right
+        .total_unit_count
+        .gt(&0)
+        .cmp(&left.total_unit_count.gt(&0))
+        .then_with(|| right.image_uploaded.cmp(&left.image_uploaded))
+        .then_with(|| left.index.cmp(&right.index))
+        .then_with(|| left.id.cmp(&right.id))
 }

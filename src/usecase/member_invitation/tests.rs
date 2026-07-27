@@ -27,12 +27,14 @@ use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
 fn token(user_id: &str) -> UserToken {
+    // Build token fixture for invitation-related operations.
     UserToken {
         user_id: user_id.into(),
     }
 }
 
 fn credential(user_id: &str) -> UserCredential {
+    // Build a credential fixture with deterministic hash value.
     UserCredential {
         user_id: user_id.into(),
         password_hash: "hash".into(),
@@ -41,6 +43,7 @@ fn credential(user_id: &str) -> UserCredential {
 
 fn user(id: &str, qid: &str) -> UserInfo {
     //
+    // Build visible user fixture for creator and invitee flows.
     let time = test_util::now();
 
     UserInfo {
@@ -65,6 +68,7 @@ fn member(
     team_id: &str,
     role_mask: RoleMask,
 ) -> MemberInfo {
+    // Build a team membership fixture with given role mask.
     MemberInfo {
         id: id.into(),
         user_id: user_id.into(),
@@ -82,6 +86,7 @@ fn invitation(
     team_id: &str,
     invitee_qid: &str,
 ) -> MemberInvitationInfo {
+    // Build a pending invitation row for API and lifecycle checks.
     MemberInvitationInfo {
         id: id.into(),
         team_id: team_id.into(),
@@ -98,6 +103,7 @@ fn create_params(
     team_id: &str,
     invitee_qid: &str,
 ) -> CreateMemberInvitationParams {
+    // Build invitation creation params for success/denial tests.
     CreateMemberInvitationParams {
         team_id: team_id.into(),
         invitee_qid: invitee_qid.into(),
@@ -106,6 +112,7 @@ fn create_params(
 }
 
 fn list_params(team_id: &str) -> ListMemberInvitationInfosParams {
+    // Build list params that request pending invitations with pagination.
     ListMemberInvitationInfosParams {
         incl_opt: Vec::new(),
         team_id: team_id.into(),
@@ -116,6 +123,7 @@ fn list_params(team_id: &str) -> ListMemberInvitationInfosParams {
 }
 
 fn update_params(id: &str) -> UpdateMemberInvitationRolesParams {
+    // Build role-update params used by invitation mutation tests.
     UpdateMemberInvitationRolesParams {
         id: id.into(),
         roles: RoleMask::from(RoleField::REVIEWER),

@@ -29,6 +29,7 @@ use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseError, BaseResult, accept};
 
 #[cfg(test)]
+// Unit tests for terminology base definitions and search access.
 mod tests;
 
 /// Creates a terminology base scoped to a team or comic.

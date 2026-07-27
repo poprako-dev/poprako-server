@@ -25,6 +25,7 @@ pub fn set_request_id() -> SetRequestIdLayer<MakeRequestUuid> {
     SetRequestIdLayer::x_request_id(MakeRequestUuid)
 }
 
+// Trace layer type used by request/response instrumentation.
 type HttpTraceLayer = TraceLayer<
     HttpMakeClassifier,
     fn(&Request) -> Span,
@@ -35,7 +36,7 @@ type HttpTraceLayer = TraceLayer<
     fn(ServerErrorsFailureClass, Duration, &Span),
 >;
 
-/// Builds the HTTP tracing layer with the request correlation fields.
+/// Builds the HTTP tracing layer with request correlation fields.
 pub fn trace_request() -> HttpTraceLayer {
     TraceLayer::new_for_http()
         .make_span_with(make_request_span as _)
@@ -46,7 +47,7 @@ pub fn trace_request() -> HttpTraceLayer {
         .on_failure(record_request_failure as _)
 }
 
-/// Creates the top-level span for one HTTP request.
+// Creates the top-level span for one HTTP request.
 fn make_request_span(request: &Request) -> Span {
     //
     let request_id = request
@@ -80,7 +81,7 @@ fn make_request_span(request: &Request) -> Span {
     )
 }
 
-/// Records a received HTTP request.
+// Records a received HTTP request.
 fn record_request_started(request: &Request, _span: &Span) {
     metrics::counter!(
         "http_requests_started",
@@ -89,7 +90,7 @@ fn record_request_started(request: &Request, _span: &Span) {
     .increment(1);
 }
 
-/// Records an HTTP response and its latency.
+// Records an HTTP response and its latency.
 fn record_request_response(
     response: &Response,
     latency: Duration,
@@ -109,7 +110,7 @@ fn record_request_response(
     );
 }
 
-/// Records an HTTP server-error response.
+// Records an HTTP server-error response.
 fn record_request_failure(
     failure: ServerErrorsFailureClass,
     latency: Duration,

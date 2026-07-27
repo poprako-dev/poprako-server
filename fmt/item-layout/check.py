@@ -19,6 +19,9 @@ from pathlib import Path
 import tree_sitter
 import tree_sitter_rust
 
+sys.path.insert(0, str(Path(__file__).parents[1]))
+from production_source import production_source
+
 
 DEFAULT_ROOT = Path(__file__).parents[2]
 GENERATED_SCHEMA = Path("src/part_impl/repo/rdb_impl/schema.rs")
@@ -272,36 +275,6 @@ def check_container(
     return diagnostics
 
 
-def item_start(node: tree_sitter.Node, source: bytes) -> int:
-    """Return an item's start together with directly attached docs/attributes."""
-
-    start = node.start_byte
-    previous = node.prev_named_sibling
-
-    while previous is not None and previous.type == "attribute_item":
-        gap = source[previous.end_byte:start]
-
-        if gap.count(b"\n") > 1:
-            break
-
-        start = previous.start_byte
-        previous = previous.prev_named_sibling
-
-    line_start = source.rfind(b"\n", 0, start) + 1
-
-    while line_start > 0:
-        previous_end = line_start - 1
-        previous_start = source.rfind(b"\n", 0, previous_end) + 1
-        previous_line = source[previous_start:previous_end].lstrip()
-
-        if not previous_line.startswith((b"//", b"/*", b"*", b"*/")):
-            break
-
-        line_start = previous_start
-
-    return line_start
-
-
 def container_items(
     container: tree_sitter.Node,
     source: bytes,
@@ -313,165 +286,6 @@ def container_items(
     ]
 
 
-def reorder_items(
-    source: bytes,
-    items: list[tree_sitter.Node],
-    ordered: list[tree_sitter.Node],
-) -> bytes:
-    starts = [item_start(item, source) for item in items]
-    chunks = [
-        source[start : starts[index + 1] if index + 1 < len(starts) else item.end_byte]
-        for index, (item, start) in enumerate(zip(items, starts))
-    ]
-    chunks_by_item = dict(zip(items, chunks))
-    replacement = b"".join(chunks_by_item[item] for item in ordered)
-
-    return source[: starts[0]] + replacement + source[items[-1].end_byte :]
-
-
-def structural_order(
-    container: tree_sitter.Node,
-    source: bytes,
-) -> tuple[list[tree_sitter.Node], list[tree_sitter.Node]] | None:
-    items = container_items(container, source)
-    ordered = list(items)
-
-    for struct in items:
-        if struct.type != "struct_item" or is_test_only(struct, source):
-            continue
-
-        struct_name = declaration_name(struct, source)
-
-        if struct_name is None:
-            continue
-
-        implementations = [
-            item
-            for item in ordered
-            if item.type == "impl_item" and impl_type_name(item, source) == struct_name
-        ]
-
-        if not implementations:
-            continue
-
-        implementations.sort(key=lambda item: (not is_inherent_impl(item), item.start_byte))
-        ordered = [item for item in ordered if item not in implementations]
-        struct_index = ordered.index(struct)
-        ordered[struct_index + 1 : struct_index + 1] = implementations
-
-    return (items, ordered) if items != ordered else None
-
-
-def function_order(
-    container: tree_sitter.Node,
-    source: bytes,
-) -> tuple[list[tree_sitter.Node], list[tree_sitter.Node]] | None:
-    items = container_items(container, source)
-    functions = [
-        item
-        for item in items
-        if item.type == "function_item" and not is_test_only(item, source)
-    ]
-
-    if len(functions) < 2:
-        return None
-
-    private_functions = [function for function in functions if not is_public(function, source)]
-    private_names = {
-        declaration_name(function, source)
-        for function in private_functions
-        if declaration_name(function, source) is not None
-    }
-    first_calls: dict[str, int] = {}
-
-    for function in functions:
-        for name, offset in calls_in(function, source):
-            if name in private_names:
-                first_calls[name] = min(first_calls.get(name, offset), offset)
-
-    ordered_functions = sorted(
-        functions,
-        key=lambda function: (
-            not is_public(function, source),
-            first_calls.get(declaration_name(function, source) or "", sys.maxsize),
-            function.start_byte,
-        ),
-    )
-
-    if functions == ordered_functions:
-        return None
-
-    first_index = items.index(functions[0])
-    ordered = [item for item in items if item not in functions]
-    ordered[first_index:first_index] = ordered_functions
-
-    return items, ordered
-
-
-def nested_containers(container: tree_sitter.Node) -> list[tree_sitter.Node]:
-    containers: list[tree_sitter.Node] = []
-
-    for child in container.named_children:
-        if child.type not in {"impl_item", "mod_item"}:
-            continue
-
-        body = child.child_by_field_name("body")
-
-        if body is not None:
-            containers.append(body)
-            containers.extend(nested_containers(body))
-
-    return containers
-
-
-def fix_file(path: Path) -> bool:
-    source = path.read_bytes()
-
-    for _ in range(1000):
-        tree = PARSER.parse(source)
-        containers = [*reversed(nested_containers(tree.root_node)), tree.root_node]
-        replacement: bytes | None = None
-
-        for container in containers:
-            layout = structural_order(container, source)
-
-            if layout is None:
-                layout = function_order(container, source)
-
-            if layout is not None:
-                replacement = reorder_items(source, *layout)
-                break
-
-        if replacement is None:
-            break
-
-        source = replacement
-    else:
-        raise RuntimeError(f"item-layout fixer did not converge for {path}")
-
-    original = path.read_bytes()
-
-    if source == original:
-        return False
-
-    path.write_bytes(source)
-
-    return True
-
-
-def fix_root(root: Path) -> int:
-    changed_paths = [
-        path
-        for path in sorted((root / "src").rglob("*.rs"))
-        if path.relative_to(root) != GENERATED_SCHEMA and fix_file(path)
-    ]
-
-    for path in changed_paths:
-        print(f"fixed {path.relative_to(root)}")
-
-    return len(changed_paths)
-
-
 def check_root(root: Path) -> list[str]:
     diagnostics: list[str] = []
 
@@ -479,7 +293,7 @@ def check_root(root: Path) -> list[str]:
         if path.relative_to(root) == GENERATED_SCHEMA:
             continue
 
-        source = path.read_bytes()
+        source = production_source(path, root)
         diagnostics.extend(
             check_container(PARSER.parse(source).root_node, path, root, source),
         )
@@ -525,29 +339,12 @@ def self_test() -> int:
             print("\n".join(diagnostics), file=sys.stderr)
             return 1
 
-        fix_root(root)
-
-        if check_root(root):
-            print("self-test: fixer did not repair the layout fixture", file=sys.stderr)
-            print("\n".join(check_root(root)), file=sys.stderr)
-            return 1
-
-        fixed = source.read_text()
-
-        if "/// Calls helpers in their required order.\npub fn run" not in fixed or (
-            "/// Runs before the second helper.\nfn first" not in fixed
-        ):
-            print("self-test: fixer separated a doc comment from its item", file=sys.stderr)
-            print(fixed, file=sys.stderr)
-            return 1
-
     return 0
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, default=DEFAULT_ROOT)
-    parser.add_argument("--fix", action="store_true")
     parser.add_argument("--self-test", action="store_true")
 
     return parser.parse_args()
@@ -558,9 +355,6 @@ def main() -> int:
 
     if args.self_test:
         return self_test()
-
-    if args.fix:
-        fix_root(args.root.resolve())
 
     diagnostics = check_root(args.root.resolve())
 

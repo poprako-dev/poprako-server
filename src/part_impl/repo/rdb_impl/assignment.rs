@@ -32,21 +32,37 @@ use crate::value::assignment::AssignmentInclOpt;
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;
 
+// Shared list query builder for assignment read paths.
 mod list;
 
-/// Converts a single `AssignmentRow` into an `AssignmentInfo`.
+// Build list query helper functions for assignment read paths.
+// Separate module.
+
+// Delete one assignment by id in repository transaction flow.
+#[instrument(level = "info", err(Debug), skip_all)]
+async fn delete(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
+    //
+    diesel::delete(t_assignment.filter(f_id.eq(id)))
+        .execute(conn)
+        .await
+        .map_err(diesel)?;
+
+    accept(())
+}
+
+// Convert a row into assignment info for orchestration return values.
 fn row_into_info(row: AssignmentRow) -> BaseResult<AssignmentInfo> {
     row.try_into()
 }
 
-/// Converts a vector of `AssignmentRow` values into a vector of `AssignmentInfo`.
+// Convert a row list into assignment infos for list operations.
 fn rows_into_infos(
     rows: Vec<AssignmentRow>,
 ) -> BaseResult<Vec<AssignmentInfo>> {
     rows.into_iter().map(row_into_info).collect()
 }
 
-/// Queries a single assignment row by chapter ID and user ID, returning `None` if not found.
+// Lookup one assignment by chapter and user id for read operations.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn get_info_by_chapter_id_and_user_id(
     conn: &mut RdbConn,
@@ -66,7 +82,7 @@ async fn get_info_by_chapter_id_and_user_id(
     row.map(row_into_info).transpose()
 }
 
-/// Queries one assignment for a user and comic, returning `None` if absent.
+// Lookup one assignment for user + comic scope and apply include fields.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn find_info_by_user_id_and_comic_id(
     conn: &mut RdbConn,
@@ -102,7 +118,7 @@ async fn find_info_by_user_id_and_comic_id(
     accept(Some(assignment_info))
 }
 
-/// Queries a single assignment row by ID and populates its includes.
+// Query assignment by id and populate optional include fields.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn get_info_by_id(
     conn: &mut RdbConn,
@@ -131,7 +147,7 @@ async fn get_info_by_id(
     accept(info)
 }
 
-/// Queries all assignment rows for a chapter under `FOR UPDATE` lock.
+// Query chapter assignments with `FOR UPDATE` for transactional mutation windows.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn list_chapter_assignments_excluded(
     conn: &mut RdbConn,
@@ -150,7 +166,7 @@ async fn list_chapter_assignments_excluded(
     rows_into_infos(rows)
 }
 
-/// Inserts a new assignment row from the given entry and returns the created info.
+// Insert a new assignment row and return created assignment info.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn create(
     conn: &mut RdbConn,
@@ -171,7 +187,7 @@ async fn create(
     row_into_info(row)
 }
 
-/// Updates the role timestamps for an assignment row.
+// Update assignment role timestamps and return latest assignment snapshot.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn put_roles(
     conn: &mut RdbConn,
@@ -197,37 +213,12 @@ async fn put_roles(
     row_into_info(row)
 }
 
-/// Deletes a single assignment row by ID.
-#[instrument(level = "info", err(Debug), skip_all)]
-async fn delete(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
-    //
-    diesel::delete(t_assignment.filter(f_id.eq(id)))
-        .execute(conn)
-        .await
-        .map_err(diesel)?;
-
-    accept(())
-}
-
-/// Deletes all assignment rows for a given chapter ID.
-#[instrument(level = "info", err(Debug), skip_all)]
-async fn delete_by_chapter_id(
-    conn: &mut RdbConn,
-    chapter_id: &str,
-) -> BaseResult<()> {
-    //
-    diesel::delete(t_assignment.filter(f_chapter_id.eq(chapter_id)))
-        .execute(conn)
-        .await
-        .map_err(diesel)?;
-
-    accept(())
-}
-
 impl Run<FindAssignmentInfo<'_, '_>> for RdbRepo {
+    // Keep assignment lookup orchestration errors mapped to repository base errors.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Resolve assignment by chapter/user or user/comic and return optional payload.
     async fn run(
         &self,
         oper: &FindAssignmentInfo<'_, '_>,
@@ -260,9 +251,11 @@ impl Run<FindAssignmentInfo<'_, '_>> for RdbRepo {
 }
 
 impl Run<ListAssignmentInfos<'_, '_>> for RdbRepo {
+    // Keep list-assignment orchestration failures normalized for call sites.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Delegate list query composition to shared listing helper with filters.
     async fn run(
         &self,
         oper: &ListAssignmentInfos<'_, '_>,
@@ -272,9 +265,11 @@ impl Run<ListAssignmentInfos<'_, '_>> for RdbRepo {
 }
 
 impl Run<GetAssignmentInfo<'_, '_>> for RdbRepo {
+    // Normalize get-assignment errors to base repository error type.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Return one assignment info by id with requested include options.
     async fn run(
         &self,
         oper: &GetAssignmentInfo<'_, '_>,
@@ -284,9 +279,11 @@ impl Run<GetAssignmentInfo<'_, '_>> for RdbRepo {
 }
 
 impl Step<ListAssignmentInfos<'_, '_>, RdbContext> for RdbRepo {
+    // Use base error for listing assignments inside an existing transaction.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Resolve assignment list query by delegating to list module in context transaction.
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -297,9 +294,11 @@ impl Step<ListAssignmentInfos<'_, '_>, RdbContext> for RdbRepo {
 }
 
 impl Step<FindAssignmentInfo<'_, '_>, RdbContext> for RdbRepo {
+    // Keep transactional assignment lookup failures consistent with run-level errors.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Resolve one assignment by chapter/user or user/comic within the open transaction.
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -337,9 +336,11 @@ impl Step<FindAssignmentInfo<'_, '_>, RdbContext> for RdbRepo {
 }
 
 impl Step<ListAssignmentInfosExcluded<'_>, RdbContext> for RdbRepo {
+    // Normalize excluded-list behavior errors under base repository semantics.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // List assignments for a chapter while applying exclusion filters under lock.
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -355,9 +356,11 @@ impl Step<ListAssignmentInfosExcluded<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<CreateAssignment<'_>, RdbContext> for RdbRepo {
+    // Translate assignment-create failures to base error within transaction.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Insert a new assignment row and return created assignment information.
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -368,9 +371,11 @@ impl Step<CreateAssignment<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<UpdateAssignmentRoles<'_>, RdbContext> for RdbRepo {
+    // Keep role-update failures mapped to shared repository error contract.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Apply role updates to an assignment and return the refreshed record.
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -380,10 +385,27 @@ impl Step<UpdateAssignmentRoles<'_>, RdbContext> for RdbRepo {
     }
 }
 
+// Delete all assignments bound to one chapter when a chapter is removed.
+#[instrument(level = "info", err(Debug), skip_all)]
+async fn delete_by_chapter_id(
+    conn: &mut RdbConn,
+    chapter_id: &str,
+) -> BaseResult<()> {
+    //
+    diesel::delete(t_assignment.filter(f_chapter_id.eq(chapter_id)))
+        .execute(conn)
+        .await
+        .map_err(diesel)?;
+
+    accept(())
+}
+
 impl Step<DeleteAssignments<'_>, RdbContext> for RdbRepo {
+    // Map all delete-assignment branch failures to base repository errors.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Remove assignments by id or by chapter inside an active transaction.
     async fn step(
         &self,
         context: &mut RdbContext,

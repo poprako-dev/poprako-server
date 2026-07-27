@@ -11,6 +11,7 @@ use utoipa::ToSchema;
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 use crate::value::incl::InclOpt;
 
+// Keep chapter-specific tests colocated with the value-level invariants they verify.
 #[cfg(test)]
 mod tests;
 
@@ -154,6 +155,7 @@ pub fn try_modify_stage(
 pub struct StagePhaseField(u8);
 
 impl StagePhaseField {
+    // Accepted serialized values for phase fields.
     /// Field value representing [`StagePhase::Pending`].
     pub const PENDING: Self = Self(0);
     /// Field value representing [`StagePhase::Active`].
@@ -163,8 +165,13 @@ impl StagePhaseField {
     /// Wildcard value that matches any phase — used in filter masks.
     pub const IGNORE: Self = Self(3);
 
+    // Shared lookup table for allowed raw numeric phase values.
     const VALID_VALUES: &'static [u8] = &[0, 1, 2, 3];
 
+    // Convert one compact field into concrete phase value when known.
+    //
+    // Returns `None` for wildcard (`IGNORE`) so callers can explicitly decide
+    // whether wildcard matching is allowed in this context.
     fn as_phase(self) -> Option<StagePhase> {
         match self {
             //
@@ -181,9 +188,26 @@ impl StagePhaseField {
     }
 }
 
+// Convert a [`StagePhase`] (business enum) into its storage field.
+impl From<StagePhase> for StagePhaseField {
+    // Map domain phase into corresponding compact field representation.
+    fn from(phase: StagePhase) -> Self {
+        match phase {
+            //
+            StagePhase::Pending => Self::PENDING,
+
+            StagePhase::Active => Self::ACTIVE,
+
+            StagePhase::Completed => Self::COMPLETED,
+        }
+    }
+}
+
 impl TryFrom<u8> for StagePhaseField {
+    // Error returned when a stored phase field code is out of range.
     type Error = BaseError;
 
+    // Validate and construct a stage phase field from raw DB/API code.
     fn try_from(value: u8) -> BaseResult<Self> {
         //
         if !Self::VALID_VALUES.contains(&value) {
@@ -197,32 +221,20 @@ impl TryFrom<u8> for StagePhaseField {
     }
 }
 
-impl From<StagePhaseField> for u8 {
-    fn from(value: StagePhaseField) -> Self {
-        value.0
-    }
-}
-
-/// Convert a [`StagePhase`] (business enum) into its storage field.
-impl From<StagePhase> for StagePhaseField {
-    fn from(phase: StagePhase) -> Self {
-        match phase {
-            //
-            StagePhase::Pending => Self::PENDING,
-
-            StagePhase::Active => Self::ACTIVE,
-
-            StagePhase::Completed => Self::COMPLETED,
-        }
-    }
-}
-
 impl Serialize for StagePhaseField {
+    // Serialize phase field as a single unsigned byte value.
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
         serializer.serialize_u8(u8::from(*self))
+    }
+}
+
+impl From<StagePhaseField> for u8 {
+    // Return the wire/storage value used by compact bitmask encoding.
+    fn from(value: StagePhaseField) -> Self {
+        value.0
     }
 }
 
@@ -244,8 +256,10 @@ impl Serialize for StagePhaseField {
 pub struct StageMask(u32);
 
 impl StageMask {
+    // High bits outside the known six-stage, two-bit layout are invalid.
     const VALID_BITS: u32 = (1 << 12) - 1;
 
+    // Canonical stage order used for iteration, validation and matching.
     const STAGES: &'static [Stage] = &[
         Stage::RawProvide,
         Stage::Translate,
@@ -254,90 +268,6 @@ impl StageMask {
         Stage::Review,
         Stage::Publish,
     ];
-
-    fn stage_shift(stage: Stage) -> u32 {
-        match stage {
-            //
-            Stage::RawProvide => 0,
-
-            Stage::Translate => 2,
-
-            Stage::Proofread => 4,
-
-            Stage::TypesetRedraw => 6,
-
-            Stage::Review => 8,
-
-            Stage::Publish => 10,
-        }
-    }
-
-    fn field_for_stage_value(
-        value: u32,
-        stage: Stage,
-    ) -> BaseResult<StagePhaseField> {
-        StagePhaseField::try_from(
-            ((value >> Self::stage_shift(stage)) & 0b11) as u8,
-        )
-    }
-
-    fn field_for_stage(&self, stage: Stage) -> StagePhaseField {
-        Self::field_for_stage_value(self.0, stage).ok().unwrap()
-    }
-
-    fn validate_stage_field(
-        stage: Stage,
-        field: StagePhaseField,
-        allow_ignore: bool,
-    ) -> BaseResult<()> {
-        //
-        if field == StagePhaseField::IGNORE {
-            //
-            if allow_ignore {
-                return accept(());
-            }
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message: trl("error-invalid-stage-phase"),
-            });
-        }
-
-        let Some(phase) = field.as_phase() else {
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message: trl("error-invalid-stage-phase"),
-            });
-        };
-
-        if !is_valid_stage_phase(stage, phase) {
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message: trl("error-invalid-stage-phase"),
-            });
-        }
-
-        accept(())
-    }
-
-    fn validate_mask_value(value: u32, allow_ignore: bool) -> BaseResult<()> {
-        //
-        if value & !Self::VALID_BITS != 0 {
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message: trl("error-invalid-stage"),
-            });
-        }
-
-        for stage in Self::STAGES {
-            //
-            let field = Self::field_for_stage_value(value, *stage)?;
-
-            Self::validate_stage_field(*stage, field, allow_ignore)?;
-        }
-
-        accept(())
-    }
 
     /// Construct a filter mask from raw bits.
     ///
@@ -430,11 +360,104 @@ impl StageMask {
     pub fn union(&self, other: StageMask) -> StageMask {
         Self(self.0 | other.0)
     }
+
+    // Validate an entire packed mask, including reserved bits and per-stage limits.
+    fn validate_mask_value(value: u32, allow_ignore: bool) -> BaseResult<()> {
+        //
+        if value & !Self::VALID_BITS != 0 {
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: trl("error-invalid-stage"),
+            });
+        }
+
+        for stage in Self::STAGES {
+            //
+            let field = Self::field_for_stage_value(value, *stage)?;
+
+            Self::validate_stage_field(*stage, field, allow_ignore)?;
+        }
+
+        accept(())
+    }
+
+    // Decode the requested stage field from `self`.
+    fn field_for_stage(&self, stage: Stage) -> StagePhaseField {
+        Self::field_for_stage_value(self.0, stage).ok().unwrap()
+    }
+
+    // Return the bit offset (in two-bit slots) for the given stage.
+    fn stage_shift(stage: Stage) -> u32 {
+        match stage {
+            //
+            Stage::RawProvide => 0,
+
+            Stage::Translate => 2,
+
+            Stage::Proofread => 4,
+
+            Stage::TypesetRedraw => 6,
+
+            Stage::Review => 8,
+
+            Stage::Publish => 10,
+        }
+    }
+
+    // Decode one stage field from packed mask bits.
+    fn field_for_stage_value(
+        value: u32,
+        stage: Stage,
+    ) -> BaseResult<StagePhaseField> {
+        StagePhaseField::try_from(
+            ((value >> Self::stage_shift(stage)) & 0b11) as u8,
+        )
+    }
+
+    // Validate stage field rules for one stage.
+    //
+    // `allow_ignore` controls whether wildcard values are valid in this check.
+    fn validate_stage_field(
+        stage: Stage,
+        field: StagePhaseField,
+        allow_ignore: bool,
+    ) -> BaseResult<()> {
+        //
+        if field == StagePhaseField::IGNORE {
+            //
+            if allow_ignore {
+                return accept(());
+            }
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: trl("error-invalid-stage-phase"),
+            });
+        }
+
+        let Some(phase) = field.as_phase() else {
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: trl("error-invalid-stage-phase"),
+            });
+        };
+
+        if !is_valid_stage_phase(stage, phase) {
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: trl("error-invalid-stage-phase"),
+            });
+        }
+
+        accept(())
+    }
 }
 
 impl TryFrom<u32> for StageMask {
+    // Error returned when a packed mask cannot be interpreted as valid workflow state.
     type Error = BaseError;
 
+    // Validate packed bits and build a concrete mask value.
     fn try_from(value: u32) -> BaseResult<Self> {
         //
         Self::validate_mask_value(value, false)?;
@@ -443,18 +466,20 @@ impl TryFrom<u32> for StageMask {
     }
 }
 
-impl From<StageMask> for u32 {
-    fn from(value: StageMask) -> Self {
-        value.0
-    }
-}
-
 impl Serialize for StageMask {
+    // Serialize mask as an integer with one 2-bit slice per stage.
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
         serializer.serialize_u32(self.0)
+    }
+}
+
+impl From<StageMask> for u32 {
+    // Convert mask back into compact numeric form for DB/persistence.
+    fn from(value: StageMask) -> Self {
+        value.0
     }
 }
 
@@ -490,6 +515,7 @@ pub enum ChapterInclOpt {
 }
 
 impl InclOpt for ChapterInclOpt {
+    // Return all include paths implied by the selected chapter inclusion option.
     fn path(self) -> &'static [Self] {
         match self {
             //

@@ -22,6 +22,7 @@ use crate::part::repo::oper::member::FindMemberInfo;
 use crate::result::{BaseError, BaseResult, accept};
 
 #[cfg(test)]
+// Unit tests for announcement usecase behavior.
 mod tests;
 
 /// Lists announcements under a team.

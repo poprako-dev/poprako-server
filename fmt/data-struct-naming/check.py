@@ -18,6 +18,9 @@ from pathlib import Path
 import tree_sitter
 import tree_sitter_rust
 
+sys.path.insert(0, str(Path(__file__).parents[1]))
+from production_source import production_source
+
 
 DEFAULT_ROOT = Path(__file__).parents[2]
 LAYER = "data"
@@ -82,7 +85,7 @@ def is_public(declaration: tree_sitter.Node, name: tree_sitter.Node, source: byt
 
 
 def check_file(path: Path, root: Path, domains: set[str]) -> list[str]:
-    source = path.read_bytes()
+    source = production_source(path, root)
     tree = PARSER.parse(source)
     source_domain = pascal_name(path.stem)
     diagnostics: list[str] = []

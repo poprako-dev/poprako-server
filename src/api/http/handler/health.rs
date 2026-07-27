@@ -12,6 +12,7 @@ use crate::api::http::shared::prometheus::render_detailed_metrics;
 use crate::api::http::shared::{MetricTotal, read_total};
 
 #[cfg(test)]
+// Health-check test fixtures stay isolated to this module.
 mod tests;
 
 /// `GET /api/health` — returns recent HTTP metrics to loopback callers.
@@ -86,6 +87,7 @@ pub async fn detailed_metrics(
         .into_response())
 }
 
+// Returns true only for loopback addresses, restricting internal status endpoints to localhost.
 fn is_loopback(addr: SocketAddr) -> bool {
     addr.ip().is_loopback()
 }

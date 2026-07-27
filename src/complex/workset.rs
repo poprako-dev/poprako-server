@@ -79,6 +79,7 @@ impl WorksetComplex {
 
         let workset_info = proxy.exec(&GetWorksetInfoExcluded { id }).await?;
 
+        // Page size for paginated comic deletion cascades.
         const PAGE_SIZE: u32 = 50;
 
         loop {
@@ -188,7 +189,7 @@ impl WorksetPermComplex {
         check_user_is_team_admin(proxy, user_id, &team_id).await
     }
 
-    /// Resolve the owning team ID from a workset ID.
+    // Resolve the owning team ID from a workset ID.
     async fn resolve_team_id<P>(
         proxy: &mut P,
         workset_id: &str,

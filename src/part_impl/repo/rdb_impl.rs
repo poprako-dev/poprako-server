@@ -2,6 +2,7 @@
 
 use crate::part_impl::shared::RdbCore;
 
+// Submit query macro that allocates a connection and calls a free function.
 #[macro_use]
 mod submit_query;
 /// Announcement repository operations.

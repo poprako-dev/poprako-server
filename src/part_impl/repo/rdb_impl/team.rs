@@ -33,7 +33,19 @@ pub mod tests;
 
 // ── Free functions ──────────────────────────────────────────────────────────
 
-/// Insert a new team and return its info.
+// Delete a team row by primary key.
+#[instrument(level = "info", err(Debug), skip_all)]
+async fn delete(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
+    //
+    diesel::delete(t_team.filter(f_id.eq(id)))
+        .execute(conn)
+        .await
+        .map_err(diesel)?;
+
+    accept(())
+}
+
+// Insert a team entry and return the persisted team info.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn create(conn: &mut RdbConn, entry: &TeamEntry) -> BaseResult<TeamInfo> {
     //
@@ -58,7 +70,7 @@ async fn create(conn: &mut RdbConn, entry: &TeamEntry) -> BaseResult<TeamInfo> {
     row.try_into()
 }
 
-/// Load a single team info by ID.
+// Load one team by id and convert it into DTO view model.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn get_info_by_id(conn: &mut RdbConn, id: &str) -> BaseResult<TeamInfo> {
     //
@@ -74,7 +86,7 @@ async fn get_info_by_id(conn: &mut RdbConn, id: &str) -> BaseResult<TeamInfo> {
     row.try_into()
 }
 
-/// Query teams selected by a list specification.
+// Query teams using list-kind filters, ordering and pagination.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn list_infos(
     conn: &mut RdbConn,
@@ -109,7 +121,7 @@ async fn list_infos(
     rows.into_iter().map(TryInto::try_into).collect()
 }
 
-/// Update a team's name and description.
+// Update mutable team profile fields for the target team.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn update_info(
     conn: &mut RdbConn,
@@ -131,7 +143,7 @@ async fn update_info(
     accept(())
 }
 
-/// Mark a team avatar as uploaded, checking version staleness.
+// Validate version/hash preconditions and mark avatar upload state.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn mark_avatar_uploaded(
     conn: &mut RdbConn,
@@ -177,8 +189,7 @@ async fn mark_avatar_uploaded(
     accept(())
 }
 
-/// Reserve a new avatar slot for a team: bump version, generate object key,
-/// and return the reservation with previous key for cleanup.
+// Allocate a new avatar reservation version, returning object keys and cleanup metadata.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn reserve_avatar(
     conn: &mut RdbConn,
@@ -261,7 +272,7 @@ async fn reserve_avatar(
     })
 }
 
-/// Load a team info by ID, locking the row for update.
+// Load one team info and lock the row for transactional updates.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn get_info_excluded(
     conn: &mut RdbConn,
@@ -281,7 +292,7 @@ async fn get_info_excluded(
     row.try_into()
 }
 
-/// Locks a team row.
+// Lock a team row to serialize concurrent writes in the current transaction.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn lock_team(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
     //
@@ -298,19 +309,7 @@ async fn lock_team(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
     accept(())
 }
 
-/// Delete a team by ID.
-#[instrument(level = "info", err(Debug), skip_all)]
-async fn delete(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
-    //
-    diesel::delete(t_team.filter(f_id.eq(id)))
-        .execute(conn)
-        .await
-        .map_err(diesel)?;
-
-    accept(())
-}
-
-/// Atomically increment and return the previous workset-next-index for a team.
+// Advance workset sequence and return previous value for deterministic IDs.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn increment_workset_next_index(
     conn: &mut RdbConn,
@@ -328,9 +327,11 @@ async fn increment_workset_next_index(
 }
 
 impl<'a> Run<CreateTeam<'a>> for RdbRepo {
+    // Map team creation orchestration failures to the shared base error type.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Submit a team create request through repository core to keep one call path.
     async fn run(
         &self,
         oper: &CreateTeam<'_>,
@@ -340,9 +341,11 @@ impl<'a> Run<CreateTeam<'a>> for RdbRepo {
 }
 
 impl Run<GetTeamInfo<'_>> for RdbRepo {
+    // Use the common base error for team info reads.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Resolve team read requests from ID-based variants and return team details.
     async fn run(
         &self,
         oper: &GetTeamInfo<'_>,
@@ -356,9 +359,11 @@ impl Run<GetTeamInfo<'_>> for RdbRepo {
 }
 
 impl Run<ListTeamInfos<'_>> for RdbRepo {
+    // Keep list query failures on a single repository-level error channel.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Return filtered and paginated team lists based on caller-provided criteria.
     async fn run(
         &self,
         oper: &ListTeamInfos<'_>,
@@ -368,9 +373,11 @@ impl Run<ListTeamInfos<'_>> for RdbRepo {
 }
 
 impl Run<UpdateTeam<'_>> for RdbRepo {
+    // Keep update orchestration failures compatible with other team operations.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Route team mutation variants into the corresponding SQL update handlers.
     async fn run(&self, oper: &UpdateTeam<'_>) -> BaseResult<()> {
         match oper {
             //
@@ -400,9 +407,11 @@ impl Run<UpdateTeam<'_>> for RdbRepo {
 }
 
 impl Step<CreateTeam<'_>, RdbContext> for RdbRepo {
+    // Convert repository step failures to base error during transaction execution.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Persist a new team row within an open transaction and return persisted info.
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -413,9 +422,11 @@ impl Step<CreateTeam<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<UpdateTeam<'_>, RdbContext> for RdbRepo {
+    // Keep transactional team updates on the same base error contract.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Apply either profile updates or avatar flag updates in current transaction.
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -449,9 +460,11 @@ impl Step<UpdateTeam<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<ReserveTeamAvatar<'_>, RdbContext> for RdbRepo {
+    // Report avatar-reservation validation and mutation errors through base error.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Reserve the next avatar slot and return upload reservation metadata.
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -463,9 +476,11 @@ impl Step<ReserveTeamAvatar<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<GetTeamInfoExcluded<'_>, RdbContext> for RdbRepo {
+    // Preserve consistent error typing for locked team detail fetches.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Load team info with row lock and exclusion rules for transactional safety.
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -480,9 +495,11 @@ impl Step<GetTeamInfoExcluded<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<LockTeam<'_>, RdbContext> for RdbRepo {
+    // Keep lock contention errors on the shared repository error type.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Acquire row lock for update sequencing before sensitive team writes.
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -493,9 +510,11 @@ impl Step<LockTeam<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<DeleteTeam<'_>, RdbContext> for RdbRepo {
+    // Use the common base error for hard delete operations in transactions.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Remove a team row after the caller has coordinated any dependent effects.
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -506,9 +525,11 @@ impl Step<DeleteTeam<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<AllocTeamWorksetIndex<'_>, RdbContext> for RdbRepo {
+    // Keep index allocation failures mapped to repository base errors.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Atomically increment and return previous index for next workset reservation.
     async fn step(
         &self,
         context: &mut RdbContext,

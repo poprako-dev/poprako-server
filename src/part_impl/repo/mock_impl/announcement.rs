@@ -18,6 +18,7 @@ use crate::part_impl::repo::mock_impl::{
 use crate::result::{BaseError, BaseResult, accept};
 use crate::value::announcement::AnnouncementInclOpt;
 
+// Internal implementation of `find_user`.
 fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
     state
         .users
@@ -26,12 +27,15 @@ fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
         .cloned()
 }
 
+// Internal implementation of `apply_user_incl`.
 fn apply_user_incl(
     state: &MockState,
     announcement_info: &mut AnnouncementInfo,
     include_user: bool,
 ) {
     //
+    // Internal implementation detail.
+    // Internal implementation detail.
     announcement_info.user = None;
 
     if include_user {
@@ -39,11 +43,14 @@ fn apply_user_incl(
     }
 }
 
+// Internal implementation of `list_announcements`.
 fn list_announcements(
     state: &MockState,
     spec: &AnnouncementListSpec,
 ) -> Vec<AnnouncementInfo> {
     //
+    // Internal implementation detail.
+    // Internal implementation detail.
     let include_user = spec.incl_opt.contains(&AnnouncementInclOpt::User);
 
     let mut announcement_infos = state
@@ -66,10 +73,14 @@ fn list_announcements(
 
     match offset >= announcement_infos.len() {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         true => Vec::new(),
 
         false => {
             //
+            // Internal implementation detail.
+            // Internal implementation detail.
             let end = std::cmp::min(offset + limit, announcement_infos.len());
 
             announcement_infos[offset..end].to_vec()
@@ -77,11 +88,14 @@ fn list_announcements(
     }
 }
 
+// Internal implementation of `create_announcement`.
 fn create_announcement(
     state: &mut MockState,
     entry: &AnnouncementEntry,
 ) -> BaseResult<AnnouncementInfo> {
     //
+    // Internal implementation detail.
+    // Internal implementation detail.
     if state
         .announcements
         .iter()
@@ -106,14 +120,18 @@ fn create_announcement(
 }
 
 impl Run<ListAnnouncementInfos<'_>> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `run`.
     async fn run(
         &self,
         oper: &ListAnnouncementInfos<'_>,
     ) -> BaseResult<Vec<AnnouncementInfo>> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
         accept(list_announcements(&state, oper.spec))
@@ -121,9 +139,11 @@ impl Run<ListAnnouncementInfos<'_>> for Mock {
 }
 
 impl Step<CreateAnnouncement<'_>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,

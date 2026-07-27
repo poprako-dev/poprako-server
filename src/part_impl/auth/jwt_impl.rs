@@ -20,6 +20,7 @@ mod tests;
 /// JWT issuer for user session tokens.
 pub struct JwtAuth {
     //
+    // Internal state field `expiration_seconds`.
     /// Token lifetime in seconds from issuance.
     expiration_seconds: i64,
 
@@ -30,30 +31,12 @@ pub struct JwtAuth {
     decoding_key: DecodingKey,
 }
 
-/// Internal JWT claim structure used for token signing.
-#[derive(Debug, Serialize)]
-struct SignClaims<'a> {
-    //
-    sub: &'a str,
-    user_id: &'a str,
-
-    iat: usize,
-    nbf: usize,
-    exp: usize,
-
-    iss: &'static str,
-}
-
-/// Decoded JWT token claims containing user identification.
-#[derive(Debug, Deserialize)]
-struct TokenClaims {
-    user_id: String,
-}
-
 impl JwtAuth {
+    // Creates a JWT signer from a shared secret and token lifetime in hours.
     /// Creates a JWT signer from a shared secret and token lifetime.
     pub fn new(secret: &str, expiration_hours: i64) -> BaseResult<Self> {
         //
+        // Internal implementation detail.
         if expiration_hours <= 0 {
             return Err(BaseError::Unrecoverable {
                 message: "[JwtAuth::new] JWT_EXPIRATION_HOURS must be positive"
@@ -74,9 +57,11 @@ impl JwtAuth {
         })
     }
 
+    // Reads token TTL from env vars and builds a signer with validated config.
     /// Reads JWT settings from environment variables.
     pub fn from_env() -> anyhow::Result<Self> {
         //
+        // Internal implementation detail.
         let secret = std::env::var("JWT_SECRET")
             .with_context(|| "[JwtAuth::from_env] JWT_SECRET is not set")?;
 
@@ -97,9 +82,11 @@ impl JwtAuth {
 }
 
 impl TokenAuth for JwtAuth {
+    // Signs a user token by encoding JWT claims with configured expiration.
     #[instrument(level = "info", err(Debug), skip_all)]
     fn sign_token(&self, token: &UserToken) -> BaseResult<String> {
         //
+        // Internal implementation detail.
         let now = OffsetDateTime::now_utc();
 
         let issued_at = now.unix_timestamp() as usize;
@@ -128,9 +115,11 @@ impl TokenAuth for JwtAuth {
         })
     }
 
+    // Verifies a JWT token string and returns the decoded user token.
     #[instrument(level = "info", err(Debug), skip_all)]
     fn verify_token(&self, raw: &str) -> BaseResult<UserToken> {
         //
+        // Internal implementation detail.
         let token_data = decode::<TokenClaims>(
             raw,
             &self.decoding_key,
@@ -138,6 +127,7 @@ impl TokenAuth for JwtAuth {
         )
         .map_err(|err| {
             //
+            // Internal state field tracing.
             tracing::debug!("[JwtAuth::verify_token] decode failed: {}", err);
 
             BaseError::Expected {
@@ -150,4 +140,34 @@ impl TokenAuth for JwtAuth {
             user_id: token_data.claims.user_id,
         })
     }
+}
+
+/// Internal JWT claim structure used for token signing.
+#[derive(Debug, Serialize)]
+// Holds JWT standard + app-specific claim fields emitted by the signer.
+struct SignClaims<'a> {
+    //
+    // Internal state field `sub`.
+    // JWT standard subject claim carrying the user primary key.
+    sub: &'a str,
+    // Copy of the user primary key, consistent with the business model.
+    user_id: &'a str,
+
+    // Token issued-at time (Unix second timestamp).
+    iat: usize,
+    // Token not-before time, preventing use before the validity window opens.
+    nbf: usize,
+    // Token expiration time (Unix second timestamp).
+    exp: usize,
+
+    // Token issuer identifier for origin verification during validation.
+    iss: &'static str,
+}
+
+/// Decoded JWT token claims containing user identification.
+#[derive(Debug, Deserialize)]
+// Exposes the user identifier after verifying a token.
+struct TokenClaims {
+    // User primary key recovered from the payload.
+    user_id: String,
 }

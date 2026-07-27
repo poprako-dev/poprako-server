@@ -118,22 +118,30 @@ where
         }
     }
 
-    /// Holds one requested upload target within a page reservation.
+    // Holds one requested upload target within a page reservation.
     struct PageUploadReservation {
         //
+        // Upload destination in object storage.
         object_key: String,
+        // Expected size (in bytes) for capacity pre-allocation and verification.
         new_byte_len: u64,
     }
 
-    /// Holds the identity and optional upload request for one reserved page.
+    // Holds the identity and optional upload request for one reserved page.
     struct PageReservation {
         //
+        // Page identifier for this reservation.
         page_id: String,
+        // Ordering index used to keep reservation payload deterministic.
         index: u32,
 
+        // Optional upload metadata when the caller requests a new page image.
         upload: Option<PageUploadReservation>,
+        // Monotonic image revision value after reservation.
         image_version: u32,
+        // Expected image digest for reservation integrity checks.
         image_hash: ImageHash,
+        // File extension used for generated object key and downstream image handling.
         ext: ImageExt,
     }
 

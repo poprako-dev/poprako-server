@@ -1,3 +1,4 @@
+// Generates BatchByIds loader structs for each declared table.
 macro_rules! preload_by_ids {
     (
         $(
@@ -49,6 +50,7 @@ macro_rules! preload_by_ids {
     };
 }
 
+// Resolves a nested foreign-key value through an optional chain path.
 macro_rules! preloadable_resolve_path {
     ($owner:expr; [] => $field:ident) => {
         Some($owner.$field.as_str())
@@ -61,6 +63,7 @@ macro_rules! preloadable_resolve_path {
     };
 }
 
+// Injects a loaded related entity into an owner through a nested optional path.
 macro_rules! preloadable_inject_path {
     ($owner:ident, $related:ident; [] => $field:ident) => {
         $owner.$field = $related;
@@ -75,6 +78,7 @@ macro_rules! preloadable_inject_path {
     };
 }
 
+// Generates an Incl struct for one include variant with resolve/inject logic.
 macro_rules! preloadable_variant {
     (
         $owner:ty;
@@ -183,6 +187,7 @@ macro_rules! preloadable_variant {
     };
 }
 
+// Generates include-variant structs and a top-level populate function.
 macro_rules! preloadable {
     (
         owner: $owner:ty,

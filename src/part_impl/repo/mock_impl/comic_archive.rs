@@ -20,8 +20,11 @@ use crate::part_impl::repo::mock_impl::{
 };
 use crate::result::{BaseError, BaseResult, accept};
 
+// Internal implementation of `order_unit_infos`.
 fn order_unit_infos(unit_infos: Vec<UnitInfo>) -> BaseResult<Vec<UnitInfo>> {
     //
+    // Internal implementation detail.
+    // Internal implementation detail.
     if unit_infos.is_empty() {
         return accept(Vec::new());
     }
@@ -38,6 +41,8 @@ fn order_unit_infos(unit_infos: Vec<UnitInfo>) -> BaseResult<Vec<UnitInfo>> {
 
     for unit_info in infos_by_id.values() {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let Some(next_id) = unit_info.next_id.as_ref() else {
             continue;
         };
@@ -73,6 +78,8 @@ fn order_unit_infos(unit_infos: Vec<UnitInfo>) -> BaseResult<Vec<UnitInfo>> {
 
     while let Some(id) = current_id {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let Some(unit_info) = infos_by_id.remove(&id) else {
             return Err(unrecoverable("persisted Unit chain is corrupt"));
         };
@@ -92,14 +99,18 @@ fn order_unit_infos(unit_infos: Vec<UnitInfo>) -> BaseResult<Vec<UnitInfo>> {
 }
 
 impl Run<ListComicArchivePayloads<'_>> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `run`.
     async fn run(
         &self,
         oper: &ListComicArchivePayloads<'_>,
     ) -> BaseResult<Vec<(OffsetDateTime, String)>> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
         let payloads = state
@@ -119,12 +130,14 @@ impl Run<ListComicArchivePayloads<'_>> for Mock {
     }
 }
 
-/// Clone a fully assembled archive snapshot from locked mock state.
+// Assemble and return a comic archive snapshot (including chapter, page, and unit info) for submission.
 fn get_snapshot_excluded(
     context: &mut MockContext,
     source_comic_id: &str,
 ) -> BaseResult<ComicArchiveSnapshot> {
     //
+    // Internal implementation detail.
+    // Internal implementation detail.
     let comic_info = context
         .state
         .comics
@@ -149,6 +162,8 @@ fn get_snapshot_excluded(
         .cloned()
         .map(|chapter_info| {
             //
+            // Internal implementation detail.
+            // Internal implementation detail.
             let assignment_infos = context
                 .state
                 .assignments
@@ -159,6 +174,8 @@ fn get_snapshot_excluded(
                 .cloned()
                 .map(|mut assignment_info| {
                     //
+                    // Internal implementation detail.
+                    // Internal implementation detail.
                     assignment_info.user = Some(
                         context
                             .state
@@ -183,6 +200,8 @@ fn get_snapshot_excluded(
                 .cloned()
                 .map(|page_info| {
                     //
+                    // Internal implementation detail.
+                    // Internal implementation detail.
                     let unordered_unit_infos = context
                         .state
                         .units
@@ -219,12 +238,14 @@ fn get_snapshot_excluded(
     })
 }
 
-/// Persist one archive row and delete active records in the mock transaction state.
+// After persisting the archive entry, remove source objects from the active set to simulate real commit side-effects.
 fn commit(
     context: &mut MockContext,
     comic_archive_entry: &ComicArchiveEntry,
 ) -> BaseResult<()> {
     //
+    // Internal implementation detail.
+    // Internal implementation detail.
     if context.archive_commit_failure {
         return Err(unrecoverable(
             "[MockComicArchive::commit] injected archive commit failure",
@@ -277,9 +298,11 @@ fn commit(
 }
 
 impl<'a> Step<GetComicArchiveSnapshotExcluded<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -290,9 +313,11 @@ impl<'a> Step<GetComicArchiveSnapshotExcluded<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<CommitComicArchive<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,

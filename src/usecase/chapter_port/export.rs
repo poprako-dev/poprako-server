@@ -32,6 +32,7 @@ use crate::result::{BaseResult, accept};
 use crate::usecase::stage::spawn_starts;
 use crate::value::chapter::Stage;
 
+// Test coverage for chapter export payload shape and ordering.
 #[cfg(test)]
 mod tests;
 
@@ -93,6 +94,7 @@ where
 
     for page_info in page_infos {
         //
+        // Load visible units for each page and map them into exported unit payloads.
 
         let unit_infos = repo
             .run(&ListUnitInfos {
@@ -184,6 +186,7 @@ where
 
     for page_info in &page_infos {
         //
+        // Collect visible units grouped by page before LabelPlus serialization.
 
         let unit_infos = repo
             .run(&ListUnitInfos {
@@ -207,12 +210,13 @@ where
     accept(content)
 }
 
-/// Builds a [`UnitTranslationExportVal`] from page and unit info.
+// Builds a [`UnitTranslationExportVal`] from page and unit info.
 fn make_unit_export(
     page_info: &PageInfo,
     index: usize,
     unit_info: UnitInfo,
 ) -> UnitTranslationExportPayload {
+    // Convert one unit into export payload fields used by downstream translators.
     UnitTranslationExportPayload {
         unit_id: unit_info.id,
         unit_index: index as i32,
@@ -229,9 +233,10 @@ fn make_unit_export(
     }
 }
 
-/// Returns [`Some`] with the text if non-empty, [`None`] otherwise.
+// Returns [`Some`] with the text if non-empty, [`None`] otherwise.
 fn non_empty(text: String) -> Option<String> {
     //
+    // Trim and normalize optional text fields before sending user-facing translation payloads.
     if text.trim().is_empty() {
         return None;
     }

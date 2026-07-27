@@ -187,8 +187,10 @@ fn seed_scope(mock: &Mock) {
 
 async fn wait_for_typeset_redraw(mock: &Mock) {
     //
+    // Poll until the detached typeset-redraw stage starts, then continue test assertions.
     for _ in 0..100 {
         //
+        // Keep polling the snapshot; background advancement is eventual and asynchronous.
         if mock.snapshot().chapters[0]
             .stages
             .has_phase(Stage::TypesetRedraw, StagePhase::Active)

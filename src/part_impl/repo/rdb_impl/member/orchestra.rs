@@ -16,9 +16,14 @@ use crate::part_impl::shared::RdbContext;
 use crate::result::{BaseError, BaseResult};
 
 impl Run<ListMemberInfos<'_>> for RdbRepo {
+    // Non-transactional query path for listing member infos.
+    //
+    // It picks the right query variant based on whether the caller provided
+    // filters or a user-only scope.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Route list variants to the corresponding read-only query in the current repo.
     async fn run(
         &self,
         oper: &ListMemberInfos<'_>,
@@ -37,9 +42,11 @@ impl Run<ListMemberInfos<'_>> for RdbRepo {
 }
 
 impl Run<GetMemberInfo<'_, '_>> for RdbRepo {
+    // Non-transactional query path for loading one member info by identity.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Resolve one member info by id through a submit-query read path.
     async fn run(
         &self,
         oper: &GetMemberInfo<'_, '_>,
@@ -53,9 +60,11 @@ impl Run<GetMemberInfo<'_, '_>> for RdbRepo {
 }
 
 impl Step<CreateMember<'_>, RdbContext> for RdbRepo {
+    // Create a new member row inside the active transaction context.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Invoke `create` step with raw entry payload and return created info.
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -66,9 +75,13 @@ impl Step<CreateMember<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<UpdateMember<'_>, RdbContext> for RdbRepo {
+    // Apply an in-transaction member update request.
+    //
+    // Supported requests either adjust nickname or change role based on branch.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Branch to nickname/role update path and execute inside the transaction.
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -92,9 +105,14 @@ impl Step<UpdateMember<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<ListMemberInfos<'_>, RdbContext> for RdbRepo {
+    // Transactional list path for member info queries.
+    //
+    // Reuses the same selection modes as non-transactional `run` execution,
+    // but executes through an explicit DB connection context.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Execute list query within the transaction and return full member info set.
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -114,9 +132,11 @@ impl Step<ListMemberInfos<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<FindMemberInfo<'_>, RdbContext> for RdbRepo {
+    // Transactional lookup for a member by `(user_id, team_id)`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Find one member-row mapping by both user and team identifiers.
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -136,9 +156,11 @@ impl Step<FindMemberInfo<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<GetMemberInfo<'_, '_>, RdbContext> for RdbRepo {
+    // Transactional lookup for a full member info by id and requested includes.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Fetch a member info with requested include options within the transaction.
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -153,9 +175,13 @@ impl Step<GetMemberInfo<'_, '_>, RdbContext> for RdbRepo {
 }
 
 impl Step<ListMemberInfosExcluded<'_>, RdbContext> for RdbRepo {
+    // Transactional list for member infos excluding one side of relation.
+    //
+    // One branch excludes all members for a user, the other excludes a full team.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Execute exclusion-based member list variants inside the same tx context.
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -175,9 +201,11 @@ impl Step<ListMemberInfosExcluded<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<DeleteMember<'_>, RdbContext> for RdbRepo {
+    // Transactional delete operation for a single member by id.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Delete the member row for the provided identifier from the DB transaction.
     async fn step(
         &self,
         context: &mut RdbContext,

@@ -1,9 +1,10 @@
-// parse_label_plus(parse_label_plus)(positive): parses the real LabelPlus material.
+// Integration fixture for real LabelPlus import parsing.
 // parse_poprako(parse_poprako)(positive): normalizes PopRaKo one-based unit indexes.
 // build_unit_create(build_unit_create)(positive): import always produces a complete Unit Create.
 
 use super::*;
 
+// LabelPlus import fixture used by chapter import parse tests.
 const LABEL_PLUS_MATERIAL: &str =
     include_str!("../../../../tests/materials/translations.lp.txt");
 

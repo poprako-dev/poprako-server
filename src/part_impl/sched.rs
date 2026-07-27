@@ -5,6 +5,7 @@ use tokio_util::sync::CancellationToken;
 
 use crate::part_impl::shared::RdbCore;
 
+// Comic archive retention periodic job.
 mod comic_archive;
 
 /// Owns the lifecycle of the fixed production periodic-job composition.
@@ -48,6 +49,7 @@ impl GeneralSched {
 }
 
 impl Drop for GeneralSched {
+    // Cancels the scheduler token on drop to stop periodic jobs.
     fn drop(&mut self) {
         self.token.cancel();
     }

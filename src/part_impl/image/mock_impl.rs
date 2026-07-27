@@ -20,8 +20,10 @@ use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 /// [Mock::with_image_get_failure] or [Mock::with_image_put_failure] to test
 /// error paths.
 impl ImagePool for Mock {
+    // Internal implementation of `gen_download_url`.
     async fn gen_download_url(&self, key: &str) -> BaseResult<Url> {
         //
+        // Internal implementation detail.
         if self.flags.lock().unwrap().image_get_failure {
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
@@ -32,11 +34,13 @@ impl ImagePool for Mock {
         accept(Url::parse(&format!("https://test.local/get/{}", key)).unwrap())
     }
 
+    // Internal implementation of `gen_thumbnail_download_url`.
     async fn gen_thumbnail_download_url(
         &self,
         original_key: &str,
     ) -> BaseResult<Url> {
         //
+        // Internal implementation detail.
         if self.flags.lock().unwrap().image_get_failure {
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
@@ -53,8 +57,10 @@ impl ImagePool for Mock {
         )
     }
 
+    // Internal implementation of `get_upload_url`.
     async fn get_upload_url(&self, key: &str) -> BaseResult<Url> {
         //
+        // Internal implementation detail.
         if self.flags.lock().unwrap().image_put_failure {
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
@@ -65,11 +71,13 @@ impl ImagePool for Mock {
         accept(Url::parse(&format!("https://test.local/put/{}", key)).unwrap())
     }
 
+    // Internal implementation of `get_upload_slot`.
     async fn get_upload_slot(
         &self,
         spec: ImageUploadSpec<'_>,
     ) -> BaseResult<ImageUploadSlot> {
         //
+        // Internal implementation detail.
         if self.flags.lock().unwrap().image_put_failure {
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
@@ -94,8 +102,10 @@ impl ImagePool for Mock {
 
 /// Mock implementation of [ImageManager].
 impl ImageManager for Mock {
+    // Internal implementation of `object_exists`.
     async fn object_exists(&self, _: &str) -> BaseResult<bool> {
         //
+        // Internal implementation detail.
         if self.flags.lock().unwrap().image_head_failure {
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
@@ -110,8 +120,10 @@ impl ImageManager for Mock {
         accept(true)
     }
 
+    // Internal implementation of `delete_object`.
     async fn delete_object(&self, key: &str) -> BaseResult<()> {
         //
+        // Internal implementation detail.
         if self.flags.lock().unwrap().image_delete_failure {
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
@@ -137,6 +149,7 @@ impl ImageManager for Mock {
 #[tokio::test]
 async fn get_upload_url_returns_stable_url() {
     //
+    // Internal implementation detail.
     let mock = Mock::new();
 
     let url = ImagePool::get_upload_url(&mock, "avatar.png").await;
@@ -152,6 +165,7 @@ async fn get_upload_url_returns_stable_url() {
 #[tokio::test]
 async fn gen_download_url_failure_returns_expected_err() {
     //
+    // Internal implementation detail.
     let mock = Mock::new().with_image_get_failure();
 
     let err_download = ImagePool::gen_download_url(&mock, "avatar.png")
