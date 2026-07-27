@@ -259,18 +259,24 @@ fn apply_order_edits<'a>(
         .collect::<HashSet<_>>();
 
     for edit in edits {
+        //
+        let UnitEdit::Create { id, .. } = edit else {
+            continue;
+        };
+
+        if find_order_pos(&ordered_ids, id).is_some() {
+            return Err(expected("error-invalid-unit-oper"));
+        }
+
+        ordered_ids.push(id);
+
+        hidden_ids.remove(id.as_str());
+    }
+
+    for edit in edits {
         match edit {
             //
             UnitEdit::Create { id, next_id, .. } => {
-                //
-                if find_order_pos(&ordered_ids, id).is_some() {
-                    return Err(expected("error-invalid-unit-oper"));
-                }
-
-                ordered_ids.push(id);
-
-                hidden_ids.remove(id.as_str());
-
                 move_order(&mut ordered_ids, id, next_id.as_deref())?;
             }
 
