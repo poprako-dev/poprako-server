@@ -6,7 +6,8 @@ use poprako_util::i18n::trl;
 
 use crate::model::write::unit::UnitEdit;
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
-use crate::util::{PatchField, next_snowflake_id};
+use crate::util::{Patch, next_snowflake_id};
+use crate::value::chapter::Stage;
 
 pub use perm::UnitPermComplex;
 
@@ -21,6 +22,50 @@ impl UnitComplex {
     /// Generates one permanent Unit ID.
     pub fn gen_id() -> String {
         next_snowflake_id()
+    }
+
+    /// Returns workflow stages started by submitted Unit content.
+    pub fn submitted_stage_starts(edits: &[UnitEdit]) -> Vec<Stage> {
+        //
+        let translated = edits.iter().any(|edit| match edit {
+            //
+            UnitEdit::Create {
+                translation: Some(translation),
+                ..
+            }
+            | UnitEdit::Save {
+                translation: Patch::Assign(translation),
+                ..
+            } => !translation.translated_text.trim().is_empty(),
+
+            _ => false,
+        });
+
+        let proofread = edits.iter().any(|edit| match edit {
+            //
+            UnitEdit::Create {
+                revision: Some(revision),
+                ..
+            }
+            | UnitEdit::Save {
+                revision: Patch::Assign(revision),
+                ..
+            } => revision.is_proofread,
+
+            _ => false,
+        });
+
+        let mut stages = Vec::with_capacity(2);
+
+        if translated {
+            stages.push(Stage::Translate);
+        }
+
+        if proofread {
+            stages.push(Stage::Proofread);
+        }
+
+        stages
     }
 
     /// Normalizes one Unit edit batch against the persisted Unit IDs.
@@ -53,9 +98,9 @@ impl UnitComplex {
             last -= 1;
 
             let id = match &edits[last] {
-                UnitEdit::Delete { id } | UnitEdit::Save { id, .. } => {
-                    id.clone()
-                }
+                UnitEdit::Create { id, .. }
+                | UnitEdit::Save { id, .. }
+                | UnitEdit::Delete { id } => id.clone(),
             };
 
             let mut prev = last;
@@ -136,48 +181,78 @@ impl UnitComplex {
         //
         let base_ids = base_ids.iter().copied().collect::<HashSet<_>>();
 
-        let (deleted_ids, saved_ids) = edits.iter().fold(
+        let (deleted_ids, created_ids) = edits.iter().fold(
             (HashSet::new(), HashSet::new()),
-            |(mut deleted, mut saved), edit| {
+            |(mut deleted, mut created), edit| {
                 //
                 match edit {
                     //
+                    UnitEdit::Create { id, .. } => {
+                        created.insert(id.as_str());
+                    }
+
                     UnitEdit::Delete { id } => {
                         deleted.insert(id.as_str());
                     }
 
-                    UnitEdit::Save { id, .. } => {
-                        saved.insert(id.as_str());
-                    }
+                    UnitEdit::Save { .. } => {}
                 }
 
-                (deleted, saved)
+                (deleted, created)
             },
         );
+
+        let create_count = edits
+            .iter()
+            .filter(|edit| matches!(edit, UnitEdit::Create { .. }))
+            .count();
+
+        if create_count != created_ids.len()
+            || created_ids.iter().any(|id| base_ids.contains(id))
+        {
+            return Err(invalid_unit_edit_err());
+        }
 
         edits.iter().try_for_each(|edit| {
             //
             match edit {
                 //
+                UnitEdit::Create { .. } => {}
+
                 UnitEdit::Delete { id } if !base_ids.contains(id.as_str()) => {
+                    return Err(invalid_unit_edit_err());
+                }
+
+                UnitEdit::Save { id, .. }
+                    if !base_ids.contains(id.as_str())
+                        && !created_ids.contains(id.as_str()) =>
+                {
                     return Err(invalid_unit_edit_err());
                 }
 
                 _ => {}
             }
 
-            let UnitEdit::Save {
-                id,
-                next_id: PatchField::Assign(next_id),
-                ..
-            } = edit
-            else {
-                return accept(());
+            let (id, next_id) = match edit {
+                //
+                UnitEdit::Create {
+                    id,
+                    next_id: Some(next_id),
+                    ..
+                } => (id, next_id),
+
+                UnitEdit::Save {
+                    id,
+                    next_id: Patch::Assign(next_id),
+                    ..
+                } => (id, next_id),
+
+                _ => return accept(()),
             };
 
             if next_id == id
                 || (!base_ids.contains(next_id.as_str())
-                    && !saved_ids.contains(next_id.as_str()))
+                    && !created_ids.contains(next_id.as_str()))
                 || deleted_ids.contains(next_id.as_str())
             {
                 return Err(invalid_unit_edit_err());
@@ -212,9 +287,9 @@ fn inherit_option<T>(earlier: &mut Option<T>, later: &mut Option<T>) {
     }
 }
 
-fn inherit_patch<T>(earlier: &mut PatchField<T>, later: &mut PatchField<T>) {
-    if matches!(later, PatchField::Skip) {
-        *later = std::mem::replace(earlier, PatchField::Skip);
+fn inherit_patch<T>(earlier: &mut Patch<T>, later: &mut Patch<T>) {
+    if matches!(later, Patch::Skip) {
+        *later = std::mem::replace(earlier, Patch::Skip);
     }
 }
 

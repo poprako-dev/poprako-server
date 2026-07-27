@@ -86,7 +86,7 @@ fn load_snowflake_node_id() -> u16 {
 /// `Skip` preserves the stored value, `Clear` resets it, and `Assign` replaces
 /// it with the carried value.
 #[derive(Debug, Clone, PartialEq, Serialize)]
-pub enum PatchField<T> {
+pub enum Patch<T> {
     /// Resets the stored field.
     Clear,
 
@@ -97,19 +97,19 @@ pub enum PatchField<T> {
     Skip,
 }
 
-impl<T> PatchField<T> {
+impl<T> Patch<T> {
     /// Maps an assigned value while preserving Clear and Skip.
-    pub fn map<U, F>(self, assign: F) -> PatchField<U>
+    pub fn map<U, F>(self, assign: F) -> Patch<U>
     where
         F: FnOnce(T) -> U,
     {
         match self {
             //
-            Self::Clear => PatchField::Clear,
+            Self::Clear => Patch::Clear,
 
-            Self::Assign(value) => PatchField::Assign(assign(value)),
+            Self::Assign(value) => Patch::Assign(assign(value)),
 
-            Self::Skip => PatchField::Skip,
+            Self::Skip => Patch::Skip,
         }
     }
 
@@ -119,7 +119,7 @@ impl<T> PatchField<T> {
     }
 }
 
-impl<'de, T> Deserialize<'de> for PatchField<T>
+impl<'de, T> Deserialize<'de> for Patch<T>
 where
     T: Deserialize<'de>,
 {
@@ -136,7 +136,7 @@ where
     }
 }
 
-impl<T> Default for PatchField<T> {
+impl<T> Default for Patch<T> {
     fn default() -> Self {
         Self::Skip
     }

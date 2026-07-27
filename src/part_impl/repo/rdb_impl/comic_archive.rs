@@ -355,7 +355,9 @@ async fn get_snapshot_excluded(
         let unordered_unit_infos =
             unit_infos_by_page.remove(&page_info.id).unwrap_or_default();
 
-        let unit_infos = order_unit_infos(unordered_unit_infos)?;
+        let mut unit_infos = order_unit_infos(unordered_unit_infos)?;
+
+        unit_infos.retain(|unit_info| unit_info.hidden_at.is_none());
 
         page_snapshots_by_chapter
             .entry(page_info.chapter_id.clone())

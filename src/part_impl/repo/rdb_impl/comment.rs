@@ -37,8 +37,10 @@ async fn list_infos(
         .await
         .map_err(diesel)?;
 
-    let mut infos =
-        rows.into_iter().map(Into::into).collect::<Vec<CommentInfo>>();
+    let mut infos = rows
+        .into_iter()
+        .map(Into::into)
+        .collect::<Vec<CommentInfo>>();
 
     incl::comment::populate_comment_incls(conn, &mut infos, &spec.incl_opt)
         .await?;

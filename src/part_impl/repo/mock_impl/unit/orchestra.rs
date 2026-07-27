@@ -6,7 +6,7 @@ use crate::part::repo::oper::unit::{
     ApplyUnitEdits, ListUnitInfos, ListUnitOrders,
 };
 use crate::part_impl::repo::mock_impl::unit::{
-    apply_edits, list_infos, list_positions,
+    apply_edits, list_infos, list_orders,
 };
 use crate::part_impl::repo::mock_impl::{Mock, MockContext};
 use crate::result::{BaseError, BaseResult};
@@ -32,7 +32,7 @@ impl Step<ListUnitOrders<'_>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &ListUnitOrders<'_>,
     ) -> BaseResult<Vec<UnitOrder>> {
-        list_positions(&context.state, oper.page_id)
+        list_orders(&context.state, oper.page_id)
     }
 }
 

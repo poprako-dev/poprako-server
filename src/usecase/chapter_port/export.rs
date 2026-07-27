@@ -102,6 +102,7 @@ where
 
         let unit_vals = unit_infos
             .into_iter()
+            .filter(|unit_info| unit_info.hidden_at.is_none())
             .enumerate()
             .map(|(index, unit_info)| {
                 make_unit_export(&page_info, index, unit_info)
@@ -189,6 +190,11 @@ where
                 page_id: &page_info.id,
             })
             .await?;
+
+        let unit_infos = unit_infos
+            .into_iter()
+            .filter(|unit_info| unit_info.hidden_at.is_none())
+            .collect();
 
         units_by_page_id.insert(page_info.id.clone(), unit_infos);
     }

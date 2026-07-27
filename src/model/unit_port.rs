@@ -5,8 +5,6 @@ use serde::Deserialize;
 /// One parsed import unit.
 pub struct UnitTranslationImport {
     //
-    /// Optional server identifier; absent for brand-new imports.
-    pub id: Option<String>,
     /// Import ordering index within the page.
     pub index: i32,
 

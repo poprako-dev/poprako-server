@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use poprako_orchestra::{Nucl, run_proxy};
 use tracing::instrument;
 
@@ -9,14 +7,12 @@ use crate::complex::chapter::ChapterComplex;
 use crate::complex::chapter_port::{
     ChapterImportComplex, ChapterPortPermComplex,
 };
-use crate::complex::unit::{UnitComplex, UnitPermComplex};
+use crate::complex::unit::UnitComplex;
 use crate::data::chapter_port::{
     ImportChapterTranslationParams, ImportChapterTranslationPayload,
 };
 use crate::model::page::PageInfo;
-use crate::model::read::proj::unit::{
-    UnitCounterDelta, UnitCounters, UnitOrder,
-};
+use crate::model::read::proj::unit::UnitCounters;
 use crate::model::unit_port::UnitTranslationImport;
 use crate::model::user::UserToken;
 use crate::model::write::unit::UnitEdit;
@@ -36,7 +32,6 @@ use crate::part::repo::page::PageRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 use crate::usecase::stage::spawn_starts;
-use crate::util::PatchField;
 use crate::value::chapter::Stage;
 use crate::value::chapter_port::TranslationFormat;
 use crate::value::role::RoleField;
@@ -44,128 +39,6 @@ use crate::value::unit::UnitEditPerm;
 
 #[cfg(test)]
 mod tests;
-
-fn visible_unit_ids(unit_orders: &[UnitOrder]) -> Vec<String> {
-    unit_orders
-        .iter()
-        .filter(|unit_order| !unit_order.is_hidden)
-        .map(|unit_order| unit_order.id.clone())
-        .collect()
-}
-
-fn invalid_unit_edit_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        message: trl("error-invalid-unit-oper"),
-    }
-}
-
-fn move_unit_order(
-    unit_orders: &mut Vec<UnitOrder>,
-    id: &str,
-    next_id: Option<&String>,
-) -> BaseResult<()> {
-    //
-    let Some(position) = unit_orders
-        .iter()
-        .position(|unit_order| unit_order.id == id)
-    else {
-        return Err(invalid_unit_edit_err());
-    };
-
-    let unit_order = unit_orders.remove(position);
-
-    let target = match next_id {
-        //
-        Some(next_id) => unit_orders
-            .iter()
-            .position(|candidate| candidate.id == *next_id)
-            .ok_or_else(invalid_unit_edit_err)?,
-
-        None => unit_orders.len(),
-    };
-
-    unit_orders.insert(target, unit_order);
-
-    accept(())
-}
-
-fn relink_unit_orders(unit_orders: &mut [UnitOrder]) {
-    for index in 0..unit_orders.len() {
-        unit_orders[index].next_id = unit_orders
-            .get(index + 1)
-            .map(|unit_order| unit_order.id.clone());
-    }
-}
-
-fn apply_unit_order_edits(
-    unit_orders: &mut Vec<UnitOrder>,
-    edits: &[UnitEdit],
-) -> BaseResult<()> {
-    //
-    for edit in edits {
-        match edit {
-            //
-            UnitEdit::Delete { id } => {
-                //
-                let Some(unit_order) = unit_orders
-                    .iter_mut()
-                    .find(|unit_order| unit_order.id == *id)
-                else {
-                    return Err(invalid_unit_edit_err());
-                };
-
-                unit_order.is_hidden = true;
-            }
-
-            UnitEdit::Save { id, next_id, .. } => {
-                //
-                let position = unit_orders
-                    .iter()
-                    .position(|unit_order| unit_order.id == *id);
-
-                match position {
-                    //
-                    Some(position) => {
-                        unit_orders[position].is_hidden = false;
-                    }
-
-                    None => unit_orders.push(UnitOrder {
-                        id: id.clone(),
-                        next_id: None,
-                        is_hidden: false,
-                    }),
-                }
-
-                match next_id {
-                    //
-                    PatchField::Skip => {}
-
-                    PatchField::Clear => {
-                        move_unit_order(unit_orders, id, None)?;
-                    }
-
-                    PatchField::Assign(next_id) => {
-                        move_unit_order(unit_orders, id, Some(next_id))?;
-                    }
-                }
-            }
-        }
-    }
-
-    relink_unit_orders(unit_orders);
-
-    let visible_count = unit_orders
-        .iter()
-        .filter(|unit_order| !unit_order.is_hidden)
-        .count();
-
-    if visible_count > 100 {
-        return Err(invalid_unit_edit_err());
-    }
-
-    accept(())
-}
 
 #[instrument(level = "info", err(Debug), skip(nucl, repo))]
 /// Imports chapter translation content through the Unit edit pipeline.
@@ -267,7 +140,7 @@ where
                     .step(context, &GetPageInfoExcluded { id: &page_scope.id })
                     .await?;
 
-                let mut positions = repo
+                let orders = repo
                     .step(
                         context,
                         &ListUnitOrders {
@@ -282,31 +155,24 @@ where
 
                 let edits = build_page_edits(
                     &imported_page.units,
-                    &positions,
                     &token.user_id,
                     edit_perm,
                     label_plus,
-                )?;
+                );
 
-                UnitPermComplex::ensure_user_can_edit_fields(
-                    edit_perm, &edits,
-                )?;
-
-                let base_ids = positions
+                let base_ids = orders
                     .iter()
-                    .map(|position| position.id.as_str())
+                    .map(|order| order.id.as_str())
                     .collect::<Vec<_>>();
 
                 let edits = UnitComplex::normalize_edits(&base_ids, edits)?;
-
-                apply_unit_order_edits(&mut positions, &edits)?;
 
                 let counters = repo
                     .step(
                         context,
                         &ApplyUnitEdits {
                             page_id: &page_info.id,
-                            orders: &positions,
+                            orders: &orders,
                             edits: &edits,
                         },
                     )
@@ -321,7 +187,7 @@ where
                 )
                 .await?;
 
-                let delta = counter_delta(page_counters(&page_info), counters);
+                let delta = page_counters(&page_info).calc_delta(counters);
 
                 repo.step(
                     context,
@@ -359,60 +225,23 @@ where
 
 fn build_page_edits(
     imported_units: &[UnitTranslationImport],
-    positions: &[UnitOrder],
     user_id: &str,
     edit_perm: UnitEditPerm,
     label_plus: bool,
-) -> BaseResult<Vec<UnitEdit>> {
-    //
-    let visible_ids = visible_unit_ids(positions);
-
-    let known_ids = positions
+) -> Vec<UnitEdit> {
+    imported_units
         .iter()
-        .map(|position| position.id.as_str())
-        .collect::<HashSet<_>>();
-
-    let mut edits = Vec::with_capacity(imported_units.len());
-
-    for imported_unit in imported_units {
-        //
-        let candidate_id = imported_unit
-            .id
-            .as_deref()
-            .filter(|id| known_ids.contains(*id))
-            .map(str::to_string)
-            .or_else(|| {
-                usize::try_from(imported_unit.index)
-                    .ok()
-                    .and_then(|index| visible_ids.get(index).cloned())
-            });
-
-        let (unit_id, next_id) = match candidate_id {
-            //
-            Some(unit_id) => (unit_id, PatchField::Skip),
-
-            None => {
-                //
-                let unit_id = UnitComplex::gen_id();
-
-                (unit_id, PatchField::Clear)
-            }
-        };
-
-        let edit = ChapterImportComplex::build_unit_edit(
-            imported_unit,
-            unit_id,
-            next_id,
-            user_id,
-            edit_perm.can_translate,
-            edit_perm.can_proofread,
-            label_plus,
-        );
-
-        edits.push(edit);
-    }
-
-    accept(edits)
+        .map(|imported_unit| {
+            ChapterImportComplex::build_unit_create(
+                imported_unit,
+                UnitComplex::gen_id(),
+                user_id,
+                edit_perm.can_translate,
+                edit_perm.can_proofread,
+                label_plus,
+            )
+        })
+        .collect()
 }
 
 fn page_counters(page_info: &PageInfo) -> UnitCounters {
@@ -420,20 +249,6 @@ fn page_counters(page_info: &PageInfo) -> UnitCounters {
         total_unit_count: page_info.total_unit_count,
         translated_unit_count: page_info.translated_unit_count,
         proofread_unit_count: page_info.proofread_unit_count,
-    }
-}
-
-fn counter_delta(
-    old_counters: UnitCounters,
-    new_counters: UnitCounters,
-) -> UnitCounterDelta {
-    UnitCounterDelta {
-        total_unit_count: new_counters.total_unit_count
-            - old_counters.total_unit_count,
-        translated_unit_count: new_counters.translated_unit_count
-            - old_counters.translated_unit_count,
-        proofread_unit_count: new_counters.proofread_unit_count
-            - old_counters.proofread_unit_count,
     }
 }
 

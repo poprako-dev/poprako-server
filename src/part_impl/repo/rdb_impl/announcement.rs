@@ -41,8 +41,10 @@ async fn list_infos(
         .await
         .map_err(diesel)?;
 
-    let mut infos =
-        rows.into_iter().map(Into::into).collect::<Vec<AnnouncementInfo>>();
+    let mut infos = rows
+        .into_iter()
+        .map(Into::into)
+        .collect::<Vec<AnnouncementInfo>>();
 
     incl::announcement::populate_announcement_incls(
         conn,
