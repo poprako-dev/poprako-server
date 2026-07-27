@@ -41,12 +41,13 @@ fields are rejected.
 ]
 ```
 
-- `create` requires `local_id`, `is_bubble`, and `coord`. Missing or null
-  `next_id` inserts at the tail. Translation and revision are optional.
+- `create` requires `local_id`, `is_bubble`, and `coord`. Missing `next_id`
+  inserts at the tail. Translation and revision are optional.
 - `patch` requires a permanent `id`. Missing or null `is_bubble` and `coord`
   leave the stored value unchanged.
 - `next_id`, `translation`, and `revision` are three-state patch fields:
-  missing means Skip, null means Clear, and a value means Assign.
+  missing or null means Skip; use `{ "type": "clear" }` to Clear, or
+  `{ "type": "assign", "value": ... }` to Assign.
 - `delete` contains only the permanent target `id` and creates a tombstone.
 
 Each batch contains 1–100 edits. `local_id` exists only within the current

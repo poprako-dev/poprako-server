@@ -5,7 +5,7 @@
 
 use std::sync::OnceLock;
 
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Deserializer};
 
 #[cfg(test)]
 mod tests;
@@ -85,7 +85,7 @@ fn load_snowflake_node_id() -> u16 {
 ///
 /// `Skip` preserves the stored value, `Clear` resets it, and `Assign` replaces
 /// it with the carried value.
-#[derive(Debug, Clone, Default, PartialEq, Serialize)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub enum Patch<T> {
     /// Resets the stored field.
     Clear,
@@ -124,16 +124,28 @@ impl<'de, T> Deserialize<'de> for Patch<T>
 where
     T: Deserialize<'de>,
 {
-    // Deserializes `null` → Clear, `"value"` → Assign(value).
+    // Deserializes null to Skip and requires an explicit tagged patch value.
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
-        match Option::<T>::deserialize(deserializer)? {
-            //
-            Some(value) => Ok(Self::Assign(value)),
+        #[derive(Deserialize)]
+        #[serde(tag = "type", content = "value", rename_all = "snake_case")]
+        enum PatchVal<T> {
+            Clear,
 
-            None => Ok(Self::Clear),
+            Assign(T),
+
+            Skip,
+        }
+
+        match Option::<PatchVal<T>>::deserialize(deserializer)? {
+            //
+            Some(PatchVal::Clear) => Ok(Self::Clear),
+
+            Some(PatchVal::Assign(value)) => Ok(Self::Assign(value)),
+
+            Some(PatchVal::Skip) | None => Ok(Self::Skip),
         }
     }
 }
