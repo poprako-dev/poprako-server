@@ -6,17 +6,16 @@ use crate::model::team::{
 use crate::value::image::{ImageExt, ImageHash};
 
 /// Creates a team.
+#[derive(Oper)]
+#[oper(output = TeamInfo)]
 pub struct CreateTeam<'a> {
     /// The team entry to insert.
     pub entry: &'a TeamEntry,
 }
 
-impl Oper for CreateTeam<'_> {
-    // Operation output type.
-    type Output = TeamInfo;
-}
-
 /// Looks up a team by identifier.
+#[derive(Oper)]
+#[oper(output = TeamInfo)]
 pub enum GetTeamInfo<'a> {
     /// Fetch by team id.
     Id {
@@ -25,23 +24,17 @@ pub enum GetTeamInfo<'a> {
     },
 }
 
-impl Oper for GetTeamInfo<'_> {
-    // Operation output type.
-    type Output = TeamInfo;
-}
-
 /// Lists team infos matching a filter spec.
+#[derive(Oper)]
+#[oper(output = Vec<TeamInfo>)]
 pub struct ListTeamInfos<'a> {
     /// The specification for filtering listed teams.
     pub spec: &'a TeamInfoListSpec,
 }
 
-impl Oper for ListTeamInfos<'_> {
-    // Operation output type.
-    type Output = Vec<TeamInfo>;
-}
-
 /// Updates a team.
+#[derive(Oper)]
+#[oper(output = ())]
 pub enum UpdateTeam<'a> {
     /// Updates team metadata fields.
     Info {
@@ -68,12 +61,9 @@ pub enum UpdateTeam<'a> {
     },
 }
 
-impl Oper for UpdateTeam<'_> {
-    // Operation output type.
-    type Output = ();
-}
-
 /// Reserves a team avatar slot for an upload.
+#[derive(Oper)]
+#[oper(output = TeamAvatarReservation)]
 pub struct ReserveTeamAvatar<'a> {
     //
     /// The team id.
@@ -86,12 +76,9 @@ pub struct ReserveTeamAvatar<'a> {
     pub image_ext: ImageExt,
 }
 
-impl Oper for ReserveTeamAvatar<'_> {
-    // Operation output type.
-    type Output = TeamAvatarReservation;
-}
-
 /// Looks up a team by identifier, matching deleted rows as well.
+#[derive(Oper)]
+#[oper(output = TeamInfo)]
 pub enum GetTeamInfoExcluded<'a> {
     /// Fetch by team id.
     Id {
@@ -100,40 +87,26 @@ pub enum GetTeamInfoExcluded<'a> {
     },
 }
 
-impl Oper for GetTeamInfoExcluded<'_> {
-    // Operation output type.
-    type Output = TeamInfo;
-}
-
 /// Locks a team row.
+#[derive(Oper)]
+#[oper(output = ())]
 pub struct LockTeam<'a> {
     /// The team id.
     pub id: &'a str,
 }
 
-impl Oper for LockTeam<'_> {
-    // Operation output type.
-    type Output = ();
-}
-
 /// Deletes a team.
+#[derive(Oper)]
+#[oper(output = ())]
 pub struct DeleteTeam<'a> {
     /// The team id.
     pub id: &'a str,
 }
 
-impl Oper for DeleteTeam<'_> {
-    // Operation output type.
-    type Output = ();
-}
-
 /// Allocates a sequential index for a new workset under this team.
+#[derive(Oper)]
+#[oper(output = i32)]
 pub struct AllocTeamWorksetIndex<'a> {
     /// The team id.
     pub id: &'a str,
-}
-
-impl Oper for AllocTeamWorksetIndex<'_> {
-    // Operation output type.
-    type Output = i32;
 }

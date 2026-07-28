@@ -1,4 +1,4 @@
-use poprako_orchestra::{Run, Step};
+use poprako_orchestra::drive;
 
 use crate::part::repo::oper::term::{
     CreateTerm, DeleteTerm, DeleteTerms, GetTermInfo, GetTermInfoExcluded,
@@ -8,28 +8,22 @@ use crate::result::BaseError;
 
 /// Terminology-entry repository operations.
 ///
-/// Independent reads use [`Run`]. Mutations and pessimistic reads use [`Step`]
+/// Independent reads use [`poprako_orchestra::Run`]. Mutations and pessimistic reads use [`poprako_orchestra::Step`]
 /// with the context coordinated by the caller.
-pub trait TermRepo<C>:
-    for<'a> Run<GetTermInfo<'a>, Error = BaseError>
-    + for<'a> Run<ListTermInfos<'a>, Error = BaseError>
-    + for<'a> Step<CreateTerm<'a>, C, Error = BaseError>
-    + for<'a> Step<GetTermInfoExcluded<'a>, C, Error = BaseError>
-    + for<'a> Step<LockTerm<'a>, C, Error = BaseError>
-    + for<'a> Step<UpdateTerm<'a>, C, Error = BaseError>
-    + for<'a> Step<DeleteTerm<'a>, C, Error = BaseError>
-    + for<'a> Step<DeleteTerms<'a>, C, Error = BaseError>
-{
-}
-
-impl<T, C> TermRepo<C> for T where
-    T: for<'a> Run<GetTermInfo<'a>, Error = BaseError>
-        + for<'a> Run<ListTermInfos<'a>, Error = BaseError>
-        + for<'a> Step<CreateTerm<'a>, C, Error = BaseError>
-        + for<'a> Step<GetTermInfoExcluded<'a>, C, Error = BaseError>
-        + for<'a> Step<LockTerm<'a>, C, Error = BaseError>
-        + for<'a> Step<UpdateTerm<'a>, C, Error = BaseError>
-        + for<'a> Step<DeleteTerm<'a>, C, Error = BaseError>
-        + for<'a> Step<DeleteTerms<'a>, C, Error = BaseError>
-{
-}
+#[drive(
+    context = C,
+    error = BaseError,
+    run(
+        for<'a> GetTermInfo<'a>,
+        for<'a> ListTermInfos<'a>,
+    ),
+    step(
+        for<'a> CreateTerm<'a>,
+        for<'a> GetTermInfoExcluded<'a>,
+        for<'a> LockTerm<'a>,
+        for<'a> UpdateTerm<'a>,
+        for<'a> DeleteTerm<'a>,
+        for<'a> DeleteTerms<'a>,
+    ),
+)]
+pub trait TermRepo<C> {}

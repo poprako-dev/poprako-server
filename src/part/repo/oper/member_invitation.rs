@@ -7,28 +7,24 @@ use crate::model::member_invitation::{
 use crate::value::member_invitation::MemberInvitationInclOpt;
 
 /// Creates a new member invitation.
+#[derive(Oper)]
+#[oper(output = MemberInvitationInfo)]
 pub struct CreateMemberInvitation<'a> {
     /// The invitation entry to insert.
     pub entry: &'a MemberInvitationEntry,
 }
 
-impl Oper for CreateMemberInvitation<'_> {
-    // The created invitation info.
-    type Output = MemberInvitationInfo;
-}
-
 /// Lists member invitations matching the given spec.
+#[derive(Oper)]
+#[oper(output = Vec<MemberInvitationInfo>)]
 pub struct ListMemberInvitationInfos<'a> {
     /// The filter and pagination specification.
     pub spec: &'a MemberInvitationListSpec,
 }
 
-impl Oper for ListMemberInvitationInfos<'_> {
-    // List of matching invitation infos.
-    type Output = Vec<MemberInvitationInfo>;
-}
-
 /// Retrieves a single invitation info by ID or code.
+#[derive(Oper)]
+#[oper(output = MemberInvitationInfo)]
 pub enum GetMemberInvitationInfo<'a, 'b> {
     /// Retrieves by invitation ID.
     Id {
@@ -46,12 +42,9 @@ pub enum GetMemberInvitationInfo<'a, 'b> {
     },
 }
 
-impl Oper for GetMemberInvitationInfo<'_, '_> {
-    // The retrieved invitation info.
-    type Output = MemberInvitationInfo;
-}
-
 /// Updates a member invitation's fields or marks it as used.
+#[derive(Oper)]
+#[oper(output = ())]
 pub enum UpdateMemberInvitation<'a> {
     /// Updates the invitation fields.
     Info {
@@ -66,12 +59,9 @@ pub enum UpdateMemberInvitation<'a> {
     },
 }
 
-impl Oper for UpdateMemberInvitation<'_> {
-    // Unit on success.
-    type Output = ();
-}
-
 /// Retrieves invitation info by code with excluded fields omitted.
+#[derive(Oper)]
+#[oper(output = MemberInvitationInfo)]
 pub enum GetMemberInvitationInfoExcluded<'a> {
     /// Retrieves by invitation code.
     Code {
@@ -80,29 +70,18 @@ pub enum GetMemberInvitationInfoExcluded<'a> {
     },
 }
 
-impl Oper for GetMemberInvitationInfoExcluded<'_> {
-    // The retrieved invitation info with excluded fields omitted.
-    type Output = MemberInvitationInfo;
-}
-
 /// Deletes a member invitation by ID.
+#[derive(Oper)]
+#[oper(output = ())]
 pub struct DeleteMemberInvitation<'a> {
     /// The invitation ID to delete.
     pub id: &'a str,
 }
 
-impl Oper for DeleteMemberInvitation<'_> {
-    // Unit on success.
-    type Output = ();
-}
-
 /// Purges one expired member invitation when it remains pending.
+#[derive(Oper)]
+#[oper(output = ())]
 pub struct PurgeExpiredMemberInvitation<'a> {
     /// The invitation ID to purge.
     pub id: &'a str,
-}
-
-impl Oper for PurgeExpiredMemberInvitation<'_> {
-    // Unit on success.
-    type Output = ();
 }

@@ -57,17 +57,16 @@ impl<R> RdbPromRepo<R> {
 /// visible work from the same topic to advance. A processing record blocks only
 /// its own topic so separate application instances cannot consume that topic
 /// concurrently.
+#[derive(Oper)]
+#[oper(output = Vec<LocalMessageRow>)]
 pub struct PollPending;
-
-impl Oper for PollPending {
-    // Internal type alias for `Output`.
-    type Output = Vec<LocalMessageRow>;
-}
 
 /// Try to claim a record (status Pending → Processing).
 ///
 /// Returns `true` if the claim succeeded (i.e. the row was still
 /// Pending), `false` if another worker claimed it first.
+#[derive(Oper)]
+#[oper(output = bool)]
 pub struct ClaimPending<'a> {
     //
     // Internal state field `id`.
@@ -84,12 +83,9 @@ impl<'a> ClaimPending<'a> {
     }
 }
 
-impl Oper for ClaimPending<'_> {
-    // Internal type alias for `Output`.
-    type Output = bool;
-}
-
 /// Mark a record as successfully completed.
+#[derive(Oper)]
+#[oper(output = ())]
 pub struct CompleteMessage<'a> {
     //
     // Internal state field `id`.
@@ -106,12 +102,9 @@ impl<'a> CompleteMessage<'a> {
     }
 }
 
-impl Oper for CompleteMessage<'_> {
-    // Internal type alias for `Output`.
-    type Output = ();
-}
-
 /// Mark a record as dead with an error message.
+#[derive(Oper)]
+#[oper(output = ())]
 pub struct FailMessage<'a> {
     //
     // Internal state field `id`.
@@ -134,12 +127,9 @@ impl<'a> FailMessage<'a> {
     }
 }
 
-impl Oper for FailMessage<'_> {
-    // Internal type alias for `Output`.
-    type Output = ();
-}
-
 /// Reset one failed processing attempt back to pending for a later retry.
+#[derive(Oper)]
+#[oper(output = ())]
 pub struct RetryMessage<'a> {
     //
     // Internal state field `id`.
@@ -170,12 +160,9 @@ impl<'a> RetryMessage<'a> {
     }
 }
 
-impl Oper for RetryMessage<'_> {
-    // Internal type alias for `Output`.
-    type Output = ();
-}
-
 /// Reset processing records stuck before a cutoff timestamp.
+#[derive(Oper)]
+#[oper(output = ())]
 pub struct ResetStuck<'a> {
     /// Cutoff timestamp; any record stuck in Processing before this is reset.
     before: &'a OffsetDateTime,
@@ -188,12 +175,9 @@ impl<'a> ResetStuck<'a> {
     }
 }
 
-impl Oper for ResetStuck<'_> {
-    // Internal type alias for `Output`.
-    type Output = ();
-}
-
 /// Deletes completed and dead records after their independent retention cutoffs.
+#[derive(Oper)]
+#[oper(output = usize)]
 pub struct PurgeCompleted<'a> {
     //
     // Internal state field `completed_before`.
@@ -214,11 +198,6 @@ impl<'a> PurgeCompleted<'a> {
             dead_before,
         }
     }
-}
-
-impl Oper for PurgeCompleted<'_> {
-    // Internal type alias for `Output`.
-    type Output = usize;
 }
 
 // ── Step impls ──────────────────────────────────────────────────────────────

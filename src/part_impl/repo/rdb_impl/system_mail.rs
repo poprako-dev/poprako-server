@@ -12,21 +12,18 @@ use crate::model::system_mail::{
 use crate::part::repo::oper::system_mail::{
     ListSystemMailInfos, MarkSystemMailRead, SendSystemMail, SendSystemMails,
 };
-use crate::part::repo::system_mail::SystemMailRepo;
 use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::system_mail::{
     SystemMailRow, SystemMailRowEntry,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_system_mail::dsl::*;
+use crate::part_impl::shared::RdbConn;
 use crate::part_impl::shared::result::{diesel, expected};
-use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
 /// System mail RDB integration tests.
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;
-
-impl SystemMailRepo<RdbContext> for RdbRepo {}
 
 // ── Free functions ──────────────────────────────────────────────────────────
 

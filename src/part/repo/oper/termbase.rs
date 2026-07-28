@@ -5,50 +5,40 @@ use crate::model::termbase::{
 };
 
 /// Creates a termbase.
+#[derive(Oper)]
+#[oper(output = TermbaseInfo)]
 pub struct CreateTermbase<'a> {
     /// The termbase entry to insert.
     pub entry: &'a TermbaseEntry,
 }
 
-impl Oper for CreateTermbase<'_> {
-    // Operation output type.
-    type Output = TermbaseInfo;
-}
-
 /// Looks up a termbase by identifier.
+#[derive(Oper)]
+#[oper(output = TermbaseInfo)]
 pub struct GetTermbaseInfo<'a> {
     /// The termbase id.
     pub id: &'a str,
 }
 
-impl Oper for GetTermbaseInfo<'_> {
-    // Operation output type.
-    type Output = TermbaseInfo;
-}
-
 /// Lists termbase infos matching a filter spec.
+#[derive(Oper)]
+#[oper(output = Vec<TermbaseInfo>)]
 pub struct ListTermbaseInfos<'a> {
     /// The specification for filtering listed termbases.
     pub spec: &'a TermbaseInfoListSpec,
 }
 
-impl Oper for ListTermbaseInfos<'_> {
-    // Operation output type.
-    type Output = Vec<TermbaseInfo>;
-}
-
 /// Looks up a termbase by identifier, matching deleted rows as well.
+#[derive(Oper)]
+#[oper(output = TermbaseInfo)]
 pub struct GetTermbaseInfoExcluded<'a> {
     /// The termbase id.
     pub id: &'a str,
 }
 
-impl Oper for GetTermbaseInfoExcluded<'_> {
-    // Operation output type.
-    type Output = TermbaseInfo;
-}
-
 /// Lists termbase infos by owner, matching deleted rows as well.
+#[derive(Oper)]
+#[oper(output = Vec<TermbaseInfo>)]
 pub enum ListTermbaseInfosExcluded<'a> {
     /// Fetch all termbases for a team.
     Team {
@@ -63,23 +53,17 @@ pub enum ListTermbaseInfosExcluded<'a> {
     },
 }
 
-impl Oper for ListTermbaseInfosExcluded<'_> {
-    // Operation output type.
-    type Output = Vec<TermbaseInfo>;
-}
-
 /// Updates a termbase.
+#[derive(Oper)]
+#[oper(output = ())]
 pub struct UpdateTermbase<'a> {
     /// The update payload for the termbase.
     pub update: &'a TermbaseInfoUpdate,
 }
 
-impl Oper for UpdateTermbase<'_> {
-    // Operation output type.
-    type Output = ();
-}
-
 /// Updates a termbase's cached term count.
+#[derive(Oper)]
+#[oper(output = ())]
 pub struct UpdateTermbaseTermCount<'a> {
     //
     /// The termbase id.
@@ -89,29 +73,18 @@ pub struct UpdateTermbaseTermCount<'a> {
     pub delta: i32,
 }
 
-impl Oper for UpdateTermbaseTermCount<'_> {
-    // Operation output type.
-    type Output = ();
-}
-
 /// Touches a termbase to update its timestamp.
+#[derive(Oper)]
+#[oper(output = ())]
 pub struct TouchTermbase<'a> {
     /// The termbase id.
     pub id: &'a str,
 }
 
-impl Oper for TouchTermbase<'_> {
-    // Operation output type.
-    type Output = ();
-}
-
 /// Deletes a termbase.
+#[derive(Oper)]
+#[oper(output = ())]
 pub struct DeleteTermbase<'a> {
     /// The termbase id.
     pub id: &'a str,
-}
-
-impl Oper for DeleteTermbase<'_> {
-    // Operation output type.
-    type Output = ();
 }

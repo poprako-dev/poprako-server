@@ -45,7 +45,7 @@ where
 #[instrument(level = "info", skip_all)]
 pub async fn notify_invitor<C, R>(repo: &R, payload: UserSignedUpPayload)
 where
-    R: TeamRepo<C> + SystemMailRepo<C>,
+    R: TeamRepo<C> + SystemMailRepo,
 {
     let team_info = GetTeamInfo::Id {
         id: &payload.team_id,
