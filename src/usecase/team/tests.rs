@@ -29,13 +29,13 @@
 // delete(delete)(negative): missing team should rollback state.
 
 use super::*;
+use crate::data::instr::team::{
+    CreateTeamInstr, ListTeamInfosInstr, MarkTeamAvatarUploadedInstr,
+    ReserveTeamAvatarInstr, UpdateTeamInfoInstr,
+};
 
 use time::OffsetDateTime;
 
-use crate::data::team::{
-    CreateTeamParams, ListTeamInfosParams, MarkTeamAvatarUploadedParams,
-    ReserveTeamAvatarParams, UpdateTeamInfoParams,
-};
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::proj::member::MemberInfo;
 use crate::model::read::proj::team::TeamInfo;
@@ -157,39 +157,39 @@ fn user(id: &str, is_sadmin: bool) -> UserInfo {
 }
 
 // Build list parameters for team pagination and optional owner filter.
-fn list_params(
+fn list_instr(
     user_id: Option<&str>,
     offset: u32,
     limit: u32,
-) -> ListTeamInfosParams {
-    ListTeamInfosParams {
+) -> ListTeamInfosInstr {
+    ListTeamInfosInstr {
         user_id: user_id.map(Into::into),
         offset,
         limit,
     }
 }
 
-// Build avatar-reservation params with fixed byte length and hash.
-fn reserve_params(file_ext: &str) -> ReserveTeamAvatarParams {
-    ReserveTeamAvatarParams {
+// Build avatar-reservation instr with fixed byte length and hash.
+fn reserve_instr(file_ext: &str) -> ReserveTeamAvatarInstr {
+    ReserveTeamAvatarInstr {
         image_hash: ImageHash::new([1; 32]),
         new_byte_len: 4096,
         ext: ImageExt::parse(file_ext).unwrap(),
     }
 }
 
-// Build mark-upload params targeting a specific cover version.
-fn mark_params(image_version: u32) -> MarkTeamAvatarUploadedParams {
-    MarkTeamAvatarUploadedParams { image_version }
+// Build mark-upload instr targeting a specific cover version.
+fn mark_instr(image_version: u32) -> MarkTeamAvatarUploadedInstr {
+    MarkTeamAvatarUploadedInstr { image_version }
 }
 
-// Build update params carrying new team name and description.
-fn update_params(
+// Build update instr carrying new team name and description.
+fn update_instr(
     id: &str,
     name: &str,
     description: &str,
-) -> UpdateTeamInfoParams {
-    UpdateTeamInfoParams {
+) -> UpdateTeamInfoInstr {
+    UpdateTeamInfoInstr {
         id: id.into(),
         name: name.into(),
         description: description.into(),
@@ -220,7 +220,7 @@ async fn create_persists_team_and_returns_info() {
     let val = create(
         (&mock, &mock, &mock),
         token("user-1"),
-        CreateTeamParams {
+        CreateTeamInstr {
             name: "Team".into(),
             description: "Desc".into(),
         },
@@ -249,7 +249,7 @@ async fn create_makes_creator_admin_member() {
     let val = create(
         (&mock, &mock, &mock),
         token("user-1"),
-        CreateTeamParams {
+        CreateTeamInstr {
             name: "Team".into(),
             description: "Desc".into(),
         },
@@ -280,7 +280,7 @@ async fn create_propagates_repo_failure() {
     let err = create(
         (&mock, &mock, &mock),
         token("user-1"),
-        CreateTeamParams {
+        CreateTeamInstr {
             name: "Team".into(),
             description: "Desc".into(),
         },
@@ -356,7 +356,7 @@ async fn list_infos_returns_paged_teams() {
     let val = list_infos(
         (&mock, &mock),
         token("user-1"),
-        list_params(Some("user-1"), 0, 1),
+        list_instr(Some("user-1"), 0, 1),
     )
     .await
     .unwrap();
@@ -376,7 +376,7 @@ async fn list_infos_returns_empty_page_when_offset_exceeds_data() {
     let val = list_infos(
         (&mock, &mock),
         token("user-1"),
-        list_params(Some("user-1"), 10, 10),
+        list_instr(Some("user-1"), 10, 10),
     )
     .await
     .unwrap();
@@ -394,7 +394,7 @@ async fn list_infos_all_teams_requires_sadmin() {
     mock.seed_user(user("user-1", false), credential("user-1"));
 
     let err =
-        list_infos((&mock, &mock), token("user-1"), list_params(None, 0, 10))
+        list_infos((&mock, &mock), token("user-1"), list_instr(None, 0, 10))
             .await
             .err()
             .unwrap();
@@ -414,7 +414,7 @@ async fn update_info_updates_team() {
     update_info(
         (&mock,),
         token("user-1"),
-        update_params("team-1", "New", "New Desc"),
+        update_instr("team-1", "New", "New Desc"),
     )
     .await
     .unwrap();
@@ -436,7 +436,7 @@ async fn update_info_propagates_missing_team() {
     let err = update_info(
         (&mock,),
         token("user-1"),
-        update_params("team-1", "New", "New Desc"),
+        update_instr("team-1", "New", "New Desc"),
     )
     .await
     .err()

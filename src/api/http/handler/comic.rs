@@ -7,6 +7,19 @@ use axum_extra::extract::Query;
 use serde::Deserialize;
 use tracing::instrument;
 
+use crate::data::instr::comic::{
+    CreateComicInstr, ListComicInfosInstr, MarkComicCoverUploadedInstr,
+    ReserveComicCoverInstr, UpdateComicInfoInstr,
+};
+use crate::data::instr::comic_archive::ExportComicArchivesInstr;
+use crate::data::val::comic::{
+    ComicInfoVal, CreateComicVal, ReserveComicCoverVal,
+};
+use crate::data::val::comic_archive::{
+    ArchiveComicVal, ExportComicArchivesVal,
+};
+use crate::data::val::comic_list::ListComicInfosVal;
+
 #[cfg(feature = "swagger")]
 use utoipa::IntoParams;
 
@@ -16,15 +29,6 @@ use crate::api::http::result::{
     Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
-use crate::data::comic::{
-    ComicInfoVal, CreateComicParams, CreateComicPayload, ListComicInfosParams,
-    MarkComicCoverUploadedParams, ReserveComicCoverParams,
-    ReserveComicCoverPayload, UpdateComicInfoParams,
-};
-use crate::data::comic_archive::{
-    ArchiveComicPayload, ExportComicArchivesParams, ExportComicArchivesPayload,
-};
-use crate::data::comic_list::ListComicInfosPayload;
 use crate::model::shared::user::UserToken;
 use crate::usecase;
 use crate::value::comic::{ComicInclOpt, ComicWithOpt};
@@ -36,10 +40,10 @@ use crate::value::comic::{ComicInclOpt, ComicWithOpt};
     tag = "comics",
     params(
         ("team_id" = String, Path, description = "Team ID"),
-        ExportComicArchivesParams,
+        ExportComicArchivesInstr,
     ),
     responses(
-        (status = 200, description = "Archive JSON strings grouped by UTC month", body = HttpBody<ExportComicArchivesPayload>),
+        (status = 200, description = "Archive JSON strings grouped by UTC month", body = HttpBody<ExportComicArchivesVal>),
         (status = 403, description = "No permission to export this team's archives"),
         (status = 422, description = "Invalid or expired month selection"),
     ),
@@ -49,9 +53,9 @@ pub async fn export_archives(
     State(harn): State<AppHarn>,
     Path(team_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Query(params): Query<ExportComicArchivesParams>,
-) -> HttpResult<ExportComicArchivesPayload> {
-    usecase::comic_archive::export((harn.repo(),), user_token, team_id, params)
+    Query(instr): Query<ExportComicArchivesInstr>,
+) -> HttpResult<ExportComicArchivesVal> {
+    usecase::comic_archive::export((harn.repo(),), user_token, team_id, instr)
         .await?
         .accept(StatusCode::OK)
 }
@@ -97,9 +101,9 @@ pub struct ComicListQuery {
     post,
     path = "/api/v1/comics",
     tag = "comics",
-    request_body = CreateComicParams,
+    request_body = CreateComicInstr,
     responses(
-        (status = 201, description = "Comic created", body = HttpBody<CreateComicPayload>),
+        (status = 201, description = "Comic created", body = HttpBody<CreateComicVal>),
         (status = 403, description = "No permission to create comics in this workset"),
         (status = 404, description = "Workset not found"),
     ),
@@ -108,9 +112,9 @@ pub struct ComicListQuery {
 pub async fn create(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    Json(params): Json<CreateComicParams>,
-) -> HttpResult<CreateComicPayload> {
-    usecase::comic::create((harn.drive(), harn.repo()), user_token, params)
+    Json(instr): Json<CreateComicInstr>,
+) -> HttpResult<CreateComicVal> {
+    usecase::comic::create((harn.drive(), harn.repo()), user_token, instr)
         .await?
         .accept(StatusCode::CREATED)
 }
@@ -123,7 +127,7 @@ pub async fn create(
     description = "Lists active comics in a workset with optional title and workflow-stage filters. `incl` embeds related rows and `with` populates parallel derived rows.",
     params(("workset_id" = String, Path, description = "Workset ID"), ComicListQuery),
     responses(
-        (status = 200, description = "Comics listed", body = HttpBody<ListComicInfosPayload>),
+        (status = 200, description = "Comics listed", body = HttpBody<ListComicInfosVal>),
         (status = 403, description = "No permission to list comics in this workset"),
         (status = 422, description = "Invalid query option combination or workflow-stage filter"),
     ),
@@ -134,9 +138,9 @@ pub async fn list_infos(
     Path(workset_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
     Query(query): Query<ComicListQuery>,
-) -> HttpResult<ListComicInfosPayload> {
+) -> HttpResult<ListComicInfosVal> {
     //
-    let params = ListComicInfosParams {
+    let instr = ListComicInfosInstr {
         workset_id,
         fuzzy_title: query.fuzzy_title,
         stages: query.stages,
@@ -149,7 +153,7 @@ pub async fn list_infos(
     usecase::comic::list_infos(
         (harn.repo(), harn.image_pool()),
         user_token,
-        params,
+        instr,
     )
     .await?
     .accept(StatusCode::OK)
@@ -188,7 +192,7 @@ pub async fn get_info(
     path = "/api/v1/comics/{comic_id}",
     tag = "comics",
     params(("comic_id" = String, Path, description = "Comic ID")),
-    request_body = UpdateComicInfoParams,
+    request_body = UpdateComicInfoInstr,
     responses(
         (status = 204, description = "Comic updated"),
         (status = 422, description = "Path id does not match body id"),
@@ -201,12 +205,12 @@ pub async fn update_info(
     State(harn): State<AppHarn>,
     Path(comic_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(params): Json<UpdateComicInfoParams>,
+    Json(instr): Json<UpdateComicInfoInstr>,
 ) -> HttpNoContent {
     //
-    ensure_path_matches_body_id(&comic_id, &params.id)?;
+    ensure_path_matches_body_id(&comic_id, &instr.id)?;
 
-    usecase::comic::update_info((harn.repo(),), user_token, params).await?;
+    usecase::comic::update_info((harn.repo(),), user_token, instr).await?;
 
     no_content()
 }
@@ -217,9 +221,9 @@ pub async fn update_info(
     path = "/api/v1/comics/{comic_id}/cover/reserve",
     tag = "comics",
     params(("comic_id" = String, Path, description = "Comic ID")),
-    request_body = ReserveComicCoverParams,
+    request_body = ReserveComicCoverInstr,
     responses(
-        (status = 200, description = "Cover upload URL reserved", body = HttpBody<ReserveComicCoverPayload>),
+        (status = 200, description = "Cover upload URL reserved", body = HttpBody<ReserveComicCoverVal>),
         (status = 403, description = "No permission to modify this comic's cover"),
         (status = 404, description = "Comic not found"),
     ),
@@ -229,13 +233,13 @@ pub async fn reserve_cover(
     State(harn): State<AppHarn>,
     Path(comic_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(params): Json<ReserveComicCoverParams>,
-) -> HttpResult<ReserveComicCoverPayload> {
+    Json(instr): Json<ReserveComicCoverInstr>,
+) -> HttpResult<ReserveComicCoverVal> {
     usecase::comic::reserve_cover(
         (harn.drive(), harn.repo(), harn.prom(), harn.image_pool()),
         user_token,
         comic_id,
-        params,
+        instr,
     )
     .await?
     .accept(StatusCode::OK)
@@ -247,7 +251,7 @@ pub async fn reserve_cover(
     path = "/api/v1/comics/{comic_id}/cover/mark-uploaded",
     tag = "comics",
     params(("comic_id" = String, Path, description = "Comic ID")),
-    request_body = MarkComicCoverUploadedParams,
+    request_body = MarkComicCoverUploadedInstr,
     responses(
         (status = 204, description = "Cover upload confirmed"),
         (status = 403, description = "No permission to modify this comic's cover"),
@@ -259,14 +263,14 @@ pub async fn mark_cover_uploaded(
     State(harn): State<AppHarn>,
     Path(comic_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(params): Json<MarkComicCoverUploadedParams>,
+    Json(instr): Json<MarkComicCoverUploadedInstr>,
 ) -> HttpNoContent {
     //
     usecase::comic::mark_cover_uploaded(
         (harn.drive(), harn.repo(), harn.image_pool()),
         user_token,
         comic_id,
-        params,
+        instr,
     )
     .await?;
 
@@ -280,7 +284,7 @@ pub async fn mark_cover_uploaded(
     tag = "comics",
     params(("comic_id" = String, Path, description = "Comic ID")),
     responses(
-        (status = 201, description = "Comic archived", body = HttpBody<ArchiveComicPayload>),
+        (status = 201, description = "Comic archived", body = HttpBody<ArchiveComicVal>),
         (status = 403, description = "No permission to archive this comic"),
         (status = 404, description = "Comic not found"),
     ),
@@ -290,7 +294,7 @@ pub async fn archive(
     State(harn): State<AppHarn>,
     Path(comic_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-) -> HttpResult<ArchiveComicPayload> {
+) -> HttpResult<ArchiveComicVal> {
     usecase::comic_archive::archive(
         (harn.drive(), harn.repo(), harn.prom()),
         user_token,

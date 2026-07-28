@@ -6,6 +6,12 @@ use axum::http::StatusCode;
 use serde::Deserialize;
 use tracing::instrument;
 
+use crate::data::instr::termbase::{
+    CreateTermbaseInstr, ListComicTermbaseInfosInstr,
+    ListTeamTermbaseInfosInstr, UpdateTermbaseInfoInstr,
+};
+use crate::data::val::termbase::{CreateTermbaseVal, TermbaseInfoVal};
+
 #[cfg(feature = "swagger")]
 use utoipa::IntoParams;
 
@@ -15,10 +21,6 @@ use crate::api::http::result::{
     Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
-use crate::data::termbase::{
-    CreateTermbaseParams, CreateTermbasePayload, ListComicTermbaseInfosParams,
-    ListTeamTermbaseInfosParams, TermbaseInfoVal, UpdateTermbaseInfoParams,
-};
 use crate::model::shared::user::UserToken;
 use crate::usecase;
 
@@ -42,9 +44,9 @@ pub struct TermbaseListQuery {
     post,
     path = "/api/v1/termbases",
     tag = "termbases",
-    request_body = CreateTermbaseParams,
+    request_body = CreateTermbaseInstr,
     responses(
-        (status = 201, description = "Termbase created", body = HttpBody<CreateTermbasePayload>),
+        (status = 201, description = "Termbase created", body = HttpBody<CreateTermbaseVal>),
         (status = 403, description = "Team proofreader role required"),
         (status = 422, description = "Invalid scope, parent, or duplicate name"),
     ),
@@ -53,9 +55,9 @@ pub struct TermbaseListQuery {
 pub async fn create(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    Json(params): Json<CreateTermbaseParams>,
-) -> HttpResult<CreateTermbasePayload> {
-    usecase::termbase::create((harn.drive(), harn.repo()), user_token, params)
+    Json(instr): Json<CreateTermbaseInstr>,
+) -> HttpResult<CreateTermbaseVal> {
+    usecase::termbase::create((harn.drive(), harn.repo()), user_token, instr)
         .await?
         .accept(StatusCode::CREATED)
 }
@@ -79,14 +81,14 @@ pub async fn list_team_infos(
     Query(query): Query<TermbaseListQuery>,
 ) -> HttpResult<Vec<TermbaseInfoVal>> {
     //
-    let params = ListTeamTermbaseInfosParams {
+    let instr = ListTeamTermbaseInfosInstr {
         team_id,
         fuzzy_name: query.fuzzy_name,
         offset: query.offset,
         limit: query.limit,
     };
 
-    usecase::termbase::list_team_infos((harn.repo(),), user_token, params)
+    usecase::termbase::list_team_infos((harn.repo(),), user_token, instr)
         .await?
         .accept(StatusCode::OK)
 }
@@ -111,14 +113,14 @@ pub async fn list_comic_infos(
     Query(query): Query<TermbaseListQuery>,
 ) -> HttpResult<Vec<TermbaseInfoVal>> {
     //
-    let params = ListComicTermbaseInfosParams {
+    let instr = ListComicTermbaseInfosInstr {
         comic_id,
         fuzzy_name: query.fuzzy_name,
         offset: query.offset,
         limit: query.limit,
     };
 
-    usecase::termbase::list_comic_infos((harn.repo(),), user_token, params)
+    usecase::termbase::list_comic_infos((harn.repo(),), user_token, instr)
         .await?
         .accept(StatusCode::OK)
 }
@@ -152,7 +154,7 @@ pub async fn get_info(
     path = "/api/v1/termbases/{termbase_id}",
     tag = "termbases",
     params(("termbase_id" = String, Path, description = "Termbase ID")),
-    request_body = UpdateTermbaseInfoParams,
+    request_body = UpdateTermbaseInfoInstr,
     responses(
         (status = 204, description = "Termbase updated"),
         (status = 403, description = "Team proofreader role required"),
@@ -164,15 +166,15 @@ pub async fn update_info(
     State(harn): State<AppHarn>,
     Path(termbase_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(params): Json<UpdateTermbaseInfoParams>,
+    Json(instr): Json<UpdateTermbaseInfoInstr>,
 ) -> HttpNoContent {
     //
-    ensure_path_matches_body_id(&termbase_id, &params.id)?;
+    ensure_path_matches_body_id(&termbase_id, &instr.id)?;
 
     usecase::termbase::update_info(
         (harn.drive(), harn.repo()),
         user_token,
-        params,
+        instr,
     )
     .await?;
 

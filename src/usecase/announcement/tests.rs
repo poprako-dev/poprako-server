@@ -6,12 +6,12 @@
 // create(create)(negative): non-member should be rejected without mutation.
 
 use super::*;
+use crate::data::instr::announcement::{
+    CreateAnnouncementInstr, ListAnnouncementInfosInstr,
+};
 
 use time::OffsetDateTime;
 
-use crate::data::announcement::{
-    CreateAnnouncementParams, ListAnnouncementInfosParams,
-};
 use crate::model::read::proj::announcement::AnnouncementInfo;
 use crate::model::read::proj::member::MemberInfo;
 use crate::model::read::proj::user::{UserCredential, UserInfo};
@@ -94,11 +94,11 @@ fn announcement(
     }
 }
 
-fn list_params(
+fn list_instr(
     team_id: &str,
     incl_opt: Vec<AnnouncementInclOpt>,
-) -> ListAnnouncementInfosParams {
-    ListAnnouncementInfosParams {
+) -> ListAnnouncementInfosInstr {
+    ListAnnouncementInfosInstr {
         team_id: team_id.into(),
         incl_opt,
         offset: 0,
@@ -106,8 +106,8 @@ fn list_params(
     }
 }
 
-fn create_params(team_id: &str) -> CreateAnnouncementParams {
-    CreateAnnouncementParams {
+fn create_instr(team_id: &str) -> CreateAnnouncementInstr {
+    CreateAnnouncementInstr {
         team_id: team_id.into(),
         title: "title".into(),
         content: "created".into(),
@@ -149,7 +149,7 @@ async fn list_infos_team_member_lists_team_announcements() {
     let announcement_info_vals = list_infos(
         (&mock, &mock),
         token("viewer-user"),
-        list_params("team-1", Vec::new()),
+        list_instr("team-1", Vec::new()),
     )
     .await
     .unwrap();
@@ -185,7 +185,7 @@ async fn list_infos_user_include_follows_request() {
     let without_user = list_infos(
         (&mock, &mock),
         token("viewer-user"),
-        list_params("team-1", Vec::new()),
+        list_instr("team-1", Vec::new()),
     )
     .await
     .unwrap();
@@ -195,7 +195,7 @@ async fn list_infos_user_include_follows_request() {
     let with_user = list_infos(
         (&mock, &mock),
         token("viewer-user"),
-        list_params("team-1", vec![AnnouncementInclOpt::User]),
+        list_instr("team-1", vec![AnnouncementInclOpt::User]),
     )
     .await
     .unwrap();
@@ -218,7 +218,7 @@ async fn list_infos_non_member_is_rejected() {
     let err = list_infos(
         (&mock, &mock),
         token("outsider-user"),
-        list_params("team-1", Vec::new()),
+        list_instr("team-1", Vec::new()),
     )
     .await
     .err()
@@ -240,7 +240,7 @@ async fn create_team_admin_creates_announcement() {
     );
 
     let created_announcement =
-        create((&mock, &mock), token("admin-user"), create_params("team-1"))
+        create((&mock, &mock), token("admin-user"), create_instr("team-1"))
             .await
             .unwrap();
 
@@ -267,14 +267,11 @@ async fn create_non_admin_member_is_rejected_without_mutation() {
         RoleMask::from(RoleField::TRANSLATOR),
     );
 
-    let err = create(
-        (&mock, &mock),
-        token("member-user"),
-        create_params("team-1"),
-    )
-    .await
-    .err()
-    .unwrap();
+    let err =
+        create((&mock, &mock), token("member-user"), create_instr("team-1"))
+            .await
+            .err()
+            .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Perm);
 
@@ -289,7 +286,7 @@ async fn create_non_member_is_rejected_without_mutation() {
     let err = create(
         (&mock, &mock),
         token("outsider-user"),
-        create_params("team-1"),
+        create_instr("team-1"),
     )
     .await
     .err()

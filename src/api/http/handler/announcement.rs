@@ -7,16 +7,19 @@ use axum_extra::extract::Query;
 use serde::Deserialize;
 use tracing::instrument;
 
+use crate::data::instr::announcement::{
+    CreateAnnouncementInstr, ListAnnouncementInfosInstr,
+};
+use crate::data::val::announcement::{
+    AnnouncementInfoVal, CreateAnnouncementVal,
+};
+
 #[cfg(feature = "swagger")]
 use utoipa::IntoParams;
 
 #[allow(unused_imports)]
 use crate::api::http::result::{Accept as _, HttpBody, HttpResult};
 use crate::api::http::state::AppHarn;
-use crate::data::announcement::{
-    AnnouncementInfoVal, CreateAnnouncementParams, CreateAnnouncementPayload,
-    ListAnnouncementInfosParams,
-};
 use crate::model::shared::user::UserToken;
 use crate::usecase;
 use crate::value::announcement::AnnouncementInclOpt;
@@ -47,9 +50,9 @@ pub struct AnnouncementListQuery {
     post,
     path = "/api/v1/announcements",
     tag = "announcements",
-    request_body = CreateAnnouncementParams,
+    request_body = CreateAnnouncementInstr,
     responses(
-        (status = 201, description = "Announcement created", body = HttpBody<CreateAnnouncementPayload>),
+        (status = 201, description = "Announcement created", body = HttpBody<CreateAnnouncementVal>),
         (status = 403, description = "No permission to create announcements in this team"),
         (status = 404, description = "Team not found"),
     ),
@@ -58,12 +61,12 @@ pub struct AnnouncementListQuery {
 pub async fn create(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    Json(params): Json<CreateAnnouncementParams>,
-) -> HttpResult<CreateAnnouncementPayload> {
+    Json(instr): Json<CreateAnnouncementInstr>,
+) -> HttpResult<CreateAnnouncementVal> {
     usecase::announcement::create(
         (harn.drive(), harn.repo()),
         user_token,
-        params,
+        instr,
     )
     .await?
     .accept(StatusCode::CREATED)
@@ -89,7 +92,7 @@ pub async fn list_infos(
     Query(query): Query<AnnouncementListQuery>,
 ) -> HttpResult<Vec<AnnouncementInfoVal>> {
     //
-    let params = ListAnnouncementInfosParams {
+    let instr = ListAnnouncementInfosInstr {
         team_id,
         incl_opt: query.incl_opt,
         offset: query.offset,
@@ -99,7 +102,7 @@ pub async fn list_infos(
     usecase::announcement::list_infos(
         (harn.repo(), harn.image_pool()),
         user_token,
-        params,
+        instr,
     )
     .await?
     .accept(StatusCode::OK)

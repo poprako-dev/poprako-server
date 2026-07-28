@@ -13,9 +13,8 @@ use crate::api::http::result::{
     Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
-use crate::data::auth::{
-    LoginAuthParams, LoginAuthPayload, RegisterAuthParams, RegisterAuthPayload,
-};
+use crate::data::instr::auth::{LoginAuthInstr, RegisterAuthInstr};
+use crate::data::val::auth::{LoginAuthVal, RegisterAuthVal};
 use crate::usecase;
 
 /// `POST /api/v1/auth/register` — registers a user via invitation code.
@@ -26,9 +25,9 @@ use crate::usecase;
     post,
     path = "/api/v1/auth/register",
     tag = "auth",
-    request_body = RegisterAuthParams,
+    request_body = RegisterAuthInstr,
     responses(
-        (status = 201, description = "Registration successful, sets auth cookie", body = HttpBody<RegisterAuthPayload>),
+        (status = 201, description = "Registration successful, sets auth cookie", body = HttpBody<RegisterAuthVal>),
         (status = 422, description = "Invalid request parameters"),
         (status = 401, description = "Invalid invitation code"),
     ),
@@ -36,12 +35,12 @@ use crate::usecase;
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn register(
     State(harn): State<AppHarn>,
-    Json(params): Json<RegisterAuthParams>,
-) -> HttpResult<RegisterAuthPayload> {
+    Json(instr): Json<RegisterAuthInstr>,
+) -> HttpResult<RegisterAuthVal> {
     //
     let reply = usecase::auth::register(
         (harn.drive(), harn.repo(), harn.auth(), harn.develop()),
-        params,
+        instr,
     )
     .await?;
 
@@ -60,20 +59,19 @@ pub async fn register(
     post,
     path = "/api/v1/auth/login",
     tag = "auth",
-    request_body = LoginAuthParams,
+    request_body = LoginAuthInstr,
     responses(
-        (status = 200, description = "Login successful, sets auth cookie", body = HttpBody<LoginAuthPayload>),
+        (status = 200, description = "Login successful, sets auth cookie", body = HttpBody<LoginAuthVal>),
         (status = 401, description = "Invalid credentials"),
     ),
 ))]
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn login(
     State(harn): State<AppHarn>,
-    Json(params): Json<LoginAuthParams>,
-) -> HttpResult<LoginAuthPayload> {
+    Json(instr): Json<LoginAuthInstr>,
+) -> HttpResult<LoginAuthVal> {
     //
-    let reply =
-        usecase::auth::login((harn.repo(), harn.auth()), params).await?;
+    let reply = usecase::auth::login((harn.repo(), harn.auth()), instr).await?;
 
     let cookie = auth_cookie(&reply.token);
 

@@ -9,7 +9,7 @@ use crate::value::image::{ImageExt, ImageHash};
 /// Carries raw [`OffsetDateTime`] timestamps; convert to [`TeamInfoVal`] for
 /// presentation.
 ///
-/// [`TeamInfoVal`]: crate::data::team::TeamInfoVal
+/// [`TeamInfoVal`]: crate::data::val::team::TeamInfoVal
 #[derive(Clone)]
 pub struct TeamInfo {
     //

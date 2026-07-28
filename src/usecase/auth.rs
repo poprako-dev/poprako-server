@@ -7,9 +7,8 @@ use poprako_util::i18n::trl;
 
 use crate::complex::member::MemberComplex;
 use crate::complex::user::UserComplex;
-use crate::data::auth::{
-    LoginAuthParams, LoginAuthPayload, RegisterAuthParams, RegisterAuthPayload,
-};
+use crate::data::instr::auth::{LoginAuthInstr, RegisterAuthInstr};
+use crate::data::val::auth::{LoginAuthVal, RegisterAuthVal};
 use crate::model::shared::user::UserToken;
 use crate::model::write::member::MemberEntry;
 use crate::model::write::user::UserEntry;
@@ -56,18 +55,18 @@ mod tests;
 #[instrument(
     level = "info",
     err(Debug),
-    skip(nucl, repo, auth, develop, params),
+    skip(nucl, repo, auth, develop, instr),
     fields(
-        qid = %params.qid,
-        nickname = %params.nickname,
+        qid = %instr.qid,
+        nickname = %instr.nickname,
         password = "[REDACTED]",
         code = "[REDACTED]",
     ),
 )]
 pub async fn register<N, C, R, A, V>(
     (nucl, repo, auth, develop): (&N, &R, &A, &V),
-    params: RegisterAuthParams,
-) -> BaseRest<RegisterAuthPayload>
+    instr: RegisterAuthInstr,
+) -> BaseRest<RegisterAuthVal>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -80,12 +79,12 @@ where
             //
 
             let invitation_info =
-                GetMemberInvitationInfoExcluded::Code { code: &params.code }
+                GetMemberInvitationInfoExcluded::Code { code: &instr.code }
                     .step_on(repo, context)
                     .await?;
 
             // Verify the invitation was issued for this QQ ID.
-            if invitation_info.invitee_qid != params.qid {
+            if invitation_info.invitee_qid != instr.qid {
                 return Err(BaseError::Expected {
                     variant: ExpectedVariant::Args,
                     message: trl("error-invalid-invitation-code"),
@@ -93,12 +92,12 @@ where
             }
 
             let password_hash =
-                UserComplex::hash_password(&params.password).await?;
+                UserComplex::hash_password(&instr.password).await?;
 
             let user_entry = UserEntry {
                 id: UserComplex::gen_id(),
-                qid: params.qid.clone(),
-                nickname: params.nickname.clone(),
+                qid: instr.qid.clone(),
+                nickname: instr.nickname.clone(),
                 password_hash,
             };
 
@@ -148,7 +147,7 @@ where
 
     let token = auth.sign_token(&original_token)?;
 
-    accept(RegisterAuthPayload {
+    accept(RegisterAuthVal {
         user_id: original_token.user_id,
         token,
     })
@@ -170,23 +169,23 @@ where
 #[instrument(
     level = "info",
     err(Debug),
-    skip(repo, auth, params),
-    fields(qid = %params.qid, password = "[REDACTED]"),
+    skip(repo, auth, instr),
+    fields(qid = %instr.qid, password = "[REDACTED]"),
 )]
 pub async fn login<C, R, A>(
     (repo, auth): (&R, &A),
-    params: LoginAuthParams,
-) -> BaseRest<LoginAuthPayload>
+    instr: LoginAuthInstr,
+) -> BaseRest<LoginAuthVal>
 where
     R: UserRepo<C>,
     A: TokenAuth,
 {
-    let user_credential = GetUserCredential::Qid { qid: &params.qid }
+    let user_credential = GetUserCredential::Qid { qid: &instr.qid }
         .run_on(repo)
         .await?;
 
     if !UserComplex::verify_password(
-        &params.password,
+        &instr.password,
         &user_credential.password_hash,
     )
     .await
@@ -203,7 +202,7 @@ where
 
     let token = auth.sign_token(&original_token)?;
 
-    accept(LoginAuthPayload {
+    accept(LoginAuthVal {
         user_id: original_token.user_id,
         token,
     })

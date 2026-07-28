@@ -18,7 +18,7 @@ async fn update_roles_admin_updates_member_role_mask() {
     let update_member_role = update_roles(
         (&mock, &mock),
         token("admin-user"),
-        update_role_params("member-target"),
+        update_role_instr("member-target"),
     )
     .await;
 
@@ -59,7 +59,7 @@ async fn update_roles_non_admin_is_rejected() {
     let err = update_roles(
         (&mock, &mock),
         token("normal-user"),
-        update_role_params("member-target"),
+        update_role_instr("member-target"),
     )
     .await
     .err()
@@ -88,7 +88,7 @@ async fn update_roles_missing_member_is_rejected() {
     let err = update_roles(
         (&mock, &mock),
         token("admin-user"),
-        update_role_params("member-missing"),
+        update_role_instr("member-missing"),
     )
     .await
     .err()

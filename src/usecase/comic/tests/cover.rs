@@ -8,10 +8,10 @@
 // delete(delete)(negative): missing comic should rollback state.
 
 use super::*;
-
-use crate::data::comic::{
-    MarkComicCoverUploadedParams, ReserveComicCoverParams,
+use crate::data::instr::comic::{
+    MarkComicCoverUploadedInstr, ReserveComicCoverInstr,
 };
+
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::proj::workset::WorksetInfo;
 use crate::part::prom::payload::TaskPayload;
@@ -21,8 +21,8 @@ use crate::test_util::{
 };
 use crate::value::image::{ImageExt, ImageHash};
 
-fn reserve_params(ext: ImageExt, hash_byte: u8) -> ReserveComicCoverParams {
-    ReserveComicCoverParams {
+fn reserve_instr(ext: ImageExt, hash_byte: u8) -> ReserveComicCoverInstr {
+    ReserveComicCoverInstr {
         image_hash: ImageHash::new([hash_byte; 32]),
         new_byte_len: 4096,
         ext,
@@ -44,7 +44,7 @@ async fn reserve_cover_updates_state_enqueues_check_and_returns_put_url() {
         (&mock, &mock, &mock, &mock),
         token("user-1"),
         "comic-1".into(),
-        reserve_params(ImageExt::Png, 1),
+        reserve_instr(ImageExt::Png, 1),
     )
     .await;
 
@@ -83,7 +83,7 @@ async fn reserve_cover_rolls_back_missing_comic() {
         (&mock, &mock, &mock, &mock),
         token("user-1"),
         "missing".into(),
-        reserve_params(ImageExt::Png, 1),
+        reserve_instr(ImageExt::Png, 1),
     )
     .await
     .err()
@@ -115,7 +115,7 @@ async fn mark_cover_uploaded_marks_matching_version() {
         (&mock, &mock, &mock),
         token("user-1"),
         "comic-1".into(),
-        MarkComicCoverUploadedParams { image_version: 2 },
+        MarkComicCoverUploadedInstr { image_version: 2 },
     )
     .await
     .ok()
@@ -143,7 +143,7 @@ async fn mark_cover_uploaded_accepts_repeated_matching_version() {
         (&mock, &mock, &mock),
         token("user-1"),
         "comic-1".into(),
-        MarkComicCoverUploadedParams { image_version: 2 },
+        MarkComicCoverUploadedInstr { image_version: 2 },
     )
     .await;
 
@@ -153,7 +153,7 @@ async fn mark_cover_uploaded_accepts_repeated_matching_version() {
         (&mock, &mock, &mock),
         token("user-1"),
         "comic-1".into(),
-        MarkComicCoverUploadedParams { image_version: 2 },
+        MarkComicCoverUploadedInstr { image_version: 2 },
     )
     .await;
 
@@ -181,7 +181,7 @@ async fn mark_cover_uploaded_rejects_stale_version() {
         (&mock, &mock, &mock),
         token("user-1"),
         "comic-1".into(),
-        MarkComicCoverUploadedParams { image_version: 1 },
+        MarkComicCoverUploadedInstr { image_version: 1 },
     )
     .await
     .err()
@@ -216,7 +216,7 @@ async fn mark_cover_uploaded_rejects_old_reservation_replay() {
         (&mock, &mock, &mock, &mock),
         token("user-1"),
         "comic-1".into(),
-        reserve_params(ImageExt::Png, 1),
+        reserve_instr(ImageExt::Png, 1),
     )
     .await
     .ok()
@@ -228,7 +228,7 @@ async fn mark_cover_uploaded_rejects_old_reservation_replay() {
         (&mock, &mock, &mock),
         token("user-1"),
         "comic-1".into(),
-        MarkComicCoverUploadedParams { image_version: 1 },
+        MarkComicCoverUploadedInstr { image_version: 1 },
     )
     .await
     .err()

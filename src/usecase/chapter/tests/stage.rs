@@ -24,7 +24,7 @@ async fn update_stage_admin_advances_any_stage() {
     update_stage(
         (&mock, &mock, &mock, &mock),
         token("user-1"),
-        UpdateChapterStageParams {
+        UpdateChapterStageInstr {
             id: "chapter-1".into(),
             stage: Stage::Publish,
             oper: StageOper::Advance,
@@ -59,7 +59,7 @@ async fn update_stage_rejects_reviewer_outside_review_stage() {
     let err = update_stage(
         (&mock, &mock, &mock, &mock),
         token("user-1"),
-        UpdateChapterStageParams {
+        UpdateChapterStageInstr {
             id: "chapter-1".into(),
             stage: Stage::Translate,
             oper: StageOper::Advance,
@@ -98,7 +98,7 @@ async fn update_stage_rejects_invalid_transition() {
     let err = update_stage(
         (&mock, &mock, &mock, &mock),
         token("user-1"),
-        UpdateChapterStageParams {
+        UpdateChapterStageInstr {
             id: "chapter-1".into(),
             stage: Stage::Publish,
             oper: StageOper::Advance,
@@ -131,7 +131,7 @@ async fn update_stage_publish_enqueues_page_image_delete() {
     update_stage(
         (&mock, &mock, &mock, &mock),
         token("user-1"),
-        UpdateChapterStageParams {
+        UpdateChapterStageInstr {
             id: "chapter-1".into(),
             stage: Stage::Publish,
             oper: StageOper::Advance,
@@ -197,7 +197,7 @@ async fn published_chapter_rejects_metadata_and_stage_updates() {
     let info_result = update_info(
         (&mock, &mock),
         token("user-1"),
-        UpdateChapterInfoParams {
+        UpdateChapterInfoInstr {
             id: "chapter-1".into(),
             subtitle: Some("changed".into()),
         },
@@ -209,7 +209,7 @@ async fn published_chapter_rejects_metadata_and_stage_updates() {
     let stage_result = update_stage(
         (&mock, &mock, &mock, &mock),
         token("user-1"),
-        UpdateChapterStageParams {
+        UpdateChapterStageInstr {
             id: "chapter-1".into(),
             stage: Stage::Translate,
             oper: StageOper::Advance,

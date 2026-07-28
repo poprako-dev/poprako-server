@@ -5,14 +5,16 @@ use axum::extract::{Extension, Query, State};
 use axum::http::StatusCode;
 use tracing::instrument;
 
+use crate::data::instr::system_mail::{
+    ListSystemMailInfosInstr, MarkSystemMailReadInstr,
+};
+use crate::data::val::system_mail::SystemMailInfoVal;
+
 #[allow(unused_imports)]
 use crate::api::http::result::{
     Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
-use crate::data::system_mail::{
-    ListSystemMailInfosParams, MarkSystemMailReadParams, SystemMailInfoVal,
-};
 use crate::model::shared::user::UserToken;
 use crate::usecase;
 
@@ -21,7 +23,7 @@ use crate::usecase;
     get,
     path = "/api/v1/system-mails",
     tag = "system-mails",
-    params(ListSystemMailInfosParams),
+    params(ListSystemMailInfosInstr),
     responses(
         (status = 200, description = "System mails listed", body = HttpBody<Vec<SystemMailInfoVal>>),
         (status = 401, description = "Authentication required"),
@@ -31,9 +33,9 @@ use crate::usecase;
 pub async fn list_infos(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    Query(params): Query<ListSystemMailInfosParams>,
+    Query(instr): Query<ListSystemMailInfosInstr>,
 ) -> HttpResult<Vec<SystemMailInfoVal>> {
-    usecase::system_mail::list_infos((harn.repo(),), user_token, params)
+    usecase::system_mail::list_infos((harn.repo(),), user_token, instr)
         .await?
         .accept(StatusCode::OK)
 }
@@ -43,7 +45,7 @@ pub async fn list_infos(
     post,
     path = "/api/v1/system-mails/mark-read",
     tag = "system-mails",
-    request_body = MarkSystemMailReadParams,
+    request_body = MarkSystemMailReadInstr,
     responses(
         (status = 204, description = "Mails marked as read"),
         (status = 403, description = "One or more mails do not belong to the user"),
@@ -53,10 +55,10 @@ pub async fn list_infos(
 pub async fn mark_read(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    Json(params): Json<MarkSystemMailReadParams>,
+    Json(instr): Json<MarkSystemMailReadInstr>,
 ) -> HttpNoContent {
     //
-    usecase::system_mail::mark_read((harn.repo(),), user_token, params.ids)
+    usecase::system_mail::mark_read((harn.repo(),), user_token, instr.ids)
         .await?;
 
     no_content()

@@ -24,13 +24,13 @@
 // delete(delete)(negative): non-admin delete rolls back.
 
 use super::*;
+use crate::data::instr::chapter::{
+    CreateChapterInstr, ListChapterInfosInstr, UpdateChapterInfoInstr,
+    UpdateChapterStageInstr,
+};
 
 use self::fixture::*;
 use crate::complex::chapter::ChapterComplex;
-use crate::data::chapter::{
-    CreateChapterParams, ListChapterInfosParams, UpdateChapterInfoParams,
-    UpdateChapterStageParams,
-};
 use crate::part::prom::payload::TaskPayload;
 use crate::part::prom::payload::image::ImagePayload;
 use crate::part_impl::repo::mock_impl::Mock;
@@ -63,7 +63,7 @@ async fn list_infos_paginates_sorted_chapters() {
     let list = list_infos(
         (&mock, &mock),
         token("user-1"),
-        ListChapterInfosParams {
+        ListChapterInfosInstr {
             incl_opt: Vec::new(),
             comic_id: "comic-1".into(),
             offset: 1,
@@ -95,7 +95,7 @@ async fn list_infos_resolves_embedded_comic_fallback_cover() {
     let found = list_infos(
         (&mock, &mock),
         token("user-1"),
-        ListChapterInfosParams {
+        ListChapterInfosInstr {
             comic_id: "comic-1".into(),
             incl_opt: vec![ChapterInclOpt::Comic],
             offset: 0,
@@ -122,7 +122,7 @@ async fn list_infos_rejects_non_member() {
     let err = list_infos(
         (&mock, &mock),
         token("user-1"),
-        ListChapterInfosParams {
+        ListChapterInfosInstr {
             incl_opt: Vec::new(),
             comic_id: "comic-1".into(),
             offset: 0,
@@ -222,7 +222,7 @@ async fn create_pins_chapter_and_creates_admin_assignment() {
     let created = create(
         (&mock, &mock),
         token("user-1"),
-        CreateChapterParams {
+        CreateChapterInstr {
             comic_id: "comic-1".into(),
             subtitle: None,
             preset_assignment_roles: Some(RoleMask::from(
@@ -276,7 +276,7 @@ async fn create_rolls_back_non_admin() {
     let err = create(
         (&mock, &mock),
         token("user-1"),
-        CreateChapterParams {
+        CreateChapterInstr {
             comic_id: "comic-1".into(),
             subtitle: Some("new".into()),
             preset_assignment_roles: None,
@@ -315,7 +315,7 @@ async fn update_info_admin_updates_metadata() {
     update_info(
         (&mock, &mock),
         token("user-1"),
-        UpdateChapterInfoParams {
+        UpdateChapterInfoInstr {
             id: "chapter-1".into(),
             subtitle: Some("updated".into()),
         },
@@ -343,7 +343,7 @@ async fn update_info_rejects_non_admin_metadata() {
     let err = update_info(
         (&mock, &mock),
         token("user-1"),
-        UpdateChapterInfoParams {
+        UpdateChapterInfoInstr {
             id: "chapter-1".into(),
             subtitle: Some("updated".into()),
         },
@@ -496,7 +496,7 @@ async fn update_stage_role_holder_advances_own_stage() {
     update_stage(
         (&mock, &mock, &mock, &mock),
         token("user-1"),
-        UpdateChapterStageParams {
+        UpdateChapterStageInstr {
             id: "chapter-1".into(),
             stage: Stage::Translate,
             oper: StageOper::Advance,
@@ -532,7 +532,7 @@ async fn update_stage_admin_rejected_when_no_role_holder() {
     let err = update_stage(
         (&mock, &mock, &mock, &mock),
         token("user-1"),
-        UpdateChapterStageParams {
+        UpdateChapterStageInstr {
             id: "chapter-1".into(),
             stage: Stage::Translate,
             oper: StageOper::Advance,
@@ -569,7 +569,7 @@ async fn update_stage_admin_with_workflow_role_advances() {
     update_stage(
         (&mock, &mock, &mock, &mock),
         token("user-1"),
-        UpdateChapterStageParams {
+        UpdateChapterStageInstr {
             id: "chapter-1".into(),
             stage: Stage::Translate,
             oper: StageOper::Advance,
@@ -613,7 +613,7 @@ async fn update_stage_admin_reverts_without_role_holder() {
     update_stage(
         (&mock, &mock, &mock, &mock),
         token("user-1"),
-        UpdateChapterStageParams {
+        UpdateChapterStageInstr {
             id: "chapter-1".into(),
             stage: Stage::Translate,
             oper: StageOper::Revert,

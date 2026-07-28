@@ -6,7 +6,7 @@
 //!
 //! Convert to [`PageInfoVal`] for presentation.
 //!
-//! [`PageInfoVal`]: crate::data::page::PageInfoVal
+//! [`PageInfoVal`]: crate::data::val::page::PageInfoVal
 
 use time::OffsetDateTime;
 

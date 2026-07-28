@@ -10,7 +10,7 @@ use crate::value::image::{ImageExt, ImageHash};
 /// presentation. Avatar fields track a multi-step upload flow: a key is
 /// reserved, the client uploads to that key, then the upload is marked complete.
 ///
-/// [`UserInfoVal`]: crate::data::user::UserInfoVal
+/// [`UserInfoVal`]: crate::data::val::user::UserInfoVal
 #[derive(Clone)]
 pub struct UserInfo {
     //

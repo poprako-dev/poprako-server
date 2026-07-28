@@ -15,13 +15,13 @@
 // delete(delete)(negative): non-admin delete rolls back.
 
 use super::*;
+use crate::data::instr::page::{
+    ListPageInfosInstr, MarkPageImageUploadedInstr, PageImageInstr,
+    ReserveChapterPagesInstr, ReservePageImageInstr,
+};
 
 use time::{Duration as TimeDuration, OffsetDateTime};
 
-use crate::data::page::{
-    ListPageInfosParams, MarkPageImageUploadedParams, PageImageParams,
-    ReserveChapterPagesParams, ReservePageImageParams,
-};
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::comic::ComicInfo;
@@ -210,7 +210,7 @@ async fn reserve_image_replaces_key_and_enqueues_prom() {
         (&mock, &mock, &mock, &mock),
         token("user-1"),
         "page-1".into(),
-        ReservePageImageParams {
+        ReservePageImageInstr {
             image_hash: ImageHash::new([1u8; 32]),
             new_byte_len: 8192,
             ext: ImageExt::Jpg,
@@ -277,7 +277,7 @@ async fn reserve_image_reuses_same_uploaded_identity_without_version_bump() {
         (&mock, &mock, &mock, &mock),
         token("user-1"),
         "page-1".into(),
-        ReservePageImageParams {
+        ReservePageImageInstr {
             image_hash: ImageHash::new([0; 32]),
             new_byte_len: 4096,
             ext: ImageExt::Png,
@@ -312,7 +312,7 @@ async fn reserve_image_resigns_same_pending_identity() {
         (&mock, &mock, &mock, &mock),
         token("user-1"),
         "page-1".into(),
-        ReservePageImageParams {
+        ReservePageImageInstr {
             image_hash: ImageHash::new([0; 32]),
             new_byte_len: 4096,
             ext: ImageExt::Png,
@@ -362,7 +362,7 @@ async fn reserve_image_replaces_same_hash_with_different_extension() {
         (&mock, &mock, &mock, &mock),
         token("user-1"),
         "page-1".into(),
-        ReservePageImageParams {
+        ReservePageImageInstr {
             image_hash: ImageHash::new([0; 32]),
             new_byte_len: 4097,
             ext: ImageExt::Webp,
@@ -405,7 +405,7 @@ async fn reserve_image_rejects_missing_page() {
         (&mock, &mock, &mock, &mock),
         token("user-1"),
         "missing".into(),
-        ReservePageImageParams {
+        ReservePageImageInstr {
             image_hash: ImageHash::new([1u8; 32]),
             new_byte_len: 8192,
             ext: ImageExt::Jpg,
@@ -434,7 +434,7 @@ async fn list_infos_sorts_and_resolves_uploaded_url() {
     let list = list_infos(
         (&mock, &mock),
         token("user-1"),
-        ListPageInfosParams {
+        ListPageInfosInstr {
             chapter_id: "chapter-1".into(),
         },
     )
@@ -473,7 +473,7 @@ async fn list_infos_rejects_non_member_without_assignment() {
     let err = list_infos(
         (&mock, &mock),
         token("user-1"),
-        ListPageInfosParams {
+        ListPageInfosInstr {
             chapter_id: "chapter-1".into(),
         },
     )
@@ -548,7 +548,7 @@ async fn mark_image_uploaded_marks_once_and_idempotent() {
         (&mock, &mock, &mock),
         token("user-1"),
         "page-1".into(),
-        MarkPageImageUploadedParams { image_version: 2 },
+        MarkPageImageUploadedInstr { image_version: 2 },
     )
     .await;
 
@@ -558,7 +558,7 @@ async fn mark_image_uploaded_marks_once_and_idempotent() {
         (&mock, &mock, &mock),
         token("user-1"),
         "page-1".into(),
-        MarkPageImageUploadedParams { image_version: 2 },
+        MarkPageImageUploadedInstr { image_version: 2 },
     )
     .await;
 

@@ -7,16 +7,15 @@ use axum_extra::extract::Query;
 use serde::Deserialize;
 use tracing::instrument;
 
+use crate::data::instr::comment::{CreateCommentInstr, ListCommentInfosInstr};
+use crate::data::val::comment::{CommentInfoVal, CreateCommentVal};
+
 #[cfg(feature = "swagger")]
 use utoipa::IntoParams;
 
 #[allow(unused_imports)]
 use crate::api::http::result::{Accept as _, HttpBody, HttpResult};
 use crate::api::http::state::AppHarn;
-use crate::data::comment::{
-    CommentInfoVal, CreateCommentParams, CreateCommentPayload,
-    ListCommentInfosParams,
-};
 use crate::model::shared::user::UserToken;
 use crate::usecase;
 use crate::value::comment::CommentInclOpt;
@@ -47,9 +46,9 @@ pub struct CommentListQuery {
     post,
     path = "/api/v1/comments",
     tag = "comments",
-    request_body = CreateCommentParams,
+    request_body = CreateCommentInstr,
     responses(
-        (status = 201, description = "Comment created", body = HttpBody<CreateCommentPayload>),
+        (status = 201, description = "Comment created", body = HttpBody<CreateCommentVal>),
         (status = 403, description = "No permission to comment in this team"),
         (status = 404, description = "Team not found"),
     ),
@@ -58,9 +57,9 @@ pub struct CommentListQuery {
 pub async fn create(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    Json(params): Json<CreateCommentParams>,
-) -> HttpResult<CreateCommentPayload> {
-    usecase::comment::create((harn.drive(), harn.repo()), user_token, params)
+    Json(instr): Json<CreateCommentInstr>,
+) -> HttpResult<CreateCommentVal> {
+    usecase::comment::create((harn.drive(), harn.repo()), user_token, instr)
         .await?
         .accept(StatusCode::CREATED)
 }
@@ -85,7 +84,7 @@ pub async fn list_infos(
     Query(query): Query<CommentListQuery>,
 ) -> HttpResult<Vec<CommentInfoVal>> {
     //
-    let params = ListCommentInfosParams {
+    let instr = ListCommentInfosInstr {
         team_id,
         incl_opt: query.incl_opt,
         offset: query.offset,
@@ -95,7 +94,7 @@ pub async fn list_infos(
     usecase::comment::list_infos(
         (harn.repo(), harn.image_pool()),
         user_token,
-        params,
+        instr,
     )
     .await?
     .accept(StatusCode::OK)

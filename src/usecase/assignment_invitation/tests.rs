@@ -9,11 +9,11 @@
 // join(join)(negative): mismatched user qid should be rejected without consuming invitation.
 
 use super::*;
-
-use crate::data::assignment_invitation::{
-    CreateAssignmentInvitationParams, JoinAssignmentInvitationParams,
-    ListAssignmentInvitationInfosParams,
+use crate::data::instr::assignment_invitation::{
+    CreateAssignmentInvitationInstr, JoinAssignmentInvitationInstr,
+    ListAssignmentInvitationInfosInstr,
 };
+
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::assignment_invitation::AssignmentInvitationInfo;
 use crate::model::read::proj::chapter::ChapterInfo;
@@ -229,9 +229,9 @@ fn role(role_field: RoleField) -> RoleMask {
     RoleMask::from(role_field)
 }
 
-// Build list params that fetch current pending invitation list.
-fn list_data() -> ListAssignmentInvitationInfosParams {
-    ListAssignmentInvitationInfosParams {
+// Build list instr that fetch current pending invitation list.
+fn list_data() -> ListAssignmentInvitationInfosInstr {
+    ListAssignmentInvitationInfosInstr {
         chapter_id: "chapter-1".into(),
         is_pending: Some(true),
         offset: 0,
@@ -239,18 +239,18 @@ fn list_data() -> ListAssignmentInvitationInfosParams {
     }
 }
 
-// Build create params targeting a specific invitee qid.
-fn create_data(invitee_qid: &str) -> CreateAssignmentInvitationParams {
-    CreateAssignmentInvitationParams {
+// Build create instr targeting a specific invitee qid.
+fn create_data(invitee_qid: &str) -> CreateAssignmentInvitationInstr {
+    CreateAssignmentInvitationInstr {
         chapter_id: "chapter-1".into(),
         invitee_qid: invitee_qid.into(),
         roles: role(RoleField::TRANSLATOR),
     }
 }
 
-// Build join params with a deterministic invitation code.
-fn join_data() -> JoinAssignmentInvitationParams {
-    JoinAssignmentInvitationParams {
+// Build join instr with a deterministic invitation code.
+fn join_data() -> JoinAssignmentInvitationInstr {
+    JoinAssignmentInvitationInstr {
         code: "AINV123".into(),
     }
 }

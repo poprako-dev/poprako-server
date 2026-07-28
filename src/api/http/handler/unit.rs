@@ -5,15 +5,16 @@ use axum::extract::{Extension, Path, State};
 use axum::http::StatusCode;
 use tracing::instrument;
 
+use crate::data::instr::unit::{
+    ListPageUnitInfosInstr, SavePageUnitEditsInstr, UnitEditInstr,
+};
+use crate::data::val::unit::ListPageUnitInfosVal;
+
 #[allow(unused_imports)]
 use crate::api::http::result::{
     Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
-use crate::data::unit::{
-    ListPageUnitInfosParams, ListPageUnitInfosPayload, SavePageUnitEditsParams,
-    UnitEditVal,
-};
 use crate::model::shared::user::UserToken;
 use crate::usecase;
 
@@ -24,7 +25,7 @@ use crate::usecase;
     tag = "units",
     params(("page_id" = String, Path, description = "Page ID")),
     responses(
-        (status = 200, description = "Units listed", body = HttpBody<ListPageUnitInfosPayload>),
+        (status = 200, description = "Units listed", body = HttpBody<ListPageUnitInfosVal>),
         (status = 403, description = "No permission to list units in this page"),
         (status = 404, description = "Page not found"),
     ),
@@ -34,11 +35,11 @@ pub async fn list_infos(
     State(harn): State<AppHarn>,
     Path(page_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-) -> HttpResult<ListPageUnitInfosPayload> {
+) -> HttpResult<ListPageUnitInfosVal> {
     //
-    let params = ListPageUnitInfosParams { page_id };
+    let instr = ListPageUnitInfosInstr { page_id };
 
-    usecase::unit::list_infos((harn.repo(),), user_token, params)
+    usecase::unit::list_infos((harn.repo(),), user_token, instr)
         .await?
         .accept(StatusCode::OK)
 }
@@ -49,7 +50,7 @@ pub async fn list_infos(
     path = "/api/v1/pages/{page_id}/units/save",
     tag = "units",
     params(("page_id" = String, Path, description = "Page ID")),
-    request_body = Vec<UnitEditVal>,
+    request_body = Vec<UnitEditInstr>,
     responses(
         (status = 204, description = "Unit edits saved"),
         (status = 403, description = "No permission to save units in this page"),
@@ -61,12 +62,12 @@ pub async fn save_infos(
     State(harn): State<AppHarn>,
     Path(page_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(edits): Json<Vec<UnitEditVal>>,
+    Json(edits): Json<Vec<UnitEditInstr>>,
 ) -> HttpNoContent {
     //
-    let params = SavePageUnitEditsParams { page_id, edits };
+    let instr = SavePageUnitEditsInstr { page_id, edits };
 
-    usecase::unit::save_edits((harn.drive(), harn.repo()), user_token, params)
+    usecase::unit::save_edits((harn.drive(), harn.repo()), user_token, instr)
         .await?;
 
     no_content()

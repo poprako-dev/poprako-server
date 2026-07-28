@@ -11,11 +11,11 @@ use crate::api::http::result::{
     Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
-use crate::data::team::{
-    CreateTeamParams, ListTeamInfosParams, MarkTeamAvatarUploadedParams,
-    ReserveTeamAvatarParams, ReserveTeamAvatarPayload, TeamInfoVal,
-    UpdateTeamInfoParams,
+use crate::data::instr::team::{
+    CreateTeamInstr, ListTeamInfosInstr, MarkTeamAvatarUploadedInstr,
+    ReserveTeamAvatarInstr, UpdateTeamInfoInstr,
 };
+use crate::data::val::team::{ReserveTeamAvatarVal, TeamInfoVal};
 use crate::model::shared::user::UserToken;
 use crate::usecase;
 
@@ -24,7 +24,7 @@ use crate::usecase;
     post,
     path = "/api/v1/teams",
     tag = "teams",
-    request_body = CreateTeamParams,
+    request_body = CreateTeamInstr,
     responses(
         (status = 201, description = "Team created", body = HttpBody<TeamInfoVal>),
         (status = 401, description = "Authentication required"),
@@ -35,12 +35,12 @@ use crate::usecase;
 pub async fn create(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    Json(params): Json<CreateTeamParams>,
+    Json(instr): Json<CreateTeamInstr>,
 ) -> HttpResult<TeamInfoVal> {
     usecase::team::create(
         (harn.drive(), harn.repo(), harn.image_pool()),
         user_token,
-        params,
+        instr,
     )
     .await?
     .accept(StatusCode::CREATED)
@@ -52,7 +52,7 @@ pub async fn create(
     path = "/api/v1/teams",
     tag = "teams",
     description = "Lists teams. Omit `user_id` to list all teams (super-admin only, otherwise `403`); supply `user_id` to list teams that user has joined. Examples: `/api/v1/teams?user_id=u_1&offset=0&limit=20`, `/api/v1/teams?offset=0&limit=20` (super-admin).",
-    params(ListTeamInfosParams),
+    params(ListTeamInfosInstr),
     responses(
         (status = 200, description = "Teams listed", body = HttpBody<Vec<TeamInfoVal>>),
         (status = 401, description = "Authentication required"),
@@ -63,12 +63,12 @@ pub async fn create(
 pub async fn list_infos(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    Query(params): Query<ListTeamInfosParams>,
+    Query(instr): Query<ListTeamInfosInstr>,
 ) -> HttpResult<Vec<TeamInfoVal>> {
     usecase::team::list_infos(
         (harn.repo(), harn.image_pool()),
         user_token,
-        params,
+        instr,
     )
     .await?
     .accept(StatusCode::OK)
@@ -102,7 +102,7 @@ pub async fn get_info(
     path = "/api/v1/teams/{team_id}",
     tag = "teams",
     params(("team_id" = String, Path, description = "Team ID")),
-    request_body = UpdateTeamInfoParams,
+    request_body = UpdateTeamInfoInstr,
     responses(
         (status = 204, description = "Team updated"),
         (status = 422, description = "Path id does not match body id"),
@@ -115,12 +115,12 @@ pub async fn update_info(
     State(harn): State<AppHarn>,
     Path(team_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(params): Json<UpdateTeamInfoParams>,
+    Json(instr): Json<UpdateTeamInfoInstr>,
 ) -> HttpNoContent {
     //
-    ensure_path_matches_body_id(&team_id, &params.id)?;
+    ensure_path_matches_body_id(&team_id, &instr.id)?;
 
-    usecase::team::update_info((harn.repo(),), user_token, params).await?;
+    usecase::team::update_info((harn.repo(),), user_token, instr).await?;
 
     no_content()
 }
@@ -131,9 +131,9 @@ pub async fn update_info(
     path = "/api/v1/teams/{team_id}/avatar/reserve",
     tag = "teams",
     params(("team_id" = String, Path, description = "Team ID")),
-    request_body = ReserveTeamAvatarParams,
+    request_body = ReserveTeamAvatarInstr,
     responses(
-        (status = 200, description = "Avatar upload URL reserved", body = HttpBody<ReserveTeamAvatarPayload>),
+        (status = 200, description = "Avatar upload URL reserved", body = HttpBody<ReserveTeamAvatarVal>),
         (status = 403, description = "No permission to modify this team's avatar"),
         (status = 404, description = "Team not found"),
     ),
@@ -143,13 +143,13 @@ pub async fn reserve_avatar(
     State(harn): State<AppHarn>,
     Path(team_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(params): Json<ReserveTeamAvatarParams>,
-) -> HttpResult<ReserveTeamAvatarPayload> {
+    Json(instr): Json<ReserveTeamAvatarInstr>,
+) -> HttpResult<ReserveTeamAvatarVal> {
     usecase::team::reserve_avatar(
         (harn.drive(), harn.repo(), harn.prom(), harn.image_pool()),
         user_token,
         team_id,
-        params,
+        instr,
     )
     .await?
     .accept(StatusCode::OK)
@@ -161,7 +161,7 @@ pub async fn reserve_avatar(
     path = "/api/v1/teams/{team_id}/avatar/mark-uploaded",
     tag = "teams",
     params(("team_id" = String, Path, description = "Team ID")),
-    request_body = MarkTeamAvatarUploadedParams,
+    request_body = MarkTeamAvatarUploadedInstr,
     responses(
         (status = 204, description = "Avatar upload confirmed"),
         (status = 403, description = "No permission to modify this team's avatar"),
@@ -173,14 +173,14 @@ pub async fn mark_avatar_uploaded(
     State(harn): State<AppHarn>,
     Path(team_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(params): Json<MarkTeamAvatarUploadedParams>,
+    Json(instr): Json<MarkTeamAvatarUploadedInstr>,
 ) -> HttpNoContent {
     //
     usecase::team::mark_avatar_uploaded(
         (harn.drive(), harn.repo(), harn.image_pool()),
         user_token,
         team_id,
-        params,
+        instr,
     )
     .await?;
 
