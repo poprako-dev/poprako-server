@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 
-use poprako_orchestra::run_proxy;
+use poprako_orchestra::{OperRun as _, run_proxy};
 use tracing::instrument;
 
 use crate::complex::chapter_port::{
@@ -70,25 +70,25 @@ where
     )
     .await?;
 
-    let chapter_info = repo
-        .run(&GetChapterInfo {
-            id: &chapter_id,
-            incls: &[],
-        })
-        .await?;
+    let chapter_info = GetChapterInfo {
+        id: &chapter_id,
+        incls: &[],
+    }
+    .run_on(repo)
+    .await?;
 
-    let comic_info = repo
-        .run(&GetComicInfo {
-            id: &chapter_info.comic_id,
-            incls: &[],
-        })
-        .await?;
+    let comic_info = GetComicInfo {
+        id: &chapter_info.comic_id,
+        incls: &[],
+    }
+    .run_on(repo)
+    .await?;
 
-    let page_infos = repo
-        .run(&ListPageInfos {
-            chapter_id: &chapter_info.id,
-        })
-        .await?;
+    let page_infos = ListPageInfos {
+        chapter_id: &chapter_info.id,
+    }
+    .run_on(repo)
+    .await?;
 
     let mut page_vals = Vec::with_capacity(page_infos.len());
 
@@ -96,11 +96,11 @@ where
         //
         // Load visible units for each page and map them into exported unit payloads.
 
-        let unit_infos = repo
-            .run(&ListUnitInfos {
-                page_id: &page_info.id,
-            })
-            .await?;
+        let unit_infos = ListUnitInfos {
+            page_id: &page_info.id,
+        }
+        .run_on(repo)
+        .await?;
 
         let unit_vals = unit_infos
             .into_iter()
@@ -170,17 +170,18 @@ where
     )
     .await?;
 
-    repo.run(&GetChapterInfo {
+    GetChapterInfo {
         id: &chapter_id,
         incls: &[],
-    })
+    }
+    .run_on(repo)
     .await?;
 
-    let page_infos = repo
-        .run(&ListPageInfos {
-            chapter_id: &chapter_id,
-        })
-        .await?;
+    let page_infos = ListPageInfos {
+        chapter_id: &chapter_id,
+    }
+    .run_on(repo)
+    .await?;
 
     let mut units_by_page_id = HashMap::new();
 
@@ -188,11 +189,11 @@ where
         //
         // Collect visible units grouped by page before LabelPlus serialization.
 
-        let unit_infos = repo
-            .run(&ListUnitInfos {
-                page_id: &page_info.id,
-            })
-            .await?;
+        let unit_infos = ListUnitInfos {
+            page_id: &page_info.id,
+        }
+        .run_on(repo)
+        .await?;
 
         let unit_infos = unit_infos
             .into_iter()

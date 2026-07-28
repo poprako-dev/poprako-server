@@ -12,7 +12,7 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 
 use fluent_templates::fluent_bundle::FluentValue;
-use poprako_orchestra::Proxy;
+use poprako_orchestra::{OperProxy as _, Proxy};
 
 use poprako_util::i18n::{trl, trl_kv};
 
@@ -76,9 +76,7 @@ impl ChapterComplex {
     }
 
     /// Rejects user mutations once a chapter has been published.
-    pub fn ensure_chapter_writable(
-        chapter_info: &ChapterInfo,
-    ) -> BaseRest<()> {
+    pub fn ensure_chapter_writable(chapter_info: &ChapterInfo) -> BaseRest<()> {
         //
         if chapter_info
             .stages
@@ -260,18 +258,18 @@ where
     P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
         + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>,
 {
-    let comic_info = proxy
-        .exec(&GetComicInfo {
-            id: comic_id,
-            incls: &[],
-        })
-        .await?;
+    let comic_info = GetComicInfo {
+        id: comic_id,
+        incls: &[],
+    }
+    .proxy_on(proxy)
+    .await?;
 
-    let workset_info = proxy
-        .exec(&GetWorksetInfo {
-            id: &comic_info.workset_id,
-        })
-        .await?;
+    let workset_info = GetWorksetInfo {
+        id: &comic_info.workset_id,
+    }
+    .proxy_on(proxy)
+    .await?;
 
     accept(workset_info.team_id)
 }
@@ -391,13 +389,13 @@ where
     let required_roles =
         required_roles_for_transition(stage, StageOper::Advance);
 
-    let assignment_infos = proxy
-        .exec(&ListAssignmentInfos::Chapter {
-            chapter_id,
-            role: None,
-            incls: &[],
-        })
-        .await?;
+    let assignment_infos = ListAssignmentInfos::Chapter {
+        chapter_id,
+        role: None,
+        incls: &[],
+    }
+    .proxy_on(proxy)
+    .await?;
 
     let has_holder = assignment_infos
         .iter()
@@ -430,12 +428,12 @@ where
         + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
         + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
 {
-    let chapter_info = proxy
-        .exec(&GetChapterInfo {
-            id: chapter_id,
-            incls: &[],
-        })
-        .await?;
+    let chapter_info = GetChapterInfo {
+        id: chapter_id,
+        incls: &[],
+    }
+    .proxy_on(proxy)
+    .await?;
 
     check_team_member_by_comic(proxy, user_id, &chapter_info.comic_id).await
 }
@@ -452,12 +450,12 @@ where
         + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
         + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
 {
-    let chapter_info = proxy
-        .exec(&GetChapterInfo {
-            id: chapter_id,
-            incls: &[],
-        })
-        .await?;
+    let chapter_info = GetChapterInfo {
+        id: chapter_id,
+        incls: &[],
+    }
+    .proxy_on(proxy)
+    .await?;
 
     check_team_admin_by_comic(proxy, user_id, &chapter_info.comic_id).await
 }
@@ -471,12 +469,12 @@ async fn check_admin<P>(
 where
     P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
 {
-    let assignment_info = proxy
-        .exec(&FindAssignmentInfo::ChapterUser {
-            chapter_id,
-            user_id,
-        })
-        .await?;
+    let assignment_info = FindAssignmentInfo::ChapterUser {
+        chapter_id,
+        user_id,
+    }
+    .proxy_on(proxy)
+    .await?;
 
     let Some(assignment_info) = assignment_info else {
         return Err(chapter_admin_err());
@@ -508,12 +506,12 @@ where
     P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>
         + for<'a, 'b> Proxy<ListAssignmentInfos<'a, 'b>, Error = BaseError>,
 {
-    let assignment_info = proxy
-        .exec(&FindAssignmentInfo::ChapterUser {
-            chapter_id,
-            user_id,
-        })
-        .await?;
+    let assignment_info = FindAssignmentInfo::ChapterUser {
+        chapter_id,
+        user_id,
+    }
+    .proxy_on(proxy)
+    .await?;
 
     let Some(assignment_info) = assignment_info else {
         return Err(chapter_workflow_role_err());
@@ -569,12 +567,12 @@ where
     let team_id =
         resolve_team_id_from_comic(proxy, &chapter_info.comic_id).await?;
 
-    let member_info = proxy
-        .exec(&FindMemberInfo::UserTeam {
-            user_id,
-            team_id: &team_id,
-        })
-        .await?;
+    let member_info = FindMemberInfo::UserTeam {
+        user_id,
+        team_id: &team_id,
+    }
+    .proxy_on(proxy)
+    .await?;
 
     let Some(member_info) = member_info else {
         return Err(BaseError::Expected {

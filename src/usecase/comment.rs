@@ -1,6 +1,6 @@
 //! Comment use cases — list and create team board comments.
 
-use poprako_orchestra::{Nucl, run_proxy};
+use poprako_orchestra::{Nucl, OperRun as _, OperStep as _, run_proxy};
 use tracing::instrument;
 
 use crate::complex::comment::{CommentComplex, CommentPermComplex};
@@ -43,11 +43,11 @@ where
     )
     .await?;
 
-    let comment_infos = repo
-        .run(&ListCommentInfos {
-            spec: &comment_list_spec,
-        })
-        .await?;
+    let comment_infos = ListCommentInfos {
+        spec: &comment_list_spec,
+    }
+    .run_on(repo)
+    .await?;
 
     let mut comment_info_vals = Vec::with_capacity(comment_infos.len());
 
@@ -90,12 +90,10 @@ where
                 content: params.content,
             };
 
-            repo.step(
-                context,
-                &CreateComment {
-                    entry: &comment_entry,
-                },
-            )
+            CreateComment {
+                entry: &comment_entry,
+            }
+            .step_on(repo, context)
             .await
         })
         .await?;

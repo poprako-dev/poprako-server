@@ -1,4 +1,4 @@
-use poprako_orchestra::Run as _;
+use poprako_orchestra::OperRun as _;
 
 use crate::part::effect::EffectDevelop;
 use crate::part::effect::event::Event;
@@ -22,8 +22,8 @@ pub async fn process(mock: &Mock, task: &ChapterPayload) -> BaseRest<()> {
 async fn process_raw_provide(mock: &Mock, chapter_id: &str) -> BaseRest<()> {
     //
     // Internal implementation detail.
-    let advanced = mock
-        .run(&CompleteChapterRawProvide { id: chapter_id })
+    let advanced = CompleteChapterRawProvide { id: chapter_id }
+        .run_on(mock)
         .await?;
 
     if advanced {

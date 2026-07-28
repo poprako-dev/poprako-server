@@ -1,6 +1,6 @@
 //! Complex-domain opers for chapter assignments.
 
-use poprako_orchestra::Proxy;
+use poprako_orchestra::{OperProxy as _, Proxy};
 
 use poprako_util::i18n::trl;
 
@@ -174,34 +174,31 @@ impl AssignmentPermComplex {
 }
 
 // Resolve the owning team ID from a chapter ID via its comic and workset.
-async fn resolve_team_id<P>(
-    proxy: &mut P,
-    chapter_id: &str,
-) -> BaseRest<String>
+async fn resolve_team_id<P>(proxy: &mut P, chapter_id: &str) -> BaseRest<String>
 where
     P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
         + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
         + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>,
 {
-    let chapter_info = proxy
-        .exec(&GetChapterInfo {
-            id: chapter_id,
-            incls: &[],
-        })
-        .await?;
+    let chapter_info = GetChapterInfo {
+        id: chapter_id,
+        incls: &[],
+    }
+    .proxy_on(proxy)
+    .await?;
 
-    let comic_info = proxy
-        .exec(&GetComicInfo {
-            id: &chapter_info.comic_id,
-            incls: &[],
-        })
-        .await?;
+    let comic_info = GetComicInfo {
+        id: &chapter_info.comic_id,
+        incls: &[],
+    }
+    .proxy_on(proxy)
+    .await?;
 
-    let workset_info = proxy
-        .exec(&GetWorksetInfo {
-            id: &comic_info.workset_id,
-        })
-        .await?;
+    let workset_info = GetWorksetInfo {
+        id: &comic_info.workset_id,
+    }
+    .proxy_on(proxy)
+    .await?;
 
     accept(workset_info.team_id)
 }
@@ -269,12 +266,12 @@ where
         return accept(());
     }
 
-    let assignment_info = proxy
-        .exec(&FindAssignmentInfo::ChapterUser {
-            chapter_id,
-            user_id,
-        })
-        .await?;
+    let assignment_info = FindAssignmentInfo::ChapterUser {
+        chapter_id,
+        user_id,
+    }
+    .proxy_on(proxy)
+    .await?;
 
     if assignment_info.is_none() {
         return Err(assignment_list_permission_err());
@@ -297,11 +294,11 @@ where
         return accept(());
     }
 
-    let user_info = proxy
-        .exec(&GetUserInfo::Id {
-            id: current_user_id,
-        })
-        .await?;
+    let user_info = GetUserInfo::Id {
+        id: current_user_id,
+    }
+    .proxy_on(proxy)
+    .await?;
 
     if !user_info.is_sadmin {
         return Err(assignment_list_permission_err());
@@ -319,12 +316,12 @@ async fn check_admin<P>(
 where
     P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
 {
-    let assignment_info = proxy
-        .exec(&FindAssignmentInfo::ChapterUser {
-            chapter_id,
-            user_id,
-        })
-        .await?;
+    let assignment_info = FindAssignmentInfo::ChapterUser {
+        chapter_id,
+        user_id,
+    }
+    .proxy_on(proxy)
+    .await?;
 
     let Some(assignment_info) = assignment_info else {
         return Err(chapter_admin_err());
@@ -354,12 +351,12 @@ where
         return Err(assignment_self_reduce_err());
     }
 
-    let assignment_info = proxy
-        .exec(&FindAssignmentInfo::ChapterUser {
-            chapter_id,
-            user_id: subject_user_id,
-        })
-        .await?;
+    let assignment_info = FindAssignmentInfo::ChapterUser {
+        chapter_id,
+        user_id: subject_user_id,
+    }
+    .proxy_on(proxy)
+    .await?;
 
     let Some(assignment_info) = assignment_info else {
         return Err(assignment_self_reduce_err());
@@ -392,12 +389,12 @@ where
 
     let team_id = resolve_team_id(proxy, chapter_id).await?;
 
-    let member_info = proxy
-        .exec(&FindMemberInfo::UserTeam {
-            user_id,
-            team_id: &team_id,
-        })
-        .await?;
+    let member_info = FindMemberInfo::UserTeam {
+        user_id,
+        team_id: &team_id,
+    }
+    .proxy_on(proxy)
+    .await?;
 
     let Some(member_info) = member_info else {
         return Err(assignment_role_not_assignable_perm_err());

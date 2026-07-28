@@ -1,6 +1,6 @@
 //! Unit use cases for listing and saving one Page sequence.
 
-use poprako_orchestra::{Nucl, run_proxy};
+use poprako_orchestra::{Nucl, OperRun as _, OperStep as _, run_proxy};
 use tracing::instrument;
 
 use crate::complex::chapter::ChapterComplex;
@@ -57,11 +57,11 @@ where
         + AssignmentRepo<C>
         + Sync,
 {
-    let page_info = repo
-        .run(&GetPageInfo {
-            id: &params.page_id,
-        })
-        .await?;
+    let page_info = GetPageInfo {
+        id: &params.page_id,
+    }
+    .run_on(repo)
+    .await?;
 
     UnitPermComplex::ensure_user_can_list_infos(
         &mut run_proxy! {
@@ -77,11 +77,11 @@ where
     )
     .await?;
 
-    let unit_infos = repo
-        .run(&ListUnitInfos {
-            page_id: &page_info.id,
-        })
-        .await?;
+    let unit_infos = ListUnitInfos {
+        page_id: &page_info.id,
+    }
+    .run_on(repo)
+    .await?;
 
     let counters = UnitCounters {
         total_unit_count: page_info.total_unit_count,
@@ -118,36 +118,30 @@ where
 
     let stages = UnitComplex::submitted_stage_starts(&edits);
 
-    let page_scope = repo.run(&GetPageInfo { id: &page_id }).await?;
+    let page_scope = GetPageInfo { id: &page_id }.run_on(repo).await?;
 
     let chapter_id = nucl
         .coord(async move |context| {
             //
-            let chapter_info = repo
-                .step(
-                    context,
-                    &GetChapterInfoExcluded {
-                        id: &page_scope.chapter_id,
-                        incls: &[],
-                    },
-                )
-                .await?;
+            let chapter_info = GetChapterInfoExcluded {
+                id: &page_scope.chapter_id,
+                incls: &[],
+            }
+            .step_on(repo, context)
+            .await?;
 
             ChapterComplex::ensure_chapter_writable(&chapter_info)?;
 
-            let page_info = repo
-                .step(context, &GetPageInfoExcluded { id: &page_id })
+            let page_info = GetPageInfoExcluded { id: &page_id }
+                .step_on(repo, context)
                 .await?;
 
-            let assignment = repo
-                .step(
-                    context,
-                    &FindAssignmentInfo::ChapterUser {
-                        chapter_id: &page_info.chapter_id,
-                        user_id: &token.user_id,
-                    },
-                )
-                .await?;
+            let assignment = FindAssignmentInfo::ChapterUser {
+                chapter_id: &page_info.chapter_id,
+                user_id: &token.user_id,
+            }
+            .step_on(repo, context)
+            .await?;
 
             let edit_perm = UnitEditPerm {
                 can_translate: assignment.as_ref().is_some_and(|assignment| {
@@ -160,14 +154,11 @@ where
 
             UnitPermComplex::ensure_user_can_edit_fields(edit_perm, &edits)?;
 
-            let orders = repo
-                .step(
-                    context,
-                    &ListUnitOrders {
-                        page_id: &page_info.id,
-                    },
-                )
-                .await?;
+            let orders = ListUnitOrders {
+                page_id: &page_info.id,
+            }
+            .step_on(repo, context)
+            .await?;
 
             let base_ids = orders
                 .iter()
@@ -176,24 +167,19 @@ where
 
             let edits = UnitComplex::normalize_edits(&base_ids, edits)?;
 
-            let counters = repo
-                .step(
-                    context,
-                    &ApplyUnitEdits {
-                        page_id: &page_info.id,
-                        orders: &orders,
-                        edits: &edits,
-                    },
-                )
-                .await?;
+            let counters = ApplyUnitEdits {
+                page_id: &page_info.id,
+                orders: &orders,
+                edits: &edits,
+            }
+            .step_on(repo, context)
+            .await?;
 
-            repo.step(
-                context,
-                &SetPageUnitCounters {
-                    id: &page_info.id,
-                    counters,
-                },
-            )
+            SetPageUnitCounters {
+                id: &page_info.id,
+                counters,
+            }
+            .step_on(repo, context)
             .await?;
 
             let old_counters = UnitCounters {
@@ -204,21 +190,17 @@ where
 
             let delta = old_counters.calc_delta(counters);
 
-            repo.step(
-                context,
-                &AdjustChapterUnitCounters {
-                    id: &page_info.chapter_id,
-                    delta,
-                },
-            )
+            AdjustChapterUnitCounters {
+                id: &page_info.chapter_id,
+                delta,
+            }
+            .step_on(repo, context)
             .await?;
 
-            repo.step(
-                context,
-                &TouchComicLastActive {
-                    id: &chapter_info.comic_id,
-                },
-            )
+            TouchComicLastActive {
+                id: &chapter_info.comic_id,
+            }
+            .step_on(repo, context)
             .await?;
 
             accept(page_info.chapter_id)

@@ -1,6 +1,8 @@
 //! Chapter use cases — list, read, create, update, and deletion.
 
-use poprako_orchestra::{Nucl, run_proxy, step_proxy};
+use poprako_orchestra::{
+    Nucl, OperRun as _, OperStep as _, run_proxy, step_proxy,
+};
 use poprako_orchestra_extra::prom::oper::DeferBatch;
 use tracing::instrument;
 
@@ -93,7 +95,7 @@ where
         limit: params.limit,
     };
 
-    let chapter_infos = repo.run(&ListChapterInfos { spec: &spec }).await?;
+    let chapter_infos = ListChapterInfos { spec: &spec }.run_on(repo).await?;
 
     let comic_ids = chapter_infos
         .iter()
@@ -157,12 +159,12 @@ where
     )
     .await?;
 
-    let chapter_info = repo
-        .run(&GetChapterInfo {
-            id: &id,
-            incls: &[],
-        })
-        .await?;
+    let chapter_info = GetChapterInfo {
+        id: &id,
+        incls: &[],
+    }
+    .run_on(repo)
+    .await?;
 
     accept(ChapterInfoVal::from(chapter_info))
 }
@@ -189,12 +191,12 @@ where
     )
     .await?;
 
-    let chapter_info = repo
-        .run(&FindPinnedChapterInfo {
-            comic_id: &comic_id,
-            incls: &[],
-        })
-        .await?;
+    let chapter_info = FindPinnedChapterInfo {
+        comic_id: &comic_id,
+        incls: &[],
+    }
+    .run_on(repo)
+    .await?;
 
     accept(chapter_info.map(ChapterInfoVal::from))
 }
@@ -233,35 +235,28 @@ where
     let chapter_id = nucl
         .coord(async move |context| {
             //
-            repo.step(
-                context,
-                &LockChapters {
-                    comic_id: &params.comic_id,
-                },
-            )
+            LockChapters {
+                comic_id: &params.comic_id,
+            }
+            .step_on(repo, context)
             .await?;
 
-            let index = repo
-                .step(
-                    context,
-                    &AllocComicChapterIndex {
-                        id: &params.comic_id,
-                    },
-                )
-                .await?;
+            let index = AllocComicChapterIndex {
+                id: &params.comic_id,
+            }
+            .step_on(repo, context)
+            .await?;
 
             let subtitle =
                 ChapterComplex::subtitle_or_default(params.subtitle, index);
 
             let chapter_id = ChapterComplex::gen_id();
 
-            repo.step(
-                context,
-                &UnpinOtherChapters {
-                    comic_id: &params.comic_id,
-                    excluded_id: &chapter_id,
-                },
-            )
+            UnpinOtherChapters {
+                comic_id: &params.comic_id,
+                excluded_id: &chapter_id,
+            }
+            .step_on(repo, context)
             .await?;
 
             let chapter_entry = ChapterEntry {
@@ -273,30 +268,23 @@ where
                 creator_id: token.user_id.clone(),
             };
 
-            let chapter_info = repo
-                .step(
-                    context,
-                    &CreateChapter {
-                        entry: &chapter_entry,
-                    },
-                )
-                .await?;
-
-            repo.step(
-                context,
-                &UpdateComicChapterCount {
-                    id: &chapter_info.comic_id,
-                    delta: 1,
-                },
-            )
+            let chapter_info = CreateChapter {
+                entry: &chapter_entry,
+            }
+            .step_on(repo, context)
             .await?;
 
-            repo.step(
-                context,
-                &TouchComicLastActive {
-                    id: &chapter_info.comic_id,
-                },
-            )
+            UpdateComicChapterCount {
+                id: &chapter_info.comic_id,
+                delta: 1,
+            }
+            .step_on(repo, context)
+            .await?;
+
+            TouchComicLastActive {
+                id: &chapter_info.comic_id,
+            }
+            .step_on(repo, context)
             .await?;
 
             let assignment_entry = AssignmentEntry {
@@ -308,12 +296,10 @@ where
                 ),
             };
 
-            repo.step(
-                context,
-                &CreateAssignment {
-                    entry: &assignment_entry,
-                },
-            )
+            CreateAssignment {
+                entry: &assignment_entry,
+            }
+            .step_on(repo, context)
             .await?;
 
             accept(chapter_info.id)
@@ -346,15 +332,12 @@ where
 
     nucl.coord(async move |context| {
         //
-        let chapter_info = repo
-            .step(
-                context,
-                &GetChapterInfoExcluded {
-                    id: &params.id,
-                    incls: &[],
-                },
-            )
-            .await?;
+        let chapter_info = GetChapterInfoExcluded {
+            id: &params.id,
+            incls: &[],
+        }
+        .step_on(repo, context)
+        .await?;
 
         ChapterComplex::ensure_chapter_writable(&chapter_info)?;
 
@@ -366,21 +349,17 @@ where
                 pin: None,
             };
 
-            repo.step(
-                context,
-                &UpdateChapter {
-                    update: &chapter_info_update,
-                },
-            )
+            UpdateChapter {
+                update: &chapter_info_update,
+            }
+            .step_on(repo, context)
             .await?;
         }
 
-        repo.step(
-            context,
-            &TouchComicLastActive {
-                id: &chapter_info.comic_id,
-            },
-        )
+        TouchComicLastActive {
+            id: &chapter_info.comic_id,
+        }
+        .step_on(repo, context)
         .await?;
 
         accept(())
@@ -411,45 +390,38 @@ where
     )
     .await?;
 
-    let chapter_info = repo
-        .run(&GetChapterInfo {
-            id: &id,
-            incls: &[],
-        })
-        .await?;
+    let chapter_info = GetChapterInfo {
+        id: &id,
+        incls: &[],
+    }
+    .run_on(repo)
+    .await?;
 
     let comic_id = chapter_info.comic_id;
 
     let () = nucl
         .coord(async move |context| {
             //
-            repo.step(
-                context,
-                &LockChapters {
-                    comic_id: &comic_id,
-                },
-            )
+            LockChapters {
+                comic_id: &comic_id,
+            }
+            .step_on(repo, context)
             .await?;
 
-            let chapter_info = repo
-                .step(
-                    context,
-                    &GetChapterInfoExcluded {
-                        id: &id,
-                        incls: &[],
-                    },
-                )
-                .await?;
+            let chapter_info = GetChapterInfoExcluded {
+                id: &id,
+                incls: &[],
+            }
+            .step_on(repo, context)
+            .await?;
 
             ChapterComplex::ensure_chapter_writable(&chapter_info)?;
 
-            repo.step(
-                context,
-                &UnpinOtherChapters {
-                    comic_id: &chapter_info.comic_id,
-                    excluded_id: &chapter_info.id,
-                },
-            )
+            UnpinOtherChapters {
+                comic_id: &chapter_info.comic_id,
+                excluded_id: &chapter_info.id,
+            }
+            .step_on(repo, context)
             .await?;
 
             let chapter_info_update = ChapterInfoUpdate {
@@ -458,20 +430,16 @@ where
                 pin: Some(true),
             };
 
-            repo.step(
-                context,
-                &UpdateChapter {
-                    update: &chapter_info_update,
-                },
-            )
+            UpdateChapter {
+                update: &chapter_info_update,
+            }
+            .step_on(repo, context)
             .await?;
 
-            repo.step(
-                context,
-                &TouchComicLastActive {
-                    id: &chapter_info.comic_id,
-                },
-            )
+            TouchComicLastActive {
+                id: &chapter_info.comic_id,
+            }
+            .step_on(repo, context)
             .await?;
 
             accept(())
@@ -516,15 +484,12 @@ where
     let events = nucl
         .coord(async move |context| {
             //
-            let chapter_info = repo
-                .step(
-                    context,
-                    &GetChapterInfoExcluded {
-                        id: &params.id,
-                        incls: &[],
-                    },
-                )
-                .await?;
+            let chapter_info = GetChapterInfoExcluded {
+                id: &params.id,
+                incls: &[],
+            }
+            .step_on(repo, context)
+            .await?;
 
             ChapterComplex::ensure_chapter_writable(&chapter_info)?;
 
@@ -542,12 +507,10 @@ where
             let next_phase =
                 chapter_stage_update.stages.get_phase(params.stage);
 
-            repo.step(
-                context,
-                &UpdateChapterStage {
-                    update: &chapter_stage_update,
-                },
-            )
+            UpdateChapterStage {
+                update: &chapter_stage_update,
+            }
+            .step_on(repo, context)
             .await?;
 
             let mut events = Vec::new();
@@ -588,12 +551,10 @@ where
                 }));
             }
 
-            repo.step(
-                context,
-                &TouchComicLastActive {
-                    id: &chapter_info.comic_id,
-                },
-            )
+            TouchComicLastActive {
+                id: &chapter_info.comic_id,
+            }
+            .step_on(repo, context)
             .await?;
 
             accept(events)

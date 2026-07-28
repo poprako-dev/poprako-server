@@ -3,7 +3,7 @@
 use std::sync::Arc;
 use std::time::Duration as StdDuration;
 
-use poprako_orchestra::Step as _;
+use poprako_orchestra::OperStep as _;
 use time::{Duration, OffsetDateTime};
 use tokio::sync::{Notify, mpsc};
 use tokio::task::JoinHandle;
@@ -329,7 +329,7 @@ where
 
         let mut context = RdbContext::new(conn);
 
-        self.repo.step(&mut context, &PollPending).await
+        PollPending.step_on(&self.repo, &mut context).await
     }
 
     // Internal implementation of `dispatch_rows`.
@@ -396,8 +396,8 @@ where
 
         let mut context = RdbContext::new(conn);
 
-        self.repo
-            .step(&mut context, &CompleteMessage::new(id, lease))
+        CompleteMessage::new(id, lease)
+            .step_on(&self.repo, &mut context)
             .await
     }
 
@@ -412,11 +412,8 @@ where
 
         let visible_at = OffsetDateTime::now_utc() + RETRY_DELAY;
 
-        self.repo
-            .step(
-                &mut context,
-                &RetryMessage::new(id, lease, message, &visible_at),
-            )
+        RetryMessage::new(id, lease, message, &visible_at)
+            .step_on(&self.repo, &mut context)
             .await
     }
 
@@ -429,8 +426,8 @@ where
 
         let mut context = RdbContext::new(conn);
 
-        self.repo
-            .step(&mut context, &FailMessage::new(id, lease, message))
+        FailMessage::new(id, lease, message)
+            .step_on(&self.repo, &mut context)
             .await
     }
 
@@ -445,8 +442,8 @@ where
 
         let before = OffsetDateTime::now_utc() - PROCESSING_TIMEOUT;
 
-        self.repo
-            .step(&mut context, &ResetStuck::new(&before))
+        ResetStuck::new(&before)
+            .step_on(&self.repo, &mut context)
             .await
     }
 
@@ -463,11 +460,8 @@ where
 
         let dead_before = OffsetDateTime::now_utc() - DEAD_RETENTION;
 
-        self.repo
-            .step(
-                &mut context,
-                &PurgeCompleted::new(&completed_before, &dead_before),
-            )
+        PurgeCompleted::new(&completed_before, &dead_before)
+            .step_on(&self.repo, &mut context)
             .await
     }
 
@@ -480,8 +474,8 @@ where
 
         let mut context = RdbContext::new(conn);
 
-        self.repo
-            .step(&mut context, &ClaimPending::new(id, lease))
+        ClaimPending::new(id, lease)
+            .step_on(&self.repo, &mut context)
             .await
     }
 }

@@ -1,6 +1,6 @@
 //! Handler for deferred chapter workflow advancement.
 
-use poprako_orchestra::Nucl;
+use poprako_orchestra::{Nucl, OperStep as _};
 use tracing::instrument;
 
 use crate::part::effect::EffectDevelop;
@@ -54,17 +54,15 @@ where
             // Internal implementation detail.
             // NOTE: Chapter -> Page is the shared lock order that prevents
             // both deadlocks and chapter upload-summary races.
-            repo.step(
-                context,
-                &GetChapterInfoExcluded {
-                    id: chapter_id,
-                    incls: &[],
-                },
-            )
+            GetChapterInfoExcluded {
+                id: chapter_id,
+                incls: &[],
+            }
+            .step_on(repo, context)
             .await?;
 
-            let advanced = repo
-                .step(context, &CompleteChapterRawProvide { id: chapter_id })
+            let advanced = CompleteChapterRawProvide { id: chapter_id }
+                .step_on(repo, context)
                 .await?;
 
             accept(advanced)

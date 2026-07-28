@@ -1,7 +1,7 @@
 //! Mock implementations of [`Prom`] for testing deferred action recording,
 //! plus an on-demand prom-record processor for integration tests.
 
-use poprako_orchestra::{Nucl as _, Step};
+use poprako_orchestra::{Nucl as _, OperStep as _, Step};
 use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 use poprako_orchestra_extra::prom::task::Task;
 use time::OffsetDateTime;
@@ -149,14 +149,12 @@ impl<'t, 'a> Step<DeferBatch<'t, 'a, String, TaskPayload, ()>, MockContext>
         //
         // Internal implementation detail.
         for task in oper.tasks {
-            self.step(
-                context,
-                &Defer::new(Task {
-                    id: task.id,
-                    payload: task.payload,
-                    delay: task.delay,
-                }),
-            )
+            Defer::new(Task {
+                id: task.id,
+                payload: task.payload,
+                delay: task.delay,
+            })
+            .step_on(self, context)
             .await?;
         }
 
@@ -386,17 +384,15 @@ async fn mark_page_image_unverified(
     mock.coord(async move |context| {
         //
         // Internal implementation detail.
-        mock.step(
-            context,
-            &GetChapterInfoExcluded {
-                id: &page_info.chapter_id,
-                incls: &[],
-            },
-        )
+        GetChapterInfoExcluded {
+            id: &page_info.chapter_id,
+            incls: &[],
+        }
+        .step_on(mock, context)
         .await?;
 
-        let locked_page_info = mock
-            .step(context, &GetPageInfoExcluded { id: resource_id })
+        let locked_page_info = GetPageInfoExcluded { id: resource_id }
+            .step_on(mock, context)
             .await?;
 
         if locked_page_info.image_version != image_version
@@ -405,15 +401,13 @@ async fn mark_page_image_unverified(
             return accept(());
         }
 
-        mock.step(
-            context,
-            &SetPageImageUploaded {
-                id: resource_id,
-                image_version,
-                image_key: object_key,
-                image_uploaded: false,
-            },
-        )
+        SetPageImageUploaded {
+            id: resource_id,
+            image_version,
+            image_key: object_key,
+            image_uploaded: false,
+        }
+        .step_on(mock, context)
         .await?;
 
         accept(())
@@ -432,14 +426,11 @@ async fn classify_expected_mark(
         //
         // Internal implementation detail.
         image::ResourceKind::UserAvatar => {
-            match mock
-                .step(
-                    context,
-                    &GetUserInfoExcluded::Id {
-                        id: image_identity.resource_id,
-                    },
-                )
-                .await
+            match (GetUserInfoExcluded::Id {
+                id: image_identity.resource_id,
+            })
+            .step_on(mock, context)
+            .await
             {
                 // Internal implementation detail.
                 Ok(user_info) => {
@@ -462,14 +453,11 @@ async fn classify_expected_mark(
         }
 
         image::ResourceKind::TeamAvatar => {
-            match mock
-                .step(
-                    context,
-                    &GetTeamInfoExcluded::Id {
-                        id: image_identity.resource_id,
-                    },
-                )
-                .await
+            match (GetTeamInfoExcluded::Id {
+                id: image_identity.resource_id,
+            })
+            .step_on(mock, context)
+            .await
             {
                 // Internal implementation detail.
                 Ok(team_info) => {
@@ -492,15 +480,12 @@ async fn classify_expected_mark(
         }
 
         image::ResourceKind::ComicCover => {
-            match mock
-                .step(
-                    context,
-                    &GetComicInfoExcluded {
-                        id: image_identity.resource_id,
-                        incls: &[],
-                    },
-                )
-                .await
+            match (GetComicInfoExcluded {
+                id: image_identity.resource_id,
+                incls: &[],
+            })
+            .step_on(mock, context)
+            .await
             {
                 Ok(comic_info) => {
                     //
@@ -522,14 +507,11 @@ async fn classify_expected_mark(
         }
 
         image::ResourceKind::PageImage => {
-            match mock
-                .step(
-                    context,
-                    &GetPageInfoExcluded {
-                        id: image_identity.resource_id,
-                    },
-                )
-                .await
+            match (GetPageInfoExcluded {
+                id: image_identity.resource_id,
+            })
+            .step_on(mock, context)
+            .await
             {
                 Ok(page_info) => {
                     //
@@ -563,41 +545,35 @@ async fn mark_uploaded(
         //
         // Internal implementation detail.
         image::ResourceKind::UserAvatar => {
-            mock.step(
-                context,
-                &UpdateUser::MarkAvatarUploaded {
-                    id: image_identity.resource_id,
-                    avatar_version: image_identity.version,
-                    avatar_key: Some(image_identity.object_key),
-                    avatar_uploaded: image_uploaded,
-                },
-            )
+            UpdateUser::MarkAvatarUploaded {
+                id: image_identity.resource_id,
+                avatar_version: image_identity.version,
+                avatar_key: Some(image_identity.object_key),
+                avatar_uploaded: image_uploaded,
+            }
+            .step_on(mock, context)
             .await
         }
 
         image::ResourceKind::TeamAvatar => {
-            mock.step(
-                context,
-                &UpdateTeam::MarkAvatarUploaded {
-                    id: image_identity.resource_id,
-                    avatar_version: image_identity.version,
-                    avatar_key: Some(image_identity.object_key),
-                    avatar_uploaded: image_uploaded,
-                },
-            )
+            UpdateTeam::MarkAvatarUploaded {
+                id: image_identity.resource_id,
+                avatar_version: image_identity.version,
+                avatar_key: Some(image_identity.object_key),
+                avatar_uploaded: image_uploaded,
+            }
+            .step_on(mock, context)
             .await
         }
 
         image::ResourceKind::ComicCover => {
-            mock.step(
-                context,
-                &MarkComicCoverUploaded {
-                    id: image_identity.resource_id,
-                    cover_version: image_identity.version,
-                    cover_key: Some(image_identity.object_key),
-                    cover_uploaded: image_uploaded,
-                },
-            )
+            MarkComicCoverUploaded {
+                id: image_identity.resource_id,
+                cover_version: image_identity.version,
+                cover_key: Some(image_identity.object_key),
+                cover_uploaded: image_uploaded,
+            }
+            .step_on(mock, context)
             .await
         }
 
@@ -615,23 +591,19 @@ async fn mark_uploaded(
                     message: trl("error-page-not-found"),
                 })?;
 
-            mock.step(
-                context,
-                &GetChapterInfoExcluded {
-                    id: &page_info.chapter_id,
-                    incls: &[],
-                },
-            )
+            GetChapterInfoExcluded {
+                id: &page_info.chapter_id,
+                incls: &[],
+            }
+            .step_on(mock, context)
             .await?;
 
-            mock.step(
-                context,
-                &MarkPageImageUploaded {
-                    id: image_identity.resource_id,
-                    image_version: image_identity.version,
-                    image_key: Some(image_identity.object_key),
-                },
-            )
+            MarkPageImageUploaded {
+                id: image_identity.resource_id,
+                image_version: image_identity.version,
+                image_key: Some(image_identity.object_key),
+            }
+            .step_on(mock, context)
             .await?;
 
             accept(())

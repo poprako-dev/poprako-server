@@ -1,5 +1,6 @@
 //! System mail use cases — list unread and mark as read for the current user.
 
+use poprako_orchestra::OperRun as _;
 use tracing::instrument;
 
 use poprako_util::time::ToUnixMilli as _;
@@ -56,11 +57,11 @@ where
         limit: params.limit,
     };
 
-    let system_mail_infos = repo
-        .run(&ListSystemMailInfos {
-            spec: &system_mail_list_spec,
-        })
-        .await?;
+    let system_mail_infos = ListSystemMailInfos {
+        spec: &system_mail_list_spec,
+    }
+    .run_on(repo)
+    .await?;
 
     let system_mail_vals = system_mail_infos
         .into_iter()
@@ -96,10 +97,11 @@ where
     R: SystemMailRepo<C>,
 {
     for id in &ids {
-        repo.run(&MarkSystemMailRead {
+        MarkSystemMailRead {
             id,
             user_id: &token.user_id,
-        })
+        }
+        .run_on(repo)
         .await?;
     }
 

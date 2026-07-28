@@ -2,7 +2,7 @@
 
 use std::time::Duration;
 
-use poprako_orchestra::{Nucl, run_proxy};
+use poprako_orchestra::{Nucl, OperRun as _, OperStep as _, run_proxy};
 use poprako_orchestra_extra::prom::oper::Defer;
 use poprako_orchestra_extra::prom::task::Task;
 use tracing::instrument;
@@ -73,27 +73,21 @@ where
         .coord(async move |context| {
             //
 
-            let invitee_user_info = repo
-                .step(
-                    context,
-                    &FindUserInfo::Qid {
-                        qid: &params.invitee_qid,
-                    },
-                )
-                .await?;
+            let invitee_user_info = FindUserInfo::Qid {
+                qid: &params.invitee_qid,
+            }
+            .step_on(repo, context)
+            .await?;
 
             if let Some(invitee_user_info) = invitee_user_info {
                 //
 
-                let invitee_member_info = repo
-                    .step(
-                        context,
-                        &FindMemberInfo::UserTeam {
-                            user_id: &invitee_user_info.id,
-                            team_id: &params.team_id,
-                        },
-                    )
-                    .await?;
+                let invitee_member_info = FindMemberInfo::UserTeam {
+                    user_id: &invitee_user_info.id,
+                    team_id: &params.team_id,
+                }
+                .step_on(repo, context)
+                .await?;
 
                 if invitee_member_info.is_some() {
                     return Err(BaseError::Expected {
@@ -116,14 +110,11 @@ where
                 roles,
             };
 
-            let member_invitation_info = repo
-                .step(
-                    context,
-                    &CreateMemberInvitation {
-                        entry: &member_invitation_entry,
-                    },
-                )
-                .await?;
+            let member_invitation_info = CreateMemberInvitation {
+                entry: &member_invitation_entry,
+            }
+            .step_on(repo, context)
+            .await?;
 
             let purge_event = InvitationPayload::Member {
                 invitation_id: member_invitation_info.id.clone(),
@@ -139,7 +130,7 @@ where
                 delay: Some(EXPIRY_DELAY),
             };
 
-            prom.step(context, &Defer::new(purge_task)).await?;
+            Defer::new(purge_task).step_on(prom, context).await?;
 
             accept((member_invitation_info.id, member_invitation_info.code))
         })
@@ -188,11 +179,11 @@ where
         limit: params.limit,
     };
 
-    let member_invitation_infos = repo
-        .run(&ListMemberInvitationInfos {
-            spec: &member_invitation_list_spec,
-        })
-        .await?;
+    let member_invitation_infos = ListMemberInvitationInfos {
+        spec: &member_invitation_list_spec,
+    }
+    .run_on(repo)
+    .await?;
 
     let mut member_invitation_info_vals =
         Vec::with_capacity(member_invitation_infos.len());
@@ -240,12 +231,10 @@ where
             roles: params.roles,
         };
 
-        repo.step(
-            context,
-            &UpdateMemberInvitation::Info {
-                update: &member_invitation_update,
-            },
-        )
+        UpdateMemberInvitation::Info {
+            update: &member_invitation_update,
+        }
+        .step_on(repo, context)
         .await?;
 
         accept(())
@@ -282,7 +271,8 @@ where
 
     nucl.coord(async move |context| {
         //
-        repo.step(context, &DeleteMemberInvitation { id: &id })
+        DeleteMemberInvitation { id: &id }
+            .step_on(repo, context)
             .await?;
 
         accept(())

@@ -1,5 +1,6 @@
 //! Handler for expired invitation purge events.
 
+use poprako_orchestra::OperRun as _;
 use tracing::instrument;
 
 use crate::part::prom::payload::invitation::InvitationPayload;
@@ -22,12 +23,14 @@ where
     let outcome = match event {
         //
         InvitationPayload::Assignment { invitation_id } => {
-            repo.run(&PurgeExpiredAssignmentInvitation { id: invitation_id })
+            PurgeExpiredAssignmentInvitation { id: invitation_id }
+                .run_on(repo)
                 .await
         }
 
         InvitationPayload::Member { invitation_id } => {
-            repo.run(&PurgeExpiredMemberInvitation { id: invitation_id })
+            PurgeExpiredMemberInvitation { id: invitation_id }
+                .run_on(repo)
                 .await
         }
     };

@@ -1,6 +1,6 @@
 //! Complex-domain opers for member invitations.
 
-use poprako_orchestra::Proxy;
+use poprako_orchestra::{OperProxy as _, Proxy};
 
 use crate::complex::util::{
     check_user_is_team_admin, check_user_is_team_member,
@@ -103,12 +103,12 @@ impl MemberInvitationPermComplex {
                 Error = BaseError,
             >,
     {
-        let member_invitation_info = proxy
-            .exec(&GetMemberInvitationInfo::Id {
-                id: invitation_id,
-                incls: &[],
-            })
-            .await?;
+        let member_invitation_info = GetMemberInvitationInfo::Id {
+            id: invitation_id,
+            incls: &[],
+        }
+        .proxy_on(proxy)
+        .await?;
 
         accept(member_invitation_info.team_id)
     }

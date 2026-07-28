@@ -1,6 +1,6 @@
 //! Announcement use cases — list and create team announcements.
 
-use poprako_orchestra::{Nucl, run_proxy};
+use poprako_orchestra::{Nucl, OperRun as _, OperStep as _, run_proxy};
 use tracing::instrument;
 
 use crate::complex::announcement::{
@@ -47,11 +47,11 @@ where
     )
     .await?;
 
-    let announcement_infos = repo
-        .run(&ListAnnouncementInfos {
-            spec: &announcement_list_spec,
-        })
-        .await?;
+    let announcement_infos = ListAnnouncementInfos {
+        spec: &announcement_list_spec,
+    }
+    .run_on(repo)
+    .await?;
 
     let mut announcement_info_vals =
         Vec::with_capacity(announcement_infos.len());
@@ -98,12 +98,10 @@ where
                 content: params.content,
             };
 
-            repo.step(
-                context,
-                &CreateAnnouncement {
-                    entry: &announcement_entry,
-                },
-            )
+            CreateAnnouncement {
+                entry: &announcement_entry,
+            }
+            .step_on(repo, context)
             .await
         })
         .await?;

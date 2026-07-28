@@ -4,6 +4,7 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 
 use fluent_templates::fluent_bundle::FluentValue;
+use poprako_orchestra::OperRun as _;
 use tracing::instrument;
 
 use poprako_util::i18n::{trl, trl_kv};
@@ -124,12 +125,12 @@ async fn load_chapter<C, R>(repo: &R, chapter_id: &str) -> Option<ChapterInfo>
 where
     R: ChapterRepo<C>,
 {
-    let chapter_info = repo
-        .run(&GetChapterInfo {
-            id: chapter_id,
-            incls: CHAPTER_INCL_OPT,
-        })
-        .await;
+    let chapter_info = GetChapterInfo {
+        id: chapter_id,
+        incls: CHAPTER_INCL_OPT,
+    }
+    .run_on(repo)
+    .await;
 
     let Ok(chapter_info) = chapter_info else {
         //
@@ -157,13 +158,13 @@ async fn build_assignment_mails<C, R>(
 where
     R: AssignmentRepo<C>,
 {
-    let assignment_infos = repo
-        .run(&ListAssignmentInfos::Chapter {
-            chapter_id: &chapter_info.id,
-            role: Some(receiver_role),
-            incls: &[],
-        })
-        .await;
+    let assignment_infos = ListAssignmentInfos::Chapter {
+        chapter_id: &chapter_info.id,
+        role: Some(receiver_role),
+        incls: &[],
+    }
+    .run_on(repo)
+    .await;
 
     let Ok(assignment_infos) = assignment_infos else {
         //
@@ -216,12 +217,12 @@ async fn send_batch<C, R>(
         return;
     }
 
-    if repo
-        .run(&SendSystemMails {
-            entries: &system_mail_entries,
-        })
-        .await
-        .is_err()
+    if (SendSystemMails {
+        entries: &system_mail_entries,
+    })
+    .run_on(repo)
+    .await
+    .is_err()
     {
         tracing::warn!(
             chapter_id = %chapter_id,

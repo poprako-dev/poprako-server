@@ -1,4 +1,4 @@
-use poprako_orchestra::Run as _;
+use poprako_orchestra::OperRun as _;
 
 use crate::part::prom::payload::invitation::InvitationPayload;
 use crate::part::repo::oper::assignment_invitation::PurgeExpiredAssignmentInvitation;
@@ -11,12 +11,14 @@ pub async fn process(mock: &Mock, event: &InvitationPayload) -> BaseRest<()> {
     match event {
         //
         InvitationPayload::Assignment { invitation_id } => {
-            mock.run(&PurgeExpiredAssignmentInvitation { id: invitation_id })
+            PurgeExpiredAssignmentInvitation { id: invitation_id }
+                .run_on(mock)
                 .await
         }
 
         InvitationPayload::Member { invitation_id } => {
-            mock.run(&PurgeExpiredMemberInvitation { id: invitation_id })
+            PurgeExpiredMemberInvitation { id: invitation_id }
+                .run_on(mock)
                 .await
         }
     }
