@@ -65,8 +65,8 @@ fn seed_proofreader_scope(mock: &Mock) {
     mock.seed_termbase(termbase());
 }
 
-fn create_params() -> CreateTermParams {
-    CreateTermParams {
+fn create_instr() -> CreateTermInstr {
+    CreateTermInstr {
         termbase_id: "termbase-1".into(),
         source: "  Source  ".into(),
         targets: vec![" Target A ".into(), "Target B".into()],
@@ -81,7 +81,7 @@ async fn create_normalizes_and_increments_count() {
 
     seed_proofreader_scope(&mock);
 
-    let payload = create((&mock, &mock), token("user-1"), create_params())
+    let val = create((&mock, &mock), token("user-1"), create_instr())
         .await
         .unwrap();
 
@@ -89,7 +89,7 @@ async fn create_normalizes_and_increments_count() {
 
     assert_eq!(snapshot.terms.len(), 1);
 
-    assert_eq!(snapshot.terms[0].id, payload.id);
+    assert_eq!(snapshot.terms[0].id, val.id);
 
     assert_eq!(snapshot.terms[0].source, "Source");
 
@@ -107,12 +107,12 @@ async fn create_rejects_duplicate_normalized_targets() {
 
     seed_proofreader_scope(&mock);
 
-    let params = CreateTermParams {
+    let instr = CreateTermInstr {
         targets: vec!["Target".into(), " target ".into()],
-        ..create_params()
+        ..create_instr()
     };
 
-    let error = create((&mock, &mock), token("user-1"), params)
+    let error = create((&mock, &mock), token("user-1"), instr)
         .await
         .unwrap_err();
 
@@ -132,12 +132,12 @@ async fn create_rejects_empty_targets() {
 
     seed_proofreader_scope(&mock);
 
-    let params = CreateTermParams {
+    let instr = CreateTermInstr {
         targets: Vec::new(),
-        ..create_params()
+        ..create_instr()
     };
 
-    let error = create((&mock, &mock), token("user-1"), params)
+    let error = create((&mock, &mock), token("user-1"), instr)
         .await
         .unwrap_err();
 
@@ -157,31 +157,31 @@ async fn list_infos_searches_only_source() {
 
     seed_proofreader_scope(&mock);
 
-    create((&mock, &mock), token("user-1"), create_params())
+    create((&mock, &mock), token("user-1"), create_instr())
         .await
         .unwrap();
 
-    let target_params = ListTermInfosParams {
+    let target_instr = ListTermInfosInstr {
         termbase_id: "termbase-1".into(),
         fuzzy_source: Some("target".into()),
         offset: 0,
         limit: 20,
     };
 
-    let target_infos = list_infos((&mock,), token("user-1"), target_params)
+    let target_infos = list_infos((&mock,), token("user-1"), target_instr)
         .await
         .unwrap();
 
     assert!(target_infos.is_empty());
 
-    let source_params = ListTermInfosParams {
+    let source_instr = ListTermInfosInstr {
         termbase_id: "termbase-1".into(),
         fuzzy_source: Some("source".into()),
         offset: 0,
         limit: 20,
     };
 
-    let source_infos = list_infos((&mock,), token("user-1"), source_params)
+    let source_infos = list_infos((&mock,), token("user-1"), source_instr)
         .await
         .unwrap();
 
@@ -195,20 +195,20 @@ async fn update_replaces_fields_and_touches_parent() {
 
     seed_proofreader_scope(&mock);
 
-    let payload = create((&mock, &mock), token("user-1"), create_params())
+    let val = create((&mock, &mock), token("user-1"), create_instr())
         .await
         .unwrap();
 
     let before = mock.snapshot().termbases[0].updated_at;
 
-    let params = UpdateTermInfoParams {
-        id: payload.id.clone(),
+    let instr = UpdateTermInfoInstr {
+        id: val.id.clone(),
         source: " Updated ".into(),
         targets: vec![" New ".into()],
         comment: Some(" Comment ".into()),
     };
 
-    update_info((&mock, &mock), token("user-1"), params)
+    update_info((&mock, &mock), token("user-1"), instr)
         .await
         .unwrap();
 
@@ -230,11 +230,11 @@ async fn delete_removes_term_and_decrements_count() {
 
     seed_proofreader_scope(&mock);
 
-    let payload = create((&mock, &mock), token("user-1"), create_params())
+    let val = create((&mock, &mock), token("user-1"), create_instr())
         .await
         .unwrap();
 
-    delete((&mock, &mock), token("user-1"), payload.id)
+    delete((&mock, &mock), token("user-1"), val.id)
         .await
         .unwrap();
 

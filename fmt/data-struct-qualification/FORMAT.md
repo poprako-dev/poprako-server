@@ -1,14 +1,15 @@
 # Data struct imports
 
-Every data domain is a public module. Import the concrete type from it and use
-the type bare:
+Every data role contains public domain submodules. Import the concrete type
+from its role and domain module, then use the type bare:
 
 ```rust
-use crate::data::team::CreateTeamParams;
+use crate::data::instr::team::CreateTeamInstr;
+use crate::data::val::team::TeamInfoVal;
 ```
 
-`team_data`, any other `*_data` wrapper, root data re-exports, and module
-qualified uses such as `team::CreateTeamParams` are forbidden. The checker
+Legacy wrappers, root data re-exports, and module-qualified uses such as
+`team::CreateTeamInstr` are forbidden. The checker
 delegates to the shared Tree-sitter rule:
 
 ```bash

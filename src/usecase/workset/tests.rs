@@ -12,15 +12,15 @@
 // delete(delete)(negative): missing workset should rollback state.
 
 use super::*;
+use crate::data::instr::workset::{
+    CreateWorksetInstr, ListWorksetInfosInstr, UpdateWorksetInfoInstr,
+};
 
 use poprako_orchestra::Step as _;
 use poprako_orchestra_extra::prom::oper::Defer;
 use poprako_orchestra_extra::prom::task::Task;
 use time::OffsetDateTime;
 
-use crate::data::workset::{
-    CreateWorksetParams, ListWorksetInfosParams, UpdateWorksetInfoParams,
-};
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::proj::member::MemberInfo;
 use crate::model::read::proj::workset::WorksetInfo;
@@ -52,9 +52,9 @@ fn workset(id: &str, team_id: &str, index: i32) -> WorksetInfo {
     }
 }
 
-fn create_params(team_id: &str) -> CreateWorksetParams {
-    // Build create params with stable name/description defaults.
-    CreateWorksetParams {
+fn create_instr(team_id: &str) -> CreateWorksetInstr {
+    // Build create instr with stable name/description defaults.
+    CreateWorksetInstr {
         team_id: team_id.into(),
         name: "new".into(),
         description: Some("desc".into()),
@@ -137,7 +137,7 @@ async fn create_allocates_index_and_persists() {
     mock.seed_member(admin_member("user-1", "team-1"));
 
     let created =
-        create((&mock, &mock), token("user-1"), create_params("team-1"))
+        create((&mock, &mock), token("user-1"), create_instr("team-1"))
             .await
             .unwrap();
 
@@ -159,7 +159,7 @@ async fn create_rolls_back_missing_team() {
 
     mock.seed_member(admin_member("user-1", "missing"));
 
-    let err = create((&mock, &mock), token("user-1"), create_params("missing"))
+    let err = create((&mock, &mock), token("user-1"), create_instr("missing"))
         .await
         .err()
         .unwrap();
@@ -218,7 +218,7 @@ async fn list_infos_filters_and_sorts_by_index() {
     let list = list_infos(
         (&mock,),
         token("user-1"),
-        ListWorksetInfosParams {
+        ListWorksetInfosInstr {
             team_id: "team-1".into(),
             offset: 0,
             limit: 10,
@@ -244,7 +244,7 @@ async fn list_infos_returns_empty_for_missing_team_contents() {
     let list = list_infos(
         (&mock,),
         token("user-1"),
-        ListWorksetInfosParams {
+        ListWorksetInfosInstr {
             team_id: "missing".into(),
             offset: 0,
             limit: 10,
@@ -268,7 +268,7 @@ async fn update_info_updates_workset() {
     update_info(
         (&mock,),
         token("user-1"),
-        UpdateWorksetInfoParams {
+        UpdateWorksetInfoInstr {
             id: "workset-1".into(),
             name: "updated".into(),
             description: Some("updated-desc".into()),
@@ -295,7 +295,7 @@ async fn update_info_propagates_missing_workset() {
     let err = update_info(
         (&mock,),
         token("user-1"),
-        UpdateWorksetInfoParams {
+        UpdateWorksetInfoInstr {
             id: "missing".into(),
             name: "updated".into(),
             description: None,

@@ -24,11 +24,11 @@
 // delete(delete)(negative): missing comic should rollback state.
 
 use super::*;
+use crate::data::instr::comic::{ListComicInfosInstr, UpdateComicInfoInstr};
 
 use fixture::*;
 use time::OffsetDateTime;
 
-use crate::data::comic::{ListComicInfosParams, UpdateComicInfoParams};
 use crate::model::read::proj::comic::ComicInfo;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
@@ -58,12 +58,11 @@ async fn create_allocates_index_and_updates_count() {
 
     mock.seed_member(creator_member);
 
-    let mut params = create_params("workset-1");
+    let mut instr = create_instr("workset-1");
 
-    params.preset_assignment_roles =
-        Some(RoleMask::from(RoleField::TRANSLATOR));
+    instr.preset_assignment_roles = Some(RoleMask::from(RoleField::TRANSLATOR));
 
-    let created = create((&mock, &mock), token("user-1"), params).await;
+    let created = create((&mock, &mock), token("user-1"), instr).await;
 
     assert!(created.is_ok());
 
@@ -119,7 +118,7 @@ async fn create_rolls_back_missing_workset() {
     //
     let mock = Mock::new();
 
-    let err = create((&mock, &mock), token("user-1"), create_params("missing"))
+    let err = create((&mock, &mock), token("user-1"), create_instr("missing"))
         .await
         .err()
         .unwrap();
@@ -249,7 +248,7 @@ async fn list_infos_omits_fallback_without_usable_first_pinned_page() {
     let found = list_infos(
         (&mock, &mock),
         token("user-1"),
-        ListComicInfosParams {
+        ListComicInfosInstr {
             workset_id: "workset-1".into(),
             fuzzy_title: None,
             stages: None,
@@ -315,7 +314,7 @@ async fn list_infos_filters_and_sorts_by_last_activity() {
     let list = list_infos(
         (&mock, &mock),
         token("user-1"),
-        ListComicInfosParams {
+        ListComicInfosInstr {
             incl_opt: Vec::new(),
             with_opt: vec![ComicWithOpt::PinnedChapter],
             workset_id: "workset-1".into(),
@@ -362,7 +361,7 @@ async fn list_infos_returns_empty_for_workset_contents() {
     let list = list_infos(
         (&mock, &mock),
         token("user-1"),
-        ListComicInfosParams {
+        ListComicInfosInstr {
             incl_opt: Vec::new(),
             with_opt: vec![],
             workset_id: "workset-1".into(),
@@ -421,7 +420,7 @@ async fn list_infos_filters_by_pinned_chapter_stages() {
     let list = list_infos(
         (&mock, &mock),
         token("user-1"),
-        ListComicInfosParams {
+        ListComicInfosInstr {
             incl_opt: Vec::new(),
             with_opt: vec![],
             workset_id: "workset-1".into(),
@@ -454,7 +453,7 @@ async fn list_infos_rejects_invalid_stages_filter() {
     let err = list_infos(
         (&mock, &mock),
         token("user-1"),
-        ListComicInfosParams {
+        ListComicInfosInstr {
             incl_opt: Vec::new(),
             with_opt: vec![],
             workset_id: "workset-1".into(),
@@ -503,7 +502,7 @@ async fn list_infos_applies_pagination() {
     let list = list_infos(
         (&mock, &mock),
         token("user-1"),
-        ListComicInfosParams {
+        ListComicInfosInstr {
             incl_opt: Vec::new(),
             with_opt: vec![],
             workset_id: "workset-1".into(),
@@ -538,7 +537,7 @@ async fn update_info_updates_comic() {
     update_info(
         (&mock,),
         token("user-1"),
-        UpdateComicInfoParams {
+        UpdateComicInfoInstr {
             id: "comic-1".into(),
             title: "updated".into(),
             author: "updated-author".into(),
@@ -566,7 +565,7 @@ async fn update_info_propagates_missing_comic() {
     let err = update_info(
         (&mock,),
         token("user-1"),
-        UpdateComicInfoParams {
+        UpdateComicInfoInstr {
             id: "missing".into(),
             title: "updated".into(),
             author: "updated-author".into(),

@@ -2,10 +2,10 @@
 // import(import)(negative): page-count mismatch rejects import and leaves units and counters unchanged.
 
 use super::*;
+use crate::data::instr::chapter_port::ImportChapterTranslationInstr;
 
 use time::OffsetDateTime;
 
-use crate::data::chapter_port::ImportChapterTranslationParams;
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::comic::ComicInfo;
@@ -230,7 +230,7 @@ async fn import_label_plus_material_updates_units_and_counters() {
     let imported = import(
         (&mock, &mock),
         token("user-1"),
-        ImportChapterTranslationParams {
+        ImportChapterTranslationInstr {
             format: TranslationFormat::LabelPlus,
             content: LABEL_PLUS_MATERIAL.into(),
         },
@@ -304,7 +304,7 @@ async fn import_rejects_page_count_mismatch_without_mutation() {
     let err = import(
         (&mock, &mock),
         token("user-1"),
-        ImportChapterTranslationParams {
+        ImportChapterTranslationInstr {
             format: TranslationFormat::LabelPlus,
             content: LABEL_PLUS_MATERIAL.into(),
         },

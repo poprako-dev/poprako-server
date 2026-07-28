@@ -11,8 +11,9 @@ use tracing::instrument;
 use crate::complex::comic_archive::{
     ComicArchiveComplex, ComicArchivePermComplex,
 };
-use crate::data::comic_archive::{
-    ArchiveComicPayload, ExportComicArchivesParams, ExportComicArchivesPayload,
+use crate::data::instr::comic_archive::ExportComicArchivesInstr;
+use crate::data::val::comic_archive::{
+    ArchiveComicVal, ExportComicArchivesVal,
 };
 use crate::model::shared::user::UserToken;
 use crate::part::prom::Prom;
@@ -41,8 +42,8 @@ pub async fn export<C, R>(
     (repo,): (&R,),
     token: UserToken,
     team_id: String,
-    params: ExportComicArchivesParams,
-) -> BaseRest<ExportComicArchivesPayload>
+    instr: ExportComicArchivesInstr,
+) -> BaseRest<ExportComicArchivesVal>
 where
     R: ComicArchiveRepo<C> + MemberRepo<C> + Sync,
 {
@@ -56,7 +57,7 @@ where
     .await?;
 
     let months = ComicArchiveMonth::parse_retained(
-        params.months,
+        instr.months,
         OffsetDateTime::now_utc(),
     )?;
 
@@ -88,7 +89,7 @@ where
             .push(archived_payload);
     }
 
-    accept(ExportComicArchivesPayload(exports))
+    accept(ExportComicArchivesVal(exports))
 }
 
 /// Archive one active comic, its descendants, and all retained image keys.
@@ -97,7 +98,7 @@ pub async fn archive<N, C, R, P>(
     (nucl, repo, prom): (&N, &R, &P),
     token: UserToken,
     comic_id: String,
-) -> BaseRest<ArchiveComicPayload>
+) -> BaseRest<ArchiveComicVal>
 where
     N: Nucl<Context = C, Error = BaseError>,
     R: ComicRepo<C>
@@ -176,7 +177,7 @@ where
             .step_on(repo, context)
             .await?;
 
-            accept(ArchiveComicPayload { archived_comic_id })
+            accept(ArchiveComicVal { archived_comic_id })
         })
         .await?;
 

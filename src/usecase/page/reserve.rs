@@ -14,10 +14,9 @@ use crate::complex::chapter::ChapterComplex;
 use crate::complex::image::ImageComplex;
 use crate::complex::page::manifest::build;
 use crate::complex::page::{PageComplex, PagePermComplex};
-use crate::data::image::ImageUploadSlotVal;
-use crate::data::page::{
-    ReserveChapterPagesParams, ReserveChapterPagesPayload, ReservedPagePayload,
-};
+use crate::data::instr::page::ReserveChapterPagesInstr;
+use crate::data::val::page::{ReserveChapterPagesVal, ReservedPageVal};
+use crate::data::view::image::ImageUploadSlotView;
 use crate::model::shared::user::UserToken;
 use crate::model::write::page::{PageEntry, PageImageSpec, PageManifestRepl};
 use crate::part::image::{ImagePool, ImageUploadSpec};
@@ -63,8 +62,8 @@ pub fn validate_page_count(page_count: i32) -> BaseRest<()> {
 pub async fn reserve_chapter_pages<N, C, R, P, I>(
     (nucl, repo, prom, image_pool): (&N, &R, &P, &I),
     token: UserToken,
-    params: ReserveChapterPagesParams,
-) -> BaseRest<ReserveChapterPagesPayload>
+    instr: ReserveChapterPagesInstr,
+) -> BaseRest<ReserveChapterPagesVal>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -77,7 +76,7 @@ where
     P: Prom<C> + Send + Sync,
     I: ImagePool,
 {
-    let ReserveChapterPagesParams { chapter_id, pages } = params;
+    let ReserveChapterPagesInstr { chapter_id, pages } = instr;
 
     let page_specs = pages
         .into_iter()
@@ -489,7 +488,7 @@ where
                     let upload_target =
                         image_pool.get_upload_slot(upload_spec).await?;
 
-                    Some(ImageUploadSlotVal {
+                    Some(ImageUploadSlotView {
                         put_url: upload_target.url.to_string(),
                         image_version: reservation.image_version,
                         headers: upload_target.headers,
@@ -499,7 +498,7 @@ where
                 None => None,
             };
 
-            accept(ReservedPagePayload {
+            accept(ReservedPageVal {
                 page_id: reservation.page_id,
                 index: reservation.index,
                 image_hash: reservation.image_hash,
@@ -512,5 +511,5 @@ where
     .into_iter()
     .collect::<BaseRest<Vec<_>>>()?;
 
-    accept(ReserveChapterPagesPayload { pages })
+    accept(ReserveChapterPagesVal { pages })
 }

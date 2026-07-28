@@ -5,7 +5,7 @@
 //! for the six production stages and their phase transitions.
 //! Convert to [`ChapterInfoVal`] for presentation.
 //!
-//! [`ChapterInfoVal`]: crate::data::chapter::ChapterInfoVal
+//! [`ChapterInfoVal`]: crate::data::val::chapter::ChapterInfoVal
 //! [`StagePhase`]: crate::value::chapter::StagePhase
 
 use crate::value::chapter::ChapterInclOpt;

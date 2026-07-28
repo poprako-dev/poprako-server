@@ -17,8 +17,8 @@
 // login(login)(negative): token signing failure should return an auth error.
 
 use super::*;
+use crate::data::instr::auth::{LoginAuthInstr, RegisterAuthInstr};
 
-use crate::data::auth::{LoginAuthParams, RegisterAuthParams};
 use crate::model::read::proj::member_invitation::MemberInvitationInfo;
 use crate::part::effect::event::Event;
 use crate::part_impl::repo::mock_impl::Mock;
@@ -49,8 +49,8 @@ fn invitation(
 }
 
 /// Builds a [`AuthRegisterData`] fixture with a fixed password.
-fn register_data(qid: &str, nickname: &str, code: &str) -> RegisterAuthParams {
-    RegisterAuthParams {
+fn register_data(qid: &str, nickname: &str, code: &str) -> RegisterAuthInstr {
+    RegisterAuthInstr {
         qid: qid.into(),
         nickname: nickname.into(),
         password: "password".into(),
@@ -59,8 +59,8 @@ fn register_data(qid: &str, nickname: &str, code: &str) -> RegisterAuthParams {
 }
 
 /// Builds a [`AuthLoginData`] fixture.
-fn login_data(qid: &str, password: &str) -> LoginAuthParams {
-    LoginAuthParams {
+fn login_data(qid: &str, password: &str) -> LoginAuthInstr {
+    LoginAuthInstr {
         qid: qid.into(),
         password: password.into(),
     }

@@ -302,11 +302,11 @@ async fn export_returns_stored_strings_grouped_by_month() {
 
     let month = format!("{:04}-{:02}", now.year(), u8::from(now.month()));
 
-    let payload = export(
+    let val = export(
         (&mock,),
         token(),
         "team-1".into(),
-        ExportComicArchivesParams {
+        ExportComicArchivesInstr {
             months: vec![month.clone()],
         },
     )
@@ -315,7 +315,7 @@ async fn export_returns_stored_strings_grouped_by_month() {
 
     let stored = &mock.snapshot().comic_archives[0].archived_payload;
 
-    assert_eq!(payload.0[&month], vec![stored.clone()]);
+    assert_eq!(val.0[&month], vec![stored.clone()]);
 }
 
 #[tokio::test]

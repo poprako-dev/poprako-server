@@ -6,10 +6,11 @@ use tracing::instrument;
 use poprako_util::i18n::trl;
 
 use crate::complex::member::{MemberComplex, MemberPermComplex};
-use crate::data::member::{
-    CreateMemberParams, CreateMemberPayload, JoinTeamParams,
-    ListMemberInfosParams, MemberInfoVal, UpdateMemberRolesParams,
+use crate::data::instr::member::{
+    CreateMemberInstr, JoinTeamInstr, ListMemberInfosInstr,
+    UpdateMemberRolesInstr,
 };
+use crate::data::val::member::{CreateMemberVal, MemberInfoVal};
 use crate::model::read::spec::member::MemberListSpec;
 use crate::model::shared::user::UserToken;
 use crate::model::write::member::{MemberEntry, MemberRoleRepl};
@@ -41,21 +42,21 @@ mod tests;
 pub async fn create<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
-    params: CreateMemberParams,
-) -> BaseRest<CreateMemberPayload>
+    instr: CreateMemberInstr,
+) -> BaseRest<CreateMemberVal>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     R: MemberRepo<C> + TeamRepo<C> + UserRepo<C> + Send + Sync,
 {
-    let roles = params.roles;
+    let roles = instr.roles;
 
     MemberPermComplex::ensure_user_can_create(
         &mut run_proxy! {
             repo => for<'a> FindMemberInfo<'a>;
         },
         &token.user_id,
-        &params.team_id,
+        &instr.team_id,
     )
     .await?;
 
@@ -63,21 +64,17 @@ where
         .coord(async move |context| {
             //
 
-            let user_info = GetUserInfoExcluded::Id {
-                id: &params.user_id,
-            }
-            .step_on(repo, context)
-            .await?;
+            let user_info = GetUserInfoExcluded::Id { id: &instr.user_id }
+                .step_on(repo, context)
+                .await?;
 
-            LockTeam {
-                id: &params.team_id,
-            }
-            .step_on(repo, context)
-            .await?;
+            LockTeam { id: &instr.team_id }
+                .step_on(repo, context)
+                .await?;
 
             let existing_member_info = FindMemberInfo::UserTeam {
-                user_id: &params.user_id,
-                team_id: &params.team_id,
+                user_id: &instr.user_id,
+                team_id: &instr.team_id,
             }
             .step_on(repo, context)
             .await?;
@@ -91,9 +88,9 @@ where
 
             let member_entry = MemberEntry {
                 id: MemberComplex::gen_id(),
-                user_id: params.user_id,
+                user_id: instr.user_id,
                 user_nickname: user_info.nickname,
-                team_id: params.team_id,
+                team_id: instr.team_id,
                 roles,
             };
 
@@ -107,20 +104,20 @@ where
         })
         .await?;
 
-    accept(CreateMemberPayload { id: member_id })
+    accept(CreateMemberVal { id: member_id })
 }
 
 /// Joins the current user to a team with a pending invitation code.
 #[instrument(
     level = "info",
     err(Debug),
-    skip(nucl, repo, image_pool, params),
+    skip(nucl, repo, image_pool, instr),
     fields(code = "[REDACTED]")
 )]
 pub async fn join_team<N, C, R, I>(
     (nucl, repo, image_pool): (&N, &R, &I),
     token: UserToken,
-    params: JoinTeamParams,
+    instr: JoinTeamInstr,
 ) -> BaseRest<MemberInfoVal>
 where
     N: Nucl<Context = C, Error = BaseError>,
@@ -141,7 +138,7 @@ where
             .await?;
 
             let member_invitation_info =
-                GetMemberInvitationInfoExcluded::Code { code: &params.code }
+                GetMemberInvitationInfoExcluded::Code { code: &instr.code }
                     .step_on(repo, context)
                     .await?;
 
@@ -194,13 +191,13 @@ where
 pub async fn list_infos<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
-    params: ListMemberInfosParams,
+    instr: ListMemberInfosInstr,
 ) -> BaseRest<Vec<MemberInfoVal>>
 where
     R: MemberRepo<C> + Sync,
     I: ImagePool,
 {
-    let member_list_spec: MemberListSpec = params.try_into()?;
+    let member_list_spec: MemberListSpec = instr.try_into()?;
 
     if let MemberListSpec::Team { team_id, .. } = &member_list_spec {
         MemberPermComplex::ensure_user_can_list_infos(
@@ -236,7 +233,7 @@ where
 pub async fn update_roles<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
-    params: UpdateMemberRolesParams,
+    instr: UpdateMemberRolesInstr,
 ) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
@@ -244,7 +241,7 @@ where
     R: MemberRepo<C> + Send + Sync,
 {
     let member_info = GetMemberInfo::Id {
-        id: &params.id,
+        id: &instr.id,
         incls: &[],
     }
     .run_on(repo)
@@ -262,8 +259,8 @@ where
     nucl.coord(async move |context| {
         //
         let member_role_update = MemberRoleRepl {
-            id: params.id,
-            roles: params.roles,
+            id: instr.id,
+            roles: instr.roles,
         };
 
         UpdateMember::Role {

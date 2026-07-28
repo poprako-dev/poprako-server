@@ -3,8 +3,8 @@
 // join_team(join_team)(negative): duplicate membership should be rejected without consuming invitation.
 
 use super::*;
+use crate::data::instr::member::JoinTeamInstr;
 
-use crate::data::member::JoinTeamParams;
 use crate::model::read::proj::member_invitation::MemberInvitationInfo;
 
 fn invitation(id: &str, invitee_qid: &str) -> MemberInvitationInfo {
@@ -20,8 +20,8 @@ fn invitation(id: &str, invitee_qid: &str) -> MemberInvitationInfo {
     }
 }
 
-fn join_team_params() -> JoinTeamParams {
-    JoinTeamParams {
+fn join_team_instr() -> JoinTeamInstr {
+    JoinTeamInstr {
         code: "INV123".into(),
     }
 }
@@ -38,7 +38,7 @@ async fn join_team_invited_user_creates_member_and_consumes_invitation() {
     super::join_team(
         (&mock, &mock, &mock),
         token("target-user"),
-        join_team_params(),
+        join_team_instr(),
     )
     .await
     .unwrap();
@@ -73,7 +73,7 @@ async fn join_team_mismatched_qid_is_rejected() {
     let err = super::join_team(
         (&mock, &mock, &mock),
         token("target-user"),
-        join_team_params(),
+        join_team_instr(),
     )
     .await
     .err()
@@ -108,7 +108,7 @@ async fn join_team_duplicate_membership_is_rejected() {
     let err = super::join_team(
         (&mock, &mock, &mock),
         token("target-user"),
-        join_team_params(),
+        join_team_instr(),
     )
     .await
     .err()

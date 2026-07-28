@@ -8,76 +8,84 @@ use utoipa::OpenApi;
 
 use crate::api::http::handler;
 use crate::api::http::result::HttpError;
-use crate::data::announcement::{
-    AnnouncementInfoVal, CreateAnnouncementParams, CreateAnnouncementPayload,
+use crate::data::instr::announcement::CreateAnnouncementInstr;
+use crate::data::instr::assignment::{
+    JoinChapterAssignmentInstr, UpdateAssignmentRolesInstr,
 };
-use crate::data::assignment::{
-    AssignmentInfoVal, JoinChapterAssignmentParams, UpdateAssignmentRolesParams,
+use crate::data::instr::assignment_invitation::{
+    CreateAssignmentInvitationInstr, JoinAssignmentInvitationInstr,
 };
-use crate::data::assignment_invitation::{
-    AssignmentInvitationInfoVal, CreateAssignmentInvitationParams,
-    CreateAssignmentInvitationPayload, JoinAssignmentInvitationParams,
+use crate::data::instr::auth::{LoginAuthInstr, RegisterAuthInstr};
+use crate::data::instr::chapter::{
+    CreateChapterInstr, UpdateChapterInfoInstr, UpdateChapterStageInstr,
 };
-use crate::data::auth::{
-    LoginAuthParams, LoginAuthPayload, RegisterAuthParams, RegisterAuthPayload,
+use crate::data::instr::chapter_port::ImportChapterTranslationInstr;
+use crate::data::instr::comic::{
+    CreateComicInstr, MarkComicCoverUploadedInstr, ReserveComicCoverInstr,
+    UpdateComicInfoInstr,
 };
-use crate::data::chapter::{
-    ChapterInfoVal, CreateChapterParams, CreateChapterPayload,
-    UpdateChapterInfoParams, UpdateChapterStageParams,
+use crate::data::instr::comment::CreateCommentInstr;
+use crate::data::instr::member::{
+    CreateMemberInstr, JoinTeamInstr, UpdateMemberRolesInstr,
 };
-use crate::data::chapter_port::{
-    ExportChapterTranslationPayload, ImportChapterTranslationParams,
-    ImportChapterTranslationPayload,
+use crate::data::instr::member_invitation::{
+    CreateMemberInvitationInstr, UpdateMemberInvitationRolesInstr,
 };
-use crate::data::comic::{
-    ComicInfoVal, CreateComicParams, CreateComicPayload,
-    MarkComicCoverUploadedParams, ReserveComicCoverParams,
-    ReserveComicCoverPayload, UpdateComicInfoParams,
+use crate::data::instr::page::{
+    MarkPageImageUploadedInstr, PageImageInstr, ReserveChapterPagesInstr,
+    ReservePageImageInstr,
 };
-use crate::data::comic_archive::ArchiveComicPayload;
-use crate::data::comic_list::ListComicInfosPayload;
-use crate::data::comment::{
-    CommentInfoVal, CreateCommentParams, CreateCommentPayload,
+use crate::data::instr::system_mail::MarkSystemMailReadInstr;
+use crate::data::instr::team::{
+    CreateTeamInstr, MarkTeamAvatarUploadedInstr, ReserveTeamAvatarInstr,
+    UpdateTeamInfoInstr,
 };
-use crate::data::image::ImageUploadSlotVal;
-use crate::data::member::{
-    CreateMemberParams, CreateMemberPayload, JoinTeamParams, MemberInfoVal,
-    UpdateMemberRolesParams,
+use crate::data::instr::term::{CreateTermInstr, UpdateTermInfoInstr};
+use crate::data::instr::termbase::{
+    CreateTermbaseInstr, UpdateTermbaseInfoInstr,
 };
-use crate::data::member_invitation::{
-    CreateMemberInvitationParams, CreateMemberInvitationPayload,
-    MemberInvitationInfoVal, UpdateMemberInvitationRolesParams,
+use crate::data::instr::unit::{
+    UnitCoordInstr, UnitEditInstr, UnitRevisionInstr, UnitTranslationInstr,
 };
-use crate::data::page::{
-    MarkPageImageUploadedParams, PageImageParams, PageInfoVal,
-    ReserveChapterPagesParams, ReserveChapterPagesPayload,
-    ReservePageImageParams, ReservedPagePayload,
+use crate::data::instr::user::{
+    MarkUserAvatarUploadedInstr, ReserveUserAvatarInstr, UpdateUserInfoInstr,
+    UpdateUserPasswordInstr,
 };
-use crate::data::system_mail::{MarkSystemMailReadParams, SystemMailInfoVal};
-use crate::data::team::{
-    CreateTeamParams, MarkTeamAvatarUploadedParams, ReserveTeamAvatarParams,
-    ReserveTeamAvatarPayload, TeamInfoVal, UpdateTeamInfoParams,
+use crate::data::instr::workset::{CreateWorksetInstr, UpdateWorksetInfoInstr};
+use crate::data::val::announcement::{
+    AnnouncementInfoVal, CreateAnnouncementVal,
 };
-use crate::data::term::{
-    CreateTermParams, CreateTermPayload, TermInfoVal, UpdateTermInfoParams,
+use crate::data::val::assignment::AssignmentInfoVal;
+use crate::data::val::assignment_invitation::{
+    AssignmentInvitationInfoVal, CreateAssignmentInvitationVal,
 };
-use crate::data::termbase::{
-    CreateTermbaseParams, CreateTermbasePayload, TermbaseInfoVal,
-    UpdateTermbaseInfoParams,
+use crate::data::val::auth::{LoginAuthVal, RegisterAuthVal};
+use crate::data::val::chapter::{ChapterInfoVal, CreateChapterVal};
+use crate::data::val::chapter_port::{
+    ExportChapterTranslationVal, ImportChapterTranslationVal,
 };
-use crate::data::unit::{
-    ListPageUnitInfosPayload, UnitCoordVal, UnitEditVal, UnitInfoVal,
-    UnitRevisionVal, UnitTranslationVal,
+use crate::data::val::comic::{
+    ComicInfoVal, CreateComicVal, ReserveComicCoverVal,
 };
-use crate::data::user::{
-    MarkUserAvatarUploadedParams, ReserveUserAvatarParams,
-    ReserveUserAvatarPayload, UpdateUserInfoParams, UpdateUserPasswordParams,
-    UserInfoVal,
+use crate::data::val::comic_archive::ArchiveComicVal;
+use crate::data::val::comic_list::ListComicInfosVal;
+use crate::data::val::comment::{CommentInfoVal, CreateCommentVal};
+use crate::data::val::member::{CreateMemberVal, MemberInfoVal};
+use crate::data::val::member_invitation::{
+    CreateMemberInvitationVal, MemberInvitationInfoVal,
 };
-use crate::data::workset::{
-    CreateWorksetParams, CreateWorksetPayload, UpdateWorksetInfoParams,
-    WorksetInfoVal,
+use crate::data::val::page::{
+    PageInfoVal, ReserveChapterPagesVal, ReservedPageVal,
 };
+use crate::data::val::system_mail::SystemMailInfoVal;
+use crate::data::val::team::{ReserveTeamAvatarVal, TeamInfoVal};
+use crate::data::val::term::{CreateTermVal, TermInfoVal};
+use crate::data::val::termbase::{CreateTermbaseVal, TermbaseInfoVal};
+use crate::data::val::unit::ListPageUnitInfosVal;
+use crate::data::val::user::{ReserveUserAvatarVal, UserInfoVal};
+use crate::data::val::workset::{CreateWorksetVal, WorksetInfoVal};
+use crate::data::view::image::ImageUploadSlotView;
+use crate::data::view::unit::UnitInfoView;
 use crate::value::announcement::AnnouncementInclOpt;
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::chapter::ChapterInclOpt;
@@ -181,89 +189,89 @@ use crate::value::role::RoleField;
     ),
     components(schemas(
         HttpError,
-        RegisterAuthParams,
-        RegisterAuthPayload,
-        LoginAuthParams,
-        LoginAuthPayload,
+        RegisterAuthInstr,
+        RegisterAuthVal,
+        LoginAuthInstr,
+        LoginAuthVal,
         UserInfoVal,
-        UpdateUserInfoParams,
-        UpdateUserPasswordParams,
-        ReserveUserAvatarParams,
-        ReserveUserAvatarPayload,
-        MarkUserAvatarUploadedParams,
+        UpdateUserInfoInstr,
+        UpdateUserPasswordInstr,
+        ReserveUserAvatarInstr,
+        ReserveUserAvatarVal,
+        MarkUserAvatarUploadedInstr,
         TeamInfoVal,
-        CreateTeamParams,
-        UpdateTeamInfoParams,
-        ReserveTeamAvatarParams,
-        ReserveTeamAvatarPayload,
-        MarkTeamAvatarUploadedParams,
+        CreateTeamInstr,
+        UpdateTeamInfoInstr,
+        ReserveTeamAvatarInstr,
+        ReserveTeamAvatarVal,
+        MarkTeamAvatarUploadedInstr,
         WorksetInfoVal,
-        CreateWorksetParams,
-        CreateWorksetPayload,
-        UpdateWorksetInfoParams,
+        CreateWorksetInstr,
+        CreateWorksetVal,
+        UpdateWorksetInfoInstr,
         ComicInfoVal,
-        ListComicInfosPayload,
-        CreateComicParams,
-        CreateComicPayload,
-        UpdateComicInfoParams,
-        ReserveComicCoverParams,
-        ReserveComicCoverPayload,
-        MarkComicCoverUploadedParams,
-        ArchiveComicPayload,
+        ListComicInfosVal,
+        CreateComicInstr,
+        CreateComicVal,
+        UpdateComicInfoInstr,
+        ReserveComicCoverInstr,
+        ReserveComicCoverVal,
+        MarkComicCoverUploadedInstr,
+        ArchiveComicVal,
         ChapterInfoVal,
-        CreateChapterParams,
-        CreateChapterPayload,
-        UpdateChapterInfoParams,
-        UpdateChapterStageParams,
-        ExportChapterTranslationPayload,
-        ImportChapterTranslationParams,
-        ImportChapterTranslationPayload,
+        CreateChapterInstr,
+        CreateChapterVal,
+        UpdateChapterInfoInstr,
+        UpdateChapterStageInstr,
+        ExportChapterTranslationVal,
+        ImportChapterTranslationInstr,
+        ImportChapterTranslationVal,
         PageInfoVal,
-        PageImageParams,
-        ImageUploadSlotVal,
-        ReserveChapterPagesParams,
-        ReserveChapterPagesPayload,
-        ReservePageImageParams,
-        ReservedPagePayload,
-        MarkPageImageUploadedParams,
-        UnitInfoVal,
-        ListPageUnitInfosPayload,
-        UnitEditVal,
-        UnitCoordVal,
-        UnitTranslationVal,
-        UnitRevisionVal,
+        PageImageInstr,
+        ImageUploadSlotView,
+        ReserveChapterPagesInstr,
+        ReserveChapterPagesVal,
+        ReservePageImageInstr,
+        ReservedPageVal,
+        MarkPageImageUploadedInstr,
+        UnitInfoView,
+        ListPageUnitInfosVal,
+        UnitEditInstr,
+        UnitCoordInstr,
+        UnitTranslationInstr,
+        UnitRevisionInstr,
         AssignmentInfoVal,
-        JoinChapterAssignmentParams,
-        UpdateAssignmentRolesParams,
+        JoinChapterAssignmentInstr,
+        UpdateAssignmentRolesInstr,
         AssignmentInvitationInfoVal,
-        CreateAssignmentInvitationParams,
-        CreateAssignmentInvitationPayload,
-        JoinAssignmentInvitationParams,
+        CreateAssignmentInvitationInstr,
+        CreateAssignmentInvitationVal,
+        JoinAssignmentInvitationInstr,
         SystemMailInfoVal,
-        MarkSystemMailReadParams,
+        MarkSystemMailReadInstr,
         AnnouncementInfoVal,
-        CreateAnnouncementParams,
-        CreateAnnouncementPayload,
+        CreateAnnouncementInstr,
+        CreateAnnouncementVal,
         CommentInfoVal,
-        CreateCommentParams,
-        CreateCommentPayload,
+        CreateCommentInstr,
+        CreateCommentVal,
         TermbaseInfoVal,
-        CreateTermbaseParams,
-        CreateTermbasePayload,
-        UpdateTermbaseInfoParams,
+        CreateTermbaseInstr,
+        CreateTermbaseVal,
+        UpdateTermbaseInfoInstr,
         TermInfoVal,
-        CreateTermParams,
-        CreateTermPayload,
-        UpdateTermInfoParams,
+        CreateTermInstr,
+        CreateTermVal,
+        UpdateTermInfoInstr,
         MemberInfoVal,
-        CreateMemberParams,
-        CreateMemberPayload,
-        JoinTeamParams,
-        UpdateMemberRolesParams,
+        CreateMemberInstr,
+        CreateMemberVal,
+        JoinTeamInstr,
+        UpdateMemberRolesInstr,
         MemberInvitationInfoVal,
-        CreateMemberInvitationParams,
-        CreateMemberInvitationPayload,
-        UpdateMemberInvitationRolesParams,
+        CreateMemberInvitationInstr,
+        CreateMemberInvitationVal,
+        UpdateMemberInvitationRolesInstr,
         ComicInclOpt,
         ComicWithOpt,
         ChapterInclOpt,

@@ -7,10 +7,10 @@ use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 use tracing::instrument;
 
 use crate::complex::workset::{WorksetComplex, WorksetPermComplex};
-use crate::data::workset::{
-    CreateWorksetParams, CreateWorksetPayload, ListWorksetInfosParams,
-    UpdateWorksetInfoParams, WorksetInfoVal,
+use crate::data::instr::workset::{
+    CreateWorksetInstr, ListWorksetInfosInstr, UpdateWorksetInfoInstr,
 };
+use crate::data::val::workset::{CreateWorksetVal, WorksetInfoVal};
 use crate::model::shared::user::UserToken;
 use crate::model::write::workset::{WorksetEntry, WorksetRepl};
 use crate::part::prom::Prom;
@@ -58,8 +58,8 @@ pub mod tests;
 pub async fn create<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
-    params: CreateWorksetParams,
-) -> BaseRest<CreateWorksetPayload>
+    instr: CreateWorksetInstr,
+) -> BaseRest<CreateWorksetVal>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -70,25 +70,23 @@ where
             repo => for<'a> FindMemberInfo<'a>;
         },
         &token.user_id,
-        &params.team_id,
+        &instr.team_id,
     )
     .await?;
 
     let workset_id = nucl
         .coord(async move |context| {
             //
-            let index = AllocTeamWorksetIndex {
-                id: &params.team_id,
-            }
-            .step_on(repo, context)
-            .await?;
+            let index = AllocTeamWorksetIndex { id: &instr.team_id }
+                .step_on(repo, context)
+                .await?;
 
             let workset_entry = WorksetEntry {
                 id: WorksetComplex::gen_id(),
-                team_id: params.team_id,
+                team_id: instr.team_id,
                 index,
-                name: params.name,
-                description: params.description,
+                name: instr.name,
+                description: instr.description,
             };
 
             let workset_info = CreateWorkset {
@@ -101,7 +99,7 @@ where
         })
         .await?;
 
-    accept(CreateWorksetPayload { id: workset_id })
+    accept(CreateWorksetVal { id: workset_id })
 }
 
 /// Fetches a workset by ID.
@@ -135,7 +133,7 @@ where
 pub async fn list_infos<C, R>(
     (repo,): (&R,),
     token: UserToken,
-    params: ListWorksetInfosParams,
+    instr: ListWorksetInfosInstr,
 ) -> BaseRest<Vec<WorksetInfoVal>>
 where
     R: WorksetRepo<C> + MemberRepo<C> + Sync,
@@ -145,14 +143,14 @@ where
             repo => for<'a> FindMemberInfo<'a>;
         },
         &token.user_id,
-        &params.team_id,
+        &instr.team_id,
     )
     .await?;
 
     let workset_infos = ListWorksetInfos {
-        team_id: &params.team_id,
-        offset: params.offset,
-        limit: params.limit,
+        team_id: &instr.team_id,
+        offset: instr.offset,
+        limit: instr.limit,
     }
     .run_on(repo)
     .await?;
@@ -165,7 +163,7 @@ where
 pub async fn update_info<C, R>(
     (repo,): (&R,),
     token: UserToken,
-    params: UpdateWorksetInfoParams,
+    instr: UpdateWorksetInfoInstr,
 ) -> BaseRest<()>
 where
     R: WorksetRepo<C> + MemberRepo<C> + Sync,
@@ -177,14 +175,14 @@ where
                 for<'a> FindMemberInfo<'a>;
         },
         &token.user_id,
-        &params.id,
+        &instr.id,
     )
     .await?;
 
     let workset_info_update = WorksetRepl {
-        id: params.id,
-        name: params.name,
-        description: params.description,
+        id: instr.id,
+        name: instr.name,
+        description: instr.description,
     };
 
     UpdateWorkset {

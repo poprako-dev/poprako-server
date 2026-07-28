@@ -5,7 +5,8 @@ use tracing::instrument;
 
 use poprako_util::time::ToUnixMilli as _;
 
-use crate::data::system_mail::{ListSystemMailInfosParams, SystemMailInfoVal};
+use crate::data::instr::system_mail::ListSystemMailInfosInstr;
+use crate::data::val::system_mail::SystemMailInfoVal;
 use crate::model::read::spec::system_mail::{
     SystemMailListKind, SystemMailListSpec,
 };
@@ -22,7 +23,7 @@ mod tests;
 /// Lists system mails for the current user.
 ///
 /// Non-transactional read — returns mails ordered by creation time
-/// descending, filtered and paginated via [`ListSystemMailInfosParams`].
+/// descending, filtered and paginated via [`ListSystemMailInfosInstr`].
 /// The `read` field controls status filtering: [`Some`] returns only
 /// matching status; [`None`] returns all.
 ///
@@ -30,17 +31,17 @@ mod tests;
 ///
 /// * `R: SystemMailRepo` — System mail storage.
 ///
-/// [`ListSystemMailInfosParams`]: ListSystemMailInfosParams
+/// [`ListSystemMailInfosInstr`]: ListSystemMailInfosInstr
 #[instrument(level = "info", err(Debug), skip(repo))]
 pub async fn list_infos<R>(
     (repo,): (&R,),
     token: UserToken,
-    params: ListSystemMailInfosParams,
+    instr: ListSystemMailInfosInstr,
 ) -> BaseRest<Vec<SystemMailInfoVal>>
 where
     R: SystemMailRepo,
 {
-    let kind = match params.is_read {
+    let kind = match instr.is_read {
         //
         Some(true) => SystemMailListKind::Read,
 
@@ -52,8 +53,8 @@ where
     let system_mail_list_spec = SystemMailListSpec {
         receiver_id: token.user_id,
         kind,
-        offset: params.offset,
-        limit: params.limit,
+        offset: instr.offset,
+        limit: instr.limit,
     };
 
     let system_mail_infos = ListSystemMailInfos {

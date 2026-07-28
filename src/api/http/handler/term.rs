@@ -6,6 +6,11 @@ use axum::http::StatusCode;
 use serde::Deserialize;
 use tracing::instrument;
 
+use crate::data::instr::term::{
+    CreateTermInstr, ListTermInfosInstr, UpdateTermInfoInstr,
+};
+use crate::data::val::term::{CreateTermVal, TermInfoVal};
+
 #[cfg(feature = "swagger")]
 use utoipa::IntoParams;
 
@@ -15,10 +20,6 @@ use crate::api::http::result::{
     Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
-use crate::data::term::{
-    CreateTermParams, CreateTermPayload, ListTermInfosParams, TermInfoVal,
-    UpdateTermInfoParams,
-};
 use crate::model::shared::user::UserToken;
 use crate::usecase;
 
@@ -42,9 +43,9 @@ pub struct TermListQuery {
     post,
     path = "/api/v1/terms",
     tag = "terms",
-    request_body = CreateTermParams,
+    request_body = CreateTermInstr,
     responses(
-        (status = 201, description = "Term created", body = HttpBody<CreateTermPayload>),
+        (status = 201, description = "Term created", body = HttpBody<CreateTermVal>),
         (status = 403, description = "Team proofreader role required"),
         (status = 422, description = "Invalid term, duplicate source, or missing termbase"),
     ),
@@ -53,9 +54,9 @@ pub struct TermListQuery {
 pub async fn create(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    Json(params): Json<CreateTermParams>,
-) -> HttpResult<CreateTermPayload> {
-    usecase::term::create((harn.drive(), harn.repo()), user_token, params)
+    Json(instr): Json<CreateTermInstr>,
+) -> HttpResult<CreateTermVal> {
+    usecase::term::create((harn.drive(), harn.repo()), user_token, instr)
         .await?
         .accept(StatusCode::CREATED)
 }
@@ -80,14 +81,14 @@ pub async fn list_infos(
     Query(query): Query<TermListQuery>,
 ) -> HttpResult<Vec<TermInfoVal>> {
     //
-    let params = ListTermInfosParams {
+    let instr = ListTermInfosInstr {
         termbase_id,
         fuzzy_source: query.fuzzy_source,
         offset: query.offset,
         limit: query.limit,
     };
 
-    usecase::term::list_infos((harn.repo(),), user_token, params)
+    usecase::term::list_infos((harn.repo(),), user_token, instr)
         .await?
         .accept(StatusCode::OK)
 }
@@ -121,7 +122,7 @@ pub async fn get_info(
     path = "/api/v1/terms/{term_id}",
     tag = "terms",
     params(("term_id" = String, Path, description = "Term ID")),
-    request_body = UpdateTermInfoParams,
+    request_body = UpdateTermInfoInstr,
     responses(
         (status = 204, description = "Term updated"),
         (status = 403, description = "Team proofreader role required"),
@@ -133,12 +134,12 @@ pub async fn update_info(
     State(harn): State<AppHarn>,
     Path(term_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(params): Json<UpdateTermInfoParams>,
+    Json(instr): Json<UpdateTermInfoInstr>,
 ) -> HttpNoContent {
     //
-    ensure_path_matches_body_id(&term_id, &params.id)?;
+    ensure_path_matches_body_id(&term_id, &instr.id)?;
 
-    usecase::term::update_info((harn.drive(), harn.repo()), user_token, params)
+    usecase::term::update_info((harn.drive(), harn.repo()), user_token, instr)
         .await?;
 
     no_content()

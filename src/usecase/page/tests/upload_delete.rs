@@ -1,6 +1,8 @@
 use super::*;
+use crate::data::instr::page::{
+    MarkPageImageUploadedInstr, ReservePageImageInstr,
+};
 
-use crate::data::page::{MarkPageImageUploadedParams, ReservePageImageParams};
 use crate::value::image::{ImageExt, ImageHash};
 
 fn seed_mark_scope(mock: &Mock) {
@@ -50,9 +52,9 @@ async fn published_chapter_rejects_page_image_writes() {
     let manifest_result = reserve_chapter_pages(
         (&mock, &mock, &mock, &mock),
         token("user-1"),
-        ReserveChapterPagesParams {
+        ReserveChapterPagesInstr {
             chapter_id: "chapter-1".into(),
-            pages: vec![PageImageParams {
+            pages: vec![PageImageInstr {
                 page_id: Some("page-1".into()),
                 image_hash: ImageHash::new([0; 32]),
                 new_byte_len: Some(4096),
@@ -68,7 +70,7 @@ async fn published_chapter_rejects_page_image_writes() {
         (&mock, &mock, &mock, &mock),
         token("user-1"),
         "page-1".into(),
-        ReservePageImageParams {
+        ReservePageImageInstr {
             image_hash: ImageHash::new([1; 32]),
             new_byte_len: 4096,
             ext: ImageExt::Png,
@@ -82,7 +84,7 @@ async fn published_chapter_rejects_page_image_writes() {
         (&mock, &mock, &mock),
         token("user-1"),
         "page-1".into(),
-        MarkPageImageUploadedParams { image_version: 1 },
+        MarkPageImageUploadedInstr { image_version: 1 },
     )
     .await;
 
@@ -105,7 +107,7 @@ async fn assert_delayed_check_clears_unverified_image(
         (&mock, &mock, &mock, &mock),
         token("user-1"),
         "page-1".into(),
-        ReservePageImageParams {
+        ReservePageImageInstr {
             image_hash: ImageHash::new([0; 32]),
             new_byte_len: 4096,
             ext: ImageExt::Png,
@@ -170,7 +172,7 @@ async fn mark_image_uploaded_rejects_stale_replay_then_accepts_current_version()
         (&mock, &mock, &mock, &mock),
         token("user-1"),
         "page-1".into(),
-        ReservePageImageParams {
+        ReservePageImageInstr {
             image_hash: ImageHash::new([1u8; 32]),
             new_byte_len: 8192,
             ext: ImageExt::Png,
@@ -186,7 +188,7 @@ async fn mark_image_uploaded_rejects_stale_replay_then_accepts_current_version()
         (&mock, &mock, &mock),
         token("user-1"),
         "page-1".into(),
-        MarkPageImageUploadedParams { image_version: 1 },
+        MarkPageImageUploadedInstr { image_version: 1 },
     )
     .await
     .err()
@@ -208,7 +210,7 @@ async fn mark_image_uploaded_rejects_stale_replay_then_accepts_current_version()
         (&mock, &mock, &mock),
         token("user-1"),
         "page-1".into(),
-        MarkPageImageUploadedParams { image_version: 2 },
+        MarkPageImageUploadedInstr { image_version: 2 },
     )
     .await
     .unwrap();
@@ -235,7 +237,7 @@ async fn mark_image_uploaded_rejects_non_raw_provider() {
         (&mock, &mock, &mock),
         token("user-1"),
         "page-1".into(),
-        MarkPageImageUploadedParams { image_version: 1 },
+        MarkPageImageUploadedInstr { image_version: 1 },
     )
     .await
     .err()

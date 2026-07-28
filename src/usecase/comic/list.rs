@@ -6,10 +6,11 @@ use tracing::instrument;
 use poprako_util::i18n::trl;
 
 use crate::complex::comic::{ComicComplex, ComicPermComplex};
-use crate::data::assignment::AssignmentInfoVal;
-use crate::data::chapter::ChapterInfoVal;
-use crate::data::comic::{ComicInfoVal, ListComicInfosParams};
-use crate::data::comic_list::ListComicInfosPayload;
+use crate::data::instr::comic::ListComicInfosInstr;
+use crate::data::val::assignment::AssignmentInfoVal;
+use crate::data::val::chapter::ChapterInfoVal;
+use crate::data::val::comic::ComicInfoVal;
+use crate::data::val::comic_list::ListComicInfosVal;
 use crate::model::read::spec::comic::ComicListSpec;
 use crate::model::shared::user::UserToken;
 use crate::part::image::ImagePool;
@@ -33,8 +34,8 @@ use crate::value::comic::ComicWithOpt;
 pub async fn list_infos<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
-    params: ListComicInfosParams,
-) -> BaseRest<ListComicInfosPayload>
+    instr: ListComicInfosInstr,
+) -> BaseRest<ListComicInfosVal>
 where
     R: ComicRepo<C>
         + WorksetRepo<C>
@@ -46,9 +47,9 @@ where
     I: ImagePool,
 {
     let with_pinned_chapter =
-        params.with_opt.contains(&ComicWithOpt::PinnedChapter);
+        instr.with_opt.contains(&ComicWithOpt::PinnedChapter);
 
-    let with_pinned_chapter_assignment = params
+    let with_pinned_chapter_assignment = instr
         .with_opt
         .contains(&ComicWithOpt::PinnedChapterAssignment);
 
@@ -66,11 +67,11 @@ where
                 for<'a> FindMemberInfo<'a>;
         },
         &token.user_id,
-        &params.workset_id,
+        &instr.workset_id,
     )
     .await?;
 
-    let spec: ComicListSpec = params.try_into()?;
+    let spec: ComicListSpec = instr.try_into()?;
 
     let comic_infos = ListComicInfos { spec: &spec }.run_on(repo).await?;
 
@@ -187,7 +188,7 @@ where
         pinned_chapter_assignment_vals.push(pinned_chapter_assignment_val);
     }
 
-    accept(ListComicInfosPayload {
+    accept(ListComicInfosVal {
         comics: comic_info_vals,
         pinned_chapters: pinned_chapter_vals,
         pinned_chapter_assignments: pinned_chapter_assignment_vals,

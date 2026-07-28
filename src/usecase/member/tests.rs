@@ -19,12 +19,12 @@
 // join_team(join_team)(negative): duplicate membership should be rejected without consuming invitation.
 
 use super::*;
+use crate::data::instr::member::{
+    CreateMemberInstr, ListMemberInfosInstr, UpdateMemberRolesInstr,
+};
 
 use poprako_util::time::ToUnixMilli;
 
-use crate::data::member::{
-    CreateMemberParams, ListMemberInfosParams, UpdateMemberRolesParams,
-};
 use crate::model::read::proj::member::MemberInfo;
 use crate::model::read::proj::team::TeamInfo;
 use crate::model::read::proj::user::{UserCredential, UserInfo};
@@ -116,18 +116,18 @@ fn member(
     }
 }
 
-// Build create-member params for a user/team pair.
-fn create_params(user_id: &str, team_id: &str) -> CreateMemberParams {
-    CreateMemberParams {
+// Build create-member instr for a user/team pair.
+fn create_instr(user_id: &str, team_id: &str) -> CreateMemberInstr {
+    CreateMemberInstr {
         user_id: user_id.into(),
         team_id: team_id.into(),
         roles: RoleMask::from(RoleField::TRANSLATOR),
     }
 }
 
-// Build list-member query params for a specific team.
-fn list_params(team_id: &str) -> ListMemberInfosParams {
-    ListMemberInfosParams {
+// Build list-member query instr for a specific team.
+fn list_instr(team_id: &str) -> ListMemberInfosInstr {
+    ListMemberInfosInstr {
         owner_id: None,
         team_id: Some(team_id.into()),
         fuzzy_nickname: None,
@@ -138,9 +138,9 @@ fn list_params(team_id: &str) -> ListMemberInfosParams {
     }
 }
 
-// Build role-update params targeting a member.
-fn update_role_params(id: &str) -> UpdateMemberRolesParams {
-    UpdateMemberRolesParams {
+// Build role-update instr targeting a member.
+fn update_role_instr(id: &str) -> UpdateMemberRolesInstr {
+    UpdateMemberRolesInstr {
         id: id.into(),
         roles: RoleMask::from(RoleField::REVIEWER),
     }
@@ -171,7 +171,7 @@ async fn create_admin_creates_member_with_target_user_nickname() {
     let create_outcome = create(
         (&mock, &mock),
         token("admin-user"),
-        create_params("target-user", "team-1"),
+        create_instr("target-user", "team-1"),
     )
     .await;
 
@@ -219,7 +219,7 @@ async fn create_non_admin_is_rejected() {
     let err = create(
         (&mock, &mock),
         token("normal-user"),
-        create_params("target-user", "team-1"),
+        create_instr("target-user", "team-1"),
     )
     .await
     .err()
@@ -252,7 +252,7 @@ async fn create_duplicate_member_is_rejected() {
     let err = create(
         (&mock, &mock),
         token("admin-user"),
-        create_params("target-user", "team-1"),
+        create_instr("target-user", "team-1"),
     )
     .await
     .err()
@@ -285,7 +285,7 @@ async fn list_infos_member_lists_team_members() {
     mock.seed_member(translator_member_info);
 
     let member_info_vals =
-        list_infos((&mock, &mock), token("admin-user"), list_params("team-1"))
+        list_infos((&mock, &mock), token("admin-user"), list_instr("team-1"))
             .await;
 
     assert!(member_info_vals.is_ok());
@@ -330,7 +330,7 @@ async fn list_infos_filters_by_role() {
     let member_info_vals = list_infos(
         (&mock, &mock),
         token("admin-user"),
-        ListMemberInfosParams {
+        ListMemberInfosInstr {
             owner_id: None,
             team_id: Some("team-1".into()),
             fuzzy_nickname: None,
@@ -377,7 +377,7 @@ async fn list_infos_applies_pagination_after_filtering() {
     let member_info_vals = list_infos(
         (&mock, &mock),
         token("admin-user"),
-        ListMemberInfosParams {
+        ListMemberInfosInstr {
             owner_id: None,
             team_id: Some("team-1".into()),
             fuzzy_nickname: None,
@@ -430,7 +430,7 @@ async fn list_infos_owner_lists_own_memberships() {
     let member_info_vals = list_infos(
         (&mock, &mock),
         token("user-1"),
-        ListMemberInfosParams {
+        ListMemberInfosInstr {
             owner_id: Some("user-1".into()),
             team_id: None,
             fuzzy_nickname: None,
@@ -469,7 +469,7 @@ async fn list_infos_non_member_is_rejected() {
     let err = list_infos(
         (&mock, &mock),
         token("stranger-user"),
-        list_params("team-1"),
+        list_instr("team-1"),
     )
     .await
     .err()
@@ -481,7 +481,7 @@ async fn list_infos_non_member_is_rejected() {
 #[test]
 fn list_infos_rejects_invalid_combination() {
     //
-    let err = TryInto::<MemberListSpec>::try_into(ListMemberInfosParams {
+    let err = TryInto::<MemberListSpec>::try_into(ListMemberInfosInstr {
         owner_id: Some("user-1".into()),
         team_id: Some("team-1".into()),
         fuzzy_nickname: None,
@@ -499,7 +499,7 @@ fn list_infos_rejects_invalid_combination() {
 #[test]
 fn list_infos_converts_owner_combination_to_mine_spec() {
     //
-    let member_list_spec: MemberListSpec = ListMemberInfosParams {
+    let member_list_spec: MemberListSpec = ListMemberInfosInstr {
         owner_id: Some("user-1".into()),
         team_id: None,
         fuzzy_nickname: None,

@@ -27,14 +27,14 @@
 // delete(delete)(negative): missing user should rollback state.
 
 use super::*;
+use crate::data::instr::user::{
+    MarkUserAvatarUploadedInstr, ReserveUserAvatarInstr, UpdateUserInfoInstr,
+    UpdateUserPasswordInstr,
+};
 
 use time::OffsetDateTime;
 
 use crate::complex::user::UserComplex;
-use crate::data::user::{
-    MarkUserAvatarUploadedParams, ReserveUserAvatarParams,
-    UpdateUserInfoParams, UpdateUserPasswordParams,
-};
 use crate::model::read::proj::member::MemberInfo;
 use crate::model::read::proj::user::UserInfo;
 use crate::model::shared::user::UserToken;
@@ -99,28 +99,28 @@ fn token(user_id: &str) -> UserToken {
 }
 
 /// Builds an [`UpdateUserInfoData`] fixture.
-fn update_params(id: &str, qid: &str, nickname: &str) -> UpdateUserInfoParams {
-    UpdateUserInfoParams {
+fn update_instr(id: &str, qid: &str, nickname: &str) -> UpdateUserInfoInstr {
+    UpdateUserInfoInstr {
         id: id.into(),
         qid: qid.into(),
         nickname: nickname.into(),
     }
 }
 
-/// Builds [`UpdateUserPasswordParams`] for replacing a user's password.
-fn update_password_params(
+/// Builds [`UpdateUserPasswordInstr`] for replacing a user's password.
+fn update_password_instr(
     current_password: &str,
     new_password: &str,
-) -> UpdateUserPasswordParams {
-    UpdateUserPasswordParams {
+) -> UpdateUserPasswordInstr {
+    UpdateUserPasswordInstr {
         current_password: current_password.into(),
         new_password: new_password.into(),
     }
 }
 
 /// Builds a [`ReserveUserAvatarData`] fixture.
-fn reserve_params(file_ext: &str) -> ReserveUserAvatarParams {
-    ReserveUserAvatarParams {
+fn reserve_instr(file_ext: &str) -> ReserveUserAvatarInstr {
+    ReserveUserAvatarInstr {
         image_hash: ImageHash::new([1; 32]),
         new_byte_len: 4096,
         ext: ImageExt::parse(file_ext).unwrap(),
@@ -128,8 +128,8 @@ fn reserve_params(file_ext: &str) -> ReserveUserAvatarParams {
 }
 
 /// Builds a [`MarkUserAvatarUploadedData`] fixture.
-fn mark_params(image_version: u32) -> MarkUserAvatarUploadedParams {
-    MarkUserAvatarUploadedParams { image_version }
+fn mark_instr(image_version: u32) -> MarkUserAvatarUploadedInstr {
+    MarkUserAvatarUploadedInstr { image_version }
 }
 
 /// Counts deferred image-delete records matching the given object key.
@@ -220,7 +220,7 @@ async fn update_info_updates_user_and_member_nickname() {
     update_info(
         (&mock, &mock),
         token("user-1"),
-        update_params("user-1", "qid-new", "New"),
+        update_instr("user-1", "qid-new", "New"),
     )
     .await
     .unwrap();
@@ -247,7 +247,7 @@ async fn update_info_rejects_non_owner_without_mutation() {
     let err = update_info(
         (&mock, &mock),
         token("user-2"),
-        update_params("user-1", "qid-new", "New"),
+        update_instr("user-1", "qid-new", "New"),
     )
     .await
     .err()
@@ -270,7 +270,7 @@ async fn update_info_rolls_back_missing_user() {
     let err = update_info(
         (&mock, &mock),
         token("user-1"),
-        update_params("user-1", "qid-new", "New"),
+        update_instr("user-1", "qid-new", "New"),
     )
     .await
     .err()
@@ -295,7 +295,7 @@ async fn update_password_replaces_the_verified_password() {
         (&mock, &mock),
         token("user-1"),
         "user-1".into(),
-        update_password_params("old-password", "new-password"),
+        update_password_instr("old-password", "new-password"),
     )
     .await
     .unwrap();
@@ -333,7 +333,7 @@ async fn update_password_rejects_an_incorrect_current_password() {
         (&mock, &mock),
         token("user-1"),
         "user-1".into(),
-        update_password_params("wrong-password", "new-password"),
+        update_password_instr("wrong-password", "new-password"),
     )
     .await
     .err()
@@ -365,7 +365,7 @@ async fn reserve_avatar_updates_state_enqueues_check_and_returns_put_url() {
     let val = reserve_avatar(
         (&mock, &mock, &mock, &mock),
         token("user-1"),
-        reserve_params("png"),
+        reserve_instr("png"),
     )
     .await
     .unwrap();
@@ -408,7 +408,7 @@ async fn reserve_avatar_replacing_avatar_enqueues_delete_and_check() {
     reserve_avatar(
         (&mock, &mock, &mock, &mock),
         token("user-1"),
-        reserve_params("jpg"),
+        reserve_instr("jpg"),
     )
     .await
     .unwrap();
@@ -434,7 +434,7 @@ async fn reserve_avatar_rolls_back_missing_user() {
     let err = reserve_avatar(
         (&mock, &mock, &mock, &mock),
         token("user-1"),
-        reserve_params("png"),
+        reserve_instr("png"),
     )
     .await
     .err()
@@ -462,7 +462,7 @@ async fn reserve_avatar_propagates_put_url_failure_after_commit() {
     let err = reserve_avatar(
         (&mock, &mock, &mock, &mock),
         token("user-1"),
-        reserve_params("png"),
+        reserve_instr("png"),
     )
     .await
     .err()
@@ -494,7 +494,7 @@ async fn mark_avatar_uploaded_marks_matching_version() {
         (&mock, &mock, &mock),
         token("user-1"),
         "user-1".into(),
-        mark_params(2),
+        mark_instr(2),
     )
     .await
     .unwrap();
@@ -516,7 +516,7 @@ async fn mark_avatar_uploaded_accepts_repeated_matching_version() {
         (&mock, &mock, &mock),
         token("user-1"),
         "user-1".into(),
-        mark_params(2),
+        mark_instr(2),
     )
     .await;
 
@@ -526,7 +526,7 @@ async fn mark_avatar_uploaded_accepts_repeated_matching_version() {
         (&mock, &mock, &mock),
         token("user-1"),
         "user-1".into(),
-        mark_params(2),
+        mark_instr(2),
     )
     .await;
 
@@ -549,7 +549,7 @@ async fn mark_avatar_uploaded_rejects_non_owner() {
         (&mock, &mock, &mock),
         token("user-2"),
         "user-1".into(),
-        mark_params(2),
+        mark_instr(2),
     )
     .await
     .err()
@@ -574,7 +574,7 @@ async fn mark_avatar_uploaded_rolls_back_stale_version() {
         (&mock, &mock, &mock),
         token("user-1"),
         "user-1".into(),
-        mark_params(1),
+        mark_instr(1),
     )
     .await
     .err()
@@ -602,7 +602,7 @@ async fn mark_avatar_uploaded_rejects_old_reservation_replay() {
     let reserved = reserve_avatar(
         (&mock, &mock, &mock, &mock),
         token("user-1"),
-        reserve_params("png"),
+        reserve_instr("png"),
     )
     .await
     .ok()
@@ -614,7 +614,7 @@ async fn mark_avatar_uploaded_rejects_old_reservation_replay() {
         (&mock, &mock, &mock),
         token("user-1"),
         "user-1".into(),
-        mark_params(1),
+        mark_instr(1),
     )
     .await
     .err()

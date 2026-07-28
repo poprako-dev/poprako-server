@@ -4,10 +4,8 @@ use poprako_orchestra::{Nucl, OperRun as _, OperStep as _, run_proxy};
 use tracing::instrument;
 
 use crate::complex::comment::{CommentComplex, CommentPermComplex};
-use crate::data::comment::{
-    CommentInfoVal, CreateCommentParams, CreateCommentPayload,
-    ListCommentInfosParams,
-};
+use crate::data::instr::comment::{CreateCommentInstr, ListCommentInfosInstr};
+use crate::data::val::comment::{CommentInfoVal, CreateCommentVal};
 use crate::model::read::spec::comment::CommentListSpec;
 use crate::model::shared::user::UserToken;
 use crate::model::write::comment::CommentEntry;
@@ -27,13 +25,13 @@ mod tests;
 pub async fn list_infos<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
-    params: ListCommentInfosParams,
+    instr: ListCommentInfosInstr,
 ) -> BaseRest<Vec<CommentInfoVal>>
 where
     R: CommentRepo<C> + MemberRepo<C> + Sync,
     I: ImagePool,
 {
-    let comment_list_spec: CommentListSpec = params.into();
+    let comment_list_spec: CommentListSpec = instr.into();
 
     CommentPermComplex::ensure_user_can_list_infos(
         &mut run_proxy! {
@@ -65,8 +63,8 @@ where
 pub async fn create<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
-    params: CreateCommentParams,
-) -> BaseRest<CreateCommentPayload>
+    instr: CreateCommentInstr,
+) -> BaseRest<CreateCommentVal>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -77,7 +75,7 @@ where
             repo => for<'a> FindMemberInfo<'a>;
         },
         &token.user_id,
-        &params.team_id,
+        &instr.team_id,
     )
     .await?;
 
@@ -86,9 +84,9 @@ where
             //
             let comment_entry = CommentEntry {
                 id: CommentComplex::gen_id(),
-                team_id: params.team_id,
+                team_id: instr.team_id,
                 user_id: token.user_id,
-                content: params.content,
+                content: instr.content,
             };
 
             CreateComment {
@@ -99,7 +97,7 @@ where
         })
         .await?;
 
-    accept(CreateCommentPayload {
+    accept(CreateCommentVal {
         id: comment_info.id,
     })
 }

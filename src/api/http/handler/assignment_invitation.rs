@@ -6,6 +6,15 @@ use axum::http::StatusCode;
 use serde::Deserialize;
 use tracing::instrument;
 
+use crate::data::instr::assignment_invitation::{
+    CreateAssignmentInvitationInstr, JoinAssignmentInvitationInstr,
+    ListAssignmentInvitationInfosInstr,
+};
+use crate::data::val::assignment::AssignmentInfoVal;
+use crate::data::val::assignment_invitation::{
+    AssignmentInvitationInfoVal, CreateAssignmentInvitationVal,
+};
+
 #[cfg(feature = "swagger")]
 use utoipa::IntoParams;
 
@@ -14,12 +23,6 @@ use crate::api::http::result::{
     Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
-use crate::data::assignment::AssignmentInfoVal;
-use crate::data::assignment_invitation::{
-    AssignmentInvitationInfoVal, CreateAssignmentInvitationParams,
-    CreateAssignmentInvitationPayload, JoinAssignmentInvitationParams,
-    ListAssignmentInvitationInfosParams,
-};
 use crate::model::shared::user::UserToken;
 use crate::usecase;
 
@@ -47,9 +50,9 @@ pub struct AssignmentInvitationListQuery {
     post,
     path = "/api/v1/assignment-invitations",
     tag = "assignment-invitations",
-    request_body = CreateAssignmentInvitationParams,
+    request_body = CreateAssignmentInvitationInstr,
     responses(
-        (status = 201, description = "Invitation created", body = HttpBody<CreateAssignmentInvitationPayload>),
+        (status = 201, description = "Invitation created", body = HttpBody<CreateAssignmentInvitationVal>),
         (status = 403, description = "No permission to create invitations in this chapter"),
         (status = 409, description = "Invitee is already assigned"),
     ),
@@ -58,12 +61,12 @@ pub struct AssignmentInvitationListQuery {
 pub async fn create(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    Json(params): Json<CreateAssignmentInvitationParams>,
-) -> HttpResult<CreateAssignmentInvitationPayload> {
+    Json(instr): Json<CreateAssignmentInvitationInstr>,
+) -> HttpResult<CreateAssignmentInvitationVal> {
     usecase::assignment_invitation::create(
         (harn.drive(), harn.repo(), harn.prom()),
         user_token,
-        params,
+        instr,
     )
     .await?
     .accept(StatusCode::CREATED)
@@ -89,7 +92,7 @@ pub async fn list_infos(
     Query(query): Query<AssignmentInvitationListQuery>,
 ) -> HttpResult<Vec<AssignmentInvitationInfoVal>> {
     //
-    let params = ListAssignmentInvitationInfosParams {
+    let instr = ListAssignmentInvitationInfosInstr {
         chapter_id,
         is_pending: query.is_pending,
         offset: query.offset,
@@ -99,7 +102,7 @@ pub async fn list_infos(
     usecase::assignment_invitation::list_infos(
         (harn.repo(),),
         user_token,
-        params,
+        instr,
     )
     .await?
     .accept(StatusCode::OK)
@@ -139,7 +142,7 @@ pub async fn delete(
     post,
     path = "/api/v1/assignment-invitations/join",
     tag = "assignment-invitations",
-    request_body = JoinAssignmentInvitationParams,
+    request_body = JoinAssignmentInvitationInstr,
     responses(
         (status = 201, description = "Joined assignment", body = HttpBody<AssignmentInfoVal>),
         (status = 422, description = "Invitation does not target this user"),
@@ -151,12 +154,12 @@ pub async fn delete(
 pub async fn join(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    Json(params): Json<JoinAssignmentInvitationParams>,
+    Json(instr): Json<JoinAssignmentInvitationInstr>,
 ) -> HttpResult<AssignmentInfoVal> {
     usecase::assignment_invitation::join(
         (harn.drive(), harn.repo(), harn.image_pool()),
         user_token,
-        params,
+        instr,
     )
     .await?
     .accept(StatusCode::CREATED)

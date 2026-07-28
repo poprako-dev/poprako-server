@@ -12,11 +12,11 @@ use poprako_util::i18n::trl;
 use crate::complex::chapter::ChapterComplex;
 use crate::complex::image::ImageComplex;
 use crate::complex::page::{PageComplex, PagePermComplex};
-use crate::data::image::ImageUploadSlotVal;
-use crate::data::page::{
-    ListPageInfosParams, MarkPageImageUploadedParams, PageInfoVal,
-    ReservePageImageParams, ReservedPagePayload,
+use crate::data::instr::page::{
+    ListPageInfosInstr, MarkPageImageUploadedInstr, ReservePageImageInstr,
 };
+use crate::data::val::page::{PageInfoVal, ReservedPageVal};
+use crate::data::view::image::ImageUploadSlotView;
 use crate::model::shared::user::UserToken;
 use crate::model::write::page::{PageImageRepl, PageManifestRepl};
 use crate::part::image::{ImageManager, ImagePool, ImageUploadSpec};
@@ -57,8 +57,8 @@ pub async fn reserve_image<N, C, R, P, I>(
     (nucl, repo, prom, image_pool): (&N, &R, &P, &I),
     token: UserToken,
     id: String,
-    params: ReservePageImageParams,
-) -> BaseRest<ReservedPagePayload>
+    instr: ReservePageImageInstr,
+) -> BaseRest<ReservedPageVal>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -67,7 +67,7 @@ where
     I: ImagePool,
 {
     ImageComplex::ensure_byte_length(
-        params.new_byte_len,
+        instr.new_byte_len,
         image::ResourceKind::PageImage,
     )?;
 
@@ -100,8 +100,8 @@ where
             let locked_page_info = GetPageInfoExcluded { id: &id }.step_on(repo, context).await?;
 
             let same_identity =
-                locked_page_info.image_hash == params.image_hash
-                    && locked_page_info.image_ext == params.ext;
+                locked_page_info.image_hash == instr.image_hash
+                    && locked_page_info.image_ext == instr.ext;
 
             if same_identity && locked_page_info.is_image_uploaded {
                 return accept((locked_page_info, None));
@@ -133,7 +133,7 @@ where
                         &locked_page_info.chapter_id,
                         &locked_page_info.id,
                         image_version,
-                        params.ext.suffix(),
+                        instr.ext.suffix(),
                     );
 
                     (
@@ -150,8 +150,8 @@ where
                 image_key: Some(image_key.clone()),
                 is_image_uploaded: false,
                 image_version,
-                image_hash: params.image_hash.clone(),
-                image_ext: params.ext,
+                image_hash: instr.image_hash.clone(),
+                image_ext: instr.ext,
             };
 
             let updated_page_info = UpdatePageManifest {
@@ -230,12 +230,12 @@ where
             let upload_spec = ImageUploadSpec {
                 object_key: &object_key,
                 content_type: page_info.image_ext.content_type(),
-                content_length: params.new_byte_len,
+                content_length: instr.new_byte_len,
             };
 
             let upload_target = image_pool.get_upload_slot(upload_spec).await?;
 
-            Some(ImageUploadSlotVal {
+            Some(ImageUploadSlotView {
                 put_url: upload_target.url.to_string(),
                 image_version: page_info.image_version,
                 headers: upload_target.headers,
@@ -245,7 +245,7 @@ where
         None => None,
     };
 
-    accept(ReservedPagePayload {
+    accept(ReservedPageVal {
         page_id: page_info.id,
         index: u32::try_from(page_info.index).map_err(|_| {
             BaseError::Unrecoverable {
@@ -264,7 +264,7 @@ where
 pub async fn list_infos<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
-    params: ListPageInfosParams,
+    instr: ListPageInfosInstr,
 ) -> BaseRest<Vec<PageInfoVal>>
 where
     R: PageRepo<C>
@@ -286,12 +286,12 @@ where
                 for<'a, 'b> FindAssignmentInfo<'a, 'b>;
         },
         &token.user_id,
-        &params.chapter_id,
+        &instr.chapter_id,
     )
     .await?;
 
     let page_infos = ListPageInfos {
-        chapter_id: &params.chapter_id,
+        chapter_id: &instr.chapter_id,
     }
     .run_on(repo)
     .await?;
@@ -348,7 +348,7 @@ pub async fn mark_image_uploaded<N, C, R, I>(
     (nucl, repo, image_manager): (&N, &R, &I),
     token: UserToken,
     id: String,
-    params: MarkPageImageUploadedParams,
+    instr: MarkPageImageUploadedInstr,
 ) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
@@ -367,7 +367,7 @@ where
     )
     .await?;
 
-    if page_info.image_version != params.image_version {
+    if page_info.image_version != instr.image_version {
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
             message: trl("error-stale-page-image-upload"),
@@ -396,7 +396,7 @@ where
 
     let repl = PageImageRepl {
         id: id.clone(),
-        image_version: params.image_version,
+        image_version: instr.image_version,
         image_key: Some(image_key.clone()),
         is_image_uploaded: true,
     };
@@ -418,7 +418,7 @@ where
             .step_on(repo, context)
             .await?;
 
-        if locked_page_info.image_version != params.image_version
+        if locked_page_info.image_version != instr.image_version
             || locked_page_info.image_key.as_deref() != Some(&image_key)
         {
             return Err(BaseError::Expected {

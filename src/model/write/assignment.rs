@@ -7,7 +7,7 @@
 //! Convert to [`AssignmentInfoVal`] for presentation.
 //!
 //! [`RoleMask`]: crate::value::role::RoleMask
-//! [`AssignmentInfoVal`]: crate::data::chapter::AssignmentInfoVal
+//! [`AssignmentInfoVal`]: crate::data::val::chapter::AssignmentInfoVal
 
 use crate::value::role::RoleMask;
 

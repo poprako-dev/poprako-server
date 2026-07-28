@@ -3,7 +3,7 @@
 //!
 //! Convert to [`ComicInfoVal`] for presentation outside the domain layer.
 //!
-//! [`ComicInfoVal`]: crate::data::comic::ComicInfoVal
+//! [`ComicInfoVal`]: crate::data::val::comic::ComicInfoVal
 
 use time::OffsetDateTime;
 

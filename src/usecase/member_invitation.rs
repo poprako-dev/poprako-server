@@ -12,10 +12,12 @@ use poprako_util::i18n::trl;
 use crate::complex::member_invitation::{
     MemberInvitationComplex, MemberInvitationPermComplex,
 };
-use crate::data::member_invitation::{
-    CreateMemberInvitationParams, CreateMemberInvitationPayload,
-    ListMemberInvitationInfosParams, MemberInvitationInfoVal,
-    UpdateMemberInvitationRolesParams,
+use crate::data::instr::member_invitation::{
+    CreateMemberInvitationInstr, ListMemberInvitationInfosInstr,
+    UpdateMemberInvitationRolesInstr,
+};
+use crate::data::val::member_invitation::{
+    CreateMemberInvitationVal, MemberInvitationInfoVal,
 };
 use crate::model::read::spec::member_invitation::MemberInvitationListSpec;
 use crate::model::shared::user::UserToken;
@@ -51,22 +53,22 @@ const EXPIRY_DELAY: Duration = Duration::from_secs(5 * 24 * 60 * 60);
 pub async fn create<N, C, R, P>(
     (nucl, repo, prom): (&N, &R, &P),
     token: UserToken,
-    params: CreateMemberInvitationParams,
-) -> BaseRest<CreateMemberInvitationPayload>
+    instr: CreateMemberInvitationInstr,
+) -> BaseRest<CreateMemberInvitationVal>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     R: MemberInvitationRepo<C> + MemberRepo<C> + UserRepo<C> + Send + Sync,
     P: Prom<C> + Send + Sync,
 {
-    let roles = params.roles;
+    let roles = instr.roles;
 
     MemberInvitationPermComplex::ensure_user_can_create(
         &mut run_proxy! {
             repo => for<'a> FindMemberInfo<'a>;
         },
         &token.user_id,
-        &params.team_id,
+        &instr.team_id,
     )
     .await?;
 
@@ -75,7 +77,7 @@ where
             //
 
             let invitee_user_info = FindUserInfo::Qid {
-                qid: &params.invitee_qid,
+                qid: &instr.invitee_qid,
             }
             .step_on(repo, context)
             .await?;
@@ -85,7 +87,7 @@ where
 
                 let invitee_member_info = FindMemberInfo::UserTeam {
                     user_id: &invitee_user_info.id,
-                    team_id: &params.team_id,
+                    team_id: &instr.team_id,
                 }
                 .step_on(repo, context)
                 .await?;
@@ -104,9 +106,9 @@ where
 
             let member_invitation_entry = MemberInvitationEntry {
                 id: member_invitation_id,
-                team_id: params.team_id,
+                team_id: instr.team_id,
                 invitor_id: token.user_id,
-                invitee_qid: params.invitee_qid,
+                invitee_qid: instr.invitee_qid,
                 code,
                 roles,
             };
@@ -137,7 +139,7 @@ where
         })
         .await?;
 
-    accept(CreateMemberInvitationPayload {
+    accept(CreateMemberInvitationVal {
         id: member_invitation_id,
         code,
     })
@@ -148,7 +150,7 @@ where
 pub async fn list_infos<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
-    params: ListMemberInvitationInfosParams,
+    instr: ListMemberInvitationInfosInstr,
 ) -> BaseRest<Vec<MemberInvitationInfoVal>>
 where
     R: MemberInvitationRepo<C> + MemberRepo<C> + Sync,
@@ -159,11 +161,11 @@ where
             repo => for<'a> FindMemberInfo<'a>;
         },
         &token.user_id,
-        &params.team_id,
+        &instr.team_id,
     )
     .await?;
 
-    let status = match params.is_pending {
+    let status = match instr.is_pending {
         //
         Some(true) => MemberInvitationStatus::Pending,
 
@@ -173,11 +175,11 @@ where
     };
 
     let member_invitation_list_spec = MemberInvitationListSpec {
-        team_id: params.team_id,
+        team_id: instr.team_id,
         status,
-        incl_opt: params.incl_opt,
-        offset: params.offset,
-        limit: params.limit,
+        incl_opt: instr.incl_opt,
+        offset: instr.offset,
+        limit: instr.limit,
     };
 
     let member_invitation_infos = ListMemberInvitationInfos {
@@ -207,7 +209,7 @@ where
 pub async fn update_roles<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
-    params: UpdateMemberInvitationRolesParams,
+    instr: UpdateMemberInvitationRolesInstr,
 ) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
@@ -221,15 +223,15 @@ where
                 for<'a> FindMemberInfo<'a>;
         },
         &token.user_id,
-        &params.id,
+        &instr.id,
     )
     .await?;
 
     nucl.coord(async move |context| {
         //
         let member_invitation_update = MemberInvitationRoleRepl {
-            id: params.id,
-            roles: params.roles,
+            id: instr.id,
+            roles: instr.roles,
         };
 
         UpdateMemberInvitation::Info {
