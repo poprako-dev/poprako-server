@@ -18,8 +18,7 @@ use crate::data::member_invitation::{
     UpdateMemberInvitationRolesParams,
 };
 use crate::model::member_invitation::{
-    MemberInvitationEntry, MemberInvitationListKind, MemberInvitationListSpec,
-    MemberInvitationUpdate,
+    MemberInvitationEntry, MemberInvitationListSpec, MemberInvitationUpdate,
 };
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
@@ -37,6 +36,7 @@ use crate::part::repo::oper::user::FindUserInfo;
 use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
+use crate::value::member_invitation::MemberInvitationStatus;
 
 #[cfg(test)]
 // Unit tests for member invitation creation and cancellation semantics.
@@ -171,13 +171,13 @@ where
     )
     .await?;
 
-    let kind = match params.pending {
+    let kind = match params.is_pending {
         //
-        Some(true) => MemberInvitationListKind::Pending,
+        Some(true) => MemberInvitationStatus::Pending,
 
-        Some(false) => MemberInvitationListKind::Used,
+        Some(false) => MemberInvitationStatus::Used,
 
-        None => MemberInvitationListKind::All,
+        None => MemberInvitationStatus::All,
     };
 
     let member_invitation_list_spec = MemberInvitationListSpec {

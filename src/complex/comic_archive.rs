@@ -206,7 +206,7 @@ fn build_assignment_payload(
             qid: user_info.qid.clone(),
             nickname: user_info.nickname.clone(),
             avatar_key: user_info.avatar_key.clone(),
-            avatar_uploaded: user_info.avatar_uploaded,
+            avatar_uploaded: user_info.is_avatar_uploaded,
             avatar_version: user_info.avatar_version,
             is_sadmin: user_info.is_sadmin,
             last_active_at: user_info.last_active_at.to_unix_milli(),

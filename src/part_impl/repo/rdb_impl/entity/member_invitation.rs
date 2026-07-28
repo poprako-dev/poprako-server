@@ -45,7 +45,7 @@ impl TryFrom<MemberInvitationRow> for MemberInvitationInfo {
             invitor_id: v.f_inviter_id,
             invitee_qid: v.f_invitee_qid,
             code: v.f_code,
-            pending: v.f_pending,
+            is_pending: v.f_pending,
             roles,
         })
     }

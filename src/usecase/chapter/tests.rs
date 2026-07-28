@@ -8,8 +8,10 @@
 // create(create)(positive): creator preset roles are merged with chapter admin.
 // create(create)(negative): non-admin creation rolls back.
 // create(create)(negative): creator cannot preset a role missing from team membership.
-// update_info(update_info)(positive): chapter admin can update metadata and pin state.
+// update_info(update_info)(positive): chapter admin can update metadata.
 // update_info(update_info)(negative): non-admin cannot update metadata.
+// mark_pinned(mark_pinned)(positive): chapter admin pins the chapter and unpins its sibling.
+// mark_pinned(mark_pinned)(negative): non-admin cannot pin a chapter.
 // update_stage(update_stage)(positive): chapter admin can advance any stage.
 // update_stage(update_stage)(negative): reviewer cannot advance another role's stage.
 // update_stage(update_stage)(negative): invalid workflow transition is rejected.
@@ -316,7 +318,6 @@ async fn update_info_admin_updates_metadata() {
         UpdateChapterInfoParams {
             id: "chapter-1".into(),
             subtitle: Some("updated".into()),
-            pin: Some(true),
         },
     )
     .await
@@ -327,7 +328,7 @@ async fn update_info_admin_updates_metadata() {
 
     assert_eq!(snapshot.chapters[0].subtitle, "updated");
 
-    assert!(snapshot.chapters[0].is_pinned);
+    assert!(!snapshot.chapters[0].is_pinned);
 }
 
 #[tokio::test]
@@ -345,7 +346,6 @@ async fn update_info_rejects_non_admin_metadata() {
         UpdateChapterInfoParams {
             id: "chapter-1".into(),
             subtitle: Some("updated".into()),
-            pin: None,
         },
     )
     .await
@@ -353,6 +353,60 @@ async fn update_info_rejects_non_admin_metadata() {
     .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Perm);
+}
+
+#[tokio::test]
+async fn mark_pinned_admin_pins_chapter_and_unpins_sibling() {
+    //
+    let mock = Mock::new();
+
+    seed_scope(&mock, "user-1", RoleMask::from(RoleField::TRANSLATOR));
+
+    mock.seed_chapter(chapter("chapter-old", "comic-1", 0, true));
+
+    mock.seed_chapter(chapter("chapter-1", "comic-1", 1, false));
+
+    mock.seed_assignment(assignment(
+        "chapter-1",
+        "user-1",
+        RoleMask::from(RoleField::ADMIN),
+    ));
+
+    mark_pinned((&mock, &mock), token("user-1"), "chapter-1".into())
+        .await
+        .ok()
+        .unwrap();
+
+    let snapshot = mock.snapshot();
+
+    assert!(snapshot.chapters.iter().any(|chapter_info| {
+        chapter_info.id == "chapter-1" && chapter_info.is_pinned
+    }));
+
+    assert!(snapshot.chapters.iter().any(|chapter_info| {
+        chapter_info.id == "chapter-old" && !chapter_info.is_pinned
+    }));
+}
+
+#[tokio::test]
+async fn mark_pinned_rejects_non_admin() {
+    //
+    let mock = Mock::new();
+
+    seed_scope(&mock, "user-1", RoleMask::from(RoleField::TRANSLATOR));
+
+    mock.seed_chapter(chapter("chapter-1", "comic-1", 1, false));
+
+    let err = mark_pinned((&mock, &mock), token("user-1"), "chapter-1".into())
+        .await
+        .err()
+        .unwrap();
+
+    let snapshot = mock.snapshot();
+
+    assert_expected_variant(err, ExpectedVariant::Perm);
+
+    assert!(!snapshot.chapters[0].is_pinned);
 }
 
 #[tokio::test]

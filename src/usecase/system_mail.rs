@@ -40,7 +40,7 @@ pub async fn list_infos<C, R>(
 where
     R: SystemMailRepo<C>,
 {
-    let kind = match params.read {
+    let kind = match params.is_read {
         //
         Some(true) => SystemMailInfoListKind::Read,
 
@@ -68,7 +68,7 @@ where
             id: system_mail_info.id,
             title: system_mail_info.title,
             content: system_mail_info.content,
-            read: system_mail_info.read,
+            is_read: system_mail_info.is_read,
             created_at: system_mail_info.created_at.to_unix_milli(),
         })
         .collect();

@@ -4,8 +4,7 @@ use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
 use crate::model::member_invitation::{
-    MemberInvitationEntry, MemberInvitationInfo, MemberInvitationListKind,
-    MemberInvitationListSpec,
+    MemberInvitationEntry, MemberInvitationInfo, MemberInvitationListSpec,
 };
 use crate::model::user::UserInfo;
 use crate::part::repo::oper::member_invitation::{
@@ -18,6 +17,7 @@ use crate::part_impl::repo::mock_impl::{
 };
 use crate::result::{BaseError, BaseRest, accept};
 use crate::value::member_invitation::MemberInvitationInclOpt;
+use crate::value::member_invitation::MemberInvitationStatus;
 
 // Internal implementation of `find_user`.
 fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
@@ -60,16 +60,16 @@ fn list_member_invitation_infos(
             member_invitation_info.team_id == spec.team_id
                 && match &spec.kind {
                     //
-                    // Internal state field `MemberInvitationListKind`.
+                    // Internal state field `MemberInvitationStatus`.
                     // Internal implementation detail.
-                    MemberInvitationListKind::All => true,
+                    MemberInvitationStatus::All => true,
 
-                    MemberInvitationListKind::Pending => {
-                        member_invitation_info.pending
+                    MemberInvitationStatus::Pending => {
+                        member_invitation_info.is_pending
                     }
 
-                    MemberInvitationListKind::Used => {
-                        !member_invitation_info.pending
+                    MemberInvitationStatus::Used => {
+                        !member_invitation_info.is_pending
                     }
                 }
         })
@@ -144,7 +144,7 @@ fn get_member_invitation_info(
             .iter()
             .find(|member_invitation_info| {
                 member_invitation_info.code == *code
-                    && member_invitation_info.pending
+                    && member_invitation_info.is_pending
             })
             .cloned()
             .ok_or_else(|| expected("error-no-pending-invitation")),
@@ -173,7 +173,7 @@ fn create_member_invitation(
         .any(|member_invitation_info| {
             member_invitation_info.team_id == entry.team_id
                 && member_invitation_info.invitee_qid == entry.invitee_qid
-                && member_invitation_info.pending
+                && member_invitation_info.is_pending
         })
     {
         return Err(expected("error-already-exists"));
@@ -186,7 +186,7 @@ fn create_member_invitation(
         invitor_id: entry.invitor_id.clone(),
         invitee_qid: entry.invitee_qid.clone(),
         code: entry.code.clone(),
-        pending: true,
+        is_pending: true,
         roles: entry.roles,
     };
 
@@ -233,11 +233,11 @@ fn update_member_invitation(
                 .iter_mut()
                 .find(|member_invitation_info| {
                     member_invitation_info.id == *id
-                        && member_invitation_info.pending
+                        && member_invitation_info.is_pending
                 })
                 .ok_or_else(|| expected("error-invitation-not-found"))?;
 
-            member_invitation_info.pending = false;
+            member_invitation_info.is_pending = false;
         }
     }
 
@@ -397,7 +397,7 @@ impl<'a> Step<PurgeExpiredMemberInvitation<'a>, MockContext> for Mock {
             .member_invitations
             .retain(|member_invitation_info| {
                 member_invitation_info.id != oper.id
-                    || !member_invitation_info.pending
+                    || !member_invitation_info.is_pending
             });
 
         accept(())
@@ -421,7 +421,7 @@ impl<'a> Run<PurgeExpiredMemberInvitation<'a>> for Mock {
 
         state.member_invitations.retain(|member_invitation_info| {
             member_invitation_info.id != oper.id
-                || !member_invitation_info.pending
+                || !member_invitation_info.is_pending
         });
 
         accept(())

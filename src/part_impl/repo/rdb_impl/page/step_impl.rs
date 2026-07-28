@@ -134,7 +134,7 @@ pub async fn update_manifest(
         .set((
             f_index.eq(update.index),
             f_image_key.eq(update.image_key.as_deref()),
-            f_image_uploaded.eq(update.image_uploaded),
+            f_image_uploaded.eq(update.is_image_uploaded),
             f_image_version.eq(i64::from(update.image_version)),
             f_image_hash.eq(image_hash.to_vec()),
             f_image_extension.eq(update.image_ext.suffix()),
@@ -423,10 +423,7 @@ pub async fn delete_by_chapter_id(
 
 /// Deletes selected pages after deleting their child units.
 #[instrument(level = "info", err(Debug), skip_all)]
-pub async fn delete_by_ids(
-    conn: &mut RdbConn,
-    ids: &[String],
-) -> BaseRest<()> {
+pub async fn delete_by_ids(conn: &mut RdbConn, ids: &[String]) -> BaseRest<()> {
     //
     if ids.is_empty() {
         return accept(());

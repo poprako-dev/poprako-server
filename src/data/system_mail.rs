@@ -12,7 +12,7 @@ use utoipa::{IntoParams, ToSchema};
 pub struct ListSystemMailInfosParams {
     //
     /// Filter by read status. Absent returns all.
-    pub read: Option<bool>,
+    pub is_read: Option<bool>,
 
     /// Pagination offset.
     pub offset: u32,
@@ -37,7 +37,7 @@ pub struct SystemMailInfoVal {
     pub content: String,
 
     /// Whether the mail has been read.
-    pub read: bool,
+    pub is_read: bool,
 
     /// Timestamp of creation, in Unix milliseconds.
     pub created_at: i64,

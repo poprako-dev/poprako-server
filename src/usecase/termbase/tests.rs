@@ -73,7 +73,7 @@ fn comic(id: &str, workset_id: &str) -> ComicInfo {
         author: "author".into(),
         description: None,
         cover_key: None,
-        cover_uploaded: false,
+        is_cover_uploaded: false,
         cover_version: 0,
         cover_hash: ImageHash::default(),
         cover_ext: ImageExt::Png,

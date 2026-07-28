@@ -7,8 +7,7 @@ use time::OffsetDateTime;
 use tracing::instrument;
 
 use crate::model::member_invitation::{
-    MemberInvitationEntry, MemberInvitationInfo, MemberInvitationListKind,
-    MemberInvitationListSpec,
+    MemberInvitationEntry, MemberInvitationInfo, MemberInvitationListSpec,
 };
 use crate::part::repo::oper::member_invitation::{
     CreateMemberInvitation, DeleteMemberInvitation, GetMemberInvitationInfo,
@@ -24,6 +23,7 @@ use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{BaseError, BaseRest, accept};
 use crate::value::member_invitation::MemberInvitationInclOpt;
+use crate::value::member_invitation::MemberInvitationStatus;
 use crate::value::role::RoleMask;
 
 /// Member invitation RDB integration tests.
@@ -59,11 +59,11 @@ async fn list_infos(
 
     query = match &spec.kind {
         //
-        MemberInvitationListKind::All => query,
+        MemberInvitationStatus::All => query,
 
-        MemberInvitationListKind::Pending => query.filter(f_pending.eq(true)),
+        MemberInvitationStatus::Pending => query.filter(f_pending.eq(true)),
 
-        MemberInvitationListKind::Used => query.filter(f_pending.eq(false)),
+        MemberInvitationStatus::Used => query.filter(f_pending.eq(false)),
     };
 
     let rows: Vec<MemberInvitationRow> = query

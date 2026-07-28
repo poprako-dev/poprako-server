@@ -160,7 +160,7 @@ impl TryFrom<TeamRow> for TeamInfo {
             name: v.f_name,
             description: v.f_description.unwrap_or_default(),
             avatar_key: v.f_avatar_key,
-            avatar_uploaded: v.f_avatar_uploaded,
+            is_avatar_uploaded: v.f_avatar_uploaded,
             avatar_version: v.f_avatar_version,
             avatar_hash: ImageHash::new(avatar_hash_bytes),
             avatar_ext,

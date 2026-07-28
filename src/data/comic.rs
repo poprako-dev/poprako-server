@@ -112,7 +112,7 @@ impl ComicInfoVal {
     where
         P: ImagePool,
     {
-        let cover_key = match (model.cover_uploaded, &model.cover_key) {
+        let cover_key = match (model.is_cover_uploaded, &model.cover_key) {
             //
             (true, Some(key)) => Some(key.as_str()),
 

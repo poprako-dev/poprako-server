@@ -269,7 +269,7 @@ where
 
             let mut batch_delays = Vec::new();
 
-            if !avatar_reservation.upload_required {
+            if !avatar_reservation.is_upload_required {
                 return accept((
                     avatar_reservation.object_key,
                     avatar_reservation.avatar_version,
@@ -389,7 +389,7 @@ where
         });
     }
 
-    if user_info.avatar_uploaded {
+    if user_info.is_avatar_uploaded {
         return accept(());
     }
 
@@ -508,7 +508,7 @@ where
 
         // Enqueue avatar object deletion if one was uploaded.
         if let Some(avatar_key) = &user_info.avatar_key
-            && user_info.avatar_uploaded
+            && user_info.is_avatar_uploaded
         {
             let delete_id = ImageComplex::gen_delete_id();
 

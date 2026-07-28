@@ -51,7 +51,7 @@ fn user(id: &str, qid: &str) -> UserInfo {
         qid: qid.into(),
         nickname: id.into(),
         avatar_key: None,
-        avatar_uploaded: false,
+        is_avatar_uploaded: false,
         avatar_version: 0,
         avatar_hash: ImageHash::default(),
         avatar_ext: ImageExt::Png,
@@ -94,7 +94,7 @@ fn invitation(
         invitor_id: "admin-user".into(),
         invitee_qid: invitee_qid.into(),
         code: "ABC123".into(),
-        pending: true,
+        is_pending: true,
         roles: RoleMask::from(RoleField::TRANSLATOR),
     }
 }
@@ -116,7 +116,7 @@ fn list_params(team_id: &str) -> ListMemberInvitationInfosParams {
     ListMemberInvitationInfosParams {
         incl_opt: Vec::new(),
         team_id: team_id.into(),
-        pending: Some(true),
+        is_pending: Some(true),
         offset: 0,
         limit: 10,
     }
@@ -166,7 +166,7 @@ async fn create_admin_creates_pending_invitation() {
 
     assert_eq!(snapshot.member_invitations[0].invitee_qid, "qid-2");
 
-    assert!(snapshot.member_invitations[0].pending);
+    assert!(snapshot.member_invitations[0].is_pending);
 
     assert_eq!(snapshot.prom_records.len(), 1);
 

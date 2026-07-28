@@ -34,7 +34,7 @@ fn create_user(state: &mut MockState, entry: &UserEntry) -> BaseRest<UserInfo> {
         qid: entry.qid.clone(),
         nickname: entry.nickname.clone(),
         avatar_key: None,
-        avatar_uploaded: false,
+        is_avatar_uploaded: false,
         avatar_version: 0,
         avatar_hash: ImageHash::default(),
         avatar_ext: ImageExt::Png,
@@ -153,7 +153,7 @@ fn update_user(state: &mut MockState, oper: &UpdateUser<'_>) -> BaseRest<()> {
                 unreachable!();
             };
 
-            user_info.avatar_uploaded = *avatar_uploaded;
+            user_info.is_avatar_uploaded = *avatar_uploaded;
         }
 
         None => user_info.last_active_at = now(),
@@ -344,7 +344,7 @@ impl<'a> Step<ReserveUserAvatar<'a>, MockContext> for Mock {
                 object_key,
                 prev_object_key: None,
                 avatar_version: user_info.avatar_version,
-                upload_required: !user_info.avatar_uploaded,
+                is_upload_required: !user_info.is_avatar_uploaded,
             });
         }
 
@@ -360,7 +360,7 @@ impl<'a> Step<ReserveUserAvatar<'a>, MockContext> for Mock {
 
         user_info.avatar_key = Some(object_key.clone());
 
-        user_info.avatar_uploaded = false;
+        user_info.is_avatar_uploaded = false;
 
         user_info.avatar_version = avatar_version;
 
@@ -374,7 +374,7 @@ impl<'a> Step<ReserveUserAvatar<'a>, MockContext> for Mock {
             object_key,
             prev_object_key,
             avatar_version,
-            upload_required: true,
+            is_upload_required: true,
         })
     }
 }

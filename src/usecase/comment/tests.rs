@@ -44,7 +44,7 @@ fn user(id: &str, nickname: &str) -> UserInfo {
         qid: id.into(),
         nickname: nickname.into(),
         avatar_key: None,
-        avatar_uploaded: false,
+        is_avatar_uploaded: false,
         avatar_version: 0,
         avatar_hash: ImageHash::default(),
         avatar_ext: ImageExt::Png,

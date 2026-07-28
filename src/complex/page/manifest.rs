@@ -112,7 +112,7 @@ fn candidate_order(left: &PageInfo, right: &PageInfo) -> Ordering {
         .total_unit_count
         .gt(&0)
         .cmp(&left.total_unit_count.gt(&0))
-        .then_with(|| right.image_uploaded.cmp(&left.image_uploaded))
+        .then_with(|| right.is_image_uploaded.cmp(&left.is_image_uploaded))
         .then_with(|| left.index.cmp(&right.index))
         .then_with(|| left.id.cmp(&right.id))
 }

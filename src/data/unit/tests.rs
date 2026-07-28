@@ -15,21 +15,16 @@ fn patch_fields_distinguish_missing_null_and_value() {
         {
             "edit": "patch",
             "id": "unit-1",
-            "next_id": null,
-            "translation": null,
-            "revision": null
+            "next_id": { "type": "clear" },
+            "translation": { "type": "clear" },
+            "revision": { "type": "clear" }
         },
         {
             "edit": "patch",
             "id": "unit-1",
-            "next_id": "unit-2",
-            "translation": {
-                "translated_text": "translated"
-            },
-            "revision": {
-                "is_proofread": true,
-                "proofread_text": "proofread"
-            }
+            "next_id": { "type": "assign", "value": "unit-2" },
+            "translation": { "type": "assign", "value": { "translated_text": "translated" } },
+            "revision": { "type": "assign", "value": { "is_proofread": true, "proofread_text": "proofread" } }
         }
     ]))
     .unwrap();
@@ -127,7 +122,7 @@ fn create_requires_structure_and_resolves_local_references() {
         {
             "edit": "patch",
             "id": "local-a",
-            "translation": {"translated_text": "text"}
+            "translation": { "type": "assign", "value": { "translated_text": "text" } }
         }
     ]))
     .unwrap();

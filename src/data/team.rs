@@ -64,7 +64,7 @@ impl TeamInfoVal {
         P: ImagePool,
     {
         let (avatar_url, avatar_thumbnail_url) =
-            match (model.avatar_uploaded, &model.avatar_key) {
+            match (model.is_avatar_uploaded, &model.avatar_key) {
                 //
                 (true, Some(key)) => (
                     image_pool.gen_download_url(key).await.ok(),

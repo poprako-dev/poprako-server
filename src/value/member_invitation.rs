@@ -7,6 +7,18 @@ use utoipa::ToSchema;
 
 use crate::value::incl::InclOpt;
 
+/// Consumption-status filtering mode for listing member invitations.
+pub enum MemberInvitationStatus {
+    /// Include invitations regardless of consumption status.
+    All,
+
+    /// Include only invitations that have not yet been consumed.
+    Pending,
+
+    /// Include only invitations that have already been consumed.
+    Used,
+}
+
 /// Incl opts for member invitation info queries.
 ///
 /// Each opt embeds additional related data into the returned

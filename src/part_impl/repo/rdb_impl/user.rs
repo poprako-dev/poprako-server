@@ -206,7 +206,7 @@ async fn reserve_avatar(
                         .into(),
                 }
             })?,
-            upload_required: !uploaded,
+            is_upload_required: !uploaded,
         });
     }
 
@@ -232,7 +232,7 @@ async fn reserve_avatar(
         object_key,
         prev_object_key: prev_key,
         avatar_version: version,
-        upload_required: true,
+        is_upload_required: true,
     })
 }
 

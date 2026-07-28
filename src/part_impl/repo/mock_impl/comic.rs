@@ -202,7 +202,7 @@ fn mark_comic_cover_uploaded(
         return Err(expected("error-stale-cover-upload"));
     }
 
-    comic.cover_uploaded = cover_uploaded;
+    comic.is_cover_uploaded = cover_uploaded;
 
     comic.updated_at = now();
 
@@ -392,7 +392,7 @@ impl<'a> Step<CreateComic<'a>, MockContext> for Mock {
             author: oper.entry.author.clone(),
             description: oper.entry.description.clone(),
             cover_key: None,
-            cover_uploaded: false,
+            is_cover_uploaded: false,
             cover_version: 0,
             cover_hash: ImageHash::default(),
             cover_ext: ImageExt::Png,
@@ -511,7 +511,7 @@ impl<'a> Step<ReserveComicCover<'a>, MockContext> for Mock {
                 object_key,
                 prev_object_key: None,
                 cover_version: comic.cover_version,
-                upload_required: !comic.cover_uploaded,
+                is_upload_required: !comic.is_cover_uploaded,
             });
         }
 
@@ -527,7 +527,7 @@ impl<'a> Step<ReserveComicCover<'a>, MockContext> for Mock {
 
         comic.cover_key = Some(object_key.clone());
 
-        comic.cover_uploaded = false;
+        comic.is_cover_uploaded = false;
 
         comic.cover_version = cover_version;
 
@@ -541,7 +541,7 @@ impl<'a> Step<ReserveComicCover<'a>, MockContext> for Mock {
             object_key,
             prev_object_key,
             cover_version,
-            upload_required: true,
+            is_upload_required: true,
         })
     }
 }

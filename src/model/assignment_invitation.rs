@@ -2,6 +2,7 @@
 
 use time::OffsetDateTime;
 
+use crate::value::assignment_invitation::AssignmentInvitationStatus;
 use crate::value::role::RoleMask;
 
 /// An invitation record for joining a chapter assignment.
@@ -23,7 +24,7 @@ pub struct AssignmentInvitationInfo {
     pub code: String,
 
     /// Whether the invitation is still awaiting consumption.
-    pub pending: bool,
+    pub is_pending: bool,
 
     /// Bitmask of workflow roles the invitation would grant upon consumption.
     pub roles: RoleMask,
@@ -61,22 +62,10 @@ pub struct AssignmentInvitationListSpec {
     /// Foreign key scoping the listing to invitations for this chapter.
     pub chapter_id: String,
     /// Consumption status filter controlling which subset of invitations to return.
-    pub kind: AssignmentInvitationListKind,
+    pub kind: AssignmentInvitationStatus,
 
     /// Number of records to skip for pagination.
     pub offset: u32,
     /// Maximum number of records to return.
     pub limit: u32,
-}
-
-/// Consumption-status filtering mode for listing assignment invitations.
-pub enum AssignmentInvitationListKind {
-    /// Include invitations regardless of consumption status.
-    All,
-
-    /// Include only invitations that have not yet been consumed.
-    Pending,
-
-    /// Include only invitations that have already been consumed.
-    Used,
 }

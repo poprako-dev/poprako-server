@@ -24,7 +24,7 @@ fn insert_mail(state: &mut MockState, entry: &SystemMailEntry) {
     state.system_mails.push(SystemMailInfo {
         id: entry.id.clone(),
         receiver_id: entry.receiver_id.clone(),
-        read: false,
+        is_read: false,
         title: entry.title.clone(),
         content: entry.content.clone(),
         created_at: now(),
@@ -105,9 +105,9 @@ fn list_system_mail_infos(
                     // Internal implementation detail.
                     SystemMailInfoListKind::All => true,
 
-                    SystemMailInfoListKind::Read => system_mail_info.read,
+                    SystemMailInfoListKind::Read => system_mail_info.is_read,
 
-                    SystemMailInfoListKind::Unread => !system_mail_info.read,
+                    SystemMailInfoListKind::Unread => !system_mail_info.is_read,
                 }
         })
         .cloned()
@@ -145,7 +145,7 @@ fn mark_system_mail_read(
         });
     }
 
-    system_mail_info.read = true;
+    system_mail_info.is_read = true;
 
     accept(())
 }

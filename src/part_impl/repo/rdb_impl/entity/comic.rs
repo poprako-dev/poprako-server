@@ -72,7 +72,7 @@ impl TryFrom<ComicRow> for ComicInfo {
             author: v.f_author,
             description: v.f_description,
             cover_key: v.f_cover_key,
-            cover_uploaded: v.f_cover_uploaded,
+            is_cover_uploaded: v.f_cover_uploaded,
             cover_version: v.f_cover_version,
             cover_hash: ImageHash::new(cover_hash_bytes),
             cover_ext,

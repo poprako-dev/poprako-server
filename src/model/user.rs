@@ -32,7 +32,7 @@ pub struct UserInfo {
     /// Object-storage key for the uploaded avatar image, absent when no avatar is set.
     pub avatar_key: Option<String>,
     /// Whether the reserved avatar upload has been completed.
-    pub avatar_uploaded: bool,
+    pub is_avatar_uploaded: bool,
     /// Monotonically increasing version number for cache-busting the avatar URL.
     pub avatar_version: u32,
     /// SHA-256 identity of the reserved avatar content.
@@ -83,7 +83,7 @@ pub struct UserAvatarReservation {
     /// Expected version number that must match when confirming the upload.
     pub avatar_version: u32,
     /// Whether a PUT capability and delayed check are required.
-    pub upload_required: bool,
+    pub is_upload_required: bool,
 }
 
 /// A stored password credential used during login verification.

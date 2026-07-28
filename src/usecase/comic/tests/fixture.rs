@@ -22,7 +22,7 @@ pub fn comic(id: &str, workset_id: &str, index: i32) -> ComicInfo {
         author: "author".into(),
         description: None,
         cover_key: None,
-        cover_uploaded: false,
+        is_cover_uploaded: false,
         cover_version: 0,
         cover_hash: ImageHash::default(),
         cover_ext: ImageExt::Png,
@@ -44,7 +44,7 @@ pub fn comic_with_uploaded_cover(
 ) -> ComicInfo {
     ComicInfo {
         cover_key: Some(cover_key.into()),
-        cover_uploaded: true,
+        is_cover_uploaded: true,
         cover_version: 1,
         cover_hash: ImageHash::default(),
         cover_ext: ImageExt::Png,
@@ -106,7 +106,7 @@ pub fn page(
         chapter_id: chapter_id.into(),
         index,
         image_key: image_key.map(Into::into),
-        image_uploaded,
+        is_image_uploaded: image_uploaded,
         image_version: 1,
         image_hash: ImageHash::new([0u8; 32]),
         image_ext: ImageExt::Png,

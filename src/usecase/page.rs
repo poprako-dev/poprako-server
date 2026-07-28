@@ -107,11 +107,11 @@ where
                 locked_page_info.image_hash == params.image_hash
                     && locked_page_info.image_ext == params.ext;
 
-            if same_identity && locked_page_info.image_uploaded {
+            if same_identity && locked_page_info.is_image_uploaded {
                 return accept((locked_page_info, None));
             }
 
-            let (image_key, image_version, previous_image_key) = match same_identity {
+            let (image_key, image_version, prev_image_key) = match same_identity {
                 //
                 true => (
                     locked_page_info.image_key.clone().ok_or_else(|| {
@@ -152,7 +152,7 @@ where
                 id: locked_page_info.id.clone(),
                 index: locked_page_info.index,
                 image_key: Some(image_key.clone()),
-                image_uploaded: false,
+                is_image_uploaded: false,
                 image_version,
                 image_hash: params.image_hash.clone(),
                 image_ext: params.ext,
@@ -173,12 +173,12 @@ where
 
             let mut task_delays = Vec::new();
 
-            if let Some(previous_image_key) = previous_image_key {
+            if let Some(prev_image_key) = prev_image_key {
                 //
                 task_ids.push(ImageComplex::gen_delete_id());
 
                 task_payloads.push(TaskPayload::Image(image::ImagePayload::Delete {
-                    object_key: previous_image_key,
+                    object_key: prev_image_key,
                 }));
 
                 task_delays.push(None);
@@ -381,7 +381,7 @@ where
         });
     }
 
-    if page_info.image_uploaded {
+    if page_info.is_image_uploaded {
         return accept(());
     }
 

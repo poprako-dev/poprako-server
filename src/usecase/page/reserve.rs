@@ -268,7 +268,7 @@ where
                         //
                         true => false,
 
-                        false => existing_page_info.image_uploaded,
+                        false => existing_page_info.is_image_uploaded,
                     };
 
                     if identity_changed
@@ -281,7 +281,7 @@ where
                         id: existing_page_info.id.clone(),
                         index,
                         image_key: image_key.clone(),
-                        image_uploaded,
+                        is_image_uploaded: image_uploaded,
                         image_version,
                         image_hash: page_spec.image_hash.clone(),
                         image_ext: page_spec.ext,

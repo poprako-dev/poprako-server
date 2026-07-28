@@ -202,8 +202,6 @@ pub struct UpdateChapterInfoParams {
 
     /// New display subtitle; `None` leaves the current value unchanged.
     pub subtitle: Option<String>,
-    /// New pin status; `None` leaves the current value unchanged.
-    pub pin: Option<bool>,
 }
 
 /// Input parameters for updating a chapter's workflow stage.

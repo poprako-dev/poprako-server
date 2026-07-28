@@ -30,7 +30,7 @@ pub struct AssignmentInvitationInfoVal {
     pub code: String,
 
     /// Whether the invitation has not yet been consumed.
-    pub pending: bool,
+    pub is_pending: bool,
 
     /// Role mask assigned to the invitation.
     pub roles: RoleMask,
@@ -50,7 +50,7 @@ impl From<AssignmentInvitationInfo> for AssignmentInvitationInfoVal {
             inviter_id: value.inviter_id,
             invitee_qid: value.invitee_qid,
             code: value.code,
-            pending: value.pending,
+            is_pending: value.is_pending,
             roles: value.roles,
             created_at: value.created_at.to_unix_milli(),
             updated_at: value.updated_at.to_unix_milli(),
@@ -71,7 +71,7 @@ pub struct ListAssignmentInvitationInfosParams {
 
     /// When `Some(true)`, returns only unconsumed invitations;
     /// `Some(false)` returns only consumed ones; `None` returns all.
-    pub pending: Option<bool>,
+    pub is_pending: Option<bool>,
 
     /// Pagination offset.
     pub offset: u32,
