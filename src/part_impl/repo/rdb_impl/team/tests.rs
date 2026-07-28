@@ -2,7 +2,8 @@
 
 use super::*;
 
-use crate::model::team::{TeamInfoListKind, TeamInfoListSpec};
+use crate::model::read::spec::team::{TeamListKind, TeamListSpec};
+use crate::model::write::team::TeamRepl;
 use crate::part::repo::oper::team::{GetTeamInfo, ListTeamInfos, UpdateTeam};
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
 use crate::part_impl::shared::RdbCore;
@@ -19,8 +20,8 @@ pub async fn team_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let repo = RdbRepo::new(shared.clone());
 
-    let team_info_list_spec = TeamInfoListSpec {
-        kind: TeamInfoListKind::All,
+    let team_info_list_spec = TeamListSpec {
+        kind: TeamListKind::All,
         offset: 0,
         limit: 10,
     };
@@ -39,14 +40,16 @@ pub async fn team_roundtrip_uses_testcontainer(shared: RdbCore) {
             .any(|team_info| team_info.id == team_fixture.team_entry.id)
     );
 
-    repo.run(&UpdateTeam::Info {
-        id: &team_fixture.team_entry.id,
-        name: "RDB Team Updated",
-        description: "updated",
-    })
-    .await
-    .ok()
-    .unwrap();
+    let repl = TeamRepl {
+        id: team_fixture.team_entry.id.clone(),
+        name: "RDB Team Updated".into(),
+        description: "updated".into(),
+    };
+
+    repo.run(&UpdateTeam::Info { repl: &repl })
+        .await
+        .ok()
+        .unwrap();
 
     let team_info = repo
         .run(&GetTeamInfo::Id {

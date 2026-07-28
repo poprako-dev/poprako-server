@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 /// Image-owning resource discriminator.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ResourceKind {
+    //
     /// Avatar image for a user.
     UserAvatar,
 
@@ -19,6 +20,7 @@ pub enum ResourceKind {
 /// Deferred image payload.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ImagePayload {
+    //
     /// Verify that an uploaded image object exists and confirm the current DB ownership.
     CheckUpload {
         //

@@ -3,9 +3,9 @@
 use time::OffsetDateTime;
 
 use crate::complex::user::UserComplex;
-use crate::model::team::TeamInfo;
-use crate::model::user::{UserCredential, UserInfo};
-use crate::model::workset::WorksetInfo;
+use crate::model::read::proj::team::TeamInfo;
+use crate::model::read::proj::user::{UserCredential, UserInfo};
+use crate::model::read::proj::workset::WorksetInfo;
 use crate::value::image::{ImageExt, ImageHash};
 
 /// Builds a [`UserInfo`] fixture with default timestamps and no avatar.

@@ -8,7 +8,8 @@ use utoipa::ToSchema;
 use poprako_util::time::ToUnixMilli;
 
 use crate::data::image::ImageUploadSlotVal;
-use crate::model::page::{PageImageSpec, PageInfo};
+use crate::model::read::proj::page::PageInfo;
+use crate::model::write::page::PageImageSpec;
 use crate::part::image::ImagePool;
 use crate::result::{BaseRest, accept};
 use crate::value::image::{ImageExt, ImageHash};

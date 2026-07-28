@@ -16,7 +16,8 @@ use poprako_util::time::ToUnixMilli;
 use crate::data::team::TeamInfoVal;
 use crate::data::user::UserInfoVal;
 use crate::data::workset::WorksetInfoVal;
-use crate::model::comic::{ComicInfo, ComicInfoListKind, ComicInfoListSpec};
+use crate::model::read::proj::comic::ComicInfo;
+use crate::model::read::spec::comic::{ComicListKind, ComicListSpec};
 use crate::part::image::ImagePool;
 use crate::result::{BaseError, BaseRest, accept};
 use crate::value::chapter::StageMask;
@@ -41,7 +42,7 @@ mod tests;
 /// Construct via [`ComicInfoVal::from_model`] — the conversion requires
 /// an [`ImagePool`] instance for URL signing.
 ///
-/// [`ComicInfo`]: crate::model::comic::ComicInfo
+/// [`ComicInfo`]: crate::model::read::proj::comic::ComicInfo
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ComicInfoVal {
@@ -249,7 +250,7 @@ pub struct ListComicInfosParams {
     pub limit: u32,
 }
 
-impl TryFrom<ListComicInfosParams> for ComicInfoListSpec {
+impl TryFrom<ListComicInfosParams> for ComicListSpec {
     // The error type for invalid listing parameters.
     type Error = BaseError;
 
@@ -261,9 +262,9 @@ impl TryFrom<ListComicInfosParams> for ComicInfoListSpec {
 
         let kind = match stages {
             //
-            Some(stage_mask) => ComicInfoListKind::Stages(stage_mask),
+            Some(stage_mask) => ComicListKind::Stages(stage_mask),
 
-            None => ComicInfoListKind::All,
+            None => ComicListKind::All,
         };
 
         accept(Self {

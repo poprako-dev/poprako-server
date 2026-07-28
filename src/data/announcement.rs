@@ -10,7 +10,8 @@ use futures::future::OptionFuture;
 use poprako_util::time::ToUnixMilli;
 
 use crate::data::user::UserInfoVal;
-use crate::model::announcement::{AnnouncementInfo, AnnouncementListSpec};
+use crate::model::read::proj::announcement::AnnouncementInfo;
+use crate::model::read::spec::announcement::AnnouncementListSpec;
 use crate::part::image::ImagePool;
 use crate::result::{BaseRest, accept};
 use crate::value::announcement::AnnouncementInclOpt;

@@ -25,7 +25,7 @@ use crate::data::comic_archive::{
     ArchiveComicPayload, ExportComicArchivesParams, ExportComicArchivesPayload,
 };
 use crate::data::comic_list::ListComicInfosPayload;
-use crate::model::user::UserToken;
+use crate::model::shared::user::UserToken;
 use crate::usecase;
 use crate::value::comic::{ComicInclOpt, ComicWithOpt};
 

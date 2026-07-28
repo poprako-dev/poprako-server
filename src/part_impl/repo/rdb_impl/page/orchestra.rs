@@ -3,7 +3,8 @@ use std::collections::HashMap;
 use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
-use crate::model::page::{PageImageReservation, PageInfo};
+use crate::model::read::proj::page::PageInfo;
+use crate::model::write::page::PageImageReservation;
 use crate::part::repo::oper::page::{
     ClearPageImagesForPublish, CreatePages, DeletePages, GetPageInfo,
     GetPageInfoExcluded, ListFirstPageInfos, ListPageInfos,
@@ -20,7 +21,7 @@ use crate::part_impl::repo::rdb_impl::page::step_impl::{
     shift_indexes_temporary, update_manifest,
 };
 use crate::part_impl::shared::RdbContext;
-use crate::result::{BaseError, BaseRest};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 
 impl Run<GetPageInfo<'_>> for RdbRepo {
     // Use base error for page read orchestration through the query dispatcher.
@@ -161,9 +162,9 @@ impl Step<MarkPageImageUploaded<'_>, RdbContext> for RdbRepo {
     ) -> BaseRest<()> {
         mark_image_uploaded(
             context.conn(),
-            oper.id,
-            oper.image_version,
-            oper.image_key,
+            &oper.repl.id,
+            oper.repl.image_version,
+            oper.repl.image_key.as_deref(),
         )
         .await
     }
@@ -181,10 +182,15 @@ impl Step<SetPageImageUploaded<'_>, RdbContext> for RdbRepo {
     ) -> BaseRest<()> {
         set_image_uploaded(
             context.conn(),
-            oper.id,
-            oper.image_version,
-            oper.image_key,
-            oper.image_uploaded,
+            &oper.repl.id,
+            oper.repl.image_version,
+            oper.repl.image_key.as_deref().ok_or_else(|| {
+                BaseError::Expected {
+                    variant: ExpectedVariant::Args,
+                    message: "page image key is required".into(),
+                }
+            })?,
+            oper.repl.is_image_uploaded,
         )
         .await
     }

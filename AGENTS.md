@@ -36,10 +36,6 @@ src/
   through a `schema::` alias. Change migrations, run `just mgr-schema`, then
   use the generated table module through its full local path.
 
-The Go project under `references/poprako-s/` is a business-behavior reference.
-Read it before changing a feature, but do not copy its architecture or mention
-its paths in Rust comments.
-
 ## Implementation Rules
 
 - For non-trivial work: plan, implement, then review with targeted validation.

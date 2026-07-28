@@ -1,7 +1,7 @@
 use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
-use crate::model::assignment_invitation::AssignmentInvitationInfo;
+use crate::model::read::proj::assignment_invitation::AssignmentInvitationInfo;
 use crate::part::repo::oper::assignment_invitation::{
     CreateAssignmentInvitation, DeleteAssignmentInvitations,
     GetAssignmentInvitationInfo, GetAssignmentInvitationInfoExcluded,

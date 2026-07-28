@@ -3,7 +3,7 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::model::member::MemberInfo;
+use crate::model::read::proj::member::MemberInfo;
 use crate::part_impl::repo::rdb_impl::schema::t_member;
 use crate::value::role::{RoleField, RoleMask};
 

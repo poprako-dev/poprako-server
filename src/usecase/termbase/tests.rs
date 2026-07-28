@@ -10,11 +10,11 @@ use super::*;
 
 use time::OffsetDateTime;
 
-use crate::model::comic::ComicInfo;
-use crate::model::member::MemberInfo;
-use crate::model::term::TermInfo;
-use crate::model::termbase::TermbaseInfo;
-use crate::model::workset::WorksetInfo;
+use crate::model::read::proj::comic::ComicInfo;
+use crate::model::read::proj::member::MemberInfo;
+use crate::model::read::proj::term::TermInfo;
+use crate::model::read::proj::termbase::TermbaseInfo;
+use crate::model::read::proj::workset::WorksetInfo;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;

@@ -20,7 +20,7 @@ use crate::data::assignment_invitation::{
     CreateAssignmentInvitationPayload, JoinAssignmentInvitationParams,
     ListAssignmentInvitationInfosParams,
 };
-use crate::model::user::UserToken;
+use crate::model::shared::user::UserToken;
 use crate::usecase;
 
 /// Query for listing assignment invitations under one chapter.

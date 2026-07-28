@@ -7,8 +7,9 @@ use time::OffsetDateTime;
 use tracing::instrument;
 
 use crate::complex::user::UserComplex;
-use crate::model::user::{
-    UserAvatarReservation, UserCredential, UserEntry, UserInfo,
+use crate::model::read::proj::user::{UserCredential, UserInfo};
+use crate::model::write::user::{
+    UserAvatarReservation, UserCredsRepl, UserEntry, UserInfoRepl,
 };
 use crate::part::repo::oper::user::{
     CreateUser, DeleteUser, FindUserInfo, GetUserCredential, GetUserInfo,
@@ -111,19 +112,14 @@ async fn create(conn: &mut RdbConn, entry: &UserEntry) -> BaseRest<UserInfo> {
 
 // Update mutable identity fields (`qid`, `nickname`) for an existing user.
 #[instrument(level = "info", err(Debug), skip_all)]
-async fn update_info(
-    conn: &mut RdbConn,
-    id: &str,
-    qid: &str,
-    nickname: &str,
-) -> BaseRest<()> {
+async fn update_info(conn: &mut RdbConn, repl: &UserInfoRepl) -> BaseRest<()> {
     //
     // Apply one write that updates both fields and returns success when DB update succeeds.
     let now = OffsetDateTime::now_utc();
 
-    let aspect = UserAspect::new(now).nickname(nickname).qid(qid);
+    let aspect = UserAspect::new(now).nickname(&repl.nickname).qid(&repl.qid);
 
-    diesel::update(t_user.filter(f_id.eq(id)))
+    diesel::update(t_user.filter(f_id.eq(&repl.id)))
         .set(&aspect)
         .execute(conn)
         .await
@@ -136,15 +132,17 @@ async fn update_info(
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn update_password_hash(
     conn: &mut RdbConn,
-    id: &str,
-    password_hash: &str,
+    repl: &UserCredsRepl,
 ) -> BaseRest<()> {
     //
     // Persist credential changes and bump `f_updated_at` in one SQL statement.
     let now = OffsetDateTime::now_utc();
 
-    diesel::update(t_user.filter(f_id.eq(id)))
-        .set((f_password_hash.eq(password_hash), f_updated_at.eq(now)))
+    diesel::update(t_user.filter(f_id.eq(&repl.id)))
+        .set((
+            f_password_hash.eq(&repl.password_hash),
+            f_updated_at.eq(now),
+        ))
         .execute(conn)
         .await
         .map_err(diesel)?;
@@ -406,33 +404,23 @@ impl Run<UpdateUser<'_>> for RdbRepo {
                 submit_query!(self.core, touch_last_active, id)
             }
 
-            UpdateUser::Info { id, qid, nickname } => {
-                submit_query!(self.core, update_info, id, qid, nickname)
+            UpdateUser::Info { repl } => {
+                submit_query!(self.core, update_info, repl)
             }
 
-            UpdateUser::MarkAvatarUploaded {
-                id,
-                avatar_version,
-                avatar_key,
-                avatar_uploaded,
-            } => {
+            UpdateUser::MarkAvatarUploaded { repl } => {
                 submit_query!(
                     self.core,
                     mark_avatar_uploaded,
-                    id,
-                    *avatar_version,
-                    *avatar_key,
-                    *avatar_uploaded
+                    &repl.id,
+                    repl.avatar_version,
+                    repl.avatar_key.as_deref(),
+                    repl.is_avatar_uploaded
                 )
             }
 
-            UpdateUser::PasswordHash { id, password_hash } => {
-                submit_query!(
-                    self.core,
-                    update_password_hash,
-                    id,
-                    password_hash
-                )
+            UpdateUser::PasswordHash { repl } => {
+                submit_query!(self.core, update_password_hash, repl)
             }
         }
     }
@@ -485,22 +473,17 @@ impl Step<UpdateUser<'_>, RdbContext> for RdbRepo {
     ) -> BaseRest<()> {
         match oper {
             //
-            UpdateUser::Info { id, qid, nickname } => {
-                update_info(context.conn(), id, qid, nickname).await
+            UpdateUser::Info { repl } => {
+                update_info(context.conn(), repl).await
             }
 
-            UpdateUser::MarkAvatarUploaded {
-                id,
-                avatar_version,
-                avatar_key,
-                avatar_uploaded,
-            } => {
+            UpdateUser::MarkAvatarUploaded { repl } => {
                 mark_avatar_uploaded(
                     context.conn(),
-                    id,
-                    *avatar_version,
-                    *avatar_key,
-                    *avatar_uploaded,
+                    &repl.id,
+                    repl.avatar_version,
+                    repl.avatar_key.as_deref(),
+                    repl.is_avatar_uploaded,
                 )
                 .await
             }
@@ -509,8 +492,8 @@ impl Step<UpdateUser<'_>, RdbContext> for RdbRepo {
                 touch_last_active(context.conn(), id).await
             }
 
-            UpdateUser::PasswordHash { id, password_hash } => {
-                update_password_hash(context.conn(), id, password_hash).await
+            UpdateUser::PasswordHash { repl } => {
+                update_password_hash(context.conn(), repl).await
             }
         }
     }

@@ -9,9 +9,10 @@ use super::*;
 use time::OffsetDateTime;
 
 use crate::data::comment::{CreateCommentParams, ListCommentInfosParams};
-use crate::model::comment::CommentInfo;
-use crate::model::member::MemberInfo;
-use crate::model::user::{UserCredential, UserInfo, UserToken};
+use crate::model::read::proj::comment::CommentInfo;
+use crate::model::read::proj::member::MemberInfo;
+use crate::model::read::proj::user::{UserCredential, UserInfo};
+use crate::model::shared::user::UserToken;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::{assert_expected_variant, now};

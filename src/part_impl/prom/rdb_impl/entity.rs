@@ -18,6 +18,7 @@ use crate::result::{BaseError, BaseRest, accept};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, AsExpression)]
 #[diesel(sql_type = Text)]
 pub enum LocalMessageStatus {
+    //
     Pending,
 
     Processing,

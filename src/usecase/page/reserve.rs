@@ -18,8 +18,8 @@ use crate::data::image::ImageUploadSlotVal;
 use crate::data::page::{
     ReserveChapterPagesParams, ReserveChapterPagesPayload, ReservedPagePayload,
 };
-use crate::model::page::{PageEntry, PageImageSpec, PageManifestUpdate};
-use crate::model::user::UserToken;
+use crate::model::shared::user::UserToken;
+use crate::model::write::page::{PageEntry, PageImageSpec, PageManifestRepl};
 use crate::part::image::{ImagePool, ImageUploadSpec};
 use crate::part::prom::Prom;
 use crate::part::prom::payload::chapter::ChapterPayload;
@@ -269,7 +269,7 @@ where
                         delete_object_keys.push(object_key.clone());
                     }
 
-                    let page_manifest_update = PageManifestUpdate {
+                    let page_manifest_update = PageManifestRepl {
                         id: existing_page_info.id.clone(),
                         index,
                         image_key: image_key.clone(),

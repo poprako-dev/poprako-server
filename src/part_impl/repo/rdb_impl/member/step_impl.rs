@@ -5,9 +5,9 @@ use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 use tracing::instrument;
 
-use crate::model::member::{
-    MemberEntry, MemberInfo, MemberListSpec, MemberRoleUpdate,
-};
+use crate::model::read::proj::member::MemberInfo;
+use crate::model::read::spec::member::MemberListSpec;
+use crate::model::write::member::{MemberEntry, MemberRoleRepl};
 use crate::part_impl::repo::rdb_impl::entity::member::{
     MemberAspect, MemberRow, MemberRowEntry,
 };
@@ -277,7 +277,7 @@ pub async fn list_infos_by_user_id(
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn update_role(
     conn: &mut RdbConn,
-    update: &MemberRoleUpdate,
+    update: &MemberRoleRepl,
 ) -> BaseRest<()> {
     //
     let now = OffsetDateTime::now_utc();
@@ -387,7 +387,7 @@ fn entity_from_entry<'a>(
 
 // Build update aspect from role change payload, applying now-stamped enabled roles.
 fn aspect_from_role_update(
-    update: &MemberRoleUpdate,
+    update: &MemberRoleRepl,
     now: OffsetDateTime,
 ) -> MemberAspect<'_> {
     //

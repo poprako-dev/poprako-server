@@ -4,9 +4,8 @@ use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
 use crate::complex::user::UserComplex;
-use crate::model::user::{
-    UserAvatarReservation, UserCredential, UserEntry, UserInfo,
-};
+use crate::model::read::proj::user::{UserCredential, UserInfo};
+use crate::model::write::user::{UserAvatarReservation, UserEntry};
 use crate::part::repo::oper::user::{
     CreateUser, DeleteUser, FindUserInfo, GetUserCredential, GetUserInfo,
     GetUserInfoExcluded, ReserveUserAvatar, UpdateUser,
@@ -98,25 +97,37 @@ fn get_user_credential(
 fn update_user(state: &mut MockState, oper: &UpdateUser<'_>) -> BaseRest<()> {
     //
     // Dispatch variant to a single mutable flow with optional identity/hash branches.
-    let (id, update) = match oper {
+    let id = match oper {
         //
-        UpdateUser::Info { id, qid, nickname } => {
-            (id, Some((qid, nickname, None)))
+        UpdateUser::Info { repl } => repl.id.as_str(),
+
+        UpdateUser::MarkAvatarUploaded { repl } => repl.id.as_str(),
+
+        UpdateUser::TouchLastActive { id } => id,
+
+        UpdateUser::PasswordHash { repl } => repl.id.as_str(),
+    };
+
+    let update = match oper {
+        //
+        UpdateUser::Info { repl } => {
+            Some((repl.qid.as_str(), repl.nickname.as_str(), None))
         }
 
-        UpdateUser::MarkAvatarUploaded {
-            id, avatar_version, ..
-        } => (id, Some((id, id, Some(*avatar_version)))),
+        UpdateUser::MarkAvatarUploaded { repl } => Some((
+            repl.id.as_str(),
+            repl.id.as_str(),
+            Some(repl.avatar_version),
+        )),
 
-        UpdateUser::TouchLastActive { id } => (id, None),
-
-        UpdateUser::PasswordHash { id, .. } => (id, None),
+        UpdateUser::TouchLastActive { .. }
+        | UpdateUser::PasswordHash { .. } => None,
     };
 
     let user_info = state
         .users
         .iter_mut()
-        .find(|user_info| user_info.id == *id)
+        .find(|user_info| user_info.id == id)
         .ok_or_else(|| expected("error-user-not-found"))?;
 
     match update {
@@ -137,23 +148,20 @@ fn update_user(state: &mut MockState, oper: &UpdateUser<'_>) -> BaseRest<()> {
             if user_info.avatar_version != avatar_version
                 || matches!(
                     oper,
-                    UpdateUser::MarkAvatarUploaded {
-                        avatar_key: Some(avatar_key),
-                        ..
-                    } if user_info.avatar_key.as_deref() != Some(*avatar_key)
+                    UpdateUser::MarkAvatarUploaded { repl }
+                        if repl.avatar_key.as_deref().is_some_and(|avatar_key| {
+                            user_info.avatar_key.as_deref() != Some(avatar_key)
+                        })
                 )
             {
                 return Err(expected("error-stale-avatar-upload"));
             }
 
-            let UpdateUser::MarkAvatarUploaded {
-                avatar_uploaded, ..
-            } = oper
-            else {
+            let UpdateUser::MarkAvatarUploaded { repl } = oper else {
                 unreachable!();
             };
 
-            user_info.is_avatar_uploaded = *avatar_uploaded;
+            user_info.is_avatar_uploaded = repl.is_avatar_uploaded;
         }
 
         None => user_info.last_active_at = now(),
@@ -165,16 +173,16 @@ fn update_user(state: &mut MockState, oper: &UpdateUser<'_>) -> BaseRest<()> {
         //
         // Internal state field `UpdateUser`.
         // Internal implementation detail.
-        UpdateUser::PasswordHash { id, password_hash } => {
+        UpdateUser::PasswordHash { repl } => {
             //
             // Mutate matching credential hash for the same user id.
             let credential = state
                 .credentials
                 .iter_mut()
-                .find(|credential| credential.user_id == *id)
+                .find(|credential| credential.user_id == repl.id)
                 .ok_or_else(|| expected("error-user-not-found"))?;
 
-            credential.password_hash = password_hash.to_string();
+            credential.password_hash = repl.password_hash.clone();
         }
 
         UpdateUser::Info { .. }

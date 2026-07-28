@@ -7,11 +7,12 @@ use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 use tracing::instrument;
 
-use crate::model::chapter::{
-    ChapterEntry, ChapterInfo, ChapterInfoListSpec, ChapterInfoUpdate,
-    ChapterStageUpdate,
-};
+use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::unit::UnitCounterDelta;
+use crate::model::read::spec::chapter::ChapterListSpec;
+use crate::model::write::chapter::{
+    ChapterEntry, ChapterPatch, ChapterStageRepl,
+};
 use crate::part_impl::repo::rdb_impl::entity::chapter::{
     ChapterAspect, ChapterRow, ChapterRowEntry,
 };
@@ -86,7 +87,7 @@ pub async fn get_info_excluded(
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos(
     conn: &mut RdbConn,
-    spec: &ChapterInfoListSpec,
+    spec: &ChapterListSpec,
 ) -> BaseRest<Vec<ChapterInfo>> {
     //
     let rows: Vec<ChapterRow> = t_chapter
@@ -228,7 +229,7 @@ pub async fn create(
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn update_info(
     conn: &mut RdbConn,
-    update: &ChapterInfoUpdate,
+    update: &ChapterPatch,
 ) -> BaseRest<()> {
     //
     let now = OffsetDateTime::now_utc();
@@ -256,7 +257,7 @@ pub async fn update_info(
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn update_stage(
     conn: &mut RdbConn,
-    update: &ChapterStageUpdate,
+    update: &ChapterStageRepl,
 ) -> BaseRest<()> {
     //
     let now = OffsetDateTime::now_utc();

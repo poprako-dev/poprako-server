@@ -23,11 +23,11 @@ use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use tracing::instrument;
 
-use crate::model::chapter::ChapterInfo;
-use crate::model::comic::ComicInfo;
-use crate::model::team::TeamInfo;
-use crate::model::user::UserInfo;
-use crate::model::workset::WorksetInfo;
+use crate::model::read::proj::chapter::ChapterInfo;
+use crate::model::read::proj::comic::ComicInfo;
+use crate::model::read::proj::team::TeamInfo;
+use crate::model::read::proj::user::UserInfo;
+use crate::model::read::proj::workset::WorksetInfo;
 use crate::part_impl::repo::rdb_impl::entity::chapter::ChapterRow;
 use crate::part_impl::repo::rdb_impl::entity::comic::ComicRow;
 use crate::part_impl::repo::rdb_impl::entity::team::TeamRow;

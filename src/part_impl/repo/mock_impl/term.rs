@@ -5,7 +5,8 @@ use std::cmp::Reverse;
 use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
-use crate::model::term::{TermInfo, TermInfoListSpec};
+use crate::model::read::proj::term::TermInfo;
+use crate::model::read::spec::term::TermListSpec;
 use crate::part::repo::oper::term::{
     CreateTerm, DeleteTerm, DeleteTerms, GetTermInfo, GetTermInfoExcluded,
     ListTermInfos, LockTerm, UpdateTerm,
@@ -40,7 +41,7 @@ fn source_conflicts(
 }
 
 // Internal implementation of `list_infos`.
-fn list_infos(state: &MockState, spec: &TermInfoListSpec) -> Vec<TermInfo> {
+fn list_infos(state: &MockState, spec: &TermListSpec) -> Vec<TermInfo> {
     //
     // Internal implementation detail.
     // Internal implementation detail.

@@ -17,7 +17,7 @@ use crate::data::announcement::{
     AnnouncementInfoVal, CreateAnnouncementParams, CreateAnnouncementPayload,
     ListAnnouncementInfosParams,
 };
-use crate::model::user::UserToken;
+use crate::model::shared::user::UserToken;
 use crate::usecase;
 use crate::value::announcement::AnnouncementInclOpt;
 

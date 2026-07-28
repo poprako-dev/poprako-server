@@ -19,7 +19,7 @@ use crate::data::termbase::{
     CreateTermbaseParams, CreateTermbasePayload, ListComicTermbaseInfosParams,
     ListTeamTermbaseInfosParams, TermbaseInfoVal, UpdateTermbaseInfoParams,
 };
-use crate::model::user::UserToken;
+use crate::model::shared::user::UserToken;
 use crate::usecase;
 
 /// Query parameters for terminology-base lists.

@@ -35,8 +35,9 @@ use crate::data::user::{
     MarkUserAvatarUploadedParams, ReserveUserAvatarParams,
     UpdateUserInfoParams, UpdateUserPasswordParams,
 };
-use crate::model::member::MemberInfo;
-use crate::model::user::{UserInfo, UserToken};
+use crate::model::read::proj::member::MemberInfo;
+use crate::model::read::proj::user::UserInfo;
+use crate::model::shared::user::UserToken;
 use crate::part::effect::event::Event;
 use crate::part::prom::payload::TaskPayload;
 use crate::part::prom::payload::image::{ImagePayload, ResourceKind};

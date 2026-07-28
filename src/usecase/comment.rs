@@ -8,8 +8,9 @@ use crate::data::comment::{
     CommentInfoVal, CreateCommentParams, CreateCommentPayload,
     ListCommentInfosParams,
 };
-use crate::model::comment::{CommentEntry, CommentListSpec};
-use crate::model::user::UserToken;
+use crate::model::read::spec::comment::CommentListSpec;
+use crate::model::shared::user::UserToken;
+use crate::model::write::comment::CommentEntry;
 use crate::part::image::ImagePool;
 use crate::part::repo::comment::CommentRepo;
 use crate::part::repo::member::MemberRepo;

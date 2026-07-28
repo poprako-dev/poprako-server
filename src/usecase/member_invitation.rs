@@ -17,10 +17,11 @@ use crate::data::member_invitation::{
     ListMemberInvitationInfosParams, MemberInvitationInfoVal,
     UpdateMemberInvitationRolesParams,
 };
-use crate::model::member_invitation::{
-    MemberInvitationEntry, MemberInvitationListSpec, MemberInvitationUpdate,
+use crate::model::read::spec::member_invitation::MemberInvitationListSpec;
+use crate::model::shared::user::UserToken;
+use crate::model::write::member_invitation::{
+    MemberInvitationEntry, MemberInvitationRoleRepl,
 };
-use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
 use crate::part::prom::Prom;
 use crate::part::prom::payload::TaskPayload;
@@ -226,7 +227,7 @@ where
 
     nucl.coord(async move |context| {
         //
-        let member_invitation_update = MemberInvitationUpdate {
+        let member_invitation_update = MemberInvitationRoleRepl {
             id: params.id,
             roles: params.roles,
         };

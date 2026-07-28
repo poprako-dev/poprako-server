@@ -10,8 +10,8 @@ use crate::data::assignment::AssignmentInfoVal;
 use crate::data::chapter::ChapterInfoVal;
 use crate::data::comic::{ComicInfoVal, ListComicInfosParams};
 use crate::data::comic_list::ListComicInfosPayload;
-use crate::model::comic::ComicInfoListSpec;
-use crate::model::user::UserToken;
+use crate::model::read::spec::comic::ComicListSpec;
+use crate::model::shared::user::UserToken;
 use crate::part::image::ImagePool;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
@@ -70,7 +70,7 @@ where
     )
     .await?;
 
-    let spec: ComicInfoListSpec = params.try_into()?;
+    let spec: ComicListSpec = params.try_into()?;
 
     let comic_infos = ListComicInfos { spec: &spec }.run_on(repo).await?;
 

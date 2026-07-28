@@ -1,10 +1,11 @@
 // comic_roundtrip_uses_testcontainer(ComicRepo)(positive): comic repo persists, lists by one-based display index, and refreshes composed search after update.
 
+use super::*;
+
 use poprako_orchestra::Run as _;
 
-use crate::model::comic::{
-    ComicInfoListKind, ComicInfoListSpec, ComicInfoUpdate,
-};
+use crate::model::read::spec::comic::{ComicListKind, ComicListSpec};
+use crate::model::write::comic::ComicRepl;
 use crate::part::repo::oper::comic::{
     GetComicInfo, ListComicInfos, UpdateComic,
 };
@@ -24,10 +25,10 @@ pub async fn comic_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let repo = RdbRepo::new(shared.clone());
 
-    let comic_list_spec = ComicInfoListSpec {
+    let comic_list_spec = ComicListSpec {
         workset_id: comic_fixture.workset_entry.id.clone(),
         fuzzy_title: Some("Comic".into()),
-        kind: ComicInfoListKind::All,
+        kind: ComicListKind::All,
         incl_opt: vec![ComicInclOpt::WorksetTeam],
         offset: 0,
         limit: 10,
@@ -53,7 +54,7 @@ pub async fn comic_roundtrip_uses_testcontainer(shared: RdbCore) {
         comic_fixture.team_entry.id
     );
 
-    let comic_info_update = ComicInfoUpdate {
+    let comic_info_update = ComicRepl {
         id: comic_fixture.comic_entry.id.clone(),
         title: "RDB Comic Updated".into(),
         author: "RDB Author Updated".into(),
@@ -78,10 +79,10 @@ pub async fn comic_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     assert_eq!(comic_info.title, "RDB Comic Updated");
 
-    let comic_list_spec = ComicInfoListSpec {
+    let comic_list_spec = ComicListSpec {
         workset_id: comic_fixture.workset_entry.id.clone(),
         fuzzy_title: Some("RDB Author Updated".into()),
-        kind: ComicInfoListKind::All,
+        kind: ComicListKind::All,
         incl_opt: Vec::new(),
         offset: 0,
         limit: 10,
@@ -99,10 +100,10 @@ pub async fn comic_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     assert_eq!(comic_infos[0].id, comic_fixture.comic_entry.id);
 
-    let comic_list_spec = ComicInfoListSpec {
+    let comic_list_spec = ComicListSpec {
         workset_id: comic_fixture.workset_entry.id.clone(),
         fuzzy_title: Some("1".into()),
-        kind: ComicInfoListKind::All,
+        kind: ComicListKind::All,
         incl_opt: Vec::new(),
         offset: 0,
         limit: 10,

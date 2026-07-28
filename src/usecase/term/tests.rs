@@ -9,8 +9,8 @@ use super::*;
 
 use time::OffsetDateTime;
 
-use crate::model::member::MemberInfo;
-use crate::model::termbase::TermbaseInfo;
+use crate::model::read::proj::member::MemberInfo;
+use crate::model::read::proj::termbase::TermbaseInfo;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;

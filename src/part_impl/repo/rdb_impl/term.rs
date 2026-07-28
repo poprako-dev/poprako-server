@@ -9,9 +9,9 @@ use poprako_orchestra::{Run, Step};
 use time::OffsetDateTime;
 use tracing::instrument;
 
-use crate::model::term::{
-    TermEntry, TermInfo, TermInfoListSpec, TermInfoUpdate,
-};
+use crate::model::read::proj::term::TermInfo;
+use crate::model::read::spec::term::TermListSpec;
+use crate::model::write::term::{TermEntry, TermRepl};
 use crate::part::repo::oper::term::{
     CreateTerm, DeleteTerm, DeleteTerms, GetTermInfo, GetTermInfoExcluded,
     ListTermInfos, LockTerm, UpdateTerm,
@@ -231,10 +231,7 @@ async fn lock_term(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
 
 // Apply a partial update payload to an existing term row.
 #[instrument(level = "info", err(Debug), skip_all)]
-async fn update_info(
-    conn: &mut RdbConn,
-    update: &TermInfoUpdate,
-) -> BaseRest<()> {
+async fn update_info(conn: &mut RdbConn, update: &TermRepl) -> BaseRest<()> {
     //
     // Prepare nullable target entries and write all requested fields in one update.
     let targets = update
@@ -261,7 +258,7 @@ async fn update_info(
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn list_infos(
     conn: &mut RdbConn,
-    spec: &TermInfoListSpec,
+    spec: &TermListSpec,
 ) -> BaseRest<Vec<TermInfo>> {
     //
     // Start with a termbase constraint, then apply optional fuzzy source matching.

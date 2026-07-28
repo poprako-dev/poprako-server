@@ -4,7 +4,8 @@ use super::*;
 
 use poprako_orchestra::Nucl as _;
 
-use crate::model::comment::{CommentEntry, CommentListSpec};
+use crate::model::read::spec::comment::CommentListSpec;
+use crate::model::write::comment::CommentEntry;
 use crate::part::repo::oper::comment::{CreateComment, ListCommentInfos};
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};

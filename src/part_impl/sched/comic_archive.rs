@@ -13,7 +13,7 @@ use tracing::instrument;
 
 use poprako_util::i18n::trl;
 
-use crate::model::system_mail::SystemMailEntry;
+use crate::model::write::system_mail::SystemMailEntry;
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::repo::rdb_impl::entity::system_mail::SystemMailRowEntry;
 use crate::part_impl::repo::rdb_impl::schema::t_comic_archive::dsl::{

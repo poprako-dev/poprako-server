@@ -10,8 +10,9 @@ use crate::data::member::{
     CreateMemberParams, CreateMemberPayload, JoinTeamParams,
     ListMemberInfosParams, MemberInfoVal, UpdateMemberRolesParams,
 };
-use crate::model::member::{MemberEntry, MemberListSpec, MemberRoleUpdate};
-use crate::model::user::UserToken;
+use crate::model::read::spec::member::MemberListSpec;
+use crate::model::shared::user::UserToken;
+use crate::model::write::member::{MemberEntry, MemberRoleRepl};
 use crate::part::image::ImagePool;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::member_invitation::MemberInvitationRepo;
@@ -260,7 +261,7 @@ where
 
     nucl.coord(async move |context| {
         //
-        let member_role_update = MemberRoleUpdate {
+        let member_role_update = MemberRoleRepl {
             id: params.id,
             roles: params.roles,
         };

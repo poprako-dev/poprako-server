@@ -5,9 +5,9 @@ use poprako_orchestra::{OperProxy as _, Proxy};
 use poprako_util::i18n::trl;
 
 use crate::complex::util::check_user_is_team_member;
-use crate::model::assignment::{
-    AssignmentInfo, AssignmentInfoListSpec, AssignmentRoleUpdate,
-};
+use crate::model::read::proj::assignment::AssignmentInfo;
+use crate::model::read::spec::assignment::AssignmentListSpec;
+use crate::model::write::assignment::AssignmentRoleRepl;
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
 use crate::part::repo::oper::chapter::GetChapterInfo;
 use crate::part::repo::oper::comic::GetComicInfo;
@@ -42,8 +42,8 @@ impl AssignmentComplex {
     pub fn merge_roles(
         assignment_info: &AssignmentInfo,
         roles: RoleMask,
-    ) -> AssignmentRoleUpdate {
-        AssignmentRoleUpdate {
+    ) -> AssignmentRoleRepl {
+        AssignmentRoleRepl {
             id: assignment_info.id.clone(),
             roles: assignment_info.roles.union(roles),
         }
@@ -87,7 +87,7 @@ impl AssignmentPermComplex {
     pub async fn ensure_user_can_list_infos<P>(
         proxy: &mut P,
         user_id: &str,
-        assignment_list_spec: &AssignmentInfoListSpec,
+        assignment_list_spec: &AssignmentListSpec,
     ) -> BaseRest<()>
     where
         P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
@@ -99,11 +99,11 @@ impl AssignmentPermComplex {
     {
         match assignment_list_spec {
             //
-            AssignmentInfoListSpec::Chapter { chapter_id, .. } => {
+            AssignmentListSpec::Chapter { chapter_id, .. } => {
                 check_list_by_chapter(proxy, user_id, chapter_id).await
             }
 
-            AssignmentInfoListSpec::User { owner_id, .. } => {
+            AssignmentListSpec::User { owner_id, .. } => {
                 check_list_by_user(proxy, user_id, owner_id).await
             }
         }

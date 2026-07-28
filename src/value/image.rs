@@ -91,6 +91,7 @@ impl<'de> Deserialize<'de> for ImageHash {
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(rename_all = "lowercase")]
 pub enum ImageExt {
+    //
     /// The JPEG image format.
     Jpg,
 

@@ -1,7 +1,9 @@
 use poprako_orchestra::Oper;
 
-use crate::model::user::{
-    UserAvatarReservation, UserCredential, UserEntry, UserInfo,
+use crate::model::read::proj::user::{UserCredential, UserInfo};
+use crate::model::write::user::{
+    UserAvatarRepl, UserAvatarReservation, UserCredsRepl, UserEntry,
+    UserInfoRepl,
 };
 use crate::value::image::{ImageExt, ImageHash};
 
@@ -50,28 +52,17 @@ pub enum FindUserInfo<'a> {
 #[derive(Oper)]
 #[oper(output = ())]
 pub enum UpdateUser<'a> {
+    //
     /// Updates user metadata fields.
     Info {
-        //
-        /// The unique user identifier.
-        id: &'a str,
-        /// The OAuth qualified identifier.
-        qid: &'a str,
-        /// The display nickname.
-        nickname: &'a str,
+        /// The replacement payload.
+        repl: &'a UserInfoRepl,
     },
 
     /// Marks a user avatar as uploaded.
     MarkAvatarUploaded {
-        //
-        /// The unique user identifier.
-        id: &'a str,
-        /// The new avatar version number.
-        avatar_version: u32,
-        /// The object storage key.
-        avatar_key: Option<&'a str>,
-        /// Whether the upload has completed.
-        avatar_uploaded: bool,
+        /// The replacement payload.
+        repl: &'a UserAvatarRepl,
     },
 
     /// Touches the last-active timestamp.
@@ -82,11 +73,8 @@ pub enum UpdateUser<'a> {
 
     /// Updates the password hash.
     PasswordHash {
-        //
-        /// The unique user identifier.
-        id: &'a str,
-        /// The hashed password value.
-        password_hash: &'a str,
+        /// The replacement payload.
+        repl: &'a UserCredsRepl,
     },
 }
 

@@ -12,9 +12,10 @@ use time::OffsetDateTime;
 use crate::data::announcement::{
     CreateAnnouncementParams, ListAnnouncementInfosParams,
 };
-use crate::model::announcement::AnnouncementInfo;
-use crate::model::member::MemberInfo;
-use crate::model::user::{UserCredential, UserInfo, UserToken};
+use crate::model::read::proj::announcement::AnnouncementInfo;
+use crate::model::read::proj::member::MemberInfo;
+use crate::model::read::proj::user::{UserCredential, UserInfo};
+use crate::model::shared::user::UserToken;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::{assert_expected_variant, now};

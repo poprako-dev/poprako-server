@@ -5,7 +5,8 @@ use std::collections::HashSet;
 
 use poprako_util::i18n::trl;
 
-use crate::model::page::{PageImageSpec, PageInfo};
+use crate::model::read::proj::page::PageInfo;
+use crate::model::write::page::PageImageSpec;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
 #[cfg(test)]

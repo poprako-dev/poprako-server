@@ -7,9 +7,8 @@ use time::OffsetDateTime;
 use tracing::instrument;
 
 use self::list::list_infos;
-use crate::model::assignment::{
-    AssignmentEntry, AssignmentInfo, AssignmentRoleUpdate,
-};
+use crate::model::read::proj::assignment::AssignmentInfo;
+use crate::model::write::assignment::{AssignmentEntry, AssignmentRoleRepl};
 use crate::part::repo::oper::assignment::{
     CreateAssignment, DeleteAssignments, FindAssignmentInfo, GetAssignmentInfo,
     ListAssignmentInfos, ListAssignmentInfosExcluded, UpdateAssignmentRoles,
@@ -189,7 +188,7 @@ async fn create(
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn put_roles(
     conn: &mut RdbConn,
-    update: &AssignmentRoleUpdate,
+    update: &AssignmentRoleRepl,
 ) -> BaseRest<AssignmentInfo> {
     //
     let now = OffsetDateTime::now_utc();

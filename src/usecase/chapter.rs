@@ -13,11 +13,10 @@ use crate::data::chapter::{
     ChapterInfoVal, CreateChapterParams, CreateChapterPayload,
     ListChapterInfosParams, UpdateChapterInfoParams, UpdateChapterStageParams,
 };
-use crate::model::assignment::AssignmentEntry;
-use crate::model::chapter::{
-    ChapterEntry, ChapterInfoListSpec, ChapterInfoUpdate,
-};
-use crate::model::user::UserToken;
+use crate::model::read::spec::chapter::ChapterListSpec;
+use crate::model::shared::user::UserToken;
+use crate::model::write::assignment::AssignmentEntry;
+use crate::model::write::chapter::{ChapterEntry, ChapterPatch};
 use crate::part::effect::EffectDevelop;
 use crate::part::effect::event::Event;
 use crate::part::effect::event::chapter::{
@@ -88,7 +87,7 @@ where
     )
     .await?;
 
-    let spec = ChapterInfoListSpec {
+    let spec = ChapterListSpec {
         comic_id: params.comic_id,
         incl_opt: params.incl_opt,
         offset: params.offset,
@@ -343,7 +342,7 @@ where
 
         if params.subtitle.is_some() {
             //
-            let chapter_info_update = ChapterInfoUpdate {
+            let chapter_info_update = ChapterPatch {
                 id: params.id.clone(),
                 subtitle: params.subtitle,
                 pin: None,
@@ -424,7 +423,7 @@ where
             .step_on(repo, context)
             .await?;
 
-            let chapter_info_update = ChapterInfoUpdate {
+            let chapter_info_update = ChapterPatch {
                 id: chapter_info.id.clone(),
                 subtitle: None,
                 pin: Some(true),

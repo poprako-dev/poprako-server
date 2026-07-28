@@ -15,6 +15,7 @@ use crate::value::incl::InclOpt;
 #[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub enum ComicInclOpt {
+    //
     /// Embed the parent workset (`workset`).
     #[serde(rename = "workset")]
     Workset,
@@ -50,6 +51,7 @@ impl InclOpt for ComicInclOpt {
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum ComicWithOpt {
+    //
     /// Populate the parallel pinned-chapter list.
     PinnedChapter,
 

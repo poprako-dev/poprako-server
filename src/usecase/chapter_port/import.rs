@@ -11,10 +11,10 @@ use crate::complex::unit::UnitComplex;
 use crate::data::chapter_port::{
     ImportChapterTranslationParams, ImportChapterTranslationPayload,
 };
-use crate::model::page::PageInfo;
+use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::unit::UnitCounters;
+use crate::model::shared::user::UserToken;
 use crate::model::unit_port::UnitTranslationImport;
-use crate::model::user::UserToken;
 use crate::model::write::unit::UnitEdit;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;

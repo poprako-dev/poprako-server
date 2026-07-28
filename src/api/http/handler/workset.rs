@@ -18,7 +18,7 @@ use crate::data::workset::{
     CreateWorksetParams, CreateWorksetPayload, ListWorksetInfosParams,
     UpdateWorksetInfoParams, WorksetInfoVal,
 };
-use crate::model::user::UserToken;
+use crate::model::shared::user::UserToken;
 use crate::usecase;
 
 /// `POST /api/v1/worksets` — create a workset inside a team.

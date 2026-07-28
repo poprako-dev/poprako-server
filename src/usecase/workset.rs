@@ -11,8 +11,8 @@ use crate::data::workset::{
     CreateWorksetParams, CreateWorksetPayload, ListWorksetInfosParams,
     UpdateWorksetInfoParams, WorksetInfoVal,
 };
-use crate::model::user::UserToken;
-use crate::model::workset::{WorksetEntry, WorksetInfoUpdate};
+use crate::model::shared::user::UserToken;
+use crate::model::write::workset::{WorksetEntry, WorksetRepl};
 use crate::part::prom::Prom;
 use crate::part::prom::payload::TaskPayload;
 use crate::part::repo::assignment::AssignmentRepo;
@@ -181,7 +181,7 @@ where
     )
     .await?;
 
-    let workset_info_update = WorksetInfoUpdate {
+    let workset_info_update = WorksetRepl {
         id: params.id,
         name: params.name,
         description: params.description,

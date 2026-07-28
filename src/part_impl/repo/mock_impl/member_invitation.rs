@@ -3,10 +3,10 @@
 use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
-use crate::model::member_invitation::{
-    MemberInvitationEntry, MemberInvitationInfo, MemberInvitationListSpec,
-};
-use crate::model::user::UserInfo;
+use crate::model::read::proj::member_invitation::MemberInvitationInfo;
+use crate::model::read::proj::user::UserInfo;
+use crate::model::read::spec::member_invitation::MemberInvitationListSpec;
+use crate::model::write::member_invitation::MemberInvitationEntry;
 use crate::part::repo::oper::member_invitation::{
     CreateMemberInvitation, DeleteMemberInvitation, GetMemberInvitationInfo,
     GetMemberInvitationInfoExcluded, ListMemberInvitationInfos,
@@ -16,8 +16,9 @@ use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected,
 };
 use crate::result::{BaseError, BaseRest, accept};
-use crate::value::member_invitation::MemberInvitationInclOpt;
-use crate::value::member_invitation::MemberInvitationStatus;
+use crate::value::member_invitation::{
+    MemberInvitationInclOpt, MemberInvitationStatus,
+};
 
 // Internal implementation of `find_user`.
 fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {

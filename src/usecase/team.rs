@@ -20,11 +20,11 @@ use crate::data::team::{
     ReserveTeamAvatarParams, ReserveTeamAvatarPayload, TeamInfoVal,
     UpdateTeamInfoParams,
 };
-use crate::model::member::MemberEntry;
-use crate::model::team::{
-    TeamEntry, TeamInfo, TeamInfoListKind, TeamInfoListSpec,
-};
-use crate::model::user::UserToken;
+use crate::model::read::proj::team::TeamInfo;
+use crate::model::read::spec::team::{TeamListKind, TeamListSpec};
+use crate::model::shared::user::UserToken;
+use crate::model::write::member::MemberEntry;
+use crate::model::write::team::{TeamAvatarRepl, TeamEntry, TeamRepl};
 use crate::part::image::{ImageManager, ImagePool, ImageUploadSpec};
 use crate::part::prom::Prom;
 use crate::part::prom::payload::{TaskPayload, image};
@@ -195,7 +195,7 @@ where
                 todo!()
             }
 
-            TeamInfoListKind::JoinedBy { user_id }
+            TeamListKind::JoinedBy { user_id }
         }
 
         None => {
@@ -208,11 +208,11 @@ where
             )
             .await?;
 
-            TeamInfoListKind::All
+            TeamListKind::All
         }
     };
 
-    let team_info_list_spec = TeamInfoListSpec {
+    let team_info_list_spec = TeamListSpec {
         kind,
         offset: params.offset,
         limit: params.limit,
@@ -262,15 +262,13 @@ where
     )
     .await?;
 
-    // FIXME: use TeamInfoUpdate instead.
+    let repl = TeamRepl {
+        id: params.id.clone(),
+        name: params.name,
+        description: params.description,
+    };
 
-    UpdateTeam::Info {
-        id: &params.id,
-        name: &params.name,
-        description: &params.description,
-    }
-    .run_on(repo)
-    .await?;
+    UpdateTeam::Info { repl: &repl }.run_on(repo).await?;
 
     accept(())
 }
@@ -488,6 +486,13 @@ where
         });
     }
 
+    let repl = TeamAvatarRepl {
+        id: id.clone(),
+        avatar_version: params.image_version,
+        avatar_key: Some(avatar_key.clone()),
+        is_avatar_uploaded: true,
+    };
+
     nucl.coord(async move |context| {
         //
         let locked_team_info = GetTeamInfoExcluded::Id { id: &id }
@@ -503,14 +508,9 @@ where
             });
         }
 
-        UpdateTeam::MarkAvatarUploaded {
-            id: &id,
-            avatar_version: params.image_version,
-            avatar_key: Some(&avatar_key),
-            avatar_uploaded: true,
-        }
-        .step_on(repo, context)
-        .await?;
+        UpdateTeam::MarkAvatarUploaded { repl: &repl }
+            .step_on(repo, context)
+            .await?;
 
         accept(())
     })

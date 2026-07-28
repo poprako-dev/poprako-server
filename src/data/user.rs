@@ -7,7 +7,7 @@ use utoipa::ToSchema;
 
 use poprako_util::time::ToUnixMilli;
 
-use crate::model::user::UserInfo;
+use crate::model::read::proj::user::UserInfo;
 use crate::part::image::ImagePool;
 use crate::result::{BaseRest, accept};
 
@@ -62,7 +62,7 @@ impl UserInfoVal {
     /// from [`OffsetDateTime`] to Unix milliseconds.
     ///
     /// [`OffsetDateTime`]: time::OffsetDateTime
-    /// [`UserInfo`]: crate::model::user::UserInfo
+    /// [`UserInfo`]: crate::model::read::proj::user::UserInfo
     pub async fn from_model<P>(
         image_pool: &P,
         model: UserInfo,

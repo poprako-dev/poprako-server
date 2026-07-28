@@ -17,8 +17,8 @@ use super::*;
 use time::{Duration, OffsetDateTime};
 
 use crate::data::system_mail::ListSystemMailInfosParams;
-use crate::model::system_mail::SystemMailInfo;
-use crate::model::user::UserToken;
+use crate::model::read::proj::system_mail::SystemMailInfo;
+use crate::model::shared::user::UserToken;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;

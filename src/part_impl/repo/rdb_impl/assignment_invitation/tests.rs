@@ -1,10 +1,11 @@
 // assignment_invitation_roundtrip_uses_testcontainer(CreateAssignmentInvitation, ListAssignmentInvitationInfos, MarkAssignmentInvitationUsed)(positive): assignment invitation repo creates, lists, and marks invitations used in an isolated PostgreSQL container.
 
+use super::*;
+
 use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 
-use crate::model::assignment_invitation::{
-    AssignmentInvitationEntry, AssignmentInvitationListSpec,
-};
+use crate::model::read::spec::assignment_invitation::AssignmentInvitationListSpec;
+use crate::model::write::assignment_invitation::AssignmentInvitationEntry;
 use crate::part::repo::oper::assignment_invitation::{
     CreateAssignmentInvitation, ListAssignmentInvitationInfos,
     MarkAssignmentInvitationUsed,

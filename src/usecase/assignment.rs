@@ -12,10 +12,9 @@ use crate::data::assignment::{
     AssignmentInfoVal, JoinChapterAssignmentParams, ListAssignmentInfosParams,
     UpdateAssignmentRolesParams,
 };
-use crate::model::assignment::{
-    AssignmentEntry, AssignmentInfoListSpec, AssignmentRoleUpdate,
-};
-use crate::model::user::UserToken;
+use crate::model::read::spec::assignment::AssignmentListSpec;
+use crate::model::shared::user::UserToken;
+use crate::model::write::assignment::{AssignmentEntry, AssignmentRoleRepl};
 use crate::part::image::ImagePool;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
@@ -60,7 +59,7 @@ where
         + Sync,
     I: ImagePool,
 {
-    let assignment_list_spec: AssignmentInfoListSpec = params.try_into()?;
+    let assignment_list_spec: AssignmentListSpec = params.try_into()?;
 
     AssignmentPermComplex::ensure_user_can_list_infos(
         &mut run_proxy! {
@@ -324,7 +323,7 @@ where
                     return Err(assignment_admin_required_err());
                 }
 
-                let assignment_role_update = AssignmentRoleUpdate {
+                let assignment_role_update = AssignmentRoleRepl {
                     id: assignment_info.id.clone(),
                     roles: params.roles,
                 };

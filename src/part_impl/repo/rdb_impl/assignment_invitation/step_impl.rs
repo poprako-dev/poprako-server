@@ -5,10 +5,9 @@ use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 use tracing::instrument;
 
-use crate::model::assignment_invitation::{
-    AssignmentInvitationEntry, AssignmentInvitationInfo,
-    AssignmentInvitationListSpec,
-};
+use crate::model::read::proj::assignment_invitation::AssignmentInvitationInfo;
+use crate::model::read::spec::assignment_invitation::AssignmentInvitationListSpec;
+use crate::model::write::assignment_invitation::AssignmentInvitationEntry;
 use crate::part_impl::repo::rdb_impl::entity::assignment_invitation::{
     AssignmentInvitationAspect, AssignmentInvitationRow,
     AssignmentInvitationRowEntry,

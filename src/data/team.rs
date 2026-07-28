@@ -7,7 +7,7 @@ use utoipa::{IntoParams, ToSchema};
 
 use poprako_util::time::ToUnixMilli;
 
-use crate::model::team::TeamInfo;
+use crate::model::read::proj::team::TeamInfo;
 use crate::part::image::ImagePool;
 use crate::result::{BaseRest, accept};
 
@@ -55,7 +55,7 @@ impl TeamInfoVal {
     /// from [`OffsetDateTime`] to Unix milliseconds.
     ///
     /// [`OffsetDateTime`]: time::OffsetDateTime
-    /// [`TeamInfo`]: crate::model::team::TeamInfo
+    /// [`TeamInfo`]: crate::model::read::proj::team::TeamInfo
     pub async fn from_model<P>(
         image_pool: &P,
         model: TeamInfo,

@@ -3,7 +3,7 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::model::team::TeamInfo;
+use crate::model::read::proj::team::TeamInfo;
 use crate::part_impl::repo::rdb_impl::schema::t_team;
 use crate::result::{BaseError, BaseRest, accept};
 use crate::value::image::{ImageExt, ImageHash};

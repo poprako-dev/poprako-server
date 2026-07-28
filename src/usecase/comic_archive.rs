@@ -14,7 +14,7 @@ use crate::complex::comic_archive::{
 use crate::data::comic_archive::{
     ArchiveComicPayload, ExportComicArchivesParams, ExportComicArchivesPayload,
 };
-use crate::model::user::UserToken;
+use crate::model::shared::user::UserToken;
 use crate::part::prom::Prom;
 use crate::part::prom::payload::{TaskPayload, image};
 use crate::part::repo::comic::ComicRepo;

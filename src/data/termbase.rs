@@ -7,7 +7,7 @@ use utoipa::ToSchema;
 
 use poprako_util::time::ToUnixMilli as _;
 
-use crate::model::termbase::TermbaseInfo;
+use crate::model::read::proj::termbase::TermbaseInfo;
 
 /// Presentation-ready terminology-base information.
 #[derive(Debug, Serialize)]

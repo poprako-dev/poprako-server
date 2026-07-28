@@ -6,10 +6,10 @@ use tracing::instrument;
 use poprako_util::time::ToUnixMilli as _;
 
 use crate::data::system_mail::{ListSystemMailInfosParams, SystemMailInfoVal};
-use crate::model::system_mail::{
-    SystemMailInfoListKind, SystemMailInfoListSpec,
+use crate::model::read::spec::system_mail::{
+    SystemMailListKind, SystemMailListSpec,
 };
-use crate::model::user::UserToken;
+use crate::model::shared::user::UserToken;
 use crate::part::repo::oper::system_mail::{
     ListSystemMailInfos, MarkSystemMailRead,
 };
@@ -42,14 +42,14 @@ where
 {
     let kind = match params.is_read {
         //
-        Some(true) => SystemMailInfoListKind::Read,
+        Some(true) => SystemMailListKind::Read,
 
-        Some(false) => SystemMailInfoListKind::Unread,
+        Some(false) => SystemMailListKind::Unread,
 
-        None => SystemMailInfoListKind::All,
+        None => SystemMailListKind::All,
     };
 
-    let system_mail_list_spec = SystemMailInfoListSpec {
+    let system_mail_list_spec = SystemMailListSpec {
         receiver_id: token.user_id,
         kind,
         offset: params.offset,

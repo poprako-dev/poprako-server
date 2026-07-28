@@ -9,6 +9,7 @@ use crate::value::incl::InclOpt;
 
 /// Consumption-status filtering mode for listing member invitations.
 pub enum MemberInvitationStatus {
+    //
     /// Include invitations regardless of consumption status.
     All,
 

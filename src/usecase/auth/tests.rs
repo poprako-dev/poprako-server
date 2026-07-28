@@ -19,7 +19,7 @@
 use super::*;
 
 use crate::data::auth::{LoginAuthParams, RegisterAuthParams};
-use crate::model::member_invitation::MemberInvitationInfo;
+use crate::model::read::proj::member_invitation::MemberInvitationInfo;
 use crate::part::effect::event::Event;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;

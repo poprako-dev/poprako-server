@@ -20,7 +20,7 @@ use crate::data::member::{
     CreateMemberParams, CreateMemberPayload, JoinTeamParams,
     ListMemberInfosParams, MemberInfoVal, UpdateMemberRolesParams,
 };
-use crate::model::user::UserToken;
+use crate::model::shared::user::UserToken;
 use crate::usecase;
 use crate::value::member::MemberInclOpt;
 

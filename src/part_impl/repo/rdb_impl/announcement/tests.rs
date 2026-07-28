@@ -4,7 +4,8 @@ use super::*;
 
 use poprako_orchestra::Nucl as _;
 
-use crate::model::announcement::{AnnouncementEntry, AnnouncementListSpec};
+use crate::model::read::spec::announcement::AnnouncementListSpec;
+use crate::model::write::announcement::AnnouncementEntry;
 use crate::part::repo::oper::announcement::{
     CreateAnnouncement, ListAnnouncementInfos,
 };

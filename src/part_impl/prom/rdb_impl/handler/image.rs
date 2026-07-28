@@ -5,6 +5,7 @@
 use poprako_orchestra::{Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
+use crate::model::write::page::PageImageRepl;
 use crate::part::image::ImageManager;
 use crate::part::prom::payload::image::{ImagePayload, ResourceKind};
 use crate::part::repo::chapter::ChapterRepo;
@@ -218,14 +219,16 @@ where
                 });
             }
 
-            SetPageImageUploaded {
-                id: image_identity.resource_id,
+            let repl = PageImageRepl {
+                id: image_identity.resource_id.to_owned(),
                 image_version: image_identity.version,
-                image_key: image_identity.object_key,
-                image_uploaded: false,
-            }
-            .step_on(repo, context)
-            .await?;
+                image_key: Some(image_identity.object_key.to_owned()),
+                is_image_uploaded: false,
+            };
+
+            SetPageImageUploaded { repl: &repl }
+                .step_on(repo, context)
+                .await?;
 
             accept(())
         })
@@ -349,13 +352,16 @@ where
                 });
             }
 
-            MarkPageImageUploaded {
-                id: image_identity.resource_id,
+            let repl = PageImageRepl {
+                id: image_identity.resource_id.to_owned(),
                 image_version: image_identity.version,
-                image_key: Some(image_identity.object_key),
-            }
-            .step_on(repo, context)
-            .await?;
+                image_key: Some(image_identity.object_key.to_owned()),
+                is_image_uploaded: true,
+            };
+
+            MarkPageImageUploaded { repl: &repl }
+                .step_on(repo, context)
+                .await?;
 
             accept(())
         })

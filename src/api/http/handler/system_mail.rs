@@ -13,7 +13,7 @@ use crate::api::http::state::AppHarn;
 use crate::data::system_mail::{
     ListSystemMailInfosParams, MarkSystemMailReadParams, SystemMailInfoVal,
 };
-use crate::model::user::UserToken;
+use crate::model::shared::user::UserToken;
 use crate::usecase;
 
 /// `GET /api/v1/system-mails` — list the current user's system mails.

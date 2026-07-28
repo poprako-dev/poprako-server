@@ -17,6 +17,7 @@ pub mod tests;
 /// One deferred task, grouped by its domain.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum TaskPayload {
+    //
     /// Advance raw provision after every chapter page is uploaded.
     #[serde(rename = "AdvanceRawProvide")]
     Chapter(ChapterPayload),
