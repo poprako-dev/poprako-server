@@ -17,7 +17,9 @@ use crate::data::user::{
     ReserveUserAvatarPayload, UpdateUserInfoParams, UpdateUserPasswordParams,
     UserInfoVal,
 };
-use crate::model::user::UserToken;
+use crate::model::shared::user::UserToken;
+use crate::model::write::member::MemberNicknameRepl;
+use crate::model::write::user::{UserAvatarRepl, UserCredsRepl, UserInfoRepl};
 use crate::part::effect::EffectDevelop;
 use crate::part::effect::event::Event;
 use crate::part::effect::event::user::UserActivePayload;
@@ -111,22 +113,26 @@ where
         });
     }
 
+    let user_repl = UserInfoRepl {
+        id: token.user_id.clone(),
+        qid: params.qid,
+        nickname: params.nickname,
+    };
+
+    let member_repl = MemberNicknameRepl {
+        user_id: token.user_id.clone(),
+        user_nickname: user_repl.nickname.clone(),
+    };
+
     nucl.coord(async move |context| {
         //
-        UpdateUser::Info {
-            id: &token.user_id,
-            qid: &params.qid,
-            nickname: &params.nickname,
-        }
-        .step_on(repo, context)
-        .await?;
+        UpdateUser::Info { repl: &user_repl }
+            .step_on(repo, context)
+            .await?;
 
-        UpdateMember::UserNickname {
-            user_id: &token.user_id,
-            user_nickname: &params.nickname,
-        }
-        .step_on(repo, context)
-        .await?;
+        UpdateMember::UserNickname { repl: &member_repl }
+            .step_on(repo, context)
+            .await?;
 
         accept(())
     })
@@ -183,14 +189,16 @@ where
     let password_hash =
         UserComplex::hash_password(&params.new_password).await?;
 
+    let repl = UserCredsRepl {
+        id: user_id.clone(),
+        password_hash,
+    };
+
     nucl.coord(async move |context| {
         //
-        UpdateUser::PasswordHash {
-            id: &user_id,
-            password_hash: &password_hash,
-        }
-        .step_on(repo, context)
-        .await?;
+        UpdateUser::PasswordHash { repl: &repl }
+            .step_on(repo, context)
+            .await?;
 
         accept(())
     })
@@ -400,6 +408,13 @@ where
         });
     }
 
+    let repl = UserAvatarRepl {
+        id: id.clone(),
+        avatar_version: params.image_version,
+        avatar_key: Some(avatar_key.clone()),
+        is_avatar_uploaded: true,
+    };
+
     nucl.coord(async move |context| {
         //
         let locked_user_info = GetUserInfoExcluded::Id { id: &id }
@@ -415,14 +430,9 @@ where
             });
         }
 
-        UpdateUser::MarkAvatarUploaded {
-            id: &id,
-            avatar_version: params.image_version,
-            avatar_key: Some(&avatar_key),
-            avatar_uploaded: true,
-        }
-        .step_on(repo, context)
-        .await?;
+        UpdateUser::MarkAvatarUploaded { repl: &repl }
+            .step_on(repo, context)
+            .await?;
 
         accept(())
     })

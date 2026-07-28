@@ -2,11 +2,12 @@ use std::collections::HashMap;
 
 use poprako_orchestra::Oper;
 
-use crate::model::chapter::{
-    ChapterEntry, ChapterInfo, ChapterInfoListSpec, ChapterInfoUpdate,
-    ChapterStageUpdate,
-};
+use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::unit::UnitCounterDelta;
+use crate::model::read::spec::chapter::ChapterListSpec;
+use crate::model::write::chapter::{
+    ChapterEntry, ChapterPatch, ChapterStageRepl,
+};
 use crate::value::chapter::{ChapterInclOpt, Stage};
 
 /// Creates a chapter.
@@ -44,7 +45,7 @@ pub struct GetChapterInfoExcluded<'a, 'b> {
 #[oper(output = Vec<ChapterInfo>)]
 pub struct ListChapterInfos<'a> {
     /// Query specification for filtering chapter infos.
-    pub spec: &'a ChapterInfoListSpec,
+    pub spec: &'a ChapterListSpec,
 }
 
 /// Lists chapter infos belonging to a comic (with exclusive lock).
@@ -87,7 +88,7 @@ pub struct ListPinnedChapterInfos<'a> {
 #[oper(output = ())]
 pub struct UpdateChapter<'a> {
     /// The chapter update data.
-    pub update: &'a ChapterInfoUpdate,
+    pub update: &'a ChapterPatch,
 }
 
 /// Updates a chapter's stage.
@@ -95,7 +96,7 @@ pub struct UpdateChapter<'a> {
 #[oper(output = ())]
 pub struct UpdateChapterStage<'a> {
     /// The stage update data.
-    pub update: &'a ChapterStageUpdate,
+    pub update: &'a ChapterStageRepl,
 }
 
 /// Atomically starts a two-step chapter stage when it is still pending.

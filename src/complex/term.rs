@@ -4,7 +4,7 @@ use std::collections::HashSet;
 
 use poprako_util::i18n::trl;
 
-use crate::model::term::{TermEntry, TermInfoUpdate};
+use crate::model::write::term::{TermEntry, TermRepl};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 
@@ -114,7 +114,7 @@ impl TermComplex {
         source: String,
         targets: Vec<String>,
         comment: Option<String>,
-    ) -> BaseRest<TermInfoUpdate> {
+    ) -> BaseRest<TermRepl> {
         //
         let source = normalize_source(source)?;
 
@@ -122,7 +122,7 @@ impl TermComplex {
 
         let comment = normalize_comment(comment);
 
-        accept(TermInfoUpdate {
+        accept(TermRepl {
             id,
             source,
             targets,

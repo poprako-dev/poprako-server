@@ -5,10 +5,11 @@ use diesel_async::RunQueryDsl;
 use poprako_orchestra::Run;
 use tracing::instrument;
 
-use crate::model::system_mail::{
-    SystemMailEntry, SystemMailInfo, SystemMailInfoListKind,
-    SystemMailInfoListSpec,
+use crate::model::read::proj::system_mail::SystemMailInfo;
+use crate::model::read::spec::system_mail::{
+    SystemMailListKind, SystemMailListSpec,
 };
+use crate::model::write::system_mail::SystemMailEntry;
 use crate::part::repo::oper::system_mail::{
     ListSystemMailInfos, MarkSystemMailRead, SendSystemMail, SendSystemMails,
 };
@@ -67,7 +68,7 @@ async fn send_batch(
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn list_infos(
     conn: &mut RdbConn,
-    spec: &SystemMailInfoListSpec,
+    spec: &SystemMailListSpec,
 ) -> BaseRest<Vec<SystemMailInfo>> {
     //
     let mut query = t_system_mail
@@ -77,11 +78,11 @@ async fn list_infos(
 
     query = match &spec.kind {
         //
-        SystemMailInfoListKind::All => query,
+        SystemMailListKind::All => query,
 
-        SystemMailInfoListKind::Read => query.filter(f_read.eq(true)),
+        SystemMailListKind::Read => query.filter(f_read.eq(true)),
 
-        SystemMailInfoListKind::Unread => query.filter(f_read.eq(false)),
+        SystemMailListKind::Unread => query.filter(f_read.eq(false)),
     };
 
     let rows: Vec<SystemMailRow> = query

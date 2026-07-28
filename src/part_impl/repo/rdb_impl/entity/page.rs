@@ -3,7 +3,8 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::model::page::{PageEntry, PageInfo};
+use crate::model::read::proj::page::PageInfo;
+use crate::model::write::page::PageEntry;
 use crate::part_impl::repo::rdb_impl::schema::t_page;
 use crate::result::BaseError;
 use crate::value::image::{ImageExt, ImageHash};

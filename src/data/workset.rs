@@ -10,13 +10,13 @@ use utoipa::{IntoParams, ToSchema};
 
 use poprako_util::time::ToUnixMilli;
 
-use crate::model::workset::WorksetInfo;
+use crate::model::read::proj::workset::WorksetInfo;
 
 /// Presentation-ready workset information.
 ///
 /// Mirrors [`WorksetInfo`] with timestamps converted to Unix milliseconds.
 ///
-/// [`WorksetInfo`]: crate::model::workset::WorksetInfo
+/// [`WorksetInfo`]: crate::model::read::proj::workset::WorksetInfo
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct WorksetInfoVal {

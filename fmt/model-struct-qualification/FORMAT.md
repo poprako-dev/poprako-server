@@ -4,7 +4,7 @@ Every model domain is a public module. Import the concrete type from it and
 use the type bare:
 
 ```rust
-use crate::model::user::UserToken;
+use crate::model::shared::user::UserToken;
 ```
 
 `user_model`, any other `*_model` wrapper, root model re-exports, and module

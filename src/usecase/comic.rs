@@ -21,10 +21,10 @@ use crate::data::comic::{
     ReserveComicCoverPayload, UpdateComicInfoParams,
 };
 use crate::data::image::ImageUploadSlotVal;
-use crate::model::assignment::AssignmentEntry;
-use crate::model::chapter::ChapterEntry;
-use crate::model::comic::{ComicEntry, ComicInfoUpdate};
-use crate::model::user::UserToken;
+use crate::model::shared::user::UserToken;
+use crate::model::write::assignment::AssignmentEntry;
+use crate::model::write::chapter::ChapterEntry;
+use crate::model::write::comic::{ComicEntry, ComicRepl};
 use crate::part::image::{ImageManager, ImagePool, ImageUploadSpec};
 use crate::part::prom::Prom;
 use crate::part::prom::payload::{TaskPayload, image};
@@ -291,7 +291,7 @@ where
     )
     .await?;
 
-    let comic_info_update = ComicInfoUpdate {
+    let comic_info_update = ComicRepl {
         id: params.id,
         title: params.title,
         author: params.author,

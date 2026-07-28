@@ -8,17 +8,17 @@ use poprako_orchestra::{Run, Step};
 use time::OffsetDateTime;
 use tracing::instrument;
 
-use crate::model::assignment::AssignmentInfo;
-use crate::model::chapter::ChapterInfo;
-use crate::model::comic::ComicInfo;
-use crate::model::comic_archive::{
-    ComicArchiveChapterSnapshot, ComicArchiveEntry, ComicArchivePageSnapshot,
-    ComicArchiveSnapshot,
+use crate::model::read::proj::assignment::AssignmentInfo;
+use crate::model::read::proj::chapter::ChapterInfo;
+use crate::model::read::proj::comic::ComicInfo;
+use crate::model::read::proj::comic_archive::{
+    ComicArchiveChapterSnapshot, ComicArchivePageSnapshot, ComicArchiveSnapshot,
 };
-use crate::model::page::PageInfo;
+use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::unit::UnitInfo;
-use crate::model::user::UserInfo;
-use crate::model::workset::WorksetInfo;
+use crate::model::read::proj::user::UserInfo;
+use crate::model::read::proj::workset::WorksetInfo;
+use crate::model::write::comic_archive::ComicArchiveEntry;
 use crate::part::repo::oper::comic_archive::{
     CommitComicArchive, GetComicArchiveSnapshotExcluded,
     ListComicArchivePayloads,

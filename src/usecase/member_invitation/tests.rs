@@ -14,9 +14,10 @@ use crate::data::member_invitation::{
     CreateMemberInvitationParams, ListMemberInvitationInfosParams,
     UpdateMemberInvitationRolesParams,
 };
-use crate::model::member::MemberInfo;
-use crate::model::member_invitation::MemberInvitationInfo;
-use crate::model::user::{UserCredential, UserInfo, UserToken};
+use crate::model::read::proj::member::MemberInfo;
+use crate::model::read::proj::member_invitation::MemberInvitationInfo;
+use crate::model::read::proj::user::{UserCredential, UserInfo};
+use crate::model::shared::user::UserToken;
 use crate::part::prom::payload::TaskPayload;
 use crate::part::prom::payload::invitation::InvitationPayload;
 use crate::part_impl::repo::mock_impl::Mock;

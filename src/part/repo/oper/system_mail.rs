@@ -1,8 +1,8 @@
 use poprako_orchestra::Oper;
 
-use crate::model::system_mail::{
-    SystemMailEntry, SystemMailInfo, SystemMailInfoListSpec,
-};
+use crate::model::read::proj::system_mail::SystemMailInfo;
+use crate::model::read::spec::system_mail::SystemMailListSpec;
+use crate::model::write::system_mail::SystemMailEntry;
 
 /// Sends one system mail.
 #[derive(Oper)]
@@ -25,7 +25,7 @@ pub struct SendSystemMails<'a> {
 #[oper(output = Vec<SystemMailInfo>)]
 pub struct ListSystemMailInfos<'a> {
     /// The specification for filtering listed system mails.
-    pub spec: &'a SystemMailInfoListSpec,
+    pub spec: &'a SystemMailListSpec,
 }
 
 /// Marks one system mail as read after verifying receiver ownership.

@@ -1,9 +1,9 @@
-use crate::model::chapter::ChapterEntry;
-use crate::model::comic::ComicEntry;
-use crate::model::page::PageEntry;
-use crate::model::team::TeamEntry;
-use crate::model::user::UserEntry;
-use crate::model::workset::WorksetEntry;
+use crate::model::write::chapter::ChapterEntry;
+use crate::model::write::comic::ComicEntry;
+use crate::model::write::page::PageEntry;
+use crate::model::write::team::TeamEntry;
+use crate::model::write::user::UserEntry;
+use crate::model::write::workset::WorksetEntry;
 use crate::value::image::ImageExt;
 
 pub fn user_entry(prefix: &str, name: &str) -> UserEntry {

@@ -6,9 +6,9 @@ use poprako_orchestra::{Run, Step};
 use time::OffsetDateTime;
 use tracing::instrument;
 
-use crate::model::member_invitation::{
-    MemberInvitationEntry, MemberInvitationInfo, MemberInvitationListSpec,
-};
+use crate::model::read::proj::member_invitation::MemberInvitationInfo;
+use crate::model::read::spec::member_invitation::MemberInvitationListSpec;
+use crate::model::write::member_invitation::MemberInvitationEntry;
 use crate::part::repo::oper::member_invitation::{
     CreateMemberInvitation, DeleteMemberInvitation, GetMemberInvitationInfo,
     GetMemberInvitationInfoExcluded, ListMemberInvitationInfos,
@@ -22,8 +22,9 @@ use crate::part_impl::repo::rdb_impl::{RdbRepo, incl};
 use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{BaseError, BaseRest, accept};
-use crate::value::member_invitation::MemberInvitationInclOpt;
-use crate::value::member_invitation::MemberInvitationStatus;
+use crate::value::member_invitation::{
+    MemberInvitationInclOpt, MemberInvitationStatus,
+};
 use crate::value::role::RoleMask;
 
 /// Member invitation RDB integration tests.

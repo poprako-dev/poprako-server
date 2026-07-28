@@ -3,7 +3,8 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::model::chapter::{ChapterEntry, ChapterInfo};
+use crate::model::read::proj::chapter::ChapterInfo;
+use crate::model::write::chapter::ChapterEntry;
 use crate::part_impl::repo::rdb_impl::schema::t_chapter;
 use crate::result::BaseError;
 use crate::value::chapter::{Stage, StageMask, StagePhase};

@@ -7,7 +7,8 @@ use poprako_util::i18n::trl;
 use crate::complex::util::{
     check_user_is_team_member, check_user_is_team_proofreader,
 };
-use crate::model::termbase::{TermbaseEntry, TermbaseInfo, TermbaseInfoUpdate};
+use crate::model::read::proj::termbase::TermbaseInfo;
+use crate::model::write::termbase::{TermbaseEntry, TermbaseRepl};
 use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::term::DeleteTerms;
@@ -105,13 +106,13 @@ impl TermbaseComplex {
         id: String,
         name: String,
         description: Option<String>,
-    ) -> BaseRest<TermbaseInfoUpdate> {
+    ) -> BaseRest<TermbaseRepl> {
         //
         let name = normalize_name(name)?;
 
         let description = normalize_optional(description);
 
-        accept(TermbaseInfoUpdate {
+        accept(TermbaseRepl {
             id,
             name,
             description,

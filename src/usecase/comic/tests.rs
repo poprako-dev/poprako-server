@@ -29,7 +29,7 @@ use fixture::*;
 use time::OffsetDateTime;
 
 use crate::data::comic::{ListComicInfosParams, UpdateComicInfoParams};
-use crate::model::comic::ComicInfo;
+use crate::model::read::proj::comic::ComicInfo;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;

@@ -16,7 +16,7 @@ use crate::data::team::{
     ReserveTeamAvatarParams, ReserveTeamAvatarPayload, TeamInfoVal,
     UpdateTeamInfoParams,
 };
-use crate::model::user::UserToken;
+use crate::model::shared::user::UserToken;
 use crate::usecase;
 
 /// `POST /api/v1/teams` — create a new team.

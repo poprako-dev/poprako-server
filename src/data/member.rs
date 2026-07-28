@@ -12,7 +12,8 @@ use poprako_util::time::ToUnixMilli;
 
 use crate::data::team::TeamInfoVal;
 use crate::data::user::UserInfoVal;
-use crate::model::member::{MemberInfo, MemberListSpec};
+use crate::model::read::proj::member::MemberInfo;
+use crate::model::read::spec::member::MemberListSpec;
 use crate::part::image::ImagePool;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::value::member::MemberInclOpt;

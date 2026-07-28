@@ -12,7 +12,8 @@ use poprako_util::time::ToUnixMilli;
 
 use crate::data::chapter::ChapterInfoVal;
 use crate::data::user::UserInfoVal;
-use crate::model::assignment::{AssignmentInfo, AssignmentInfoListSpec};
+use crate::model::read::proj::assignment::AssignmentInfo;
+use crate::model::read::spec::assignment::AssignmentListSpec;
 use crate::part::image::ImagePool;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::value::assignment::AssignmentInclOpt;
@@ -140,12 +141,12 @@ pub struct ListAssignmentInfosParams {
     pub limit: u32,
 }
 
-impl TryInto<AssignmentInfoListSpec> for ListAssignmentInfosParams {
+impl TryInto<AssignmentListSpec> for ListAssignmentInfosParams {
     // Validate exclusive list mode parameters before converting to domain spec.
     type Error = BaseError;
 
     // Convert validated query parameters into the domain list spec.
-    fn try_into(self) -> BaseRest<AssignmentInfoListSpec> {
+    fn try_into(self) -> BaseRest<AssignmentListSpec> {
         //
         let invalid_args = || BaseError::Expected {
             variant: ExpectedVariant::Args,
@@ -157,7 +158,7 @@ impl TryInto<AssignmentInfoListSpec> for ListAssignmentInfosParams {
         }
 
         if let Some(chapter_id) = self.chapter_id {
-            return accept(AssignmentInfoListSpec::Chapter {
+            return accept(AssignmentListSpec::Chapter {
                 chapter_id,
                 role: self.role,
                 incl_opt: self.incl_opt,
@@ -166,7 +167,7 @@ impl TryInto<AssignmentInfoListSpec> for ListAssignmentInfosParams {
             });
         }
 
-        accept(AssignmentInfoListSpec::User {
+        accept(AssignmentListSpec::User {
             owner_id: self.owner_id.ok_or_else(invalid_args)?,
             role: self.role,
             incl_opt: self.incl_opt,

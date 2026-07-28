@@ -10,8 +10,9 @@ use crate::data::announcement::{
     AnnouncementInfoVal, CreateAnnouncementParams, CreateAnnouncementPayload,
     ListAnnouncementInfosParams,
 };
-use crate::model::announcement::{AnnouncementEntry, AnnouncementListSpec};
-use crate::model::user::UserToken;
+use crate::model::read::spec::announcement::AnnouncementListSpec;
+use crate::model::shared::user::UserToken;
+use crate::model::write::announcement::AnnouncementEntry;
 use crate::part::image::ImagePool;
 use crate::part::repo::announcement::AnnouncementRepo;
 use crate::part::repo::member::MemberRepo;

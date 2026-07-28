@@ -19,7 +19,7 @@ use crate::data::term::{
     CreateTermParams, CreateTermPayload, ListTermInfosParams, TermInfoVal,
     UpdateTermInfoParams,
 };
-use crate::model::user::UserToken;
+use crate::model::shared::user::UserToken;
 use crate::usecase;
 
 /// Query parameters for terms inside one terminology base.

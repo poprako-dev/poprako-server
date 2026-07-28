@@ -11,7 +11,7 @@ use poprako_util::time::ToUnixMilli;
 
 use crate::data::comic::ComicInfoVal;
 use crate::data::user::UserInfoVal;
-use crate::model::chapter::ChapterInfo;
+use crate::model::read::proj::chapter::ChapterInfo;
 use crate::part::image::ImagePool;
 use crate::result::{BaseRest, accept};
 use crate::value::chapter::{ChapterInclOpt, Stage, StageMask, StageOper};
@@ -24,7 +24,7 @@ use crate::value::role::RoleMask;
 ///
 /// Construct via [`From<ChapterInfo>`] — the conversion is infallible.
 ///
-/// [`ChapterInfo`]: crate::model::chapter::ChapterInfo
+/// [`ChapterInfo`]: crate::model::read::proj::chapter::ChapterInfo
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ChapterInfoVal {

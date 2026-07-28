@@ -1,4 +1,4 @@
-use crate::model::member::MemberInfo;
+use crate::model::read::proj::member::MemberInfo;
 use crate::part_impl::repo::rdb_impl::incl::framework::{
     BatchByIds, Incl, TeamByIds, UserByIds, populate,
 };

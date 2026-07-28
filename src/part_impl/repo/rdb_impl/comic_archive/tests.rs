@@ -8,7 +8,7 @@ use poprako_orchestra::Nucl as _;
 use time::OffsetDateTime;
 
 use crate::complex::comic_archive::ComicArchiveComplex;
-use crate::model::comic_archive::ComicArchiveEntry;
+use crate::model::write::comic_archive::ComicArchiveEntry;
 use crate::part::repo::oper::comic_archive::{
     CommitComicArchive, GetComicArchiveSnapshotExcluded,
 };

@@ -9,7 +9,7 @@ use utoipa::{IntoParams, ToSchema};
 use futures::future::OptionFuture;
 
 use crate::data::user::UserInfoVal;
-use crate::model::member_invitation::MemberInvitationInfo;
+use crate::model::read::proj::member_invitation::MemberInvitationInfo;
 use crate::part::image::ImagePool;
 use crate::result::{BaseRest, accept};
 use crate::value::member_invitation::MemberInvitationInclOpt;
@@ -82,7 +82,7 @@ pub struct ListMemberInvitationInfosParams {
 /// Mirrors [`MemberInvitationInfo`] with timestamps omitted (the domain
 /// model carries no timestamps).
 ///
-/// [`MemberInvitationInfo`]: crate::model::member_invitation::MemberInvitationInfo
+/// [`MemberInvitationInfo`]: crate::model::read::proj::member_invitation::MemberInvitationInfo
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct MemberInvitationInfoVal {

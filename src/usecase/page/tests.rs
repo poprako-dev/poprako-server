@@ -22,13 +22,13 @@ use crate::data::page::{
     ListPageInfosParams, MarkPageImageUploadedParams, PageImageParams,
     ReserveChapterPagesParams, ReservePageImageParams,
 };
-use crate::model::assignment::AssignmentInfo;
-use crate::model::chapter::ChapterInfo;
-use crate::model::comic::ComicInfo;
-use crate::model::member::MemberInfo;
-use crate::model::page::PageInfo;
-use crate::model::user::UserToken;
-use crate::model::workset::WorksetInfo;
+use crate::model::read::proj::assignment::AssignmentInfo;
+use crate::model::read::proj::chapter::ChapterInfo;
+use crate::model::read::proj::comic::ComicInfo;
+use crate::model::read::proj::member::MemberInfo;
+use crate::model::read::proj::page::PageInfo;
+use crate::model::read::proj::workset::WorksetInfo;
+use crate::model::shared::user::UserToken;
 use crate::part::prom::payload::TaskPayload;
 use crate::part::prom::payload::chapter::ChapterPayload;
 use crate::part::prom::payload::image::{ImagePayload, ResourceKind};

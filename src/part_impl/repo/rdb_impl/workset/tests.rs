@@ -2,7 +2,7 @@
 
 use super::*;
 
-use crate::model::workset::WorksetInfoUpdate;
+use crate::model::write::workset::WorksetRepl;
 use crate::part::repo::oper::workset::{
     GetWorksetInfo, ListWorksetInfos, UpdateWorkset,
 };
@@ -33,7 +33,7 @@ pub async fn workset_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     assert_eq!(workset_infos.len(), 1);
 
-    let workset_info_update = WorksetInfoUpdate {
+    let workset_info_update = WorksetRepl {
         id: workset_fixture.workset_entry.id.clone(),
         name: "RDB Workset Updated".into(),
         description: Some("updated".into()),

@@ -18,7 +18,7 @@ use crate::data::user::{
     ReserveUserAvatarPayload, UpdateUserInfoParams, UpdateUserPasswordParams,
     UserInfoVal,
 };
-use crate::model::user::UserToken;
+use crate::model::shared::user::UserToken;
 use crate::usecase;
 
 /// `GET /api/v1/users/me` — current user's profile.

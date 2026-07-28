@@ -4,7 +4,7 @@ use poprako_orchestra_extra::prom::task::Task;
 
 use crate::complex::chapter::ChapterComplex;
 use crate::complex::image::ImageComplex;
-use crate::model::chapter::ChapterInfoUpdate;
+use crate::model::write::chapter::ChapterPatch;
 use crate::part::prom::payload::{TaskPayload, image};
 use crate::part::repo::oper::assignment::DeleteAssignments;
 use crate::part::repo::oper::assignment_invitation::DeleteAssignmentInvitations;
@@ -194,7 +194,7 @@ where
         return accept(());
     };
 
-    let chapter_info_update = ChapterInfoUpdate {
+    let chapter_info_update = ChapterPatch {
         id: chapter_info.id.clone(),
         subtitle: None,
         pin: Some(true),

@@ -6,9 +6,9 @@ use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
 use crate::complex::team::TeamComplex;
-use crate::model::team::{
-    TeamAvatarReservation, TeamEntry, TeamInfo, TeamInfoListKind,
-};
+use crate::model::read::proj::team::TeamInfo;
+use crate::model::read::spec::team::TeamListKind;
+use crate::model::write::team::{TeamAvatarReservation, TeamEntry};
 use crate::part::repo::oper::team::{
     AllocTeamWorksetIndex, CreateTeam, DeleteTeam, GetTeamInfo,
     GetTeamInfoExcluded, ListTeamInfos, LockTeam, ReserveTeamAvatar,
@@ -71,7 +71,7 @@ fn list_team_infos(
         //
         // Internal implementation detail.
         // Internal implementation detail.
-        TeamInfoListKind::JoinedBy { user_id } => state
+        TeamListKind::JoinedBy { user_id } => state
             .teams
             .iter()
             .filter(|team_info| {
@@ -83,7 +83,7 @@ fn list_team_infos(
             .cloned()
             .collect(),
 
-        TeamInfoListKind::All => state.teams.clone(),
+        TeamListKind::All => state.teams.clone(),
     };
 
     team_infos.sort_by_key(|team_info| Reverse(team_info.created_at));
@@ -114,48 +114,45 @@ fn update_team(state: &mut MockState, oper: &UpdateTeam<'_>) -> BaseRest<()> {
     //
     // Internal implementation detail.
     // Internal implementation detail.
+    let id = match oper {
+        //
+        UpdateTeam::Info { repl } => repl.id.as_str(),
+
+        UpdateTeam::MarkAvatarUploaded { repl } => repl.id.as_str(),
+    };
+
     let team_info = state
         .teams
         .iter_mut()
-        .find(|team_info| match oper {
-            UpdateTeam::Info { id, .. }
-            | UpdateTeam::MarkAvatarUploaded { id, .. } => team_info.id == *id,
-        })
+        .find(|team_info| team_info.id == id)
         .ok_or_else(|| expected("error-team-not-found"))?;
 
     match oper {
         //
         // Internal implementation detail.
         // Internal implementation detail.
-        UpdateTeam::Info {
-            name, description, ..
-        } => {
+        UpdateTeam::Info { repl } => {
             //
             // Internal implementation detail.
             // Internal implementation detail.
-            team_info.name = name.to_string();
+            team_info.name = repl.name.clone();
 
-            team_info.description = description.to_string();
+            team_info.description = repl.description.clone();
         }
 
-        UpdateTeam::MarkAvatarUploaded {
-            avatar_version,
-            avatar_key,
-            avatar_uploaded,
-            ..
-        } => {
+        UpdateTeam::MarkAvatarUploaded { repl } => {
             //
             // Internal implementation detail.
             // Internal implementation detail.
-            if team_info.avatar_version != *avatar_version
-                || avatar_key.is_some_and(|avatar_key| {
+            if team_info.avatar_version != repl.avatar_version
+                || repl.avatar_key.as_deref().is_some_and(|avatar_key| {
                     team_info.avatar_key.as_deref() != Some(avatar_key)
                 })
             {
                 return Err(expected("error-stale-avatar-upload"));
             }
 
-            team_info.is_avatar_uploaded = *avatar_uploaded;
+            team_info.is_avatar_uploaded = repl.is_avatar_uploaded;
         }
     }
 

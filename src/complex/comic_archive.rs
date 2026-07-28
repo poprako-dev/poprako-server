@@ -6,11 +6,11 @@ use time::OffsetDateTime;
 use poprako_util::time::ToUnixMilli;
 
 use crate::complex::util::check_user_is_team_admin;
-use crate::model::assignment::AssignmentInfo;
-use crate::model::comic_archive::{
-    ComicArchiveChapterSnapshot, ComicArchiveEntry, ComicArchiveRecord,
-    ComicArchiveSnapshot,
+use crate::model::read::proj::assignment::AssignmentInfo;
+use crate::model::read::proj::comic_archive::{
+    ComicArchiveChapterSnapshot, ComicArchiveRecord, ComicArchiveSnapshot,
 };
+use crate::model::write::comic_archive::ComicArchiveEntry;
 use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::workset::GetWorksetInfo;

@@ -7,10 +7,9 @@ use time::OffsetDateTime;
 use tracing::instrument;
 
 use crate::complex::team::TeamComplex;
-use crate::model::team::{
-    TeamAvatarReservation, TeamEntry, TeamInfo, TeamInfoListKind,
-    TeamInfoListSpec,
-};
+use crate::model::read::proj::team::TeamInfo;
+use crate::model::read::spec::team::{TeamListKind, TeamListSpec};
+use crate::model::write::team::{TeamAvatarReservation, TeamEntry, TeamRepl};
 use crate::part::repo::oper::team::{
     AllocTeamWorksetIndex, CreateTeam, DeleteTeam, GetTeamInfo,
     GetTeamInfoExcluded, ListTeamInfos, LockTeam, ReserveTeamAvatar,
@@ -90,16 +89,16 @@ async fn get_info_by_id(conn: &mut RdbConn, id: &str) -> BaseRest<TeamInfo> {
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn list_infos(
     conn: &mut RdbConn,
-    spec: &TeamInfoListSpec,
+    spec: &TeamListSpec,
 ) -> BaseRest<Vec<TeamInfo>> {
     //
     let mut query = t_team.into_boxed();
 
     query = match &spec.kind {
         //
-        TeamInfoListKind::All => query,
+        TeamListKind::All => query,
 
-        TeamInfoListKind::JoinedBy { user_id } => {
+        TeamListKind::JoinedBy { user_id } => {
             //
             let member_team_ids = t_member::table
                 .filter(t_member::f_user_id.eq(user_id))
@@ -123,18 +122,15 @@ async fn list_infos(
 
 // Update mutable team profile fields for the target team.
 #[instrument(level = "info", err(Debug), skip_all)]
-async fn update_info(
-    conn: &mut RdbConn,
-    id: &str,
-    name: &str,
-    description: &str,
-) -> BaseRest<()> {
+async fn update_info(conn: &mut RdbConn, repl: &TeamRepl) -> BaseRest<()> {
     //
     let now = OffsetDateTime::now_utc();
 
-    let aspect = TeamAspect::new(now).name(name).description(description);
+    let aspect = TeamAspect::new(now)
+        .name(&repl.name)
+        .description(&repl.description);
 
-    diesel::update(t_team.filter(f_id.eq(id)))
+    diesel::update(t_team.filter(f_id.eq(&repl.id)))
         .set(&aspect)
         .execute(conn)
         .await
@@ -378,25 +374,18 @@ impl Run<UpdateTeam<'_>> for RdbRepo {
     async fn run(&self, oper: &UpdateTeam<'_>) -> BaseRest<()> {
         match oper {
             //
-            UpdateTeam::Info {
-                id,
-                name,
-                description,
-            } => submit_query!(self.core, update_info, id, name, description),
+            UpdateTeam::Info { repl } => {
+                submit_query!(self.core, update_info, repl)
+            }
 
-            UpdateTeam::MarkAvatarUploaded {
-                id,
-                avatar_version,
-                avatar_key,
-                avatar_uploaded,
-            } => {
+            UpdateTeam::MarkAvatarUploaded { repl } => {
                 submit_query!(
                     self.core,
                     mark_avatar_uploaded,
-                    id,
-                    *avatar_version,
-                    *avatar_key,
-                    *avatar_uploaded
+                    &repl.id,
+                    repl.avatar_version,
+                    repl.avatar_key.as_deref(),
+                    repl.is_avatar_uploaded
                 )
             }
         }
@@ -431,24 +420,17 @@ impl Step<UpdateTeam<'_>, RdbContext> for RdbRepo {
     ) -> BaseRest<()> {
         match oper {
             //
-            UpdateTeam::Info {
-                id,
-                name,
-                description,
-            } => update_info(context.conn(), id, name, description).await,
+            UpdateTeam::Info { repl } => {
+                update_info(context.conn(), repl).await
+            }
 
-            UpdateTeam::MarkAvatarUploaded {
-                id,
-                avatar_version,
-                avatar_key,
-                avatar_uploaded,
-            } => {
+            UpdateTeam::MarkAvatarUploaded { repl } => {
                 mark_avatar_uploaded(
                     context.conn(),
-                    id,
-                    *avatar_version,
-                    *avatar_key,
-                    *avatar_uploaded,
+                    &repl.id,
+                    repl.avatar_version,
+                    repl.avatar_key.as_deref(),
+                    repl.is_avatar_uploaded,
                 )
                 .await
             }

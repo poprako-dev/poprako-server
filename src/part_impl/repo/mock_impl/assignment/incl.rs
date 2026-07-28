@@ -1,9 +1,9 @@
-use crate::model::assignment::AssignmentInfo;
-use crate::model::chapter::ChapterInfo;
-use crate::model::comic::ComicInfo;
-use crate::model::team::TeamInfo;
-use crate::model::user::UserInfo;
-use crate::model::workset::WorksetInfo;
+use crate::model::read::proj::assignment::AssignmentInfo;
+use crate::model::read::proj::chapter::ChapterInfo;
+use crate::model::read::proj::comic::ComicInfo;
+use crate::model::read::proj::team::TeamInfo;
+use crate::model::read::proj::user::UserInfo;
+use crate::model::read::proj::workset::WorksetInfo;
 use crate::part_impl::repo::mock_impl::MockState;
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::incl::expand_incl_opts;

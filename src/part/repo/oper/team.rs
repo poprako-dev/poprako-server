@@ -1,7 +1,9 @@
 use poprako_orchestra::Oper;
 
-use crate::model::team::{
-    TeamAvatarReservation, TeamEntry, TeamInfo, TeamInfoListSpec,
+use crate::model::read::proj::team::TeamInfo;
+use crate::model::read::spec::team::TeamListSpec;
+use crate::model::write::team::{
+    TeamAvatarRepl, TeamAvatarReservation, TeamEntry, TeamRepl,
 };
 use crate::value::image::{ImageExt, ImageHash};
 
@@ -29,35 +31,24 @@ pub enum GetTeamInfo<'a> {
 #[oper(output = Vec<TeamInfo>)]
 pub struct ListTeamInfos<'a> {
     /// The specification for filtering listed teams.
-    pub spec: &'a TeamInfoListSpec,
+    pub spec: &'a TeamListSpec,
 }
 
 /// Updates a team.
 #[derive(Oper)]
 #[oper(output = ())]
 pub enum UpdateTeam<'a> {
+    //
     /// Updates team metadata fields.
     Info {
-        //
-        /// The team identifier.
-        id: &'a str,
-        /// The display name.
-        name: &'a str,
-        /// A short description of the team.
-        description: &'a str,
+        /// The replacement payload.
+        repl: &'a TeamRepl,
     },
 
     /// Marks a team avatar as uploaded.
     MarkAvatarUploaded {
-        //
-        /// The team identifier.
-        id: &'a str,
-        /// The new avatar version number.
-        avatar_version: u32,
-        /// The object storage key.
-        avatar_key: Option<&'a str>,
-        /// Whether the upload has completed.
-        avatar_uploaded: bool,
+        /// The replacement payload.
+        repl: &'a TeamAvatarRepl,
     },
 }
 

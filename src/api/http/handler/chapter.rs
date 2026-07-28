@@ -20,7 +20,7 @@ use crate::data::chapter::{
     ChapterInfoVal, CreateChapterParams, CreateChapterPayload,
     ListChapterInfosParams, UpdateChapterInfoParams, UpdateChapterStageParams,
 };
-use crate::model::user::UserToken;
+use crate::model::shared::user::UserToken;
 use crate::usecase;
 use crate::value::chapter::ChapterInclOpt;
 

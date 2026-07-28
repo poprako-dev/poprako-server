@@ -34,14 +34,14 @@ pub enum UserRepl {
 }
 ```
 
-### update(patch) => XxxAspect
+### update(patch) => XxxPatch
 
 patch 通常语义表现为 Option::is_none 的字段会省略而不更新。
 
 例：
 
 ```rust
-pub struct ComicAspect {
+pub struct ComicPatch {
     pub id: String,
     pub title: Option<String>,
     pub description: Option<String>,

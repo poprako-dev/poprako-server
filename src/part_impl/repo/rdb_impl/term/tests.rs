@@ -4,8 +4,9 @@ use super::*;
 
 use poprako_orchestra::Nucl as _;
 
-use crate::model::term::{TermEntry, TermInfoListSpec};
-use crate::model::termbase::TermbaseEntry;
+use crate::model::read::spec::term::TermListSpec;
+use crate::model::write::term::TermEntry;
+use crate::model::write::termbase::TermbaseEntry;
 use crate::part::repo::oper::term::{CreateTerm, GetTermInfo, ListTermInfos};
 use crate::part::repo::oper::termbase::CreateTermbase;
 use crate::part_impl::drive::rdb_impl::RdbDrive;
@@ -79,7 +80,7 @@ pub async fn term_array_unique_and_fuzzy_roundtrip(shared: RdbCore) {
 
     assert_eq!(persisted.targets, vec!["勇者", "英雄"]);
 
-    let list_spec = TermInfoListSpec {
+    let list_spec = TermListSpec {
         termbase_id: termbase_entry.id.clone(),
         fuzzy_source: Some("%_H".into()),
         offset: 0,

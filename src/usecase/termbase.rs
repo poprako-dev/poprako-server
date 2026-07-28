@@ -10,8 +10,8 @@ use crate::data::termbase::{
     CreateTermbaseParams, CreateTermbasePayload, ListComicTermbaseInfosParams,
     ListTeamTermbaseInfosParams, TermbaseInfoVal, UpdateTermbaseInfoParams,
 };
-use crate::model::termbase::TermbaseInfoListSpec;
-use crate::model::user::UserToken;
+use crate::model::read::spec::termbase::TermbaseListSpec;
+use crate::model::shared::user::UserToken;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::comic::{GetComicInfo, GetComicInfoExcluded};
@@ -163,7 +163,7 @@ where
     )
     .await?;
 
-    let termbase_info_list_spec = TermbaseInfoListSpec::Team {
+    let termbase_info_list_spec = TermbaseListSpec::Team {
         team_id: params.team_id,
         fuzzy_name: TermbaseComplex::normalize_fuzzy_name(params.fuzzy_name),
         offset: params.offset,
@@ -212,7 +212,7 @@ where
     )
     .await?;
 
-    let termbase_info_list_spec = TermbaseInfoListSpec::Comic {
+    let termbase_info_list_spec = TermbaseListSpec::Comic {
         team_id,
         comic_id: params.comic_id,
         fuzzy_name: TermbaseComplex::normalize_fuzzy_name(params.fuzzy_name),

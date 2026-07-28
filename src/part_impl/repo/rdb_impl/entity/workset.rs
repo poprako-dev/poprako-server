@@ -3,7 +3,8 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::model::workset::{WorksetEntry, WorksetInfo};
+use crate::model::read::proj::workset::WorksetInfo;
+use crate::model::write::workset::WorksetEntry;
 use crate::part_impl::repo::rdb_impl::schema::t_workset;
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────

@@ -4,9 +4,8 @@ use super::*;
 
 use poprako_orchestra::Nucl as _;
 
-use crate::model::assignment::{
-    AssignmentEntry, AssignmentInfoListSpec, AssignmentRoleUpdate,
-};
+use crate::model::read::spec::assignment::AssignmentListSpec;
+use crate::model::write::assignment::{AssignmentEntry, AssignmentRoleRepl};
 use crate::part::repo::oper::assignment::{
     CreateAssignment, GetAssignmentInfo, ListAssignmentInfos,
     UpdateAssignmentRoles,
@@ -64,7 +63,7 @@ pub async fn assignment_roundtrip_uses_testcontainer(shared: RdbCore) {
         .ok()
         .unwrap();
 
-    let assignment_list_spec = AssignmentInfoListSpec::Chapter {
+    let assignment_list_spec = AssignmentListSpec::Chapter {
         chapter_id: chapter_fixture.chapter_entry.id.clone(),
         role: Some(RoleField::TRANSLATOR),
         incl_opt: vec![AssignmentInclOpt::User],
@@ -102,7 +101,7 @@ pub async fn assignment_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     assert_eq!(assignment_infos[0].id, assignment_entry.id);
 
-    let assignment_role_update = AssignmentRoleUpdate {
+    let assignment_role_update = AssignmentRoleRepl {
         id: assignment_entry.id.clone(),
         roles: reviewer_role,
     };

@@ -1,7 +1,7 @@
 use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
-use crate::model::member::MemberInfo;
+use crate::model::read::proj::member::MemberInfo;
 use crate::part::repo::oper::member::{
     CreateMember, DeleteMember, FindMemberInfo, GetMemberInfo, ListMemberInfos,
     ListMemberInfosExcluded, UpdateMember,
@@ -86,12 +86,13 @@ impl Step<UpdateMember<'_>, RdbContext> for RdbRepo {
     ) -> BaseRest<()> {
         match oper {
             //
-            UpdateMember::UserNickname {
-                user_id,
-                user_nickname,
-            } => {
-                update_user_nickname(context.conn(), user_id, user_nickname)
-                    .await
+            UpdateMember::UserNickname { repl } => {
+                update_user_nickname(
+                    context.conn(),
+                    &repl.user_id,
+                    &repl.user_nickname,
+                )
+                .await
             }
 
             UpdateMember::Role { update } => {

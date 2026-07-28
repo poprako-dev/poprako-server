@@ -17,11 +17,10 @@ use crate::data::assignment_invitation::{
     CreateAssignmentInvitationPayload, JoinAssignmentInvitationParams,
     ListAssignmentInvitationInfosParams,
 };
-use crate::model::assignment::AssignmentEntry;
-use crate::model::assignment_invitation::{
-    AssignmentInvitationEntry, AssignmentInvitationListSpec,
-};
-use crate::model::user::UserToken;
+use crate::model::read::spec::assignment_invitation::AssignmentInvitationListSpec;
+use crate::model::shared::user::UserToken;
+use crate::model::write::assignment::AssignmentEntry;
+use crate::model::write::assignment_invitation::AssignmentInvitationEntry;
 use crate::part::image::ImagePool;
 use crate::part::prom::Prom;
 use crate::part::prom::payload::TaskPayload;

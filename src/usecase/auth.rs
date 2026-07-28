@@ -10,8 +10,9 @@ use crate::complex::user::UserComplex;
 use crate::data::auth::{
     LoginAuthParams, LoginAuthPayload, RegisterAuthParams, RegisterAuthPayload,
 };
-use crate::model::member::MemberEntry;
-use crate::model::user::{UserEntry, UserToken};
+use crate::model::shared::user::UserToken;
+use crate::model::write::member::MemberEntry;
+use crate::model::write::user::UserEntry;
 use crate::part::auth::TokenAuth;
 use crate::part::effect::EffectDevelop;
 use crate::part::effect::event::Event;

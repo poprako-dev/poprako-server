@@ -10,7 +10,7 @@ use crate::data::unit::{
     into_unit_edits,
 };
 use crate::model::read::proj::unit::UnitCounters;
-use crate::model::user::UserToken;
+use crate::model::shared::user::UserToken;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;

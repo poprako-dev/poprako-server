@@ -2,11 +2,12 @@
 
 use std::cmp::Reverse;
 
-use crate::model::chapter::{ChapterEntry, ChapterInfo};
-use crate::model::comic::ComicInfo;
-use crate::model::team::TeamInfo;
-use crate::model::user::UserInfo;
-use crate::model::workset::WorksetInfo;
+use crate::model::read::proj::chapter::ChapterInfo;
+use crate::model::read::proj::comic::ComicInfo;
+use crate::model::read::proj::team::TeamInfo;
+use crate::model::read::proj::user::UserInfo;
+use crate::model::read::proj::workset::WorksetInfo;
+use crate::model::write::chapter::ChapterEntry;
 use crate::part_impl::repo::mock_impl::{MockState, expected, now};
 use crate::result::{BaseRest, accept};
 use crate::value::chapter::{ChapterInclOpt, StageMask};

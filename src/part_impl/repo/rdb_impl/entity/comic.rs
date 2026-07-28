@@ -4,7 +4,8 @@ use diesel::prelude::*;
 use time::OffsetDateTime;
 
 use crate::complex::comic::ComicComplex;
-use crate::model::comic::{ComicEntry, ComicInfo};
+use crate::model::read::proj::comic::ComicInfo;
+use crate::model::write::comic::ComicEntry;
 use crate::part_impl::repo::rdb_impl::schema::t_comic;
 use crate::result::{BaseError, BaseRest, accept};
 use crate::value::image::{ImageExt, ImageHash};

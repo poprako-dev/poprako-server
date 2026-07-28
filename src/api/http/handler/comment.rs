@@ -17,7 +17,7 @@ use crate::data::comment::{
     CommentInfoVal, CreateCommentParams, CreateCommentPayload,
     ListCommentInfosParams,
 };
-use crate::model::user::UserToken;
+use crate::model::shared::user::UserToken;
 use crate::usecase;
 use crate::value::comment::CommentInclOpt;
 

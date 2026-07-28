@@ -4,9 +4,9 @@ use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
 use self::incl::apply_assignment_incls;
-use crate::model::assignment::{
-    AssignmentEntry, AssignmentInfo, AssignmentInfoListSpec,
-};
+use crate::model::read::proj::assignment::AssignmentInfo;
+use crate::model::read::spec::assignment::AssignmentListSpec;
+use crate::model::write::assignment::AssignmentEntry;
 use crate::part::repo::oper::assignment::{
     CreateAssignment, DeleteAssignments, FindAssignmentInfo, GetAssignmentInfo,
     ListAssignmentInfos, ListAssignmentInfosExcluded, UpdateAssignmentRoles,
@@ -36,7 +36,7 @@ fn list_infos(
             //
             // Internal implementation detail.
             // Internal implementation detail.
-            AssignmentInfoListSpec::Chapter {
+            AssignmentListSpec::Chapter {
                 chapter_id,
                 role,
                 incl_opt,
@@ -56,7 +56,7 @@ fn list_infos(
                     .collect::<Vec<_>>(),
             ),
 
-            AssignmentInfoListSpec::User {
+            AssignmentListSpec::User {
                 owner_id,
                 role,
                 incl_opt,

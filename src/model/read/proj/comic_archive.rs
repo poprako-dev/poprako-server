@@ -2,12 +2,12 @@
 
 use time::OffsetDateTime;
 
-use crate::model::assignment::AssignmentInfo;
-use crate::model::chapter::ChapterInfo;
-use crate::model::comic::ComicInfo;
-use crate::model::page::PageInfo;
+use crate::model::read::proj::assignment::AssignmentInfo;
+use crate::model::read::proj::chapter::ChapterInfo;
+use crate::model::read::proj::comic::ComicInfo;
+use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::unit::UnitInfo;
-use crate::model::workset::WorksetInfo;
+use crate::model::read::proj::workset::WorksetInfo;
 
 /// Fully locked active data used to build an immutable archive.
 pub struct ComicArchiveSnapshot {
@@ -56,17 +56,4 @@ pub struct ComicArchiveRecord {
 
     /// When this archive record was created.
     pub created_at: OffsetDateTime,
-}
-
-/// Archive rows and the source IDs that must be deleted atomically.
-pub struct ComicArchiveEntry {
-    //
-    /// The archive record to insert.
-    pub record: ComicArchiveRecord,
-    /// The archived comic's original ID — this record will be deleted after archiving.
-    pub source_comic_id: String,
-    /// IDs of all chapters that were archived and should be deleted.
-    pub source_chapter_ids: Vec<String>,
-    /// IDs of all pages that were archived and should be deleted.
-    pub source_page_ids: Vec<String>,
 }

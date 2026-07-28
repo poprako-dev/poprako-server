@@ -1,7 +1,7 @@
 #[allow(unused_imports)]
 use super::*;
 
-use crate::model::user::UserInfo;
+use crate::model::read::proj::user::UserInfo;
 use crate::part_impl::repo::rdb_impl::incl::framework::{
     BatchByIds, Incl, UserByIds, populate,
 };

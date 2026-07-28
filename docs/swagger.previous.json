@@ -3334,7 +3334,7 @@
       },
       "ChapterInfoVal": {
         "type": "object",
-        "description": "Presentation-ready chapter information.\n\nMirrors [`ChapterInfo`] but converts timestamps to Unix milliseconds\nand exposes the same grouped field layout as the API response.\n\nConstruct via [`From<ChapterInfo>`] — the conversion is infallible.\n\n[`ChapterInfo`]: crate::model::chapter::ChapterInfo",
+        "description": "Presentation-ready chapter information.\n\nMirrors [`ChapterInfo`] but converts timestamps to Unix milliseconds\nand exposes the same grouped field layout as the API response.\n\nConstruct via [`From<ChapterInfo>`] — the conversion is infallible.\n\n[`ChapterInfo`]: crate::model::read::proj::chapter::ChapterInfo",
         "required": [
           "id",
           "comic_id",
@@ -3430,7 +3430,7 @@
       },
       "ComicInfoVal": {
         "type": "object",
-        "description": "Presentation-ready comic information.\n\nMirrors [`ComicInfo`] but converts timestamps to Unix milliseconds and\nresolves the cover key to a signed download URL via [`ImagePool`] when\nthe cover has been uploaded.\n\nConstruct via [`ComicInfoVal::from_model`] — the conversion requires\nan [`ImagePool`] instance for URL signing.\n\n[`ComicInfo`]: crate::model::comic::ComicInfo",
+        "description": "Presentation-ready comic information.\n\nMirrors [`ComicInfo`] but converts timestamps to Unix milliseconds and\nresolves the cover key to a signed download URL via [`ImagePool`] when\nthe cover has been uploaded.\n\nConstruct via [`ComicInfoVal::from_model`] — the conversion requires\nan [`ImagePool`] instance for URL signing.\n\n[`ComicInfo`]: crate::model::read::proj::comic::ComicInfo",
         "required": [
           "id",
           "workset_id",
@@ -4046,7 +4046,7 @@
           },
           "data": {
             "type": "object",
-            "description": "Presentation-ready chapter information.\n\nMirrors [`ChapterInfo`] but converts timestamps to Unix milliseconds\nand exposes the same grouped field layout as the API response.\n\nConstruct via [`From<ChapterInfo>`] — the conversion is infallible.\n\n[`ChapterInfo`]: crate::model::chapter::ChapterInfo",
+            "description": "Presentation-ready chapter information.\n\nMirrors [`ChapterInfo`] but converts timestamps to Unix milliseconds\nand exposes the same grouped field layout as the API response.\n\nConstruct via [`From<ChapterInfo>`] — the conversion is infallible.\n\n[`ChapterInfo`]: crate::model::read::proj::chapter::ChapterInfo",
             "required": [
               "id",
               "comic_id",
@@ -4149,7 +4149,7 @@
           },
           "data": {
             "type": "object",
-            "description": "Presentation-ready comic information.\n\nMirrors [`ComicInfo`] but converts timestamps to Unix milliseconds and\nresolves the cover key to a signed download URL via [`ImagePool`] when\nthe cover has been uploaded.\n\nConstruct via [`ComicInfoVal::from_model`] — the conversion requires\nan [`ImagePool`] instance for URL signing.\n\n[`ComicInfo`]: crate::model::comic::ComicInfo",
+            "description": "Presentation-ready comic information.\n\nMirrors [`ComicInfo`] but converts timestamps to Unix milliseconds and\nresolves the cover key to a signed download URL via [`ImagePool`] when\nthe cover has been uploaded.\n\nConstruct via [`ComicInfoVal::from_model`] — the conversion requires\nan [`ImagePool`] instance for URL signing.\n\n[`ComicInfo`]: crate::model::read::proj::comic::ComicInfo",
             "required": [
               "id",
               "workset_id",
@@ -4758,7 +4758,7 @@
               },
               {
                 "type": "object",
-                "description": "Presentation-ready chapter information.\n\nMirrors [`ChapterInfo`] but converts timestamps to Unix milliseconds\nand exposes the same grouped field layout as the API response.\n\nConstruct via [`From<ChapterInfo>`] — the conversion is infallible.\n\n[`ChapterInfo`]: crate::model::chapter::ChapterInfo",
+                "description": "Presentation-ready chapter information.\n\nMirrors [`ChapterInfo`] but converts timestamps to Unix milliseconds\nand exposes the same grouped field layout as the API response.\n\nConstruct via [`From<ChapterInfo>`] — the conversion is infallible.\n\n[`ChapterInfo`]: crate::model::read::proj::chapter::ChapterInfo",
                 "required": [
                   "id",
                   "comic_id",
@@ -5444,7 +5444,7 @@
             "type": "array",
             "items": {
               "type": "object",
-              "description": "Presentation-ready chapter information.\n\nMirrors [`ChapterInfo`] but converts timestamps to Unix milliseconds\nand exposes the same grouped field layout as the API response.\n\nConstruct via [`From<ChapterInfo>`] — the conversion is infallible.\n\n[`ChapterInfo`]: crate::model::chapter::ChapterInfo",
+              "description": "Presentation-ready chapter information.\n\nMirrors [`ChapterInfo`] but converts timestamps to Unix milliseconds\nand exposes the same grouped field layout as the API response.\n\nConstruct via [`From<ChapterInfo>`] — the conversion is infallible.\n\n[`ChapterInfo`]: crate::model::read::proj::chapter::ChapterInfo",
               "required": [
                 "id",
                 "comic_id",
@@ -5550,7 +5550,7 @@
             "type": "array",
             "items": {
               "type": "object",
-              "description": "Presentation-ready comic information.\n\nMirrors [`ComicInfo`] but converts timestamps to Unix milliseconds and\nresolves the cover key to a signed download URL via [`ImagePool`] when\nthe cover has been uploaded.\n\nConstruct via [`ComicInfoVal::from_model`] — the conversion requires\nan [`ImagePool`] instance for URL signing.\n\n[`ComicInfo`]: crate::model::comic::ComicInfo",
+              "description": "Presentation-ready comic information.\n\nMirrors [`ComicInfo`] but converts timestamps to Unix milliseconds and\nresolves the cover key to a signed download URL via [`ImagePool`] when\nthe cover has been uploaded.\n\nConstruct via [`ComicInfoVal::from_model`] — the conversion requires\nan [`ImagePool`] instance for URL signing.\n\n[`ComicInfo`]: crate::model::read::proj::comic::ComicInfo",
               "required": [
                 "id",
                 "workset_id",
@@ -5816,7 +5816,7 @@
             "type": "array",
             "items": {
               "type": "object",
-              "description": "Presentation-ready member invitation information.\n\nMirrors [`MemberInvitationInfo`] with timestamps omitted (the domain\nmodel carries no timestamps).\n\n[`MemberInvitationInfo`]: crate::model::member_invitation::MemberInvitationInfo",
+              "description": "Presentation-ready member invitation information.\n\nMirrors [`MemberInvitationInfo`] with timestamps omitted (the domain\nmodel carries no timestamps).\n\n[`MemberInvitationInfo`]: crate::model::read::proj::member_invitation::MemberInvitationInfo",
               "required": [
                 "id",
                 "team_id",
@@ -6072,7 +6072,7 @@
             "type": "array",
             "items": {
               "type": "object",
-              "description": "Presentation-ready workset information.\n\nMirrors [`WorksetInfo`] with timestamps converted to Unix milliseconds.\n\n[`WorksetInfo`]: crate::model::workset::WorksetInfo",
+              "description": "Presentation-ready workset information.\n\nMirrors [`WorksetInfo`] with timestamps converted to Unix milliseconds.\n\n[`WorksetInfo`]: crate::model::read::proj::workset::WorksetInfo",
               "required": [
                 "id",
                 "team_id",
@@ -6140,7 +6140,7 @@
           },
           "data": {
             "type": "object",
-            "description": "Presentation-ready workset information.\n\nMirrors [`WorksetInfo`] with timestamps converted to Unix milliseconds.\n\n[`WorksetInfo`]: crate::model::workset::WorksetInfo",
+            "description": "Presentation-ready workset information.\n\nMirrors [`WorksetInfo`] with timestamps converted to Unix milliseconds.\n\n[`WorksetInfo`]: crate::model::read::proj::workset::WorksetInfo",
             "required": [
               "id",
               "team_id",
@@ -6482,7 +6482,7 @@
       },
       "MemberInvitationInfoVal": {
         "type": "object",
-        "description": "Presentation-ready member invitation information.\n\nMirrors [`MemberInvitationInfo`] with timestamps omitted (the domain\nmodel carries no timestamps).\n\n[`MemberInvitationInfo`]: crate::model::member_invitation::MemberInvitationInfo",
+        "description": "Presentation-ready member invitation information.\n\nMirrors [`MemberInvitationInfo`] with timestamps omitted (the domain\nmodel carries no timestamps).\n\n[`MemberInvitationInfo`]: crate::model::read::proj::member_invitation::MemberInvitationInfo",
         "required": [
           "id",
           "team_id",
@@ -7562,7 +7562,7 @@
       },
       "WorksetInfoVal": {
         "type": "object",
-        "description": "Presentation-ready workset information.\n\nMirrors [`WorksetInfo`] with timestamps converted to Unix milliseconds.\n\n[`WorksetInfo`]: crate::model::workset::WorksetInfo",
+        "description": "Presentation-ready workset information.\n\nMirrors [`WorksetInfo`] with timestamps converted to Unix milliseconds.\n\n[`WorksetInfo`]: crate::model::read::proj::workset::WorksetInfo",
         "required": [
           "id",
           "team_id",

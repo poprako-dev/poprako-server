@@ -1,8 +1,11 @@
 // chapter_roundtrip_uses_testcontainer(ChapterRepo)(positive): chapter repo persists, lists, and finds pinned chapter rows in an isolated PostgreSQL container.
 
+use super::*;
+
 use poprako_orchestra::{Nucl, Run as _, Step as _};
 
-use crate::model::chapter::{ChapterInfoListSpec, ChapterStageUpdate};
+use crate::model::read::spec::chapter::ChapterListSpec;
+use crate::model::write::chapter::ChapterStageRepl;
 use crate::part::repo::oper::chapter::{
     FindPinnedChapterInfo, GetChapterInfo, ListChapterInfos, StartChapterStage,
     UpdateChapterStage,
@@ -29,7 +32,7 @@ pub async fn chapter_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let stage_mask = StageMask::try_from(0u32).ok().unwrap();
 
-    let chapter_stage_update = ChapterStageUpdate {
+    let chapter_stage_update = ChapterStageRepl {
         id: chapter_fixture.chapter_entry.id.clone(),
         stages: stage_mask,
     };
@@ -88,7 +91,7 @@ pub async fn chapter_roundtrip_uses_testcontainer(shared: RdbCore) {
             .has_phase(Stage::Translate, StagePhase::Active)
     );
 
-    let chapter_list_spec = ChapterInfoListSpec {
+    let chapter_list_spec = ChapterListSpec {
         comic_id: chapter_fixture.comic_entry.id.clone(),
         incl_opt: vec![ChapterInclOpt::Creator],
         offset: 0,
@@ -110,7 +113,7 @@ pub async fn chapter_roundtrip_uses_testcontainer(shared: RdbCore) {
         chapter_fixture.creator_form.id
     );
 
-    let chapter_list_spec = ChapterInfoListSpec {
+    let chapter_list_spec = ChapterListSpec {
         comic_id: chapter_fixture.comic_entry.id.clone(),
         incl_opt: vec![ChapterInclOpt::ComicWorksetTeam],
         offset: 0,

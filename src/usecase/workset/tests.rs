@@ -21,10 +21,10 @@ use time::OffsetDateTime;
 use crate::data::workset::{
     CreateWorksetParams, ListWorksetInfosParams, UpdateWorksetInfoParams,
 };
-use crate::model::comic::ComicInfo;
-use crate::model::member::MemberInfo;
-use crate::model::user::UserToken;
-use crate::model::workset::WorksetInfo;
+use crate::model::read::proj::comic::ComicInfo;
+use crate::model::read::proj::member::MemberInfo;
+use crate::model::read::proj::workset::WorksetInfo;
+use crate::model::shared::user::UserToken;
 use crate::part::prom::payload::{TaskPayload, image};
 use crate::part::repo::oper::workset::DeleteWorkset;
 use crate::part_impl::prom::mock_impl::MockPromRecord;

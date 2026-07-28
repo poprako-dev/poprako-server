@@ -12,8 +12,8 @@ use super::*;
 use crate::data::comic::{
     MarkComicCoverUploadedParams, ReserveComicCoverParams,
 };
-use crate::model::comic::ComicInfo;
-use crate::model::workset::WorksetInfo;
+use crate::model::read::proj::comic::ComicInfo;
+use crate::model::read::proj::workset::WorksetInfo;
 use crate::part::prom::payload::TaskPayload;
 use crate::part::prom::payload::image::{ImagePayload, ResourceKind};
 use crate::test_util::{

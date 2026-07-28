@@ -10,7 +10,8 @@ use futures::future::OptionFuture;
 use poprako_util::time::ToUnixMilli;
 
 use crate::data::user::UserInfoVal;
-use crate::model::comment::{CommentInfo, CommentListSpec};
+use crate::model::read::proj::comment::CommentInfo;
+use crate::model::read::spec::comment::CommentListSpec;
 use crate::part::image::ImagePool;
 use crate::result::{BaseRest, accept};
 use crate::value::comment::CommentInclOpt;

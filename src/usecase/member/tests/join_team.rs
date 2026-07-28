@@ -5,7 +5,7 @@
 use super::*;
 
 use crate::data::member::JoinTeamParams;
-use crate::model::member_invitation::MemberInvitationInfo;
+use crate::model::read::proj::member_invitation::MemberInvitationInfo;
 
 fn invitation(id: &str, invitee_qid: &str) -> MemberInvitationInfo {
     MemberInvitationInfo {

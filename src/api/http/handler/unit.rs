@@ -14,7 +14,7 @@ use crate::data::unit::{
     ListPageUnitInfosParams, ListPageUnitInfosPayload, SavePageUnitEditsParams,
     UnitEditVal,
 };
-use crate::model::user::UserToken;
+use crate::model::shared::user::UserToken;
 use crate::usecase;
 
 /// `GET /api/v1/pages/{page_id}/units` — list units under a page.

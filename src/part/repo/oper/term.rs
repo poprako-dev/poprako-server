@@ -1,8 +1,8 @@
 use poprako_orchestra::Oper;
 
-use crate::model::term::{
-    TermEntry, TermInfo, TermInfoListSpec, TermInfoUpdate,
-};
+use crate::model::read::proj::term::TermInfo;
+use crate::model::read::spec::term::TermListSpec;
+use crate::model::write::term::{TermEntry, TermRepl};
 
 /// Creates a term.
 #[derive(Oper)]
@@ -25,7 +25,7 @@ pub struct GetTermInfo<'a> {
 #[oper(output = Vec<TermInfo>)]
 pub struct ListTermInfos<'a> {
     /// The specification for filtering listed terms.
-    pub spec: &'a TermInfoListSpec,
+    pub spec: &'a TermListSpec,
 }
 
 /// Looks up a term by identifier, matching deleted rows as well.
@@ -49,7 +49,7 @@ pub struct LockTerm<'a> {
 #[oper(output = ())]
 pub struct UpdateTerm<'a> {
     /// The update payload for the term.
-    pub update: &'a TermInfoUpdate,
+    pub update: &'a TermRepl,
 }
 
 /// Deletes one term.

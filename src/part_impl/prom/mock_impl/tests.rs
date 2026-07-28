@@ -1,7 +1,7 @@
 use super::*;
 
-use crate::model::assignment_invitation::AssignmentInvitationInfo;
-use crate::model::member_invitation::MemberInvitationInfo;
+use crate::model::read::proj::assignment_invitation::AssignmentInvitationInfo;
+use crate::model::read::proj::member_invitation::MemberInvitationInfo;
 use crate::part::prom::payload::invitation::InvitationPayload;
 use crate::test_util::now;
 use crate::value::image::{ImageExt, ImageHash};

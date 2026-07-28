@@ -17,8 +17,8 @@ use crate::data::page::{
     ListPageInfosParams, MarkPageImageUploadedParams, PageInfoVal,
     ReservePageImageParams, ReservedPagePayload,
 };
-use crate::model::page::PageManifestUpdate;
-use crate::model::user::UserToken;
+use crate::model::shared::user::UserToken;
+use crate::model::write::page::{PageImageRepl, PageManifestRepl};
 use crate::part::image::{ImageManager, ImagePool, ImageUploadSpec};
 use crate::part::prom::Prom;
 use crate::part::prom::payload::chapter::ChapterPayload;
@@ -144,7 +144,7 @@ where
                 }
             };
 
-            let page_manifest_update = PageManifestUpdate {
+            let page_manifest_update = PageManifestRepl {
                 id: locked_page_info.id.clone(),
                 index: locked_page_info.index,
                 image_key: Some(image_key.clone()),
@@ -394,6 +394,13 @@ where
         });
     }
 
+    let repl = PageImageRepl {
+        id: id.clone(),
+        image_version: params.image_version,
+        image_key: Some(image_key.clone()),
+        is_image_uploaded: true,
+    };
+
     nucl.coord(async move |context| {
         //
         // NOTE: Chapter -> Page is the shared lock order that prevents both
@@ -420,13 +427,9 @@ where
             });
         }
 
-        MarkPageImageUploaded {
-            id: &id,
-            image_version: params.image_version,
-            image_key: Some(image_key.as_str()),
-        }
-        .step_on(repo, context)
-        .await?;
+        MarkPageImageUploaded { repl: &repl }
+            .step_on(repo, context)
+            .await?;
 
         accept(())
     })

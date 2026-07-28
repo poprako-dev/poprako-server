@@ -36,10 +36,11 @@ use crate::data::team::{
     CreateTeamParams, ListTeamInfosParams, MarkTeamAvatarUploadedParams,
     ReserveTeamAvatarParams, UpdateTeamInfoParams,
 };
-use crate::model::comic::ComicInfo;
-use crate::model::member::MemberInfo;
-use crate::model::team::TeamInfo;
-use crate::model::user::{UserCredential, UserInfo, UserToken};
+use crate::model::read::proj::comic::ComicInfo;
+use crate::model::read::proj::member::MemberInfo;
+use crate::model::read::proj::team::TeamInfo;
+use crate::model::read::proj::user::{UserCredential, UserInfo};
+use crate::model::shared::user::UserToken;
 use crate::part::prom::payload::TaskPayload;
 use crate::part::prom::payload::image::{ImagePayload, ResourceKind};
 use crate::part_impl::prom::mock_impl::MockPromRecord;

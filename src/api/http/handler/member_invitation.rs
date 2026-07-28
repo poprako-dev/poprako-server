@@ -21,7 +21,7 @@ use crate::data::member_invitation::{
     ListMemberInvitationInfosParams, MemberInvitationInfoVal,
     UpdateMemberInvitationRolesParams,
 };
-use crate::model::user::UserToken;
+use crate::model::shared::user::UserToken;
 use crate::usecase;
 use crate::value::member_invitation::MemberInvitationInclOpt;
 

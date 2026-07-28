@@ -11,9 +11,9 @@ use crate::complex::chapter_port::{
 use crate::data::chapter_port::ExportChapterTranslationPayload;
 use crate::data::page_port::PageTranslationExportPayload;
 use crate::data::unit_port::UnitTranslationExportPayload;
-use crate::model::page::PageInfo;
+use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::unit::UnitInfo;
-use crate::model::user::UserToken;
+use crate::model::shared::user::UserToken;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;

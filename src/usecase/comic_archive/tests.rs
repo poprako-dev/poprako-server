@@ -7,16 +7,17 @@ use super::*;
 
 use time::OffsetDateTime;
 
-use crate::model::assignment::AssignmentInfo;
-use crate::model::assignment_invitation::AssignmentInvitationInfo;
-use crate::model::chapter::ChapterInfo;
-use crate::model::comic::ComicInfo;
-use crate::model::member::MemberInfo;
-use crate::model::page::PageInfo;
+use crate::model::read::proj::assignment::AssignmentInfo;
+use crate::model::read::proj::assignment_invitation::AssignmentInvitationInfo;
+use crate::model::read::proj::chapter::ChapterInfo;
+use crate::model::read::proj::comic::ComicInfo;
+use crate::model::read::proj::member::MemberInfo;
+use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::unit::UnitInfo;
+use crate::model::read::proj::user::{UserCredential, UserInfo};
+use crate::model::read::proj::workset::WorksetInfo;
 use crate::model::shared::unit::UnitCoord;
-use crate::model::user::{UserCredential, UserInfo, UserToken};
-use crate::model::workset::WorksetInfo;
+use crate::model::shared::user::UserToken;
 use crate::part::prom::payload::TaskPayload;
 use crate::part::prom::payload::image::ImagePayload;
 use crate::part_impl::repo::mock_impl::Mock;

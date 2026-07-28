@@ -16,7 +16,7 @@ use crate::data::assignment::{
     AssignmentInfoVal, JoinChapterAssignmentParams, ListAssignmentInfosParams,
     UpdateAssignmentRolesParams,
 };
-use crate::model::user::UserToken;
+use crate::model::shared::user::UserToken;
 use crate::usecase;
 
 /// `GET /api/v1/assignments` — list assignments by chapter or owner.

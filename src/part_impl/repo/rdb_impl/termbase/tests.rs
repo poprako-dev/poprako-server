@@ -4,7 +4,8 @@ use super::*;
 
 use poprako_orchestra::Nucl as _;
 
-use crate::model::termbase::{TermbaseEntry, TermbaseInfoListSpec};
+use crate::model::read::spec::termbase::TermbaseListSpec;
+use crate::model::write::termbase::TermbaseEntry;
 use crate::part::repo::oper::termbase::{
     CreateTermbase, GetTermbaseInfo, ListTermbaseInfos, UpdateTermbaseTermCount,
 };
@@ -56,7 +57,7 @@ pub async fn termbase_unique_and_query_roundtrip(shared: RdbCore) {
 
     assert_eq!(created.term_count, 0);
 
-    let list_spec = TermbaseInfoListSpec::Team {
+    let list_spec = TermbaseListSpec::Team {
         team_id: comic_fixture.team_entry.id.clone(),
         fuzzy_name: Some("%_G".into()),
         offset: 0,

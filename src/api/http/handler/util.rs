@@ -9,7 +9,7 @@ use utoipa::IntoParams;
 use poprako_util::i18n::trl;
 
 use crate::api::http::result::HttpError;
-use crate::model::user::UserToken;
+use crate::model::shared::user::UserToken;
 use crate::result::ExpectedVariant;
 
 /// Pagination query parameters for nested list endpoints where the parent id

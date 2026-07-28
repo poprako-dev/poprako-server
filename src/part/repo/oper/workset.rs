@@ -1,6 +1,7 @@
 use poprako_orchestra::Oper;
 
-use crate::model::workset::{WorksetEntry, WorksetInfo, WorksetInfoUpdate};
+use crate::model::read::proj::workset::WorksetInfo;
+use crate::model::write::workset::{WorksetEntry, WorksetRepl};
 
 /// Creates a workset.
 #[derive(Oper)]
@@ -54,7 +55,7 @@ pub struct ListWorksetInfosExcluded<'a> {
 #[oper(output = ())]
 pub struct UpdateWorkset<'a> {
     /// The update payload for the workset.
-    pub update: &'a WorksetInfoUpdate,
+    pub update: &'a WorksetRepl,
 }
 
 /// Deletes a workset.

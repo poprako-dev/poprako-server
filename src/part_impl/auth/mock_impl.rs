@@ -2,7 +2,7 @@
 
 use poprako_util::i18n::trl;
 
-use crate::model::user::UserToken;
+use crate::model::shared::user::UserToken;
 use crate::part::auth::TokenAuth;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};

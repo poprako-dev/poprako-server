@@ -17,7 +17,7 @@ use crate::data::page::{
     ReserveChapterPagesParams, ReserveChapterPagesPayload,
     ReservePageImageParams, ReservedPagePayload,
 };
-use crate::model::user::UserToken;
+use crate::model::shared::user::UserToken;
 use crate::usecase;
 
 /// `GET /api/v1/chapters/{chapter_id}/pages` — list pages in a chapter.

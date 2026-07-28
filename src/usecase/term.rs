@@ -11,8 +11,8 @@ use crate::data::term::{
     CreateTermParams, CreateTermPayload, ListTermInfosParams, TermInfoVal,
     UpdateTermInfoParams,
 };
-use crate::model::term::TermInfoListSpec;
-use crate::model::user::UserToken;
+use crate::model::read::spec::term::TermListSpec;
+use crate::model::shared::user::UserToken;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::comic::GetComicInfo;
@@ -171,7 +171,7 @@ where
     )
     .await?;
 
-    let term_info_list_spec = TermInfoListSpec {
+    let term_info_list_spec = TermListSpec {
         termbase_id: params.termbase_id,
         fuzzy_source: TermComplex::normalize_fuzzy_source(params.fuzzy_source),
         offset: params.offset,
