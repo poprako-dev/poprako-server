@@ -70,7 +70,7 @@ where
 {
     ensure_user_admin(repo, &token.user_id, &params.chapter_id).await?;
 
-    let kind = match params.is_pending {
+    let status = match params.is_pending {
         //
         Some(true) => AssignmentInvitationStatus::Pending,
 
@@ -81,7 +81,7 @@ where
 
     let assignment_invitation_list_spec = AssignmentInvitationListSpec {
         chapter_id: params.chapter_id,
-        kind,
+        status,
         offset: params.offset,
         limit: params.limit,
     };

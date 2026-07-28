@@ -69,7 +69,7 @@ pub async fn assignment_invitation_roundtrip_uses_testcontainer(
 
     let assignment_invitation_list_spec = AssignmentInvitationListSpec {
         chapter_id: chapter_fixture.chapter_entry.id.clone(),
-        kind: AssignmentInvitationStatus::Used,
+        status: AssignmentInvitationStatus::Used,
         offset: 0,
         limit: 10,
     };

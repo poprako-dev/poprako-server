@@ -57,7 +57,7 @@ async fn list_infos(
         .select(MemberInvitationRow::as_select())
         .into_boxed();
 
-    query = match &spec.kind {
+    query = match &spec.status {
         //
         MemberInvitationStatus::All => query,
 
