@@ -30,7 +30,7 @@ pub async fn list_infos(
         .filter(f_chapter_id.eq(spec.chapter_id.as_str()))
         .into_boxed();
 
-    query = match &spec.kind {
+    query = match &spec.status {
         //
         AssignmentInvitationStatus::All => query,
 

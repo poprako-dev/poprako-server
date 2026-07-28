@@ -58,7 +58,7 @@ fn list_member_invitation_infos(
         .iter()
         .filter(|member_invitation_info| {
             member_invitation_info.team_id == spec.team_id
-                && match &spec.kind {
+                && match &spec.status {
                     //
                     // Internal state field `MemberInvitationStatus`.
                     // Internal implementation detail.

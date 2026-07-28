@@ -45,7 +45,7 @@ fn list_infos(
         .iter()
         .filter(|info| {
             info.chapter_id == oper.spec.chapter_id
-                && match &oper.spec.kind {
+                && match &oper.spec.status {
                     //
                     // Internal state field `AssignmentInvitationStatus`.
                     // Internal implementation detail.

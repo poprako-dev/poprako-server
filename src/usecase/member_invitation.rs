@@ -171,7 +171,7 @@ where
     )
     .await?;
 
-    let kind = match params.is_pending {
+    let status = match params.is_pending {
         //
         Some(true) => MemberInvitationStatus::Pending,
 
@@ -182,7 +182,7 @@ where
 
     let member_invitation_list_spec = MemberInvitationListSpec {
         team_id: params.team_id,
-        kind,
+        status,
         incl_opt: params.incl_opt,
         offset: params.offset,
         limit: params.limit,

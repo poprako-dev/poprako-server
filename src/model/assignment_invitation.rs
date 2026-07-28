@@ -62,7 +62,7 @@ pub struct AssignmentInvitationListSpec {
     /// Foreign key scoping the listing to invitations for this chapter.
     pub chapter_id: String,
     /// Consumption status filter controlling which subset of invitations to return.
-    pub kind: AssignmentInvitationStatus,
+    pub status: AssignmentInvitationStatus,
 
     /// Number of records to skip for pagination.
     pub offset: u32,

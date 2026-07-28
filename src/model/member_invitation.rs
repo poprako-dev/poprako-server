@@ -74,7 +74,7 @@ pub struct MemberInvitationListSpec {
     /// The team whose invitations should be listed.
     pub team_id: String,
     /// Consumption-status filter narrowing which invitations to return.
-    pub kind: MemberInvitationStatus,
+    pub status: MemberInvitationStatus,
     /// Additional data to include in each result, such as the inviter user record.
     pub incl_opt: Vec<MemberInvitationInclOpt>,
 

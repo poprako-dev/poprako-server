@@ -67,7 +67,7 @@ pub async fn member_invitation_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let member_invitation_list_spec = MemberInvitationListSpec {
         team_id: team_fixture.team_entry.id.clone(),
-        kind: MemberInvitationStatus::Used,
+        status: MemberInvitationStatus::Used,
         incl_opt: vec![MemberInvitationInclOpt::Invitor],
         offset: 0,
         limit: 10,
