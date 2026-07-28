@@ -156,10 +156,7 @@ async fn list_expired_slots(
 
 #[instrument(level = "info", err(Debug), skip_all)]
 // Delete archived rows for one team-month slot and notify team admins.
-async fn purge_slot(
-    conn: &mut RdbConn,
-    slot: &ExpiredSlot,
-) -> BaseRest<usize> {
+async fn purge_slot(conn: &mut RdbConn, slot: &ExpiredSlot) -> BaseRest<usize> {
     //
     let end = next_month(slot.start)?;
 

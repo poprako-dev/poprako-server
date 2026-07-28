@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use poprako_orchestra::run_proxy;
+use poprako_orchestra::{OperRun as _, run_proxy};
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
@@ -72,7 +72,7 @@ where
 
     let spec: ComicInfoListSpec = params.try_into()?;
 
-    let comic_infos = repo.run(&ListComicInfos { spec: &spec }).await?;
+    let comic_infos = ListComicInfos { spec: &spec }.run_on(repo).await?;
 
     let comic_ids = comic_infos
         .iter()
@@ -94,9 +94,10 @@ where
     let mut pinned_chapter_infos = match with_pinned_chapter {
         //
         true => {
-            repo.run(&ListPinnedChapterInfos {
+            ListPinnedChapterInfos {
                 comic_ids: &comic_ids,
-            })
+            }
+            .run_on(repo)
             .await?
         }
 
@@ -113,12 +114,12 @@ where
                     .map(|chapter_info| chapter_info.id.clone())
                     .collect::<Vec<_>>();
 
-                let assignment_infos = repo
-                    .run(&ListAssignmentInfos::Chapters {
-                        chapter_ids: &chapter_ids,
-                        incls: &[],
-                    })
-                    .await?;
+                let assignment_infos = ListAssignmentInfos::Chapters {
+                    chapter_ids: &chapter_ids,
+                    incls: &[],
+                }
+                .run_on(repo)
+                .await?;
 
                 let mut assignment_infos_by_chapter = HashMap::new();
 

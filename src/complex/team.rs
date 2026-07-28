@@ -1,7 +1,7 @@
 //! Complex-domain opers for team entities: identity and avatar-storage key
 //! generation, and permission checks.
 
-use poprako_orchestra::Proxy;
+use poprako_orchestra::{OperProxy as _, Proxy};
 use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 use poprako_orchestra_extra::prom::task::Task;
 
@@ -97,15 +97,15 @@ impl TeamComplex {
         // worksets (and their subtrees) inserted between the listing and
         // the team delete.
 
-        let team_info = proxy.exec(&GetTeamInfoExcluded::Id { id }).await?;
+        let team_info = GetTeamInfoExcluded::Id { id }.proxy_on(proxy).await?;
 
         TermbaseComplex::delete_team_cascade(proxy, &team_info.id).await?;
 
-        let workset_infos = proxy
-            .exec(&ListWorksetInfosExcluded {
-                team_id: &team_info.id,
-            })
-            .await?;
+        let workset_infos = ListWorksetInfosExcluded {
+            team_id: &team_info.id,
+        }
+        .proxy_on(proxy)
+        .await?;
 
         for workset_info in workset_infos {
             WorksetComplex::delete_cascade(proxy, &workset_info.id).await?;
@@ -126,24 +126,24 @@ impl TeamComplex {
                 delay: None,
             };
 
-            proxy.exec(&Defer::new(task)).await?;
+            Defer::new(task).proxy_on(proxy).await?;
         }
 
-        let member_infos = proxy
-            .exec(&ListMemberInfosExcluded::Team {
-                team_id: &team_info.id,
-            })
-            .await?;
+        let member_infos = ListMemberInfosExcluded::Team {
+            team_id: &team_info.id,
+        }
+        .proxy_on(proxy)
+        .await?;
 
         for member_info in member_infos {
-            proxy
-                .exec(&DeleteMember {
-                    id: &member_info.id,
-                })
-                .await?;
+            DeleteMember {
+                id: &member_info.id,
+            }
+            .proxy_on(proxy)
+            .await?;
         }
 
-        proxy.exec(&DeleteTeam { id: &team_info.id }).await?;
+        DeleteTeam { id: &team_info.id }.proxy_on(proxy).await?;
 
         accept(())
     }
@@ -232,7 +232,7 @@ impl TeamPermComplex {
     where
         P: for<'a> Proxy<GetUserInfo<'a>, Error = BaseError>,
     {
-        let user_info = proxy.exec(&GetUserInfo::Id { id: user_id }).await?;
+        let user_info = GetUserInfo::Id { id: user_id }.proxy_on(proxy).await?;
 
         if !user_info.is_sadmin {
             return Err(BaseError::Expected {

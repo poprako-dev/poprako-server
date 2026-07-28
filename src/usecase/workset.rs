@@ -1,6 +1,8 @@
 //! Workset use cases — create, read, update, list, and deletion.
 
-use poprako_orchestra::{Nucl, run_proxy, step_proxy};
+use poprako_orchestra::{
+    Nucl, OperRun as _, OperStep as _, run_proxy, step_proxy,
+};
 use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 use tracing::instrument;
 
@@ -75,14 +77,11 @@ where
     let workset_id = nucl
         .coord(async move |context| {
             //
-            let index = repo
-                .step(
-                    context,
-                    &AllocTeamWorksetIndex {
-                        id: &params.team_id,
-                    },
-                )
-                .await?;
+            let index = AllocTeamWorksetIndex {
+                id: &params.team_id,
+            }
+            .step_on(repo, context)
+            .await?;
 
             let workset_entry = WorksetEntry {
                 id: WorksetComplex::gen_id(),
@@ -92,14 +91,11 @@ where
                 description: params.description,
             };
 
-            let workset_info = repo
-                .step(
-                    context,
-                    &CreateWorkset {
-                        entry: &workset_entry,
-                    },
-                )
-                .await?;
+            let workset_info = CreateWorkset {
+                entry: &workset_entry,
+            }
+            .step_on(repo, context)
+            .await?;
 
             accept(workset_info.id)
         })
@@ -129,7 +125,7 @@ where
     )
     .await?;
 
-    let workset_info = repo.run(&GetWorksetInfo { id: &id }).await?;
+    let workset_info = GetWorksetInfo { id: &id }.run_on(repo).await?;
 
     accept(workset_info.into())
 }
@@ -153,13 +149,13 @@ where
     )
     .await?;
 
-    let workset_infos = repo
-        .run(&ListWorksetInfos {
-            team_id: &params.team_id,
-            offset: params.offset,
-            limit: params.limit,
-        })
-        .await?;
+    let workset_infos = ListWorksetInfos {
+        team_id: &params.team_id,
+        offset: params.offset,
+        limit: params.limit,
+    }
+    .run_on(repo)
+    .await?;
 
     accept(workset_infos.into_iter().map(Into::into).collect())
 }
@@ -191,9 +187,10 @@ where
         description: params.description,
     };
 
-    repo.run(&UpdateWorkset {
+    UpdateWorkset {
         update: &workset_info_update,
-    })
+    }
+    .run_on(repo)
     .await?;
 
     accept(())

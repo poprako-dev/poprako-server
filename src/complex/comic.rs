@@ -3,7 +3,7 @@
 
 use std::collections::HashMap;
 
-use poprako_orchestra::Proxy;
+use poprako_orchestra::{OperProxy as _, Proxy};
 use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 use poprako_orchestra_extra::prom::task::Task;
 
@@ -77,18 +77,18 @@ impl ComicComplex {
         }
 
         let pinned_chapter_infos =
-            proxy.exec(&ListPinnedChapterInfos { comic_ids }).await?;
+            ListPinnedChapterInfos { comic_ids }.proxy_on(proxy).await?;
 
         let chapter_ids = pinned_chapter_infos
             .values()
             .map(|chapter_info| chapter_info.id.clone())
             .collect::<Vec<_>>();
 
-        let first_page_infos = proxy
-            .exec(&ListFirstPageInfos {
-                chapter_ids: &chapter_ids,
-            })
-            .await?;
+        let first_page_infos = ListFirstPageInfos {
+            chapter_ids: &chapter_ids,
+        }
+        .proxy_on(proxy)
+        .await?;
 
         let mut fallback_cover_keys = HashMap::new();
 
@@ -142,16 +142,17 @@ impl ComicComplex {
         // leaks from chapters (and their page images) inserted between the
         // listing and the comic delete.
 
-        let comic_info =
-            proxy.exec(&GetComicInfoExcluded { id, incls: &[] }).await?;
+        let comic_info = GetComicInfoExcluded { id, incls: &[] }
+            .proxy_on(proxy)
+            .await?;
 
         TermbaseComplex::delete_comic_cascade(proxy, &comic_info.id).await?;
 
-        let chapter_infos = proxy
-            .exec(&ListChapterInfosExcluded {
-                comic_id: &comic_info.id,
-            })
-            .await?;
+        let chapter_infos = ListChapterInfosExcluded {
+            comic_id: &comic_info.id,
+        }
+        .proxy_on(proxy)
+        .await?;
 
         for chapter_info in chapter_infos {
             ChapterComplex::delete_cascade(proxy, &chapter_info.id).await?;
@@ -172,17 +173,17 @@ impl ComicComplex {
                 delay: None,
             };
 
-            proxy.exec(&Defer::new(task)).await?;
+            Defer::new(task).proxy_on(proxy).await?;
         }
 
-        proxy.exec(&DeleteComic { id: &comic_info.id }).await?;
+        DeleteComic { id: &comic_info.id }.proxy_on(proxy).await?;
 
-        proxy
-            .exec(&UpdateWorksetComicCount {
-                id: &comic_info.workset_id,
-                delta: -1,
-            })
-            .await?;
+        UpdateWorksetComicCount {
+            id: &comic_info.workset_id,
+            delta: -1,
+        }
+        .proxy_on(proxy)
+        .await?;
 
         accept(())
     }
@@ -320,7 +321,7 @@ impl ComicPermComplex {
         P: for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>,
     {
         let workset_info =
-            proxy.exec(&GetWorksetInfo { id: workset_id }).await?;
+            GetWorksetInfo { id: workset_id }.proxy_on(proxy).await?;
 
         accept(workset_info.team_id)
     }
@@ -334,18 +335,18 @@ impl ComicPermComplex {
         P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
             + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>,
     {
-        let comic_info = proxy
-            .exec(&GetComicInfo {
-                id: comic_id,
-                incls: &[],
-            })
-            .await?;
+        let comic_info = GetComicInfo {
+            id: comic_id,
+            incls: &[],
+        }
+        .proxy_on(proxy)
+        .await?;
 
-        let workset_info = proxy
-            .exec(&GetWorksetInfo {
-                id: &comic_info.workset_id,
-            })
-            .await?;
+        let workset_info = GetWorksetInfo {
+            id: &comic_info.workset_id,
+        }
+        .proxy_on(proxy)
+        .await?;
 
         accept(workset_info.team_id)
     }

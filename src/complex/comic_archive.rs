@@ -1,6 +1,6 @@
 //! Pure conversion of active comic snapshots into immutable archive payloads.
 
-use poprako_orchestra::Proxy;
+use poprako_orchestra::{OperProxy as _, Proxy};
 use time::OffsetDateTime;
 
 use poprako_util::time::ToUnixMilli;
@@ -78,18 +78,18 @@ impl ComicArchivePermComplex {
             + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
             + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
-        let comic_info = proxy
-            .exec(&GetComicInfo {
-                id: comic_id,
-                incls: &[],
-            })
-            .await?;
+        let comic_info = GetComicInfo {
+            id: comic_id,
+            incls: &[],
+        }
+        .proxy_on(proxy)
+        .await?;
 
-        let workset_info = proxy
-            .exec(&GetWorksetInfo {
-                id: &comic_info.workset_id,
-            })
-            .await?;
+        let workset_info = GetWorksetInfo {
+            id: &comic_info.workset_id,
+        }
+        .proxy_on(proxy)
+        .await?;
 
         check_user_is_team_admin(proxy, user_id, &workset_info.team_id).await
     }

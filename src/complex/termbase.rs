@@ -1,6 +1,6 @@
 //! Terminology-base validation, permissions, and cascade operations.
 
-use poprako_orchestra::Proxy;
+use poprako_orchestra::{OperProxy as _, Proxy};
 
 use poprako_util::i18n::trl;
 
@@ -125,19 +125,20 @@ impl TermbaseComplex {
             + for<'a> Proxy<DeleteTerms<'a>, Error = BaseError>
             + for<'a> Proxy<DeleteTermbase<'a>, Error = BaseError>,
     {
-        let termbase_info = proxy.exec(&GetTermbaseInfoExcluded { id }).await?;
+        let termbase_info =
+            GetTermbaseInfoExcluded { id }.proxy_on(proxy).await?;
 
-        proxy
-            .exec(&DeleteTerms {
-                termbase_id: &termbase_info.id,
-            })
-            .await?;
+        DeleteTerms {
+            termbase_id: &termbase_info.id,
+        }
+        .proxy_on(proxy)
+        .await?;
 
-        proxy
-            .exec(&DeleteTermbase {
-                id: &termbase_info.id,
-            })
-            .await?;
+        DeleteTermbase {
+            id: &termbase_info.id,
+        }
+        .proxy_on(proxy)
+        .await?;
 
         accept(())
     }
@@ -153,8 +154,8 @@ impl TermbaseComplex {
             + for<'a> Proxy<DeleteTerms<'a>, Error = BaseError>
             + for<'a> Proxy<DeleteTermbase<'a>, Error = BaseError>,
     {
-        let termbase_infos = proxy
-            .exec(&ListTermbaseInfosExcluded::Team { team_id })
+        let termbase_infos = ListTermbaseInfosExcluded::Team { team_id }
+            .proxy_on(proxy)
             .await?;
 
         for termbase_info in termbase_infos {
@@ -175,8 +176,8 @@ impl TermbaseComplex {
             + for<'a> Proxy<DeleteTerms<'a>, Error = BaseError>
             + for<'a> Proxy<DeleteTermbase<'a>, Error = BaseError>,
     {
-        let termbase_infos = proxy
-            .exec(&ListTermbaseInfosExcluded::Comic { comic_id })
+        let termbase_infos = ListTermbaseInfosExcluded::Comic { comic_id }
+            .proxy_on(proxy)
             .await?;
 
         for termbase_info in termbase_infos {
@@ -200,18 +201,18 @@ impl TermbasePermComplex {
         P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
             + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>,
     {
-        let comic_info = proxy
-            .exec(&GetComicInfo {
-                id: comic_id,
-                incls: &[],
-            })
-            .await?;
+        let comic_info = GetComicInfo {
+            id: comic_id,
+            incls: &[],
+        }
+        .proxy_on(proxy)
+        .await?;
 
-        let workset_info = proxy
-            .exec(&GetWorksetInfo {
-                id: &comic_info.workset_id,
-            })
-            .await?;
+        let workset_info = GetWorksetInfo {
+            id: &comic_info.workset_id,
+        }
+        .proxy_on(proxy)
+        .await?;
 
         accept(workset_info.team_id)
     }

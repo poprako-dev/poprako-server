@@ -142,10 +142,7 @@ impl<'a> Run<GetTermbaseInfo<'a>> for Mock {
 
     #[instrument(level = "info", err(Debug), skip_all)]
     // Internal implementation of `run`.
-    async fn run(
-        &self,
-        oper: &GetTermbaseInfo<'a>,
-    ) -> BaseRest<TermbaseInfo> {
+    async fn run(&self, oper: &GetTermbaseInfo<'a>) -> BaseRest<TermbaseInfo> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
