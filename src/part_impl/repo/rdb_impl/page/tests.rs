@@ -128,7 +128,7 @@ pub async fn page_roundtrip_uses_testcontainer(shared: RdbCore) {
         Some(image_reservation.object_key)
     );
 
-    assert!(!replaced_page_info.image_uploaded);
+    assert!(!replaced_page_info.is_image_uploaded);
 
     let chapter_ids = vec![page_fixture.chapter_entry.id.clone()];
 

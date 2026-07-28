@@ -149,7 +149,7 @@ async fn mark_avatar_uploaded_marks_matching_version() {
     .await
     .unwrap();
 
-    assert!(mock.snapshot().teams[0].avatar_uploaded);
+    assert!(mock.snapshot().teams[0].is_avatar_uploaded);
 }
 
 #[tokio::test]
@@ -181,7 +181,7 @@ async fn mark_avatar_uploaded_accepts_repeated_matching_version() {
 
     assert!(second.is_ok());
 
-    assert!(mock.snapshot().teams[0].avatar_uploaded);
+    assert!(mock.snapshot().teams[0].is_avatar_uploaded);
 }
 
 #[tokio::test]
@@ -209,7 +209,7 @@ async fn mark_avatar_uploaded_rejects_stale_version() {
         "error-stale-avatar-upload",
     );
 
-    assert!(!mock.snapshot().teams[0].avatar_uploaded);
+    assert!(!mock.snapshot().teams[0].is_avatar_uploaded);
 }
 
 #[tokio::test]
@@ -253,7 +253,7 @@ async fn mark_avatar_uploaded_rejects_old_reservation_replay() {
         "error-stale-avatar-upload",
     );
 
-    assert!(!snapshot.teams[0].avatar_uploaded);
+    assert!(!snapshot.teams[0].is_avatar_uploaded);
 
     assert_eq!(snapshot.teams[0].avatar_version, 2);
 }

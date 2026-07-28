@@ -65,7 +65,7 @@ fn page_from_entry(entry: &PageEntry) -> PageInfo {
         chapter_id: entry.chapter_id.clone(),
         index: entry.index,
         image_key: entry.image_key.clone(),
-        image_uploaded: false,
+        is_image_uploaded: false,
         image_version: entry.image_version,
         image_hash: entry.image_hash.clone(),
         image_ext: entry.image_ext,

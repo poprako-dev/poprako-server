@@ -44,7 +44,7 @@ impl TryFrom<AssignmentInvitationRow> for AssignmentInvitationInfo {
             inviter_id: row.f_inviter_id,
             invitee_qid: row.f_invitee_qid,
             code: row.f_code,
-            pending: row.f_pending,
+            is_pending: row.f_pending,
             roles,
             created_at: row.f_created_at,
             updated_at: row.f_updated_at,

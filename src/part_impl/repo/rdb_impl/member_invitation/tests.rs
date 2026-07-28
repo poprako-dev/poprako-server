@@ -5,7 +5,7 @@ use super::*;
 use poprako_orchestra::Nucl as _;
 
 use crate::model::member_invitation::{
-    MemberInvitationEntry, MemberInvitationListKind, MemberInvitationListSpec,
+    MemberInvitationEntry, MemberInvitationListSpec,
 };
 use crate::part::repo::oper::member_invitation::{
     CreateMemberInvitation, ListMemberInvitationInfos, UpdateMemberInvitation,
@@ -15,6 +15,7 @@ use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
 use crate::part_impl::shared::RdbCore;
 use crate::result::BaseError;
 use crate::value::member_invitation::MemberInvitationInclOpt;
+use crate::value::member_invitation::MemberInvitationStatus;
 use crate::value::role::{RoleField, RoleMask};
 
 const PREFIX: &str = "rdb-test-member-invitation-domain-";
@@ -66,7 +67,7 @@ pub async fn member_invitation_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let member_invitation_list_spec = MemberInvitationListSpec {
         team_id: team_fixture.team_entry.id.clone(),
-        kind: MemberInvitationListKind::Used,
+        kind: MemberInvitationStatus::Used,
         incl_opt: vec![MemberInvitationInclOpt::Invitor],
         offset: 0,
         limit: 10,
@@ -82,7 +83,7 @@ pub async fn member_invitation_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     assert_eq!(member_invitation_infos.len(), 1);
 
-    assert!(!member_invitation_infos[0].pending);
+    assert!(!member_invitation_infos[0].is_pending);
 
     test_shared::cleanup(&shared, PREFIX).await.ok().unwrap();
 

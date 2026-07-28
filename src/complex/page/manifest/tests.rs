@@ -17,7 +17,7 @@ fn page(
         chapter_id: "chapter-1".into(),
         index,
         image_key: Some(format!("{}.png", id)),
-        image_uploaded,
+        is_image_uploaded: image_uploaded,
         image_version: 1,
         image_hash: ImageHash::new([hash; 32]),
         image_ext: ImageExt::Png,

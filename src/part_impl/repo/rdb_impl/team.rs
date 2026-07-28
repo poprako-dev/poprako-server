@@ -242,7 +242,7 @@ async fn reserve_avatar(
                         .into(),
                 }
             })?,
-            upload_required: !uploaded,
+            is_upload_required: !uploaded,
         });
     }
 
@@ -268,16 +268,13 @@ async fn reserve_avatar(
         object_key,
         prev_object_key: prev_key,
         avatar_version: version,
-        upload_required: true,
+        is_upload_required: true,
     })
 }
 
 // Load one team info and lock the row for transactional updates.
 #[instrument(level = "info", err(Debug), skip_all)]
-async fn get_info_excluded(
-    conn: &mut RdbConn,
-    id: &str,
-) -> BaseRest<TeamInfo> {
+async fn get_info_excluded(conn: &mut RdbConn, id: &str) -> BaseRest<TeamInfo> {
     //
     let row: TeamRow = t_team
         .filter(f_id.eq(id))

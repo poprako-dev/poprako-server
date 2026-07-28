@@ -7,7 +7,7 @@ use tracing::instrument;
 
 use crate::model::assignment_invitation::{
     AssignmentInvitationEntry, AssignmentInvitationInfo,
-    AssignmentInvitationListKind, AssignmentInvitationListSpec,
+    AssignmentInvitationListSpec,
 };
 use crate::part_impl::repo::rdb_impl::entity::assignment_invitation::{
     AssignmentInvitationAspect, AssignmentInvitationRow,
@@ -17,6 +17,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_assignment_invitation::dsl::*;
 use crate::part_impl::shared::RdbConn;
 use crate::part_impl::shared::result::{diesel, expected};
 use crate::result::{BaseRest, accept};
+use crate::value::assignment_invitation::AssignmentInvitationStatus;
 
 /// Queries assignment invitation rows selected by a list specification.
 #[instrument(level = "info", err(Debug), skip_all)]
@@ -31,13 +32,11 @@ pub async fn list_infos(
 
     query = match &spec.kind {
         //
-        AssignmentInvitationListKind::All => query,
+        AssignmentInvitationStatus::All => query,
 
-        AssignmentInvitationListKind::Pending => {
-            query.filter(f_pending.eq(true))
-        }
+        AssignmentInvitationStatus::Pending => query.filter(f_pending.eq(true)),
 
-        AssignmentInvitationListKind::Used => query.filter(f_pending.eq(false)),
+        AssignmentInvitationStatus::Used => query.filter(f_pending.eq(false)),
     };
 
     let rows: Vec<AssignmentInvitationRow> = query

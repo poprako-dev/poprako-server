@@ -148,6 +148,10 @@ pub fn new(harn: AppHarn) -> Router<AppHarn> {
             post(chapter::advance_stage),
         )
         .route(
+            "/chapters/{chapter_id}/mark-pinned",
+            post(chapter::mark_pinned),
+        )
+        .route(
             "/chapters/{chapter_id}/translations/import",
             post(chapter_port::import),
         )

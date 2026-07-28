@@ -37,7 +37,7 @@ pub struct PageInfo {
     /// Object-storage key reserved for the page image, `None` before reservation.
     pub image_key: Option<String>,
     /// Whether the client has confirmed the image upload for this page.
-    pub image_uploaded: bool,
+    pub is_image_uploaded: bool,
     /// Monotonically increasing version counter, bumped on each image reservation.
     pub image_version: u32,
     /// Content-addressable hash of the uploaded image file.
@@ -106,6 +106,7 @@ pub struct PageImageReservation {
 }
 
 /// Persisted manifest state for one retained or newly created page.
+/// TODO: why is this necessary?
 pub struct PageManifestUpdate {
     //
     /// The unique identifier of the page whose manifest is being updated.
@@ -116,7 +117,7 @@ pub struct PageManifestUpdate {
     /// Updated object-storage key for the page image.
     pub image_key: Option<String>,
     /// Whether the image upload has been confirmed for this page.
-    pub image_uploaded: bool,
+    pub is_image_uploaded: bool,
     /// Updated version counter for the image lifecycle.
     pub image_version: u32,
     /// Updated content hash of the page image file.

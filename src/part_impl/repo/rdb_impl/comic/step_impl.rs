@@ -397,7 +397,7 @@ pub async fn reserve_cover(
                     message: "[reserve_cover] cover version is invalid".into(),
                 }
             })?,
-            upload_required: !uploaded,
+            is_upload_required: !uploaded,
         });
     }
 
@@ -423,7 +423,7 @@ pub async fn reserve_cover(
         object_key,
         prev_object_key: prev_key,
         cover_version,
-        upload_required: true,
+        is_upload_required: true,
     })
 }
 

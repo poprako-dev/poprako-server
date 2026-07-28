@@ -36,7 +36,7 @@ fn create_team(state: &mut MockState, entry: &TeamEntry) -> BaseRest<TeamInfo> {
         name: entry.name.clone(),
         description: entry.description.clone(),
         avatar_key: None,
-        avatar_uploaded: false,
+        is_avatar_uploaded: false,
         avatar_version: 0,
         avatar_hash: ImageHash::default(),
         avatar_ext: ImageExt::Png,
@@ -155,7 +155,7 @@ fn update_team(state: &mut MockState, oper: &UpdateTeam<'_>) -> BaseRest<()> {
                 return Err(expected("error-stale-avatar-upload"));
             }
 
-            team_info.avatar_uploaded = *avatar_uploaded;
+            team_info.is_avatar_uploaded = *avatar_uploaded;
         }
     }
 
@@ -199,7 +199,7 @@ fn reserve_team_avatar(
             object_key,
             prev_object_key: None,
             avatar_version: team_info.avatar_version,
-            upload_required: !team_info.avatar_uploaded,
+            is_upload_required: !team_info.is_avatar_uploaded,
         });
     }
 
@@ -215,7 +215,7 @@ fn reserve_team_avatar(
 
     team_info.avatar_key = Some(object_key.clone());
 
-    team_info.avatar_uploaded = false;
+    team_info.is_avatar_uploaded = false;
 
     team_info.avatar_version = avatar_version;
 
@@ -229,7 +229,7 @@ fn reserve_team_avatar(
         object_key,
         prev_object_key,
         avatar_version,
-        upload_required: true,
+        is_upload_required: true,
     })
 }
 

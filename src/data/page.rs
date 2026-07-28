@@ -65,7 +65,7 @@ impl PageInfoVal {
         P: ImagePool,
     {
         let (image_url, image_thumbnail_url) =
-            match (model.image_uploaded, &model.image_key) {
+            match (model.is_image_uploaded, &model.image_key) {
                 //
                 (true, Some(key)) => (
                     image_pool.gen_download_url(key).await.ok(),

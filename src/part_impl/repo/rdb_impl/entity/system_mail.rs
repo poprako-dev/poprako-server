@@ -29,7 +29,7 @@ impl From<SystemMailRow> for SystemMailInfo {
         SystemMailInfo {
             id: v.f_id,
             receiver_id: v.f_receiver_id,
-            read: v.f_read,
+            is_read: v.f_read,
             title: v.f_title,
             content: v.f_content,
             created_at: v.f_created_at,

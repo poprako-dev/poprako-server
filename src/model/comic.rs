@@ -44,7 +44,7 @@ pub struct ComicInfo {
     /// Object-storage key for the comic cover image, if one has been reserved.
     pub cover_key: Option<String>,
     /// Whether the client has confirmed the cover upload to the reserved key.
-    pub cover_uploaded: bool,
+    pub is_cover_uploaded: bool,
     /// Monotonically increasing version counter for optimistic concurrency on cover updates.
     pub cover_version: u32,
     /// SHA-256 identity of the reserved cover content.
@@ -164,5 +164,5 @@ pub struct ComicCoverReservation {
     /// Version that must match when the upload is marked as complete.
     pub cover_version: u32,
     /// Whether a PUT capability and delayed check are required.
-    pub upload_required: bool,
+    pub is_upload_required: bool,
 }

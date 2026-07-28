@@ -183,6 +183,18 @@ impl ChapterPermComplex {
         check_admin(proxy, user_id, chapter_id).await
     }
 
+    /// Verify the caller is assigned as a chapter admin for pinning.
+    pub async fn ensure_user_can_mark_pinned<P>(
+        proxy: &mut P,
+        user_id: &str,
+        chapter_id: &str,
+    ) -> BaseRest<()>
+    where
+        P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
+    {
+        check_admin(proxy, user_id, chapter_id).await
+    }
+
     /// Verify the caller has permission to apply a workflow operation.
     pub async fn ensure_user_can_update_stage<P>(
         proxy: &mut P,

@@ -28,7 +28,7 @@ fn user_info(id: &str, avatar_key: &str, avatar_version: u32) -> UserInfo {
         qid: format!("qid-{}", id),
         nickname: format!("nick-{}", id),
         avatar_key: Some(avatar_key.to_string()),
-        avatar_uploaded: false,
+        is_avatar_uploaded: false,
         avatar_version,
         avatar_hash: ImageHash::default(),
         avatar_ext: ImageExt::Png,
@@ -79,7 +79,7 @@ fn assignment_invitation(id: &str, pending: bool) -> AssignmentInvitationInfo {
         inviter_id: "user-1".to_string(),
         invitee_qid: "qid-1".to_string(),
         code: id.to_string(),
-        pending,
+        is_pending: pending,
         roles: RoleMask::from(RoleField::TRANSLATOR),
         created_at,
         updated_at: created_at,
@@ -95,7 +95,7 @@ fn member_invitation(id: &str, pending: bool) -> MemberInvitationInfo {
         invitor_id: "user-1".to_string(),
         invitee_qid: "qid-1".to_string(),
         code: id.to_string(),
-        pending,
+        is_pending: pending,
         roles: RoleMask::from(RoleField::TRANSLATOR),
     }
 }
@@ -174,7 +174,7 @@ async fn process_pending_marks_uploaded_image() {
 
     process_pending(&mock).await.ok().unwrap();
 
-    assert!(mock.snapshot().users[0].avatar_uploaded);
+    assert!(mock.snapshot().users[0].is_avatar_uploaded);
 }
 
 #[tokio::test]
@@ -216,7 +216,7 @@ async fn process_pending_ignores_stale_image_check() {
 
     let snapshot = mock.snapshot();
 
-    assert!(!snapshot.users[0].avatar_uploaded);
+    assert!(!snapshot.users[0].is_avatar_uploaded);
 
     assert!(snapshot.deleted_image_keys.is_empty());
 }
@@ -258,7 +258,7 @@ async fn process_pending_rejects_mismatched_image_key() {
 
     assert!(process_pending(&mock).await.is_err());
 
-    assert!(!mock.snapshot().users[0].avatar_uploaded);
+    assert!(!mock.snapshot().users[0].is_avatar_uploaded);
 }
 
 #[tokio::test]

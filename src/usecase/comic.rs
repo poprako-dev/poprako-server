@@ -375,7 +375,7 @@ where
                 )
                 .await?;
 
-            if !cover_reservation.upload_required {
+            if !cover_reservation.is_upload_required {
                 return accept((
                     cover_reservation.object_key,
                     cover_reservation.cover_version,
@@ -501,7 +501,7 @@ where
         });
     }
 
-    if comic_info.cover_uploaded {
+    if comic_info.is_cover_uploaded {
         return accept(());
     }
 

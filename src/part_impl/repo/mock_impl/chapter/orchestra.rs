@@ -270,7 +270,7 @@ impl<'a> Run<CompleteChapterRawProvide<'a>> for Mock {
 
         let all_pages_uploaded = page_count > 0
             && state.pages.iter().all(|page_info| {
-                page_info.chapter_id != oper.id || page_info.image_uploaded
+                page_info.chapter_id != oper.id || page_info.is_image_uploaded
             });
 
         if !all_pages_uploaded {
@@ -328,7 +328,7 @@ impl<'a> Step<CompleteChapterRawProvide<'a>, MockContext> for Mock {
 
         let all_pages_uploaded = page_count > 0
             && context.state.pages.iter().all(|page_info| {
-                page_info.chapter_id != oper.id || page_info.image_uploaded
+                page_info.chapter_id != oper.id || page_info.is_image_uploaded
             });
 
         if !all_pages_uploaded {

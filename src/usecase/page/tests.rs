@@ -84,7 +84,7 @@ fn comic(id: &str, workset_id: &str) -> ComicInfo {
         author: "author".into(),
         description: None,
         cover_key: None,
-        cover_uploaded: false,
+        is_cover_uploaded: false,
         cover_version: 0,
         cover_hash: ImageHash::default(),
         cover_ext: ImageExt::Png,
@@ -170,7 +170,7 @@ fn page(
         chapter_id: "chapter-1".into(),
         index,
         image_key: image_key.map(Into::into),
-        image_uploaded,
+        is_image_uploaded: image_uploaded,
         image_version,
         image_hash: ImageHash::new([0u8; 32]),
         image_ext: ImageExt::Png,
@@ -238,7 +238,7 @@ async fn reserve_image_replaces_key_and_enqueues_prom() {
         Some("page/chapter_chapter-1/page-1-2.jpg".into())
     );
 
-    assert!(!snapshot.pages[0].image_uploaded);
+    assert!(!snapshot.pages[0].is_image_uploaded);
 
     assert_eq!(snapshot.pages[0].image_version, 2);
 
@@ -566,5 +566,5 @@ async fn mark_image_uploaded_marks_once_and_idempotent() {
 
     let snapshot = mock.snapshot();
 
-    assert!(snapshot.pages[0].image_uploaded);
+    assert!(snapshot.pages[0].is_image_uploaded);
 }

@@ -33,7 +33,7 @@ pub struct AssignmentInvitationListQuery {
     //
     /// When `Some(true)`, returns only unconsumed invitations;
     /// `Some(false)` returns only consumed ones; `None` returns all.
-    pub pending: Option<bool>,
+    pub is_pending: Option<bool>,
 
     /// Pagination offset (0-based).
     pub offset: u32,
@@ -91,7 +91,7 @@ pub async fn list_infos(
     //
     let params = ListAssignmentInvitationInfosParams {
         chapter_id,
-        pending: query.pending,
+        is_pending: query.is_pending,
         offset: query.offset,
         limit: query.limit,
     };

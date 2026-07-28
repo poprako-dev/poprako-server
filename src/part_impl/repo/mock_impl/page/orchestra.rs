@@ -169,7 +169,7 @@ impl<'a> Step<ReservePageImage<'a>, MockContext> for Mock {
 
         page_info.image_version += 1;
 
-        page_info.image_uploaded = false;
+        page_info.is_image_uploaded = false;
 
         let object_key = PageComplex::gen_image_key(
             &page_info.chapter_id,
@@ -216,7 +216,7 @@ impl<'a> Step<MarkPageImageUploaded<'a>, MockContext> for Mock {
             return Err(expected("error-stale-page-image-upload"));
         }
 
-        page_info.image_uploaded = true;
+        page_info.is_image_uploaded = true;
 
         page_info.updated_at = now();
 
@@ -248,7 +248,7 @@ impl<'a> Step<SetPageImageUploaded<'a>, MockContext> for Mock {
             return Err(expected("error-stale-page-image-upload"));
         }
 
-        page_info.image_uploaded = oper.image_uploaded;
+        page_info.is_image_uploaded = oper.image_uploaded;
 
         page_info.updated_at = now();
 
@@ -337,7 +337,7 @@ impl<'a> Step<UpdatePageManifest<'a>, MockContext> for Mock {
 
         page_info.image_key = oper.update.image_key.clone();
 
-        page_info.image_uploaded = oper.update.image_uploaded;
+        page_info.is_image_uploaded = oper.update.is_image_uploaded;
 
         page_info.image_version = oper.update.image_version;
 
@@ -376,7 +376,7 @@ impl<'a> Step<ClearPageImagesForPublish<'a>, MockContext> for Mock {
                 object_keys.push(object_key);
             }
 
-            page_info.image_uploaded = false;
+            page_info.is_image_uploaded = false;
 
             page_info.image_version = page_info
                 .image_version

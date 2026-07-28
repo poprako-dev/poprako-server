@@ -19,8 +19,7 @@ use crate::data::assignment_invitation::{
 };
 use crate::model::assignment::AssignmentEntry;
 use crate::model::assignment_invitation::{
-    AssignmentInvitationEntry, AssignmentInvitationListKind,
-    AssignmentInvitationListSpec,
+    AssignmentInvitationEntry, AssignmentInvitationListSpec,
 };
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
@@ -49,6 +48,7 @@ use crate::part::repo::user::UserRepo;
 use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
+use crate::value::assignment_invitation::AssignmentInvitationStatus;
 use crate::value::role::{RoleField, RoleMask};
 
 #[cfg(test)]
@@ -70,13 +70,13 @@ where
 {
     ensure_user_admin(repo, &token.user_id, &params.chapter_id).await?;
 
-    let kind = match params.pending {
+    let kind = match params.is_pending {
         //
-        Some(true) => AssignmentInvitationListKind::Pending,
+        Some(true) => AssignmentInvitationStatus::Pending,
 
-        Some(false) => AssignmentInvitationListKind::Used,
+        Some(false) => AssignmentInvitationStatus::Used,
 
-        None => AssignmentInvitationListKind::All,
+        None => AssignmentInvitationStatus::All,
     };
 
     let assignment_invitation_list_spec = AssignmentInvitationListSpec {

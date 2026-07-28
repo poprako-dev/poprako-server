@@ -185,7 +185,7 @@ impl TryFrom<UserRow> for UserInfo {
             qid: v.f_qid,
             nickname: v.f_nickname,
             avatar_key: v.f_avatar_key,
-            avatar_uploaded: v.f_avatar_uploaded,
+            is_avatar_uploaded: v.f_avatar_uploaded,
             avatar_version: v.f_avatar_version,
             avatar_hash: ImageHash::new(avatar_hash_bytes),
             avatar_ext,
