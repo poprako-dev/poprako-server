@@ -45,7 +45,7 @@ impl<R> EffectHandler<R> {
         R: AssignmentRepo<C>
             + ChapterRepo<C>
             + TeamRepo<C>
-            + SystemMailRepo<C>
+            + SystemMailRepo
             + UserRepo<C>
             + Send
             + Sync,

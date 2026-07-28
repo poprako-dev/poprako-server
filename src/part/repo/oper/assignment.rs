@@ -8,6 +8,8 @@ use crate::value::assignment::AssignmentInclOpt;
 use crate::value::role::RoleField;
 
 /// Finds an optional assignment.
+#[derive(Oper)]
+#[oper(output = Option<AssignmentInfo>)]
 pub enum FindAssignmentInfo<'a, 'b> {
     /// Finds by chapter and user.
     ChapterUser {
@@ -30,12 +32,9 @@ pub enum FindAssignmentInfo<'a, 'b> {
     },
 }
 
-impl Oper for FindAssignmentInfo<'_, '_> {
-    // Internal output type for this step.
-    type Output = Option<AssignmentInfo>;
-}
-
 /// Gets an assignment that must exist.
+#[derive(Oper)]
+#[oper(output = AssignmentInfo)]
 pub struct GetAssignmentInfo<'a, 'b> {
     //
     /// Assignment identifier.
@@ -44,12 +43,9 @@ pub struct GetAssignmentInfo<'a, 'b> {
     pub incls: &'b [AssignmentInclOpt],
 }
 
-impl Oper for GetAssignmentInfo<'_, '_> {
-    // Internal output type for this step.
-    type Output = AssignmentInfo;
-}
-
 /// Lists assignments selected by a query specification or chapter set.
+#[derive(Oper)]
+#[oper(output = Vec<AssignmentInfo>)]
 pub enum ListAssignmentInfos<'a, 'b> {
     /// Lists by a query specification.
     Spec {
@@ -78,12 +74,9 @@ pub enum ListAssignmentInfos<'a, 'b> {
     },
 }
 
-impl Oper for ListAssignmentInfos<'_, '_> {
-    // Internal output type for this step.
-    type Output = Vec<AssignmentInfo>;
-}
-
 /// Lists and exclusively locks all assignment rows under a chapter.
+#[derive(Oper)]
+#[oper(output = Vec<AssignmentInfo>)]
 pub enum ListAssignmentInfosExcluded<'a> {
     /// Lists and locks by chapter.
     Chapter {
@@ -92,34 +85,25 @@ pub enum ListAssignmentInfosExcluded<'a> {
     },
 }
 
-impl Oper for ListAssignmentInfosExcluded<'_> {
-    // Internal output type for this step.
-    type Output = Vec<AssignmentInfo>;
-}
-
 /// Creates an assignment.
+#[derive(Oper)]
+#[oper(output = AssignmentInfo)]
 pub struct CreateAssignment<'a> {
     /// The assignment entry data.
     pub entry: &'a AssignmentEntry,
 }
 
-impl Oper for CreateAssignment<'_> {
-    // Internal output type for this step.
-    type Output = AssignmentInfo;
-}
-
 /// Replaces the roles assigned to an assignment.
+#[derive(Oper)]
+#[oper(output = AssignmentInfo)]
 pub struct UpdateAssignmentRoles<'a> {
     /// The role update data.
     pub update: &'a AssignmentRoleUpdate,
 }
 
-impl Oper for UpdateAssignmentRoles<'_> {
-    // Internal output type for this step.
-    type Output = AssignmentInfo;
-}
-
 /// Deletes assignments selected by identifier or chapter.
+#[derive(Oper)]
+#[oper(output = ())]
 pub enum DeleteAssignments<'a> {
     /// Deletes by assignment identifier.
     Id {
@@ -132,9 +116,4 @@ pub enum DeleteAssignments<'a> {
         /// Chapter identifier.
         chapter_id: &'a str,
     },
-}
-
-impl Oper for DeleteAssignments<'_> {
-    // Internal output type for this step.
-    type Output = ();
 }

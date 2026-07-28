@@ -1,22 +1,22 @@
 //! Repository traits for the comment domain.
 
-use poprako_orchestra::{Run, Step};
+use poprako_orchestra::drive;
 
 use crate::part::repo::oper::comment::{CreateComment, ListCommentInfos};
 use crate::result::BaseError;
 
 /// Comment repository operations.
 ///
-/// Independent lists use [`Run`], while creation steps through the context
+/// Independent lists use [`poprako_orchestra::Run`], while creation steps through the context
 /// coordinated by the caller.
-pub trait CommentRepo<C>:
-    for<'a> Run<ListCommentInfos<'a>, Error = BaseError>
-    + for<'a> Step<CreateComment<'a>, C, Error = BaseError>
-{
-}
-
-impl<T, C> CommentRepo<C> for T where
-    T: for<'a> Run<ListCommentInfos<'a>, Error = BaseError>
-        + for<'a> Step<CreateComment<'a>, C, Error = BaseError>
-{
-}
+#[drive(
+    context = C,
+    error = BaseError,
+    run(
+        for<'a> ListCommentInfos<'a>,
+    ),
+    step(
+        for<'a> CreateComment<'a>,
+    ),
+)]
+pub trait CommentRepo<C> {}

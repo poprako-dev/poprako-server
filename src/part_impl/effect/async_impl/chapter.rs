@@ -36,7 +36,7 @@ pub async fn notify_next_phase<C, R>(
     repo: &R,
     payload: &ChapterWorkflowCompletedPayload,
 ) where
-    R: AssignmentRepo<C> + ChapterRepo<C> + SystemMailRepo<C>,
+    R: AssignmentRepo<C> + ChapterRepo<C> + SystemMailRepo,
 {
     let Some((receiver_role, workflow_label)) =
         next_phase_config(payload.completed_stage)
@@ -66,7 +66,7 @@ pub async fn notify_reviewers_on_progress<C, R>(
     repo: &R,
     payload: ChapterWorkflowCompletedPayload,
 ) where
-    R: AssignmentRepo<C> + ChapterRepo<C> + SystemMailRepo<C>,
+    R: AssignmentRepo<C> + ChapterRepo<C> + SystemMailRepo,
 {
     let Some(workflow_label) = reviewer_progress_label(payload.completed_stage)
     else {
@@ -82,7 +82,7 @@ pub async fn notify_reviewers_on_publish<C, R>(
     repo: &R,
     payload: ChapterPublishedPayload,
 ) where
-    R: AssignmentRepo<C> + ChapterRepo<C> + SystemMailRepo<C>,
+    R: AssignmentRepo<C> + ChapterRepo<C> + SystemMailRepo,
 {
     notify_reviewers(repo, &payload.chapter_id, trl("mail-workflow-publish"))
         .await;
@@ -206,12 +206,12 @@ where
 /// Sends a batch of system mail forms, logging a warning on failure.
 #[instrument(level = "info", skip_all)]
 // Submits prepared mails and logs the failure path for observability.
-async fn send_batch<C, R>(
+async fn send_batch<R>(
     repo: &R,
     chapter_id: &str,
     system_mail_entries: Vec<SystemMailEntry>,
 ) where
-    R: SystemMailRepo<C>,
+    R: SystemMailRepo,
 {
     if system_mail_entries.is_empty() {
         return;
@@ -259,7 +259,7 @@ async fn notify_reviewers<C, R>(
     chapter_id: &str,
     workflow_label: String,
 ) where
-    R: AssignmentRepo<C> + ChapterRepo<C> + SystemMailRepo<C>,
+    R: AssignmentRepo<C> + ChapterRepo<C> + SystemMailRepo,
 {
     let Some(chapter_info) = load_chapter(repo, chapter_id).await else {
         return;

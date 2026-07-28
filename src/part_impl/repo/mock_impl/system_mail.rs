@@ -11,13 +11,8 @@ use crate::model::system_mail::{
 use crate::part::repo::oper::system_mail::{
     ListSystemMailInfos, MarkSystemMailRead, SendSystemMail, SendSystemMails,
 };
-use crate::part::repo::system_mail::SystemMailRepo;
-use crate::part_impl::repo::mock_impl::{
-    Mock, MockContext, MockState, expected, now,
-};
+use crate::part_impl::repo::mock_impl::{Mock, MockState, expected, now};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-
-impl SystemMailRepo<MockContext> for Mock {}
 
 // Internal implementation of `insert_mail`.
 fn insert_mail(state: &mut MockState, entry: &SystemMailEntry) {

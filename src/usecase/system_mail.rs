@@ -28,18 +28,17 @@ mod tests;
 ///
 /// # Type Parameters
 ///
-/// * `C` — Context anchor.
-/// * `R: SystemMailRepo<C>` — System mail storage.
+/// * `R: SystemMailRepo` — System mail storage.
 ///
 /// [`ListSystemMailInfosParams`]: ListSystemMailInfosParams
 #[instrument(level = "info", err(Debug), skip(repo))]
-pub async fn list_infos<C, R>(
+pub async fn list_infos<R>(
     (repo,): (&R,),
     token: UserToken,
     params: ListSystemMailInfosParams,
 ) -> BaseRest<Vec<SystemMailInfoVal>>
 where
-    R: SystemMailRepo<C>,
+    R: SystemMailRepo,
 {
     let kind = match params.is_read {
         //
@@ -85,16 +84,15 @@ where
 ///
 /// # Type Parameters
 ///
-/// * `C` — Context anchor.
-/// * `R: SystemMailRepo<C>` — System mail storage.
+/// * `R: SystemMailRepo` — System mail storage.
 #[instrument(level = "info", err(Debug), skip(repo))]
-pub async fn mark_read<C, R>(
+pub async fn mark_read<R>(
     (repo,): (&R,),
     token: UserToken,
     ids: Vec<String>,
 ) -> BaseRest<()>
 where
-    R: SystemMailRepo<C>,
+    R: SystemMailRepo,
 {
     for id in &ids {
         MarkSystemMailRead {

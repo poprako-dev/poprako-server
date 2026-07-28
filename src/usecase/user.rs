@@ -111,7 +111,7 @@ where
         });
     }
 
-    nucl.coord(async move |context| -> Result<(), BaseError> {
+    nucl.coord(async move |context| {
         //
         UpdateUser::Info {
             id: &token.user_id,
@@ -400,7 +400,7 @@ where
         });
     }
 
-    nucl.coord(async move |context| -> Result<(), BaseError> {
+    nucl.coord(async move |context| {
         //
         let locked_user_info = GetUserInfoExcluded::Id { id: &id }
             .step_on(repo, context)
@@ -470,9 +470,8 @@ where
         });
     }
 
-    nucl.coord(async move |context| -> Result<(), BaseError> {
+    nucl.coord(async move |context| {
         //
-
         let user_info = GetUserInfoExcluded::Id { id: &id }
             .step_on(repo, context)
             .await?;

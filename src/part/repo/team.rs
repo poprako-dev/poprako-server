@@ -1,6 +1,6 @@
 //! Repository traits for the team domain.
 
-use poprako_orchestra::{Run, Step};
+use poprako_orchestra::drive;
 
 use crate::part::repo::oper::team::{
     AllocTeamWorksetIndex, CreateTeam, DeleteTeam, GetTeamInfo,
@@ -11,34 +11,25 @@ use crate::result::BaseError;
 
 /// Team repository operations.
 ///
-/// Standalone reads and updates use [`Run`]. Transactional mutations, locks,
-/// and sequence allocation use [`Step`] with the caller-owned context.
-pub trait TeamRepo<C>:
-    for<'a> Run<CreateTeam<'a>, Error = BaseError>
-    + for<'a> Run<GetTeamInfo<'a>, Error = BaseError>
-    + for<'a> Run<ListTeamInfos<'a>, Error = BaseError>
-    + for<'a> Run<UpdateTeam<'a>, Error = BaseError>
-    + for<'a> Step<CreateTeam<'a>, C, Error = BaseError>
-    + for<'a> Step<UpdateTeam<'a>, C, Error = BaseError>
-    + for<'a> Step<ReserveTeamAvatar<'a>, C, Error = BaseError>
-    + for<'a> Step<GetTeamInfoExcluded<'a>, C, Error = BaseError>
-    + for<'a> Step<LockTeam<'a>, C, Error = BaseError>
-    + for<'a> Step<DeleteTeam<'a>, C, Error = BaseError>
-    + for<'a> Step<AllocTeamWorksetIndex<'a>, C, Error = BaseError>
-{
-}
-
-impl<T, C> TeamRepo<C> for T where
-    T: for<'a> Run<CreateTeam<'a>, Error = BaseError>
-        + for<'a> Run<GetTeamInfo<'a>, Error = BaseError>
-        + for<'a> Run<ListTeamInfos<'a>, Error = BaseError>
-        + for<'a> Run<UpdateTeam<'a>, Error = BaseError>
-        + for<'a> Step<CreateTeam<'a>, C, Error = BaseError>
-        + for<'a> Step<UpdateTeam<'a>, C, Error = BaseError>
-        + for<'a> Step<ReserveTeamAvatar<'a>, C, Error = BaseError>
-        + for<'a> Step<GetTeamInfoExcluded<'a>, C, Error = BaseError>
-        + for<'a> Step<LockTeam<'a>, C, Error = BaseError>
-        + for<'a> Step<DeleteTeam<'a>, C, Error = BaseError>
-        + for<'a> Step<AllocTeamWorksetIndex<'a>, C, Error = BaseError>
-{
-}
+/// Standalone reads and updates use [`poprako_orchestra::Run`]. Transactional mutations, locks,
+/// and sequence allocation use [`poprako_orchestra::Step`] with the caller-owned context.
+#[drive(
+    context = C,
+    error = BaseError,
+    run(
+        for<'a> CreateTeam<'a>,
+        for<'a> GetTeamInfo<'a>,
+        for<'a> ListTeamInfos<'a>,
+        for<'a> UpdateTeam<'a>,
+    ),
+    step(
+        for<'a> CreateTeam<'a>,
+        for<'a> UpdateTeam<'a>,
+        for<'a> ReserveTeamAvatar<'a>,
+        for<'a> GetTeamInfoExcluded<'a>,
+        for<'a> LockTeam<'a>,
+        for<'a> DeleteTeam<'a>,
+        for<'a> AllocTeamWorksetIndex<'a>,
+    ),
+)]
+pub trait TeamRepo<C> {}
