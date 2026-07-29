@@ -22,6 +22,7 @@ use crate::part::image::ImagePool;
 use crate::result::{BaseError, BaseResult, accept};
 use crate::value::chapter::StageMask;
 use crate::value::comic::{ComicInclOpt, ComicWithOpt};
+use crate::value::role::RoleMask;
 
 #[cfg(test)]
 mod tests {
@@ -211,6 +212,11 @@ pub struct CreateComicParams {
 
     /// Optional subtitle for the first chapter created alongside the comic.
     pub first_chapter_subtitle: Option<String>,
+
+    /// Roles assigned to the creator on the first chapter in addition to the
+    /// mandatory admin role. Every requested role must exist on the creator's
+    /// team membership.
+    pub preset_assignment_roles: Option<RoleMask>,
 }
 
 /// Return value from a successful comic creation.

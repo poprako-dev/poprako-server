@@ -44,6 +44,7 @@ pub mod user;
 pub mod workset;
 
 /// Diesel-backed repository handle wrapping a connection pool.
+#[derive(Clone)]
 pub struct RdbRepo {
     core: RdbCore,
 }

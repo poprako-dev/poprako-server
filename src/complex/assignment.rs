@@ -28,6 +28,16 @@ impl AssignmentComplex {
         next_snowflake_id()
     }
 
+    /// Build the creator assignment roles, always preserving chapter admin.
+    pub fn creator_roles(preset_roles: Option<RoleMask>) -> RoleMask {
+        //
+        let admin_roles = RoleMask::from(RoleField::ADMIN);
+
+        preset_roles
+            .map(|roles| roles.union(admin_roles))
+            .unwrap_or(admin_roles)
+    }
+
     /// Merge new roles into an existing assignment, preserving existing roles
     /// and writing new ones.
     pub fn merge_roles(

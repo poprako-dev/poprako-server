@@ -5,18 +5,18 @@ use tracing::instrument;
 
 use crate::model::chapter::ChapterInfo;
 use crate::part::repo::oper::chapter::{
-    AdjustChapterUnitCounters, CreateChapter, DeleteChapter,
-    FindPinnedChapterInfo, GetChapterInfo, GetChapterInfoExcluded,
-    ListChapterInfos, ListChapterInfosExcluded, ListPinnedChapterInfos,
-    SetChapterPageCounters, UnpinOtherChapters, UpdateChapter,
-    UpdateChapterStage,
+    AdjustChapterUnitCounters, CompleteChapterRawProvide, CreateChapter,
+    DeleteChapter, FindPinnedChapterInfo, GetChapterInfo,
+    GetChapterInfoExcluded, ListChapterInfos, ListChapterInfosExcluded,
+    ListPinnedChapterInfos, SetChapterPageCounters, StartChapterStage,
+    UnpinOtherChapters, UpdateChapter, UpdateChapterStage,
 };
 use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::chapter::{
-    adjust_unit_counters, create, delete, find_pinned_info_by_comic_id,
-    get_info_by_id, get_info_excluded, list_infos, list_infos_excluded,
-    list_pinned_infos_by_comic_ids, set_page_counters, unpin_others,
-    update_info, update_stage,
+    adjust_unit_counters, complete_raw_provide, create, delete,
+    find_pinned_info_by_comic_id, get_info_by_id, get_info_excluded,
+    list_infos, list_infos_excluded, list_pinned_infos_by_comic_ids,
+    set_page_counters, start_stage, unpin_others, update_info, update_stage,
 };
 use crate::part_impl::shared::RdbContext;
 use crate::result::{BaseError, BaseResult};
@@ -71,6 +71,27 @@ impl<'a> Run<ListPinnedChapterInfos<'a>> for RdbRepo {
         oper: &ListPinnedChapterInfos<'a>,
     ) -> BaseResult<HashMap<String, ChapterInfo>> {
         submit_query!(self.core, list_pinned_infos_by_comic_ids, oper.comic_ids)
+    }
+}
+
+impl<'a> Run<StartChapterStage<'a>> for RdbRepo {
+    type Error = BaseError;
+
+    #[instrument(level = "info", err(Debug), skip_all)]
+    async fn run(&self, oper: &StartChapterStage<'a>) -> BaseResult<bool> {
+        submit_query!(self.core, start_stage, oper.id, oper.stage)
+    }
+}
+
+impl<'a> Run<CompleteChapterRawProvide<'a>> for RdbRepo {
+    type Error = BaseError;
+
+    #[instrument(level = "info", err(Debug), skip_all)]
+    async fn run(
+        &self,
+        oper: &CompleteChapterRawProvide<'a>,
+    ) -> BaseResult<bool> {
+        submit_query!(self.core, complete_raw_provide, oper.id)
     }
 }
 

@@ -57,6 +57,7 @@ pub mod member;
 pub mod member_invitation;
 /// Page management use cases.
 pub mod page;
+mod stage;
 /// System mail use cases.
 pub mod system_mail;
 /// Team management use cases.

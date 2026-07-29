@@ -1,8 +1,11 @@
 use serde::{Deserialize, Serialize};
 
+use crate::part::prom::payload::chapter::CheckUploadFinish;
 use crate::part::prom::payload::image::Payload as ImagePayload;
 use crate::part::prom::payload::invitation::PurgeExpiredInvitation;
 
+/// Deferred chapter payloads.
+pub mod chapter;
 /// Deferred image payloads.
 pub mod image;
 /// Deferred invitation payloads.
@@ -11,6 +14,9 @@ pub mod invitation;
 /// Deferred-action payload grouped by resource domain.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Payload {
+    /// Advance raw provision after every chapter page is uploaded.
+    CheckChapterUploadFinish(CheckUploadFinish),
+
     /// Image-domain deferred action.
     Image(ImagePayload),
 
@@ -23,6 +29,8 @@ impl Payload {
     pub(crate) fn topic(&self) -> &'static str {
         match self {
             //
+            Self::CheckChapterUploadFinish(_) => "check_chapter_upload_finish",
+
             Self::Image(_) => "image",
 
             Self::PurgeExpiredInvitation(_) => "purge_expired_invitation",

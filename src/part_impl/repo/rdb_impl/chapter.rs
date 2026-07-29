@@ -17,11 +17,12 @@ use crate::part_impl::repo::rdb_impl::entity::chapter::{
     ChapterAspect, ChapterRow, ChapterRowEntry,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::*;
+use crate::part_impl::repo::rdb_impl::schema::t_page;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, incl};
 use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::shared::{RdbConn, RdbContext};
-use crate::result::{BaseResult, accept};
-use crate::value::chapter::ChapterInclOpt;
+use crate::result::{BaseError, BaseResult, accept};
+use crate::value::chapter::{ChapterInclOpt, Stage};
 
 mod orchestra;
 #[cfg(all(test, feature = "repo"))]
@@ -271,6 +272,90 @@ pub(super) async fn update_stage(
         .map_err(diesel)?;
 
     accept(())
+}
+
+/// Atomically moves a pending two-step stage to active.
+#[instrument(level = "info", err(Debug), skip_all)]
+pub(super) async fn start_stage(
+    conn: &mut RdbConn,
+    id: &str,
+    stage: Stage,
+) -> BaseResult<bool> {
+    //
+    let now = OffsetDateTime::now_utc();
+
+    let updated_count = match stage {
+        //
+        Stage::Translate => diesel::update(
+            t_chapter
+                .filter(f_id.eq(id))
+                .filter(f_translating_at.is_null())
+                .filter(f_translated_at.is_null()),
+        )
+        .set((f_translating_at.eq(now), f_updated_at.eq(now)))
+        .execute(conn)
+        .await
+        .map_err(diesel)?,
+
+        Stage::Proofread => diesel::update(
+            t_chapter
+                .filter(f_id.eq(id))
+                .filter(f_proofreading_at.is_null())
+                .filter(f_proofread_at.is_null()),
+        )
+        .set((f_proofreading_at.eq(now), f_updated_at.eq(now)))
+        .execute(conn)
+        .await
+        .map_err(diesel)?,
+
+        Stage::TypesetRedraw => diesel::update(
+            t_chapter
+                .filter(f_id.eq(id))
+                .filter(f_typesetting_at.is_null())
+                .filter(f_typeset_at.is_null()),
+        )
+        .set((f_typesetting_at.eq(now), f_updated_at.eq(now)))
+        .execute(conn)
+        .await
+        .map_err(diesel)?,
+
+        Stage::RawProvide | Stage::Review | Stage::Publish => {
+            return Err(BaseError::Unrecoverable {
+                message: "only two-step chapter stages can be started"
+                    .to_string(),
+            });
+        }
+    };
+
+    accept(updated_count > 0)
+}
+
+/// Atomically completes raw provision when every reserved page is uploaded.
+#[instrument(level = "info", err(Debug), skip_all)]
+pub(super) async fn complete_raw_provide(
+    conn: &mut RdbConn,
+    id: &str,
+) -> BaseResult<bool> {
+    //
+    let now = OffsetDateTime::now_utc();
+
+    let incomplete_pages = t_page::table
+        .filter(t_page::f_chapter_id.eq(id))
+        .filter(t_page::f_image_uploaded.eq(false));
+
+    let updated_count = diesel::update(
+        t_chapter
+            .filter(f_id.eq(id))
+            .filter(f_uploaded_at.is_null())
+            .filter(f_page_count.gt(0))
+            .filter(diesel::dsl::not(diesel::dsl::exists(incomplete_pages))),
+    )
+    .set((f_uploaded_at.eq(now), f_updated_at.eq(now)))
+    .execute(conn)
+    .await
+    .map_err(diesel)?;
+
+    accept(updated_count > 0)
 }
 
 /// Sets the page and unit counters on a chapter row.

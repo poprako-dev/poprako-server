@@ -6,16 +6,14 @@ use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 use poprako_orchestra_extra::prom::task::Task;
 use time::OffsetDateTime;
 
+use self::image_task::ResourceState;
 use crate::model::user::{UserCredential, UserInfo};
 use crate::part::image::ImageManager;
 use crate::part::prom::Prom;
-use crate::part::prom::payload::invitation::PurgeExpiredInvitation;
 use crate::part::prom::payload::{Payload, image};
-use crate::part::repo::oper::assignment_invitation::PurgeExpiredAssignmentInvitation;
 use crate::part::repo::oper::comic::{
     GetComicInfoExcluded, MarkComicCoverUploaded,
 };
-use crate::part::repo::oper::member_invitation::PurgeExpiredMemberInvitation;
 use crate::part::repo::oper::page::{
     GetPageInfoExcluded, MarkPageImageUploaded,
 };
@@ -24,6 +22,9 @@ use crate::part::repo::oper::user::{GetUserInfoExcluded, UpdateUser};
 use crate::part_impl::repo::mock_impl::{Mock, MockContext};
 use crate::result::{BaseError, BaseResult, accept};
 
+mod chapter;
+mod image_task;
+mod invitation;
 mod tests;
 
 /// A recorded deferred action stored in the mock context during transactional testing.
@@ -341,43 +342,19 @@ pub async fn process_pending(mock: &Mock) -> BaseResult<()> {
 
         match payload {
             //
+            Payload::CheckChapterUploadFinish(task) => {
+                chapter::process_check_upload_finish(mock, &task).await?;
+            }
+
             Payload::Image(task) => {
                 process_image_task(mock, &task).await?;
             }
 
             Payload::PurgeExpiredInvitation(event) => {
-                process_invitation_event(mock, &event).await?;
+                invitation::process(mock, &event).await?;
             }
         }
     }
-
-    accept(())
-}
-
-async fn process_invitation_event(
-    mock: &Mock,
-    event: &PurgeExpiredInvitation,
-) -> BaseResult<()> {
-    //
-    mock.coord(async move |context| match event {
-        //
-        PurgeExpiredInvitation::Assignment { invitation_id } => {
-            mock.step(
-                context,
-                &PurgeExpiredAssignmentInvitation { id: invitation_id },
-            )
-            .await
-        }
-
-        PurgeExpiredInvitation::Member { invitation_id } => {
-            mock.step(
-                context,
-                &PurgeExpiredMemberInvitation { id: invitation_id },
-            )
-            .await
-        }
-    })
-    .await?;
 
     accept(())
 }
@@ -508,15 +485,6 @@ async fn mark_uploaded(
             .await
         }
     }
-}
-
-enum ResourceState {
-    /// The image version matches the current DB record.
-    Current,
-    /// The image version is outdated; the resource has been superseded.
-    Stale,
-    /// The referenced resource no longer exists.
-    Missing,
 }
 
 fn classify_current_version(

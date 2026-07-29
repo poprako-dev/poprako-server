@@ -83,6 +83,7 @@ use crate::value::role::RoleField;
 #[openapi(
     paths(
         handler::health::check_health,
+        handler::health::detailed_metrics,
         handler::auth::register,
         handler::auth::login,
         handler::auth::logout,

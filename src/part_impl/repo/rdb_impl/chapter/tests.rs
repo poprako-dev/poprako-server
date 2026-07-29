@@ -1,15 +1,18 @@
 // chapter_roundtrip_reads_test_database_url(ChapterRepo)(positive): chapter repo persists, lists, and finds pinned chapter rows in the local test database.
 
+use super::*;
+
 use poprako_orchestra::{Nucl, Run as _, Step as _};
 
 use crate::model::chapter::{ChapterInfoListSpec, ChapterStageUpdate};
 use crate::part::repo::oper::chapter::{
-    FindPinnedChapterInfo, ListChapterInfos, UpdateChapterStage,
+    FindPinnedChapterInfo, GetChapterInfo, ListChapterInfos, StartChapterStage,
+    UpdateChapterStage,
 };
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
 use crate::result::accept;
-use crate::value::chapter::{ChapterInclOpt, StageMask};
+use crate::value::chapter::{ChapterInclOpt, Stage, StageMask, StagePhase};
 
 const PREFIX: &str = "rdb-test-chapter-domain-";
 
@@ -49,6 +52,43 @@ async fn chapter_roundtrip_reads_test_database_url() {
         .await
         .ok()
         .unwrap();
+
+    let first_start = repo
+        .run(&StartChapterStage {
+            id: &chapter_fixture.chapter_entry.id,
+            stage: Stage::Translate,
+        })
+        .await
+        .ok()
+        .unwrap();
+
+    let repeated_start = repo
+        .run(&StartChapterStage {
+            id: &chapter_fixture.chapter_entry.id,
+            stage: Stage::Translate,
+        })
+        .await
+        .ok()
+        .unwrap();
+
+    assert!(first_start);
+
+    assert!(!repeated_start);
+
+    let started_chapter = repo
+        .run(&GetChapterInfo {
+            id: &chapter_fixture.chapter_entry.id,
+            incls: &[],
+        })
+        .await
+        .ok()
+        .unwrap();
+
+    assert!(
+        started_chapter
+            .stages
+            .has_phase(Stage::Translate, StagePhase::Active)
+    );
 
     let chapter_list_spec = ChapterInfoListSpec {
         comic_id: chapter_fixture.comic_entry.id.clone(),
