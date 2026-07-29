@@ -17,11 +17,13 @@ use crate::part_impl::repo::mock_impl::{
 use crate::result::{BaseError, BaseResult, accept};
 use crate::value::image::{ImageExt, ImageHash};
 
+// Insert a new user entry into mock state and mirror it into credentials.
 fn create_user(
     state: &mut MockState,
     entry: &UserEntry,
 ) -> BaseResult<UserInfo> {
     //
+    // Validate unique id/qid before inserting to avoid inconsistent fixture state.
     if state.users.iter().any(|user| user.id == entry.id)
         || state.users.iter().any(|user| user.qid == entry.qid)
     {
@@ -55,6 +57,7 @@ fn create_user(
     accept(user_info)
 }
 
+// Load one user info from mock state by id.
 fn get_user_info(state: &MockState, id: &str) -> BaseResult<UserInfo> {
     state
         .users
@@ -64,6 +67,7 @@ fn get_user_info(state: &MockState, id: &str) -> BaseResult<UserInfo> {
         .ok_or_else(|| expected("error-user-not-found"))
 }
 
+// Find one user info by qid and return an optional result.
 fn find_user_info(state: &MockState, qid: &str) -> Option<UserInfo> {
     state
         .users
@@ -72,11 +76,13 @@ fn find_user_info(state: &MockState, qid: &str) -> Option<UserInfo> {
         .cloned()
 }
 
+// Resolve credential for a qid from linked mock tables.
 fn get_user_credential(
     state: &MockState,
     qid: &str,
 ) -> BaseResult<UserCredential> {
     //
+    // Resolve user first, then locate corresponding credential row.
     let user_info = state
         .users
         .iter()
@@ -91,8 +97,10 @@ fn get_user_credential(
         .ok_or_else(|| expected("error-user-not-found"))
 }
 
+// Apply a domain update mutation to the in-memory user store.
 fn update_user(state: &mut MockState, oper: &UpdateUser<'_>) -> BaseResult<()> {
     //
+    // Dispatch variant to a single mutable flow with optional identity/hash branches.
     let (id, update) = match oper {
         //
         UpdateUser::Info { id, qid, nickname } => {
@@ -116,8 +124,11 @@ fn update_user(state: &mut MockState, oper: &UpdateUser<'_>) -> BaseResult<()> {
 
     match update {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         Some((qid, nickname, None)) => {
             //
+            // Update qid and nickname on one mutable user object.
             user_info.qid = qid.to_string();
 
             user_info.nickname = nickname.to_string();
@@ -125,6 +136,7 @@ fn update_user(state: &mut MockState, oper: &UpdateUser<'_>) -> BaseResult<()> {
 
         Some((_, _, Some(avatar_version))) => {
             //
+            // Validate optimistic avatar token before toggling upload state.
             if user_info.avatar_version != avatar_version
                 || matches!(
                     oper,
@@ -154,8 +166,11 @@ fn update_user(state: &mut MockState, oper: &UpdateUser<'_>) -> BaseResult<()> {
 
     match oper {
         //
+        // Internal state field `UpdateUser`.
+        // Internal implementation detail.
         UpdateUser::PasswordHash { id, password_hash } => {
             //
+            // Mutate matching credential hash for the same user id.
             let credential = state
                 .credentials
                 .iter_mut()
@@ -174,11 +189,14 @@ fn update_user(state: &mut MockState, oper: &UpdateUser<'_>) -> BaseResult<()> {
 }
 
 impl<'a> Run<GetUserInfo<'a>> for Mock {
+    // Keep run layer errors as `BaseError` in tests.
     type Error = BaseError;
 
+    // Resolve `GetUserInfo` against the locked mock state.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(&self, oper: &GetUserInfo<'a>) -> BaseResult<UserInfo> {
         //
+        // Lock state immutably for read-only user info lookup.
         let state = self.state.lock().unwrap();
 
         match oper {
@@ -188,14 +206,17 @@ impl<'a> Run<GetUserInfo<'a>> for Mock {
 }
 
 impl<'a> Run<GetUserCredential<'a>> for Mock {
+    // Keep run layer errors as `BaseError` in tests.
     type Error = BaseError;
 
+    // Resolve credentials from mock state by qid.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &GetUserCredential<'a>,
     ) -> BaseResult<UserCredential> {
         //
+        // Lock state immutably for safe credential read.
         let state = self.state.lock().unwrap();
 
         match oper {
@@ -205,14 +226,17 @@ impl<'a> Run<GetUserCredential<'a>> for Mock {
 }
 
 impl<'a> Run<FindUserInfo<'a>> for Mock {
+    // Keep run layer errors as `BaseError` in tests.
     type Error = BaseError;
 
+    // Resolve optional user info by qid in shared state.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &FindUserInfo<'a>,
     ) -> BaseResult<Option<UserInfo>> {
         //
+        // Lock state immutably for optional find-by-qid.
         let state = self.state.lock().unwrap();
 
         match oper {
@@ -222,11 +246,14 @@ impl<'a> Run<FindUserInfo<'a>> for Mock {
 }
 
 impl<'a> Run<UpdateUser<'a>> for Mock {
+    // Keep run layer errors as `BaseError` in tests.
     type Error = BaseError;
 
+    // Apply update user mutations under mutable lock.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(&self, oper: &UpdateUser<'a>) -> BaseResult<()> {
         //
+        // Lock mutable state and reuse shared update helper.
         let mut state = self.state.lock().unwrap();
 
         update_user(&mut state, oper)
@@ -234,8 +261,10 @@ impl<'a> Run<UpdateUser<'a>> for Mock {
 }
 
 impl<'a> Step<CreateUser<'a>, MockContext> for Mock {
+    // Keep step errors as `BaseError` in mocked transactions.
     type Error = BaseError;
 
+    // Create user using transaction-local mutable state.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
@@ -247,8 +276,10 @@ impl<'a> Step<CreateUser<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<FindUserInfo<'a>, MockContext> for Mock {
+    // Keep step errors as `BaseError` in mocked transactions.
     type Error = BaseError;
 
+    // Resolve optional user by qid from transaction context.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
@@ -264,8 +295,10 @@ impl<'a> Step<FindUserInfo<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<UpdateUser<'a>, MockContext> for Mock {
+    // Keep step errors as `BaseError` in mocked transactions.
     type Error = BaseError;
 
+    // Apply update operation using context-scoped user state.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
@@ -277,8 +310,10 @@ impl<'a> Step<UpdateUser<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<ReserveUserAvatar<'a>, MockContext> for Mock {
+    // Keep step errors as `BaseError` in mocked transactions.
     type Error = BaseError;
 
+    // Reserve/reuse avatar metadata and return reservation detail.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
@@ -286,6 +321,7 @@ impl<'a> Step<ReserveUserAvatar<'a>, MockContext> for Mock {
         oper: &ReserveUserAvatar<'a>,
     ) -> BaseResult<UserAvatarReservation> {
         //
+        // Locate user and branch on same-hash reuse or new hash allocation.
         let user_info = context
             .state
             .users
@@ -302,6 +338,7 @@ impl<'a> Step<ReserveUserAvatar<'a>, MockContext> for Mock {
 
         if same_hash {
             //
+            // Keep existing key when hash matches and extension is unchanged.
             let object_key = user_info.avatar_key.clone().ok_or_else(|| {
                 BaseError::Unrecoverable {
                     message: "[Mock::ReserveUserAvatar] avatar key is missing"
@@ -349,8 +386,10 @@ impl<'a> Step<ReserveUserAvatar<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<GetUserInfoExcluded<'a>, MockContext> for Mock {
+    // Keep step errors as `BaseError` in mocked transactions.
     type Error = BaseError;
 
+    // Load by id with context state for exclusive update preparation.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
@@ -364,8 +403,10 @@ impl<'a> Step<GetUserInfoExcluded<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<DeleteUser<'a>, MockContext> for Mock {
+    // Keep step errors as `BaseError` in mocked transactions.
     type Error = BaseError;
 
+    // Delete user and cleanup dependent mock artifacts.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
@@ -373,6 +414,7 @@ impl<'a> Step<DeleteUser<'a>, MockContext> for Mock {
         oper: &DeleteUser<'a>,
     ) -> BaseResult<()> {
         //
+        // Remove user row and all related linked state for the same user id.
         let position = context
             .state
             .users

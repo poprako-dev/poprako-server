@@ -5,13 +5,14 @@ use axum::extract::{Extension, Path, State};
 use axum::http::StatusCode;
 use tracing::instrument;
 
-use crate::api::http::handler::util::ensure_path_matches_body_id;
 #[allow(unused_imports)]
-use crate::api::http::result::{Accept as _, HttpBody, HttpResult};
+use crate::api::http::result::{
+    Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
+};
 use crate::api::http::state::AppHarn;
 use crate::data::unit::{
-    ListPageUnitInfosParams, ListPageUnitInfosPayload, SavePageUnitsParams,
-    SavePageUnitsPayload,
+    ListPageUnitInfosParams, ListPageUnitInfosPayload, SavePageUnitEditsParams,
+    UnitEditVal,
 };
 use crate::model::user::UserToken;
 use crate::usecase;
@@ -42,18 +43,17 @@ pub async fn list_infos(
         .accept(StatusCode::OK)
 }
 
-/// `POST /api/v1/pages/{page_id}/units/save` — save unit opers.
+/// `POST /api/v1/pages/{page_id}/units/save` — save Unit edits.
 #[cfg_attr(feature = "swagger", utoipa::path(
     post,
     path = "/api/v1/pages/{page_id}/units/save",
     tag = "units",
     params(("page_id" = String, Path, description = "Page ID")),
-    request_body = SavePageUnitsParams,
+    request_body = Vec<UnitEditVal>,
     responses(
-        (status = 200, description = "Units saved", body = HttpBody<SavePageUnitsPayload>),
-        (status = 422, description = "Path id does not match body page id or diff page id"),
+        (status = 204, description = "Unit edits saved"),
         (status = 403, description = "No permission to save units in this page"),
-        (status = 422, description = "Invalid unit oper"),
+        (status = 422, description = "Invalid Unit edit"),
     ),
 ))]
 #[instrument(level = "info", err(Debug), skip_all)]
@@ -61,14 +61,13 @@ pub async fn save_infos(
     State(harn): State<AppHarn>,
     Path(page_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(params): Json<SavePageUnitsParams>,
-) -> HttpResult<SavePageUnitsPayload> {
+    Json(edits): Json<Vec<UnitEditVal>>,
+) -> HttpNoContent {
     //
-    ensure_path_matches_body_id(&page_id, &params.page_id)?;
+    let params = SavePageUnitEditsParams { page_id, edits };
 
-    ensure_path_matches_body_id(&page_id, &params.diff.page_id)?;
+    usecase::unit::save_edits((harn.drive(), harn.repo()), user_token, params)
+        .await?;
 
-    usecase::unit::save((harn.drive(), harn.repo()), user_token, params)
-        .await?
-        .accept(StatusCode::OK)
+    no_content()
 }

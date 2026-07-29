@@ -38,6 +38,19 @@ pub struct AnnouncementRowEntry<'a> {
     pub f_created_at: OffsetDateTime,
 }
 
+impl<'a> From<&'a AnnouncementEntry> for AnnouncementRowEntry<'a> {
+    fn from(entry: &'a AnnouncementEntry) -> Self {
+        Self {
+            f_id: &entry.id,
+            f_team_id: &entry.team_id,
+            f_user_id: &entry.user_id,
+            f_title: &entry.title,
+            f_content: &entry.content,
+            f_created_at: OffsetDateTime::now_utc(),
+        }
+    }
+}
+
 impl From<AnnouncementRow> for AnnouncementInfo {
     fn from(row: AnnouncementRow) -> Self {
         Self {
@@ -48,19 +61,6 @@ impl From<AnnouncementRow> for AnnouncementInfo {
             title: row.f_title,
             content: row.f_content,
             created_at: row.f_created_at,
-        }
-    }
-}
-
-impl<'a> From<&'a AnnouncementEntry> for AnnouncementRowEntry<'a> {
-    fn from(entry: &'a AnnouncementEntry) -> Self {
-        Self {
-            f_id: &entry.id,
-            f_team_id: &entry.team_id,
-            f_user_id: &entry.user_id,
-            f_title: &entry.title,
-            f_content: &entry.content,
-            f_created_at: OffsetDateTime::now_utc(),
         }
     }
 }

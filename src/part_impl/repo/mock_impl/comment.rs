@@ -14,6 +14,7 @@ use crate::part_impl::repo::mock_impl::{
 use crate::result::{BaseError, BaseResult, accept};
 use crate::value::comment::CommentInclOpt;
 
+// Internal implementation of `find_user`.
 fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
     state
         .users
@@ -22,12 +23,15 @@ fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
         .cloned()
 }
 
+// Internal implementation of `apply_user_incl`.
 fn apply_user_incl(
     state: &MockState,
     comment_info: &mut CommentInfo,
     include_user: bool,
 ) {
     //
+    // Internal implementation detail.
+    // Internal implementation detail.
     comment_info.user = None;
 
     if include_user {
@@ -35,11 +39,14 @@ fn apply_user_incl(
     }
 }
 
+// Internal implementation of `list_comments`.
 fn list_comments(
     state: &MockState,
     spec: &CommentListSpec,
 ) -> Vec<CommentInfo> {
     //
+    // Internal implementation detail.
+    // Internal implementation detail.
     let include_user = spec.incl_opt.contains(&CommentInclOpt::User);
 
     let mut comment_infos = state
@@ -61,10 +68,14 @@ fn list_comments(
 
     match offset >= comment_infos.len() {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         true => Vec::new(),
 
         false => {
             //
+            // Internal implementation detail.
+            // Internal implementation detail.
             let end = std::cmp::min(offset + limit, comment_infos.len());
 
             comment_infos[offset..end].to_vec()
@@ -72,11 +83,14 @@ fn list_comments(
     }
 }
 
+// Internal implementation of `create_comment`.
 fn create_comment(
     state: &mut MockState,
     entry: &CommentEntry,
 ) -> BaseResult<CommentInfo> {
     //
+    // Internal implementation detail.
+    // Internal implementation detail.
     if state
         .comments
         .iter()
@@ -100,14 +114,18 @@ fn create_comment(
 }
 
 impl Run<ListCommentInfos<'_>> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `run`.
     async fn run(
         &self,
         oper: &ListCommentInfos<'_>,
     ) -> BaseResult<Vec<CommentInfo>> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
         accept(list_comments(&state, oper.spec))
@@ -115,9 +133,11 @@ impl Run<ListCommentInfos<'_>> for Mock {
 }
 
 impl Step<CreateComment<'_>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,

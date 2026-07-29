@@ -1,34 +1,33 @@
-//! Repository trait for the unit domain.
+//! Repository capabilities for the Unit domain.
 
 use poprako_orchestra::{Run, Step};
 
 use crate::part::repo::oper::unit::{
-    CountUnits, CreateUnit, DeleteUnit, ListUnitIndexes, ListUnitInfos,
-    SaveUnit, UpdateUnitIndexes,
+    ApplyUnitEdits, ListUnitInfos, ListUnitOrders,
 };
 use crate::result::BaseError;
 
-/// Unit repository operations over standalone runs and coordinated steps.
+/// Complete Unit repository capability used by application harnesses.
 pub trait UnitRepo<C>:
-    for<'a> Run<ListUnitInfos<'a>, Error = BaseError>
-    + for<'a> Step<ListUnitInfos<'a>, C, Error = BaseError>
-    + for<'a> Step<CreateUnit<'a>, C, Error = BaseError>
-    + for<'a> Step<SaveUnit<'a>, C, Error = BaseError>
-    + for<'a> Step<DeleteUnit<'a>, C, Error = BaseError>
-    + for<'a> Step<ListUnitIndexes<'a>, C, Error = BaseError>
-    + for<'a> Step<UpdateUnitIndexes<'a>, C, Error = BaseError>
-    + for<'a> Step<CountUnits<'a>, C, Error = BaseError>
+    for<'a> Run<ListUnitInfos<'a>, Error = BaseError> + UnitRepoTransactional<C>
 {
 }
 
 impl<T, C> UnitRepo<C> for T where
     T: for<'a> Run<ListUnitInfos<'a>, Error = BaseError>
-        + for<'a> Step<ListUnitInfos<'a>, C, Error = BaseError>
-        + for<'a> Step<CreateUnit<'a>, C, Error = BaseError>
-        + for<'a> Step<SaveUnit<'a>, C, Error = BaseError>
-        + for<'a> Step<DeleteUnit<'a>, C, Error = BaseError>
-        + for<'a> Step<ListUnitIndexes<'a>, C, Error = BaseError>
-        + for<'a> Step<UpdateUnitIndexes<'a>, C, Error = BaseError>
-        + for<'a> Step<CountUnits<'a>, C, Error = BaseError>
+        + UnitRepoTransactional<C>
+{
+}
+
+/// Unit capabilities executed inside the caller-owned transaction.
+pub trait UnitRepoTransactional<C>:
+    for<'a> Step<ListUnitOrders<'a>, C, Error = BaseError>
+    + for<'a> Step<ApplyUnitEdits<'a>, C, Error = BaseError>
+{
+}
+
+impl<T, C> UnitRepoTransactional<C> for T where
+    T: for<'a> Step<ListUnitOrders<'a>, C, Error = BaseError>
+        + for<'a> Step<ApplyUnitEdits<'a>, C, Error = BaseError>
 {
 }

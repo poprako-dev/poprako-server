@@ -12,19 +12,6 @@ use axum::middleware::Next;
 use axum::response::{IntoResponse, Response};
 use governor::{DefaultDirectRateLimiter, Quota, RateLimiter};
 
-/// Returns the global singleton rate limiter, initialised on first call.
-fn limiter() -> &'static DefaultDirectRateLimiter {
-    //
-    static LIMITER: OnceLock<DefaultDirectRateLimiter> = OnceLock::new();
-
-    LIMITER.get_or_init(|| {
-        RateLimiter::direct(
-            Quota::per_second(NonZeroU32::new(20).unwrap())
-                .allow_burst(NonZeroU32::new(80).unwrap()),
-        )
-    })
-}
-
 /// `from_fn` handler that enforces a global rate limit.
 pub async fn rate_limit(request: Request, next: Next) -> Response {
     //
@@ -36,4 +23,17 @@ pub async fn rate_limit(request: Request, next: Next) -> Response {
     }
 
     next.run(request).await
+}
+
+// Returns the global singleton rate limiter, created lazily at first call.
+fn limiter() -> &'static DefaultDirectRateLimiter {
+    //
+    static LIMITER: OnceLock<DefaultDirectRateLimiter> = OnceLock::new();
+
+    LIMITER.get_or_init(|| {
+        RateLimiter::direct(
+            Quota::per_second(NonZeroU32::new(20).unwrap())
+                .allow_burst(NonZeroU32::new(80).unwrap()),
+        )
+    })
 }

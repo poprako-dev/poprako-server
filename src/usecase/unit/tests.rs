@@ -1,97 +1,384 @@
-// list_infos(list_infos)(positive): team member lists page units in index order with page counters.
-// list_infos(list_infos)(positive): chapter assignee lists page units without team membership.
-// list_infos(list_infos)(negative): non-member without assignment cannot list page units.
-// save_infos(save_infos)(positive): create maps a local id, save updates, and delete removes.
-// save_infos(save_infos)(positive): successful translation and proofread submissions asynchronously start their chapter stages.
-// save_infos(save_infos)(positive): save with before_id places unit before anchor, None appends to tail.
-// save_infos(save_infos)(positive): concurrent merge applies b-then-c and c-then-b to twenty units and reaches consistent final state.
-// save_infos(save_infos)(negative): user without edit role rolls back units and counters.
-// save_infos(save_infos)(negative): invalid diff rolls back units, counters, and comic activity.
-// save_infos(save_infos)(negative): missing text editor ids are rejected before transaction access.
+// save_edits(save_edits)(positive): token identity is persisted and save returns Unit.
+// save_edits(save_edits)(positive): Delete tombstones and Patch restores a Unit.
+// save_edits(save_edits)(positive): concurrent inserts before one anchor remain a complete chain.
+// save_edits(save_edits)(negative): translator revision edits are rejected and rolled back.
 
 use super::*;
 
 use time::OffsetDateTime;
 
-use crate::data::unit::UnitOperParams;
+use crate::data::unit::{
+    ListPageUnitInfosParams, SavePageUnitEditsParams, UnitCoordVal,
+    UnitEditVal, UnitRevisionVal, UnitTranslationVal,
+};
 use crate::model::assignment::AssignmentInfo;
 use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
-use crate::model::member::MemberInfo;
 use crate::model::page::PageInfo;
-use crate::model::unit::UnitInfo;
 use crate::model::user::UserToken;
 use crate::model::workset::WorksetInfo;
 use crate::part_impl::repo::mock_impl::Mock;
-use crate::result::{BaseError, ExpectedVariant, accept};
-use crate::value::chapter::{Stage, StageMask, StagePhase};
+use crate::result::{BaseError, ExpectedVariant};
+use crate::util::Patch;
+use crate::value::chapter::StageMask;
 use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
-mod basic;
-mod merge;
-mod rollback;
+#[tokio::test]
+async fn create_uses_token_identity_and_updates_counters() {
+    //
+    let mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
 
-struct TestRng {
-    state: u64,
+    save_edits(
+        (&mock, &mock),
+        token("translator-1"),
+        save_params(vec![create("local-1", None, Some("translated"))]),
+    )
+    .await
+    .unwrap();
+
+    let snapshot = mock.snapshot();
+
+    assert_eq!(snapshot.units.len(), 1);
+
+    assert_eq!(
+        snapshot.units[0].last_translator_id.as_deref(),
+        Some("translator-1")
+    );
+
+    assert_eq!(snapshot.pages[0].total_unit_count, 1);
+
+    assert_eq!(snapshot.pages[0].translated_unit_count, 1);
+
+    assert_eq!(snapshot.chapters[0].total_unit_count, 1);
 }
 
-impl TestRng {
-    fn new(seed: u64) -> Self {
-        Self { state: seed }
-    }
+#[tokio::test]
+async fn delete_then_patch_restores_the_tombstone() {
+    //
+    let mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
 
-    fn next(&mut self) -> u64 {
-        //
-        self.state = self
-            .state
-            .wrapping_mul(6_364_136_223_846_793_005)
-            .wrapping_add(1_442_695_040_888_963_407);
+    save_edits(
+        (&mock, &mock),
+        token("translator-1"),
+        save_params(vec![create("local-1", None, Some("text"))]),
+    )
+    .await
+    .unwrap();
 
-        self.state
-    }
+    let unit_id = mock.snapshot().units[0].id.clone();
 
-    fn range(&mut self, bound: usize) -> usize {
-        (self.next() as usize) % bound
-    }
+    save_edits(
+        (&mock, &mock),
+        token("translator-1"),
+        save_params(vec![UnitEditVal::Delete {
+            id: unit_id.clone(),
+        }]),
+    )
+    .await
+    .unwrap();
 
-    fn bool(&mut self) -> bool {
-        self.next() & 1 == 1
+    assert!(mock.snapshot().units[0].hidden_at.is_some());
+
+    assert_eq!(mock.snapshot().pages[0].total_unit_count, 0);
+
+    save_edits(
+        (&mock, &mock),
+        token("translator-1"),
+        save_params(vec![UnitEditVal::Patch {
+            id: unit_id,
+            next_id: Patch::Skip,
+            is_bubble: Some(false),
+            coord: None,
+            translation: Patch::Skip,
+            revision: Patch::Skip,
+        }]),
+    )
+    .await
+    .unwrap();
+
+    let snapshot = mock.snapshot();
+
+    assert!(snapshot.units[0].hidden_at.is_none());
+
+    assert!(!snapshot.units[0].is_bubble);
+
+    assert_eq!(snapshot.pages[0].total_unit_count, 1);
+}
+
+#[tokio::test]
+async fn translator_revision_edit_is_rejected_without_mutation() {
+    //
+    let mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
+
+    save_edits(
+        (&mock, &mock),
+        token("translator-1"),
+        save_params(vec![create("local-1", None, Some("text"))]),
+    )
+    .await
+    .unwrap();
+
+    let before = mock.snapshot();
+
+    let error = save_edits(
+        (&mock, &mock),
+        token("translator-1"),
+        save_params(vec![UnitEditVal::Patch {
+            id: before.units[0].id.clone(),
+            next_id: Patch::Skip,
+            is_bubble: None,
+            coord: None,
+            translation: Patch::Skip,
+            revision: Patch::Assign(UnitRevisionVal {
+                is_proofread: true,
+                proofread_text: Some("proofread".to_string()),
+            }),
+        }]),
+    )
+    .await
+    .unwrap_err();
+
+    assert!(matches!(
+        error,
+        BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            ..
+        }
+    ));
+
+    let after = mock.snapshot();
+
+    assert_eq!(
+        after.units[0].proofread_text,
+        before.units[0].proofread_text
+    );
+
+    assert_eq!(after.pages[0].proofread_unit_count, 0);
+}
+
+#[tokio::test]
+async fn proofreader_and_dual_role_apply_only_their_allowed_fields() {
+    //
+    let proofreader = save_scope(RoleMask::from(RoleField::PROOFREADER));
+
+    save_edits(
+        (&proofreader, &proofreader),
+        token("translator-1"),
+        save_params(vec![UnitEditVal::Create {
+            local_id: "proofreader-local".to_string(),
+            next_id: None,
+            is_bubble: true,
+            coord: UnitCoordVal {
+                x_coord: 1.0,
+                y_coord: 2.0,
+            },
+            translation: None,
+            revision: Some(UnitRevisionVal {
+                is_proofread: true,
+                proofread_text: Some("proofread".to_string()),
+            }),
+        }]),
+    )
+    .await
+    .unwrap();
+
+    let proofreader_snapshot = proofreader.snapshot();
+
+    assert_eq!(
+        proofreader_snapshot.units[0].last_proofreader_id.as_deref(),
+        Some("translator-1")
+    );
+
+    let dual_roles = RoleMask::from(RoleField::TRANSLATOR)
+        .union(RoleMask::from(RoleField::PROOFREADER));
+
+    let dual = save_scope(dual_roles);
+
+    save_edits(
+        (&dual, &dual),
+        token("translator-1"),
+        save_params(vec![UnitEditVal::Create {
+            local_id: "dual-local".to_string(),
+            next_id: None,
+            is_bubble: true,
+            coord: UnitCoordVal {
+                x_coord: 1.0,
+                y_coord: 2.0,
+            },
+            translation: Some(UnitTranslationVal {
+                translated_text: "translated".to_string(),
+            }),
+            revision: Some(UnitRevisionVal {
+                is_proofread: true,
+                proofread_text: Some("proofread".to_string()),
+            }),
+        }]),
+    )
+    .await
+    .unwrap();
+
+    let dual_snapshot = dual.snapshot();
+
+    assert_eq!(dual_snapshot.pages[0].translated_unit_count, 1);
+
+    assert_eq!(dual_snapshot.pages[0].proofread_unit_count, 1);
+}
+
+#[tokio::test]
+async fn concurrent_same_anchor_inserts_preserve_all_nodes() {
+    //
+    let mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
+
+    save_edits(
+        (&mock, &mock),
+        token("translator-1"),
+        save_params(vec![create("anchor-local", None, Some("anchor"))]),
+    )
+    .await
+    .unwrap();
+
+    let anchor_id = mock.snapshot().units[0].id.clone();
+
+    let first_mock = mock.clone();
+
+    let first_anchor = anchor_id.clone();
+
+    let first = tokio::spawn(async move {
+        save_edits(
+            (&first_mock, &first_mock),
+            token("translator-1"),
+            save_params(vec![create(
+                "first-local",
+                Some(first_anchor),
+                Some("first"),
+            )]),
+        )
+        .await
+    });
+
+    let second_mock = mock.clone();
+
+    let second = tokio::spawn(async move {
+        save_edits(
+            (&second_mock, &second_mock),
+            token("translator-1"),
+            save_params(vec![create(
+                "second-local",
+                Some(anchor_id),
+                Some("second"),
+            )]),
+        )
+        .await
+    });
+
+    first.await.unwrap().unwrap();
+
+    second.await.unwrap().unwrap();
+
+    let listed = list_infos(
+        (&mock,),
+        token("translator-1"),
+        ListPageUnitInfosParams {
+            page_id: "page-1".to_string(),
+        },
+    )
+    .await
+    .unwrap();
+
+    assert_eq!(listed.unit_infos.len(), 3);
+
+    assert_eq!(
+        listed.unit_infos.last().unwrap().translated_text.as_deref(),
+        Some("anchor")
+    );
+}
+
+// Build save request params for a fixed page id.
+fn save_params(edits: Vec<UnitEditVal>) -> SavePageUnitEditsParams {
+    SavePageUnitEditsParams {
+        page_id: "page-1".to_string(),
+        edits,
     }
 }
 
+// Build a create-unit edit fixture for a page.
+fn create(
+    local_id: &str,
+    next_id: Option<String>,
+    translated_text: Option<&str>,
+) -> UnitEditVal {
+    UnitEditVal::Create {
+        local_id: local_id.to_string(),
+        next_id,
+        is_bubble: true,
+        coord: UnitCoordVal {
+            x_coord: 1.0,
+            y_coord: 2.0,
+        },
+        translation: translated_text.map(|text| UnitTranslationVal {
+            translated_text: text.to_string(),
+        }),
+        revision: None,
+    }
+}
+
+// Build token payload used by unit-edit authorization checks.
 fn token(user_id: &str) -> UserToken {
     UserToken {
-        user_id: user_id.into(),
+        user_id: user_id.to_string(),
     }
 }
 
-fn workset(id: &str, team_id: &str) -> WorksetInfo {
+// Build a mock scope with workset/chapter/page/assignment fixtures for tests.
+fn save_scope(roles: RoleMask) -> Mock {
     //
-    let time = OffsetDateTime::now_utc();
+    // Build a minimal snapshot scope with one chapter/page/assignment setup.
+    let mock = Mock::new();
+
+    mock.seed_workset(workset());
+
+    mock.seed_comic(comic());
+
+    mock.seed_chapter(chapter());
+
+    mock.seed_page(page());
+
+    mock.seed_assignment(assignment(roles));
+
+    mock
+}
+
+// Build baseline workset fixture consumed by other local entity builders.
+fn workset() -> WorksetInfo {
+    //
+    // Build a baseline workset fixture.
+    let current_time = OffsetDateTime::now_utc();
 
     WorksetInfo {
-        id: id.into(),
-        team_id: team_id.into(),
+        id: "workset-1".to_string(),
+        team_id: "team-1".to_string(),
         index: 0,
-        name: "workset".into(),
+        name: "workset".to_string(),
         description: None,
         comic_count: 1,
-        created_at: time,
-        updated_at: time,
+        created_at: current_time,
+        updated_at: current_time,
     }
 }
 
-fn comic(id: &str, workset_id: &str) -> ComicInfo {
+// Build baseline comic fixture tied to the default workset.
+fn comic() -> ComicInfo {
     //
-    let time = OffsetDateTime::now_utc();
+    // Build a baseline comic fixture linked to the default workset.
+    let current_time = OffsetDateTime::now_utc();
 
     ComicInfo {
-        id: id.into(),
-        workset_id: workset_id.into(),
+        id: "comic-1".to_string(),
+        workset_id: "workset-1".to_string(),
         index: 0,
-        title: "comic".into(),
-        author: "author".into(),
+        title: "comic".to_string(),
+        author: "author".to_string(),
         description: None,
         cover_key: None,
         cover_uploaded: false,
@@ -99,241 +386,78 @@ fn comic(id: &str, workset_id: &str) -> ComicInfo {
         cover_hash: ImageHash::default(),
         cover_ext: ImageExt::Png,
         chapter_count: 1,
-        creator_id: "user-1".into(),
+        creator_id: "translator-1".to_string(),
         workset: None,
         team: None,
         creator: None,
-        last_active_at: time,
-        created_at: time,
-        updated_at: time,
+        last_active_at: current_time,
+        created_at: current_time,
+        updated_at: current_time,
     }
 }
 
-fn chapter(
-    id: &str,
-    comic_id: &str,
-    total: i32,
-    translated: i32,
-    proofread: i32,
-) -> ChapterInfo {
+// Build baseline chapter fixture with one-page expectation.
+fn chapter() -> ChapterInfo {
     //
-    let time = OffsetDateTime::now_utc();
+    // Build a baseline chapter fixture for unit-level operations.
+    let current_time = OffsetDateTime::now_utc();
 
     ChapterInfo {
-        id: id.into(),
-        comic_id: comic_id.into(),
+        id: "chapter-1".to_string(),
+        comic_id: "comic-1".to_string(),
         comic: None,
         is_pinned: true,
         index: 0,
-        subtitle: "chapter".into(),
+        subtitle: "chapter".to_string(),
         page_count: 1,
-        total_unit_count: total,
-        translated_unit_count: translated,
-        proofread_unit_count: proofread,
-        stages: StageMask::try_from(0u32).ok().unwrap(),
-        creator_id: "user-1".into(),
+        total_unit_count: 0,
+        translated_unit_count: 0,
+        proofread_unit_count: 0,
+        stages: StageMask::try_from(0_u32).unwrap(),
+        creator_id: "translator-1".to_string(),
         creator: None,
-        created_at: time,
-        updated_at: time,
+        created_at: current_time,
+        updated_at: current_time,
     }
 }
 
-fn member(user_id: &str) -> MemberInfo {
-    MemberInfo {
-        id: format!("member-{}", user_id),
-        user_id: user_id.into(),
-        user_nickname: user_id.into(),
-        user_last_active_at: OffsetDateTime::now_utc(),
-        team_id: "team-1".into(),
-        user: None,
-        team: None,
-        roles: RoleMask::from(RoleField::TRANSLATOR),
-    }
-}
-
-fn assignment(
-    chapter_id: &str,
-    user_id: &str,
-    role_mask: RoleMask,
-) -> AssignmentInfo {
+// Build baseline page fixture with zero-unit counters.
+fn page() -> PageInfo {
     //
-    let time = OffsetDateTime::now_utc();
-
-    AssignmentInfo {
-        id: format!("assignment-{}-{}", chapter_id, user_id),
-        chapter_id: chapter_id.into(),
-        user_id: user_id.into(),
-        user: None,
-        chapter: None,
-        roles: role_mask,
-        created_at: time,
-        updated_at: time,
-    }
-}
-
-fn page(id: &str, total: i32, translated: i32, proofread: i32) -> PageInfo {
-    //
-    let time = OffsetDateTime::now_utc();
+    // Build a baseline page fixture for unit-chain assembly.
+    let current_time = OffsetDateTime::now_utc();
 
     PageInfo {
-        id: id.into(),
-        chapter_id: "chapter-1".into(),
+        id: "page-1".to_string(),
+        chapter_id: "chapter-1".to_string(),
         index: 0,
         image_key: None,
         image_uploaded: false,
         image_version: 0,
-        image_hash: ImageHash::new([0u8; 32]),
+        image_hash: ImageHash::default(),
         image_ext: ImageExt::Png,
-        total_unit_count: total,
-        translated_unit_count: translated,
-        proofread_unit_count: proofread,
-        created_at: time,
-        updated_at: time,
+        total_unit_count: 0,
+        translated_unit_count: 0,
+        proofread_unit_count: 0,
+        created_at: current_time,
+        updated_at: current_time,
     }
 }
 
-fn unit(
-    id: &str,
-    page_id: &str,
-    index: i32,
-    text: &str,
-    proofread_text: Option<&str>,
-    proofread: bool,
-) -> UnitInfo {
+// Build baseline assignment fixture for user-role scenarios.
+fn assignment(roles: RoleMask) -> AssignmentInfo {
     //
-    let time = OffsetDateTime::now_utc();
+    // Build an assignment fixture tied to the test translator.
+    let current_time = OffsetDateTime::now_utc();
 
-    UnitInfo {
-        id: id.into(),
-        page_id: page_id.into(),
-        index,
-        is_bubble: true,
-        is_proofread: proofread,
-        x_coord: 1.0,
-        y_coord: 2.0,
-        translated_text: Some(text.into()),
-        last_translator_id: None,
-        proofread_text: proofread_text.map(Into::into),
-        last_proofreader_id: None,
-        created_at: time,
-        updated_at: time,
-    }
-}
-
-fn create_oper(
-    local_id: &str,
-    text: &str,
-    before_id: Option<&str>,
-) -> UnitOperParams {
-    UnitOperParams::Create {
-        local_id: local_id.into(),
-        before_id: before_id.map(Into::into),
-        is_bubble: true,
-        is_proofread: false,
-        x_coord: 3.0,
-        y_coord: 4.0,
-        translated_text: Some(text.into()),
-        last_translator_id: Some("user-1".into()),
-        proofread_text: None,
-        last_proofreader_id: None,
-    }
-}
-
-fn save_oper(id: &str, text: &str, before_id: Option<&str>) -> UnitOperParams {
-    save_oper_with_payload(id, text, false, 5.0, 6.0, before_id)
-}
-
-fn delete_oper(id: &str) -> UnitOperParams {
-    UnitOperParams::Delete { id: id.into() }
-}
-
-fn save_oper_with_payload(
-    id: &str,
-    text: &str,
-    proofread: bool,
-    x_coord: f64,
-    y_coord: f64,
-    before_id: Option<&str>,
-) -> UnitOperParams {
-    UnitOperParams::Save {
-        id: id.into(),
-        before_id: before_id.map(Into::into),
-        is_bubble: true,
-        is_proofread: proofread,
-        x_coord,
-        y_coord,
-        translated_text: Some(text.into()),
-        last_translator_id: Some("user-1".into()),
-        proofread_text: None,
-        last_proofreader_id: None,
-    }
-}
-
-fn seed_scope(mock: &Mock, total: i32, translated: i32, proofread: i32) {
-    //
-    mock.seed_workset(workset("workset-1", "team-1"));
-
-    mock.seed_comic(comic("comic-1", "workset-1"));
-
-    mock.seed_chapter(chapter(
-        "chapter-1",
-        "comic-1",
-        total,
-        translated,
-        proofread,
-    ));
-
-    mock.seed_page(page("page-1", total, translated, proofread));
-}
-
-fn sorted_unit_ids(units: &[UnitInfo]) -> Vec<String> {
-    //
-    let mut unit_infos = units.to_vec();
-
-    unit_infos.sort_by_key(|left| left.index);
-
-    unit_infos
-        .into_iter()
-        .map(|unit_info| unit_info.id)
-        .collect()
-}
-
-async fn wait_for_stage(mock: &Mock, stage: Stage, phase: StagePhase) {
-    //
-    for _ in 0..100 {
-        //
-        if mock.snapshot().chapters[0].stages.has_phase(stage, phase) {
-            return;
-        }
-
-        tokio::task::yield_now().await;
-    }
-
-    panic!("detached stage advancement did not finish");
-}
-
-fn assert_perm_error(error: BaseError) {
-    match error {
-        //
-        BaseError::Expected { variant, .. } => {
-            assert!(matches!(variant, ExpectedVariant::Perm));
-        }
-
-        BaseError::Unrecoverable { .. } => {
-            panic!("expected permission error");
-        }
-    }
-}
-
-fn assert_args_error(error: BaseError) {
-    match error {
-        //
-        BaseError::Expected { variant, .. } => {
-            assert!(matches!(variant, ExpectedVariant::Args));
-        }
-
-        BaseError::Unrecoverable { .. } => {
-            panic!("expected argument error");
-        }
+    AssignmentInfo {
+        id: "assignment-1".to_string(),
+        chapter_id: "chapter-1".to_string(),
+        user_id: "translator-1".to_string(),
+        user: None,
+        chapter: None,
+        roles,
+        created_at: current_time,
+        updated_at: current_time,
     }
 }

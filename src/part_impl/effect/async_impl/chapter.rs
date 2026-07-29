@@ -23,10 +23,10 @@ use crate::part::repo::system_mail::SystemMailRepo;
 use crate::value::chapter::{ChapterInclOpt, Stage};
 use crate::value::role::RoleField;
 
-/// Default include options for loading chapter data with its comic, workset, and team relations.
+// Default include options for loading chapter data with its comic, workset, and team relations.
 const CHAPTER_INCL_OPT: &[ChapterInclOpt] = &[ChapterInclOpt::ComicWorksetTeam];
 
-/// Maximum number of characters for truncated comic titles in notification messages.
+// Maximum number of characters for truncated comic titles in notification messages.
 const TITLE_LIMIT: usize = 15;
 
 /// Notifies next-phase assignees after one workflow stage completes.
@@ -87,32 +87,39 @@ pub async fn notify_reviewers_on_publish<C, R>(
         .await;
 }
 
-/// Notifies all reviewer assignees of a chapter about a workflow event.
-#[instrument(level = "info", skip_all)]
-async fn notify_reviewers<C, R>(
-    repo: &R,
-    chapter_id: &str,
-    workflow_label: String,
-) where
-    R: AssignmentRepo<C> + ChapterRepo<C> + SystemMailRepo<C>,
-{
-    let Some(chapter_info) = load_chapter(repo, chapter_id).await else {
-        return;
-    };
+// Returns the next-phase role and workflow label for a completed stage.
+// `Publish` does not generate a next-phase notification.
+fn next_phase_config(stage: Stage) -> Option<(RoleField, String)> {
+    match stage {
+        //
+        // Internal implementation detail.
+        Stage::RawProvide => {
+            Some((RoleField::TRANSLATOR, trl("mail-workflow-upload")))
+        }
 
-    let system_mail_entries = build_assignment_mails(
-        repo,
-        &chapter_info,
-        RoleField::REVIEWER,
-        workflow_label,
-    )
-    .await;
+        Stage::Translate => {
+            Some((RoleField::PROOFREADER, trl("mail-workflow-translate")))
+        }
 
-    send_batch(repo, chapter_id, system_mail_entries).await;
+        Stage::Proofread => {
+            Some((RoleField::TYPESETTER, trl("mail-workflow-proofread")))
+        }
+
+        Stage::TypesetRedraw => {
+            Some((RoleField::REVIEWER, trl("mail-workflow-typeset")))
+        }
+
+        Stage::Review => {
+            Some((RoleField::PUBLISHER, trl("mail-workflow-review")))
+        }
+
+        Stage::Publish => None,
+    }
 }
 
 /// Loads a chapter by ID with default include options, returning `None` on lookup failure.
 #[instrument(level = "info", skip_all)]
+// Loads the chapter and resolves include data used by notification templates.
 async fn load_chapter<C, R>(repo: &R, chapter_id: &str) -> Option<ChapterInfo>
 where
     R: ChapterRepo<C>,
@@ -126,6 +133,7 @@ where
 
     let Ok(chapter_info) = chapter_info else {
         //
+        // Internal implementation detail.
         tracing::warn!(
             chapter_id = %chapter_id,
             "[AsyncEffectDevelop::load_chapter] failed to look up chapter for notification",
@@ -139,6 +147,7 @@ where
 
 /// Builds a list of system mail forms for all assignments in a chapter matching a role.
 #[instrument(level = "info", skip_all)]
+// Fetches assignments and renders localized title, workflow, and assignee fields.
 async fn build_assignment_mails<C, R>(
     repo: &R,
     chapter_info: &ChapterInfo,
@@ -158,6 +167,7 @@ where
 
     let Ok(assignment_infos) = assignment_infos else {
         //
+        // Internal implementation detail.
         tracing::warn!(
             chapter_id = %chapter_info.id,
             "[AsyncEffectDevelop::build_assignment_mails] failed to list chapter assignments",
@@ -168,6 +178,7 @@ where
 
     let Some(args) = chapter_mail_args(chapter_info, workflow_label) else {
         //
+        // Internal implementation detail.
         tracing::warn!(
             chapter_id = %chapter_info.id,
             "[AsyncEffectDevelop::build_assignment_mails] missing chapter include chain",
@@ -191,12 +202,87 @@ where
         .collect()
 }
 
-/// Builds the i18n template arguments for a chapter progress notification mail.
+/// Sends a batch of system mail forms, logging a warning on failure.
+#[instrument(level = "info", skip_all)]
+// Submits prepared mails and logs the failure path for observability.
+async fn send_batch<C, R>(
+    repo: &R,
+    chapter_id: &str,
+    system_mail_entries: Vec<SystemMailEntry>,
+) where
+    R: SystemMailRepo<C>,
+{
+    if system_mail_entries.is_empty() {
+        return;
+    }
+
+    if repo
+        .run(&SendSystemMails {
+            entries: &system_mail_entries,
+        })
+        .await
+        .is_err()
+    {
+        tracing::warn!(
+            chapter_id = %chapter_id,
+            "[AsyncEffectDevelop::send_batch] failed to send chapter notification mails",
+        );
+    }
+}
+
+// Returns the reviewer workflow label for a completed stage, skipping typesetting.
+// Returns `None` when reviewers are not expected.
+fn reviewer_progress_label(stage: Stage) -> Option<String> {
+    match stage {
+        //
+        // Internal implementation detail.
+        Stage::RawProvide => Some(trl("mail-workflow-upload")),
+
+        Stage::Translate => Some(trl("mail-workflow-translate")),
+
+        Stage::Proofread => Some(trl("mail-workflow-proofread")),
+
+        Stage::TypesetRedraw => None,
+
+        Stage::Review => Some(trl("mail-workflow-review")),
+
+        Stage::Publish => None,
+    }
+}
+
+/// Notifies all reviewer assignees of a chapter about a workflow event.
+#[instrument(level = "info", skip_all)]
+// Loads current assignees, builds their mail payload, then dispatches notifications.
+async fn notify_reviewers<C, R>(
+    repo: &R,
+    chapter_id: &str,
+    workflow_label: String,
+) where
+    R: AssignmentRepo<C> + ChapterRepo<C> + SystemMailRepo<C>,
+{
+    let Some(chapter_info) = load_chapter(repo, chapter_id).await else {
+        return;
+    };
+
+    let system_mail_entries = build_assignment_mails(
+        repo,
+        &chapter_info,
+        RoleField::REVIEWER,
+        workflow_label,
+    )
+    .await;
+
+    send_batch(repo, chapter_id, system_mail_entries).await;
+}
+
+// Builds the i18n template arguments for a chapter progress notification mail.
+// Returns `None` when any required include (comic/workset/team) is missing.
 fn chapter_mail_args(
     chapter_info: &ChapterInfo,
     workflow_label: String,
 ) -> Option<HashMap<Cow<'static, str>, FluentValue<'static>>> {
     //
+    // Internal implementation detail.
     let comic_info = chapter_info.comic.as_ref()?;
 
     let workset_info = comic_info.workset.as_ref()?;
@@ -234,88 +320,17 @@ fn chapter_mail_args(
     Some(args)
 }
 
-/// Sends a batch of system mail forms, logging a warning on failure.
-#[instrument(level = "info", skip_all)]
-async fn send_batch<C, R>(
-    repo: &R,
-    chapter_id: &str,
-    system_mail_entries: Vec<SystemMailEntry>,
-) where
-    R: SystemMailRepo<C>,
-{
-    if system_mail_entries.is_empty() {
-        return;
-    }
-
-    if repo
-        .run(&SendSystemMails {
-            entries: &system_mail_entries,
-        })
-        .await
-        .is_err()
-    {
-        tracing::warn!(
-            chapter_id = %chapter_id,
-            "[AsyncEffectDevelop::send_batch] failed to send chapter notification mails",
-        );
-    }
-}
-
-/// Returns the next-phase role and workflow label for a completed stage.
-fn next_phase_config(stage: Stage) -> Option<(RoleField, String)> {
-    match stage {
-        //
-        Stage::RawProvide => {
-            Some((RoleField::TRANSLATOR, trl("mail-workflow-upload")))
-        }
-
-        Stage::Translate => {
-            Some((RoleField::PROOFREADER, trl("mail-workflow-translate")))
-        }
-
-        Stage::Proofread => {
-            Some((RoleField::TYPESETTER, trl("mail-workflow-proofread")))
-        }
-
-        Stage::TypesetRedraw => {
-            Some((RoleField::REVIEWER, trl("mail-workflow-typeset")))
-        }
-
-        Stage::Review => {
-            Some((RoleField::PUBLISHER, trl("mail-workflow-review")))
-        }
-
-        Stage::Publish => None,
-    }
-}
-
-/// Returns the reviewer workflow label for a completed stage, skipping typesetting.
-fn reviewer_progress_label(stage: Stage) -> Option<String> {
-    match stage {
-        //
-        Stage::RawProvide => Some(trl("mail-workflow-upload")),
-
-        Stage::Translate => Some(trl("mail-workflow-translate")),
-
-        Stage::Proofread => Some(trl("mail-workflow-proofread")),
-
-        Stage::TypesetRedraw => None,
-
-        Stage::Review => Some(trl("mail-workflow-review")),
-
-        Stage::Publish => None,
-    }
-}
-
-/// Truncates a title to a maximum number of characters, appending ellipsis if truncated.
+// Truncates a title to a maximum number of characters, appending ellipsis if truncated.
 fn truncate_title(title: &str, max_chars: usize) -> String {
     //
+    // Internal implementation detail.
     let mut chars = title.chars();
 
-    let short_title: String = chars.by_ref().take(max_chars).collect();
+    let short_title = chars.by_ref().take(max_chars).collect::<String>();
 
     match chars.next() {
         //
+        // Internal implementation detail.
         Some(_) => format!("{}...", short_title),
 
         None => short_title,

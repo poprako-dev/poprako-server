@@ -8,6 +8,7 @@ use crate::model::term::{TermEntry, TermInfoUpdate};
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 
+// Build a normalized args-level error object using the provided i18n message key.
 fn expected(message: &str) -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Args,
@@ -15,6 +16,7 @@ fn expected(message: &str) -> BaseError {
     }
 }
 
+// Trim a term source and reject empty values after normalization.
 fn normalize_source(source: String) -> BaseResult<String> {
     //
     let source = source.trim().to_string();
@@ -26,6 +28,7 @@ fn normalize_source(source: String) -> BaseResult<String> {
     accept(source)
 }
 
+// Normalize all targets and validate required presence, uniqueness and non-empty values.
 fn normalize_targets(targets: Vec<String>) -> BaseResult<Vec<String>> {
     //
     if targets.is_empty() {
@@ -54,6 +57,7 @@ fn normalize_targets(targets: Vec<String>) -> BaseResult<Vec<String>> {
     accept(normalized_targets)
 }
 
+// Normalize an optional comment value; empty content becomes `None`.
 fn normalize_comment(comment: Option<String>) -> Option<String> {
     comment.and_then(|comment| {
         //

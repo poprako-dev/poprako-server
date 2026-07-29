@@ -61,6 +61,7 @@ impl ImageHash {
 }
 
 impl Serialize for ImageHash {
+    // Serialize SHA-256 hash as padded RFC 4648 base64 string.
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -70,6 +71,7 @@ impl Serialize for ImageHash {
 }
 
 impl<'de> Deserialize<'de> for ImageHash {
+    // Deserialize image hash from canonical padded RFC 4648 base64.
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -199,8 +201,10 @@ impl ImageExt {
 }
 
 impl FromStr for ImageExt {
+    // Error returned when an image extension string cannot be parsed.
     type Err = ();
 
+    // Parse image extension from a string, returning error on failure.
     fn from_str(value: &str) -> Result<Self, Self::Err> {
         Self::parse(value).ok_or(())
     }

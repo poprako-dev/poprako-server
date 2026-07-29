@@ -1,68 +1,77 @@
-//! Data transfer objects for page unit use cases.
+//! Data transfer objects for page Unit use cases.
+//!
+//! Types in this module describe how client-supplied edit payloads are
+//! represented and how persisted Unit rows are projected back into API-facing
+//! response types.
+
+use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
+use poprako_util::i18n::trl;
 use poprako_util::time::ToUnixMilli;
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
-use crate::model::unit::{
-    UnitContent, UnitCounters, UnitDiff, UnitIdMapper, UnitInfo, UnitOper,
-};
+use crate::model::read::proj::unit::{UnitCounters, UnitInfo};
+use crate::model::shared::unit::{UnitCoord, UnitRevision, UnitTranslation};
+use crate::model::write::unit::UnitEdit;
+use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::util::Patch;
 
 #[cfg(test)]
 mod tests;
 
-/// Presentation-ready unit information.
+/// Presentation-ready visible Unit information.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UnitInfoVal {
     //
-    /// Unique unit identifier.
+    /// Permanent Unit ID.
     pub id: String,
-
-    /// Parent page identifier this unit belongs to.
+    /// Owning Page ID.
     pub page_id: String,
 
-    /// Whether this unit represents a speech bubble area on the page.
+    /// Whether the Unit identifies a speech bubble.
     pub is_bubble: bool,
-    /// Whether this unit has an approved proofread version.
+    /// Whether the current revision is approved.
     pub is_proofread: bool,
 
-    /// Horizontal coordinate of the unit bounding box on the page.
+    /// Horizontal page-relative coordinate.
     pub x_coord: f64,
-    /// Vertical coordinate of the unit bounding box on the page.
+    /// Vertical page-relative coordinate.
     pub y_coord: f64,
 
-    /// Translated text content, or [`None`] if not yet translated.
+    /// Current translated text.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub translated_text: Option<String>,
-    /// Identifier of the user who last modified the translation, or [`None`].
+    /// ID of the translator who last assigned translation content.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub last_translator_id: Option<String>,
 
-    /// Proofread text content, or [`None`] if not yet proofread.
+    /// Current proofread text.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub proofread_text: Option<String>,
-    /// Identifier of the user who last modified the proofread, or [`None`].
+    /// ID of the proofreader who last assigned revision content.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub last_proofreader_id: Option<String>,
 
-    /// Timestamp of unit creation, in milliseconds since Unix epoch.
+    /// Creation time as Unix milliseconds.
     pub created_at: i64,
-    /// Timestamp of the last unit update, in milliseconds since Unix epoch.
+    /// Last update time as Unix milliseconds.
     pub updated_at: i64,
 }
 
 impl From<UnitInfo> for UnitInfoVal {
+    // Map persisted unit info model into API value shape.
     fn from(model: UnitInfo) -> Self {
         Self {
             id: model.id,
             page_id: model.page_id,
             is_bubble: model.is_bubble,
             is_proofread: model.is_proofread,
-            x_coord: model.x_coord,
-            y_coord: model.y_coord,
+            x_coord: model.coord.x_coord,
+            y_coord: model.coord.y_coord,
             translated_text: model.translated_text,
             last_translator_id: model.last_translator_id,
             proofread_text: model.proofread_text,
@@ -73,259 +82,341 @@ impl From<UnitInfo> for UnitInfoVal {
     }
 }
 
-/// Input parameters for listing all units under one page.
+/// Input parameters for listing visible Units under one Page.
 #[derive(Debug, Deserialize)]
 pub struct ListPageUnitInfosParams {
-    /// Parent page identifier to list units for.
+    /// Page whose visible Units are listed.
     pub page_id: String,
 }
 
-/// Return value for listing units under one page.
+/// Return value for listing visible Units under one Page.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ListPageUnitInfosPayload {
     //
-    /// All units belonging to the requested page.
+    /// Visible Units in final linked-list order.
     pub unit_infos: Vec<UnitInfoVal>,
 
-    /// Total number of units on the page.
+    /// Number of visible Units.
     pub total_unit_count: i32,
-    /// Number of units that have a translation.
+    /// Number of visible translated Units.
     pub translated_unit_count: i32,
-    /// Number of units that have been proofread.
+    /// Number of visible proofread Units.
     pub proofread_unit_count: i32,
 }
 
-/// Input parameters for saving unit opers under one page.
-#[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
-pub struct SavePageUnitsParams {
-    //
-    /// Parent page identifier to save units under.
-    pub page_id: String,
-    /// Batch of unit operations to apply (create, save, delete).
-    pub diff: UnitDiffParams,
-}
-
-/// Return value for saving unit opers under one page.
-#[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
-pub struct SavePageUnitsPayload {
-    //
-    /// Mappings from client-assigned local IDs to server-assigned unit IDs.
-    pub local_id_mappers: Vec<UnitIdMapperVal>,
-
-    /// Total number of units on the page after the save.
-    pub total_unit_count: i32,
-    /// Number of translated units after the save.
-    pub translated_unit_count: i32,
-    /// Number of proofread units after the save.
-    pub proofread_unit_count: i32,
-}
-
-/// Transport-facing unit oper.
-#[derive(Debug, Clone, Deserialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
-pub struct UnitDiffParams {
-    //
-    /// Parent page identifier the operations apply to.
-    pub page_id: String,
-    /// Ordered list of unit operations to apply.
-    pub opers: Vec<UnitOperParams>,
-}
-
-/// Transport-facing unit oper event.
-#[derive(Debug, Clone, Deserialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
-#[serde(tag = "oper", rename_all = "snake_case", deny_unknown_fields)]
-pub enum UnitOperParams {
-    /// Create a new unit with client-assigned local id and content payload.
-    Create {
-        //
-        /// Client-assigned temporary identifier mapped to the server-assigned id after creation.
-        local_id: String,
-
-        /// Identifier of the unit to insert before in ordering, or [`None`] to append.
-        #[serde(default)]
-        before_id: Option<String>,
-
-        /// Whether this unit represents a speech bubble area.
-        is_bubble: bool,
-
-        /// Whether this unit should be marked as proofread immediately.
-        #[serde(default)]
-        is_proofread: bool,
-
-        /// Horizontal position of the unit on the page.
-        x_coord: f64,
-        /// Vertical position of the unit on the page.
-        y_coord: f64,
-
-        /// Initial translated text content, or [`None`].
-        translated_text: Option<String>,
-        /// Identifier of the user providing the initial translation, or [`None`].
-        last_translator_id: Option<String>,
-
-        /// Initial proofread text content, or [`None`].
-        proofread_text: Option<String>,
-        /// Identifier of the user providing the initial proofread, or [`None`].
-        last_proofreader_id: Option<String>,
-    },
-
-    /// Update an existing unit identified by server-assigned id with new content payload.
-    Save {
-        //
-        /// Server-assigned identifier of the unit to update.
-        id: String,
-
-        /// Identifier of the unit to insert before in ordering, or [`None`] to keep current position.
-        #[serde(default)]
-        before_id: Option<String>,
-
-        /// Whether this unit represents a speech bubble area.
-        is_bubble: bool,
-        /// Whether this unit has an approved proofread version.
-        is_proofread: bool,
-
-        /// Updated horizontal position of the unit on the page.
-        x_coord: f64,
-        /// Updated vertical position of the unit on the page.
-        y_coord: f64,
-
-        /// Updated translated text content, or [`None`] to leave unchanged.
-        translated_text: Option<String>,
-        /// Identifier of the user providing the updated translation, or [`None`].
-        last_translator_id: Option<String>,
-
-        /// Updated proofread text content, or [`None`] to leave unchanged.
-        proofread_text: Option<String>,
-        /// Identifier of the user providing the updated proofread, or [`None`].
-        last_proofreader_id: Option<String>,
-    },
-
-    /// Remove an existing unit by server-assigned id.
-    Delete {
-        /// Server-assigned identifier of the unit to remove.
-        id: String,
-    },
-}
-
-impl UnitDiffParams {
-    /// Converts transport-safe data into domain opers.
-    pub fn into_model(self) -> Option<UnitDiff> {
-        //
-        let mut opers = Vec::with_capacity(self.opers.len());
-
-        for unit_oper_data in self.opers {
-            //
-            let unit_oper = unit_oper_data.into_model();
-
-            opers.push(unit_oper);
-        }
-
-        Some(UnitDiff {
-            page_id: self.page_id,
-            opers,
-        })
-    }
-}
-
-impl UnitOperParams {
-    fn into_model(self) -> UnitOper {
-        match self {
-            //
-            UnitOperParams::Create {
-                local_id,
-                before_id,
-                is_bubble,
-                is_proofread,
-                x_coord,
-                y_coord,
-                translated_text,
-                last_translator_id,
-                proofread_text,
-                last_proofreader_id,
-            } => UnitOper::Create {
-                id: local_id,
-                payload: UnitContent {
-                    is_bubble,
-                    is_proofread,
-                    x_coord,
-                    y_coord,
-                    translated_text,
-                    last_translator_id,
-                    proofread_text,
-                    last_proofreader_id,
-                },
-                before_id,
-            },
-
-            //
-            UnitOperParams::Save {
-                id,
-                before_id,
-                is_bubble,
-                is_proofread,
-                x_coord,
-                y_coord,
-                translated_text,
-                last_translator_id,
-                proofread_text,
-                last_proofreader_id,
-            } => UnitOper::Save {
-                id,
-                payload: UnitContent {
-                    is_bubble,
-                    is_proofread,
-                    x_coord,
-                    y_coord,
-                    translated_text,
-                    last_translator_id,
-                    proofread_text,
-                    last_proofreader_id,
-                },
-                before_id,
-            },
-
-            UnitOperParams::Delete { id } => UnitOper::Delete { id },
-        }
-    }
-}
-
-/// Presentation-ready local-to-server id mapping.
-#[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
-pub struct UnitIdMapperVal {
-    //
-    /// Client-assigned temporary unit identifier.
-    pub local_id: String,
-    /// Server-assigned permanent unit identifier.
-    pub unit_id: String,
-}
-
-impl From<UnitIdMapper> for UnitIdMapperVal {
-    fn from(model: UnitIdMapper) -> Self {
-        Self {
-            local_id: model.local_id,
-            unit_id: model.unit_id,
-        }
-    }
-}
-
-impl SavePageUnitsPayload {
-    /// Builds a compact save response from mappings and counters.
+impl ListPageUnitInfosPayload {
+    /// Converts ordered persisted Units and counters into the response payload.
     pub fn from_parts(
-        local_id_mappers: Vec<UnitIdMapper>,
+        unit_infos: Vec<UnitInfo>,
         counters: UnitCounters,
     ) -> Self {
         Self {
-            local_id_mappers: local_id_mappers
+            unit_infos: unit_infos
                 .into_iter()
-                .map(UnitIdMapperVal::from)
+                .filter(|unit_info| unit_info.hidden_at.is_none())
+                .map(UnitInfoVal::from)
                 .collect(),
             total_unit_count: counters.total_unit_count,
             translated_unit_count: counters.translated_unit_count,
             proofread_unit_count: counters.proofread_unit_count,
         }
+    }
+}
+
+/// Input parameters for saving a batch of Unit edits.
+#[derive(Debug, Deserialize)]
+pub struct SavePageUnitEditsParams {
+    //
+    /// Page whose Units are being edited.
+    pub page_id: String,
+
+    /// Ordered batch of Unit edits.
+    pub edits: Vec<UnitEditVal>,
+}
+
+/// One transport-facing Unit edit.
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[serde(tag = "edit", rename_all = "snake_case", deny_unknown_fields)]
+pub enum UnitEditVal {
+    /// Creates one Unit with a request-local ID.
+    Create {
+        //
+        /// Request-local ID used for references within this batch.
+        local_id: String,
+
+        /// Unit before which the new Unit is inserted, or the tail when null.
+        #[serde(default)]
+        next_id: Option<String>,
+
+        /// Whether the Unit identifies a speech bubble.
+        is_bubble: bool,
+        /// Initial page-relative coordinate.
+        coord: UnitCoordVal,
+
+        /// Optional initial translation assignment.
+        #[serde(default)]
+        translation: Option<UnitTranslationVal>,
+        /// Optional initial revision assignment.
+        #[serde(default)]
+        revision: Option<UnitRevisionVal>,
+    },
+
+    /// Patches or restores one permanent Unit.
+    Patch {
+        //
+        /// Permanent target Unit ID.
+        id: String,
+
+        /// Three-state linked-list successor patch.
+        #[serde(default)]
+        #[cfg_attr(
+            feature = "swagger",
+            schema(value_type = Option<String>)
+        )]
+        next_id: Patch<String>,
+
+        /// Optional speech-bubble flag replacement.
+        #[serde(default)]
+        is_bubble: Option<bool>,
+        /// Optional coordinate replacement.
+        #[serde(default)]
+        coord: Option<UnitCoordVal>,
+
+        /// Three-state translation patch.
+        #[serde(default)]
+        #[cfg_attr(
+            feature = "swagger",
+            schema(value_type = Option<UnitTranslationVal>)
+        )]
+        translation: Patch<UnitTranslationVal>,
+        /// Three-state revision patch.
+        #[serde(default)]
+        #[cfg_attr(
+            feature = "swagger",
+            schema(value_type = Option<UnitRevisionVal>)
+        )]
+        revision: Patch<UnitRevisionVal>,
+    },
+
+    /// Soft-deletes one permanent Unit.
+    Delete {
+        /// Permanent target Unit ID.
+        id: String,
+    },
+}
+
+/// Page-relative Unit coordinates.
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[serde(deny_unknown_fields)]
+pub struct UnitCoordVal {
+    //
+    /// Horizontal page-relative coordinate.
+    pub x_coord: f64,
+    /// Vertical page-relative coordinate.
+    pub y_coord: f64,
+}
+
+impl From<UnitCoordVal> for UnitCoord {
+    // Convert API coordinate value into domain coordinate.
+    fn from(value: UnitCoordVal) -> Self {
+        Self {
+            x_coord: value.x_coord,
+            y_coord: value.y_coord,
+        }
+    }
+}
+
+/// Translation assignment accepted from the client.
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[serde(deny_unknown_fields)]
+pub struct UnitTranslationVal {
+    /// Replacement translated text.
+    pub translated_text: String,
+}
+
+/// Revision assignment accepted from the client.
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[serde(deny_unknown_fields)]
+pub struct UnitRevisionVal {
+    //
+    /// Replacement approval state.
+    pub is_proofread: bool,
+
+    /// Replacement proofread text.
+    #[serde(default)]
+    pub proofread_text: Option<String>,
+}
+
+/// Converts transport edits into domain Saves and Deletes.
+///
+/// The returned list preserves input order and maps request-local references.
+pub fn into_unit_edits<F>(
+    edits: Vec<UnitEditVal>,
+    user_id: &str,
+    mut gen_id: F,
+) -> BaseResult<Vec<UnitEdit>>
+where
+    F: FnMut() -> String,
+{
+    let mut local_id_map = HashMap::new();
+
+    for edit in &edits {
+        //
+        let UnitEditVal::Create { local_id, .. } = edit else {
+            continue;
+        };
+
+        validate_id(local_id)?;
+
+        let unit_id = gen_id();
+
+        if local_id_map.insert(local_id.clone(), unit_id).is_some() {
+            return Err(invalid_unit_edit_err());
+        }
+    }
+
+    let edits = edits
+        .into_iter()
+        .map(|edit| edit.into_model(user_id, &local_id_map))
+        .collect::<BaseResult<Vec<_>>>()?;
+
+    accept(edits)
+}
+
+impl UnitEditVal {
+    // Convert one transport edit operation into a repository edit command.
+    fn into_model(
+        self,
+        user_id: &str,
+        local_id_map: &HashMap<String, String>,
+    ) -> BaseResult<UnitEdit> {
+        match self {
+            //
+            Self::Create {
+                local_id,
+                next_id,
+                is_bubble,
+                coord,
+                translation,
+                revision,
+            } => {
+                //
+                let id = resolve_id(local_id, local_id_map)?;
+
+                let next_id = next_id
+                    .map(|next_id| resolve_id(next_id, local_id_map))
+                    .transpose()?;
+
+                let translation = translation.map(|value| UnitTranslation {
+                    translated_text: value.translated_text,
+                    last_translator_id: user_id.to_string(),
+                });
+
+                let revision = revision.map(|value| UnitRevision {
+                    is_proofread: value.is_proofread,
+                    proofread_text: value.proofread_text,
+                    last_proofreader_id: user_id.to_string(),
+                });
+
+                accept(UnitEdit::Create {
+                    id,
+                    next_id,
+                    is_bubble,
+                    coord: coord.into(),
+                    translation,
+                    revision,
+                })
+            }
+
+            Self::Patch {
+                id,
+                next_id,
+                is_bubble,
+                coord,
+                translation,
+                revision,
+            } => {
+                //
+                let id = resolve_id(id, local_id_map)?;
+
+                let next_id = resolve_patch_id(next_id, local_id_map)?;
+
+                accept(UnitEdit::Save {
+                    id,
+                    next_id,
+                    is_bubble,
+                    coord: coord.map(UnitCoord::from),
+                    translation: translation.map(|value| UnitTranslation {
+                        translated_text: value.translated_text,
+                        last_translator_id: user_id.to_string(),
+                    }),
+                    revision: revision.map(|value| UnitRevision {
+                        is_proofread: value.is_proofread,
+                        proofread_text: value.proofread_text,
+                        last_proofreader_id: user_id.to_string(),
+                    }),
+                })
+            }
+
+            Self::Delete { id } => accept(UnitEdit::Delete {
+                id: resolve_id(id, local_id_map)?,
+            }),
+        }
+    }
+}
+
+// Validate a unit edit local reference id is non-empty.
+fn validate_id(id: &str) -> BaseResult<()> {
+    //
+    if id.is_empty() {
+        return Err(invalid_unit_edit_err());
+    }
+
+    accept(())
+}
+
+// Construct the error returned for invalid unit edit payloads.
+fn invalid_unit_edit_err() -> BaseError {
+    BaseError::Expected {
+        variant: ExpectedVariant::Args,
+        message: trl("error-invalid-unit-oper"),
+    }
+}
+
+// Resolve a local reference id or return it as-is if it is already a real id.
+fn resolve_id(
+    id: String,
+    local_id_map: &HashMap<String, String>,
+) -> BaseResult<String> {
+    //
+    validate_id(&id)?;
+
+    match local_id_map.get(&id) {
+        //
+        Some(resolved_id) => accept(resolved_id.clone()),
+
+        None => accept(id),
+    }
+}
+
+// Resolve a patch id, handling Clear, Assign, and Skip variants.
+fn resolve_patch_id(
+    value: Patch<String>,
+    local_id_map: &HashMap<String, String>,
+) -> BaseResult<Patch<String>> {
+    match value {
+        //
+        Patch::Clear => accept(Patch::Clear),
+
+        Patch::Assign(id) => {
+            accept(Patch::Assign(resolve_id(id, local_id_map)?))
+        }
+
+        Patch::Skip => accept(Patch::Skip),
     }
 }

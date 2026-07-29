@@ -36,7 +36,7 @@ use crate::value::comic_archive::ComicArchiveMonth;
 mod tests;
 
 /// Exports selected retained UTC month slots for one team.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(repo))]
 pub async fn export<C, R>(
     (repo,): (&R,),
     token: UserToken,
@@ -92,7 +92,7 @@ where
 }
 
 /// Archive one active comic, its descendants, and all retained image keys.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(nucl, repo, prom))]
 pub async fn archive<N, C, R, P>(
     (nucl, repo, prom): (&N, &R, &P),
     token: UserToken,
@@ -159,7 +159,7 @@ where
                 ));
             }
 
-            let delete_tasks: Vec<Task<'_, String, TaskPayload>> = delete_ids
+            let delete_tasks = delete_ids
                 .iter()
                 .zip(delete_payloads.iter())
                 .map(|(id, payload)| Task {
@@ -167,7 +167,7 @@ where
                     payload,
                     delay: None,
                 })
-                .collect();
+                .collect::<Vec<Task<'_, String, TaskPayload>>>();
 
             prom.step(context, &DeferBatch::new(&delete_tasks)).await?;
 

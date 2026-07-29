@@ -99,6 +99,12 @@ def leading_attributes(node: tree_sitter.Node) -> list[tree_sitter.Node]:
             attributes.append(sibling)
             continue
 
+        # Comments may sit between an outer attribute and its item. They do
+        # not end the attribute run, and formatting checkers intentionally
+        # keep such comments attached to the item they describe.
+        if sibling.type in {"line_comment", "block_comment"}:
+            continue
+
         if not sibling.is_named:
             continue
 
@@ -903,7 +909,8 @@ def valid_self_test() -> list[str]:
         write_fixture(
             root,
             "src/lib.rs",
-            "mod parent;\nmod port;\nmod part_impl;\n#[cfg(test)] mod tests;\n",
+            "mod parent;\nmod port;\nmod part_impl;\n#[cfg(test)]\n"
+            "// Tests remain outside the production module graph.\nmod tests;\n",
         )
         write_fixture(
             root,

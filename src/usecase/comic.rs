@@ -65,7 +65,9 @@ use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 
 pub use list::list_infos;
 
+// Comic listing use cases (internal).
 mod list;
+/// Comic use-case test helpers.
 #[cfg(test)]
 pub mod tests;
 
@@ -80,7 +82,7 @@ pub mod tests;
 /// 5. Updates the comic's denormalised chapter counter and last-activity
 ///    timestamp.
 /// 6. Creates an ADMIN assignment on the new chapter for the caller.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(nucl, repo))]
 pub async fn create<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
@@ -230,7 +232,7 @@ where
 }
 
 /// Fetches a comic by ID with cover URL resolution.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(repo, image_pool))]
 pub async fn get_info<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
@@ -285,7 +287,7 @@ where
 }
 
 /// Updates a comic's title, author, and description.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(repo))]
 pub async fn update_info<C, R>(
     (repo,): (&R,),
     token: UserToken,
@@ -322,7 +324,7 @@ where
 }
 
 /// Reserves a new comic cover upload slot.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(nucl, repo, prom, image_pool))]
 pub async fn reserve_cover<N, C, R, P, I>(
     (nucl, repo, prom, image_pool): (&N, &R, &P, &I),
     token: UserToken,
@@ -413,7 +415,7 @@ where
 
             batch_delays.push(Some(Duration::from_secs(15 * 60)));
 
-            let batch_tasks: Vec<Task<'_, String, TaskPayload>> = batch_ids
+            let batch_tasks = batch_ids
                 .iter()
                 .zip(batch_payloads.iter())
                 .zip(batch_delays.iter())
@@ -422,7 +424,7 @@ where
                     payload,
                     delay: *delay,
                 })
-                .collect();
+                .collect::<Vec<Task<'_, String, TaskPayload>>>();
 
             prom.step(context, &DeferBatch::new(&batch_tasks)).await?;
 
@@ -460,7 +462,7 @@ where
 }
 
 /// Marks a reserved comic cover as successfully uploaded.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(nucl, repo, image_manager))]
 pub async fn mark_cover_uploaded<N, C, R, I>(
     (nucl, repo, image_manager): (&N, &R, &I),
     token: UserToken,
@@ -559,7 +561,7 @@ where
 }
 
 /// Deletes a comic and updates the parent workset counter.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(nucl, repo, prom))]
 pub async fn delete<N, C, R, P>(
     (nucl, repo, prom): (&N, &R, &P),
     token: UserToken,

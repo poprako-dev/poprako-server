@@ -20,6 +20,7 @@ pub enum MemberInvitationInclOpt {
 }
 
 impl InclOpt for MemberInvitationInclOpt {
+    // Expand include option to concrete dependency chain.
     fn path(self) -> &'static [Self] {
         match self {
             Self::Invitor => &[Self::Invitor],

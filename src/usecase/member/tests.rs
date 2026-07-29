@@ -34,15 +34,19 @@ use crate::test_util::{self, assert_expected_variant};
 use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
+// Member join flows and invitation conversion behavior.
 mod join_team;
+// Member role updates and deletion scenarios.
 mod mutate;
 
+// Build user-token fixture for member scenario authorization.
 fn token(user_id: &str) -> UserToken {
     UserToken {
         user_id: user_id.into(),
     }
 }
 
+// Build deterministic credentials for seeded test users.
 fn credential(user_id: &str) -> UserCredential {
     UserCredential {
         user_id: user_id.into(),
@@ -50,6 +54,7 @@ fn credential(user_id: &str) -> UserCredential {
     }
 }
 
+// Build a user fixture with baseline timestamps and avatar fields.
 fn user(id: &str, nickname: &str) -> UserInfo {
     //
     let time = test_util::now();
@@ -70,6 +75,7 @@ fn user(id: &str, nickname: &str) -> UserInfo {
     }
 }
 
+// Build a team fixture with baseline metadata.
 fn team(id: &str) -> TeamInfo {
     //
     let time = test_util::now();
@@ -88,6 +94,7 @@ fn team(id: &str) -> TeamInfo {
     }
 }
 
+// Build a member fixture with a specific role mask and nickname.
 fn member(
     id: &str,
     user_id: &str,
@@ -107,6 +114,7 @@ fn member(
     }
 }
 
+// Build create-member params for a user/team pair.
 fn create_params(user_id: &str, team_id: &str) -> CreateMemberParams {
     CreateMemberParams {
         user_id: user_id.into(),
@@ -115,6 +123,7 @@ fn create_params(user_id: &str, team_id: &str) -> CreateMemberParams {
     }
 }
 
+// Build list-member query params for a specific team.
 fn list_params(team_id: &str) -> ListMemberInfosParams {
     ListMemberInfosParams {
         owner_id: None,
@@ -127,6 +136,7 @@ fn list_params(team_id: &str) -> ListMemberInfosParams {
     }
 }
 
+// Build role-update params targeting a member.
 fn update_role_params(id: &str) -> UpdateMemberRolesParams {
     UpdateMemberRolesParams {
         id: id.into(),
@@ -134,6 +144,7 @@ fn update_role_params(id: &str) -> UpdateMemberRolesParams {
     }
 }
 
+// Seed an admin member used by privileged member operations.
 fn seed_admin(mock: &Mock) {
     mock.seed_member(member(
         "member-admin",

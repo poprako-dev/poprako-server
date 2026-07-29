@@ -16,6 +16,7 @@ pub fn expand_incl_opts<I>(incl_opts: &[I]) -> Vec<I>
 where
     I: InclOpt + Copy + 'static,
 {
+    // Keep include order deterministic while folding dependencies to avoid duplicate joins.
     let mut expanded_incl_opts = Vec::new();
 
     for incl_opt in incl_opts {
@@ -25,8 +26,8 @@ where
     expanded_incl_opts
 }
 
-/// Append the full dependency path for a single incl opt, expanding
-/// dependencies in order and deduplicating as we go.
+// Append the full dependency path for a single incl opt, expanding
+// dependencies in order and deduplicating as we go.
 fn push_path<I>(expanded_incl_opts: &mut Vec<I>, path: &[I])
 where
     I: InclOpt + Copy,
@@ -36,8 +37,8 @@ where
     }
 }
 
-/// Append a single incl opt to the expanded list if it is not already present,
-/// preserving insertion order.
+// Append a single incl opt to the expanded list if it is not already present,
+// preserving insertion order.
 fn push_unique<I>(expanded_incl_opts: &mut Vec<I>, incl_opt: I)
 where
     I: InclOpt + Copy,

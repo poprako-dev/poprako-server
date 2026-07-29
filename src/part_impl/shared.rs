@@ -13,6 +13,7 @@ use crate::result::{BaseError, BaseResult, accept};
 
 /// Result helpers for Diesel-backed shared internals.
 pub mod result;
+/// RDB test-container helpers.
 #[cfg(all(
     test,
     feature = "rdb",
@@ -20,7 +21,7 @@ pub mod result;
 ))]
 pub mod test_rdb;
 
-/// Internal type alias for the Diesel async connection pool.
+// Internal type alias for the Diesel async connection pool.
 type RdbPool = Pool<AsyncPgConnection>;
 
 /// A pooled async PostgreSQL connection obtained from the connection pool.

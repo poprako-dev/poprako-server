@@ -150,8 +150,24 @@ impl PagePermComplex {
     }
 }
 
-/// Verify the caller is assigned as `RAW_PROVIDER` or `REVIEWER` on the
-/// chapter, which is required for page image reservation.
+// Return a permission error when page image reservation requires assignment.
+fn page_reserve_role_err() -> BaseError {
+    BaseError::Expected {
+        variant: ExpectedVariant::Perm,
+        message: trl("error-page-reserve-role-required"),
+    }
+}
+
+// Return a permission error when page image upload confirmation requires assignment.
+fn page_upload_role_err() -> BaseError {
+    BaseError::Expected {
+        variant: ExpectedVariant::Perm,
+        message: trl("error-page-upload-role-required"),
+    }
+}
+
+// Verify the caller is assigned as `RAW_PROVIDER` or `REVIEWER` on the
+// chapter, which is required for page image reservation.
 async fn check_reserve_role<P>(
     proxy: &mut P,
     user_id: &str,
@@ -181,8 +197,8 @@ where
     accept(())
 }
 
-/// Verify the caller is assigned as `RAW_PROVIDER` on the chapter, which
-/// is required for page image upload confirmation.
+// Verify the caller is assigned as `RAW_PROVIDER` on the chapter, which
+// is required for page image upload confirmation.
 async fn check_upload_role<P>(
     proxy: &mut P,
     user_id: &str,
@@ -212,7 +228,7 @@ where
     accept(())
 }
 
-/// Verify the caller has any assignment on the chapter (any role qualifies).
+// Verify the caller has any assignment on the chapter (any role qualifies).
 async fn check_any_assignment<P>(
     proxy: &mut P,
     user_id: &str,
@@ -236,20 +252,4 @@ where
     }
 
     accept(())
-}
-
-/// Construct a "page reserve role required" permission error.
-fn page_reserve_role_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Perm,
-        message: trl("error-page-reserve-role-required"),
-    }
-}
-
-/// Construct a "page upload role required" permission error.
-fn page_upload_role_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Perm,
-        message: trl("error-page-upload-role-required"),
-    }
 }

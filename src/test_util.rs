@@ -13,9 +13,9 @@ pub mod fixture;
 
 /// Asserts that `err` is a [`RootError::Expected`] whose variant matches `expected`.
 /// Panics with a descriptive message on mismatch.
-pub fn assert_expected_variant(err: BaseError, expected: ExpectedVariant) {
+pub fn assert_expected_variant(err_: BaseError, expected: ExpectedVariant) {
     //
-    let BaseError::Expected { variant, .. } = err else {
+    let BaseError::Expected { variant, .. } = err_ else {
         panic!("expected RootError::Expected");
     };
 
@@ -31,7 +31,7 @@ pub fn assert_expected_variant(err: BaseError, expected: ExpectedVariant) {
 
 /// Asserts that `err` is an expected error with the exact variant and i18n key.
 pub fn assert_expected_message(
-    err: BaseError,
+    err_: BaseError,
     expected: ExpectedVariant,
     trl_key: &str,
 ) {
@@ -39,7 +39,7 @@ pub fn assert_expected_message(
     let BaseError::Expected {
         variant,
         message: actual,
-    } = err
+    } = err_
     else {
         panic!("expected RootError::Expected");
     };

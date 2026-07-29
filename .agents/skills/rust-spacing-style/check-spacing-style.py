@@ -19,6 +19,11 @@ from tree_sitter import Language, Node, Parser
 import tree_sitter_rust
 
 
+PROJECT_ROOT = Path(__file__).parents[3]
+sys.path.insert(0, str(PROJECT_ROOT / "fmt"))
+from production_source import production_source
+
+
 IGNORED_DIRS = {
     ".git",
     ".hg",
@@ -72,9 +77,10 @@ class FileAnalysis:
 
 
 class RustSpacingChecker:
-    def __init__(self) -> None:
+    def __init__(self, root: Path | None = None) -> None:
         language = Language(tree_sitter_rust.language())
         self.parser = Parser(language)
+        self.root = root or Path.cwd().resolve()
 
     def analyze_file(
         self,
@@ -82,7 +88,7 @@ class RustSpacingChecker:
         *,
         build_fixes: bool = False,
     ) -> FileAnalysis:
-        source = path.read_bytes()
+        source = production_source(path, self.root)
 
         return self.analyze_source(
             path,
@@ -834,7 +840,7 @@ def main() -> int:
 
     args = parser.parse_args()
 
-    checker = RustSpacingChecker()
+    checker = RustSpacingChecker(Path.cwd().resolve())
     files = iter_rs_files(args.paths)
 
     if not args.fix:
@@ -870,10 +876,11 @@ def main() -> int:
     for path in files:
         try:
             source = path.read_bytes()
+            analysis_source = production_source(path, checker.root)
 
             analysis = checker.analyze_source(
                 path,
-                source,
+                analysis_source,
                 build_fixes=True,
             )
         except UnicodeDecodeError as error:

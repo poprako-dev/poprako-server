@@ -16,6 +16,7 @@ use crate::part_impl::repo::mock_impl::{
 use crate::result::{BaseError, BaseResult, accept};
 use crate::value::member::MemberInclOpt;
 
+// Internal implementation of `find_user`.
 fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
     state
         .users
@@ -24,6 +25,7 @@ fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
         .cloned()
 }
 
+// Internal implementation of `find_team`.
 fn find_team(state: &MockState, team_id: &str) -> Option<TeamInfo> {
     state
         .teams
@@ -32,12 +34,25 @@ fn find_team(state: &MockState, team_id: &str) -> Option<TeamInfo> {
         .cloned()
 }
 
+// Resolve one member by primary key and return expected error when missing.
+fn get_member_by_id(state: &MockState, id: &str) -> BaseResult<MemberInfo> {
+    state
+        .members
+        .iter()
+        .find(|member| member.id == id)
+        .cloned()
+        .ok_or_else(|| expected("error-member-not-found"))
+}
+
+// Internal implementation of `apply_user_incl`.
 fn apply_user_incl(
     state: &MockState,
     member_info: &mut MemberInfo,
     include_user: bool,
 ) {
     //
+    // Internal implementation detail.
+    // Internal implementation detail.
     member_info.user = None;
 
     if include_user {
@@ -45,12 +60,15 @@ fn apply_user_incl(
     }
 }
 
+// Internal implementation of `apply_team_incl`.
 fn apply_team_incl(
     state: &MockState,
     member_info: &mut MemberInfo,
     include_team: bool,
 ) {
     //
+    // Internal implementation detail.
+    // Internal implementation detail.
     member_info.team = None;
 
     if include_team {
@@ -58,12 +76,14 @@ fn apply_team_incl(
     }
 }
 
-/// Inserts a new member record, rejecting duplicates by id or by the same user+team pair.
+// Insert a new member record after duplicate checks on id and (user, team).
 fn create_member(
     state: &mut MockState,
     entry: &MemberEntry,
 ) -> BaseResult<MemberInfo> {
     //
+    // Internal implementation detail.
+    // Internal implementation detail.
     if state.members.iter().any(|member| member.id == entry.id) {
         return Err(expected("error-already-exists"));
     }
@@ -90,6 +110,7 @@ fn create_member(
     accept(member)
 }
 
+// Internal implementation of `find_member_by_user_id_and_team_id`.
 fn find_member_by_user_id_and_team_id(
     state: &MockState,
     user_id: &str,
@@ -103,14 +124,18 @@ fn find_member_by_user_id_and_team_id(
 }
 
 impl<'a> Run<FindMemberInfo<'a>> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `run`.
     async fn run(
         &self,
         oper: &FindMemberInfo<'a>,
     ) -> BaseResult<Option<MemberInfo>> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
         match oper {
@@ -121,21 +146,15 @@ impl<'a> Run<FindMemberInfo<'a>> for Mock {
     }
 }
 
-fn get_member_by_id(state: &MockState, id: &str) -> BaseResult<MemberInfo> {
-    state
-        .members
-        .iter()
-        .find(|member| member.id == id)
-        .cloned()
-        .ok_or_else(|| expected("error-member-not-found"))
-}
-
+// Internal implementation of `get_member_info`.
 fn get_member_info(
     state: &MockState,
     id: &str,
     incls: &[MemberInclOpt],
 ) -> BaseResult<MemberInfo> {
     //
+    // Internal implementation detail.
+    // Internal implementation detail.
     let mut member_info = get_member_by_id(state, id)?;
 
     let include_user = incls.contains(&MemberInclOpt::User);
@@ -149,13 +168,18 @@ fn get_member_info(
     accept(member_info)
 }
 
+// Internal implementation of `list_member_infos`.
 fn list_member_infos(
     state: &MockState,
     spec: &MemberListSpec,
 ) -> Vec<MemberInfo> {
     //
+    // Internal implementation detail.
+    // Internal implementation detail.
     let (offset, limit, incls, mut member_infos) = match spec {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         MemberListSpec::User {
             owner_id,
             incl_opt,
@@ -211,6 +235,8 @@ fn list_member_infos(
 
     for member_info in &mut member_infos {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         apply_user_incl(state, member_info, include_user);
 
         apply_team_incl(state, member_info, include_team);
@@ -224,10 +250,14 @@ fn list_member_infos(
 
     match offset >= member_infos.len() {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         true => Vec::new(),
 
         false => {
             //
+            // Internal implementation detail.
+            // Internal implementation detail.
             let end = std::cmp::min(offset + limit, member_infos.len());
 
             member_infos[offset..end].to_vec()
@@ -235,6 +265,7 @@ fn list_member_infos(
     }
 }
 
+// Internal implementation of `list_member_infos_by_user`.
 fn list_member_infos_by_user(
     state: &MockState,
     user_id: &str,
@@ -248,18 +279,24 @@ fn list_member_infos_by_user(
 }
 
 impl<'a> Run<ListMemberInfos<'a>> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `run`.
     async fn run(
         &self,
         oper: &ListMemberInfos<'a>,
     ) -> BaseResult<Vec<MemberInfo>> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
         match oper {
             //
+            // Internal implementation detail.
+            // Internal implementation detail.
             ListMemberInfos::Spec { spec } => {
                 accept(list_member_infos(&state, spec))
             }
@@ -272,14 +309,18 @@ impl<'a> Run<ListMemberInfos<'a>> for Mock {
 }
 
 impl<'a, 'b> Run<GetMemberInfo<'a, 'b>> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `run`.
     async fn run(
         &self,
         oper: &GetMemberInfo<'a, 'b>,
     ) -> BaseResult<MemberInfo> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
         match oper {
@@ -291,9 +332,11 @@ impl<'a, 'b> Run<GetMemberInfo<'a, 'b>> for Mock {
 }
 
 impl<'a> Step<CreateMember<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -304,9 +347,11 @@ impl<'a> Step<CreateMember<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<UpdateMember<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -314,11 +359,15 @@ impl<'a> Step<UpdateMember<'a>, MockContext> for Mock {
     ) -> BaseResult<()> {
         match oper {
             //
+            // Internal implementation detail.
+            // Internal implementation detail.
             UpdateMember::UserNickname {
                 user_id,
                 user_nickname,
             } => {
                 //
+                // Internal implementation detail.
+                // Internal implementation detail.
                 context
                     .state
                     .members
@@ -333,6 +382,8 @@ impl<'a> Step<UpdateMember<'a>, MockContext> for Mock {
 
             UpdateMember::Role { update } => {
                 //
+                // Internal implementation detail.
+                // Internal implementation detail.
                 let member_info = context
                     .state
                     .members
@@ -349,9 +400,11 @@ impl<'a> Step<UpdateMember<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<ListMemberInfos<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -359,6 +412,8 @@ impl<'a> Step<ListMemberInfos<'a>, MockContext> for Mock {
     ) -> BaseResult<Vec<MemberInfo>> {
         match oper {
             //
+            // Internal implementation detail.
+            // Internal implementation detail.
             ListMemberInfos::Spec { spec } => {
                 accept(list_member_infos(&context.state, spec))
             }
@@ -371,9 +426,11 @@ impl<'a> Step<ListMemberInfos<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<FindMemberInfo<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -392,9 +449,11 @@ impl<'a> Step<FindMemberInfo<'a>, MockContext> for Mock {
 }
 
 impl<'a, 'b> Step<GetMemberInfo<'a, 'b>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -409,9 +468,11 @@ impl<'a, 'b> Step<GetMemberInfo<'a, 'b>, MockContext> for Mock {
 }
 
 impl<'a> Step<ListMemberInfosExcluded<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -419,6 +480,8 @@ impl<'a> Step<ListMemberInfosExcluded<'a>, MockContext> for Mock {
     ) -> BaseResult<Vec<MemberInfo>> {
         match oper {
             //
+            // Internal implementation detail.
+            // Internal implementation detail.
             ListMemberInfosExcluded::User { user_id } => {
                 accept(list_member_infos_by_user(&context.state, user_id))
             }
@@ -437,15 +500,19 @@ impl<'a> Step<ListMemberInfosExcluded<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<DeleteMember<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &DeleteMember<'a>,
     ) -> BaseResult<()> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let position = context
             .state
             .members

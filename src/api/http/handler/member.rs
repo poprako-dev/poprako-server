@@ -25,6 +25,7 @@ use crate::usecase;
 use crate::value::member::MemberInclOpt;
 
 #[cfg(test)]
+// Member handler tests validate request parameter shape and response mapping.
 mod tests;
 
 /// Query for the current-user memberships list endpoint (`/members/me`).

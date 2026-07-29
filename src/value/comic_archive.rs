@@ -213,6 +213,8 @@ pub struct ComicArchiveMonth {
     pub end: OffsetDateTime,
 }
 
+// Keep archive month parsing and bounds calculation centralized in this model.
+
 impl ComicArchiveMonth {
     /// Parses distinct retained month labels and resolves their UTC bounds.
     pub fn parse_retained(
@@ -252,6 +254,7 @@ impl ComicArchiveMonth {
         accept(months)
     }
 
+    // Construct a month slot from validated label, year, and month components.
     fn new(label: String, year: i32, month: u8) -> BaseResult<Self> {
         //
         let month = Month::try_from(month)
@@ -283,6 +286,15 @@ impl ComicArchiveMonth {
     }
 }
 
+// Build an args error with the given i18n key.
+fn args(key: &str) -> BaseError {
+    BaseError::Expected {
+        variant: ExpectedVariant::Args,
+        message: trl(key),
+    }
+}
+
+// Parse a "YYYY-MM" label string into its year and month components.
 fn parse_label(label: &str) -> BaseResult<(i32, u8)> {
     //
     let Some((year, month)) = label.split_once('-') else {
@@ -302,11 +314,4 @@ fn parse_label(label: &str) -> BaseResult<(i32, u8)> {
         .map_err(|_| args("error-invalid-comic-archive-month"))?;
 
     accept((year, month))
-}
-
-fn args(key: &str) -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        message: trl(key),
-    }
 }

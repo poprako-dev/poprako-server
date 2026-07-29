@@ -14,6 +14,7 @@ use crate::part_impl::repo::mock_impl::{
 };
 use crate::result::{BaseError, BaseResult, accept};
 
+// Internal implementation of `get_workset_info`.
 fn get_workset_info(state: &MockState, id: &str) -> BaseResult<WorksetInfo> {
     state
         .worksets
@@ -23,11 +24,14 @@ fn get_workset_info(state: &MockState, id: &str) -> BaseResult<WorksetInfo> {
         .ok_or_else(|| expected("error-workset-not-found"))
 }
 
+// Internal implementation of `list_workset_infos`.
 fn list_workset_infos(
     state: &MockState,
     oper: &ListWorksetInfos<'_>,
 ) -> Vec<WorksetInfo> {
     //
+    // Internal implementation detail.
+    // Internal implementation detail.
     let mut workset_infos = state
         .worksets
         .iter()
@@ -43,10 +47,14 @@ fn list_workset_infos(
 
     match offset >= workset_infos.len() {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         true => Vec::new(),
 
         false => {
             //
+            // Internal implementation detail.
+            // Internal implementation detail.
             let end = std::cmp::min(offset + limit, workset_infos.len());
 
             workset_infos[offset..end].to_vec()
@@ -54,11 +62,14 @@ fn list_workset_infos(
     }
 }
 
+// Internal implementation of `update_workset`.
 fn update_workset(
     state: &mut MockState,
     update: &WorksetInfoUpdate,
 ) -> BaseResult<()> {
     //
+    // Internal implementation detail.
+    // Internal implementation detail.
     let workset_info = state
         .worksets
         .iter_mut()
@@ -75,11 +86,15 @@ fn update_workset(
 }
 
 impl<'a> Run<GetWorksetInfo<'a>> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `run`.
     async fn run(&self, oper: &GetWorksetInfo<'a>) -> BaseResult<WorksetInfo> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
         get_workset_info(&state, oper.id)
@@ -87,14 +102,18 @@ impl<'a> Run<GetWorksetInfo<'a>> for Mock {
 }
 
 impl<'a> Run<ListWorksetInfos<'a>> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `run`.
     async fn run(
         &self,
         oper: &ListWorksetInfos<'a>,
     ) -> BaseResult<Vec<WorksetInfo>> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
         accept(list_workset_infos(&state, oper))
@@ -102,11 +121,15 @@ impl<'a> Run<ListWorksetInfos<'a>> for Mock {
 }
 
 impl<'a> Run<UpdateWorkset<'a>> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `run`.
     async fn run(&self, oper: &UpdateWorkset<'a>) -> BaseResult<()> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let mut state = self.state.lock().unwrap();
 
         update_workset(&mut state, oper.update)
@@ -114,9 +137,11 @@ impl<'a> Run<UpdateWorkset<'a>> for Mock {
 }
 
 impl<'a> Step<GetWorksetInfo<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -127,9 +152,11 @@ impl<'a> Step<GetWorksetInfo<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<ListWorksetInfos<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -140,9 +167,11 @@ impl<'a> Step<ListWorksetInfos<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<GetWorksetInfoExcluded<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -153,9 +182,11 @@ impl<'a> Step<GetWorksetInfoExcluded<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<ListWorksetInfosExcluded<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -174,15 +205,19 @@ impl<'a> Step<ListWorksetInfosExcluded<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<CreateWorkset<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &CreateWorkset<'a>,
     ) -> BaseResult<WorksetInfo> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         if context
             .state
             .worksets
@@ -212,15 +247,19 @@ impl<'a> Step<CreateWorkset<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<DeleteWorkset<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &DeleteWorkset<'a>,
     ) -> BaseResult<()> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let position = context
             .state
             .worksets
@@ -272,15 +311,19 @@ impl<'a> Step<DeleteWorkset<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<AllocWorksetComicIndex<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &AllocWorksetComicIndex<'a>,
     ) -> BaseResult<i32> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         // verify the workset exists
         context
             .state
@@ -301,15 +344,19 @@ impl<'a> Step<AllocWorksetComicIndex<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<UpdateWorksetComicCount<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &UpdateWorksetComicCount<'a>,
     ) -> BaseResult<()> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let workset_info = context
             .state
             .worksets

@@ -19,6 +19,7 @@ use crate::part_impl::shared::RdbContext;
 use crate::part_impl::shared::result::diesel;
 use crate::result::{BaseError, BaseResult, accept};
 
+/// RDB prom repository integration tests.
 #[cfg(all(test, feature = "rdb", feature = "prom_impl"))]
 pub mod tests;
 
@@ -59,6 +60,7 @@ impl<R> RdbPromRepo<R> {
 pub struct PollPending;
 
 impl Oper for PollPending {
+    // Internal type alias for `Output`.
     type Output = Vec<LocalMessageRow>;
 }
 
@@ -68,6 +70,7 @@ impl Oper for PollPending {
 /// Pending), `false` if another worker claimed it first.
 pub struct ClaimPending<'a> {
     //
+    // Internal state field `id`.
     /// ID of the local-message row to claim.
     id: &'a str,
     /// Lease observed by the poller.
@@ -82,12 +85,14 @@ impl<'a> ClaimPending<'a> {
 }
 
 impl Oper for ClaimPending<'_> {
+    // Internal type alias for `Output`.
     type Output = bool;
 }
 
 /// Mark a record as successfully completed.
 pub struct CompleteMessage<'a> {
     //
+    // Internal state field `id`.
     /// ID of the local-message row to mark complete.
     id: &'a str,
     /// Lease owned by the worker attempt.
@@ -102,12 +107,14 @@ impl<'a> CompleteMessage<'a> {
 }
 
 impl Oper for CompleteMessage<'_> {
+    // Internal type alias for `Output`.
     type Output = ();
 }
 
 /// Mark a record as dead with an error message.
 pub struct FailMessage<'a> {
     //
+    // Internal state field `id`.
     /// ID of the local-message row to mark as failed.
     id: &'a str,
     /// Lease owned by the worker attempt.
@@ -128,12 +135,14 @@ impl<'a> FailMessage<'a> {
 }
 
 impl Oper for FailMessage<'_> {
+    // Internal type alias for `Output`.
     type Output = ();
 }
 
 /// Reset one failed processing attempt back to pending for a later retry.
 pub struct RetryMessage<'a> {
     //
+    // Internal state field `id`.
     /// ID of the local-message row to retry.
     id: &'a str,
     /// Lease owned by the worker attempt.
@@ -162,6 +171,7 @@ impl<'a> RetryMessage<'a> {
 }
 
 impl Oper for RetryMessage<'_> {
+    // Internal type alias for `Output`.
     type Output = ();
 }
 
@@ -179,12 +189,14 @@ impl<'a> ResetStuck<'a> {
 }
 
 impl Oper for ResetStuck<'_> {
+    // Internal type alias for `Output`.
     type Output = ();
 }
 
 /// Deletes completed and dead records after their independent retention cutoffs.
 pub struct PurgeCompleted<'a> {
     //
+    // Internal state field `completed_before`.
     /// Cutoff timestamp for completed records to purge.
     completed_before: &'a OffsetDateTime,
     /// Cutoff timestamp for dead records to purge.
@@ -205,6 +217,7 @@ impl<'a> PurgeCompleted<'a> {
 }
 
 impl Oper for PurgeCompleted<'_> {
+    // Internal type alias for `Output`.
     type Output = usize;
 }
 
@@ -214,15 +227,18 @@ impl<R> Step<PollPending, RdbContext> for RdbPromRepo<R>
 where
     R: Sync,
 {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut RdbContext,
         _oper: &PollPending,
     ) -> BaseResult<Vec<LocalMessageRow>> {
         //
+        // Internal implementation detail.
         use diesel::prelude::*;
 
         use diesel_async::RunQueryDsl;
@@ -274,15 +290,18 @@ impl<'a, R> Step<ClaimPending<'a>, RdbContext> for RdbPromRepo<R>
 where
     R: Sync,
 {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &ClaimPending<'a>,
     ) -> BaseResult<bool> {
         //
+        // Internal implementation detail.
         use diesel::prelude::*;
 
         use diesel_async::RunQueryDsl;
@@ -313,15 +332,18 @@ impl<'a, R> Step<CompleteMessage<'a>, RdbContext> for RdbPromRepo<R>
 where
     R: Sync,
 {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &CompleteMessage<'a>,
     ) -> BaseResult<()> {
         //
+        // Internal implementation detail.
         use diesel::prelude::*;
 
         use diesel_async::RunQueryDsl;
@@ -352,15 +374,18 @@ impl<'a, R> Step<FailMessage<'a>, RdbContext> for RdbPromRepo<R>
 where
     R: Sync,
 {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &FailMessage<'a>,
     ) -> BaseResult<()> {
         //
+        // Internal implementation detail.
         use diesel::prelude::*;
 
         use diesel_async::RunQueryDsl;
@@ -391,15 +416,18 @@ impl<'a, R> Step<RetryMessage<'a>, RdbContext> for RdbPromRepo<R>
 where
     R: Sync,
 {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &RetryMessage<'a>,
     ) -> BaseResult<()> {
         //
+        // Internal implementation detail.
         use diesel::prelude::*;
 
         use diesel_async::RunQueryDsl;
@@ -433,15 +461,18 @@ impl<'a, R> Step<ResetStuck<'a>, RdbContext> for RdbPromRepo<R>
 where
     R: Sync,
 {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &ResetStuck<'a>,
     ) -> BaseResult<()> {
         //
+        // Internal implementation detail.
         use diesel::prelude::*;
 
         use diesel_async::RunQueryDsl;
@@ -492,15 +523,18 @@ impl<'a, R> Step<PurgeCompleted<'a>, RdbContext> for RdbPromRepo<R>
 where
     R: Sync,
 {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &PurgeCompleted<'a>,
     ) -> BaseResult<usize> {
         //
+        // Internal implementation detail.
         use diesel::prelude::*;
 
         use diesel_async::RunQueryDsl;

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::fmt::Write as _;
 
 use crate::model::page::PageInfo;
-use crate::model::unit::UnitInfo;
+use crate::model::read::proj::unit::UnitInfo;
 
 /// Chapter export formatting rules.
 pub struct ChapterExportComplex;
@@ -58,8 +58,8 @@ impl ChapterExportComplex {
                     output,
                     "----------------[{}]----------------[{:.4},{:.4},{}]",
                     index + 1,
-                    unit_info.x_coord,
-                    unit_info.y_coord,
+                    unit_info.coord.x_coord,
+                    unit_info.coord.y_coord,
                     group
                 )
                 .unwrap_or_else(|error| {
@@ -84,22 +84,14 @@ impl ChapterExportComplex {
     }
 }
 
-/// Build a LabelPlus image filename from a page's stored index and image
-/// file extension (defaults to `jpg` when the image key has no extension).
+// Build a LabelPlus image filename from a page's stored index and image
+// file extension (defaults to `jpg` when the image key has no extension).
 fn label_plus_image_name(page_info: &PageInfo) -> String {
-    //
-    let ext = page_info
-        .image_key
-        .as_deref()
-        .and_then(|image_key| image_key.rsplit_once('.').map(|(_, ext)| ext))
-        .filter(|ext| !ext.is_empty())
-        .unwrap_or("jpg");
-
-    format!("{:03}.{}", page_info.index, ext)
+    format!("{:03}.{}", page_info.index, page_info.image_ext.suffix())
 }
 
-/// Return the proofread text if non-empty, falling back to translated text
-/// if no proofread content is available.
+// Return the proofread text if non-empty, falling back to translated text
+// if no proofread content is available.
 fn select_main_text(unit_info: &UnitInfo) -> Option<&str> {
     unit_info
         .proofread_text

@@ -1,5 +1,6 @@
 // create(create)(positive): creation normalizes text and increments term_count.
 // create(create)(negative): duplicate normalized targets are rejected.
+// create(create)(negative): an empty target list is rejected in the business layer.
 // list_infos(list_infos)(positive): fuzzy source does not search targets or comments.
 // update_info(update_info)(positive): update replaces fields and touches the parent.
 // delete(delete)(positive): deletion removes the term and decrements term_count.
@@ -17,12 +18,14 @@ use crate::test_util::fixture::team;
 use crate::value::role::{RoleField, RoleMask};
 
 fn token(user_id: &str) -> UserToken {
+    // Build a token fixture for term-level authorisation and mutation checks.
     UserToken {
         user_id: user_id.into(),
     }
 }
 
 fn member(user_id: &str, roles: RoleMask) -> MemberInfo {
+    // Build a team member fixture with explicit proofreader role bits.
     MemberInfo {
         id: format!("member-{}", user_id),
         user_id: user_id.into(),
@@ -37,6 +40,7 @@ fn member(user_id: &str, roles: RoleMask) -> MemberInfo {
 
 fn termbase() -> TermbaseInfo {
     //
+    // Build a shared glossary container fixture.
     let time = OffsetDateTime::now_utc();
 
     TermbaseInfo {
@@ -105,6 +109,31 @@ async fn create_rejects_duplicate_normalized_targets() {
 
     let params = CreateTermParams {
         targets: vec!["Target".into(), " target ".into()],
+        ..create_params()
+    };
+
+    let error = create((&mock, &mock), token("user-1"), params)
+        .await
+        .unwrap_err();
+
+    assert_expected_variant(error, ExpectedVariant::Args);
+
+    let snapshot = mock.snapshot();
+
+    assert!(snapshot.terms.is_empty());
+
+    assert_eq!(snapshot.termbases[0].term_count, 0);
+}
+
+#[tokio::test]
+async fn create_rejects_empty_targets() {
+    //
+    let mock = Mock::new();
+
+    seed_proofreader_scope(&mock);
+
+    let params = CreateTermParams {
+        targets: Vec::new(),
         ..create_params()
     };
 

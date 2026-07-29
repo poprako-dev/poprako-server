@@ -45,12 +45,14 @@ use crate::util::next_snowflake_id;
 
 pub use reserve::reserve_chapter_pages;
 
+// Page reservation workflow and related orchestration.
 mod reserve;
 #[cfg(test)]
+// Unit tests for page metadata and upload reservation flows.
 mod tests;
 
 /// Reserves a replacement image upload slot for one page.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(nucl, repo, prom, image_pool))]
 pub async fn reserve_image<N, C, R, P, I>(
     (nucl, repo, prom, image_pool): (&N, &R, &P, &I),
     token: UserToken,
@@ -206,7 +208,7 @@ where
                 delay: Some(Duration::from_secs(20 * 60)),
             };
 
-            let image_tasks: Vec<Task<'_, String, TaskPayload>> = task_ids
+            let image_tasks = task_ids
                 .iter()
                 .zip(task_payloads.iter())
                 .zip(task_delays.iter())
@@ -215,7 +217,7 @@ where
                     payload,
                     delay: *delay,
                 })
-                .collect();
+                .collect::<Vec<Task<'_, String, TaskPayload>>>();
 
             prom.step(context, &DeferBatch::new(&image_tasks)).await?;
 
@@ -265,7 +267,7 @@ where
 }
 
 /// Lists pages under one chapter.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(repo, image_pool))]
 pub async fn list_infos<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
@@ -312,7 +314,7 @@ where
 }
 
 /// Fetches one page by ID.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(repo, image_pool))]
 pub async fn get_info<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
@@ -348,7 +350,7 @@ where
 }
 
 /// Marks one page image as uploaded.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(nucl, repo, image_manager))]
 pub async fn mark_image_uploaded<N, C, R, I>(
     (nucl, repo, image_manager): (&N, &R, &I),
     token: UserToken,
@@ -445,7 +447,7 @@ where
 }
 
 /// Deletes all pages under one chapter.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(nucl, repo, prom))]
 pub async fn delete<N, C, R, P>(
     (nucl, repo, prom): (&N, &R, &P),
     token: UserToken,
@@ -513,7 +515,7 @@ where
             }
         }
 
-        let delete_tasks: Vec<Task<'_, String, TaskPayload>> = delete_ids
+        let delete_tasks = delete_ids
             .iter()
             .zip(delete_payloads.iter())
             .map(|(id, payload)| Task {
@@ -521,7 +523,7 @@ where
                 payload,
                 delay: None,
             })
-            .collect();
+            .collect::<Vec<Task<'_, String, TaskPayload>>>();
 
         prom.step(context, &DeferBatch::new(&delete_tasks)).await?;
 

@@ -1,4 +1,4 @@
-/// Shared utility helpers for complex-layer operations.
+// Shared utility helpers for complex-layer operations.
 mod util;
 
 // TODO: Separate pure domain rules from proxy-driven permission checks and
@@ -34,7 +34,7 @@ pub mod team;
 pub mod term;
 /// Termbase permission checks and cascade rules.
 pub mod termbase;
-/// Unit ordering and diff business rules.
+/// Unit ordering, mutation, and permission rules.
 pub mod unit;
 /// User business rules and permission checks.
 pub mod user;

@@ -11,7 +11,7 @@ use crate::model::chapter::{
     ChapterEntry, ChapterInfo, ChapterInfoListSpec, ChapterInfoUpdate,
     ChapterStageUpdate,
 };
-use crate::model::unit::UnitCounterDelta;
+use crate::model::read::proj::unit::UnitCounterDelta;
 use crate::part_impl::repo::rdb_impl::entity::chapter::{
     ChapterAspect, ChapterRow, ChapterRowEntry,
 };
@@ -22,16 +22,6 @@ use crate::part_impl::shared::RdbConn;
 use crate::part_impl::shared::result::{diesel, expected};
 use crate::result::{BaseError, BaseResult, accept};
 use crate::value::chapter::{ChapterInclOpt, Stage};
-
-/// Converts a single `ChapterRow` into a `ChapterInfo`.
-fn row_into_info(row: ChapterRow) -> BaseResult<ChapterInfo> {
-    row.try_into()
-}
-
-/// Converts a vector of `ChapterRow` values into `ChapterInfo`.
-fn rows_into_infos(rows: Vec<ChapterRow>) -> BaseResult<Vec<ChapterInfo>> {
-    rows.into_iter().map(row_into_info).collect()
-}
 
 /// Queries a single chapter row by ID and populates its includes.
 #[instrument(level = "info", err(Debug), skip_all)]
@@ -480,4 +470,14 @@ pub async fn delete(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
         .map_err(diesel)?;
 
     accept(())
+}
+
+// Converts a single `ChapterRow` into a `ChapterInfo`.
+fn row_into_info(row: ChapterRow) -> BaseResult<ChapterInfo> {
+    row.try_into()
+}
+
+// Converts a vector of `ChapterRow` values into `ChapterInfo`.
+fn rows_into_infos(rows: Vec<ChapterRow>) -> BaseResult<Vec<ChapterInfo>> {
+    rows.into_iter().map(row_into_info).collect()
 }

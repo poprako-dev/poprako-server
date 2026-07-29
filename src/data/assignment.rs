@@ -47,22 +47,8 @@ pub struct AssignmentInfoVal {
     pub updated_at: i64,
 }
 
-impl From<AssignmentInfo> for AssignmentInfoVal {
-    fn from(model: AssignmentInfo) -> Self {
-        Self {
-            id: model.id,
-            chapter_id: model.chapter_id,
-            user_id: model.user_id,
-            user: None,
-            chapter: None,
-            roles: model.roles,
-            created_at: model.created_at.to_unix_milli(),
-            updated_at: model.updated_at.to_unix_milli(),
-        }
-    }
-}
-
 impl AssignmentInfoVal {
+    /// Build a response value and eagerly resolve included user/chapter references.
     /// Converts an assignment model into a presentation-ready value,
     /// resolving included user avatar when present.
     pub async fn from_model<P>(
@@ -95,6 +81,22 @@ impl AssignmentInfoVal {
             created_at: model.created_at.to_unix_milli(),
             updated_at: model.updated_at.to_unix_milli(),
         })
+    }
+}
+
+impl From<AssignmentInfo> for AssignmentInfoVal {
+    // Convert one persisted assignment into API value shape.
+    fn from(model: AssignmentInfo) -> Self {
+        Self {
+            id: model.id,
+            chapter_id: model.chapter_id,
+            user_id: model.user_id,
+            user: None,
+            chapter: None,
+            roles: model.roles,
+            created_at: model.created_at.to_unix_milli(),
+            updated_at: model.updated_at.to_unix_milli(),
+        }
     }
 }
 
@@ -139,8 +141,10 @@ pub struct ListAssignmentInfosParams {
 }
 
 impl TryInto<AssignmentInfoListSpec> for ListAssignmentInfosParams {
+    // Validate exclusive list mode parameters before converting to domain spec.
     type Error = BaseError;
 
+    // Convert validated query parameters into the domain list spec.
     fn try_into(self) -> BaseResult<AssignmentInfoListSpec> {
         //
         let invalid_args = || BaseError::Expected {

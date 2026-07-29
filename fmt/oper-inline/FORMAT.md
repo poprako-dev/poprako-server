@@ -10,5 +10,4 @@ uv run fmt/oper-inline/check.py
 uv run fmt/oper-inline/check.py --self-test
 ```
 
-`--fix-safe` only rewrites a local oper when its next statement contains
 exactly one reference and that reference is a direct call argument.

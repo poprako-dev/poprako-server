@@ -16,7 +16,6 @@ use crate::result::BaseError;
 const PREFIX: &str = "rdb-test-term-domain-";
 
 /// Verifies term array unique and fuzzy roundtrip.
-/// Verifies term array unique and fuzzy roundtrip.
 pub async fn term_array_unique_and_fuzzy_roundtrip(shared: RdbCore) {
     //
     let comic_fixture = test_shared::seed_comic(&shared, PREFIX).await;
@@ -114,27 +113,6 @@ pub async fn term_array_unique_and_fuzzy_roundtrip(shared: RdbCore) {
         .await;
 
     assert!(duplicate_result.is_err());
-
-    let invalid_targets_entry = TermEntry {
-        id: format!("{}invalid-targets", PREFIX),
-        source: "Villain".into(),
-        targets: Vec::new(),
-        ..term_entry.clone()
-    };
-
-    let invalid_targets_result = drive
-        .coord(async |context| {
-            repo.step(
-                context,
-                &CreateTerm {
-                    entry: &invalid_targets_entry,
-                },
-            )
-            .await
-        })
-        .await;
-
-    assert!(invalid_targets_result.is_err());
 
     test_shared::cleanup(&shared, PREFIX).await.ok().unwrap();
 

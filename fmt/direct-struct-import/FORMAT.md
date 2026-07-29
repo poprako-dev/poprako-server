@@ -13,5 +13,4 @@ uv run fmt/direct-struct-import/check.py --layer model
 uv run fmt/direct-struct-import/check.py --layer data
 ```
 
-`--fix` removes whole legacy imports that contain only `*_model` or
 `*_data` module aliases. It never rewrites a mixed import or a type use.

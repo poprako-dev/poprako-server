@@ -92,7 +92,7 @@ impl MemberInvitationPermComplex {
         check_user_is_team_admin(proxy, user_id, &team_id).await
     }
 
-    /// Resolve the owning team ID from an invitation ID.
+    // Resolve the owning team ID from an invitation ID.
     async fn resolve_team_id<P>(
         proxy: &mut P,
         invitation_id: &str,

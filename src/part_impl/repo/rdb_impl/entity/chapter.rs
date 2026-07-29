@@ -42,6 +42,33 @@ pub struct ChapterRow {
     pub f_updated_at: OffsetDateTime,
 }
 
+impl TryFrom<ChapterRow> for ChapterInfo {
+    type Error = BaseError;
+
+    fn try_from(row: ChapterRow) -> Result<Self, Self::Error> {
+        //
+        let stages = workflow_stage_mask_from_row(&row)?;
+
+        Ok(Self {
+            id: row.f_id,
+            comic_id: row.f_comic_id,
+            comic: None,
+            is_pinned: row.f_is_pinned,
+            index: row.f_index,
+            subtitle: row.f_subtitle,
+            page_count: row.f_page_count,
+            total_unit_count: row.f_total_unit_count,
+            translated_unit_count: row.f_translated_unit_count,
+            proofread_unit_count: row.f_proofread_unit_count,
+            stages,
+            creator_id: row.f_creator_id,
+            creator: None,
+            created_at: row.f_created_at,
+            updated_at: row.f_updated_at,
+        })
+    }
+}
+
 /// Insertable struct for creating a new record in the `t_chapter` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_chapter)]
@@ -59,6 +86,24 @@ pub struct ChapterRowEntry<'a> {
 
     pub f_created_at: OffsetDateTime,
     pub f_updated_at: OffsetDateTime,
+}
+
+impl<'a> From<&'a ChapterEntry> for ChapterRowEntry<'a> {
+    fn from(chapter_entry: &'a ChapterEntry) -> Self {
+        //
+        let now = OffsetDateTime::now_utc();
+
+        Self {
+            f_id: &chapter_entry.id,
+            f_comic_id: &chapter_entry.comic_id,
+            f_is_pinned: chapter_entry.is_pinned,
+            f_index: chapter_entry.index,
+            f_subtitle: &chapter_entry.subtitle,
+            f_creator_id: &chapter_entry.creator_id,
+            f_created_at: now,
+            f_updated_at: now,
+        }
+    }
 }
 
 /// Aspect struct for updating specific fields of a chapter record identified by id.
@@ -178,6 +223,34 @@ impl<'a> ChapterAspect<'a> {
     }
 }
 
+/// Convert an optional one-shot timestamp to a `StagePhase`:
+/// `Some` maps to `Completed`, `None` maps to `Pending`.
+fn phase_from_one_shot(timestamp: Option<OffsetDateTime>) -> StagePhase {
+    match timestamp {
+        //
+        Some(_) => StagePhase::Completed,
+
+        None => StagePhase::Pending,
+    }
+}
+
+/// Convert optional start/completed timestamps to a `StagePhase`:
+/// `(Some, Some)` -> `Completed`, `(Some, None)` -> `Active`,
+/// `(None, None)` -> `Pending`.
+fn phase_from_two_step(
+    started_at: Option<OffsetDateTime>,
+    completed_at: Option<OffsetDateTime>,
+) -> StagePhase {
+    match (started_at, completed_at) {
+        //
+        (_, Some(_)) => StagePhase::Completed,
+
+        (Some(_), None) => StagePhase::Active,
+
+        (None, None) => StagePhase::Pending,
+    }
+}
+
 /// Resolve a one-shot stage (RawProvide, Review, Publish) to its timestamp:
 /// `Some(updated_at)` when completed, `None` when pending.
 fn one_shot_timestamp(
@@ -219,34 +292,6 @@ fn two_step_timestamps(
     }
 }
 
-/// Convert an optional one-shot timestamp to a `StagePhase`:
-/// `Some` maps to `Completed`, `None` maps to `Pending`.
-fn phase_from_one_shot(timestamp: Option<OffsetDateTime>) -> StagePhase {
-    match timestamp {
-        //
-        Some(_) => StagePhase::Completed,
-
-        None => StagePhase::Pending,
-    }
-}
-
-/// Convert optional start/completed timestamps to a `StagePhase`:
-/// `(Some, Some)` -> `Completed`, `(Some, None)` -> `Active`,
-/// `(None, None)` -> `Pending`.
-fn phase_from_two_step(
-    started_at: Option<OffsetDateTime>,
-    completed_at: Option<OffsetDateTime>,
-) -> StagePhase {
-    match (started_at, completed_at) {
-        //
-        (_, Some(_)) => StagePhase::Completed,
-
-        (Some(_), None) => StagePhase::Active,
-
-        (None, None) => StagePhase::Pending,
-    }
-}
-
 /// Build a `StageMask` from a `ChapterRow` by converting each column-pair into
 /// its corresponding `StagePhase`.
 fn workflow_stage_mask_from_row(
@@ -277,49 +322,4 @@ fn workflow_stage_mask_from_row(
         )?;
 
     Ok(stages)
-}
-
-impl TryFrom<ChapterRow> for ChapterInfo {
-    type Error = BaseError;
-
-    fn try_from(row: ChapterRow) -> Result<Self, Self::Error> {
-        //
-        let stages = workflow_stage_mask_from_row(&row)?;
-
-        Ok(Self {
-            id: row.f_id,
-            comic_id: row.f_comic_id,
-            comic: None,
-            is_pinned: row.f_is_pinned,
-            index: row.f_index,
-            subtitle: row.f_subtitle,
-            page_count: row.f_page_count,
-            total_unit_count: row.f_total_unit_count,
-            translated_unit_count: row.f_translated_unit_count,
-            proofread_unit_count: row.f_proofread_unit_count,
-            stages,
-            creator_id: row.f_creator_id,
-            creator: None,
-            created_at: row.f_created_at,
-            updated_at: row.f_updated_at,
-        })
-    }
-}
-
-impl<'a> From<&'a ChapterEntry> for ChapterRowEntry<'a> {
-    fn from(chapter_entry: &'a ChapterEntry) -> Self {
-        //
-        let now = OffsetDateTime::now_utc();
-
-        Self {
-            f_id: &chapter_entry.id,
-            f_comic_id: &chapter_entry.comic_id,
-            f_is_pinned: chapter_entry.is_pinned,
-            f_index: chapter_entry.index,
-            f_subtitle: &chapter_entry.subtitle,
-            f_creator_id: &chapter_entry.creator_id,
-            f_created_at: now,
-            f_updated_at: now,
-        }
-    }
 }

@@ -15,6 +15,7 @@ use crate::part_impl::repo::mock_impl::{
 };
 use crate::result::{BaseError, BaseResult, accept};
 
+// Internal implementation of `get_info`.
 fn get_info(state: &MockState, id: &str) -> BaseResult<TermInfo> {
     state
         .terms
@@ -24,6 +25,7 @@ fn get_info(state: &MockState, id: &str) -> BaseResult<TermInfo> {
         .ok_or_else(|| expected("error-term-not-found"))
 }
 
+// Internal implementation of `source_conflicts`.
 fn source_conflicts(
     state: &MockState,
     id: Option<&str>,
@@ -37,8 +39,11 @@ fn source_conflicts(
     })
 }
 
+// Internal implementation of `list_infos`.
 fn list_infos(state: &MockState, spec: &TermInfoListSpec) -> Vec<TermInfo> {
     //
+    // Internal implementation detail.
+    // Internal implementation detail.
     let mut term_infos = state
         .terms
         .iter()
@@ -48,6 +53,8 @@ fn list_infos(state: &MockState, spec: &TermInfoListSpec) -> Vec<TermInfo> {
 
     if let Some(fuzzy_source) = &spec.fuzzy_source {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let fuzzy_source = fuzzy_source.to_lowercase();
 
         term_infos.retain(|term_info| {
@@ -65,11 +72,15 @@ fn list_infos(state: &MockState, spec: &TermInfoListSpec) -> Vec<TermInfo> {
 }
 
 impl<'a> Run<GetTermInfo<'a>> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `run`.
     async fn run(&self, oper: &GetTermInfo<'a>) -> BaseResult<TermInfo> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
         get_info(&state, oper.id)
@@ -77,11 +88,15 @@ impl<'a> Run<GetTermInfo<'a>> for Mock {
 }
 
 impl<'a> Run<ListTermInfos<'a>> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `run`.
     async fn run(&self, oper: &ListTermInfos<'a>) -> BaseResult<Vec<TermInfo>> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
         accept(list_infos(&state, oper.spec))
@@ -89,15 +104,19 @@ impl<'a> Run<ListTermInfos<'a>> for Mock {
 }
 
 impl<'a> Step<CreateTerm<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &CreateTerm<'a>,
     ) -> BaseResult<TermInfo> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         if source_conflicts(
             &context.state,
             None,
@@ -136,9 +155,11 @@ impl<'a> Step<CreateTerm<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<GetTermInfoExcluded<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -149,15 +170,19 @@ impl<'a> Step<GetTermInfoExcluded<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<LockTerm<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &LockTerm<'a>,
     ) -> BaseResult<()> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         get_info(&context.state, oper.id)?;
 
         accept(())
@@ -165,15 +190,19 @@ impl<'a> Step<LockTerm<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<UpdateTerm<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &UpdateTerm<'a>,
     ) -> BaseResult<()> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let current = get_info(&context.state, &oper.update.id)?;
 
         if source_conflicts(
@@ -205,15 +234,19 @@ impl<'a> Step<UpdateTerm<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<DeleteTerm<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &DeleteTerm<'a>,
     ) -> BaseResult<()> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let position = context
             .state
             .terms
@@ -228,15 +261,19 @@ impl<'a> Step<DeleteTerm<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<DeleteTerms<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &DeleteTerms<'a>,
     ) -> BaseResult<()> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         context
             .state
             .terms

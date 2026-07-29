@@ -1,179 +1,180 @@
-// unit_diff_params_into_model(UnitDiffParams::into_model)(positive): minimal create defaults optional state and content.
-// unit_diff_params_into_model(UnitDiffParams::into_model)(positive): create and save preserve supplied complete content.
-// unit_diff_params_rejects_legacy_or_mixed_identifiers(UnitDiffParams)(negative): legacy and mixed create-save identifiers are rejected.
-
 use super::*;
 
-use crate::model::unit::UnitOper;
+use serde_json::json;
+
+use crate::model::write::unit::UnitEdit;
 
 #[test]
-fn unit_diff_params_into_model_defaults_minimal_create() {
+fn patch_fields_distinguish_missing_null_and_value() {
     //
-    let value = serde_json::json!({
-        "page_id": "page-1",
-        "opers": [{
-            "oper": "create",
-            "local_id": "local-1",
-            "is_bubble": true,
-            "x_coord": 1.0,
-            "y_coord": 2.0
-        }]
-    });
-
-    let unit_diff_params: UnitDiffParams =
-        serde_json::from_value(value).ok().unwrap();
-
-    let unit_diff = unit_diff_params.into_model().unwrap();
-
-    match &unit_diff.opers[0] {
-        //
-        UnitOper::Create {
-            id: local_id,
-            payload,
-            before_id,
-        } => {
-            //
-            assert_eq!(local_id, "local-1");
-
-            assert!(before_id.is_none());
-
-            assert!(payload.is_bubble);
-
-            assert!(!payload.is_proofread);
-
-            assert!(payload.translated_text.is_none());
-
-            assert!(payload.last_translator_id.is_none());
-
-            assert!(payload.proofread_text.is_none());
-
-            assert!(payload.last_proofreader_id.is_none());
-        }
-
-        UnitOper::Save { .. } | UnitOper::Delete { .. } => {
-            panic!("expected create oper");
-        }
-    }
-}
-
-#[test]
-fn unit_diff_params_into_model_preserves_create_and_save_content() {
-    //
-    let value = serde_json::json!({
-        "page_id": "page-1",
-        "opers": [
-            {
-                "oper": "create",
-                "local_id": "local-1",
-                "before_id": "unit-a",
-                "is_bubble": true,
-                "is_proofread": true,
-                "x_coord": 1.0,
-                "y_coord": 2.0,
-                "translated_text": "translated",
-                "last_translator_id": "user-1",
-                "proofread_text": "proofread",
-                "last_proofreader_id": "user-2"
+    let edits = serde_json::from_value::<Vec<UnitEditVal>>(json!([
+        {
+            "edit": "patch",
+            "id": "unit-1"
+        },
+        {
+            "edit": "patch",
+            "id": "unit-1",
+            "next_id": null,
+            "translation": null,
+            "revision": null
+        },
+        {
+            "edit": "patch",
+            "id": "unit-1",
+            "next_id": "unit-2",
+            "translation": {
+                "translated_text": "translated"
             },
-            {
-                "oper": "save",
-                "id": "unit-a",
-                "is_bubble": false,
-                "is_proofread": false,
-                "x_coord": 3.0,
-                "y_coord": 4.0,
-                "translated_text": null,
-                "last_translator_id": null,
-                "proofread_text": null,
-                "last_proofreader_id": null
+            "revision": {
+                "is_proofread": true,
+                "proofread_text": "proofread"
             }
-        ]
-    });
-
-    let unit_diff_params: UnitDiffParams =
-        serde_json::from_value(value).ok().unwrap();
-
-    let unit_diff = unit_diff_params.into_model().unwrap();
-
-    match &unit_diff.opers[0] {
-        //
-        UnitOper::Create {
-            payload, before_id, ..
-        } => {
-            //
-            assert_eq!(before_id.as_deref(), Some("unit-a"));
-
-            assert!(payload.is_proofread);
-
-            assert_eq!(payload.translated_text.as_deref(), Some("translated"));
-
-            assert_eq!(payload.last_translator_id.as_deref(), Some("user-1"));
-
-            assert_eq!(payload.proofread_text.as_deref(), Some("proofread"));
-
-            assert_eq!(payload.last_proofreader_id.as_deref(), Some("user-2"));
         }
+    ]))
+    .unwrap();
 
-        UnitOper::Save { .. } | UnitOper::Delete { .. } => {
-            panic!("expected create oper");
-        }
-    }
+    let edits =
+        into_unit_edits(edits, "editor-1", || "unused".to_string()).unwrap();
 
-    match &unit_diff.opers[1] {
-        //
-        UnitOper::Save { id, payload, .. } => {
-            //
-            assert_eq!(id, "unit-a");
+    let UnitEdit::Save {
+        next_id,
+        translation,
+        revision,
+        ..
+    } = &edits[0]
+    else {
+        panic!("patch must become Save");
+    };
 
-            assert!(!payload.is_bubble);
+    assert!(matches!(next_id, Patch::Skip));
 
-            assert!(payload.translated_text.is_none());
-        }
+    assert!(matches!(translation, Patch::Skip));
 
-        UnitOper::Create { .. } | UnitOper::Delete { .. } => {
-            panic!("expected save oper");
-        }
-    }
+    assert!(matches!(revision, Patch::Skip));
+
+    let UnitEdit::Save {
+        next_id,
+        translation,
+        revision,
+        ..
+    } = &edits[1]
+    else {
+        panic!("patch must become Save");
+    };
+
+    assert!(matches!(next_id, Patch::Clear));
+
+    assert!(matches!(translation, Patch::Clear));
+
+    assert!(matches!(revision, Patch::Clear));
+
+    let UnitEdit::Save {
+        next_id,
+        translation,
+        revision,
+        ..
+    } = &edits[2]
+    else {
+        panic!("patch must become Save");
+    };
+
+    assert!(matches!(
+        next_id,
+        Patch::Assign(id) if id == "unit-2"
+    ));
+
+    assert!(matches!(
+        translation,
+        Patch::Assign(value)
+            if value.last_translator_id == "editor-1"
+    ));
+
+    assert!(matches!(
+        revision,
+        Patch::Assign(value)
+            if value.last_proofreader_id == "editor-1"
+    ));
 }
 
 #[test]
-fn unit_diff_params_rejects_legacy_or_mixed_identifiers() {
+fn create_requires_structure_and_resolves_local_references() {
     //
-    let invalid_opers = [
-        serde_json::json!({
-            "oper": "save",
-            "local_id": "local-1",
-            "is_bubble": true,
-            "is_proofread": false,
-            "x_coord": 1.0,
-            "y_coord": 2.0
-        }),
-        serde_json::json!({
-            "oper": "create",
-            "local_id": "local-1",
-            "id": "unit-a",
-            "is_bubble": true,
-            "x_coord": 1.0,
-            "y_coord": 2.0
-        }),
-        serde_json::json!({
-            "oper": "save",
-            "is_bubble": true,
-            "is_proofread": false,
-            "x_coord": 1.0,
-            "y_coord": 2.0
-        }),
-    ];
+    let missing_coord = serde_json::from_value::<Vec<UnitEditVal>>(json!([
+        {
+            "edit": "create",
+            "local_id": "local-a",
+            "is_bubble": true
+        }
+    ]));
 
-    for invalid_oper in invalid_opers {
+    assert!(missing_coord.is_err());
+
+    let edits = serde_json::from_value::<Vec<UnitEditVal>>(json!([
+        {
+            "edit": "create",
+            "local_id": "local-a",
+            "next_id": "local-b",
+            "is_bubble": true,
+            "coord": {"x_coord": 1.0, "y_coord": 2.0}
+        },
+        {
+            "edit": "create",
+            "local_id": "local-b",
+            "is_bubble": false,
+            "coord": {"x_coord": 3.0, "y_coord": 4.0}
+        },
+        {
+            "edit": "patch",
+            "id": "local-a",
+            "translation": {"translated_text": "text"}
+        }
+    ]))
+    .unwrap();
+
+    let mut next_id = 0;
+
+    let edits = into_unit_edits(edits, "editor-1", || {
         //
-        let value = serde_json::json!({
-            "page_id": "page-1",
-            "opers": [invalid_oper]
-        });
+        next_id += 1;
 
-        let result = serde_json::from_value::<UnitDiffParams>(value);
+        format!("server-{}", next_id)
+    })
+    .unwrap();
 
-        assert!(result.is_err());
-    }
+    assert!(matches!(
+        &edits[0],
+        UnitEdit::Create {
+            id,
+            next_id: Some(anchor),
+            ..
+        } if id == "server-1" && anchor == "server-2"
+    ));
+
+    assert!(matches!(
+        &edits[2],
+        UnitEdit::Save { id, .. } if id == "server-1"
+    ));
+}
+
+#[test]
+fn conversion_rejects_duplicate_local_ids() {
+    //
+    let duplicate = serde_json::from_value::<Vec<UnitEditVal>>(json!([
+        {
+            "edit": "create",
+            "local_id": "local-a",
+            "is_bubble": true,
+            "coord": {"x_coord": 1.0, "y_coord": 2.0}
+        },
+        {
+            "edit": "create",
+            "local_id": "local-a",
+            "is_bubble": false,
+            "coord": {"x_coord": 3.0, "y_coord": 4.0}
+        }
+    ]))
+    .unwrap();
+
+    assert!(into_unit_edits(duplicate, "editor-1", String::new).is_err());
 }

@@ -1,13 +1,6 @@
 // it_05 — Unit save: basic creation, counts, export, import/export.
 //
-// NOTE: Minimal passing version. Complex unit save scenarios (before_id
-// insert, move, concurrent writes) are deferred — the server's per-unit
-// index update loop has a known unique-constraint limitation when shifting
-// unit positions.
-//
-// Covers test-plan: F1 (create bubble units), F10 (import/export).
-//
-// Status: IMPLEMENTED (minimal). F2-F9 NOT YET COVERED.
+// Covers F1/F2 creation and linked ordering plus F10 import/export.
 
 import assert from "node:assert/strict";
 
@@ -43,24 +36,15 @@ export async function runIt05Module(ctx: RunCtx): Promise<void> {
 
     // ---------- F1. create 5 bubble units on p0 ----------
 
-    const f1Opers = Array.from({ length: 5 }, (_, i) =>
+    const f1Edits = Array.from({ length: 5 }, (_, i) =>
         newBubbleUnit(`p0_lu_0${i + 1}`, 0.1 * (i + 1), 0.1 * (i + 1)),
     );
 
-    const f1Save = await savePageUnits(trans01.api, p0Id, f1Opers);
+    const f1Save = await savePageUnits(trans01.api, p0Id, f1Edits);
 
-    assert.equal(f1Save.local_id_mappers.length, 5);
     assert.equal(f1Save.total_unit_count, 5);
     assert.equal(f1Save.translated_unit_count, 0);
     assert.equal(f1Save.proofread_unit_count, 0);
-
-    for (let i = 0; i < 5; i++) {
-        const mapper = f1Save.local_id_mappers[i]!;
-
-        assert.equal(mapper.local_id, `p0_lu_0${i + 1}`);
-        assert.ok(mapper.unit_id);
-        assert.notEqual(mapper.unit_id, mapper.local_id);
-    }
 
     const mainAfterF1 = await getChapter(ctx.sadmin, mainChapterId);
 
@@ -76,30 +60,24 @@ export async function runIt05Module(ctx: RunCtx): Promise<void> {
     await assertPageExportInvariant(ctx.sadmin, mainChapterId, p0Id);
 
     // Capture unit IDs in export order for F2.
-    const p0UnitIds = [...p0ExportAfterF1!.units]
-        .sort((a, b) => a.unit_index - b.unit_index)
-        .map((u) => u.unit_id);
+    const p0UnitIds = f1Save.unit_infos.map((unit) => unit.id);
 
-    // ---------- F2. before_id insert ----------
+    // ---------- F2. next_id insert ----------
 
-    const beforeIdOper = {
-        oper: "create" as const,
+    const anchoredEdit = {
+        edit: "create" as const,
         local_id: "p0_lu_insert_before_02",
-        before_id: p0UnitIds[1],
+        next_id: p0UnitIds[1],
         is_bubble: true,
-        is_proofread: false,
-        x_coord: 0.15,
-        y_coord: 0.15,
-        translated_text: null,
-        last_translator_id: null,
-        proofread_text: null,
-        last_proofreader_id: null,
+        coord: {
+            x_coord: 0.15,
+            y_coord: 0.15,
+        },
     };
 
-    const f2Save = await savePageUnits(trans01.api, p0Id, [beforeIdOper]);
+    const f2Save = await savePageUnits(trans01.api, p0Id, [anchoredEdit]);
 
-    assert.equal(f2Save.local_id_mappers.length, 1);
-    assert.equal(f2Save.total_unit_count, 6, "total 5 -> 6 after before_id insert");
+    assert.equal(f2Save.total_unit_count, 6, "total 5 -> 6 after next_id insert");
 
     const exportAfterF2 = await exportPoprako(ctx.sadmin, mainChapterId);
     const p0ExportAfterF2 = exportAfterF2.pages.find((p) => p.page_id === p0Id)!;
@@ -111,7 +89,7 @@ export async function runIt05Module(ctx: RunCtx): Promise<void> {
     // New unit inserted before the 2nd unit: [u0, inserted, u1, u2, u3, u4]
     assert.equal(f2Order.length, 6);
     assert.equal(f2Order[0], p0UnitIds[0], "u0 stays first");
-    assert.equal(f2Order[1], f2Save.local_id_mappers[0]!.unit_id, "inserted unit before u1");
+    assert.equal(f2Order[1], f2Save.unit_infos[1]!.id, "inserted unit before u1");
     assert.equal(f2Order[2], p0UnitIds[1], "u1 shifted to index 2");
 
     await assertPageExportInvariant(ctx.sadmin, mainChapterId, p0Id);

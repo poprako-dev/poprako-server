@@ -21,11 +21,14 @@ use crate::part_impl::repo::mock_impl::{
 use crate::result::{BaseError, BaseResult, accept};
 use crate::value::chapter::{ChapterInclOpt, Stage, StagePhase};
 
+// Internal implementation of `list_chapter_infos`.
 fn list_chapter_infos(
     state: &MockState,
     spec: &ChapterInfoListSpec,
 ) -> Vec<ChapterInfo> {
     //
+    // Internal implementation detail.
+    // Internal implementation detail.
     let mut chapter_infos = list_infos(state, &spec.comic_id);
 
     for chapter_info in &mut chapter_infos {
@@ -38,10 +41,14 @@ fn list_chapter_infos(
 
     match offset >= chapter_infos.len() {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         true => Vec::new(),
 
         false => {
             //
+            // Internal implementation detail.
+            // Internal implementation detail.
             let end = std::cmp::min(offset + limit, chapter_infos.len());
 
             chapter_infos[offset..end].to_vec()
@@ -49,12 +56,15 @@ fn list_chapter_infos(
     }
 }
 
+// Internal implementation of `find_pinned_chapter_info`.
 fn find_pinned_chapter_info(
     state: &MockState,
     comic_id: &str,
     incls: &[ChapterInclOpt],
 ) -> Option<ChapterInfo> {
     //
+    // Internal implementation detail.
+    // Internal implementation detail.
     let mut chapter_info = state
         .chapters
         .iter()
@@ -70,15 +80,20 @@ fn find_pinned_chapter_info(
     chapter_info
 }
 
+// Internal implementation of `list_pinned_chapter_infos`.
 fn list_pinned_chapter_infos(
     state: &MockState,
     comic_ids: &[String],
 ) -> HashMap<String, ChapterInfo> {
     //
+    // Internal implementation detail.
+    // Internal implementation detail.
     let mut chapter_infos = HashMap::new();
 
     for comic_id in comic_ids {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let chapter_info = state
             .chapters
             .iter()
@@ -98,14 +113,18 @@ fn list_pinned_chapter_infos(
 }
 
 impl<'a> Run<ListChapterInfos<'a>> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `run`.
     async fn run(
         &self,
         oper: &ListChapterInfos<'a>,
     ) -> BaseResult<Vec<ChapterInfo>> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
         accept(list_chapter_infos(&state, oper.spec))
@@ -113,14 +132,18 @@ impl<'a> Run<ListChapterInfos<'a>> for Mock {
 }
 
 impl<'a, 'b> Run<GetChapterInfo<'a, 'b>> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `run`.
     async fn run(
         &self,
         oper: &GetChapterInfo<'a, 'b>,
     ) -> BaseResult<ChapterInfo> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
         get_chapter_by_id(&state, oper.id, oper.incls)
@@ -128,14 +151,18 @@ impl<'a, 'b> Run<GetChapterInfo<'a, 'b>> for Mock {
 }
 
 impl<'a, 'b> Run<FindPinnedChapterInfo<'a, 'b>> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `run`.
     async fn run(
         &self,
         oper: &FindPinnedChapterInfo<'a, 'b>,
     ) -> BaseResult<Option<ChapterInfo>> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
         accept(find_pinned_chapter_info(&state, oper.comic_id, oper.incls))
@@ -143,14 +170,18 @@ impl<'a, 'b> Run<FindPinnedChapterInfo<'a, 'b>> for Mock {
 }
 
 impl<'a> Run<ListPinnedChapterInfos<'a>> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `run`.
     async fn run(
         &self,
         oper: &ListPinnedChapterInfos<'a>,
     ) -> BaseResult<HashMap<String, ChapterInfo>> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
         accept(list_pinned_chapter_infos(&state, oper.comic_ids))
@@ -158,11 +189,15 @@ impl<'a> Run<ListPinnedChapterInfos<'a>> for Mock {
 }
 
 impl<'a> Run<StartChapterStage<'a>> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `run`.
     async fn run(&self, oper: &StartChapterStage<'a>) -> BaseResult<bool> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let mut state = self.state.lock().unwrap();
 
         let Some(chapter_info) = state
@@ -198,14 +233,18 @@ impl<'a> Run<StartChapterStage<'a>> for Mock {
 }
 
 impl<'a> Run<CompleteChapterRawProvide<'a>> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `run`.
     async fn run(
         &self,
         oper: &CompleteChapterRawProvide<'a>,
     ) -> BaseResult<bool> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let mut state = self.state.lock().unwrap();
 
         let Some(chapter_index) = state
@@ -251,15 +290,19 @@ impl<'a> Run<CompleteChapterRawProvide<'a>> for Mock {
 }
 
 impl<'a> Step<CompleteChapterRawProvide<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &CompleteChapterRawProvide<'a>,
     ) -> BaseResult<bool> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let Some(chapter_index) = context
             .state
             .chapters
@@ -305,15 +348,19 @@ impl<'a> Step<CompleteChapterRawProvide<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<ResetChapterRawProvide<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &ResetChapterRawProvide<'a>,
     ) -> BaseResult<()> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let chapter_info = context
             .state
             .chapters
@@ -332,9 +379,11 @@ impl<'a> Step<ResetChapterRawProvide<'a>, MockContext> for Mock {
 }
 
 impl<'a, 'b> Step<GetChapterInfo<'a, 'b>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -345,9 +394,11 @@ impl<'a, 'b> Step<GetChapterInfo<'a, 'b>, MockContext> for Mock {
 }
 
 impl<'a, 'b> Step<GetChapterInfoExcluded<'a, 'b>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -358,9 +409,11 @@ impl<'a, 'b> Step<GetChapterInfoExcluded<'a, 'b>, MockContext> for Mock {
 }
 
 impl<'a> Step<ListChapterInfosExcluded<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -371,9 +424,11 @@ impl<'a> Step<ListChapterInfosExcluded<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<LockChapters<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         _: &mut MockContext,
@@ -384,9 +439,11 @@ impl<'a> Step<LockChapters<'a>, MockContext> for Mock {
 }
 
 impl<'a, 'b> Step<FindPinnedChapterInfo<'a, 'b>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -401,9 +458,11 @@ impl<'a, 'b> Step<FindPinnedChapterInfo<'a, 'b>, MockContext> for Mock {
 }
 
 impl<'a> Step<CreateChapter<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -414,15 +473,19 @@ impl<'a> Step<CreateChapter<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<UpdateChapter<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &UpdateChapter<'a>,
     ) -> BaseResult<()> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let chapter_info = context
             .state
             .chapters
@@ -445,15 +508,19 @@ impl<'a> Step<UpdateChapter<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<UpdateChapterStage<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &UpdateChapterStage<'a>,
     ) -> BaseResult<()> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let chapter_info = context
             .state
             .chapters
@@ -470,15 +537,19 @@ impl<'a> Step<UpdateChapterStage<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<SetChapterPageCounters<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &SetChapterPageCounters<'a>,
     ) -> BaseResult<()> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let chapter_info = context
             .state
             .chapters
@@ -501,15 +572,19 @@ impl<'a> Step<SetChapterPageCounters<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<AdjustChapterUnitCounters<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &AdjustChapterUnitCounters<'a>,
     ) -> BaseResult<()> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let chapter_info = context
             .state
             .chapters
@@ -530,15 +605,19 @@ impl<'a> Step<AdjustChapterUnitCounters<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<UnpinOtherChapters<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &UnpinOtherChapters<'a>,
     ) -> BaseResult<()> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         for chapter_info in &mut context.state.chapters {
             if chapter_info.comic_id == oper.comic_id
                 && chapter_info.id != oper.excluded_id
@@ -554,15 +633,19 @@ impl<'a> Step<UnpinOtherChapters<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<DeleteChapter<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &DeleteChapter<'a>,
     ) -> BaseResult<()> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let position = context
             .state
             .chapters

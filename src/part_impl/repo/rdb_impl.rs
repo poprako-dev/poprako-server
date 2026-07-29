@@ -2,6 +2,7 @@
 
 use crate::part_impl::shared::RdbCore;
 
+// Submit query macro that allocates a connection and calls a free function.
 #[macro_use]
 mod submit_query;
 /// Announcement repository operations.
@@ -38,6 +39,7 @@ pub mod team;
 pub mod term;
 /// Termbase repository operations.
 pub mod termbase;
+/// Shared RDB integration-test fixtures.
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod test_shared;
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]

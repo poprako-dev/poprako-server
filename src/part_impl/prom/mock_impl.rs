@@ -25,23 +25,38 @@ use crate::part::repo::oper::user::{GetUserInfoExcluded, UpdateUser};
 use crate::part_impl::repo::mock_impl::{Mock, MockContext};
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 
+// Internal organization of the `chapter` module.
 mod chapter;
+// Internal organization of the `image_task` module.
 mod image_task;
+// Internal organization of the `invitation` module.
 mod invitation;
+// Internal organization of the `tests` module.
 mod tests;
 
 #[derive(Clone, Copy)]
+// Fields and state semantics for the `ImageIdentity` struct.
+// Snapshot of the source resource and desired state for a pending image task.
 struct ImageIdentity<'a> {
     //
+    // Internal state field `kind`.
+    // Resource kind (user avatar / team avatar / comic cover / page image) determines the update path.
     kind: image::ResourceKind,
+    // Primary key of the resource record.
     resource_id: &'a str,
+    // Currently assigned object-storage key.
     object_key: &'a str,
+    // Resource version number, used to detect stale writes.
     version: u32,
 }
 
+// Fields and state semantics for the `CurrentImageIdentity` struct.
 struct CurrentImageIdentity<'a> {
     //
+    // Internal state field `version`.
+    // Version number of the currently persisted record.
     version: u32,
+    // Object key of the currently persisted record, or None when not yet uploaded.
     object_key: Option<&'a str>,
 }
 
@@ -49,6 +64,7 @@ struct CurrentImageIdentity<'a> {
 #[cfg_attr(test, derive(Clone))]
 pub struct MockPromRecord {
     //
+    // Internal state field `id`.
     /// Server-assigned unique identifier for the prom record.
     id: String,
 
@@ -86,14 +102,17 @@ impl Prom<MockContext> for Mock {}
 
 /// Defers one record in the coordinated mock state.
 impl<'a> Step<Defer<'a, String, TaskPayload, ()>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &Defer<'a, String, TaskPayload, ()>,
     ) -> Result<(), Self::Error> {
         //
+        // Internal implementation detail.
         let payload_json =
             serde_json::to_string(oper.task.payload).map_err(|error| {
                 BaseError::Unrecoverable {
@@ -118,14 +137,17 @@ impl<'a> Step<Defer<'a, String, TaskPayload, ()>, MockContext> for Mock {
 impl<'t, 'a> Step<DeferBatch<'t, 'a, String, TaskPayload, ()>, MockContext>
     for Mock
 {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &DeferBatch<'t, 'a, String, TaskPayload, ()>,
     ) -> Result<(), Self::Error> {
         //
+        // Internal implementation detail.
         for task in oper.tasks {
             self.step(
                 context,
@@ -156,14 +178,17 @@ impl<'t, 'a> Step<DeferBatch<'t, 'a, String, TaskPayload, ()>, MockContext>
 /// the full deferred-action chain within an integration test.
 pub async fn process_pending(mock: &Mock) -> BaseResult<()> {
     //
+    // Internal implementation detail.
     let snapshot = mock.snapshot();
 
     for record in &snapshot.prom_records {
         //
+        // Internal implementation detail.
         let payload = record.payload();
 
         match payload {
             //
+            // Internal implementation detail.
             TaskPayload::Chapter(task) => {
                 chapter::process(mock, &task).await?;
             }
@@ -181,13 +206,17 @@ pub async fn process_pending(mock: &Mock) -> BaseResult<()> {
     accept(())
 }
 
-/// Process a single image task against the mock's in-memory image pool.
+/// Process one image task against the mock state and update related resource
+/// records when the referenced object matches expected identity.
+// Dispatch the task payload branch by branch and delegate to repository
+// mutations that mirror production update handlers.
 async fn process_image_task(
     image_pool: &Mock,
     task: &image::ImagePayload,
 ) -> BaseResult<()> {
     match task {
         //
+        // Internal implementation detail.
         image::ImagePayload::CheckUpload {
             resource_kind,
             resource_id,
@@ -195,8 +224,10 @@ async fn process_image_task(
             version,
         } => match image_pool.object_exists(object_key).await? {
             //
+            // Internal implementation detail.
             true => {
                 //
+                // Internal implementation detail.
                 let image_identity = ImageIdentity {
                     kind: *resource_kind,
                     resource_id,
@@ -204,9 +235,10 @@ async fn process_image_task(
                     version: *version,
                 };
 
-                //
+                // Internal implementation detail.
                 if image_identity.kind == image::ResourceKind::PageImage {
                     //
+                    // Internal implementation detail.
                     let page_info = image_pool
                         .snapshot()
                         .pages
@@ -238,6 +270,7 @@ async fn process_image_task(
 
             false => match resource_kind {
                 //
+                // Internal implementation detail.
                 image::ResourceKind::PageImage => {
                     mark_page_image_unverified(
                         image_pool,
@@ -250,6 +283,7 @@ async fn process_image_task(
 
                 _ => {
                     //
+                    // Internal implementation detail.
                     let image_identity = ImageIdentity {
                         kind: *resource_kind,
                         resource_id,
@@ -269,6 +303,49 @@ async fn process_image_task(
     }
 }
 
+// Internal implementation of `process_existing_image`.
+async fn process_existing_image(
+    mock: &Mock,
+    image_identity: ImageIdentity<'_>,
+    image_uploaded: bool,
+) -> BaseResult<()> {
+    //
+    // Internal implementation detail.
+    let resource_state = mock
+        .coord(async move |context| {
+            //
+            // Internal implementation detail.
+            let resource_state =
+                classify_expected_mark(mock, context, image_identity).await?;
+
+            if !matches!(resource_state, ResourceState::Current) {
+                return accept(resource_state);
+            }
+
+            mark_uploaded(mock, context, image_identity, image_uploaded)
+                .await?;
+
+            accept(ResourceState::Current)
+        })
+        .await?;
+
+    match resource_state {
+        //
+        // Internal state field ResourceState.
+        ResourceState::Current | ResourceState::Stale => accept(()),
+
+        // SAFETY: stale and deleted resource keys belong exclusively to
+        // dedicated Delete tasks.
+        ResourceState::Missing => accept(()),
+
+        ResourceState::Mismatched => Err(BaseError::Unrecoverable {
+            message: "prom image identity does not match current resource"
+                .into(),
+        }),
+    }
+}
+
+// Internal implementation of `mark_page_image_unverified`.
 async fn mark_page_image_unverified(
     mock: &Mock,
     resource_id: &str,
@@ -276,6 +353,7 @@ async fn mark_page_image_unverified(
     image_version: u32,
 ) -> BaseResult<()> {
     //
+    // Internal implementation detail.
     let page_info = mock
         .snapshot()
         .pages
@@ -291,6 +369,7 @@ async fn mark_page_image_unverified(
         page_info.image_key.as_deref() == Some(object_key),
     ) {
         //
+        // Internal implementation detail.
         (false, _) => return accept(()),
 
         (true, false) => {
@@ -306,6 +385,7 @@ async fn mark_page_image_unverified(
 
     mock.coord(async move |context| {
         //
+        // Internal implementation detail.
         mock.step(
             context,
             &GetChapterInfoExcluded {
@@ -342,44 +422,137 @@ async fn mark_page_image_unverified(
     .map_err(Into::into)
 }
 
-async fn process_existing_image(
+// Internal implementation of `classify_expected_mark`.
+async fn classify_expected_mark(
     mock: &Mock,
+    context: &mut MockContext,
     image_identity: ImageIdentity<'_>,
-    image_uploaded: bool,
-) -> BaseResult<()> {
-    //
-    let resource_state = mock
-        .coord(async move |context| {
-            //
-            let resource_state =
-                classify_expected_mark(mock, context, image_identity).await?;
-
-            if !matches!(resource_state, ResourceState::Current) {
-                return accept(resource_state);
-            }
-
-            mark_uploaded(mock, context, image_identity, image_uploaded)
-                .await?;
-
-            accept(ResourceState::Current)
-        })
-        .await?;
-
-    match resource_state {
+) -> BaseResult<ResourceState> {
+    match image_identity.kind {
         //
-        ResourceState::Current | ResourceState::Stale => accept(()),
+        // Internal implementation detail.
+        image::ResourceKind::UserAvatar => {
+            match mock
+                .step(
+                    context,
+                    &GetUserInfoExcluded::Id {
+                        id: image_identity.resource_id,
+                    },
+                )
+                .await
+            {
+                // Internal implementation detail.
+                Ok(user_info) => {
+                    //
+                    // Internal implementation detail.
+                    let current_identity = CurrentImageIdentity {
+                        version: user_info.avatar_version,
+                        object_key: user_info.avatar_key.as_deref(),
+                    };
 
-        // SAFETY: stale and deleted resource keys belong exclusively to
-        // dedicated Delete tasks.
-        ResourceState::Missing => accept(()),
+                    classify_current_identity(current_identity, image_identity)
+                }
 
-        ResourceState::Mismatched => Err(BaseError::Unrecoverable {
-            message: "prom image identity does not match current resource"
-                .into(),
-        }),
+                Err(BaseError::Expected { .. }) => {
+                    accept(ResourceState::Missing)
+                }
+
+                Err(error) => Err(error),
+            }
+        }
+
+        image::ResourceKind::TeamAvatar => {
+            match mock
+                .step(
+                    context,
+                    &GetTeamInfoExcluded::Id {
+                        id: image_identity.resource_id,
+                    },
+                )
+                .await
+            {
+                // Internal implementation detail.
+                Ok(team_info) => {
+                    //
+                    // Internal implementation detail.
+                    let current_identity = CurrentImageIdentity {
+                        version: team_info.avatar_version,
+                        object_key: team_info.avatar_key.as_deref(),
+                    };
+
+                    classify_current_identity(current_identity, image_identity)
+                }
+
+                Err(BaseError::Expected { .. }) => {
+                    accept(ResourceState::Missing)
+                }
+
+                Err(error) => Err(error),
+            }
+        }
+
+        image::ResourceKind::ComicCover => {
+            match mock
+                .step(
+                    context,
+                    &GetComicInfoExcluded {
+                        id: image_identity.resource_id,
+                        incls: &[],
+                    },
+                )
+                .await
+            {
+                Ok(comic_info) => {
+                    //
+                    // Internal implementation detail.
+                    let current_identity = CurrentImageIdentity {
+                        version: comic_info.cover_version,
+                        object_key: comic_info.cover_key.as_deref(),
+                    };
+
+                    classify_current_identity(current_identity, image_identity)
+                }
+
+                Err(BaseError::Expected { .. }) => {
+                    accept(ResourceState::Missing)
+                }
+
+                Err(error) => Err(error),
+            }
+        }
+
+        image::ResourceKind::PageImage => {
+            match mock
+                .step(
+                    context,
+                    &GetPageInfoExcluded {
+                        id: image_identity.resource_id,
+                    },
+                )
+                .await
+            {
+                Ok(page_info) => {
+                    //
+                    // Internal implementation detail.
+                    let current_identity = CurrentImageIdentity {
+                        version: page_info.image_version,
+                        object_key: page_info.image_key.as_deref(),
+                    };
+
+                    classify_current_identity(current_identity, image_identity)
+                }
+
+                Err(BaseError::Expected { .. }) => {
+                    accept(ResourceState::Missing)
+                }
+
+                Err(error) => Err(error),
+            }
+        }
     }
 }
 
+// Internal implementation of `mark_uploaded`.
 async fn mark_uploaded(
     mock: &Mock,
     context: &mut MockContext,
@@ -388,6 +561,7 @@ async fn mark_uploaded(
 ) -> BaseResult<()> {
     match image_identity.kind {
         //
+        // Internal implementation detail.
         image::ResourceKind::UserAvatar => {
             mock.step(
                 context,
@@ -429,6 +603,7 @@ async fn mark_uploaded(
 
         image::ResourceKind::PageImage => {
             //
+            // Internal implementation detail.
             let page_info = context
                 .state
                 .pages
@@ -464,6 +639,7 @@ async fn mark_uploaded(
     }
 }
 
+// Internal implementation of `classify_current_identity`.
 fn classify_current_identity(
     current_identity: CurrentImageIdentity<'_>,
     image_identity: ImageIdentity<'_>,
@@ -473,134 +649,11 @@ fn classify_current_identity(
         current_identity.object_key == Some(image_identity.object_key),
     ) {
         //
+        // Internal implementation detail.
         (false, _) => accept(ResourceState::Stale),
 
         (true, false) => accept(ResourceState::Mismatched),
 
         (true, true) => accept(ResourceState::Current),
-    }
-}
-
-async fn classify_expected_mark(
-    mock: &Mock,
-    context: &mut MockContext,
-    image_identity: ImageIdentity<'_>,
-) -> BaseResult<ResourceState> {
-    match image_identity.kind {
-        //
-        image::ResourceKind::UserAvatar => {
-            match mock
-                .step(
-                    context,
-                    &GetUserInfoExcluded::Id {
-                        id: image_identity.resource_id,
-                    },
-                )
-                .await
-            {
-                //
-                Ok(user_info) => {
-                    //
-                    let current_identity = CurrentImageIdentity {
-                        version: user_info.avatar_version,
-                        object_key: user_info.avatar_key.as_deref(),
-                    };
-
-                    classify_current_identity(current_identity, image_identity)
-                }
-
-                Err(BaseError::Expected { .. }) => {
-                    accept(ResourceState::Missing)
-                }
-
-                Err(error) => Err(error),
-            }
-        }
-
-        image::ResourceKind::TeamAvatar => {
-            match mock
-                .step(
-                    context,
-                    &GetTeamInfoExcluded::Id {
-                        id: image_identity.resource_id,
-                    },
-                )
-                .await
-            {
-                //
-                Ok(team_info) => {
-                    //
-                    let current_identity = CurrentImageIdentity {
-                        version: team_info.avatar_version,
-                        object_key: team_info.avatar_key.as_deref(),
-                    };
-
-                    classify_current_identity(current_identity, image_identity)
-                }
-
-                Err(BaseError::Expected { .. }) => {
-                    accept(ResourceState::Missing)
-                }
-
-                Err(error) => Err(error),
-            }
-        }
-
-        image::ResourceKind::ComicCover => {
-            match mock
-                .step(
-                    context,
-                    &GetComicInfoExcluded {
-                        id: image_identity.resource_id,
-                        incls: &[],
-                    },
-                )
-                .await
-            {
-                Ok(comic_info) => {
-                    //
-                    let current_identity = CurrentImageIdentity {
-                        version: comic_info.cover_version,
-                        object_key: comic_info.cover_key.as_deref(),
-                    };
-
-                    classify_current_identity(current_identity, image_identity)
-                }
-
-                Err(BaseError::Expected { .. }) => {
-                    accept(ResourceState::Missing)
-                }
-
-                Err(error) => Err(error),
-            }
-        }
-
-        image::ResourceKind::PageImage => {
-            match mock
-                .step(
-                    context,
-                    &GetPageInfoExcluded {
-                        id: image_identity.resource_id,
-                    },
-                )
-                .await
-            {
-                Ok(page_info) => {
-                    //
-                    let current_identity = CurrentImageIdentity {
-                        version: page_info.image_version,
-                        object_key: page_info.image_key.as_deref(),
-                    };
-
-                    classify_current_identity(current_identity, image_identity)
-                }
-
-                Err(BaseError::Expected { .. }) => {
-                    accept(ResourceState::Missing)
-                }
-
-                Err(error) => Err(error),
-            }
-        }
     }
 }

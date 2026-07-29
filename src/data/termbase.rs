@@ -43,6 +43,7 @@ pub struct TermbaseInfoVal {
 }
 
 impl From<TermbaseInfo> for TermbaseInfoVal {
+    // Convert terminology base model into response payload.
     fn from(model: TermbaseInfo) -> Self {
         Self {
             id: model.id,
@@ -97,6 +98,7 @@ pub struct UpdateTermbaseInfoParams {
 }
 
 /// Input parameters for listing team-owned terminology bases.
+#[derive(Debug)]
 pub struct ListTeamTermbaseInfosParams {
     //
     /// Owning team identifier.
@@ -112,6 +114,7 @@ pub struct ListTeamTermbaseInfosParams {
 }
 
 /// Input parameters for listing terminology bases visible from a comic.
+#[derive(Debug)]
 pub struct ListComicTermbaseInfosParams {
     //
     /// Owning comic identifier.

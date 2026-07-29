@@ -23,6 +23,7 @@ use utoipa::ToSchema;
 use crate::result::{Error as RegularError, ExpectedVariant};
 
 #[cfg(test)]
+// HTTP result test fixtures are compiled only for tests.
 mod tests;
 
 /// Business-level error envelope returned by all failing endpoints.
@@ -45,17 +46,6 @@ pub struct HttpError {
     message: Option<String>,
 }
 
-impl std::fmt::Display for HttpError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "HttpError(code={}, message={})",
-            self.code,
-            self.message.as_deref().unwrap_or("(no message)"),
-        )
-    }
-}
-
 impl HttpError {
     /// Builds an error from an expected application variant and message.
     pub fn expected(variant: ExpectedVariant, message: &str) -> Self {
@@ -76,7 +66,7 @@ impl HttpError {
         }
     }
 
-    /// `422 Unprocessable Entity` error, used for path/body id mismatch.
+    /// `422 Unprocessable Entity` used for path/body id mismatch.
     pub fn unprocessable(message: &str) -> Self {
         Self {
             status: StatusCode::UNPROCESSABLE_ENTITY,
@@ -95,7 +85,20 @@ impl HttpError {
     }
 }
 
+impl std::fmt::Display for HttpError {
+    // Formats one failure as `HttpError(code=..., message=...)` for logs.
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "HttpError(code={}, message={})",
+            self.code,
+            self.message.as_deref().unwrap_or("(no message)"),
+        )
+    }
+}
+
 impl From<RegularError> for HttpError {
+    // Maps the shared result error to HTTP boundary error payload.
     fn from(source: RegularError) -> Self {
         match source {
             //
@@ -123,6 +126,7 @@ impl From<RegularError> for HttpError {
 }
 
 impl IntoResponse for HttpError {
+    // Converts a boundary error into JSON response with status code.
     fn into_response(self) -> Response {
         (self.status, Json(self)).into_response()
     }
@@ -181,6 +185,7 @@ impl<T> IntoResponse for HttpBody<T>
 where
     T: Serialize,
 {
+    // Converts a success body into JSON response and merges any recorded headers.
     fn into_response(self) -> Response {
         //
         let status = self.status;
@@ -224,12 +229,14 @@ impl NoContent {
 }
 
 impl Default for NoContent {
+    // Builds a default `204 No Content` marker.
     fn default() -> Self {
         Self::new()
     }
 }
 
 impl IntoResponse for NoContent {
+    // Converts a 204 marker into an empty HTTP response with headers.
     fn into_response(self) -> Response {
         //
         let mut response = StatusCode::NO_CONTENT.into_response();
@@ -256,7 +263,7 @@ where
 
 /// Trait form of [`accept`] so handlers can write `value.accept(StatusCode::OK)`.
 pub trait Accept {
-    /// The serializable data type returned in the HTTP response body.
+    /// The serializable response payload type returned by [`accept`].
     type Data: Serialize;
 
     /// Wraps `self` into an [`HttpResult`] carrying the provided status code.
@@ -267,8 +274,10 @@ impl<T> Accept for T
 where
     T: Serialize,
 {
+    // Concrete payload type emitted by [`accept`] for this implementation.
     type Data = T;
 
+    // Wraps a success body with the provided status code.
     fn accept(self, status_code: StatusCode) -> HttpResult<Self::Data> {
         accept(self, status_code)
     }

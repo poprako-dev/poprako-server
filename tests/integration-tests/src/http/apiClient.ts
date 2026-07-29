@@ -1,4 +1,5 @@
 type JsonRecord = Record<string, unknown>;
+type JsonBody = JsonRecord | unknown[];
 
 export interface ApiResponse<T> {
     status: number;
@@ -46,15 +47,15 @@ export class ApiClient {
         return this.retryRequest<T>("GET", path);
     }
 
-    async post<T>(path: string, body?: JsonRecord): Promise<ApiResponse<T>> {
+    async post<T>(path: string, body?: JsonBody): Promise<ApiResponse<T>> {
         return this.retryRequest<T>("POST", path, body);
     }
 
-    async put<T>(path: string, body?: JsonRecord): Promise<ApiResponse<T>> {
+    async put<T>(path: string, body?: JsonBody): Promise<ApiResponse<T>> {
         return this.retryRequest<T>("PUT", path, body);
     }
 
-    async patch<T>(path: string, body?: JsonRecord): Promise<ApiResponse<T>> {
+    async patch<T>(path: string, body?: JsonBody): Promise<ApiResponse<T>> {
         return this.retryRequest<T>("PATCH", path, body);
     }
 
@@ -65,7 +66,7 @@ export class ApiClient {
     private async retryRequest<T>(
         method: string,
         path: string,
-        body?: JsonRecord,
+        body?: JsonBody,
     ): Promise<ApiResponse<T>> {
         let lastResponse: ApiResponse<T> | null = null;
 
@@ -89,7 +90,7 @@ export class ApiClient {
     private async request<T>(
         method: string,
         path: string,
-        body?: JsonRecord,
+        body?: JsonBody,
     ): Promise<ApiResponse<T>> {
         const headers = new Headers();
 

@@ -51,6 +51,7 @@ use crate::test_util::{
 use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
+// Delete flow coverage, including avatar cleanup and related records.
 mod delete;
 
 /// Builds a [`UserInfo`] fixture with avatar fields set.

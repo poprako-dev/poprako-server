@@ -42,6 +42,7 @@ pub struct AssignmentInvitationInfoVal {
 }
 
 impl From<AssignmentInvitationInfo> for AssignmentInvitationInfoVal {
+    // Map assignment invitation model fields directly to API-facing values.
     fn from(value: AssignmentInvitationInfo) -> Self {
         Self {
             id: value.id,

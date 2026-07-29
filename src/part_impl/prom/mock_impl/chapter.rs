@@ -18,8 +18,10 @@ pub async fn process(mock: &Mock, task: &ChapterPayload) -> BaseResult<()> {
     }
 }
 
+// Internal implementation of `process_raw_provide`.
 async fn process_raw_provide(mock: &Mock, chapter_id: &str) -> BaseResult<()> {
     //
+    // Internal implementation detail.
     let advanced = mock
         .run(&CompleteChapterRawProvide { id: chapter_id })
         .await?;

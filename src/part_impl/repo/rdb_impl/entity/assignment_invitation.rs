@@ -31,6 +31,27 @@ pub struct AssignmentInvitationRow {
     pub f_updated_at: OffsetDateTime,
 }
 
+impl TryFrom<AssignmentInvitationRow> for AssignmentInvitationInfo {
+    type Error = BaseError;
+
+    fn try_from(row: AssignmentInvitationRow) -> Result<Self, Self::Error> {
+        //
+        let roles = RoleMask::try_from(row.f_role_mask as u32)?;
+
+        Ok(Self {
+            id: row.f_id,
+            chapter_id: row.f_chapter_id,
+            inviter_id: row.f_inviter_id,
+            invitee_qid: row.f_invitee_qid,
+            code: row.f_code,
+            pending: row.f_pending,
+            roles,
+            created_at: row.f_created_at,
+            updated_at: row.f_updated_at,
+        })
+    }
+}
+
 /// Insertable struct for creating a new record in the `t_assignment_invitation` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_assignment_invitation)]
@@ -50,6 +71,27 @@ pub struct AssignmentInvitationRowEntry<'a> {
 
     pub f_created_at: OffsetDateTime,
     pub f_updated_at: OffsetDateTime,
+}
+
+impl<'a> From<&'a AssignmentInvitationEntry>
+    for AssignmentInvitationRowEntry<'a>
+{
+    fn from(entry: &'a AssignmentInvitationEntry) -> Self {
+        //
+        let now = OffsetDateTime::now_utc();
+
+        Self {
+            f_id: &entry.id,
+            f_chapter_id: &entry.chapter_id,
+            f_inviter_id: &entry.inviter_id,
+            f_invitee_qid: &entry.invitee_qid,
+            f_code: &entry.code,
+            f_pending: true,
+            f_role_mask: i64::from(u32::from(entry.roles)),
+            f_created_at: now,
+            f_updated_at: now,
+        }
+    }
 }
 
 /// Aspect struct for updating specific fields of an assignment-invitation record
@@ -75,47 +117,5 @@ impl AssignmentInvitationAspect {
         self.f_pending = Some(val);
 
         self
-    }
-}
-
-impl TryFrom<AssignmentInvitationRow> for AssignmentInvitationInfo {
-    type Error = BaseError;
-
-    fn try_from(row: AssignmentInvitationRow) -> Result<Self, Self::Error> {
-        //
-        let roles = RoleMask::try_from(row.f_role_mask as u32)?;
-
-        Ok(Self {
-            id: row.f_id,
-            chapter_id: row.f_chapter_id,
-            inviter_id: row.f_inviter_id,
-            invitee_qid: row.f_invitee_qid,
-            code: row.f_code,
-            pending: row.f_pending,
-            roles,
-            created_at: row.f_created_at,
-            updated_at: row.f_updated_at,
-        })
-    }
-}
-
-impl<'a> From<&'a AssignmentInvitationEntry>
-    for AssignmentInvitationRowEntry<'a>
-{
-    fn from(entry: &'a AssignmentInvitationEntry) -> Self {
-        //
-        let now = OffsetDateTime::now_utc();
-
-        Self {
-            f_id: &entry.id,
-            f_chapter_id: &entry.chapter_id,
-            f_inviter_id: &entry.inviter_id,
-            f_invitee_qid: &entry.invitee_qid,
-            f_code: &entry.code,
-            f_pending: true,
-            f_role_mask: i64::from(u32::from(entry.roles)),
-            f_created_at: now,
-            f_updated_at: now,
-        }
     }
 }

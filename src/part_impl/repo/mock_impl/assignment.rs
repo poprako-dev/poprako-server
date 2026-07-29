@@ -17,84 +17,25 @@ use crate::part_impl::repo::mock_impl::{
 use crate::result::{BaseError, BaseResult, accept};
 use crate::value::assignment::AssignmentInclOpt;
 
+// Internal organization of the `incl` module.
 mod incl;
 
-fn find_assignment(
-    state: &MockState,
-    chapter_id: &str,
-    user_id: &str,
-) -> Option<AssignmentInfo> {
-    state
-        .assignments
-        .iter()
-        .find(|assignment_info| {
-            assignment_info.chapter_id == chapter_id
-                && assignment_info.user_id == user_id
-        })
-        .cloned()
-}
-
-fn find_assignment_by_user_and_comic(
-    state: &MockState,
-    user_id: &str,
-    comic_id: &str,
-    incls: &[AssignmentInclOpt],
-) -> Option<AssignmentInfo> {
-    //
-    let mut assignment_infos = state
-        .assignments
-        .iter()
-        .filter(|assignment_info| assignment_info.user_id == user_id)
-        .filter(|assignment_info| {
-            state.chapters.iter().any(|chapter_info| {
-                chapter_info.id == assignment_info.chapter_id
-                    && chapter_info.comic_id == comic_id
-            })
-        })
-        .cloned()
-        .collect::<Vec<_>>();
-
-    assignment_infos.sort_by(|left, right| {
-        right
-            .created_at
-            .cmp(&left.created_at)
-            .then_with(|| left.id.cmp(&right.id))
-    });
-
-    let mut assignment_info = assignment_infos.into_iter().next()?;
-
-    apply_assignment_incls(state, &mut assignment_info, incls);
-
-    Some(assignment_info)
-}
-
-fn get_assignment(
-    state: &MockState,
-    id: &str,
-    incl_opt: &[AssignmentInclOpt],
-) -> BaseResult<AssignmentInfo> {
-    //
-    let mut assignment_info = state
-        .assignments
-        .iter()
-        .find(|assignment_info| assignment_info.id == id)
-        .cloned()
-        .ok_or_else(|| expected("error-assignment-not-found"))?;
-
-    apply_assignment_incls(state, &mut assignment_info, incl_opt);
-
-    accept(assignment_info)
-}
-
+// Internal implementation of `list_infos`.
 fn list_infos(
     state: &MockState,
     oper: &ListAssignmentInfos<'_, '_>,
 ) -> Vec<AssignmentInfo> {
     //
+    // Internal implementation detail.
+    // Internal implementation detail.
     let (role, incl_opt, page, mut assignment_infos) = match oper {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         ListAssignmentInfos::Spec { spec } => match spec {
             //
+            // Internal implementation detail.
+            // Internal implementation detail.
             AssignmentInfoListSpec::Chapter {
                 chapter_id,
                 role,
@@ -187,12 +128,18 @@ fn list_infos(
 
     match page {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         Some((offset, limit)) => match offset >= assignment_infos.len() {
             //
+            // Internal implementation detail.
+            // Internal implementation detail.
             true => Vec::new(),
 
             false => {
                 //
+                // Internal implementation detail.
+                // Internal implementation detail.
                 let end = std::cmp::min(offset + limit, assignment_infos.len());
 
                 assignment_infos[offset..end].to_vec()
@@ -203,6 +150,7 @@ fn list_infos(
     }
 }
 
+// Internal implementation of `list_infos_excluded`.
 fn list_infos_excluded(
     state: &MockState,
     chapter_id: &str,
@@ -217,11 +165,87 @@ fn list_infos_excluded(
     )
 }
 
+// Internal implementation of `get_assignment`.
+fn get_assignment(
+    state: &MockState,
+    id: &str,
+    incl_opt: &[AssignmentInclOpt],
+) -> BaseResult<AssignmentInfo> {
+    //
+    // Internal implementation detail.
+    // Internal implementation detail.
+    let mut assignment_info = state
+        .assignments
+        .iter()
+        .find(|assignment_info| assignment_info.id == id)
+        .cloned()
+        .ok_or_else(|| expected("error-assignment-not-found"))?;
+
+    apply_assignment_incls(state, &mut assignment_info, incl_opt);
+
+    accept(assignment_info)
+}
+
+// Find the most recent assignment for a user within a comic, then load all
+// requested include relations.
+fn find_assignment_by_user_and_comic(
+    state: &MockState,
+    user_id: &str,
+    comic_id: &str,
+    incls: &[AssignmentInclOpt],
+) -> Option<AssignmentInfo> {
+    //
+    let mut assignment_infos = state
+        .assignments
+        .iter()
+        .filter(|assignment_info| assignment_info.user_id == user_id)
+        .filter(|assignment_info| {
+            state.chapters.iter().any(|chapter_info| {
+                chapter_info.id == assignment_info.chapter_id
+                    && chapter_info.comic_id == comic_id
+            })
+        })
+        .cloned()
+        .collect::<Vec<_>>();
+
+    assignment_infos.sort_by(|left, right| {
+        right
+            .created_at
+            .cmp(&left.created_at)
+            .then_with(|| left.id.cmp(&right.id))
+    });
+
+    let mut assignment_info = assignment_infos.into_iter().next()?;
+
+    apply_assignment_incls(state, &mut assignment_info, incls);
+
+    Some(assignment_info)
+}
+
+// Internal implementation of `find_assignment`.
+fn find_assignment(
+    state: &MockState,
+    chapter_id: &str,
+    user_id: &str,
+) -> Option<AssignmentInfo> {
+    state
+        .assignments
+        .iter()
+        .find(|assignment_info| {
+            assignment_info.chapter_id == chapter_id
+                && assignment_info.user_id == user_id
+        })
+        .cloned()
+}
+
+// Internal implementation of `create_assignment`.
 fn create_assignment(
     state: &mut MockState,
     entry: &AssignmentEntry,
 ) -> BaseResult<AssignmentInfo> {
     //
+    // Internal implementation detail.
+    // Internal implementation detail.
     if state
         .assignments
         .iter()
@@ -255,8 +279,11 @@ fn create_assignment(
     accept(assignment_info)
 }
 
+// Internal implementation of `delete_assignment_by_id`.
 fn delete_assignment_by_id(state: &mut MockState, id: &str) -> BaseResult<()> {
     //
+    // Internal implementation detail.
+    // Internal implementation detail.
     let index = state
         .assignments
         .iter()
@@ -268,29 +295,38 @@ fn delete_assignment_by_id(state: &mut MockState, id: &str) -> BaseResult<()> {
     accept(())
 }
 
+// Internal implementation of `delete_assignments_by_chapter_id`.
 fn delete_assignments_by_chapter_id(
     state: &mut MockState,
     chapter_id: &str,
 ) -> BaseResult<()> {
     //
+    // Internal implementation detail.
+    // Internal implementation detail.
     state.assignments.retain(|a| a.chapter_id != chapter_id);
 
     accept(())
 }
 
 impl Run<FindAssignmentInfo<'_, '_>> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `run`.
     async fn run(
         &self,
         oper: &FindAssignmentInfo<'_, '_>,
     ) -> Result<Option<AssignmentInfo>, Self::Error> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
         let assignment_info = match oper {
             //
+            // Internal implementation detail.
+            // Internal implementation detail.
             FindAssignmentInfo::ChapterUser {
                 chapter_id,
                 user_id,
@@ -310,14 +346,18 @@ impl Run<FindAssignmentInfo<'_, '_>> for Mock {
 }
 
 impl Run<ListAssignmentInfos<'_, '_>> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `run`.
     async fn run(
         &self,
         oper: &ListAssignmentInfos<'_, '_>,
     ) -> Result<Vec<AssignmentInfo>, Self::Error> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
         let assignment_infos = list_infos(&state, oper);
@@ -327,14 +367,18 @@ impl Run<ListAssignmentInfos<'_, '_>> for Mock {
 }
 
 impl Run<GetAssignmentInfo<'_, '_>> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `run`.
     async fn run(
         &self,
         oper: &GetAssignmentInfo<'_, '_>,
     ) -> Result<AssignmentInfo, Self::Error> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
         get_assignment(&state, oper.id, oper.incls)
@@ -342,17 +386,23 @@ impl Run<GetAssignmentInfo<'_, '_>> for Mock {
 }
 
 impl Step<FindAssignmentInfo<'_, '_>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &FindAssignmentInfo<'_, '_>,
     ) -> Result<Option<AssignmentInfo>, Self::Error> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let assignment_info = match oper {
             //
+            // Internal implementation detail.
+            // Internal implementation detail.
             FindAssignmentInfo::ChapterUser {
                 chapter_id,
                 user_id,
@@ -375,9 +425,11 @@ impl Step<FindAssignmentInfo<'_, '_>, MockContext> for Mock {
 }
 
 impl Step<ListAssignmentInfosExcluded<'_>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -392,15 +444,19 @@ impl Step<ListAssignmentInfosExcluded<'_>, MockContext> for Mock {
 }
 
 impl Step<ListAssignmentInfos<'_, '_>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &ListAssignmentInfos<'_, '_>,
     ) -> Result<Vec<AssignmentInfo>, Self::Error> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let assignment_infos = list_infos(&context.state, oper);
 
         accept(assignment_infos)
@@ -408,9 +464,11 @@ impl Step<ListAssignmentInfos<'_, '_>, MockContext> for Mock {
 }
 
 impl Step<CreateAssignment<'_>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -421,15 +479,19 @@ impl Step<CreateAssignment<'_>, MockContext> for Mock {
 }
 
 impl Step<UpdateAssignmentRoles<'_>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &UpdateAssignmentRoles<'_>,
     ) -> Result<AssignmentInfo, Self::Error> {
         //
+        // Internal implementation detail.
+        // Internal implementation detail.
         let assignment_info = context
             .state
             .assignments
@@ -446,9 +508,11 @@ impl Step<UpdateAssignmentRoles<'_>, MockContext> for Mock {
 }
 
 impl Step<DeleteAssignments<'_>, MockContext> for Mock {
+    // Internal type alias for `Error`.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `step`.
     async fn step(
         &self,
         context: &mut MockContext,
@@ -456,6 +520,8 @@ impl Step<DeleteAssignments<'_>, MockContext> for Mock {
     ) -> Result<(), Self::Error> {
         match oper {
             //
+            // Internal implementation detail.
+            // Internal implementation detail.
             DeleteAssignments::Id { id } => {
                 delete_assignment_by_id(&mut context.state, id)
             }

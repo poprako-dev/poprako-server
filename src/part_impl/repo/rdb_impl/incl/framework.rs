@@ -130,8 +130,8 @@ pub async fn populate<I: Incl>(
     accept(())
 }
 
-/// Decrements a reference count and takes ownership of a loaded related entity
-/// when its last reference is consumed, avoiding a clone for shared entries.
+// Decrements a reference count and takes ownership of a loaded related entity
+// when its last reference is consumed, avoiding a clone for shared entries.
 fn take_loaded_related<Related: Clone>(
     map: &mut HashMap<String, Related>,
     key_counts: &mut HashMap<String, usize>,
@@ -152,7 +152,7 @@ fn take_loaded_related<Related: Clone>(
     map.get(key).cloned()
 }
 
-/// Execute a batch `SELECT … WHERE f_id IN (…)` via a [`BatchByIds`] impl.
+// Execute a batch `SELECT … WHERE f_id IN (…)` via a [`BatchByIds`] impl.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn batch_load<B: BatchByIds>(
     conn: &mut RdbConn,

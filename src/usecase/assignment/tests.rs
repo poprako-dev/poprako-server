@@ -17,27 +17,39 @@ use crate::value::chapter::{Stage, StageMask, StagePhase};
 use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
+// Tests for assignment deletion behavior.
 mod delete;
+// Tests for assignment joining behavior.
 mod join;
+// Tests for assignment listing behavior.
 mod list_infos;
+// Tests for assignment role mutation behavior.
 mod update_roles;
 
+// Build a token fixture for authenticated user_id.
 fn token(user_id: &str) -> UserToken {
+    // Build an auth token fixture for assignment scenario checks.
     UserToken {
         user_id: user_id.into(),
     }
 }
 
+// Build a one-bit role mask from a named role.
 fn role(role_field: RoleField) -> RoleMask {
+    // Build a single role mask flag.
     RoleMask::from(role_field)
 }
 
+// Combine two role fields for assignment fixture inputs.
 fn roles(left: RoleField, right: RoleField) -> RoleMask {
+    // Combine two role flags for assignment test inputs.
     role(left).union(role(right))
 }
 
+// Build a baseline user fixture for assignment tests.
 fn user(id: &str, is_sadmin: bool) -> UserInfo {
     //
+    // Build a member fixture with deterministic timestamps.
     let time = now();
 
     UserInfo {
@@ -56,15 +68,19 @@ fn user(id: &str, is_sadmin: bool) -> UserInfo {
     }
 }
 
+// Build a fixed credential fixture for auth-dependent assertions.
 fn credential(user_id: &str) -> UserCredential {
+    // Build a deterministic credential for authentication preconditions.
     UserCredential {
         user_id: user_id.into(),
         password_hash: "hash".into(),
     }
 }
 
+// Build a minimal team fixture used by chapter and workset ownership.
 fn team(id: &str) -> TeamInfo {
     //
+    // Build a team stub used by assignment ownership assertions.
     let time = now();
 
     TeamInfo {
@@ -81,8 +97,10 @@ fn team(id: &str) -> TeamInfo {
     }
 }
 
+// Build a workset fixture binding team + identifier inputs.
 fn workset(id: &str, team_id: &str) -> WorksetInfo {
     //
+    // Build a workset fixture for assignment scoping checks.
     let time = now();
 
     WorksetInfo {
@@ -97,8 +115,10 @@ fn workset(id: &str, team_id: &str) -> WorksetInfo {
     }
 }
 
+// Build a comic fixture for assignment domain test data.
 fn comic(id: &str, workset_id: &str) -> ComicInfo {
     //
+    // Build a comic fixture under a target workset.
     let time = now();
 
     ComicInfo {
@@ -124,8 +144,10 @@ fn comic(id: &str, workset_id: &str) -> ComicInfo {
     }
 }
 
+// Build a chapter fixture linked to the selected comic id.
 fn chapter(id: &str, comic_id: &str) -> ChapterInfo {
     //
+    // Build a chapter fixture for assignment operations.
     let time = now();
 
     ChapterInfo {
@@ -147,7 +169,9 @@ fn chapter(id: &str, comic_id: &str) -> ChapterInfo {
     }
 }
 
+// Build a member fixture with explicit role mask for membership assertions.
 fn member(user_id: &str, role_mask: RoleMask) -> MemberInfo {
+    // Build a team member fixture with a deterministic role set.
     MemberInfo {
         id: format!("member-{}", user_id),
         user_id: user_id.into(),
@@ -160,12 +184,14 @@ fn member(user_id: &str, role_mask: RoleMask) -> MemberInfo {
     }
 }
 
+// Build an assignment fixture for a user/chapter role setup.
 fn assignment(
     chapter_id: &str,
     user_id: &str,
     role_mask: RoleMask,
 ) -> AssignmentInfo {
     //
+    // Build an assignment row fixture for role and membership scenarios.
     let time = now();
 
     AssignmentInfo {
@@ -180,8 +206,10 @@ fn assignment(
     }
 }
 
+// Build a page fixture with stable image metadata.
 fn page(id: &str, chapter_id: &str, image_key: &str) -> PageInfo {
     //
+    // Build a page fixture with image metadata for assignment page listings.
     let time = now();
 
     PageInfo {
@@ -201,6 +229,7 @@ fn page(id: &str, chapter_id: &str, image_key: &str) -> PageInfo {
     }
 }
 
+// Build list params that filter by chapter id.
 fn list_by_chapter_data(chapter_id: &str) -> ListAssignmentInfosParams {
     ListAssignmentInfosParams {
         incl_opt: Vec::new(),
@@ -212,6 +241,7 @@ fn list_by_chapter_data(chapter_id: &str) -> ListAssignmentInfosParams {
     }
 }
 
+// Build list params that filter by owner id.
 fn list_by_user_data(owner_id: &str) -> ListAssignmentInfosParams {
     ListAssignmentInfosParams {
         incl_opt: Vec::new(),
@@ -223,6 +253,7 @@ fn list_by_user_data(owner_id: &str) -> ListAssignmentInfosParams {
     }
 }
 
+// Build role-update params for assignment mutability tests.
 fn update_roles_data(
     chapter_id: &str,
     user_id: &str,
@@ -235,6 +266,7 @@ fn update_roles_data(
     }
 }
 
+// Seed shared team/workset/comic/chapter fixtures.
 fn seed_scope(mock: &Mock) {
     //
     mock.seed_team(team("team-1"));
@@ -246,6 +278,7 @@ fn seed_scope(mock: &Mock) {
     mock.seed_chapter(chapter("chapter-1", "comic-1"));
 }
 
+// Seed a user and credential for repeatable test preparation.
 fn seed_user(mock: &Mock, user_id: &str, is_sadmin: bool) {
     mock.seed_user(user(user_id, is_sadmin), credential(user_id));
 }

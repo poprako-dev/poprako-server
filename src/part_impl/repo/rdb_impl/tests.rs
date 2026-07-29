@@ -52,8 +52,7 @@ async fn repo_rdb_impls_use_testcontainer() {
 
     term::tests::term_array_unique_and_fuzzy_roundtrip(shared.clone()).await;
 
-    termbase::tests::termbase_constraints_and_query_roundtrip(shared.clone())
-        .await;
+    termbase::tests::termbase_unique_and_query_roundtrip(shared.clone()).await;
 
     unit::tests::unit_roundtrip_uses_testcontainer(shared.clone()).await;
 

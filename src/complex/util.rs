@@ -205,7 +205,7 @@ where
     accept(())
 }
 
-/// Construct a "chapter assignee required" permission error.
+// Construct a "chapter assignee required" permission error.
 fn chapter_assignee_required_err() -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Perm,
@@ -213,7 +213,7 @@ fn chapter_assignee_required_err() -> BaseError {
     }
 }
 
-/// Construct a "translator or proofreader required" permission error.
+// Construct a "translator or proofreader required" permission error.
 fn chapter_translator_or_proofreader_required_err() -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Perm,

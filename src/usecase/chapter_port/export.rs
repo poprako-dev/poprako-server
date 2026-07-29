@@ -12,7 +12,7 @@ use crate::data::chapter_port::ExportChapterTranslationPayload;
 use crate::data::page_port::PageTranslationExportPayload;
 use crate::data::unit_port::UnitTranslationExportPayload;
 use crate::model::page::PageInfo;
-use crate::model::unit::UnitInfo;
+use crate::model::read::proj::unit::UnitInfo;
 use crate::model::user::UserToken;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
@@ -32,11 +32,12 @@ use crate::result::{BaseResult, accept};
 use crate::usecase::stage::spawn_starts;
 use crate::value::chapter::Stage;
 
+// Test coverage for chapter export payload shape and ordering.
 #[cfg(test)]
 mod tests;
 
 /// Exports one chapter as a JSON-safe translation payload.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(repo))]
 pub async fn export<C, R>(
     (repo,): (&R,),
     token: UserToken,
@@ -93,6 +94,7 @@ where
 
     for page_info in page_infos {
         //
+        // Load visible units for each page and map them into exported unit payloads.
 
         let unit_infos = repo
             .run(&ListUnitInfos {
@@ -102,7 +104,11 @@ where
 
         let unit_vals = unit_infos
             .into_iter()
-            .map(|unit_info| make_unit_export(&page_info, unit_info))
+            .filter(|unit_info| unit_info.hidden_at.is_none())
+            .enumerate()
+            .map(|(index, unit_info)| {
+                make_unit_export(&page_info, index, unit_info)
+            })
             .collect();
 
         page_vals.push(PageTranslationExportPayload {
@@ -131,7 +137,7 @@ where
 }
 
 /// Exports one chapter as LabelPlus text.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(repo))]
 pub async fn export_label_plus<C, R>(
     (repo,): (&R,),
     token: UserToken,
@@ -180,12 +186,18 @@ where
 
     for page_info in &page_infos {
         //
+        // Collect visible units grouped by page before LabelPlus serialization.
 
         let unit_infos = repo
             .run(&ListUnitInfos {
                 page_id: &page_info.id,
             })
             .await?;
+
+        let unit_infos = unit_infos
+            .into_iter()
+            .filter(|unit_info| unit_info.hidden_at.is_none())
+            .collect();
 
         units_by_page_id.insert(page_info.id.clone(), unit_infos);
     }
@@ -198,18 +210,20 @@ where
     accept(content)
 }
 
-/// Builds a [`UnitTranslationExportVal`] from page and unit info.
+// Builds a [`UnitTranslationExportVal`] from page and unit info.
 fn make_unit_export(
     page_info: &PageInfo,
+    index: usize,
     unit_info: UnitInfo,
 ) -> UnitTranslationExportPayload {
+    // Convert one unit into export payload fields used by downstream translators.
     UnitTranslationExportPayload {
         unit_id: unit_info.id,
-        unit_index: unit_info.index,
+        unit_index: index as i32,
         page_id: page_info.id.clone(),
         page_index: page_info.index,
-        x_coord: unit_info.x_coord,
-        y_coord: unit_info.y_coord,
+        x_coord: unit_info.coord.x_coord,
+        y_coord: unit_info.coord.y_coord,
         is_bubble: unit_info.is_bubble,
         translated_text: unit_info.translated_text,
         translator_id: unit_info.last_translator_id,
@@ -219,9 +233,10 @@ fn make_unit_export(
     }
 }
 
-/// Returns [`Some`] with the text if non-empty, [`None`] otherwise.
+// Returns [`Some`] with the text if non-empty, [`None`] otherwise.
 fn non_empty(text: String) -> Option<String> {
     //
+    // Trim and normalize optional text fields before sending user-facing translation payloads.
     if text.trim().is_empty() {
         return None;
     }

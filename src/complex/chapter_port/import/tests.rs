@@ -1,8 +1,10 @@
-// parse_label_plus(parse_label_plus)(positive): parses the real LabelPlus material.
-// parse_poprako(parse_poprako)(positive): preserves PopRaKo one-based unit indexes.
+// Integration fixture for real LabelPlus import parsing.
+// parse_poprako(parse_poprako)(positive): normalizes PopRaKo one-based unit indexes.
+// build_unit_create(build_unit_create)(positive): import always produces a complete Unit Create.
 
 use super::*;
 
+// LabelPlus import fixture used by chapter import parse tests.
 const LABEL_PLUS_MATERIAL: &str =
     include_str!("../../../../tests/materials/translations.lp.txt");
 
@@ -35,7 +37,7 @@ fn parse_label_plus_parses_real_material() {
 }
 
 #[test]
-fn parse_poprako_preserves_one_based_indexes() {
+fn parse_poprako_normalizes_one_based_indexes() {
     //
     let pages = ChapterImportComplex::parse_poprako(
         r#"{
@@ -68,5 +70,32 @@ fn parse_poprako_preserves_one_based_indexes() {
         Err(_) => panic!("expected PopRaKo parse success"),
     };
 
-    assert_eq!(pages[0].units[0].index, 7);
+    assert_eq!(pages[0].units[0].index, 6);
+}
+
+#[test]
+fn build_unit_create_produces_a_complete_create() {
+    //
+    let pages =
+        ChapterImportComplex::parse_label_plus(LABEL_PLUS_MATERIAL).unwrap();
+
+    let edit = ChapterImportComplex::build_unit_create(
+        &pages[0].units[0],
+        "unit-new".to_string(),
+        "proofreader-1",
+        false,
+        true,
+        true,
+    );
+
+    assert!(matches!(
+        edit,
+        UnitEdit::Create {
+            id,
+            next_id: None,
+            is_bubble: true,
+            revision: Some(_),
+            ..
+        } if id == "unit-new"
+    ));
 }

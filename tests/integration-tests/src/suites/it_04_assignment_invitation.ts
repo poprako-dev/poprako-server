@@ -333,9 +333,9 @@ export async function runIt04Module(ctx: RunCtx): Promise<void> {
     ctx.main.assignmentIds["proof_02"] = proof02Assignment.id;
 
     // Also join raw_01 and raw_02 as RAW_PROVIDER so it_05/F-parallel has them
-    // for before_id inserts (page reserve needs RAW_PROVIDER; unit save needs
+    // for anchored inserts (page reserve needs RAW_PROVIDER; unit save needs
     // TRANSLATOR/PROOFREADER — raw_01/02 will NOT be able to save units, but
-    // they can still be assigned). For F8 before_id inserts, the inserter must
+    // they can still be assigned). For F8 anchored inserts, the inserter must
     // be a translator/proofreader. So also add TRANSLATOR to raw_01/02 via
     // self-join merge (member roles of raw_01 = RAW only -> cannot take
     // TRANSLATOR). So raw_01/02 CANNOT save units. it_05 will use trans_* for
@@ -426,23 +426,20 @@ export async function runIt04Module(ctx: RunCtx): Promise<void> {
         const aMainPageId = ctx.main.pageIds[0]!;
 
         expectError(
-            await trans03.api.post<ErrorBody>(`/api/v1/pages/${aMainPageId}/units/save`, {
-                diff: {
-                    opers: [
-                        {
-                            is_bubble: true,
-                            is_proofread: false,
-                            local_id: "should-fail",
-                            oper: "create",
-                            translated_text: null,
+            await trans03.api.post<ErrorBody>(
+                `/api/v1/pages/${aMainPageId}/units/save`,
+                [
+                    {
+                        edit: "create",
+                        local_id: "should-fail",
+                        is_bubble: true,
+                        coord: {
                             x_coord: 0.1,
                             y_coord: 0.1,
                         },
-                    ],
-                    page_id: aMainPageId,
-                },
-                page_id: aMainPageId,
-            }),
+                    },
+                ],
+            ),
             403,
             4,
         );

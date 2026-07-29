@@ -47,21 +47,6 @@ pub struct MemberInfoVal {
     pub roles: RoleMask,
 }
 
-impl From<MemberInfo> for MemberInfoVal {
-    fn from(value: MemberInfo) -> Self {
-        Self {
-            id: value.id,
-            user_id: value.user_id,
-            nickname: value.user_nickname,
-            last_active_at: value.user_last_active_at.to_unix_milli(),
-            team_id: value.team_id,
-            user: None,
-            team: None,
-            roles: value.roles,
-        }
-    }
-}
-
 impl MemberInfoVal {
     /// Converts a member model into a presentation-ready value,
     /// resolving included user/team params when present.
@@ -90,6 +75,22 @@ impl MemberInfoVal {
             .transpose()?,
             roles: model.roles,
         })
+    }
+}
+
+impl From<MemberInfo> for MemberInfoVal {
+    // Convert persisted membership model into response DTO without include expansion.
+    fn from(value: MemberInfo) -> Self {
+        Self {
+            id: value.id,
+            user_id: value.user_id,
+            nickname: value.user_nickname,
+            last_active_at: value.user_last_active_at.to_unix_milli(),
+            team_id: value.team_id,
+            user: None,
+            team: None,
+            roles: value.roles,
+        }
     }
 }
 
@@ -166,8 +167,10 @@ pub struct ListMemberInfosParams {
 }
 
 impl TryInto<MemberListSpec> for ListMemberInfosParams {
+    // The error type for invalid member listing parameters.
     type Error = BaseError;
 
+    // Convert validated member query parameters into the domain list spec.
     fn try_into(self) -> BaseResult<MemberListSpec> {
         //
         let invalid_args = || BaseError::Expected {

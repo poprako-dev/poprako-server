@@ -15,26 +15,12 @@ use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::schema::t_local_message;
 use crate::part_impl::shared::{RdbContext, RdbCore};
 
+// Constant definition for `PREFIX`.
 const PREFIX: &str = "rdb-test-prom-purge-";
+// Constant definition for `POLL_PREFIX`.
 const POLL_PREFIX: &str = "rdb-test-prom-poll-";
+// Constant definition for `LEASE_PREFIX`.
 const LEASE_PREFIX: &str = "rdb-test-prom-lease-";
-
-fn local_message_entry(
-    id: &'static str,
-    topic: &'static str,
-    status: LocalMessageStatus,
-    created_at: OffsetDateTime,
-) -> LocalMessageEntry<'static> {
-    LocalMessageEntry {
-        f_id: id,
-        f_topic: topic,
-        f_status: status,
-        f_payload: serde_json::json!({}),
-        f_visible_at: created_at,
-        f_created_at: created_at,
-        f_updated_at: created_at,
-    }
-}
 
 /// Verifies polling is fair across topics and skips topics with processing
 /// work.
@@ -42,6 +28,7 @@ pub async fn poll_pending_selects_one_visible_message_per_idle_topic(
     shared: RdbCore,
 ) {
     //
+    // Internal state field test_shared.
     test_shared::reset(&shared, POLL_PREFIX).await;
 
     let now = OffsetDateTime::now_utc();
@@ -123,6 +110,7 @@ pub async fn retry_message_allows_later_topic_message_to_advance(
     shared: RdbCore,
 ) {
     //
+    // Internal state field test_shared.
     test_shared::reset(&shared, POLL_PREFIX).await;
 
     let now = OffsetDateTime::now_utc();
@@ -196,6 +184,7 @@ pub async fn retry_message_allows_later_topic_message_to_advance(
 /// and the worker attempt lease.
 pub async fn stale_attempt_finalization_preserves_newer_lease(shared: RdbCore) {
     //
+    // Internal state field test_shared.
     test_shared::reset(&shared, LEASE_PREFIX).await;
 
     let now = OffsetDateTime::now_utc();
@@ -330,6 +319,7 @@ pub async fn completed_message_purge_preserves_non_completed_records(
     shared: RdbCore,
 ) {
     //
+    // Internal state field test_shared.
     test_shared::reset(&shared, PREFIX).await;
 
     let now = OffsetDateTime::now_utc();
@@ -442,4 +432,22 @@ pub async fn completed_message_purge_preserves_non_completed_records(
         .await
         .ok()
         .unwrap();
+}
+
+// Internal implementation of `local_message_entry`.
+fn local_message_entry(
+    id: &'static str,
+    topic: &'static str,
+    status: LocalMessageStatus,
+    created_at: OffsetDateTime,
+) -> LocalMessageEntry<'static> {
+    LocalMessageEntry {
+        f_id: id,
+        f_topic: topic,
+        f_status: status,
+        f_payload: serde_json::json!({}),
+        f_visible_at: created_at,
+        f_created_at: created_at,
+        f_updated_at: created_at,
+    }
 }

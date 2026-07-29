@@ -43,8 +43,11 @@ use crate::value::chapter::{Stage, StageMask, StagePhase};
 use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
+// Reservation tests for chapter page creation and lifecycle.
 mod reserve;
+// Upload and deletion behavior with raw-image upload flow.
 mod upload_delete;
+// Validation guard tests for page operations.
 mod validation;
 
 fn token(user_id: &str) -> UserToken {
