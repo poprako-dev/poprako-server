@@ -30,8 +30,10 @@ use super::*;
 
 use time::OffsetDateTime;
 
+use crate::complex::user::UserComplex;
 use crate::data::user::{
-    MarkUserAvatarUploadedParams, ReserveUserAvatarParams, UpdateUserInfoParams,
+    MarkUserAvatarUploadedParams, ReserveUserAvatarParams,
+    UpdateUserInfoParams, UpdateUserPasswordParams,
 };
 use crate::model::member::MemberInfo;
 use crate::model::user::{UserInfo, UserToken};
@@ -101,6 +103,17 @@ fn update_params(id: &str, qid: &str, nickname: &str) -> UpdateUserInfoParams {
         id: id.into(),
         qid: qid.into(),
         nickname: nickname.into(),
+    }
+}
+
+/// Builds [`UpdateUserPasswordParams`] for replacing a user's password.
+fn update_password_params(
+    current_password: &str,
+    new_password: &str,
+) -> UpdateUserPasswordParams {
+    UpdateUserPasswordParams {
+        current_password: current_password.into(),
+        new_password: new_password.into(),
     }
 }
 
@@ -266,6 +279,79 @@ async fn update_info_rolls_back_missing_user() {
     assert_expected_variant(err, ExpectedVariant::Args);
 
     assert!(mock.snapshot().users.is_empty());
+}
+
+#[tokio::test]
+async fn update_password_replaces_the_verified_password() {
+    //
+    let mock = Mock::new();
+
+    mock.seed_user(
+        user("user-1", "qid-1", "Old"),
+        credential("user-1", "old-password"),
+    );
+
+    update_password(
+        &mock,
+        &mock,
+        token("user-1"),
+        "user-1".into(),
+        update_password_params("old-password", "new-password"),
+    )
+    .await
+    .unwrap();
+
+    let snapshot = mock.snapshot();
+
+    assert!(
+        UserComplex::verify_password(
+            "new-password",
+            &snapshot.credentials[0].password_hash,
+        )
+        .await
+    );
+
+    assert!(
+        !UserComplex::verify_password(
+            "old-password",
+            &snapshot.credentials[0].password_hash,
+        )
+        .await
+    );
+}
+
+#[tokio::test]
+async fn update_password_rejects_an_incorrect_current_password() {
+    //
+    let mock = Mock::new();
+
+    mock.seed_user(
+        user("user-1", "qid-1", "Old"),
+        credential("user-1", "old-password"),
+    );
+
+    let err = update_password(
+        &mock,
+        &mock,
+        token("user-1"),
+        "user-1".into(),
+        update_password_params("wrong-password", "new-password"),
+    )
+    .await
+    .err()
+    .unwrap();
+
+    assert_expected_variant(err, ExpectedVariant::Auth);
+
+    let snapshot = mock.snapshot();
+
+    assert!(
+        UserComplex::verify_password(
+            "old-password",
+            &snapshot.credentials[0].password_hash,
+        )
+        .await
+    );
 }
 
 #[tokio::test]

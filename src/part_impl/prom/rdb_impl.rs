@@ -7,12 +7,6 @@
 //!
 //! [`AsyncEffectDevelop`]: crate::part_impl::effect::async_impl::AsyncEffectDevelop
 
-mod entity;
-
-mod handler;
-
-mod repo;
-
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
@@ -23,7 +17,6 @@ use time::OffsetDateTime;
 use tokio::sync::oneshot::{
     Receiver as OneshotReceiver, Sender as OneshotSender,
 };
-
 use tracing::instrument;
 
 use crate::part::image::ImageManager;
@@ -37,6 +30,10 @@ use crate::part_impl::repo::rdb_impl::schema::t_local_message;
 use crate::part_impl::shared::result::diesel;
 use crate::part_impl::shared::{RdbContext, RdbCore};
 use crate::result::{RegularError, RegularResult};
+
+mod entity;
+mod handler;
+mod repo;
 
 // ── Handle type ────────────────────────────────────────────────────────────
 

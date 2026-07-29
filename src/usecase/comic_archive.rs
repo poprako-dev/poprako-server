@@ -4,14 +4,12 @@ use poprako_orchestra::{Nucl, run_proxy};
 use poprako_orchestra_extra::prom::oper::DeferBatch;
 use poprako_orchestra_extra::prom::task::Task;
 use time::OffsetDateTime;
-
 use tracing::instrument;
 
 use crate::complex::comic_archive::{
     ComicArchiveComplex, ComicArchivePermComplex,
 };
 use crate::data::comic_archive::ArchiveComicPayload;
-use crate::model::comic_archive::ComicArchiveSnapshot;
 use crate::model::user::UserToken;
 use crate::part::prom::Prom;
 use crate::part::prom::payload::{Payload, image};
@@ -74,15 +72,15 @@ where
                 )
                 .await?;
 
-            let image_keys = collect_image_keys(&comic_archive_snapshot);
-
             let archived_at = OffsetDateTime::now_utc();
 
-            let comic_archive_write = ComicArchiveComplex::build_write(
-                comic_archive_snapshot,
-                token.user_id,
-                archived_at,
-            )?;
+            let (comic_archive_write, image_keys) =
+                ComicArchiveComplex::prepare_write(
+                    comic_archive_snapshot,
+                    token.user_id,
+                    archived_at,
+                )
+                .await?;
 
             let archived_comic_id = comic_archive_write.comic_record.id.clone();
 
@@ -98,7 +96,7 @@ where
                 }));
             }
 
-            let delete_tasks: Vec<_> = delete_ids
+            let delete_tasks: Vec<Task<'_, String, Payload>> = delete_ids
                 .iter()
                 .zip(delete_payloads.iter())
                 .map(|(id, payload)| Task {
@@ -123,30 +121,4 @@ where
         .await?;
 
     accept(archive_comic_val)
-}
-
-/// Collect every current comic or page object key, including reserved uploads.
-fn collect_image_keys(
-    comic_archive_snapshot: &ComicArchiveSnapshot,
-) -> Vec<String> {
-    //
-    let mut image_keys = Vec::new();
-
-    if let Some(cover_key) = &comic_archive_snapshot.comic_info.cover_key {
-        image_keys.push(cover_key.clone());
-    }
-
-    for chapter_snapshot in &comic_archive_snapshot.chapter_snapshots {
-        for page_snapshot in &chapter_snapshot.page_snapshots {
-            if let Some(image_key) = &page_snapshot.page_info.image_key {
-                image_keys.push(image_key.clone());
-            }
-        }
-    }
-
-    image_keys.sort();
-
-    image_keys.dedup();
-
-    image_keys
 }

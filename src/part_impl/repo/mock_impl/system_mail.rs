@@ -3,10 +3,11 @@
 use std::cmp::Reverse;
 
 use poprako_orchestra::Run;
-
 use tracing::instrument;
 
-use crate::model::system_mail::{SystemMailEntry, SystemMailInfo};
+use crate::model::system_mail::{
+    SystemMailEntry, SystemMailInfo, SystemMailInfoListKind,
+};
 use crate::part::repo::oper::system_mail::{
     ListSystemMailInfos, MarkSystemMailRead, SendSystemMail, SendSystemMails,
 };
@@ -85,12 +86,14 @@ fn list_system_mail_infos(
         .system_mails
         .iter()
         .filter(|system_mail_info| {
-            system_mail_info.receiver_id == oper.receiver_id
-                && match oper.read {
+            system_mail_info.receiver_id == oper.spec.receiver_id
+                && match &oper.spec.kind {
                     //
-                    Some(read) => system_mail_info.read == read,
+                    SystemMailInfoListKind::All => true,
 
-                    None => true,
+                    SystemMailInfoListKind::Read => system_mail_info.read,
+
+                    SystemMailInfoListKind::Unread => !system_mail_info.read,
                 }
         })
         .cloned()
@@ -101,8 +104,8 @@ fn list_system_mail_infos(
 
     system_mail_infos
         .into_iter()
-        .skip(oper.offset as usize)
-        .take(oper.limit as usize)
+        .skip(oper.spec.offset as usize)
+        .take(oper.spec.limit as usize)
         .collect()
 }
 

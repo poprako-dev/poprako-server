@@ -1,11 +1,9 @@
 //! Assignment invitation use cases.
 
+use poprako_orchestra::Nucl;
 use tracing::instrument;
 
-use poprako_orchestra::Nucl;
-
 use poprako_util::i18n::trl;
-use poprako_util::page::Page;
 
 use crate::complex::assignment::AssignmentComplex;
 use crate::data::assignment::AssignmentInfoVal;
@@ -15,7 +13,10 @@ use crate::data::assignment_invitation::{
     ListAssignmentInvitationInfosParams,
 };
 use crate::model::assignment::{AssignmentEntry, AssignmentInfo};
-use crate::model::assignment_invitation::AssignmentInvitationEntry;
+use crate::model::assignment_invitation::{
+    AssignmentInvitationEntry, AssignmentInvitationListKind,
+    AssignmentInvitationListSpec,
+};
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
 use crate::part::repo::assignment::AssignmentRepo;
@@ -59,14 +60,25 @@ where
 {
     ensure_user_admin(repo, &token.user_id, &params.chapter_id).await?;
 
+    let kind = match params.pending {
+        //
+        Some(true) => AssignmentInvitationListKind::Pending,
+
+        Some(false) => AssignmentInvitationListKind::Used,
+
+        None => AssignmentInvitationListKind::All,
+    };
+
+    let assignment_invitation_list_spec = AssignmentInvitationListSpec {
+        chapter_id: params.chapter_id,
+        kind,
+        offset: params.offset,
+        limit: params.limit,
+    };
+
     let assignment_invitation_infos = repo
         .run(&ListAssignmentInvitationInfos {
-            chapter_id: &params.chapter_id,
-            pending: params.pending,
-            page: Page {
-                offset: params.offset,
-                limit: params.limit,
-            },
+            spec: &assignment_invitation_list_spec,
         })
         .await?;
 

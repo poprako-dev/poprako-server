@@ -9,9 +9,9 @@ use crate::part_impl::repo::mock_impl::{
 };
 use crate::result::RegularResult;
 
-impl PageRepo<MockContext> for Mock {}
-
 mod orchestra;
+
+impl PageRepo<MockContext> for Mock {}
 
 fn get_page_by_id(state: &MockState, id: &str) -> RegularResult<PageInfo> {
     state

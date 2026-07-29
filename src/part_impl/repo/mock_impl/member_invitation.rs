@@ -1,11 +1,11 @@
 //! Mock member-invitation repository operations.
 
 use poprako_orchestra::{Run, Step};
-
 use tracing::instrument;
 
 use crate::model::member_invitation::{
-    MemberInvitationEntry, MemberInvitationInfo, MemberInvitationListSpec,
+    MemberInvitationEntry, MemberInvitationInfo, MemberInvitationListKind,
+    MemberInvitationListSpec,
 };
 use crate::model::user::UserInfo;
 use crate::part::repo::member_invitation::MemberInvitationRepo;
@@ -54,9 +54,18 @@ fn list_member_invitation_infos(
         .iter()
         .filter(|member_invitation_info| {
             member_invitation_info.team_id == spec.team_id
-                && spec.pending.is_none_or(|pending| {
-                    member_invitation_info.pending == pending
-                })
+                && match &spec.kind {
+                    //
+                    MemberInvitationListKind::All => true,
+
+                    MemberInvitationListKind::Pending => {
+                        member_invitation_info.pending
+                    }
+
+                    MemberInvitationListKind::Used => {
+                        !member_invitation_info.pending
+                    }
+                }
         })
         .cloned()
         .collect::<Vec<_>>();

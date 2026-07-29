@@ -6,15 +6,13 @@ use anyhow::Context as _;
 use diesel_async::AsyncPgConnection;
 use diesel_async::pooled_connection::AsyncDieselConnectionManager;
 use diesel_async::pooled_connection::deadpool::{Object, Pool};
-
 use tracing::instrument;
 
+use self::result::{pool_build, pool_get};
 use crate::result::{RegularError, RegularResult};
 
 /// Result helpers for Diesel-backed shared internals.
 pub mod result;
-
-use self::result::{pool_build, pool_get};
 
 /// Internal type alias for the Diesel async connection pool.
 type RdbPool = Pool<AsyncPgConnection>;

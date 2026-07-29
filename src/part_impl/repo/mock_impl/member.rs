@@ -1,7 +1,6 @@
 //! Mock member repository operations for in-memory testing.
 
 use poprako_orchestra::{Run, Step};
-
 use tracing::instrument;
 
 use crate::model::member::{MemberEntry, MemberInfo, MemberListSpec};

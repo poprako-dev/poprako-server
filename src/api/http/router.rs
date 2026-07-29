@@ -40,6 +40,7 @@ pub fn new(harn: AppHarn) -> Router<AppHarn> {
                 .put(user::update_info)
                 .delete(user::delete),
         )
+        .route("/users/{user_id}/password", put(user::update_password))
         .route(
             "/users/{user_id}/avatar/reserve",
             post(user::reserve_avatar),

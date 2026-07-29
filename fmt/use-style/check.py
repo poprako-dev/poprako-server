@@ -67,6 +67,7 @@ class UseStmt:
     attr_signature: tuple[str, ...]
     indent: str
     scope_id: int
+    public: bool
     in_tests_mod: bool
     requires_super_glob: bool
     leaves: list[Leaf]
@@ -240,7 +241,7 @@ def collect_uses(path: Path, source: bytes) -> list[UseStmt]:
     statements: list[UseStmt] = []
 
     for node in descendants(tree.root_node, "use_declaration"):
-        if not module_scope(node) or is_public_use(node, source):
+        if not module_scope(node):
             continue
 
         argument = node.child_by_field_name("argument")
@@ -265,6 +266,7 @@ def collect_uses(path: Path, source: bytes) -> list[UseStmt]:
                 attr_signature=tuple(text(source, attr) for attr in attrs),
                 indent=indent,
                 scope_id=node.parent.id,
+                public=is_public_use(node, source),
                 in_tests_mod=lexical_tests_mod or test_file,
                 requires_super_glob=lexical_tests_mod,
                 leaves=leaves,
@@ -354,21 +356,22 @@ def apply_trait_aliases(leaves: list[Leaf], masked: bytes) -> tuple[list[Leaf], 
     return fixed, changed
 
 
-def render_leaf(leaf: Leaf) -> str:
+def render_leaf(leaf: Leaf, public: bool) -> str:
     base = "::".join((*leaf.prefix, "*" if leaf.kind == "glob" else leaf.leaf))
 
     if leaf.kind == "self":
         base = "::".join(leaf.prefix)
 
-    return f"use {base}{f' as {leaf.alias}' if leaf.alias else ''};"
+    visibility = "pub " if public else ""
+    return f"{visibility}use {base}{f' as {leaf.alias}' if leaf.alias else ''};"
 
 
-def render_bucket(leaves: list[Leaf]) -> str:
+def render_bucket(leaves: list[Leaf], public: bool) -> str:
     rank = {"self": 0, "name": 1, "glob": 2}
     leaves = sorted(leaves, key=lambda leaf: (rank[leaf.kind], leaf.leaf, leaf.alias or ""))
 
     if len(leaves) == 1:
-        return render_leaf(leaves[0])
+        return render_leaf(leaves[0], public)
 
     prefix = "::".join(leaves[0].prefix)
     items = []
@@ -377,10 +380,16 @@ def render_bucket(leaves: list[Leaf]) -> str:
         name = "self" if leaf.kind == "self" else "*" if leaf.kind == "glob" else leaf.leaf
         items.append(f"{name}{f' as {leaf.alias}' if leaf.alias else ''}")
 
-    return f"use {prefix}::{{{', '.join(items)}}};"
+    visibility = "pub " if public else ""
+    return f"{visibility}use {prefix}::{{{', '.join(items)}}};"
 
 
-def render_block(leaves: list[Leaf], local_crates: set[str], indent: str) -> str:
+def render_block(
+    leaves: list[Leaf],
+    local_crates: set[str],
+    indent: str,
+    public: bool,
+) -> str:
     by_category: dict[str, list[Leaf]] = {category_name: [] for category_name in CATEGORIES}
 
     for leaf in canonicalize(leaves):
@@ -394,7 +403,7 @@ def render_block(leaves: list[Leaf], local_crates: set[str], indent: str) -> str
         for leaf in by_category[category_name]:
             buckets.setdefault(leaf.prefix, []).append(leaf)
 
-        group = [render_bucket(bucket) for bucket in buckets.values()]
+        group = [render_bucket(bucket, public) for bucket in buckets.values()]
 
         if group and lines:
             lines.append("")
@@ -412,7 +421,11 @@ def contiguous_blocks(source: bytes, statements: list[UseStmt]) -> list[list[Use
         if current:
             previous = current[-1]
             gap = source[previous.end : statement.attr_start]
-            separated = previous.scope_id != statement.scope_id or gap.strip()
+            separated = (
+                previous.scope_id != statement.scope_id
+                or previous.public != statement.public
+                or gap.strip()
+            )
 
             if separated:
                 blocks.append(current)
@@ -444,6 +457,212 @@ def condition_segments(block: list[UseStmt]) -> list[list[UseStmt]]:
         segments.append(current)
 
     return segments
+
+
+def scope_nodes(tree: tree_sitter.Tree) -> list[tree_sitter.Node]:
+    return [tree.root_node, *descendants(tree.root_node, "declaration_list")]
+
+
+def semantic_children(scope: tree_sitter.Node) -> list[tree_sitter.Node]:
+    return [
+        child
+        for child in scope.named_children
+        if child.type
+        not in {"attribute_item", "inner_attribute_item", "block_comment", "line_comment"}
+    ]
+
+
+def item_start(source: bytes, node: tree_sitter.Node) -> int:
+    parent = node.parent
+
+    if parent is None:
+        return node.start_byte
+
+    siblings = parent.named_children
+    index = next(index for index, sibling in enumerate(siblings) if sibling.id == node.id)
+    start = node.start_byte
+
+    for sibling in reversed(siblings[:index]):
+        gap = source[sibling.end_byte : start]
+
+        if gap.strip():
+            break
+
+        if sibling.type == "attribute_item":
+            start = sibling.start_byte
+            continue
+
+        if sibling.type in {"line_comment", "block_comment"}:
+            comment = text(source, sibling).lstrip()
+
+            if not comment.startswith(("//!", "/*!")):
+                start = sibling.start_byte
+                continue
+
+        break
+
+    return source.rfind(b"\n", 0, start) + 1
+
+
+def item_end(source: bytes, node: tree_sitter.Node) -> int:
+    newline = source.find(b"\n", node.end_byte)
+    return len(source) if newline < 0 else newline + 1
+
+
+def item_rank(node: tree_sitter.Node, source: bytes) -> int:
+    if node.type == "use_declaration":
+        return 1 if is_public_use(node, source) else 0
+
+    if node.type == "mod_item":
+        return 2
+
+    return 3
+
+
+def check_item_order(path: Path, root: Path, source: bytes) -> list[str]:
+    tree = PARSER.parse(source)
+    diagnostics: list[str] = []
+
+    for scope in scope_nodes(tree):
+        highest = -1
+
+        for node in semantic_children(scope):
+            rank = item_rank(node, source)
+
+            if rank < highest:
+                expected = "ordinary use, pub use, mod, then other code"
+                diagnostics.append(line(path, root, source, node.start_byte, "USE_ITEM_ORDER", expected))
+
+            highest = max(highest, rank)
+
+    return diagnostics
+
+
+def check_use_block_boundaries(
+    path: Path,
+    root: Path,
+    source: bytes,
+    statements: list[UseStmt],
+) -> list[str]:
+    diagnostics: list[str] = []
+    scopes: dict[int, list[UseStmt]] = {}
+
+    for statement in statements:
+        scopes.setdefault(statement.scope_id, []).append(statement)
+
+    for scope_statements in scopes.values():
+        for previous, current in zip(scope_statements, scope_statements[1:]):
+            if previous.public == current.public:
+                continue
+
+            gap = source[previous.end : current.attr_start]
+
+            if gap.count(b"\n") != 2:
+                diagnostics.append(
+                    line(
+                        path,
+                        root,
+                        source,
+                        current.start,
+                        "USE_VISIBILITY_BLANK_LINE",
+                        "ordinary use and pub use blocks need exactly one blank line",
+                    ),
+                )
+
+    return diagnostics
+
+
+def join_use_chunks(
+    source: bytes,
+    nodes: list[tree_sitter.Node],
+    statements: dict[int, UseStmt],
+    local_crates: set[str],
+) -> bytes:
+    chunks: list[bytes] = []
+
+    for index, node in enumerate(nodes):
+        start = item_start(source, node)
+        chunk = source[start:item_end(source, node)].strip(b"\r\n")
+
+        if index:
+            previous = statements[nodes[index - 1].start_byte]
+            current = statements[node.start_byte]
+            previous_categories = {category(leaf, local_crates) for leaf in previous.leaves}
+            current_categories = {category(leaf, local_crates) for leaf in current.leaves}
+            same_condition = (
+                previous.condition == current.condition
+                and previous.attr_signature == current.attr_signature
+            )
+            separator = b"\n\n" if same_condition and previous_categories != current_categories else b"\n"
+            chunks.append(separator)
+
+        chunks.append(chunk)
+
+    return b"".join(chunks)
+
+
+def first_structure_edit(
+    path: Path,
+    source: bytes,
+    local_crates: set[str],
+) -> tuple[int, int, bytes] | None:
+    tree = PARSER.parse(source)
+    statements = {statement.start: statement for statement in collect_uses(path, source)}
+    scopes = sorted(scope_nodes(tree), key=lambda scope: scope.end_byte - scope.start_byte)
+
+    for scope in scopes:
+        children = semantic_children(scope)
+        ranks = [item_rank(node, source) for node in children]
+
+        if ranks == sorted(ranks):
+            continue
+
+        declarations = [node for node in children if node.type in {"use_declaration", "mod_item"}]
+        ordinary_uses = [
+            node
+            for node in declarations
+            if node.type == "use_declaration" and not is_public_use(node, source)
+        ]
+        public_uses = [
+            node
+            for node in declarations
+            if node.type == "use_declaration" and is_public_use(node, source)
+        ]
+        modules = [node for node in declarations if node.type == "mod_item"]
+        sections = [
+            join_use_chunks(source, ordinary_uses, statements, local_crates),
+            join_use_chunks(source, public_uses, statements, local_crates),
+            b"\n".join(
+                source[item_start(source, node):item_end(source, node)].strip(b"\r\n")
+                for node in modules
+            ),
+        ]
+        header = b"\n\n".join(section for section in sections if section) + b"\n\n"
+        anchor = item_start(source, children[0])
+        edits: list[tuple[int, int, bytes]] = []
+        replaced_anchor = False
+
+        for node in declarations:
+            start = item_start(source, node)
+            end = item_end(source, node)
+
+            if start == anchor:
+                edits.append((start, end, header))
+                replaced_anchor = True
+            else:
+                edits.append((start, end, b""))
+
+        if not replaced_anchor:
+            edits.append((anchor, anchor, header))
+
+        updated = source
+
+        for start, end, replacement in sorted(edits, reverse=True):
+            updated = updated[:start] + replacement + updated[end:]
+
+        return 0, len(source), updated.rstrip() + b"\n"
+
+    return None
 
 
 def line(path: Path, root: Path, source: bytes, index: int, code: str, message: str) -> str:
@@ -487,7 +706,11 @@ def check_test_super_imports(
             continue
 
         for statement in super_statements:
-            pure_glob = len(statement.leaves) == 1 and statement.leaves[0] == Leaf(("super",), "*", "glob", None)
+            pure_glob = (
+                not statement.public
+                and len(statement.leaves) == 1
+                and statement.leaves[0] == Leaf(("super",), "*", "glob", None)
+            )
 
             if not pure_glob:
                 diagnostics.append(line(path, root, source, statement.start, "USE_SUPER_IN_TESTS_NOT_GLOB", "super imports in mod tests must be `use super::*;`"))
@@ -514,6 +737,8 @@ def check_file(path: Path, root: Path, local_crates: set[str]) -> tuple[list[str
                 diagnostics.append(line(path, root, source, statement.start, "USE_SUPER_OUTSIDE_TESTS", "`super` imports are only allowed inside mod tests"))
 
     diagnostics.extend(check_test_super_imports(path, root, source, statements))
+    diagnostics.extend(check_use_block_boundaries(path, root, source, statements))
+    diagnostics.extend(check_item_order(path, root, source))
 
     for block in contiguous_blocks(source, statements):
         for segment in condition_segments(block):
@@ -579,7 +804,12 @@ def check_file(path: Path, root: Path, local_crates: set[str]) -> tuple[list[str
                 continue
 
             fixed_leaves, _ = apply_trait_aliases(leaves, masked)
-            rendered = render_block(fixed_leaves, local_crates, segment[0].indent)
+            rendered = render_block(
+                fixed_leaves,
+                local_crates,
+                segment[0].indent,
+                segment[0].public,
+            )
             first = segment[0]
             prefix = source[first.attr_start : first.start]
             replacement = prefix + rendered.encode()
@@ -614,6 +844,33 @@ def apply_fixes(path: Path, edits: list[tuple[int, int, bytes]]) -> None:
     path.write_bytes(source)
 
 
+def apply_structure_fixes(path: Path, local_crates: set[str]) -> None:
+    for _ in range(100):
+        source = path.read_bytes()
+        edit = first_structure_edit(path, source, local_crates)
+
+        if edit is None:
+            return
+
+        apply_fixes(path, [edit])
+
+    raise RuntimeError(f"structure fixer did not converge for {path}")
+
+
+def fix_file(path: Path, root: Path, local_crates: set[str]) -> list[str]:
+    for _ in range(100):
+        before = path.read_bytes()
+        _, edits = check_file(path, root, local_crates)
+        apply_fixes(path, edits)
+        apply_structure_fixes(path, local_crates)
+
+        if path.read_bytes() == before:
+            errors, _ = check_file(path, root, local_crates)
+            return errors
+
+    raise RuntimeError(f"use-style fixer did not converge for {path}")
+
+
 def self_test() -> int:
     with tempfile.TemporaryDirectory() as directory:
         root = Path(directory)
@@ -626,8 +883,9 @@ def self_test() -> int:
             "use crate::a::B;\n"
             "#[cfg(unix)]\n"
             "use std::io::Write;\n"
-            "fn local() { use std::mem::take; }\n"
-            "pub use crate::reexport::Thing;\n",
+            "\n"
+            "pub use crate::reexport::Thing;\n\n"
+            "fn local() { use std::mem::take; }\n",
         )
         diagnostics, _ = check_file(fixture, root, {root.name})
 
@@ -676,6 +934,66 @@ def self_test() -> int:
             print("self-test: invalid test-module super import was accepted", file=sys.stderr)
             return 1
 
+        fixture.write_text(
+            "mod before;\n"
+            "use std::time::Duration;\n"
+            "pub use crate::api::Api;\n"
+            "fn main_code() {}\n"
+            "#[cfg(test)]\n"
+            "mod tests {\n"
+            "    use super::*;\n"
+            "}\n",
+        )
+        diagnostics, edits = check_file(fixture, root, {root.name})
+
+        if not any("USE_ITEM_ORDER" in item for item in diagnostics):
+            print("self-test: invalid item order was accepted", file=sys.stderr)
+            return 1
+
+        apply_fixes(fixture, edits)
+        apply_structure_fixes(fixture, {root.name})
+        fixed = fixture.read_text()
+
+        if fixed.index("use std") > fixed.index("pub use") or fixed.index("pub use") > fixed.index("mod before"):
+            print("self-test: use/pub use/mod order was not fixed", file=sys.stderr)
+            return 1
+
+        if fixed.index("mod tests") > fixed.index("fn main_code"):
+            print("self-test: trailing test module was not moved", file=sys.stderr)
+            return 1
+
+        diagnostics, _ = check_file(fixture, root, {root.name})
+
+        if diagnostics:
+            print("self-test: structure-fixed source still has diagnostics", file=sys.stderr)
+            print("\n".join(diagnostics), file=sys.stderr)
+            return 1
+
+        fixture.write_text(
+            "mod outer {\n"
+            "    fn code() {}\n"
+            "\n"
+            "    // Keep this comment with the test module.\n"
+            "    #[cfg(test)]\n"
+            "    mod tests {\n"
+            "        use super::*;\n"
+            "    }\n"
+            "}\n",
+        )
+        apply_structure_fixes(fixture, {root.name})
+        fixed = fixture.read_text()
+
+        if fixed.index("// Keep this comment") > fixed.index("fn code"):
+            print("self-test: module comment was not moved with its declaration", file=sys.stderr)
+            return 1
+
+        diagnostics, _ = check_file(fixture, root, {root.name})
+
+        if diagnostics:
+            print("self-test: nested structure-fixed source still has diagnostics", file=sys.stderr)
+            print("\n".join(diagnostics), file=sys.stderr)
+            return 1
+
     return 0
 
 
@@ -698,8 +1016,7 @@ def main() -> int:
         errors, edits = check_file(path, root, local_crates)
 
         if args.fix:
-            apply_fixes(path, edits)
-            errors, _ = check_file(path, root, local_crates)
+            errors = fix_file(path, root, local_crates)
 
         diagnostics.extend(errors)
 

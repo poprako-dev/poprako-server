@@ -6,7 +6,7 @@ use argon2::password_hash::{
     PasswordHash, PasswordHasher as _, PasswordVerifier as _, SaltString,
 };
 
-use crate::result::{Error as RootError, RegularResult};
+use crate::result::{RegularError, RegularResult};
 use crate::util::next_snowflake_id;
 
 /// Domain opers for [User] aggregates: password hashing and verification via Argon2id, ID generation, and avatar storage key computation.
@@ -18,38 +18,49 @@ impl UserComplex {
         next_snowflake_id()
     }
 
-    /// Hashes a plaintext password with Argon2id and a random salt, returning the encoded hash string.
-    pub fn hash_password(password: &str) -> RegularResult<String> {
-        //
-        let salt = SaltString::generate(OsRng);
+    /// Hashes a plaintext password on Tokio's blocking pool and returns its Argon2id-encoded value.
+    pub async fn hash_password(password: &str) -> RegularResult<String> {
+        let password = password.to_owned();
 
-        Argon2::default()
-            .hash_password(password.as_bytes(), &salt)
-            .map(|h| h.to_string())
-            .map_err(|e| RootError::Unrecoverable {
+        tokio::task::spawn_blocking(move || hash_password_sync(&password))
+            .await
+            .map_err(|error| RegularError::Unrecoverable {
                 message: format!(
-                    "[UserComplex::hash_password] argon2 hashing failed: {}",
-                    e
+                    "[UserComplex::hash_password] blocking task failed: {}",
+                    error
                 ),
-            })
+            })?
     }
 
-    /// Verifies a plaintext password against an Argon2id-encoded hash. Returns `false` on parse or verification failure.
-    pub fn verify_password(password: &str, password_hash: &str) -> bool {
-        //
-        let Ok(parsed) = PasswordHash::new(password_hash) else {
-            return false;
-        };
+    /// Verifies a plaintext password on Tokio's blocking pool against an Argon2id-encoded hash.
+    pub async fn verify_password(password: &str, password_hash: &str) -> bool {
+        let password = password.to_owned();
+        let password_hash = password_hash.to_owned();
 
-        Argon2::default()
-            .verify_password(password.as_bytes(), &parsed)
-            .inspect_err(|e| {
-                tracing::warn!(
-                    "[UserComplex::verify_password] failed to verify_password: {}",
-                    e
-                )
-            })
-            .is_ok()
+        match tokio::task::spawn_blocking(move || {
+            verify_password_sync(&password, &password_hash)
+        })
+        .await
+        {
+            Ok(is_valid) => is_valid,
+
+            Err(error) => {
+                tracing::error!(
+                    error = %error,
+                    "[UserComplex::verify_password] blocking task failed",
+                );
+
+                false
+            }
+        }
+    }
+
+    /// Hashes a plaintext password using the sync runtime (test-only helper).
+    #[cfg(test)]
+    pub(crate) fn hash_password_for_test(
+        password: &str,
+    ) -> RegularResult<String> {
+        hash_password_sync(password)
     }
 
     /// Constructs the object storage key for a user's avatar image from the user ID, version counter, and file extension.
@@ -60,4 +71,34 @@ impl UserComplex {
     ) -> String {
         format!("user_avatar/{}-{}.{}", id, avatar_version, file_ext)
     }
+}
+
+fn hash_password_sync(password: &str) -> RegularResult<String> {
+    let salt = SaltString::generate(OsRng);
+
+    Argon2::default()
+        .hash_password(password.as_bytes(), &salt)
+        .map(|h| h.to_string())
+        .map_err(|e| RegularError::Unrecoverable {
+            message: format!(
+                "[UserComplex::hash_password] argon2 hashing failed: {}",
+                e
+            ),
+        })
+}
+
+fn verify_password_sync(password: &str, password_hash: &str) -> bool {
+    let Ok(parsed) = PasswordHash::new(password_hash) else {
+        return false;
+    };
+
+    Argon2::default()
+        .verify_password(password.as_bytes(), &parsed)
+        .inspect_err(|e| {
+            tracing::warn!(
+                "[UserComplex::verify_password] failed to verify_password: {}",
+                e
+            )
+        })
+        .is_ok()
 }

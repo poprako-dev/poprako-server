@@ -14,13 +14,42 @@ use axum::http::header::{HeaderMap, HeaderValue, SET_COOKIE};
 use axum::response::{IntoResponse, Response};
 use cookie::Cookie;
 use serde::Serialize;
-#[cfg(feature = "swagger-ui")]
-use utoipa::ToSchema;
 
 use poprako_util::i18n::trl;
 use poprako_util::rename::StdResult;
+#[cfg(feature = "swagger-ui")]
+use utoipa::ToSchema;
 
 use crate::result::{Error as RegularError, ExpectedVariant};
+
+#[cfg(test)]
+mod tests {
+    // http_body_serializes_success_envelope(HttpBody)(positive): emits code zero and data.
+
+    use super::*;
+
+    use serde_json::json;
+
+    #[test]
+    fn http_body_serializes_success_envelope() {
+        //
+        let http_body =
+            HttpBody::new(StatusCode::CREATED, json!({ "id": "comic_1" }));
+
+        let serialized =
+            serde_json::to_value(http_body).expect("http body serializes");
+
+        assert_eq!(
+            serialized,
+            json!({
+                "code": 0,
+                "data": {
+                    "id": "comic_1",
+                },
+            }),
+        );
+    }
+}
 
 /// Business-level error envelope returned by all failing endpoints.
 #[derive(Debug, Serialize)]
@@ -264,33 +293,4 @@ where
 /// Returns a `204 No Content` result with an empty body.
 pub fn no_content() -> StdResult<NoContent, HttpError> {
     Ok(NoContent::new())
-}
-
-#[cfg(test)]
-mod tests {
-    // http_body_serializes_success_envelope(HttpBody)(positive): emits code zero and data.
-
-    use super::*;
-
-    use serde_json::json;
-
-    #[test]
-    fn http_body_serializes_success_envelope() {
-        //
-        let http_body =
-            HttpBody::new(StatusCode::CREATED, json!({ "id": "comic_1" }));
-
-        let serialized =
-            serde_json::to_value(http_body).expect("http body serializes");
-
-        assert_eq!(
-            serialized,
-            json!({
-                "code": 0,
-                "data": {
-                    "id": "comic_1",
-                },
-            }),
-        );
-    }
 }

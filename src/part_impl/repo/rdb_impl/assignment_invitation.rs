@@ -3,11 +3,11 @@
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
-
 use tracing::instrument;
 
 use crate::model::assignment_invitation::{
     AssignmentInvitationEntry, AssignmentInvitationInfo,
+    AssignmentInvitationListKind, AssignmentInvitationListSpec,
 };
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part_impl::repo::rdb_impl::RdbRepo;
@@ -20,9 +20,11 @@ use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::RegularResult;
 
-impl AssignmentInvitationRepo<RdbContext> for RdbRepo {}
-
 mod orchestra;
+#[cfg(all(test, feature = "repo"))]
+mod tests;
+
+impl AssignmentInvitationRepo<RdbContext> for RdbRepo {}
 
 /// Converts a single `AssignmentInvitationRow` into an `AssignmentInvitationInfo`.
 fn row_into_info(
@@ -38,29 +40,33 @@ fn rows_into_infos(
     rows.into_iter().map(row_into_info).collect()
 }
 
-/// Queries assignment invitation rows filtered by chapter ID and optional pending flag.
+/// Queries assignment invitation rows selected by a list specification.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn list_infos(
     conn: &mut RdbConn,
-    chapter_id: &str,
-    pending: Option<bool>,
-    offset: u32,
-    limit: u32,
+    spec: &AssignmentInvitationListSpec,
 ) -> RegularResult<Vec<AssignmentInvitationInfo>> {
     //
     let mut query = t_assignment_invitation
-        .filter(f_chapter_id.eq(chapter_id))
+        .filter(f_chapter_id.eq(spec.chapter_id.as_str()))
         .into_boxed();
 
-    if let Some(pending) = pending {
-        query = query.filter(f_pending.eq(pending));
-    }
+    query = match &spec.kind {
+        //
+        AssignmentInvitationListKind::All => query,
+
+        AssignmentInvitationListKind::Pending => {
+            query.filter(f_pending.eq(true))
+        }
+
+        AssignmentInvitationListKind::Used => query.filter(f_pending.eq(false)),
+    };
 
     let rows: Vec<AssignmentInvitationRow> = query
         .select(AssignmentInvitationRow::as_select())
         .order_by((f_created_at.desc(), f_id.asc()))
-        .offset(offset as i64)
-        .limit(limit as i64)
+        .offset(spec.offset as i64)
+        .limit(spec.limit as i64)
         .load(conn)
         .await
         .map_err(diesel)?;
@@ -182,6 +188,3 @@ async fn delete_by_chapter_id(
 
     Ok(())
 }
-
-#[cfg(all(test, feature = "repo"))]
-mod tests;

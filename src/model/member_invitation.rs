@@ -50,9 +50,19 @@ pub struct MemberInvitationUpdate {
 /// Filtering, pagination, and include parameters for listing invitations.
 pub struct MemberInvitationListSpec {
     pub team_id: String,
-    pub pending: Option<bool>,
+    pub kind: MemberInvitationListKind,
     pub incl_opt: Vec<MemberInvitationInclOpt>,
 
     pub offset: u32,
     pub limit: u32,
+}
+
+/// Consumption-status filtering mode for listing member invitations.
+pub enum MemberInvitationListKind {
+    /// Include invitations regardless of consumption status.
+    All,
+    /// Include only invitations that have not yet been consumed.
+    Pending,
+    /// Include only invitations that have already been consumed.
+    Used,
 }

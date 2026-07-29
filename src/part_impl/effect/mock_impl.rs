@@ -1,5 +1,7 @@
 //! Mock implementation of [EffectDevelop] for testing event collection.
 
+use crate::part::effect::event::Event;
+use crate::part::effect::event::user::UserActivePayload;
 use crate::part::effect::{EffectDevelop, EventIter};
 use crate::part_impl::repo::mock_impl::Mock;
 
@@ -17,9 +19,6 @@ impl EffectDevelop for Mock {
 }
 
 // develop_collects_events(Develop::develop)(positive): emitted events should be stored for later draining.
-
-use crate::part::effect::event::Event;
-use crate::part::effect::event::user::UserActivePayload;
 
 /// Mock helper that verifies events are collected for later draining.
 #[tokio::test]

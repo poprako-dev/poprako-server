@@ -2,14 +2,16 @@
 
 use serde::{Deserialize, Serialize};
 
+use poprako_util::time::ToUnixMilli;
 #[cfg(feature = "swagger-ui")]
 use utoipa::ToSchema;
-
-use poprako_util::time::ToUnixMilli;
 
 use crate::model::unit::{
     UnitContent, UnitCounters, UnitDiff, UnitIdMapper, UnitInfo, UnitOper,
 };
+
+#[cfg(test)]
+mod tests;
 
 /// Presentation-ready unit information.
 #[derive(Debug, Serialize)]
@@ -270,6 +272,3 @@ impl SavePageUnitsPayload {
         }
     }
 }
-
-#[cfg(test)]
-mod tests;

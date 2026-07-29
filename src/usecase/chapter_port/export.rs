@@ -1,12 +1,8 @@
-#[cfg(test)]
-mod tests;
-
 // FIXME: specific models and values are necessary.
 
 use std::collections::HashMap;
 
 use poprako_orchestra::run_proxy;
-
 use tracing::instrument;
 
 use crate::complex::chapter_port::{
@@ -33,6 +29,9 @@ use crate::part::repo::page::PageRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::part::repo::workset::WorksetRepo;
 use crate::result::RegularResult;
+
+#[cfg(test)]
+mod tests;
 
 /// Exports one chapter as a JSON-safe translation payload.
 #[instrument(level = "info", err(Debug), skip_all)]

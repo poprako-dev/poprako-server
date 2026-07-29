@@ -4,7 +4,6 @@ use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use poprako_orchestra::{Run, Step};
 use time::OffsetDateTime;
-
 use tracing::instrument;
 
 use crate::complex::user::UserComplex;
@@ -24,6 +23,9 @@ use crate::part_impl::repo::rdb_impl::schema::t_user::dsl::*;
 use crate::part_impl::shared::result::{diesel, expected, version};
 use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{RegularError, RegularResult};
+
+#[cfg(all(test, feature = "repo"))]
+mod tests;
 
 impl UserRepo<RdbContext> for RdbRepo {}
 
@@ -129,6 +131,25 @@ async fn update_info(
 
     diesel::update(t_user.filter(f_id.eq(id)))
         .set(&aspect)
+        .execute(conn)
+        .await
+        .map_err(diesel)?;
+
+    Ok(())
+}
+
+/// Replace a user's password hash.
+#[instrument(level = "info", err(Debug), skip_all)]
+async fn update_password_hash(
+    conn: &mut RdbConn,
+    id: &str,
+    password_hash: &str,
+) -> RegularResult<()> {
+    //
+    let now = OffsetDateTime::now_utc();
+
+    diesel::update(t_user.filter(f_id.eq(id)))
+        .set((f_password_hash.eq(password_hash), f_updated_at.eq(now)))
         .execute(conn)
         .await
         .map_err(diesel)?;
@@ -324,6 +345,15 @@ impl<'a> Run<UpdateUser<'a>> for RdbRepo {
                     *avatar_version
                 )
             }
+
+            UpdateUser::PasswordHash { id, password_hash } => {
+                submit_query!(
+                    self.core,
+                    update_password_hash,
+                    id,
+                    password_hash
+                )
+            }
         }
     }
 }
@@ -380,6 +410,10 @@ impl<'a> Step<UpdateUser<'a>, RdbContext> for RdbRepo {
             UpdateUser::TouchLastActive { id } => {
                 touch_last_active(context.conn(), id).await
             }
+
+            UpdateUser::PasswordHash { id, password_hash } => {
+                update_password_hash(context.conn(), id, password_hash).await
+            }
         }
     }
 }
@@ -426,5 +460,3 @@ impl<'a> Step<DeleteUser<'a>, RdbContext> for RdbRepo {
         delete(context.conn(), oper.id).await
     }
 }
-#[cfg(all(test, feature = "repo"))]
-mod tests;

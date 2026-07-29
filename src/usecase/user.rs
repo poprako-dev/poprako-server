@@ -5,15 +5,16 @@ use std::time::Duration;
 use poprako_orchestra::Nucl;
 use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 use poprako_orchestra_extra::prom::task::Task;
-
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
 
 use crate::complex::image::ImageComplex;
+use crate::complex::user::UserComplex;
 use crate::data::user::{
     MarkUserAvatarUploadedParams, ReserveUserAvatarParams,
-    ReserveUserAvatarPayload, UpdateUserInfoParams, UserInfoVal,
+    ReserveUserAvatarPayload, UpdateUserInfoParams, UpdateUserPasswordParams,
+    UserInfoVal,
 };
 use crate::model::user::UserToken;
 use crate::part::effect::EffectDevelop;
@@ -27,7 +28,8 @@ use crate::part::repo::oper::member::{
     DeleteMember, ListMemberInfosExcluded, UpdateMember,
 };
 use crate::part::repo::oper::user::{
-    DeleteUser, GetUserInfo, GetUserInfoExcluded, ReserveUserAvatar, UpdateUser,
+    DeleteUser, GetUserCredential, GetUserInfo, GetUserInfoExcluded,
+    ReserveUserAvatar, UpdateUser,
 };
 use crate::part::repo::user::UserRepo;
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
@@ -138,6 +140,68 @@ where
     Ok(())
 }
 
+/// Replaces a user's password after verifying their current password.
+#[instrument(level = "info", err(Debug), skip_all)]
+pub async fn update_password<N, C, R>(
+    nucl: &N,
+    repo: &R,
+    token: UserToken,
+    user_id: String,
+    params: UpdateUserPasswordParams,
+) -> RegularResult<()>
+where
+    N: Nucl<Context = C, Error = RegularError>,
+    C: Send,
+    R: UserRepo<C> + Send + Sync,
+{
+    if token.user_id != user_id {
+        return Err(RegularError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: trl("error-forbidden"),
+        });
+    }
+
+    let user_info = repo.run(&GetUserInfo::Id { id: &user_id }).await?;
+
+    let user_credential = repo
+        .run(&GetUserCredential::Qid {
+            qid: &user_info.qid,
+        })
+        .await?;
+
+    if !UserComplex::verify_password(
+        &params.current_password,
+        &user_credential.password_hash,
+    )
+    .await
+    {
+        return Err(RegularError::Expected {
+            variant: ExpectedVariant::Auth,
+            message: trl("error-wrong-credentials"),
+        });
+    }
+
+    let password_hash =
+        UserComplex::hash_password(&params.new_password).await?;
+
+    nucl.coord(async move |context| -> RegularResult<()> {
+        //
+        repo.step(
+            context,
+            &UpdateUser::PasswordHash {
+                id: &user_id,
+                password_hash: &password_hash,
+            },
+        )
+        .await?;
+
+        Ok(())
+    })
+    .await?;
+
+    Ok(())
+}
+
 /// Reserves a new avatar upload slot for a user.
 ///
 /// Transactional flow (same pattern as [`team::reserve_avatar`]):
@@ -215,7 +279,7 @@ where
 
             batch_delays.push(Some(Duration::from_secs(15 * 60)));
 
-            let batch_tasks: Vec<_> = batch_ids
+            let batch_tasks: Vec<Task<'_, String, Payload>> = batch_ids
                 .iter()
                 .zip(batch_payloads.iter())
                 .zip(batch_delays.iter())

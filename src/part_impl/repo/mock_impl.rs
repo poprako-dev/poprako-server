@@ -4,13 +4,65 @@ use std::sync::{Arc, Mutex};
 
 use poprako_orchestra::nucl::Error as NuclError;
 use poprako_orchestra::{Nucl, Run as _, Step as _};
+use poprako_orchestra_extra::prom::oper::Defer;
+use poprako_orchestra_extra::prom::task::Task;
 use time::OffsetDateTime;
 
 use poprako_util::i18n::trl;
 
+use crate::model::announcement::AnnouncementInfo;
+use crate::model::assignment::AssignmentInfo;
+use crate::model::assignment_invitation::AssignmentInvitationInfo;
+use crate::model::chapter::ChapterInfo;
+use crate::model::comic::ComicInfo;
+use crate::model::comic_archive::ComicArchiveRecord;
+use crate::model::comment::CommentInfo;
+use crate::model::member::{MemberEntry, MemberInfo};
+use crate::model::member_invitation::MemberInvitationInfo;
+use crate::model::page::PageInfo;
+use crate::model::system_mail::SystemMailInfo;
+use crate::model::team::TeamInfo;
+use crate::model::unit::UnitInfo;
+use crate::model::user::{UserCredential, UserInfo};
+use crate::model::workset::WorksetInfo;
 use crate::part::effect::event::Event;
+use crate::part::prom::payload::{Payload, image};
+use crate::part::repo::oper::member::CreateMember;
+use crate::part::repo::oper::user::GetUserInfo;
 use crate::part_impl::prom::mock_impl::MockPromRecord;
 use crate::result::{ExpectedVariant, RegularError};
+use crate::value::role::{RoleField, RoleMask};
+
+/// Mock implementations for announcement repository opers.
+pub mod announcement;
+/// Mock implementations for assignment repository opers.
+pub mod assignment;
+/// Mock implementations for assignment invitation repository opers.
+pub mod assignment_invitation;
+/// Mock implementations for chapter repository operations.
+pub mod chapter;
+pub mod comic;
+/// Mock implementations for immutable comic archive repository operations.
+pub mod comic_archive;
+/// Mock implementations for comment repository opers.
+pub mod comment;
+/// Mock implementations for member repository opers.
+pub mod member;
+/// Mock implementations for member invitation repository opers.
+pub mod member_invitation;
+mod nucl;
+/// Mock implementations for page repository opers.
+pub mod page;
+/// Mock implementations for system mail repository opers.
+pub mod system_mail;
+/// Mock implementations for team repository opers.
+pub mod team;
+/// Mock implementations for unit repository opers.
+pub mod unit;
+/// Mock implementations for user repository opers.
+pub mod user;
+/// Mock implementations for workset repository opers.
+pub mod workset;
 
 /// In-memory state holding all mock repository records.
 #[cfg_attr(test, derive(Clone, Default))]
@@ -320,77 +372,9 @@ pub fn now() -> OffsetDateTime {
     OffsetDateTime::now_utc()
 }
 
-/// Mock implementations for announcement repository opers.
-pub mod announcement;
-
-/// Mock implementations for assignment repository opers.
-pub mod assignment;
-
-/// Mock implementations for assignment invitation repository opers.
-pub mod assignment_invitation;
-
-/// Mock implementations for chapter repository operations.
-pub mod chapter;
-
-/// Mock implementations for comment repository opers.
-pub mod comment;
-
-pub mod comic;
-/// Mock implementations for immutable comic archive repository operations.
-pub mod comic_archive;
-
-/// Mock implementations for member repository opers.
-pub mod member;
-
-/// Mock implementations for member invitation repository opers.
-pub mod member_invitation;
-
-mod nucl;
-
-/// Mock implementations for page repository opers.
-pub mod page;
-
-/// Mock implementations for system mail repository opers.
-pub mod system_mail;
-
-/// Mock implementations for team repository opers.
-pub mod team;
-
-/// Mock implementations for unit repository opers.
-pub mod unit;
-
-/// Mock implementations for user repository opers.
-pub mod user;
-
-/// Mock implementations for workset repository opers.
-pub mod workset;
-
 // run_reads_seeded_user(GetUserInfo)(positive): a seeded user should be readable outside a transaction.
 // nucl_coord_commits_repo_and_prom(CreateMember, Defer)(positive): successful coordination should commit repo and prom state together.
 // nucl_coord_rolls_back_repo_and_prom(CreateMember, Defer)(negative): failed coordination should discard repo and prom state together.
-
-use poprako_orchestra_extra::prom::oper::Defer;
-use poprako_orchestra_extra::prom::task::Task;
-
-use crate::model::announcement::AnnouncementInfo;
-use crate::model::assignment::AssignmentInfo;
-use crate::model::assignment_invitation::AssignmentInvitationInfo;
-use crate::model::chapter::ChapterInfo;
-use crate::model::comic::ComicInfo;
-use crate::model::comic_archive::ComicArchiveRecord;
-use crate::model::comment::CommentInfo;
-use crate::model::member::{MemberEntry, MemberInfo};
-use crate::model::member_invitation::MemberInvitationInfo;
-use crate::model::page::PageInfo;
-use crate::model::system_mail::SystemMailInfo;
-use crate::model::team::TeamInfo;
-use crate::model::unit::UnitInfo;
-use crate::model::user::{UserCredential, UserInfo};
-use crate::model::workset::WorksetInfo;
-use crate::part::prom::payload::{Payload, image};
-use crate::part::repo::oper::member::CreateMember;
-use crate::part::repo::oper::user::GetUserInfo;
-use crate::value::role::{RoleField, RoleMask};
 
 /// Build a minimal `UserInfo` for test seeding.
 fn user(id: &str) -> UserInfo {
