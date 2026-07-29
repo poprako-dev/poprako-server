@@ -21,7 +21,7 @@ macro_rules! preload_by_ids {
                 async fn load(
                     conn: &mut RdbConn,
                     ids: Vec<&str>,
-                ) -> BaseResult<Vec<$row>> {
+                ) -> BaseRest<Vec<$row>> {
                     $table::table
                         .filter($table::f_id.eq_any(ids))
                         .select(<$row>::as_select())
@@ -30,7 +30,7 @@ macro_rules! preload_by_ids {
                         .map_err(diesel)
                 }
 
-                fn into_entry(row: $row) -> BaseResult<(String, $info)> {
+                fn into_entry(row: $row) -> BaseRest<(String, $info)> {
                     let id = row.f_id.clone();
 
                     let info: $info = preload_by_ids!(@convert $convert $info, row);
@@ -208,7 +208,7 @@ macro_rules! preloadable {
             conn: &mut RdbConn,
             infos: &mut [$owner],
             incl_opt: &[$opt],
-        ) -> BaseResult<()> {
+        ) -> BaseRest<()> {
             for incl_opt in expand_incl_opts(incl_opt) {
                 match incl_opt {
                     $(

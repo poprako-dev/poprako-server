@@ -12,7 +12,7 @@ use time::OffsetDateTime;
 
 use crate::part::prom::payload::TaskPayload;
 use crate::part_impl::repo::rdb_impl::schema::t_local_message;
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 
 /// Lifecycle status of a local message record in the prom queue.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, AsExpression)]
@@ -72,7 +72,7 @@ impl<'a> LocalMessageEntry<'a> {
     pub fn from_task(
         task: &Task<'a, String, TaskPayload>,
         now: OffsetDateTime,
-    ) -> BaseResult<Self> {
+    ) -> BaseRest<Self> {
         //
         let f_payload =
             serde_json::to_value(task.payload).map_err(|error| {

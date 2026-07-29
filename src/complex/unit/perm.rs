@@ -13,7 +13,7 @@ use crate::part::repo::oper::chapter::GetChapterInfo;
 use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::workset::GetWorksetInfo;
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::Patch;
 use crate::value::unit::UnitEditPerm;
 
@@ -26,7 +26,7 @@ impl UnitPermComplex {
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
             + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
@@ -59,7 +59,7 @@ impl UnitPermComplex {
     pub fn ensure_user_can_edit_fields(
         perm: UnitEditPerm,
         edits: &[UnitEdit],
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         //
         if !perm.can_translate && !perm.can_proofread {
             return Err(unit_edit_permission_err());
@@ -122,7 +122,7 @@ fn unit_list_permission_err() -> BaseError {
 fn check_optional_content_perm<T>(
     field: &Option<T>,
     allowed: bool,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     if field.is_some() && !allowed {
         return Err(unit_edit_permission_err());
@@ -132,7 +132,7 @@ fn check_optional_content_perm<T>(
 }
 
 // Validate patch content is only assigned when the caller has permission.
-fn check_content_perm<T>(field: &Patch<T>, allowed: bool) -> BaseResult<()> {
+fn check_content_perm<T>(field: &Patch<T>, allowed: bool) -> BaseRest<()> {
     //
     if !field.is_skip() && !allowed {
         return Err(unit_edit_permission_err());

@@ -4,7 +4,7 @@ use diesel_async::RunQueryDsl;
 use crate::part_impl::repo::rdb_impl::schema::t_local_message;
 use crate::part_impl::shared::RdbCore;
 use crate::part_impl::shared::result::diesel as diesel_error;
-use crate::result::{BaseResult, accept};
+use crate::result::{BaseRest, accept};
 
 pub async fn reset(shared: &RdbCore, prefix: &str) {
     //
@@ -13,7 +13,7 @@ pub async fn reset(shared: &RdbCore, prefix: &str) {
     assert_no_leftovers(shared, prefix).await.unwrap();
 }
 
-pub async fn cleanup(shared: &RdbCore, prefix: &str) -> BaseResult<()> {
+pub async fn cleanup(shared: &RdbCore, prefix: &str) -> BaseRest<()> {
     //
     let mut conn = shared.get().await?;
 
@@ -32,7 +32,7 @@ pub async fn cleanup(shared: &RdbCore, prefix: &str) -> BaseResult<()> {
 pub async fn assert_no_leftovers(
     shared: &RdbCore,
     prefix: &str,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     let mut conn = shared.get().await?;
 

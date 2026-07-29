@@ -5,7 +5,7 @@ use poprako_util::i18n::trl;
 use crate::model::user::UserToken;
 use crate::part::auth::TokenAuth;
 use crate::part_impl::repo::mock_impl::Mock;
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
 /// Mock implementation of [TokenAuth].
 ///
@@ -13,7 +13,7 @@ use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 /// Configure [Mock::with_token_failure] to test sign failures.
 impl TokenAuth for Mock {
     // Internal implementation of `sign_token`.
-    fn sign_token(&self, token: &UserToken) -> BaseResult<String> {
+    fn sign_token(&self, token: &UserToken) -> BaseRest<String> {
         //
         // Internal implementation detail.
         if self.flags.lock().unwrap().token_failure {
@@ -27,7 +27,7 @@ impl TokenAuth for Mock {
     }
 
     // Internal implementation of `verify_token`.
-    fn verify_token(&self, raw: &str) -> BaseResult<UserToken> {
+    fn verify_token(&self, raw: &str) -> BaseRest<UserToken> {
         //
         // Internal implementation detail.
         if self.flags.lock().unwrap().token_failure {

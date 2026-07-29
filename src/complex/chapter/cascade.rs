@@ -1,4 +1,4 @@
-use poprako_orchestra::Proxy;
+use poprako_orchestra::{OperProxy as _, Proxy};
 use poprako_orchestra_extra::prom::oper::DeferBatch;
 use poprako_orchestra_extra::prom::task::Task;
 
@@ -18,14 +18,14 @@ use crate::part::repo::oper::comic::{
 use crate::part::repo::oper::page::{
     ClearPageImagesForPublish, DeletePages, ListPageInfos,
 };
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 
 impl ChapterComplex {
     /// Appends page image deletes inside an existing transaction context.
     pub async fn clean_uploaded_images<P>(
         proxy: &mut P,
         chapter_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a> Proxy<ClearPageImagesForPublish<'a>, Error = BaseError>
             + for<'t, 'a> Proxy<
@@ -33,15 +33,15 @@ impl ChapterComplex {
                 Error = BaseError,
             >,
     {
-        let object_keys = proxy
-            .exec(&ClearPageImagesForPublish { chapter_id })
+        let object_keys = ClearPageImagesForPublish { chapter_id }
+            .proxy_on(proxy)
             .await?;
 
         defer_image_deletes(proxy, object_keys).await
     }
 
     /// Deletes a chapter subtree inside an existing transaction context.
-    pub async fn delete_cascade<P>(proxy: &mut P, id: &str) -> BaseResult<()>
+    pub async fn delete_cascade<P>(proxy: &mut P, id: &str) -> BaseRest<()>
     where
         P: for<'a, 'b> Proxy<GetChapterInfoExcluded<'a, 'b>, Error = BaseError>
             + for<'a> Proxy<ListPageInfos<'a>, Error = BaseError>
@@ -64,56 +64,56 @@ impl ChapterComplex {
         // pages (and their uploaded images) inserted between the listing
         // and the chapter delete.
 
-        let chapter_info = proxy
-            .exec(&GetChapterInfoExcluded { id, incls: &[] })
+        let chapter_info = GetChapterInfoExcluded { id, incls: &[] }
+            .proxy_on(proxy)
             .await?;
 
         prom_image_deletes(proxy, &chapter_info.id).await?;
 
         // Delete leaf FKs first to satisfy ON DELETE RESTRICT constraints.
 
-        proxy
-            .exec(&DeleteAssignmentInvitations::Chapter {
-                chapter_id: &chapter_info.id,
-            })
-            .await?;
+        DeleteAssignmentInvitations::Chapter {
+            chapter_id: &chapter_info.id,
+        }
+        .proxy_on(proxy)
+        .await?;
 
-        proxy
-            .exec(&DeleteAssignments::Chapter {
-                chapter_id: &chapter_info.id,
-            })
-            .await?;
+        DeleteAssignments::Chapter {
+            chapter_id: &chapter_info.id,
+        }
+        .proxy_on(proxy)
+        .await?;
 
         // DeletePages::Chapter deletes units then pages internally.
 
-        proxy
-            .exec(&DeletePages::Chapter {
-                chapter_id: &chapter_info.id,
-            })
-            .await?;
+        DeletePages::Chapter {
+            chapter_id: &chapter_info.id,
+        }
+        .proxy_on(proxy)
+        .await?;
 
-        proxy
-            .exec(&DeleteChapter {
-                id: &chapter_info.id,
-            })
-            .await?;
+        DeleteChapter {
+            id: &chapter_info.id,
+        }
+        .proxy_on(proxy)
+        .await?;
 
         if chapter_info.is_pinned {
             repin_latest_chapter(proxy, &chapter_info.comic_id).await?;
         }
 
-        proxy
-            .exec(&UpdateComicChapterCount {
-                id: &chapter_info.comic_id,
-                delta: -1,
-            })
-            .await?;
+        UpdateComicChapterCount {
+            id: &chapter_info.comic_id,
+            delta: -1,
+        }
+        .proxy_on(proxy)
+        .await?;
 
-        proxy
-            .exec(&TouchComicLastActive {
-                id: &chapter_info.comic_id,
-            })
-            .await?;
+        TouchComicLastActive {
+            id: &chapter_info.comic_id,
+        }
+        .proxy_on(proxy)
+        .await?;
 
         accept(())
     }
@@ -124,7 +124,7 @@ impl ChapterComplex {
 async fn defer_image_deletes<P>(
     proxy: &mut P,
     object_keys: Vec<String>,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     P: for<'t, 'a> Proxy<
             DeferBatch<'t, 'a, String, TaskPayload, ()>,
@@ -153,17 +153,14 @@ where
         })
         .collect::<Vec<Task<'_, String, TaskPayload>>>();
 
-    proxy.exec(&DeferBatch::new(&tasks)).await?;
+    DeferBatch::new(&tasks).proxy_on(proxy).await?;
 
     accept(())
 }
 
 // Schedule image deletion tasks for all uploaded page images belonging
 // to the given chapter.
-async fn prom_image_deletes<P>(
-    proxy: &mut P,
-    chapter_id: &str,
-) -> BaseResult<()>
+async fn prom_image_deletes<P>(proxy: &mut P, chapter_id: &str) -> BaseRest<()>
 where
     P: for<'a> Proxy<ListPageInfos<'a>, Error = BaseError>
         + for<'t, 'a> Proxy<
@@ -171,7 +168,7 @@ where
             Error = BaseError,
         >,
 {
-    let page_infos = proxy.exec(&ListPageInfos { chapter_id }).await?;
+    let page_infos = ListPageInfos { chapter_id }.proxy_on(proxy).await?;
 
     let object_keys = page_infos
         .into_iter()
@@ -183,17 +180,15 @@ where
 
 // After deleting a pinned chapter, repin the most recent remaining chapter
 // (by list order) for the same comic.
-async fn repin_latest_chapter<P>(
-    proxy: &mut P,
-    comic_id: &str,
-) -> BaseResult<()>
+async fn repin_latest_chapter<P>(proxy: &mut P, comic_id: &str) -> BaseRest<()>
 where
     P: for<'a> Proxy<ListChapterInfosExcluded<'a>, Error = BaseError>
         + for<'a> Proxy<UpdateChapter<'a>, Error = BaseError>
         + for<'a> Proxy<UnpinOtherChapters<'a>, Error = BaseError>,
 {
-    let chapter_infos =
-        proxy.exec(&ListChapterInfosExcluded { comic_id }).await?;
+    let chapter_infos = ListChapterInfosExcluded { comic_id }
+        .proxy_on(proxy)
+        .await?;
 
     let Some(chapter_info) = chapter_infos.first() else {
         return accept(());
@@ -205,18 +200,18 @@ where
         pin: Some(true),
     };
 
-    proxy
-        .exec(&UpdateChapter {
-            update: &chapter_info_update,
-        })
-        .await?;
+    UpdateChapter {
+        update: &chapter_info_update,
+    }
+    .proxy_on(proxy)
+    .await?;
 
-    proxy
-        .exec(&UnpinOtherChapters {
-            comic_id: &chapter_info.comic_id,
-            excluded_id: &chapter_info.id,
-        })
-        .await?;
+    UnpinOtherChapters {
+        comic_id: &chapter_info.comic_id,
+        excluded_id: &chapter_info.id,
+    }
+    .proxy_on(proxy)
+    .await?;
 
     accept(())
 }

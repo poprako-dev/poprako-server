@@ -1,6 +1,6 @@
 //! Authentication use cases — registration and login.
 
-use poprako_orchestra::Nucl;
+use poprako_orchestra::{Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
@@ -24,7 +24,7 @@ use crate::part::repo::oper::member_invitation::{
 };
 use crate::part::repo::oper::user::{CreateUser, GetUserCredential};
 use crate::part::repo::user::UserRepo;
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
 #[cfg(test)]
 mod tests;
@@ -66,7 +66,7 @@ mod tests;
 pub async fn register<N, C, R, A, V>(
     (nucl, repo, auth, develop): (&N, &R, &A, &V),
     params: RegisterAuthParams,
-) -> BaseResult<RegisterAuthPayload>
+) -> BaseRest<RegisterAuthPayload>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -78,14 +78,10 @@ where
         .coord(async move |context| {
             //
 
-            let invitation_info = repo
-                .step(
-                    context,
-                    &GetMemberInvitationInfoExcluded::Code {
-                        code: &params.code,
-                    },
-                )
-                .await?;
+            let invitation_info =
+                GetMemberInvitationInfoExcluded::Code { code: &params.code }
+                    .step_on(repo, context)
+                    .await?;
 
             // Verify the invitation was issued for this QQ ID.
             if invitation_info.invitee_qid != params.qid {
@@ -105,8 +101,8 @@ where
                 password_hash,
             };
 
-            let user_info = repo
-                .step(context, &CreateUser { entry: &user_entry })
+            let user_info = CreateUser { entry: &user_entry }
+                .step_on(repo, context)
                 .await?;
 
             let member_entry = MemberEntry {
@@ -117,20 +113,16 @@ where
                 roles: invitation_info.roles,
             };
 
-            repo.step(
-                context,
-                &CreateMember {
-                    entry: &member_entry,
-                },
-            )
+            CreateMember {
+                entry: &member_entry,
+            }
+            .step_on(repo, context)
             .await?;
 
-            repo.step(
-                context,
-                &UpdateMemberInvitation::MarkUsed {
-                    id: &invitation_info.id,
-                },
-            )
+            UpdateMemberInvitation::MarkUsed {
+                id: &invitation_info.id,
+            }
+            .step_on(repo, context)
             .await?;
 
             accept((
@@ -183,13 +175,13 @@ where
 pub async fn login<C, R, A>(
     (repo, auth): (&R, &A),
     params: LoginAuthParams,
-) -> BaseResult<LoginAuthPayload>
+) -> BaseRest<LoginAuthPayload>
 where
     R: UserRepo<C>,
     A: TokenAuth,
 {
-    let user_credential = repo
-        .run(&GetUserCredential::Qid { qid: &params.qid })
+    let user_credential = GetUserCredential::Qid { qid: &params.qid }
+        .run_on(repo)
         .await?;
 
     if !UserComplex::verify_password(

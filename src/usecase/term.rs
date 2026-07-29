@@ -1,6 +1,8 @@
 //! Terminology-entry use cases.
 
-use poprako_orchestra::{Nucl, run_proxy, step_proxy};
+use poprako_orchestra::{
+    Nucl, OperRun as _, OperStep as _, run_proxy, step_proxy,
+};
 use tracing::instrument;
 
 use crate::complex::term::TermComplex;
@@ -26,7 +28,7 @@ use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::term::TermRepo;
 use crate::part::repo::termbase::TermbaseRepo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 
 #[cfg(test)]
 // Unit tests for term lifecycle, ownership, and conflict guards.
@@ -38,7 +40,7 @@ pub async fn create<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
     params: CreateTermParams,
-) -> BaseResult<CreateTermPayload>
+) -> BaseRest<CreateTermPayload>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -61,14 +63,11 @@ where
     let term_id = nucl
         .coord(async move |context| {
             //
-            let termbase_info = repo
-                .step(
-                    context,
-                    &GetTermbaseInfoExcluded {
-                        id: &term_entry.termbase_id,
-                    },
-                )
-                .await?;
+            let termbase_info = GetTermbaseInfoExcluded {
+                id: &term_entry.termbase_id,
+            }
+            .step_on(repo, context)
+            .await?;
 
             TermbasePermComplex::ensure_user_can_write(
                 &mut step_proxy! {
@@ -83,17 +82,15 @@ where
             )
             .await?;
 
-            let term_info = repo
-                .step(context, &CreateTerm { entry: &term_entry })
+            let term_info = CreateTerm { entry: &term_entry }
+                .step_on(repo, context)
                 .await?;
 
-            repo.step(
-                context,
-                &UpdateTermbaseTermCount {
-                    id: &termbase_info.id,
-                    delta: 1,
-                },
-            )
+            UpdateTermbaseTermCount {
+                id: &termbase_info.id,
+                delta: 1,
+            }
+            .step_on(repo, context)
             .await?;
 
             accept(term_info.id)
@@ -109,7 +106,7 @@ pub async fn get_info<C, R>(
     (repo,): (&R,),
     token: UserToken,
     id: String,
-) -> BaseResult<TermInfoVal>
+) -> BaseRest<TermInfoVal>
 where
     R: TermbaseRepo<C>
         + TermRepo<C>
@@ -118,13 +115,13 @@ where
         + MemberRepo<C>
         + Sync,
 {
-    let term_info = repo.run(&GetTermInfo { id: &id }).await?;
+    let term_info = GetTermInfo { id: &id }.run_on(repo).await?;
 
-    let termbase_info = repo
-        .run(&GetTermbaseInfo {
-            id: &term_info.termbase_id,
-        })
-        .await?;
+    let termbase_info = GetTermbaseInfo {
+        id: &term_info.termbase_id,
+    }
+    .run_on(repo)
+    .await?;
 
     TermbasePermComplex::ensure_user_can_read(
         &mut run_proxy! {
@@ -147,7 +144,7 @@ pub async fn list_infos<C, R>(
     (repo,): (&R,),
     token: UserToken,
     params: ListTermInfosParams,
-) -> BaseResult<Vec<TermInfoVal>>
+) -> BaseRest<Vec<TermInfoVal>>
 where
     R: TermbaseRepo<C>
         + TermRepo<C>
@@ -156,11 +153,11 @@ where
         + MemberRepo<C>
         + Sync,
 {
-    let termbase_info = repo
-        .run(&GetTermbaseInfo {
-            id: &params.termbase_id,
-        })
-        .await?;
+    let termbase_info = GetTermbaseInfo {
+        id: &params.termbase_id,
+    }
+    .run_on(repo)
+    .await?;
 
     TermbasePermComplex::ensure_user_can_read(
         &mut run_proxy! {
@@ -181,11 +178,11 @@ where
         limit: params.limit,
     };
 
-    let term_infos = repo
-        .run(&ListTermInfos {
-            spec: &term_info_list_spec,
-        })
-        .await?;
+    let term_infos = ListTermInfos {
+        spec: &term_info_list_spec,
+    }
+    .run_on(repo)
+    .await?;
 
     accept(term_infos.into_iter().map(Into::into).collect())
 }
@@ -196,7 +193,7 @@ pub async fn update_info<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
     params: UpdateTermInfoParams,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -215,22 +212,19 @@ where
         params.comment,
     )?;
 
-    let term_info = repo
-        .run(&GetTermInfo {
-            id: &term_info_update.id,
-        })
-        .await?;
+    let term_info = GetTermInfo {
+        id: &term_info_update.id,
+    }
+    .run_on(repo)
+    .await?;
 
     nucl.coord(async move |context| {
         //
-        let termbase_info = repo
-            .step(
-                context,
-                &GetTermbaseInfoExcluded {
-                    id: &term_info.termbase_id,
-                },
-            )
-            .await?;
+        let termbase_info = GetTermbaseInfoExcluded {
+            id: &term_info.termbase_id,
+        }
+        .step_on(repo, context)
+        .await?;
 
         TermbasePermComplex::ensure_user_can_write(
             &mut step_proxy! {
@@ -245,28 +239,22 @@ where
         )
         .await?;
 
-        repo.step(
-            context,
-            &LockTerm {
-                id: &term_info_update.id,
-            },
-        )
+        LockTerm {
+            id: &term_info_update.id,
+        }
+        .step_on(repo, context)
         .await?;
 
-        repo.step(
-            context,
-            &UpdateTerm {
-                update: &term_info_update,
-            },
-        )
+        UpdateTerm {
+            update: &term_info_update,
+        }
+        .step_on(repo, context)
         .await?;
 
-        repo.step(
-            context,
-            &TouchTermbase {
-                id: &termbase_info.id,
-            },
-        )
+        TouchTermbase {
+            id: &termbase_info.id,
+        }
+        .step_on(repo, context)
         .await?;
 
         accept(())
@@ -282,7 +270,7 @@ pub async fn delete<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
     id: String,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -294,18 +282,15 @@ where
         + Send
         + Sync,
 {
-    let term_info = repo.run(&GetTermInfo { id: &id }).await?;
+    let term_info = GetTermInfo { id: &id }.run_on(repo).await?;
 
     nucl.coord(async move |context| {
         //
-        let termbase_info = repo
-            .step(
-                context,
-                &GetTermbaseInfoExcluded {
-                    id: &term_info.termbase_id,
-                },
-            )
-            .await?;
+        let termbase_info = GetTermbaseInfoExcluded {
+            id: &term_info.termbase_id,
+        }
+        .step_on(repo, context)
+        .await?;
 
         TermbasePermComplex::ensure_user_can_write(
             &mut step_proxy! {
@@ -320,18 +305,19 @@ where
         )
         .await?;
 
-        repo.step(context, &LockTerm { id: &term_info.id }).await?;
-
-        repo.step(context, &DeleteTerm { id: &term_info.id })
+        LockTerm { id: &term_info.id }
+            .step_on(repo, context)
             .await?;
 
-        repo.step(
-            context,
-            &UpdateTermbaseTermCount {
-                id: &termbase_info.id,
-                delta: -1,
-            },
-        )
+        DeleteTerm { id: &term_info.id }
+            .step_on(repo, context)
+            .await?;
+
+        UpdateTermbaseTermCount {
+            id: &termbase_info.id,
+            delta: -1,
+        }
+        .step_on(repo, context)
         .await?;
 
         accept(())

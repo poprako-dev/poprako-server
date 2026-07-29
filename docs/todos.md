@@ -15,3 +15,4 @@
 - [ ] Unexpected left `drive`.
 - [ ] Split _event_ and _override data_.
 - [ ] is\_\* format boolean fields.
+- [ ] regularize model naming and layout.

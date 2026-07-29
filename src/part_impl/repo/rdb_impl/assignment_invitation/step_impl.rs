@@ -7,7 +7,7 @@ use tracing::instrument;
 
 use crate::model::assignment_invitation::{
     AssignmentInvitationEntry, AssignmentInvitationInfo,
-    AssignmentInvitationListKind, AssignmentInvitationListSpec,
+    AssignmentInvitationListSpec,
 };
 use crate::part_impl::repo::rdb_impl::entity::assignment_invitation::{
     AssignmentInvitationAspect, AssignmentInvitationRow,
@@ -16,28 +16,27 @@ use crate::part_impl::repo::rdb_impl::entity::assignment_invitation::{
 use crate::part_impl::repo::rdb_impl::schema::t_assignment_invitation::dsl::*;
 use crate::part_impl::shared::RdbConn;
 use crate::part_impl::shared::result::{diesel, expected};
-use crate::result::{BaseResult, accept};
+use crate::result::{BaseRest, accept};
+use crate::value::assignment_invitation::AssignmentInvitationStatus;
 
 /// Queries assignment invitation rows selected by a list specification.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos(
     conn: &mut RdbConn,
     spec: &AssignmentInvitationListSpec,
-) -> BaseResult<Vec<AssignmentInvitationInfo>> {
+) -> BaseRest<Vec<AssignmentInvitationInfo>> {
     //
     let mut query = t_assignment_invitation
         .filter(f_chapter_id.eq(spec.chapter_id.as_str()))
         .into_boxed();
 
-    query = match &spec.kind {
+    query = match &spec.status {
         //
-        AssignmentInvitationListKind::All => query,
+        AssignmentInvitationStatus::All => query,
 
-        AssignmentInvitationListKind::Pending => {
-            query.filter(f_pending.eq(true))
-        }
+        AssignmentInvitationStatus::Pending => query.filter(f_pending.eq(true)),
 
-        AssignmentInvitationListKind::Used => query.filter(f_pending.eq(false)),
+        AssignmentInvitationStatus::Used => query.filter(f_pending.eq(false)),
     };
 
     let rows: Vec<AssignmentInvitationRow> = query
@@ -57,7 +56,7 @@ pub async fn list_infos(
 pub async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
-) -> BaseResult<AssignmentInvitationInfo> {
+) -> BaseRest<AssignmentInvitationInfo> {
     //
     let row: AssignmentInvitationRow = t_assignment_invitation
         .filter(f_id.eq(id))
@@ -76,7 +75,7 @@ pub async fn get_info_by_id(
 pub async fn get_info_by_code_excluded(
     conn: &mut RdbConn,
     code: &str,
-) -> BaseResult<AssignmentInvitationInfo> {
+) -> BaseRest<AssignmentInvitationInfo> {
     //
     let row: AssignmentInvitationRow = t_assignment_invitation
         .filter(f_code.eq(code))
@@ -97,7 +96,7 @@ pub async fn get_info_by_code_excluded(
 pub async fn create(
     conn: &mut RdbConn,
     model_entry: &AssignmentInvitationEntry,
-) -> BaseResult<AssignmentInvitationInfo> {
+) -> BaseRest<AssignmentInvitationInfo> {
     //
     let entry = AssignmentInvitationRowEntry::from(model_entry);
 
@@ -117,7 +116,7 @@ pub async fn create(
 pub async fn mark_pending_as_used(
     conn: &mut RdbConn,
     id: &str,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -142,7 +141,7 @@ pub async fn mark_pending_as_used(
 
 /// Deletes a single assignment invitation row by ID.
 #[instrument(level = "info", err(Debug), skip_all)]
-pub async fn delete(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
+pub async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
     diesel::delete(t_assignment_invitation.filter(f_id.eq(id)))
         .execute(conn)
@@ -154,7 +153,7 @@ pub async fn delete(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
 
 /// Deletes an assignment invitation only while it remains pending.
 #[instrument(level = "info", err(Debug), skip_all)]
-pub async fn purge_pending(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
+pub async fn purge_pending(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
     diesel::delete(
         t_assignment_invitation
@@ -173,7 +172,7 @@ pub async fn purge_pending(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
 pub async fn delete_by_chapter_id(
     conn: &mut RdbConn,
     chapter_id: &str,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     diesel::delete(t_assignment_invitation.filter(f_chapter_id.eq(chapter_id)))
         .execute(conn)
@@ -186,13 +185,13 @@ pub async fn delete_by_chapter_id(
 // Converts a vector of `AssignmentInvitationRow` values into `AssignmentInvitationInfo`.
 fn rows_into_infos(
     rows: Vec<AssignmentInvitationRow>,
-) -> BaseResult<Vec<AssignmentInvitationInfo>> {
+) -> BaseRest<Vec<AssignmentInvitationInfo>> {
     rows.into_iter().map(row_into_info).collect()
 }
 
 // Converts a single `AssignmentInvitationRow` into an `AssignmentInvitationInfo`.
 fn row_into_info(
     row: AssignmentInvitationRow,
-) -> BaseResult<AssignmentInvitationInfo> {
+) -> BaseRest<AssignmentInvitationInfo> {
     row.try_into()
 }

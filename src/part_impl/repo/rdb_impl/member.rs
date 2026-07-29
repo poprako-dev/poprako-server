@@ -7,7 +7,7 @@ use tracing::instrument;
 use crate::model::member::MemberInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part_impl::repo::rdb_impl::RdbRepo;
-use crate::result::{BaseError, BaseResult};
+use crate::result::{BaseError, BaseRest};
 
 // Orchestration logic for member repository operations.
 mod orchestra;
@@ -26,7 +26,7 @@ impl Run<FindMemberInfo<'_>> for RdbRepo {
     async fn run(
         &self,
         oper: &FindMemberInfo<'_>,
-    ) -> BaseResult<Option<MemberInfo>> {
+    ) -> BaseRest<Option<MemberInfo>> {
         match oper {
             FindMemberInfo::UserTeam { user_id, team_id } => {
                 submit_query!(

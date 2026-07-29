@@ -59,7 +59,7 @@ fn user(id: &str, qid: &str, nickname: &str) -> UserInfo {
         qid: qid.into(),
         nickname: nickname.into(),
         avatar_key: None,
-        avatar_uploaded: false,
+        is_avatar_uploaded: false,
         avatar_version: 0,
         avatar_hash: ImageHash::default(),
         avatar_ext: ImageExt::Png,
@@ -81,7 +81,7 @@ fn team(id: &str) -> TeamInfo {
         name: id.into(),
         description: "description".into(),
         avatar_key: None,
-        avatar_uploaded: false,
+        is_avatar_uploaded: false,
         avatar_version: 0,
         avatar_hash: ImageHash::default(),
         avatar_ext: ImageExt::Png,
@@ -122,7 +122,7 @@ fn comic(id: &str, workset_id: &str) -> ComicInfo {
         author: "author".into(),
         description: None,
         cover_key: None,
-        cover_uploaded: false,
+        is_cover_uploaded: false,
         cover_version: 0,
         cover_hash: ImageHash::default(),
         cover_ext: ImageExt::Png,
@@ -215,7 +215,7 @@ fn invitation(
         inviter_id: "admin-user".into(),
         invitee_qid: invitee_qid.into(),
         code: "AINV123".into(),
-        pending: true,
+        is_pending: true,
         roles: role_mask,
         created_at: time,
         updated_at: time,
@@ -232,7 +232,7 @@ fn role(role_field: RoleField) -> RoleMask {
 fn list_data() -> ListAssignmentInvitationInfosParams {
     ListAssignmentInvitationInfosParams {
         chapter_id: "chapter-1".into(),
-        pending: Some(true),
+        is_pending: Some(true),
         offset: 0,
         limit: 10,
     }
@@ -358,7 +358,7 @@ async fn create_reviewer_creates_pending_invitation() {
 
     assert_eq!(snapshot.assignment_invitations[0].invitee_qid, "target-qid");
 
-    assert!(snapshot.assignment_invitations[0].pending);
+    assert!(snapshot.assignment_invitations[0].is_pending);
 
     assert_eq!(snapshot.prom_records.len(), 1);
 
@@ -520,7 +520,7 @@ async fn join_invited_user_creates_assignment_and_consumes_invitation() {
 
     assert_eq!(snapshot.assignments[0].roles, role(RoleField::TRANSLATOR));
 
-    assert!(!snapshot.assignment_invitations[0].pending);
+    assert!(!snapshot.assignment_invitations[0].is_pending);
 }
 
 #[tokio::test]
@@ -566,7 +566,7 @@ async fn join_existing_assignment_merges_roles() {
             .has_every_role(&[RoleField::TRANSLATOR, RoleField::PROOFREADER])
     );
 
-    assert!(!snapshot.assignment_invitations[0].pending);
+    assert!(!snapshot.assignment_invitations[0].is_pending);
 }
 
 #[tokio::test]
@@ -600,5 +600,5 @@ async fn join_mismatched_qid_is_rejected() {
 
     assert!(snapshot.assignments.is_empty());
 
-    assert!(snapshot.assignment_invitations[0].pending);
+    assert!(snapshot.assignment_invitations[0].is_pending);
 }

@@ -1,7 +1,7 @@
 //! Complex-domain opers for workset entities: identity generation and
 //! permission gates.
 
-use poprako_orchestra::Proxy;
+use poprako_orchestra::{OperProxy as _, Proxy};
 use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 
 use crate::complex::comic::ComicComplex;
@@ -30,7 +30,7 @@ use crate::part::repo::oper::workset::{
     DeleteWorkset, GetWorksetInfo, GetWorksetInfoExcluded,
     UpdateWorksetComicCount,
 };
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 use crate::util::next_snowflake_id;
 
 /// Domain opers for workset entities.
@@ -43,7 +43,7 @@ impl WorksetComplex {
     }
 
     /// Deletes a workset subtree inside an existing transaction context.
-    pub async fn delete_cascade<P>(proxy: &mut P, id: &str) -> BaseResult<()>
+    pub async fn delete_cascade<P>(proxy: &mut P, id: &str) -> BaseRest<()>
     where
         P: for<'a> Proxy<GetWorksetInfoExcluded<'a>, Error = BaseError>
             + for<'a> Proxy<ListComicInfosExcluded<'a>, Error = BaseError>
@@ -77,7 +77,8 @@ impl WorksetComplex {
         // preventing resource leaks from comics inserted between the last
         // paginated page and the workset delete.
 
-        let workset_info = proxy.exec(&GetWorksetInfoExcluded { id }).await?;
+        let workset_info =
+            GetWorksetInfoExcluded { id }.proxy_on(proxy).await?;
 
         // Page size for paginated comic deletion cascades.
         const PAGE_SIZE: u32 = 50;
@@ -93,8 +94,8 @@ impl WorksetComplex {
                 limit: PAGE_SIZE,
             };
 
-            let comic_infos = proxy
-                .exec(&ListComicInfosExcluded { spec: &list_spec })
+            let comic_infos = ListComicInfosExcluded { spec: &list_spec }
+                .proxy_on(proxy)
                 .await?;
 
             if comic_infos.is_empty() {
@@ -106,11 +107,11 @@ impl WorksetComplex {
             }
         }
 
-        proxy
-            .exec(&DeleteWorkset {
-                id: &workset_info.id,
-            })
-            .await?;
+        DeleteWorkset {
+            id: &workset_info.id,
+        }
+        .proxy_on(proxy)
+        .await?;
 
         accept(())
     }
@@ -125,7 +126,7 @@ impl WorksetPermComplex {
         proxy: &mut P,
         user_id: &str,
         team_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
@@ -137,7 +138,7 @@ impl WorksetPermComplex {
         proxy: &mut P,
         user_id: &str,
         team_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
@@ -149,7 +150,7 @@ impl WorksetPermComplex {
         proxy: &mut P,
         user_id: &str,
         workset_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
             + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
@@ -164,7 +165,7 @@ impl WorksetPermComplex {
         proxy: &mut P,
         user_id: &str,
         workset_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
             + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
@@ -179,7 +180,7 @@ impl WorksetPermComplex {
         proxy: &mut P,
         user_id: &str,
         workset_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
             + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
@@ -193,12 +194,12 @@ impl WorksetPermComplex {
     async fn resolve_team_id<P>(
         proxy: &mut P,
         workset_id: &str,
-    ) -> BaseResult<String>
+    ) -> BaseRest<String>
     where
         P: for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>,
     {
         let workset_info =
-            proxy.exec(&GetWorksetInfo { id: workset_id }).await?;
+            GetWorksetInfo { id: workset_id }.proxy_on(proxy).await?;
 
         accept(workset_info.team_id)
     }

@@ -1,4 +1,4 @@
-use poprako_orchestra::{Nucl, run_proxy};
+use poprako_orchestra::{Nucl, OperRun as _, OperStep as _, run_proxy};
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
@@ -30,7 +30,7 @@ use crate::part::repo::oper::page::{
 use crate::part::repo::oper::unit::{ApplyUnitEdits, ListUnitOrders};
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::unit::UnitRepo;
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::stage::spawn_starts;
 use crate::value::chapter::Stage;
 use crate::value::chapter_port::TranslationFormat;
@@ -48,7 +48,7 @@ pub async fn import<N, C, R>(
     token: UserToken,
     params: ImportChapterTranslationParams,
     chapter_id: String,
-) -> BaseResult<ImportChapterTranslationPayload>
+) -> BaseRest<ImportChapterTranslationPayload>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -71,13 +71,13 @@ where
     )
     .await?;
 
-    let assignment_info = repo
-        .run(&FindAssignmentInfo::ChapterUser {
-            chapter_id: &chapter_id,
-            user_id: &token.user_id,
-        })
-        .await?
-        .ok_or_else(unit_edit_permission_err)?;
+    let assignment_info = FindAssignmentInfo::ChapterUser {
+        chapter_id: &chapter_id,
+        user_id: &token.user_id,
+    }
+    .run_on(repo)
+    .await?
+    .ok_or_else(unit_edit_permission_err)?;
 
     let edit_perm = UnitEditPerm {
         can_translate: assignment_info
@@ -106,26 +106,20 @@ where
     let import_payload = nucl
         .coord(async move |context| {
             //
-            let chapter_info = repo
-                .step(
-                    context,
-                    &GetChapterInfoExcluded {
-                        id: &chapter_id,
-                        incls: &[],
-                    },
-                )
-                .await?;
+            let chapter_info = GetChapterInfoExcluded {
+                id: &chapter_id,
+                incls: &[],
+            }
+            .step_on(repo, context)
+            .await?;
 
             ChapterComplex::ensure_chapter_writable(&chapter_info)?;
 
-            let page_scopes = repo
-                .step(
-                    context,
-                    &ListPageInfos {
-                        chapter_id: &chapter_id,
-                    },
-                )
-                .await?;
+            let page_scopes = ListPageInfos {
+                chapter_id: &chapter_id,
+            }
+            .step_on(repo, context)
+            .await?;
 
             ChapterImportComplex::validate_page_count(
                 imported_pages.len(),
@@ -137,18 +131,15 @@ where
             for (page_scope, imported_page) in
                 page_scopes.iter().zip(imported_pages.iter())
             {
-                let page_info = repo
-                    .step(context, &GetPageInfoExcluded { id: &page_scope.id })
+                let page_info = GetPageInfoExcluded { id: &page_scope.id }
+                    .step_on(repo, context)
                     .await?;
 
-                let orders = repo
-                    .step(
-                        context,
-                        &ListUnitOrders {
-                            page_id: &page_info.id,
-                        },
-                    )
-                    .await?;
+                let orders = ListUnitOrders {
+                    page_id: &page_info.id,
+                }
+                .step_on(repo, context)
+                .await?;
 
                 if imported_page.units.is_empty() {
                     continue;
@@ -168,46 +159,37 @@ where
 
                 let edits = UnitComplex::normalize_edits(&base_ids, edits)?;
 
-                let counters = repo
-                    .step(
-                        context,
-                        &ApplyUnitEdits {
-                            page_id: &page_info.id,
-                            orders: &orders,
-                            edits: &edits,
-                        },
-                    )
-                    .await?;
+                let counters = ApplyUnitEdits {
+                    page_id: &page_info.id,
+                    orders: &orders,
+                    edits: &edits,
+                }
+                .step_on(repo, context)
+                .await?;
 
-                repo.step(
-                    context,
-                    &SetPageUnitCounters {
-                        id: &page_info.id,
-                        counters,
-                    },
-                )
+                SetPageUnitCounters {
+                    id: &page_info.id,
+                    counters,
+                }
+                .step_on(repo, context)
                 .await?;
 
                 let delta = page_counters(&page_info).calc_delta(counters);
 
-                repo.step(
-                    context,
-                    &AdjustChapterUnitCounters {
-                        id: &page_info.chapter_id,
-                        delta,
-                    },
-                )
+                AdjustChapterUnitCounters {
+                    id: &page_info.chapter_id,
+                    delta,
+                }
+                .step_on(repo, context)
                 .await?;
 
                 imported_unit_count += imported_page.units.len() as i32;
             }
 
-            repo.step(
-                context,
-                &TouchComicLastActive {
-                    id: &chapter_info.comic_id,
-                },
-            )
+            TouchComicLastActive {
+                id: &chapter_info.comic_id,
+            }
+            .step_on(repo, context)
             .await?;
 
             accept(ImportChapterTranslationPayload {

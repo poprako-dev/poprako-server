@@ -1,7 +1,9 @@
 //! Domain models for member invitations.
 
 use crate::model::user::UserInfo;
-use crate::value::member_invitation::MemberInvitationInclOpt;
+use crate::value::member_invitation::{
+    MemberInvitationInclOpt, MemberInvitationStatus,
+};
 use crate::value::role::RoleMask;
 
 /// An invitation record for joining a team.
@@ -30,7 +32,7 @@ pub struct MemberInvitationInfo {
     pub code: String,
 
     /// Whether this invitation has not yet been consumed.
-    pub pending: bool,
+    pub is_pending: bool,
 
     /// Role mask that will be assigned to the member upon acceptance.
     pub roles: RoleMask,
@@ -72,7 +74,7 @@ pub struct MemberInvitationListSpec {
     /// The team whose invitations should be listed.
     pub team_id: String,
     /// Consumption-status filter narrowing which invitations to return.
-    pub kind: MemberInvitationListKind,
+    pub status: MemberInvitationStatus,
     /// Additional data to include in each result, such as the inviter user record.
     pub incl_opt: Vec<MemberInvitationInclOpt>,
 
@@ -80,16 +82,4 @@ pub struct MemberInvitationListSpec {
     pub offset: u32,
     /// Maximum number of records to return.
     pub limit: u32,
-}
-
-/// Consumption-status filtering mode for listing member invitations.
-pub enum MemberInvitationListKind {
-    /// Include invitations regardless of consumption status.
-    All,
-
-    /// Include only invitations that have not yet been consumed.
-    Pending,
-
-    /// Include only invitations that have already been consumed.
-    Used,
 }

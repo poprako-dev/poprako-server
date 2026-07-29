@@ -1,6 +1,8 @@
 //! Workset use cases — create, read, update, list, and deletion.
 
-use poprako_orchestra::{Nucl, run_proxy, step_proxy};
+use poprako_orchestra::{
+    Nucl, OperRun as _, OperStep as _, run_proxy, step_proxy,
+};
 use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 use tracing::instrument;
 
@@ -45,7 +47,7 @@ use crate::part::repo::term::TermRepo;
 use crate::part::repo::termbase::TermbaseRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 
 /// Workset use-case test helpers.
 #[cfg(test)]
@@ -57,7 +59,7 @@ pub async fn create<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
     params: CreateWorksetParams,
-) -> BaseResult<CreateWorksetPayload>
+) -> BaseRest<CreateWorksetPayload>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -75,14 +77,11 @@ where
     let workset_id = nucl
         .coord(async move |context| {
             //
-            let index = repo
-                .step(
-                    context,
-                    &AllocTeamWorksetIndex {
-                        id: &params.team_id,
-                    },
-                )
-                .await?;
+            let index = AllocTeamWorksetIndex {
+                id: &params.team_id,
+            }
+            .step_on(repo, context)
+            .await?;
 
             let workset_entry = WorksetEntry {
                 id: WorksetComplex::gen_id(),
@@ -92,14 +91,11 @@ where
                 description: params.description,
             };
 
-            let workset_info = repo
-                .step(
-                    context,
-                    &CreateWorkset {
-                        entry: &workset_entry,
-                    },
-                )
-                .await?;
+            let workset_info = CreateWorkset {
+                entry: &workset_entry,
+            }
+            .step_on(repo, context)
+            .await?;
 
             accept(workset_info.id)
         })
@@ -114,7 +110,7 @@ pub async fn get_info<C, R>(
     (repo,): (&R,),
     token: UserToken,
     id: String,
-) -> BaseResult<WorksetInfoVal>
+) -> BaseRest<WorksetInfoVal>
 where
     R: WorksetRepo<C> + MemberRepo<C> + Sync,
 {
@@ -129,7 +125,7 @@ where
     )
     .await?;
 
-    let workset_info = repo.run(&GetWorksetInfo { id: &id }).await?;
+    let workset_info = GetWorksetInfo { id: &id }.run_on(repo).await?;
 
     accept(workset_info.into())
 }
@@ -140,7 +136,7 @@ pub async fn list_infos<C, R>(
     (repo,): (&R,),
     token: UserToken,
     params: ListWorksetInfosParams,
-) -> BaseResult<Vec<WorksetInfoVal>>
+) -> BaseRest<Vec<WorksetInfoVal>>
 where
     R: WorksetRepo<C> + MemberRepo<C> + Sync,
 {
@@ -153,13 +149,13 @@ where
     )
     .await?;
 
-    let workset_infos = repo
-        .run(&ListWorksetInfos {
-            team_id: &params.team_id,
-            offset: params.offset,
-            limit: params.limit,
-        })
-        .await?;
+    let workset_infos = ListWorksetInfos {
+        team_id: &params.team_id,
+        offset: params.offset,
+        limit: params.limit,
+    }
+    .run_on(repo)
+    .await?;
 
     accept(workset_infos.into_iter().map(Into::into).collect())
 }
@@ -170,7 +166,7 @@ pub async fn update_info<C, R>(
     (repo,): (&R,),
     token: UserToken,
     params: UpdateWorksetInfoParams,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     R: WorksetRepo<C> + MemberRepo<C> + Sync,
 {
@@ -191,9 +187,10 @@ where
         description: params.description,
     };
 
-    repo.run(&UpdateWorkset {
+    UpdateWorkset {
         update: &workset_info_update,
-    })
+    }
+    .run_on(repo)
     .await?;
 
     accept(())
@@ -205,7 +202,7 @@ pub async fn delete<N, C, R, P>(
     (nucl, repo, prom): (&N, &R, &P),
     token: UserToken,
     id: String,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,

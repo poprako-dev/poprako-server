@@ -3,8 +3,7 @@
 use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 
 use crate::model::assignment_invitation::{
-    AssignmentInvitationEntry, AssignmentInvitationListKind,
-    AssignmentInvitationListSpec,
+    AssignmentInvitationEntry, AssignmentInvitationListSpec,
 };
 use crate::part::repo::oper::assignment_invitation::{
     CreateAssignmentInvitation, ListAssignmentInvitationInfos,
@@ -14,6 +13,7 @@ use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
 use crate::part_impl::shared::RdbCore;
 use crate::result::BaseError;
+use crate::value::assignment_invitation::AssignmentInvitationStatus;
 use crate::value::role::{RoleField, RoleMask};
 
 const PREFIX: &str = "rdb-test-assignment-invitation-domain-";
@@ -69,7 +69,7 @@ pub async fn assignment_invitation_roundtrip_uses_testcontainer(
 
     let assignment_invitation_list_spec = AssignmentInvitationListSpec {
         chapter_id: chapter_fixture.chapter_entry.id.clone(),
-        kind: AssignmentInvitationListKind::Used,
+        status: AssignmentInvitationStatus::Used,
         offset: 0,
         limit: 10,
     };
@@ -84,7 +84,7 @@ pub async fn assignment_invitation_roundtrip_uses_testcontainer(
 
     assert_eq!(assignment_invitation_infos.len(), 1);
 
-    assert!(!assignment_invitation_infos[0].pending);
+    assert!(!assignment_invitation_infos[0].is_pending);
 
     test_shared::cleanup(&shared, PREFIX).await.ok().unwrap();
 

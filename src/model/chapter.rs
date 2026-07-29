@@ -98,11 +98,12 @@ pub struct ChapterEntry {
     pub creator_id: String,
 }
 
-/// Mutable profile (non-workflow) fields for a chapter.
+/// Mutable non-workflow fields for a chapter.
 ///
-/// Only `subtitle` and `is_pinned` are user-editable through the profile
-/// update endpoint. Workflow phase transitions are handled via
-/// [`ChapterStageUpdate`] instead.
+/// The profile update endpoint changes only `subtitle`. Chapter pinning is a
+/// separate action, while internal orchestration can use `pin` to preserve
+/// the single-pinned-chapter invariant. Workflow phase transitions are
+/// handled via [`ChapterStageUpdate`] instead.
 #[cfg_attr(test, derive(Clone))]
 pub struct ChapterInfoUpdate {
     //
@@ -111,7 +112,7 @@ pub struct ChapterInfoUpdate {
 
     /// New subtitle value, or `None` to leave unchanged.
     pub subtitle: Option<String>,
-    /// New pinned state, or `None` to leave unchanged.
+    /// New pinned state for a dedicated pinning operation.
     pub pin: Option<bool>,
 }
 

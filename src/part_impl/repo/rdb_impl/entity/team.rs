@@ -5,7 +5,7 @@ use time::OffsetDateTime;
 
 use crate::model::team::TeamInfo;
 use crate::part_impl::repo::rdb_impl::schema::t_team;
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 use crate::value::image::{ImageExt, ImageHash};
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
@@ -137,7 +137,7 @@ impl<'a> TeamAspect<'a> {
 impl TryFrom<TeamRow> for TeamInfo {
     type Error = BaseError;
 
-    fn try_from(v: TeamRow) -> BaseResult<Self> {
+    fn try_from(v: TeamRow) -> BaseRest<Self> {
         //
         let avatar_hash_bytes: [u8; 32] =
             v.f_avatar_hash.try_into().map_err(|_| {
@@ -160,7 +160,7 @@ impl TryFrom<TeamRow> for TeamInfo {
             name: v.f_name,
             description: v.f_description.unwrap_or_default(),
             avatar_key: v.f_avatar_key,
-            avatar_uploaded: v.f_avatar_uploaded,
+            is_avatar_uploaded: v.f_avatar_uploaded,
             avatar_version: v.f_avatar_version,
             avatar_hash: ImageHash::new(avatar_hash_bytes),
             avatar_ext,

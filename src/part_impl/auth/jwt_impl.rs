@@ -12,7 +12,7 @@ use poprako_util::i18n::trl;
 
 use crate::model::user::UserToken;
 use crate::part::auth::TokenAuth;
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
 #[cfg(test)]
 mod tests;
@@ -34,7 +34,7 @@ pub struct JwtAuth {
 impl JwtAuth {
     // Creates a JWT signer from a shared secret and token lifetime in hours.
     /// Creates a JWT signer from a shared secret and token lifetime.
-    pub fn new(secret: &str, expiration_hours: i64) -> BaseResult<Self> {
+    pub fn new(secret: &str, expiration_hours: i64) -> BaseRest<Self> {
         //
         // Internal implementation detail.
         if expiration_hours <= 0 {
@@ -84,7 +84,7 @@ impl JwtAuth {
 impl TokenAuth for JwtAuth {
     // Signs a user token by encoding JWT claims with configured expiration.
     #[instrument(level = "info", err(Debug), skip_all)]
-    fn sign_token(&self, token: &UserToken) -> BaseResult<String> {
+    fn sign_token(&self, token: &UserToken) -> BaseRest<String> {
         //
         // Internal implementation detail.
         let now = OffsetDateTime::now_utc();
@@ -117,7 +117,7 @@ impl TokenAuth for JwtAuth {
 
     // Verifies a JWT token string and returns the decoded user token.
     #[instrument(level = "info", err(Debug), skip_all)]
-    fn verify_token(&self, raw: &str) -> BaseResult<UserToken> {
+    fn verify_token(&self, raw: &str) -> BaseRest<UserToken> {
         //
         // Internal implementation detail.
         let token_data = decode::<TokenClaims>(

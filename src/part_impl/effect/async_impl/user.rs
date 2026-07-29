@@ -4,6 +4,7 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 
 use fluent_templates::fluent_bundle::FluentValue;
+use poprako_orchestra::OperRun as _;
 use tracing::instrument;
 
 use poprako_util::i18n::{trl, trl_kv};
@@ -26,12 +27,12 @@ pub async fn touch_last_active<C, R>(repo: &R, payload: UserActivePayload)
 where
     R: UserRepo<C>,
 {
-    if repo
-        .run(&UpdateUser::TouchLastActive {
-            id: &payload.user_id,
-        })
-        .await
-        .is_err()
+    if (UpdateUser::TouchLastActive {
+        id: &payload.user_id,
+    })
+    .run_on(repo)
+    .await
+    .is_err()
     {
         tracing::warn!(
             user_id = %payload.user_id,
@@ -44,13 +45,13 @@ where
 #[instrument(level = "info", skip_all)]
 pub async fn notify_invitor<C, R>(repo: &R, payload: UserSignedUpPayload)
 where
-    R: TeamRepo<C> + SystemMailRepo<C>,
+    R: TeamRepo<C> + SystemMailRepo,
 {
-    let team_info = repo
-        .run(&GetTeamInfo::Id {
-            id: &payload.team_id,
-        })
-        .await;
+    let team_info = GetTeamInfo::Id {
+        id: &payload.team_id,
+    }
+    .run_on(repo)
+    .await;
 
     let Ok(team_info) = team_info else {
         //
@@ -81,12 +82,12 @@ where
         content: trl_kv("mail-invitation-used-body", &args),
     };
 
-    if repo
-        .run(&SendSystemMail {
-            entry: &system_mail_entry,
-        })
-        .await
-        .is_err()
+    if (SendSystemMail {
+        entry: &system_mail_entry,
+    })
+    .run_on(repo)
+    .await
+    .is_err()
     {
         tracing::warn!(
             team_id = %payload.team_id,

@@ -17,7 +17,7 @@ use crate::part::repo::oper::comic::{
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 use crate::value::comic::ComicInclOpt;
 use crate::value::image::{ImageExt, ImageHash};
 use crate::value::incl::expand_incl_opts;
@@ -186,7 +186,7 @@ fn mark_comic_cover_uploaded(
     cover_version: u32,
     cover_key: Option<&str>,
     cover_uploaded: bool,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     let comic = state
         .comics
@@ -202,7 +202,7 @@ fn mark_comic_cover_uploaded(
         return Err(expected("error-stale-cover-upload"));
     }
 
-    comic.cover_uploaded = cover_uploaded;
+    comic.is_cover_uploaded = cover_uploaded;
 
     comic.updated_at = now();
 
@@ -214,7 +214,7 @@ fn get_comic_info(
     state: &MockState,
     id: &str,
     incls: &[ComicInclOpt],
-) -> BaseResult<ComicInfo> {
+) -> BaseRest<ComicInfo> {
     //
     let mut comic_info = state
         .comics
@@ -392,7 +392,7 @@ impl<'a> Step<CreateComic<'a>, MockContext> for Mock {
             author: oper.entry.author.clone(),
             description: oper.entry.description.clone(),
             cover_key: None,
-            cover_uploaded: false,
+            is_cover_uploaded: false,
             cover_version: 0,
             cover_hash: ImageHash::default(),
             cover_ext: ImageExt::Png,
@@ -511,7 +511,7 @@ impl<'a> Step<ReserveComicCover<'a>, MockContext> for Mock {
                 object_key,
                 prev_object_key: None,
                 cover_version: comic.cover_version,
-                upload_required: !comic.cover_uploaded,
+                is_upload_required: !comic.is_cover_uploaded,
             });
         }
 
@@ -527,7 +527,7 @@ impl<'a> Step<ReserveComicCover<'a>, MockContext> for Mock {
 
         comic.cover_key = Some(object_key.clone());
 
-        comic.cover_uploaded = false;
+        comic.is_cover_uploaded = false;
 
         comic.cover_version = cover_version;
 
@@ -541,7 +541,7 @@ impl<'a> Step<ReserveComicCover<'a>, MockContext> for Mock {
             object_key,
             prev_object_key,
             cover_version,
-            upload_required: true,
+            is_upload_required: true,
         })
     }
 }

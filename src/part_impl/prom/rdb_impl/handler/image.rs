@@ -2,7 +2,7 @@
 //!
 //! Dispatches image [`ImagePayload`] variants to their concrete implementations.
 
-use poprako_orchestra::Nucl;
+use poprako_orchestra::{Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
 use crate::part::image::ImageManager;
@@ -21,7 +21,7 @@ use crate::part_impl::prom::rdb_impl::handler::image::identity::ImageIdentity;
 use crate::part_impl::prom::rdb_impl::handler::image::resource::ResourceState;
 use crate::part_impl::prom::rdb_impl::handler::task_flow::TaskFlow;
 use crate::part_impl::shared::RdbContext;
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
 // Internal organization of the `identity` module.
 mod identity;
@@ -158,11 +158,11 @@ where
     N: Nucl<Context = RdbContext, Error = BaseError>,
     R: ChapterRepo<RdbContext> + PageRepo<RdbContext> + Send + Sync,
 {
-    let page_info = match repo
-        .run(&GetPageInfo {
-            id: image_identity.resource_id,
-        })
-        .await
+    let page_info = match (GetPageInfo {
+        id: image_identity.resource_id,
+    })
+    .run_on(repo)
+    .await
     {
         // Internal implementation detail.
         Ok(page_info) => page_info,
@@ -189,29 +189,24 @@ where
         (true, true) => {}
     }
 
-    let outcome: BaseResult<()> = nucl
+    let outcome: BaseRest<()> = nucl
         .coord(async move |context| {
             //
             // Internal implementation detail.
             // NOTE: Chapter -> Page is the shared lock order that prevents
             // both deadlocks and chapter upload-summary races.
-            repo.step(
-                context,
-                &GetChapterInfoExcluded {
-                    id: &page_info.chapter_id,
-                    incls: &[],
-                },
-            )
+            GetChapterInfoExcluded {
+                id: &page_info.chapter_id,
+                incls: &[],
+            }
+            .step_on(repo, context)
             .await?;
 
-            let locked_page_info = repo
-                .step(
-                    context,
-                    &GetPageInfoExcluded {
-                        id: image_identity.resource_id,
-                    },
-                )
-                .await?;
+            let locked_page_info = GetPageInfoExcluded {
+                id: image_identity.resource_id,
+            }
+            .step_on(repo, context)
+            .await?;
 
             if locked_page_info.image_version != image_identity.version
                 || locked_page_info.image_key.as_deref()
@@ -223,15 +218,13 @@ where
                 });
             }
 
-            repo.step(
-                context,
-                &SetPageImageUploaded {
-                    id: image_identity.resource_id,
-                    image_version: image_identity.version,
-                    image_key: image_identity.object_key,
-                    image_uploaded: false,
-                },
-            )
+            SetPageImageUploaded {
+                id: image_identity.resource_id,
+                image_version: image_identity.version,
+                image_key: image_identity.object_key,
+                image_uploaded: false,
+            }
+            .step_on(repo, context)
             .await?;
 
             accept(())
@@ -293,11 +286,11 @@ where
     N: Nucl<Context = RdbContext, Error = BaseError>,
     R: ChapterRepo<RdbContext> + PageRepo<RdbContext> + Send + Sync,
 {
-    let page_info = match repo
-        .run(&GetPageInfo {
-            id: image_identity.resource_id,
-        })
-        .await
+    let page_info = match (GetPageInfo {
+        id: image_identity.resource_id,
+    })
+    .run_on(repo)
+    .await
     {
         // Internal implementation detail.
         Ok(page_info) => page_info,
@@ -327,29 +320,24 @@ where
         (true, true) => {}
     }
 
-    let outcome: BaseResult<()> = nucl
+    let outcome: BaseRest<()> = nucl
         .coord(async move |context| {
             //
             // Internal implementation detail.
             // NOTE: Chapter -> Page is the shared lock order that prevents
             // both deadlocks and chapter upload-summary races.
-            repo.step(
-                context,
-                &GetChapterInfoExcluded {
-                    id: &page_info.chapter_id,
-                    incls: &[],
-                },
-            )
+            GetChapterInfoExcluded {
+                id: &page_info.chapter_id,
+                incls: &[],
+            }
+            .step_on(repo, context)
             .await?;
 
-            let locked_page_info = repo
-                .step(
-                    context,
-                    &GetPageInfoExcluded {
-                        id: image_identity.resource_id,
-                    },
-                )
-                .await?;
+            let locked_page_info = GetPageInfoExcluded {
+                id: image_identity.resource_id,
+            }
+            .step_on(repo, context)
+            .await?;
 
             if locked_page_info.image_version != image_identity.version
                 || locked_page_info.image_key.as_deref()
@@ -361,14 +349,12 @@ where
                 });
             }
 
-            repo.step(
-                context,
-                &MarkPageImageUploaded {
-                    id: image_identity.resource_id,
-                    image_version: image_identity.version,
-                    image_key: Some(image_identity.object_key),
-                },
-            )
+            MarkPageImageUploaded {
+                id: image_identity.resource_id,
+                image_version: image_identity.version,
+                image_key: Some(image_identity.object_key),
+            }
+            .step_on(repo, context)
             .await?;
 
             accept(())

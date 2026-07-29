@@ -1,6 +1,6 @@
 //! Complex-domain opers for page entities.
 
-use poprako_orchestra::Proxy;
+use poprako_orchestra::{OperProxy as _, Proxy};
 
 use poprako_util::i18n::trl;
 
@@ -12,7 +12,7 @@ use crate::part::repo::oper::chapter::GetChapterInfo;
 use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::workset::GetWorksetInfo;
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 use crate::value::role::RoleField;
 
@@ -51,7 +51,7 @@ impl PagePermComplex {
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
     {
@@ -63,7 +63,7 @@ impl PagePermComplex {
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
             + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
@@ -71,25 +71,25 @@ impl PagePermComplex {
             + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>
             + for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
     {
-        let chapter_info = proxy
-            .exec(&GetChapterInfo {
-                id: chapter_id,
-                incls: &[],
-            })
-            .await?;
+        let chapter_info = GetChapterInfo {
+            id: chapter_id,
+            incls: &[],
+        }
+        .proxy_on(proxy)
+        .await?;
 
-        let comic_info = proxy
-            .exec(&GetComicInfo {
-                id: &chapter_info.comic_id,
-                incls: &[],
-            })
-            .await?;
+        let comic_info = GetComicInfo {
+            id: &chapter_info.comic_id,
+            incls: &[],
+        }
+        .proxy_on(proxy)
+        .await?;
 
-        let workset_info = proxy
-            .exec(&GetWorksetInfo {
-                id: &comic_info.workset_id,
-            })
-            .await?;
+        let workset_info = GetWorksetInfo {
+            id: &comic_info.workset_id,
+        }
+        .proxy_on(proxy)
+        .await?;
 
         let member_check =
             check_user_is_team_member(proxy, user_id, &workset_info.team_id)
@@ -107,7 +107,7 @@ impl PagePermComplex {
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
     {
@@ -119,32 +119,32 @@ impl PagePermComplex {
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
             + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
             + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
             + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
-        let chapter_info = proxy
-            .exec(&GetChapterInfo {
-                id: chapter_id,
-                incls: &[],
-            })
-            .await?;
+        let chapter_info = GetChapterInfo {
+            id: chapter_id,
+            incls: &[],
+        }
+        .proxy_on(proxy)
+        .await?;
 
-        let comic_info = proxy
-            .exec(&GetComicInfo {
-                id: &chapter_info.comic_id,
-                incls: &[],
-            })
-            .await?;
+        let comic_info = GetComicInfo {
+            id: &chapter_info.comic_id,
+            incls: &[],
+        }
+        .proxy_on(proxy)
+        .await?;
 
-        let workset_info = proxy
-            .exec(&GetWorksetInfo {
-                id: &comic_info.workset_id,
-            })
-            .await?;
+        let workset_info = GetWorksetInfo {
+            id: &comic_info.workset_id,
+        }
+        .proxy_on(proxy)
+        .await?;
 
         check_user_is_team_admin(proxy, user_id, &workset_info.team_id).await
     }
@@ -172,16 +172,16 @@ async fn check_reserve_role<P>(
     proxy: &mut P,
     user_id: &str,
     chapter_id: &str,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
 {
-    let assignment_info = proxy
-        .exec(&FindAssignmentInfo::ChapterUser {
-            chapter_id,
-            user_id,
-        })
-        .await?;
+    let assignment_info = FindAssignmentInfo::ChapterUser {
+        chapter_id,
+        user_id,
+    }
+    .proxy_on(proxy)
+    .await?;
 
     let Some(assignment_info) = assignment_info else {
         return Err(page_reserve_role_err());
@@ -203,16 +203,16 @@ async fn check_upload_role<P>(
     proxy: &mut P,
     user_id: &str,
     chapter_id: &str,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
 {
-    let assignment_info = proxy
-        .exec(&FindAssignmentInfo::ChapterUser {
-            chapter_id,
-            user_id,
-        })
-        .await?;
+    let assignment_info = FindAssignmentInfo::ChapterUser {
+        chapter_id,
+        user_id,
+    }
+    .proxy_on(proxy)
+    .await?;
 
     let Some(assignment_info) = assignment_info else {
         return Err(page_upload_role_err());
@@ -233,16 +233,16 @@ async fn check_any_assignment<P>(
     proxy: &mut P,
     user_id: &str,
     chapter_id: &str,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
 {
-    let assignment_info = proxy
-        .exec(&FindAssignmentInfo::ChapterUser {
-            chapter_id,
-            user_id,
-        })
-        .await?;
+    let assignment_info = FindAssignmentInfo::ChapterUser {
+        chapter_id,
+        user_id,
+    }
+    .proxy_on(proxy)
+    .await?;
 
     if assignment_info.is_none() {
         return Err(BaseError::Expected {

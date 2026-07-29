@@ -13,7 +13,7 @@ use crate::part_impl::repo::rdb_impl::member::step_impl::{
     list_infos_by_user_id_excluded, update_role, update_user_nickname,
 };
 use crate::part_impl::shared::RdbContext;
-use crate::result::{BaseError, BaseResult};
+use crate::result::{BaseError, BaseRest};
 
 impl Run<ListMemberInfos<'_>> for RdbRepo {
     // Non-transactional query path for listing member infos.
@@ -27,7 +27,7 @@ impl Run<ListMemberInfos<'_>> for RdbRepo {
     async fn run(
         &self,
         oper: &ListMemberInfos<'_>,
-    ) -> BaseResult<Vec<MemberInfo>> {
+    ) -> BaseRest<Vec<MemberInfo>> {
         match oper {
             //
             ListMemberInfos::Spec { spec } => {
@@ -47,10 +47,7 @@ impl Run<GetMemberInfo<'_, '_>> for RdbRepo {
 
     #[instrument(level = "info", err(Debug), skip_all)]
     // Resolve one member info by id through a submit-query read path.
-    async fn run(
-        &self,
-        oper: &GetMemberInfo<'_, '_>,
-    ) -> BaseResult<MemberInfo> {
+    async fn run(&self, oper: &GetMemberInfo<'_, '_>) -> BaseRest<MemberInfo> {
         match oper {
             GetMemberInfo::Id { id, incls } => {
                 submit_query!(self.core, get_info_by_id, id, incls)
@@ -69,7 +66,7 @@ impl Step<CreateMember<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &CreateMember<'_>,
-    ) -> BaseResult<MemberInfo> {
+    ) -> BaseRest<MemberInfo> {
         create(context.conn(), oper.entry).await
     }
 }
@@ -86,7 +83,7 @@ impl Step<UpdateMember<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &UpdateMember<'_>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         match oper {
             //
             UpdateMember::UserNickname {
@@ -117,7 +114,7 @@ impl Step<ListMemberInfos<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &ListMemberInfos<'_>,
-    ) -> BaseResult<Vec<MemberInfo>> {
+    ) -> BaseRest<Vec<MemberInfo>> {
         match oper {
             //
             ListMemberInfos::Spec { spec } => {
@@ -141,7 +138,7 @@ impl Step<FindMemberInfo<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &FindMemberInfo<'_>,
-    ) -> BaseResult<Option<MemberInfo>> {
+    ) -> BaseRest<Option<MemberInfo>> {
         match oper {
             FindMemberInfo::UserTeam { user_id, team_id } => {
                 find_info_by_user_id_and_team_id(
@@ -165,7 +162,7 @@ impl Step<GetMemberInfo<'_, '_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &GetMemberInfo<'_, '_>,
-    ) -> BaseResult<MemberInfo> {
+    ) -> BaseRest<MemberInfo> {
         match oper {
             GetMemberInfo::Id { id, incls } => {
                 get_info_by_id(context.conn(), id, incls).await
@@ -186,7 +183,7 @@ impl Step<ListMemberInfosExcluded<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &ListMemberInfosExcluded<'_>,
-    ) -> BaseResult<Vec<MemberInfo>> {
+    ) -> BaseRest<Vec<MemberInfo>> {
         match oper {
             //
             ListMemberInfosExcluded::User { user_id } => {
@@ -210,7 +207,7 @@ impl Step<DeleteMember<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &DeleteMember<'_>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         delete(context.conn(), oper.id).await
     }
 }

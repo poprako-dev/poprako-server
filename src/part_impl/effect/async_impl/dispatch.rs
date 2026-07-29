@@ -17,7 +17,7 @@ where
     R: AssignmentRepo<C>
         + ChapterRepo<C>
         + TeamRepo<C>
-        + SystemMailRepo<C>
+        + SystemMailRepo
         + UserRepo<C>,
 {
     match event {

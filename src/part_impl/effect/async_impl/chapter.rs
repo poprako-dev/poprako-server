@@ -4,6 +4,7 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 
 use fluent_templates::fluent_bundle::FluentValue;
+use poprako_orchestra::OperRun as _;
 use tracing::instrument;
 
 use poprako_util::i18n::{trl, trl_kv};
@@ -35,7 +36,7 @@ pub async fn notify_next_phase<C, R>(
     repo: &R,
     payload: &ChapterWorkflowCompletedPayload,
 ) where
-    R: AssignmentRepo<C> + ChapterRepo<C> + SystemMailRepo<C>,
+    R: AssignmentRepo<C> + ChapterRepo<C> + SystemMailRepo,
 {
     let Some((receiver_role, workflow_label)) =
         next_phase_config(payload.completed_stage)
@@ -65,7 +66,7 @@ pub async fn notify_reviewers_on_progress<C, R>(
     repo: &R,
     payload: ChapterWorkflowCompletedPayload,
 ) where
-    R: AssignmentRepo<C> + ChapterRepo<C> + SystemMailRepo<C>,
+    R: AssignmentRepo<C> + ChapterRepo<C> + SystemMailRepo,
 {
     let Some(workflow_label) = reviewer_progress_label(payload.completed_stage)
     else {
@@ -81,7 +82,7 @@ pub async fn notify_reviewers_on_publish<C, R>(
     repo: &R,
     payload: ChapterPublishedPayload,
 ) where
-    R: AssignmentRepo<C> + ChapterRepo<C> + SystemMailRepo<C>,
+    R: AssignmentRepo<C> + ChapterRepo<C> + SystemMailRepo,
 {
     notify_reviewers(repo, &payload.chapter_id, trl("mail-workflow-publish"))
         .await;
@@ -124,12 +125,12 @@ async fn load_chapter<C, R>(repo: &R, chapter_id: &str) -> Option<ChapterInfo>
 where
     R: ChapterRepo<C>,
 {
-    let chapter_info = repo
-        .run(&GetChapterInfo {
-            id: chapter_id,
-            incls: CHAPTER_INCL_OPT,
-        })
-        .await;
+    let chapter_info = GetChapterInfo {
+        id: chapter_id,
+        incls: CHAPTER_INCL_OPT,
+    }
+    .run_on(repo)
+    .await;
 
     let Ok(chapter_info) = chapter_info else {
         //
@@ -157,13 +158,13 @@ async fn build_assignment_mails<C, R>(
 where
     R: AssignmentRepo<C>,
 {
-    let assignment_infos = repo
-        .run(&ListAssignmentInfos::Chapter {
-            chapter_id: &chapter_info.id,
-            role: Some(receiver_role),
-            incls: &[],
-        })
-        .await;
+    let assignment_infos = ListAssignmentInfos::Chapter {
+        chapter_id: &chapter_info.id,
+        role: Some(receiver_role),
+        incls: &[],
+    }
+    .run_on(repo)
+    .await;
 
     let Ok(assignment_infos) = assignment_infos else {
         //
@@ -205,23 +206,23 @@ where
 /// Sends a batch of system mail forms, logging a warning on failure.
 #[instrument(level = "info", skip_all)]
 // Submits prepared mails and logs the failure path for observability.
-async fn send_batch<C, R>(
+async fn send_batch<R>(
     repo: &R,
     chapter_id: &str,
     system_mail_entries: Vec<SystemMailEntry>,
 ) where
-    R: SystemMailRepo<C>,
+    R: SystemMailRepo,
 {
     if system_mail_entries.is_empty() {
         return;
     }
 
-    if repo
-        .run(&SendSystemMails {
-            entries: &system_mail_entries,
-        })
-        .await
-        .is_err()
+    if (SendSystemMails {
+        entries: &system_mail_entries,
+    })
+    .run_on(repo)
+    .await
+    .is_err()
     {
         tracing::warn!(
             chapter_id = %chapter_id,
@@ -258,7 +259,7 @@ async fn notify_reviewers<C, R>(
     chapter_id: &str,
     workflow_label: String,
 ) where
-    R: AssignmentRepo<C> + ChapterRepo<C> + SystemMailRepo<C>,
+    R: AssignmentRepo<C> + ChapterRepo<C> + SystemMailRepo,
 {
     let Some(chapter_info) = load_chapter(repo, chapter_id).await else {
         return;

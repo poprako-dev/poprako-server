@@ -1,6 +1,6 @@
 //! Handler for deferred chapter workflow advancement.
 
-use poprako_orchestra::Nucl;
+use poprako_orchestra::{Nucl, OperStep as _};
 use tracing::instrument;
 
 use crate::part::effect::EffectDevelop;
@@ -13,7 +13,7 @@ use crate::part::repo::oper::chapter::{
 };
 use crate::part_impl::prom::rdb_impl::handler::task_flow::TaskFlow;
 use crate::part_impl::shared::RdbContext;
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 use crate::value::chapter::Stage;
 
 /// Attempts raw-provision completion once and completes even while uploads remain pending.
@@ -48,23 +48,21 @@ where
     R: ChapterRepo<RdbContext> + Send + Sync,
     V: EffectDevelop + Sync,
 {
-    let outcome: BaseResult<bool> = nucl
+    let outcome: BaseRest<bool> = nucl
         .coord(async move |context| {
             //
             // Internal implementation detail.
             // NOTE: Chapter -> Page is the shared lock order that prevents
             // both deadlocks and chapter upload-summary races.
-            repo.step(
-                context,
-                &GetChapterInfoExcluded {
-                    id: chapter_id,
-                    incls: &[],
-                },
-            )
+            GetChapterInfoExcluded {
+                id: chapter_id,
+                incls: &[],
+            }
+            .step_on(repo, context)
             .await?;
 
-            let advanced = repo
-                .step(context, &CompleteChapterRawProvide { id: chapter_id })
+            let advanced = CompleteChapterRawProvide { id: chapter_id }
+                .step_on(repo, context)
                 .await?;
 
             accept(advanced)

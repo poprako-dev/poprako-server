@@ -3,7 +3,7 @@
 
 use std::collections::HashMap;
 
-use poprako_orchestra::Proxy;
+use poprako_orchestra::{OperProxy as _, Proxy};
 use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 use poprako_orchestra_extra::prom::task::Task;
 
@@ -36,7 +36,7 @@ use crate::part::repo::oper::termbase::{
 use crate::part::repo::oper::workset::{
     GetWorksetInfo, UpdateWorksetComicCount,
 };
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 use crate::util::next_snowflake_id;
 use crate::value::index::stored_index_to_user_index;
 use crate::value::role::RoleMask;
@@ -67,7 +67,7 @@ impl ComicComplex {
     pub async fn resolve_fallback_cover_keys<P>(
         proxy: &mut P,
         comic_ids: &[String],
-    ) -> BaseResult<HashMap<String, String>>
+    ) -> BaseRest<HashMap<String, String>>
     where
         P: for<'a> Proxy<ListPinnedChapterInfos<'a>, Error = BaseError>
             + for<'a> Proxy<ListFirstPageInfos<'a>, Error = BaseError>,
@@ -77,18 +77,18 @@ impl ComicComplex {
         }
 
         let pinned_chapter_infos =
-            proxy.exec(&ListPinnedChapterInfos { comic_ids }).await?;
+            ListPinnedChapterInfos { comic_ids }.proxy_on(proxy).await?;
 
         let chapter_ids = pinned_chapter_infos
             .values()
             .map(|chapter_info| chapter_info.id.clone())
             .collect::<Vec<_>>();
 
-        let first_page_infos = proxy
-            .exec(&ListFirstPageInfos {
-                chapter_ids: &chapter_ids,
-            })
-            .await?;
+        let first_page_infos = ListFirstPageInfos {
+            chapter_ids: &chapter_ids,
+        }
+        .proxy_on(proxy)
+        .await?;
 
         let mut fallback_cover_keys = HashMap::new();
 
@@ -99,7 +99,7 @@ impl ComicComplex {
             };
 
             let (true, Some(image_key)) =
-                (page_info.image_uploaded, &page_info.image_key)
+                (page_info.is_image_uploaded, &page_info.image_key)
             else {
                 continue;
             };
@@ -111,7 +111,7 @@ impl ComicComplex {
     }
 
     /// Deletes a comic subtree inside an existing transaction context.
-    pub async fn delete_cascade<P>(proxy: &mut P, id: &str) -> BaseResult<()>
+    pub async fn delete_cascade<P>(proxy: &mut P, id: &str) -> BaseRest<()>
     where
         P: for<'a, 'b> Proxy<GetComicInfoExcluded<'a, 'b>, Error = BaseError>
             + for<'a> Proxy<ListChapterInfosExcluded<'a>, Error = BaseError>
@@ -142,23 +142,24 @@ impl ComicComplex {
         // leaks from chapters (and their page images) inserted between the
         // listing and the comic delete.
 
-        let comic_info =
-            proxy.exec(&GetComicInfoExcluded { id, incls: &[] }).await?;
+        let comic_info = GetComicInfoExcluded { id, incls: &[] }
+            .proxy_on(proxy)
+            .await?;
 
         TermbaseComplex::delete_comic_cascade(proxy, &comic_info.id).await?;
 
-        let chapter_infos = proxy
-            .exec(&ListChapterInfosExcluded {
-                comic_id: &comic_info.id,
-            })
-            .await?;
+        let chapter_infos = ListChapterInfosExcluded {
+            comic_id: &comic_info.id,
+        }
+        .proxy_on(proxy)
+        .await?;
 
         for chapter_info in chapter_infos {
             ChapterComplex::delete_cascade(proxy, &chapter_info.id).await?;
         }
 
         if let Some(cover_key) = &comic_info.cover_key
-            && comic_info.cover_uploaded
+            && comic_info.is_cover_uploaded
         {
             let delete_id = ImageComplex::gen_delete_id();
 
@@ -172,17 +173,17 @@ impl ComicComplex {
                 delay: None,
             };
 
-            proxy.exec(&Defer::new(task)).await?;
+            Defer::new(task).proxy_on(proxy).await?;
         }
 
-        proxy.exec(&DeleteComic { id: &comic_info.id }).await?;
+        DeleteComic { id: &comic_info.id }.proxy_on(proxy).await?;
 
-        proxy
-            .exec(&UpdateWorksetComicCount {
-                id: &comic_info.workset_id,
-                delta: -1,
-            })
-            .await?;
+        UpdateWorksetComicCount {
+            id: &comic_info.workset_id,
+            delta: -1,
+        }
+        .proxy_on(proxy)
+        .await?;
 
         accept(())
     }
@@ -198,7 +199,7 @@ impl ComicPermComplex {
         user_id: &str,
         workset_id: &str,
         preset_assignment_roles: Option<RoleMask>,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
             + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
@@ -220,7 +221,7 @@ impl ComicPermComplex {
         proxy: &mut P,
         user_id: &str,
         workset_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
             + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
@@ -236,7 +237,7 @@ impl ComicPermComplex {
         proxy: &mut P,
         user_id: &str,
         comic_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
             + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
@@ -252,7 +253,7 @@ impl ComicPermComplex {
         proxy: &mut P,
         user_id: &str,
         comic_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
             + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
@@ -268,7 +269,7 @@ impl ComicPermComplex {
         proxy: &mut P,
         user_id: &str,
         comic_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
             + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
@@ -284,7 +285,7 @@ impl ComicPermComplex {
         proxy: &mut P,
         user_id: &str,
         comic_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
             + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
@@ -300,7 +301,7 @@ impl ComicPermComplex {
         proxy: &mut P,
         user_id: &str,
         comic_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
             + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
@@ -315,12 +316,12 @@ impl ComicPermComplex {
     async fn resolve_team_id_from_workset<P>(
         proxy: &mut P,
         workset_id: &str,
-    ) -> BaseResult<String>
+    ) -> BaseRest<String>
     where
         P: for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>,
     {
         let workset_info =
-            proxy.exec(&GetWorksetInfo { id: workset_id }).await?;
+            GetWorksetInfo { id: workset_id }.proxy_on(proxy).await?;
 
         accept(workset_info.team_id)
     }
@@ -329,23 +330,23 @@ impl ComicPermComplex {
     async fn resolve_team_id_from_comic<P>(
         proxy: &mut P,
         comic_id: &str,
-    ) -> BaseResult<String>
+    ) -> BaseRest<String>
     where
         P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
             + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>,
     {
-        let comic_info = proxy
-            .exec(&GetComicInfo {
-                id: comic_id,
-                incls: &[],
-            })
-            .await?;
+        let comic_info = GetComicInfo {
+            id: comic_id,
+            incls: &[],
+        }
+        .proxy_on(proxy)
+        .await?;
 
-        let workset_info = proxy
-            .exec(&GetWorksetInfo {
-                id: &comic_info.workset_id,
-            })
-            .await?;
+        let workset_info = GetWorksetInfo {
+            id: &comic_info.workset_id,
+        }
+        .proxy_on(proxy)
+        .await?;
 
         accept(workset_info.team_id)
     }

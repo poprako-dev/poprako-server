@@ -16,14 +16,14 @@ use crate::part_impl::repo::mock_impl::page::{
     get_page_by_id, list_first_pages, list_infos, page_from_entry,
 };
 use crate::part_impl::repo::mock_impl::{Mock, MockContext, expected, now};
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 
 impl<'a> Run<GetPageInfo<'a>> for Mock {
     // Internal type alias for `Error`.
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
     // Internal implementation of `run`.
-    async fn run(&self, oper: &GetPageInfo<'a>) -> BaseResult<PageInfo> {
+    async fn run(&self, oper: &GetPageInfo<'a>) -> BaseRest<PageInfo> {
         //
         // Internal implementation detail.
         let state = self.state.lock().unwrap();
@@ -36,7 +36,7 @@ impl<'a> Run<ListPageInfos<'a>> for Mock {
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
     // Internal implementation of `run`.
-    async fn run(&self, oper: &ListPageInfos<'a>) -> BaseResult<Vec<PageInfo>> {
+    async fn run(&self, oper: &ListPageInfos<'a>) -> BaseRest<Vec<PageInfo>> {
         //
         // Internal implementation detail.
         let state = self.state.lock().unwrap();
@@ -54,7 +54,7 @@ impl<'a> Run<ListFirstPageInfos<'a>> for Mock {
     async fn run(
         &self,
         oper: &ListFirstPageInfos<'a>,
-    ) -> BaseResult<HashMap<String, PageInfo>> {
+    ) -> BaseRest<HashMap<String, PageInfo>> {
         //
         // Internal implementation detail.
         let state = self.state.lock().unwrap();
@@ -71,7 +71,7 @@ impl<'a> Step<GetPageInfo<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &GetPageInfo<'a>,
-    ) -> BaseResult<PageInfo> {
+    ) -> BaseRest<PageInfo> {
         get_page_by_id(&context.state, oper.id)
     }
 }
@@ -84,7 +84,7 @@ impl<'a> Step<ListPageInfos<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &ListPageInfos<'a>,
-    ) -> BaseResult<Vec<PageInfo>> {
+    ) -> BaseRest<Vec<PageInfo>> {
         accept(list_infos(&context.state, oper.chapter_id))
     }
 }
@@ -99,7 +99,7 @@ impl<'a> Step<ListPageInfosExcluded<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &ListPageInfosExcluded<'a>,
-    ) -> BaseResult<Vec<PageInfo>> {
+    ) -> BaseRest<Vec<PageInfo>> {
         accept(list_infos(&context.state, oper.chapter_id))
     }
 }
@@ -112,7 +112,7 @@ impl<'a> Step<CreatePages<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &CreatePages<'a>,
-    ) -> BaseResult<Vec<PageInfo>> {
+    ) -> BaseRest<Vec<PageInfo>> {
         //
         // Internal implementation detail.
         if oper.entries.iter().any(|page_entry| {
@@ -142,7 +142,7 @@ impl<'a> Step<GetPageInfoExcluded<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &GetPageInfoExcluded<'a>,
-    ) -> BaseResult<PageInfo> {
+    ) -> BaseRest<PageInfo> {
         get_page_by_id(&context.state, oper.id)
     }
 }
@@ -155,7 +155,7 @@ impl<'a> Step<ReservePageImage<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &ReservePageImage<'a>,
-    ) -> BaseResult<PageImageReservation> {
+    ) -> BaseRest<PageImageReservation> {
         //
         // Internal implementation detail.
         let page_info = context
@@ -169,7 +169,7 @@ impl<'a> Step<ReservePageImage<'a>, MockContext> for Mock {
 
         page_info.image_version += 1;
 
-        page_info.image_uploaded = false;
+        page_info.is_image_uploaded = false;
 
         let object_key = PageComplex::gen_image_key(
             &page_info.chapter_id,
@@ -198,7 +198,7 @@ impl<'a> Step<MarkPageImageUploaded<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &MarkPageImageUploaded<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         //
         // Internal implementation detail.
         let page_info = context
@@ -216,7 +216,7 @@ impl<'a> Step<MarkPageImageUploaded<'a>, MockContext> for Mock {
             return Err(expected("error-stale-page-image-upload"));
         }
 
-        page_info.image_uploaded = true;
+        page_info.is_image_uploaded = true;
 
         page_info.updated_at = now();
 
@@ -232,7 +232,7 @@ impl<'a> Step<SetPageImageUploaded<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &SetPageImageUploaded<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         //
         // Internal implementation detail.
         let page_info = context
@@ -248,7 +248,7 @@ impl<'a> Step<SetPageImageUploaded<'a>, MockContext> for Mock {
             return Err(expected("error-stale-page-image-upload"));
         }
 
-        page_info.image_uploaded = oper.image_uploaded;
+        page_info.is_image_uploaded = oper.image_uploaded;
 
         page_info.updated_at = now();
 
@@ -264,7 +264,7 @@ impl<'a> Step<SetPageUnitCounters<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &SetPageUnitCounters<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         //
         // Internal implementation detail.
         let page_info = context
@@ -296,7 +296,7 @@ impl<'a> Step<ShiftPageIndexesTemporary<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &ShiftPageIndexesTemporary<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         //
         // Internal implementation detail.
         for page_info in context.state.pages.iter_mut().filter(|page_info| {
@@ -323,7 +323,7 @@ impl<'a> Step<UpdatePageManifest<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &UpdatePageManifest<'a>,
-    ) -> BaseResult<PageInfo> {
+    ) -> BaseRest<PageInfo> {
         //
         // Internal implementation detail.
         let page_info = context
@@ -337,7 +337,7 @@ impl<'a> Step<UpdatePageManifest<'a>, MockContext> for Mock {
 
         page_info.image_key = oper.update.image_key.clone();
 
-        page_info.image_uploaded = oper.update.image_uploaded;
+        page_info.is_image_uploaded = oper.update.is_image_uploaded;
 
         page_info.image_version = oper.update.image_version;
 
@@ -361,7 +361,7 @@ impl<'a> Step<ClearPageImagesForPublish<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &ClearPageImagesForPublish<'a>,
-    ) -> BaseResult<Vec<String>> {
+    ) -> BaseRest<Vec<String>> {
         //
         // Internal implementation detail.
         let mut object_keys = Vec::new();
@@ -376,7 +376,7 @@ impl<'a> Step<ClearPageImagesForPublish<'a>, MockContext> for Mock {
                 object_keys.push(object_key);
             }
 
-            page_info.image_uploaded = false;
+            page_info.is_image_uploaded = false;
 
             page_info.image_version = page_info
                 .image_version
@@ -402,7 +402,7 @@ impl<'a> Step<DeletePages<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &DeletePages<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         match oper {
             //
             // Internal implementation detail.

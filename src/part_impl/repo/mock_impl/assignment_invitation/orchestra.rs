@@ -1,9 +1,7 @@
 use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
-use crate::model::assignment_invitation::{
-    AssignmentInvitationInfo, AssignmentInvitationListKind,
-};
+use crate::model::assignment_invitation::AssignmentInvitationInfo;
 use crate::part::repo::oper::assignment_invitation::{
     CreateAssignmentInvitation, DeleteAssignmentInvitations,
     GetAssignmentInvitationInfo, GetAssignmentInvitationInfoExcluded,
@@ -13,13 +11,14 @@ use crate::part::repo::oper::assignment_invitation::{
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
+use crate::value::assignment_invitation::AssignmentInvitationStatus;
 
 // Internal implementation of `get_info`.
 fn get_info(
     state: &MockState,
     oper: &GetAssignmentInvitationInfo<'_>,
-) -> BaseResult<AssignmentInvitationInfo> {
+) -> BaseRest<AssignmentInvitationInfo> {
     state
         .assignment_invitations
         .iter()
@@ -46,15 +45,15 @@ fn list_infos(
         .iter()
         .filter(|info| {
             info.chapter_id == oper.spec.chapter_id
-                && match &oper.spec.kind {
+                && match &oper.spec.status {
                     //
-                    // Internal state field `AssignmentInvitationListKind`.
+                    // Internal state field `AssignmentInvitationStatus`.
                     // Internal implementation detail.
-                    AssignmentInvitationListKind::All => true,
+                    AssignmentInvitationStatus::All => true,
 
-                    AssignmentInvitationListKind::Pending => info.pending,
+                    AssignmentInvitationStatus::Pending => info.is_pending,
 
-                    AssignmentInvitationListKind::Used => !info.pending,
+                    AssignmentInvitationStatus::Used => !info.is_pending,
                 }
         })
         .cloned()
@@ -89,7 +88,7 @@ impl<'a> Run<ListAssignmentInvitationInfos<'a>> for Mock {
     async fn run(
         &self,
         oper: &ListAssignmentInvitationInfos<'a>,
-    ) -> BaseResult<Vec<AssignmentInvitationInfo>> {
+    ) -> BaseRest<Vec<AssignmentInvitationInfo>> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -106,7 +105,7 @@ impl<'a> Run<GetAssignmentInvitationInfo<'a>> for Mock {
     async fn run(
         &self,
         oper: &GetAssignmentInvitationInfo<'a>,
-    ) -> BaseResult<AssignmentInvitationInfo> {
+    ) -> BaseRest<AssignmentInvitationInfo> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -124,12 +123,12 @@ impl<'a> Step<CreateAssignmentInvitation<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &CreateAssignmentInvitation<'a>,
-    ) -> BaseResult<AssignmentInvitationInfo> {
+    ) -> BaseRest<AssignmentInvitationInfo> {
         match context.state.assignment_invitations.iter().any(|info| {
             info.id == oper.entry.id
                 || (info.chapter_id == oper.entry.chapter_id
                     && info.invitee_qid == oper.entry.invitee_qid
-                    && info.pending)
+                    && info.is_pending)
         }) {
             //
             // Internal implementation detail.
@@ -148,7 +147,7 @@ impl<'a> Step<CreateAssignmentInvitation<'a>, MockContext> for Mock {
                     inviter_id: oper.entry.inviter_id.clone(),
                     invitee_qid: oper.entry.invitee_qid.clone(),
                     code: oper.entry.code.clone(),
-                    pending: true,
+                    is_pending: true,
                     roles: oper.entry.roles,
                     created_at: time,
                     updated_at: time,
@@ -170,7 +169,7 @@ impl<'a> Step<GetAssignmentInvitationInfo<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &GetAssignmentInvitationInfo<'a>,
-    ) -> BaseResult<AssignmentInvitationInfo> {
+    ) -> BaseRest<AssignmentInvitationInfo> {
         get_info(&context.state, oper)
     }
 }
@@ -183,12 +182,12 @@ impl<'a> Step<GetAssignmentInvitationInfoExcluded<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &GetAssignmentInvitationInfoExcluded<'a>,
-    ) -> BaseResult<AssignmentInvitationInfo> {
+    ) -> BaseRest<AssignmentInvitationInfo> {
         context
             .state
             .assignment_invitations
             .iter()
-            .find(|info| info.code == oper.code && info.pending)
+            .find(|info| info.code == oper.code && info.is_pending)
             .cloned()
             .ok_or_else(|| expected("error-no-pending-invitation"))
     }
@@ -202,7 +201,7 @@ impl<'a> Step<MarkAssignmentInvitationUsed<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &MarkAssignmentInvitationUsed<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -210,10 +209,10 @@ impl<'a> Step<MarkAssignmentInvitationUsed<'a>, MockContext> for Mock {
             .state
             .assignment_invitations
             .iter_mut()
-            .find(|info| info.id == oper.id && info.pending)
+            .find(|info| info.id == oper.id && info.is_pending)
             .ok_or_else(|| expected("error-invitation-not-found"))?;
 
-        info.pending = false;
+        info.is_pending = false;
 
         info.updated_at = now();
 
@@ -229,7 +228,7 @@ impl<'a> Step<DeleteAssignmentInvitations<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &DeleteAssignmentInvitations<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         match oper {
             //
             // Internal implementation detail.
@@ -275,14 +274,14 @@ impl<'a> Step<PurgeExpiredAssignmentInvitation<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &PurgeExpiredAssignmentInvitation<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
         context
             .state
             .assignment_invitations
-            .retain(|info| info.id != oper.id || !info.pending);
+            .retain(|info| info.id != oper.id || !info.is_pending);
 
         accept(())
     }
@@ -297,7 +296,7 @@ impl<'a> Run<PurgeExpiredAssignmentInvitation<'a>> for Mock {
     async fn run(
         &self,
         oper: &PurgeExpiredAssignmentInvitation<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -305,7 +304,7 @@ impl<'a> Run<PurgeExpiredAssignmentInvitation<'a>> for Mock {
 
         state
             .assignment_invitations
-            .retain(|info| info.id != oper.id || !info.pending);
+            .retain(|info| info.id != oper.id || !info.is_pending);
 
         accept(())
     }

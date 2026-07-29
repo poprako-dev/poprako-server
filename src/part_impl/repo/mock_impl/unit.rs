@@ -7,7 +7,7 @@ use crate::model::write::unit::UnitEdit;
 use crate::part_impl::repo::mock_impl::{
     MockState, expected, now, unrecoverable,
 };
-use crate::result::{BaseResult, accept};
+use crate::result::{BaseRest, accept};
 use crate::util::Patch;
 
 // Internal organization of the `orchestra` module.
@@ -30,7 +30,7 @@ fn move_order<'a>(
     ordered_ids: &mut Vec<&'a str>,
     id: &'a str,
     next_id: Option<&str>,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     // Return an operation error if caller targets an unknown id.
     let Some(pos) = find_order_pos(ordered_ids, id) else {
@@ -59,7 +59,7 @@ fn order_units<T, I, N>(
     units: &mut [T],
     id_of: I,
     next_id_of: N,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     I: for<'a> Fn(&'a T) -> &'a str,
     N: for<'a> Fn(&'a T) -> Option<&'a str>,
@@ -132,7 +132,7 @@ where
 fn apply_order_edits<'a>(
     orders: &'a [UnitOrder],
     edits: &'a [UnitEdit],
-) -> BaseResult<Vec<&'a str>> {
+) -> BaseRest<Vec<&'a str>> {
     //
     // Start with persisted ordering, then apply create/save/delete repositioning rules.
     let mut ordered_ids = orders
@@ -202,7 +202,7 @@ fn apply_order_edits<'a>(
 }
 
 // Build a unit payload for create edits.
-fn unit_from_edit(page_id: &str, edit: &UnitEdit) -> BaseResult<UnitInfo> {
+fn unit_from_edit(page_id: &str, edit: &UnitEdit) -> BaseRest<UnitInfo> {
     //
     // Parse creation fields and initialize runtime state with now timestamps.
     let UnitEdit::Create {
@@ -262,7 +262,7 @@ fn find_unit_mut<'a>(
     state: &'a mut MockState,
     page_id: &str,
     id: &str,
-) -> BaseResult<&'a mut UnitInfo> {
+) -> BaseRest<&'a mut UnitInfo> {
     state
         .units
         .iter_mut()
@@ -344,7 +344,7 @@ fn write_edit(unit_info: &mut UnitInfo, edit: &UnitEdit) {
 }
 
 // List units for one page in deterministic next-id order.
-fn list_infos(state: &MockState, page_id: &str) -> BaseResult<Vec<UnitInfo>> {
+fn list_infos(state: &MockState, page_id: &str) -> BaseRest<Vec<UnitInfo>> {
     //
     // Load all units and enforce chain ordering before returning.
     let mut unit_infos = state
@@ -386,7 +386,7 @@ fn count_infos(unit_infos: &[UnitInfo]) -> UnitCounters {
 }
 
 // List lightweight order objects for one page, kept aligned with unit sequence.
-fn list_orders(state: &MockState, page_id: &str) -> BaseResult<Vec<UnitOrder>> {
+fn list_orders(state: &MockState, page_id: &str) -> BaseRest<Vec<UnitOrder>> {
     //
     // Load order metadata and then sort by linked-list order.
     let mut orders = state
@@ -415,7 +415,7 @@ fn apply_edits(
     page_id: &str,
     orders: &[UnitOrder],
     edits: &[UnitEdit],
-) -> BaseResult<UnitCounters> {
+) -> BaseRest<UnitCounters> {
     //
     // Derive a new order first, then apply each edit with conflict checks.
     let ordered_ids = apply_order_edits(orders, edits)?;

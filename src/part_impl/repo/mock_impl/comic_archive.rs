@@ -18,10 +18,10 @@ use crate::part::repo::oper::comic_archive::{
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, expected, unrecoverable,
 };
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 
 // Internal implementation of `order_unit_infos`.
-fn order_unit_infos(unit_infos: Vec<UnitInfo>) -> BaseResult<Vec<UnitInfo>> {
+fn order_unit_infos(unit_infos: Vec<UnitInfo>) -> BaseRest<Vec<UnitInfo>> {
     //
     // Internal implementation detail.
     // Internal implementation detail.
@@ -107,7 +107,7 @@ impl Run<ListComicArchivePayloads<'_>> for Mock {
     async fn run(
         &self,
         oper: &ListComicArchivePayloads<'_>,
-    ) -> BaseResult<Vec<(OffsetDateTime, String)>> {
+    ) -> BaseRest<Vec<(OffsetDateTime, String)>> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -134,7 +134,7 @@ impl Run<ListComicArchivePayloads<'_>> for Mock {
 fn get_snapshot_excluded(
     context: &mut MockContext,
     source_comic_id: &str,
-) -> BaseResult<ComicArchiveSnapshot> {
+) -> BaseRest<ComicArchiveSnapshot> {
     //
     // Internal implementation detail.
     // Internal implementation detail.
@@ -190,7 +190,7 @@ fn get_snapshot_excluded(
 
                     accept(assignment_info)
                 })
-                .collect::<BaseResult<Vec<_>>>()?;
+                .collect::<BaseRest<Vec<_>>>()?;
 
             let page_snapshots = context
                 .state
@@ -221,7 +221,7 @@ fn get_snapshot_excluded(
                         unit_infos,
                     })
                 })
-                .collect::<BaseResult<Vec<_>>>()?;
+                .collect::<BaseRest<Vec<_>>>()?;
 
             accept(ComicArchiveChapterSnapshot {
                 chapter_info,
@@ -229,7 +229,7 @@ fn get_snapshot_excluded(
                 page_snapshots,
             })
         })
-        .collect::<BaseResult<Vec<_>>>()?;
+        .collect::<BaseRest<Vec<_>>>()?;
 
     accept(ComicArchiveSnapshot {
         comic_info,
@@ -242,7 +242,7 @@ fn get_snapshot_excluded(
 fn commit(
     context: &mut MockContext,
     comic_archive_entry: &ComicArchiveEntry,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     // Internal implementation detail.
     // Internal implementation detail.
@@ -307,7 +307,7 @@ impl<'a> Step<GetComicArchiveSnapshotExcluded<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &GetComicArchiveSnapshotExcluded<'a>,
-    ) -> BaseResult<ComicArchiveSnapshot> {
+    ) -> BaseRest<ComicArchiveSnapshot> {
         get_snapshot_excluded(context, oper.comic_id)
     }
 }
@@ -322,7 +322,7 @@ impl<'a> Step<CommitComicArchive<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &CommitComicArchive<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         commit(context, oper.entry)
     }
 }

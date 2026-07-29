@@ -2,7 +2,9 @@
 
 use std::time::Duration;
 
-use poprako_orchestra::{Nucl, run_proxy, step_proxy};
+use poprako_orchestra::{
+    Nucl, OperRun as _, OperStep as _, run_proxy, step_proxy,
+};
 use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 use poprako_orchestra_extra::prom::task::Task;
 use tracing::instrument;
@@ -65,7 +67,7 @@ use crate::part::repo::termbase::TermbaseRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::part::repo::user::UserRepo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::value::role::{RoleField, RoleMask};
 
 #[cfg(test)]
@@ -86,7 +88,7 @@ pub async fn create<N, C, R, I>(
     (nucl, repo, image_pool): (&N, &R, &I),
     token: UserToken,
     params: CreateTeamParams,
-) -> BaseResult<TeamInfoVal>
+) -> BaseRest<TeamInfoVal>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -110,12 +112,12 @@ where
     let team_info: TeamInfo = nucl
         .coord(async move |context| {
             //
-            let user_info = repo
-                .step(context, &GetUserInfoExcluded::Id { id: &token.user_id })
+            let user_info = GetUserInfoExcluded::Id { id: &token.user_id }
+                .step_on(repo, context)
                 .await?;
 
-            let team_info = repo
-                .step(context, &CreateTeam { entry: &team_entry })
+            let team_info = CreateTeam { entry: &team_entry }
+                .step_on(repo, context)
                 .await?;
 
             let member_entry = MemberEntry {
@@ -126,12 +128,10 @@ where
                 roles: RoleMask::from(RoleField::ADMIN),
             };
 
-            repo.step(
-                context,
-                &CreateMember {
-                    entry: &member_entry,
-                },
-            )
+            CreateMember {
+                entry: &member_entry,
+            }
+            .step_on(repo, context)
             .await?;
 
             accept(team_info)
@@ -155,14 +155,14 @@ where
 pub async fn get_info<C, R, I>(
     (repo, image_pool): (&R, &I),
     id: String,
-) -> BaseResult<TeamInfoVal>
+) -> BaseRest<TeamInfoVal>
 where
     R: TeamRepo<C>,
     I: ImagePool,
 {
     TeamInfoVal::from_model(
         image_pool,
-        repo.run(&GetTeamInfo::Id { id: &id }).await?,
+        GetTeamInfo::Id { id: &id }.run_on(repo).await?,
     )
     .await
 }
@@ -182,7 +182,7 @@ pub async fn list_infos<C, R, I>(
     token: UserToken,
     // FIXME: use try_into()?
     params: ListTeamInfosParams,
-) -> BaseResult<Vec<TeamInfoVal>>
+) -> BaseRest<Vec<TeamInfoVal>>
 where
     R: TeamRepo<C> + UserRepo<C> + Sync,
     I: ImagePool,
@@ -218,11 +218,11 @@ where
         limit: params.limit,
     };
 
-    let team_infos = repo
-        .run(&ListTeamInfos {
-            spec: &team_info_list_spec,
-        })
-        .await?;
+    let team_infos = ListTeamInfos {
+        spec: &team_info_list_spec,
+    }
+    .run_on(repo)
+    .await?;
 
     let team_info_vals = futures_util::future::join_all(
         team_infos
@@ -231,7 +231,7 @@ where
     )
     .await
     .into_iter()
-    .collect::<BaseResult<Vec<_>>>()?;
+    .collect::<BaseRest<Vec<_>>>()?;
 
     accept(team_info_vals)
 }
@@ -249,7 +249,7 @@ pub async fn update_info<C, R>(
     (repo,): (&R,),
     token: UserToken,
     params: UpdateTeamInfoParams,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     R: TeamRepo<C> + MemberRepo<C> + Sync,
 {
@@ -264,11 +264,12 @@ where
 
     // FIXME: use TeamInfoUpdate instead.
 
-    repo.run(&UpdateTeam::Info {
+    UpdateTeam::Info {
         id: &params.id,
         name: &params.name,
         description: &params.description,
-    })
+    }
+    .run_on(repo)
     .await?;
 
     accept(())
@@ -298,7 +299,7 @@ pub async fn reserve_avatar<N, C, R, P, I>(
     token: UserToken,
     id: String,
     params: ReserveTeamAvatarParams,
-) -> BaseResult<ReserveTeamAvatarPayload>
+) -> BaseRest<ReserveTeamAvatarPayload>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -329,18 +330,15 @@ where
     let (object_key, avatar_version, upload_required) = nucl
         .coord(async move |context| {
             //
-            let avatar_reservation = repo
-                .step(
-                    context,
-                    &ReserveTeamAvatar {
-                        id: &id,
-                        image_hash: &transaction_image_hash,
-                        image_ext,
-                    },
-                )
-                .await?;
+            let avatar_reservation = ReserveTeamAvatar {
+                id: &id,
+                image_hash: &transaction_image_hash,
+                image_ext,
+            }
+            .step_on(repo, context)
+            .await?;
 
-            if !avatar_reservation.upload_required {
+            if !avatar_reservation.is_upload_required {
                 return accept((
                     avatar_reservation.object_key,
                     avatar_reservation.avatar_version,
@@ -393,7 +391,7 @@ where
                 })
                 .collect::<Vec<Task<'_, String, TaskPayload>>>();
 
-            prom.step(context, &DeferBatch::new(&batch_tasks)).await?;
+            DeferBatch::new(&batch_tasks).step_on(prom, context).await?;
 
             accept((
                 avatar_reservation.object_key,
@@ -445,7 +443,7 @@ pub async fn mark_avatar_uploaded<N, C, R, I>(
     token: UserToken,
     id: String,
     params: MarkTeamAvatarUploadedParams,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -461,7 +459,7 @@ where
     )
     .await?;
 
-    let team_info = repo.run(&GetTeamInfo::Id { id: &id }).await?;
+    let team_info = GetTeamInfo::Id { id: &id }.run_on(repo).await?;
 
     if team_info.avatar_version != params.image_version {
         return Err(BaseError::Expected {
@@ -470,7 +468,7 @@ where
         });
     }
 
-    if team_info.avatar_uploaded {
+    if team_info.is_avatar_uploaded {
         return accept(());
     }
 
@@ -492,8 +490,8 @@ where
 
     nucl.coord(async move |context| {
         //
-        let locked_team_info = repo
-            .step(context, &GetTeamInfoExcluded::Id { id: &id })
+        let locked_team_info = GetTeamInfoExcluded::Id { id: &id }
+            .step_on(repo, context)
             .await?;
 
         if locked_team_info.avatar_version != params.image_version
@@ -505,15 +503,13 @@ where
             });
         }
 
-        repo.step(
-            context,
-            &UpdateTeam::MarkAvatarUploaded {
-                id: &id,
-                avatar_version: params.image_version,
-                avatar_key: Some(&avatar_key),
-                avatar_uploaded: true,
-            },
-        )
+        UpdateTeam::MarkAvatarUploaded {
+            id: &id,
+            avatar_version: params.image_version,
+            avatar_key: Some(&avatar_key),
+            avatar_uploaded: true,
+        }
+        .step_on(repo, context)
         .await?;
 
         accept(())
@@ -544,7 +540,7 @@ pub async fn delete<N, C, R, P>(
     (nucl, repo, prom): (&N, &R, &P),
     token: UserToken,
     id: String,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,

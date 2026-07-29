@@ -129,6 +129,7 @@ use crate::value::role::RoleField;
         handler::chapter::get_pinned,
         handler::chapter::get_info,
         handler::chapter::update_info,
+        handler::chapter::mark_pinned,
         handler::chapter::advance_stage,
         handler::chapter::delete,
         handler::chapter_port::import,

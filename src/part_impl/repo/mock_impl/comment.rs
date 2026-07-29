@@ -11,7 +11,7 @@ use crate::part::repo::oper::comment::{CreateComment, ListCommentInfos};
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 use crate::value::comment::CommentInclOpt;
 
 // Internal implementation of `find_user`.
@@ -87,7 +87,7 @@ fn list_comments(
 fn create_comment(
     state: &mut MockState,
     entry: &CommentEntry,
-) -> BaseResult<CommentInfo> {
+) -> BaseRest<CommentInfo> {
     //
     // Internal implementation detail.
     // Internal implementation detail.
@@ -122,7 +122,7 @@ impl Run<ListCommentInfos<'_>> for Mock {
     async fn run(
         &self,
         oper: &ListCommentInfos<'_>,
-    ) -> BaseResult<Vec<CommentInfo>> {
+    ) -> BaseRest<Vec<CommentInfo>> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -142,7 +142,7 @@ impl Step<CreateComment<'_>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &CreateComment<'_>,
-    ) -> BaseResult<CommentInfo> {
+    ) -> BaseRest<CommentInfo> {
         create_comment(&mut context.state, oper.entry)
     }
 }

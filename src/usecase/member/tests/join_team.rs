@@ -15,7 +15,7 @@ fn invitation(id: &str, invitee_qid: &str) -> MemberInvitationInfo {
         invitor_id: "admin-user".into(),
         invitee_qid: invitee_qid.into(),
         code: "INV123".into(),
-        pending: true,
+        is_pending: true,
         roles: RoleMask::from(RoleField::TRANSLATOR),
     }
 }
@@ -58,7 +58,7 @@ async fn join_team_invited_user_creates_member_and_consumes_invitation() {
         RoleMask::from(RoleField::TRANSLATOR)
     );
 
-    assert!(!snapshot.member_invitations[0].pending);
+    assert!(!snapshot.member_invitations[0].is_pending);
 }
 
 #[tokio::test]
@@ -85,7 +85,7 @@ async fn join_team_mismatched_qid_is_rejected() {
 
     assert!(snapshot.members.is_empty());
 
-    assert!(snapshot.member_invitations[0].pending);
+    assert!(snapshot.member_invitations[0].is_pending);
 }
 
 #[tokio::test]
@@ -120,5 +120,5 @@ async fn join_team_duplicate_membership_is_rejected() {
 
     assert_eq!(snapshot.members.len(), 1);
 
-    assert!(snapshot.member_invitations[0].pending);
+    assert!(snapshot.member_invitations[0].is_pending);
 }

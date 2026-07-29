@@ -14,7 +14,7 @@ use crate::data::team::TeamInfoVal;
 use crate::data::user::UserInfoVal;
 use crate::model::member::{MemberInfo, MemberListSpec};
 use crate::part::image::ImagePool;
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::value::member::MemberInclOpt;
 use crate::value::role::{RoleField, RoleMask};
 
@@ -53,7 +53,7 @@ impl MemberInfoVal {
     pub async fn from_model<P>(
         image_pool: &P,
         model: MemberInfo,
-    ) -> BaseResult<Self>
+    ) -> BaseRest<Self>
     where
         P: ImagePool,
     {
@@ -171,7 +171,7 @@ impl TryInto<MemberListSpec> for ListMemberInfosParams {
     type Error = BaseError;
 
     // Convert validated member query parameters into the domain list spec.
-    fn try_into(self) -> BaseResult<MemberListSpec> {
+    fn try_into(self) -> BaseRest<MemberListSpec> {
         //
         let invalid_args = || BaseError::Expected {
             variant: ExpectedVariant::Args,

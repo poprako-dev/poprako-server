@@ -155,7 +155,7 @@ async fn update_stage_publish_enqueues_page_image_delete() {
 
     assert_eq!(snapshot.pages[0].image_key, None);
 
-    assert!(!snapshot.pages[0].image_uploaded);
+    assert!(!snapshot.pages[0].is_image_uploaded);
 
     assert_eq!(snapshot.pages[0].image_version, 2);
 
@@ -200,7 +200,6 @@ async fn published_chapter_rejects_metadata_and_stage_updates() {
         UpdateChapterInfoParams {
             id: "chapter-1".into(),
             subtitle: Some("changed".into()),
-            pin: None,
         },
     )
     .await;

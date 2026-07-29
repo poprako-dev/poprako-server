@@ -14,7 +14,7 @@ use crate::data::chapter::ChapterInfoVal;
 use crate::data::user::UserInfoVal;
 use crate::model::assignment::{AssignmentInfo, AssignmentInfoListSpec};
 use crate::part::image::ImagePool;
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::role::{RoleField, RoleMask};
 
@@ -55,7 +55,7 @@ impl AssignmentInfoVal {
         image_pool: &P,
         model: AssignmentInfo,
         fallback_cover_key: Option<&str>,
-    ) -> BaseResult<Self>
+    ) -> BaseRest<Self>
     where
         P: ImagePool,
     {
@@ -145,7 +145,7 @@ impl TryInto<AssignmentInfoListSpec> for ListAssignmentInfosParams {
     type Error = BaseError;
 
     // Convert validated query parameters into the domain list spec.
-    fn try_into(self) -> BaseResult<AssignmentInfoListSpec> {
+    fn try_into(self) -> BaseRest<AssignmentInfoListSpec> {
         //
         let invalid_args = || BaseError::Expected {
             variant: ExpectedVariant::Args,

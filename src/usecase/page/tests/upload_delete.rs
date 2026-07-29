@@ -118,7 +118,7 @@ async fn assert_delayed_check_clears_unverified_image(
 
     let snapshot = mock.snapshot();
 
-    assert_eq!(snapshot.pages[0].image_uploaded, expected_uploaded);
+    assert_eq!(snapshot.pages[0].is_image_uploaded, expected_uploaded);
 
     assert_eq!(
         snapshot.deleted_image_keys,
@@ -200,7 +200,7 @@ async fn mark_image_uploaded_rejects_stale_replay_then_accepts_current_version()
         "error-stale-page-image-upload",
     );
 
-    assert!(!snapshot.pages[0].image_uploaded);
+    assert!(!snapshot.pages[0].is_image_uploaded);
 
     assert_eq!(snapshot.pages[0].image_version, 2);
 
@@ -213,7 +213,7 @@ async fn mark_image_uploaded_rejects_stale_replay_then_accepts_current_version()
     .await
     .unwrap();
 
-    assert!(mock.snapshot().pages[0].image_uploaded);
+    assert!(mock.snapshot().pages[0].is_image_uploaded);
 }
 
 #[tokio::test]
@@ -245,7 +245,7 @@ async fn mark_image_uploaded_rejects_non_raw_provider() {
 
     assert_expected_variant(err, ExpectedVariant::Perm);
 
-    assert!(!snapshot.pages[0].image_uploaded);
+    assert!(!snapshot.pages[0].is_image_uploaded);
 }
 
 #[tokio::test]

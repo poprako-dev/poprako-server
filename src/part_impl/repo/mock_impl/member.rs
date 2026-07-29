@@ -13,7 +13,7 @@ use crate::part::repo::oper::member::{
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 use crate::value::member::MemberInclOpt;
 
 // Internal implementation of `find_user`.
@@ -35,7 +35,7 @@ fn find_team(state: &MockState, team_id: &str) -> Option<TeamInfo> {
 }
 
 // Resolve one member by primary key and return expected error when missing.
-fn get_member_by_id(state: &MockState, id: &str) -> BaseResult<MemberInfo> {
+fn get_member_by_id(state: &MockState, id: &str) -> BaseRest<MemberInfo> {
     state
         .members
         .iter()
@@ -80,7 +80,7 @@ fn apply_team_incl(
 fn create_member(
     state: &mut MockState,
     entry: &MemberEntry,
-) -> BaseResult<MemberInfo> {
+) -> BaseRest<MemberInfo> {
     //
     // Internal implementation detail.
     // Internal implementation detail.
@@ -132,7 +132,7 @@ impl<'a> Run<FindMemberInfo<'a>> for Mock {
     async fn run(
         &self,
         oper: &FindMemberInfo<'a>,
-    ) -> BaseResult<Option<MemberInfo>> {
+    ) -> BaseRest<Option<MemberInfo>> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -151,7 +151,7 @@ fn get_member_info(
     state: &MockState,
     id: &str,
     incls: &[MemberInclOpt],
-) -> BaseResult<MemberInfo> {
+) -> BaseRest<MemberInfo> {
     //
     // Internal implementation detail.
     // Internal implementation detail.
@@ -287,7 +287,7 @@ impl<'a> Run<ListMemberInfos<'a>> for Mock {
     async fn run(
         &self,
         oper: &ListMemberInfos<'a>,
-    ) -> BaseResult<Vec<MemberInfo>> {
+    ) -> BaseRest<Vec<MemberInfo>> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -314,10 +314,7 @@ impl<'a, 'b> Run<GetMemberInfo<'a, 'b>> for Mock {
 
     #[instrument(level = "info", err(Debug), skip_all)]
     // Internal implementation of `run`.
-    async fn run(
-        &self,
-        oper: &GetMemberInfo<'a, 'b>,
-    ) -> BaseResult<MemberInfo> {
+    async fn run(&self, oper: &GetMemberInfo<'a, 'b>) -> BaseRest<MemberInfo> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -341,7 +338,7 @@ impl<'a> Step<CreateMember<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &CreateMember<'a>,
-    ) -> BaseResult<MemberInfo> {
+    ) -> BaseRest<MemberInfo> {
         create_member(&mut context.state, oper.entry)
     }
 }
@@ -356,7 +353,7 @@ impl<'a> Step<UpdateMember<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &UpdateMember<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         match oper {
             //
             // Internal implementation detail.
@@ -409,7 +406,7 @@ impl<'a> Step<ListMemberInfos<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &ListMemberInfos<'a>,
-    ) -> BaseResult<Vec<MemberInfo>> {
+    ) -> BaseRest<Vec<MemberInfo>> {
         match oper {
             //
             // Internal implementation detail.
@@ -435,7 +432,7 @@ impl<'a> Step<FindMemberInfo<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &FindMemberInfo<'a>,
-    ) -> BaseResult<Option<MemberInfo>> {
+    ) -> BaseRest<Option<MemberInfo>> {
         match oper {
             FindMemberInfo::UserTeam { user_id, team_id } => {
                 accept(find_member_by_user_id_and_team_id(
@@ -458,7 +455,7 @@ impl<'a, 'b> Step<GetMemberInfo<'a, 'b>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &GetMemberInfo<'a, 'b>,
-    ) -> BaseResult<MemberInfo> {
+    ) -> BaseRest<MemberInfo> {
         match oper {
             GetMemberInfo::Id { id, incls } => {
                 get_member_info(&context.state, id, incls)
@@ -477,7 +474,7 @@ impl<'a> Step<ListMemberInfosExcluded<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &ListMemberInfosExcluded<'a>,
-    ) -> BaseResult<Vec<MemberInfo>> {
+    ) -> BaseRest<Vec<MemberInfo>> {
         match oper {
             //
             // Internal implementation detail.
@@ -509,7 +506,7 @@ impl<'a> Step<DeleteMember<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &DeleteMember<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         //
         // Internal implementation detail.
         // Internal implementation detail.

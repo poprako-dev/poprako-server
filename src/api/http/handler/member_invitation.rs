@@ -37,7 +37,7 @@ pub struct MemberInvitationListQuery {
     //
     /// When `Some(true)`, returns only unconsumed invitations;
     /// `Some(false)` returns only consumed ones; `None` returns all.
-    pub pending: Option<bool>,
+    pub is_pending: Option<bool>,
 
     /// Related rows to embed. Repeatable. Values: `invitor`.
     #[serde(default, rename = "incl")]
@@ -99,7 +99,7 @@ pub async fn list_infos(
     //
     let params = ListMemberInvitationInfosParams {
         team_id,
-        pending: query.pending,
+        is_pending: query.is_pending,
         incl_opt: query.incl_opt,
         offset: query.offset,
         limit: query.limit,

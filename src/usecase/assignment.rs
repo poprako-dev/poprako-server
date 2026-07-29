@@ -1,6 +1,6 @@
 //! Assignment use cases — list, join, role update, and deletion.
 
-use poprako_orchestra::{Nucl, run_proxy};
+use poprako_orchestra::{Nucl, OperRun as _, OperStep as _, run_proxy};
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
@@ -36,7 +36,7 @@ use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::user::UserRepo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
 #[cfg(test)]
 // Unit tests that cover assignment orchestration invariants.
@@ -48,7 +48,7 @@ pub async fn list_infos<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
     params: ListAssignmentInfosParams,
-) -> BaseResult<Vec<AssignmentInfoVal>>
+) -> BaseRest<Vec<AssignmentInfoVal>>
 where
     R: AssignmentRepo<C>
         + ChapterRepo<C>
@@ -77,11 +77,11 @@ where
     )
     .await?;
 
-    let assignment_infos = repo
-        .run(&ListAssignmentInfos::Spec {
-            spec: &assignment_list_spec,
-        })
-        .await?;
+    let assignment_infos = ListAssignmentInfos::Spec {
+        spec: &assignment_list_spec,
+    }
+    .run_on(repo)
+    .await?;
 
     let comic_ids = assignment_infos
         .iter()
@@ -130,7 +130,7 @@ pub async fn join<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
     params: JoinChapterAssignmentParams,
-) -> BaseResult<AssignmentInfoVal>
+) -> BaseRest<AssignmentInfoVal>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -142,12 +142,12 @@ where
         + Send
         + Sync,
 {
-    let chapter_info = repo
-        .run(&GetChapterInfo {
-            id: &params.chapter_id,
-            incls: &[],
-        })
-        .await?;
+    let chapter_info = GetChapterInfo {
+        id: &params.chapter_id,
+        incls: &[],
+    }
+    .run_on(repo)
+    .await?;
 
     ChapterPermComplex::ensure_user_can_join(
         &mut run_proxy! {
@@ -180,27 +180,21 @@ where
     let assignment_info = nucl
         .coord(async move |context| {
             //
-            let chapter_info = repo
-                .step(
-                    context,
-                    &GetChapterInfoExcluded {
-                        id: &params.chapter_id,
-                        incls: &[],
-                    },
-                )
-                .await?;
+            let chapter_info = GetChapterInfoExcluded {
+                id: &params.chapter_id,
+                incls: &[],
+            }
+            .step_on(repo, context)
+            .await?;
 
             ChapterComplex::ensure_chapter_writable(&chapter_info)?;
 
-            let existing_assignment_info = repo
-                .step(
-                    context,
-                    &FindAssignmentInfo::ChapterUser {
-                        chapter_id: &params.chapter_id,
-                        user_id: &token.user_id,
-                    },
-                )
-                .await?;
+            let existing_assignment_info = FindAssignmentInfo::ChapterUser {
+                chapter_id: &params.chapter_id,
+                user_id: &token.user_id,
+            }
+            .step_on(repo, context)
+            .await?;
 
             match existing_assignment_info {
                 //
@@ -211,12 +205,10 @@ where
                         params.roles,
                     );
 
-                    repo.step(
-                        context,
-                        &UpdateAssignmentRoles {
-                            update: &assignment_role_update,
-                        },
-                    )
+                    UpdateAssignmentRoles {
+                        update: &assignment_role_update,
+                    }
+                    .step_on(repo, context)
                     .await
                 }
 
@@ -229,12 +221,10 @@ where
                         roles: params.roles,
                     };
 
-                    repo.step(
-                        context,
-                        &CreateAssignment {
-                            entry: &assignment_entry,
-                        },
-                    )
+                    CreateAssignment {
+                        entry: &assignment_entry,
+                    }
+                    .step_on(repo, context)
                     .await
                 }
             }
@@ -250,7 +240,7 @@ pub async fn update_roles<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
     params: UpdateAssignmentRolesParams,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -295,26 +285,20 @@ where
 
     nucl.coord(async move |context| {
         //
-        let chapter_info = repo
-            .step(
-                context,
-                &GetChapterInfoExcluded {
-                    id: &params.chapter_id,
-                    incls: &[],
-                },
-            )
-            .await?;
+        let chapter_info = GetChapterInfoExcluded {
+            id: &params.chapter_id,
+            incls: &[],
+        }
+        .step_on(repo, context)
+        .await?;
 
         ChapterComplex::ensure_chapter_writable(&chapter_info)?;
 
-        let assignment_infos = repo
-            .step(
-                context,
-                &ListAssignmentInfosExcluded::Chapter {
-                    chapter_id: &params.chapter_id,
-                },
-            )
-            .await?;
+        let assignment_infos = ListAssignmentInfosExcluded::Chapter {
+            chapter_id: &params.chapter_id,
+        }
+        .step_on(repo, context)
+        .await?;
 
         let existing_assignment_info = assignment_infos
             .iter()
@@ -345,12 +329,10 @@ where
                     roles: params.roles,
                 };
 
-                repo.step(
-                    context,
-                    &UpdateAssignmentRoles {
-                        update: &assignment_role_update,
-                    },
-                )
+                UpdateAssignmentRoles {
+                    update: &assignment_role_update,
+                }
+                .step_on(repo, context)
                 .await?;
             }
 
@@ -371,12 +353,10 @@ where
                     roles: params.roles,
                 };
 
-                repo.step(
-                    context,
-                    &CreateAssignment {
-                        entry: &assignment_entry,
-                    },
-                )
+                CreateAssignment {
+                    entry: &assignment_entry,
+                }
+                .step_on(repo, context)
                 .await?;
             }
         }
@@ -396,18 +376,18 @@ pub async fn delete<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
     id: String,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     R: AssignmentRepo<C> + Send + Sync,
 {
-    let assignment_info = repo
-        .run(&GetAssignmentInfo {
-            id: &id,
-            incls: &[],
-        })
-        .await?;
+    let assignment_info = GetAssignmentInfo {
+        id: &id,
+        incls: &[],
+    }
+    .run_on(repo)
+    .await?;
 
     AssignmentPermComplex::ensure_user_can_delete(
         &mut run_proxy! {
@@ -421,7 +401,8 @@ where
     nucl.coord(async move |context| {
         //
 
-        repo.step(context, &DeleteAssignments::Id { id: &id })
+        DeleteAssignments::Id { id: &id }
+            .step_on(repo, context)
             .await?;
 
         accept(())

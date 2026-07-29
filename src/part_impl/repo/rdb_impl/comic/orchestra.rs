@@ -15,7 +15,7 @@ use crate::part_impl::repo::rdb_impl::comic::step_impl::{
     touch_last_active, update_chapter_count, update_info,
 };
 use crate::part_impl::shared::RdbContext;
-use crate::result::{BaseError, BaseResult};
+use crate::result::{BaseError, BaseRest};
 
 impl Run<GetComicInfo<'_, '_>> for RdbRepo {
     // Maps the `GetComicInfo` repository operation to non-transactional execution.
@@ -23,7 +23,7 @@ impl Run<GetComicInfo<'_, '_>> for RdbRepo {
 
     // Fetches one comic through `submit_query!` and applies caller-defined includes.
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn run(&self, oper: &GetComicInfo<'_, '_>) -> BaseResult<ComicInfo> {
+    async fn run(&self, oper: &GetComicInfo<'_, '_>) -> BaseRest<ComicInfo> {
         submit_query!(self.core, get_info_by_id, oper.id, oper.incls)
     }
 }
@@ -34,10 +34,7 @@ impl Run<ListComicInfos<'_>> for RdbRepo {
 
     // Loads matching comics and returns the list view for the requested spec.
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn run(
-        &self,
-        oper: &ListComicInfos<'_>,
-    ) -> BaseResult<Vec<ComicInfo>> {
+    async fn run(&self, oper: &ListComicInfos<'_>) -> BaseRest<Vec<ComicInfo>> {
         submit_query!(self.core, list_infos, oper.spec)
     }
 }
@@ -48,7 +45,7 @@ impl Run<UpdateComic<'_>> for RdbRepo {
 
     // Writes the provided comic updates using the step-level `update_info` flow.
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn run(&self, oper: &UpdateComic<'_>) -> BaseResult<()> {
+    async fn run(&self, oper: &UpdateComic<'_>) -> BaseRest<()> {
         submit_query!(self.core, update_info, oper.update)
     }
 }
@@ -59,7 +56,7 @@ impl Run<MarkComicCoverUploaded<'_>> for RdbRepo {
 
     // Persists cover upload state (version/key/flag) and returns no payload.
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn run(&self, oper: &MarkComicCoverUploaded<'_>) -> BaseResult<()> {
+    async fn run(&self, oper: &MarkComicCoverUploaded<'_>) -> BaseRest<()> {
         submit_query!(
             self.core,
             mark_cover_uploaded,
@@ -81,7 +78,7 @@ impl Step<GetComicInfo<'_, '_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &GetComicInfo<'_, '_>,
-    ) -> BaseResult<ComicInfo> {
+    ) -> BaseRest<ComicInfo> {
         get_info_by_id(context.conn(), oper.id, oper.incls).await
     }
 }
@@ -96,7 +93,7 @@ impl Step<ListComicInfos<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &ListComicInfos<'_>,
-    ) -> BaseResult<Vec<ComicInfo>> {
+    ) -> BaseRest<Vec<ComicInfo>> {
         list_infos(context.conn(), oper.spec).await
     }
 }
@@ -111,7 +108,7 @@ impl Step<GetComicInfoExcluded<'_, '_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &GetComicInfoExcluded<'_, '_>,
-    ) -> BaseResult<ComicInfo> {
+    ) -> BaseRest<ComicInfo> {
         get_info_excluded(context.conn(), oper.id, oper.incls).await
     }
 }
@@ -126,7 +123,7 @@ impl Step<ListComicInfosExcluded<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &ListComicInfosExcluded<'_>,
-    ) -> BaseResult<Vec<ComicInfo>> {
+    ) -> BaseRest<Vec<ComicInfo>> {
         list_infos_excluded(context.conn(), oper.spec).await
     }
 }
@@ -141,7 +138,7 @@ impl Step<CreateComic<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &CreateComic<'_>,
-    ) -> BaseResult<ComicInfo> {
+    ) -> BaseRest<ComicInfo> {
         create(context.conn(), oper.entry).await
     }
 }
@@ -156,7 +153,7 @@ impl Step<ReserveComicCover<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &ReserveComicCover<'_>,
-    ) -> BaseResult<ComicCoverReservation> {
+    ) -> BaseRest<ComicCoverReservation> {
         reserve_cover(context.conn(), oper.id, oper.image_hash, oper.image_ext)
             .await
     }
@@ -172,7 +169,7 @@ impl Step<MarkComicCoverUploaded<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &MarkComicCoverUploaded<'_>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         mark_cover_uploaded(
             context.conn(),
             oper.id,
@@ -194,7 +191,7 @@ impl Step<DeleteComic<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &DeleteComic<'_>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         delete(context.conn(), oper.id).await
     }
 }
@@ -209,7 +206,7 @@ impl Step<AllocComicChapterIndex<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &AllocComicChapterIndex<'_>,
-    ) -> BaseResult<i32> {
+    ) -> BaseRest<i32> {
         incr_chapter_next_index(context.conn(), oper.id).await
     }
 }
@@ -224,7 +221,7 @@ impl Step<UpdateComicChapterCount<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &UpdateComicChapterCount<'_>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         update_chapter_count(context.conn(), oper.id, oper.delta).await
     }
 }
@@ -239,7 +236,7 @@ impl Step<TouchComicLastActive<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &TouchComicLastActive<'_>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         touch_last_active(context.conn(), oper.id).await
     }
 }

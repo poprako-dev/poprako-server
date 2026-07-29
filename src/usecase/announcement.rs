@@ -1,6 +1,6 @@
 //! Announcement use cases — list and create team announcements.
 
-use poprako_orchestra::{Nucl, run_proxy};
+use poprako_orchestra::{Nucl, OperRun as _, OperStep as _, run_proxy};
 use tracing::instrument;
 
 use crate::complex::announcement::{
@@ -19,7 +19,7 @@ use crate::part::repo::oper::announcement::{
     CreateAnnouncement, ListAnnouncementInfos,
 };
 use crate::part::repo::oper::member::FindMemberInfo;
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 
 #[cfg(test)]
 // Unit tests for announcement usecase behavior.
@@ -31,7 +31,7 @@ pub async fn list_infos<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
     params: ListAnnouncementInfosParams,
-) -> BaseResult<Vec<AnnouncementInfoVal>>
+) -> BaseRest<Vec<AnnouncementInfoVal>>
 where
     R: AnnouncementRepo<C> + MemberRepo<C> + Sync,
     I: ImagePool,
@@ -47,11 +47,11 @@ where
     )
     .await?;
 
-    let announcement_infos = repo
-        .run(&ListAnnouncementInfos {
-            spec: &announcement_list_spec,
-        })
-        .await?;
+    let announcement_infos = ListAnnouncementInfos {
+        spec: &announcement_list_spec,
+    }
+    .run_on(repo)
+    .await?;
 
     let mut announcement_info_vals =
         Vec::with_capacity(announcement_infos.len());
@@ -72,7 +72,7 @@ pub async fn create<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
     params: CreateAnnouncementParams,
-) -> BaseResult<CreateAnnouncementPayload>
+) -> BaseRest<CreateAnnouncementPayload>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -98,12 +98,10 @@ where
                 content: params.content,
             };
 
-            repo.step(
-                context,
-                &CreateAnnouncement {
-                    entry: &announcement_entry,
-                },
-            )
+            CreateAnnouncement {
+                entry: &announcement_entry,
+            }
+            .step_on(repo, context)
             .await
         })
         .await?;

@@ -1,5 +1,6 @@
 //! System mail use cases — list unread and mark as read for the current user.
 
+use poprako_orchestra::OperRun as _;
 use tracing::instrument;
 
 use poprako_util::time::ToUnixMilli as _;
@@ -13,7 +14,7 @@ use crate::part::repo::oper::system_mail::{
     ListSystemMailInfos, MarkSystemMailRead,
 };
 use crate::part::repo::system_mail::SystemMailRepo;
-use crate::result::{BaseResult, accept};
+use crate::result::{BaseRest, accept};
 
 #[cfg(test)]
 mod tests;
@@ -27,20 +28,19 @@ mod tests;
 ///
 /// # Type Parameters
 ///
-/// * `C` — Context anchor.
-/// * `R: SystemMailRepo<C>` — System mail storage.
+/// * `R: SystemMailRepo` — System mail storage.
 ///
 /// [`ListSystemMailInfosParams`]: ListSystemMailInfosParams
 #[instrument(level = "info", err(Debug), skip(repo))]
-pub async fn list_infos<C, R>(
+pub async fn list_infos<R>(
     (repo,): (&R,),
     token: UserToken,
     params: ListSystemMailInfosParams,
-) -> BaseResult<Vec<SystemMailInfoVal>>
+) -> BaseRest<Vec<SystemMailInfoVal>>
 where
-    R: SystemMailRepo<C>,
+    R: SystemMailRepo,
 {
-    let kind = match params.read {
+    let kind = match params.is_read {
         //
         Some(true) => SystemMailInfoListKind::Read,
 
@@ -56,11 +56,11 @@ where
         limit: params.limit,
     };
 
-    let system_mail_infos = repo
-        .run(&ListSystemMailInfos {
-            spec: &system_mail_list_spec,
-        })
-        .await?;
+    let system_mail_infos = ListSystemMailInfos {
+        spec: &system_mail_list_spec,
+    }
+    .run_on(repo)
+    .await?;
 
     let system_mail_vals = system_mail_infos
         .into_iter()
@@ -68,7 +68,7 @@ where
             id: system_mail_info.id,
             title: system_mail_info.title,
             content: system_mail_info.content,
-            read: system_mail_info.read,
+            is_read: system_mail_info.is_read,
             created_at: system_mail_info.created_at.to_unix_milli(),
         })
         .collect();
@@ -84,22 +84,22 @@ where
 ///
 /// # Type Parameters
 ///
-/// * `C` — Context anchor.
-/// * `R: SystemMailRepo<C>` — System mail storage.
+/// * `R: SystemMailRepo` — System mail storage.
 #[instrument(level = "info", err(Debug), skip(repo))]
-pub async fn mark_read<C, R>(
+pub async fn mark_read<R>(
     (repo,): (&R,),
     token: UserToken,
     ids: Vec<String>,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
-    R: SystemMailRepo<C>,
+    R: SystemMailRepo,
 {
     for id in &ids {
-        repo.run(&MarkSystemMailRead {
+        MarkSystemMailRead {
             id,
             user_id: &token.user_id,
-        })
+        }
+        .run_on(repo)
         .await?;
     }
 

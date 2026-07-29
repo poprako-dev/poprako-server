@@ -15,7 +15,7 @@ use crate::part_impl::repo::rdb_impl::entity::unit::{
 use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::*;
 use crate::part_impl::shared::RdbConn;
 use crate::part_impl::shared::result::{diesel, expected};
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 use crate::util::Patch;
 
 #[cfg(test)]
@@ -25,7 +25,7 @@ mod tests;
 pub async fn list_infos(
     conn: &mut RdbConn,
     page_id: &str,
-) -> BaseResult<Vec<UnitInfo>> {
+) -> BaseRest<Vec<UnitInfo>> {
     //
     let rows = t_unit
         .filter(f_page_id.eq(page_id))
@@ -51,7 +51,7 @@ pub async fn list_infos(
 pub async fn list_orders_for_update(
     conn: &mut RdbConn,
     page_id: &str,
-) -> BaseResult<Vec<UnitOrder>> {
+) -> BaseRest<Vec<UnitOrder>> {
     //
     let rows = t_unit
         .filter(f_page_id.eq(page_id))
@@ -86,7 +86,7 @@ pub async fn apply_edits(
     page_id: &str,
     orders: &[UnitOrder],
     edits: &[UnitEdit],
-) -> BaseResult<UnitCounters> {
+) -> BaseRest<UnitCounters> {
     //
     let ordered_ids = apply_order_edits(orders, edits)?;
 
@@ -174,7 +174,7 @@ fn order_units<T, I, N>(
     units: &mut [T],
     id_of: I,
     next_id_of: N,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     I: for<'a> Fn(&'a T) -> &'a str,
     N: for<'a> Fn(&'a T) -> Option<&'a str>,
@@ -245,7 +245,7 @@ where
 fn apply_order_edits<'a>(
     orders: &'a [UnitOrder],
     edits: &'a [UnitEdit],
-) -> BaseResult<Vec<&'a str>> {
+) -> BaseRest<Vec<&'a str>> {
     //
     let mut ordered_ids = orders
         .iter()
@@ -357,7 +357,7 @@ fn move_order<'a>(
     ordered_ids: &mut Vec<&'a str>,
     id: &'a str,
     next_id: Option<&str>,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     let Some(pos) = find_order_pos(ordered_ids, id) else {
         return Err(expected("error-invalid-unit-oper"));

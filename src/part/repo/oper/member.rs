@@ -6,17 +6,16 @@ use crate::model::member::{
 use crate::value::member::MemberInclOpt;
 
 /// Creates a new team member record.
+#[derive(Oper)]
+#[oper(output = MemberInfo)]
 pub struct CreateMember<'a> {
     /// The member entry to insert.
     pub entry: &'a MemberEntry,
 }
 
-impl Oper for CreateMember<'_> {
-    // The created member info.
-    type Output = MemberInfo;
-}
-
 /// Updates a member's fields (nickname or role).
+#[derive(Oper)]
+#[oper(output = ())]
 pub enum UpdateMember<'a> {
     /// Updates the member's nickname.
     UserNickname {
@@ -34,12 +33,9 @@ pub enum UpdateMember<'a> {
     },
 }
 
-impl Oper for UpdateMember<'_> {
-    // Unit on success.
-    type Output = ();
-}
-
 /// Lists member infos by query spec or by user ID.
+#[derive(Oper)]
+#[oper(output = Vec<MemberInfo>)]
 pub enum ListMemberInfos<'a> {
     /// Lists members matching the given spec.
     Spec {
@@ -54,12 +50,9 @@ pub enum ListMemberInfos<'a> {
     },
 }
 
-impl Oper for ListMemberInfos<'_> {
-    // List of matching member infos.
-    type Output = Vec<MemberInfo>;
-}
-
 /// Finds a single member by user and team.
+#[derive(Oper)]
+#[oper(output = Option<MemberInfo>)]
 pub enum FindMemberInfo<'a> {
     /// Finds by user ID and team ID.
     UserTeam {
@@ -71,12 +64,9 @@ pub enum FindMemberInfo<'a> {
     },
 }
 
-impl Oper for FindMemberInfo<'_> {
-    // The matching member info, if found.
-    type Output = Option<MemberInfo>;
-}
-
 /// Retrieves a single member's info by ID with optional includes.
+#[derive(Oper)]
+#[oper(output = MemberInfo)]
 pub enum GetMemberInfo<'a, 'b> {
     /// Retrieves by member ID.
     Id {
@@ -88,12 +78,9 @@ pub enum GetMemberInfo<'a, 'b> {
     },
 }
 
-impl Oper for GetMemberInfo<'_, '_> {
-    // The retrieved member info.
-    type Output = MemberInfo;
-}
-
 /// Lists member infos for a user or team with excluded fields omitted.
+#[derive(Oper)]
+#[oper(output = Vec<MemberInfo>)]
 pub enum ListMemberInfosExcluded<'a> {
     /// Lists memberships for a user with excluded fields omitted.
     User {
@@ -108,18 +95,10 @@ pub enum ListMemberInfosExcluded<'a> {
     },
 }
 
-impl Oper for ListMemberInfosExcluded<'_> {
-    // List of matching member infos with excluded fields omitted.
-    type Output = Vec<MemberInfo>;
-}
-
 /// Deletes a member record by ID.
+#[derive(Oper)]
+#[oper(output = ())]
 pub struct DeleteMember<'a> {
     /// The member ID to delete.
     pub id: &'a str,
-}
-
-impl Oper for DeleteMember<'_> {
-    // Unit on success.
-    type Output = ();
 }

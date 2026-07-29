@@ -11,7 +11,7 @@ use crate::part::image::{
     ImageManager, ImagePool, ImageUploadSlot, ImageUploadSpec,
 };
 use crate::part_impl::repo::mock_impl::Mock;
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
 /// Mock implementation of [ImagePool].
 ///
@@ -21,7 +21,7 @@ use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 /// error paths.
 impl ImagePool for Mock {
     // Internal implementation of `gen_download_url`.
-    async fn gen_download_url(&self, key: &str) -> BaseResult<Url> {
+    async fn gen_download_url(&self, key: &str) -> BaseRest<Url> {
         //
         // Internal implementation detail.
         if self.flags.lock().unwrap().image_get_failure {
@@ -38,7 +38,7 @@ impl ImagePool for Mock {
     async fn gen_thumbnail_download_url(
         &self,
         original_key: &str,
-    ) -> BaseResult<Url> {
+    ) -> BaseRest<Url> {
         //
         // Internal implementation detail.
         if self.flags.lock().unwrap().image_get_failure {
@@ -58,7 +58,7 @@ impl ImagePool for Mock {
     }
 
     // Internal implementation of `get_upload_url`.
-    async fn get_upload_url(&self, key: &str) -> BaseResult<Url> {
+    async fn get_upload_url(&self, key: &str) -> BaseRest<Url> {
         //
         // Internal implementation detail.
         if self.flags.lock().unwrap().image_put_failure {
@@ -75,7 +75,7 @@ impl ImagePool for Mock {
     async fn get_upload_slot(
         &self,
         spec: ImageUploadSpec<'_>,
-    ) -> BaseResult<ImageUploadSlot> {
+    ) -> BaseRest<ImageUploadSlot> {
         //
         // Internal implementation detail.
         if self.flags.lock().unwrap().image_put_failure {
@@ -103,7 +103,7 @@ impl ImagePool for Mock {
 /// Mock implementation of [ImageManager].
 impl ImageManager for Mock {
     // Internal implementation of `object_exists`.
-    async fn object_exists(&self, _: &str) -> BaseResult<bool> {
+    async fn object_exists(&self, _: &str) -> BaseRest<bool> {
         //
         // Internal implementation detail.
         if self.flags.lock().unwrap().image_head_failure {
@@ -121,7 +121,7 @@ impl ImageManager for Mock {
     }
 
     // Internal implementation of `delete_object`.
-    async fn delete_object(&self, key: &str) -> BaseResult<()> {
+    async fn delete_object(&self, key: &str) -> BaseRest<()> {
         //
         // Internal implementation detail.
         if self.flags.lock().unwrap().image_delete_failure {

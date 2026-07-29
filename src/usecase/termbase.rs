@@ -1,6 +1,8 @@
 //! Terminology-base use cases.
 
-use poprako_orchestra::{Nucl, run_proxy, step_proxy};
+use poprako_orchestra::{
+    Nucl, OperRun as _, OperStep as _, run_proxy, step_proxy,
+};
 use tracing::instrument;
 
 use crate::complex::termbase::{TermbaseComplex, TermbasePermComplex};
@@ -26,7 +28,7 @@ use crate::part::repo::team::TeamRepo;
 use crate::part::repo::term::TermRepo;
 use crate::part::repo::termbase::TermbaseRepo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 
 #[cfg(test)]
 // Unit tests for terminology base definitions and search access.
@@ -38,7 +40,7 @@ pub async fn create<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
     params: CreateTermbaseParams,
-) -> BaseResult<CreateTermbasePayload>
+) -> BaseRest<CreateTermbasePayload>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -66,31 +68,25 @@ where
                     //
                     (Some(team_id), None) => {
                         //
-                        repo.step(context, &LockTeam { id: team_id }).await?;
+                        LockTeam { id: team_id }.step_on(repo, context).await?;
 
                         team_id.clone()
                     }
 
                     (None, Some(comic_id)) => {
                         //
-                        let comic_info = repo
-                            .step(
-                                context,
-                                &GetComicInfoExcluded {
-                                    id: comic_id,
-                                    incls: &[],
-                                },
-                            )
-                            .await?;
+                        let comic_info = GetComicInfoExcluded {
+                            id: comic_id,
+                            incls: &[],
+                        }
+                        .step_on(repo, context)
+                        .await?;
 
-                        let workset_info = repo
-                            .step(
-                                context,
-                                &GetWorksetInfo {
-                                    id: &comic_info.workset_id,
-                                },
-                            )
-                            .await?;
+                        let workset_info = GetWorksetInfo {
+                            id: &comic_info.workset_id,
+                        }
+                        .step_on(repo, context)
+                        .await?;
 
                         workset_info.team_id
                     }
@@ -108,14 +104,11 @@ where
             )
             .await?;
 
-            let termbase_info = repo
-                .step(
-                    context,
-                    &CreateTermbase {
-                        entry: &termbase_entry,
-                    },
-                )
-                .await?;
+            let termbase_info = CreateTermbase {
+                entry: &termbase_entry,
+            }
+            .step_on(repo, context)
+            .await?;
 
             accept(termbase_info.id)
         })
@@ -130,11 +123,11 @@ pub async fn get_info<C, R>(
     (repo,): (&R,),
     token: UserToken,
     id: String,
-) -> BaseResult<TermbaseInfoVal>
+) -> BaseRest<TermbaseInfoVal>
 where
     R: TermbaseRepo<C> + ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
 {
-    let termbase_info = repo.run(&GetTermbaseInfo { id: &id }).await?;
+    let termbase_info = GetTermbaseInfo { id: &id }.run_on(repo).await?;
 
     TermbasePermComplex::ensure_user_can_read(
         &mut run_proxy! {
@@ -157,7 +150,7 @@ pub async fn list_team_infos<C, R>(
     (repo,): (&R,),
     token: UserToken,
     params: ListTeamTermbaseInfosParams,
-) -> BaseResult<Vec<TermbaseInfoVal>>
+) -> BaseRest<Vec<TermbaseInfoVal>>
 where
     R: TermbaseRepo<C> + MemberRepo<C> + Sync,
 {
@@ -177,11 +170,11 @@ where
         limit: params.limit,
     };
 
-    let termbase_infos = repo
-        .run(&ListTermbaseInfos {
-            spec: &termbase_info_list_spec,
-        })
-        .await?;
+    let termbase_infos = ListTermbaseInfos {
+        spec: &termbase_info_list_spec,
+    }
+    .run_on(repo)
+    .await?;
 
     accept(termbase_infos.into_iter().map(Into::into).collect())
 }
@@ -192,7 +185,7 @@ pub async fn list_comic_infos<C, R>(
     (repo,): (&R,),
     token: UserToken,
     params: ListComicTermbaseInfosParams,
-) -> BaseResult<Vec<TermbaseInfoVal>>
+) -> BaseRest<Vec<TermbaseInfoVal>>
 where
     R: TermbaseRepo<C> + ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
 {
@@ -227,11 +220,11 @@ where
         limit: params.limit,
     };
 
-    let termbase_infos = repo
-        .run(&ListTermbaseInfos {
-            spec: &termbase_info_list_spec,
-        })
-        .await?;
+    let termbase_infos = ListTermbaseInfos {
+        spec: &termbase_info_list_spec,
+    }
+    .run_on(repo)
+    .await?;
 
     accept(termbase_infos.into_iter().map(Into::into).collect())
 }
@@ -242,7 +235,7 @@ pub async fn update_info<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
     params: UpdateTermbaseInfoParams,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -261,14 +254,11 @@ where
 
     nucl.coord(async move |context| {
         //
-        let termbase_info = repo
-            .step(
-                context,
-                &GetTermbaseInfoExcluded {
-                    id: &termbase_info_update.id,
-                },
-            )
-            .await?;
+        let termbase_info = GetTermbaseInfoExcluded {
+            id: &termbase_info_update.id,
+        }
+        .step_on(repo, context)
+        .await?;
 
         TermbasePermComplex::ensure_user_can_write(
             &mut step_proxy! {
@@ -283,12 +273,10 @@ where
         )
         .await?;
 
-        repo.step(
-            context,
-            &UpdateTermbase {
-                update: &termbase_info_update,
-            },
-        )
+        UpdateTermbase {
+            update: &termbase_info_update,
+        }
+        .step_on(repo, context)
         .await?;
 
         accept(())
@@ -304,7 +292,7 @@ pub async fn delete<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
     id: String,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -318,8 +306,8 @@ where
 {
     nucl.coord(async move |context| {
         //
-        let termbase_info = repo
-            .step(context, &GetTermbaseInfoExcluded { id: &id })
+        let termbase_info = GetTermbaseInfoExcluded { id: &id }
+            .step_on(repo, context)
             .await?;
 
         TermbasePermComplex::ensure_user_can_write(

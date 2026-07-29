@@ -8,17 +8,16 @@ use crate::value::comic::ComicInclOpt;
 use crate::value::image::{ImageExt, ImageHash};
 
 /// Creates a new comic with the given entry.
+#[derive(Oper)]
+#[oper(output = ComicInfo)]
 pub struct CreateComic<'a> {
     /// The comic entry to insert.
     pub entry: &'a ComicEntry,
 }
 
-impl Oper for CreateComic<'_> {
-    // Created comic info.
-    type Output = ComicInfo;
-}
-
 /// Retrieves a single comic's info by ID with optional includes.
+#[derive(Oper)]
+#[oper(output = ComicInfo)]
 pub struct GetComicInfo<'a, 'b> {
     //
     /// The comic ID.
@@ -27,23 +26,17 @@ pub struct GetComicInfo<'a, 'b> {
     pub incls: &'b [ComicInclOpt],
 }
 
-impl Oper for GetComicInfo<'_, '_> {
-    // Retrieved comic info.
-    type Output = ComicInfo;
-}
-
 /// Lists comics matching the given spec.
+#[derive(Oper)]
+#[oper(output = Vec<ComicInfo>)]
 pub struct ListComicInfos<'a> {
     /// The filter and pagination specification.
     pub spec: &'a ComicInfoListSpec,
 }
 
-impl Oper for ListComicInfos<'_> {
-    // List of matching comic infos.
-    type Output = Vec<ComicInfo>;
-}
-
 /// Retrieves a single comic's info with excluded relations omitted.
+#[derive(Oper)]
+#[oper(output = ComicInfo)]
 pub struct GetComicInfoExcluded<'a, 'b> {
     //
     /// The comic ID.
@@ -52,34 +45,25 @@ pub struct GetComicInfoExcluded<'a, 'b> {
     pub incls: &'b [ComicInclOpt],
 }
 
-impl Oper for GetComicInfoExcluded<'_, '_> {
-    // Retrieved comic info with excluded fields omitted.
-    type Output = ComicInfo;
-}
-
 /// Lists comics matching the given spec with excluded fields omitted.
+#[derive(Oper)]
+#[oper(output = Vec<ComicInfo>)]
 pub struct ListComicInfosExcluded<'a> {
     /// The filter and pagination specification.
     pub spec: &'a ComicInfoListSpec,
 }
 
-impl Oper for ListComicInfosExcluded<'_> {
-    // List of matching comic infos with excluded fields omitted.
-    type Output = Vec<ComicInfo>;
-}
-
 /// Updates an existing comic's fields.
+#[derive(Oper)]
+#[oper(output = ())]
 pub struct UpdateComic<'a> {
     /// The update payload.
     pub update: &'a ComicInfoUpdate,
 }
 
-impl Oper for UpdateComic<'_> {
-    // Unit on success.
-    type Output = ();
-}
-
 /// Reserves a cover image slot for a comic.
+#[derive(Oper)]
+#[oper(output = ComicCoverReservation)]
 pub struct ReserveComicCover<'a> {
     //
     /// The comic ID.
@@ -90,12 +74,9 @@ pub struct ReserveComicCover<'a> {
     pub image_ext: ImageExt,
 }
 
-impl Oper for ReserveComicCover<'_> {
-    // The cover reservation details.
-    type Output = ComicCoverReservation;
-}
-
 /// Marks a comic's cover as uploaded or updates its upload state.
+#[derive(Oper)]
+#[oper(output = ())]
 pub struct MarkComicCoverUploaded<'a> {
     //
     /// The comic ID.
@@ -108,34 +89,25 @@ pub struct MarkComicCoverUploaded<'a> {
     pub cover_uploaded: bool,
 }
 
-impl Oper for MarkComicCoverUploaded<'_> {
-    // Unit on success.
-    type Output = ();
-}
-
 /// Deletes a comic by ID.
+#[derive(Oper)]
+#[oper(output = ())]
 pub struct DeleteComic<'a> {
     /// The comic ID to delete.
     pub id: &'a str,
 }
 
-impl Oper for DeleteComic<'_> {
-    // Unit on success.
-    type Output = ();
-}
-
 /// Allocates a new chapter index for a comic.
+#[derive(Oper)]
+#[oper(output = i32)]
 pub struct AllocComicChapterIndex<'a> {
     /// The comic ID.
     pub id: &'a str,
 }
 
-impl Oper for AllocComicChapterIndex<'_> {
-    // The allocated chapter index.
-    type Output = i32;
-}
-
 /// Adjusts a comic's chapter count by the given delta.
+#[derive(Oper)]
+#[oper(output = ())]
 pub struct UpdateComicChapterCount<'a> {
     //
     /// The comic ID.
@@ -144,18 +116,10 @@ pub struct UpdateComicChapterCount<'a> {
     pub delta: i32,
 }
 
-impl Oper for UpdateComicChapterCount<'_> {
-    // Unit on success.
-    type Output = ();
-}
-
 /// Updates a comic's last-active timestamp to now.
+#[derive(Oper)]
+#[oper(output = ())]
 pub struct TouchComicLastActive<'a> {
     /// The comic ID.
     pub id: &'a str,
-}
-
-impl Oper for TouchComicLastActive<'_> {
-    // Unit on success.
-    type Output = ();
 }

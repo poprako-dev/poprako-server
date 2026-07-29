@@ -117,7 +117,7 @@ async fn reserve_chapter_pages_creates_pages_and_urls() {
         processed
             .pages
             .iter()
-            .all(|page_info| page_info.image_uploaded)
+            .all(|page_info| page_info.is_image_uploaded)
     );
 
     assert!(
@@ -233,7 +233,7 @@ async fn reserve_chapter_pages_preserves_pending_page_without_new_byte_len() {
 
     assert_eq!(snapshot.pages[0].image_version, 2);
 
-    assert!(!snapshot.pages[0].image_uploaded);
+    assert!(!snapshot.pages[0].is_image_uploaded);
 
     assert!(
         snapshot
@@ -286,7 +286,7 @@ async fn reserve_chapter_pages_resigns_pending_page_with_new_byte_len() {
 
     assert_eq!(snapshot.pages[0].image_version, 2);
 
-    assert!(!snapshot.pages[0].image_uploaded);
+    assert!(!snapshot.pages[0].is_image_uploaded);
 
     assert!(snapshot.prom_records.iter().any(|record| {
         matches!(
@@ -388,7 +388,7 @@ async fn reserve_chapter_pages_rejects_replacement_without_new_byte_len() {
 
     assert_eq!(snapshot.pages[0].image_version, 2);
 
-    assert!(snapshot.pages[0].image_uploaded);
+    assert!(snapshot.pages[0].is_image_uploaded);
 
     assert!(snapshot.prom_records.is_empty());
 }
@@ -495,7 +495,7 @@ async fn reserve_chapter_pages_keeps_raw_pending_when_uploads_are_missing() {
         snapshot
             .pages
             .iter()
-            .all(|page_info| !page_info.image_uploaded)
+            .all(|page_info| !page_info.is_image_uploaded)
     );
 
     assert!(

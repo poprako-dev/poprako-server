@@ -186,6 +186,36 @@ pub async fn update_info(
     no_content()
 }
 
+/// `POST /api/v1/chapters/{chapter_id}/mark-pinned` — pin a chapter.
+#[cfg_attr(feature = "swagger", utoipa::path(
+    post,
+    path = "/api/v1/chapters/{chapter_id}/mark-pinned",
+    tag = "chapters",
+    params(("chapter_id" = String, Path, description = "Chapter ID")),
+    responses(
+        (status = 204, description = "Chapter marked as pinned"),
+        (status = 403, description = "No permission to pin this chapter"),
+        (status = 404, description = "Chapter not found"),
+        (status = 422, description = "Published chapters cannot be pinned"),
+    ),
+))]
+#[instrument(level = "info", err(Debug), skip_all)]
+pub async fn mark_pinned(
+    State(harn): State<AppHarn>,
+    Path(chapter_id): Path<String>,
+    Extension(user_token): Extension<UserToken>,
+) -> HttpNoContent {
+    //
+    usecase::chapter::mark_pinned(
+        (harn.drive(), harn.repo()),
+        user_token,
+        chapter_id,
+    )
+    .await?;
+
+    no_content()
+}
+
 /// `POST /api/v1/chapters/{chapter_id}/stage/advance` — advance a workflow stage.
 #[cfg_attr(feature = "swagger", utoipa::path(
     post,

@@ -2,7 +2,9 @@
 
 use std::time::Duration;
 
-use poprako_orchestra::{Nucl, run_proxy, step_proxy};
+use poprako_orchestra::{
+    Nucl, OperRun as _, OperStep as _, run_proxy, step_proxy,
+};
 use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 use poprako_orchestra_extra::prom::task::Task;
 use tracing::instrument;
@@ -61,7 +63,7 @@ use crate::part::repo::term::TermRepo;
 use crate::part::repo::termbase::TermbaseRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
 pub use list::list_infos;
 
@@ -87,7 +89,7 @@ pub async fn create<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
     params: CreateComicParams,
-) -> BaseResult<CreateComicPayload>
+) -> BaseRest<CreateComicPayload>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -114,14 +116,11 @@ where
     let (comic_id, chapter_id) = nucl
         .coord(async move |context| {
             //
-            let index = repo
-                .step(
-                    context,
-                    &AllocWorksetComicIndex {
-                        id: &params.workset_id,
-                    },
-                )
-                .await?;
+            let index = AllocWorksetComicIndex {
+                id: &params.workset_id,
+            }
+            .step_on(repo, context)
+            .await?;
 
             let comic_entry = ComicEntry {
                 id: ComicComplex::gen_id(),
@@ -133,26 +132,21 @@ where
                 creator_id: token.user_id.clone(),
             };
 
-            let comic_info = repo
-                .step(
-                    context,
-                    &CreateComic {
-                        entry: &comic_entry,
-                    },
-                )
-                .await?;
-
-            repo.step(
-                context,
-                &UpdateWorksetComicCount {
-                    id: &comic_entry.workset_id,
-                    delta: 1,
-                },
-            )
+            let comic_info = CreateComic {
+                entry: &comic_entry,
+            }
+            .step_on(repo, context)
             .await?;
 
-            let chapter_index = repo
-                .step(context, &AllocComicChapterIndex { id: &comic_info.id })
+            UpdateWorksetComicCount {
+                id: &comic_entry.workset_id,
+                delta: 1,
+            }
+            .step_on(repo, context)
+            .await?;
+
+            let chapter_index = AllocComicChapterIndex { id: &comic_info.id }
+                .step_on(repo, context)
                 .await?;
 
             let subtitle = ChapterComplex::subtitle_or_default(
@@ -169,39 +163,30 @@ where
                 creator_id: token.user_id.clone(),
             };
 
-            let chapter_info = repo
-                .step(
-                    context,
-                    &CreateChapter {
-                        entry: &chapter_entry,
-                    },
-                )
-                .await?;
-
-            repo.step(
-                context,
-                &UnpinOtherChapters {
-                    comic_id: &chapter_info.comic_id,
-                    excluded_id: &chapter_info.id,
-                },
-            )
+            let chapter_info = CreateChapter {
+                entry: &chapter_entry,
+            }
+            .step_on(repo, context)
             .await?;
 
-            repo.step(
-                context,
-                &UpdateComicChapterCount {
-                    id: &chapter_info.comic_id,
-                    delta: 1,
-                },
-            )
+            UnpinOtherChapters {
+                comic_id: &chapter_info.comic_id,
+                excluded_id: &chapter_info.id,
+            }
+            .step_on(repo, context)
             .await?;
 
-            repo.step(
-                context,
-                &TouchComicLastActive {
-                    id: &chapter_info.comic_id,
-                },
-            )
+            UpdateComicChapterCount {
+                id: &chapter_info.comic_id,
+                delta: 1,
+            }
+            .step_on(repo, context)
+            .await?;
+
+            TouchComicLastActive {
+                id: &chapter_info.comic_id,
+            }
+            .step_on(repo, context)
             .await?;
 
             let assignment_entry = AssignmentEntry {
@@ -213,12 +198,10 @@ where
                 ),
             };
 
-            repo.step(
-                context,
-                &CreateAssignment {
-                    entry: &assignment_entry,
-                },
-            )
+            CreateAssignment {
+                entry: &assignment_entry,
+            }
+            .step_on(repo, context)
             .await?;
 
             accept((comic_info.id, chapter_info.id))
@@ -237,7 +220,7 @@ pub async fn get_info<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
     id: String,
-) -> BaseResult<ComicInfoVal>
+) -> BaseRest<ComicInfoVal>
 where
     R: ComicRepo<C>
         + WorksetRepo<C>
@@ -259,12 +242,12 @@ where
     )
     .await?;
 
-    let comic_info = repo
-        .run(&GetComicInfo {
-            id: &id,
-            incls: &[],
-        })
-        .await?;
+    let comic_info = GetComicInfo {
+        id: &id,
+        incls: &[],
+    }
+    .run_on(repo)
+    .await?;
 
     let comic_ids = vec![comic_info.id.clone()];
 
@@ -292,7 +275,7 @@ pub async fn update_info<C, R>(
     (repo,): (&R,),
     token: UserToken,
     params: UpdateComicInfoParams,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     R: ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
 {
@@ -315,9 +298,10 @@ where
         description: params.description,
     };
 
-    repo.run(&UpdateComic {
+    UpdateComic {
         update: &comic_info_update,
-    })
+    }
+    .run_on(repo)
     .await?;
 
     accept(())
@@ -330,7 +314,7 @@ pub async fn reserve_cover<N, C, R, P, I>(
     token: UserToken,
     id: String,
     params: ReserveComicCoverParams,
-) -> BaseResult<ReserveComicCoverPayload>
+) -> BaseRest<ReserveComicCoverPayload>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -364,18 +348,15 @@ where
     let (object_key, cover_version, upload_required) = nucl
         .coord(async move |context| {
             //
-            let cover_reservation = repo
-                .step(
-                    context,
-                    &ReserveComicCover {
-                        id: &id,
-                        image_hash: &transaction_image_hash,
-                        image_ext,
-                    },
-                )
-                .await?;
+            let cover_reservation = ReserveComicCover {
+                id: &id,
+                image_hash: &transaction_image_hash,
+                image_ext,
+            }
+            .step_on(repo, context)
+            .await?;
 
-            if !cover_reservation.upload_required {
+            if !cover_reservation.is_upload_required {
                 return accept((
                     cover_reservation.object_key,
                     cover_reservation.cover_version,
@@ -426,7 +407,7 @@ where
                 })
                 .collect::<Vec<Task<'_, String, TaskPayload>>>();
 
-            prom.step(context, &DeferBatch::new(&batch_tasks)).await?;
+            DeferBatch::new(&batch_tasks).step_on(prom, context).await?;
 
             accept((
                 cover_reservation.object_key,
@@ -468,7 +449,7 @@ pub async fn mark_cover_uploaded<N, C, R, I>(
     token: UserToken,
     id: String,
     params: MarkComicCoverUploadedParams,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -487,12 +468,12 @@ where
     )
     .await?;
 
-    let comic_info = repo
-        .run(&GetComicInfo {
-            id: &id,
-            incls: &[],
-        })
-        .await?;
+    let comic_info = GetComicInfo {
+        id: &id,
+        incls: &[],
+    }
+    .run_on(repo)
+    .await?;
 
     if comic_info.cover_version != params.image_version {
         return Err(BaseError::Expected {
@@ -501,7 +482,7 @@ where
         });
     }
 
-    if comic_info.cover_uploaded {
+    if comic_info.is_cover_uploaded {
         return accept(());
     }
 
@@ -523,15 +504,12 @@ where
 
     nucl.coord(async move |context| {
         //
-        let locked_comic_info = repo
-            .step(
-                context,
-                &GetComicInfoExcluded {
-                    id: &id,
-                    incls: &[],
-                },
-            )
-            .await?;
+        let locked_comic_info = GetComicInfoExcluded {
+            id: &id,
+            incls: &[],
+        }
+        .step_on(repo, context)
+        .await?;
 
         if locked_comic_info.cover_version != params.image_version
             || locked_comic_info.cover_key.as_deref() != Some(&cover_key)
@@ -542,15 +520,13 @@ where
             });
         }
 
-        repo.step(
-            context,
-            &MarkComicCoverUploaded {
-                id: &id,
-                cover_version: params.image_version,
-                cover_key: Some(&cover_key),
-                cover_uploaded: true,
-            },
-        )
+        MarkComicCoverUploaded {
+            id: &id,
+            cover_version: params.image_version,
+            cover_key: Some(&cover_key),
+            cover_uploaded: true,
+        }
+        .step_on(repo, context)
         .await?;
 
         accept(())
@@ -566,7 +542,7 @@ pub async fn delete<N, C, R, P>(
     (nucl, repo, prom): (&N, &R, &P),
     token: UserToken,
     id: String,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,

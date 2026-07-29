@@ -26,7 +26,7 @@ use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::schema::t_local_message;
 use crate::part_impl::shared::result::diesel;
 use crate::part_impl::shared::{RdbContext, RdbCore};
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 
 // Internal organization of the `entity` module.
 mod entity;
@@ -135,7 +135,7 @@ impl<'a> Step<Defer<'a, String, TaskPayload, ()>, RdbContext> for RdbProm {
         &self,
         context: &mut RdbContext,
         oper: &Defer<'a, String, TaskPayload, ()>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         //
         // Internal implementation detail.
         let now = OffsetDateTime::now_utc();
@@ -164,7 +164,7 @@ impl<'t, 'a> Step<DeferBatch<'t, 'a, String, TaskPayload, ()>, RdbContext>
         &self,
         context: &mut RdbContext,
         oper: &DeferBatch<'t, 'a, String, TaskPayload, ()>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         //
         // Internal implementation detail.
         if oper.tasks.is_empty() {
@@ -177,7 +177,7 @@ impl<'t, 'a> Step<DeferBatch<'t, 'a, String, TaskPayload, ()>, RdbContext>
             .tasks
             .iter()
             .map(|task| LocalMessageEntry::from_task(task, now))
-            .collect::<BaseResult<Vec<_>>>()?;
+            .collect::<BaseRest<Vec<_>>>()?;
 
         diesel::insert_into(t_local_message::table)
             .values(&entries)

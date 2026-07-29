@@ -1,4 +1,4 @@
-use poprako_orchestra::Run;
+use poprako_orchestra::{OperRun as _, Run};
 
 use crate::part::repo::oper::chapter::StartChapterStage;
 use crate::result::BaseError;
@@ -17,12 +17,12 @@ where
     tokio::spawn(async move {
         for stage in stages {
             //
-            let outcome = repo
-                .run(&StartChapterStage {
-                    id: &chapter_id,
-                    stage,
-                })
-                .await;
+            let outcome = StartChapterStage {
+                id: &chapter_id,
+                stage,
+            }
+            .run_on(&repo)
+            .await;
 
             if let Err(error) = outcome {
                 tracing::warn!(

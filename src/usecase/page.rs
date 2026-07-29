@@ -2,7 +2,7 @@
 
 use std::time::Duration;
 
-use poprako_orchestra::{Nucl, run_proxy};
+use poprako_orchestra::{Nucl, OperRun as _, OperStep as _, run_proxy};
 use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 use poprako_orchestra_extra::prom::task::Task;
 use tracing::instrument;
@@ -40,7 +40,7 @@ use crate::part::repo::oper::page::{
 use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 
 pub use reserve::reserve_chapter_pages;
@@ -58,7 +58,7 @@ pub async fn reserve_image<N, C, R, P, I>(
     token: UserToken,
     id: String,
     params: ReservePageImageParams,
-) -> BaseResult<ReservedPagePayload>
+) -> BaseRest<ReservedPagePayload>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -71,7 +71,7 @@ where
         image::ResourceKind::PageImage,
     )?;
 
-    let page_info = repo.run(&GetPageInfo { id: &id }).await?;
+    let page_info = GetPageInfo { id: &id }.run_on(repo).await?;
 
     PagePermComplex::ensure_user_can_reserve(
         &mut run_proxy! {
@@ -87,31 +87,27 @@ where
             //
             // NOTE: Chapter -> Page is the shared lock order that prevents
             // both deadlocks and page-aggregate counter races.
-            repo.step(
-                context,
-                &GetChapterInfoExcluded {
-                    id: &page_info.chapter_id,
-                    incls: &[],
-                },
-            )
+            GetChapterInfoExcluded {
+                id: &page_info.chapter_id,
+                incls: &[],
+            }
+            .step_on(repo, context)
             .await
             .and_then(|chapter_info| {
                 ChapterComplex::ensure_chapter_writable(&chapter_info)
             })?;
 
-            let locked_page_info = repo
-                .step(context, &GetPageInfoExcluded { id: &id })
-                .await?;
+            let locked_page_info = GetPageInfoExcluded { id: &id }.step_on(repo, context).await?;
 
             let same_identity =
                 locked_page_info.image_hash == params.image_hash
                     && locked_page_info.image_ext == params.ext;
 
-            if same_identity && locked_page_info.image_uploaded {
+            if same_identity && locked_page_info.is_image_uploaded {
                 return accept((locked_page_info, None));
             }
 
-            let (image_key, image_version, previous_image_key) = match same_identity {
+            let (image_key, image_version, prev_image_key) = match same_identity {
                 //
                 true => (
                     locked_page_info.image_key.clone().ok_or_else(|| {
@@ -152,20 +148,17 @@ where
                 id: locked_page_info.id.clone(),
                 index: locked_page_info.index,
                 image_key: Some(image_key.clone()),
-                image_uploaded: false,
+                is_image_uploaded: false,
                 image_version,
                 image_hash: params.image_hash.clone(),
                 image_ext: params.ext,
             };
 
-            let updated_page_info = repo
-                .step(
-                    context,
-                    &UpdatePageManifest {
-                        update: &page_manifest_update,
-                    },
-                )
-                .await?;
+            let updated_page_info = UpdatePageManifest {
+                update: &page_manifest_update,
+            }
+            .step_on(repo, context)
+            .await?;
 
             let mut task_ids = Vec::new();
 
@@ -173,12 +166,12 @@ where
 
             let mut task_delays = Vec::new();
 
-            if let Some(previous_image_key) = previous_image_key {
+            if let Some(prev_image_key) = prev_image_key {
                 //
                 task_ids.push(ImageComplex::gen_delete_id());
 
                 task_payloads.push(TaskPayload::Image(image::ImagePayload::Delete {
-                    object_key: previous_image_key,
+                    object_key: prev_image_key,
                 }));
 
                 task_delays.push(None);
@@ -219,9 +212,9 @@ where
                 })
                 .collect::<Vec<Task<'_, String, TaskPayload>>>();
 
-            prom.step(context, &DeferBatch::new(&image_tasks)).await?;
+            DeferBatch::new(&image_tasks).step_on(prom, context).await?;
 
-            prom.step(context, &Defer::new(advance_task)).await?;
+            Defer::new(advance_task).step_on(prom, context).await?;
 
             accept((updated_page_info, Some(image_key)))
         })
@@ -272,7 +265,7 @@ pub async fn list_infos<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
     params: ListPageInfosParams,
-) -> BaseResult<Vec<PageInfoVal>>
+) -> BaseRest<Vec<PageInfoVal>>
 where
     R: PageRepo<C>
         + ChapterRepo<C>
@@ -297,11 +290,11 @@ where
     )
     .await?;
 
-    let page_infos = repo
-        .run(&ListPageInfos {
-            chapter_id: &params.chapter_id,
-        })
-        .await?;
+    let page_infos = ListPageInfos {
+        chapter_id: &params.chapter_id,
+    }
+    .run_on(repo)
+    .await?;
 
     futures_util::future::join_all(
         page_infos
@@ -319,7 +312,7 @@ pub async fn get_info<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
     id: String,
-) -> BaseResult<PageInfoVal>
+) -> BaseRest<PageInfoVal>
 where
     R: PageRepo<C>
         + ChapterRepo<C>
@@ -330,7 +323,7 @@ where
         + Sync,
     I: ImagePool,
 {
-    let page_info = repo.run(&GetPageInfo { id: &id }).await?;
+    let page_info = GetPageInfo { id: &id }.run_on(repo).await?;
 
     PagePermComplex::ensure_user_can_list_infos(
         &mut run_proxy! {
@@ -356,14 +349,14 @@ pub async fn mark_image_uploaded<N, C, R, I>(
     token: UserToken,
     id: String,
     params: MarkPageImageUploadedParams,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     R: ChapterRepo<C> + PageRepo<C> + AssignmentRepo<C> + Send + Sync,
     I: ImageManager,
 {
-    let page_info = repo.run(&GetPageInfo { id: &id }).await?;
+    let page_info = GetPageInfo { id: &id }.run_on(repo).await?;
 
     PagePermComplex::ensure_user_can_mark_image_uploaded(
         &mut run_proxy! {
@@ -381,7 +374,7 @@ where
         });
     }
 
-    if page_info.image_uploaded {
+    if page_info.is_image_uploaded {
         return accept(());
     }
 
@@ -405,20 +398,18 @@ where
         //
         // NOTE: Chapter -> Page is the shared lock order that prevents both
         // deadlocks and chapter upload-summary races.
-        let chapter_info = repo
-            .step(
-                context,
-                &GetChapterInfoExcluded {
-                    id: &page_info.chapter_id,
-                    incls: &[],
-                },
-            )
-            .await?;
+        let chapter_info = GetChapterInfoExcluded {
+            id: &page_info.chapter_id,
+            incls: &[],
+        }
+        .step_on(repo, context)
+        .await?;
 
         ChapterComplex::ensure_chapter_writable(&chapter_info)?;
 
-        let locked_page_info =
-            repo.step(context, &GetPageInfoExcluded { id: &id }).await?;
+        let locked_page_info = GetPageInfoExcluded { id: &id }
+            .step_on(repo, context)
+            .await?;
 
         if locked_page_info.image_version != params.image_version
             || locked_page_info.image_key.as_deref() != Some(&image_key)
@@ -429,14 +420,12 @@ where
             });
         }
 
-        repo.step(
-            context,
-            &MarkPageImageUploaded {
-                id: &id,
-                image_version: params.image_version,
-                image_key: Some(image_key.as_str()),
-            },
-        )
+        MarkPageImageUploaded {
+            id: &id,
+            image_version: params.image_version,
+            image_key: Some(image_key.as_str()),
+        }
+        .step_on(repo, context)
         .await?;
 
         accept(())
@@ -452,7 +441,7 @@ pub async fn delete<N, C, R, P>(
     (nucl, repo, prom): (&N, &R, &P),
     token: UserToken,
     chapter_id: String,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -481,24 +470,18 @@ where
 
     nucl.coord(async move |context| {
         //
-        let chapter_info = repo
-            .step(
-                context,
-                &GetChapterInfoExcluded {
-                    id: &chapter_id,
-                    incls: &[],
-                },
-            )
-            .await?;
+        let chapter_info = GetChapterInfoExcluded {
+            id: &chapter_id,
+            incls: &[],
+        }
+        .step_on(repo, context)
+        .await?;
 
-        let page_infos = repo
-            .step(
-                context,
-                &ListPageInfos {
-                    chapter_id: &chapter_info.id,
-                },
-            )
-            .await?;
+        let page_infos = ListPageInfos {
+            chapter_id: &chapter_info.id,
+        }
+        .step_on(repo, context)
+        .await?;
 
         let mut delete_ids = Vec::new();
 
@@ -525,34 +508,30 @@ where
             })
             .collect::<Vec<Task<'_, String, TaskPayload>>>();
 
-        prom.step(context, &DeferBatch::new(&delete_tasks)).await?;
+        DeferBatch::new(&delete_tasks)
+            .step_on(prom, context)
+            .await?;
 
-        repo.step(
-            context,
-            &DeletePages::Chapter {
-                chapter_id: &chapter_info.id,
-            },
-        )
+        DeletePages::Chapter {
+            chapter_id: &chapter_info.id,
+        }
+        .step_on(repo, context)
         .await?;
 
-        repo.step(
-            context,
-            &SetChapterPageCounters {
-                id: &chapter_info.id,
-                page_count: 0,
-                total_unit_count: 0,
-                translated_unit_count: 0,
-                proofread_unit_count: 0,
-            },
-        )
+        SetChapterPageCounters {
+            id: &chapter_info.id,
+            page_count: 0,
+            total_unit_count: 0,
+            translated_unit_count: 0,
+            proofread_unit_count: 0,
+        }
+        .step_on(repo, context)
         .await?;
 
-        repo.step(
-            context,
-            &TouchComicLastActive {
-                id: &chapter_info.comic_id,
-            },
-        )
+        TouchComicLastActive {
+            id: &chapter_info.comic_id,
+        }
+        .step_on(repo, context)
         .await?;
 
         accept(())
