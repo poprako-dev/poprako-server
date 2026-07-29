@@ -9,7 +9,7 @@ use crate::part_impl::repo::rdb_impl::incl;
 use crate::part_impl::repo::rdb_impl::schema::t_assignment::dsl::*;
 use crate::part_impl::shared::RdbConn;
 use crate::part_impl::shared::result::diesel;
-use crate::result::{BaseResult, accept};
+use crate::result::{BaseRest, accept};
 use crate::value::role::RoleField;
 
 /// Queries assignment infos selected by the repository operation.
@@ -17,7 +17,7 @@ use crate::value::role::RoleField;
 pub async fn list_infos(
     conn: &mut RdbConn,
     oper: &ListAssignmentInfos<'_, '_>,
-) -> BaseResult<Vec<AssignmentInfo>> {
+) -> BaseRest<Vec<AssignmentInfo>> {
     //
     // Build the query shape from the operation mode first so the same pipeline can be reused
     // for all list variants.
@@ -147,13 +147,11 @@ pub async fn list_infos(
 
 // Map query rows into public-facing assignment infos by converting each row and
 // bubbling mapping errors immediately.
-fn rows_into_infos(
-    rows: Vec<AssignmentRow>,
-) -> BaseResult<Vec<AssignmentInfo>> {
+fn rows_into_infos(rows: Vec<AssignmentRow>) -> BaseRest<Vec<AssignmentInfo>> {
     rows.into_iter().map(row_into_info).collect()
 }
 
 // Convert one persisted assignment row into the API-facing info DTO.
-fn row_into_info(row: AssignmentRow) -> BaseResult<AssignmentInfo> {
+fn row_into_info(row: AssignmentRow) -> BaseRest<AssignmentInfo> {
     row.try_into()
 }

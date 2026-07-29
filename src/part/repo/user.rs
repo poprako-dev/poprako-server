@@ -1,6 +1,6 @@
 //! Repository traits for the user domain.
 
-use poprako_orchestra::{Run, Step};
+use poprako_orchestra::drive;
 
 use crate::part::repo::oper::user::{
     CreateUser, DeleteUser, FindUserInfo, GetUserCredential, GetUserInfo,
@@ -10,32 +10,24 @@ use crate::result::BaseError;
 
 /// User repository operations.
 ///
-/// Independent reads and activity updates use [`Run`]. Mutations and locks
-/// use [`Step`] with the context coordinated by the caller.
-pub trait UserRepo<C>:
-    for<'a> Run<GetUserInfo<'a>, Error = BaseError>
-    + for<'a> Run<GetUserCredential<'a>, Error = BaseError>
-    + for<'a> Run<FindUserInfo<'a>, Error = BaseError>
-    + for<'a> Run<UpdateUser<'a>, Error = BaseError>
-    + for<'a> Step<CreateUser<'a>, C, Error = BaseError>
-    + for<'a> Step<FindUserInfo<'a>, C, Error = BaseError>
-    + for<'a> Step<UpdateUser<'a>, C, Error = BaseError>
-    + for<'a> Step<ReserveUserAvatar<'a>, C, Error = BaseError>
-    + for<'a> Step<GetUserInfoExcluded<'a>, C, Error = BaseError>
-    + for<'a> Step<DeleteUser<'a>, C, Error = BaseError>
-{
-}
-
-impl<T, C> UserRepo<C> for T where
-    T: for<'a> Run<GetUserInfo<'a>, Error = BaseError>
-        + for<'a> Run<GetUserCredential<'a>, Error = BaseError>
-        + for<'a> Run<FindUserInfo<'a>, Error = BaseError>
-        + for<'a> Run<UpdateUser<'a>, Error = BaseError>
-        + for<'a> Step<CreateUser<'a>, C, Error = BaseError>
-        + for<'a> Step<FindUserInfo<'a>, C, Error = BaseError>
-        + for<'a> Step<UpdateUser<'a>, C, Error = BaseError>
-        + for<'a> Step<ReserveUserAvatar<'a>, C, Error = BaseError>
-        + for<'a> Step<GetUserInfoExcluded<'a>, C, Error = BaseError>
-        + for<'a> Step<DeleteUser<'a>, C, Error = BaseError>
-{
-}
+/// Independent reads and activity updates use [`poprako_orchestra::Run`]. Mutations and locks
+/// use [`poprako_orchestra::Step`] with the context coordinated by the caller.
+#[drive(
+    context = C,
+    error = BaseError,
+    run(
+        for<'a> GetUserInfo<'a>,
+        for<'a> GetUserCredential<'a>,
+        for<'a> FindUserInfo<'a>,
+        for<'a> UpdateUser<'a>,
+    ),
+    step(
+        for<'a> CreateUser<'a>,
+        for<'a> FindUserInfo<'a>,
+        for<'a> UpdateUser<'a>,
+        for<'a> ReserveUserAvatar<'a>,
+        for<'a> GetUserInfoExcluded<'a>,
+        for<'a> DeleteUser<'a>,
+    ),
+)]
+pub trait UserRepo<C> {}

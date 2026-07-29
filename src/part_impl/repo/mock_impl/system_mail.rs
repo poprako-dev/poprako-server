@@ -11,20 +11,15 @@ use crate::model::system_mail::{
 use crate::part::repo::oper::system_mail::{
     ListSystemMailInfos, MarkSystemMailRead, SendSystemMail, SendSystemMails,
 };
-use crate::part::repo::system_mail::SystemMailRepo;
-use crate::part_impl::repo::mock_impl::{
-    Mock, MockContext, MockState, expected, now,
-};
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
-
-impl SystemMailRepo<MockContext> for Mock {}
+use crate::part_impl::repo::mock_impl::{Mock, MockState, expected, now};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
 // Internal implementation of `insert_mail`.
 fn insert_mail(state: &mut MockState, entry: &SystemMailEntry) {
     state.system_mails.push(SystemMailInfo {
         id: entry.id.clone(),
         receiver_id: entry.receiver_id.clone(),
-        read: false,
+        is_read: false,
         title: entry.title.clone(),
         content: entry.content.clone(),
         created_at: now(),
@@ -35,7 +30,7 @@ fn insert_mail(state: &mut MockState, entry: &SystemMailEntry) {
 fn send_system_mail(
     state: &mut MockState,
     entry: &SystemMailEntry,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     // Internal implementation detail.
     // Internal implementation detail.
@@ -56,7 +51,7 @@ fn send_system_mail(
 fn send_system_mails(
     state: &mut MockState,
     entries: &[SystemMailEntry],
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     // Internal implementation detail.
     // Internal implementation detail.
@@ -105,9 +100,9 @@ fn list_system_mail_infos(
                     // Internal implementation detail.
                     SystemMailInfoListKind::All => true,
 
-                    SystemMailInfoListKind::Read => system_mail_info.read,
+                    SystemMailInfoListKind::Read => system_mail_info.is_read,
 
-                    SystemMailInfoListKind::Unread => !system_mail_info.read,
+                    SystemMailInfoListKind::Unread => !system_mail_info.is_read,
                 }
         })
         .cloned()
@@ -128,7 +123,7 @@ fn mark_system_mail_read(
     state: &mut MockState,
     id: &str,
     user_id: &str,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     // Internal implementation detail.
     // Internal implementation detail.
@@ -145,7 +140,7 @@ fn mark_system_mail_read(
         });
     }
 
-    system_mail_info.read = true;
+    system_mail_info.is_read = true;
 
     accept(())
 }
@@ -156,7 +151,7 @@ impl Run<SendSystemMail<'_>> for Mock {
 
     #[instrument(level = "info", err(Debug), skip_all)]
     // Internal implementation of `run`.
-    async fn run(&self, oper: &SendSystemMail<'_>) -> BaseResult<()> {
+    async fn run(&self, oper: &SendSystemMail<'_>) -> BaseRest<()> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -172,7 +167,7 @@ impl Run<SendSystemMails<'_>> for Mock {
 
     #[instrument(level = "info", err(Debug), skip_all)]
     // Internal implementation of `run`.
-    async fn run(&self, oper: &SendSystemMails<'_>) -> BaseResult<()> {
+    async fn run(&self, oper: &SendSystemMails<'_>) -> BaseRest<()> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -191,7 +186,7 @@ impl Run<ListSystemMailInfos<'_>> for Mock {
     async fn run(
         &self,
         oper: &ListSystemMailInfos<'_>,
-    ) -> BaseResult<Vec<SystemMailInfo>> {
+    ) -> BaseRest<Vec<SystemMailInfo>> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -207,7 +202,7 @@ impl Run<MarkSystemMailRead<'_>> for Mock {
 
     #[instrument(level = "info", err(Debug), skip_all)]
     // Internal implementation of `run`.
-    async fn run(&self, oper: &MarkSystemMailRead<'_>) -> BaseResult<()> {
+    async fn run(&self, oper: &MarkSystemMailRead<'_>) -> BaseRest<()> {
         //
         // Internal implementation detail.
         // Internal implementation detail.

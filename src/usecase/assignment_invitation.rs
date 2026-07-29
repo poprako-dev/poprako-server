@@ -2,7 +2,7 @@
 
 use std::time::Duration;
 
-use poprako_orchestra::Nucl;
+use poprako_orchestra::{Nucl, OperRun as _, OperStep as _};
 use poprako_orchestra_extra::prom::oper::Defer;
 use poprako_orchestra_extra::prom::task::Task;
 use tracing::instrument;
@@ -19,8 +19,7 @@ use crate::data::assignment_invitation::{
 };
 use crate::model::assignment::AssignmentEntry;
 use crate::model::assignment_invitation::{
-    AssignmentInvitationEntry, AssignmentInvitationListKind,
-    AssignmentInvitationListSpec,
+    AssignmentInvitationEntry, AssignmentInvitationListSpec,
 };
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
@@ -47,8 +46,9 @@ use crate::part::repo::oper::user::{FindUserInfo, GetUserInfoExcluded};
 use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::user::UserRepo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
+use crate::value::assignment_invitation::AssignmentInvitationStatus;
 use crate::value::role::{RoleField, RoleMask};
 
 #[cfg(test)]
@@ -64,33 +64,33 @@ pub async fn list_infos<C, R>(
     (repo,): (&R,),
     token: UserToken,
     params: ListAssignmentInvitationInfosParams,
-) -> BaseResult<Vec<AssignmentInvitationInfoVal>>
+) -> BaseRest<Vec<AssignmentInvitationInfoVal>>
 where
     R: AssignmentInvitationRepo<C> + AssignmentRepo<C> + Sync,
 {
     ensure_user_admin(repo, &token.user_id, &params.chapter_id).await?;
 
-    let kind = match params.pending {
+    let status = match params.is_pending {
         //
-        Some(true) => AssignmentInvitationListKind::Pending,
+        Some(true) => AssignmentInvitationStatus::Pending,
 
-        Some(false) => AssignmentInvitationListKind::Used,
+        Some(false) => AssignmentInvitationStatus::Used,
 
-        None => AssignmentInvitationListKind::All,
+        None => AssignmentInvitationStatus::All,
     };
 
     let assignment_invitation_list_spec = AssignmentInvitationListSpec {
         chapter_id: params.chapter_id,
-        kind,
+        status,
         offset: params.offset,
         limit: params.limit,
     };
 
-    let assignment_invitation_infos = repo
-        .run(&ListAssignmentInvitationInfos {
-            spec: &assignment_invitation_list_spec,
-        })
-        .await?;
+    let assignment_invitation_infos = ListAssignmentInvitationInfos {
+        spec: &assignment_invitation_list_spec,
+    }
+    .run_on(repo)
+    .await?;
 
     accept(
         assignment_invitation_infos
@@ -106,7 +106,7 @@ pub async fn create<N, C, R, P>(
     (nucl, repo, prom): (&N, &R, &P),
     token: UserToken,
     params: CreateAssignmentInvitationParams,
-) -> BaseResult<CreateAssignmentInvitationPayload>
+) -> BaseRest<CreateAssignmentInvitationPayload>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -125,38 +125,30 @@ where
     let (assignment_invitation_id, code) = nucl
         .coord(async move |context| {
             //
-            let chapter_info = repo
-                .step(
-                    context,
-                    &GetChapterInfoExcluded {
-                        id: &params.chapter_id,
-                        incls: &[],
-                    },
-                )
-                .await?;
+            let chapter_info = GetChapterInfoExcluded {
+                id: &params.chapter_id,
+                incls: &[],
+            }
+            .step_on(repo, context)
+            .await?;
 
             ChapterComplex::ensure_chapter_writable(&chapter_info)?;
 
-            let invitee_user_info = repo
-                .step(
-                    context,
-                    &FindUserInfo::Qid {
-                        qid: &params.invitee_qid,
-                    },
-                )
-                .await?;
+            let invitee_user_info = FindUserInfo::Qid {
+                qid: &params.invitee_qid,
+            }
+            .step_on(repo, context)
+            .await?;
 
             if let Some(invitee_user_info) = invitee_user_info {
                 //
 
-                let existing_assignment_info = repo
-                    .step(
-                        context,
-                        &FindAssignmentInfo::ChapterUser {
-                            chapter_id: &params.chapter_id,
-                            user_id: &invitee_user_info.id,
-                        },
-                    )
+                let existing_assignment_info =
+                    FindAssignmentInfo::ChapterUser {
+                        chapter_id: &params.chapter_id,
+                        user_id: &invitee_user_info.id,
+                    }
+                    .step_on(repo, context)
                     .await?;
 
                 if existing_assignment_info.is_some() {
@@ -177,14 +169,11 @@ where
                 roles: params.roles,
             };
 
-            let assignment_invitation_info = repo
-                .step(
-                    context,
-                    &CreateAssignmentInvitation {
-                        entry: &assignment_invitation_entry,
-                    },
-                )
-                .await?;
+            let assignment_invitation_info = CreateAssignmentInvitation {
+                entry: &assignment_invitation_entry,
+            }
+            .step_on(repo, context)
+            .await?;
 
             let purge_event = InvitationPayload::Assignment {
                 invitation_id: assignment_invitation_info.id.clone(),
@@ -200,7 +189,7 @@ where
                 delay: Some(EXPIRY_DELAY),
             };
 
-            prom.step(context, &Defer::new(purge_task)).await?;
+            Defer::new(purge_task).step_on(prom, context).await?;
 
             accept((
                 assignment_invitation_info.id,
@@ -221,15 +210,16 @@ pub async fn delete<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
     id: String,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     R: AssignmentInvitationRepo<C> + AssignmentRepo<C> + Send + Sync,
 {
-    let assignment_invitation_info = repo
-        .run(&GetAssignmentInvitationInfo::Id { id: &id })
-        .await?;
+    let assignment_invitation_info =
+        GetAssignmentInvitationInfo::Id { id: &id }
+            .run_on(repo)
+            .await?;
 
     ensure_user_admin(
         repo,
@@ -241,7 +231,8 @@ where
     nucl.coord(async move |context| {
         //
 
-        repo.step(context, &DeleteAssignmentInvitations::Id { id: &id })
+        DeleteAssignmentInvitations::Id { id: &id }
+            .step_on(repo, context)
             .await?;
 
         accept(())
@@ -262,7 +253,7 @@ pub async fn join<N, C, R, I>(
     (nucl, repo, image_pool): (&N, &R, &I),
     token: UserToken,
     params: JoinAssignmentInvitationParams,
-) -> BaseResult<AssignmentInfoVal>
+) -> BaseRest<AssignmentInfoVal>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -283,21 +274,16 @@ where
         .coord(async move |context| {
             //
 
-            let current_user_info = repo
-                .step(
-                    context,
-                    &GetUserInfoExcluded::Id {
-                        id: &current_user_id,
-                    },
-                )
-                .await?;
+            let current_user_info = GetUserInfoExcluded::Id {
+                id: &current_user_id,
+            }
+            .step_on(repo, context)
+            .await?;
 
-            let assignment_invitation_info = repo
-                .step(
-                    context,
-                    &GetAssignmentInvitationInfoExcluded { code: &params.code },
-                )
-                .await?;
+            let assignment_invitation_info =
+                GetAssignmentInvitationInfoExcluded { code: &params.code }
+                    .step_on(repo, context)
+                    .await?;
 
             if assignment_invitation_info.invitee_qid != current_user_info.qid {
                 return Err(invalid_invitation_err());
@@ -305,46 +291,34 @@ where
 
             validate_roles(assignment_invitation_info.roles)?;
 
-            let chapter_info = repo
-                .step(
-                    context,
-                    &GetChapterInfoExcluded {
-                        id: &assignment_invitation_info.chapter_id,
-                        incls: &[],
-                    },
-                )
-                .await?;
+            let chapter_info = GetChapterInfoExcluded {
+                id: &assignment_invitation_info.chapter_id,
+                incls: &[],
+            }
+            .step_on(repo, context)
+            .await?;
 
             ChapterComplex::ensure_chapter_writable(&chapter_info)?;
 
-            let comic_info = repo
-                .step(
-                    context,
-                    &GetComicInfo {
-                        id: &chapter_info.comic_id,
-                        incls: &[],
-                    },
-                )
-                .await?;
+            let comic_info = GetComicInfo {
+                id: &chapter_info.comic_id,
+                incls: &[],
+            }
+            .step_on(repo, context)
+            .await?;
 
-            let workset_info = repo
-                .step(
-                    context,
-                    &GetWorksetInfo {
-                        id: &comic_info.workset_id,
-                    },
-                )
-                .await?;
+            let workset_info = GetWorksetInfo {
+                id: &comic_info.workset_id,
+            }
+            .step_on(repo, context)
+            .await?;
 
-            let member_info = repo
-                .step(
-                    context,
-                    &FindMemberInfo::UserTeam {
-                        user_id: &current_user_id,
-                        team_id: &workset_info.team_id,
-                    },
-                )
-                .await?;
+            let member_info = FindMemberInfo::UserTeam {
+                user_id: &current_user_id,
+                team_id: &workset_info.team_id,
+            }
+            .step_on(repo, context)
+            .await?;
 
             let Some(member_info) = member_info else {
                 return Err(assignment_role_not_assignable_perm_err());
@@ -357,15 +331,12 @@ where
                 return Err(assignment_role_not_assignable_perm_err());
             }
 
-            let existing_assignment_info = repo
-                .step(
-                    context,
-                    &FindAssignmentInfo::ChapterUser {
-                        chapter_id: &assignment_invitation_info.chapter_id,
-                        user_id: &current_user_id,
-                    },
-                )
-                .await?;
+            let existing_assignment_info = FindAssignmentInfo::ChapterUser {
+                chapter_id: &assignment_invitation_info.chapter_id,
+                user_id: &current_user_id,
+            }
+            .step_on(repo, context)
+            .await?;
 
             let assignment_info = match existing_assignment_info {
                 //
@@ -376,12 +347,10 @@ where
                         assignment_invitation_info.roles,
                     );
 
-                    repo.step(
-                        context,
-                        &UpdateAssignmentRoles {
-                            update: &assignment_role_update,
-                        },
-                    )
+                    UpdateAssignmentRoles {
+                        update: &assignment_role_update,
+                    }
+                    .step_on(repo, context)
                     .await?
                 }
 
@@ -396,22 +365,18 @@ where
                         roles: assignment_invitation_info.roles,
                     };
 
-                    repo.step(
-                        context,
-                        &CreateAssignment {
-                            entry: &assignment_entry,
-                        },
-                    )
+                    CreateAssignment {
+                        entry: &assignment_entry,
+                    }
+                    .step_on(repo, context)
                     .await?
                 }
             };
 
-            repo.step(
-                context,
-                &MarkAssignmentInvitationUsed {
-                    id: &assignment_invitation_info.id,
-                },
-            )
+            MarkAssignmentInvitationUsed {
+                id: &assignment_invitation_info.id,
+            }
+            .step_on(repo, context)
             .await?;
 
             accept(assignment_info)
@@ -427,16 +392,16 @@ async fn ensure_user_admin<C, R>(
     repo: &R,
     current_user_id: &str,
     chapter_id: &str,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     R: AssignmentRepo<C>,
 {
-    let assignment_info = repo
-        .run(&FindAssignmentInfo::ChapterUser {
-            chapter_id,
-            user_id: current_user_id,
-        })
-        .await?;
+    let assignment_info = FindAssignmentInfo::ChapterUser {
+        chapter_id,
+        user_id: current_user_id,
+    }
+    .run_on(repo)
+    .await?;
 
     let Some(assignment_info) = assignment_info else {
         return Err(chapter_admin_err());
@@ -450,7 +415,7 @@ where
 }
 
 // Validates that the roles mask is non-empty and does not contain ADMIN.
-fn validate_roles(roles: RoleMask) -> BaseResult<()> {
+fn validate_roles(roles: RoleMask) -> BaseRest<()> {
     //
     if u32::from(roles) == 0 || roles.has_any_role(&[RoleField::ADMIN]) {
         return Err(assignment_role_not_assignable_args_err());

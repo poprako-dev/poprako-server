@@ -12,27 +12,24 @@ use crate::model::system_mail::{
 use crate::part::repo::oper::system_mail::{
     ListSystemMailInfos, MarkSystemMailRead, SendSystemMail, SendSystemMails,
 };
-use crate::part::repo::system_mail::SystemMailRepo;
 use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::system_mail::{
     SystemMailRow, SystemMailRowEntry,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_system_mail::dsl::*;
+use crate::part_impl::shared::RdbConn;
 use crate::part_impl::shared::result::{diesel, expected};
-use crate::part_impl::shared::{RdbConn, RdbContext};
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
 /// System mail RDB integration tests.
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;
 
-impl SystemMailRepo<RdbContext> for RdbRepo {}
-
 // ── Free functions ──────────────────────────────────────────────────────────
 
 // Insert one system mail row and return nothing when persistence succeeds.
 #[instrument(level = "info", err(Debug), skip_all)]
-async fn send(conn: &mut RdbConn, entry: &SystemMailEntry) -> BaseResult<()> {
+async fn send(conn: &mut RdbConn, entry: &SystemMailEntry) -> BaseRest<()> {
     //
     let entry = SystemMailRowEntry::from(entry);
 
@@ -50,7 +47,7 @@ async fn send(conn: &mut RdbConn, entry: &SystemMailEntry) -> BaseResult<()> {
 async fn send_batch(
     conn: &mut RdbConn,
     entries: &[SystemMailEntry],
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     let entries = entries
         .iter()
@@ -71,7 +68,7 @@ async fn send_batch(
 async fn list_infos(
     conn: &mut RdbConn,
     spec: &SystemMailInfoListSpec,
-) -> BaseResult<Vec<SystemMailInfo>> {
+) -> BaseRest<Vec<SystemMailInfo>> {
     //
     let mut query = t_system_mail
         .filter(f_receiver_id.eq(spec.receiver_id.as_str()))
@@ -104,7 +101,7 @@ async fn mark_read(
     conn: &mut RdbConn,
     id: &str,
     user_id: &str,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     let row: Option<SystemMailRow> = t_system_mail
         .filter(f_id.eq(id))
@@ -138,7 +135,7 @@ impl Run<SendSystemMail<'_>> for RdbRepo {
 
     #[instrument(level = "info", err(Debug), skip_all)]
     // Persist one outbound system mail entry in the request-scoped transaction.
-    async fn run(&self, oper: &SendSystemMail<'_>) -> BaseResult<()> {
+    async fn run(&self, oper: &SendSystemMail<'_>) -> BaseRest<()> {
         submit_query!(self.core, send, oper.entry)
     }
 }
@@ -149,7 +146,7 @@ impl Run<SendSystemMails<'_>> for RdbRepo {
 
     #[instrument(level = "info", err(Debug), skip_all)]
     // Persist multiple outbound system mails in one request scope.
-    async fn run(&self, oper: &SendSystemMails<'_>) -> BaseResult<()> {
+    async fn run(&self, oper: &SendSystemMails<'_>) -> BaseRest<()> {
         submit_query!(self.core, send_batch, oper.entries)
     }
 }
@@ -163,7 +160,7 @@ impl Run<ListSystemMailInfos<'_>> for RdbRepo {
     async fn run(
         &self,
         oper: &ListSystemMailInfos<'_>,
-    ) -> BaseResult<Vec<SystemMailInfo>> {
+    ) -> BaseRest<Vec<SystemMailInfo>> {
         submit_query!(self.core, list_infos, oper.spec)
     }
 }
@@ -174,7 +171,7 @@ impl Run<MarkSystemMailRead<'_>> for RdbRepo {
 
     #[instrument(level = "info", err(Debug), skip_all)]
     // Verify receiver ownership then set the target mail as read.
-    async fn run(&self, oper: &MarkSystemMailRead<'_>) -> BaseResult<()> {
+    async fn run(&self, oper: &MarkSystemMailRead<'_>) -> BaseRest<()> {
         submit_query!(self.core, mark_read, oper.id, oper.user_id)
     }
 }

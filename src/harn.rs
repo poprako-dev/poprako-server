@@ -74,7 +74,7 @@ where
         + MemberRepo<C>
         + MemberInvitationRepo<C>
         + PageRepo<C>
-        + SystemMailRepo<C>
+        + SystemMailRepo
         + TeamRepo<C>
         + TermRepo<C>
         + TermbaseRepo<C>

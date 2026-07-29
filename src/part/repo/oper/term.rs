@@ -5,89 +5,65 @@ use crate::model::term::{
 };
 
 /// Creates a term.
+#[derive(Oper)]
+#[oper(output = TermInfo)]
 pub struct CreateTerm<'a> {
     /// The term entry to insert.
     pub entry: &'a TermEntry,
 }
 
-impl Oper for CreateTerm<'_> {
-    // Operation output type.
-    type Output = TermInfo;
-}
-
 /// Looks up a term by identifier.
+#[derive(Oper)]
+#[oper(output = TermInfo)]
 pub struct GetTermInfo<'a> {
     /// The term id.
     pub id: &'a str,
 }
 
-impl Oper for GetTermInfo<'_> {
-    // Operation output type.
-    type Output = TermInfo;
-}
-
 /// Lists term infos matching a filter spec.
+#[derive(Oper)]
+#[oper(output = Vec<TermInfo>)]
 pub struct ListTermInfos<'a> {
     /// The specification for filtering listed terms.
     pub spec: &'a TermInfoListSpec,
 }
 
-impl Oper for ListTermInfos<'_> {
-    // Operation output type.
-    type Output = Vec<TermInfo>;
-}
-
 /// Looks up a term by identifier, matching deleted rows as well.
+#[derive(Oper)]
+#[oper(output = TermInfo)]
 pub struct GetTermInfoExcluded<'a> {
     /// The term id.
     pub id: &'a str,
 }
 
-impl Oper for GetTermInfoExcluded<'_> {
-    // Operation output type.
-    type Output = TermInfo;
-}
-
 /// Locks a term row.
+#[derive(Oper)]
+#[oper(output = ())]
 pub struct LockTerm<'a> {
     /// The term id.
     pub id: &'a str,
 }
 
-impl Oper for LockTerm<'_> {
-    // Operation output type.
-    type Output = ();
-}
-
 /// Updates a term.
+#[derive(Oper)]
+#[oper(output = ())]
 pub struct UpdateTerm<'a> {
     /// The update payload for the term.
     pub update: &'a TermInfoUpdate,
 }
 
-impl Oper for UpdateTerm<'_> {
-    // Operation output type.
-    type Output = ();
-}
-
 /// Deletes one term.
+#[derive(Oper)]
+#[oper(output = ())]
 pub struct DeleteTerm<'a> {
     /// The term id.
     pub id: &'a str,
 }
 
-impl Oper for DeleteTerm<'_> {
-    // Operation output type.
-    type Output = ();
-}
-
 /// Deletes all terms for a termbase.
+#[derive(Oper)]
+#[oper(output = ())]
 pub struct DeleteTerms<'a> {
     /// The termbase id whose terms to delete.
     pub termbase_id: &'a str,
-}
-
-impl Oper for DeleteTerms<'_> {
-    // Operation output type.
-    type Output = ();
 }

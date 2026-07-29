@@ -23,6 +23,7 @@ boundaries. Every segment is checked:
 | `txn`        | FBD007 | forbidden abbreviation of `transaction`           |
 | `tx`         | FBD008 | forbidden abbreviation of `transaction`           |
 | `extension`  | FBD010 | forbidden — use `ext`                             |
+| `previous`   | FBD011 | forbidden — use `prev`                            |
 
 ## `err` rules (FBD004)
 
@@ -43,6 +44,7 @@ identifier) is always forbidden.
 
 - **FBD009** — identifiers starting with `target_` are forbidden.
 - **FBD010** — `schema::` path qualifier (outside `rdb_impl/`) is forbidden.
+- **FBD011** — `previous` is forbidden; use `prev` instead.
 
 ## Examples
 
@@ -75,13 +77,17 @@ let err_msg = String::new();
 let err_code = SomeError::new();
 let err_info = ParseError { code: 1 };
 
-// ✗ FBD001 / FBD002 / FBD005 / FBD006 / FBD007 / FBD008
+// ✗ FBD001 / FBD002 / FBD005 / FBD006 / FBD007 / FBD008 / FBD011
 fn parse_result() {}
 fn compute_res() {}
 fn get_closure() {}
 fn open_connection() {}
 fn begin_txn() {}
 fn commit_tx() {}
+fn read_previous() {}
+
+// ✓ FBD011 fix — replace `previous` with `prev`
+fn read_prev() {}
 ```
 
 ## Usage

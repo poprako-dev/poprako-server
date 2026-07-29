@@ -1,6 +1,6 @@
 //! Resource-specific image identity checks and updates.
 
-use poprako_orchestra::Nucl;
+use poprako_orchestra::{Nucl, OperStep as _};
 use tracing::instrument;
 
 use crate::part::prom::payload::image::ResourceKind;
@@ -18,7 +18,7 @@ use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
 use crate::part_impl::prom::rdb_impl::handler::image::identity::ImageIdentity;
 use crate::part_impl::shared::RdbContext;
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 
 /// Classification of a deferred image payload against persisted identity.
 pub enum ResourceState {
@@ -53,7 +53,7 @@ pub async fn mark_current_or_classify<N, R>(
     repo: &R,
     image_identity: ImageIdentity<'_>,
     image_uploaded: bool,
-) -> BaseResult<ResourceState>
+) -> BaseRest<ResourceState>
 where
     N: Nucl<Context = RdbContext, Error = BaseError>,
     R: UserRepo<RdbContext>
@@ -94,7 +94,7 @@ async fn classify_expected_mark<R>(
     repo: &R,
     context: &mut RdbContext,
     image_identity: ImageIdentity<'_>,
-) -> BaseResult<ResourceState>
+) -> BaseRest<ResourceState>
 where
     R: UserRepo<RdbContext>
         + TeamRepo<RdbContext>
@@ -107,14 +107,11 @@ where
         //
         // Internal implementation detail.
         ResourceKind::UserAvatar => {
-            match repo
-                .step(
-                    context,
-                    &GetUserInfoExcluded::Id {
-                        id: image_identity.resource_id,
-                    },
-                )
-                .await
+            match (GetUserInfoExcluded::Id {
+                id: image_identity.resource_id,
+            })
+            .step_on(repo, context)
+            .await
             {
                 // Internal implementation detail.
                 Ok(info) => {
@@ -137,14 +134,11 @@ where
         }
 
         ResourceKind::TeamAvatar => {
-            match repo
-                .step(
-                    context,
-                    &GetTeamInfoExcluded::Id {
-                        id: image_identity.resource_id,
-                    },
-                )
-                .await
+            match (GetTeamInfoExcluded::Id {
+                id: image_identity.resource_id,
+            })
+            .step_on(repo, context)
+            .await
             {
                 // Internal implementation detail.
                 Ok(info) => {
@@ -167,15 +161,12 @@ where
         }
 
         ResourceKind::ComicCover => {
-            match repo
-                .step(
-                    context,
-                    &GetComicInfoExcluded {
-                        id: image_identity.resource_id,
-                        incls: &[],
-                    },
-                )
-                .await
+            match (GetComicInfoExcluded {
+                id: image_identity.resource_id,
+                incls: &[],
+            })
+            .step_on(repo, context)
+            .await
             {
                 // Internal implementation detail.
                 Ok(info) => {
@@ -198,14 +189,11 @@ where
         }
 
         ResourceKind::PageImage => {
-            match repo
-                .step(
-                    context,
-                    &GetPageInfoExcluded {
-                        id: image_identity.resource_id,
-                    },
-                )
-                .await
+            match (GetPageInfoExcluded {
+                id: image_identity.resource_id,
+            })
+            .step_on(repo, context)
+            .await
             {
                 // Internal implementation detail.
                 Ok(info) => {
@@ -235,7 +223,7 @@ async fn mark_uploaded_by_kind<R>(
     context: &mut RdbContext,
     image_identity: ImageIdentity<'_>,
     image_uploaded: bool,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     R: UserRepo<RdbContext>
         + TeamRepo<RdbContext>
@@ -248,53 +236,45 @@ where
         //
         // Internal implementation detail.
         ResourceKind::UserAvatar => {
-            repo.step(
-                context,
-                &UpdateUser::MarkAvatarUploaded {
-                    id: image_identity.resource_id,
-                    avatar_version: image_identity.version,
-                    avatar_key: Some(image_identity.object_key),
-                    avatar_uploaded: image_uploaded,
-                },
-            )
+            UpdateUser::MarkAvatarUploaded {
+                id: image_identity.resource_id,
+                avatar_version: image_identity.version,
+                avatar_key: Some(image_identity.object_key),
+                avatar_uploaded: image_uploaded,
+            }
+            .step_on(repo, context)
             .await
         }
 
         ResourceKind::TeamAvatar => {
-            repo.step(
-                context,
-                &UpdateTeam::MarkAvatarUploaded {
-                    id: image_identity.resource_id,
-                    avatar_version: image_identity.version,
-                    avatar_key: Some(image_identity.object_key),
-                    avatar_uploaded: image_uploaded,
-                },
-            )
+            UpdateTeam::MarkAvatarUploaded {
+                id: image_identity.resource_id,
+                avatar_version: image_identity.version,
+                avatar_key: Some(image_identity.object_key),
+                avatar_uploaded: image_uploaded,
+            }
+            .step_on(repo, context)
             .await
         }
 
         ResourceKind::ComicCover => {
-            repo.step(
-                context,
-                &MarkComicCoverUploaded {
-                    id: image_identity.resource_id,
-                    cover_version: image_identity.version,
-                    cover_key: Some(image_identity.object_key),
-                    cover_uploaded: image_uploaded,
-                },
-            )
+            MarkComicCoverUploaded {
+                id: image_identity.resource_id,
+                cover_version: image_identity.version,
+                cover_key: Some(image_identity.object_key),
+                cover_uploaded: image_uploaded,
+            }
+            .step_on(repo, context)
             .await
         }
 
         ResourceKind::PageImage => {
-            repo.step(
-                context,
-                &MarkPageImageUploaded {
-                    id: image_identity.resource_id,
-                    image_version: image_identity.version,
-                    image_key: Some(image_identity.object_key),
-                },
-            )
+            MarkPageImageUploaded {
+                id: image_identity.resource_id,
+                image_version: image_identity.version,
+                image_key: Some(image_identity.object_key),
+            }
+            .step_on(repo, context)
             .await
         }
     }
@@ -304,7 +284,7 @@ where
 fn classify_current_identity(
     current_identity: CurrentImageIdentity<'_>,
     image_identity: ImageIdentity<'_>,
-) -> BaseResult<ResourceState> {
+) -> BaseRest<ResourceState> {
     match (
         current_identity.version == image_identity.version,
         current_identity.object_key == Some(image_identity.object_key),

@@ -20,7 +20,7 @@ use crate::part_impl::repo::rdb_impl::page::step_impl::{
     shift_indexes_temporary, update_manifest,
 };
 use crate::part_impl::shared::RdbContext;
-use crate::result::{BaseError, BaseResult};
+use crate::result::{BaseError, BaseRest};
 
 impl Run<GetPageInfo<'_>> for RdbRepo {
     // Use base error for page read orchestration through the query dispatcher.
@@ -28,7 +28,7 @@ impl Run<GetPageInfo<'_>> for RdbRepo {
 
     #[instrument(level = "info", err(Debug), skip_all)]
     // Fetch one page by id via shared repository dispatch.
-    async fn run(&self, oper: &GetPageInfo<'_>) -> BaseResult<PageInfo> {
+    async fn run(&self, oper: &GetPageInfo<'_>) -> BaseRest<PageInfo> {
         submit_query!(self.core, get_info_by_id, oper.id)
     }
 }
@@ -39,7 +39,7 @@ impl Run<ListPageInfos<'_>> for RdbRepo {
 
     #[instrument(level = "info", err(Debug), skip_all)]
     // List page infos for a chapter using the chapter id filter.
-    async fn run(&self, oper: &ListPageInfos<'_>) -> BaseResult<Vec<PageInfo>> {
+    async fn run(&self, oper: &ListPageInfos<'_>) -> BaseRest<Vec<PageInfo>> {
         submit_query!(self.core, list_infos, oper.chapter_id)
     }
 }
@@ -53,7 +53,7 @@ impl Run<ListFirstPageInfos<'_>> for RdbRepo {
     async fn run(
         &self,
         oper: &ListFirstPageInfos<'_>,
-    ) -> BaseResult<HashMap<String, PageInfo>> {
+    ) -> BaseRest<HashMap<String, PageInfo>> {
         submit_query!(
             self.core,
             list_first_infos_by_chapter_ids,
@@ -72,7 +72,7 @@ impl Step<GetPageInfo<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &GetPageInfo<'_>,
-    ) -> BaseResult<PageInfo> {
+    ) -> BaseRest<PageInfo> {
         get_info_by_id(context.conn(), oper.id).await
     }
 }
@@ -87,7 +87,7 @@ impl Step<ListPageInfos<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &ListPageInfos<'_>,
-    ) -> BaseResult<Vec<PageInfo>> {
+    ) -> BaseRest<Vec<PageInfo>> {
         list_infos(context.conn(), oper.chapter_id).await
     }
 }
@@ -102,7 +102,7 @@ impl Step<ListPageInfosExcluded<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &ListPageInfosExcluded<'_>,
-    ) -> BaseResult<Vec<PageInfo>> {
+    ) -> BaseRest<Vec<PageInfo>> {
         list_infos_excluded(context.conn(), oper.chapter_id).await
     }
 }
@@ -116,7 +116,7 @@ impl Step<CreatePages<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &CreatePages<'_>,
-    ) -> BaseResult<Vec<PageInfo>> {
+    ) -> BaseRest<Vec<PageInfo>> {
         create_batch(context.conn(), oper.entries).await
     }
 }
@@ -130,7 +130,7 @@ impl Step<GetPageInfoExcluded<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &GetPageInfoExcluded<'_>,
-    ) -> BaseResult<PageInfo> {
+    ) -> BaseRest<PageInfo> {
         get_info_excluded(context.conn(), oper.id).await
     }
 }
@@ -144,7 +144,7 @@ impl Step<ReservePageImage<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &ReservePageImage<'_>,
-    ) -> BaseResult<PageImageReservation> {
+    ) -> BaseRest<PageImageReservation> {
         reserve_image(context.conn(), oper.id, oper.file_ext).await
     }
 }
@@ -158,7 +158,7 @@ impl Step<MarkPageImageUploaded<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &MarkPageImageUploaded<'_>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         mark_image_uploaded(
             context.conn(),
             oper.id,
@@ -178,7 +178,7 @@ impl Step<SetPageImageUploaded<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &SetPageImageUploaded<'_>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         set_image_uploaded(
             context.conn(),
             oper.id,
@@ -199,7 +199,7 @@ impl Step<SetPageUnitCounters<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &SetPageUnitCounters<'_>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         set_unit_counters(context.conn(), oper.id, oper.counters).await
     }
 }
@@ -214,7 +214,7 @@ impl Step<ShiftPageIndexesTemporary<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &ShiftPageIndexesTemporary<'_>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         shift_indexes_temporary(context.conn(), oper.chapter_id).await
     }
 }
@@ -229,7 +229,7 @@ impl Step<UpdatePageManifest<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &UpdatePageManifest<'_>,
-    ) -> BaseResult<PageInfo> {
+    ) -> BaseRest<PageInfo> {
         update_manifest(context.conn(), oper.update).await
     }
 }
@@ -244,7 +244,7 @@ impl Step<ClearPageImagesForPublish<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &ClearPageImagesForPublish<'_>,
-    ) -> BaseResult<Vec<String>> {
+    ) -> BaseRest<Vec<String>> {
         clear_images_for_publish(context.conn(), oper.chapter_id).await
     }
 }
@@ -258,7 +258,7 @@ impl Step<DeletePages<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &DeletePages<'_>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         match oper {
             //
             DeletePages::Chapter { chapter_id } => {

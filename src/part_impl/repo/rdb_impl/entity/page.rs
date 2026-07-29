@@ -56,7 +56,7 @@ impl TryFrom<PageRow> for PageInfo {
             chapter_id: row.f_chapter_id,
             index: row.f_index,
             image_key: row.f_image_key,
-            image_uploaded: row.f_image_uploaded,
+            is_image_uploaded: row.f_image_uploaded,
             image_version: row.f_image_version,
             image_hash: ImageHash::new(image_hash_bytes),
             image_ext: image_extension,

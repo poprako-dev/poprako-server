@@ -1,4 +1,4 @@
-use poprako_orchestra::{Run, Step};
+use poprako_orchestra::drive;
 
 use crate::part::repo::oper::chapter::{
     AdjustChapterUnitCounters, CompleteChapterRawProvide, CreateChapter,
@@ -12,52 +12,34 @@ use crate::result::BaseError;
 
 /// Chapter repository operations.
 ///
-/// Independent queries use [`Run`]. Coordinated queries, mutations, and
-/// pessimistic reads use [`Step`] with the caller-coordinated context.
-pub trait ChapterRepo<C>:
-    for<'a, 'b> Run<GetChapterInfo<'a, 'b>, Error = BaseError>
-    + for<'a> Run<ListChapterInfos<'a>, Error = BaseError>
-    + for<'a, 'b> Run<FindPinnedChapterInfo<'a, 'b>, Error = BaseError>
-    + for<'a> Run<ListPinnedChapterInfos<'a>, Error = BaseError>
-    + for<'a> Run<StartChapterStage<'a>, Error = BaseError>
-    + for<'a> Run<CompleteChapterRawProvide<'a>, Error = BaseError>
-    + for<'a, 'b> Step<GetChapterInfo<'a, 'b>, C, Error = BaseError>
-    + for<'a, 'b> Step<GetChapterInfoExcluded<'a, 'b>, C, Error = BaseError>
-    + for<'a> Step<ListChapterInfosExcluded<'a>, C, Error = BaseError>
-    + for<'a> Step<LockChapters<'a>, C, Error = BaseError>
-    + for<'a, 'b> Step<FindPinnedChapterInfo<'a, 'b>, C, Error = BaseError>
-    + for<'a> Step<CreateChapter<'a>, C, Error = BaseError>
-    + for<'a> Step<UpdateChapter<'a>, C, Error = BaseError>
-    + for<'a> Step<UpdateChapterStage<'a>, C, Error = BaseError>
-    + for<'a> Step<CompleteChapterRawProvide<'a>, C, Error = BaseError>
-    + for<'a> Step<ResetChapterRawProvide<'a>, C, Error = BaseError>
-    + for<'a> Step<SetChapterPageCounters<'a>, C, Error = BaseError>
-    + for<'a> Step<AdjustChapterUnitCounters<'a>, C, Error = BaseError>
-    + for<'a> Step<UnpinOtherChapters<'a>, C, Error = BaseError>
-    + for<'a> Step<DeleteChapter<'a>, C, Error = BaseError>
-{
-}
-
-impl<T, C> ChapterRepo<C> for T where
-    T: for<'a, 'b> Run<GetChapterInfo<'a, 'b>, Error = BaseError>
-        + for<'a> Run<ListChapterInfos<'a>, Error = BaseError>
-        + for<'a, 'b> Run<FindPinnedChapterInfo<'a, 'b>, Error = BaseError>
-        + for<'a> Run<ListPinnedChapterInfos<'a>, Error = BaseError>
-        + for<'a> Run<StartChapterStage<'a>, Error = BaseError>
-        + for<'a> Run<CompleteChapterRawProvide<'a>, Error = BaseError>
-        + for<'a, 'b> Step<GetChapterInfo<'a, 'b>, C, Error = BaseError>
-        + for<'a, 'b> Step<GetChapterInfoExcluded<'a, 'b>, C, Error = BaseError>
-        + for<'a> Step<ListChapterInfosExcluded<'a>, C, Error = BaseError>
-        + for<'a> Step<LockChapters<'a>, C, Error = BaseError>
-        + for<'a, 'b> Step<FindPinnedChapterInfo<'a, 'b>, C, Error = BaseError>
-        + for<'a> Step<CreateChapter<'a>, C, Error = BaseError>
-        + for<'a> Step<UpdateChapter<'a>, C, Error = BaseError>
-        + for<'a> Step<UpdateChapterStage<'a>, C, Error = BaseError>
-        + for<'a> Step<CompleteChapterRawProvide<'a>, C, Error = BaseError>
-        + for<'a> Step<ResetChapterRawProvide<'a>, C, Error = BaseError>
-        + for<'a> Step<SetChapterPageCounters<'a>, C, Error = BaseError>
-        + for<'a> Step<AdjustChapterUnitCounters<'a>, C, Error = BaseError>
-        + for<'a> Step<UnpinOtherChapters<'a>, C, Error = BaseError>
-        + for<'a> Step<DeleteChapter<'a>, C, Error = BaseError>
-{
-}
+/// Independent queries use [`poprako_orchestra::Run`]. Coordinated queries, mutations, and
+/// pessimistic reads use [`poprako_orchestra::Step`] with the caller-coordinated context.
+#[drive(
+    context = C,
+    error = BaseError,
+    run(
+        for<'a, 'b> GetChapterInfo<'a, 'b>,
+        for<'a> ListChapterInfos<'a>,
+        for<'a, 'b> FindPinnedChapterInfo<'a, 'b>,
+        for<'a> ListPinnedChapterInfos<'a>,
+        for<'a> StartChapterStage<'a>,
+        for<'a> CompleteChapterRawProvide<'a>,
+    ),
+    step(
+        for<'a, 'b> GetChapterInfo<'a, 'b>,
+        for<'a, 'b> GetChapterInfoExcluded<'a, 'b>,
+        for<'a> ListChapterInfosExcluded<'a>,
+        for<'a> LockChapters<'a>,
+        for<'a, 'b> FindPinnedChapterInfo<'a, 'b>,
+        for<'a> CreateChapter<'a>,
+        for<'a> UpdateChapter<'a>,
+        for<'a> UpdateChapterStage<'a>,
+        for<'a> CompleteChapterRawProvide<'a>,
+        for<'a> ResetChapterRawProvide<'a>,
+        for<'a> SetChapterPageCounters<'a>,
+        for<'a> AdjustChapterUnitCounters<'a>,
+        for<'a> UnpinOtherChapters<'a>,
+        for<'a> DeleteChapter<'a>,
+    ),
+)]
+pub trait ChapterRepo<C> {}

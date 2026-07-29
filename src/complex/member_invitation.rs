@@ -1,13 +1,13 @@
 //! Complex-domain opers for member invitations.
 
-use poprako_orchestra::Proxy;
+use poprako_orchestra::{OperProxy as _, Proxy};
 
 use crate::complex::util::{
     check_user_is_team_admin, check_user_is_team_member,
 };
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::member_invitation::GetMemberInvitationInfo;
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 use crate::util::next_snowflake_id;
 
 /// Domain opers for member invitations.
@@ -39,7 +39,7 @@ impl MemberInvitationPermComplex {
         proxy: &mut P,
         user_id: &str,
         team_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
@@ -51,7 +51,7 @@ impl MemberInvitationPermComplex {
         proxy: &mut P,
         user_id: &str,
         team_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
@@ -63,7 +63,7 @@ impl MemberInvitationPermComplex {
         proxy: &mut P,
         user_id: &str,
         invitation_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a, 'b> Proxy<
                 GetMemberInvitationInfo<'a, 'b>,
@@ -80,7 +80,7 @@ impl MemberInvitationPermComplex {
         proxy: &mut P,
         user_id: &str,
         invitation_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a, 'b> Proxy<
                 GetMemberInvitationInfo<'a, 'b>,
@@ -96,19 +96,19 @@ impl MemberInvitationPermComplex {
     async fn resolve_team_id<P>(
         proxy: &mut P,
         invitation_id: &str,
-    ) -> BaseResult<String>
+    ) -> BaseRest<String>
     where
         P: for<'a, 'b> Proxy<
                 GetMemberInvitationInfo<'a, 'b>,
                 Error = BaseError,
             >,
     {
-        let member_invitation_info = proxy
-            .exec(&GetMemberInvitationInfo::Id {
-                id: invitation_id,
-                incls: &[],
-            })
-            .await?;
+        let member_invitation_info = GetMemberInvitationInfo::Id {
+            id: invitation_id,
+            incls: &[],
+        }
+        .proxy_on(proxy)
+        .await?;
 
         accept(member_invitation_info.team_id)
     }

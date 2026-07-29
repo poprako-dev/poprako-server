@@ -6,17 +6,16 @@ use crate::model::user::{
 use crate::value::image::{ImageExt, ImageHash};
 
 /// Creates a user.
+#[derive(Oper)]
+#[oper(output = UserInfo)]
 pub struct CreateUser<'a> {
     /// The user entry to insert.
     pub entry: &'a UserEntry,
 }
 
-impl Oper for CreateUser<'_> {
-    // Operation output type.
-    type Output = UserInfo;
-}
-
 /// Looks up a user by identifier.
+#[derive(Oper)]
+#[oper(output = UserInfo)]
 pub enum GetUserInfo<'a> {
     /// Fetch by user id.
     Id {
@@ -25,12 +24,9 @@ pub enum GetUserInfo<'a> {
     },
 }
 
-impl Oper for GetUserInfo<'_> {
-    // Operation output type.
-    type Output = UserInfo;
-}
-
 /// Looks up user credentials by OAuth qid.
+#[derive(Oper)]
+#[oper(output = UserCredential)]
 pub enum GetUserCredential<'a> {
     /// Fetch by qid.
     Qid {
@@ -39,12 +35,9 @@ pub enum GetUserCredential<'a> {
     },
 }
 
-impl Oper for GetUserCredential<'_> {
-    // Operation output type.
-    type Output = UserCredential;
-}
-
 /// Finds a user by OAuth qid, returning `None` if not found.
+#[derive(Oper)]
+#[oper(output = Option<UserInfo>)]
 pub enum FindUserInfo<'a> {
     /// Fetch by qid.
     Qid {
@@ -53,12 +46,9 @@ pub enum FindUserInfo<'a> {
     },
 }
 
-impl Oper for FindUserInfo<'_> {
-    // Operation output type.
-    type Output = Option<UserInfo>;
-}
-
 /// Updates a user.
+#[derive(Oper)]
+#[oper(output = ())]
 pub enum UpdateUser<'a> {
     /// Updates user metadata fields.
     Info {
@@ -100,12 +90,9 @@ pub enum UpdateUser<'a> {
     },
 }
 
-impl Oper for UpdateUser<'_> {
-    // Operation output type.
-    type Output = ();
-}
-
 /// Reserves a user avatar slot for an upload.
+#[derive(Oper)]
+#[oper(output = UserAvatarReservation)]
 pub struct ReserveUserAvatar<'a> {
     //
     /// The user id.
@@ -118,12 +105,9 @@ pub struct ReserveUserAvatar<'a> {
     pub image_ext: ImageExt,
 }
 
-impl Oper for ReserveUserAvatar<'_> {
-    // Operation output type.
-    type Output = UserAvatarReservation;
-}
-
 /// Looks up a user by identifier, matching deleted rows as well.
+#[derive(Oper)]
+#[oper(output = UserInfo)]
 pub enum GetUserInfoExcluded<'a> {
     /// Fetch by user id.
     Id {
@@ -132,18 +116,10 @@ pub enum GetUserInfoExcluded<'a> {
     },
 }
 
-impl Oper for GetUserInfoExcluded<'_> {
-    // Operation output type.
-    type Output = UserInfo;
-}
-
 /// Deletes a user.
+#[derive(Oper)]
+#[oper(output = ())]
 pub struct DeleteUser<'a> {
     /// The user id.
     pub id: &'a str,
-}
-
-impl Oper for DeleteUser<'_> {
-    // Operation output type.
-    type Output = ();
 }

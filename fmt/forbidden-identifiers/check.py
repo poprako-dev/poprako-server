@@ -76,6 +76,7 @@ FORBIDDEN_SEGMENTS: dict[str, tuple[str, str]] = {
     "txn":        ("FBD007", "'txn' is a forbidden abbreviation of 'transaction'"),
     "tx":         ("FBD008", "'tx' is a forbidden abbreviation of 'transaction'"),
     "extension":  ("FBD010", "'extension' is forbidden — use 'ext' instead"),
+    "previous":   ("FBD011", "'previous' is forbidden — use 'prev' instead"),
 }
 
 
@@ -736,6 +737,7 @@ def self_test() -> int:
             "fn process_input(data: &[u8]) -> Vec<u8> {\n"
             "    let processed = Vec::new();\n"
             "    let err_msg = \"something\";\n"       # err_ prefix, not Error type
+            "    let prev_value = 1;\n"
             "    for byte in data {\n"
             "        match byte {\n"
             "            0 => continue,\n"
@@ -1020,14 +1022,17 @@ def self_test() -> int:
             "fn begin_txn() {}\n"
             "fn commit_tx() {}\n"
             "static target_name: &str = \"\";\n"
+            "fn read_previous() {}\n"
+            "fn read_prev() {}\n"
+            "fn read_Previous() {}\n"
         )
 
         diagnostics = check_root(root)
-        # 6 function names + 1 static = 7 (FBD001, FBD002, FBD005, FBD006, FBD007, FBD008, FBD009)
+        # 8 forbidden function names + 1 static = 9, with read_prev allowed.
 
-        if len(diagnostics) != 7:
+        if len(diagnostics) != 9:
             print(
-                f"self-test other codes: expected 7 violations, got {len(diagnostics)}",
+                f"self-test other codes: expected 9 violations, got {len(diagnostics)}",
                 file=sys.stderr,
             )
             for d in diagnostics:
@@ -1047,6 +1052,9 @@ def self_test() -> int:
             "fn f8(tx: ()) {}\n"             # FBD008
             "static target_x: u8 = 0;\n"     # FBD009
             "fn f9(extension: ()) {}\n"      # FBD010
+            "fn f10(previous_value: ()) {}\n" # FBD011
+            "fn f11(PreviousValue: ()) {}\n" # FBD011 via PascalCase
+            "fn f12(prev_value: ()) {}\n"    # allowed replacement
         )
 
         diagnostics = check_root(root)
@@ -1055,12 +1063,12 @@ def self_test() -> int:
         for d in diagnostics:
             for code in (
                 "FBD001", "FBD002", "FBD003", "FBD004", "FBD005",
-                "FBD006", "FBD007", "FBD008", "FBD009", "FBD010",
+                "FBD006", "FBD007", "FBD008", "FBD009", "FBD010", "FBD011",
             ):
                 if code in d:
                     codes.add(code)
 
-        expected_codes = {f"FBD{i:03d}" for i in range(1, 11)}
+        expected_codes = {f"FBD{i:03d}" for i in range(1, 12)}
 
         if codes != expected_codes:
             missing = expected_codes - codes

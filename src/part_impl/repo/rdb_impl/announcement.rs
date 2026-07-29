@@ -18,7 +18,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_announcement::dsl::*;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, incl};
 use crate::part_impl::shared::result::diesel;
 use crate::part_impl::shared::{RdbConn, RdbContext};
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 
 /// Announcement RDB integration tests.
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
@@ -29,7 +29,7 @@ pub mod tests;
 async fn list_infos(
     conn: &mut RdbConn,
     spec: &AnnouncementListSpec,
-) -> BaseResult<Vec<AnnouncementInfo>> {
+) -> BaseRest<Vec<AnnouncementInfo>> {
     //
     let rows: Vec<AnnouncementRow> = t_announcement
         .filter(f_team_id.eq(spec.team_id.as_str()))
@@ -61,7 +61,7 @@ async fn list_infos(
 async fn create(
     conn: &mut RdbConn,
     entry: &AnnouncementEntry,
-) -> BaseResult<AnnouncementInfo> {
+) -> BaseRest<AnnouncementInfo> {
     //
     let entry = AnnouncementRowEntry::from(entry);
 
@@ -84,7 +84,7 @@ impl Run<ListAnnouncementInfos<'_>> for RdbRepo {
     async fn run(
         &self,
         oper: &ListAnnouncementInfos<'_>,
-    ) -> BaseResult<Vec<AnnouncementInfo>> {
+    ) -> BaseRest<Vec<AnnouncementInfo>> {
         submit_query!(self.core, list_infos, oper.spec)
     }
 }
@@ -99,7 +99,7 @@ impl Step<CreateAnnouncement<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &CreateAnnouncement<'_>,
-    ) -> BaseResult<AnnouncementInfo> {
+    ) -> BaseRest<AnnouncementInfo> {
         create(context.conn(), oper.entry).await
     }
 }

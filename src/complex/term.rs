@@ -5,7 +5,7 @@ use std::collections::HashSet;
 use poprako_util::i18n::trl;
 
 use crate::model::term::{TermEntry, TermInfoUpdate};
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 
 // Build a normalized args-level error object using the provided i18n message key.
@@ -17,7 +17,7 @@ fn expected(message: &str) -> BaseError {
 }
 
 // Trim a term source and reject empty values after normalization.
-fn normalize_source(source: String) -> BaseResult<String> {
+fn normalize_source(source: String) -> BaseRest<String> {
     //
     let source = source.trim().to_string();
 
@@ -29,7 +29,7 @@ fn normalize_source(source: String) -> BaseResult<String> {
 }
 
 // Normalize all targets and validate required presence, uniqueness and non-empty values.
-fn normalize_targets(targets: Vec<String>) -> BaseResult<Vec<String>> {
+fn normalize_targets(targets: Vec<String>) -> BaseRest<Vec<String>> {
     //
     if targets.is_empty() {
         return Err(expected("error-term-targets-required"));
@@ -90,7 +90,7 @@ impl TermComplex {
         targets: Vec<String>,
         comment: Option<String>,
         creator_id: String,
-    ) -> BaseResult<TermEntry> {
+    ) -> BaseRest<TermEntry> {
         //
         let source = normalize_source(source)?;
 
@@ -114,7 +114,7 @@ impl TermComplex {
         source: String,
         targets: Vec<String>,
         comment: Option<String>,
-    ) -> BaseResult<TermInfoUpdate> {
+    ) -> BaseRest<TermInfoUpdate> {
         //
         let source = normalize_source(source)?;
 

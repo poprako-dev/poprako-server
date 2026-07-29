@@ -6,7 +6,7 @@ use std::future::Future;
 
 use url::Url;
 
-use crate::result::BaseResult;
+use crate::result::BaseRest;
 /// Constraints bound into a presigned image upload request.
 pub struct ImageUploadSpec<'a> {
     //
@@ -36,25 +36,25 @@ pub trait ImagePool {
     fn gen_download_url(
         &self,
         key: &str,
-    ) -> impl Future<Output = BaseResult<Url>> + Send;
+    ) -> impl Future<Output = BaseRest<Url>> + Send;
 
     /// Returns a thumbnail download URL for the object at `original_key`.
     fn gen_thumbnail_download_url(
         &self,
         original_key: &str,
-    ) -> impl Future<Output = BaseResult<Url>> + Send;
+    ) -> impl Future<Output = BaseRest<Url>> + Send;
 
     /// Returns a signed upload URL for writing an object at `key`.
     fn get_upload_url(
         &self,
         key: &str,
-    ) -> impl Future<Output = BaseResult<Url>> + Send;
+    ) -> impl Future<Output = BaseRest<Url>> + Send;
 
     /// Returns an upload target whose signature binds content identity.
     fn get_upload_slot(
         &self,
         spec: ImageUploadSpec<'_>,
-    ) -> impl Future<Output = BaseResult<ImageUploadSlot>> + Send;
+    ) -> impl Future<Output = BaseRest<ImageUploadSlot>> + Send;
 }
 
 /// Abstraction over image object lifecycle — existence checks and deletion.
@@ -70,12 +70,12 @@ pub trait ImageManager {
     fn object_exists(
         &self,
         key: &str,
-    ) -> impl Future<Output = BaseResult<bool>> + Send;
+    ) -> impl Future<Output = BaseRest<bool>> + Send;
 
     /// Delete an object from storage. Idempotent — succeeds if the
     /// object does not exist.
     fn delete_object(
         &self,
         key: &str,
-    ) -> impl Future<Output = BaseResult<()>> + Send;
+    ) -> impl Future<Output = BaseRest<()>> + Send;
 }

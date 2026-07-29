@@ -7,7 +7,7 @@ use crate::model::page_port::{PageTranslationImport, PoprakoPageImport};
 use crate::model::shared::unit::{UnitCoord, UnitRevision, UnitTranslation};
 use crate::model::unit_port::UnitTranslationImport;
 use crate::model::write::unit::UnitEdit;
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
 #[cfg(test)]
 // Test cases for chapter-import parsing, translation assembly, and validation.
@@ -20,7 +20,7 @@ impl ChapterImportComplex {
     /// Parses LabelPlus text into chapter import pages.
     pub fn parse_label_plus(
         content: &str,
-    ) -> BaseResult<Vec<PageTranslationImport>> {
+    ) -> BaseRest<Vec<PageTranslationImport>> {
         //
         let mut lines = content.lines();
 
@@ -93,7 +93,7 @@ impl ChapterImportComplex {
     /// Parses PopRaKo JSON text into chapter import pages.
     pub fn parse_poprako(
         content: &str,
-    ) -> BaseResult<Vec<PageTranslationImport>> {
+    ) -> BaseRest<Vec<PageTranslationImport>> {
         //
         let project: ChapterPoprakoProjectImport =
             serde_json::from_str(content).map_err(|_| {
@@ -112,7 +112,7 @@ impl ChapterImportComplex {
             .pages
             .into_iter()
             .map(parse_poprako_page)
-            .collect::<BaseResult<Vec<_>>>()?;
+            .collect::<BaseRest<Vec<_>>>()?;
 
         accept(pages)
     }
@@ -121,7 +121,7 @@ impl ChapterImportComplex {
     pub fn validate_page_count(
         imported_page_count: usize,
         existing_page_count: usize,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         //
         if imported_page_count != existing_page_count {
             return Err(args_err("error-chapter-import-page-count-mismatch"));
@@ -210,9 +210,7 @@ fn is_label_plus_page_header(line: &str) -> bool {
 
 // Parse a LabelPlus unit header line into its index, coordinates, and
 // bubble flag (`1` = bubble, `2` = non-bubble).
-fn parse_label_plus_unit_header(
-    line: &str,
-) -> BaseResult<Option<LabelPlusUnit>> {
+fn parse_label_plus_unit_header(line: &str) -> BaseRest<Option<LabelPlusUnit>> {
     //
     let Some(rest) = line.strip_prefix("----------------[") else {
         return accept(None);
@@ -268,7 +266,7 @@ fn flush_label_plus_unit(
     current_page: &mut Option<Vec<UnitTranslationImport>>,
     current_unit: &mut Option<LabelPlusUnit>,
     main_text_lines: &mut Vec<String>,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     let Some(label_plus_unit) = current_unit.take() else {
         return accept(());
@@ -300,7 +298,7 @@ fn flush_label_plus_unit(
 // validating required fields, unique indexes, and finite coordinates.
 fn parse_poprako_page(
     page: PoprakoPageImport,
-) -> BaseResult<PageTranslationImport> {
+) -> BaseRest<PageTranslationImport> {
     //
     if page.image_filename.trim().is_empty() {
         return Err(args_err("error-invalid-chapter-import-content"));
@@ -348,7 +346,7 @@ fn parse_poprako_page(
 // Validate the LabelPlus header: version line starting with a digit,
 // a `-` separator line, content lines ending with a `-` separator,
 // and at least one trailing line.
-fn validate_label_plus_header<'a, I>(lines: &mut I) -> BaseResult<()>
+fn validate_label_plus_header<'a, I>(lines: &mut I) -> BaseRest<()>
 where
     I: Iterator<Item = &'a str>,
 {

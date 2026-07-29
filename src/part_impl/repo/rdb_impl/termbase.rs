@@ -24,7 +24,7 @@ use crate::part_impl::repo::rdb_impl::entity::termbase::{
 use crate::part_impl::repo::rdb_impl::schema::t_termbase::dsl::*;
 use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::shared::{RdbConn, RdbContext};
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 
 /// Termbase RDB integration tests.
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
@@ -33,7 +33,7 @@ pub mod tests;
 // Escape `%` and `_` wildcard symbols so fuzzy search stays literal-safe.
 #[instrument(level = "info", err(Debug), skip_all)]
 // Remove one termbase row by id.
-async fn delete(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
+async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
     // Execute hard delete as the finalization action in repositories.
     diesel::delete(t_termbase.filter(f_id.eq(id)))
@@ -54,7 +54,7 @@ fn escape_ilike_pattern(input: &str) -> String {
 
 #[instrument(level = "info", err(Debug), skip_all)]
 // Load one termbase row by id and map DB entity into response shape.
-async fn get_info(conn: &mut RdbConn, id: &str) -> BaseResult<TermbaseInfo> {
+async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<TermbaseInfo> {
     //
     // Return explicit not-found error when the target termbase does not exist.
     let row: TermbaseRow = t_termbase
@@ -74,7 +74,7 @@ async fn get_info(conn: &mut RdbConn, id: &str) -> BaseResult<TermbaseInfo> {
 async fn get_info_excluded(
     conn: &mut RdbConn,
     id: &str,
-) -> BaseResult<TermbaseInfo> {
+) -> BaseRest<TermbaseInfo> {
     //
     // Take `FOR UPDATE` lock and keep semantics aligned with locked read paths.
     let row: TermbaseRow = t_termbase
@@ -95,7 +95,7 @@ async fn get_info_excluded(
 async fn list_infos(
     conn: &mut RdbConn,
     spec: &TermbaseInfoListSpec,
-) -> BaseResult<Vec<TermbaseInfo>> {
+) -> BaseRest<Vec<TermbaseInfo>> {
     //
     // Build one query path that branches on scope and optional fuzzy name.
     let mut query = t_termbase.select(TermbaseRow::as_select()).into_boxed();
@@ -154,7 +154,7 @@ async fn list_infos(
 async fn list_infos_excluded(
     conn: &mut RdbConn,
     oper: &ListTermbaseInfosExcluded<'_>,
-) -> BaseResult<Vec<TermbaseInfo>> {
+) -> BaseRest<Vec<TermbaseInfo>> {
     //
     // Lock candidate rows so subsequent writes in caller transaction stay safe.
     let rows: Vec<TermbaseRow> = match oper {
@@ -184,7 +184,7 @@ async fn list_infos_excluded(
 async fn create(
     conn: &mut RdbConn,
     termbase_entry: &TermbaseEntry,
-) -> BaseResult<TermbaseInfo> {
+) -> BaseRest<TermbaseInfo> {
     //
     // Convert API entry into insert row shape and fetch persisted row.
     let entry = TermbaseRowEntry::from(termbase_entry);
@@ -204,7 +204,7 @@ async fn create(
 async fn update_info(
     conn: &mut RdbConn,
     update: &TermbaseInfoUpdate,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     // Keep `updated_at` current while applying partial name/description updates.
     diesel::update(t_termbase.filter(f_id.eq(&update.id)))
@@ -226,7 +226,7 @@ async fn update_term_count(
     conn: &mut RdbConn,
     id: &str,
     delta: i32,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     // Use SQL delta update to avoid read-modify-write races.
     diesel::update(t_termbase.filter(f_id.eq(id)))
@@ -243,7 +243,7 @@ async fn update_term_count(
 
 #[instrument(level = "info", err(Debug), skip_all)]
 // Touch updated_at to indicate activity without changing business fields.
-async fn touch(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
+async fn touch(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
     // Keep liveness and stale-checking aligned for external schedulers.
     diesel::update(t_termbase.filter(f_id.eq(id)))
@@ -261,10 +261,7 @@ impl Run<GetTermbaseInfo<'_>> for RdbRepo {
 
     // Load one termbase info by id through shared query path.
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn run(
-        &self,
-        oper: &GetTermbaseInfo<'_>,
-    ) -> BaseResult<TermbaseInfo> {
+    async fn run(&self, oper: &GetTermbaseInfo<'_>) -> BaseRest<TermbaseInfo> {
         submit_query!(self.core, get_info, oper.id)
     }
 }
@@ -278,7 +275,7 @@ impl Run<ListTermbaseInfos<'_>> for RdbRepo {
     async fn run(
         &self,
         oper: &ListTermbaseInfos<'_>,
-    ) -> BaseResult<Vec<TermbaseInfo>> {
+    ) -> BaseRest<Vec<TermbaseInfo>> {
         submit_query!(self.core, list_infos, oper.spec)
     }
 }
@@ -293,7 +290,7 @@ impl Step<CreateTermbase<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &CreateTermbase<'_>,
-    ) -> BaseResult<TermbaseInfo> {
+    ) -> BaseRest<TermbaseInfo> {
         create(context.conn(), oper.entry).await
     }
 }
@@ -308,7 +305,7 @@ impl Step<GetTermbaseInfo<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &GetTermbaseInfo<'_>,
-    ) -> BaseResult<TermbaseInfo> {
+    ) -> BaseRest<TermbaseInfo> {
         get_info(context.conn(), oper.id).await
     }
 }
@@ -323,7 +320,7 @@ impl Step<GetTermbaseInfoExcluded<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &GetTermbaseInfoExcluded<'_>,
-    ) -> BaseResult<TermbaseInfo> {
+    ) -> BaseRest<TermbaseInfo> {
         get_info_excluded(context.conn(), oper.id).await
     }
 }
@@ -338,7 +335,7 @@ impl Step<ListTermbaseInfosExcluded<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &ListTermbaseInfosExcluded<'_>,
-    ) -> BaseResult<Vec<TermbaseInfo>> {
+    ) -> BaseRest<Vec<TermbaseInfo>> {
         list_infos_excluded(context.conn(), oper).await
     }
 }
@@ -353,7 +350,7 @@ impl Step<UpdateTermbase<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &UpdateTermbase<'_>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         update_info(context.conn(), oper.update).await
     }
 }
@@ -368,7 +365,7 @@ impl Step<UpdateTermbaseTermCount<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &UpdateTermbaseTermCount<'_>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         update_term_count(context.conn(), oper.id, oper.delta).await
     }
 }
@@ -383,7 +380,7 @@ impl Step<TouchTermbase<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &TouchTermbase<'_>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         touch(context.conn(), oper.id).await
     }
 }
@@ -398,7 +395,7 @@ impl Step<DeleteTermbase<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &DeleteTermbase<'_>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         delete(context.conn(), oper.id).await
     }
 }

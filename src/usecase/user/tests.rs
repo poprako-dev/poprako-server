@@ -65,7 +65,7 @@ fn user_with_avatar(
 ) -> UserInfo {
     UserInfo {
         avatar_key: Some(avatar_key.into()),
-        avatar_uploaded,
+        is_avatar_uploaded: avatar_uploaded,
         avatar_version,
         ..user(id, qid, nickname)
     }
@@ -383,7 +383,7 @@ async fn reserve_avatar_updates_state_enqueues_check_and_returns_put_url() {
         Some("user_avatar/user-1-1.png")
     );
 
-    assert!(!snapshot.users[0].avatar_uploaded);
+    assert!(!snapshot.users[0].is_avatar_uploaded);
 
     assert_one_image_check_record(
         &snapshot.prom_records,
@@ -498,7 +498,7 @@ async fn mark_avatar_uploaded_marks_matching_version() {
     .await
     .unwrap();
 
-    assert!(mock.snapshot().users[0].avatar_uploaded);
+    assert!(mock.snapshot().users[0].is_avatar_uploaded);
 }
 
 #[tokio::test]
@@ -531,7 +531,7 @@ async fn mark_avatar_uploaded_accepts_repeated_matching_version() {
 
     assert!(second.is_ok());
 
-    assert!(mock.snapshot().users[0].avatar_uploaded);
+    assert!(mock.snapshot().users[0].is_avatar_uploaded);
 }
 
 #[tokio::test]
@@ -556,7 +556,7 @@ async fn mark_avatar_uploaded_rejects_non_owner() {
 
     assert_expected_variant(err, ExpectedVariant::Perm);
 
-    assert!(!mock.snapshot().users[0].avatar_uploaded);
+    assert!(!mock.snapshot().users[0].is_avatar_uploaded);
 }
 
 #[tokio::test]
@@ -585,7 +585,7 @@ async fn mark_avatar_uploaded_rolls_back_stale_version() {
         "error-stale-avatar-upload",
     );
 
-    assert!(!mock.snapshot().users[0].avatar_uploaded);
+    assert!(!mock.snapshot().users[0].is_avatar_uploaded);
 }
 
 #[tokio::test]
@@ -627,7 +627,7 @@ async fn mark_avatar_uploaded_rejects_old_reservation_replay() {
         "error-stale-avatar-upload",
     );
 
-    assert!(!snapshot.users[0].avatar_uploaded);
+    assert!(!snapshot.users[0].is_avatar_uploaded);
 
     assert_eq!(snapshot.users[0].avatar_version, 2);
 }

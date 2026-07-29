@@ -1,7 +1,7 @@
 //! Complex-domain opers for team entities: identity and avatar-storage key
 //! generation, and permission checks.
 
-use poprako_orchestra::Proxy;
+use poprako_orchestra::{OperProxy as _, Proxy};
 use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 use poprako_orchestra_extra::prom::task::Task;
 
@@ -36,7 +36,7 @@ use crate::part::repo::oper::workset::{
     DeleteWorkset, GetWorksetInfoExcluded, ListWorksetInfosExcluded,
     UpdateWorksetComicCount,
 };
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 
 /// Domain opers for team entities.
@@ -58,7 +58,7 @@ impl TeamComplex {
     }
 
     /// Deletes a team subtree inside an existing transaction context.
-    pub async fn delete_cascade<P>(proxy: &mut P, id: &str) -> BaseResult<()>
+    pub async fn delete_cascade<P>(proxy: &mut P, id: &str) -> BaseRest<()>
     where
         P: for<'a> Proxy<GetTeamInfoExcluded<'a>, Error = BaseError>
             + for<'a> Proxy<ListWorksetInfosExcluded<'a>, Error = BaseError>
@@ -97,22 +97,22 @@ impl TeamComplex {
         // worksets (and their subtrees) inserted between the listing and
         // the team delete.
 
-        let team_info = proxy.exec(&GetTeamInfoExcluded::Id { id }).await?;
+        let team_info = GetTeamInfoExcluded::Id { id }.proxy_on(proxy).await?;
 
         TermbaseComplex::delete_team_cascade(proxy, &team_info.id).await?;
 
-        let workset_infos = proxy
-            .exec(&ListWorksetInfosExcluded {
-                team_id: &team_info.id,
-            })
-            .await?;
+        let workset_infos = ListWorksetInfosExcluded {
+            team_id: &team_info.id,
+        }
+        .proxy_on(proxy)
+        .await?;
 
         for workset_info in workset_infos {
             WorksetComplex::delete_cascade(proxy, &workset_info.id).await?;
         }
 
         if let Some(avatar_key) = &team_info.avatar_key
-            && team_info.avatar_uploaded
+            && team_info.is_avatar_uploaded
         {
             let delete_id = ImageComplex::gen_delete_id();
 
@@ -126,24 +126,24 @@ impl TeamComplex {
                 delay: None,
             };
 
-            proxy.exec(&Defer::new(task)).await?;
+            Defer::new(task).proxy_on(proxy).await?;
         }
 
-        let member_infos = proxy
-            .exec(&ListMemberInfosExcluded::Team {
-                team_id: &team_info.id,
-            })
-            .await?;
+        let member_infos = ListMemberInfosExcluded::Team {
+            team_id: &team_info.id,
+        }
+        .proxy_on(proxy)
+        .await?;
 
         for member_info in member_infos {
-            proxy
-                .exec(&DeleteMember {
-                    id: &member_info.id,
-                })
-                .await?;
+            DeleteMember {
+                id: &member_info.id,
+            }
+            .proxy_on(proxy)
+            .await?;
         }
 
-        proxy.exec(&DeleteTeam { id: &team_info.id }).await?;
+        DeleteTeam { id: &team_info.id }.proxy_on(proxy).await?;
 
         accept(())
     }
@@ -159,7 +159,7 @@ impl TeamPermComplex {
         proxy: &mut P,
         user_id: &str,
         team_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
@@ -171,7 +171,7 @@ impl TeamPermComplex {
         proxy: &mut P,
         user_id: &str,
         team_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
@@ -183,7 +183,7 @@ impl TeamPermComplex {
         proxy: &mut P,
         user_id: &str,
         team_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
@@ -195,7 +195,7 @@ impl TeamPermComplex {
         proxy: &mut P,
         user_id: &str,
         team_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
@@ -206,7 +206,7 @@ impl TeamPermComplex {
     pub async fn ensure_user_can_create<P>(
         proxy: &mut P,
         user_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a> Proxy<GetUserInfo<'a>, Error = BaseError>,
     {
@@ -217,7 +217,7 @@ impl TeamPermComplex {
     pub async fn ensure_user_can_list_infos<P>(
         proxy: &mut P,
         user_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a> Proxy<GetUserInfo<'a>, Error = BaseError>,
     {
@@ -228,11 +228,11 @@ impl TeamPermComplex {
     async fn check_user_is_sadmin<P>(
         proxy: &mut P,
         user_id: &str,
-    ) -> BaseResult<()>
+    ) -> BaseRest<()>
     where
         P: for<'a> Proxy<GetUserInfo<'a>, Error = BaseError>,
     {
-        let user_info = proxy.exec(&GetUserInfo::Id { id: user_id }).await?;
+        let user_info = GetUserInfo::Id { id: user_id }.proxy_on(proxy).await?;
 
         if !user_info.is_sadmin {
             return Err(BaseError::Expected {

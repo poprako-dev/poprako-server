@@ -14,7 +14,7 @@ use crate::part::repo::oper::termbase::{
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 
 // Internal implementation of `same_owner`.
 fn same_owner(
@@ -127,7 +127,7 @@ fn list_infos(
 }
 
 // Resolve one termbase by id and return it with expected-args missing error.
-fn get_info(state: &MockState, id: &str) -> BaseResult<TermbaseInfo> {
+fn get_info(state: &MockState, id: &str) -> BaseRest<TermbaseInfo> {
     state
         .termbases
         .iter()
@@ -142,10 +142,7 @@ impl<'a> Run<GetTermbaseInfo<'a>> for Mock {
 
     #[instrument(level = "info", err(Debug), skip_all)]
     // Internal implementation of `run`.
-    async fn run(
-        &self,
-        oper: &GetTermbaseInfo<'a>,
-    ) -> BaseResult<TermbaseInfo> {
+    async fn run(&self, oper: &GetTermbaseInfo<'a>) -> BaseRest<TermbaseInfo> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -164,7 +161,7 @@ impl<'a> Run<ListTermbaseInfos<'a>> for Mock {
     async fn run(
         &self,
         oper: &ListTermbaseInfos<'a>,
-    ) -> BaseResult<Vec<TermbaseInfo>> {
+    ) -> BaseRest<Vec<TermbaseInfo>> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -184,7 +181,7 @@ impl<'a> Step<CreateTermbase<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &CreateTermbase<'a>,
-    ) -> BaseResult<TermbaseInfo> {
+    ) -> BaseRest<TermbaseInfo> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -228,7 +225,7 @@ impl<'a> Step<GetTermbaseInfo<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &GetTermbaseInfo<'a>,
-    ) -> BaseResult<TermbaseInfo> {
+    ) -> BaseRest<TermbaseInfo> {
         get_info(&context.state, oper.id)
     }
 }
@@ -243,7 +240,7 @@ impl<'a> Step<GetTermbaseInfoExcluded<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &GetTermbaseInfoExcluded<'a>,
-    ) -> BaseResult<TermbaseInfo> {
+    ) -> BaseRest<TermbaseInfo> {
         get_info(&context.state, oper.id)
     }
 }
@@ -258,7 +255,7 @@ impl<'a> Step<ListTermbaseInfosExcluded<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &ListTermbaseInfosExcluded<'a>,
-    ) -> BaseResult<Vec<TermbaseInfo>> {
+    ) -> BaseRest<Vec<TermbaseInfo>> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -295,7 +292,7 @@ impl<'a> Step<UpdateTermbase<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &UpdateTermbase<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -338,7 +335,7 @@ impl<'a> Step<UpdateTermbaseTermCount<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &UpdateTermbaseTermCount<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -373,7 +370,7 @@ impl<'a> Step<TouchTermbase<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &TouchTermbase<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -400,7 +397,7 @@ impl<'a> Step<DeleteTermbase<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &DeleteTermbase<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         //
         // Internal implementation detail.
         // Internal implementation detail.

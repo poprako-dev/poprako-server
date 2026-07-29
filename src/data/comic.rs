@@ -18,7 +18,7 @@ use crate::data::user::UserInfoVal;
 use crate::data::workset::WorksetInfoVal;
 use crate::model::comic::{ComicInfo, ComicInfoListKind, ComicInfoListSpec};
 use crate::part::image::ImagePool;
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 use crate::value::chapter::StageMask;
 use crate::value::comic::{ComicInclOpt, ComicWithOpt};
 use crate::value::role::RoleMask;
@@ -108,11 +108,11 @@ impl ComicInfoVal {
         image_pool: &P,
         model: ComicInfo,
         fallback_cover_key: Option<&str>,
-    ) -> BaseResult<Self>
+    ) -> BaseRest<Self>
     where
         P: ImagePool,
     {
-        let cover_key = match (model.cover_uploaded, &model.cover_key) {
+        let cover_key = match (model.is_cover_uploaded, &model.cover_key) {
             //
             (true, Some(key)) => Some(key.as_str()),
 
@@ -254,7 +254,7 @@ impl TryFrom<ListComicInfosParams> for ComicInfoListSpec {
     type Error = BaseError;
 
     // Convert validated query parameters into the domain list spec.
-    fn try_from(params: ListComicInfosParams) -> BaseResult<Self> {
+    fn try_from(params: ListComicInfosParams) -> BaseRest<Self> {
         //
         let stages =
             params.stages.map(StageMask::try_filter_from).transpose()?;

@@ -6,7 +6,7 @@ use time::OffsetDateTime;
 use crate::complex::comic::ComicComplex;
 use crate::model::comic::{ComicEntry, ComicInfo};
 use crate::part_impl::repo::rdb_impl::schema::t_comic;
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 use crate::value::image::{ImageExt, ImageHash};
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
@@ -46,7 +46,7 @@ pub struct ComicRow {
 impl TryFrom<ComicRow> for ComicInfo {
     type Error = BaseError;
 
-    fn try_from(v: ComicRow) -> BaseResult<Self> {
+    fn try_from(v: ComicRow) -> BaseRest<Self> {
         //
         let cover_hash_bytes: [u8; 32] =
             v.f_cover_hash.try_into().map_err(|_| {
@@ -72,7 +72,7 @@ impl TryFrom<ComicRow> for ComicInfo {
             author: v.f_author,
             description: v.f_description,
             cover_key: v.f_cover_key,
-            cover_uploaded: v.f_cover_uploaded,
+            is_cover_uploaded: v.f_cover_uploaded,
             cover_version: v.f_cover_version,
             cover_hash: ImageHash::new(cover_hash_bytes),
             cover_ext,

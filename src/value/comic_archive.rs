@@ -7,7 +7,7 @@ use time::{Date, Month, OffsetDateTime, PrimitiveDateTime, Time};
 
 use poprako_util::i18n::trl;
 
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
 #[cfg(test)]
 mod tests;
@@ -220,7 +220,7 @@ impl ComicArchiveMonth {
     pub fn parse_retained(
         labels: Vec<String>,
         now: OffsetDateTime,
-    ) -> BaseResult<Vec<Self>> {
+    ) -> BaseRest<Vec<Self>> {
         //
         if labels.is_empty() || labels.len() > MAX_EXPORT_MONTHS {
             return Err(args("error-invalid-comic-archive-month-count"));
@@ -255,7 +255,7 @@ impl ComicArchiveMonth {
     }
 
     // Construct a month slot from validated label, year, and month components.
-    fn new(label: String, year: i32, month: u8) -> BaseResult<Self> {
+    fn new(label: String, year: i32, month: u8) -> BaseRest<Self> {
         //
         let month = Month::try_from(month)
             .map_err(|_| args("error-invalid-comic-archive-month"))?;
@@ -295,7 +295,7 @@ fn args(key: &str) -> BaseError {
 }
 
 // Parse a "YYYY-MM" label string into its year and month components.
-fn parse_label(label: &str) -> BaseResult<(i32, u8)> {
+fn parse_label(label: &str) -> BaseRest<(i32, u8)> {
     //
     let Some((year, month)) = label.split_once('-') else {
         return Err(args("error-invalid-comic-archive-month"));

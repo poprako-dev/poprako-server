@@ -25,7 +25,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_chapter::{
 use crate::part_impl::repo::rdb_impl::{RdbRepo, incl};
 use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::shared::{RdbConn, RdbContext};
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 use crate::value::assignment::AssignmentInclOpt;
 
 /// Assignment RDB integration tests.
@@ -40,7 +40,7 @@ mod list;
 
 // Delete one assignment by id in repository transaction flow.
 #[instrument(level = "info", err(Debug), skip_all)]
-async fn delete(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
+async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
     diesel::delete(t_assignment.filter(f_id.eq(id)))
         .execute(conn)
@@ -51,14 +51,12 @@ async fn delete(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
 }
 
 // Convert a row into assignment info for orchestration return values.
-fn row_into_info(row: AssignmentRow) -> BaseResult<AssignmentInfo> {
+fn row_into_info(row: AssignmentRow) -> BaseRest<AssignmentInfo> {
     row.try_into()
 }
 
 // Convert a row list into assignment infos for list operations.
-fn rows_into_infos(
-    rows: Vec<AssignmentRow>,
-) -> BaseResult<Vec<AssignmentInfo>> {
+fn rows_into_infos(rows: Vec<AssignmentRow>) -> BaseRest<Vec<AssignmentInfo>> {
     rows.into_iter().map(row_into_info).collect()
 }
 
@@ -68,7 +66,7 @@ async fn get_info_by_chapter_id_and_user_id(
     conn: &mut RdbConn,
     chapter_id: &str,
     user_id: &str,
-) -> BaseResult<Option<AssignmentInfo>> {
+) -> BaseRest<Option<AssignmentInfo>> {
     //
     let row: Option<AssignmentRow> = t_assignment
         .filter(f_chapter_id.eq(chapter_id))
@@ -89,7 +87,7 @@ async fn find_info_by_user_id_and_comic_id(
     user_id: &str,
     comic_id: &str,
     incls: &[AssignmentInclOpt],
-) -> BaseResult<Option<AssignmentInfo>> {
+) -> BaseRest<Option<AssignmentInfo>> {
     //
     let row: Option<AssignmentRow> = t_assignment
         .inner_join(chapter_table)
@@ -124,7 +122,7 @@ async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
     incl_opt: &[AssignmentInclOpt],
-) -> BaseResult<AssignmentInfo> {
+) -> BaseRest<AssignmentInfo> {
     //
     let row: AssignmentRow = t_assignment
         .filter(f_id.eq(id))
@@ -152,7 +150,7 @@ async fn get_info_by_id(
 async fn list_chapter_assignments_excluded(
     conn: &mut RdbConn,
     chapter_id: &str,
-) -> BaseResult<Vec<AssignmentInfo>> {
+) -> BaseRest<Vec<AssignmentInfo>> {
     //
     let rows: Vec<AssignmentRow> = t_assignment
         .filter(f_chapter_id.eq(chapter_id))
@@ -171,7 +169,7 @@ async fn list_chapter_assignments_excluded(
 async fn create(
     conn: &mut RdbConn,
     model_entry: &AssignmentEntry,
-) -> BaseResult<AssignmentInfo> {
+) -> BaseRest<AssignmentInfo> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -192,7 +190,7 @@ async fn create(
 async fn put_roles(
     conn: &mut RdbConn,
     update: &AssignmentRoleUpdate,
-) -> BaseResult<AssignmentInfo> {
+) -> BaseRest<AssignmentInfo> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -222,7 +220,7 @@ impl Run<FindAssignmentInfo<'_, '_>> for RdbRepo {
     async fn run(
         &self,
         oper: &FindAssignmentInfo<'_, '_>,
-    ) -> BaseResult<Option<AssignmentInfo>> {
+    ) -> BaseRest<Option<AssignmentInfo>> {
         match oper {
             //
             FindAssignmentInfo::ChapterUser {
@@ -259,7 +257,7 @@ impl Run<ListAssignmentInfos<'_, '_>> for RdbRepo {
     async fn run(
         &self,
         oper: &ListAssignmentInfos<'_, '_>,
-    ) -> BaseResult<Vec<AssignmentInfo>> {
+    ) -> BaseRest<Vec<AssignmentInfo>> {
         submit_query!(self.core, list_infos, oper)
     }
 }
@@ -273,7 +271,7 @@ impl Run<GetAssignmentInfo<'_, '_>> for RdbRepo {
     async fn run(
         &self,
         oper: &GetAssignmentInfo<'_, '_>,
-    ) -> BaseResult<AssignmentInfo> {
+    ) -> BaseRest<AssignmentInfo> {
         submit_query!(self.core, get_info_by_id, oper.id, oper.incls)
     }
 }
@@ -288,7 +286,7 @@ impl Step<ListAssignmentInfos<'_, '_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &ListAssignmentInfos<'_, '_>,
-    ) -> BaseResult<Vec<AssignmentInfo>> {
+    ) -> BaseRest<Vec<AssignmentInfo>> {
         list_infos(context.conn(), oper).await
     }
 }
@@ -303,7 +301,7 @@ impl Step<FindAssignmentInfo<'_, '_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &FindAssignmentInfo<'_, '_>,
-    ) -> BaseResult<Option<AssignmentInfo>> {
+    ) -> BaseRest<Option<AssignmentInfo>> {
         match oper {
             //
             FindAssignmentInfo::ChapterUser {
@@ -345,7 +343,7 @@ impl Step<ListAssignmentInfosExcluded<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &ListAssignmentInfosExcluded<'_>,
-    ) -> BaseResult<Vec<AssignmentInfo>> {
+    ) -> BaseRest<Vec<AssignmentInfo>> {
         match oper {
             ListAssignmentInfosExcluded::Chapter { chapter_id } => {
                 list_chapter_assignments_excluded(context.conn(), chapter_id)
@@ -365,7 +363,7 @@ impl Step<CreateAssignment<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &CreateAssignment<'_>,
-    ) -> BaseResult<AssignmentInfo> {
+    ) -> BaseRest<AssignmentInfo> {
         create(context.conn(), oper.entry).await
     }
 }
@@ -380,7 +378,7 @@ impl Step<UpdateAssignmentRoles<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &UpdateAssignmentRoles<'_>,
-    ) -> BaseResult<AssignmentInfo> {
+    ) -> BaseRest<AssignmentInfo> {
         put_roles(context.conn(), oper.update).await
     }
 }
@@ -390,7 +388,7 @@ impl Step<UpdateAssignmentRoles<'_>, RdbContext> for RdbRepo {
 async fn delete_by_chapter_id(
     conn: &mut RdbConn,
     chapter_id: &str,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     diesel::delete(t_assignment.filter(f_chapter_id.eq(chapter_id)))
         .execute(conn)
@@ -410,7 +408,7 @@ impl Step<DeleteAssignments<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &DeleteAssignments<'_>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         match oper {
             //
             DeleteAssignments::Id { id } => delete(context.conn(), id).await,

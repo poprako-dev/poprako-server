@@ -43,7 +43,7 @@ fn invitation(
         invitor_id: invitor_id.into(),
         invitee_qid: invitee_qid.into(),
         code: code.into(),
-        pending,
+        is_pending: pending,
         roles: RoleMask::from(RoleField::RAW_PROVIDER),
     }
 }
@@ -102,7 +102,7 @@ async fn register_creates_user_member_consumes_invitation_and_emits_signup() {
 
     assert_eq!(snapshot.members[0].user_id, val.user_id);
 
-    assert!(!snapshot.member_invitations[0].pending);
+    assert!(!snapshot.member_invitations[0].is_pending);
 
     let events = mock.drain_events();
 
@@ -149,7 +149,7 @@ async fn register_rolls_back_when_invitee_qid_mismatches() {
 
     assert!(snapshot.members.is_empty());
 
-    assert!(snapshot.member_invitations[0].pending);
+    assert!(snapshot.member_invitations[0].is_pending);
 
     assert_eq!(mock.event_count(), 0);
 }
@@ -184,7 +184,7 @@ async fn register_propagates_token_failure_after_commit_and_event() {
 
     assert_eq!(snapshot.members.len(), 1);
 
-    assert!(!snapshot.member_invitations[0].pending);
+    assert!(!snapshot.member_invitations[0].is_pending);
 
     assert_eq!(mock.event_count(), 1);
 }

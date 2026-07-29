@@ -99,7 +99,7 @@ fn comic_with_uploaded_cover(
         author: "author".into(),
         description: None,
         cover_key: Some(cover_key.into()),
-        cover_uploaded: true,
+        is_cover_uploaded: true,
         cover_version: 1,
         cover_hash: ImageHash::default(),
         cover_ext: ImageExt::Png,

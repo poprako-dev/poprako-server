@@ -12,7 +12,7 @@ use poprako_util::time::ToUnixMilli;
 use crate::data::user::UserInfoVal;
 use crate::model::announcement::{AnnouncementInfo, AnnouncementListSpec};
 use crate::part::image::ImagePool;
-use crate::result::{BaseResult, accept};
+use crate::result::{BaseRest, accept};
 use crate::value::announcement::AnnouncementInclOpt;
 
 /// Presentation-ready team announcement information.
@@ -46,7 +46,7 @@ impl AnnouncementInfoVal {
     pub async fn from_model<P>(
         image_pool: &P,
         model: AnnouncementInfo,
-    ) -> BaseResult<Self>
+    ) -> BaseRest<Self>
     where
         P: ImagePool,
     {

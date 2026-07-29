@@ -4,7 +4,7 @@ use crate::part_impl::repo::rdb_impl::incl::framework::{
     WorksetByIds, populate,
 };
 use crate::part_impl::shared::RdbConn;
-use crate::result::BaseResult;
+use crate::result::BaseRest;
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::incl::expand_incl_opts;
 

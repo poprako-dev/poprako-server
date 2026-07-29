@@ -1,6 +1,6 @@
 //! Comment use cases — list and create team board comments.
 
-use poprako_orchestra::{Nucl, run_proxy};
+use poprako_orchestra::{Nucl, OperRun as _, OperStep as _, run_proxy};
 use tracing::instrument;
 
 use crate::complex::comment::{CommentComplex, CommentPermComplex};
@@ -15,7 +15,7 @@ use crate::part::repo::comment::CommentRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::comment::{CreateComment, ListCommentInfos};
 use crate::part::repo::oper::member::FindMemberInfo;
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 
 #[cfg(test)]
 // Unit tests that validate comment lifecycle and visibility constraints.
@@ -27,7 +27,7 @@ pub async fn list_infos<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
     params: ListCommentInfosParams,
-) -> BaseResult<Vec<CommentInfoVal>>
+) -> BaseRest<Vec<CommentInfoVal>>
 where
     R: CommentRepo<C> + MemberRepo<C> + Sync,
     I: ImagePool,
@@ -43,11 +43,11 @@ where
     )
     .await?;
 
-    let comment_infos = repo
-        .run(&ListCommentInfos {
-            spec: &comment_list_spec,
-        })
-        .await?;
+    let comment_infos = ListCommentInfos {
+        spec: &comment_list_spec,
+    }
+    .run_on(repo)
+    .await?;
 
     let mut comment_info_vals = Vec::with_capacity(comment_infos.len());
 
@@ -65,7 +65,7 @@ pub async fn create<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
     params: CreateCommentParams,
-) -> BaseResult<CreateCommentPayload>
+) -> BaseRest<CreateCommentPayload>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -90,12 +90,10 @@ where
                 content: params.content,
             };
 
-            repo.step(
-                context,
-                &CreateComment {
-                    entry: &comment_entry,
-                },
-            )
+            CreateComment {
+                entry: &comment_entry,
+            }
+            .step_on(repo, context)
             .await
         })
         .await?;

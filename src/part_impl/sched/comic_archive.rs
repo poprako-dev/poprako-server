@@ -25,7 +25,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_member::dsl::{
 use crate::part_impl::repo::rdb_impl::schema::t_system_mail;
 use crate::part_impl::shared::result::diesel;
 use crate::part_impl::shared::{RdbConn, RdbCore};
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 use crate::util::next_snowflake_id;
 
 #[cfg(test)]
@@ -87,7 +87,7 @@ struct ExpiredSlot {
 
 #[instrument(level = "info", err(Debug), skip_all)]
 // Purge all retained-expired slots for one sweep and report total deletions.
-async fn purge_once(core: &RdbCore) -> BaseResult<usize> {
+async fn purge_once(core: &RdbCore) -> BaseRest<usize> {
     //
     let mut conn = core.get().await?;
 
@@ -112,7 +112,7 @@ async fn purge_once(core: &RdbCore) -> BaseResult<usize> {
 }
 
 // Keep archive entries older than last year from the first day of cutoff month.
-fn retained_cutoff(now: OffsetDateTime) -> BaseResult<OffsetDateTime> {
+fn retained_cutoff(now: OffsetDateTime) -> BaseRest<OffsetDateTime> {
     //
     let date = Date::from_calendar_date(now.year() - 1, now.month(), 1)
         .map_err(|error| BaseError::Unrecoverable {
@@ -130,7 +130,7 @@ fn retained_cutoff(now: OffsetDateTime) -> BaseResult<OffsetDateTime> {
 async fn list_expired_slots(
     conn: &mut RdbConn,
     cutoff: OffsetDateTime,
-) -> BaseResult<Vec<ExpiredSlot>> {
+) -> BaseRest<Vec<ExpiredSlot>> {
     //
     let rows: Vec<(String, OffsetDateTime)> = t_comic_archive
         .filter(f_created_at.lt(cutoff))
@@ -156,10 +156,7 @@ async fn list_expired_slots(
 
 #[instrument(level = "info", err(Debug), skip_all)]
 // Delete archived rows for one team-month slot and notify team admins.
-async fn purge_slot(
-    conn: &mut RdbConn,
-    slot: &ExpiredSlot,
-) -> BaseResult<usize> {
+async fn purge_slot(conn: &mut RdbConn, slot: &ExpiredSlot) -> BaseRest<usize> {
     //
     let end = next_month(slot.start)?;
 
@@ -230,7 +227,7 @@ async fn purge_slot(
 }
 
 // Compute midnight UTC at the first day of the current month.
-fn month_start(timestamp: OffsetDateTime) -> BaseResult<OffsetDateTime> {
+fn month_start(timestamp: OffsetDateTime) -> BaseRest<OffsetDateTime> {
     //
     let date = Date::from_calendar_date(
         timestamp.year(),
@@ -248,7 +245,7 @@ fn month_start(timestamp: OffsetDateTime) -> BaseResult<OffsetDateTime> {
 }
 
 // Compute the first-day midnight of the following month.
-fn next_month(start: OffsetDateTime) -> BaseResult<OffsetDateTime> {
+fn next_month(start: OffsetDateTime) -> BaseRest<OffsetDateTime> {
     //
     let next = match start.month() {
         //

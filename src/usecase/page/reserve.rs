@@ -3,7 +3,7 @@
 use std::collections::HashSet;
 use std::time::Duration;
 
-use poprako_orchestra::{Nucl, run_proxy};
+use poprako_orchestra::{Nucl, OperStep as _, run_proxy};
 use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 use poprako_orchestra_extra::prom::task::Task;
 use tracing::instrument;
@@ -37,7 +37,7 @@ use crate::part::repo::oper::page::{
     UpdatePageManifest,
 };
 use crate::part::repo::page::PageRepo;
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 use crate::value::image::{ImageExt, ImageHash};
 
@@ -46,7 +46,7 @@ use crate::value::image::{ImageExt, ImageHash};
 /// The maximum is 200 because page reservation for a single chapter can never
 /// exceed this number — the manifest-based flow sets a hard cap for practical
 /// upload and review capacity.
-pub fn validate_page_count(page_count: i32) -> BaseResult<()> {
+pub fn validate_page_count(page_count: i32) -> BaseRest<()> {
     //
     if !(1..=200).contains(&page_count) {
         return Err(BaseError::Expected {
@@ -64,7 +64,7 @@ pub async fn reserve_chapter_pages<N, C, R, P, I>(
     (nucl, repo, prom, image_pool): (&N, &R, &P, &I),
     token: UserToken,
     params: ReserveChapterPagesParams,
-) -> BaseResult<ReserveChapterPagesPayload>
+) -> BaseRest<ReserveChapterPagesPayload>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -159,26 +159,20 @@ where
             //
             // NOTE: Chapter -> Page is the shared lock order that prevents
             // both deadlocks and page-aggregate counter races.
-            let chapter_info = repo
-                .step(
-                    context,
-                    &GetChapterInfoExcluded {
-                        id: &chapter_id,
-                        incls: &[],
-                    },
-                )
-                .await?;
+            let chapter_info = GetChapterInfoExcluded {
+                id: &chapter_id,
+                incls: &[],
+            }
+            .step_on(repo, context)
+            .await?;
 
             ChapterComplex::ensure_chapter_writable(&chapter_info)?;
 
-            let existing_page_infos = repo
-                .step(
-                    context,
-                    &ListPageInfosExcluded {
-                        chapter_id: &chapter_info.id,
-                    },
-                )
-                .await?;
+            let existing_page_infos = ListPageInfosExcluded {
+                chapter_id: &chapter_info.id,
+            }
+            .step_on(repo, context)
+            .await?;
 
             let manifest_plan = build(
                 &chapter_info.id,
@@ -186,12 +180,10 @@ where
                 &page_specs,
             )?;
 
-            repo.step(
-                context,
-                &ShiftPageIndexesTemporary {
-                    chapter_id: &chapter_info.id,
-                },
-            )
+            ShiftPageIndexesTemporary {
+                chapter_id: &chapter_info.id,
+            }
+            .step_on(repo, context)
             .await?;
 
             let mut page_entries =
@@ -268,7 +260,7 @@ where
                         //
                         true => false,
 
-                        false => existing_page_info.image_uploaded,
+                        false => existing_page_info.is_image_uploaded,
                     };
 
                     if identity_changed
@@ -281,18 +273,16 @@ where
                         id: existing_page_info.id.clone(),
                         index,
                         image_key: image_key.clone(),
-                        image_uploaded,
+                        is_image_uploaded: image_uploaded,
                         image_version,
                         image_hash: page_spec.image_hash.clone(),
                         image_ext: page_spec.ext,
                     };
 
-                    repo.step(
-                        context,
-                        &UpdatePageManifest {
-                            update: &page_manifest_update,
-                        },
-                    )
+                    UpdatePageManifest {
+                        update: &page_manifest_update,
+                    }
+                    .step_on(repo, context)
                     .await?;
 
                     reservations.push(PageReservation {
@@ -369,12 +359,10 @@ where
                 });
             }
 
-            repo.step(
-                context,
-                &CreatePages {
-                    entries: &page_entries,
-                },
-            )
+            CreatePages {
+                entries: &page_entries,
+            }
+            .step_on(repo, context)
             .await?;
 
             let deleted_page_ids = manifest_plan
@@ -392,12 +380,10 @@ where
                 })
                 .collect::<Vec<_>>();
 
-            repo.step(
-                context,
-                &DeletePages::Ids {
-                    ids: &deleted_page_ids,
-                },
-            )
+            DeletePages::Ids {
+                ids: &deleted_page_ids,
+            }
+            .step_on(repo, context)
             .await?;
 
             let mut task_ids = Vec::new();
@@ -448,20 +434,18 @@ where
                 })
                 .collect::<Vec<Task<'_, String, TaskPayload>>>();
 
-            prom.step(context, &DeferBatch::new(&image_tasks)).await?;
+            DeferBatch::new(&image_tasks).step_on(prom, context).await?;
 
-            repo.step(
-                context,
-                &SetChapterPageCounters {
-                    id: &chapter_info.id,
-                    page_count: i32::try_from(reservations.len()).map_err(|_| BaseError::Unrecoverable {
-                        message: "[reserve_chapter_pages] page count exceeds i32".into(),
-                    })?,
-                    total_unit_count,
-                    translated_unit_count,
-                    proofread_unit_count,
-                },
-            )
+            SetChapterPageCounters {
+                id: &chapter_info.id,
+                page_count: i32::try_from(reservations.len()).map_err(|_| BaseError::Unrecoverable {
+                    message: "[reserve_chapter_pages] page count exceeds i32".into(),
+                })?,
+                total_unit_count,
+                translated_unit_count,
+                proofread_unit_count,
+            }
+            .step_on(repo, context)
             .await?;
 
             let advance_id = next_snowflake_id();
@@ -477,14 +461,12 @@ where
                 delay: Some(Duration::from_secs(20 * 60)),
             };
 
-            prom.step(context, &Defer::new(advance_task)).await?;
+            Defer::new(advance_task).step_on(prom, context).await?;
 
-            repo.step(
-                context,
-                &TouchComicLastActive {
-                    id: &chapter_info.comic_id,
-                },
-            )
+            TouchComicLastActive {
+                id: &chapter_info.comic_id,
+            }
+            .step_on(repo, context)
             .await?;
 
             accept(reservations)
@@ -528,7 +510,7 @@ where
     ))
     .await
     .into_iter()
-    .collect::<BaseResult<Vec<_>>>()?;
+    .collect::<BaseRest<Vec<_>>>()?;
 
     accept(ReserveChapterPagesPayload { pages })
 }

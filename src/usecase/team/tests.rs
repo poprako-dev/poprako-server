@@ -67,7 +67,7 @@ fn team_with_avatar(
 ) -> TeamInfo {
     TeamInfo {
         avatar_key: Some(avatar_key.into()),
-        avatar_uploaded,
+        is_avatar_uploaded: avatar_uploaded,
         avatar_version,
         ..team(id, name, description)
     }
@@ -104,7 +104,7 @@ fn comic_with_uploaded_cover(
         author: "author".into(),
         description: None,
         cover_key: Some(cover_key.into()),
-        cover_uploaded: true,
+        is_cover_uploaded: true,
         cover_version: 1,
         cover_hash: ImageHash::default(),
         cover_ext: ImageExt::Png,
@@ -144,7 +144,7 @@ fn user(id: &str, is_sadmin: bool) -> UserInfo {
         qid: id.into(),
         nickname: id.into(),
         avatar_key: None,
-        avatar_uploaded: false,
+        is_avatar_uploaded: false,
         avatar_version: 0,
         avatar_hash: ImageHash::default(),
         avatar_ext: ImageExt::Png,

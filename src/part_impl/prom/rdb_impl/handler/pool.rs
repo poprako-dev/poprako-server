@@ -3,7 +3,7 @@
 use std::sync::Arc;
 use std::time::Duration as StdDuration;
 
-use poprako_orchestra::Step as _;
+use poprako_orchestra::OperStep as _;
 use time::{Duration, OffsetDateTime};
 use tokio::sync::{Notify, mpsc};
 use tokio::task::JoinHandle;
@@ -24,7 +24,7 @@ use crate::part_impl::prom::rdb_impl::repo::{
 };
 use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::shared::RdbContext;
-use crate::result::BaseResult;
+use crate::result::BaseRest;
 
 #[cfg(all(test, feature = "rdb", feature = "prom_impl"))]
 // Internal organization of the `tests` module.
@@ -322,14 +322,14 @@ where
 
     #[instrument(level = "info", err(Debug), skip_all)]
     // Internal implementation of `poll`.
-    async fn poll(&self) -> BaseResult<Vec<LocalMessageRow>> {
+    async fn poll(&self) -> BaseRest<Vec<LocalMessageRow>> {
         //
         // Internal implementation detail.
         let conn = self.core.get().await?;
 
         let mut context = RdbContext::new(conn);
 
-        self.repo.step(&mut context, &PollPending).await
+        PollPending.step_on(&self.repo, &mut context).await
     }
 
     // Internal implementation of `dispatch_rows`.
@@ -389,26 +389,21 @@ where
 
     #[instrument(level = "info", err(Debug), skip_all)]
     // Internal implementation of `complete`.
-    async fn complete(&self, id: &str, lease: i64) -> BaseResult<()> {
+    async fn complete(&self, id: &str, lease: i64) -> BaseRest<()> {
         //
         // Internal implementation detail.
         let conn = self.core.get().await?;
 
         let mut context = RdbContext::new(conn);
 
-        self.repo
-            .step(&mut context, &CompleteMessage::new(id, lease))
+        CompleteMessage::new(id, lease)
+            .step_on(&self.repo, &mut context)
             .await
     }
 
     #[instrument(level = "info", err(Debug), skip_all)]
     // Internal implementation of `retry`.
-    async fn retry(
-        &self,
-        id: &str,
-        lease: i64,
-        message: &str,
-    ) -> BaseResult<()> {
+    async fn retry(&self, id: &str, lease: i64, message: &str) -> BaseRest<()> {
         //
         // Internal implementation detail.
         let conn = self.core.get().await?;
@@ -417,36 +412,28 @@ where
 
         let visible_at = OffsetDateTime::now_utc() + RETRY_DELAY;
 
-        self.repo
-            .step(
-                &mut context,
-                &RetryMessage::new(id, lease, message, &visible_at),
-            )
+        RetryMessage::new(id, lease, message, &visible_at)
+            .step_on(&self.repo, &mut context)
             .await
     }
 
     #[instrument(level = "info", err(Debug), skip_all)]
     // Internal implementation of `fail`.
-    async fn fail(
-        &self,
-        id: &str,
-        lease: i64,
-        message: &str,
-    ) -> BaseResult<()> {
+    async fn fail(&self, id: &str, lease: i64, message: &str) -> BaseRest<()> {
         //
         // Internal implementation detail.
         let conn = self.core.get().await?;
 
         let mut context = RdbContext::new(conn);
 
-        self.repo
-            .step(&mut context, &FailMessage::new(id, lease, message))
+        FailMessage::new(id, lease, message)
+            .step_on(&self.repo, &mut context)
             .await
     }
 
     #[instrument(level = "info", err(Debug), skip_all)]
     // Internal implementation of `reset_stuck`.
-    async fn reset_stuck(&self) -> BaseResult<()> {
+    async fn reset_stuck(&self) -> BaseRest<()> {
         //
         // Internal implementation detail.
         let conn = self.core.get().await?;
@@ -455,14 +442,14 @@ where
 
         let before = OffsetDateTime::now_utc() - PROCESSING_TIMEOUT;
 
-        self.repo
-            .step(&mut context, &ResetStuck::new(&before))
+        ResetStuck::new(&before)
+            .step_on(&self.repo, &mut context)
             .await
     }
 
     #[instrument(level = "info", err(Debug), skip_all)]
     // Internal implementation of `purge_completed`.
-    async fn purge_completed(&self) -> BaseResult<usize> {
+    async fn purge_completed(&self) -> BaseRest<usize> {
         //
         // Internal implementation detail.
         let conn = self.core.get().await?;
@@ -473,25 +460,22 @@ where
 
         let dead_before = OffsetDateTime::now_utc() - DEAD_RETENTION;
 
-        self.repo
-            .step(
-                &mut context,
-                &PurgeCompleted::new(&completed_before, &dead_before),
-            )
+        PurgeCompleted::new(&completed_before, &dead_before)
+            .step_on(&self.repo, &mut context)
             .await
     }
 
     #[instrument(level = "info", err(Debug), skip_all)]
     // Internal implementation of `claim`.
-    async fn claim(&self, id: &str, lease: i64) -> BaseResult<bool> {
+    async fn claim(&self, id: &str, lease: i64) -> BaseRest<bool> {
         //
         // Internal implementation detail.
         let conn = self.core.get().await?;
 
         let mut context = RdbContext::new(conn);
 
-        self.repo
-            .step(&mut context, &ClaimPending::new(id, lease))
+        ClaimPending::new(id, lease)
+            .step_on(&self.repo, &mut context)
             .await
     }
 }

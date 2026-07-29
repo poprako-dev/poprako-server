@@ -6,7 +6,7 @@ use argon2::password_hash::{
     PasswordHash, PasswordHasher as _, PasswordVerifier as _, SaltString,
 };
 
-use crate::result::{BaseError, BaseResult};
+use crate::result::{BaseError, BaseRest};
 use crate::util::next_snowflake_id;
 
 /// Domain opers for [User] aggregates: password hashing and verification via Argon2id, ID generation, and avatar storage key computation.
@@ -19,7 +19,7 @@ impl UserComplex {
     }
 
     /// Hashes a plaintext password on Tokio's blocking pool and returns its Argon2id-encoded value.
-    pub async fn hash_password(password: &str) -> BaseResult<String> {
+    pub async fn hash_password(password: &str) -> BaseRest<String> {
         //
         let password = password.to_owned();
 
@@ -62,7 +62,7 @@ impl UserComplex {
 
     /// Hashes a plaintext password using the sync runtime (test-only helper).
     #[cfg(test)]
-    pub fn hash_password_for_test(password: &str) -> BaseResult<String> {
+    pub fn hash_password_for_test(password: &str) -> BaseRest<String> {
         hash_password_sync(password)
     }
 
@@ -77,7 +77,7 @@ impl UserComplex {
 }
 
 // Hashes a plaintext password with the Argon2id algorithm on the current thread.
-fn hash_password_sync(password: &str) -> BaseResult<String> {
+fn hash_password_sync(password: &str) -> BaseRest<String> {
     //
     let salt = SaltString::generate(OsRng);
 

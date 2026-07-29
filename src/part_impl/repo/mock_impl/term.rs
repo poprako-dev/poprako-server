@@ -13,10 +13,10 @@ use crate::part::repo::oper::term::{
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 
 // Internal implementation of `get_info`.
-fn get_info(state: &MockState, id: &str) -> BaseResult<TermInfo> {
+fn get_info(state: &MockState, id: &str) -> BaseRest<TermInfo> {
     state
         .terms
         .iter()
@@ -77,7 +77,7 @@ impl<'a> Run<GetTermInfo<'a>> for Mock {
 
     #[instrument(level = "info", err(Debug), skip_all)]
     // Internal implementation of `run`.
-    async fn run(&self, oper: &GetTermInfo<'a>) -> BaseResult<TermInfo> {
+    async fn run(&self, oper: &GetTermInfo<'a>) -> BaseRest<TermInfo> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -93,7 +93,7 @@ impl<'a> Run<ListTermInfos<'a>> for Mock {
 
     #[instrument(level = "info", err(Debug), skip_all)]
     // Internal implementation of `run`.
-    async fn run(&self, oper: &ListTermInfos<'a>) -> BaseResult<Vec<TermInfo>> {
+    async fn run(&self, oper: &ListTermInfos<'a>) -> BaseRest<Vec<TermInfo>> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -113,7 +113,7 @@ impl<'a> Step<CreateTerm<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &CreateTerm<'a>,
-    ) -> BaseResult<TermInfo> {
+    ) -> BaseRest<TermInfo> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -164,7 +164,7 @@ impl<'a> Step<GetTermInfoExcluded<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &GetTermInfoExcluded<'a>,
-    ) -> BaseResult<TermInfo> {
+    ) -> BaseRest<TermInfo> {
         get_info(&context.state, oper.id)
     }
 }
@@ -179,7 +179,7 @@ impl<'a> Step<LockTerm<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &LockTerm<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -199,7 +199,7 @@ impl<'a> Step<UpdateTerm<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &UpdateTerm<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -243,7 +243,7 @@ impl<'a> Step<DeleteTerm<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &DeleteTerm<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -270,7 +270,7 @@ impl<'a> Step<DeleteTerms<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &DeleteTerms<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         //
         // Internal implementation detail.
         // Internal implementation detail.

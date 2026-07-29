@@ -24,7 +24,7 @@ pub struct TeamInfo {
     /// Object-storage key for the team avatar image.
     pub avatar_key: Option<String>,
     /// Whether the team avatar has been uploaded and confirmed.
-    pub avatar_uploaded: bool,
+    pub is_avatar_uploaded: bool,
     /// Monotonically increasing version counter for the avatar.
     pub avatar_version: u32,
     /// SHA-256 identity of the reserved avatar content.
@@ -92,7 +92,6 @@ pub struct TeamAvatarReservation {
     /// The new version number that must match on upload confirmation.
     pub avatar_version: u32,
     /// Whether a PUT capability and delayed check are required.
-    pub upload_required: bool,
+    /// TODO: what is this
+    pub is_upload_required: bool,
 }
-
-// TODO: update

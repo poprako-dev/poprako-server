@@ -12,10 +12,10 @@ use crate::part::repo::oper::workset::{
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 
 // Internal implementation of `get_workset_info`.
-fn get_workset_info(state: &MockState, id: &str) -> BaseResult<WorksetInfo> {
+fn get_workset_info(state: &MockState, id: &str) -> BaseRest<WorksetInfo> {
     state
         .worksets
         .iter()
@@ -66,7 +66,7 @@ fn list_workset_infos(
 fn update_workset(
     state: &mut MockState,
     update: &WorksetInfoUpdate,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     // Internal implementation detail.
     // Internal implementation detail.
@@ -91,7 +91,7 @@ impl<'a> Run<GetWorksetInfo<'a>> for Mock {
 
     #[instrument(level = "info", err(Debug), skip_all)]
     // Internal implementation of `run`.
-    async fn run(&self, oper: &GetWorksetInfo<'a>) -> BaseResult<WorksetInfo> {
+    async fn run(&self, oper: &GetWorksetInfo<'a>) -> BaseRest<WorksetInfo> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -110,7 +110,7 @@ impl<'a> Run<ListWorksetInfos<'a>> for Mock {
     async fn run(
         &self,
         oper: &ListWorksetInfos<'a>,
-    ) -> BaseResult<Vec<WorksetInfo>> {
+    ) -> BaseRest<Vec<WorksetInfo>> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -126,7 +126,7 @@ impl<'a> Run<UpdateWorkset<'a>> for Mock {
 
     #[instrument(level = "info", err(Debug), skip_all)]
     // Internal implementation of `run`.
-    async fn run(&self, oper: &UpdateWorkset<'a>) -> BaseResult<()> {
+    async fn run(&self, oper: &UpdateWorkset<'a>) -> BaseRest<()> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -146,7 +146,7 @@ impl<'a> Step<GetWorksetInfo<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &GetWorksetInfo<'a>,
-    ) -> BaseResult<WorksetInfo> {
+    ) -> BaseRest<WorksetInfo> {
         get_workset_info(&context.state, oper.id)
     }
 }
@@ -161,7 +161,7 @@ impl<'a> Step<ListWorksetInfos<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &ListWorksetInfos<'a>,
-    ) -> BaseResult<Vec<WorksetInfo>> {
+    ) -> BaseRest<Vec<WorksetInfo>> {
         accept(list_workset_infos(&context.state, oper))
     }
 }
@@ -176,7 +176,7 @@ impl<'a> Step<GetWorksetInfoExcluded<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &GetWorksetInfoExcluded<'a>,
-    ) -> BaseResult<WorksetInfo> {
+    ) -> BaseRest<WorksetInfo> {
         get_workset_info(&context.state, oper.id)
     }
 }
@@ -191,7 +191,7 @@ impl<'a> Step<ListWorksetInfosExcluded<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &ListWorksetInfosExcluded<'a>,
-    ) -> BaseResult<Vec<WorksetInfo>> {
+    ) -> BaseRest<Vec<WorksetInfo>> {
         accept(
             context
                 .state
@@ -214,7 +214,7 @@ impl<'a> Step<CreateWorkset<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &CreateWorkset<'a>,
-    ) -> BaseResult<WorksetInfo> {
+    ) -> BaseRest<WorksetInfo> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -256,7 +256,7 @@ impl<'a> Step<DeleteWorkset<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &DeleteWorkset<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -320,7 +320,7 @@ impl<'a> Step<AllocWorksetComicIndex<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &AllocWorksetComicIndex<'a>,
-    ) -> BaseResult<i32> {
+    ) -> BaseRest<i32> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -353,7 +353,7 @@ impl<'a> Step<UpdateWorksetComicCount<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &UpdateWorksetComicCount<'a>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         //
         // Internal implementation detail.
         // Internal implementation detail.

@@ -14,7 +14,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_comment::dsl::*;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, incl};
 use crate::part_impl::shared::result::diesel;
 use crate::part_impl::shared::{RdbConn, RdbContext};
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 
 /// Comment RDB integration tests.
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
@@ -25,7 +25,7 @@ pub mod tests;
 async fn list_infos(
     conn: &mut RdbConn,
     spec: &CommentListSpec,
-) -> BaseResult<Vec<CommentInfo>> {
+) -> BaseRest<Vec<CommentInfo>> {
     //
     let rows: Vec<CommentRow> = t_comment
         .filter(f_team_id.eq(spec.team_id.as_str()))
@@ -53,7 +53,7 @@ async fn list_infos(
 async fn create(
     conn: &mut RdbConn,
     entry: &CommentEntry,
-) -> BaseResult<CommentInfo> {
+) -> BaseRest<CommentInfo> {
     //
     let entry = CommentRowEntry::from(entry);
 
@@ -76,7 +76,7 @@ impl Run<ListCommentInfos<'_>> for RdbRepo {
     async fn run(
         &self,
         oper: &ListCommentInfos<'_>,
-    ) -> BaseResult<Vec<CommentInfo>> {
+    ) -> BaseRest<Vec<CommentInfo>> {
         submit_query!(self.core, list_infos, oper.spec)
     }
 }
@@ -91,7 +91,7 @@ impl Step<CreateComment<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &CreateComment<'_>,
-    ) -> BaseResult<CommentInfo> {
+    ) -> BaseRest<CommentInfo> {
         create(context.conn(), oper.entry).await
     }
 }

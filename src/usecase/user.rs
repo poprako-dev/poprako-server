@@ -2,7 +2,7 @@
 
 use std::time::Duration;
 
-use poprako_orchestra::Nucl;
+use poprako_orchestra::{Nucl, OperRun as _, OperStep as _};
 use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 use poprako_orchestra_extra::prom::task::Task;
 use tracing::instrument;
@@ -33,7 +33,7 @@ use crate::part::repo::oper::user::{
     ReserveUserAvatar, UpdateUser,
 };
 use crate::part::repo::user::UserRepo;
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
 #[cfg(test)]
 // Unit tests for account, role, and membership operations.
@@ -56,13 +56,13 @@ pub async fn get_info<C, R, I, V>(
     (repo, image_pool, develop): (&R, &I, &V),
     token: UserToken,
     id: String,
-) -> BaseResult<UserInfoVal>
+) -> BaseRest<UserInfoVal>
 where
     R: UserRepo<C>,
     I: ImagePool,
     V: EffectDevelop + Send + Sync,
 {
-    let user_info = repo.run(&GetUserInfo::Id { id: &id }).await?;
+    let user_info = GetUserInfo::Id { id: &id }.run_on(repo).await?;
 
     // Dispatch an activity event when the user reads their own profile.
     if token.user_id == id {
@@ -97,7 +97,7 @@ pub async fn update_info<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
     params: UpdateUserInfoParams,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -111,25 +111,21 @@ where
         });
     }
 
-    nucl.coord(async move |context| -> Result<(), BaseError> {
+    nucl.coord(async move |context| {
         //
-        repo.step(
-            context,
-            &UpdateUser::Info {
-                id: &token.user_id,
-                qid: &params.qid,
-                nickname: &params.nickname,
-            },
-        )
+        UpdateUser::Info {
+            id: &token.user_id,
+            qid: &params.qid,
+            nickname: &params.nickname,
+        }
+        .step_on(repo, context)
         .await?;
 
-        repo.step(
-            context,
-            &UpdateMember::UserNickname {
-                user_id: &token.user_id,
-                user_nickname: &params.nickname,
-            },
-        )
+        UpdateMember::UserNickname {
+            user_id: &token.user_id,
+            user_nickname: &params.nickname,
+        }
+        .step_on(repo, context)
         .await?;
 
         accept(())
@@ -151,7 +147,7 @@ pub async fn update_password<N, C, R>(
     token: UserToken,
     user_id: String,
     params: UpdateUserPasswordParams,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -164,13 +160,13 @@ where
         });
     }
 
-    let user_info = repo.run(&GetUserInfo::Id { id: &user_id }).await?;
+    let user_info = GetUserInfo::Id { id: &user_id }.run_on(repo).await?;
 
-    let user_credential = repo
-        .run(&GetUserCredential::Qid {
-            qid: &user_info.qid,
-        })
-        .await?;
+    let user_credential = GetUserCredential::Qid {
+        qid: &user_info.qid,
+    }
+    .run_on(repo)
+    .await?;
 
     if !UserComplex::verify_password(
         &params.current_password,
@@ -189,13 +185,11 @@ where
 
     nucl.coord(async move |context| {
         //
-        repo.step(
-            context,
-            &UpdateUser::PasswordHash {
-                id: &user_id,
-                password_hash: &password_hash,
-            },
-        )
+        UpdateUser::PasswordHash {
+            id: &user_id,
+            password_hash: &password_hash,
+        }
+        .step_on(repo, context)
         .await?;
 
         accept(())
@@ -230,7 +224,7 @@ pub async fn reserve_avatar<N, C, R, P, I>(
     (nucl, repo, prom, image_pool): (&N, &R, &P, &I),
     token: UserToken,
     params: ReserveUserAvatarParams,
-) -> BaseResult<ReserveUserAvatarPayload>
+) -> BaseRest<ReserveUserAvatarPayload>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -252,16 +246,13 @@ where
     let (object_key, avatar_version, upload_required) = nucl
         .coord(async move |context| {
             //
-            let avatar_reservation = repo
-                .step(
-                    context,
-                    &ReserveUserAvatar {
-                        id: &token.user_id,
-                        image_hash: &transaction_image_hash,
-                        image_ext,
-                    },
-                )
-                .await?;
+            let avatar_reservation = ReserveUserAvatar {
+                id: &token.user_id,
+                image_hash: &transaction_image_hash,
+                image_ext,
+            }
+            .step_on(repo, context)
+            .await?;
 
             let mut batch_ids = Vec::new();
 
@@ -269,7 +260,7 @@ where
 
             let mut batch_delays = Vec::new();
 
-            if !avatar_reservation.upload_required {
+            if !avatar_reservation.is_upload_required {
                 return accept((
                     avatar_reservation.object_key,
                     avatar_reservation.avatar_version,
@@ -314,7 +305,7 @@ where
                 })
                 .collect::<Vec<Task<'_, String, TaskPayload>>>();
 
-            prom.step(context, &DeferBatch::new(&batch_tasks)).await?;
+            DeferBatch::new(&batch_tasks).step_on(prom, context).await?;
 
             accept((
                 avatar_reservation.object_key,
@@ -366,7 +357,7 @@ pub async fn mark_avatar_uploaded<N, C, R, I>(
     token: UserToken,
     id: String,
     params: MarkUserAvatarUploadedParams,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -380,7 +371,7 @@ where
         });
     }
 
-    let user_info = repo.run(&GetUserInfo::Id { id: &id }).await?;
+    let user_info = GetUserInfo::Id { id: &id }.run_on(repo).await?;
 
     if user_info.avatar_version != params.image_version {
         return Err(BaseError::Expected {
@@ -389,7 +380,7 @@ where
         });
     }
 
-    if user_info.avatar_uploaded {
+    if user_info.is_avatar_uploaded {
         return accept(());
     }
 
@@ -409,10 +400,10 @@ where
         });
     }
 
-    nucl.coord(async move |context| -> Result<(), BaseError> {
+    nucl.coord(async move |context| {
         //
-        let locked_user_info = repo
-            .step(context, &GetUserInfoExcluded::Id { id: &id })
+        let locked_user_info = GetUserInfoExcluded::Id { id: &id }
+            .step_on(repo, context)
             .await?;
 
         if locked_user_info.avatar_version != params.image_version
@@ -424,15 +415,13 @@ where
             });
         }
 
-        repo.step(
-            context,
-            &UpdateUser::MarkAvatarUploaded {
-                id: &id,
-                avatar_version: params.image_version,
-                avatar_key: Some(&avatar_key),
-                avatar_uploaded: true,
-            },
-        )
+        UpdateUser::MarkAvatarUploaded {
+            id: &id,
+            avatar_version: params.image_version,
+            avatar_key: Some(&avatar_key),
+            avatar_uploaded: true,
+        }
+        .step_on(repo, context)
         .await?;
 
         accept(())
@@ -466,7 +455,7 @@ pub async fn delete<N, C, R, P>(
     (nucl, repo, prom): (&N, &R, &P),
     token: UserToken,
     id: String,
-) -> BaseResult<()>
+) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -481,34 +470,31 @@ where
         });
     }
 
-    nucl.coord(async move |context| -> Result<(), BaseError> {
+    nucl.coord(async move |context| {
         //
-
-        let user_info = repo
-            .step(context, &GetUserInfoExcluded::Id { id: &id })
+        let user_info = GetUserInfoExcluded::Id { id: &id }
+            .step_on(repo, context)
             .await?;
 
         // Delete all memberships before the user to satisfy FK constraints.
 
-        let member_infos = repo
-            .step(context, &ListMemberInfosExcluded::User { user_id: &id })
+        let member_infos = ListMemberInfosExcluded::User { user_id: &id }
+            .step_on(repo, context)
             .await?;
 
         for member_info in &member_infos {
-            repo.step(
-                context,
-                &DeleteMember {
-                    id: &member_info.id,
-                },
-            )
+            DeleteMember {
+                id: &member_info.id,
+            }
+            .step_on(repo, context)
             .await?;
         }
 
-        repo.step(context, &DeleteUser { id: &id }).await?;
+        DeleteUser { id: &id }.step_on(repo, context).await?;
 
         // Enqueue avatar object deletion if one was uploaded.
         if let Some(avatar_key) = &user_info.avatar_key
-            && user_info.avatar_uploaded
+            && user_info.is_avatar_uploaded
         {
             let delete_id = ImageComplex::gen_delete_id();
 
@@ -522,7 +508,7 @@ where
                 delay: None,
             };
 
-            prom.step(context, &Defer::new(task)).await?;
+            Defer::new(task).step_on(prom, context).await?;
         }
 
         accept(())

@@ -18,7 +18,7 @@ pub struct SystemMailInfo {
     pub receiver_id: String,
 
     /// Whether the recipient has marked this mail as read.
-    pub read: bool,
+    pub is_read: bool,
 
     /// Subject line of the system mail notification.
     pub title: String,

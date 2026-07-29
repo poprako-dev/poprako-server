@@ -6,28 +6,24 @@ use crate::model::assignment_invitation::{
 };
 
 /// Creates an assignment invitation.
+#[derive(Oper)]
+#[oper(output = AssignmentInvitationInfo)]
 pub struct CreateAssignmentInvitation<'a> {
     /// The assignment invitation entry data.
     pub entry: &'a AssignmentInvitationEntry,
 }
 
-impl Oper for CreateAssignmentInvitation<'_> {
-    // Internal output type for this step.
-    type Output = AssignmentInvitationInfo;
-}
-
 /// Lists assignment invitation infos selected by a query specification.
+#[derive(Oper)]
+#[oper(output = Vec<AssignmentInvitationInfo>)]
 pub struct ListAssignmentInvitationInfos<'a> {
     /// Query specification for filtering invitation infos.
     pub spec: &'a AssignmentInvitationListSpec,
 }
 
-impl Oper for ListAssignmentInvitationInfos<'_> {
-    // Internal output type for this step.
-    type Output = Vec<AssignmentInvitationInfo>;
-}
-
 /// Gets an assignment invitation that must exist.
+#[derive(Oper)]
+#[oper(output = AssignmentInvitationInfo)]
 pub enum GetAssignmentInvitationInfo<'a> {
     /// Gets by invitation identifier.
     Id {
@@ -36,45 +32,33 @@ pub enum GetAssignmentInvitationInfo<'a> {
     },
 }
 
-impl Oper for GetAssignmentInvitationInfo<'_> {
-    // Internal output type for this step.
-    type Output = AssignmentInvitationInfo;
-}
-
 /// Gets an assignment invitation that must exist (with exclusive lock).
+#[derive(Oper)]
+#[oper(output = AssignmentInvitationInfo)]
 pub struct GetAssignmentInvitationInfoExcluded<'a> {
     /// Invitation code.
     pub code: &'a str,
 }
 
-impl Oper for GetAssignmentInvitationInfoExcluded<'_> {
-    // Internal output type for this step.
-    type Output = AssignmentInvitationInfo;
-}
-
 /// Marks an assignment invitation as used.
+#[derive(Oper)]
+#[oper(output = ())]
 pub struct MarkAssignmentInvitationUsed<'a> {
     /// Invitation identifier.
     pub id: &'a str,
 }
 
-impl Oper for MarkAssignmentInvitationUsed<'_> {
-    // Internal output type for this step.
-    type Output = ();
-}
-
 /// Purges one expired assignment invitation when it remains pending.
+#[derive(Oper)]
+#[oper(output = ())]
 pub struct PurgeExpiredAssignmentInvitation<'a> {
     /// Invitation identifier.
     pub id: &'a str,
 }
 
-impl Oper for PurgeExpiredAssignmentInvitation<'_> {
-    // Internal output type for this step.
-    type Output = ();
-}
-
 /// Deletes assignment invitations selected by identifier or chapter.
+#[derive(Oper)]
+#[oper(output = ())]
 pub enum DeleteAssignmentInvitations<'a> {
     /// Deletes by invitation identifier.
     Id {
@@ -87,9 +71,4 @@ pub enum DeleteAssignmentInvitations<'a> {
         /// Chapter identifier.
         chapter_id: &'a str,
     },
-}
-
-impl Oper for DeleteAssignmentInvitations<'_> {
-    // Internal output type for this step.
-    type Output = ();
 }

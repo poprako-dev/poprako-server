@@ -24,7 +24,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_member;
 use crate::part_impl::repo::rdb_impl::schema::t_team::dsl::*;
 use crate::part_impl::shared::result::{diesel, expected, next_version};
 use crate::part_impl::shared::{RdbConn, RdbContext};
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 use crate::value::image::{ImageExt, ImageHash};
 
 /// Team RDB integration tests.
@@ -35,7 +35,7 @@ pub mod tests;
 
 // Delete a team row by primary key.
 #[instrument(level = "info", err(Debug), skip_all)]
-async fn delete(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
+async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
     diesel::delete(t_team.filter(f_id.eq(id)))
         .execute(conn)
@@ -47,7 +47,7 @@ async fn delete(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
 
 // Insert a team entry and return the persisted team info.
 #[instrument(level = "info", err(Debug), skip_all)]
-async fn create(conn: &mut RdbConn, entry: &TeamEntry) -> BaseResult<TeamInfo> {
+async fn create(conn: &mut RdbConn, entry: &TeamEntry) -> BaseRest<TeamInfo> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -72,7 +72,7 @@ async fn create(conn: &mut RdbConn, entry: &TeamEntry) -> BaseResult<TeamInfo> {
 
 // Load one team by id and convert it into DTO view model.
 #[instrument(level = "info", err(Debug), skip_all)]
-async fn get_info_by_id(conn: &mut RdbConn, id: &str) -> BaseResult<TeamInfo> {
+async fn get_info_by_id(conn: &mut RdbConn, id: &str) -> BaseRest<TeamInfo> {
     //
     let row: TeamRow = t_team
         .filter(f_id.eq(id))
@@ -91,7 +91,7 @@ async fn get_info_by_id(conn: &mut RdbConn, id: &str) -> BaseResult<TeamInfo> {
 async fn list_infos(
     conn: &mut RdbConn,
     spec: &TeamInfoListSpec,
-) -> BaseResult<Vec<TeamInfo>> {
+) -> BaseRest<Vec<TeamInfo>> {
     //
     let mut query = t_team.into_boxed();
 
@@ -128,7 +128,7 @@ async fn update_info(
     id: &str,
     name: &str,
     description: &str,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -151,7 +151,7 @@ async fn mark_avatar_uploaded(
     version: u32,
     avatar_key: Option<&str>,
     avatar_uploaded: bool,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -196,7 +196,7 @@ async fn reserve_avatar(
     id: &str,
     image_hash: &ImageHash,
     image_ext: ImageExt,
-) -> BaseResult<TeamAvatarReservation> {
+) -> BaseRest<TeamAvatarReservation> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -242,7 +242,7 @@ async fn reserve_avatar(
                         .into(),
                 }
             })?,
-            upload_required: !uploaded,
+            is_upload_required: !uploaded,
         });
     }
 
@@ -268,16 +268,13 @@ async fn reserve_avatar(
         object_key,
         prev_object_key: prev_key,
         avatar_version: version,
-        upload_required: true,
+        is_upload_required: true,
     })
 }
 
 // Load one team info and lock the row for transactional updates.
 #[instrument(level = "info", err(Debug), skip_all)]
-async fn get_info_excluded(
-    conn: &mut RdbConn,
-    id: &str,
-) -> BaseResult<TeamInfo> {
+async fn get_info_excluded(conn: &mut RdbConn, id: &str) -> BaseRest<TeamInfo> {
     //
     let row: TeamRow = t_team
         .filter(f_id.eq(id))
@@ -294,7 +291,7 @@ async fn get_info_excluded(
 
 // Lock a team row to serialize concurrent writes in the current transaction.
 #[instrument(level = "info", err(Debug), skip_all)]
-async fn lock_team(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
+async fn lock_team(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
     let _: String = t_team
         .filter(f_id.eq(id))
@@ -314,7 +311,7 @@ async fn lock_team(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
 async fn increment_workset_next_index(
     conn: &mut RdbConn,
     id: &str,
-) -> BaseResult<i32> {
+) -> BaseRest<i32> {
     //
     let prev: i32 = diesel::update(t_team.filter(f_id.eq(id)))
         .set(f_workset_next_index.eq(f_workset_next_index + 1))
@@ -378,7 +375,7 @@ impl Run<UpdateTeam<'_>> for RdbRepo {
 
     #[instrument(level = "info", err(Debug), skip_all)]
     // Route team mutation variants into the corresponding SQL update handlers.
-    async fn run(&self, oper: &UpdateTeam<'_>) -> BaseResult<()> {
+    async fn run(&self, oper: &UpdateTeam<'_>) -> BaseRest<()> {
         match oper {
             //
             UpdateTeam::Info {
@@ -416,7 +413,7 @@ impl Step<CreateTeam<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &CreateTeam<'_>,
-    ) -> BaseResult<TeamInfo> {
+    ) -> BaseRest<TeamInfo> {
         create(context.conn(), oper.entry).await
     }
 }
@@ -431,7 +428,7 @@ impl Step<UpdateTeam<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &UpdateTeam<'_>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         match oper {
             //
             UpdateTeam::Info {
@@ -469,7 +466,7 @@ impl Step<ReserveTeamAvatar<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &ReserveTeamAvatar<'_>,
-    ) -> BaseResult<TeamAvatarReservation> {
+    ) -> BaseRest<TeamAvatarReservation> {
         reserve_avatar(context.conn(), oper.id, oper.image_hash, oper.image_ext)
             .await
     }
@@ -485,7 +482,7 @@ impl Step<GetTeamInfoExcluded<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &GetTeamInfoExcluded<'_>,
-    ) -> BaseResult<TeamInfo> {
+    ) -> BaseRest<TeamInfo> {
         match oper {
             GetTeamInfoExcluded::Id { id } => {
                 get_info_excluded(context.conn(), id).await
@@ -504,7 +501,7 @@ impl Step<LockTeam<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &LockTeam<'_>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         lock_team(context.conn(), oper.id).await
     }
 }
@@ -519,7 +516,7 @@ impl Step<DeleteTeam<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &DeleteTeam<'_>,
-    ) -> BaseResult<()> {
+    ) -> BaseRest<()> {
         delete(context.conn(), oper.id).await
     }
 }
@@ -534,7 +531,7 @@ impl Step<AllocTeamWorksetIndex<'_>, RdbContext> for RdbRepo {
         &self,
         context: &mut RdbContext,
         oper: &AllocTeamWorksetIndex<'_>,
-    ) -> BaseResult<i32> {
+    ) -> BaseRest<i32> {
         increment_workset_next_index(context.conn(), oper.id).await
     }
 }

@@ -11,7 +11,7 @@ use futures::future::OptionFuture;
 use crate::data::user::UserInfoVal;
 use crate::model::member_invitation::MemberInvitationInfo;
 use crate::part::image::ImagePool;
-use crate::result::{BaseResult, accept};
+use crate::result::{BaseRest, accept};
 use crate::value::member_invitation::MemberInvitationInclOpt;
 use crate::value::role::RoleMask;
 
@@ -65,7 +65,7 @@ pub struct ListMemberInvitationInfosParams {
 
     /// When `Some(true)`, returns only unconsumed invitations;
     /// `Some(false)` returns only consumed ones; `None` returns all.
-    pub pending: Option<bool>,
+    pub is_pending: Option<bool>,
 
     /// Related rows to embed. Repeatable. Values: `invitor`.
     #[serde(default, rename = "incl")]
@@ -105,7 +105,7 @@ pub struct MemberInvitationInfoVal {
     pub code: String,
 
     /// Whether the invitation has not yet been consumed.
-    pub pending: bool,
+    pub is_pending: bool,
 
     /// Role mask assigned to the invitee upon acceptance.
     pub roles: RoleMask,
@@ -117,7 +117,7 @@ impl MemberInvitationInfoVal {
     pub async fn from_model<P>(
         image_pool: &P,
         model: MemberInvitationInfo,
-    ) -> BaseResult<Self>
+    ) -> BaseRest<Self>
     where
         P: ImagePool,
     {
@@ -132,7 +132,7 @@ impl MemberInvitationInfoVal {
             .transpose()?,
             invitee_qid: model.invitee_qid,
             code: model.code,
-            pending: model.pending,
+            is_pending: model.is_pending,
             roles: model.roles,
         })
     }
@@ -148,7 +148,7 @@ impl From<MemberInvitationInfo> for MemberInvitationInfoVal {
             invitor: None,
             invitee_qid: value.invitee_qid,
             code: value.code,
-            pending: value.pending,
+            is_pending: value.is_pending,
             roles: value.roles,
         }
     }

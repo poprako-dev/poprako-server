@@ -15,7 +15,7 @@ use crate::part::repo::oper::announcement::{
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 use crate::value::announcement::AnnouncementInclOpt;
 
 // Internal implementation of `find_user`.
@@ -92,7 +92,7 @@ fn list_announcements(
 fn create_announcement(
     state: &mut MockState,
     entry: &AnnouncementEntry,
-) -> BaseResult<AnnouncementInfo> {
+) -> BaseRest<AnnouncementInfo> {
     //
     // Internal implementation detail.
     // Internal implementation detail.
@@ -128,7 +128,7 @@ impl Run<ListAnnouncementInfos<'_>> for Mock {
     async fn run(
         &self,
         oper: &ListAnnouncementInfos<'_>,
-    ) -> BaseResult<Vec<AnnouncementInfo>> {
+    ) -> BaseRest<Vec<AnnouncementInfo>> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -148,7 +148,7 @@ impl Step<CreateAnnouncement<'_>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &CreateAnnouncement<'_>,
-    ) -> BaseResult<AnnouncementInfo> {
+    ) -> BaseRest<AnnouncementInfo> {
         create_announcement(&mut context.state, oper.entry)
     }
 }

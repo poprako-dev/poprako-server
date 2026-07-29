@@ -21,14 +21,14 @@ use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{
 };
 use crate::part_impl::shared::RdbConn;
 use crate::part_impl::shared::result::{diesel, expected, next_version};
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseRest, accept};
 
 /// Load a single page info by ID.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
-) -> BaseResult<PageInfo> {
+) -> BaseRest<PageInfo> {
     //
     let row: PageRow = t_page
         .filter(f_id.eq(id))
@@ -47,7 +47,7 @@ pub async fn get_info_by_id(
 pub async fn get_info_excluded(
     conn: &mut RdbConn,
     id: &str,
-) -> BaseResult<PageInfo> {
+) -> BaseRest<PageInfo> {
     //
     let row: PageRow = t_page
         .filter(f_id.eq(id))
@@ -67,7 +67,7 @@ pub async fn get_info_excluded(
 pub async fn list_infos(
     conn: &mut RdbConn,
     chapter_id: &str,
-) -> BaseResult<Vec<PageInfo>> {
+) -> BaseRest<Vec<PageInfo>> {
     //
     let rows: Vec<PageRow> = t_page
         .filter(f_chapter_id.eq(chapter_id))
@@ -85,7 +85,7 @@ pub async fn list_infos(
 pub async fn list_infos_excluded(
     conn: &mut RdbConn,
     chapter_id: &str,
-) -> BaseResult<Vec<PageInfo>> {
+) -> BaseRest<Vec<PageInfo>> {
     //
     let rows: Vec<PageRow> = t_page
         .filter(f_chapter_id.eq(chapter_id))
@@ -104,7 +104,7 @@ pub async fn list_infos_excluded(
 pub async fn shift_indexes_temporary(
     conn: &mut RdbConn,
     chapter_id: &str,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     diesel::update(
         t_page
@@ -124,7 +124,7 @@ pub async fn shift_indexes_temporary(
 pub async fn update_manifest(
     conn: &mut RdbConn,
     update: &PageManifestUpdate,
-) -> BaseResult<PageInfo> {
+) -> BaseRest<PageInfo> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -134,7 +134,7 @@ pub async fn update_manifest(
         .set((
             f_index.eq(update.index),
             f_image_key.eq(update.image_key.as_deref()),
-            f_image_uploaded.eq(update.image_uploaded),
+            f_image_uploaded.eq(update.is_image_uploaded),
             f_image_version.eq(i64::from(update.image_version)),
             f_image_hash.eq(image_hash.to_vec()),
             f_image_extension.eq(update.image_ext.suffix()),
@@ -153,7 +153,7 @@ pub async fn update_manifest(
 pub async fn clear_images_for_publish(
     conn: &mut RdbConn,
     chapter_id: &str,
-) -> BaseResult<Vec<String>> {
+) -> BaseRest<Vec<String>> {
     //
     let rows: Vec<PageRow> = t_page
         .filter(f_chapter_id.eq(chapter_id))
@@ -167,7 +167,7 @@ pub async fn clear_images_for_publish(
     let page_infos = rows
         .into_iter()
         .map(TryInto::try_into)
-        .collect::<BaseResult<Vec<PageInfo>>>()?;
+        .collect::<BaseRest<Vec<PageInfo>>>()?;
 
     let object_keys = page_infos
         .iter()
@@ -207,7 +207,7 @@ pub async fn clear_images_for_publish(
 pub async fn list_first_infos_by_chapter_ids(
     conn: &mut RdbConn,
     chapter_ids: &[String],
-) -> BaseResult<HashMap<String, PageInfo>> {
+) -> BaseRest<HashMap<String, PageInfo>> {
     //
     let rows: Vec<PageRow> = t_page
         .filter(f_chapter_id.eq_any(chapter_ids))
@@ -221,7 +221,7 @@ pub async fn list_first_infos_by_chapter_ids(
     accept(
         rows.into_iter()
             .map(TryInto::try_into)
-            .collect::<BaseResult<Vec<PageInfo>>>()?
+            .collect::<BaseRest<Vec<PageInfo>>>()?
             .into_iter()
             .map(|page_info| (page_info.chapter_id.clone(), page_info))
             .collect(),
@@ -233,12 +233,12 @@ pub async fn list_first_infos_by_chapter_ids(
 pub async fn create_batch(
     conn: &mut RdbConn,
     model_entries: &[PageEntry],
-) -> BaseResult<Vec<PageInfo>> {
+) -> BaseRest<Vec<PageInfo>> {
     //
     let entries: Vec<PageRowEntry> = model_entries
         .iter()
         .map(PageRowEntry::try_from)
-        .collect::<BaseResult<_>>()?;
+        .collect::<BaseRest<_>>()?;
 
     let rows: Vec<PageRow> = diesel::insert_into(t_page)
         .values(&entries)
@@ -257,7 +257,7 @@ pub async fn reserve_image(
     conn: &mut RdbConn,
     id: &str,
     file_ext: &str,
-) -> BaseResult<PageImageReservation> {
+) -> BaseRest<PageImageReservation> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -300,7 +300,7 @@ pub async fn mark_image_uploaded(
     id: &str,
     version: u32,
     image_key: Option<&str>,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -346,7 +346,7 @@ pub async fn set_image_uploaded(
     version: u32,
     image_key: &str,
     image_uploaded: bool,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -374,7 +374,7 @@ pub async fn set_unit_counters(
     conn: &mut RdbConn,
     id: &str,
     counters: UnitCounters,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -397,7 +397,7 @@ pub async fn set_unit_counters(
 pub async fn delete_by_chapter_id(
     conn: &mut RdbConn,
     chapter_id: &str,
-) -> BaseResult<()> {
+) -> BaseRest<()> {
     //
     let page_ids: Vec<String> = t_page
         .filter(f_chapter_id.eq(chapter_id))
@@ -423,10 +423,7 @@ pub async fn delete_by_chapter_id(
 
 /// Deletes selected pages after deleting their child units.
 #[instrument(level = "info", err(Debug), skip_all)]
-pub async fn delete_by_ids(
-    conn: &mut RdbConn,
-    ids: &[String],
-) -> BaseResult<()> {
+pub async fn delete_by_ids(conn: &mut RdbConn, ids: &[String]) -> BaseRest<()> {
     //
     if ids.is_empty() {
         return accept(());
