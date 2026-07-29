@@ -18,9 +18,9 @@ use crate::part_impl::repo::rdb_impl::entity::system_mail::{
     SystemMailRow, SystemMailRowEntry,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_system_mail::dsl::*;
-use crate::part_impl::shared::RdbConn;
-use crate::part_impl::shared::result::{diesel, expected};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::shared::RdbConn;
+use crate::shared::result::{diesel, expected};
 
 /// System mail RDB integration tests.
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]

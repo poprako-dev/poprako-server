@@ -22,9 +22,9 @@ use crate::part_impl::repo::rdb_impl::schema::t_chapter::{
     f_comic_id as chapter_comic_id, table as chapter_table,
 };
 use crate::part_impl::repo::rdb_impl::{RdbRepo, incl};
-use crate::part_impl::shared::result::{diesel, expected};
-use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{BaseError, BaseRest, accept};
+use crate::shared::result::{diesel, expected};
+use crate::shared::{RdbConn, RdbContext};
 use crate::value::assignment::AssignmentInclOpt;
 
 /// Assignment RDB integration tests.

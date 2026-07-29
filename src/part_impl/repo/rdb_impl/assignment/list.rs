@@ -8,9 +8,9 @@ use crate::part::repo::oper::assignment::ListAssignmentInfos;
 use crate::part_impl::repo::rdb_impl::entity::assignment::AssignmentRow;
 use crate::part_impl::repo::rdb_impl::incl;
 use crate::part_impl::repo::rdb_impl::schema::t_assignment::dsl::*;
-use crate::part_impl::shared::RdbConn;
-use crate::part_impl::shared::result::diesel;
 use crate::result::{BaseRest, accept};
+use crate::shared::RdbConn;
+use crate::shared::result::diesel;
 use crate::value::role::RoleField;
 
 /// Queries assignment infos selected by the repository operation.

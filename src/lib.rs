@@ -11,6 +11,7 @@ pub use api::http::state::AppHarn;
 #[doc(hidden)]
 pub use complex::user::UserComplex;
 pub use config::AppConfig;
+pub use extra::sched::GeneralSched;
 pub use harn::Harn;
 pub use log::init_log;
 pub use part_impl::auth::jwt_impl::JwtAuth;
@@ -19,8 +20,7 @@ pub use part_impl::effect::async_impl::AsyncEffectDevelop;
 pub use part_impl::image::r2_impl::R2ImagePool;
 pub use part_impl::prom::rdb_impl::RdbProm;
 pub use part_impl::repo::rdb_impl::RdbRepo;
-pub use part_impl::sched::GeneralSched;
-pub use part_impl::shared::RdbCore;
+pub use shared::RdbCore;
 
 // HTTP API layer (handlers, middleware, server, router, OpenAPI).
 mod api;
@@ -34,6 +34,8 @@ mod complex;
 mod config;
 // Inbound request and outbound response DTOs for the HTTP API layer.
 mod data;
+// Fixed production extras outside the port-implementation tree.
+mod extra;
 // Application harness wiring all ports together for production and test use.
 mod harn;
 // Tracing-subscriber initialisation shared across binaries.
@@ -47,6 +49,8 @@ mod part;
 mod part_impl;
 // Root error and result types used across all layers.
 mod result;
+// Shared RDB infrastructure used by port implementations and production extras.
+mod shared;
 #[cfg(test)]
 // Internal tests utility helpers for fixtures and assertions.
 mod test_util;

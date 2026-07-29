@@ -1,6 +1,6 @@
 //! Diesel-backed repository adapter.
 
-use crate::part_impl::shared::RdbCore;
+use crate::shared::RdbCore;
 
 // Submit query macro that allocates a connection and calls a free function.
 #[macro_use]

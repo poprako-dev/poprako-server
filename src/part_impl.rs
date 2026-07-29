@@ -10,7 +10,3 @@ pub mod image;
 pub mod prom;
 /// Repository implementations (RDBMS, mock).
 pub mod repo;
-/// Scheduled-task adapter.
-pub mod sched;
-/// Shared utilities for part implementations.
-pub mod shared;

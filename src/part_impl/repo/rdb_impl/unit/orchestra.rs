@@ -9,8 +9,8 @@ use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::unit::step_impl::{
     apply_edits, list_infos, list_orders_for_update,
 };
-use crate::part_impl::shared::RdbContext;
 use crate::result::{BaseError, BaseRest};
+use crate::shared::RdbContext;
 
 impl Run<ListUnitInfos<'_>> for RdbRepo {
     // Error type for the Run trait impl on unit list query.

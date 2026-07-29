@@ -19,9 +19,9 @@ use crate::part_impl::repo::rdb_impl::entity::chapter::{
 use crate::part_impl::repo::rdb_impl::incl;
 use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::*;
 use crate::part_impl::repo::rdb_impl::schema::t_page;
-use crate::part_impl::shared::RdbConn;
-use crate::part_impl::shared::result::{diesel, expected};
 use crate::result::{BaseError, BaseRest, accept};
+use crate::shared::RdbConn;
+use crate::shared::result::{diesel, expected};
 use crate::value::chapter::{ChapterInclOpt, Stage};
 
 /// Queries a single chapter row by ID and populates its includes.

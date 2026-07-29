@@ -10,7 +10,7 @@ use crate::part::repo::oper::system_mail::{
     ListSystemMailInfos, MarkSystemMailRead, SendSystemMail,
 };
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
-use crate::part_impl::shared::RdbCore;
+use crate::shared::RdbCore;
 
 const PREFIX: &str = "rdb-test-system-mail-domain-";
 

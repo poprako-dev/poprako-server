@@ -24,8 +24,8 @@ use crate::part::repo::user::UserRepo;
 use crate::part_impl::prom::rdb_impl::handler::task_flow::TaskFlow;
 use crate::part_impl::prom::rdb_impl::handler::{chapter, image, invitation};
 use crate::part_impl::prom::rdb_impl::repo::RdbPromRepo;
-use crate::part_impl::shared::{RdbContext, RdbCore};
 use crate::result::BaseError;
+use crate::shared::{RdbContext, RdbCore};
 
 /// Background worker that polls the `t_local_message` table, dispatches by topic,
 /// and completes or fails each record.

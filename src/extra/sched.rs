@@ -1,9 +1,10 @@
 //! Fixed production composition for periodic background jobs.
 
 use tokio::sync::watch;
+
 use tokio_util::sync::CancellationToken;
 
-use crate::part_impl::shared::RdbCore;
+use crate::shared::RdbCore;
 
 // Comic archive retention periodic job.
 mod comic_archive;

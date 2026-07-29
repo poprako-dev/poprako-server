@@ -20,8 +20,8 @@ use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
 use crate::part_impl::prom::rdb_impl::handler::image::identity::ImageIdentity;
-use crate::part_impl::shared::RdbContext;
 use crate::result::{BaseError, BaseRest, accept};
+use crate::shared::RdbContext;
 
 /// Classification of a deferred image payload against persisted identity.
 pub enum ResourceState {

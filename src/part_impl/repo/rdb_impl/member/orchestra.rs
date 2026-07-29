@@ -12,8 +12,8 @@ use crate::part_impl::repo::rdb_impl::member::step_impl::{
     list_infos, list_infos_by_team_id_excluded, list_infos_by_user_id,
     list_infos_by_user_id_excluded, update_role, update_user_nickname,
 };
-use crate::part_impl::shared::RdbContext;
 use crate::result::{BaseError, BaseRest};
+use crate::shared::RdbContext;
 
 impl Run<ListMemberInfos<'_>> for RdbRepo {
     // Non-transactional query path for listing member infos.

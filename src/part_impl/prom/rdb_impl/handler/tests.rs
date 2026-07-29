@@ -15,7 +15,7 @@ use crate::part_impl::prom::rdb_impl::test_shared;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::schema::t_local_message;
-use crate::part_impl::shared::RdbCore;
+use crate::shared::RdbCore;
 
 // Constant definition for `PREFIX`.
 const PREFIX: &str = "rdb-test-prom-handler-";

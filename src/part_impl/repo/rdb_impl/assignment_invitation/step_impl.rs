@@ -13,9 +13,9 @@ use crate::part_impl::repo::rdb_impl::entity::assignment_invitation::{
     AssignmentInvitationRowEntry,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_assignment_invitation::dsl::*;
-use crate::part_impl::shared::RdbConn;
-use crate::part_impl::shared::result::{diesel, expected};
 use crate::result::{BaseRest, accept};
+use crate::shared::RdbConn;
+use crate::shared::result::{diesel, expected};
 use crate::value::assignment_invitation::AssignmentInvitationStatus;
 
 /// Queries assignment invitation rows selected by a list specification.

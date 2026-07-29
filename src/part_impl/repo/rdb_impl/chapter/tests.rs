@@ -12,8 +12,8 @@ use crate::part::repo::oper::chapter::{
 };
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
-use crate::part_impl::shared::RdbCore;
 use crate::result::accept;
+use crate::shared::RdbCore;
 use crate::value::chapter::{ChapterInclOpt, Stage, StageMask, StagePhase};
 
 const PREFIX: &str = "rdb-test-chapter-domain-";

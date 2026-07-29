@@ -5,9 +5,9 @@ use poprako_orchestra::Nucl;
 use poprako_orchestra::nucl::Error as NuclError;
 use tracing::instrument;
 
-use crate::part_impl::shared::result::diesel;
-use crate::part_impl::shared::{RdbContext, RdbCore};
 use crate::result::BaseError;
+use crate::shared::result::diesel;
+use crate::shared::{RdbContext, RdbCore};
 
 /// Diesel-backed transaction driver that wraps operations in database transactions.
 ///

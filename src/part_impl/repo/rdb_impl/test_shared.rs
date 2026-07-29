@@ -16,9 +16,9 @@ use crate::part::repo::oper::user::CreateUser;
 use crate::part::repo::oper::workset::CreateWorkset;
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, schema};
-use crate::part_impl::shared::RdbCore;
-use crate::part_impl::shared::result::diesel as diesel_error;
 use crate::result::{BaseError, BaseRest, accept};
+use crate::shared::RdbCore;
+use crate::shared::result::diesel as diesel_error;
 
 pub use self::form::{
     chapter_entry, comic_entry, page_entry, team_entry, user_entry,
