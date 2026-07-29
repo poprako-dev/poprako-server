@@ -34,22 +34,22 @@ pub struct ComicArchivePageSnapshot {
 #[derive(Clone)]
 pub struct ComicArchiveRecord {
     pub id: String,
+    pub team_id: String,
     pub archived_bytes: Vec<u8>,
     pub archiver_id: String,
     pub created_at: OffsetDateTime,
 }
 
 /// Archive rows and the source IDs that must be deleted atomically.
+// FIXME: bad naming.
 pub struct ComicArchiveWrite {
-    pub comic_record: ComicArchiveRecord,
-    pub chapter_records: Vec<ComicArchiveRecord>,
-    pub translation_records: Vec<ComicArchiveRecord>,
+    pub record: ComicArchiveRecord,
     pub source_comic_id: String,
     pub source_chapter_ids: Vec<String>,
     pub source_page_ids: Vec<String>,
 }
 
-/// Immutable comic payload stored in `t_archived_comic`.
+/// Complete immutable comic payload stored in `t_comic_archive`.
 #[derive(Debug, PartialEq, Encode, Decode)]
 pub struct ArchivedComicPayload {
     pub source_comic_id: String,
@@ -64,7 +64,7 @@ pub struct ArchivedComicPayload {
     pub last_active_at: i64,
     pub created_at: i64,
     pub updated_at: i64,
-    pub chapter_archive_ids: Vec<String>,
+    pub chapters: Vec<ArchivedChapterPayload>,
 }
 
 /// Embedded workset snapshot belonging to an archived comic.
@@ -81,11 +81,10 @@ pub struct ArchivedWorksetPayload {
     pub updated_at: i64,
 }
 
-/// Immutable chapter payload stored in `t_archived_chapter`.
+/// Immutable chapter payload embedded in a comic archive.
 #[derive(Debug, PartialEq, Encode, Decode)]
 pub struct ArchivedChapterPayload {
     pub source_chapter_id: String,
-    pub archived_comic_id: String,
     pub is_pinned: bool,
     pub index: i32,
     pub subtitle: String,
@@ -98,6 +97,7 @@ pub struct ArchivedChapterPayload {
     pub created_at: i64,
     pub updated_at: i64,
     pub assignments: Vec<ArchivedAssignmentPayload>,
+    pub pages: Vec<ArchivedPagePayload>,
 }
 
 /// Assignment role snapshot paired with the complete assigned-user profile.
@@ -124,14 +124,6 @@ pub struct ArchivedUserPayload {
     pub last_active_at: i64,
     pub created_at: i64,
     pub updated_at: i64,
-}
-
-/// Immutable page and unit payload stored in `t_archived_translation`.
-#[derive(Debug, PartialEq, Encode, Decode)]
-pub struct ArchivedTranslationPayload {
-    pub source_chapter_id: String,
-    pub archived_chapter_id: String,
-    pub pages: Vec<ArchivedPagePayload>,
 }
 
 /// Page snapshot excluding object-storage state and image metadata.

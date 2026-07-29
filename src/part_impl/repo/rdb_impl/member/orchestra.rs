@@ -9,8 +9,8 @@ use crate::part::repo::oper::member::{
 use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::member::{
     create, delete, find_info_by_user_id_and_team_id, get_info_by_id,
-    list_infos, list_infos_by_user_id, list_infos_by_user_id_excluded,
-    update_role, update_user_nickname,
+    list_infos, list_infos_by_team_id_excluded, list_infos_by_user_id,
+    list_infos_by_user_id_excluded, update_role, update_user_nickname,
 };
 use crate::part_impl::shared::RdbContext;
 use crate::result::{BaseError, BaseResult};
@@ -164,6 +164,9 @@ impl<'a> Step<ListMemberInfosExcluded<'a>, RdbContext> for RdbRepo {
         match oper {
             ListMemberInfosExcluded::User { user_id } => {
                 list_infos_by_user_id_excluded(context.conn(), user_id).await
+            }
+            ListMemberInfosExcluded::Team { team_id } => {
+                list_infos_by_team_id_excluded(context.conn(), team_id).await
             }
         }
     }

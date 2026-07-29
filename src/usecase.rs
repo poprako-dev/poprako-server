@@ -62,6 +62,8 @@ mod stage;
 pub mod system_mail;
 /// Team management use cases.
 pub mod team;
+/// Terminology-entry use cases.
+pub mod term;
 /// Termbase management use cases.
 pub mod termbase;
 /// Unit ordering use cases.

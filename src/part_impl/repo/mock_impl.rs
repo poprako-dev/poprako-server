@@ -22,6 +22,8 @@ use crate::model::member_invitation::MemberInvitationInfo;
 use crate::model::page::PageInfo;
 use crate::model::system_mail::SystemMailInfo;
 use crate::model::team::TeamInfo;
+use crate::model::term::TermInfo;
+use crate::model::termbase::TermbaseInfo;
 use crate::model::unit::UnitInfo;
 use crate::model::user::{UserCredential, UserInfo};
 use crate::model::workset::WorksetInfo;
@@ -57,6 +59,10 @@ pub mod page;
 pub mod system_mail;
 /// Mock implementations for team repository opers.
 pub mod team;
+/// Mock implementations for term repository opers.
+pub mod term;
+/// Mock implementations for termbase repository opers.
+pub mod termbase;
 /// Mock implementations for unit repository opers.
 pub mod unit;
 /// Mock implementations for user repository opers.
@@ -76,15 +82,15 @@ pub struct MockState {
     pub member_invitations: Vec<MemberInvitationInfo>,
     pub worksets: Vec<WorksetInfo>,
     pub comics: Vec<ComicInfo>,
+    pub termbases: Vec<TermbaseInfo>,
+    pub terms: Vec<TermInfo>,
     pub chapters: Vec<ChapterInfo>,
     pub assignments: Vec<AssignmentInfo>,
     pub assignment_invitations: Vec<AssignmentInvitationInfo>,
     pub pages: Vec<PageInfo>,
     pub units: Vec<UnitInfo>,
     pub system_mails: Vec<SystemMailInfo>,
-    pub archived_comics: Vec<ComicArchiveRecord>,
-    pub archived_chapters: Vec<ComicArchiveRecord>,
-    pub archived_translations: Vec<ComicArchiveRecord>,
+    pub comic_archives: Vec<ComicArchiveRecord>,
     pub prom_records: Vec<MockPromRecord>,
     pub deleted_image_keys: Vec<String>,
 }
@@ -101,15 +107,15 @@ pub struct MockSnapshot {
     pub member_invitations: Vec<MemberInvitationInfo>,
     pub worksets: Vec<WorksetInfo>,
     pub comics: Vec<ComicInfo>,
+    pub termbases: Vec<TermbaseInfo>,
+    pub terms: Vec<TermInfo>,
     pub chapters: Vec<ChapterInfo>,
     pub assignments: Vec<AssignmentInfo>,
     pub assignment_invitations: Vec<AssignmentInvitationInfo>,
     pub pages: Vec<PageInfo>,
     pub units: Vec<UnitInfo>,
     pub system_mails: Vec<SystemMailInfo>,
-    pub archived_comics: Vec<ComicArchiveRecord>,
-    pub archived_chapters: Vec<ComicArchiveRecord>,
-    pub archived_translations: Vec<ComicArchiveRecord>,
+    pub comic_archives: Vec<ComicArchiveRecord>,
     pub prom_records: Vec<MockPromRecord>,
     pub deleted_image_keys: Vec<String>,
 }
@@ -126,15 +132,15 @@ impl From<MockState> for MockSnapshot {
             member_invitations: state.member_invitations,
             worksets: state.worksets,
             comics: state.comics,
+            termbases: state.termbases,
+            terms: state.terms,
             chapters: state.chapters,
             assignments: state.assignments,
             assignment_invitations: state.assignment_invitations,
             pages: state.pages,
             units: state.units,
             system_mails: state.system_mails,
-            archived_comics: state.archived_comics,
-            archived_chapters: state.archived_chapters,
-            archived_translations: state.archived_translations,
+            comic_archives: state.comic_archives,
             prom_records: state.prom_records,
             deleted_image_keys: state.deleted_image_keys,
         }
@@ -230,6 +236,16 @@ impl Mock {
     /// Seed a comic directly into the mock state.
     pub fn seed_comic(&self, comic: ComicInfo) {
         self.state.lock().unwrap().comics.push(comic);
+    }
+
+    /// Seed a terminology base directly into the mock state.
+    pub fn seed_termbase(&self, termbase: TermbaseInfo) {
+        self.state.lock().unwrap().termbases.push(termbase);
+    }
+
+    /// Seed a terminology entry directly into the mock state.
+    pub fn seed_term(&self, term: TermInfo) {
+        self.state.lock().unwrap().terms.push(term);
     }
 
     /// Seed a chapter directly into the mock state.

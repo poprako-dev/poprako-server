@@ -57,6 +57,7 @@ impl<'a, 'b> Oper for GetMemberInfo<'a, 'b> {
 
 pub enum ListMemberInfosExcluded<'a> {
     User { user_id: &'a str },
+    Team { team_id: &'a str },
 }
 
 impl<'a> Oper for ListMemberInfosExcluded<'a> {

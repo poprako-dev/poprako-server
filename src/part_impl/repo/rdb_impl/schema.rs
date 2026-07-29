@@ -12,33 +12,6 @@ diesel::table! {
 }
 
 diesel::table! {
-    t_archived_chapter (f_id) {
-        f_id -> Text,
-        f_archived_bytes -> Bytea,
-        f_archiver_id -> Text,
-        f_created_at -> Timestamptz,
-    }
-}
-
-diesel::table! {
-    t_archived_comic (f_id) {
-        f_id -> Text,
-        f_archived_bytes -> Bytea,
-        f_archiver_id -> Text,
-        f_created_at -> Timestamptz,
-    }
-}
-
-diesel::table! {
-    t_archived_translation (f_id) {
-        f_id -> Text,
-        f_archived_bytes -> Bytea,
-        f_archiver_id -> Text,
-        f_created_at -> Timestamptz,
-    }
-}
-
-diesel::table! {
     t_assignment (f_id) {
         f_id -> Text,
         f_chapter_id -> Text,
@@ -104,6 +77,7 @@ diesel::table! {
         f_title -> Text,
         f_author -> Text,
         f_description -> Nullable<Text>,
+        f_composed_title -> Text,
         f_cover_key -> Nullable<Text>,
         f_cover_uploaded -> Bool,
         f_cover_version -> Int8,
@@ -113,7 +87,16 @@ diesel::table! {
         f_last_active_at -> Timestamptz,
         f_created_at -> Timestamptz,
         f_updated_at -> Timestamptz,
-        f_composed_title -> Text,
+    }
+}
+
+diesel::table! {
+    t_comic_archive (f_id) {
+        f_id -> Text,
+        f_team_id -> Text,
+        f_archived_bytes -> Bytea,
+        f_archiver_id -> Text,
+        f_created_at -> Timestamptz,
     }
 }
 
@@ -219,6 +202,33 @@ diesel::table! {
 }
 
 diesel::table! {
+    t_term (f_id) {
+        f_id -> Text,
+        f_termbase_id -> Text,
+        f_source -> Text,
+        f_targets -> Array<Nullable<Text>>,
+        f_comment -> Nullable<Text>,
+        f_creator_id -> Text,
+        f_created_at -> Timestamptz,
+        f_updated_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
+    t_termbase (f_id) {
+        f_id -> Text,
+        f_team_id -> Nullable<Text>,
+        f_comic_id -> Nullable<Text>,
+        f_name -> Text,
+        f_description -> Nullable<Text>,
+        f_term_count -> Int4,
+        f_creator_id -> Text,
+        f_created_at -> Timestamptz,
+        f_updated_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     t_unit (f_id) {
         f_id -> Text,
         f_page_id -> Text,
@@ -277,6 +287,7 @@ diesel::joinable!(t_chapter -> t_comic (f_comic_id));
 diesel::joinable!(t_chapter -> t_user (f_creator_id));
 diesel::joinable!(t_comic -> t_user (f_creator_id));
 diesel::joinable!(t_comic -> t_workset (f_workset_id));
+diesel::joinable!(t_comic_archive -> t_team (f_team_id));
 diesel::joinable!(t_comment -> t_team (f_team_id));
 diesel::joinable!(t_comment -> t_user (f_user_id));
 diesel::joinable!(t_member -> t_team (f_team_id));
@@ -285,18 +296,21 @@ diesel::joinable!(t_member_invitation -> t_team (f_team_id));
 diesel::joinable!(t_member_invitation -> t_user (f_inviter_id));
 diesel::joinable!(t_page -> t_chapter (f_chapter_id));
 diesel::joinable!(t_system_mail -> t_user (f_receiver_id));
+diesel::joinable!(t_term -> t_termbase (f_termbase_id));
+diesel::joinable!(t_term -> t_user (f_creator_id));
+diesel::joinable!(t_termbase -> t_comic (f_comic_id));
+diesel::joinable!(t_termbase -> t_team (f_team_id));
+diesel::joinable!(t_termbase -> t_user (f_creator_id));
 diesel::joinable!(t_unit -> t_page (f_page_id));
 diesel::joinable!(t_workset -> t_team (f_team_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     t_announcement,
-    t_archived_chapter,
-    t_archived_comic,
-    t_archived_translation,
     t_assignment,
     t_assignment_invitation,
     t_chapter,
     t_comic,
+    t_comic_archive,
     t_comment,
     t_local_message,
     t_member,
@@ -304,6 +318,8 @@ diesel::allow_tables_to_appear_in_same_query!(
     t_page,
     t_system_mail,
     t_team,
+    t_term,
+    t_termbase,
     t_unit,
     t_user,
     t_workset,

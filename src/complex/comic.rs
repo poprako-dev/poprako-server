@@ -9,6 +9,7 @@ use poprako_orchestra_extra::prom::task::Task;
 
 use crate::complex::chapter::ChapterComplex;
 use crate::complex::image::ImageComplex;
+use crate::complex::termbase::TermbaseComplex;
 use crate::complex::util::{
     check_user_is_team_admin, check_user_is_team_admin_with_roles,
     check_user_is_team_member,
@@ -27,6 +28,10 @@ use crate::part::repo::oper::comic::{
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::page::{
     DeletePages, ListFirstPageInfos, ListPageInfos,
+};
+use crate::part::repo::oper::term::DeleteTerms;
+use crate::part::repo::oper::termbase::{
+    DeleteTermbase, GetTermbaseInfoExcluded, ListTermbaseInfosExcluded,
 };
 use crate::part::repo::oper::workset::{
     GetWorksetInfo, UpdateWorksetComicCount,
@@ -122,6 +127,10 @@ impl ComicComplex {
             + for<'a> Proxy<UnpinOtherChapters<'a>, Error = BaseError>
             + for<'a> Proxy<UpdateComicChapterCount<'a>, Error = BaseError>
             + for<'a> Proxy<TouchComicLastActive<'a>, Error = BaseError>
+            + for<'a> Proxy<ListTermbaseInfosExcluded<'a>, Error = BaseError>
+            + for<'a> Proxy<GetTermbaseInfoExcluded<'a>, Error = BaseError>
+            + for<'a> Proxy<DeleteTerms<'a>, Error = BaseError>
+            + for<'a> Proxy<DeleteTermbase<'a>, Error = BaseError>
             + for<'a> Proxy<Defer<'a, String, Payload, ()>, Error = BaseError>
             + for<'t, 'a> Proxy<
                 DeferBatch<'t, 'a, String, Payload, ()>,
@@ -135,6 +144,8 @@ impl ComicComplex {
 
         let comic_info =
             proxy.exec(&GetComicInfoExcluded { id, incls: &[] }).await?;
+
+        TermbaseComplex::delete_comic_cascade(proxy, &comic_info.id).await?;
 
         let chapter_infos = proxy
             .exec(&ListChapterInfosExcluded {

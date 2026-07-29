@@ -254,7 +254,7 @@ async fn reserve_chapter_pages_creates_pages_and_urls() {
     assert!(
         reserved.creations[0]
             .put_url
-            .contains("https://test.local/put/chapter_chapter-1/")
+            .contains("https://test.local/put/page/chapter_chapter-1/")
     );
 
     for creation in &reserved.creations {
@@ -415,12 +415,12 @@ async fn reserve_image_replaces_key_and_enqueues_prom() {
 
     assert_eq!(
         reserved.put_url,
-        "https://test.local/put/chapter_chapter-1/page_page-1-2.jpg"
+        "https://test.local/put/page/chapter_chapter-1/page-1-2.jpg"
     );
 
     assert_eq!(
         snapshot.pages[0].image_key,
-        Some("chapter_chapter-1/page_page-1-2.jpg".into())
+        Some("page/chapter_chapter-1/page-1-2.jpg".into())
     );
 
     assert!(!snapshot.pages[0].image_uploaded);
@@ -438,7 +438,7 @@ async fn reserve_image_replaces_key_and_enqueues_prom() {
         &snapshot.prom_records,
         ResourceKind::PageImage,
         "page-1",
-        "chapter_chapter-1/page_page-1-2.jpg",
+        "page/chapter_chapter-1/page-1-2.jpg",
         2,
     );
 }

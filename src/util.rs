@@ -14,7 +14,7 @@ mod tests;
 ///
 /// A u64 fits in 11 base62 characters (vs 16 hex chars).
 pub fn next_snowflake_id() -> String {
-    base62::encode(next_snowflake_u64())
+    format!("{:0>11}", base62::encode(next_snowflake_u64()))
 }
 
 /// Generate a unique time-ordered 64-bit value backed by a snowflake.

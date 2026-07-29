@@ -131,6 +131,35 @@ export async function runIt04Module(ctx: RunCtx): Promise<void> {
         2,
     );
 
+    // E1.4c: role update preserves the assignment while allowing the caller
+    // to leave one of their roles.
+    const guestAssignment = await joinChapterAssignment(
+        guest01.api,
+        mainChapterId,
+        ROLE_MASK.TRANS_PROOF,
+    );
+
+    await updateAssignmentRoles(
+        guest01.api,
+        mainChapterId,
+        guest01.userId,
+        ROLE.PROOFREADER,
+    );
+
+    const guestAssignments = await listOwnerAssignments(
+        guest01.api,
+        guest01.userId,
+    );
+
+    const guestAssignmentAfterRoleExit = guestAssignments.find(
+        (assignment) => assignment.id === guestAssignment.id,
+    );
+
+    assert.ok(guestAssignmentAfterRoleExit, "guest assignment must remain");
+    assert.equal(guestAssignmentAfterRoleExit.roles, ROLE.PROOFREADER);
+
+    await deleteAssignment(guest01.api, guestAssignment.id);
+
     // E1.5: join with non-existent chapter_id -> 422/2.
     expectError(
         await trans01.api.post<ErrorBody>("/api/v1/assignments/join", {
