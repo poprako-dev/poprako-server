@@ -3,7 +3,8 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::model::term::{TermEntry, TermInfo};
+use crate::model::read::proj::term::TermInfo;
+use crate::model::write::term::TermEntry;
 use crate::part_impl::repo::rdb_impl::schema::t_term;
 
 /// Raw database row for a terminology entry.

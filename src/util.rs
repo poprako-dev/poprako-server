@@ -62,6 +62,7 @@ fn load_snowflake_node_id() -> u16 {
 /// it with the carried value.
 #[derive(Debug, Clone, Default, PartialEq)]
 pub enum Patch<T> {
+    //
     /// Resets the stored field.
     Clear,
 
@@ -108,6 +109,7 @@ where
         #[derive(Deserialize)]
         #[serde(tag = "type", content = "value", rename_all = "snake_case")]
         enum PatchVal<T> {
+            //
             /// Explicit clear — discard the current value.
             Clear,
 

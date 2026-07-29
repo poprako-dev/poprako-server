@@ -2,10 +2,11 @@ use std::collections::HashMap;
 
 use poprako_orchestra::Oper;
 
-use crate::model::page::{
-    PageEntry, PageImageReservation, PageInfo, PageManifestUpdate,
-};
+use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::unit::UnitCounters;
+use crate::model::write::page::{
+    PageEntry, PageImageRepl, PageImageReservation, PageManifestRepl,
+};
 
 /// Retrieves a single page's info by ID.
 #[derive(Oper)]
@@ -68,7 +69,7 @@ pub struct ShiftPageIndexesTemporary<'a> {
 #[oper(output = PageInfo)]
 pub struct UpdatePageManifest<'a> {
     /// The manifest update payload.
-    pub update: &'a PageManifestUpdate,
+    pub update: &'a PageManifestRepl,
 }
 
 /// Invalidates all page image keys after chapter publication.
@@ -94,28 +95,16 @@ pub struct ReservePageImage<'a> {
 #[derive(Oper)]
 #[oper(output = ())]
 pub struct MarkPageImageUploaded<'a> {
-    //
-    /// The page ID.
-    pub id: &'a str,
-    /// The image version to mark.
-    pub image_version: u32,
-    /// The optional S3 key for the uploaded image.
-    pub image_key: Option<&'a str>,
+    /// The replacement payload.
+    pub repl: &'a PageImageRepl,
 }
 
 /// Sets one page image's verified upload state for its current identity.
 #[derive(Oper)]
 #[oper(output = ())]
 pub struct SetPageImageUploaded<'a> {
-    //
-    /// The page ID.
-    pub id: &'a str,
-    /// The image version to update.
-    pub image_version: u32,
-    /// The S3 key for the image.
-    pub image_key: &'a str,
-    /// Whether the image is uploaded.
-    pub image_uploaded: bool,
+    /// The replacement payload.
+    pub repl: &'a PageImageRepl,
 }
 
 /// Sets the unit counters for a page.
@@ -133,6 +122,7 @@ pub struct SetPageUnitCounters<'a> {
 #[derive(Oper)]
 #[oper(output = ())]
 pub enum DeletePages<'a> {
+    //
     /// Deletes all pages for a chapter.
     Chapter {
         /// The chapter ID.

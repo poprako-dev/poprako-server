@@ -10,11 +10,11 @@ use super::*;
 
 use time::OffsetDateTime;
 
-use crate::model::comic::ComicInfo;
-use crate::model::member::MemberInfo;
-use crate::model::term::TermInfo;
-use crate::model::termbase::TermbaseInfo;
-use crate::model::workset::WorksetInfo;
+use crate::model::read::proj::comic::ComicInfo;
+use crate::model::read::proj::member::MemberInfo;
+use crate::model::read::proj::term::TermInfo;
+use crate::model::read::proj::termbase::TermbaseInfo;
+use crate::model::read::proj::workset::WorksetInfo;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
@@ -127,8 +127,8 @@ fn term(id: &str, termbase_id: &str) -> TermInfo {
     }
 }
 
-fn create_params() -> CreateTermbaseParams {
-    CreateTermbaseParams {
+fn create_instr() -> CreateTermbaseInstr {
+    CreateTermbaseInstr {
         team_id: Some("team-1".into()),
         comic_id: None,
         name: "  Glossary  ".into(),
@@ -149,7 +149,7 @@ async fn create_normalizes_and_persists_for_proofreader() {
         RoleMask::from(RoleField::PROOFREADER),
     ));
 
-    let payload = create((&mock, &mock), token("user-1"), create_params())
+    let val = create((&mock, &mock), token("user-1"), create_instr())
         .await
         .unwrap();
 
@@ -157,7 +157,7 @@ async fn create_normalizes_and_persists_for_proofreader() {
 
     assert_eq!(snapshot.termbases.len(), 1);
 
-    assert_eq!(snapshot.termbases[0].id, payload.id);
+    assert_eq!(snapshot.termbases[0].id, val.id);
 
     assert_eq!(snapshot.termbases[0].name, "Glossary");
 
@@ -177,7 +177,7 @@ async fn create_rejects_admin_without_proofreader() {
         RoleMask::from(RoleField::ADMIN),
     ));
 
-    let error = create((&mock, &mock), token("user-1"), create_params())
+    let error = create((&mock, &mock), token("user-1"), create_instr())
         .await
         .unwrap_err();
 
@@ -191,14 +191,14 @@ async fn create_rejects_invalid_scope() {
     //
     let mock = Mock::new();
 
-    let params = CreateTermbaseParams {
+    let instr = CreateTermbaseInstr {
         team_id: Some("team-1".into()),
         comic_id: Some("comic-1".into()),
         name: "Glossary".into(),
         description: None,
     };
 
-    let error = create((&mock, &mock), token("user-1"), params)
+    let error = create((&mock, &mock), token("user-1"), instr)
         .await
         .unwrap_err();
 
@@ -250,14 +250,14 @@ async fn list_comic_infos_inherits_team_and_excludes_sibling() {
         None,
     ));
 
-    let params = ListComicTermbaseInfosParams {
+    let instr = ListComicTermbaseInfosInstr {
         comic_id: "comic-1".into(),
         fuzzy_name: Some("hero".into()),
         offset: 0,
         limit: 20,
     };
 
-    let infos = list_comic_infos((&mock,), token("user-1"), params)
+    let infos = list_comic_infos((&mock,), token("user-1"), instr)
         .await
         .unwrap();
 
@@ -295,14 +295,14 @@ async fn list_comic_infos_does_not_search_description() {
         Some("secret phrase"),
     ));
 
-    let params = ListComicTermbaseInfosParams {
+    let instr = ListComicTermbaseInfosInstr {
         comic_id: "comic-1".into(),
         fuzzy_name: Some("secret".into()),
         offset: 0,
         limit: 20,
     };
 
-    let infos = list_comic_infos((&mock,), token("user-1"), params)
+    let infos = list_comic_infos((&mock,), token("user-1"), instr)
         .await
         .unwrap();
 

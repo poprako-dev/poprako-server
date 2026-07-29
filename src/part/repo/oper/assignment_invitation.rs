@@ -1,9 +1,8 @@
 use poprako_orchestra::Oper;
 
-use crate::model::assignment_invitation::{
-    AssignmentInvitationEntry, AssignmentInvitationInfo,
-    AssignmentInvitationListSpec,
-};
+use crate::model::read::proj::assignment_invitation::AssignmentInvitationInfo;
+use crate::model::read::spec::assignment_invitation::AssignmentInvitationListSpec;
+use crate::model::write::assignment_invitation::AssignmentInvitationEntry;
 
 /// Creates an assignment invitation.
 #[derive(Oper)]
@@ -60,6 +59,7 @@ pub struct PurgeExpiredAssignmentInvitation<'a> {
 #[derive(Oper)]
 #[oper(output = ())]
 pub enum DeleteAssignmentInvitations<'a> {
+    //
     /// Deletes by invitation identifier.
     Id {
         /// Invitation identifier.

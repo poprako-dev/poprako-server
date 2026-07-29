@@ -8,10 +8,11 @@ use time::OffsetDateTime;
 use tracing::instrument;
 
 use crate::complex::page::PageComplex;
-use crate::model::page::{
-    PageEntry, PageImageReservation, PageInfo, PageManifestUpdate,
-};
+use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::unit::UnitCounters;
+use crate::model::write::page::{
+    PageEntry, PageImageReservation, PageManifestRepl,
+};
 use crate::part_impl::repo::rdb_impl::entity::page::{
     PageAspect, PageRow, PageRowEntry,
 };
@@ -123,7 +124,7 @@ pub async fn shift_indexes_temporary(
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn update_manifest(
     conn: &mut RdbConn,
-    update: &PageManifestUpdate,
+    update: &PageManifestRepl,
 ) -> BaseRest<PageInfo> {
     //
     let now = OffsetDateTime::now_utc();

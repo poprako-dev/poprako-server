@@ -22,7 +22,7 @@ import {
     listMyMembers,
     updateMemberRoles,
 } from "../http/fixtures.js";
-import type { IdVal, TermbaseInfoVal, TermInfoVal } from "../http/types.js";
+import type { IdVal, TermbaseInfoView, TermInfoView } from "../http/types.js";
 import { titled } from "../state/prefix.js";
 import { ROLE } from "../state/roles.js";
 import type { RunCtx } from "../state/runCtx.js";
@@ -63,11 +63,11 @@ async function createTerm(
     );
 }
 
-async function getTermbase(api: RunCtx["sadmin"], termbaseId: string): Promise<TermbaseInfoVal> {
+async function getTermbase(api: RunCtx["sadmin"], termbaseId: string): Promise<TermbaseInfoView> {
     return expectSuccessData(await api.get(`/api/v1/termbases/${termbaseId}`), 200);
 }
 
-async function getTerm(api: RunCtx["sadmin"], termId: string): Promise<TermInfoVal> {
+async function getTerm(api: RunCtx["sadmin"], termId: string): Promise<TermInfoView> {
     return expectSuccessData(await api.get(`/api/v1/terms/${termId}`), 200);
 }
 
@@ -100,8 +100,8 @@ export async function runIt12Module(ctx: RunCtx): Promise<void> {
     assert.equal(teamInfo.comic_id, undefined);
     assert.equal(teamInfo.term_count, 0);
 
-    const visibleFromComic = expectSuccessList<TermbaseInfoVal>(
-        await translator.api.get<SuccessBody<TermbaseInfoVal[]>>(
+    const visibleFromComic = expectSuccessList<TermbaseInfoView>(
+        await translator.api.get<SuccessBody<TermbaseInfoView[]>>(
             `/api/v1/comics/${mainComicId}/termbases?offset=0&limit=20`,
         ),
         200,
@@ -112,8 +112,8 @@ export async function runIt12Module(ctx: RunCtx): Promise<void> {
         new Set([teamTermbase.id, comicTermbase.id]),
     );
 
-    const fuzzyByName = expectSuccessList<TermbaseInfoVal>(
-        await translator.api.get<SuccessBody<TermbaseInfoVal[]>>(
+    const fuzzyByName = expectSuccessList<TermbaseInfoView>(
+        await translator.api.get<SuccessBody<TermbaseInfoView[]>>(
             `/api/v1/comics/${mainComicId}/termbases?fuzzy_name=${encodeURIComponent("main comic")}&offset=0&limit=20`,
         ),
         200,
@@ -121,8 +121,8 @@ export async function runIt12Module(ctx: RunCtx): Promise<void> {
 
     assert.deepEqual(fuzzyByName.map((termbase) => termbase.id), [comicTermbase.id]);
 
-    const fuzzyByDescription = expectSuccessList<TermbaseInfoVal>(
-        await translator.api.get<SuccessBody<TermbaseInfoVal[]>>(
+    const fuzzyByDescription = expectSuccessList<TermbaseInfoView>(
+        await translator.api.get<SuccessBody<TermbaseInfoView[]>>(
             `/api/v1/comics/${mainComicId}/termbases?fuzzy_name=${encodeURIComponent("description")}&offset=0&limit=20`,
         ),
         200,
@@ -192,8 +192,8 @@ export async function runIt12Module(ctx: RunCtx): Promise<void> {
     assert.deepEqual(updatedTerm.targets, ["女主角", "主角"]);
     assert.equal(updatedTerm.comment, undefined);
 
-    const termFuzzy = expectSuccessList<TermInfoVal>(
-        await translator.api.get<SuccessBody<TermInfoVal[]>>(
+    const termFuzzy = expectSuccessList<TermInfoView>(
+        await translator.api.get<SuccessBody<TermInfoView[]>>(
             `/api/v1/termbases/${comicTermbase.id}/terms?fuzzy_source=heroine&offset=0&limit=20`,
         ),
         200,
@@ -201,8 +201,8 @@ export async function runIt12Module(ctx: RunCtx): Promise<void> {
 
     assert.deepEqual(termFuzzy.map((listedTerm) => listedTerm.id), [term.id]);
 
-    const targetFuzzy = expectSuccessList<TermInfoVal>(
-        await translator.api.get<SuccessBody<TermInfoVal[]>>(
+    const targetFuzzy = expectSuccessList<TermInfoView>(
+        await translator.api.get<SuccessBody<TermInfoView[]>>(
             `/api/v1/termbases/${comicTermbase.id}/terms?fuzzy_source=${encodeURIComponent("女主角")}&offset=0&limit=20`,
         ),
         200,

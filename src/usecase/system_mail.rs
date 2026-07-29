@@ -5,11 +5,12 @@ use tracing::instrument;
 
 use poprako_util::time::ToUnixMilli as _;
 
-use crate::data::system_mail::{ListSystemMailInfosParams, SystemMailInfoVal};
-use crate::model::system_mail::{
-    SystemMailInfoListKind, SystemMailInfoListSpec,
+use crate::data::instr::system_mail::ListSystemMailInfosInstr;
+use crate::data::view::system_mail::SystemMailInfoView;
+use crate::model::read::spec::system_mail::{
+    SystemMailListKind, SystemMailListSpec,
 };
-use crate::model::user::UserToken;
+use crate::model::shared::user::UserToken;
 use crate::part::repo::oper::system_mail::{
     ListSystemMailInfos, MarkSystemMailRead,
 };
@@ -22,7 +23,7 @@ mod tests;
 /// Lists system mails for the current user.
 ///
 /// Non-transactional read — returns mails ordered by creation time
-/// descending, filtered and paginated via [`ListSystemMailInfosParams`].
+/// descending, filtered and paginated via [`ListSystemMailInfosInstr`].
 /// The `read` field controls status filtering: [`Some`] returns only
 /// matching status; [`None`] returns all.
 ///
@@ -30,30 +31,30 @@ mod tests;
 ///
 /// * `R: SystemMailRepo` — System mail storage.
 ///
-/// [`ListSystemMailInfosParams`]: ListSystemMailInfosParams
+/// [`ListSystemMailInfosInstr`]: ListSystemMailInfosInstr
 #[instrument(level = "info", err(Debug), skip(repo))]
 pub async fn list_infos<R>(
     (repo,): (&R,),
     token: UserToken,
-    params: ListSystemMailInfosParams,
-) -> BaseRest<Vec<SystemMailInfoVal>>
+    instr: ListSystemMailInfosInstr,
+) -> BaseRest<Vec<SystemMailInfoView>>
 where
     R: SystemMailRepo,
 {
-    let kind = match params.is_read {
+    let kind = match instr.is_read {
         //
-        Some(true) => SystemMailInfoListKind::Read,
+        Some(true) => SystemMailListKind::Read,
 
-        Some(false) => SystemMailInfoListKind::Unread,
+        Some(false) => SystemMailListKind::Unread,
 
-        None => SystemMailInfoListKind::All,
+        None => SystemMailListKind::All,
     };
 
-    let system_mail_list_spec = SystemMailInfoListSpec {
+    let system_mail_list_spec = SystemMailListSpec {
         receiver_id: token.user_id,
         kind,
-        offset: params.offset,
-        limit: params.limit,
+        offset: instr.offset,
+        limit: instr.limit,
     };
 
     let system_mail_infos = ListSystemMailInfos {
@@ -64,7 +65,7 @@ where
 
     let system_mail_vals = system_mail_infos
         .into_iter()
-        .map(|system_mail_info| SystemMailInfoVal {
+        .map(|system_mail_info| SystemMailInfoView {
             id: system_mail_info.id,
             title: system_mail_info.title,
             content: system_mail_info.content,

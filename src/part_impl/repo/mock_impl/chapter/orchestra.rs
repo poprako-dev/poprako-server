@@ -3,7 +3,8 @@ use std::collections::HashMap;
 use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
-use crate::model::chapter::{ChapterInfo, ChapterInfoListSpec};
+use crate::model::read::proj::chapter::ChapterInfo;
+use crate::model::read::spec::chapter::ChapterListSpec;
 use crate::part::repo::oper::chapter::{
     AdjustChapterUnitCounters, CompleteChapterRawProvide, CreateChapter,
     DeleteChapter, FindPinnedChapterInfo, GetChapterInfo,
@@ -24,7 +25,7 @@ use crate::value::chapter::{ChapterInclOpt, Stage, StagePhase};
 // Internal implementation of `list_chapter_infos`.
 fn list_chapter_infos(
     state: &MockState,
-    spec: &ChapterInfoListSpec,
+    spec: &ChapterListSpec,
 ) -> Vec<ChapterInfo> {
     //
     // Internal implementation detail.

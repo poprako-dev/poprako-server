@@ -5,7 +5,8 @@ use std::collections::HashSet;
 
 use poprako_util::i18n::trl;
 
-use crate::model::page::{PageImageSpec, PageInfo};
+use crate::model::read::proj::page::PageInfo;
+use crate::model::write::page::PageImageSpec;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
 #[cfg(test)]
@@ -33,9 +34,8 @@ pub fn build(
     page_specs: &[PageImageSpec],
 ) -> BaseRest<ManifestPlan> {
     //
-    let mut assigned_existing_indexes = vec![None; page_specs.len()];
-
-    let mut consumed_existing_indexes = HashSet::new();
+    let (mut assigned_existing_indexes, mut consumed_existing_indexes) =
+        (vec![None; page_specs.len()], HashSet::new());
 
     for (request_index, page_spec) in page_specs.iter().enumerate() {
         //

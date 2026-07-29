@@ -83,9 +83,7 @@ where
     pub async fn run(self) {
         //
         // Internal implementation detail.
-        let handler = Arc::new(self);
-
-        let completed = Arc::new(Notify::new());
+        let (handler, completed) = (Arc::new(self), Arc::new(Notify::new()));
 
         let (worker_senders, worker_handles) =
             handler.spawn_workers(completed.clone());
@@ -113,9 +111,10 @@ where
     ) -> (Vec<WorkerSender>, Vec<JoinHandle<()>>) {
         //
         // Internal implementation detail.
-        let mut worker_senders = Vec::with_capacity(WORKER_COUNT);
-
-        let mut worker_handles = Vec::with_capacity(WORKER_COUNT);
+        let (mut worker_senders, mut worker_handles) = (
+            Vec::with_capacity(WORKER_COUNT),
+            Vec::with_capacity(WORKER_COUNT),
+        );
 
         for worker_index in 0..WORKER_COUNT {
             //
@@ -123,9 +122,7 @@ where
             let (worker_sender, mut worker_receiver) =
                 mpsc::unbounded_channel();
 
-            let handler = self.clone();
-
-            let completed = completed.clone();
+            let (handler, completed) = (self.clone(), completed.clone());
 
             let worker_handle = tokio::spawn(async move {
                 //
@@ -160,9 +157,8 @@ where
     ) {
         //
         // Internal implementation detail.
-        let mut next_stuck_reset_at = OffsetDateTime::now_utc();
-
-        let mut next_completed_purge_at = OffsetDateTime::now_utc();
+        let (mut next_stuck_reset_at, mut next_completed_purge_at) =
+            (OffsetDateTime::now_utc(), OffsetDateTime::now_utc());
 
         loop {
             //
@@ -456,9 +452,10 @@ where
 
         let mut context = RdbContext::new(conn);
 
-        let completed_before = OffsetDateTime::now_utc() - COMPLETED_RETENTION;
-
-        let dead_before = OffsetDateTime::now_utc() - DEAD_RETENTION;
+        let (completed_before, dead_before) = (
+            OffsetDateTime::now_utc() - COMPLETED_RETENTION,
+            OffsetDateTime::now_utc() - DEAD_RETENTION,
+        );
 
         PurgeCompleted::new(&completed_before, &dead_before)
             .step_on(&self.repo, &mut context)

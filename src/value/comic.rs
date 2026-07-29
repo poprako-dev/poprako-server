@@ -10,11 +10,12 @@ use crate::value::incl::InclOpt;
 /// Incl opts for comic info queries.
 ///
 /// Each opt embeds additional related data into the returned
-/// [`ComicInfoVal`]. Dotted opts implicitly pull in the segments before the
+/// [`ComicInfoView`]. Dotted opts implicitly pull in the segments before the
 /// dot (e.g. `workset.team` also embeds `workset`).
 #[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub enum ComicInclOpt {
+    //
     /// Embed the parent workset (`workset`).
     #[serde(rename = "workset")]
     Workset,
@@ -50,6 +51,7 @@ impl InclOpt for ComicInclOpt {
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum ComicWithOpt {
+    //
     /// Populate the parallel pinned-chapter list.
     PinnedChapter,
 

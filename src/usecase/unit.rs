@@ -5,12 +5,12 @@ use tracing::instrument;
 
 use crate::complex::chapter::ChapterComplex;
 use crate::complex::unit::{UnitComplex, UnitPermComplex};
-use crate::data::unit::{
-    ListPageUnitInfosParams, ListPageUnitInfosPayload, SavePageUnitEditsParams,
-    into_unit_edits,
+use crate::data::instr::unit::{
+    ListPageUnitInfosInstr, SavePageUnitEditsInstr, into_unit_edits,
 };
+use crate::data::val::unit::ListPageUnitInfosVal;
 use crate::model::read::proj::unit::UnitCounters;
-use crate::model::user::UserToken;
+use crate::model::shared::user::UserToken;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
@@ -45,8 +45,8 @@ mod tests;
 pub async fn list_infos<C, R>(
     (repo,): (&R,),
     token: UserToken,
-    params: ListPageUnitInfosParams,
-) -> BaseRest<ListPageUnitInfosPayload>
+    instr: ListPageUnitInfosInstr,
+) -> BaseRest<ListPageUnitInfosVal>
 where
     R: PageRepo<C>
         + UnitRepo<C>
@@ -57,11 +57,7 @@ where
         + AssignmentRepo<C>
         + Sync,
 {
-    let page_info = GetPageInfo {
-        id: &params.page_id,
-    }
-    .run_on(repo)
-    .await?;
+    let page_info = GetPageInfo { id: &instr.page_id }.run_on(repo).await?;
 
     UnitPermComplex::ensure_user_can_list_infos(
         &mut run_proxy! {
@@ -89,7 +85,7 @@ where
         proofread_unit_count: page_info.proofread_unit_count,
     };
 
-    accept(ListPageUnitInfosPayload::from_parts(unit_infos, counters))
+    accept(ListPageUnitInfosVal::from_parts(unit_infos, counters))
 }
 
 #[instrument(level = "info", err(Debug), skip(nucl, repo))]
@@ -97,7 +93,7 @@ where
 pub async fn save_edits<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
-    params: SavePageUnitEditsParams,
+    instr: SavePageUnitEditsInstr,
 ) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
@@ -112,7 +108,7 @@ where
         + Sync
         + 'static,
 {
-    let SavePageUnitEditsParams { page_id, edits } = params;
+    let SavePageUnitEditsInstr { page_id, edits } = instr;
 
     let edits = into_unit_edits(edits, &token.user_id, UnitComplex::gen_id)?;
 

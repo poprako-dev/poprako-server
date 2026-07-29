@@ -1,4 +1,4 @@
-use crate::model::announcement::AnnouncementInfo;
+use crate::model::read::proj::announcement::AnnouncementInfo;
 use crate::part_impl::repo::rdb_impl::incl::framework::{
     BatchByIds, Incl, UserByIds, populate,
 };

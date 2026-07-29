@@ -4,7 +4,7 @@ use std::collections::HashSet;
 
 use poprako_util::i18n::trl;
 
-use crate::model::term::{TermEntry, TermInfoUpdate};
+use crate::model::write::term::{TermEntry, TermRepl};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 
@@ -35,9 +35,10 @@ fn normalize_targets(targets: Vec<String>) -> BaseRest<Vec<String>> {
         return Err(expected("error-term-targets-required"));
     }
 
-    let mut normalized_targets = Vec::with_capacity(targets.len());
-
-    let mut seen_targets = HashSet::with_capacity(targets.len());
+    let (mut normalized_targets, mut seen_targets) = (
+        Vec::with_capacity(targets.len()),
+        HashSet::with_capacity(targets.len()),
+    );
 
     for target in targets {
         //
@@ -92,11 +93,11 @@ impl TermComplex {
         creator_id: String,
     ) -> BaseRest<TermEntry> {
         //
-        let source = normalize_source(source)?;
-
-        let targets = normalize_targets(targets)?;
-
-        let comment = normalize_comment(comment);
+        let (source, targets, comment) = (
+            normalize_source(source)?,
+            normalize_targets(targets)?,
+            normalize_comment(comment),
+        );
 
         accept(TermEntry {
             id: next_snowflake_id(),
@@ -114,15 +115,15 @@ impl TermComplex {
         source: String,
         targets: Vec<String>,
         comment: Option<String>,
-    ) -> BaseRest<TermInfoUpdate> {
+    ) -> BaseRest<TermRepl> {
         //
-        let source = normalize_source(source)?;
+        let (source, targets, comment) = (
+            normalize_source(source)?,
+            normalize_targets(targets)?,
+            normalize_comment(comment),
+        );
 
-        let targets = normalize_targets(targets)?;
-
-        let comment = normalize_comment(comment);
-
-        accept(TermInfoUpdate {
+        accept(TermRepl {
             id,
             source,
             targets,

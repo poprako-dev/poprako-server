@@ -1,12 +1,12 @@
 use super::*;
+use crate::data::instr::comic::CreateComicInstr;
 
-use crate::data::comic::CreateComicParams;
-use crate::model::assignment::AssignmentInfo;
-use crate::model::chapter::ChapterInfo;
-use crate::model::comic::ComicInfo;
-use crate::model::member::MemberInfo;
-use crate::model::page::PageInfo;
-use crate::model::user::UserToken;
+use crate::model::read::proj::assignment::AssignmentInfo;
+use crate::model::read::proj::chapter::ChapterInfo;
+use crate::model::read::proj::comic::ComicInfo;
+use crate::model::read::proj::member::MemberInfo;
+use crate::model::read::proj::page::PageInfo;
+use crate::model::shared::user::UserToken;
 use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
@@ -118,8 +118,8 @@ pub fn page(
     }
 }
 
-pub fn create_params(workset_id: &str) -> CreateComicParams {
-    CreateComicParams {
+pub fn create_instr(workset_id: &str) -> CreateComicInstr {
+    CreateComicInstr {
         workset_id: workset_id.into(),
         title: "new".into(),
         author: "author".into(),

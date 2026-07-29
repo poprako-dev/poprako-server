@@ -10,33 +10,33 @@ import {
 import { ApiClient, clientFor } from "./apiClient.js";
 import type { SuccessBody } from "./apiClient.js";
 import type {
-    AnnouncementInfoVal,
+    AnnouncementInfoView,
     ArchiveComicVal,
-    AssignmentInfoVal,
-    AssignmentInvitationInfoVal,
-    ChapterInfoVal,
+    AssignmentInfoView,
+    AssignmentInvitationInfoView,
+    ChapterInfoView,
     CodeVal,
-    ComicInfoVal,
-    ListComicInfosPayload,
-    CommentInfoVal,
+    ComicInfoView,
+    ListComicInfosVal,
+    CommentInfoView,
     CreateComicVal,
     IdVal,
     ListPageUnitInfosVal,
     LoginVal,
-    MemberInfoVal,
-    MemberInvitationInfoVal,
+    MemberInfoView,
+    MemberInvitationInfoView,
     ImageExtension,
-    PageInfoVal,
+    PageInfoView,
     PageImageInput,
     PoprakoExportVal,
     ReserveChapterPagesVal,
     ReservedPageVal,
-    ReserveImagePayload,
-    SystemMailInfoVal,
-    TeamInfoVal,
-    UnitInfoVal,
-    UserInfoVal,
-    WorksetInfoVal,
+    ReserveImageVal,
+    SystemMailInfoView,
+    TeamInfoView,
+    UnitInfoView,
+    UserInfoView,
+    WorksetInfoView,
 } from "./types.js";
 import type { StageName, StageOper } from "../state/stages.js";
 
@@ -123,11 +123,11 @@ export async function logout(api: ApiClient): Promise<void> {
 
 // ---------- user ----------
 
-export async function getMyInfo(api: ApiClient): Promise<UserInfoVal> {
+export async function getMyInfo(api: ApiClient): Promise<UserInfoView> {
     return expectSuccessData(await api.get("/api/v1/users/me"), 200);
 }
 
-export async function getUserInfo(api: ApiClient, userId: string): Promise<UserInfoVal> {
+export async function getUserInfo(api: ApiClient, userId: string): Promise<UserInfoView> {
     return expectSuccessData(await api.get(`/api/v1/users/${userId}`), 200);
 }
 
@@ -137,9 +137,9 @@ export async function createTeam(
     api: ApiClient,
     name: string,
     description: string,
-): Promise<TeamInfoVal> {
+): Promise<TeamInfoView> {
     return expectSuccessData(
-        await api.post<SuccessBody<TeamInfoVal>>("/api/v1/teams", {
+        await api.post<SuccessBody<TeamInfoView>>("/api/v1/teams", {
             description,
             name,
         }),
@@ -147,16 +147,16 @@ export async function createTeam(
     );
 }
 
-export async function getTeam(api: ApiClient, teamId: string): Promise<TeamInfoVal> {
+export async function getTeam(api: ApiClient, teamId: string): Promise<TeamInfoView> {
     return expectSuccessData(await api.get(`/api/v1/teams/${teamId}`), 200);
 }
 
-export async function listTeams(api: ApiClient, userId?: string): Promise<TeamInfoVal[]> {
+export async function listTeams(api: ApiClient, userId?: string): Promise<TeamInfoView[]> {
     const query = userId
         ? `?user_id=${encodeURIComponent(userId)}&offset=0&limit=50`
         : "?offset=0&limit=50";
 
-    return expectSuccessList(await api.get<SuccessBody<TeamInfoVal[]>>(`/api/v1/teams${query}`), 200);
+    return expectSuccessList(await api.get<SuccessBody<TeamInfoView[]>>(`/api/v1/teams${query}`), 200);
 }
 
 export async function updateTeam(
@@ -178,7 +178,7 @@ export async function reserveTeamAvatar(
     api: ApiClient,
     teamId: string,
     ext: ImageExtension,
-): Promise<ReserveImagePayload> {
+): Promise<ReserveImageVal> {
     return reserveAndUploadImage(
         api,
         `/api/v1/teams/${teamId}/avatar/reserve`,
@@ -192,13 +192,13 @@ async function reserveAndUploadImage(
     path: string,
     content: string,
     ext: ImageExtension,
-): Promise<ReserveImagePayload> {
+): Promise<ReserveImageVal> {
     const imageBytes = new TextEncoder().encode(content);
 
     const imageHash = createHash("sha256").update(imageBytes).digest("base64");
 
     const reserved = expectSuccessData(
-        await api.post<SuccessBody<ReserveImagePayload>>(path, {
+        await api.post<SuccessBody<ReserveImageVal>>(path, {
             image_hash: imageHash,
             new_byte_len: imageBytes.byteLength,
             ext,
@@ -237,7 +237,7 @@ export async function reserveUserAvatar(
     api: ApiClient,
     userId: string,
     ext: ImageExtension,
-): Promise<ReserveImagePayload> {
+): Promise<ReserveImageVal> {
     return reserveAndUploadImage(
         api,
         `/api/v1/users/${userId}/avatar/reserve`,
@@ -260,9 +260,9 @@ export async function markUserAvatarUploaded(
 
 // ---------- member ----------
 
-export async function listMyMembers(api: ApiClient, incl = ""): Promise<MemberInfoVal[]> {
+export async function listMyMembers(api: ApiClient, incl = ""): Promise<MemberInfoView[]> {
     return expectSuccessList(
-        await api.get<SuccessBody<MemberInfoVal[]>>(`/api/v1/members/me?offset=0&limit=50${incl}`),
+        await api.get<SuccessBody<MemberInfoView[]>>(`/api/v1/members/me?offset=0&limit=50${incl}`),
         200,
     );
 }
@@ -271,11 +271,11 @@ export async function listTeamMembers(
     api: ApiClient,
     teamId: string,
     extraQuery = "",
-): Promise<MemberInfoVal[]> {
+): Promise<MemberInfoView[]> {
     const query = `?team_id=${encodeURIComponent(teamId)}&offset=0&limit=50${extraQuery}`;
 
     return expectSuccessList(
-        await api.get<SuccessBody<MemberInfoVal[]>>(`/api/v1/members${query}`),
+        await api.get<SuccessBody<MemberInfoView[]>>(`/api/v1/members${query}`),
         200,
     );
 }
@@ -315,11 +315,11 @@ export async function listMemberInvitations(
     api: ApiClient,
     teamId: string,
     pending: boolean,
-): Promise<MemberInvitationInfoVal[]> {
+): Promise<MemberInvitationInfoView[]> {
     const query = `?pending=${pending}&offset=0&limit=100`;
 
     return expectSuccessList(
-        await api.get<SuccessBody<MemberInvitationInfoVal[]>>(
+        await api.get<SuccessBody<MemberInvitationInfoView[]>>(
             `/api/v1/teams/${teamId}/member-invitations${query}`,
         ),
         200,
@@ -361,13 +361,13 @@ export async function createWorkset(
     );
 }
 
-export async function getWorkset(api: ApiClient, worksetId: string): Promise<WorksetInfoVal> {
+export async function getWorkset(api: ApiClient, worksetId: string): Promise<WorksetInfoView> {
     return expectSuccessData(await api.get(`/api/v1/worksets/${worksetId}`), 200);
 }
 
-export async function listTeamWorksets(api: ApiClient, teamId: string): Promise<WorksetInfoVal[]> {
+export async function listTeamWorksets(api: ApiClient, teamId: string): Promise<WorksetInfoView[]> {
     return expectSuccessList(
-        await api.get<SuccessBody<WorksetInfoVal[]>>(`/api/v1/teams/${teamId}/worksets?offset=0&limit=100`),
+        await api.get<SuccessBody<WorksetInfoView[]>>(`/api/v1/teams/${teamId}/worksets?offset=0&limit=100`),
         200,
     );
 }
@@ -412,7 +412,7 @@ export async function createComic(
     );
 }
 
-export async function getComic(api: ApiClient, comicId: string): Promise<ComicInfoVal> {
+export async function getComic(api: ApiClient, comicId: string): Promise<ComicInfoView> {
     return expectSuccessData(await api.get(`/api/v1/comics/${comicId}`), 200);
 }
 
@@ -427,7 +427,7 @@ export async function listWorksetComics(
     api: ApiClient,
     worksetId: string,
     extraQuery = "",
-): Promise<ComicInfoVal[]> {
+): Promise<ComicInfoView[]> {
     const payload = await listWorksetComicInfos(api, worksetId, extraQuery);
 
     return payload.comics;
@@ -437,11 +437,11 @@ export async function listWorksetComicInfos(
     api: ApiClient,
     worksetId: string,
     extraQuery = "",
-): Promise<ListComicInfosPayload> {
+): Promise<ListComicInfosVal> {
     const query = `?offset=0&limit=100${extraQuery}`;
 
     return expectSuccessData(
-        await api.get<SuccessBody<ListComicInfosPayload>>(`/api/v1/worksets/${worksetId}/comics${query}`),
+        await api.get<SuccessBody<ListComicInfosVal>>(`/api/v1/worksets/${worksetId}/comics${query}`),
         200,
     );
 }
@@ -467,7 +467,7 @@ export async function reserveComicCover(
     api: ApiClient,
     comicId: string,
     ext: ImageExtension,
-): Promise<ReserveImagePayload> {
+): Promise<ReserveImageVal> {
     return reserveAndUploadImage(
         api,
         `/api/v1/comics/${comicId}/cover/reserve`,
@@ -504,7 +504,7 @@ export async function createChapter(
     );
 }
 
-export async function getChapter(api: ApiClient, chapterId: string): Promise<ChapterInfoVal> {
+export async function getChapter(api: ApiClient, chapterId: string): Promise<ChapterInfoView> {
     return expectSuccessData(await api.get(`/api/v1/chapters/${chapterId}`), 200);
 }
 
@@ -512,11 +512,11 @@ export async function listComicChapters(
     api: ApiClient,
     comicId: string,
     extraQuery = "",
-): Promise<ChapterInfoVal[]> {
+): Promise<ChapterInfoView[]> {
     const query = `?offset=0&limit=100${extraQuery}`;
 
     return expectSuccessList(
-        await api.get<SuccessBody<ChapterInfoVal[]>>(`/api/v1/comics/${comicId}/chapters${query}`),
+        await api.get<SuccessBody<ChapterInfoView[]>>(`/api/v1/comics/${comicId}/chapters${query}`),
         200,
     );
 }
@@ -524,9 +524,9 @@ export async function listComicChapters(
 export async function getPinnedChapter(
     api: ApiClient,
     comicId: string,
-): Promise<ChapterInfoVal | null> {
+): Promise<ChapterInfoView | null> {
     const data = expectSuccessData(
-        await api.get<SuccessBody<ChapterInfoVal | null>>(`/api/v1/comics/${comicId}/chapters/pinned`),
+        await api.get<SuccessBody<ChapterInfoView | null>>(`/api/v1/comics/${comicId}/chapters/pinned`),
         200,
     );
 
@@ -629,9 +629,9 @@ export async function reserveChapterPages(
     return reserved;
 }
 
-export async function listChapterPages(api: ApiClient, chapterId: string): Promise<PageInfoVal[]> {
+export async function listChapterPages(api: ApiClient, chapterId: string): Promise<PageInfoView[]> {
     return expectSuccessList(
-        await api.get<SuccessBody<PageInfoVal[]>>(`/api/v1/chapters/${chapterId}/pages?offset=0&limit=100`),
+        await api.get<SuccessBody<PageInfoView[]>>(`/api/v1/chapters/${chapterId}/pages?offset=0&limit=100`),
         200,
     );
 }
@@ -824,11 +824,11 @@ export async function listChapterAssignments(
     api: ApiClient,
     chapterId: string,
     extraQuery = "",
-): Promise<AssignmentInfoVal[]> {
+): Promise<AssignmentInfoView[]> {
     const query = `?chapter_id=${encodeURIComponent(chapterId)}&offset=0&limit=100${extraQuery}`;
 
     return expectSuccessList(
-        await api.get<SuccessBody<AssignmentInfoVal[]>>(`/api/v1/assignments${query}`),
+        await api.get<SuccessBody<AssignmentInfoView[]>>(`/api/v1/assignments${query}`),
         200,
     );
 }
@@ -837,11 +837,11 @@ export async function listOwnerAssignments(
     api: ApiClient,
     ownerId: string,
     extraQuery = "",
-): Promise<AssignmentInfoVal[]> {
+): Promise<AssignmentInfoView[]> {
     const query = `?owner_id=${encodeURIComponent(ownerId)}&offset=0&limit=100${extraQuery}`;
 
     return expectSuccessList(
-        await api.get<SuccessBody<AssignmentInfoVal[]>>(`/api/v1/assignments${query}`),
+        await api.get<SuccessBody<AssignmentInfoView[]>>(`/api/v1/assignments${query}`),
         200,
     );
 }
@@ -850,9 +850,9 @@ export async function joinChapterAssignment(
     api: ApiClient,
     chapterId: string,
     roles: number,
-): Promise<AssignmentInfoVal> {
+): Promise<AssignmentInfoView> {
     return expectSuccessData(
-        await api.post<SuccessBody<AssignmentInfoVal>>("/api/v1/assignments/join", {
+        await api.post<SuccessBody<AssignmentInfoView>>("/api/v1/assignments/join", {
             chapter_id: chapterId,
             roles,
         }),
@@ -901,11 +901,11 @@ export async function listChapterAssignmentInvitations(
     api: ApiClient,
     chapterId: string,
     pending: boolean,
-): Promise<AssignmentInvitationInfoVal[]> {
+): Promise<AssignmentInvitationInfoView[]> {
     const query = `?pending=${pending}&offset=0&limit=100`;
 
     return expectSuccessList(
-        await api.get<SuccessBody<AssignmentInvitationInfoVal[]>>(
+        await api.get<SuccessBody<AssignmentInvitationInfoView[]>>(
             `/api/v1/chapters/${chapterId}/assignment-invitations${query}`,
         ),
         200,
@@ -915,9 +915,9 @@ export async function listChapterAssignmentInvitations(
 export async function joinAssignmentInvitation(
     api: ApiClient,
     code: string,
-): Promise<AssignmentInfoVal> {
+): Promise<AssignmentInfoView> {
     return expectSuccessData(
-        await api.post<SuccessBody<AssignmentInfoVal>>("/api/v1/assignment-invitations/join", {
+        await api.post<SuccessBody<AssignmentInfoView>>("/api/v1/assignment-invitations/join", {
             code,
         }),
         201,
@@ -936,9 +936,9 @@ export async function deleteAssignmentInvitation(
 export async function listSystemMails(
     api: ApiClient,
     extraQuery = "",
-): Promise<SystemMailInfoVal[]> {
+): Promise<SystemMailInfoView[]> {
     return expectSuccessList(
-        await api.get<SuccessBody<SystemMailInfoVal[]>>(`/api/v1/system-mails?offset=0&limit=100${extraQuery}`),
+        await api.get<SuccessBody<SystemMailInfoView[]>>(`/api/v1/system-mails?offset=0&limit=100${extraQuery}`),
         200,
     );
 }
@@ -1002,9 +1002,9 @@ export async function createAnnouncement(
 export async function listTeamAnnouncements(
     api: ApiClient,
     teamId: string,
-): Promise<AnnouncementInfoVal[]> {
+): Promise<AnnouncementInfoView[]> {
     return expectSuccessList(
-        await api.get<SuccessBody<AnnouncementInfoVal[]>>(`/api/v1/teams/${teamId}/announcements?offset=0&limit=100`),
+        await api.get<SuccessBody<AnnouncementInfoView[]>>(`/api/v1/teams/${teamId}/announcements?offset=0&limit=100`),
         200,
     );
 }
@@ -1015,9 +1015,9 @@ export async function listTeamAnnouncementsPaged(
     teamId: string,
     offset: number,
     limit: number,
-): Promise<AnnouncementInfoVal[]> {
+): Promise<AnnouncementInfoView[]> {
     return expectSuccessList(
-        await api.get<SuccessBody<AnnouncementInfoVal[]>>(`/api/v1/teams/${teamId}/announcements?offset=${offset}&limit=${limit}`),
+        await api.get<SuccessBody<AnnouncementInfoView[]>>(`/api/v1/teams/${teamId}/announcements?offset=${offset}&limit=${limit}`),
         200,
     );
 }
@@ -1036,9 +1036,9 @@ export async function createComment(
     );
 }
 
-export async function listTeamComments(api: ApiClient, teamId: string): Promise<CommentInfoVal[]> {
+export async function listTeamComments(api: ApiClient, teamId: string): Promise<CommentInfoView[]> {
     return expectSuccessList(
-        await api.get<SuccessBody<CommentInfoVal[]>>(`/api/v1/teams/${teamId}/comments?offset=0&limit=100`),
+        await api.get<SuccessBody<CommentInfoView[]>>(`/api/v1/teams/${teamId}/comments?offset=0&limit=100`),
         200,
     );
 }

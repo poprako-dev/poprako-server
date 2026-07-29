@@ -1,9 +1,11 @@
 // page_roundtrip_uses_testcontainer(SetPageUnitCounters, ReservePageImage, ListPageInfos)(positive): page repo persists, returns the replaced image key, and updates page counters in an isolated PostgreSQL container.
 
+use super::*;
+
 use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 
-use crate::model::page::PageEntry;
 use crate::model::read::proj::unit::UnitCounters;
+use crate::model::write::page::PageEntry;
 use crate::part::repo::oper::page::{
     CreatePages, GetPageInfo, ListFirstPageInfos, ListPageInfos,
     ReservePageImage, SetPageUnitCounters,

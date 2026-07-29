@@ -5,13 +5,14 @@
 // create(create)(negative): non-member should be rejected without mutation.
 
 use super::*;
+use crate::data::instr::comment::{CreateCommentInstr, ListCommentInfosInstr};
 
 use time::OffsetDateTime;
 
-use crate::data::comment::{CreateCommentParams, ListCommentInfosParams};
-use crate::model::comment::CommentInfo;
-use crate::model::member::MemberInfo;
-use crate::model::user::{UserCredential, UserInfo, UserToken};
+use crate::model::read::proj::comment::CommentInfo;
+use crate::model::read::proj::member::MemberInfo;
+use crate::model::read::proj::user::{UserCredential, UserInfo};
+use crate::model::shared::user::UserToken;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::{assert_expected_variant, now};
@@ -90,11 +91,11 @@ fn comment(
     }
 }
 
-fn list_params(
+fn list_instr(
     team_id: &str,
     incl_opt: Vec<CommentInclOpt>,
-) -> ListCommentInfosParams {
-    ListCommentInfosParams {
+) -> ListCommentInfosInstr {
+    ListCommentInfosInstr {
         team_id: team_id.into(),
         incl_opt,
         offset: 0,
@@ -102,8 +103,8 @@ fn list_params(
     }
 }
 
-fn create_params(team_id: &str) -> CreateCommentParams {
-    CreateCommentParams {
+fn create_instr(team_id: &str) -> CreateCommentInstr {
+    CreateCommentInstr {
         team_id: team_id.into(),
         content: "created".into(),
     }
@@ -134,7 +135,7 @@ async fn list_infos_team_member_lists_team_comments() {
     let comment_info_vals = list_infos(
         (&mock, &mock),
         token("viewer-user"),
-        list_params("team-1", Vec::new()),
+        list_instr("team-1", Vec::new()),
     )
     .await;
 
@@ -163,7 +164,7 @@ async fn list_infos_user_include_follows_request() {
     let without_user = list_infos(
         (&mock, &mock),
         token("viewer-user"),
-        list_params("team-1", Vec::new()),
+        list_instr("team-1", Vec::new()),
     )
     .await;
 
@@ -174,7 +175,7 @@ async fn list_infos_user_include_follows_request() {
     let with_user = list_infos(
         (&mock, &mock),
         token("viewer-user"),
-        list_params("team-1", vec![CommentInclOpt::User]),
+        list_instr("team-1", vec![CommentInclOpt::User]),
     )
     .await;
 
@@ -195,7 +196,7 @@ async fn list_infos_non_member_is_rejected() {
     let err = list_infos(
         (&mock, &mock),
         token("outsider-user"),
-        list_params("team-1", Vec::new()),
+        list_instr("team-1", Vec::new()),
     )
     .await
     .err()
@@ -211,14 +212,11 @@ async fn create_team_member_creates_comment() {
 
     seed_member(&mock, "viewer-user", "team-1");
 
-    let created_comment = create(
-        (&mock, &mock),
-        token("viewer-user"),
-        create_params("team-1"),
-    )
-    .await
-    .ok()
-    .unwrap();
+    let created_comment =
+        create((&mock, &mock), token("viewer-user"), create_instr("team-1"))
+            .await
+            .ok()
+            .unwrap();
 
     let snapshot = mock.snapshot();
 
@@ -239,7 +237,7 @@ async fn create_non_member_is_rejected_without_mutation() {
     let err = create(
         (&mock, &mock),
         token("outsider-user"),
-        create_params("team-1"),
+        create_instr("team-1"),
     )
     .await
     .err()

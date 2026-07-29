@@ -60,7 +60,7 @@ def is_inline(node: tree_sitter.Node) -> bool:
     while parent is not None and parent.type in WRAPPERS:
         parent = parent.parent
 
-    return parent is not None and parent.type == "arguments"
+    return parent is not None and parent.type in ("arguments", "field_expression")
 
 
 def main() -> int:

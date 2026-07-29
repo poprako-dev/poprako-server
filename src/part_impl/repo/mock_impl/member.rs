@@ -3,9 +3,11 @@
 use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
-use crate::model::member::{MemberEntry, MemberInfo, MemberListSpec};
-use crate::model::team::TeamInfo;
-use crate::model::user::UserInfo;
+use crate::model::read::proj::member::MemberInfo;
+use crate::model::read::proj::team::TeamInfo;
+use crate::model::read::proj::user::UserInfo;
+use crate::model::read::spec::member::MemberListSpec;
+use crate::model::write::member::MemberEntry;
 use crate::part::repo::oper::member::{
     CreateMember, DeleteMember, FindMemberInfo, GetMemberInfo, ListMemberInfos,
     ListMemberInfosExcluded, UpdateMember,
@@ -358,10 +360,7 @@ impl<'a> Step<UpdateMember<'a>, MockContext> for Mock {
             //
             // Internal implementation detail.
             // Internal implementation detail.
-            UpdateMember::UserNickname {
-                user_id,
-                user_nickname,
-            } => {
+            UpdateMember::UserNickname { repl } => {
                 //
                 // Internal implementation detail.
                 // Internal implementation detail.
@@ -369,9 +368,9 @@ impl<'a> Step<UpdateMember<'a>, MockContext> for Mock {
                     .state
                     .members
                     .iter_mut()
-                    .filter(|member_info| member_info.user_id == *user_id)
+                    .filter(|member_info| member_info.user_id == repl.user_id)
                     .for_each(|member_info| {
-                        member_info.user_nickname = user_nickname.to_string();
+                        member_info.user_nickname = repl.user_nickname.clone();
                     });
 
                 accept(())

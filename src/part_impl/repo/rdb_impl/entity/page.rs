@@ -3,7 +3,8 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::model::page::{PageEntry, PageInfo};
+use crate::model::read::proj::page::PageInfo;
+use crate::model::write::page::PageEntry;
 use crate::part_impl::repo::rdb_impl::schema::t_page;
 use crate::result::BaseError;
 use crate::value::image::{ImageExt, ImageHash};
@@ -38,18 +39,20 @@ impl TryFrom<PageRow> for PageInfo {
 
     fn try_from(row: PageRow) -> Result<Self, Self::Error> {
         //
-        let image_hash_bytes: [u8; 32] =
+        let (image_hash_bytes, image_extension) = (
             row.f_image_hash.try_into().map_err(|_| {
                 BaseError::Unrecoverable {
                     message: "[PageRow] f_image_hash must contain 32 bytes"
                         .into(),
                 }
-            })?;
-
-        let image_extension = ImageExt::parse(&row.f_image_extension)
-            .ok_or_else(|| BaseError::Unrecoverable {
-                message: "[PageRow] f_image_extension must be supported".into(),
-            })?;
+            })?,
+            ImageExt::parse(&row.f_image_extension).ok_or_else(|| {
+                BaseError::Unrecoverable {
+                    message: "[PageRow] f_image_extension must be supported"
+                        .into(),
+                }
+            })?,
+        );
 
         Ok(Self {
             id: row.f_id,

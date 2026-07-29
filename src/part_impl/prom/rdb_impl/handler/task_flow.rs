@@ -1,5 +1,6 @@
 /// Outcome of a topic handler invocation.
 pub enum TaskFlow {
+    //
     /// Task completed successfully; move record to Completed status.
     Complete,
 

@@ -45,7 +45,7 @@ import {
     revertStage,
     waitForMails,
 } from "../http/fixtures.js";
-import type { ChapterInfoVal } from "../http/types.js";
+import type { ChapterInfoView } from "../http/types.js";
 import { PHASE, STAGE_PIPELINE, stagePhase } from "../state/stages.js";
 import type { RunCtx } from "../state/runCtx.js";
 

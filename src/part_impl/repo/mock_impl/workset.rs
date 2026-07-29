@@ -3,7 +3,8 @@
 use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
-use crate::model::workset::{WorksetInfo, WorksetInfoUpdate};
+use crate::model::read::proj::workset::WorksetInfo;
+use crate::model::write::workset::WorksetRepl;
 use crate::part::repo::oper::workset::{
     AllocWorksetComicIndex, CreateWorkset, DeleteWorkset, GetWorksetInfo,
     GetWorksetInfoExcluded, ListWorksetInfos, ListWorksetInfosExcluded,
@@ -63,10 +64,7 @@ fn list_workset_infos(
 }
 
 // Internal implementation of `update_workset`.
-fn update_workset(
-    state: &mut MockState,
-    update: &WorksetInfoUpdate,
-) -> BaseRest<()> {
+fn update_workset(state: &mut MockState, update: &WorksetRepl) -> BaseRest<()> {
     //
     // Internal implementation detail.
     // Internal implementation detail.

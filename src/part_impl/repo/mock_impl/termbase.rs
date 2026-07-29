@@ -5,7 +5,8 @@ use std::cmp::Reverse;
 use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
-use crate::model::termbase::{TermbaseInfo, TermbaseInfoListSpec};
+use crate::model::read::proj::termbase::TermbaseInfo;
+use crate::model::read::spec::termbase::TermbaseListSpec;
 use crate::part::repo::oper::termbase::{
     CreateTermbase, DeleteTermbase, GetTermbaseInfo, GetTermbaseInfoExcluded,
     ListTermbaseInfos, ListTermbaseInfosExcluded, TouchTermbase,
@@ -60,10 +61,7 @@ fn name_conflicts(
 }
 
 // Internal implementation of `list_infos`.
-fn list_infos(
-    state: &MockState,
-    spec: &TermbaseInfoListSpec,
-) -> Vec<TermbaseInfo> {
+fn list_infos(state: &MockState, spec: &TermbaseListSpec) -> Vec<TermbaseInfo> {
     //
     // Internal implementation detail.
     // Internal implementation detail.
@@ -71,7 +69,7 @@ fn list_infos(
         //
         // Internal implementation detail.
         // Internal implementation detail.
-        TermbaseInfoListSpec::Team {
+        TermbaseListSpec::Team {
             team_id,
             fuzzy_name,
             offset,
@@ -90,7 +88,7 @@ fn list_infos(
             *limit,
         ),
 
-        TermbaseInfoListSpec::Comic {
+        TermbaseListSpec::Comic {
             team_id,
             comic_id,
             fuzzy_name,

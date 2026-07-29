@@ -1,7 +1,9 @@
 use poprako_orchestra::Oper;
 
-use crate::model::member::{
-    MemberEntry, MemberInfo, MemberListSpec, MemberRoleUpdate,
+use crate::model::read::proj::member::MemberInfo;
+use crate::model::read::spec::member::MemberListSpec;
+use crate::model::write::member::{
+    MemberEntry, MemberNicknameRepl, MemberRoleRepl,
 };
 use crate::value::member::MemberInclOpt;
 
@@ -17,19 +19,17 @@ pub struct CreateMember<'a> {
 #[derive(Oper)]
 #[oper(output = ())]
 pub enum UpdateMember<'a> {
+    //
     /// Updates the member's nickname.
     UserNickname {
-        //
-        /// The member's user ID.
-        user_id: &'a str,
-        /// The new nickname.
-        user_nickname: &'a str,
+        /// The nickname replacement payload.
+        repl: &'a MemberNicknameRepl,
     },
 
     /// Updates the member's role.
     Role {
         /// The role update payload.
-        update: &'a MemberRoleUpdate,
+        update: &'a MemberRoleRepl,
     },
 }
 
@@ -37,6 +37,7 @@ pub enum UpdateMember<'a> {
 #[derive(Oper)]
 #[oper(output = Vec<MemberInfo>)]
 pub enum ListMemberInfos<'a> {
+    //
     /// Lists members matching the given spec.
     Spec {
         /// The filter and pagination specification.
@@ -82,6 +83,7 @@ pub enum GetMemberInfo<'a, 'b> {
 #[derive(Oper)]
 #[oper(output = Vec<MemberInfo>)]
 pub enum ListMemberInfosExcluded<'a> {
+    //
     /// Lists memberships for a user with excluded fields omitted.
     User {
         /// The user ID.

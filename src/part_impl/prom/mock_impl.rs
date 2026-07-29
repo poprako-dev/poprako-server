@@ -9,7 +9,10 @@ use time::OffsetDateTime;
 use poprako_util::i18n::trl;
 
 use self::image_task::ResourceState;
-use crate::model::user::{UserCredential, UserInfo};
+use crate::model::read::proj::user::{UserCredential, UserInfo};
+use crate::model::write::page::PageImageRepl;
+use crate::model::write::team::TeamAvatarRepl;
+use crate::model::write::user::UserAvatarRepl;
 use crate::part::image::ImageManager;
 use crate::part::prom::Prom;
 use crate::part::prom::payload::{TaskPayload, image};
@@ -401,14 +404,16 @@ async fn mark_page_image_unverified(
             return accept(());
         }
 
-        SetPageImageUploaded {
-            id: resource_id,
+        let repl = PageImageRepl {
+            id: resource_id.to_owned(),
             image_version,
-            image_key: object_key,
-            image_uploaded: false,
-        }
-        .step_on(mock, context)
-        .await?;
+            image_key: Some(object_key.to_owned()),
+            is_image_uploaded: false,
+        };
+
+        SetPageImageUploaded { repl: &repl }
+            .step_on(mock, context)
+            .await?;
 
         accept(())
     })
@@ -545,25 +550,29 @@ async fn mark_uploaded(
         //
         // Internal implementation detail.
         image::ResourceKind::UserAvatar => {
-            UpdateUser::MarkAvatarUploaded {
-                id: image_identity.resource_id,
+            let repl = UserAvatarRepl {
+                id: image_identity.resource_id.to_owned(),
                 avatar_version: image_identity.version,
-                avatar_key: Some(image_identity.object_key),
-                avatar_uploaded: image_uploaded,
-            }
-            .step_on(mock, context)
-            .await
+                avatar_key: Some(image_identity.object_key.to_owned()),
+                is_avatar_uploaded: image_uploaded,
+            };
+
+            UpdateUser::MarkAvatarUploaded { repl: &repl }
+                .step_on(mock, context)
+                .await
         }
 
         image::ResourceKind::TeamAvatar => {
-            UpdateTeam::MarkAvatarUploaded {
-                id: image_identity.resource_id,
+            let repl = TeamAvatarRepl {
+                id: image_identity.resource_id.to_owned(),
                 avatar_version: image_identity.version,
-                avatar_key: Some(image_identity.object_key),
-                avatar_uploaded: image_uploaded,
-            }
-            .step_on(mock, context)
-            .await
+                avatar_key: Some(image_identity.object_key.to_owned()),
+                is_avatar_uploaded: image_uploaded,
+            };
+
+            UpdateTeam::MarkAvatarUploaded { repl: &repl }
+                .step_on(mock, context)
+                .await
         }
 
         image::ResourceKind::ComicCover => {
@@ -598,13 +607,16 @@ async fn mark_uploaded(
             .step_on(mock, context)
             .await?;
 
-            MarkPageImageUploaded {
-                id: image_identity.resource_id,
+            let repl = PageImageRepl {
+                id: image_identity.resource_id.to_owned(),
                 image_version: image_identity.version,
-                image_key: Some(image_identity.object_key),
-            }
-            .step_on(mock, context)
-            .await?;
+                image_key: Some(image_identity.object_key.to_owned()),
+                is_image_uploaded: true,
+            };
+
+            MarkPageImageUploaded { repl: &repl }
+                .step_on(mock, context)
+                .await?;
 
             accept(())
         }

@@ -3,6 +3,9 @@
 use poprako_orchestra::{Nucl, OperStep as _};
 use tracing::instrument;
 
+use crate::model::write::page::PageImageRepl;
+use crate::model::write::team::TeamAvatarRepl;
+use crate::model::write::user::UserAvatarRepl;
 use crate::part::prom::payload::image::ResourceKind;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::oper::comic::{
@@ -22,6 +25,7 @@ use crate::result::{BaseError, BaseRest, accept};
 
 /// Classification of a deferred image payload against persisted identity.
 pub enum ResourceState {
+    //
     /// The image version and object key match the current record.
     Current,
 
@@ -236,25 +240,31 @@ where
         //
         // Internal implementation detail.
         ResourceKind::UserAvatar => {
-            UpdateUser::MarkAvatarUploaded {
-                id: image_identity.resource_id,
+            //
+            let repl = UserAvatarRepl {
+                id: image_identity.resource_id.to_owned(),
                 avatar_version: image_identity.version,
-                avatar_key: Some(image_identity.object_key),
-                avatar_uploaded: image_uploaded,
-            }
-            .step_on(repo, context)
-            .await
+                avatar_key: Some(image_identity.object_key.to_owned()),
+                is_avatar_uploaded: image_uploaded,
+            };
+
+            UpdateUser::MarkAvatarUploaded { repl: &repl }
+                .step_on(repo, context)
+                .await
         }
 
         ResourceKind::TeamAvatar => {
-            UpdateTeam::MarkAvatarUploaded {
-                id: image_identity.resource_id,
+            //
+            let repl = TeamAvatarRepl {
+                id: image_identity.resource_id.to_owned(),
                 avatar_version: image_identity.version,
-                avatar_key: Some(image_identity.object_key),
-                avatar_uploaded: image_uploaded,
-            }
-            .step_on(repo, context)
-            .await
+                avatar_key: Some(image_identity.object_key.to_owned()),
+                is_avatar_uploaded: image_uploaded,
+            };
+
+            UpdateTeam::MarkAvatarUploaded { repl: &repl }
+                .step_on(repo, context)
+                .await
         }
 
         ResourceKind::ComicCover => {
@@ -269,13 +279,17 @@ where
         }
 
         ResourceKind::PageImage => {
-            MarkPageImageUploaded {
-                id: image_identity.resource_id,
+            //
+            let repl = PageImageRepl {
+                id: image_identity.resource_id.to_owned(),
                 image_version: image_identity.version,
-                image_key: Some(image_identity.object_key),
-            }
-            .step_on(repo, context)
-            .await
+                image_key: Some(image_identity.object_key.to_owned()),
+                is_image_uploaded: true,
+            };
+
+            MarkPageImageUploaded { repl: &repl }
+                .step_on(repo, context)
+                .await
         }
     }
 }

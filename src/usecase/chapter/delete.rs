@@ -5,7 +5,7 @@ use poprako_orchestra_extra::prom::oper::DeferBatch;
 use tracing::instrument;
 
 use crate::complex::chapter::{ChapterComplex, ChapterPermComplex};
-use crate::model::user::UserToken;
+use crate::model::shared::user::UserToken;
 use crate::part::prom::Prom;
 use crate::part::prom::payload::TaskPayload;
 use crate::part::repo::assignment::AssignmentRepo;

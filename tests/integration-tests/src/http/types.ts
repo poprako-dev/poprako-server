@@ -1,7 +1,7 @@
 // Presentation-side value types mirroring `crate::data::*` `*Val` structs.
 // Field names match the JSON serialization (snake_case) exactly.
 
-export interface UserInfoVal {
+export interface UserInfoView {
     id: string;
     nickname: string;
     qid: string;
@@ -12,7 +12,7 @@ export interface UserInfoVal {
     updated_at: number;
 }
 
-export interface TeamInfoVal {
+export interface TeamInfoView {
     id: string;
     name: string;
     description: string;
@@ -22,7 +22,7 @@ export interface TeamInfoVal {
     updated_at: number;
 }
 
-export interface WorksetInfoVal {
+export interface WorksetInfoView {
     id: string;
     team_id: string;
     index: number;
@@ -33,7 +33,7 @@ export interface WorksetInfoVal {
     updated_at: number;
 }
 
-export interface ComicInfoVal {
+export interface ComicInfoView {
     id: string;
     workset_id: string;
     index: number;
@@ -44,15 +44,15 @@ export interface ComicInfoVal {
     cover_thumbnail_url: string | null;
     chapter_count: number;
     creator_id: string;
-    workset: WorksetInfoVal | null;
-    team: TeamInfoVal | null;
-    creator: UserInfoVal | null;
+    workset: WorksetInfoView | null;
+    team: TeamInfoView | null;
+    creator: UserInfoView | null;
     last_active_at: number;
     created_at: number;
     updated_at: number;
 }
 
-export interface TermbaseInfoVal {
+export interface TermbaseInfoView {
     id: string;
     team_id?: string;
     comic_id?: string;
@@ -64,7 +64,7 @@ export interface TermbaseInfoVal {
     updated_at: number;
 }
 
-export interface TermInfoVal {
+export interface TermInfoView {
     id: string;
     termbase_id: string;
     source: string;
@@ -75,16 +75,16 @@ export interface TermInfoVal {
     updated_at: number;
 }
 
-export interface ListComicInfosPayload {
-    comics: ComicInfoVal[];
-    pinned_chapters: (ChapterInfoVal | null)[];
-    pinned_chapter_assignments: AssignmentInfoVal[][];
+export interface ListComicInfosVal {
+    comics: ComicInfoView[];
+    pinned_chapters: (ChapterInfoView | null)[];
+    pinned_chapter_assignments: AssignmentInfoView[][];
 }
 
-export interface ChapterInfoVal {
+export interface ChapterInfoView {
     id: string;
     comic_id: string;
-    comic: ComicInfoVal | null;
+    comic: ComicInfoView | null;
     is_pinned: boolean;
     index: number;
     subtitle: string;
@@ -94,12 +94,12 @@ export interface ChapterInfoVal {
     proofread_unit_count: number;
     stages: number;
     creator_id: string;
-    creator: UserInfoVal | null;
+    creator: UserInfoView | null;
     created_at: number;
     updated_at: number;
 }
 
-export interface PageInfoVal {
+export interface PageInfoView {
     id: string;
     chapter_id: string;
     index: number;
@@ -114,7 +114,7 @@ export interface PageInfoVal {
     updated_at: number;
 }
 
-export interface UnitInfoVal {
+export interface UnitInfoView {
     id: string;
     page_id: string;
     is_bubble: boolean;
@@ -129,38 +129,38 @@ export interface UnitInfoVal {
     updated_at: number;
 }
 
-export interface MemberInfoVal {
+export interface MemberInfoView {
     id: string;
     user_id: string;
     nickname: string;
     last_active_at: number;
     team_id: string;
-    user: UserInfoVal | null;
-    team: TeamInfoVal | null;
+    user: UserInfoView | null;
+    team: TeamInfoView | null;
     roles: number;
 }
 
-export interface MemberInvitationInfoVal {
+export interface MemberInvitationInfoView {
     id: string;
     team_id: string;
     invitor_id: string;
-    invitor: UserInfoVal | null;
+    invitor: UserInfoView | null;
     invitee_qid: string;
     code: string;
     pending: boolean;
     roles: number;
 }
 
-export interface AssignmentInfoVal {
+export interface AssignmentInfoView {
     id: string;
     chapter_id: string;
     user_id: string;
     roles: number;
-    user: UserInfoVal | null;
-    chapter: ChapterInfoVal | null;
+    user: UserInfoView | null;
+    chapter: ChapterInfoView | null;
 }
 
-export interface AssignmentInvitationInfoVal {
+export interface AssignmentInvitationInfoView {
     id: string;
     chapter_id: string;
     invitor_id: string;
@@ -170,26 +170,26 @@ export interface AssignmentInvitationInfoVal {
     roles: number;
 }
 
-export interface AnnouncementInfoVal {
+export interface AnnouncementInfoView {
     id: string;
     team_id: string;
     user_id: string;
     title: string;
     content: string;
-    user: UserInfoVal | null;
+    user: UserInfoView | null;
     created_at: number;
 }
 
-export interface CommentInfoVal {
+export interface CommentInfoView {
     id: string;
     team_id: string;
     user_id: string;
     content: string;
-    user: UserInfoVal | null;
+    user: UserInfoView | null;
     created_at: number;
 }
 
-export interface SystemMailInfoVal {
+export interface SystemMailInfoView {
     id: string;
     user_id: string;
     title: string;
@@ -243,12 +243,12 @@ export interface ReserveChapterPagesVal {
     pages: ReservedPageVal[];
 }
 
-export interface ReserveImagePayload {
+export interface ReserveImageVal {
     slot: UploadSlotVal | null;
 }
 
 export interface ListPageUnitInfosVal {
-    unit_infos: UnitInfoVal[];
+    unit_infos: UnitInfoView[];
     total_unit_count: number;
     translated_unit_count: number;
     proofread_unit_count: number;

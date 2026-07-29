@@ -7,17 +7,17 @@ use axum_extra::extract::Query;
 use serde::Deserialize;
 use tracing::instrument;
 
+use crate::data::instr::comment::{CreateCommentInstr, ListCommentInfosInstr};
+use crate::data::val::comment::CreateCommentVal;
+use crate::data::view::comment::CommentInfoView;
+
 #[cfg(feature = "swagger")]
 use utoipa::IntoParams;
 
 #[allow(unused_imports)]
 use crate::api::http::result::{Accept as _, HttpBody, HttpResult};
 use crate::api::http::state::AppHarn;
-use crate::data::comment::{
-    CommentInfoVal, CreateCommentParams, CreateCommentPayload,
-    ListCommentInfosParams,
-};
-use crate::model::user::UserToken;
+use crate::model::shared::user::UserToken;
 use crate::usecase;
 use crate::value::comment::CommentInclOpt;
 
@@ -47,9 +47,9 @@ pub struct CommentListQuery {
     post,
     path = "/api/v1/comments",
     tag = "comments",
-    request_body = CreateCommentParams,
+    request_body = CreateCommentInstr,
     responses(
-        (status = 201, description = "Comment created", body = HttpBody<CreateCommentPayload>),
+        (status = 201, description = "Comment created", body = HttpBody<CreateCommentVal>),
         (status = 403, description = "No permission to comment in this team"),
         (status = 404, description = "Team not found"),
     ),
@@ -58,9 +58,9 @@ pub struct CommentListQuery {
 pub async fn create(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    Json(params): Json<CreateCommentParams>,
-) -> HttpResult<CreateCommentPayload> {
-    usecase::comment::create((harn.drive(), harn.repo()), user_token, params)
+    Json(instr): Json<CreateCommentInstr>,
+) -> HttpResult<CreateCommentVal> {
+    usecase::comment::create((harn.drive(), harn.repo()), user_token, instr)
         .await?
         .accept(StatusCode::CREATED)
 }
@@ -73,7 +73,7 @@ pub async fn create(
     description = "Lists a team's board comments. `incl` embeds related rows. Example: `/api/v1/teams/{team_id}/comments?incl=user&offset=0&limit=20`.",
     params(("team_id" = String, Path, description = "Team ID"), CommentListQuery),
     responses(
-        (status = 200, description = "Comments listed", body = HttpBody<Vec<CommentInfoVal>>),
+        (status = 200, description = "Comments listed", body = HttpBody<Vec<CommentInfoView>>),
         (status = 403, description = "No permission to list comments in this team"),
     ),
 ))]
@@ -83,9 +83,9 @@ pub async fn list_infos(
     Path(team_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
     Query(query): Query<CommentListQuery>,
-) -> HttpResult<Vec<CommentInfoVal>> {
+) -> HttpResult<Vec<CommentInfoView>> {
     //
-    let params = ListCommentInfosParams {
+    let instr = ListCommentInfosInstr {
         team_id,
         incl_opt: query.incl_opt,
         offset: query.offset,
@@ -95,7 +95,7 @@ pub async fn list_infos(
     usecase::comment::list_infos(
         (harn.repo(), harn.image_pool()),
         user_token,
-        params,
+        instr,
     )
     .await?
     .accept(StatusCode::OK)

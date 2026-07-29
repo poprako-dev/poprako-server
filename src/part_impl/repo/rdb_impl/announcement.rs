@@ -5,9 +5,9 @@ use diesel_async::RunQueryDsl;
 use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
-use crate::model::announcement::{
-    AnnouncementEntry, AnnouncementInfo, AnnouncementListSpec,
-};
+use crate::model::read::proj::announcement::AnnouncementInfo;
+use crate::model::read::spec::announcement::AnnouncementListSpec;
+use crate::model::write::announcement::AnnouncementEntry;
 use crate::part::repo::oper::announcement::{
     CreateAnnouncement, ListAnnouncementInfos,
 };

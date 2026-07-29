@@ -7,8 +7,8 @@
 // list_infos(list_infos)(negative): invalid owner combination should be rejected.
 
 use super::*;
+use crate::data::instr::assignment::ListAssignmentInfosInstr;
 
-use crate::data::assignment::ListAssignmentInfosParams;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
 use crate::value::assignment::AssignmentInclOpt;
@@ -238,7 +238,7 @@ async fn list_infos_invalid_owner_combination_is_rejected() {
     let err = list_infos(
         (&mock, &mock),
         token("viewer-user"),
-        ListAssignmentInfosParams {
+        ListAssignmentInfosInstr {
             incl_opt: Vec::new(),
             chapter_id: Some("chapter-1".into()),
             owner_id: Some("owner-user".into()),

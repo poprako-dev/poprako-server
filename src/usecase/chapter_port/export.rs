@@ -8,12 +8,12 @@ use tracing::instrument;
 use crate::complex::chapter_port::{
     ChapterExportComplex, ChapterPortPermComplex,
 };
-use crate::data::chapter_port::ExportChapterTranslationPayload;
-use crate::data::page_port::PageTranslationExportPayload;
-use crate::data::unit_port::UnitTranslationExportPayload;
-use crate::model::page::PageInfo;
+use crate::data::val::chapter_port::ExportChapterTranslationVal;
+use crate::data::view::page_port::PageTranslationExportView;
+use crate::data::view::unit_port::UnitTranslationExportView;
+use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::unit::UnitInfo;
-use crate::model::user::UserToken;
+use crate::model::shared::user::UserToken;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
@@ -42,7 +42,7 @@ pub async fn export<C, R>(
     (repo,): (&R,),
     token: UserToken,
     chapter_id: String,
-) -> BaseRest<ExportChapterTranslationPayload>
+) -> BaseRest<ExportChapterTranslationVal>
 where
     R: ChapterRepo<C>
         + ComicRepo<C>
@@ -90,11 +90,11 @@ where
     .run_on(repo)
     .await?;
 
-    let mut page_vals = Vec::with_capacity(page_infos.len());
+    let mut page_views = Vec::with_capacity(page_infos.len());
 
     for page_info in page_infos {
         //
-        // Load visible units for each page and map them into exported unit payloads.
+        // Load visible units for each page and map them into exported unit views.
 
         let unit_infos = ListUnitInfos {
             page_id: &page_info.id,
@@ -102,7 +102,7 @@ where
         .run_on(repo)
         .await?;
 
-        let unit_vals = unit_infos
+        let unit_views = unit_infos
             .into_iter()
             .filter(|unit_info| unit_info.hidden_at.is_none())
             .enumerate()
@@ -111,29 +111,29 @@ where
             })
             .collect();
 
-        page_vals.push(PageTranslationExportPayload {
+        page_views.push(PageTranslationExportView {
             page_id: page_info.id,
             page_index: page_info.index,
-            units: unit_vals,
+            units: unit_views,
         });
     }
 
-    let payload = ExportChapterTranslationPayload {
+    let val = ExportChapterTranslationVal {
         chapter_id: chapter_info.id,
         chapter_index: chapter_info.index,
         chapter_subtitle: non_empty(chapter_info.subtitle),
         comic_id: chapter_info.comic_id,
         comic_title: comic_info.title,
-        pages: page_vals,
+        pages: page_views,
     };
 
     spawn_starts(
         ((*repo).clone(),),
-        payload.chapter_id.clone(),
+        val.chapter_id.clone(),
         vec![Stage::TypesetRedraw],
     );
 
-    accept(payload)
+    accept(val)
 }
 
 /// Exports one chapter as LabelPlus text.
@@ -211,14 +211,14 @@ where
     accept(content)
 }
 
-// Builds a [`UnitTranslationExportVal`] from page and unit info.
+// Builds a [`UnitTranslationExportView`] from page and unit info.
 fn make_unit_export(
     page_info: &PageInfo,
     index: usize,
     unit_info: UnitInfo,
-) -> UnitTranslationExportPayload {
-    // Convert one unit into export payload fields used by downstream translators.
-    UnitTranslationExportPayload {
+) -> UnitTranslationExportView {
+    // Convert one unit into export view fields used by downstream translators.
+    UnitTranslationExportView {
         unit_id: unit_info.id,
         unit_index: index as i32,
         page_id: page_info.id.clone(),

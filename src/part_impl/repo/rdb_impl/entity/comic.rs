@@ -4,7 +4,8 @@ use diesel::prelude::*;
 use time::OffsetDateTime;
 
 use crate::complex::comic::ComicComplex;
-use crate::model::comic::{ComicEntry, ComicInfo};
+use crate::model::read::proj::comic::ComicInfo;
+use crate::model::write::comic::ComicEntry;
 use crate::part_impl::repo::rdb_impl::schema::t_comic;
 use crate::result::{BaseError, BaseRest, accept};
 use crate::value::image::{ImageExt, ImageHash};
@@ -48,21 +49,20 @@ impl TryFrom<ComicRow> for ComicInfo {
 
     fn try_from(v: ComicRow) -> BaseRest<Self> {
         //
-        let cover_hash_bytes: [u8; 32] =
+        let (cover_hash_bytes, cover_ext) = (
             v.f_cover_hash.try_into().map_err(|_| {
                 BaseError::Unrecoverable {
                     message: "[ComicRow] f_cover_hash must contain 32 bytes"
                         .into(),
                 }
-            })?;
-
-        let cover_ext =
+            })?,
             ImageExt::parse(&v.f_cover_extension).ok_or_else(|| {
                 BaseError::Unrecoverable {
                     message: "[ComicRow] f_cover_extension must be supported"
                         .into(),
                 }
-            })?;
+            })?,
+        );
 
         accept(ComicInfo {
             id: v.f_id,

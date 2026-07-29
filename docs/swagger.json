@@ -70,7 +70,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateAnnouncementParams"
+                "$ref": "#/components/schemas/CreateAnnouncementInstr"
               }
             }
           },
@@ -82,7 +82,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_CreateAnnouncementPayload"
+                  "$ref": "#/components/schemas/HttpBody_CreateAnnouncementVal"
                 }
               }
             }
@@ -107,7 +107,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateAssignmentInvitationParams"
+                "$ref": "#/components/schemas/CreateAssignmentInvitationInstr"
               }
             }
           },
@@ -119,7 +119,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_CreateAssignmentInvitationPayload"
+                  "$ref": "#/components/schemas/HttpBody_CreateAssignmentInvitationVal"
                 }
               }
             }
@@ -144,7 +144,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/JoinAssignmentInvitationParams"
+                "$ref": "#/components/schemas/JoinAssignmentInvitationInstr"
               }
             }
           },
@@ -156,7 +156,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_AssignmentInfoVal"
+                  "$ref": "#/components/schemas/HttpBody_AssignmentInfoView"
                 }
               }
             }
@@ -281,7 +281,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_AssignmentInfoVal"
+                  "$ref": "#/components/schemas/HttpBody_Vec_AssignmentInfoView"
                 }
               }
             }
@@ -306,7 +306,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/JoinChapterAssignmentParams"
+                "$ref": "#/components/schemas/JoinChapterAssignmentInstr"
               }
             }
           },
@@ -318,7 +318,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_AssignmentInfoVal"
+                  "$ref": "#/components/schemas/HttpBody_AssignmentInfoView"
                 }
               }
             }
@@ -375,7 +375,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/LoginAuthParams"
+                "$ref": "#/components/schemas/LoginAuthInstr"
               }
             }
           },
@@ -387,7 +387,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_LoginAuthPayload"
+                  "$ref": "#/components/schemas/HttpBody_LoginAuthVal"
                 }
               }
             }
@@ -425,7 +425,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RegisterAuthParams"
+                "$ref": "#/components/schemas/RegisterAuthInstr"
               }
             }
           },
@@ -437,7 +437,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_RegisterAuthPayload"
+                  "$ref": "#/components/schemas/HttpBody_RegisterAuthVal"
                 }
               }
             }
@@ -462,7 +462,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateChapterParams"
+                "$ref": "#/components/schemas/CreateChapterInstr"
               }
             }
           },
@@ -474,7 +474,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_CreateChapterPayload"
+                  "$ref": "#/components/schemas/HttpBody_CreateChapterVal"
                 }
               }
             }
@@ -512,7 +512,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ChapterInfoVal"
+                  "$ref": "#/components/schemas/HttpBody_ChapterInfoView"
                 }
               }
             }
@@ -575,7 +575,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateChapterInfoParams"
+                "$ref": "#/components/schemas/UpdateChapterInfoInstr"
               }
             }
           },
@@ -616,7 +616,7 @@
             }
           },
           {
-            "name": "pending",
+            "name": "is_pending",
             "in": "query",
             "description": "When `Some(true)`, returns only unconsumed invitations;\n`Some(false)` returns only consumed ones; `None` returns all.",
             "required": false,
@@ -653,7 +653,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_AssignmentInvitationInfoVal"
+                  "$ref": "#/components/schemas/HttpBody_Vec_AssignmentInvitationInfoView"
                 }
               }
             }
@@ -695,7 +695,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateAssignmentRolesParams"
+                "$ref": "#/components/schemas/UpdateAssignmentRolesInstr"
               }
             }
           },
@@ -713,6 +713,40 @@
           },
           "422": {
             "description": "Path ids do not match body ids"
+          }
+        }
+      }
+    },
+    "/api/v1/chapters/{chapter_id}/mark-pinned": {
+      "post": {
+        "tags": [
+          "chapters"
+        ],
+        "summary": "`POST /api/v1/chapters/{chapter_id}/mark-pinned` — pin a chapter.",
+        "operationId": "mark_pinned",
+        "parameters": [
+          {
+            "name": "chapter_id",
+            "in": "path",
+            "description": "Chapter ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Chapter marked as pinned"
+          },
+          "403": {
+            "description": "No permission to pin this chapter"
+          },
+          "404": {
+            "description": "Chapter not found"
+          },
+          "422": {
+            "description": "Published chapters cannot be pinned"
           }
         }
       }
@@ -741,7 +775,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_PageInfoVal"
+                  "$ref": "#/components/schemas/HttpBody_Vec_PageInfoView"
                 }
               }
             }
@@ -800,7 +834,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ReserveChapterPagesParams"
+                "$ref": "#/components/schemas/ReserveChapterPagesInstr"
               }
             }
           },
@@ -812,7 +846,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ReserveChapterPagesPayload"
+                  "$ref": "#/components/schemas/HttpBody_ReserveChapterPagesVal"
                 }
               }
             }
@@ -848,7 +882,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateChapterStageParams"
+                "$ref": "#/components/schemas/UpdateChapterStageInstr"
               }
             }
           },
@@ -971,7 +1005,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ImportChapterTranslationParams"
+                "$ref": "#/components/schemas/ImportChapterTranslationInstr"
               }
             }
           },
@@ -983,7 +1017,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ImportChapterTranslationPayload"
+                  "$ref": "#/components/schemas/HttpBody_ImportChapterTranslationVal"
                 }
               }
             }
@@ -1008,7 +1042,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateComicParams"
+                "$ref": "#/components/schemas/CreateComicInstr"
               }
             }
           },
@@ -1020,7 +1054,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_CreateComicPayload"
+                  "$ref": "#/components/schemas/HttpBody_CreateComicVal"
                 }
               }
             }
@@ -1058,7 +1092,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ComicInfoVal"
+                  "$ref": "#/components/schemas/HttpBody_ComicInfoView"
                 }
               }
             }
@@ -1092,7 +1126,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateComicInfoParams"
+                "$ref": "#/components/schemas/UpdateComicInfoInstr"
               }
             }
           },
@@ -1167,7 +1201,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ArchiveComicPayload"
+                  "$ref": "#/components/schemas/HttpBody_ArchiveComicVal"
                 }
               }
             }
@@ -1240,7 +1274,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_ChapterInfoVal"
+                  "$ref": "#/components/schemas/HttpBody_Vec_ChapterInfoView"
                 }
               }
             }
@@ -1275,7 +1309,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Option_ChapterInfoVal"
+                  "$ref": "#/components/schemas/HttpBody_Option_ChapterInfoView"
                 }
               }
             }
@@ -1308,7 +1342,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/MarkImageUploadedParams"
+                "$ref": "#/components/schemas/MarkComicCoverUploadedInstr"
               }
             }
           },
@@ -1349,7 +1383,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ReserveImageParams"
+                "$ref": "#/components/schemas/ReserveComicCoverInstr"
               }
             }
           },
@@ -1361,7 +1395,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ReserveImagePayload"
+                  "$ref": "#/components/schemas/HttpBody_ReserveComicCoverVal"
                 }
               }
             }
@@ -1430,7 +1464,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_TermbaseInfoVal"
+                  "$ref": "#/components/schemas/HttpBody_Vec_TermbaseInfoView"
                 }
               }
             }
@@ -1455,7 +1489,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateCommentParams"
+                "$ref": "#/components/schemas/CreateCommentInstr"
               }
             }
           },
@@ -1467,7 +1501,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_CreateCommentPayload"
+                  "$ref": "#/components/schemas/HttpBody_CreateCommentVal"
                 }
               }
             }
@@ -1492,7 +1526,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateMemberInvitationParams"
+                "$ref": "#/components/schemas/CreateMemberInvitationInstr"
               }
             }
           },
@@ -1504,7 +1538,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_CreateMemberInvitationPayload"
+                  "$ref": "#/components/schemas/HttpBody_CreateMemberInvitationVal"
                 }
               }
             }
@@ -1571,7 +1605,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateMemberInvitationRolesParams"
+                "$ref": "#/components/schemas/UpdateMemberInvitationRolesInstr"
               }
             }
           },
@@ -1679,7 +1713,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_MemberInfoVal"
+                  "$ref": "#/components/schemas/HttpBody_Vec_MemberInfoView"
                 }
               }
             }
@@ -1702,7 +1736,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateMemberParams"
+                "$ref": "#/components/schemas/CreateMemberInstr"
               }
             }
           },
@@ -1714,7 +1748,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_CreateMemberPayload"
+                  "$ref": "#/components/schemas/HttpBody_CreateMemberVal"
                 }
               }
             }
@@ -1742,7 +1776,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/JoinTeamParams"
+                "$ref": "#/components/schemas/JoinTeamInstr"
               }
             }
           },
@@ -1754,7 +1788,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_MemberInfoVal"
+                  "$ref": "#/components/schemas/HttpBody_MemberInfoView"
                 }
               }
             }
@@ -1817,7 +1851,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_MemberInfoVal"
+                  "$ref": "#/components/schemas/HttpBody_Vec_MemberInfoView"
                 }
               }
             }
@@ -1881,7 +1915,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateMemberRolesParams"
+                "$ref": "#/components/schemas/UpdateMemberRolesInstr"
               }
             }
           },
@@ -1927,7 +1961,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_PageInfoVal"
+                  "$ref": "#/components/schemas/HttpBody_PageInfoView"
                 }
               }
             }
@@ -1963,7 +1997,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/MarkPageImageUploadedParams"
+                "$ref": "#/components/schemas/MarkPageImageUploadedInstr"
               }
             }
           },
@@ -2004,7 +2038,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ReservePageImageParams"
+                "$ref": "#/components/schemas/ReservePageImageInstr"
               }
             }
           },
@@ -2016,7 +2050,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ReservedPagePayload"
+                  "$ref": "#/components/schemas/HttpBody_ReservedPageVal"
                 }
               }
             }
@@ -2054,7 +2088,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ListPageUnitInfosPayload"
+                  "$ref": "#/components/schemas/HttpBody_ListPageUnitInfosVal"
                 }
               }
             }
@@ -2092,7 +2126,7 @@
               "schema": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/UnitEditVal"
+                  "$ref": "#/components/schemas/UnitEditInstr"
                 }
               }
             }
@@ -2121,7 +2155,7 @@
         "operationId": "list_infos",
         "parameters": [
           {
-            "name": "read",
+            "name": "is_read",
             "in": "query",
             "description": "Filter by read status. Absent returns all.",
             "required": false,
@@ -2158,7 +2192,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_SystemMailInfoVal"
+                  "$ref": "#/components/schemas/HttpBody_Vec_SystemMailInfoView"
                 }
               }
             }
@@ -2180,7 +2214,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/MarkSystemMailReadParams"
+                "$ref": "#/components/schemas/MarkSystemMailReadInstr"
               }
             }
           },
@@ -2243,7 +2277,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_TeamInfoVal"
+                  "$ref": "#/components/schemas/HttpBody_Vec_TeamInfoView"
                 }
               }
             }
@@ -2266,7 +2300,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateTeamParams"
+                "$ref": "#/components/schemas/CreateTeamInstr"
               }
             }
           },
@@ -2278,7 +2312,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_TeamInfoVal"
+                  "$ref": "#/components/schemas/HttpBody_TeamInfoView"
                 }
               }
             }
@@ -2316,7 +2350,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_TeamInfoVal"
+                  "$ref": "#/components/schemas/HttpBody_TeamInfoView"
                 }
               }
             }
@@ -2350,7 +2384,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateTeamInfoParams"
+                "$ref": "#/components/schemas/UpdateTeamInfoInstr"
               }
             }
           },
@@ -2460,7 +2494,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_AnnouncementInfoVal"
+                  "$ref": "#/components/schemas/HttpBody_Vec_AnnouncementInfoView"
                 }
               }
             }
@@ -2493,7 +2527,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/MarkImageUploadedParams"
+                "$ref": "#/components/schemas/MarkTeamAvatarUploadedInstr"
               }
             }
           },
@@ -2534,7 +2568,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ReserveImageParams"
+                "$ref": "#/components/schemas/ReserveTeamAvatarInstr"
               }
             }
           },
@@ -2546,7 +2580,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ReserveImagePayload"
+                  "$ref": "#/components/schemas/HttpBody_ReserveTeamAvatarVal"
                 }
               }
             }
@@ -2596,7 +2630,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ExportComicArchivesPayload"
+                  "$ref": "#/components/schemas/HttpBody_ExportComicArchivesVal"
                 }
               }
             }
@@ -2669,7 +2703,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_CommentInfoVal"
+                  "$ref": "#/components/schemas/HttpBody_Vec_CommentInfoView"
                 }
               }
             }
@@ -2699,7 +2733,7 @@
             }
           },
           {
-            "name": "pending",
+            "name": "is_pending",
             "in": "query",
             "description": "When `Some(true)`, returns only unconsumed invitations;\n`Some(false)` returns only consumed ones; `None` returns all.",
             "required": false,
@@ -2748,7 +2782,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_MemberInvitationInfoVal"
+                  "$ref": "#/components/schemas/HttpBody_Vec_MemberInvitationInfoView"
                 }
               }
             }
@@ -2814,7 +2848,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_TermbaseInfoVal"
+                  "$ref": "#/components/schemas/HttpBody_Vec_TermbaseInfoView"
                 }
               }
             }
@@ -2871,7 +2905,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_WorksetInfoVal"
+                  "$ref": "#/components/schemas/HttpBody_Vec_WorksetInfoView"
                 }
               }
             }
@@ -2896,7 +2930,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateTermbaseParams"
+                "$ref": "#/components/schemas/CreateTermbaseInstr"
               }
             }
           },
@@ -2908,7 +2942,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_CreateTermbasePayload"
+                  "$ref": "#/components/schemas/HttpBody_CreateTermbaseVal"
                 }
               }
             }
@@ -2946,7 +2980,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_TermbaseInfoVal"
+                  "$ref": "#/components/schemas/HttpBody_TermbaseInfoView"
                 }
               }
             }
@@ -2980,7 +3014,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateTermbaseInfoParams"
+                "$ref": "#/components/schemas/UpdateTermbaseInfoInstr"
               }
             }
           },
@@ -3083,7 +3117,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_TermInfoVal"
+                  "$ref": "#/components/schemas/HttpBody_Vec_TermInfoView"
                 }
               }
             }
@@ -3108,7 +3142,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateTermParams"
+                "$ref": "#/components/schemas/CreateTermInstr"
               }
             }
           },
@@ -3120,7 +3154,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_CreateTermPayload"
+                  "$ref": "#/components/schemas/HttpBody_CreateTermVal"
                 }
               }
             }
@@ -3158,7 +3192,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_TermInfoVal"
+                  "$ref": "#/components/schemas/HttpBody_TermInfoView"
                 }
               }
             }
@@ -3192,7 +3226,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateTermInfoParams"
+                "$ref": "#/components/schemas/UpdateTermInfoInstr"
               }
             }
           },
@@ -3253,7 +3287,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_UserInfoVal"
+                  "$ref": "#/components/schemas/HttpBody_UserInfoView"
                 }
               }
             }
@@ -3288,7 +3322,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_UserInfoVal"
+                  "$ref": "#/components/schemas/HttpBody_UserInfoView"
                 }
               }
             }
@@ -3322,7 +3356,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateUserInfoParams"
+                "$ref": "#/components/schemas/UpdateUserInfoInstr"
               }
             }
           },
@@ -3395,7 +3429,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/MarkImageUploadedParams"
+                "$ref": "#/components/schemas/MarkUserAvatarUploadedInstr"
               }
             }
           },
@@ -3433,7 +3467,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ReserveImageParams"
+                "$ref": "#/components/schemas/ReserveUserAvatarInstr"
               }
             }
           },
@@ -3445,7 +3479,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ReserveImagePayload"
+                  "$ref": "#/components/schemas/HttpBody_ReserveUserAvatarVal"
                 }
               }
             }
@@ -3478,7 +3512,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateUserPasswordParams"
+                "$ref": "#/components/schemas/UpdateUserPasswordInstr"
               }
             }
           },
@@ -3508,7 +3542,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateWorksetParams"
+                "$ref": "#/components/schemas/CreateWorksetInstr"
               }
             }
           },
@@ -3520,7 +3554,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_CreateWorksetPayload"
+                  "$ref": "#/components/schemas/HttpBody_CreateWorksetVal"
                 }
               }
             }
@@ -3561,7 +3595,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_WorksetInfoVal"
+                  "$ref": "#/components/schemas/HttpBody_WorksetInfoView"
                 }
               }
             }
@@ -3598,7 +3632,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateWorksetInfoParams"
+                "$ref": "#/components/schemas/UpdateWorksetInfoInstr"
               }
             }
           },
@@ -3740,7 +3774,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ListComicInfosPayload"
+                  "$ref": "#/components/schemas/HttpBody_ListComicInfosVal"
                 }
               }
             }
@@ -3759,12 +3793,12 @@
     "schemas": {
       "AnnouncementInclOpt": {
         "type": "string",
-        "description": "Incl opts for announcement info queries.\n\nEach opt embeds additional related data into the returned\n`AnnouncementInfoVal`.",
+        "description": "Incl opts for announcement info queries.\n\nEach opt embeds additional related data into the returned\n`AnnouncementInfoView`.",
         "enum": [
           "user"
         ]
       },
-      "AnnouncementInfoVal": {
+      "AnnouncementInfoView": {
         "type": "object",
         "description": "Presentation-ready team announcement information.",
         "required": [
@@ -3803,7 +3837,7 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/UserInfoVal",
+                "$ref": "#/components/schemas/UserInfoView",
                 "description": "Authoring user information, omitted when not requested."
               }
             ]
@@ -3814,7 +3848,7 @@
           }
         }
       },
-      "ArchiveComicPayload": {
+      "ArchiveComicVal": {
         "type": "object",
         "description": "Value returned after an active comic has been archived atomically.",
         "required": [
@@ -3829,7 +3863,7 @@
       },
       "AssignmentInclOpt": {
         "type": "string",
-        "description": "Incl opts for assignment info queries.\n\nEach opt embeds additional related data into the returned\n`AssignmentInfoVal`. Dotted opts implicitly pull in the segments before\nthe dot (e.g. `chapter.comic.workset.team` also embeds `chapter`,\n`chapter.comic`, and `chapter.comic.workset`).",
+        "description": "Incl opts for assignment info queries.\n\nEach opt embeds additional related data into the returned\n`AssignmentInfoView`. Dotted opts implicitly pull in the segments before\nthe dot (e.g. `chapter.comic.workset.team` also embeds `chapter`,\n`chapter.comic`, and `chapter.comic.workset`).",
         "enum": [
           "user",
           "chapter",
@@ -3840,7 +3874,7 @@
           "chapter.comic.creator"
         ]
       },
-      "AssignmentInfoVal": {
+      "AssignmentInfoView": {
         "type": "object",
         "description": "Presentation-ready chapter assignment information.",
         "required": [
@@ -3858,7 +3892,7 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/ChapterInfoVal",
+                "$ref": "#/components/schemas/ChapterInfoView",
                 "description": "Resolved chapter information, when included."
               }
             ]
@@ -3891,7 +3925,7 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/UserInfoVal",
+                "$ref": "#/components/schemas/UserInfoView",
                 "description": "Resolved user information, when included."
               }
             ]
@@ -3902,7 +3936,7 @@
           }
         }
       },
-      "AssignmentInvitationInfoVal": {
+      "AssignmentInvitationInfoView": {
         "type": "object",
         "description": "Presentation-ready assignment invitation information.",
         "required": [
@@ -3911,7 +3945,7 @@
           "inviter_id",
           "invitee_qid",
           "code",
-          "pending",
+          "is_pending",
           "roles",
           "created_at",
           "updated_at"
@@ -3942,7 +3976,7 @@
             "type": "string",
             "description": "User identifier of the inviter who created this invitation."
           },
-          "pending": {
+          "is_pending": {
             "type": "boolean",
             "description": "Whether the invitation has not yet been consumed."
           },
@@ -3959,7 +3993,7 @@
       },
       "ChapterInclOpt": {
         "type": "string",
-        "description": "Incl opts for chapter info queries.\n\nEach opt embeds additional related data into the returned\n`ChapterInfoVal`. Dotted opts implicitly pull in the segments before the\ndot (e.g. `comic.workset.team` also embeds `comic` and `comic.workset`).",
+        "description": "Incl opts for chapter info queries.\n\nEach opt embeds additional related data into the returned\n`ChapterInfoView`. Dotted opts implicitly pull in the segments before the\ndot (e.g. `comic.workset.team` also embeds `comic` and `comic.workset`).",
         "enum": [
           "comic",
           "comic.workset",
@@ -3968,9 +4002,9 @@
           "creator"
         ]
       },
-      "ChapterInfoVal": {
+      "ChapterInfoView": {
         "type": "object",
-        "description": "Presentation-ready chapter information.\n\nMirrors [`ChapterInfo`] but converts timestamps to Unix milliseconds\nand exposes the same grouped field layout as the API response.\n\nConstruct via [`From<ChapterInfo>`] — the conversion is infallible.\n\n[`ChapterInfo`]: crate::model::chapter::ChapterInfo",
+        "description": "Presentation-ready chapter information.\n\nMirrors [`ChapterInfo`] but converts timestamps to Unix milliseconds\nand exposes the same grouped field layout as the API response.\n\nConstruct via [`From<ChapterInfo>`] — the conversion is infallible.\n\n[`ChapterInfo`]: crate::model::read::proj::chapter::ChapterInfo",
         "required": [
           "id",
           "comic_id",
@@ -3993,7 +4027,7 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/ComicInfoVal",
+                "$ref": "#/components/schemas/ComicInfoView",
                 "description": "Included comic information; present only when requested via inclusion\noptions."
               }
             ]
@@ -4013,7 +4047,7 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/UserInfoVal",
+                "$ref": "#/components/schemas/UserInfoView",
                 "description": "Included creator information; present only when requested via inclusion\noptions."
               }
             ]
@@ -4072,16 +4106,16 @@
       },
       "ComicInclOpt": {
         "type": "string",
-        "description": "Incl opts for comic info queries.\n\nEach opt embeds additional related data into the returned\n[`ComicInfoVal`]. Dotted opts implicitly pull in the segments before the\ndot (e.g. `workset.team` also embeds `workset`).",
+        "description": "Incl opts for comic info queries.\n\nEach opt embeds additional related data into the returned\n[`ComicInfoView`]. Dotted opts implicitly pull in the segments before the\ndot (e.g. `workset.team` also embeds `workset`).",
         "enum": [
           "workset",
           "workset.team",
           "creator"
         ]
       },
-      "ComicInfoVal": {
+      "ComicInfoView": {
         "type": "object",
-        "description": "Presentation-ready comic information.\n\nMirrors [`ComicInfo`] but converts timestamps to Unix milliseconds and\nresolves the cover key to a signed download URL via [`ImagePool`] when\nthe cover has been uploaded.\n\nConstruct via [`ComicInfoVal::from_model`] — the conversion requires\nan [`ImagePool`] instance for URL signing.\n\n[`ComicInfo`]: crate::model::comic::ComicInfo",
+        "description": "Presentation-ready comic information.\n\nMirrors [`ComicInfo`] but converts timestamps to Unix milliseconds and\nresolves the cover key to a signed download URL via [`ImagePool`] when\nthe cover has been uploaded.\n\nConstruct via [`ComicInfoView::from_model`] — the conversion requires\nan [`ImagePool`] instance for URL signing.\n\n[`ComicInfo`]: crate::model::read::proj::comic::ComicInfo",
         "required": [
           "id",
           "workset_id",
@@ -4129,7 +4163,7 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/UserInfoVal",
+                "$ref": "#/components/schemas/UserInfoView",
                 "description": "Resolved creator profile, included when the `creator` expansion option is requested."
               }
             ]
@@ -4165,7 +4199,7 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/TeamInfoVal",
+                "$ref": "#/components/schemas/TeamInfoView",
                 "description": "Resolved team summary for the owning workset, included when the `team` expansion option is requested."
               }
             ]
@@ -4185,7 +4219,7 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/WorksetInfoVal",
+                "$ref": "#/components/schemas/WorksetInfoView",
                 "description": "Resolved workset summary, included when the `workset` expansion option is requested."
               }
             ]
@@ -4206,12 +4240,12 @@
       },
       "CommentInclOpt": {
         "type": "string",
-        "description": "Incl opts for comment info queries.\n\nEach opt embeds additional related data into the returned\n`CommentInfoVal`.",
+        "description": "Incl opts for comment info queries.\n\nEach opt embeds additional related data into the returned\n`CommentInfoView`.",
         "enum": [
           "user"
         ]
       },
-      "CommentInfoVal": {
+      "CommentInfoView": {
         "type": "object",
         "description": "Presentation-ready team board comment information.",
         "required": [
@@ -4245,7 +4279,7 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/UserInfoVal",
+                "$ref": "#/components/schemas/UserInfoView",
                 "description": "Author user information, present when requested via inclusion options."
               }
             ]
@@ -4256,7 +4290,7 @@
           }
         }
       },
-      "CreateAnnouncementParams": {
+      "CreateAnnouncementInstr": {
         "type": "object",
         "description": "Input parameters for creating an announcement.",
         "required": [
@@ -4279,7 +4313,7 @@
           }
         }
       },
-      "CreateAnnouncementPayload": {
+      "CreateAnnouncementVal": {
         "type": "object",
         "description": "Return value from creating an announcement.",
         "required": [
@@ -4292,7 +4326,7 @@
           }
         }
       },
-      "CreateAssignmentInvitationParams": {
+      "CreateAssignmentInvitationInstr": {
         "type": "object",
         "description": "Input parameters for creating an assignment invitation.",
         "required": [
@@ -4315,7 +4349,7 @@
           }
         }
       },
-      "CreateAssignmentInvitationPayload": {
+      "CreateAssignmentInvitationVal": {
         "type": "object",
         "description": "Return value from creating an assignment invitation.",
         "required": [
@@ -4333,7 +4367,7 @@
           }
         }
       },
-      "CreateChapterParams": {
+      "CreateChapterInstr": {
         "type": "object",
         "description": "Input parameters for creating a new chapter.",
         "required": [
@@ -4364,7 +4398,7 @@
           }
         }
       },
-      "CreateChapterPayload": {
+      "CreateChapterVal": {
         "type": "object",
         "description": "Return value from a successful chapter creation.",
         "required": [
@@ -4377,7 +4411,7 @@
           }
         }
       },
-      "CreateComicParams": {
+      "CreateComicInstr": {
         "type": "object",
         "description": "Input parameters for creating a new comic inside a workset.\n\nThe first chapter is created atomically with the comic. Its subtitle\ncan be customised via `first_chapter_subtitle`; when absent, a\nlocale-aware default (e.g. \"Ch. 1\") is generated.",
         "required": [
@@ -4425,7 +4459,7 @@
           }
         }
       },
-      "CreateComicPayload": {
+      "CreateComicVal": {
         "type": "object",
         "description": "Return value from a successful comic creation.\n\nIncludes the IDs of both the new comic and its auto-created first chapter.",
         "required": [
@@ -4443,7 +4477,7 @@
           }
         }
       },
-      "CreateCommentParams": {
+      "CreateCommentInstr": {
         "type": "object",
         "description": "Input parameters for creating a comment.",
         "required": [
@@ -4461,7 +4495,7 @@
           }
         }
       },
-      "CreateCommentPayload": {
+      "CreateCommentVal": {
         "type": "object",
         "description": "Return value from creating a comment.",
         "required": [
@@ -4474,48 +4508,7 @@
           }
         }
       },
-      "CreateMemberInvitationParams": {
-        "type": "object",
-        "description": "Input parameters for creating a new team invitation.\n\nThe invitation binds a specific QQ ID (`invitee_qid`) to a [`RoleMask`]\nthat will be granted upon acceptance. The actual in-app user lookup\nhappens during the registration flow.",
-        "required": [
-          "team_id",
-          "invitee_qid",
-          "roles"
-        ],
-        "properties": {
-          "invitee_qid": {
-            "type": "string",
-            "description": "The QQ ID of the person being invited (not a user UUID)."
-          },
-          "roles": {
-            "$ref": "#/components/schemas/RoleMask",
-            "description": "The role mask that will be assigned when the invitee registers\nand accepts the invitation."
-          },
-          "team_id": {
-            "type": "string",
-            "description": "Owning team identifier."
-          }
-        }
-      },
-      "CreateMemberInvitationPayload": {
-        "type": "object",
-        "description": "Return value from a successful invitation creation.\n\nThe `code` is a short opaque token the invitee presents during\nregistration to claim the invitation.",
-        "required": [
-          "id",
-          "code"
-        ],
-        "properties": {
-          "code": {
-            "type": "string",
-            "description": "Opaque invitation code presented by the invitee to claim the invitation."
-          },
-          "id": {
-            "type": "string",
-            "description": "Unique identifier of the created invitation."
-          }
-        }
-      },
-      "CreateMemberParams": {
+      "CreateMemberInstr": {
         "type": "object",
         "description": "Input parameters for creating a member.",
         "required": [
@@ -4538,7 +4531,48 @@
           }
         }
       },
-      "CreateMemberPayload": {
+      "CreateMemberInvitationInstr": {
+        "type": "object",
+        "description": "Input parameters for creating a new team invitation.\n\nThe invitation binds a specific QQ ID (`invitee_qid`) to a [`RoleMask`]\nthat will be granted upon acceptance. The actual in-app user lookup\nhappens during the registration flow.",
+        "required": [
+          "team_id",
+          "invitee_qid",
+          "roles"
+        ],
+        "properties": {
+          "invitee_qid": {
+            "type": "string",
+            "description": "The QQ ID of the person being invited (not a user UUID)."
+          },
+          "roles": {
+            "$ref": "#/components/schemas/RoleMask",
+            "description": "The role mask that will be assigned when the invitee registers\nand accepts the invitation."
+          },
+          "team_id": {
+            "type": "string",
+            "description": "Owning team identifier."
+          }
+        }
+      },
+      "CreateMemberInvitationVal": {
+        "type": "object",
+        "description": "Return value from a successful invitation creation.\n\nThe `code` is a short opaque token the invitee presents during\nregistration to claim the invitation.",
+        "required": [
+          "id",
+          "code"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Opaque invitation code presented by the invitee to claim the invitation."
+          },
+          "id": {
+            "type": "string",
+            "description": "Unique identifier of the created invitation."
+          }
+        }
+      },
+      "CreateMemberVal": {
         "type": "object",
         "description": "Return value from creating a member.",
         "required": [
@@ -4551,7 +4585,7 @@
           }
         }
       },
-      "CreateTeamParams": {
+      "CreateTeamInstr": {
         "type": "object",
         "description": "Input parameters for creating a new team.",
         "required": [
@@ -4569,7 +4603,7 @@
           }
         }
       },
-      "CreateTermParams": {
+      "CreateTermInstr": {
         "type": "object",
         "description": "Input parameters for creating a terminology entry.",
         "required": [
@@ -4602,7 +4636,7 @@
           }
         }
       },
-      "CreateTermPayload": {
+      "CreateTermVal": {
         "type": "object",
         "description": "Return value from creating a terminology entry.",
         "required": [
@@ -4615,7 +4649,7 @@
           }
         }
       },
-      "CreateTermbaseParams": {
+      "CreateTermbaseInstr": {
         "type": "object",
         "description": "Input parameters for creating a terminology base.",
         "required": [
@@ -4649,7 +4683,7 @@
           }
         }
       },
-      "CreateTermbasePayload": {
+      "CreateTermbaseVal": {
         "type": "object",
         "description": "Return value from creating a terminology base.",
         "required": [
@@ -4662,7 +4696,7 @@
           }
         }
       },
-      "CreateWorksetParams": {
+      "CreateWorksetInstr": {
         "type": "object",
         "description": "Input parameters for creating a new workset inside a team.",
         "required": [
@@ -4687,7 +4721,7 @@
           }
         }
       },
-      "CreateWorksetPayload": {
+      "CreateWorksetVal": {
         "type": "object",
         "description": "Return value from a successful workset creation.",
         "required": [
@@ -4700,7 +4734,7 @@
           }
         }
       },
-      "ExportChapterTranslationPayload": {
+      "ExportChapterTranslationVal": {
         "type": "object",
         "description": "JSON-safe export object for one translated chapter.",
         "required": [
@@ -4738,13 +4772,13 @@
           "pages": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/PageTranslationExportPayload"
+              "$ref": "#/components/schemas/PageTranslationExportView"
             },
             "description": "Translated pages contained in this chapter."
           }
         }
       },
-      "ExportComicArchivesPayload": {
+      "ExportComicArchivesVal": {
         "type": "object",
         "description": "JSON archive payloads grouped by their UTC `YYYY-MM` month slot.",
         "additionalProperties": {
@@ -4757,7 +4791,7 @@
           "type": "string"
         }
       },
-      "HttpBody_ArchiveComicPayload": {
+      "HttpBody_ArchiveComicVal": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -4787,7 +4821,7 @@
           }
         }
       },
-      "HttpBody_AssignmentInfoVal": {
+      "HttpBody_AssignmentInfoView": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -4820,7 +4854,7 @@
                     "type": "null"
                   },
                   {
-                    "$ref": "#/components/schemas/ChapterInfoVal",
+                    "$ref": "#/components/schemas/ChapterInfoView",
                     "description": "Resolved chapter information, when included."
                   }
                 ]
@@ -4853,7 +4887,7 @@
                     "type": "null"
                   },
                   {
-                    "$ref": "#/components/schemas/UserInfoVal",
+                    "$ref": "#/components/schemas/UserInfoView",
                     "description": "Resolved user information, when included."
                   }
                 ]
@@ -4866,7 +4900,7 @@
           }
         }
       },
-      "HttpBody_ChapterInfoVal": {
+      "HttpBody_ChapterInfoView": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -4883,7 +4917,7 @@
           },
           "data": {
             "type": "object",
-            "description": "Presentation-ready chapter information.\n\nMirrors [`ChapterInfo`] but converts timestamps to Unix milliseconds\nand exposes the same grouped field layout as the API response.\n\nConstruct via [`From<ChapterInfo>`] — the conversion is infallible.\n\n[`ChapterInfo`]: crate::model::chapter::ChapterInfo",
+            "description": "Presentation-ready chapter information.\n\nMirrors [`ChapterInfo`] but converts timestamps to Unix milliseconds\nand exposes the same grouped field layout as the API response.\n\nConstruct via [`From<ChapterInfo>`] — the conversion is infallible.\n\n[`ChapterInfo`]: crate::model::read::proj::chapter::ChapterInfo",
             "required": [
               "id",
               "comic_id",
@@ -4906,7 +4940,7 @@
                     "type": "null"
                   },
                   {
-                    "$ref": "#/components/schemas/ComicInfoVal",
+                    "$ref": "#/components/schemas/ComicInfoView",
                     "description": "Included comic information; present only when requested via inclusion\noptions."
                   }
                 ]
@@ -4926,7 +4960,7 @@
                     "type": "null"
                   },
                   {
-                    "$ref": "#/components/schemas/UserInfoVal",
+                    "$ref": "#/components/schemas/UserInfoView",
                     "description": "Included creator information; present only when requested via inclusion\noptions."
                   }
                 ]
@@ -4985,7 +5019,7 @@
           }
         }
       },
-      "HttpBody_ComicInfoVal": {
+      "HttpBody_ComicInfoView": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -5002,7 +5036,7 @@
           },
           "data": {
             "type": "object",
-            "description": "Presentation-ready comic information.\n\nMirrors [`ComicInfo`] but converts timestamps to Unix milliseconds and\nresolves the cover key to a signed download URL via [`ImagePool`] when\nthe cover has been uploaded.\n\nConstruct via [`ComicInfoVal::from_model`] — the conversion requires\nan [`ImagePool`] instance for URL signing.\n\n[`ComicInfo`]: crate::model::comic::ComicInfo",
+            "description": "Presentation-ready comic information.\n\nMirrors [`ComicInfo`] but converts timestamps to Unix milliseconds and\nresolves the cover key to a signed download URL via [`ImagePool`] when\nthe cover has been uploaded.\n\nConstruct via [`ComicInfoView::from_model`] — the conversion requires\nan [`ImagePool`] instance for URL signing.\n\n[`ComicInfo`]: crate::model::read::proj::comic::ComicInfo",
             "required": [
               "id",
               "workset_id",
@@ -5050,7 +5084,7 @@
                     "type": "null"
                   },
                   {
-                    "$ref": "#/components/schemas/UserInfoVal",
+                    "$ref": "#/components/schemas/UserInfoView",
                     "description": "Resolved creator profile, included when the `creator` expansion option is requested."
                   }
                 ]
@@ -5086,7 +5120,7 @@
                     "type": "null"
                   },
                   {
-                    "$ref": "#/components/schemas/TeamInfoVal",
+                    "$ref": "#/components/schemas/TeamInfoView",
                     "description": "Resolved team summary for the owning workset, included when the `team` expansion option is requested."
                   }
                 ]
@@ -5106,7 +5140,7 @@
                     "type": "null"
                   },
                   {
-                    "$ref": "#/components/schemas/WorksetInfoVal",
+                    "$ref": "#/components/schemas/WorksetInfoView",
                     "description": "Resolved workset summary, included when the `workset` expansion option is requested."
                   }
                 ]
@@ -5119,7 +5153,7 @@
           }
         }
       },
-      "HttpBody_CreateAnnouncementPayload": {
+      "HttpBody_CreateAnnouncementVal": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -5149,7 +5183,7 @@
           }
         }
       },
-      "HttpBody_CreateAssignmentInvitationPayload": {
+      "HttpBody_CreateAssignmentInvitationVal": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -5184,7 +5218,7 @@
           }
         }
       },
-      "HttpBody_CreateChapterPayload": {
+      "HttpBody_CreateChapterVal": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -5214,7 +5248,7 @@
           }
         }
       },
-      "HttpBody_CreateComicPayload": {
+      "HttpBody_CreateComicVal": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -5249,7 +5283,7 @@
           }
         }
       },
-      "HttpBody_CreateCommentPayload": {
+      "HttpBody_CreateCommentVal": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -5279,7 +5313,7 @@
           }
         }
       },
-      "HttpBody_CreateMemberInvitationPayload": {
+      "HttpBody_CreateMemberInvitationVal": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -5314,7 +5348,7 @@
           }
         }
       },
-      "HttpBody_CreateMemberPayload": {
+      "HttpBody_CreateMemberVal": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -5344,7 +5378,7 @@
           }
         }
       },
-      "HttpBody_CreateTermPayload": {
+      "HttpBody_CreateTermVal": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -5374,7 +5408,7 @@
           }
         }
       },
-      "HttpBody_CreateTermbasePayload": {
+      "HttpBody_CreateTermbaseVal": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -5404,7 +5438,7 @@
           }
         }
       },
-      "HttpBody_CreateWorksetPayload": {
+      "HttpBody_CreateWorksetVal": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -5434,7 +5468,7 @@
           }
         }
       },
-      "HttpBody_ExportChapterTranslationPayload": {
+      "HttpBody_ExportChapterTranslationVal": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -5487,7 +5521,7 @@
               "pages": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/PageTranslationExportPayload"
+                  "$ref": "#/components/schemas/PageTranslationExportView"
                 },
                 "description": "Translated pages contained in this chapter."
               }
@@ -5495,7 +5529,7 @@
           }
         }
       },
-      "HttpBody_ExportComicArchivesPayload": {
+      "HttpBody_ExportComicArchivesVal": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -5525,7 +5559,7 @@
           }
         }
       },
-      "HttpBody_ImportChapterTranslationPayload": {
+      "HttpBody_ImportChapterTranslationVal": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -5562,7 +5596,7 @@
           }
         }
       },
-      "HttpBody_ListComicInfosPayload": {
+      "HttpBody_ListComicInfosVal": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -5589,7 +5623,7 @@
               "comics": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/ComicInfoVal"
+                  "$ref": "#/components/schemas/ComicInfoView"
                 },
                 "description": "Comic information for the listed comics."
               },
@@ -5598,7 +5632,7 @@
                 "items": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/AssignmentInfoVal"
+                    "$ref": "#/components/schemas/AssignmentInfoView"
                   }
                 },
                 "description": "Assignments for each pinned chapter, positionally aligned with `comics`."
@@ -5611,7 +5645,7 @@
                       "type": "null"
                     },
                     {
-                      "$ref": "#/components/schemas/ChapterInfoVal"
+                      "$ref": "#/components/schemas/ChapterInfoView"
                     }
                   ]
                 },
@@ -5621,7 +5655,7 @@
           }
         }
       },
-      "HttpBody_ListPageUnitInfosPayload": {
+      "HttpBody_ListPageUnitInfosVal": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -5664,7 +5698,7 @@
               "unit_infos": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/UnitInfoVal"
+                  "$ref": "#/components/schemas/UnitInfoView"
                 },
                 "description": "Visible Units in final linked-list order."
               }
@@ -5672,7 +5706,7 @@
           }
         }
       },
-      "HttpBody_LoginAuthPayload": {
+      "HttpBody_LoginAuthVal": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -5707,7 +5741,7 @@
           }
         }
       },
-      "HttpBody_MemberInfoVal": {
+      "HttpBody_MemberInfoView": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -5757,7 +5791,7 @@
                     "type": "null"
                   },
                   {
-                    "$ref": "#/components/schemas/TeamInfoVal",
+                    "$ref": "#/components/schemas/TeamInfoView",
                     "description": "Resolved team detail, present when the `team` include option is requested."
                   }
                 ]
@@ -5772,7 +5806,7 @@
                     "type": "null"
                   },
                   {
-                    "$ref": "#/components/schemas/UserInfoVal",
+                    "$ref": "#/components/schemas/UserInfoView",
                     "description": "Resolved user detail, present when the `user` include option is requested."
                   }
                 ]
@@ -5785,7 +5819,7 @@
           }
         }
       },
-      "HttpBody_Option_ChapterInfoVal": {
+      "HttpBody_Option_ChapterInfoView": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -5807,7 +5841,7 @@
               },
               {
                 "type": "object",
-                "description": "Presentation-ready chapter information.\n\nMirrors [`ChapterInfo`] but converts timestamps to Unix milliseconds\nand exposes the same grouped field layout as the API response.\n\nConstruct via [`From<ChapterInfo>`] — the conversion is infallible.\n\n[`ChapterInfo`]: crate::model::chapter::ChapterInfo",
+                "description": "Presentation-ready chapter information.\n\nMirrors [`ChapterInfo`] but converts timestamps to Unix milliseconds\nand exposes the same grouped field layout as the API response.\n\nConstruct via [`From<ChapterInfo>`] — the conversion is infallible.\n\n[`ChapterInfo`]: crate::model::read::proj::chapter::ChapterInfo",
                 "required": [
                   "id",
                   "comic_id",
@@ -5830,7 +5864,7 @@
                         "type": "null"
                       },
                       {
-                        "$ref": "#/components/schemas/ComicInfoVal",
+                        "$ref": "#/components/schemas/ComicInfoView",
                         "description": "Included comic information; present only when requested via inclusion\noptions."
                       }
                     ]
@@ -5850,7 +5884,7 @@
                         "type": "null"
                       },
                       {
-                        "$ref": "#/components/schemas/UserInfoVal",
+                        "$ref": "#/components/schemas/UserInfoView",
                         "description": "Included creator information; present only when requested via inclusion\noptions."
                       }
                     ]
@@ -5911,7 +5945,7 @@
           }
         }
       },
-      "HttpBody_PageInfoVal": {
+      "HttpBody_PageInfoView": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -6006,7 +6040,7 @@
           }
         }
       },
-      "HttpBody_RegisterAuthPayload": {
+      "HttpBody_RegisterAuthVal": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -6041,7 +6075,7 @@
           }
         }
       },
-      "HttpBody_ReserveChapterPagesPayload": {
+      "HttpBody_ReserveChapterPagesVal": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -6066,7 +6100,7 @@
               "pages": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/ReservedPagePayload"
+                  "$ref": "#/components/schemas/ReservedPageVal"
                 },
                 "description": "Reserved pages with upload targets."
               }
@@ -6074,7 +6108,7 @@
           }
         }
       },
-      "HttpBody_ReserveImagePayload": {
+      "HttpBody_ReserveComicCoverVal": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -6091,7 +6125,7 @@
           },
           "data": {
             "type": "object",
-            "description": "Single-resource image reservation response.",
+            "description": "Comic cover upload reservation response.",
             "properties": {
               "slot": {
                 "oneOf": [
@@ -6099,8 +6133,8 @@
                     "type": "null"
                   },
                   {
-                    "$ref": "#/components/schemas/ImageUploadSlotVal",
-                    "description": "Upload capability, absent when this content is already uploaded."
+                    "$ref": "#/components/schemas/ImageUploadSlotView",
+                    "description": "Upload capability, absent when this cover is already uploaded."
                   }
                 ]
               }
@@ -6108,7 +6142,75 @@
           }
         }
       },
-      "HttpBody_ReservedPagePayload": {
+      "HttpBody_ReserveTeamAvatarVal": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Application-level success code, 0 for normal success.",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "Team avatar upload reservation response.",
+            "properties": {
+              "slot": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ImageUploadSlotView",
+                    "description": "Upload capability, absent when this avatar is already uploaded."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_ReserveUserAvatarVal": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Application-level success code, 0 for normal success.",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "User avatar upload reservation response.",
+            "properties": {
+              "slot": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ImageUploadSlotView",
+                    "description": "Upload capability, absent when this avatar is already uploaded."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_ReservedPageVal": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -6157,7 +6259,7 @@
                     "type": "null"
                   },
                   {
-                    "$ref": "#/components/schemas/ImageUploadSlotVal",
+                    "$ref": "#/components/schemas/ImageUploadSlotView",
                     "description": "Presigned upload slot, if a new image must be uploaded."
                   }
                 ]
@@ -6166,7 +6268,7 @@
           }
         }
       },
-      "HttpBody_TeamInfoVal": {
+      "HttpBody_TeamInfoView": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -6232,7 +6334,7 @@
           }
         }
       },
-      "HttpBody_TermInfoVal": {
+      "HttpBody_TermInfoView": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -6304,7 +6406,7 @@
           }
         }
       },
-      "HttpBody_TermbaseInfoVal": {
+      "HttpBody_TermbaseInfoView": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -6383,7 +6485,7 @@
           }
         }
       },
-      "HttpBody_UserInfoVal": {
+      "HttpBody_UserInfoView": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -6460,7 +6562,7 @@
           }
         }
       },
-      "HttpBody_Vec_AnnouncementInfoVal": {
+      "HttpBody_Vec_AnnouncementInfoView": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -6516,7 +6618,7 @@
                       "type": "null"
                     },
                     {
-                      "$ref": "#/components/schemas/UserInfoVal",
+                      "$ref": "#/components/schemas/UserInfoView",
                       "description": "Authoring user information, omitted when not requested."
                     }
                   ]
@@ -6530,7 +6632,7 @@
           }
         }
       },
-      "HttpBody_Vec_AssignmentInfoVal": {
+      "HttpBody_Vec_AssignmentInfoView": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -6565,7 +6667,7 @@
                       "type": "null"
                     },
                     {
-                      "$ref": "#/components/schemas/ChapterInfoVal",
+                      "$ref": "#/components/schemas/ChapterInfoView",
                       "description": "Resolved chapter information, when included."
                     }
                   ]
@@ -6598,7 +6700,7 @@
                       "type": "null"
                     },
                     {
-                      "$ref": "#/components/schemas/UserInfoVal",
+                      "$ref": "#/components/schemas/UserInfoView",
                       "description": "Resolved user information, when included."
                     }
                   ]
@@ -6612,7 +6714,7 @@
           }
         }
       },
-      "HttpBody_Vec_AssignmentInvitationInfoVal": {
+      "HttpBody_Vec_AssignmentInvitationInfoView": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -6638,7 +6740,7 @@
                 "inviter_id",
                 "invitee_qid",
                 "code",
-                "pending",
+                "is_pending",
                 "roles",
                 "created_at",
                 "updated_at"
@@ -6669,7 +6771,7 @@
                   "type": "string",
                   "description": "User identifier of the inviter who created this invitation."
                 },
-                "pending": {
+                "is_pending": {
                   "type": "boolean",
                   "description": "Whether the invitation has not yet been consumed."
                 },
@@ -6687,7 +6789,7 @@
           }
         }
       },
-      "HttpBody_Vec_ChapterInfoVal": {
+      "HttpBody_Vec_ChapterInfoView": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -6706,7 +6808,7 @@
             "type": "array",
             "items": {
               "type": "object",
-              "description": "Presentation-ready chapter information.\n\nMirrors [`ChapterInfo`] but converts timestamps to Unix milliseconds\nand exposes the same grouped field layout as the API response.\n\nConstruct via [`From<ChapterInfo>`] — the conversion is infallible.\n\n[`ChapterInfo`]: crate::model::chapter::ChapterInfo",
+              "description": "Presentation-ready chapter information.\n\nMirrors [`ChapterInfo`] but converts timestamps to Unix milliseconds\nand exposes the same grouped field layout as the API response.\n\nConstruct via [`From<ChapterInfo>`] — the conversion is infallible.\n\n[`ChapterInfo`]: crate::model::read::proj::chapter::ChapterInfo",
               "required": [
                 "id",
                 "comic_id",
@@ -6729,7 +6831,7 @@
                       "type": "null"
                     },
                     {
-                      "$ref": "#/components/schemas/ComicInfoVal",
+                      "$ref": "#/components/schemas/ComicInfoView",
                       "description": "Included comic information; present only when requested via inclusion\noptions."
                     }
                   ]
@@ -6749,7 +6851,7 @@
                       "type": "null"
                     },
                     {
-                      "$ref": "#/components/schemas/UserInfoVal",
+                      "$ref": "#/components/schemas/UserInfoView",
                       "description": "Included creator information; present only when requested via inclusion\noptions."
                     }
                   ]
@@ -6809,7 +6911,7 @@
           }
         }
       },
-      "HttpBody_Vec_CommentInfoVal": {
+      "HttpBody_Vec_CommentInfoView": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -6860,7 +6962,7 @@
                       "type": "null"
                     },
                     {
-                      "$ref": "#/components/schemas/UserInfoVal",
+                      "$ref": "#/components/schemas/UserInfoView",
                       "description": "Author user information, present when requested via inclusion options."
                     }
                   ]
@@ -6874,7 +6976,7 @@
           }
         }
       },
-      "HttpBody_Vec_MemberInfoVal": {
+      "HttpBody_Vec_MemberInfoView": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -6926,7 +7028,7 @@
                       "type": "null"
                     },
                     {
-                      "$ref": "#/components/schemas/TeamInfoVal",
+                      "$ref": "#/components/schemas/TeamInfoView",
                       "description": "Resolved team detail, present when the `team` include option is requested."
                     }
                   ]
@@ -6941,7 +7043,7 @@
                       "type": "null"
                     },
                     {
-                      "$ref": "#/components/schemas/UserInfoVal",
+                      "$ref": "#/components/schemas/UserInfoView",
                       "description": "Resolved user detail, present when the `user` include option is requested."
                     }
                   ]
@@ -6955,7 +7057,7 @@
           }
         }
       },
-      "HttpBody_Vec_MemberInvitationInfoVal": {
+      "HttpBody_Vec_MemberInvitationInfoView": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -6974,14 +7076,14 @@
             "type": "array",
             "items": {
               "type": "object",
-              "description": "Presentation-ready member invitation information.\n\nMirrors [`MemberInvitationInfo`] with timestamps omitted (the domain\nmodel carries no timestamps).\n\n[`MemberInvitationInfo`]: crate::model::member_invitation::MemberInvitationInfo",
+              "description": "Presentation-ready member invitation information.\n\nMirrors [`MemberInvitationInfo`] with timestamps omitted (the domain\nmodel carries no timestamps).\n\n[`MemberInvitationInfo`]: crate::model::read::proj::member_invitation::MemberInvitationInfo",
               "required": [
                 "id",
                 "team_id",
                 "invitor_id",
                 "invitee_qid",
                 "code",
-                "pending",
+                "is_pending",
                 "roles"
               ],
               "properties": {
@@ -7003,7 +7105,7 @@
                       "type": "null"
                     },
                     {
-                      "$ref": "#/components/schemas/UserInfoVal",
+                      "$ref": "#/components/schemas/UserInfoView",
                       "description": "Resolved invitor user information, present only when requested via incl."
                     }
                   ]
@@ -7012,7 +7114,7 @@
                   "type": "string",
                   "description": "Identifier of the user who created the invitation."
                 },
-                "pending": {
+                "is_pending": {
                   "type": "boolean",
                   "description": "Whether the invitation has not yet been consumed."
                 },
@@ -7029,7 +7131,7 @@
           }
         }
       },
-      "HttpBody_Vec_PageInfoVal": {
+      "HttpBody_Vec_PageInfoView": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -7127,7 +7229,7 @@
           }
         }
       },
-      "HttpBody_Vec_SystemMailInfoVal": {
+      "HttpBody_Vec_SystemMailInfoView": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -7151,7 +7253,7 @@
                 "id",
                 "title",
                 "content",
-                "read",
+                "is_read",
                 "created_at"
               ],
               "properties": {
@@ -7168,7 +7270,7 @@
                   "type": "string",
                   "description": "Unique identifier."
                 },
-                "read": {
+                "is_read": {
                   "type": "boolean",
                   "description": "Whether the mail has been read."
                 },
@@ -7181,7 +7283,7 @@
           }
         }
       },
-      "HttpBody_Vec_TeamInfoVal": {
+      "HttpBody_Vec_TeamInfoView": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -7250,7 +7352,7 @@
           }
         }
       },
-      "HttpBody_Vec_TermInfoVal": {
+      "HttpBody_Vec_TermInfoView": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -7325,7 +7427,7 @@
           }
         }
       },
-      "HttpBody_Vec_TermbaseInfoVal": {
+      "HttpBody_Vec_TermbaseInfoView": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -7407,7 +7509,7 @@
           }
         }
       },
-      "HttpBody_Vec_WorksetInfoVal": {
+      "HttpBody_Vec_WorksetInfoView": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -7426,7 +7528,7 @@
             "type": "array",
             "items": {
               "type": "object",
-              "description": "Presentation-ready workset information.\n\nMirrors [`WorksetInfo`] with timestamps converted to Unix milliseconds.\n\n[`WorksetInfo`]: crate::model::workset::WorksetInfo",
+              "description": "Presentation-ready workset information.\n\nMirrors [`WorksetInfo`] with timestamps converted to Unix milliseconds.\n\n[`WorksetInfo`]: crate::model::read::proj::workset::WorksetInfo",
               "required": [
                 "id",
                 "team_id",
@@ -7481,7 +7583,7 @@
           }
         }
       },
-      "HttpBody_WorksetInfoVal": {
+      "HttpBody_WorksetInfoView": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -7498,7 +7600,7 @@
           },
           "data": {
             "type": "object",
-            "description": "Presentation-ready workset information.\n\nMirrors [`WorksetInfo`] with timestamps converted to Unix milliseconds.\n\n[`WorksetInfo`]: crate::model::workset::WorksetInfo",
+            "description": "Presentation-ready workset information.\n\nMirrors [`WorksetInfo`] with timestamps converted to Unix milliseconds.\n\n[`WorksetInfo`]: crate::model::read::proj::workset::WorksetInfo",
             "required": [
               "id",
               "team_id",
@@ -7592,7 +7694,7 @@
         },
         "description": "SHA-256 content hash encoded as canonical padded RFC 4648 Base64."
       },
-      "ImageUploadSlotVal": {
+      "ImageUploadSlotView": {
         "type": "object",
         "description": "Presigned capability for one pending image upload.",
         "required": [
@@ -7623,7 +7725,7 @@
           }
         }
       },
-      "ImportChapterTranslationParams": {
+      "ImportChapterTranslationInstr": {
         "type": "object",
         "description": "Request body for importing chapter translations.",
         "required": [
@@ -7641,7 +7743,7 @@
           }
         }
       },
-      "ImportChapterTranslationPayload": {
+      "ImportChapterTranslationVal": {
         "type": "object",
         "description": "Summary returned after importing chapter translations.",
         "required": [
@@ -7661,7 +7763,7 @@
           }
         }
       },
-      "JoinAssignmentInvitationParams": {
+      "JoinAssignmentInvitationInstr": {
         "type": "object",
         "description": "Input parameters for joining an assignment through an invitation code.",
         "required": [
@@ -7674,7 +7776,7 @@
           }
         }
       },
-      "JoinChapterAssignmentParams": {
+      "JoinChapterAssignmentInstr": {
         "type": "object",
         "description": "Input parameters for a user joining a chapter as a worker via role\nselection.\n\nThe role mask must contain role bits that are valid for volunteer\nassignment; the use case layer validates this before applying.",
         "required": [
@@ -7692,7 +7794,7 @@
           }
         }
       },
-      "JoinTeamParams": {
+      "JoinTeamInstr": {
         "type": "object",
         "description": "Input parameters for joining a team through a member invitation.",
         "required": [
@@ -7705,7 +7807,7 @@
           }
         }
       },
-      "ListComicInfosPayload": {
+      "ListComicInfosVal": {
         "type": "object",
         "description": "Presentation-ready comic list and optional pinned chapters.\n\n`pinned_chapters` and `pinned_chapter_assignments` are positionally aligned\nwith `comics`. Their entries are populated only when the corresponding\n`with` options are requested.",
         "required": [
@@ -7717,7 +7819,7 @@
           "comics": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ComicInfoVal"
+              "$ref": "#/components/schemas/ComicInfoView"
             },
             "description": "Comic information for the listed comics."
           },
@@ -7726,7 +7828,7 @@
             "items": {
               "type": "array",
               "items": {
-                "$ref": "#/components/schemas/AssignmentInfoVal"
+                "$ref": "#/components/schemas/AssignmentInfoView"
               }
             },
             "description": "Assignments for each pinned chapter, positionally aligned with `comics`."
@@ -7739,7 +7841,7 @@
                   "type": "null"
                 },
                 {
-                  "$ref": "#/components/schemas/ChapterInfoVal"
+                  "$ref": "#/components/schemas/ChapterInfoView"
                 }
               ]
             },
@@ -7747,7 +7849,7 @@
           }
         }
       },
-      "ListPageUnitInfosPayload": {
+      "ListPageUnitInfosVal": {
         "type": "object",
         "description": "Return value for listing visible Units under one Page.",
         "required": [
@@ -7775,13 +7877,13 @@
           "unit_infos": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/UnitInfoVal"
+              "$ref": "#/components/schemas/UnitInfoView"
             },
             "description": "Visible Units in final linked-list order."
           }
         }
       },
-      "LoginAuthParams": {
+      "LoginAuthInstr": {
         "type": "object",
         "description": "Input parameters for user login.",
         "required": [
@@ -7799,7 +7901,7 @@
           }
         }
       },
-      "LoginAuthPayload": {
+      "LoginAuthVal": {
         "type": "object",
         "description": "Return value from a successful login.",
         "required": [
@@ -7817,9 +7919,9 @@
           }
         }
       },
-      "MarkImageUploadedParams": {
+      "MarkComicCoverUploadedInstr": {
         "type": "object",
-        "description": "Request to confirm one reserved image version.",
+        "description": "Request to confirm one reserved comic cover version.",
         "required": [
           "image_version"
         ],
@@ -7827,12 +7929,12 @@
           "image_version": {
             "type": "integer",
             "format": "int32",
-            "description": "Version returned in the upload slot.",
+            "description": "Version returned in the cover upload slot.",
             "minimum": 0
           }
         }
       },
-      "MarkPageImageUploadedParams": {
+      "MarkPageImageUploadedInstr": {
         "type": "object",
         "description": "Input parameters for confirming a page image upload completed.",
         "required": [
@@ -7847,7 +7949,7 @@
           }
         }
       },
-      "MarkSystemMailReadParams": {
+      "MarkSystemMailReadInstr": {
         "type": "object",
         "description": "Input parameters for marking a batch of system mails as read.",
         "required": [
@@ -7863,15 +7965,45 @@
           }
         }
       },
+      "MarkTeamAvatarUploadedInstr": {
+        "type": "object",
+        "description": "Request to confirm one reserved team avatar version.",
+        "required": [
+          "image_version"
+        ],
+        "properties": {
+          "image_version": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Version returned in the avatar upload slot.",
+            "minimum": 0
+          }
+        }
+      },
+      "MarkUserAvatarUploadedInstr": {
+        "type": "object",
+        "description": "Request to confirm one reserved user avatar version.",
+        "required": [
+          "image_version"
+        ],
+        "properties": {
+          "image_version": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Version returned in the avatar upload slot.",
+            "minimum": 0
+          }
+        }
+      },
       "MemberInclOpt": {
         "type": "string",
-        "description": "Incl opts for member info queries.\n\nEach opt embeds additional related data into the returned\n`MemberInfoVal`.",
+        "description": "Incl opts for member info queries.\n\nEach opt embeds additional related data into the returned\n`MemberInfoView`.",
         "enum": [
           "user",
           "team"
         ]
       },
-      "MemberInfoVal": {
+      "MemberInfoView": {
         "type": "object",
         "description": "Presentation-ready membership information.",
         "required": [
@@ -7906,7 +8038,7 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/TeamInfoVal",
+                "$ref": "#/components/schemas/TeamInfoView",
                 "description": "Resolved team detail, present when the `team` include option is requested."
               }
             ]
@@ -7921,7 +8053,7 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/UserInfoVal",
+                "$ref": "#/components/schemas/UserInfoView",
                 "description": "Resolved user detail, present when the `user` include option is requested."
               }
             ]
@@ -7934,21 +8066,21 @@
       },
       "MemberInvitationInclOpt": {
         "type": "string",
-        "description": "Incl opts for member invitation info queries.\n\nEach opt embeds additional related data into the returned\n`MemberInvitationInfoVal`.",
+        "description": "Incl opts for member invitation info queries.\n\nEach opt embeds additional related data into the returned\n`MemberInvitationInfoView`.",
         "enum": [
           "invitor"
         ]
       },
-      "MemberInvitationInfoVal": {
+      "MemberInvitationInfoView": {
         "type": "object",
-        "description": "Presentation-ready member invitation information.\n\nMirrors [`MemberInvitationInfo`] with timestamps omitted (the domain\nmodel carries no timestamps).\n\n[`MemberInvitationInfo`]: crate::model::member_invitation::MemberInvitationInfo",
+        "description": "Presentation-ready member invitation information.\n\nMirrors [`MemberInvitationInfo`] with timestamps omitted (the domain\nmodel carries no timestamps).\n\n[`MemberInvitationInfo`]: crate::model::read::proj::member_invitation::MemberInvitationInfo",
         "required": [
           "id",
           "team_id",
           "invitor_id",
           "invitee_qid",
           "code",
-          "pending",
+          "is_pending",
           "roles"
         ],
         "properties": {
@@ -7970,7 +8102,7 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/UserInfoVal",
+                "$ref": "#/components/schemas/UserInfoView",
                 "description": "Resolved invitor user information, present only when requested via incl."
               }
             ]
@@ -7979,7 +8111,7 @@
             "type": "string",
             "description": "Identifier of the user who created the invitation."
           },
-          "pending": {
+          "is_pending": {
             "type": "boolean",
             "description": "Whether the invitation has not yet been consumed."
           },
@@ -8078,7 +8210,7 @@
           }
         }
       },
-      "PageImageParams": {
+      "PageImageInstr": {
         "type": "object",
         "description": "One page image in a complete chapter manifest.",
         "required": [
@@ -8112,7 +8244,7 @@
           }
         }
       },
-      "PageInfoVal": {
+      "PageInfoView": {
         "type": "object",
         "description": "Presentation-ready page information.",
         "required": [
@@ -8190,7 +8322,7 @@
           }
         }
       },
-      "PageTranslationExportPayload": {
+      "PageTranslationExportView": {
         "type": "object",
         "description": "JSON-safe export object for one page.",
         "required": [
@@ -8211,13 +8343,13 @@
           "units": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/UnitTranslationExportPayload"
+              "$ref": "#/components/schemas/UnitTranslationExportView"
             },
             "description": "Translation units belonging to this page."
           }
         }
       },
-      "RegisterAuthParams": {
+      "RegisterAuthInstr": {
         "type": "object",
         "description": "Input parameters for user registration.",
         "required": [
@@ -8245,7 +8377,7 @@
           }
         }
       },
-      "RegisterAuthPayload": {
+      "RegisterAuthVal": {
         "type": "object",
         "description": "Return value from a successful registration.",
         "required": [
@@ -8263,7 +8395,7 @@
           }
         }
       },
-      "ReserveChapterPagesParams": {
+      "ReserveChapterPagesInstr": {
         "type": "object",
         "description": "Input parameters for reserving all page images of a chapter.",
         "required": [
@@ -8278,13 +8410,13 @@
           "pages": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/PageImageParams"
+              "$ref": "#/components/schemas/PageImageInstr"
             },
             "description": "Page images to reserve for the chapter."
           }
         }
       },
-      "ReserveChapterPagesPayload": {
+      "ReserveChapterPagesVal": {
         "type": "object",
         "description": "Return value from successful chapter page reservations.",
         "required": [
@@ -8294,15 +8426,15 @@
           "pages": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ReservedPagePayload"
+              "$ref": "#/components/schemas/ReservedPageVal"
             },
             "description": "Reserved pages with upload targets."
           }
         }
       },
-      "ReserveImageParams": {
+      "ReserveComicCoverInstr": {
         "type": "object",
-        "description": "Content-bound image reservation request.",
+        "description": "Request to reserve a comic cover upload.",
         "required": [
           "image_hash",
           "new_byte_len",
@@ -8311,23 +8443,23 @@
         "properties": {
           "ext": {
             "$ref": "#/components/schemas/ImageExt",
-            "description": "File format persisted as part of the image identity."
+            "description": "Cover file format."
           },
           "image_hash": {
             "$ref": "#/components/schemas/ImageHash",
-            "description": "SHA-256 identity of the exact upload bytes."
+            "description": "SHA-256 identity of the exact cover bytes."
           },
           "new_byte_len": {
             "type": "integer",
             "format": "int64",
-            "description": "Upload size used only for validation and PUT signing.",
+            "description": "Upload size used for validation and PUT signing.",
             "minimum": 0
           }
         }
       },
-      "ReserveImagePayload": {
+      "ReserveComicCoverVal": {
         "type": "object",
-        "description": "Single-resource image reservation response.",
+        "description": "Comic cover upload reservation response.",
         "properties": {
           "slot": {
             "oneOf": [
@@ -8335,14 +8467,14 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/ImageUploadSlotVal",
-                "description": "Upload capability, absent when this content is already uploaded."
+                "$ref": "#/components/schemas/ImageUploadSlotView",
+                "description": "Upload capability, absent when this cover is already uploaded."
               }
             ]
           }
         }
       },
-      "ReservePageImageParams": {
+      "ReservePageImageInstr": {
         "type": "object",
         "description": "Input parameters for reserving one page image.",
         "required": [
@@ -8367,7 +8499,91 @@
           }
         }
       },
-      "ReservedPagePayload": {
+      "ReserveTeamAvatarInstr": {
+        "type": "object",
+        "description": "Request to reserve a team avatar upload.",
+        "required": [
+          "image_hash",
+          "new_byte_len",
+          "ext"
+        ],
+        "properties": {
+          "ext": {
+            "$ref": "#/components/schemas/ImageExt",
+            "description": "Avatar file format."
+          },
+          "image_hash": {
+            "$ref": "#/components/schemas/ImageHash",
+            "description": "SHA-256 identity of the exact avatar bytes."
+          },
+          "new_byte_len": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Upload size used for validation and PUT signing.",
+            "minimum": 0
+          }
+        }
+      },
+      "ReserveTeamAvatarVal": {
+        "type": "object",
+        "description": "Team avatar upload reservation response.",
+        "properties": {
+          "slot": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ImageUploadSlotView",
+                "description": "Upload capability, absent when this avatar is already uploaded."
+              }
+            ]
+          }
+        }
+      },
+      "ReserveUserAvatarInstr": {
+        "type": "object",
+        "description": "Request to reserve a user avatar upload.",
+        "required": [
+          "image_hash",
+          "new_byte_len",
+          "ext"
+        ],
+        "properties": {
+          "ext": {
+            "$ref": "#/components/schemas/ImageExt",
+            "description": "Avatar file format."
+          },
+          "image_hash": {
+            "$ref": "#/components/schemas/ImageHash",
+            "description": "SHA-256 identity of the exact avatar bytes."
+          },
+          "new_byte_len": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Upload size used for validation and PUT signing.",
+            "minimum": 0
+          }
+        }
+      },
+      "ReserveUserAvatarVal": {
+        "type": "object",
+        "description": "User avatar upload reservation response.",
+        "properties": {
+          "slot": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ImageUploadSlotView",
+                "description": "Upload capability, absent when this avatar is already uploaded."
+              }
+            ]
+          }
+        }
+      },
+      "ReservedPageVal": {
         "type": "object",
         "description": "One reserved page upload target.",
         "required": [
@@ -8401,7 +8617,7 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/ImageUploadSlotVal",
+                "$ref": "#/components/schemas/ImageUploadSlotView",
                 "description": "Presigned upload slot, if a new image must be uploaded."
               }
             ]
@@ -8448,14 +8664,14 @@
           "revert"
         ]
       },
-      "SystemMailInfoVal": {
+      "SystemMailInfoView": {
         "type": "object",
         "description": "Presentation-ready system mail value.\n\nConverts the raw [`SystemMailInfo`] timestamp to Unix milliseconds\nand omits the internal `receiver_id` field.",
         "required": [
           "id",
           "title",
           "content",
-          "read",
+          "is_read",
           "created_at"
         ],
         "properties": {
@@ -8472,7 +8688,7 @@
             "type": "string",
             "description": "Unique identifier."
           },
-          "read": {
+          "is_read": {
             "type": "boolean",
             "description": "Whether the mail has been read."
           },
@@ -8482,7 +8698,7 @@
           }
         }
       },
-      "TeamInfoVal": {
+      "TeamInfoView": {
         "type": "object",
         "description": "Presentation-ready team profile information.\n\nConverts the raw [`TeamInfo`] timestamps to Unix milliseconds and\nresolves the avatar key to a signed download URL via [`ImagePool`] when\nthe avatar has been uploaded.",
         "required": [
@@ -8531,7 +8747,7 @@
           }
         }
       },
-      "TermInfoVal": {
+      "TermInfoView": {
         "type": "object",
         "description": "Presentation-ready terminology-entry information.",
         "required": [
@@ -8586,7 +8802,7 @@
           }
         }
       },
-      "TermbaseInfoVal": {
+      "TermbaseInfoView": {
         "type": "object",
         "description": "Presentation-ready terminology-base information.",
         "required": [
@@ -8656,7 +8872,7 @@
           "poprako"
         ]
       },
-      "UnitCoordVal": {
+      "UnitCoordInstr": {
         "type": "object",
         "description": "Page-relative Unit coordinates.",
         "required": [
@@ -8677,7 +8893,7 @@
         },
         "additionalProperties": false
       },
-      "UnitEditVal": {
+      "UnitEditInstr": {
         "oneOf": [
           {
             "type": "object",
@@ -8690,7 +8906,7 @@
             ],
             "properties": {
               "coord": {
-                "$ref": "#/components/schemas/UnitCoordVal",
+                "$ref": "#/components/schemas/UnitCoordInstr",
                 "description": "Initial page-relative coordinate."
               },
               "edit": {
@@ -8720,7 +8936,7 @@
                     "type": "null"
                   },
                   {
-                    "$ref": "#/components/schemas/UnitRevisionVal",
+                    "$ref": "#/components/schemas/UnitRevisionInstr",
                     "description": "Optional initial revision assignment."
                   }
                 ]
@@ -8731,7 +8947,7 @@
                     "type": "null"
                   },
                   {
-                    "$ref": "#/components/schemas/UnitTranslationVal",
+                    "$ref": "#/components/schemas/UnitTranslationInstr",
                     "description": "Optional initial translation assignment."
                   }
                 ]
@@ -8752,7 +8968,7 @@
                     "type": "null"
                   },
                   {
-                    "$ref": "#/components/schemas/UnitCoordVal",
+                    "$ref": "#/components/schemas/UnitCoordInstr",
                     "description": "Optional coordinate replacement."
                   }
                 ]
@@ -8787,7 +9003,7 @@
                     "type": "null"
                   },
                   {
-                    "$ref": "#/components/schemas/UnitRevisionVal",
+                    "$ref": "#/components/schemas/UnitRevisionInstr",
                     "description": "Three-state revision patch."
                   }
                 ]
@@ -8798,7 +9014,7 @@
                     "type": "null"
                   },
                   {
-                    "$ref": "#/components/schemas/UnitTranslationVal",
+                    "$ref": "#/components/schemas/UnitTranslationInstr",
                     "description": "Three-state translation patch."
                   }
                 ]
@@ -8828,7 +9044,7 @@
         ],
         "description": "One transport-facing Unit edit."
       },
-      "UnitInfoVal": {
+      "UnitInfoView": {
         "type": "object",
         "description": "Presentation-ready visible Unit information.",
         "required": [
@@ -8908,7 +9124,7 @@
           }
         }
       },
-      "UnitRevisionVal": {
+      "UnitRevisionInstr": {
         "type": "object",
         "description": "Revision assignment accepted from the client.",
         "required": [
@@ -8929,7 +9145,7 @@
         },
         "additionalProperties": false
       },
-      "UnitTranslationExportPayload": {
+      "UnitTranslationExportView": {
         "type": "object",
         "description": "JSON-safe export object for one page unit.",
         "required": [
@@ -9009,7 +9225,7 @@
           }
         }
       },
-      "UnitTranslationVal": {
+      "UnitTranslationInstr": {
         "type": "object",
         "description": "Translation assignment accepted from the client.",
         "required": [
@@ -9023,7 +9239,7 @@
         },
         "additionalProperties": false
       },
-      "UpdateAssignmentRolesParams": {
+      "UpdateAssignmentRolesInstr": {
         "type": "object",
         "description": "Input parameters for updating assignment roles.",
         "required": [
@@ -9046,7 +9262,7 @@
           }
         }
       },
-      "UpdateChapterInfoParams": {
+      "UpdateChapterInfoInstr": {
         "type": "object",
         "description": "Input parameters for partially updating a chapter's profile.",
         "required": [
@@ -9057,13 +9273,6 @@
             "type": "string",
             "description": "Chapter identifier to update."
           },
-          "pin": {
-            "type": [
-              "boolean",
-              "null"
-            ],
-            "description": "New pin status; `None` leaves the current value unchanged."
-          },
           "subtitle": {
             "type": [
               "string",
@@ -9073,7 +9282,7 @@
           }
         }
       },
-      "UpdateChapterStageParams": {
+      "UpdateChapterStageInstr": {
         "type": "object",
         "description": "Input parameters for updating a chapter's workflow stage.\n\nEncodes a single operation on a specific stage, e.g. \"start translating\"\non the `translate` stage. The use case layer validates that the\ntransition is legal for the current stage phase before applying it.",
         "required": [
@@ -9096,7 +9305,7 @@
           }
         }
       },
-      "UpdateComicInfoParams": {
+      "UpdateComicInfoInstr": {
         "type": "object",
         "description": "Input parameters for updating a comic's title, author, and description.\n\nCover updates are handled by dedicated endpoints.\n\n[`reserve_cover`]: crate::usecase::comic::reserve_cover",
         "required": [
@@ -9126,7 +9335,7 @@
           }
         }
       },
-      "UpdateMemberInvitationRolesParams": {
+      "UpdateMemberInvitationRolesInstr": {
         "type": "object",
         "description": "Input parameters for updating a pending invitation's roles.",
         "required": [
@@ -9144,7 +9353,7 @@
           }
         }
       },
-      "UpdateMemberRolesParams": {
+      "UpdateMemberRolesInstr": {
         "type": "object",
         "description": "Input parameters for updating a member's roles.",
         "required": [
@@ -9162,7 +9371,7 @@
           }
         }
       },
-      "UpdateTeamInfoParams": {
+      "UpdateTeamInfoInstr": {
         "type": "object",
         "description": "Input parameters for updating a team's profile.",
         "required": [
@@ -9185,7 +9394,7 @@
           }
         }
       },
-      "UpdateTermInfoParams": {
+      "UpdateTermInfoInstr": {
         "type": "object",
         "description": "Input parameters for replacing terminology-entry fields.",
         "required": [
@@ -9218,7 +9427,7 @@
           }
         }
       },
-      "UpdateTermbaseInfoParams": {
+      "UpdateTermbaseInfoInstr": {
         "type": "object",
         "description": "Input parameters for replacing terminology-base profile fields.",
         "required": [
@@ -9243,7 +9452,7 @@
           }
         }
       },
-      "UpdateUserInfoParams": {
+      "UpdateUserInfoInstr": {
         "type": "object",
         "description": "Input parameters for updating a user's profile.",
         "required": [
@@ -9266,7 +9475,7 @@
           }
         }
       },
-      "UpdateUserPasswordParams": {
+      "UpdateUserPasswordInstr": {
         "type": "object",
         "description": "Input parameters for replacing the authenticated user's password.",
         "required": [
@@ -9284,7 +9493,7 @@
           }
         }
       },
-      "UpdateWorksetInfoParams": {
+      "UpdateWorksetInfoInstr": {
         "type": "object",
         "description": "Input parameters for updating a workset's name and description.\n\nCover and counter updates are handled internally by the repo layer.",
         "required": [
@@ -9309,7 +9518,7 @@
           }
         }
       },
-      "UserInfoVal": {
+      "UserInfoView": {
         "type": "object",
         "description": "Presentation-ready user profile information.\n\nConverts the raw [`UserInfo`] timestamps to Unix milliseconds and\nresolves the avatar key to a signed download URL via [`ImagePool`] when\nthe avatar has been uploaded.",
         "required": [
@@ -9369,9 +9578,9 @@
           }
         }
       },
-      "WorksetInfoVal": {
+      "WorksetInfoView": {
         "type": "object",
-        "description": "Presentation-ready workset information.\n\nMirrors [`WorksetInfo`] with timestamps converted to Unix milliseconds.\n\n[`WorksetInfo`]: crate::model::workset::WorksetInfo",
+        "description": "Presentation-ready workset information.\n\nMirrors [`WorksetInfo`] with timestamps converted to Unix milliseconds.\n\n[`WorksetInfo`]: crate::model::read::proj::workset::WorksetInfo",
         "required": [
           "id",
           "team_id",

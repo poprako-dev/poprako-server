@@ -8,7 +8,7 @@ use crate::complex::comic::ComicComplex;
 use crate::complex::util::{
     check_user_is_team_admin, check_user_is_team_member,
 };
-use crate::model::comic::{ComicInfoListKind, ComicInfoListSpec};
+use crate::model::read::spec::comic::{ComicListKind, ComicListSpec};
 use crate::part::prom::payload::TaskPayload;
 use crate::part::repo::oper::assignment::DeleteAssignments;
 use crate::part::repo::oper::assignment_invitation::DeleteAssignmentInvitations;
@@ -85,10 +85,10 @@ impl WorksetComplex {
 
         loop {
             //
-            let list_spec = ComicInfoListSpec {
+            let list_spec = ComicListSpec {
                 workset_id: workset_info.id.clone(),
                 fuzzy_title: None,
-                kind: ComicInfoListKind::All,
+                kind: ComicListKind::All,
                 incl_opt: Vec::new(),
                 offset: 0,
                 limit: PAGE_SIZE,

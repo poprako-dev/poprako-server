@@ -1,4 +1,4 @@
-use crate::model::member_invitation::MemberInvitationInfo;
+use crate::model::read::proj::member_invitation::MemberInvitationInfo;
 use crate::part_impl::repo::rdb_impl::incl::framework::{
     BatchByIds, Incl, UserByIds, populate,
 };

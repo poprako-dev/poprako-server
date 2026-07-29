@@ -14,17 +14,18 @@ use poprako_util::i18n::trl;
 use crate::complex::image::ImageComplex;
 use crate::complex::member::MemberComplex;
 use crate::complex::team::{TeamComplex, TeamPermComplex};
-use crate::data::image::ImageUploadSlotVal;
-use crate::data::team::{
-    CreateTeamParams, ListTeamInfosParams, MarkTeamAvatarUploadedParams,
-    ReserveTeamAvatarParams, ReserveTeamAvatarPayload, TeamInfoVal,
-    UpdateTeamInfoParams,
+use crate::data::instr::team::{
+    CreateTeamInstr, ListTeamInfosInstr, MarkTeamAvatarUploadedInstr,
+    ReserveTeamAvatarInstr, UpdateTeamInfoInstr,
 };
-use crate::model::member::MemberEntry;
-use crate::model::team::{
-    TeamEntry, TeamInfo, TeamInfoListKind, TeamInfoListSpec,
-};
-use crate::model::user::UserToken;
+use crate::data::val::team::ReserveTeamAvatarVal;
+use crate::data::view::image::ImageUploadSlotView;
+use crate::data::view::team::TeamInfoView;
+use crate::model::read::proj::team::TeamInfo;
+use crate::model::read::spec::team::{TeamListKind, TeamListSpec};
+use crate::model::shared::user::UserToken;
+use crate::model::write::member::MemberEntry;
+use crate::model::write::team::{TeamAvatarRepl, TeamEntry, TeamRepl};
 use crate::part::image::{ImageManager, ImagePool, ImageUploadSpec};
 use crate::part::prom::Prom;
 use crate::part::prom::payload::{TaskPayload, image};
@@ -87,8 +88,8 @@ mod tests;
 pub async fn create<N, C, R, I>(
     (nucl, repo, image_pool): (&N, &R, &I),
     token: UserToken,
-    params: CreateTeamParams,
-) -> BaseRest<TeamInfoVal>
+    instr: CreateTeamInstr,
+) -> BaseRest<TeamInfoView>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -105,8 +106,8 @@ where
 
     let team_entry = TeamEntry {
         id: TeamComplex::gen_id(),
-        name: params.name,
-        description: params.description,
+        name: instr.name,
+        description: instr.description,
     };
 
     let team_info: TeamInfo = nucl
@@ -139,7 +140,7 @@ where
         .await?;
 
     // FIXME: no need to use info val in create.
-    TeamInfoVal::from_model(image_pool, team_info).await
+    TeamInfoView::from_model(image_pool, team_info).await
 }
 
 /// Fetches a team by ID with avatar URL resolution.
@@ -155,12 +156,12 @@ where
 pub async fn get_info<C, R, I>(
     (repo, image_pool): (&R, &I),
     id: String,
-) -> BaseRest<TeamInfoVal>
+) -> BaseRest<TeamInfoView>
 where
     R: TeamRepo<C>,
     I: ImagePool,
 {
-    TeamInfoVal::from_model(
+    TeamInfoView::from_model(
         image_pool,
         GetTeamInfo::Id { id: &id }.run_on(repo).await?,
     )
@@ -181,13 +182,13 @@ pub async fn list_infos<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
     // FIXME: use try_into()?
-    params: ListTeamInfosParams,
-) -> BaseRest<Vec<TeamInfoVal>>
+    instr: ListTeamInfosInstr,
+) -> BaseRest<Vec<TeamInfoView>>
 where
     R: TeamRepo<C> + UserRepo<C> + Sync,
     I: ImagePool,
 {
-    let kind = match params.user_id {
+    let kind = match instr.user_id {
         //
         Some(user_id) => {
             //
@@ -195,7 +196,7 @@ where
                 todo!()
             }
 
-            TeamInfoListKind::JoinedBy { user_id }
+            TeamListKind::JoinedBy { user_id }
         }
 
         None => {
@@ -208,14 +209,14 @@ where
             )
             .await?;
 
-            TeamInfoListKind::All
+            TeamListKind::All
         }
     };
 
-    let team_info_list_spec = TeamInfoListSpec {
+    let team_info_list_spec = TeamListSpec {
         kind,
-        offset: params.offset,
-        limit: params.limit,
+        offset: instr.offset,
+        limit: instr.limit,
     };
 
     let team_infos = ListTeamInfos {
@@ -227,7 +228,7 @@ where
     let team_info_vals = futures_util::future::join_all(
         team_infos
             .into_iter()
-            .map(|team_info| TeamInfoVal::from_model(image_pool, team_info)),
+            .map(|team_info| TeamInfoView::from_model(image_pool, team_info)),
     )
     .await
     .into_iter()
@@ -248,7 +249,7 @@ where
 pub async fn update_info<C, R>(
     (repo,): (&R,),
     token: UserToken,
-    params: UpdateTeamInfoParams,
+    instr: UpdateTeamInfoInstr,
 ) -> BaseRest<()>
 where
     R: TeamRepo<C> + MemberRepo<C> + Sync,
@@ -258,19 +259,17 @@ where
             repo => for<'a> FindMemberInfo<'a>;
         },
         &token.user_id,
-        &params.id,
+        &instr.id,
     )
     .await?;
 
-    // FIXME: use TeamInfoUpdate instead.
+    let repl = TeamRepl {
+        id: instr.id.clone(),
+        name: instr.name,
+        description: instr.description,
+    };
 
-    UpdateTeam::Info {
-        id: &params.id,
-        name: &params.name,
-        description: &params.description,
-    }
-    .run_on(repo)
-    .await?;
+    UpdateTeam::Info { repl: &repl }.run_on(repo).await?;
 
     accept(())
 }
@@ -298,8 +297,8 @@ pub async fn reserve_avatar<N, C, R, P, I>(
     (nucl, repo, prom, image_pool): (&N, &R, &P, &I),
     token: UserToken,
     id: String,
-    params: ReserveTeamAvatarParams,
-) -> BaseRest<ReserveTeamAvatarPayload>
+    instr: ReserveTeamAvatarInstr,
+) -> BaseRest<ReserveTeamAvatarVal>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -308,15 +307,12 @@ where
     I: ImagePool,
 {
     ImageComplex::ensure_byte_length(
-        params.new_byte_len,
+        instr.new_byte_len,
         image::ResourceKind::TeamAvatar,
     )?;
 
-    let transaction_image_hash = params.image_hash.clone();
-
-    let image_ext = params.ext;
-
-    let new_byte_len = params.new_byte_len;
+    let (transaction_image_hash, image_ext, new_byte_len) =
+        (instr.image_hash.clone(), instr.ext, instr.new_byte_len);
 
     TeamPermComplex::ensure_user_can_reserve_avatar(
         &mut run_proxy! {
@@ -346,11 +342,8 @@ where
                 ));
             }
 
-            let mut batch_ids = Vec::new();
-
-            let mut batch_payloads = Vec::new();
-
-            let mut batch_delays = Vec::new();
+            let (mut batch_ids, mut batch_payloads, mut batch_delays) =
+                (Vec::new(), Vec::new(), Vec::new());
 
             // If replacing an existing avatar, schedule deletion of the old object.
             if let Some(prev_key) = &avatar_reservation.prev_object_key {
@@ -415,7 +408,7 @@ where
 
             let upload_slot = image_pool.get_upload_slot(upload_spec).await?;
 
-            Some(ImageUploadSlotVal {
+            Some(ImageUploadSlotView {
                 put_url: upload_slot.url.to_string(),
                 image_version: avatar_version,
                 headers: upload_slot.headers,
@@ -425,7 +418,7 @@ where
         false => None,
     };
 
-    accept(ReserveTeamAvatarPayload { slot })
+    accept(ReserveTeamAvatarVal { slot })
 }
 
 /// Marks a reserved team avatar as successfully uploaded.
@@ -442,7 +435,7 @@ pub async fn mark_avatar_uploaded<N, C, R, I>(
     (nucl, repo, image_manager): (&N, &R, &I),
     token: UserToken,
     id: String,
-    params: MarkTeamAvatarUploadedParams,
+    instr: MarkTeamAvatarUploadedInstr,
 ) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
@@ -461,7 +454,7 @@ where
 
     let team_info = GetTeamInfo::Id { id: &id }.run_on(repo).await?;
 
-    if team_info.avatar_version != params.image_version {
+    if team_info.avatar_version != instr.image_version {
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
             message: trl("error-stale-avatar-upload"),
@@ -488,13 +481,20 @@ where
         });
     }
 
+    let repl = TeamAvatarRepl {
+        id: id.clone(),
+        avatar_version: instr.image_version,
+        avatar_key: Some(avatar_key.clone()),
+        is_avatar_uploaded: true,
+    };
+
     nucl.coord(async move |context| {
         //
         let locked_team_info = GetTeamInfoExcluded::Id { id: &id }
             .step_on(repo, context)
             .await?;
 
-        if locked_team_info.avatar_version != params.image_version
+        if locked_team_info.avatar_version != instr.image_version
             || locked_team_info.avatar_key.as_deref() != Some(&avatar_key)
         {
             return Err(BaseError::Expected {
@@ -503,14 +503,9 @@ where
             });
         }
 
-        UpdateTeam::MarkAvatarUploaded {
-            id: &id,
-            avatar_version: params.image_version,
-            avatar_key: Some(&avatar_key),
-            avatar_uploaded: true,
-        }
-        .step_on(repo, context)
-        .await?;
+        UpdateTeam::MarkAvatarUploaded { repl: &repl }
+            .step_on(repo, context)
+            .await?;
 
         accept(())
     })
@@ -519,7 +514,7 @@ where
     accept(())
 }
 
-/// Deletes a team and all associated params.
+/// Deletes a team and all associated instr.
 ///
 /// Transactional cascade:
 ///

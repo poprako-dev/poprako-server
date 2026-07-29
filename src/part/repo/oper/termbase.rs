@@ -1,8 +1,8 @@
 use poprako_orchestra::Oper;
 
-use crate::model::termbase::{
-    TermbaseEntry, TermbaseInfo, TermbaseInfoListSpec, TermbaseInfoUpdate,
-};
+use crate::model::read::proj::termbase::TermbaseInfo;
+use crate::model::read::spec::termbase::TermbaseListSpec;
+use crate::model::write::termbase::{TermbaseEntry, TermbaseRepl};
 
 /// Creates a termbase.
 #[derive(Oper)]
@@ -25,7 +25,7 @@ pub struct GetTermbaseInfo<'a> {
 #[oper(output = Vec<TermbaseInfo>)]
 pub struct ListTermbaseInfos<'a> {
     /// The specification for filtering listed termbases.
-    pub spec: &'a TermbaseInfoListSpec,
+    pub spec: &'a TermbaseListSpec,
 }
 
 /// Looks up a termbase by identifier, matching deleted rows as well.
@@ -40,6 +40,7 @@ pub struct GetTermbaseInfoExcluded<'a> {
 #[derive(Oper)]
 #[oper(output = Vec<TermbaseInfo>)]
 pub enum ListTermbaseInfosExcluded<'a> {
+    //
     /// Fetch all termbases for a team.
     Team {
         /// The team identifier.
@@ -58,7 +59,7 @@ pub enum ListTermbaseInfosExcluded<'a> {
 #[oper(output = ())]
 pub struct UpdateTermbase<'a> {
     /// The update payload for the termbase.
-    pub update: &'a TermbaseInfoUpdate,
+    pub update: &'a TermbaseRepl,
 }
 
 /// Updates a termbase's cached term count.

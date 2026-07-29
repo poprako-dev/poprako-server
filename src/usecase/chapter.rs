@@ -9,15 +9,16 @@ use tracing::instrument;
 use crate::complex::assignment::AssignmentComplex;
 use crate::complex::chapter::{ChapterComplex, ChapterPermComplex};
 use crate::complex::comic::ComicComplex;
-use crate::data::chapter::{
-    ChapterInfoVal, CreateChapterParams, CreateChapterPayload,
-    ListChapterInfosParams, UpdateChapterInfoParams, UpdateChapterStageParams,
+use crate::data::instr::chapter::{
+    CreateChapterInstr, ListChapterInfosInstr, UpdateChapterInfoInstr,
+    UpdateChapterStageInstr,
 };
-use crate::model::assignment::AssignmentEntry;
-use crate::model::chapter::{
-    ChapterEntry, ChapterInfoListSpec, ChapterInfoUpdate,
-};
-use crate::model::user::UserToken;
+use crate::data::val::chapter::CreateChapterVal;
+use crate::data::view::chapter::ChapterInfoView;
+use crate::model::read::spec::chapter::ChapterListSpec;
+use crate::model::shared::user::UserToken;
+use crate::model::write::assignment::AssignmentEntry;
+use crate::model::write::chapter::{ChapterEntry, ChapterPatch};
 use crate::part::effect::EffectDevelop;
 use crate::part::effect::event::Event;
 use crate::part::effect::event::chapter::{
@@ -65,8 +66,8 @@ mod tests;
 pub async fn list_infos<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
-    params: ListChapterInfosParams,
-) -> BaseRest<Vec<ChapterInfoVal>>
+    instr: ListChapterInfosInstr,
+) -> BaseRest<Vec<ChapterInfoView>>
 where
     R: ChapterRepo<C>
         + ComicRepo<C>
@@ -84,15 +85,15 @@ where
                 for<'a> FindMemberInfo<'a>;
         },
         &token.user_id,
-        &params.comic_id,
+        &instr.comic_id,
     )
     .await?;
 
-    let spec = ChapterInfoListSpec {
-        comic_id: params.comic_id,
-        incl_opt: params.incl_opt,
-        offset: params.offset,
-        limit: params.limit,
+    let spec = ChapterListSpec {
+        comic_id: instr.comic_id,
+        incl_opt: instr.incl_opt,
+        offset: instr.offset,
+        limit: instr.limit,
     };
 
     let chapter_infos = ListChapterInfos { spec: &spec }.run_on(repo).await?;
@@ -124,7 +125,7 @@ where
             .map(String::as_str);
 
         chapter_info_vals.push(
-            ChapterInfoVal::from_model(
+            ChapterInfoView::from_model(
                 image_pool,
                 chapter_info,
                 fallback_cover_key,
@@ -142,7 +143,7 @@ pub async fn get_info<C, R>(
     (repo,): (&R,),
     token: UserToken,
     id: String,
-) -> BaseRest<ChapterInfoVal>
+) -> BaseRest<ChapterInfoView>
 where
     R: ChapterRepo<C> + ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
 {
@@ -166,7 +167,7 @@ where
     .run_on(repo)
     .await?;
 
-    accept(ChapterInfoVal::from(chapter_info))
+    accept(ChapterInfoView::from(chapter_info))
 }
 
 /// Fetches the pinned chapter under one comic.
@@ -175,7 +176,7 @@ pub async fn get_pinned<C, R>(
     (repo,): (&R,),
     token: UserToken,
     comic_id: String,
-) -> BaseRest<Option<ChapterInfoVal>>
+) -> BaseRest<Option<ChapterInfoView>>
 where
     R: ChapterRepo<C> + ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
 {
@@ -198,7 +199,7 @@ where
     .run_on(repo)
     .await?;
 
-    accept(chapter_info.map(ChapterInfoVal::from))
+    accept(chapter_info.map(ChapterInfoView::from))
 }
 
 /// Creates a new chapter.
@@ -206,8 +207,8 @@ where
 pub async fn create<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
-    params: CreateChapterParams,
-) -> BaseRest<CreateChapterPayload>
+    instr: CreateChapterInstr,
+) -> BaseRest<CreateChapterVal>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -227,8 +228,8 @@ where
                 for<'a> FindMemberInfo<'a>;
         },
         &token.user_id,
-        &params.comic_id,
-        params.preset_assignment_roles,
+        &instr.comic_id,
+        instr.preset_assignment_roles,
     )
     .await?;
 
@@ -236,24 +237,24 @@ where
         .coord(async move |context| {
             //
             LockChapters {
-                comic_id: &params.comic_id,
+                comic_id: &instr.comic_id,
             }
             .step_on(repo, context)
             .await?;
 
             let index = AllocComicChapterIndex {
-                id: &params.comic_id,
+                id: &instr.comic_id,
             }
             .step_on(repo, context)
             .await?;
 
             let subtitle =
-                ChapterComplex::subtitle_or_default(params.subtitle, index);
+                ChapterComplex::subtitle_or_default(instr.subtitle, index);
 
             let chapter_id = ChapterComplex::gen_id();
 
             UnpinOtherChapters {
-                comic_id: &params.comic_id,
+                comic_id: &instr.comic_id,
                 excluded_id: &chapter_id,
             }
             .step_on(repo, context)
@@ -261,7 +262,7 @@ where
 
             let chapter_entry = ChapterEntry {
                 id: chapter_id,
-                comic_id: params.comic_id,
+                comic_id: instr.comic_id,
                 is_pinned: true,
                 index,
                 subtitle,
@@ -292,7 +293,7 @@ where
                 chapter_id: chapter_info.id.clone(),
                 user_id: token.user_id,
                 roles: AssignmentComplex::creator_roles(
-                    params.preset_assignment_roles,
+                    instr.preset_assignment_roles,
                 ),
             };
 
@@ -306,7 +307,7 @@ where
         })
         .await?;
 
-    accept(CreateChapterPayload { id: chapter_id })
+    accept(CreateChapterVal { id: chapter_id })
 }
 
 /// Updates chapter metadata.
@@ -314,7 +315,7 @@ where
 pub async fn update_info<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
-    params: UpdateChapterInfoParams,
+    instr: UpdateChapterInfoInstr,
 ) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
@@ -326,14 +327,14 @@ where
             repo => for<'a, 'b> FindAssignmentInfo<'a, 'b>;
         },
         &token.user_id,
-        &params.id,
+        &instr.id,
     )
     .await?;
 
     nucl.coord(async move |context| {
         //
         let chapter_info = GetChapterInfoExcluded {
-            id: &params.id,
+            id: &instr.id,
             incls: &[],
         }
         .step_on(repo, context)
@@ -341,11 +342,11 @@ where
 
         ChapterComplex::ensure_chapter_writable(&chapter_info)?;
 
-        if params.subtitle.is_some() {
+        if instr.subtitle.is_some() {
             //
-            let chapter_info_update = ChapterInfoUpdate {
-                id: params.id.clone(),
-                subtitle: params.subtitle,
+            let chapter_info_update = ChapterPatch {
+                id: instr.id.clone(),
+                subtitle: instr.subtitle,
                 pin: None,
             };
 
@@ -424,7 +425,7 @@ where
             .step_on(repo, context)
             .await?;
 
-            let chapter_info_update = ChapterInfoUpdate {
+            let chapter_info_update = ChapterPatch {
                 id: chapter_info.id.clone(),
                 subtitle: None,
                 pin: Some(true),
@@ -454,7 +455,7 @@ where
 pub async fn update_stage<N, C, R, P, V>(
     (nucl, repo, prom, develop): (&N, &R, &P, &V),
     token: UserToken,
-    params: UpdateChapterStageParams,
+    instr: UpdateChapterStageInstr,
 ) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
@@ -475,9 +476,9 @@ where
                 for<'a, 'b> ListAssignmentInfos<'a, 'b>;
         },
         &token.user_id,
-        &params.id,
-        params.stage,
-        params.oper,
+        &instr.id,
+        instr.stage,
+        instr.oper,
     )
     .await?;
 
@@ -485,7 +486,7 @@ where
         .coord(async move |context| {
             //
             let chapter_info = GetChapterInfoExcluded {
-                id: &params.id,
+                id: &instr.id,
                 incls: &[],
             }
             .step_on(repo, context)
@@ -496,16 +497,16 @@ where
             let was_published = chapter_info.stages.get_phase(Stage::Publish)
                 == StagePhase::Completed;
 
-            let prev_phase = chapter_info.stages.get_phase(params.stage);
+            let prev_phase = chapter_info.stages.get_phase(instr.stage);
 
             let chapter_stage_update = ChapterComplex::build_stage_update(
                 &chapter_info,
-                params.stage,
-                params.oper,
+                instr.stage,
+                instr.oper,
             )?;
 
             let next_phase =
-                chapter_stage_update.stages.get_phase(params.stage);
+                chapter_stage_update.stages.get_phase(instr.stage);
 
             UpdateChapterStage {
                 update: &chapter_stage_update,
@@ -515,20 +516,20 @@ where
 
             let mut events = Vec::new();
 
-            if params.oper == StageOper::Advance
+            if instr.oper == StageOper::Advance
                 && prev_phase != StagePhase::Completed
                 && next_phase == StagePhase::Completed
             {
                 events.push(Event::ChapterWorkflowCompleted(
                     ChapterWorkflowCompletedPayload {
                         chapter_id: chapter_info.id.clone(),
-                        completed_stage: params.stage,
+                        completed_stage: instr.stage,
                     },
                 ));
             }
 
-            if params.stage == Stage::Publish
-                && params.oper == StageOper::Advance
+            if instr.stage == Stage::Publish
+                && instr.oper == StageOper::Advance
                 && !was_published
                 && chapter_stage_update
                     .stages

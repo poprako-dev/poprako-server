@@ -6,12 +6,14 @@ use tracing::instrument;
 use crate::complex::announcement::{
     AnnouncementComplex, AnnouncementPermComplex,
 };
-use crate::data::announcement::{
-    AnnouncementInfoVal, CreateAnnouncementParams, CreateAnnouncementPayload,
-    ListAnnouncementInfosParams,
+use crate::data::instr::announcement::{
+    CreateAnnouncementInstr, ListAnnouncementInfosInstr,
 };
-use crate::model::announcement::{AnnouncementEntry, AnnouncementListSpec};
-use crate::model::user::UserToken;
+use crate::data::val::announcement::CreateAnnouncementVal;
+use crate::data::view::announcement::AnnouncementInfoView;
+use crate::model::read::spec::announcement::AnnouncementListSpec;
+use crate::model::shared::user::UserToken;
+use crate::model::write::announcement::AnnouncementEntry;
 use crate::part::image::ImagePool;
 use crate::part::repo::announcement::AnnouncementRepo;
 use crate::part::repo::member::MemberRepo;
@@ -30,13 +32,13 @@ mod tests;
 pub async fn list_infos<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
-    params: ListAnnouncementInfosParams,
-) -> BaseRest<Vec<AnnouncementInfoVal>>
+    instr: ListAnnouncementInfosInstr,
+) -> BaseRest<Vec<AnnouncementInfoView>>
 where
     R: AnnouncementRepo<C> + MemberRepo<C> + Sync,
     I: ImagePool,
 {
-    let announcement_list_spec: AnnouncementListSpec = params.into();
+    let announcement_list_spec: AnnouncementListSpec = instr.into();
 
     AnnouncementPermComplex::ensure_user_can_list_infos(
         &mut run_proxy! {
@@ -58,7 +60,7 @@ where
 
     for announcement_info in announcement_infos {
         announcement_info_vals.push(
-            AnnouncementInfoVal::from_model(image_pool, announcement_info)
+            AnnouncementInfoView::from_model(image_pool, announcement_info)
                 .await?,
         );
     }
@@ -71,8 +73,8 @@ where
 pub async fn create<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
-    params: CreateAnnouncementParams,
-) -> BaseRest<CreateAnnouncementPayload>
+    instr: CreateAnnouncementInstr,
+) -> BaseRest<CreateAnnouncementVal>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -83,7 +85,7 @@ where
             repo => for<'a> FindMemberInfo<'a>;
         },
         &token.user_id,
-        &params.team_id,
+        &instr.team_id,
     )
     .await?;
 
@@ -92,10 +94,10 @@ where
             //
             let announcement_entry = AnnouncementEntry {
                 id: AnnouncementComplex::gen_id(),
-                team_id: params.team_id,
+                team_id: instr.team_id,
                 user_id: token.user_id,
-                title: params.title,
-                content: params.content,
+                title: instr.title,
+                content: instr.content,
             };
 
             CreateAnnouncement {
@@ -106,7 +108,7 @@ where
         })
         .await?;
 
-    accept(CreateAnnouncementPayload {
+    accept(CreateAnnouncementVal {
         id: announcement_info.id,
     })
 }

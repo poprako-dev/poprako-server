@@ -9,12 +9,11 @@ async fn create_rejects_preset_role_missing_from_membership() {
 
     mock.seed_member(admin_member("user-1", "team-1"));
 
-    let mut params = create_params("workset-1");
+    let mut instr = create_instr("workset-1");
 
-    params.preset_assignment_roles =
-        Some(RoleMask::from(RoleField::TRANSLATOR));
+    instr.preset_assignment_roles = Some(RoleMask::from(RoleField::TRANSLATOR));
 
-    let err = create((&mock, &mock), token("user-1"), params)
+    let err = create((&mock, &mock), token("user-1"), instr)
         .await
         .err()
         .unwrap();

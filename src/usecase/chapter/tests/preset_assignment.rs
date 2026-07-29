@@ -10,7 +10,7 @@ async fn create_rejects_preset_role_missing_from_membership() {
     let err = create(
         (&mock, &mock),
         token("user-1"),
-        CreateChapterParams {
+        CreateChapterInstr {
             comic_id: "comic-1".into(),
             subtitle: None,
             preset_assignment_roles: Some(RoleMask::from(

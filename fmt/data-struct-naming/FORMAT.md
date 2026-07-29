@@ -1,24 +1,28 @@
 # Data struct naming
 
-Public data types must carry their domain in the type name. Their meaning must
-not depend on a `*_data::` path prefix:
+Public data types must carry their domain in the type name, and their role is
+encoded by the `src/data` submodule:
 
 ```rust
-use crate::data::CreateTeamParams;
+use crate::data::instr::team::CreateTeamInstr;
+use crate::data::view::team::TeamInfoView;
+use crate::data::view::team::TeamMemberView;
 
-fn create(params: CreateTeamParams) { /* ... */ }
+fn create(instr: CreateTeamInstr) -> TeamInfoView { /* ... */ }
 ```
 
-In `src/data/team.rs`, write `CreateTeamParams`, not `CreateData`. Every public
-data type has one boundary role:
+In `src/data/instr/team.rs`, write `CreateTeamInstr`, not `CreateInstr`. Every
+public data type has one boundary role:
 
-- Usecase and handler inputs end in `Params`.
-- Usecase return DTOs end in `Payload`.
-- `Val` is reserved for a serde representation converted from a model, such as
-  `TeamInfo -> TeamInfoVal`; it is not a generic response suffix.
+- Usecase and handler inputs end in `Instr`.
+- Direct response DTOs that are not model `Info` projections end in `Val`.
+- Every direct projection of a model `*Info` is named `*InfoView`, even when
+  the endpoint returns it directly or wraps it in `Vec`, `Option`, or another
+  response DTO.
+- Other response-only nested structures end in `View`.
 
-`Form` and the legacy `Data` suffix are forbidden. A persisted creation input
-belongs in the model layer as a domain-qualified `Entry`.
+Legacy role suffixes are forbidden. A persisted creation input belongs in the
+model layer as a domain-qualified `Entry`.
 
 Run the standalone checker from the repository root:
 

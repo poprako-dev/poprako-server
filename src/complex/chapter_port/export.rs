@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::fmt::Write as _;
 
-use crate::model::page::PageInfo;
+use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::unit::UnitInfo;
 
 /// Chapter export formatting rules.

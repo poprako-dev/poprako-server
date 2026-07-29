@@ -7,16 +7,17 @@ use super::*;
 
 use time::OffsetDateTime;
 
-use crate::model::assignment::AssignmentInfo;
-use crate::model::assignment_invitation::AssignmentInvitationInfo;
-use crate::model::chapter::ChapterInfo;
-use crate::model::comic::ComicInfo;
-use crate::model::member::MemberInfo;
-use crate::model::page::PageInfo;
+use crate::model::read::proj::assignment::AssignmentInfo;
+use crate::model::read::proj::assignment_invitation::AssignmentInvitationInfo;
+use crate::model::read::proj::chapter::ChapterInfo;
+use crate::model::read::proj::comic::ComicInfo;
+use crate::model::read::proj::member::MemberInfo;
+use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::unit::UnitInfo;
+use crate::model::read::proj::user::{UserCredential, UserInfo};
+use crate::model::read::proj::workset::WorksetInfo;
 use crate::model::shared::unit::UnitCoord;
-use crate::model::user::{UserCredential, UserInfo, UserToken};
-use crate::model::workset::WorksetInfo;
+use crate::model::shared::user::UserToken;
 use crate::part::prom::payload::TaskPayload;
 use crate::part::prom::payload::image::ImagePayload;
 use crate::part_impl::repo::mock_impl::Mock;
@@ -301,11 +302,11 @@ async fn export_returns_stored_strings_grouped_by_month() {
 
     let month = format!("{:04}-{:02}", now.year(), u8::from(now.month()));
 
-    let payload = export(
+    let val = export(
         (&mock,),
         token(),
         "team-1".into(),
-        ExportComicArchivesParams {
+        ExportComicArchivesInstr {
             months: vec![month.clone()],
         },
     )
@@ -314,7 +315,7 @@ async fn export_returns_stored_strings_grouped_by_month() {
 
     let stored = &mock.snapshot().comic_archives[0].archived_payload;
 
-    assert_eq!(payload.0[&month], vec![stored.clone()]);
+    assert_eq!(val.0[&month], vec![stored.clone()]);
 }
 
 #[tokio::test]
