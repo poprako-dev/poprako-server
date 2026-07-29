@@ -22,8 +22,11 @@ use crate::value::chapter::{Stage, StageMask};
 use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
+// Internal implementation of `team_info`.
+// Build a stable test team with non-zero avatar metadata.
 fn team_info() -> TeamInfo {
     //
+    // Internal implementation detail.
     let time = OffsetDateTime::now_utc();
 
     TeamInfo {
@@ -40,8 +43,11 @@ fn team_info() -> TeamInfo {
     }
 }
 
+// Internal implementation of `workset_info`.
+// Build a stable test workset associated with the test team.
 fn workset_info() -> WorksetInfo {
     //
+    // Internal implementation detail.
     let time = OffsetDateTime::now_utc();
 
     WorksetInfo {
@@ -56,8 +62,11 @@ fn workset_info() -> WorksetInfo {
     }
 }
 
+// Internal implementation of `comic_info`.
+// Build a stable test comic under the test workset and creator.
 fn comic_info() -> ComicInfo {
     //
+    // Internal implementation detail.
     let time = OffsetDateTime::now_utc();
 
     ComicInfo {
@@ -83,8 +92,11 @@ fn comic_info() -> ComicInfo {
     }
 }
 
+// Internal implementation of `chapter_info`.
+// Build a stable test chapter for async workflow dispatch tests.
 fn chapter_info() -> ChapterInfo {
     //
+    // Internal implementation detail.
     let time = OffsetDateTime::now_utc();
 
     ChapterInfo {
@@ -106,8 +118,25 @@ fn chapter_info() -> ChapterInfo {
     }
 }
 
+// Internal implementation of `seed_chapter_scope`.
+// Seed team/workset/comic/chapter fixtures used by chapter tests.
+fn seed_chapter_scope(mock: &Mock) {
+    //
+    // Internal implementation detail.
+    mock.seed_team(team_info());
+
+    mock.seed_workset(workset_info());
+
+    mock.seed_comic(comic_info());
+
+    mock.seed_chapter(chapter_info());
+}
+
+// Internal implementation of `assignment_info`.
+// Build a test assignment record bound to the seeded chapter.
 fn assignment_info(id: &str, user_id: &str, roles: RoleMask) -> AssignmentInfo {
     //
+    // Internal implementation detail.
     let time = OffsetDateTime::now_utc();
 
     AssignmentInfo {
@@ -122,20 +151,10 @@ fn assignment_info(id: &str, user_id: &str, roles: RoleMask) -> AssignmentInfo {
     }
 }
 
-fn seed_chapter_scope(mock: &Mock) {
-    //
-    mock.seed_team(team_info());
-
-    mock.seed_workset(workset_info());
-
-    mock.seed_comic(comic_info());
-
-    mock.seed_chapter(chapter_info());
-}
-
 #[tokio::test]
 async fn develop_dispatches_user_signup() {
     //
+    // Internal implementation detail.
     let mock = Arc::new(Mock::new());
 
     mock.seed_team(team_info());
@@ -164,6 +183,7 @@ async fn develop_dispatches_user_signup() {
 #[tokio::test]
 async fn develop_dispatches_chapter_workflow_completed() {
     //
+    // Internal implementation detail.
     let mock = Arc::new(Mock::new());
 
     seed_chapter_scope(&mock);
@@ -209,6 +229,7 @@ async fn develop_dispatches_chapter_workflow_completed() {
 #[tokio::test]
 async fn develop_dispatches_chapter_published() {
     //
+    // Internal implementation detail.
     let mock = Arc::new(Mock::new());
 
     seed_chapter_scope(&mock);
@@ -241,6 +262,7 @@ async fn develop_dispatches_chapter_published() {
 #[tokio::test]
 async fn close_is_idempotent() {
     //
+    // Internal implementation detail.
     let mock = Arc::new(Mock::new());
 
     let develop = AsyncEffectDevelop::new(mock, 8);
@@ -253,6 +275,7 @@ async fn close_is_idempotent() {
 #[tokio::test]
 async fn close_is_concurrent() {
     //
+    // Internal implementation detail.
     let mock = Arc::new(Mock::new());
 
     let develop = AsyncEffectDevelop::new(mock, 8);

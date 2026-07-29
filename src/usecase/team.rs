@@ -69,6 +69,7 @@ use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 use crate::value::role::{RoleField, RoleMask};
 
 #[cfg(test)]
+// Unit and integration tests for team management policies.
 mod tests;
 
 /// Creates a new team.
@@ -80,7 +81,7 @@ mod tests;
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C>` — Team storage.
 /// * `I: ImagePool` — Resolves the avatar signed URL.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(nucl, repo, image_pool))]
 pub async fn create<N, C, R, I>(
     (nucl, repo, image_pool): (&N, &R, &I),
     token: UserToken,
@@ -150,7 +151,7 @@ where
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C>` — Team storage.
 /// * `I: ImagePool` — Resolves the avatar signed URL.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(repo, image_pool))]
 pub async fn get_info<C, R, I>(
     (repo, image_pool): (&R, &I),
     id: String,
@@ -175,7 +176,7 @@ where
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C>` — Team storage.
 /// * `I: ImagePool` — Resolves avatar signed URLs.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(repo, image_pool))]
 pub async fn list_infos<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
@@ -243,7 +244,7 @@ where
 ///
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C>` — Team storage.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(repo))]
 pub async fn update_info<C, R>(
     (repo,): (&R,),
     token: UserToken,
@@ -291,7 +292,7 @@ where
 /// * `R: TeamRepo<C>` — Team storage.
 /// * `P: Prom<C>` — Prom enqueuer for deferred image opers.
 /// * `I: ImagePool` — Generates the signed upload URL.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(nucl, repo, prom, image_pool))]
 pub async fn reserve_avatar<N, C, R, P, I>(
     (nucl, repo, prom, image_pool): (&N, &R, &P, &I),
     token: UserToken,
@@ -381,7 +382,7 @@ where
 
             batch_delays.push(Some(Duration::from_secs(15 * 60)));
 
-            let batch_tasks: Vec<Task<'_, String, TaskPayload>> = batch_ids
+            let batch_tasks = batch_ids
                 .iter()
                 .zip(batch_payloads.iter())
                 .zip(batch_delays.iter())
@@ -390,7 +391,7 @@ where
                     payload,
                     delay: *delay,
                 })
-                .collect();
+                .collect::<Vec<Task<'_, String, TaskPayload>>>();
 
             prom.step(context, &DeferBatch::new(&batch_tasks)).await?;
 
@@ -438,7 +439,7 @@ where
 ///
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C>` — Team storage.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(nucl, repo, image_manager))]
 pub async fn mark_avatar_uploaded<N, C, R, I>(
     (nucl, repo, image_manager): (&N, &R, &I),
     token: UserToken,
@@ -538,7 +539,7 @@ where
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C> + WorksetRepo<C> + ComicRepo<C>` — Team, workset, and comic storage.
 /// * `P: Prom<C>` — Prom enqueuer for deferred avatar deletion.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(nucl, repo, prom))]
 pub async fn delete<N, C, R, P>(
     (nucl, repo, prom): (&N, &R, &P),
     token: UserToken,

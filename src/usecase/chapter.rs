@@ -52,12 +52,14 @@ use crate::value::chapter::{Stage, StageOper, StagePhase};
 
 pub use delete::delete;
 
+// Chapter deletion use cases (internal).
 mod delete;
+
 #[cfg(test)]
 mod tests;
 
 /// Lists chapters under one comic.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(repo, image_pool))]
 pub async fn list_infos<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
@@ -133,7 +135,7 @@ where
 }
 
 /// Fetches a chapter by ID.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(repo))]
 pub async fn get_info<C, R>(
     (repo,): (&R,),
     token: UserToken,
@@ -166,7 +168,7 @@ where
 }
 
 /// Fetches the pinned chapter under one comic.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(repo))]
 pub async fn get_pinned<C, R>(
     (repo,): (&R,),
     token: UserToken,
@@ -198,7 +200,7 @@ where
 }
 
 /// Creates a new chapter.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(nucl, repo))]
 pub async fn create<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
@@ -322,7 +324,7 @@ where
 }
 
 /// Updates chapter metadata.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(nucl, repo))]
 pub async fn update_info<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
@@ -410,7 +412,7 @@ where
 }
 
 /// Updates chapter workflow state.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(nucl, repo, prom, develop))]
 pub async fn update_stage<N, C, R, P, V>(
     (nucl, repo, prom, develop): (&N, &R, &P, &V),
     token: UserToken,

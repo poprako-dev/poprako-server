@@ -16,7 +16,7 @@ use crate::model::comic_archive::{
     ComicArchiveSnapshot,
 };
 use crate::model::page::PageInfo;
-use crate::model::unit::UnitInfo;
+use crate::model::read::proj::unit::UnitInfo;
 use crate::model::user::UserInfo;
 use crate::model::workset::WorksetInfo;
 use crate::part::repo::oper::comic_archive::{
@@ -51,7 +51,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_page::dsl::{
     t_page,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{
-    f_index as unit_index, f_page_id as unit_page_id, t_unit,
+    f_page_id as unit_page_id, t_unit,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_user::dsl::{
     f_id as user_id, t_user,
@@ -64,10 +64,91 @@ use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{BaseError, BaseResult, accept};
 use crate::value::comic_archive::ComicArchiveMonth;
 
+/// Comic archive RDB integration tests.
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;
 
+// Standardize chain-corruption failures for unit graph validation.
+fn corrupt_unit_chain_err() -> BaseError {
+    BaseError::Unrecoverable {
+        message: "persisted Unit chain is corrupt".to_string(),
+    }
+}
+
+// Reorder chained unit infos by next_id links and return only visible units.
+fn order_unit_infos(unit_infos: Vec<UnitInfo>) -> BaseResult<Vec<UnitInfo>> {
+    //
+    if unit_infos.is_empty() {
+        return accept(Vec::new());
+    }
+
+    let mut infos_by_id = unit_infos
+        .into_iter()
+        .map(|unit_info| (unit_info.id.clone(), unit_info))
+        .collect::<HashMap<_, _>>();
+
+    let mut predecessor_counts = infos_by_id
+        .keys()
+        .map(|id| (id.clone(), 0_usize))
+        .collect::<HashMap<_, _>>();
+
+    for unit_info in infos_by_id.values() {
+        //
+        let Some(next_id) = unit_info.next_id.as_ref() else {
+            continue;
+        };
+
+        if next_id == &unit_info.id {
+            return Err(corrupt_unit_chain_err());
+        }
+
+        let Some(predecessor_count) = predecessor_counts.get_mut(next_id)
+        else {
+            return Err(corrupt_unit_chain_err());
+        };
+
+        *predecessor_count += 1;
+
+        if *predecessor_count > 1 {
+            return Err(corrupt_unit_chain_err());
+        }
+    }
+
+    let head_ids = predecessor_counts
+        .iter()
+        .filter_map(|(id, count)| (*count == 0).then_some(id.as_str()))
+        .collect::<Vec<_>>();
+
+    let [head_id] = head_ids.as_slice() else {
+        return Err(corrupt_unit_chain_err());
+    };
+
+    let mut current_id = Some((*head_id).to_string());
+
+    let mut visible_infos = Vec::with_capacity(infos_by_id.len());
+
+    while let Some(id) = current_id {
+        //
+        let Some(unit_info) = infos_by_id.remove(&id) else {
+            return Err(corrupt_unit_chain_err());
+        };
+
+        current_id = unit_info.next_id.clone();
+
+        if unit_info.hidden_at.is_none() {
+            visible_infos.push(unit_info);
+        }
+    }
+
+    if !infos_by_id.is_empty() {
+        return Err(corrupt_unit_chain_err());
+    }
+
+    accept(visible_infos)
+}
+
 #[instrument(level = "info", err(Debug), skip_all)]
+// Load archive payloads by month window and return timestamped serialized blobs.
 async fn list_payloads(
     conn: &mut RdbConn,
     team_id: &str,
@@ -78,6 +159,7 @@ async fn list_payloads(
     struct ArchivePayloadRow {
         //
         created_at: OffsetDateTime,
+        // Serialized payload snapshot JSON for a retention slot.
         payload: String,
     }
 
@@ -120,6 +202,7 @@ async fn list_payloads(
 
 /// Lock every active descendant needed by an archive transaction.
 #[instrument(level = "info", err(Debug), skip_all)]
+// Build a full snapshot of all descendants and lock them for commit safety.
 async fn get_snapshot_excluded(
     conn: &mut RdbConn,
     source_comic_id: &str,
@@ -234,7 +317,7 @@ async fn get_snapshot_excluded(
     let unit_rows: Vec<UnitRow> = t_unit
         .filter(unit_page_id.eq_any(&source_page_ids))
         .select(UnitRow::as_select())
-        .order_by((unit_page_id.asc(), unit_index.asc()))
+        .order_by(unit_page_id.asc())
         .for_update()
         .load(conn)
         .await
@@ -274,8 +357,12 @@ async fn get_snapshot_excluded(
 
     for page_info in page_infos {
         //
-        let unit_infos =
+        let unordered_unit_infos =
             unit_infos_by_page.remove(&page_info.id).unwrap_or_default();
+
+        let mut unit_infos = order_unit_infos(unordered_unit_infos)?;
+
+        unit_infos.retain(|unit_info| unit_info.hidden_at.is_none());
 
         page_snapshots_by_chapter
             .entry(page_info.chapter_id.clone())
@@ -313,7 +400,7 @@ async fn get_snapshot_excluded(
     })
 }
 
-/// Insert one archive row and remove the active comic subtree without touching workset counters.
+// Store archive payload and hard-delete source comic descendants.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn commit(
     conn: &mut RdbConn,
@@ -376,9 +463,11 @@ async fn commit(
 }
 
 impl Step<GetComicArchiveSnapshotExcluded<'_>, RdbContext> for RdbRepo {
+    // Use base errors for snapshot reads in comic archive transactions.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Resolve the snapshot while holding transaction locks.
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -389,9 +478,11 @@ impl Step<GetComicArchiveSnapshotExcluded<'_>, RdbContext> for RdbRepo {
 }
 
 impl Run<ListComicArchivePayloads<'_>> for RdbRepo {
+    // Use base errors for payload-list operations.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Route to shared payload query with team-month filters.
     async fn run(
         &self,
         oper: &ListComicArchivePayloads<'_>,
@@ -401,9 +492,11 @@ impl Run<ListComicArchivePayloads<'_>> for RdbRepo {
 }
 
 impl Step<CommitComicArchive<'_>, RdbContext> for RdbRepo {
+    // Use base errors for commit operations.
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Persist archive entry and delete source entities in a single transaction.
     async fn step(
         &self,
         context: &mut RdbContext,

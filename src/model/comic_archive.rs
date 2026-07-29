@@ -6,7 +6,7 @@ use crate::model::assignment::AssignmentInfo;
 use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
 use crate::model::page::PageInfo;
-use crate::model::unit::UnitInfo;
+use crate::model::read::proj::unit::UnitInfo;
 use crate::model::workset::WorksetInfo;
 
 /// Fully locked active data used to build an immutable archive.

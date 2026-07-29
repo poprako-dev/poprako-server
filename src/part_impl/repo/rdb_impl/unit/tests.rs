@@ -1,34 +1,22 @@
-// unit_roundtrip_uses_testcontainer(UnitRepo)(positive): unit repo creates, saves, restores, reindexes, and lists units.
-// unit_roundtrip_uses_testcontainer(UnitRepo)(negative): unit create rejects an existing server id without mutation.
+// unit_roundtrip_uses_testcontainer(UnitRepo)(positive): batch apply creates, hides, restores, orders, and counts Units.
 
 use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 
-use crate::model::unit::{UnitContent, UnitIndexUpdate};
+use crate::model::read::proj::unit::UnitOrder;
+use crate::model::shared::unit::{UnitCoord, UnitRevision, UnitTranslation};
+use crate::model::write::unit::UnitEdit;
 use crate::part::repo::oper::unit::{
-    CreateUnit, ListUnitInfos, SaveUnit, UpdateUnitIndexes,
+    ApplyUnitEdits, ListUnitInfos, ListUnitOrders,
 };
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
 use crate::part_impl::shared::RdbCore;
 use crate::result::accept;
+use crate::util::Patch;
 
 const PREFIX: &str = "rdb-test-unit-domain-";
 
-fn unit_payload(text: Option<&str>, proofread: bool) -> UnitContent {
-    UnitContent {
-        is_bubble: true,
-        is_proofread: proofread,
-        x_coord: 1.0,
-        y_coord: 2.0,
-        translated_text: text.map(Into::into),
-        last_translator_id: None,
-        proofread_text: None,
-        last_proofreader_id: None,
-    }
-}
-
-/// Verifies unit roundtrip via testcontainers.
-/// Verifies unit roundtrip via testcontainers.
+/// Verifies Unit v2 persistence through the real transaction adapter.
 pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
     //
     test_shared::reset(&shared, PREFIX).await;
@@ -39,117 +27,179 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let nucl = RdbDrive::new(shared.clone());
 
-    let unit_id = format!("{}unit", PREFIX);
+    let first_id = format!("{}first", PREFIX);
 
-    let restored_unit_id = format!("{}restored-unit", PREFIX);
+    let second_id = format!("{}second", PREFIX);
 
-    let create_unit_payload = unit_payload(Some("translated"), false);
+    let creator_id = page_fixture.chapter_entry.creator_id.clone();
 
-    let save_unit_payload = unit_payload(Some("translated"), true);
+    let create_edits = [
+        create_edit(&first_id, &creator_id, "translated"),
+        create_edit(&second_id, &creator_id, "second"),
+    ];
 
-    let restored_unit_payload = unit_payload(Some("restored"), false);
-
-    let unit_index_updates = [UnitIndexUpdate {
-        id: unit_id.clone(),
-        index: 5,
-    }];
+    let create_orders = [
+        UnitOrder {
+            id: first_id.clone(),
+            next_id: Some(second_id.clone()),
+            is_hidden: false,
+        },
+        UnitOrder {
+            id: second_id.clone(),
+            next_id: None,
+            is_hidden: false,
+        },
+    ];
 
     nucl.coord(async |context| {
         //
-        repo.step(
-            context,
-            &CreateUnit {
-                page_id: &page_fixture.page_entry.id,
-                id: &unit_id,
-                payload: &create_unit_payload,
-            },
-        )
-        .await?;
+        let counters = repo
+            .step(
+                context,
+                &ApplyUnitEdits {
+                    page_id: &page_fixture.page_entry.id,
+                    orders: &[],
+                    edits: &create_edits,
+                },
+            )
+            .await?;
 
-        repo.step(
-            context,
-            &SaveUnit {
-                page_id: &page_fixture.page_entry.id,
-                id: &unit_id,
-                payload: &save_unit_payload,
-            },
-        )
-        .await?;
-
-        repo.step(
-            context,
-            &SaveUnit {
-                page_id: &page_fixture.page_entry.id,
-                id: &restored_unit_id,
-                payload: &restored_unit_payload,
-            },
-        )
-        .await?;
-
-        repo.step(
-            context,
-            &UpdateUnitIndexes {
-                page_id: &page_fixture.page_entry.id,
-                updates: &unit_index_updates,
-            },
-        )
-        .await?;
+        assert_eq!(counters.total_unit_count, 2);
 
         accept(())
     })
     .await
-    .ok()
     .unwrap();
 
-    let duplicate_create_result = nucl
-        .coord(async |context| {
-            repo.step(
+    let delete_edits = [UnitEdit::Delete {
+        id: first_id.clone(),
+    }];
+
+    nucl.coord(async |context| {
+        //
+        let counters = repo
+            .step(
                 context,
-                &CreateUnit {
+                &ApplyUnitEdits {
                     page_id: &page_fixture.page_entry.id,
-                    id: &unit_id,
-                    payload: &create_unit_payload,
+                    orders: &create_orders,
+                    edits: &delete_edits,
                 },
             )
-            .await
-        })
-        .await;
+            .await?;
 
-    assert!(duplicate_create_result.is_err());
+        assert_eq!(counters.total_unit_count, 1);
+
+        let orders = repo
+            .step(
+                context,
+                &ListUnitOrders {
+                    page_id: &page_fixture.page_entry.id,
+                },
+            )
+            .await?;
+
+        assert_eq!(orders.len(), 2);
+
+        accept(())
+    })
+    .await
+    .unwrap();
 
     let unit_infos = repo
         .run(&ListUnitInfos {
             page_id: &page_fixture.page_entry.id,
         })
         .await
-        .ok()
         .unwrap();
 
     assert_eq!(unit_infos.len(), 2);
 
-    let saved_unit_info = unit_infos
-        .iter()
-        .find(|unit_info| unit_info.id == unit_id)
-        .unwrap();
+    assert!(unit_infos[0].hidden_at.is_some());
 
-    assert_eq!(saved_unit_info.index, 5);
+    let restore_edits = [UnitEdit::Save {
+        id: first_id.clone(),
+        next_id: Patch::Clear,
+        is_bubble: None,
+        coord: None,
+        translation: Patch::Skip,
+        revision: Patch::Assign(UnitRevision {
+            is_proofread: true,
+            proofread_text: Some("proofread".to_string()),
+            last_proofreader_id: creator_id,
+        }),
+    }];
 
-    assert!(saved_unit_info.is_proofread);
+    let restore_orders = [
+        UnitOrder {
+            id: first_id.clone(),
+            next_id: Some(second_id.clone()),
+            is_hidden: true,
+        },
+        UnitOrder {
+            id: second_id.clone(),
+            next_id: None,
+            is_hidden: false,
+        },
+    ];
 
-    let restored_unit_info = unit_infos
-        .iter()
-        .find(|unit_info| unit_info.id == restored_unit_id)
+    nucl.coord(async |context| {
+        //
+        let counters = repo
+            .step(
+                context,
+                &ApplyUnitEdits {
+                    page_id: &page_fixture.page_entry.id,
+                    orders: &restore_orders,
+                    edits: &restore_edits,
+                },
+            )
+            .await?;
+
+        assert_eq!(counters.total_unit_count, 2);
+
+        assert_eq!(counters.proofread_unit_count, 1);
+
+        accept(())
+    })
+    .await
+    .unwrap();
+
+    let unit_infos = repo
+        .run(&ListUnitInfos {
+            page_id: &page_fixture.page_entry.id,
+        })
+        .await
         .unwrap();
 
     assert_eq!(
-        restored_unit_info.translated_text.as_deref(),
-        Some("restored")
+        unit_infos
+            .iter()
+            .map(|unit_info| unit_info.id.as_str())
+            .collect::<Vec<_>>(),
+        vec![second_id.as_str(), first_id.as_str()]
     );
 
-    test_shared::cleanup(&shared, PREFIX).await.ok().unwrap();
+    test_shared::cleanup(&shared, PREFIX).await.unwrap();
 
     test_shared::assert_no_leftovers(&shared, PREFIX)
         .await
-        .ok()
         .unwrap();
+}
+
+fn create_edit(id: &str, user_id: &str, text: &str) -> UnitEdit {
+    UnitEdit::Create {
+        id: id.to_string(),
+        next_id: None,
+        is_bubble: true,
+        coord: UnitCoord {
+            x_coord: 1.0,
+            y_coord: 2.0,
+        },
+        translation: Some(UnitTranslation {
+            translated_text: text.to_string(),
+            last_translator_id: user_id.to_string(),
+        }),
+        revision: None,
+    }
 }

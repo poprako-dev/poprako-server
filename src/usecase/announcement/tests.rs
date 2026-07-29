@@ -23,12 +23,14 @@ use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
 fn token(user_id: &str) -> UserToken {
+    // Build a user token fixture for announcement permission checks.
     UserToken {
         user_id: user_id.into(),
     }
 }
 
 fn credential(user_id: &str) -> UserCredential {
+    // Build a user credential fixture for announcement-related authentication flows.
     UserCredential {
         user_id: user_id.into(),
         password_hash: "hash".into(),
@@ -36,6 +38,7 @@ fn credential(user_id: &str) -> UserCredential {
 }
 
 fn user(id: &str, nickname: &str) -> UserInfo {
+    // Build a visible team user with deterministic timestamps.
     //
     let time = now();
 

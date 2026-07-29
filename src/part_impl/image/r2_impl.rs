@@ -21,12 +21,13 @@ use crate::part::image::{
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 
 #[cfg(test)]
+// Executes lightweight unit tests for URL generation and upload content handling.
 mod tests;
 
-/// Expiration duration for presigned upload URLs (10 minutes).
+// Expiration duration for presigned upload URLs (10 minutes).
 const PUT_SIGNED_EXPIRATION: Duration = Duration::from_secs(600);
 
-/// Cloudflare Image Resizing options for public thumbnail URLs.
+// Cloudflare Image Resizing options for public thumbnail URLs.
 const THUMBNAIL_TRANSFORM: &str =
     "width=300,fit=scale-down,quality=80,format=auto,metadata=none";
 
@@ -34,6 +35,7 @@ const THUMBNAIL_TRANSFORM: &str =
 #[derive(Clone)]
 pub struct R2ImagePool {
     //
+    // Internal state field `client`.
     /// HTTP client configured for Cloudflare R2 API requests.
     client: Client,
     /// Name of the R2 bucket used for image storage.
@@ -55,6 +57,7 @@ impl R2ImagePool {
     /// Reads Cloudflare R2 settings from environment variables.
     pub fn from_env() -> anyhow::Result<Self> {
         //
+        // Internal implementation detail.
         let account_id = std::env::var("R2_ACCOUNT_ID").with_context(
             || "[R2ImagePool::from_env] R2_ACCOUNT_ID is not set",
         )?;
@@ -103,16 +106,19 @@ impl R2ImagePool {
 
 impl ImagePool for R2ImagePool {
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `gen_download_url`.
     async fn gen_download_url(&self, key: &str) -> BaseResult<Url> {
         build_public_url(&self.domain, key, "gen_download_url")
     }
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `gen_thumbnail_download_url`.
     async fn gen_thumbnail_download_url(
         &self,
         original_key: &str,
     ) -> BaseResult<Url> {
         //
+        // Internal implementation detail.
         let thumbnail_path =
             format!("cdn-cgi/image/{}/{}", THUMBNAIL_TRANSFORM, original_key);
 
@@ -124,8 +130,10 @@ impl ImagePool for R2ImagePool {
     }
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `get_upload_url`.
     async fn get_upload_url(&self, key: &str) -> BaseResult<Url> {
         //
+        // Internal implementation detail.
         let content_type =
             detect_content_type(key).ok_or_else(|| BaseError::Expected {
                 variant: ExpectedVariant::Args,
@@ -164,11 +172,13 @@ impl ImagePool for R2ImagePool {
     }
 
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Internal implementation of `get_upload_slot`.
     async fn get_upload_slot(
         &self,
         spec: ImageUploadSpec<'_>,
     ) -> BaseResult<ImageUploadSlot> {
         //
+        // Internal implementation detail.
         let content_length =
             i64::try_from(spec.content_length).map_err(|_| {
                 BaseError::Unrecoverable {
@@ -223,6 +233,25 @@ impl ImagePool for R2ImagePool {
 
 impl ImageManager for R2ImagePool {
     #[instrument(level = "info", err(Debug), skip_all)]
+    // Removes a previously uploaded object from the R2 bucket.
+    async fn delete_object(&self, key: &str) -> BaseResult<()> {
+        self.client
+            .delete_object()
+            .bucket(&self.bucket)
+            .key(key)
+            .send()
+            .await
+            .map(|_| ())
+            .map_err(|e| BaseError::Unrecoverable {
+                message: format!(
+                    "[R2ImagePool::delete_object] failed to delete '{}': {}",
+                    key, e
+                ),
+            })
+    }
+
+    #[instrument(level = "info", err(Debug), skip_all)]
+    // Performs a HEAD request to determine whether an object exists in R2.
     async fn object_exists(&self, key: &str) -> BaseResult<bool> {
         match self
             .client
@@ -248,32 +277,16 @@ impl ImageManager for R2ImagePool {
             }),
         }
     }
-
-    #[instrument(level = "info", err(Debug), skip_all)]
-    async fn delete_object(&self, key: &str) -> BaseResult<()> {
-        self.client
-            .delete_object()
-            .bucket(&self.bucket)
-            .key(key)
-            .send()
-            .await
-            .map(|_| ())
-            .map_err(|e| BaseError::Unrecoverable {
-                message: format!(
-                    "[R2ImagePool::delete_object] failed to delete '{}': {}",
-                    key, e
-                ),
-            })
-    }
 }
 
-/// Builds a URL under the configured public image domain.
+// Builds a URL under the configured public image domain.
 fn build_public_url(
     domain: &str,
     path: &str,
     operation: &str,
 ) -> BaseResult<Url> {
     //
+    // Internal implementation detail.
     if domain.is_empty() {
         return Err(BaseError::Unrecoverable {
             message: format!(
@@ -288,6 +301,7 @@ fn build_public_url(
     let url_string =
         match domain.starts_with("http://") || domain.starts_with("https://") {
             //
+            // Internal implementation detail.
             true => {
                 format!("{}/{}", domain, path)
             }
@@ -305,13 +319,15 @@ fn build_public_url(
     })
 }
 
-/// Maps a file extension to its MIME content type for upload requests.
+// Maps a file extension to its MIME content type for upload requests.
 fn detect_content_type(key: &str) -> Option<&'static str> {
     //
+    // Internal implementation detail.
     let ext = key.rsplit('.').next()?.to_lowercase();
 
     match ext.as_str() {
         //
+        // Internal implementation detail.
         "jpg" | "jpeg" => Some("image/jpeg"),
 
         "png" => Some("image/png"),

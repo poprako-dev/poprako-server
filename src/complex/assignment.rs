@@ -173,8 +173,81 @@ impl AssignmentPermComplex {
     }
 }
 
-/// Verify the caller may list assignments for a chapter — either as a team
-/// member of the owning team, or as a chapter assignee.
+// Resolve the owning team ID from a chapter ID via its comic and workset.
+async fn resolve_team_id<P>(
+    proxy: &mut P,
+    chapter_id: &str,
+) -> BaseResult<String>
+where
+    P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
+        + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
+        + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>,
+{
+    let chapter_info = proxy
+        .exec(&GetChapterInfo {
+            id: chapter_id,
+            incls: &[],
+        })
+        .await?;
+
+    let comic_info = proxy
+        .exec(&GetComicInfo {
+            id: &chapter_info.comic_id,
+            incls: &[],
+        })
+        .await?;
+
+    let workset_info = proxy
+        .exec(&GetWorksetInfo {
+            id: &comic_info.workset_id,
+        })
+        .await?;
+
+    accept(workset_info.team_id)
+}
+
+// Construct a generic "assignment list forbidden" permission error.
+fn assignment_list_permission_err() -> BaseError {
+    BaseError::Expected {
+        variant: ExpectedVariant::Perm,
+        message: trl("error-forbidden"),
+    }
+}
+
+// Construct a "chapter admin required" permission error.
+fn chapter_admin_err() -> BaseError {
+    BaseError::Expected {
+        variant: ExpectedVariant::Perm,
+        message: trl("error-chapter-admin-required"),
+    }
+}
+
+// Construct an "assignment self-reduce forbidden" permission error.
+fn assignment_self_reduce_err() -> BaseError {
+    BaseError::Expected {
+        variant: ExpectedVariant::Perm,
+        message: trl("error-forbidden"),
+    }
+}
+
+// Construct an "admin role cannot be assigned through this flow" args error.
+fn assignment_role_not_assignable_args_err() -> BaseError {
+    BaseError::Expected {
+        variant: ExpectedVariant::Args,
+        message: trl("error-chapter-role-not-assignable"),
+    }
+}
+
+// Construct a "role not assignable because member lacks permission" error.
+fn assignment_role_not_assignable_perm_err() -> BaseError {
+    BaseError::Expected {
+        variant: ExpectedVariant::Perm,
+        message: trl("error-chapter-role-not-assignable"),
+    }
+}
+
+// Verify the caller may list assignments for a chapter as a team
+// member of the owning team, or as a chapter assignee.
 async fn check_list_by_chapter<P>(
     proxy: &mut P,
     user_id: &str,
@@ -210,8 +283,8 @@ where
     accept(())
 }
 
-/// Verify the caller may list assignments for a user — either as the owner
-/// or as a super-admin.
+// Verify the caller may list assignments for a user as the owner
+// or as a super-admin.
 async fn check_list_by_user<P>(
     proxy: &mut P,
     current_user_id: &str,
@@ -237,7 +310,7 @@ where
     accept(())
 }
 
-/// Verify the caller is assigned as a chapter admin on this chapter.
+// Verify the caller is assigned as a chapter admin on this chapter.
 async fn check_admin<P>(
     proxy: &mut P,
     user_id: &str,
@@ -264,9 +337,9 @@ where
     accept(())
 }
 
-/// Verify the caller is reducing their own admin role assignment — the
-/// caller must be the target user and must currently hold the roles they
-/// are removing.
+// Verify the caller is reducing their own admin role assignment.
+// The caller must be the target user and currently hold the roles they
+// are removing.
 async fn check_self_reduce<P>(
     proxy: &mut P,
     current_user_id: &str,
@@ -299,8 +372,8 @@ where
     accept(())
 }
 
-/// Verify the target user's team membership permits the requested role bits.
-/// Also rejects `ADMIN` roles (not assignable through the update flow).
+// Verify the target user's team membership permits the requested roles.
+// Also reject `ADMIN` roles because they are not assignable through this flow.
 async fn check_target_roles<P>(
     proxy: &mut P,
     user_id: &str,
@@ -335,77 +408,4 @@ where
     }
 
     accept(())
-}
-
-/// Resolve the owning team ID from a chapter ID via its comic and workset.
-async fn resolve_team_id<P>(
-    proxy: &mut P,
-    chapter_id: &str,
-) -> BaseResult<String>
-where
-    P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
-        + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
-        + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>,
-{
-    let chapter_info = proxy
-        .exec(&GetChapterInfo {
-            id: chapter_id,
-            incls: &[],
-        })
-        .await?;
-
-    let comic_info = proxy
-        .exec(&GetComicInfo {
-            id: &chapter_info.comic_id,
-            incls: &[],
-        })
-        .await?;
-
-    let workset_info = proxy
-        .exec(&GetWorksetInfo {
-            id: &comic_info.workset_id,
-        })
-        .await?;
-
-    accept(workset_info.team_id)
-}
-
-/// Construct a generic "assignment list forbidden" permission error.
-fn assignment_list_permission_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Perm,
-        message: trl("error-forbidden"),
-    }
-}
-
-/// Construct a "chapter admin required" permission error.
-fn chapter_admin_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Perm,
-        message: trl("error-chapter-admin-required"),
-    }
-}
-
-/// Construct a "assignment self-reduce forbidden" permission error.
-fn assignment_self_reduce_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Perm,
-        message: trl("error-forbidden"),
-    }
-}
-
-/// Construct an "admin role cannot be assigned through this flow" args error.
-fn assignment_role_not_assignable_args_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        message: trl("error-chapter-role-not-assignable"),
-    }
-}
-
-/// Construct a "role not assignable because member lacks permission" error.
-fn assignment_role_not_assignable_perm_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Perm,
-        message: trl("error-chapter-role-not-assignable"),
-    }
 }

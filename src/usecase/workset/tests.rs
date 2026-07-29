@@ -37,6 +37,7 @@ use crate::value::role::{RoleField, RoleMask};
 
 fn workset(id: &str, team_id: &str, index: i32) -> WorksetInfo {
     //
+    // Build a basic workset fixture for pagination and mutation tests.
     let time = OffsetDateTime::now_utc();
 
     WorksetInfo {
@@ -52,6 +53,7 @@ fn workset(id: &str, team_id: &str, index: i32) -> WorksetInfo {
 }
 
 fn create_params(team_id: &str) -> CreateWorksetParams {
+    // Build create params with stable name/description defaults.
     CreateWorksetParams {
         team_id: team_id.into(),
         name: "new".into(),
@@ -60,12 +62,14 @@ fn create_params(team_id: &str) -> CreateWorksetParams {
 }
 
 fn token(user_id: &str) -> UserToken {
+    // Build token fixture for workset API request context.
     UserToken {
         user_id: user_id.into(),
     }
 }
 
 fn admin_member(user_id: &str, team_id: &str) -> MemberInfo {
+    // Build an admin member fixture for workset admin-only operations.
     MemberInfo {
         id: format!("member-{}-{}", user_id, team_id),
         user_id: user_id.into(),
@@ -84,6 +88,7 @@ fn comic_with_uploaded_cover(
     cover_key: &str,
 ) -> ComicInfo {
     //
+    // Build a comic fixture with pre-uploaded cover metadata for delete assertions.
     let time = OffsetDateTime::now_utc();
 
     ComicInfo {

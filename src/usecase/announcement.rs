@@ -22,10 +22,11 @@ use crate::part::repo::oper::member::FindMemberInfo;
 use crate::result::{BaseError, BaseResult, accept};
 
 #[cfg(test)]
+// Unit tests for announcement usecase behavior.
 mod tests;
 
 /// Lists announcements under a team.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(repo, image_pool))]
 pub async fn list_infos<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
@@ -66,7 +67,7 @@ where
 }
 
 /// Creates an announcement under a team.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(nucl, repo))]
 pub async fn create<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,

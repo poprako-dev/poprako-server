@@ -31,6 +31,26 @@ pub struct MemberInvitationRow {
     pub f_updated_at: OffsetDateTime,
 }
 
+impl TryFrom<MemberInvitationRow> for MemberInvitationInfo {
+    type Error = BaseError;
+
+    fn try_from(v: MemberInvitationRow) -> Result<Self, Self::Error> {
+        //
+        let roles = RoleMask::try_from(v.f_role_mask as u32)?;
+
+        Ok(MemberInvitationInfo {
+            id: v.f_id,
+            team_id: v.f_team_id,
+            invitor: None,
+            invitor_id: v.f_inviter_id,
+            invitee_qid: v.f_invitee_qid,
+            code: v.f_code,
+            pending: v.f_pending,
+            roles,
+        })
+    }
+}
+
 // ── Insertable ─────────────────────────────────────────────────────────────
 
 /// Insertable struct for creating a new record in the `t_member_invitation` table.
@@ -50,6 +70,22 @@ pub struct MemberInvitationRowEntry<'a> {
 
     pub f_created_at: OffsetDateTime,
     pub f_updated_at: OffsetDateTime,
+}
+
+impl<'a> From<&'a MemberInvitationEntry> for MemberInvitationRowEntry<'a> {
+    fn from(entry: &'a MemberInvitationEntry) -> Self {
+        Self {
+            f_id: &entry.id,
+            f_inviter_id: &entry.invitor_id,
+            f_team_id: &entry.team_id,
+            f_invitee_qid: &entry.invitee_qid,
+            f_code: &entry.code,
+            f_pending: true,
+            f_role_mask: i64::from(u32::from(entry.roles)),
+            f_created_at: OffsetDateTime::now_utc(),
+            f_updated_at: OffsetDateTime::now_utc(),
+        }
+    }
 }
 
 // ── Changeset (AsChangeset) ────────────────────────────────────────────────
@@ -87,43 +123,5 @@ impl MemberInvitationAspect {
         self.f_role_mask = Some(val);
 
         self
-    }
-}
-
-// ── Conversions ────────────────────────────────────────────────────────────
-
-impl TryFrom<MemberInvitationRow> for MemberInvitationInfo {
-    type Error = BaseError;
-
-    fn try_from(v: MemberInvitationRow) -> Result<Self, Self::Error> {
-        //
-        let roles = RoleMask::try_from(v.f_role_mask as u32)?;
-
-        Ok(MemberInvitationInfo {
-            id: v.f_id,
-            team_id: v.f_team_id,
-            invitor: None,
-            invitor_id: v.f_inviter_id,
-            invitee_qid: v.f_invitee_qid,
-            code: v.f_code,
-            pending: v.f_pending,
-            roles,
-        })
-    }
-}
-
-impl<'a> From<&'a MemberInvitationEntry> for MemberInvitationRowEntry<'a> {
-    fn from(entry: &'a MemberInvitationEntry) -> Self {
-        Self {
-            f_id: &entry.id,
-            f_inviter_id: &entry.invitor_id,
-            f_team_id: &entry.team_id,
-            f_invitee_qid: &entry.invitee_qid,
-            f_code: &entry.code,
-            f_pending: true,
-            f_role_mask: i64::from(u32::from(entry.roles)),
-            f_created_at: OffsetDateTime::now_utc(),
-            f_updated_at: OffsetDateTime::now_utc(),
-        }
     }
 }

@@ -1,224 +1,327 @@
-//! RDB-backed unit query functions extracted into a sibling module to avoid
-//! MOD001 lint violations when `orchestra` imports from the parent `unit` module.
+//! RDB-backed Unit operations.
 
-use diesel::dsl::max;
+use std::collections::HashSet;
+
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 use tracing::instrument;
 
-use crate::model::unit::{
-    UnitContent, UnitCounters, UnitIndex, UnitIndexUpdate, UnitInfo,
-};
+use crate::model::read::proj::unit::{UnitCounters, UnitInfo, UnitOrder};
+use crate::model::write::unit::UnitEdit;
 use crate::part_impl::repo::rdb_impl::entity::unit::{
     UnitAspect, UnitEntry, UnitRow,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::*;
 use crate::part_impl::shared::RdbConn;
 use crate::part_impl::shared::result::{diesel, expected};
-use crate::result::{BaseResult, accept};
+use crate::result::{BaseError, BaseResult, accept};
+use crate::util::Patch;
 
-/// Queries unit infos for a page, ordered by index then ID.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[cfg(test)]
+mod tests;
+
+/// Lists visible Units in verified linked-list order.
 pub async fn list_infos(
     conn: &mut RdbConn,
     page_id: &str,
 ) -> BaseResult<Vec<UnitInfo>> {
     //
-    let rows: Vec<UnitRow> = t_unit
+    let rows = t_unit
         .filter(f_page_id.eq(page_id))
         .select(UnitRow::as_select())
-        .order_by((f_index.asc(), f_id.asc()))
-        .load(conn)
+        .load::<UnitRow>(conn)
         .await
         .map_err(diesel)?;
 
-    accept(rows.into_iter().map(Into::into).collect())
+    let mut unit_infos =
+        rows.into_iter().map(UnitInfo::from).collect::<Vec<_>>();
+
+    order_units(
+        &mut unit_infos,
+        |unit_info| unit_info.id.as_str(),
+        |unit_info| unit_info.next_id.as_deref(),
+    )?;
+
+    accept(unit_infos)
 }
 
-/// Compute the next available unit index for a page.
 #[instrument(level = "info", err(Debug), skip_all)]
-async fn next_index(conn: &mut RdbConn, page_id: &str) -> BaseResult<i32> {
+/// Locks and lists the complete Unit chain, including tombstones.
+pub async fn list_orders_for_update(
+    conn: &mut RdbConn,
+    page_id: &str,
+) -> BaseResult<Vec<UnitOrder>> {
     //
-    let current: Option<i32> = t_unit
+    let rows = t_unit
         .filter(f_page_id.eq(page_id))
-        .select(max(f_index))
-        .get_result(conn)
+        .select((f_id, f_next_id, f_hidden_at))
+        .for_update()
+        .load::<(String, Option<String>, Option<OffsetDateTime>)>(conn)
         .await
         .map_err(diesel)?;
 
-    accept(current.map(|index| index + 1).unwrap_or(0))
+    let mut orders = rows
+        .into_iter()
+        .map(|(id, next_id, hidden_at)| UnitOrder {
+            id,
+            next_id,
+            is_hidden: hidden_at.is_some(),
+        })
+        .collect::<Vec<_>>();
+
+    order_units(
+        &mut orders,
+        |order| order.id.as_str(),
+        |order| order.next_id.as_deref(),
+    )?;
+
+    accept(orders)
 }
 
-/// Insert a new unit with the next available index for the given page.
 #[instrument(level = "info", err(Debug), skip_all)]
-pub async fn create_unit(
+/// Applies normalized Unit edits and returns the latest visible counters.
+pub async fn apply_edits(
     conn: &mut RdbConn,
     page_id: &str,
-    id: &str,
-    payload: &UnitContent,
-) -> BaseResult<()> {
+    orders: &[UnitOrder],
+    edits: &[UnitEdit],
+) -> BaseResult<UnitCounters> {
     //
-    let index = next_index(conn, page_id).await?;
+    let ordered_ids = apply_order_edits(orders, edits)?;
 
-    let entry = UnitEntry::new(id, page_id, index, payload);
+    for edit in edits {
+        match edit {
+            //
+            UnitEdit::Create { .. } => {
+                //
+                let Some(entry) = UnitEntry::from_edit(page_id, edit) else {
+                    return Err(expected("error-invalid-unit-oper"));
+                };
 
-    diesel::insert_into(t_unit)
-        .values(&entry)
-        .execute(conn)
-        .await
-        .map_err(diesel)?;
+                diesel::insert_into(t_unit)
+                    .values(entry)
+                    .execute(conn)
+                    .await
+                    .map_err(diesel)?;
+            }
 
-    accept(())
-}
+            UnitEdit::Delete { id } => {
+                //
+                let affected = diesel::update(
+                    t_unit.filter(f_page_id.eq(page_id)).filter(f_id.eq(id)),
+                )
+                .set(UnitAspect::new().hide())
+                .execute(conn)
+                .await
+                .map_err(diesel)?;
 
-/// Upsert a unit: create if absent, otherwise update its payload.
-#[instrument(level = "info", err(Debug), skip_all)]
-pub async fn save_unit(
-    conn: &mut RdbConn,
-    page_id: &str,
-    id: &str,
-    payload: &UnitContent,
-) -> BaseResult<()> {
-    //
-    let existing_page_id: Option<String> = t_unit
-        .filter(f_id.eq(id))
-        .select(f_page_id)
-        .get_result(conn)
-        .await
-        .optional()
-        .map_err(diesel)?;
+                if affected != 1 {
+                    return Err(expected("error-invalid-unit-oper"));
+                }
+            }
 
-    let Some(existing_page_id) = existing_page_id else {
-        return create_unit(conn, page_id, id, payload).await;
-    };
+            UnitEdit::Save { id, .. } => {
+                //
+                let affected = diesel::update(
+                    t_unit.filter(f_page_id.eq(page_id)).filter(f_id.eq(id)),
+                )
+                .set(UnitAspect::new().apply_edit(edit))
+                .execute(conn)
+                .await
+                .map_err(diesel)?;
 
-    if existing_page_id != page_id {
-        return Err(expected("error-unit-duplicate"));
+                if affected != 1 {
+                    return Err(expected("error-invalid-unit-oper"));
+                }
+            }
+        }
     }
 
-    let now = OffsetDateTime::now_utc();
+    for (index, id) in ordered_ids.iter().enumerate() {
+        //
+        let next_id = ordered_ids.get(index + 1).copied();
 
-    let aspect = UnitAspect::new(now).payload(payload);
+        let unchanged = orders
+            .iter()
+            .find(|order| order.id == **id)
+            .is_some_and(|order| order.next_id.as_deref() == next_id);
 
-    diesel::update(t_unit.filter(f_id.eq(id)))
-        .set(&aspect)
+        if unchanged {
+            continue;
+        }
+
+        let affected = diesel::update(
+            t_unit.filter(f_page_id.eq(page_id)).filter(f_id.eq(*id)),
+        )
+        .set(UnitAspect::new().order(next_id))
         .execute(conn)
         .await
         .map_err(diesel)?;
 
-    accept(())
+        if affected != 1 {
+            return Err(expected("error-invalid-unit-oper"));
+        }
+    }
+
+    let unit_infos = list_infos(conn, page_id).await?;
+
+    accept(count_infos(&unit_infos))
 }
 
-/// Delete a unit by its ID within the scope of a page.
-#[instrument(level = "info", err(Debug), skip_all)]
-pub async fn delete_by_id_in_page(
-    conn: &mut RdbConn,
-    page_id: &str,
-    id: &str,
-) -> BaseResult<()> {
+// Orders units in linked-list order, detecting cycles and multiple heads.
+fn order_units<T, I, N>(
+    units: &mut [T],
+    id_of: I,
+    next_id_of: N,
+) -> BaseResult<()>
+where
+    I: for<'a> Fn(&'a T) -> &'a str,
+    N: for<'a> Fn(&'a T) -> Option<&'a str>,
+{
     //
-    diesel::delete(t_unit.filter(f_page_id.eq(page_id)).filter(f_id.eq(id)))
-        .execute(conn)
-        .await
-        .map_err(diesel)?;
-
-    accept(())
-}
-
-/// Query (id, index) pairs for all units in a page.
-#[instrument(level = "info", err(Debug), skip_all)]
-pub async fn list_indexes_by_page_id(
-    conn: &mut RdbConn,
-    page_id: &str,
-) -> BaseResult<Vec<UnitIndex>> {
-    //
-    let indexes: Vec<(String, i32)> = t_unit
-        .filter(f_page_id.eq(page_id))
-        .select((f_id, f_index))
-        .load(conn)
-        .await
-        .map_err(diesel)?;
-
-    accept(
-        indexes
-            .into_iter()
-            .map(|(id, index)| UnitIndex { id, index })
-            .collect(),
-    )
-}
-
-/// Reorder units in a page by assigning new indexes, safely handling cyclic
-/// dependencies via a two-phase shift-then-set strategy.
-#[instrument(level = "info", err(Debug), skip_all)]
-pub async fn update_indexes_by_page_id(
-    conn: &mut RdbConn,
-    page_id: &str,
-    updates: &[UnitIndexUpdate],
-) -> BaseResult<()> {
-    //
-    if updates.is_empty() {
+    if units.is_empty() {
         return accept(());
     }
 
-    // Index shifts can create a cyclic dependency where no sequential
-    // ordering avoids a temporary duplicate (page_id, index).  Two-phase:
-    //  1. Bump every affected row to index + OFFSET (safe temporary range
-    //     with no overlapping values).
-    //  2. Set each row to its target index via sequential UPDATEs (now
-    //     conflict-free because all rows are in the non-overlapping range).
-    const OFFSET: i32 = 100_000;
-
-    let mut id_filters: Vec<&str> = Vec::with_capacity(updates.len());
-
-    for update in updates {
-        id_filters.push(update.id.as_str());
+    for index in 0..units.len() {
+        if units[index + 1..]
+            .iter()
+            .any(|unit| id_of(unit) == id_of(&units[index]))
+        {
+            return Err(corrupt_unit_chain_err());
+        }
     }
 
-    // Phase 1: shift all affected units up by OFFSET in a single UPDATE.
-    diesel::update(
-        t_unit
-            .filter(f_page_id.eq(page_id))
-            .filter(f_id.eq_any(&id_filters)),
-    )
-    .set(f_index.eq(f_index + OFFSET))
-    .execute(conn)
-    .await
-    .map_err(diesel)?;
+    let mut head_pos = None;
 
-    // Phase 2: set each unit to its target index, now conflict-free.
-    for unit_index_update in updates {
+    for candidate in 0..units.len() {
         //
-        let now = OffsetDateTime::now_utc();
+        let has_predecessor = units.iter().any(|unit| {
+            next_id_of(unit)
+                .is_some_and(|next_id| next_id == id_of(&units[candidate]))
+        });
 
-        let aspect = UnitAspect::new(now).index(unit_index_update.index);
+        if has_predecessor {
+            continue;
+        }
 
-        diesel::update(
-            t_unit
-                .filter(f_page_id.eq(page_id))
-                .filter(f_id.eq(unit_index_update.id.as_str())),
-        )
-        .set(&aspect)
-        .execute(conn)
-        .await
-        .map_err(diesel)?;
+        if head_pos.replace(candidate).is_some() {
+            return Err(corrupt_unit_chain_err());
+        }
+    }
+
+    let Some(head_pos) = head_pos else {
+        return Err(corrupt_unit_chain_err());
+    };
+
+    units.swap(0, head_pos);
+
+    for index in 0..units.len() - 1 {
+        //
+        let next_pos = units[index + 1..].iter().enumerate().find_map(
+            |(pos, candidate)| {
+                next_id_of(&units[index])
+                    .is_some_and(|next_id| next_id == id_of(candidate))
+                    .then_some(pos)
+            },
+        );
+
+        let Some(next_pos) = next_pos else {
+            return Err(corrupt_unit_chain_err());
+        };
+
+        units.swap(index + 1, index + 1 + next_pos);
+    }
+
+    if units.last().is_some_and(|unit| next_id_of(unit).is_some()) {
+        return Err(corrupt_unit_chain_err());
     }
 
     accept(())
 }
 
-/// Count total, translated, and proofread units for a page.
-#[instrument(level = "info", err(Debug), skip_all)]
-pub async fn count_by_page_id(
-    conn: &mut RdbConn,
-    page_id: &str,
-) -> BaseResult<UnitCounters> {
+// Applies normalized Unit edits to produce the final ordered id list.
+fn apply_order_edits<'a>(
+    orders: &'a [UnitOrder],
+    edits: &'a [UnitEdit],
+) -> BaseResult<Vec<&'a str>> {
     //
-    let infos = list_infos(conn, page_id).await?;
+    let mut ordered_ids = orders
+        .iter()
+        .map(|order| order.id.as_str())
+        .collect::<Vec<_>>();
 
-    let counters = infos.iter().fold(
-        UnitCounters::default(),
-        |mut counters, unit_info| {
+    let mut hidden_ids = orders
+        .iter()
+        .filter(|order| order.is_hidden)
+        .map(|order| order.id.as_str())
+        .collect::<HashSet<_>>();
+
+    for edit in edits {
+        //
+        let UnitEdit::Create { id, .. } = edit else {
+            continue;
+        };
+
+        if find_order_pos(&ordered_ids, id).is_some() {
+            return Err(expected("error-invalid-unit-oper"));
+        }
+
+        ordered_ids.push(id);
+
+        hidden_ids.remove(id.as_str());
+    }
+
+    for edit in edits {
+        match edit {
+            //
+            UnitEdit::Create { id, next_id, .. } => {
+                move_order(&mut ordered_ids, id, next_id.as_deref())?;
+            }
+
+            UnitEdit::Save { id, next_id, .. } => {
+                //
+                hidden_ids.remove(id.as_str());
+
+                match next_id {
+                    //
+                    Patch::Skip => {}
+
+                    Patch::Clear => {
+                        move_order(&mut ordered_ids, id, None)?;
+                    }
+
+                    Patch::Assign(next_id) => {
+                        move_order(&mut ordered_ids, id, Some(next_id))?;
+                    }
+                }
+            }
+
+            UnitEdit::Delete { id } => {
+                hidden_ids.insert(id);
+            }
+        }
+    }
+
+    let visible_count = ordered_ids
+        .iter()
+        .filter(|id| !hidden_ids.contains(**id))
+        .count();
+
+    if visible_count > 100 {
+        return Err(expected("error-invalid-unit-oper"));
+    }
+
+    accept(ordered_ids)
+}
+
+// Computes visible Unit counters from the ordered unit info list.
+fn count_infos(unit_infos: &[UnitInfo]) -> UnitCounters {
+    unit_infos
+        .iter()
+        .filter(|unit_info| unit_info.hidden_at.is_none())
+        .fold(UnitCounters::default(), |mut counters, unit_info| {
             //
             counters.total_unit_count += 1;
 
@@ -231,8 +334,46 @@ pub async fn count_by_page_id(
             }
 
             counters
-        },
-    );
+        })
+}
 
-    accept(counters)
+// Returns an unrecoverable error for a corrupt Unit chain.
+fn corrupt_unit_chain_err() -> BaseError {
+    BaseError::Unrecoverable {
+        message: "persisted Unit chain is corrupt".to_string(),
+    }
+}
+
+// Finds the position of an id in the ordered list.
+fn find_order_pos(ordered_ids: &[&str], id: &str) -> Option<usize> {
+    ordered_ids
+        .iter()
+        .enumerate()
+        .find_map(|(pos, candidate)| (*candidate == id).then_some(pos))
+}
+
+// Moves an id to a new position in the ordered list by setting its next_id.
+fn move_order<'a>(
+    ordered_ids: &mut Vec<&'a str>,
+    id: &'a str,
+    next_id: Option<&str>,
+) -> BaseResult<()> {
+    //
+    let Some(pos) = find_order_pos(ordered_ids, id) else {
+        return Err(expected("error-invalid-unit-oper"));
+    };
+
+    let id = ordered_ids.remove(pos);
+
+    let pos = match next_id {
+        //
+        Some(next_id) => find_order_pos(ordered_ids, next_id)
+            .ok_or_else(|| expected("error-invalid-unit-oper"))?,
+
+        None => ordered_ids.len(),
+    };
+
+    ordered_ids.insert(pos, id);
+
+    accept(())
 }

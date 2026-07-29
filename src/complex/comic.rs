@@ -311,7 +311,7 @@ impl ComicPermComplex {
         check_user_is_team_admin(proxy, user_id, &team_id).await
     }
 
-    /// Resolve the owning team ID from a workset ID.
+    // Resolve the owning team ID from a workset ID.
     async fn resolve_team_id_from_workset<P>(
         proxy: &mut P,
         workset_id: &str,
@@ -325,7 +325,7 @@ impl ComicPermComplex {
         accept(workset_info.team_id)
     }
 
-    /// Resolve the owning team ID from a comic ID (via its workset).
+    // Resolve the owning team ID from a comic ID (via its workset).
     async fn resolve_team_id_from_comic<P>(
         proxy: &mut P,
         comic_id: &str,

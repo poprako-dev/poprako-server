@@ -27,6 +27,22 @@ pub struct TermbaseRow {
     pub f_updated_at: OffsetDateTime,
 }
 
+impl From<TermbaseRow> for TermbaseInfo {
+    fn from(row: TermbaseRow) -> Self {
+        Self {
+            id: row.f_id,
+            team_id: row.f_team_id,
+            comic_id: row.f_comic_id,
+            name: row.f_name,
+            description: row.f_description,
+            term_count: row.f_term_count,
+            creator_id: row.f_creator_id,
+            created_at: row.f_created_at,
+            updated_at: row.f_updated_at,
+        }
+    }
+}
+
 /// Insertable terminology-base row.
 #[derive(Insertable)]
 #[diesel(table_name = t_termbase)]
@@ -44,22 +60,6 @@ pub struct TermbaseRowEntry<'a> {
 
     pub f_created_at: OffsetDateTime,
     pub f_updated_at: OffsetDateTime,
-}
-
-impl From<TermbaseRow> for TermbaseInfo {
-    fn from(row: TermbaseRow) -> Self {
-        Self {
-            id: row.f_id,
-            team_id: row.f_team_id,
-            comic_id: row.f_comic_id,
-            name: row.f_name,
-            description: row.f_description,
-            term_count: row.f_term_count,
-            creator_id: row.f_creator_id,
-            created_at: row.f_created_at,
-            updated_at: row.f_updated_at,
-        }
-    }
 }
 
 impl<'a> From<&'a TermbaseEntry> for TermbaseRowEntry<'a> {

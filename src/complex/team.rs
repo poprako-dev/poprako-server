@@ -224,7 +224,7 @@ impl TeamPermComplex {
         Self::check_user_is_sadmin(proxy, user_id).await
     }
 
-    /// Check whether the user is a super-admin; returns a `Perm` error if not.
+    // Check whether the user is a super-admin; returns a `Perm` error if not.
     async fn check_user_is_sadmin<P>(
         proxy: &mut P,
         user_id: &str,

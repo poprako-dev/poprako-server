@@ -1,71 +1,35 @@
 use poprako_orchestra::Oper;
 
-use crate::model::unit::{
-    UnitContent, UnitCounters, UnitIndex, UnitIndexUpdate, UnitInfo,
-};
+use crate::model::read::proj::unit::{UnitCounters, UnitInfo, UnitOrder};
+use crate::model::write::unit::UnitEdit;
 
+/// Lists unit infos for a page.
+#[derive(Oper)]
+#[oper(output = Vec<UnitInfo>)]
 pub struct ListUnitInfos<'a> {
+    /// The page id.
     pub page_id: &'a str,
 }
 
-impl Oper for ListUnitInfos<'_> {
-    type Output = Vec<UnitInfo>;
+/// Lists unit orders for a page.
+#[derive(Oper)]
+#[oper(output = Vec<UnitOrder>)]
+pub struct ListUnitOrders<'a> {
+    /// The page id.
+    pub page_id: &'a str,
 }
 
-pub struct CreateUnit<'a> {
+/// Applies unit edits (reorder, create, update, delete) for a page.
+#[derive(Oper)]
+#[oper(output = UnitCounters)]
+pub struct ApplyUnitEdits<'a> {
     //
+    /// The page id.
     pub page_id: &'a str,
-    pub id: &'a str,
-    pub payload: &'a UnitContent,
-}
 
-impl Oper for CreateUnit<'_> {
-    type Output = ();
-}
+    /// The new unit order for the page.
+    pub orders: &'a [UnitOrder],
 
-pub struct SaveUnit<'a> {
-    //
-    pub page_id: &'a str,
-    pub id: &'a str,
-    pub payload: &'a UnitContent,
-}
-
-impl Oper for SaveUnit<'_> {
-    type Output = ();
-}
-
-pub struct DeleteUnit<'a> {
-    //
-    pub page_id: &'a str,
-    pub id: &'a str,
-}
-
-impl Oper for DeleteUnit<'_> {
-    type Output = ();
-}
-
-pub struct ListUnitIndexes<'a> {
-    pub page_id: &'a str,
-}
-
-impl Oper for ListUnitIndexes<'_> {
-    type Output = Vec<UnitIndex>;
-}
-
-pub struct UpdateUnitIndexes<'a> {
-    //
-    pub page_id: &'a str,
-    pub updates: &'a [UnitIndexUpdate],
-}
-
-impl Oper for UpdateUnitIndexes<'_> {
-    type Output = ();
-}
-
-pub struct CountUnits<'a> {
-    pub page_id: &'a str,
-}
-
-impl Oper for CountUnits<'_> {
-    type Output = UnitCounters;
+    /// The batch of unit edits to apply.
+    pub edits: &'a [UnitEdit],
 }

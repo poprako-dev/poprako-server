@@ -35,6 +35,7 @@ pub struct Harn<C, N, R, P, A, I, V> {
 }
 
 impl<C, N, R, P, A, I, V> Clone for Harn<C, N, R, P, A, I, V> {
+    // Clones the harness by bumping the inner `Arc` reference count.
     fn clone(&self) -> Self {
         Self {
             inner: Arc::clone(&self.inner),
@@ -42,16 +43,22 @@ impl<C, N, R, P, A, I, V> Clone for Harn<C, N, R, P, A, I, V> {
     }
 }
 
-/// Inner, non-cloneable state shared across all `Harn` clones via `Arc`.
+// Inner, non-cloneable state shared across all `Harn` clones via `Arc`.
 struct HarnInner<C, N, R, P, A, I, V> {
     //
+    // Transaction driver (Nucl).
     drive: N,
+    // Repository bundle implementing all domain step traits.
     repo: R,
+    // Prom (deferred task) enqueuer.
     prom: P,
+    // Auth token signer.
     auth: A,
+    // Image pool for upload / download URL signing.
     image_pool: I,
+    // Side-effect (event) processor.
     develop: V,
-
+    // Phantom type parameter marker.
     _p: PhantomData<C>,
 }
 

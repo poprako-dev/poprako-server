@@ -21,6 +21,19 @@ pub struct CommentRow {
     pub f_created_at: OffsetDateTime,
 }
 
+impl From<CommentRow> for CommentInfo {
+    fn from(row: CommentRow) -> Self {
+        Self {
+            id: row.f_id,
+            team_id: row.f_team_id,
+            user_id: row.f_user_id,
+            user: None,
+            content: row.f_content,
+            created_at: row.f_created_at,
+        }
+    }
+}
+
 /// Insertable struct for creating a new record in the `t_comment` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_comment)]
@@ -34,19 +47,6 @@ pub struct CommentRowEntry<'a> {
     pub f_content: &'a str,
 
     pub f_created_at: OffsetDateTime,
-}
-
-impl From<CommentRow> for CommentInfo {
-    fn from(row: CommentRow) -> Self {
-        Self {
-            id: row.f_id,
-            team_id: row.f_team_id,
-            user_id: row.f_user_id,
-            user: None,
-            content: row.f_content,
-            created_at: row.f_created_at,
-        }
-    }
 }
 
 impl<'a> From<&'a CommentEntry> for CommentRowEntry<'a> {

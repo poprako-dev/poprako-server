@@ -20,12 +20,14 @@ use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
 fn token(user_id: &str) -> UserToken {
+    // Build token fixture for comment permission checks.
     UserToken {
         user_id: user_id.into(),
     }
 }
 
 fn credential(user_id: &str) -> UserCredential {
+    // Build predictable credential fixture for auth-gated comment actions.
     UserCredential {
         user_id: user_id.into(),
         password_hash: "hash".into(),
@@ -34,6 +36,7 @@ fn credential(user_id: &str) -> UserCredential {
 
 fn user(id: &str, nickname: &str) -> UserInfo {
     //
+    // Build a user fixture with stable avatar defaults.
     let time = now();
 
     UserInfo {
@@ -58,6 +61,7 @@ fn member(
     team_id: &str,
     role_mask: RoleMask,
 ) -> MemberInfo {
+    // Build a team member fixture with a fixed role assignment.
     MemberInfo {
         id: id.into(),
         user_id: user_id.into(),

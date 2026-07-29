@@ -38,6 +38,9 @@ from pathlib import Path
 import tree_sitter
 import tree_sitter_rust
 
+sys.path.insert(0, str(Path(__file__).parents[1]))
+from production_source import production_source
+
 
 ROOT = Path(__file__).parents[2]
 PARSER = tree_sitter.Parser(tree_sitter.Language(tree_sitter_rust.language()))
@@ -681,7 +684,7 @@ def check_file(
     root: Path,
     test_module_set: set[Path],
 ) -> list[str]:
-    source = path.read_bytes()
+    source = production_source(path, root)
     diagnostics: list[str] = []
 
     # entire file is a test module — skip identifier checks

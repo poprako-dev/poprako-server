@@ -39,6 +39,7 @@ pub struct CommentInfoVal {
 }
 
 impl CommentInfoVal {
+    /// Convert a persisted comment row into API output with optional author include.
     /// Converts a comment model into a presentation value.
     pub async fn from_model<P>(
         image_pool: &P,
@@ -86,6 +87,7 @@ pub struct ListCommentInfosParams {
 }
 
 impl From<ListCommentInfosParams> for CommentListSpec {
+    // Map comment listing parameters directly to the repository spec.
     fn from(params: ListCommentInfosParams) -> Self {
         Self {
             team_id: params.team_id,

@@ -24,6 +24,19 @@ pub struct SystemMailRow {
     pub f_created_at: OffsetDateTime,
 }
 
+impl From<SystemMailRow> for SystemMailInfo {
+    fn from(v: SystemMailRow) -> Self {
+        SystemMailInfo {
+            id: v.f_id,
+            receiver_id: v.f_receiver_id,
+            read: v.f_read,
+            title: v.f_title,
+            content: v.f_content,
+            created_at: v.f_created_at,
+        }
+    }
+}
+
 // ── Insertable ─────────────────────────────────────────────────────────────
 
 /// Insertable struct for creating a new record in the `t_system_mail` table.
@@ -38,21 +51,6 @@ pub struct SystemMailRowEntry<'a> {
     pub f_content: &'a str,
 
     pub f_created_at: OffsetDateTime,
-}
-
-// ── Conversions ────────────────────────────────────────────────────────────
-
-impl From<SystemMailRow> for SystemMailInfo {
-    fn from(v: SystemMailRow) -> Self {
-        SystemMailInfo {
-            id: v.f_id,
-            receiver_id: v.f_receiver_id,
-            read: v.f_read,
-            title: v.f_title,
-            content: v.f_content,
-            created_at: v.f_created_at,
-        }
-    }
 }
 
 impl<'a> From<&'a SystemMailEntry> for SystemMailRowEntry<'a> {

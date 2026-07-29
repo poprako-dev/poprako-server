@@ -18,15 +18,6 @@ use crate::data::auth::{
 };
 use crate::usecase;
 
-/// Builds the `authorization-token` HttpOnly cookie carrying the bearer token.
-fn auth_cookie(token: &str) -> Cookie<'static> {
-    Cookie::build((AUTH_COOKIE_NAME, format!("Bearer {}", token)))
-        .path("/")
-        .http_only(true)
-        .same_site(SameSite::Lax)
-        .build()
-}
-
 /// `POST /api/v1/auth/register` — registers a user via invitation code.
 ///
 /// Public route. On success, sets the `authorization-token` cookie and returns
@@ -114,4 +105,13 @@ pub async fn logout() -> HttpNoContent {
         .build();
 
     no_content().map(|body| body.with_cookie(&cookie))
+}
+
+// Builds the `authorization-token` HttpOnly cookie used by auth responses.
+fn auth_cookie(token: &str) -> Cookie<'static> {
+    Cookie::build((AUTH_COOKIE_NAME, format!("Bearer {}", token)))
+        .path("/")
+        .http_only(true)
+        .same_site(SameSite::Lax)
+        .build()
 }

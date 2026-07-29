@@ -12,10 +12,5 @@ CREATE TABLE IF NOT EXISTS "t_termbase" (
     "f_creator_id"  TEXT        NOT NULL REFERENCES "t_user" ("f_id") ON DELETE RESTRICT,
 
     "f_created_at"  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    "f_updated_at"  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-
-    CONSTRAINT "chk_termbase_scope"
-        CHECK (("f_team_id" IS NOT NULL) <> ("f_comic_id" IS NOT NULL)),
-    CONSTRAINT "chk_termbase_term_count"
-        CHECK ("f_term_count" >= 0)
+    "f_updated_at"  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

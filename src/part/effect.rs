@@ -34,16 +34,20 @@ pub trait EventIter {
 }
 
 impl EventIter for Vec<Event> {
+    // Event iterator for a pre-collected vector of side effects.
     type Iter = IntoIter<Event>;
 
+    // Consumes the vector and yields its events one by one.
     fn into_iter(self) -> Self::Iter {
         <Vec<Event> as IntoIterator>::into_iter(self)
     }
 }
 
 impl EventIter for Event {
+    // Single-element event iterator wrapping one domain event.
     type Iter = Once<Event>;
 
+    // Consumes the event and yields it as a single-element iterator.
     fn into_iter(self) -> Self::Iter {
         std::iter::once(self)
     }

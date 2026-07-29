@@ -29,33 +29,89 @@ use crate::result::{BaseError, BaseResult, accept};
 use crate::util::next_snowflake_id;
 
 #[cfg(test)]
+// Test module for retention schedule coverage scenarios.
 mod tests;
 
+/// Spawns the comic archiver background task.
+pub fn spawn(core: RdbCore, token: CancellationToken) -> watch::Receiver<bool> {
+    //
+    let (done_send, done_recv) = watch::channel(false);
+
+    tokio::spawn(async move {
+        //
+        loop {
+            //
+            match purge_once(&core).await {
+                //
+                Ok(deleted_count) if deleted_count > 0 => {
+                    tracing::info!(
+                        deleted_count,
+                        "[ComicArchiveRetention::run] purged expired archives",
+                    );
+                }
+
+                Ok(_) => {}
+
+                Err(error) => {
+                    tracing::error!(
+                        error = ?error,
+                        "[ComicArchiveRetention::run] retention job failed",
+                    );
+                }
+            }
+
+            tokio::select! {
+                () = token.cancelled() => break,
+                () = tokio::time::sleep(PURGE_INTERVAL) => {}
+            }
+        }
+
+        done_send.send_replace(true);
+    });
+
+    done_recv
+}
+
+// Retention retention cycle frequency.
 const PURGE_INTERVAL: Duration = Duration::from_secs(7 * 24 * 60 * 60);
 
+// Cached team/month slot to purge archive rows safely in batches.
 struct ExpiredSlot {
     //
+    // Team being iterated for archive retention.
     team_id: String,
+
+    // Month start time that defines the purge window.
     start: OffsetDateTime,
 }
 
-fn month_start(timestamp: OffsetDateTime) -> BaseResult<OffsetDateTime> {
+#[instrument(level = "info", err(Debug), skip_all)]
+// Purge all retained-expired slots for one sweep and report total deletions.
+async fn purge_once(core: &RdbCore) -> BaseResult<usize> {
     //
-    let date = Date::from_calendar_date(
-        timestamp.year(),
-        timestamp.month(),
-        1,
-    )
-    .map_err(|error| BaseError::Unrecoverable {
-        message: format!(
-            "[ComicArchiveRetention::month_start] failed to build month: {}",
-            error
-        ),
-    })?;
+    let mut conn = core.get().await?;
 
-    accept(PrimitiveDateTime::new(date, Time::MIDNIGHT).assume_utc())
+    let cutoff = retained_cutoff(OffsetDateTime::now_utc())?;
+
+    let slots = list_expired_slots(&mut conn, cutoff).await?;
+
+    let mut total_deleted = 0;
+
+    let drive = RdbDrive::new(core.clone());
+
+    for slot in slots {
+        //
+        let deleted_count = drive
+            .coord(async |context| purge_slot(context.conn(), &slot).await)
+            .await?;
+
+        total_deleted += deleted_count;
+    }
+
+    accept(total_deleted)
 }
 
+// Keep archive entries older than last year from the first day of cutoff month.
 fn retained_cutoff(now: OffsetDateTime) -> BaseResult<OffsetDateTime> {
     //
     let date = Date::from_calendar_date(now.year() - 1, now.month(), 1)
@@ -69,39 +125,8 @@ fn retained_cutoff(now: OffsetDateTime) -> BaseResult<OffsetDateTime> {
     accept(PrimitiveDateTime::new(date, Time::MIDNIGHT).assume_utc())
 }
 
-fn next_month(start: OffsetDateTime) -> BaseResult<OffsetDateTime> {
-    //
-    let next = match start.month() {
-        //
-        Month::December => (start.year() + 1, Month::January),
-
-        month => (
-            start.year(),
-            Month::try_from(u8::from(month) + 1).map_err(|error| {
-                BaseError::Unrecoverable {
-                    message: format!(
-                        "[ComicArchiveRetention::next_month] failed to build month: {}",
-                        error
-                    ),
-                }
-            })?,
-        ),
-    };
-
-    let date =
-        Date::from_calendar_date(next.0, next.1, 1).map_err(|error| {
-            BaseError::Unrecoverable {
-                message: format!(
-                    "[ComicArchiveRetention::next_month] failed to build month start: {}",
-                    error
-                ),
-            }
-        })?;
-
-    accept(PrimitiveDateTime::new(date, Time::MIDNIGHT).assume_utc())
-}
-
 #[instrument(level = "info", err(Debug), skip_all)]
+// Query months already expired for retention and deduplicate by team/month.
 async fn list_expired_slots(
     conn: &mut RdbConn,
     cutoff: OffsetDateTime,
@@ -130,6 +155,7 @@ async fn list_expired_slots(
 }
 
 #[instrument(level = "info", err(Debug), skip_all)]
+// Delete archived rows for one team-month slot and notify team admins.
 async fn purge_slot(
     conn: &mut RdbConn,
     slot: &ExpiredSlot,
@@ -203,67 +229,53 @@ async fn purge_slot(
     accept(deleted_count)
 }
 
-#[instrument(level = "info", err(Debug), skip_all)]
-async fn purge_once(core: &RdbCore) -> BaseResult<usize> {
+// Compute midnight UTC at the first day of the current month.
+fn month_start(timestamp: OffsetDateTime) -> BaseResult<OffsetDateTime> {
     //
-    let mut conn = core.get().await?;
+    let date = Date::from_calendar_date(
+        timestamp.year(),
+        timestamp.month(),
+        1,
+    )
+    .map_err(|error| BaseError::Unrecoverable {
+        message: format!(
+            "[ComicArchiveRetention::month_start] failed to build month: {}",
+            error
+        ),
+    })?;
 
-    let cutoff = retained_cutoff(OffsetDateTime::now_utc())?;
-
-    let slots = list_expired_slots(&mut conn, cutoff).await?;
-
-    let mut total_deleted = 0;
-
-    let drive = RdbDrive::new(core.clone());
-
-    for slot in slots {
-        //
-        let deleted_count = drive
-            .coord(async |context| purge_slot(context.conn(), &slot).await)
-            .await?;
-
-        total_deleted += deleted_count;
-    }
-
-    accept(total_deleted)
+    accept(PrimitiveDateTime::new(date, Time::MIDNIGHT).assume_utc())
 }
 
-/// Starts the comic-archive retention loop and returns its completion signal.
-pub fn spawn(core: RdbCore, token: CancellationToken) -> watch::Receiver<bool> {
+// Compute the first-day midnight of the following month.
+fn next_month(start: OffsetDateTime) -> BaseResult<OffsetDateTime> {
     //
-    let (done_send, done_recv) = watch::channel(false);
-
-    tokio::spawn(async move {
+    let next = match start.month() {
         //
-        loop {
-            //
-            match purge_once(&core).await {
-                //
-                Ok(deleted_count) if deleted_count > 0 => {
-                    tracing::info!(
-                        deleted_count,
-                        "[ComicArchiveRetention::run] purged expired archives",
-                    );
+        Month::December => (start.year() + 1, Month::January),
+
+        month => (
+            start.year(),
+            Month::try_from(u8::from(month) + 1).map_err(|error| {
+                BaseError::Unrecoverable {
+                    message: format!(
+                        "[ComicArchiveRetention::next_month] failed to build month: {}",
+                        error
+                    ),
                 }
+            })?,
+        ),
+    };
 
-                Ok(_) => {}
-
-                Err(error) => {
-                    tracing::error!(
-                        error = ?error,
-                        "[ComicArchiveRetention::run] retention job failed",
-                    );
-                }
+    let date =
+        Date::from_calendar_date(next.0, next.1, 1).map_err(|error| {
+            BaseError::Unrecoverable {
+                message: format!(
+                    "[ComicArchiveRetention::next_month] failed to build month start: {}",
+                    error
+                ),
             }
+        })?;
 
-            tokio::select! {
-                () = token.cancelled() => break,
-                () = tokio::time::sleep(PURGE_INTERVAL) => {}
-            }
-        }
-
-        done_send.send_replace(true);
-    });
-
-    done_recv
+    accept(PrimitiveDateTime::new(date, Time::MIDNIGHT).assume_utc())
 }

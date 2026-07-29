@@ -1903,6 +1903,44 @@
         }
       }
     },
+    "/api/v1/pages/{page_id}": {
+      "get": {
+        "tags": [
+          "pages"
+        ],
+        "summary": "`GET /api/v1/pages/{page_id}` — fetch one page.",
+        "operationId": "get_info",
+        "parameters": [
+          {
+            "name": "page_id",
+            "in": "path",
+            "description": "Page ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Page info retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpBody_PageInfoVal"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No permission to view this page"
+          },
+          "404": {
+            "description": "Page not found"
+          }
+        }
+      }
+    },
     "/api/v1/pages/{page_id}/image/mark-uploaded": {
       "post": {
         "tags": [
@@ -2035,7 +2073,7 @@
         "tags": [
           "units"
         ],
-        "summary": "`POST /api/v1/pages/{page_id}/units/save` — save unit opers.",
+        "summary": "`POST /api/v1/pages/{page_id}/units/save` — save Unit edits.",
         "operationId": "save_infos",
         "parameters": [
           {
@@ -2052,28 +2090,24 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SavePageUnitsParams"
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/UnitEditVal"
+                }
               }
             }
           },
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "Units saved",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HttpBody_SavePageUnitsPayload"
-                }
-              }
-            }
+          "204": {
+            "description": "Unit edits saved"
           },
           "403": {
             "description": "No permission to save units in this page"
           },
           "422": {
-            "description": "Invalid unit oper"
+            "description": "Invalid Unit edit"
           }
         }
       }
@@ -5604,7 +5638,7 @@
           },
           "data": {
             "type": "object",
-            "description": "Return value for listing units under one page.",
+            "description": "Return value for listing visible Units under one Page.",
             "required": [
               "unit_infos",
               "total_unit_count",
@@ -5615,24 +5649,24 @@
               "proofread_unit_count": {
                 "type": "integer",
                 "format": "int32",
-                "description": "Number of units that have been proofread."
+                "description": "Number of visible proofread Units."
               },
               "total_unit_count": {
                 "type": "integer",
                 "format": "int32",
-                "description": "Total number of units on the page."
+                "description": "Number of visible Units."
               },
               "translated_unit_count": {
                 "type": "integer",
                 "format": "int32",
-                "description": "Number of units that have a translation."
+                "description": "Number of visible translated Units."
               },
               "unit_infos": {
                 "type": "array",
                 "items": {
                   "$ref": "#/components/schemas/UnitInfoVal"
                 },
-                "description": "All units belonging to the requested page."
+                "description": "Visible Units in final linked-list order."
               }
             }
           }
@@ -5877,6 +5911,101 @@
           }
         }
       },
+      "HttpBody_PageInfoVal": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Application-level success code, 0 for normal success.",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "Presentation-ready page information.",
+            "required": [
+              "id",
+              "chapter_id",
+              "index",
+              "image_hash",
+              "ext",
+              "total_unit_count",
+              "translated_unit_count",
+              "proofread_unit_count",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "chapter_id": {
+                "type": "string",
+                "description": "Owning chapter identifier."
+              },
+              "created_at": {
+                "type": "integer",
+                "format": "int64",
+                "description": "Timestamp of creation, in Unix milliseconds."
+              },
+              "ext": {
+                "$ref": "#/components/schemas/ImageExt",
+                "description": "File format."
+              },
+              "id": {
+                "type": "string",
+                "description": "Unique page identifier."
+              },
+              "image_hash": {
+                "$ref": "#/components/schemas/ImageHash",
+                "description": "Content hash of the page image."
+              },
+              "image_thumbnail_url": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Presigned download URL for the thumbnail, if uploaded."
+              },
+              "image_url": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Presigned download URL for the full image, if uploaded."
+              },
+              "index": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Ordinal position within the chapter."
+              },
+              "proofread_unit_count": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Number of proofread units on this page."
+              },
+              "total_unit_count": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Total number of translation units on this page."
+              },
+              "translated_unit_count": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Number of translated units on this page."
+              },
+              "updated_at": {
+                "type": "integer",
+                "format": "int64",
+                "description": "Timestamp of last update, in Unix milliseconds."
+              }
+            }
+          }
+        }
+      },
       "HttpBody_RegisterAuthPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
@@ -6032,57 +6161,6 @@
                     "description": "Presigned upload slot, if a new image must be uploaded."
                   }
                 ]
-              }
-            }
-          }
-        }
-      },
-      "HttpBody_SavePageUnitsPayload": {
-        "type": "object",
-        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
-        "required": [
-          "code",
-          "data"
-        ],
-        "properties": {
-          "code": {
-            "type": "integer",
-            "format": "int32",
-            "description": "Application-level success code, 0 for normal success.",
-            "example": 0,
-            "minimum": 0
-          },
-          "data": {
-            "type": "object",
-            "description": "Return value for saving unit opers under one page.",
-            "required": [
-              "local_id_mappers",
-              "total_unit_count",
-              "translated_unit_count",
-              "proofread_unit_count"
-            ],
-            "properties": {
-              "local_id_mappers": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/UnitIdMapperVal"
-                },
-                "description": "Mappings from client-assigned local IDs to server-assigned unit IDs."
-              },
-              "proofread_unit_count": {
-                "type": "integer",
-                "format": "int32",
-                "description": "Number of proofread units after the save."
-              },
-              "total_unit_count": {
-                "type": "integer",
-                "format": "int32",
-                "description": "Total number of units on the page after the save."
-              },
-              "translated_unit_count": {
-                "type": "integer",
-                "format": "int32",
-                "description": "Number of translated units after the save."
               }
             }
           }
@@ -7671,7 +7749,7 @@
       },
       "ListPageUnitInfosPayload": {
         "type": "object",
-        "description": "Return value for listing units under one page.",
+        "description": "Return value for listing visible Units under one Page.",
         "required": [
           "unit_infos",
           "total_unit_count",
@@ -7682,24 +7760,24 @@
           "proofread_unit_count": {
             "type": "integer",
             "format": "int32",
-            "description": "Number of units that have been proofread."
+            "description": "Number of visible proofread Units."
           },
           "total_unit_count": {
             "type": "integer",
             "format": "int32",
-            "description": "Total number of units on the page."
+            "description": "Number of visible Units."
           },
           "translated_unit_count": {
             "type": "integer",
             "format": "int32",
-            "description": "Number of units that have a translation."
+            "description": "Number of visible translated Units."
           },
           "unit_infos": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/UnitInfoVal"
             },
-            "description": "All units belonging to the requested page."
+            "description": "Visible Units in final linked-list order."
           }
         }
       },
@@ -8344,58 +8422,6 @@
         "example": 34,
         "minimum": 0
       },
-      "SavePageUnitsParams": {
-        "type": "object",
-        "description": "Input parameters for saving unit opers under one page.",
-        "required": [
-          "page_id",
-          "diff"
-        ],
-        "properties": {
-          "diff": {
-            "$ref": "#/components/schemas/UnitDiffParams",
-            "description": "Batch of unit operations to apply (create, save, delete)."
-          },
-          "page_id": {
-            "type": "string",
-            "description": "Parent page identifier to save units under."
-          }
-        }
-      },
-      "SavePageUnitsPayload": {
-        "type": "object",
-        "description": "Return value for saving unit opers under one page.",
-        "required": [
-          "local_id_mappers",
-          "total_unit_count",
-          "translated_unit_count",
-          "proofread_unit_count"
-        ],
-        "properties": {
-          "local_id_mappers": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/UnitIdMapperVal"
-            },
-            "description": "Mappings from client-assigned local IDs to server-assigned unit IDs."
-          },
-          "proofread_unit_count": {
-            "type": "integer",
-            "format": "int32",
-            "description": "Number of proofread units after the save."
-          },
-          "total_unit_count": {
-            "type": "integer",
-            "format": "int32",
-            "description": "Total number of units on the page after the save."
-          },
-          "translated_unit_count": {
-            "type": "integer",
-            "format": "int32",
-            "description": "Number of translated units after the save."
-          }
-        }
-      },
       "Stage": {
         "type": "string",
         "description": "Stage in the chapter production pipeline.",
@@ -8630,48 +8656,181 @@
           "poprako"
         ]
       },
-      "UnitDiffParams": {
+      "UnitCoordVal": {
         "type": "object",
-        "description": "Transport-facing unit oper.",
+        "description": "Page-relative Unit coordinates.",
         "required": [
-          "page_id",
-          "opers"
+          "x_coord",
+          "y_coord"
         ],
         "properties": {
-          "opers": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/UnitOperParams"
-            },
-            "description": "Ordered list of unit operations to apply."
+          "x_coord": {
+            "type": "number",
+            "format": "double",
+            "description": "Horizontal page-relative coordinate."
           },
-          "page_id": {
-            "type": "string",
-            "description": "Parent page identifier the operations apply to."
+          "y_coord": {
+            "type": "number",
+            "format": "double",
+            "description": "Vertical page-relative coordinate."
           }
-        }
+        },
+        "additionalProperties": false
       },
-      "UnitIdMapperVal": {
-        "type": "object",
-        "description": "Presentation-ready local-to-server id mapping.",
-        "required": [
-          "local_id",
-          "unit_id"
-        ],
-        "properties": {
-          "local_id": {
-            "type": "string",
-            "description": "Client-assigned temporary unit identifier."
+      "UnitEditVal": {
+        "oneOf": [
+          {
+            "type": "object",
+            "description": "Creates one Unit with a request-local ID.",
+            "required": [
+              "local_id",
+              "is_bubble",
+              "coord",
+              "edit"
+            ],
+            "properties": {
+              "coord": {
+                "$ref": "#/components/schemas/UnitCoordVal",
+                "description": "Initial page-relative coordinate."
+              },
+              "edit": {
+                "type": "string",
+                "enum": [
+                  "create"
+                ]
+              },
+              "is_bubble": {
+                "type": "boolean",
+                "description": "Whether the Unit identifies a speech bubble."
+              },
+              "local_id": {
+                "type": "string",
+                "description": "Request-local ID used for references within this batch."
+              },
+              "next_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Unit before which the new Unit is inserted, or the tail when null."
+              },
+              "revision": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/UnitRevisionVal",
+                    "description": "Optional initial revision assignment."
+                  }
+                ]
+              },
+              "translation": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/UnitTranslationVal",
+                    "description": "Optional initial translation assignment."
+                  }
+                ]
+              }
+            }
           },
-          "unit_id": {
-            "type": "string",
-            "description": "Server-assigned permanent unit identifier."
+          {
+            "type": "object",
+            "description": "Patches or restores one permanent Unit.",
+            "required": [
+              "id",
+              "edit"
+            ],
+            "properties": {
+              "coord": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/UnitCoordVal",
+                    "description": "Optional coordinate replacement."
+                  }
+                ]
+              },
+              "edit": {
+                "type": "string",
+                "enum": [
+                  "patch"
+                ]
+              },
+              "id": {
+                "type": "string",
+                "description": "Permanent target Unit ID."
+              },
+              "is_bubble": {
+                "type": [
+                  "boolean",
+                  "null"
+                ],
+                "description": "Optional speech-bubble flag replacement."
+              },
+              "next_id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Three-state linked-list successor patch."
+              },
+              "revision": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/UnitRevisionVal",
+                    "description": "Three-state revision patch."
+                  }
+                ]
+              },
+              "translation": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/UnitTranslationVal",
+                    "description": "Three-state translation patch."
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "Soft-deletes one permanent Unit.",
+            "required": [
+              "id",
+              "edit"
+            ],
+            "properties": {
+              "edit": {
+                "type": "string",
+                "enum": [
+                  "delete"
+                ]
+              },
+              "id": {
+                "type": "string",
+                "description": "Permanent target Unit ID."
+              }
+            }
           }
-        }
+        ],
+        "description": "One transport-facing Unit edit."
       },
       "UnitInfoVal": {
         "type": "object",
-        "description": "Presentation-ready unit information.",
+        "description": "Presentation-ready visible Unit information.",
         "required": [
           "id",
           "page_id",
@@ -8686,246 +8845,89 @@
           "created_at": {
             "type": "integer",
             "format": "int64",
-            "description": "Timestamp of unit creation, in milliseconds since Unix epoch."
+            "description": "Creation time as Unix milliseconds."
           },
           "id": {
             "type": "string",
-            "description": "Unique unit identifier."
+            "description": "Permanent Unit ID."
           },
           "is_bubble": {
             "type": "boolean",
-            "description": "Whether this unit represents a speech bubble area on the page."
+            "description": "Whether the Unit identifies a speech bubble."
           },
           "is_proofread": {
             "type": "boolean",
-            "description": "Whether this unit has an approved proofread version."
+            "description": "Whether the current revision is approved."
           },
           "last_proofreader_id": {
             "type": [
               "string",
               "null"
             ],
-            "description": "Identifier of the user who last modified the proofread, or [`None`]."
+            "description": "ID of the proofreader who last assigned revision content."
           },
           "last_translator_id": {
             "type": [
               "string",
               "null"
             ],
-            "description": "Identifier of the user who last modified the translation, or [`None`]."
+            "description": "ID of the translator who last assigned translation content."
           },
           "page_id": {
             "type": "string",
-            "description": "Parent page identifier this unit belongs to."
+            "description": "Owning Page ID."
           },
           "proofread_text": {
             "type": [
               "string",
               "null"
             ],
-            "description": "Proofread text content, or [`None`] if not yet proofread."
+            "description": "Current proofread text."
           },
           "translated_text": {
             "type": [
               "string",
               "null"
             ],
-            "description": "Translated text content, or [`None`] if not yet translated."
+            "description": "Current translated text."
           },
           "updated_at": {
             "type": "integer",
             "format": "int64",
-            "description": "Timestamp of the last unit update, in milliseconds since Unix epoch."
+            "description": "Last update time as Unix milliseconds."
           },
           "x_coord": {
             "type": "number",
             "format": "double",
-            "description": "Horizontal coordinate of the unit bounding box on the page."
+            "description": "Horizontal page-relative coordinate."
           },
           "y_coord": {
             "type": "number",
             "format": "double",
-            "description": "Vertical coordinate of the unit bounding box on the page."
+            "description": "Vertical page-relative coordinate."
           }
         }
       },
-      "UnitOperParams": {
-        "oneOf": [
-          {
-            "type": "object",
-            "description": "Create a new unit with client-assigned local id and content payload.",
-            "required": [
-              "local_id",
-              "is_bubble",
-              "x_coord",
-              "y_coord",
-              "oper"
-            ],
-            "properties": {
-              "before_id": {
-                "type": [
-                  "string",
-                  "null"
-                ],
-                "description": "Identifier of the unit to insert before in ordering, or [`None`] to append."
-              },
-              "is_bubble": {
-                "type": "boolean",
-                "description": "Whether this unit represents a speech bubble area."
-              },
-              "is_proofread": {
-                "type": "boolean",
-                "description": "Whether this unit should be marked as proofread immediately."
-              },
-              "last_proofreader_id": {
-                "type": [
-                  "string",
-                  "null"
-                ],
-                "description": "Identifier of the user providing the initial proofread, or [`None`]."
-              },
-              "last_translator_id": {
-                "type": [
-                  "string",
-                  "null"
-                ],
-                "description": "Identifier of the user providing the initial translation, or [`None`]."
-              },
-              "local_id": {
-                "type": "string",
-                "description": "Client-assigned temporary identifier mapped to the server-assigned id after creation."
-              },
-              "oper": {
-                "type": "string",
-                "enum": [
-                  "create"
-                ]
-              },
-              "proofread_text": {
-                "type": [
-                  "string",
-                  "null"
-                ],
-                "description": "Initial proofread text content, or [`None`]."
-              },
-              "translated_text": {
-                "type": [
-                  "string",
-                  "null"
-                ],
-                "description": "Initial translated text content, or [`None`]."
-              },
-              "x_coord": {
-                "type": "number",
-                "format": "double",
-                "description": "Horizontal position of the unit on the page."
-              },
-              "y_coord": {
-                "type": "number",
-                "format": "double",
-                "description": "Vertical position of the unit on the page."
-              }
-            }
-          },
-          {
-            "type": "object",
-            "description": "Update an existing unit identified by server-assigned id with new content payload.",
-            "required": [
-              "id",
-              "is_bubble",
-              "is_proofread",
-              "x_coord",
-              "y_coord",
-              "oper"
-            ],
-            "properties": {
-              "before_id": {
-                "type": [
-                  "string",
-                  "null"
-                ],
-                "description": "Identifier of the unit to insert before in ordering, or [`None`] to keep current position."
-              },
-              "id": {
-                "type": "string",
-                "description": "Server-assigned identifier of the unit to update."
-              },
-              "is_bubble": {
-                "type": "boolean",
-                "description": "Whether this unit represents a speech bubble area."
-              },
-              "is_proofread": {
-                "type": "boolean",
-                "description": "Whether this unit has an approved proofread version."
-              },
-              "last_proofreader_id": {
-                "type": [
-                  "string",
-                  "null"
-                ],
-                "description": "Identifier of the user providing the updated proofread, or [`None`]."
-              },
-              "last_translator_id": {
-                "type": [
-                  "string",
-                  "null"
-                ],
-                "description": "Identifier of the user providing the updated translation, or [`None`]."
-              },
-              "oper": {
-                "type": "string",
-                "enum": [
-                  "save"
-                ]
-              },
-              "proofread_text": {
-                "type": [
-                  "string",
-                  "null"
-                ],
-                "description": "Updated proofread text content, or [`None`] to leave unchanged."
-              },
-              "translated_text": {
-                "type": [
-                  "string",
-                  "null"
-                ],
-                "description": "Updated translated text content, or [`None`] to leave unchanged."
-              },
-              "x_coord": {
-                "type": "number",
-                "format": "double",
-                "description": "Updated horizontal position of the unit on the page."
-              },
-              "y_coord": {
-                "type": "number",
-                "format": "double",
-                "description": "Updated vertical position of the unit on the page."
-              }
-            }
-          },
-          {
-            "type": "object",
-            "description": "Remove an existing unit by server-assigned id.",
-            "required": [
-              "id",
-              "oper"
-            ],
-            "properties": {
-              "id": {
-                "type": "string",
-                "description": "Server-assigned identifier of the unit to remove."
-              },
-              "oper": {
-                "type": "string",
-                "enum": [
-                  "delete"
-                ]
-              }
-            }
-          }
+      "UnitRevisionVal": {
+        "type": "object",
+        "description": "Revision assignment accepted from the client.",
+        "required": [
+          "is_proofread"
         ],
-        "description": "Transport-facing unit oper event."
+        "properties": {
+          "is_proofread": {
+            "type": "boolean",
+            "description": "Replacement approval state."
+          },
+          "proofread_text": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Replacement proofread text."
+          }
+        },
+        "additionalProperties": false
       },
       "UnitTranslationExportPayload": {
         "type": "object",
@@ -9006,6 +9008,20 @@
             "description": "Vertical coordinate of the unit bounding box on the page."
           }
         }
+      },
+      "UnitTranslationVal": {
+        "type": "object",
+        "description": "Translation assignment accepted from the client.",
+        "required": [
+          "translated_text"
+        ],
+        "properties": {
+          "translated_text": {
+            "type": "string",
+            "description": "Replacement translated text."
+          }
+        },
+        "additionalProperties": false
       },
       "UpdateAssignmentRolesParams": {
         "type": "object",

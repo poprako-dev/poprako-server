@@ -6,9 +6,10 @@ use crate::value::image::{ImageExt, ImageHash};
 // nucl_coord_commits_repo_and_prom(CreateMember, Defer)(positive): successful coordination should commit repo and prom state together.
 // nucl_coord_rolls_back_repo_and_prom(CreateMember, Defer)(negative): failed coordination should discard repo and prom state together.
 
-/// Build a minimal `UserInfo` for test seeding.
+// Construct a minimal `UserInfo` record for repository tests.
 fn user(id: &str) -> UserInfo {
     //
+    // Internal implementation detail.
     let time = now();
 
     UserInfo {
@@ -31,6 +32,7 @@ fn user(id: &str) -> UserInfo {
 #[tokio::test]
 async fn run_reads_seeded_user() {
     //
+    // Internal implementation detail.
     let mock = Mock::new();
 
     mock.seed_user(
@@ -53,6 +55,7 @@ async fn run_reads_seeded_user() {
 #[tokio::test]
 async fn nucl_coord_commits_repo_and_prom() {
     //
+    // Internal implementation detail.
     let mock = Mock::new();
 
     let member_entry = MemberEntry {
@@ -109,6 +112,7 @@ async fn nucl_coord_commits_repo_and_prom() {
 #[tokio::test]
 async fn nucl_coord_rolls_back_repo_and_prom() {
     //
+    // Internal implementation detail.
     let mock = Mock::new();
 
     let member_entry = MemberEntry {
@@ -126,6 +130,7 @@ async fn nucl_coord_rolls_back_repo_and_prom() {
     let err = mock
         .coord(async move |context| {
             //
+            // Internal implementation detail.
             repo.step(
                 context,
                 &CreateMember {
@@ -171,10 +176,12 @@ async fn nucl_coord_rolls_back_repo_and_prom() {
 #[tokio::test]
 async fn nucl_coord_commits_state() {
     //
+    // Internal implementation detail.
     let mock = Mock::new();
 
     Nucl::coord(&mock, async |context| {
         //
+        // Internal implementation detail.
         context.state.users.push(user("user-1"));
 
         Ok::<(), BaseError>(())
@@ -191,10 +198,12 @@ async fn nucl_coord_commits_state() {
 #[tokio::test]
 async fn nucl_coord_rolls_back_state() {
     //
+    // Internal implementation detail.
     let mock = Mock::new();
 
     let error = Nucl::coord(&mock, async |context| {
         //
+        // Internal implementation detail.
         context.state.users.push(user("user-1"));
 
         Err::<(), _>(unrecoverable("[nucl_coord_rolls_back_state] fail"))

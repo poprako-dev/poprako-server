@@ -35,28 +35,15 @@ pub enum ResourceState {
     Mismatched,
 }
 
-/// Current image identity read from a persisted resource record.
+// Current image identity read from a persisted resource record.
+// Holds the latest DB version and object key for mismatch checks.
 struct CurrentImageIdentity<'a> {
     //
+    // Internal state field `version`.
+    // Version number of the resource in the database, used to detect stale writes.
     version: u32,
+    // Object key associated with the current database record.
     object_key: Option<&'a str>,
-}
-
-fn classify_current_identity(
-    current_identity: CurrentImageIdentity<'_>,
-    image_identity: ImageIdentity<'_>,
-) -> BaseResult<ResourceState> {
-    match (
-        current_identity.version == image_identity.version,
-        current_identity.object_key == Some(image_identity.object_key),
-    ) {
-        //
-        (false, _) => accept(ResourceState::Stale),
-
-        (true, false) => accept(ResourceState::Mismatched),
-
-        (true, true) => accept(ResourceState::Current),
-    }
 }
 
 /// Classifies a payload under lock and applies its uploaded state when current.
@@ -79,6 +66,7 @@ where
     let resource_state = nucl
         .coord(async move |context| {
             //
+            // Internal implementation detail.
             let resource_state =
                 classify_expected_mark(repo, context, image_identity).await?;
 
@@ -101,6 +89,147 @@ where
     accept(resource_state)
 }
 
+// Internal implementation of `classify_expected_mark`.
+async fn classify_expected_mark<R>(
+    repo: &R,
+    context: &mut RdbContext,
+    image_identity: ImageIdentity<'_>,
+) -> BaseResult<ResourceState>
+where
+    R: UserRepo<RdbContext>
+        + TeamRepo<RdbContext>
+        + ComicRepo<RdbContext>
+        + PageRepo<RdbContext>
+        + Send
+        + Sync,
+{
+    match image_identity.kind {
+        //
+        // Internal implementation detail.
+        ResourceKind::UserAvatar => {
+            match repo
+                .step(
+                    context,
+                    &GetUserInfoExcluded::Id {
+                        id: image_identity.resource_id,
+                    },
+                )
+                .await
+            {
+                // Internal implementation detail.
+                Ok(info) => {
+                    //
+                    // Internal implementation detail.
+                    let current_identity = CurrentImageIdentity {
+                        version: info.avatar_version,
+                        object_key: info.avatar_key.as_deref(),
+                    };
+
+                    classify_current_identity(current_identity, image_identity)
+                }
+
+                Err(BaseError::Expected { .. }) => {
+                    accept(ResourceState::Missing)
+                }
+
+                Err(error) => Err(error),
+            }
+        }
+
+        ResourceKind::TeamAvatar => {
+            match repo
+                .step(
+                    context,
+                    &GetTeamInfoExcluded::Id {
+                        id: image_identity.resource_id,
+                    },
+                )
+                .await
+            {
+                // Internal implementation detail.
+                Ok(info) => {
+                    //
+                    // Internal implementation detail.
+                    let current_identity = CurrentImageIdentity {
+                        version: info.avatar_version,
+                        object_key: info.avatar_key.as_deref(),
+                    };
+
+                    classify_current_identity(current_identity, image_identity)
+                }
+
+                Err(BaseError::Expected { .. }) => {
+                    accept(ResourceState::Missing)
+                }
+
+                Err(error) => Err(error),
+            }
+        }
+
+        ResourceKind::ComicCover => {
+            match repo
+                .step(
+                    context,
+                    &GetComicInfoExcluded {
+                        id: image_identity.resource_id,
+                        incls: &[],
+                    },
+                )
+                .await
+            {
+                // Internal implementation detail.
+                Ok(info) => {
+                    //
+                    // Internal implementation detail.
+                    let current_identity = CurrentImageIdentity {
+                        version: info.cover_version,
+                        object_key: info.cover_key.as_deref(),
+                    };
+
+                    classify_current_identity(current_identity, image_identity)
+                }
+
+                Err(BaseError::Expected { .. }) => {
+                    accept(ResourceState::Missing)
+                }
+
+                Err(error) => Err(error),
+            }
+        }
+
+        ResourceKind::PageImage => {
+            match repo
+                .step(
+                    context,
+                    &GetPageInfoExcluded {
+                        id: image_identity.resource_id,
+                    },
+                )
+                .await
+            {
+                // Internal implementation detail.
+                Ok(info) => {
+                    //
+                    // Internal implementation detail.
+                    let current_identity = CurrentImageIdentity {
+                        version: info.image_version,
+                        object_key: info.image_key.as_deref(),
+                    };
+
+                    classify_current_identity(current_identity, image_identity)
+                }
+
+                Err(BaseError::Expected { .. }) => {
+                    accept(ResourceState::Missing)
+                }
+
+                Err(error) => Err(error),
+            }
+        }
+    }
+}
+
+// Internal implementation of `mark_uploaded_by_kind`.
 async fn mark_uploaded_by_kind<R>(
     repo: &R,
     context: &mut RdbContext,
@@ -117,6 +246,7 @@ where
 {
     match image_identity.kind {
         //
+        // Internal implementation detail.
         ResourceKind::UserAvatar => {
             repo.step(
                 context,
@@ -170,136 +300,21 @@ where
     }
 }
 
-async fn classify_expected_mark<R>(
-    repo: &R,
-    context: &mut RdbContext,
+// Internal implementation of `classify_current_identity`.
+fn classify_current_identity(
+    current_identity: CurrentImageIdentity<'_>,
     image_identity: ImageIdentity<'_>,
-) -> BaseResult<ResourceState>
-where
-    R: UserRepo<RdbContext>
-        + TeamRepo<RdbContext>
-        + ComicRepo<RdbContext>
-        + PageRepo<RdbContext>
-        + Send
-        + Sync,
-{
-    match image_identity.kind {
+) -> BaseResult<ResourceState> {
+    match (
+        current_identity.version == image_identity.version,
+        current_identity.object_key == Some(image_identity.object_key),
+    ) {
         //
-        ResourceKind::UserAvatar => {
-            match repo
-                .step(
-                    context,
-                    &GetUserInfoExcluded::Id {
-                        id: image_identity.resource_id,
-                    },
-                )
-                .await
-            {
-                //
-                Ok(info) => {
-                    //
-                    let current_identity = CurrentImageIdentity {
-                        version: info.avatar_version,
-                        object_key: info.avatar_key.as_deref(),
-                    };
+        // Internal implementation detail.
+        (false, _) => accept(ResourceState::Stale),
 
-                    classify_current_identity(current_identity, image_identity)
-                }
+        (true, false) => accept(ResourceState::Mismatched),
 
-                Err(BaseError::Expected { .. }) => {
-                    accept(ResourceState::Missing)
-                }
-
-                Err(error) => Err(error),
-            }
-        }
-
-        ResourceKind::TeamAvatar => {
-            match repo
-                .step(
-                    context,
-                    &GetTeamInfoExcluded::Id {
-                        id: image_identity.resource_id,
-                    },
-                )
-                .await
-            {
-                //
-                Ok(info) => {
-                    //
-                    let current_identity = CurrentImageIdentity {
-                        version: info.avatar_version,
-                        object_key: info.avatar_key.as_deref(),
-                    };
-
-                    classify_current_identity(current_identity, image_identity)
-                }
-
-                Err(BaseError::Expected { .. }) => {
-                    accept(ResourceState::Missing)
-                }
-
-                Err(error) => Err(error),
-            }
-        }
-
-        ResourceKind::ComicCover => {
-            match repo
-                .step(
-                    context,
-                    &GetComicInfoExcluded {
-                        id: image_identity.resource_id,
-                        incls: &[],
-                    },
-                )
-                .await
-            {
-                //
-                Ok(info) => {
-                    //
-                    let current_identity = CurrentImageIdentity {
-                        version: info.cover_version,
-                        object_key: info.cover_key.as_deref(),
-                    };
-
-                    classify_current_identity(current_identity, image_identity)
-                }
-
-                Err(BaseError::Expected { .. }) => {
-                    accept(ResourceState::Missing)
-                }
-
-                Err(error) => Err(error),
-            }
-        }
-
-        ResourceKind::PageImage => {
-            match repo
-                .step(
-                    context,
-                    &GetPageInfoExcluded {
-                        id: image_identity.resource_id,
-                    },
-                )
-                .await
-            {
-                //
-                Ok(info) => {
-                    //
-                    let current_identity = CurrentImageIdentity {
-                        version: info.image_version,
-                        object_key: info.image_key.as_deref(),
-                    };
-
-                    classify_current_identity(current_identity, image_identity)
-                }
-
-                Err(BaseError::Expected { .. }) => {
-                    accept(ResourceState::Missing)
-                }
-
-                Err(error) => Err(error),
-            }
-        }
+        (true, true) => accept(ResourceState::Current),
     }
 }

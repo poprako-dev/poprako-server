@@ -27,6 +27,21 @@ pub struct WorksetRow {
     pub f_updated_at: OffsetDateTime,
 }
 
+impl From<WorksetRow> for WorksetInfo {
+    fn from(v: WorksetRow) -> Self {
+        WorksetInfo {
+            id: v.f_id,
+            team_id: v.f_team_id,
+            index: v.f_index,
+            name: v.f_name,
+            description: v.f_description,
+            comic_count: v.f_comic_count,
+            created_at: v.f_created_at,
+            updated_at: v.f_updated_at,
+        }
+    }
+}
+
 // ── Insertable ─────────────────────────────────────────────────────────────
 
 /// Insertable struct for creating a new record in the `t_workset` table.
@@ -43,6 +58,20 @@ pub struct WorksetRowEntry<'a> {
 
     pub f_created_at: OffsetDateTime,
     pub f_updated_at: OffsetDateTime,
+}
+
+impl<'a> From<&'a WorksetEntry> for WorksetRowEntry<'a> {
+    fn from(workset_entry: &'a WorksetEntry) -> Self {
+        Self {
+            f_id: &workset_entry.id,
+            f_team_id: &workset_entry.team_id,
+            f_index: workset_entry.index,
+            f_name: &workset_entry.name,
+            f_description: workset_entry.description.as_deref(),
+            f_created_at: OffsetDateTime::now_utc(),
+            f_updated_at: OffsetDateTime::now_utc(),
+        }
+    }
 }
 
 // ── Changeset (AsChangeset) ────────────────────────────────────────────────
@@ -98,36 +127,5 @@ impl<'a> WorksetAspect<'a> {
         self.f_comic_next_index = Some(val);
 
         self
-    }
-}
-
-// ── Conversions ────────────────────────────────────────────────────────────
-
-impl From<WorksetRow> for WorksetInfo {
-    fn from(v: WorksetRow) -> Self {
-        WorksetInfo {
-            id: v.f_id,
-            team_id: v.f_team_id,
-            index: v.f_index,
-            name: v.f_name,
-            description: v.f_description,
-            comic_count: v.f_comic_count,
-            created_at: v.f_created_at,
-            updated_at: v.f_updated_at,
-        }
-    }
-}
-
-impl<'a> From<&'a WorksetEntry> for WorksetRowEntry<'a> {
-    fn from(workset_entry: &'a WorksetEntry) -> Self {
-        Self {
-            f_id: &workset_entry.id,
-            f_team_id: &workset_entry.team_id,
-            f_index: workset_entry.index,
-            f_name: &workset_entry.name,
-            f_description: workset_entry.description.as_deref(),
-            f_created_at: OffsetDateTime::now_utc(),
-            f_updated_at: OffsetDateTime::now_utc(),
-        }
     }
 }

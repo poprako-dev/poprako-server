@@ -123,19 +123,19 @@ pub async fn export_download(
     download_response(&filename, payload)
 }
 
-/// Internal payload carrying the serialised export content and its metadata.
+// Internal payload carrying the serialised export content and response metadata.
 struct TranslationExportPayload {
     //
-    /// MIME type of the response body.
+    // MIME type of the HTTP response body.
     content_type: &'static str,
-    /// File extension for download filenames.
+    // File extension for the downloaded filename suffix.
     ext: &'static str,
-    /// Raw bytes of the serialised export.
+    // Raw bytes of the serialised export payload.
     body: Bytes,
 }
 
-/// Loads the export content from the usecase and builds the payload for the
-/// selected format.
+// Loads exported chapter data from the selected usecase path and builds the
+// response payload that is later written into the HTTP body.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn export_payload(
     harn: &AppHarn,
@@ -189,7 +189,7 @@ async fn export_payload(
     }
 }
 
-/// Builds a `200 OK` export response with the given content type.
+// Builds a `200 OK` inline export response with the payload's MIME type.
 fn body_response(
     payload: TranslationExportPayload,
 ) -> Result<Response, HttpError> {
@@ -208,8 +208,7 @@ fn body_response(
         })
 }
 
-/// Builds a `200 OK` file-download response with the given content type and
-/// `Content-Disposition: attachment; filename="<filename>"`.
+// Builds a `200 OK` attachment response with MIME type and filename header.
 fn download_response(
     filename_base: &str,
     payload: TranslationExportPayload,

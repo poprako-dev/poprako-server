@@ -23,12 +23,14 @@ use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
 fn token(user_id: &str) -> UserToken {
+    // Build a token fixture used for termbase ownership checks.
     UserToken {
         user_id: user_id.into(),
     }
 }
 
 fn member(user_id: &str, team_id: &str, roles: RoleMask) -> MemberInfo {
+    // Build a team member fixture with role permissions.
     MemberInfo {
         id: format!("member-{}-{}", user_id, team_id),
         user_id: user_id.into(),
@@ -43,6 +45,7 @@ fn member(user_id: &str, team_id: &str, roles: RoleMask) -> MemberInfo {
 
 fn workset(id: &str, team_id: &str) -> WorksetInfo {
     //
+    // Build a workset fixture for comic-bound termbase scenarios.
     let time = OffsetDateTime::now_utc();
 
     WorksetInfo {
@@ -59,6 +62,7 @@ fn workset(id: &str, team_id: &str) -> WorksetInfo {
 
 fn comic(id: &str, workset_id: &str) -> ComicInfo {
     //
+    // Build a comic fixture for comic-scoped termbase validation.
     let time = OffsetDateTime::now_utc();
 
     ComicInfo {

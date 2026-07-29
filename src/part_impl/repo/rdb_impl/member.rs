@@ -9,14 +9,19 @@ use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::result::{BaseError, BaseResult};
 
+// Orchestration logic for member repository operations.
 mod orchestra;
+// Member step implementation helpers.
 mod step_impl;
+/// Member RDB integration tests.
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;
 
 impl Run<FindMemberInfo<'_>> for RdbRepo {
+    // Error type for the Run trait impl on member lookup.
     type Error = BaseError;
 
+    // Finds a member by user and team IDs within the given operation spec.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,

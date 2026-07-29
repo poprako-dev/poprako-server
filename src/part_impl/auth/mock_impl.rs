@@ -12,8 +12,10 @@ use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 /// Returns a deterministic token (`"token:{user_id}"`) by default.
 /// Configure [Mock::with_token_failure] to test sign failures.
 impl TokenAuth for Mock {
+    // Internal implementation of `sign_token`.
     fn sign_token(&self, token: &UserToken) -> BaseResult<String> {
         //
+        // Internal implementation detail.
         if self.flags.lock().unwrap().token_failure {
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Auth,
@@ -24,8 +26,10 @@ impl TokenAuth for Mock {
         accept(format!("token:{}", token.user_id))
     }
 
+    // Internal implementation of `verify_token`.
     fn verify_token(&self, raw: &str) -> BaseResult<UserToken> {
         //
+        // Internal implementation detail.
         if self.flags.lock().unwrap().token_failure {
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Auth,
@@ -46,6 +50,7 @@ impl TokenAuth for Mock {
 #[test]
 fn sign_returns_stable_token() {
     //
+    // Internal implementation detail.
     let mock = Mock::new();
 
     let signed = TokenAuth::sign_token(
@@ -66,6 +71,7 @@ fn sign_returns_stable_token() {
 #[test]
 fn sign_failure_returns_expected_auth() {
     //
+    // Internal implementation detail.
     let mock = Mock::new().with_token_failure();
 
     let err_token = TokenAuth::sign_token(

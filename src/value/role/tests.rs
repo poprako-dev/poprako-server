@@ -1,3 +1,4 @@
+//! Role bitmask conversion and serde round-trip tests.
 // try_from(RoleField)(positive): singular valid bit should construct a role field.
 // try_from(RoleField)(negative): zero, composite, or out-of-range bits should be rejected.
 // serialize(RoleField)(positive): role field should serialize as its raw bit value.

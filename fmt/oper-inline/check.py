@@ -18,6 +18,9 @@ from pathlib import Path
 import tree_sitter
 import tree_sitter_rust
 
+sys.path.insert(0, str(Path(__file__).parents[1]))
+from production_source import production_source
+
 
 ROOT = Path(__file__).parents[2]
 PARSER = tree_sitter.Parser(tree_sitter.Language(tree_sitter_rust.language()))
@@ -42,11 +45,11 @@ def text(source: bytes, node: tree_sitter.Node) -> str:
     return source[node.start_byte : node.end_byte].decode()
 
 
-def oper_names(paths: list[Path]) -> set[str]:
+def oper_names(paths: list[Path], root: Path) -> set[str]:
     names: set[str] = set()
 
     for path in paths:
-        source = path.read_bytes()
+        source = production_source(path, root)
         tree = PARSER.parse(source)
 
         for item in descendants(tree.root_node, "impl_item"):
@@ -121,8 +124,8 @@ def next_statement(declaration: tree_sitter.Node) -> tree_sitter.Node | None:
     return None
 
 
-def safe_inline_edits(path: Path, names: set[str]) -> list[tuple[int, int, bytes]]:
-    source = path.read_bytes()
+def safe_inline_edits(path: Path, names: set[str], root: Path) -> list[tuple[int, int, bytes]]:
+    source = production_source(path, root)
     tree = PARSER.parse(source)
     edits: list[tuple[int, int, bytes]] = []
 
@@ -167,9 +170,9 @@ def safe_inline_edits(path: Path, names: set[str]) -> list[tuple[int, int, bytes
     return edits
 
 
-def apply_safe_fixes(paths: list[Path], names: set[str]) -> None:
+def apply_safe_fixes(paths: list[Path], names: set[str], root: Path) -> None:
     for path in paths:
-        edits = safe_inline_edits(path, names)
+        edits = safe_inline_edits(path, names, root)
 
         if not edits:
             continue
@@ -182,9 +185,9 @@ def apply_safe_fixes(paths: list[Path], names: set[str]) -> None:
         path.write_bytes(source)
 
 
-def apply_missing_borrows(paths: list[Path], names: set[str]) -> None:
+def apply_missing_borrows(paths: list[Path], names: set[str], root: Path) -> None:
     for path in paths:
-        source = path.read_bytes()
+        source = production_source(path, root)
         tree = PARSER.parse(source)
         edits: list[tuple[int, bytes]] = []
 
@@ -211,15 +214,17 @@ def apply_missing_borrows(paths: list[Path], names: set[str]) -> None:
 
             edits.append((expression.start_byte, b"&"))
 
+        updated = path.read_bytes()
+
         for start, replacement in reversed(edits):
-            source = source[:start] + replacement + source[start:]
+            updated = updated[:start] + replacement + updated[start:]
 
         if edits:
-            path.write_bytes(source)
+            path.write_bytes(updated)
 
 
 def check_file(path: Path, names: set[str], root: Path) -> list[str]:
-    source = path.read_bytes()
+    source = production_source(path, root)
     tree = PARSER.parse(source)
     errors: list[str] = []
 
@@ -260,7 +265,7 @@ def self_test() -> int:
             "}\n",
         )
 
-        if check_file(fixture, oper_names([fixture]), root):
+        if check_file(fixture, oper_names([fixture], root), root):
             print("self-test: inline operations were rejected", file=sys.stderr)
             return 1
 
@@ -277,16 +282,16 @@ def self_test() -> int:
             "    consume(&get);\n"
             "}\n",
         )
-        diagnostics = check_file(fixture, oper_names([fixture]), root)
+        diagnostics = check_file(fixture, oper_names([fixture], root), root)
 
         if len(diagnostics) != 2:
             print("self-test: bound operations were not fully rejected", file=sys.stderr)
             print("\n".join(diagnostics), file=sys.stderr)
             return 1
 
-        names = oper_names([fixture])
-        apply_safe_fixes([fixture], names)
-        apply_missing_borrows([fixture], names)
+        names = oper_names([fixture], root)
+        apply_safe_fixes([fixture], names, root)
+        apply_missing_borrows([fixture], names, root)
 
         if check_file(fixture, names, root):
             print("self-test: safe fixes did not inline operations", file=sys.stderr)
@@ -310,16 +315,16 @@ def main() -> int:
     args = parser.parse_args()
     root = args.root.resolve()
     paths = sorted((root / "src").rglob("*.rs"))
-    names = oper_names(paths)
+    names = oper_names(paths, root)
 
     if args.self_test:
         return self_test()
 
     if args.fix_safe:
-        apply_safe_fixes(paths, names)
+        apply_safe_fixes(paths, names, root)
 
     if args.fix_borrows:
-        apply_missing_borrows(paths, names)
+        apply_missing_borrows(paths, names, root)
 
     errors = [error for path in paths for error in check_file(path, names, root)]
 

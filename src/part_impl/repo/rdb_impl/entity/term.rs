@@ -25,6 +25,21 @@ pub struct TermRow {
     pub f_updated_at: OffsetDateTime,
 }
 
+impl From<TermRow> for TermInfo {
+    fn from(row: TermRow) -> Self {
+        Self {
+            id: row.f_id,
+            termbase_id: row.f_termbase_id,
+            source: row.f_source,
+            targets: row.f_targets.into_iter().flatten().collect(),
+            comment: row.f_comment,
+            creator_id: row.f_creator_id,
+            created_at: row.f_created_at,
+            updated_at: row.f_updated_at,
+        }
+    }
+}
+
 /// Insertable terminology-entry row.
 #[derive(Insertable)]
 #[diesel(table_name = t_term)]
@@ -42,21 +57,6 @@ pub struct TermRowEntry<'a> {
 
     pub f_created_at: OffsetDateTime,
     pub f_updated_at: OffsetDateTime,
-}
-
-impl From<TermRow> for TermInfo {
-    fn from(row: TermRow) -> Self {
-        Self {
-            id: row.f_id,
-            termbase_id: row.f_termbase_id,
-            source: row.f_source,
-            targets: row.f_targets.into_iter().flatten().collect(),
-            comment: row.f_comment,
-            creator_id: row.f_creator_id,
-            created_at: row.f_created_at,
-            updated_at: row.f_updated_at,
-        }
-    }
 }
 
 impl<'a> From<&'a TermEntry> for TermRowEntry<'a> {

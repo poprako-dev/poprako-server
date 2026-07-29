@@ -52,7 +52,17 @@ mod tests;
 /// * `R` — Repository bundle: [`UserRepo`], [`MemberRepo`], [`MemberInvitationRepo`].
 /// * `A: TokenAuth` — Signs the session token.
 /// * `V: EffectDevelop` — Processes the signup event.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(
+    level = "info",
+    err(Debug),
+    skip(nucl, repo, auth, develop, params),
+    fields(
+        qid = %params.qid,
+        nickname = %params.nickname,
+        password = "[REDACTED]",
+        code = "[REDACTED]",
+    ),
+)]
 pub async fn register<N, C, R, A, V>(
     (nucl, repo, auth, develop): (&N, &R, &A, &V),
     params: RegisterAuthParams,
@@ -164,7 +174,12 @@ where
 /// * `C` — Context anchor.
 /// * `R: UserRepo<C>` — Provides credential lookup.
 /// * `A: TokenAuth` — Signs the session token.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(
+    level = "info",
+    err(Debug),
+    skip(repo, auth, params),
+    fields(qid = %params.qid, password = "[REDACTED]"),
+)]
 pub async fn login<C, R, A>(
     (repo, auth): (&R, &A),
     params: LoginAuthParams,

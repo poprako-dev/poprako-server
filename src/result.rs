@@ -57,6 +57,7 @@ where
     BE: Into<Error>,
     E: Into<Error>,
 {
+    // Converts a Nucl error into an application-level Error, unwrapping the backend or step inner error.
     fn from(value: NuclError<BE, E>) -> Self {
         match value {
             //

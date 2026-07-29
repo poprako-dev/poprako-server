@@ -15,7 +15,7 @@
 //   - unit save is transactional; concurrent saves to DIFFERENT units commit
 //     independently. Same-unit concurrent saves are last-write-wins (no
 //     version field in the DTO).
-//   - before_id insert is an in-memory order operation; concurrent inserts
+//   - next_id insert is an in-memory order operation; concurrent inserts
 //     before the same anchor both succeed (each appends before the anchor in
 //     its own transaction; final order has both new units before the anchor).
 //
@@ -39,7 +39,7 @@ import {
 } from "../http/fixtures.js";
 import type { RunCtx } from "../state/runCtx.js";
 
-export const IMPLEMENTED = false as const;
+export const IMPLEMENTED = true as const;
 
 export async function runIt06Module(ctx: RunCtx): Promise<void> {
     assert.ok(ctx.main, "it_02 must have set ctx.main");
@@ -89,9 +89,7 @@ export async function runIt06Module(ctx: RunCtx): Promise<void> {
     assert.equal(create12.total_unit_count, 12);
 
     const p1List = await listPageUnits(ctx.sadmin, p1Id);
-    const p1UnitIds = [...p1List.unit_infos]
-        .sort((a, b) => a.index - b.index)
-        .map((u) => u.id);
+    const p1UnitIds = p1List.unit_infos.map((unit) => unit.id);
 
     assert.equal(p1UnitIds.length, 12);
 
@@ -101,24 +99,22 @@ export async function runIt06Module(ctx: RunCtx): Promise<void> {
     const f6Trans02 = p1UnitIds.slice(4, 8);
     const f6Trans03 = p1UnitIds.slice(8, 12);
 
-    const buildF6Opers = (targets: string[], prefix: string, translatorId: string) =>
+    const buildF6Edits = (targets: string[], prefix: string) =>
         targets.map((unitId, i) =>
             updateUnit(unitId, {
                 is_bubble: true,
                 is_proofread: false,
                 translated_text: `${prefix}${i}`,
-                last_translator_id: translatorId,
             }),
         );
 
     const [f6A, f6B, f6C] = await Promise.all([
-        savePageUnits(trans01.api, p1Id, buildF6Opers(f6Trans01, "A", trans01.userId)),
-        savePageUnits(trans02.api, p1Id, buildF6Opers(f6Trans02, "B", trans02.userId)),
-        savePageUnits(trans03.api, p1Id, buildF6Opers(f6Trans03, "C", trans03.userId)),
+        savePageUnits(trans01.api, p1Id, buildF6Edits(f6Trans01, "A")),
+        savePageUnits(trans02.api, p1Id, buildF6Edits(f6Trans02, "B")),
+        savePageUnits(trans03.api, p1Id, buildF6Edits(f6Trans03, "C")),
     ]);
 
-    // All three parallel saves committed. SavePageUnitsVal has no status field;
-    // the assertions below verify the final state.
+    // All three saves returned a fresh list; final assertions verify state.
     assert.equal(f6A.translated_unit_count <= 12, true, "F6 A count <= 12");
     assert.equal(f6B.translated_unit_count <= 12, true, "F6 B count <= 12");
     assert.equal(f6C.translated_unit_count <= 12, true, "F6 C count <= 12");
@@ -174,7 +170,6 @@ export async function runIt06Module(ctx: RunCtx): Promise<void> {
                 is_bubble: true,
                 is_proofread: false,
                 translated_text: "A version",
-                last_translator_id: trans01.userId,
             }),
         ]),
         savePageUnits(trans02.api, p1Id, [
@@ -182,21 +177,16 @@ export async function runIt06Module(ctx: RunCtx): Promise<void> {
                 is_bubble: true,
                 is_proofread: false,
                 translated_text: "B version",
-                last_translator_id: trans02.userId,
             }),
         ]),
     ]);
 
-    // Both should succeed (last-write-wins); if one rejected, it must be 422.
+    // Both succeed; the later committed Patch wins.
     for (const r of f7Results) {
+        assert.equal(r.status, "fulfilled", "F7 Patch must commit");
+
         if (r.status === "fulfilled") {
             assert.equal(r.value.total_unit_count, 12, "F7 success must keep count");
-        } else {
-            // rejected: acceptable only if it's a 422-style error
-            assert.ok(
-                /422|status/i.test(String(r.reason)),
-                `F7 rejection must be a 422, got: ${String(r.reason)}`,
-            );
         }
     }
 
@@ -212,55 +202,43 @@ export async function runIt06Module(ctx: RunCtx): Promise<void> {
     assert.equal(p1AfterF7.total_unit_count, 12, "count unchanged");
     assert.ok(f7Final.updated_at >= f7OldUpdatedAt, "updated_at must not decrease");
 
-    // ---------- F8. parallel before_id inserts before the same anchor ----------
+    // ---------- F8. parallel next_id inserts before the same anchor ----------
 
     const f8Anchor = p1UnitIds[3]!;
-    const f8AnchorBefore = p1AfterF7.unit_infos.find((u) => u.id === f8Anchor)!;
-    const f8AnchorOldIndex = f8AnchorBefore.index;
+    const f8AnchorOldIndex = p1AfterF7.unit_infos.findIndex((u) => u.id === f8Anchor);
 
     const f8Results = await Promise.allSettled([
         savePageUnits(trans01.api, p1Id, [
             {
-                oper: "create",
+                edit: "create",
                 local_id: "A_before_anchor",
-                before_id: f8Anchor,
+                next_id: f8Anchor,
                 is_bubble: true,
-                is_proofread: false,
-                x_coord: 0.5,
-                y_coord: 0.5,
-                translated_text: null,
-                last_translator_id: null,
-                proofread_text: null,
-                last_proofreader_id: null,
+                coord: {
+                    x_coord: 0.5,
+                    y_coord: 0.5,
+                },
             },
         ]),
         savePageUnits(trans02.api, p1Id, [
             {
-                oper: "create",
+                edit: "create",
                 local_id: "B_before_anchor",
-                before_id: f8Anchor,
+                next_id: f8Anchor,
                 is_bubble: true,
-                is_proofread: false,
-                x_coord: 0.6,
-                y_coord: 0.6,
-                translated_text: null,
-                last_translator_id: null,
-                proofread_text: null,
-                last_proofreader_id: null,
+                coord: {
+                    x_coord: 0.6,
+                    y_coord: 0.6,
+                },
             },
         ]),
     ]);
 
     let f8SuccessCount = 0;
-    const f8NewIds: string[] = [];
 
     for (const r of f8Results) {
         if (r.status === "fulfilled") {
             f8SuccessCount += 1;
-
-            for (const m of r.value.local_id_mappers) {
-                f8NewIds.push(m.unit_id);
-            }
         } else {
             assert.ok(
                 /422|409|status/i.test(String(r.reason)),
@@ -269,9 +247,13 @@ export async function runIt06Module(ctx: RunCtx): Promise<void> {
         }
     }
 
-    assert.ok(f8SuccessCount >= 1, "at least one F8 insert must succeed");
+    assert.equal(f8SuccessCount, 2, "both F8 inserts must succeed");
 
     const p1AfterF8 = await listPageUnits(ctx.sadmin, p1Id);
+    const priorIds = new Set(p1AfterF7.unit_infos.map((unit) => unit.id));
+    const f8NewIds = p1AfterF8.unit_infos
+        .filter((unit) => !priorIds.has(unit.id))
+        .map((unit) => unit.id);
 
     assert.equal(p1AfterF8.total_unit_count, 12 + f8SuccessCount, "total increased by success count");
 
@@ -330,7 +312,6 @@ export async function runIt06Module(ctx: RunCtx): Promise<void> {
                 is_bubble: true,
                 is_proofread: false,
                 translated_text: "X-updated",
-                last_translator_id: trans01.userId,
             }),
         ]),
         savePageUnits(trans01.api, p1Id, [deleteUnit(f9Target)]),

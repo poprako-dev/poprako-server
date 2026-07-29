@@ -5,6 +5,7 @@ use std::sync::OnceLock;
 use anyhow::Context as _;
 use metrics_exporter_prometheus::{PrometheusBuilder, PrometheusHandle};
 
+// Cached Prometheus recorder handle shared by initialization and rendering.
 static PROMETHEUS_HANDLE: OnceLock<PrometheusHandle> = OnceLock::new();
 
 /// Installs the global Prometheus recorder and retains its rendering handle.

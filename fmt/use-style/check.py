@@ -21,6 +21,9 @@ from pathlib import Path
 import tree_sitter
 import tree_sitter_rust
 
+sys.path.insert(0, str(Path(__file__).parents[1]))
+from production_source import production_source
+
 
 ROOT = Path(__file__).parents[2]
 PARSER = tree_sitter.Parser(tree_sitter.Language(tree_sitter_rust.language()))
@@ -113,10 +116,14 @@ def leading_attributes(node: tree_sitter.Node) -> tuple[tree_sitter.Node, ...]:
     attrs: list[tree_sitter.Node] = []
 
     for sibling in reversed(siblings[:index]):
-        if sibling.type != "attribute_item":
-            break
+        if sibling.type == "attribute_item":
+            attrs.append(sibling)
+            continue
 
-        attrs.append(sibling)
+        if sibling.type in {"line_comment", "block_comment"}:
+            continue
+
+        break
 
     return tuple(reversed(attrs))
 
@@ -757,7 +764,7 @@ def check_single_test_module(
 
 
 def check_file(path: Path, root: Path, local_crates: set[str]) -> tuple[list[str], list[tuple[int, int, bytes]]]:
-    source = path.read_bytes()
+    source = production_source(path, root)
     statements = collect_uses(path, source)
     masked = masked_source(source, statements)
     diagnostics: list[str] = []
@@ -1040,8 +1047,8 @@ def main() -> int:
     parser.add_argument(
         "--fix",
         action=argparse.BooleanOptionalAction,
-        default=True,
-        help="rewrite use declarations, then format them with cargo fmt (default: enabled)",
+        default=False,
+        help="rewrite use declarations, then format them with cargo fmt",
     )
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()

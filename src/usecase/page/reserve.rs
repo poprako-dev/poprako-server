@@ -59,7 +59,7 @@ pub fn validate_page_count(page_count: i32) -> BaseResult<()> {
 }
 
 /// Reserves upload slots for all pages in an empty chapter.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(nucl, repo, prom, image_pool))]
 pub async fn reserve_chapter_pages<N, C, R, P, I>(
     (nucl, repo, prom, image_pool): (&N, &R, &P, &I),
     token: UserToken,
@@ -118,22 +118,30 @@ where
         }
     }
 
-    /// Holds one requested upload target within a page reservation.
+    // Holds one requested upload target within a page reservation.
     struct PageUploadReservation {
         //
+        // Upload destination in object storage.
         object_key: String,
+        // Expected size (in bytes) for capacity pre-allocation and verification.
         new_byte_len: u64,
     }
 
-    /// Holds the identity and optional upload request for one reserved page.
+    // Holds the identity and optional upload request for one reserved page.
     struct PageReservation {
         //
+        // Page identifier for this reservation.
         page_id: String,
+        // Ordering index used to keep reservation payload deterministic.
         index: u32,
 
+        // Optional upload metadata when the caller requests a new page image.
         upload: Option<PageUploadReservation>,
+        // Monotonic image revision value after reservation.
         image_version: u32,
+        // Expected image digest for reservation integrity checks.
         image_hash: ImageHash,
+        // File extension used for generated object key and downstream image handling.
         ext: ImageExt,
     }
 
@@ -429,7 +437,7 @@ where
                 task_delays.push(Some(Duration::from_secs(15 * 60)));
             }
 
-            let image_tasks: Vec<Task<'_, String, TaskPayload>> = task_ids
+            let image_tasks = task_ids
                 .iter()
                 .zip(task_payloads.iter())
                 .zip(task_delays.iter())
@@ -438,7 +446,7 @@ where
                     payload,
                     delay: *delay,
                 })
-                .collect();
+                .collect::<Vec<Task<'_, String, TaskPayload>>>();
 
             prom.step(context, &DeferBatch::new(&image_tasks)).await?;
 

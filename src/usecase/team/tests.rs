@@ -53,9 +53,10 @@ use crate::test_util::{
 use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
+// Team avatar reservation, upload check, and cleanup behavior.
 mod avatar;
 
-/// Builds a [`TeamInfo`] fixture with avatar fields set.
+// Build a team fixture with explicit avatar metadata for avatar-related assertions.
 fn team_with_avatar(
     id: &str,
     name: &str,
@@ -72,7 +73,7 @@ fn team_with_avatar(
     }
 }
 
-/// Builds a [`MemberInfo`] fixture.
+// Build a generic member fixture for team-related membership checks.
 fn member(id: &str, user_id: &str, team_id: &str) -> MemberInfo {
     MemberInfo {
         id: id.into(),
@@ -86,7 +87,7 @@ fn member(id: &str, user_id: &str, team_id: &str) -> MemberInfo {
     }
 }
 
-/// Builds a [`ComicInfo`] fixture with an uploaded cover.
+// Build a comic fixture that already has an uploaded cover.
 fn comic_with_uploaded_cover(
     id: &str,
     workset_id: &str,
@@ -118,14 +119,14 @@ fn comic_with_uploaded_cover(
     }
 }
 
-/// Builds a [`UserToken`] fixture.
+// Build a token fixture that carries only the user id under test.
 fn token(user_id: &str) -> UserToken {
     UserToken {
         user_id: user_id.into(),
     }
 }
 
-/// Builds a [`UserCredential`] fixture.
+// Build login-credential data for the seeded user.
 fn credential(user_id: &str) -> UserCredential {
     UserCredential {
         user_id: user_id.into(),
@@ -133,7 +134,7 @@ fn credential(user_id: &str) -> UserCredential {
     }
 }
 
-/// Builds a [`UserInfo`] fixture.
+// Build a user fixture with configurable super-admin flag.
 fn user(id: &str, is_sadmin: bool) -> UserInfo {
     //
     let time = OffsetDateTime::now_utc();
@@ -154,7 +155,7 @@ fn user(id: &str, is_sadmin: bool) -> UserInfo {
     }
 }
 
-/// Builds a [`ListTeamInfosData`] fixture.
+// Build list parameters for team pagination and optional owner filter.
 fn list_params(
     user_id: Option<&str>,
     offset: u32,
@@ -167,7 +168,7 @@ fn list_params(
     }
 }
 
-/// Builds a [`ReserveTeamAvatarData`] fixture.
+// Build avatar-reservation params with fixed byte length and hash.
 fn reserve_params(file_ext: &str) -> ReserveTeamAvatarParams {
     ReserveTeamAvatarParams {
         image_hash: ImageHash::new([1; 32]),
@@ -176,12 +177,12 @@ fn reserve_params(file_ext: &str) -> ReserveTeamAvatarParams {
     }
 }
 
-/// Builds a [`MarkTeamAvatarUploadedData`] fixture.
+// Build mark-upload params targeting a specific cover version.
 fn mark_params(image_version: u32) -> MarkTeamAvatarUploadedParams {
     MarkTeamAvatarUploadedParams { image_version }
 }
 
-/// Builds an [`UpdateTeamInfoData`] fixture.
+// Build update params carrying new team name and description.
 fn update_params(
     id: &str,
     name: &str,
@@ -194,7 +195,7 @@ fn update_params(
     }
 }
 
-/// Counts deferred image-delete records matching the given object key.
+// Count deferred image-delete prom records for a specific object key.
 fn count_delete_records(records: &[MockPromRecord], object_key: &str) -> usize {
     records
         .iter()

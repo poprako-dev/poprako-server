@@ -6,6 +6,7 @@ use super::*;
 
 use axum::http::Uri;
 
+// Build a local URI from the query string and reuse `Query::try_from_uri` to parse a MemberMeListQuery.
 fn parse_query(query: &str) -> MemberMeListQuery {
     //
     let uri = format!("http://localhost/members/me?{}", query)

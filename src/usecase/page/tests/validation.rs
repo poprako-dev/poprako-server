@@ -12,7 +12,7 @@ fn image_byte_length_accepts_closed_bounds() {
 
     assert!(
         ImageComplex::ensure_byte_length(
-            5 * 1024 * 1024,
+            15 * 1024 * 1024,
             ResourceKind::PageImage,
         )
         .is_ok(),
@@ -28,7 +28,7 @@ fn image_byte_length_rejects_values_outside_bounds() {
 
     assert!(
         ImageComplex::ensure_byte_length(
-            5 * 1024 * 1024 + 1,
+            15 * 1024 * 1024 + 1,
             ResourceKind::PageImage,
         )
         .is_err(),

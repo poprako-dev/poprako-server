@@ -17,6 +17,9 @@ from pathlib import Path
 import tree_sitter
 import tree_sitter_rust
 
+sys.path.insert(0, str(Path(__file__).parents[1]))
+from production_source import production_source
+
 
 ROOT = Path(__file__).parents[2]
 PARSER = tree_sitter.Parser(tree_sitter.Language(tree_sitter_rust.language()))
@@ -61,8 +64,8 @@ def legacy_aliases(layer: str, domains: set[str]) -> set[str]:
     return {f"{domain}_{layer}" for domain in domains}
 
 
-def remove_legacy_imports(path: Path, layer: str, domains: set[str]) -> bool:
-    source = path.read_bytes()
+def remove_legacy_imports(path: Path, root: Path, layer: str, domains: set[str]) -> bool:
+    source = production_source(path, root)
     tree = PARSER.parse(source)
     aliases = legacy_aliases(layer, domains)
     edits: list[tuple[int, int]] = []
@@ -80,7 +83,7 @@ def remove_legacy_imports(path: Path, layer: str, domains: set[str]) -> bool:
     if not edits:
         return False
 
-    updated = source
+    updated = path.read_bytes()
 
     for start, end in reversed(edits):
         updated = updated[:start] + updated[end:]
@@ -90,7 +93,7 @@ def remove_legacy_imports(path: Path, layer: str, domains: set[str]) -> bool:
 
 
 def check_file(path: Path, root: Path, layer: str, domains: set[str]) -> list[str]:
-    source = path.read_bytes()
+    source = production_source(path, root)
     tree = PARSER.parse(source)
     errors: list[str] = []
     imported_modules: set[str] = set()
@@ -178,7 +181,7 @@ def main() -> int:
 
     if args.fix:
         for path in sorted((root / "src").rglob("*.rs")):
-            remove_legacy_imports(path, args.layer, domains)
+            remove_legacy_imports(path, root, args.layer, domains)
 
     errors = [
         error

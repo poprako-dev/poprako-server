@@ -20,10 +20,11 @@ use crate::part_impl::shared::result::diesel;
 use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{BaseError, BaseResult, accept};
 
+/// Announcement RDB integration tests.
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;
 
-/// Queries announcement rows filtered by team ID, ordered by creation time descending.
+// Queries announcement rows filtered by team ID, ordered by creation time descending.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn list_infos(
     conn: &mut RdbConn,
@@ -40,8 +41,10 @@ async fn list_infos(
         .await
         .map_err(diesel)?;
 
-    let mut infos: Vec<AnnouncementInfo> =
-        rows.into_iter().map(Into::into).collect();
+    let mut infos = rows
+        .into_iter()
+        .map(Into::into)
+        .collect::<Vec<AnnouncementInfo>>();
 
     incl::announcement::populate_announcement_incls(
         conn,
@@ -53,7 +56,7 @@ async fn list_infos(
     accept(infos)
 }
 
-/// Inserts a new announcement row from the given entry and returns the created info.
+// Inserts a new announcement row from the given entry and returns the created info.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn create(
     conn: &mut RdbConn,
@@ -73,8 +76,10 @@ async fn create(
 }
 
 impl Run<ListAnnouncementInfos<'_>> for RdbRepo {
+    // Error type for the Run trait impl on announcement list query.
     type Error = BaseError;
 
+    // Executes the announcement list query with the given operation spec.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
@@ -85,8 +90,10 @@ impl Run<ListAnnouncementInfos<'_>> for RdbRepo {
 }
 
 impl Step<CreateAnnouncement<'_>, RdbContext> for RdbRepo {
+    // Error type for the Step trait impl on announcement creation.
     type Error = BaseError;
 
+    // Runs announcement creation within an existing transaction.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,

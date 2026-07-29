@@ -41,6 +41,7 @@ pub struct AnnouncementInfoVal {
 }
 
 impl AnnouncementInfoVal {
+    /// Build the response object from a model row and resolved optional user.
     /// Converts an announcement model into a presentation value.
     pub async fn from_model<P>(
         image_pool: &P,
@@ -89,6 +90,7 @@ pub struct ListAnnouncementInfosParams {
 }
 
 impl From<ListAnnouncementInfosParams> for AnnouncementListSpec {
+    // Map listing parameters directly to the repository spec.
     fn from(params: ListAnnouncementInfosParams) -> Self {
         Self {
             team_id: params.team_id,
