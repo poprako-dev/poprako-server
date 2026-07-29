@@ -18,7 +18,7 @@ use crate::part::repo::oper::comic::{
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
-use crate::result::{RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, accept};
 use crate::value::comic::ComicInclOpt;
 use crate::value::incl::expand_incl_opts;
 use crate::value::index::user_index_to_stored_index;
@@ -178,7 +178,7 @@ fn mark_comic_cover_uploaded(
     state: &mut MockState,
     id: &str,
     cover_version: u32,
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     let comic = state
         .comics
@@ -194,14 +194,14 @@ fn mark_comic_cover_uploaded(
 
     comic.updated_at = now();
 
-    Ok(())
+    accept(())
 }
 
 fn get_comic_info(
     state: &MockState,
     id: &str,
     incls: &[ComicInclOpt],
-) -> RegularResult<ComicInfo> {
+) -> BaseResult<ComicInfo> {
     //
     let mut comic_info = state
         .comics
@@ -212,7 +212,7 @@ fn get_comic_info(
 
     apply_comic_incls(state, &mut comic_info, incls);
 
-    Ok(comic_info)
+    accept(comic_info)
 }
 
 fn list_comic_infos(
@@ -263,7 +263,7 @@ fn list_comic_infos(
 }
 
 impl<'a, 'b> Run<GetComicInfo<'a, 'b>> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
@@ -278,7 +278,7 @@ impl<'a, 'b> Run<GetComicInfo<'a, 'b>> for Mock {
 }
 
 impl<'a> Run<ListComicInfos<'a>> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
@@ -288,12 +288,12 @@ impl<'a> Run<ListComicInfos<'a>> for Mock {
         //
         let state = self.state.lock().unwrap();
 
-        Ok(list_comic_infos(&state, oper.spec))
+        accept(list_comic_infos(&state, oper.spec))
     }
 }
 
 impl<'a> Run<UpdateComic<'a>> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(&self, oper: &UpdateComic<'a>) -> Result<(), Self::Error> {
@@ -314,12 +314,12 @@ impl<'a> Run<UpdateComic<'a>> for Mock {
 
         comic.updated_at = now();
 
-        Ok(())
+        accept(())
     }
 }
 
 impl<'a> Run<MarkComicCoverUploaded<'a>> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
@@ -334,7 +334,7 @@ impl<'a> Run<MarkComicCoverUploaded<'a>> for Mock {
 }
 
 impl<'a> Step<CreateComic<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
@@ -376,12 +376,12 @@ impl<'a> Step<CreateComic<'a>, MockContext> for Mock {
 
         context.state.comics.push(comic.clone());
 
-        Ok(comic)
+        accept(comic)
     }
 }
 
 impl<'a, 'b> Step<GetComicInfo<'a, 'b>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
@@ -394,7 +394,7 @@ impl<'a, 'b> Step<GetComicInfo<'a, 'b>, MockContext> for Mock {
 }
 
 impl<'a, 'b> Step<GetComicInfoExcluded<'a, 'b>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
@@ -407,7 +407,7 @@ impl<'a, 'b> Step<GetComicInfoExcluded<'a, 'b>, MockContext> for Mock {
 }
 
 impl<'a> Step<ListComicInfosExcluded<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
@@ -415,12 +415,12 @@ impl<'a> Step<ListComicInfosExcluded<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &ListComicInfosExcluded<'a>,
     ) -> Result<Vec<ComicInfo>, Self::Error> {
-        Ok(list_comic_infos(&context.state, oper.spec))
+        accept(list_comic_infos(&context.state, oper.spec))
     }
 }
 
 impl<'a> Step<ListComicInfos<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
@@ -428,12 +428,12 @@ impl<'a> Step<ListComicInfos<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &ListComicInfos<'a>,
     ) -> Result<Vec<ComicInfo>, Self::Error> {
-        Ok(list_comic_infos(&context.state, oper.spec))
+        accept(list_comic_infos(&context.state, oper.spec))
     }
 }
 
 impl<'a> Step<ReserveComicCover<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
@@ -467,7 +467,7 @@ impl<'a> Step<ReserveComicCover<'a>, MockContext> for Mock {
 
         comic.updated_at = now();
 
-        Ok(ComicCoverReservation {
+        accept(ComicCoverReservation {
             object_key,
             prev_object_key,
             cover_version,
@@ -476,7 +476,7 @@ impl<'a> Step<ReserveComicCover<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<MarkComicCoverUploaded<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
@@ -493,7 +493,7 @@ impl<'a> Step<MarkComicCoverUploaded<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<DeleteComic<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
@@ -538,12 +538,12 @@ impl<'a> Step<DeleteComic<'a>, MockContext> for Mock {
                 .any(|chapter_id| chapter_id == &assignment_info.chapter_id)
         });
 
-        Ok(())
+        accept(())
     }
 }
 
 impl<'a> Step<AllocComicChapterIndex<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
@@ -567,12 +567,12 @@ impl<'a> Step<AllocComicChapterIndex<'a>, MockContext> for Mock {
             .filter(|chapter_info| chapter_info.comic_id == oper.id)
             .count() as i32;
 
-        Ok(index)
+        accept(index)
     }
 }
 
 impl<'a> Step<UpdateComicChapterCount<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
@@ -592,12 +592,12 @@ impl<'a> Step<UpdateComicChapterCount<'a>, MockContext> for Mock {
 
         comic.updated_at = now();
 
-        Ok(())
+        accept(())
     }
 }
 
 impl<'a> Step<TouchComicLastActive<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
@@ -617,6 +617,6 @@ impl<'a> Step<TouchComicLastActive<'a>, MockContext> for Mock {
 
         comic.updated_at = now();
 
-        Ok(())
+        accept(())
     }
 }

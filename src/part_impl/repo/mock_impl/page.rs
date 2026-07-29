@@ -7,13 +7,13 @@ use crate::part::repo::page::PageRepo;
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
-use crate::result::RegularResult;
+use crate::result::BaseResult;
 
 mod orchestra;
 
 impl PageRepo<MockContext> for Mock {}
 
-fn get_page_by_id(state: &MockState, id: &str) -> RegularResult<PageInfo> {
+fn get_page_by_id(state: &MockState, id: &str) -> BaseResult<PageInfo> {
     state
         .pages
         .iter()
@@ -62,7 +62,6 @@ fn list_first_pages(
     state: &MockState,
     chapter_ids: &[String],
 ) -> HashMap<String, PageInfo> {
-    //
     chapter_ids
         .iter()
         .filter_map(|chapter_id| {

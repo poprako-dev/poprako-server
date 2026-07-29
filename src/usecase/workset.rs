@@ -41,7 +41,7 @@ use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::{RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, accept};
 
 #[cfg(test)]
 pub mod tests;
@@ -53,9 +53,9 @@ pub async fn create<N, C, R>(
     repo: &R,
     token: UserToken,
     params: CreateWorksetParams,
-) -> RegularResult<CreateWorksetPayload>
+) -> BaseResult<CreateWorksetPayload>
 where
-    N: Nucl<Context = C, Error = RegularError>,
+    N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     R: TeamRepo<C> + WorksetRepo<C> + MemberRepo<C> + Send + Sync,
 {
@@ -69,7 +69,7 @@ where
     .await?;
 
     let workset_id = nucl
-        .coord(async move |context| -> RegularResult<String> {
+        .coord(async move |context| {
             //
             let index = repo
                 .step(
@@ -97,11 +97,11 @@ where
                 )
                 .await?;
 
-            Ok(workset_info.id)
+            accept(workset_info.id)
         })
         .await?;
 
-    Ok(CreateWorksetPayload { id: workset_id })
+    accept(CreateWorksetPayload { id: workset_id })
 }
 
 /// Fetches a workset by ID.
@@ -110,7 +110,7 @@ pub async fn get_info<C, R>(
     repo: &R,
     token: UserToken,
     id: String,
-) -> RegularResult<WorksetInfoVal>
+) -> BaseResult<WorksetInfoVal>
 where
     R: WorksetRepo<C> + MemberRepo<C> + Sync,
 {
@@ -127,7 +127,7 @@ where
 
     let workset_info = repo.run(&GetWorksetInfo { id: &id }).await?;
 
-    Ok(workset_info.into())
+    accept(workset_info.into())
 }
 
 /// Lists worksets for a team.
@@ -136,7 +136,7 @@ pub async fn list_infos<C, R>(
     repo: &R,
     token: UserToken,
     params: ListWorksetInfosParams,
-) -> RegularResult<Vec<WorksetInfoVal>>
+) -> BaseResult<Vec<WorksetInfoVal>>
 where
     R: WorksetRepo<C> + MemberRepo<C> + Sync,
 {
@@ -159,7 +159,7 @@ where
         })
         .await?;
 
-    Ok(workset_infos.into_iter().map(Into::into).collect())
+    accept(workset_infos.into_iter().map(Into::into).collect())
 }
 
 /// Updates a workset's name and description.
@@ -168,7 +168,7 @@ pub async fn update_info<C, R>(
     repo: &R,
     token: UserToken,
     params: UpdateWorksetInfoParams,
-) -> RegularResult<()>
+) -> BaseResult<()>
 where
     R: WorksetRepo<C> + MemberRepo<C> + Sync,
 {
@@ -194,7 +194,7 @@ where
     })
     .await?;
 
-    Ok(())
+    accept(())
 }
 
 /// Deletes a workset and its child data.
@@ -205,9 +205,9 @@ pub async fn delete<N, C, R, P>(
     prom: &P,
     token: UserToken,
     id: String,
-) -> RegularResult<()>
+) -> BaseResult<()>
 where
-    N: Nucl<Context = C, Error = RegularError>,
+    N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     R: WorksetRepo<C>
         + ComicRepo<C>
@@ -232,7 +232,7 @@ where
     )
     .await?;
 
-    nucl.coord(async move |context| -> RegularResult<()> {
+    nucl.coord(async move |context| {
         //
         WorksetComplex::delete_cascade(
             &mut step_proxy! {
@@ -263,9 +263,9 @@ where
         )
         .await?;
 
-        Ok(())
+        accept(())
     })
     .await?;
 
-    Ok(())
+    accept(())
 }

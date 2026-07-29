@@ -11,7 +11,7 @@ use crate::part::repo::chapter::ChapterRepo;
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
-use crate::result::RegularResult;
+use crate::result::{BaseResult, accept};
 use crate::value::chapter::{ChapterInclOpt, StageMask};
 use crate::value::incl::expand_incl_opts;
 
@@ -24,7 +24,7 @@ pub(super) fn get_chapter_by_id(
     state: &MockState,
     id: &str,
     incl_opt: &[ChapterInclOpt],
-) -> RegularResult<ChapterInfo> {
+) -> BaseResult<ChapterInfo> {
     //
     let mut chapter_info = state
         .chapters
@@ -35,7 +35,7 @@ pub(super) fn get_chapter_by_id(
 
     apply_chapter_incls(state, &mut chapter_info, incl_opt);
 
-    Ok(chapter_info)
+    accept(chapter_info)
 }
 
 /// Returns all chapters for a comic from the mock state, sorted by index descending.
@@ -60,7 +60,7 @@ pub(super) fn list_all_chapters(
 pub(super) fn create_chapter(
     state: &mut MockState,
     chapter_entry: &ChapterEntry,
-) -> RegularResult<ChapterInfo> {
+) -> BaseResult<ChapterInfo> {
     //
     if state
         .chapters
@@ -92,7 +92,7 @@ pub(super) fn create_chapter(
 
     state.chapters.push(chapter_info.clone());
 
-    Ok(chapter_info)
+    accept(chapter_info)
 }
 
 fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {

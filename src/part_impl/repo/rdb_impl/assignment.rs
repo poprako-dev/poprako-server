@@ -26,7 +26,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_chapter::{
 use crate::part_impl::repo::rdb_impl::{RdbRepo, incl};
 use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::shared::{RdbConn, RdbContext};
-use crate::result::{RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, accept};
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::role::RoleField;
 
@@ -36,14 +36,14 @@ mod tests;
 impl AssignmentRepo<RdbContext> for RdbRepo {}
 
 /// Converts a single `AssignmentRow` into an `AssignmentInfo`.
-fn row_into_info(row: AssignmentRow) -> RegularResult<AssignmentInfo> {
+fn row_into_info(row: AssignmentRow) -> BaseResult<AssignmentInfo> {
     row.try_into()
 }
 
 /// Converts a vector of `AssignmentRow` values into a vector of `AssignmentInfo`.
 fn rows_into_infos(
     rows: Vec<AssignmentRow>,
-) -> RegularResult<Vec<AssignmentInfo>> {
+) -> BaseResult<Vec<AssignmentInfo>> {
     rows.into_iter().map(row_into_info).collect()
 }
 
@@ -53,7 +53,7 @@ async fn get_info_by_chapter_id_and_user_id(
     conn: &mut RdbConn,
     chapter_id: &str,
     user_id: &str,
-) -> RegularResult<Option<AssignmentInfo>> {
+) -> BaseResult<Option<AssignmentInfo>> {
     //
     let row: Option<AssignmentRow> = t_assignment
         .filter(f_chapter_id.eq(chapter_id))
@@ -74,7 +74,7 @@ async fn find_info_by_user_id_and_comic_id(
     user_id: &str,
     comic_id: &str,
     incls: &[AssignmentInclOpt],
-) -> RegularResult<Option<AssignmentInfo>> {
+) -> BaseResult<Option<AssignmentInfo>> {
     //
     let row: Option<AssignmentRow> = t_assignment
         .inner_join(chapter_table)
@@ -88,7 +88,7 @@ async fn find_info_by_user_id_and_comic_id(
         .map_err(diesel)?;
 
     let Some(row) = row else {
-        return Ok(None);
+        return accept(None);
     };
 
     let mut assignment_info = row_into_info(row)?;
@@ -100,7 +100,7 @@ async fn find_info_by_user_id_and_comic_id(
     )
     .await?;
 
-    Ok(Some(assignment_info))
+    accept(Some(assignment_info))
 }
 
 /// Queries a single assignment row by ID and populates its includes.
@@ -109,7 +109,7 @@ async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
     incl_opt: &[AssignmentInclOpt],
-) -> RegularResult<AssignmentInfo> {
+) -> BaseResult<AssignmentInfo> {
     //
     let row: AssignmentRow = t_assignment
         .filter(f_id.eq(id))
@@ -129,7 +129,7 @@ async fn get_info_by_id(
     )
     .await?;
 
-    Ok(info)
+    accept(info)
 }
 
 /// Queries assignment rows filtered by the given spec and populates includes.
@@ -137,7 +137,7 @@ async fn get_info_by_id(
 async fn list_infos(
     conn: &mut RdbConn,
     spec: &AssignmentInfoListSpec,
-) -> RegularResult<Vec<AssignmentInfo>> {
+) -> BaseResult<Vec<AssignmentInfo>> {
     //
     let (role, incl_opt, offset, limit, mut query) = match spec {
         //
@@ -225,7 +225,7 @@ async fn list_infos(
     incl::assignment::populate_assignment_incls(conn, &mut infos, incl_opt)
         .await?;
 
-    Ok(infos)
+    accept(infos)
 }
 
 /// Queries all assignment rows for a given chapter, optionally filtered by role.
@@ -235,7 +235,7 @@ async fn list_all_infos_by_chapter(
     chapter_id: &str,
     role: Option<RoleField>,
     incl_opt: &[AssignmentInclOpt],
-) -> RegularResult<Vec<AssignmentInfo>> {
+) -> BaseResult<Vec<AssignmentInfo>> {
     //
     let mut query = t_assignment
         .filter(f_chapter_id.eq(chapter_id))
@@ -290,7 +290,7 @@ async fn list_all_infos_by_chapter(
     incl::assignment::populate_assignment_incls(conn, &mut infos, incl_opt)
         .await?;
 
-    Ok(infos)
+    accept(infos)
 }
 
 /// Queries all assignment rows for a chapter under `FOR UPDATE` lock.
@@ -298,7 +298,7 @@ async fn list_all_infos_by_chapter(
 async fn list_chapter_assignments_excluded(
     conn: &mut RdbConn,
     chapter_id: &str,
-) -> RegularResult<Vec<AssignmentInfo>> {
+) -> BaseResult<Vec<AssignmentInfo>> {
     //
     let rows: Vec<AssignmentRow> = t_assignment
         .filter(f_chapter_id.eq(chapter_id))
@@ -317,7 +317,7 @@ async fn list_chapter_assignments_excluded(
 async fn create(
     conn: &mut RdbConn,
     model_entry: &AssignmentEntry,
-) -> RegularResult<AssignmentInfo> {
+) -> BaseResult<AssignmentInfo> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -338,7 +338,7 @@ async fn create(
 async fn put_roles(
     conn: &mut RdbConn,
     update: &AssignmentRoleUpdate,
-) -> RegularResult<AssignmentInfo> {
+) -> BaseResult<AssignmentInfo> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -361,14 +361,14 @@ async fn put_roles(
 
 /// Deletes a single assignment row by ID.
 #[instrument(level = "info", err(Debug), skip_all)]
-async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
+async fn delete(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
     //
     diesel::delete(t_assignment.filter(f_id.eq(id)))
         .execute(conn)
         .await
         .map_err(diesel)?;
 
-    Ok(())
+    accept(())
 }
 
 /// Deletes all assignment rows for a given chapter ID.
@@ -376,24 +376,24 @@ async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
 async fn delete_by_chapter_id(
     conn: &mut RdbConn,
     chapter_id: &str,
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     diesel::delete(t_assignment.filter(f_chapter_id.eq(chapter_id)))
         .execute(conn)
         .await
         .map_err(diesel)?;
 
-    Ok(())
+    accept(())
 }
 
 impl Run<FindAssignmentInfo<'_, '_>> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &FindAssignmentInfo<'_, '_>,
-    ) -> RegularResult<Option<AssignmentInfo>> {
+    ) -> BaseResult<Option<AssignmentInfo>> {
         match oper {
             //
             FindAssignmentInfo::ChapterUser {
@@ -422,13 +422,13 @@ impl Run<FindAssignmentInfo<'_, '_>> for RdbRepo {
 }
 
 impl Run<ListAssignmentInfos<'_, '_>> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListAssignmentInfos<'_, '_>,
-    ) -> RegularResult<Vec<AssignmentInfo>> {
+    ) -> BaseResult<Vec<AssignmentInfo>> {
         match oper {
             //
             ListAssignmentInfos::Spec { spec } => {
@@ -451,26 +451,26 @@ impl Run<ListAssignmentInfos<'_, '_>> for RdbRepo {
 }
 
 impl Run<GetAssignmentInfo<'_, '_>> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &GetAssignmentInfo<'_, '_>,
-    ) -> RegularResult<AssignmentInfo> {
+    ) -> BaseResult<AssignmentInfo> {
         submit_query!(self.core, get_info_by_id, oper.id, oper.incls)
     }
 }
 
 impl Step<ListAssignmentInfos<'_, '_>, RdbContext> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &ListAssignmentInfos<'_, '_>,
-    ) -> RegularResult<Vec<AssignmentInfo>> {
+    ) -> BaseResult<Vec<AssignmentInfo>> {
         match oper {
             //
             ListAssignmentInfos::Spec { spec } => {
@@ -495,14 +495,14 @@ impl Step<ListAssignmentInfos<'_, '_>, RdbContext> for RdbRepo {
 }
 
 impl Step<FindAssignmentInfo<'_, '_>, RdbContext> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &FindAssignmentInfo<'_, '_>,
-    ) -> RegularResult<Option<AssignmentInfo>> {
+    ) -> BaseResult<Option<AssignmentInfo>> {
         match oper {
             //
             FindAssignmentInfo::ChapterUser {
@@ -535,14 +535,14 @@ impl Step<FindAssignmentInfo<'_, '_>, RdbContext> for RdbRepo {
 }
 
 impl Step<ListAssignmentInfosExcluded<'_>, RdbContext> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &ListAssignmentInfosExcluded<'_>,
-    ) -> RegularResult<Vec<AssignmentInfo>> {
+    ) -> BaseResult<Vec<AssignmentInfo>> {
         match oper {
             ListAssignmentInfosExcluded::Chapter { chapter_id } => {
                 list_chapter_assignments_excluded(context.conn(), chapter_id)
@@ -553,40 +553,40 @@ impl Step<ListAssignmentInfosExcluded<'_>, RdbContext> for RdbRepo {
 }
 
 impl Step<CreateAssignment<'_>, RdbContext> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &CreateAssignment<'_>,
-    ) -> RegularResult<AssignmentInfo> {
+    ) -> BaseResult<AssignmentInfo> {
         create(context.conn(), oper.entry).await
     }
 }
 
 impl Step<UpdateAssignmentRoles<'_>, RdbContext> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &UpdateAssignmentRoles<'_>,
-    ) -> RegularResult<AssignmentInfo> {
+    ) -> BaseResult<AssignmentInfo> {
         put_roles(context.conn(), oper.update).await
     }
 }
 
 impl Step<DeleteAssignments<'_>, RdbContext> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &DeleteAssignments<'_>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         match oper {
             //
             DeleteAssignments::Id { id } => delete(context.conn(), id).await,

@@ -24,7 +24,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_member;
 use crate::part_impl::repo::rdb_impl::schema::t_team::dsl::*;
 use crate::part_impl::shared::result::{diesel, expected, version};
 use crate::part_impl::shared::{RdbConn, RdbContext};
-use crate::result::{RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, accept};
 
 #[cfg(all(test, feature = "repo"))]
 mod tests;
@@ -35,10 +35,7 @@ impl TeamRepo<RdbContext> for RdbRepo {}
 
 /// Insert a new team and return its info.
 #[instrument(level = "info", err(Debug), skip_all)]
-async fn create(
-    conn: &mut RdbConn,
-    entry: &TeamEntry,
-) -> RegularResult<TeamInfo> {
+async fn create(conn: &mut RdbConn, entry: &TeamEntry) -> BaseResult<TeamInfo> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -58,15 +55,12 @@ async fn create(
         .await
         .map_err(diesel)?;
 
-    Ok(row.into())
+    accept(row.into())
 }
 
 /// Load a single team info by ID.
 #[instrument(level = "info", err(Debug), skip_all)]
-async fn get_info_by_id(
-    conn: &mut RdbConn,
-    id: &str,
-) -> RegularResult<TeamInfo> {
+async fn get_info_by_id(conn: &mut RdbConn, id: &str) -> BaseResult<TeamInfo> {
     //
     let row: TeamRow = t_team
         .filter(f_id.eq(id))
@@ -77,7 +71,7 @@ async fn get_info_by_id(
         .map_err(diesel)?
         .ok_or_else(|| expected("error-team-not-found"))?;
 
-    Ok(row.into())
+    accept(row.into())
 }
 
 /// Query teams selected by a list specification.
@@ -85,7 +79,7 @@ async fn get_info_by_id(
 async fn list_infos(
     conn: &mut RdbConn,
     spec: &TeamInfoListSpec,
-) -> RegularResult<Vec<TeamInfo>> {
+) -> BaseResult<Vec<TeamInfo>> {
     //
     let mut query = t_team.into_boxed();
 
@@ -94,6 +88,7 @@ async fn list_infos(
         TeamInfoListKind::All => query,
 
         TeamInfoListKind::JoinedBy { user_id } => {
+            //
             let member_team_ids = t_member::table
                 .filter(t_member::f_user_id.eq(user_id))
                 .select(t_member::f_team_id);
@@ -111,7 +106,7 @@ async fn list_infos(
         .await
         .map_err(diesel)?;
 
-    Ok(rows.into_iter().map(Into::into).collect())
+    accept(rows.into_iter().map(Into::into).collect())
 }
 
 /// Update a team's name and description.
@@ -121,7 +116,7 @@ async fn update_info(
     id: &str,
     name: &str,
     description: &str,
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -133,7 +128,7 @@ async fn update_info(
         .await
         .map_err(diesel)?;
 
-    Ok(())
+    accept(())
 }
 
 /// Mark a team avatar as uploaded, checking version staleness.
@@ -142,7 +137,7 @@ async fn mark_avatar_uploaded(
     conn: &mut RdbConn,
     id: &str,
     version: u32,
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -160,7 +155,7 @@ async fn mark_avatar_uploaded(
         return Err(expected("error-avatar-version-mismatch"));
     }
 
-    Ok(())
+    accept(())
 }
 
 /// Reserve a new avatar slot for a team: bump version, generate object key,
@@ -170,7 +165,7 @@ async fn reserve_avatar(
     conn: &mut RdbConn,
     id: &str,
     file_ext: &str,
-) -> RegularResult<TeamAvatarReservation> {
+) -> BaseResult<TeamAvatarReservation> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -197,7 +192,7 @@ async fn reserve_avatar(
         .await
         .map_err(diesel)?;
 
-    Ok(TeamAvatarReservation {
+    accept(TeamAvatarReservation {
         object_key,
         prev_object_key: prev_key,
         avatar_version: version,
@@ -209,7 +204,7 @@ async fn reserve_avatar(
 async fn get_info_excluded(
     conn: &mut RdbConn,
     id: &str,
-) -> RegularResult<TeamInfo> {
+) -> BaseResult<TeamInfo> {
     //
     let row: TeamRow = t_team
         .filter(f_id.eq(id))
@@ -221,19 +216,19 @@ async fn get_info_excluded(
         .map_err(diesel)?
         .ok_or_else(|| expected("error-team-not-found"))?;
 
-    Ok(row.into())
+    accept(row.into())
 }
 
 /// Delete a team by ID.
 #[instrument(level = "info", err(Debug), skip_all)]
-async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
+async fn delete(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
     //
     diesel::delete(t_team.filter(f_id.eq(id)))
         .execute(conn)
         .await
         .map_err(diesel)?;
 
-    Ok(())
+    accept(())
 }
 
 /// Atomically increment and return the previous workset-next-index for a team.
@@ -241,7 +236,7 @@ async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
 async fn increment_workset_next_index(
     conn: &mut RdbConn,
     id: &str,
-) -> RegularResult<i32> {
+) -> BaseResult<i32> {
     //
     let prev: i32 = diesel::update(t_team.filter(f_id.eq(id)))
         .set(f_workset_next_index.eq(f_workset_next_index + 1))
@@ -250,11 +245,11 @@ async fn increment_workset_next_index(
         .await
         .map_err(diesel)?;
 
-    Ok(prev)
+    accept(prev)
 }
 
 impl<'a> Run<CreateTeam<'a>> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
@@ -266,7 +261,7 @@ impl<'a> Run<CreateTeam<'a>> for RdbRepo {
 }
 
 impl<'a> Run<GetTeamInfo<'a>> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
@@ -282,7 +277,7 @@ impl<'a> Run<GetTeamInfo<'a>> for RdbRepo {
 }
 
 impl<'a> Run<ListTeamInfos<'a>> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
@@ -294,10 +289,10 @@ impl<'a> Run<ListTeamInfos<'a>> for RdbRepo {
 }
 
 impl<'a> Run<UpdateTeam<'a>> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn run(&self, oper: &UpdateTeam<'a>) -> RegularResult<()> {
+    async fn run(&self, oper: &UpdateTeam<'a>) -> BaseResult<()> {
         match oper {
             //
             UpdateTeam::Info {
@@ -319,27 +314,27 @@ impl<'a> Run<UpdateTeam<'a>> for RdbRepo {
 }
 
 impl<'a> Step<CreateTeam<'a>, RdbContext> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &CreateTeam<'a>,
-    ) -> RegularResult<TeamInfo> {
+    ) -> BaseResult<TeamInfo> {
         create(context.conn(), oper.entry).await
     }
 }
 
 impl<'a> Step<UpdateTeam<'a>, RdbContext> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &UpdateTeam<'a>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         match oper {
             //
             UpdateTeam::Info {
@@ -356,27 +351,27 @@ impl<'a> Step<UpdateTeam<'a>, RdbContext> for RdbRepo {
 }
 
 impl<'a> Step<ReserveTeamAvatar<'a>, RdbContext> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &ReserveTeamAvatar<'a>,
-    ) -> RegularResult<TeamAvatarReservation> {
+    ) -> BaseResult<TeamAvatarReservation> {
         reserve_avatar(context.conn(), oper.id, oper.file_ext).await
     }
 }
 
 impl<'a> Step<GetTeamInfoExcluded<'a>, RdbContext> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &GetTeamInfoExcluded<'a>,
-    ) -> RegularResult<TeamInfo> {
+    ) -> BaseResult<TeamInfo> {
         match oper {
             GetTeamInfoExcluded::Id { id } => {
                 get_info_excluded(context.conn(), id).await
@@ -386,27 +381,27 @@ impl<'a> Step<GetTeamInfoExcluded<'a>, RdbContext> for RdbRepo {
 }
 
 impl<'a> Step<DeleteTeam<'a>, RdbContext> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &DeleteTeam<'a>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         delete(context.conn(), oper.id).await
     }
 }
 
 impl<'a> Step<AllocTeamWorksetIndex<'a>, RdbContext> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &AllocTeamWorksetIndex<'a>,
-    ) -> RegularResult<i32> {
+    ) -> BaseResult<i32> {
         increment_workset_next_index(context.conn(), oper.id).await
     }
 }

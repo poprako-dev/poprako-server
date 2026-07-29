@@ -36,7 +36,7 @@ use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::{ExpectedVariant, RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 
 #[cfg(test)]
 mod tests;
@@ -47,7 +47,7 @@ pub async fn list_infos<C, R>(
     repo: &R,
     token: UserToken,
     params: ListPageUnitInfosParams,
-) -> RegularResult<ListPageUnitInfosPayload>
+) -> BaseResult<ListPageUnitInfosPayload>
 where
     R: PageRepo<C>
         + UnitRepo<C>
@@ -88,7 +88,7 @@ where
         })
         .await?;
 
-    Ok(ListPageUnitInfosPayload {
+    accept(ListPageUnitInfosPayload {
         unit_infos: unit_infos.into_iter().map(UnitInfoVal::from).collect(),
         total_unit_count: page_info.total_unit_count,
         translated_unit_count: page_info.translated_unit_count,
@@ -103,9 +103,9 @@ pub async fn save_infos<N, C, R>(
     repo: &R,
     token: UserToken,
     params: SavePageUnitsParams,
-) -> RegularResult<SavePageUnitsPayload>
+) -> BaseResult<SavePageUnitsPayload>
 where
-    N: Nucl<Context = C, Error = RegularError>,
+    N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     R: PageRepo<C>
         + UnitRepo<C>
@@ -129,164 +129,162 @@ where
     } = UnitApplyParts::from(UnitComplex::prepare_diff(unit_diff)?);
 
     let save_units = nucl
-        .coord(
-            async move |context| -> RegularResult<SavePageUnitsPayload> {
-                //
-                let page_info = repo
-                    .step(context, &GetPageInfoExcluded { id: &page_id })
-                    .await?;
+        .coord(async move |context| {
+            //
+            let page_info = repo
+                .step(context, &GetPageInfoExcluded { id: &page_id })
+                .await?;
 
-                UnitPermComplex::ensure_user_can_save_infos(
-                    &mut step_proxy! {
-                        context;
-                        repo =>
-                            for<'a, 'b> FindAssignmentInfo<'a, 'b>;
+            UnitPermComplex::ensure_user_can_save_infos(
+                &mut step_proxy! {
+                    context;
+                    repo =>
+                        for<'a, 'b> FindAssignmentInfo<'a, 'b>;
+                },
+                &token.user_id,
+                &page_info.chapter_id,
+            )
+            .await?;
+
+            let chapter_info = repo
+                .step(
+                    context,
+                    &GetChapterInfo {
+                        id: &page_info.chapter_id,
+                        incls: &[],
                     },
-                    &token.user_id,
-                    &page_info.chapter_id,
                 )
                 .await?;
 
-                let chapter_info = repo
-                    .step(
-                        context,
-                        &GetChapterInfo {
-                            id: &page_info.chapter_id,
-                            incls: &[],
-                        },
-                    )
-                    .await?;
+            let current_indexes = repo
+                .step(
+                    context,
+                    &ListUnitIndexes {
+                        page_id: &page_info.id,
+                    },
+                )
+                .await?;
 
-                let current_indexes = repo
-                    .step(
-                        context,
-                        &ListUnitIndexes {
-                            page_id: &page_info.id,
-                        },
-                    )
-                    .await?;
+            let mut sorted_indexes = current_indexes.clone();
 
-                let mut sorted_indexes = current_indexes.clone();
+            sorted_indexes.sort_by(|left, right| {
+                left.index
+                    .cmp(&right.index)
+                    .then_with(|| left.id.cmp(&right.id))
+            });
 
-                sorted_indexes.sort_by(|left, right| {
-                    left.index
-                        .cmp(&right.index)
-                        .then_with(|| left.id.cmp(&right.id))
-                });
+            let mut current_order: Vec<String> = sorted_indexes
+                .into_iter()
+                .map(|unit_index| unit_index.id)
+                .collect();
 
-                let mut current_order: Vec<String> = sorted_indexes
-                    .into_iter()
-                    .map(|unit_index| unit_index.id)
-                    .collect();
+            for oper in &opers {
+                match oper {
+                    //
+                    UnitOper::Create { id, payload, .. } => {
+                        repo.step(
+                            context,
+                            &CreateUnit {
+                                page_id: &page_info.id,
+                                id,
+                                payload,
+                            },
+                        )
+                        .await?;
+                    }
 
-                for oper in &opers {
-                    match oper {
-                        //
-                        UnitOper::Create { id, payload, .. } => {
-                            repo.step(
-                                context,
-                                &CreateUnit {
-                                    page_id: &page_info.id,
-                                    id,
-                                    payload,
-                                },
-                            )
-                            .await?;
-                        }
+                    UnitOper::Save { id, payload, .. } => {
+                        repo.step(
+                            context,
+                            &SaveUnit {
+                                page_id: &page_info.id,
+                                id,
+                                payload,
+                            },
+                        )
+                        .await?;
+                    }
 
-                        UnitOper::Save { id, payload, .. } => {
-                            repo.step(
-                                context,
-                                &SaveUnit {
-                                    page_id: &page_info.id,
-                                    id,
-                                    payload,
-                                },
-                            )
-                            .await?;
-                        }
-
-                        UnitOper::Delete { id } => {
-                            repo.step(
-                                context,
-                                &DeleteUnit {
-                                    page_id: &page_info.id,
-                                    id,
-                                },
-                            )
-                            .await?;
-                        }
+                    UnitOper::Delete { id } => {
+                        repo.step(
+                            context,
+                            &DeleteUnit {
+                                page_id: &page_info.id,
+                                id,
+                            },
+                        )
+                        .await?;
                     }
                 }
+            }
 
-                current_order =
-                    UnitComplex::apply_opers_to_order(&opers, current_order);
+            current_order =
+                UnitComplex::apply_opers_to_order(&opers, current_order);
 
-                let index_updates = UnitComplex::build_index_updates_from_order(
-                    &current_order,
-                    &current_indexes,
-                );
+            let index_updates = UnitComplex::build_index_updates_from_order(
+                &current_order,
+                &current_indexes,
+            );
 
-                if !index_updates.is_empty() {
-                    repo.step(
-                        context,
-                        &UpdateUnitIndexes {
-                            page_id: &page_info.id,
-                            updates: &index_updates,
-                        },
-                    )
-                    .await?;
-                }
-
-                let counters = repo
-                    .step(
-                        context,
-                        &CountUnits {
-                            page_id: &page_info.id,
-                        },
-                    )
-                    .await?;
-
+            if !index_updates.is_empty() {
                 repo.step(
                     context,
-                    &SetPageUnitCounters {
-                        id: &page_info.id,
-                        counters,
+                    &UpdateUnitIndexes {
+                        page_id: &page_info.id,
+                        updates: &index_updates,
+                    },
+                )
+                .await?;
+            }
+
+            let counters = repo
+                .step(
+                    context,
+                    &CountUnits {
+                        page_id: &page_info.id,
                     },
                 )
                 .await?;
 
-                let old_counters = UnitCounters {
-                    total_unit_count: page_info.total_unit_count,
-                    translated_unit_count: page_info.translated_unit_count,
-                    proofread_unit_count: page_info.proofread_unit_count,
-                };
+            repo.step(
+                context,
+                &SetPageUnitCounters {
+                    id: &page_info.id,
+                    counters,
+                },
+            )
+            .await?;
 
-                let delta = counter_delta(old_counters, counters);
+            let old_counters = UnitCounters {
+                total_unit_count: page_info.total_unit_count,
+                translated_unit_count: page_info.translated_unit_count,
+                proofread_unit_count: page_info.proofread_unit_count,
+            };
 
-                repo.step(
-                    context,
-                    &AdjustChapterUnitCounters {
-                        id: &page_info.chapter_id,
-                        delta,
-                    },
-                )
-                .await?;
+            let delta = counter_delta(old_counters, counters);
 
-                repo.step(
-                    context,
-                    &TouchComicLastActive {
-                        id: &chapter_info.comic_id,
-                    },
-                )
-                .await?;
+            repo.step(
+                context,
+                &AdjustChapterUnitCounters {
+                    id: &page_info.chapter_id,
+                    delta,
+                },
+            )
+            .await?;
 
-                Ok(SavePageUnitsPayload::from_parts(local_id_maps, counters))
-            },
-        )
+            repo.step(
+                context,
+                &TouchComicLastActive {
+                    id: &chapter_info.comic_id,
+                },
+            )
+            .await?;
+
+            accept(SavePageUnitsPayload::from_parts(local_id_maps, counters))
+        })
         .await?;
 
-    Ok(save_units)
+    accept(save_units)
 }
 
 /// Carries the validated opers and local ID maps produced by applying a diff.
@@ -320,8 +318,8 @@ fn counter_delta(
 }
 
 /// Constructs an args error for an invalid unit operation.
-fn unit_invalid_oper_error() -> RegularError {
-    RegularError::Expected {
+fn unit_invalid_oper_error() -> BaseError {
+    BaseError::Expected {
         variant: ExpectedVariant::Args,
         message: trl("error-invalid-unit-oper"),
     }

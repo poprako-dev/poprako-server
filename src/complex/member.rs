@@ -6,7 +6,7 @@ use crate::complex::util::{
     check_user_is_team_admin, check_user_is_team_member,
 };
 use crate::part::repo::oper::member::FindMemberInfo;
-use crate::result::{RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult};
 use crate::util::next_snowflake_id;
 
 /// Domain opers for [Member] aggregates: unique identifier generation.
@@ -28,9 +28,9 @@ impl MemberPermComplex {
         proxy: &mut P,
         user_id: &str,
         team_id: &str,
-    ) -> RegularResult<()>
+    ) -> BaseResult<()>
     where
-        P: for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>,
+        P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
         check_user_is_team_admin(proxy, user_id, team_id).await
     }
@@ -40,9 +40,9 @@ impl MemberPermComplex {
         proxy: &mut P,
         user_id: &str,
         team_id: &str,
-    ) -> RegularResult<()>
+    ) -> BaseResult<()>
     where
-        P: for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>,
+        P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
         check_user_is_team_admin(proxy, user_id, team_id).await
     }
@@ -52,9 +52,9 @@ impl MemberPermComplex {
         proxy: &mut P,
         user_id: &str,
         team_id: &str,
-    ) -> RegularResult<()>
+    ) -> BaseResult<()>
     where
-        P: for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>,
+        P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
         check_user_is_team_admin(proxy, user_id, team_id).await
     }
@@ -64,9 +64,9 @@ impl MemberPermComplex {
         proxy: &mut P,
         user_id: &str,
         team_id: &str,
-    ) -> RegularResult<()>
+    ) -> BaseResult<()>
     where
-        P: for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>,
+        P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
         check_user_is_team_member(proxy, user_id, team_id).await
     }

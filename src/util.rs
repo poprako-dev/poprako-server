@@ -2,7 +2,7 @@
 
 use std::sync::OnceLock;
 
-use crate::result::{RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult};
 #[cfg(test)]
 use bitcode::Decode;
 use bitcode::Encode;
@@ -57,14 +57,14 @@ pub fn next_snowflake_u64() -> u64 {
 /// SAFETY: Any encoding-structure or bitcode-version change must be preceded
 /// by a full rewrite using a version that can read all existing archive data.
 /// Bitcode does not promise stable formats across major versions.
-pub fn compress_archive<T>(archive_payload: &T) -> RegularResult<Vec<u8>>
+pub fn compress_archive<T>(archive_payload: &T) -> BaseResult<Vec<u8>>
 where
     T: Encode + ?Sized,
 {
     let encoded_bytes = bitcode::encode(archive_payload);
 
     zstd::stream::encode_all(encoded_bytes.as_slice(), 0).map_err(|error| {
-        RegularError::Unrecoverable {
+        BaseError::Unrecoverable {
             message: format!(
                 "[util::compress_archive] failed to compress archive payload: {}",
                 error
@@ -75,12 +75,12 @@ where
 
 /// Decompress an archive payload and decode it with the pinned bitcode format.
 #[cfg(test)]
-pub fn decompress_archive<T>(archived_bytes: &[u8]) -> RegularResult<T>
+pub fn decompress_archive<T>(archived_bytes: &[u8]) -> BaseResult<T>
 where
     T: for<'a> Decode<'a>,
 {
     let encoded_bytes = zstd::stream::decode_all(archived_bytes).map_err(|error| {
-        RegularError::Unrecoverable {
+        BaseError::Unrecoverable {
             message: format!(
                 "[util::decompress_archive] failed to decompress archive payload: {}",
                 error
@@ -88,7 +88,7 @@ where
         }
     })?;
 
-    bitcode::decode(&encoded_bytes).map_err(|error| RegularError::Unrecoverable {
+    bitcode::decode(&encoded_bytes).map_err(|error| BaseError::Unrecoverable {
         message: format!(
             "[util::decompress_archive] failed to decode archive payload: {}",
             error
@@ -120,9 +120,7 @@ fn load_snowflake_node_id() -> u16 {
         Err(_) => return 0,
     };
 
-    let parsed: Result<u16, _> = value.parse();
-
-    match parsed {
+    match value.parse() {
         //
         Ok(instance) if instance <= 1023 => instance,
 

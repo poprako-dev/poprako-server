@@ -5,7 +5,7 @@ use std::future::Future;
 
 use url::Url;
 
-use crate::result::RegularResult;
+use crate::result::BaseResult;
 
 /// Abstraction over an image pool — signed URL generation.
 ///
@@ -16,19 +16,19 @@ pub trait ImagePool {
     fn gen_download_url(
         &self,
         key: &str,
-    ) -> impl Future<Output = RegularResult<Url>> + Send;
+    ) -> impl Future<Output = BaseResult<Url>> + Send;
 
     /// Returns a thumbnail download URL for the object at `original_key`.
     fn gen_thumbnail_download_url(
         &self,
         original_key: &str,
-    ) -> impl Future<Output = RegularResult<Url>> + Send;
+    ) -> impl Future<Output = BaseResult<Url>> + Send;
 
     /// Returns a signed upload URL for writing an object at `key`.
     fn get_upload_url(
         &self,
         key: &str,
-    ) -> impl Future<Output = RegularResult<Url>> + Send;
+    ) -> impl Future<Output = BaseResult<Url>> + Send;
 }
 
 /// Abstraction over image object lifecycle — metadata and deletion.
@@ -44,12 +44,12 @@ pub trait ImageManager {
     fn head_object(
         &self,
         key: &str,
-    ) -> impl Future<Output = RegularResult<bool>> + Send;
+    ) -> impl Future<Output = BaseResult<bool>> + Send;
 
     /// Delete an object from storage. Idempotent — succeeds if the
     /// object does not exist.
     fn delete_object(
         &self,
         key: &str,
-    ) -> impl Future<Output = RegularResult<()>> + Send;
+    ) -> impl Future<Output = BaseResult<()>> + Send;
 }

@@ -20,7 +20,7 @@ use crate::part::repo::oper::chapter::GetChapterInfo;
 use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::workset::GetWorksetInfo;
-use crate::result::{ExpectedVariant, RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 
 #[cfg(test)]
@@ -36,7 +36,7 @@ impl UnitComplex {
     }
 
     /// Validates one compact difference and resolves local create ids.
-    pub fn prepare_diff(diff: UnitDiff) -> RegularResult<UnitApplyAck> {
+    pub fn prepare_diff(diff: UnitDiff) -> BaseResult<UnitApplyAck> {
         //
         validate_page_id(&diff.page_id)?;
 
@@ -107,7 +107,7 @@ impl UnitComplex {
             }
         }
 
-        Ok(UnitApplyAck {
+        accept(UnitApplyAck {
             opers,
             local_id_map,
         })
@@ -201,27 +201,27 @@ impl UnitPermComplex {
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,
-    ) -> RegularResult<()>
+    ) -> BaseResult<()>
     where
-        P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = RegularError>
-            + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = RegularError>
-            + for<'a> Proxy<GetWorksetInfo<'a>, Error = RegularError>
-            + for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>
-            + for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = RegularError>,
+        P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
+            + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
+            + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+            + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>
+            + for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
     {
         let member_check =
             check_user_is_team_member_by_chapter(proxy, user_id, chapter_id)
                 .await;
 
         if member_check.is_ok() {
-            return Ok(());
+            return accept(());
         }
 
         match check_user_is_chapter_assignee(proxy, user_id, chapter_id).await {
             //
-            Ok(()) => Ok(()),
+            Ok(()) => accept(()),
 
-            Err(RegularError::Expected {
+            Err(BaseError::Expected {
                 variant: ExpectedVariant::Perm,
                 ..
             }) => Err(unit_list_permission_error()),
@@ -235,18 +235,18 @@ impl UnitPermComplex {
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,
-    ) -> RegularResult<()>
+    ) -> BaseResult<()>
     where
-        P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = RegularError>,
+        P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
     {
         match check_user_is_chapter_translator_or_proofreader(
             proxy, user_id, chapter_id,
         )
         .await
         {
-            Ok(()) => Ok(()),
+            Ok(()) => accept(()),
 
-            Err(RegularError::Expected {
+            Err(BaseError::Expected {
                 variant: ExpectedVariant::Perm,
                 ..
             }) => Err(unit_edit_permission_error()),
@@ -257,32 +257,32 @@ impl UnitPermComplex {
 }
 
 /// Validate a page ID string (delegates to [`validate_id`]).
-fn validate_page_id(page_id: &str) -> RegularResult<()> {
+fn validate_page_id(page_id: &str) -> BaseResult<()> {
     validate_id(page_id)
 }
 
 /// Validate a non-empty identifier, returning an args error for empty strings.
-fn validate_id(id: &str) -> RegularResult<()> {
+fn validate_id(id: &str) -> BaseResult<()> {
     //
     if id.is_empty() {
         return Err(unit_invalid_oper_error());
     }
 
-    Ok(())
+    accept(())
 }
 
 /// Validate an optional identifier — rejects `Some("")` but allows `None`.
-fn validate_optional_id(id: &Option<String>) -> RegularResult<()> {
+fn validate_optional_id(id: &Option<String>) -> BaseResult<()> {
     //
     if id.as_ref().map(|id| id.is_empty()).unwrap_or(false) {
         return Err(unit_invalid_oper_error());
     }
 
-    Ok(())
+    accept(())
 }
 
 /// Validate editor identifiers required by non-empty unit text fields.
-fn validate_payload(payload: &UnitContent) -> RegularResult<()> {
+fn validate_payload(payload: &UnitContent) -> BaseResult<()> {
     //
     validate_text_editor(
         &payload.translated_text,
@@ -294,14 +294,14 @@ fn validate_payload(payload: &UnitContent) -> RegularResult<()> {
         &payload.last_proofreader_id,
     )?;
 
-    Ok(())
+    accept(())
 }
 
 /// Require a non-empty editor identifier when text is non-empty.
 fn validate_text_editor(
     text: &Option<String>,
     editor_id: &Option<String>,
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     let has_text = text.as_ref().map(|text| !text.is_empty()).unwrap_or(false);
 
@@ -311,7 +311,7 @@ fn validate_text_editor(
 
         (true, None) => Err(unit_invalid_oper_error()),
 
-        (false, _) => Ok(()),
+        (false, _) => accept(()),
     }
 }
 
@@ -375,24 +375,24 @@ fn compact_index_updates_from_order(
 }
 
 /// Construct an "invalid unit operation" args error.
-fn unit_invalid_oper_error() -> RegularError {
-    RegularError::Expected {
+fn unit_invalid_oper_error() -> BaseError {
+    BaseError::Expected {
         variant: ExpectedVariant::Args,
         message: trl("error-invalid-unit-oper"),
     }
 }
 
 /// Construct a "unit list permission required" error.
-fn unit_list_permission_error() -> RegularError {
-    RegularError::Expected {
+fn unit_list_permission_error() -> BaseError {
+    BaseError::Expected {
         variant: ExpectedVariant::Perm,
         message: trl("error-unit-list-permission-required"),
     }
 }
 
 /// Construct a "unit edit permission required" error.
-fn unit_edit_permission_error() -> RegularError {
-    RegularError::Expected {
+fn unit_edit_permission_error() -> BaseError {
+    BaseError::Expected {
         variant: ExpectedVariant::Perm,
         message: trl("error-unit-edit-permission-required"),
     }

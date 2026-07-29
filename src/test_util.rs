@@ -9,15 +9,15 @@ use crate::part::prom::payload::image::{
     Payload as ImagePayload, ResourceKind,
 };
 use crate::part_impl::prom::mock_impl::MockPromRecord;
-use crate::result::{ExpectedVariant, RegularError};
+use crate::result::{BaseError, ExpectedVariant};
 
 pub mod fixture;
 
 /// Asserts that `err` is a [`RootError::Expected`] whose variant matches `expected`.
 /// Panics with a descriptive message on mismatch.
-pub fn assert_expected_variant(err: RegularError, expected: ExpectedVariant) {
+pub fn assert_expected_variant(err: BaseError, expected: ExpectedVariant) {
     //
-    let RegularError::Expected { variant, .. } = err else {
+    let BaseError::Expected { variant, .. } = err else {
         panic!("expected RootError::Expected");
     };
 
@@ -33,12 +33,12 @@ pub fn assert_expected_variant(err: RegularError, expected: ExpectedVariant) {
 
 /// Asserts that `err` is an expected error with the exact variant and i18n key.
 pub fn assert_expected_message(
-    err: RegularError,
+    err: BaseError,
     expected: ExpectedVariant,
     trl_key: &str,
 ) {
     //
-    let RegularError::Expected {
+    let BaseError::Expected {
         variant,
         message: actual,
     } = err
@@ -47,7 +47,7 @@ pub fn assert_expected_message(
     };
 
     assert_expected_variant(
-        RegularError::Expected {
+        BaseError::Expected {
             variant,
             message: actual.clone(),
         },

@@ -6,7 +6,7 @@ use super::*;
 use jsonwebtoken::{DecodingKey, Validation, decode};
 use serde::Deserialize;
 
-use crate::model::user::UserTokenRef;
+use crate::model::user::UserToken;
 
 #[derive(Debug, Deserialize)]
 struct TestClaims {
@@ -19,8 +19,12 @@ fn sign_token() {
     //
     let auth = JwtAuth::new("test-secret", 1).unwrap();
 
-    let signed_token =
-        TokenAuth::sign_token(&auth, &UserTokenRef { user_id: "user-1" });
+    let signed_token = TokenAuth::sign_token(
+        &auth,
+        &UserToken {
+            user_id: "user-1".into(),
+        },
+    );
 
     assert!(signed_token.is_ok());
 
@@ -43,5 +47,5 @@ fn new_rejects_non_positive_expiration() {
     //
     let err = JwtAuth::new("test-secret", 0).err().unwrap();
 
-    assert!(matches!(err, RegularError::Unrecoverable { .. }));
+    assert!(matches!(err, BaseError::Unrecoverable { .. }));
 }

@@ -64,7 +64,7 @@ use crate::part_impl::repo::rdb_impl::schema::{
 };
 use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::shared::{RdbConn, RdbContext};
-use crate::result::{RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, accept};
 
 #[cfg(all(test, feature = "repo"))]
 mod tests;
@@ -76,7 +76,7 @@ impl ComicArchiveRepo<RdbContext> for RdbRepo {}
 async fn get_snapshot_excluded(
     conn: &mut RdbConn,
     source_comic_id: &str,
-) -> RegularResult<ComicArchiveSnapshot> {
+) -> BaseResult<ComicArchiveSnapshot> {
     //
     let comic_row: ComicRow = t_comic
         .filter(comic_id.eq(source_comic_id))
@@ -114,7 +114,7 @@ async fn get_snapshot_excluded(
     let chapter_infos: Vec<ChapterInfo> = chapter_rows
         .into_iter()
         .map(ChapterInfo::try_from)
-        .collect::<RegularResult<Vec<_>>>()?;
+        .collect::<BaseResult<Vec<_>>>()?;
 
     let source_chapter_ids = chapter_infos
         .iter()
@@ -140,7 +140,7 @@ async fn get_snapshot_excluded(
     let assignment_infos = assignment_rows
         .into_iter()
         .map(AssignmentInfo::try_from)
-        .collect::<RegularResult<Vec<_>>>()?;
+        .collect::<BaseResult<Vec<_>>>()?;
 
     let assigned_user_ids = assignment_infos
         .iter()
@@ -257,7 +257,7 @@ async fn get_snapshot_excluded(
         })
         .collect();
 
-    Ok(ComicArchiveSnapshot {
+    accept(ComicArchiveSnapshot {
         comic_info,
         workset_info,
         chapter_snapshots,
@@ -269,7 +269,7 @@ async fn get_snapshot_excluded(
 async fn commit(
     conn: &mut RdbConn,
     comic_archive_write: &ComicArchiveWrite,
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     let comic_entry =
         ArchivedComicEntry::from(&comic_archive_write.comic_record);
@@ -352,31 +352,31 @@ async fn commit(
     .await
     .map_err(diesel)?;
 
-    Ok(())
+    accept(())
 }
 
 impl<'a> Step<GetComicArchiveSnapshotExcluded<'a>, RdbContext> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &GetComicArchiveSnapshotExcluded<'a>,
-    ) -> RegularResult<ComicArchiveSnapshot> {
+    ) -> BaseResult<ComicArchiveSnapshot> {
         get_snapshot_excluded(context.conn(), oper.comic_id).await
     }
 }
 
 impl<'a> Step<CommitComicArchive<'a>, RdbContext> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &CommitComicArchive<'a>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         commit(context.conn(), oper.write).await
     }
 }

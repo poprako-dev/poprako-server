@@ -19,7 +19,7 @@ use crate::part_impl::repo::rdb_impl::entity::unit::{
 use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::*;
 use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::shared::{RdbConn, RdbContext};
-use crate::result::RegularResult;
+use crate::result::{BaseResult, accept};
 
 mod orchestra;
 #[cfg(all(test, feature = "repo"))]
@@ -33,7 +33,7 @@ async fn list_infos_by_page_id(
     conn: &mut RdbConn,
     page_id: &str,
     page: Page,
-) -> RegularResult<Vec<UnitInfo>> {
+) -> BaseResult<Vec<UnitInfo>> {
     //
     let rows: Vec<UnitRow> = t_unit
         .filter(f_page_id.eq(page_id))
@@ -45,7 +45,7 @@ async fn list_infos_by_page_id(
         .await
         .map_err(diesel)?;
 
-    Ok(rows.into_iter().map(Into::into).collect())
+    accept(rows.into_iter().map(Into::into).collect())
 }
 
 /// Query all unit infos for a page, ordered by index then ID (no pagination).
@@ -53,7 +53,7 @@ async fn list_infos_by_page_id(
 async fn list_all_infos_by_page_id(
     conn: &mut RdbConn,
     page_id: &str,
-) -> RegularResult<Vec<UnitInfo>> {
+) -> BaseResult<Vec<UnitInfo>> {
     //
     let rows: Vec<UnitRow> = t_unit
         .filter(f_page_id.eq(page_id))
@@ -63,12 +63,12 @@ async fn list_all_infos_by_page_id(
         .await
         .map_err(diesel)?;
 
-    Ok(rows.into_iter().map(Into::into).collect())
+    accept(rows.into_iter().map(Into::into).collect())
 }
 
 /// Compute the next available unit index for a page.
 #[instrument(level = "info", err(Debug), skip_all)]
-async fn next_index(conn: &mut RdbConn, page_id: &str) -> RegularResult<i32> {
+async fn next_index(conn: &mut RdbConn, page_id: &str) -> BaseResult<i32> {
     //
     let current: Option<i32> = t_unit
         .filter(f_page_id.eq(page_id))
@@ -77,7 +77,7 @@ async fn next_index(conn: &mut RdbConn, page_id: &str) -> RegularResult<i32> {
         .await
         .map_err(diesel)?;
 
-    Ok(current.map(|index| index + 1).unwrap_or(0))
+    accept(current.map(|index| index + 1).unwrap_or(0))
 }
 
 /// Insert a new unit with the next available index for the given page.
@@ -87,7 +87,7 @@ async fn create_unit(
     page_id: &str,
     id: &str,
     payload: &UnitContent,
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     let index = next_index(conn, page_id).await?;
 
@@ -99,7 +99,7 @@ async fn create_unit(
         .await
         .map_err(diesel)?;
 
-    Ok(())
+    accept(())
 }
 
 /// Upsert a unit: create if absent, otherwise update its payload.
@@ -109,7 +109,7 @@ async fn save_unit(
     page_id: &str,
     id: &str,
     payload: &UnitContent,
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     let existing_page_id: Option<String> = t_unit
         .filter(f_id.eq(id))
@@ -137,7 +137,7 @@ async fn save_unit(
         .await
         .map_err(diesel)?;
 
-    Ok(())
+    accept(())
 }
 
 /// Delete a unit by its ID within the scope of a page.
@@ -146,14 +146,14 @@ async fn delete_by_id_in_page(
     conn: &mut RdbConn,
     page_id: &str,
     id: &str,
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     diesel::delete(t_unit.filter(f_page_id.eq(page_id)).filter(f_id.eq(id)))
         .execute(conn)
         .await
         .map_err(diesel)?;
 
-    Ok(())
+    accept(())
 }
 
 /// Query (id, index) pairs for all units in a page.
@@ -161,7 +161,7 @@ async fn delete_by_id_in_page(
 async fn list_indexes_by_page_id(
     conn: &mut RdbConn,
     page_id: &str,
-) -> RegularResult<Vec<UnitIndex>> {
+) -> BaseResult<Vec<UnitIndex>> {
     //
     let indexes: Vec<(String, i32)> = t_unit
         .filter(f_page_id.eq(page_id))
@@ -170,10 +170,12 @@ async fn list_indexes_by_page_id(
         .await
         .map_err(diesel)?;
 
-    Ok(indexes
-        .into_iter()
-        .map(|(id, index)| UnitIndex { id, index })
-        .collect())
+    accept(
+        indexes
+            .into_iter()
+            .map(|(id, index)| UnitIndex { id, index })
+            .collect(),
+    )
 }
 
 /// Reorder units in a page by assigning new indexes, safely handling cyclic
@@ -183,10 +185,10 @@ async fn update_indexes_by_page_id(
     conn: &mut RdbConn,
     page_id: &str,
     updates: &[UnitIndexUpdate],
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     if updates.is_empty() {
-        return Ok(());
+        return accept(());
     }
 
     // Index shifts can create a cyclic dependency where no sequential
@@ -232,7 +234,7 @@ async fn update_indexes_by_page_id(
         .map_err(diesel)?;
     }
 
-    Ok(())
+    accept(())
 }
 
 /// Count total, translated, and proofread units for a page.
@@ -240,7 +242,7 @@ async fn update_indexes_by_page_id(
 async fn count_by_page_id(
     conn: &mut RdbConn,
     page_id: &str,
-) -> RegularResult<UnitCounters> {
+) -> BaseResult<UnitCounters> {
     //
     let infos = list_all_infos_by_page_id(conn, page_id).await?;
 
@@ -262,5 +264,5 @@ async fn count_by_page_id(
         },
     );
 
-    Ok(counters)
+    accept(counters)
 }

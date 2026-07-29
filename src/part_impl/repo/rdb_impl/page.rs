@@ -21,7 +21,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{
 };
 use crate::part_impl::shared::result::{diesel, expected, version};
 use crate::part_impl::shared::{RdbConn, RdbContext};
-use crate::result::RegularResult;
+use crate::result::{BaseResult, accept};
 
 mod orchestra;
 #[cfg(all(test, feature = "repo"))]
@@ -31,10 +31,7 @@ impl PageRepo<RdbContext> for RdbRepo {}
 
 /// Load a single page info by ID.
 #[instrument(level = "info", err(Debug), skip_all)]
-async fn get_info_by_id(
-    conn: &mut RdbConn,
-    id: &str,
-) -> RegularResult<PageInfo> {
+async fn get_info_by_id(conn: &mut RdbConn, id: &str) -> BaseResult<PageInfo> {
     //
     let row: PageRow = t_page
         .filter(f_id.eq(id))
@@ -45,7 +42,7 @@ async fn get_info_by_id(
         .map_err(diesel)?
         .ok_or_else(|| expected("error-page-not-found"))?;
 
-    Ok(row.into())
+    accept(row.into())
 }
 
 /// Load a page info by ID, locking the row for update.
@@ -53,7 +50,7 @@ async fn get_info_by_id(
 async fn get_info_excluded(
     conn: &mut RdbConn,
     id: &str,
-) -> RegularResult<PageInfo> {
+) -> BaseResult<PageInfo> {
     //
     let row: PageRow = t_page
         .filter(f_id.eq(id))
@@ -65,7 +62,7 @@ async fn get_info_excluded(
         .map_err(diesel)?
         .ok_or_else(|| expected("error-page-not-found"))?;
 
-    Ok(row.into())
+    accept(row.into())
 }
 
 /// Query a paginated list of page infos for a chapter, ordered by index.
@@ -75,7 +72,7 @@ async fn list_infos_by_chapter_id(
     chapter_id: &str,
     offset: u32,
     limit: u32,
-) -> RegularResult<Vec<PageInfo>> {
+) -> BaseResult<Vec<PageInfo>> {
     //
     let rows: Vec<PageRow> = t_page
         .filter(f_chapter_id.eq(chapter_id))
@@ -87,7 +84,7 @@ async fn list_infos_by_chapter_id(
         .await
         .map_err(diesel)?;
 
-    Ok(rows.into_iter().map(Into::into).collect())
+    accept(rows.into_iter().map(Into::into).collect())
 }
 
 /// Query all page infos for a chapter, ordered by index (no pagination).
@@ -95,7 +92,7 @@ async fn list_infos_by_chapter_id(
 async fn list_all_infos_by_chapter_id(
     conn: &mut RdbConn,
     chapter_id: &str,
-) -> RegularResult<Vec<PageInfo>> {
+) -> BaseResult<Vec<PageInfo>> {
     //
     let rows: Vec<PageRow> = t_page
         .filter(f_chapter_id.eq(chapter_id))
@@ -105,7 +102,7 @@ async fn list_all_infos_by_chapter_id(
         .await
         .map_err(diesel)?;
 
-    Ok(rows.into_iter().map(Into::into).collect())
+    accept(rows.into_iter().map(Into::into).collect())
 }
 
 /// Query the lowest-index page info for each requested chapter.
@@ -113,7 +110,7 @@ async fn list_all_infos_by_chapter_id(
 async fn list_first_infos_by_chapter_ids(
     conn: &mut RdbConn,
     chapter_ids: &[String],
-) -> RegularResult<HashMap<String, PageInfo>> {
+) -> BaseResult<HashMap<String, PageInfo>> {
     //
     let rows: Vec<PageRow> = t_page
         .filter(f_chapter_id.eq_any(chapter_ids))
@@ -124,11 +121,14 @@ async fn list_first_infos_by_chapter_ids(
         .await
         .map_err(diesel)?;
 
-    Ok(rows
-        .into_iter()
-        .map(Into::into)
-        .map(|page_info: PageInfo| (page_info.chapter_id.clone(), page_info))
-        .collect())
+    accept(
+        rows.into_iter()
+            .map(Into::into)
+            .map(|page_info: PageInfo| {
+                (page_info.chapter_id.clone(), page_info)
+            })
+            .collect(),
+    )
 }
 
 /// Batch-insert pages from a slice of model_entries and return the created infos.
@@ -136,7 +136,7 @@ async fn list_first_infos_by_chapter_ids(
 async fn create_batch(
     conn: &mut RdbConn,
     model_entries: &[PageEntry],
-) -> RegularResult<Vec<PageInfo>> {
+) -> BaseResult<Vec<PageInfo>> {
     //
     let entries: Vec<PageRowEntry> =
         model_entries.iter().map(PageRowEntry::from).collect();
@@ -148,7 +148,7 @@ async fn create_batch(
         .await
         .map_err(diesel)?;
 
-    Ok(rows.into_iter().map(Into::into).collect())
+    accept(rows.into_iter().map(Into::into).collect())
 }
 
 /// Reserve a new image slot for a page: bump version, generate object key,
@@ -158,7 +158,7 @@ async fn reserve_image(
     conn: &mut RdbConn,
     id: &str,
     file_ext: &str,
-) -> RegularResult<PageImageReservation> {
+) -> BaseResult<PageImageReservation> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -188,7 +188,7 @@ async fn reserve_image(
         .await
         .map_err(diesel)?;
 
-    Ok(PageImageReservation {
+    accept(PageImageReservation {
         object_key,
         prev_object_key: prev_key,
         image_version,
@@ -201,7 +201,7 @@ async fn mark_image_uploaded(
     conn: &mut RdbConn,
     id: &str,
     version: u32,
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -219,7 +219,7 @@ async fn mark_image_uploaded(
         return Err(expected("error-stale-page-image-upload"));
     }
 
-    Ok(())
+    accept(())
 }
 
 /// Persist unit counters (total, translated, proofread) onto a page row.
@@ -228,7 +228,7 @@ async fn set_unit_counters(
     conn: &mut RdbConn,
     id: &str,
     counters: UnitCounters,
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -243,7 +243,7 @@ async fn set_unit_counters(
         .await
         .map_err(diesel)?;
 
-    Ok(())
+    accept(())
 }
 
 /// Delete all pages (and their child units) for a given chapter.
@@ -251,7 +251,7 @@ async fn set_unit_counters(
 async fn delete_by_chapter_id(
     conn: &mut RdbConn,
     chapter_id: &str,
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     let page_ids: Vec<String> = t_page
         .filter(f_chapter_id.eq(chapter_id))
@@ -272,5 +272,5 @@ async fn delete_by_chapter_id(
         .await
         .map_err(diesel)?;
 
-    Ok(())
+    accept(())
 }

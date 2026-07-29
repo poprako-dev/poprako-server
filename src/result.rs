@@ -38,10 +38,10 @@ pub fn accept<T>(v: T) -> Result<T> {
 }
 
 /// Alias for [`Error`] used at module boundary layers.
-pub type RegularError = Error;
+pub type BaseError = Error;
 
 /// Alias for [`Result`] used at module boundary layers.
-pub type RegularResult<T> = Result<T>;
+pub type BaseResult<T> = Result<T>;
 
 impl<BE, E> From<NuclError<BE, E>> for Error
 where

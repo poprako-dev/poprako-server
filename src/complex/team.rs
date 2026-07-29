@@ -29,7 +29,7 @@ use crate::part::repo::oper::workset::{
     DeleteWorkset, GetWorksetInfoExcluded, ListWorksetInfosExcluded,
     UpdateWorksetComicCount,
 };
-use crate::result::{ExpectedVariant, RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 
 /// Domain opers for team entities.
@@ -51,36 +51,32 @@ impl TeamComplex {
     }
 
     /// Deletes a team subtree inside an existing transaction context.
-    pub async fn delete_cascade<P>(proxy: &mut P, id: &str) -> RegularResult<()>
+    pub async fn delete_cascade<P>(proxy: &mut P, id: &str) -> BaseResult<()>
     where
-        P: for<'a> Proxy<GetTeamInfoExcluded<'a>, Error = RegularError>
-            + for<'a> Proxy<ListWorksetInfosExcluded<'a>, Error = RegularError>
-            + for<'a> Proxy<DeleteTeam<'a>, Error = RegularError>
-            + for<'a> Proxy<GetWorksetInfoExcluded<'a>, Error = RegularError>
-            + for<'a> Proxy<ListComicInfosExcluded<'a>, Error = RegularError>
-            + for<'a> Proxy<DeleteWorkset<'a>, Error = RegularError>
-            + for<'a, 'b> Proxy<
-                GetComicInfoExcluded<'a, 'b>,
-                Error = RegularError,
-            > + for<'a> Proxy<ListChapterInfosExcluded<'a>, Error = RegularError>
-            + for<'a> Proxy<DeleteComic<'a>, Error = RegularError>
-            + for<'a> Proxy<UpdateWorksetComicCount<'a>, Error = RegularError>
-            + for<'a, 'b> Proxy<
-                GetChapterInfoExcluded<'a, 'b>,
-                Error = RegularError,
-            > + for<'a> Proxy<ListPageInfos<'a>, Error = RegularError>
-            + for<'a> Proxy<DeleteAssignmentInvitations<'a>, Error = RegularError>
-            + for<'a> Proxy<DeleteAssignments<'a>, Error = RegularError>
-            + for<'a> Proxy<DeletePages<'a>, Error = RegularError>
-            + for<'a> Proxy<DeleteChapter<'a>, Error = RegularError>
-            + for<'a> Proxy<UpdateChapter<'a>, Error = RegularError>
-            + for<'a> Proxy<UnpinOtherChapters<'a>, Error = RegularError>
-            + for<'a> Proxy<UpdateComicChapterCount<'a>, Error = RegularError>
-            + for<'a> Proxy<TouchComicLastActive<'a>, Error = RegularError>
-            + for<'a> Proxy<Defer<'a, String, Payload, ()>, Error = RegularError>
+        P: for<'a> Proxy<GetTeamInfoExcluded<'a>, Error = BaseError>
+            + for<'a> Proxy<ListWorksetInfosExcluded<'a>, Error = BaseError>
+            + for<'a> Proxy<DeleteTeam<'a>, Error = BaseError>
+            + for<'a> Proxy<GetWorksetInfoExcluded<'a>, Error = BaseError>
+            + for<'a> Proxy<ListComicInfosExcluded<'a>, Error = BaseError>
+            + for<'a> Proxy<DeleteWorkset<'a>, Error = BaseError>
+            + for<'a, 'b> Proxy<GetComicInfoExcluded<'a, 'b>, Error = BaseError>
+            + for<'a> Proxy<ListChapterInfosExcluded<'a>, Error = BaseError>
+            + for<'a> Proxy<DeleteComic<'a>, Error = BaseError>
+            + for<'a> Proxy<UpdateWorksetComicCount<'a>, Error = BaseError>
+            + for<'a, 'b> Proxy<GetChapterInfoExcluded<'a, 'b>, Error = BaseError>
+            + for<'a> Proxy<ListPageInfos<'a>, Error = BaseError>
+            + for<'a> Proxy<DeleteAssignmentInvitations<'a>, Error = BaseError>
+            + for<'a> Proxy<DeleteAssignments<'a>, Error = BaseError>
+            + for<'a> Proxy<DeletePages<'a>, Error = BaseError>
+            + for<'a> Proxy<DeleteChapter<'a>, Error = BaseError>
+            + for<'a> Proxy<UpdateChapter<'a>, Error = BaseError>
+            + for<'a> Proxy<UnpinOtherChapters<'a>, Error = BaseError>
+            + for<'a> Proxy<UpdateComicChapterCount<'a>, Error = BaseError>
+            + for<'a> Proxy<TouchComicLastActive<'a>, Error = BaseError>
+            + for<'a> Proxy<Defer<'a, String, Payload, ()>, Error = BaseError>
             + for<'t, 'a> Proxy<
                 DeferBatch<'t, 'a, String, Payload, ()>,
-                Error = RegularError,
+                Error = BaseError,
             >,
     {
         // SAFETY: Lock the root team row (FOR UPDATE) to serialize with
@@ -120,7 +116,7 @@ impl TeamComplex {
 
         proxy.exec(&DeleteTeam { id: &team_info.id }).await?;
 
-        Ok(())
+        accept(())
     }
 }
 
@@ -134,9 +130,9 @@ impl TeamPermComplex {
         proxy: &mut P,
         user_id: &str,
         team_id: &str,
-    ) -> RegularResult<()>
+    ) -> BaseResult<()>
     where
-        P: for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>,
+        P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
         check_user_is_team_admin(proxy, user_id, team_id).await
     }
@@ -146,9 +142,9 @@ impl TeamPermComplex {
         proxy: &mut P,
         user_id: &str,
         team_id: &str,
-    ) -> RegularResult<()>
+    ) -> BaseResult<()>
     where
-        P: for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>,
+        P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
         check_user_is_team_admin(proxy, user_id, team_id).await
     }
@@ -158,9 +154,9 @@ impl TeamPermComplex {
         proxy: &mut P,
         user_id: &str,
         team_id: &str,
-    ) -> RegularResult<()>
+    ) -> BaseResult<()>
     where
-        P: for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>,
+        P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
         check_user_is_team_admin(proxy, user_id, team_id).await
     }
@@ -170,9 +166,9 @@ impl TeamPermComplex {
         proxy: &mut P,
         user_id: &str,
         team_id: &str,
-    ) -> RegularResult<()>
+    ) -> BaseResult<()>
     where
-        P: for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>,
+        P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
         check_user_is_team_admin(proxy, user_id, team_id).await
     }
@@ -181,9 +177,9 @@ impl TeamPermComplex {
     pub async fn ensure_user_can_list_all<P>(
         proxy: &mut P,
         user_id: &str,
-    ) -> RegularResult<()>
+    ) -> BaseResult<()>
     where
-        P: for<'a> Proxy<GetUserInfo<'a>, Error = RegularError>,
+        P: for<'a> Proxy<GetUserInfo<'a>, Error = BaseError>,
     {
         Self::check_user_is_sadmin(proxy, user_id).await
     }
@@ -192,19 +188,19 @@ impl TeamPermComplex {
     async fn check_user_is_sadmin<P>(
         proxy: &mut P,
         user_id: &str,
-    ) -> RegularResult<()>
+    ) -> BaseResult<()>
     where
-        P: for<'a> Proxy<GetUserInfo<'a>, Error = RegularError>,
+        P: for<'a> Proxy<GetUserInfo<'a>, Error = BaseError>,
     {
         let user_info = proxy.exec(&GetUserInfo::Id { id: user_id }).await?;
 
         if !user_info.is_sadmin {
-            return Err(RegularError::Expected {
+            return Err(BaseError::Expected {
                 variant: ExpectedVariant::Perm,
                 message: trl("error-sadmin-required"),
             });
         }
 
-        Ok(())
+        accept(())
     }
 }

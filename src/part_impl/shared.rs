@@ -9,7 +9,7 @@ use diesel_async::pooled_connection::deadpool::{Object, Pool};
 use tracing::instrument;
 
 use self::result::{pool_build, pool_get};
-use crate::result::{RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, accept};
 
 /// Result helpers for Diesel-backed shared internals.
 pub mod result;
@@ -46,15 +46,15 @@ impl RdbCore {
             .with_context(|| "[RdbCore::from_env] DATABASE_URL is not set")?;
 
         Self::from_database_url(&database_url).map_err(|err| match err {
-            RegularError::Expected { message, .. }
-            | RegularError::Unrecoverable { message } => {
+            BaseError::Expected { message, .. }
+            | BaseError::Unrecoverable { message } => {
                 anyhow::anyhow!("{}", message)
             }
         })
     }
 
     /// Creates a connection pool from a raw database URL string.
-    pub fn from_database_url(database_url: &str) -> RegularResult<Self> {
+    pub fn from_database_url(database_url: &str) -> BaseResult<Self> {
         //
         let manager = AsyncDieselConnectionManager::<AsyncPgConnection>::new(
             database_url,
@@ -62,14 +62,14 @@ impl RdbCore {
 
         let pool = Pool::builder(manager).build().map_err(pool_build)?;
 
-        Ok(Self {
+        accept(Self {
             pool: Arc::new(pool),
         })
     }
 
     #[instrument(level = "info", err(Debug), skip_all)]
     /// Retrieves a pooled connection, blocking until one is available.
-    pub async fn get(&self) -> RegularResult<RdbPooledConn> {
+    pub async fn get(&self) -> BaseResult<RdbPooledConn> {
         self.pool.get().await.map_err(pool_get)
     }
 }

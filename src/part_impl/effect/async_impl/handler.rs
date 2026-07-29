@@ -2,12 +2,9 @@
 //! dispatches them to the appropriate domain handler.
 
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
 
 use tokio::sync::mpsc::Receiver;
-use tokio::sync::oneshot::{
-    Receiver as OneshotReceiver, Sender as OneshotSender,
-};
+use tokio_util::sync::CancellationToken;
 use tracing::instrument;
 
 use crate::part::effect::event::Event;
@@ -23,27 +20,17 @@ use crate::part_impl::effect::async_impl::dispatch::dispatch;
 pub struct EffectHandler<R> {
     repo: Arc<R>,
     recv: Receiver<Event>,
-    shutdown_recv: OneshotReceiver<()>,
-    done_send: OneshotSender<()>,
-    accepting: Arc<AtomicBool>,
+    token: CancellationToken,
 }
 
 impl<R> EffectHandler<R> {
-    /// Builds a background handler from its queue and shutdown channels.
+    /// Builds a background handler from its queue and cancellation token.
     pub fn new(
         repo: Arc<R>,
         recv: Receiver<Event>,
-        shutdown_recv: OneshotReceiver<()>,
-        done_send: OneshotSender<()>,
-        accepting: Arc<AtomicBool>,
+        token: CancellationToken,
     ) -> Self {
-        Self {
-            repo,
-            recv,
-            shutdown_recv,
-            done_send,
-            accepting,
-        }
+        Self { repo, recv, token }
     }
 
     #[instrument(level = "info", skip_all)]
@@ -69,22 +56,12 @@ impl<R> EffectHandler<R> {
                         None => break,
                     }
                 }
-                _ = &mut self.shutdown_recv => {
-                    self.accepting.store(false, Ordering::Release);
-                    break;
-                }
+                () = self.token.cancelled() => break,
             }
         }
 
         while let Ok(event) = self.recv.try_recv() {
             dispatch::<C, R>(&self.repo, event).await;
         }
-
-        self.done_send.send(()).unwrap_or_else(|error| {
-            tracing::warn!(
-                error = ?error,
-                "[EffectHandler::run] completion receiver already dropped",
-            );
-        });
     }
 }

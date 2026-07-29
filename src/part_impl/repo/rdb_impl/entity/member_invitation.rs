@@ -7,7 +7,7 @@ use crate::model::member_invitation::{
     MemberInvitationEntry, MemberInvitationInfo,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_member_invitation;
-use crate::result::RegularError;
+use crate::result::BaseError;
 use crate::value::role::RoleMask;
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
@@ -90,7 +90,7 @@ impl MemberInvitationAspect {
 // ── Conversions ────────────────────────────────────────────────────────────
 
 impl TryFrom<MemberInvitationRow> for MemberInvitationInfo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     fn try_from(v: MemberInvitationRow) -> Result<Self, Self::Error> {
         //

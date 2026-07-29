@@ -12,12 +12,12 @@ use crate::part::repo::member_invitation::MemberInvitationRepo;
 use crate::part::repo::oper::member_invitation::{
     CreateMemberInvitation, DeleteMemberInvitation, GetMemberInvitationInfo,
     GetMemberInvitationInfoExcluded, ListMemberInvitationInfos,
-    UpdateMemberInvitation,
+    PurgeExpiredMemberInvitation, UpdateMemberInvitation,
 };
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected,
 };
-use crate::result::{RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, accept};
 use crate::value::member_invitation::MemberInvitationInclOpt;
 
 impl MemberInvitationRepo<MockContext> for Mock {}
@@ -100,7 +100,7 @@ fn list_member_invitation_infos(
 fn get_member_invitation_info(
     state: &MockState,
     oper: &GetMemberInvitationInfo<'_, '_>,
-) -> RegularResult<MemberInvitationInfo> {
+) -> BaseResult<MemberInvitationInfo> {
     match oper {
         //
         GetMemberInvitationInfo::Id { id, incls } => {
@@ -121,7 +121,7 @@ fn get_member_invitation_info(
                 include_invitor,
             );
 
-            Ok(member_invitation_info)
+            accept(member_invitation_info)
         }
 
         GetMemberInvitationInfo::Code { code } => state
@@ -139,7 +139,7 @@ fn get_member_invitation_info(
 fn create_member_invitation(
     state: &mut MockState,
     entry: &MemberInvitationEntry,
-) -> RegularResult<MemberInvitationInfo> {
+) -> BaseResult<MemberInvitationInfo> {
     //
     if state
         .member_invitations
@@ -176,13 +176,13 @@ fn create_member_invitation(
         .member_invitations
         .push(member_invitation_info.clone());
 
-    Ok(member_invitation_info)
+    accept(member_invitation_info)
 }
 
 fn update_member_invitation(
     state: &mut MockState,
     oper: &UpdateMemberInvitation<'_>,
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     match oper {
         //
@@ -214,32 +214,32 @@ fn update_member_invitation(
         }
     }
 
-    Ok(())
+    accept(())
 }
 
 impl<'a> Run<ListMemberInvitationInfos<'a>> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListMemberInvitationInfos<'a>,
-    ) -> RegularResult<Vec<MemberInvitationInfo>> {
+    ) -> BaseResult<Vec<MemberInvitationInfo>> {
         //
         let state = self.state.lock().unwrap();
 
-        Ok(list_member_invitation_infos(&state, oper.spec))
+        accept(list_member_invitation_infos(&state, oper.spec))
     }
 }
 
 impl<'a, 'b> Run<GetMemberInvitationInfo<'a, 'b>> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &GetMemberInvitationInfo<'a, 'b>,
-    ) -> RegularResult<MemberInvitationInfo> {
+    ) -> BaseResult<MemberInvitationInfo> {
         //
         let state = self.state.lock().unwrap();
 
@@ -248,57 +248,55 @@ impl<'a, 'b> Run<GetMemberInvitationInfo<'a, 'b>> for Mock {
 }
 
 impl<'a> Step<CreateMemberInvitation<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &CreateMemberInvitation<'a>,
-    ) -> RegularResult<MemberInvitationInfo> {
+    ) -> BaseResult<MemberInvitationInfo> {
         create_member_invitation(&mut context.state, oper.entry)
     }
 }
 
 impl<'a, 'b> Step<GetMemberInvitationInfo<'a, 'b>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &GetMemberInvitationInfo<'a, 'b>,
-    ) -> RegularResult<MemberInvitationInfo> {
+    ) -> BaseResult<MemberInvitationInfo> {
         get_member_invitation_info(&context.state, oper)
     }
 }
 
 impl<'a> Step<UpdateMemberInvitation<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &UpdateMemberInvitation<'a>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         update_member_invitation(&mut context.state, oper)
     }
 }
 
 impl<'a> Step<GetMemberInvitationInfoExcluded<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &GetMemberInvitationInfoExcluded<'a>,
-    ) -> RegularResult<MemberInvitationInfo> {
+    ) -> BaseResult<MemberInvitationInfo> {
         match oper {
             GetMemberInvitationInfoExcluded::Code { code } => {
-                //
-
                 get_member_invitation_info(
                     &context.state,
                     &GetMemberInvitationInfo::Code { code },
@@ -309,14 +307,14 @@ impl<'a> Step<GetMemberInvitationInfoExcluded<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<DeleteMemberInvitation<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &DeleteMemberInvitation<'a>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         //
         let position = context
             .state
@@ -329,6 +327,28 @@ impl<'a> Step<DeleteMemberInvitation<'a>, MockContext> for Mock {
 
         context.state.member_invitations.remove(position);
 
-        Ok(())
+        accept(())
+    }
+}
+
+impl<'a> Step<PurgeExpiredMemberInvitation<'a>, MockContext> for Mock {
+    type Error = BaseError;
+
+    #[instrument(level = "info", err(Debug), skip_all)]
+    async fn step(
+        &self,
+        context: &mut MockContext,
+        oper: &PurgeExpiredMemberInvitation<'a>,
+    ) -> BaseResult<()> {
+        //
+        context
+            .state
+            .member_invitations
+            .retain(|member_invitation_info| {
+                member_invitation_info.id != oper.id
+                    || !member_invitation_info.pending
+            });
+
+        accept(())
     }
 }

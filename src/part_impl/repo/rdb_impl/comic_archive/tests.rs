@@ -21,7 +21,7 @@ use crate::part_impl::repo::rdb_impl::schema::{
     t_comic, t_page, t_workset,
 };
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
-use crate::result::RegularError;
+use crate::result::BaseError;
 use crate::util::decompress_archive;
 
 const PREFIX: &str = "rdb-test-comic-archive-domain-";
@@ -84,7 +84,7 @@ async fn comic_archive_roundtrip_reads_test_database_url() {
             )
             .await?;
 
-            Ok::<ComicArchiveWrite, RegularError>(comic_archive_write)
+            Ok::<ComicArchiveWrite, BaseError>(comic_archive_write)
         })
         .await
         .ok()

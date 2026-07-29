@@ -18,7 +18,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_member::dsl::*;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, incl};
 use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::shared::{RdbConn, RdbContext};
-use crate::result::{RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, accept};
 use crate::value::member::MemberInclOpt;
 use crate::value::role::{RoleField, RoleMask};
 
@@ -152,7 +152,7 @@ async fn find_info_by_user_id_and_team_id(
     conn: &mut RdbConn,
     user_id: &str,
     team_id: &str,
-) -> RegularResult<Option<MemberInfo>> {
+) -> BaseResult<Option<MemberInfo>> {
     //
     let row: Option<MemberRow> = t_member
         .filter(f_user_id.eq(user_id))
@@ -163,17 +163,17 @@ async fn find_info_by_user_id_and_team_id(
         .optional()
         .map_err(diesel)?;
 
-    Ok(row.map(Into::into))
+    accept(row.map(Into::into))
 }
 
 impl<'a> Run<FindMemberInfo<'a>> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &FindMemberInfo<'a>,
-    ) -> RegularResult<Option<MemberInfo>> {
+    ) -> BaseResult<Option<MemberInfo>> {
         match oper {
             FindMemberInfo::UserTeam { user_id, team_id } => {
                 submit_query!(
@@ -192,7 +192,7 @@ impl<'a> Run<FindMemberInfo<'a>> for RdbRepo {
 async fn list_infos(
     conn: &mut RdbConn,
     spec: &MemberListSpec,
-) -> RegularResult<Vec<MemberInfo>> {
+) -> BaseResult<Vec<MemberInfo>> {
     //
     let rows: Vec<MemberRow> =
         match spec {
@@ -289,7 +289,7 @@ async fn list_infos(
     incl::member::populate_member_incls(conn, &mut infos, spec.incl_opt())
         .await?;
 
-    Ok(infos)
+    accept(infos)
 }
 
 /// Load a single member info by ID with optional includes.
@@ -298,7 +298,7 @@ async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
     incl_opt: &[MemberInclOpt],
-) -> RegularResult<MemberInfo> {
+) -> BaseResult<MemberInfo> {
     //
     let row: MemberRow = t_member
         .filter(f_id.eq(id))
@@ -318,7 +318,7 @@ async fn get_info_by_id(
     )
     .await?;
 
-    Ok(info)
+    accept(info)
 }
 
 /// Insert a new member and return its info.
@@ -326,7 +326,7 @@ async fn get_info_by_id(
 async fn create(
     conn: &mut RdbConn,
     entry: &MemberEntry,
-) -> RegularResult<MemberInfo> {
+) -> BaseResult<MemberInfo> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -339,7 +339,7 @@ async fn create(
         .await
         .map_err(diesel)?;
 
-    Ok(row.into())
+    accept(row.into())
 }
 
 /// Update the user-nickname for every member row owned by the given user.
@@ -348,7 +348,7 @@ async fn update_user_nickname(
     conn: &mut RdbConn,
     user_id: &str,
     nickname: &str,
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -360,7 +360,7 @@ async fn update_user_nickname(
         .await
         .map_err(diesel)?;
 
-    Ok(())
+    accept(())
 }
 
 /// Query all member infos for a user, locking the rows for update.
@@ -368,7 +368,7 @@ async fn update_user_nickname(
 async fn list_infos_by_user_id_excluded(
     conn: &mut RdbConn,
     user_id: &str,
-) -> RegularResult<Vec<MemberInfo>> {
+) -> BaseResult<Vec<MemberInfo>> {
     //
     let rows: Vec<MemberRow> = t_member
         .filter(f_user_id.eq(user_id))
@@ -378,7 +378,7 @@ async fn list_infos_by_user_id_excluded(
         .await
         .map_err(diesel)?;
 
-    Ok(rows.into_iter().map(Into::into).collect())
+    accept(rows.into_iter().map(Into::into).collect())
 }
 
 /// Query all member infos for a user without acquiring a lock.
@@ -386,7 +386,7 @@ async fn list_infos_by_user_id_excluded(
 async fn list_infos_by_user_id(
     conn: &mut RdbConn,
     user_id: &str,
-) -> RegularResult<Vec<MemberInfo>> {
+) -> BaseResult<Vec<MemberInfo>> {
     //
     let rows: Vec<MemberRow> = t_member
         .filter(f_user_id.eq(user_id))
@@ -395,7 +395,7 @@ async fn list_infos_by_user_id(
         .await
         .map_err(diesel)?;
 
-    Ok(rows.into_iter().map(Into::into).collect())
+    accept(rows.into_iter().map(Into::into).collect())
 }
 
 /// Update the role mask and refresh assignment timestamps for a member.
@@ -403,7 +403,7 @@ async fn list_infos_by_user_id(
 async fn update_role(
     conn: &mut RdbConn,
     update: &MemberRoleUpdate,
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -415,17 +415,17 @@ async fn update_role(
         .await
         .map_err(diesel)?;
 
-    Ok(())
+    accept(())
 }
 
 /// Delete a member by ID.
 #[instrument(level = "info", err(Debug), skip_all)]
-async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
+async fn delete(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
     //
     diesel::delete(t_member.filter(f_id.eq(id)))
         .execute(conn)
         .await
         .map_err(diesel)?;
 
-    Ok(())
+    accept(())
 }

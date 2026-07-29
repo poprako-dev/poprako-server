@@ -13,11 +13,11 @@ use crate::part::repo::workset::WorksetRepo;
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
-use crate::result::{RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, accept};
 
 impl WorksetRepo<MockContext> for Mock {}
 
-fn get_workset_info(state: &MockState, id: &str) -> RegularResult<WorksetInfo> {
+fn get_workset_info(state: &MockState, id: &str) -> BaseResult<WorksetInfo> {
     state
         .worksets
         .iter()
@@ -64,7 +64,7 @@ fn list_workset_infos(
 fn update_workset(
     state: &mut MockState,
     update: &WorksetInfoUpdate,
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     let workset_info = state
         .worksets
@@ -78,17 +78,14 @@ fn update_workset(
 
     workset_info.updated_at = now();
 
-    Ok(())
+    accept(())
 }
 
 impl<'a> Run<GetWorksetInfo<'a>> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn run(
-        &self,
-        oper: &GetWorksetInfo<'a>,
-    ) -> RegularResult<WorksetInfo> {
+    async fn run(&self, oper: &GetWorksetInfo<'a>) -> BaseResult<WorksetInfo> {
         //
         let state = self.state.lock().unwrap();
 
@@ -97,25 +94,25 @@ impl<'a> Run<GetWorksetInfo<'a>> for Mock {
 }
 
 impl<'a> Run<ListWorksetInfos<'a>> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListWorksetInfos<'a>,
-    ) -> RegularResult<Vec<WorksetInfo>> {
+    ) -> BaseResult<Vec<WorksetInfo>> {
         //
         let state = self.state.lock().unwrap();
 
-        Ok(list_workset_infos(&state, oper))
+        accept(list_workset_infos(&state, oper))
     }
 }
 
 impl<'a> Run<UpdateWorkset<'a>> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn run(&self, oper: &UpdateWorkset<'a>) -> RegularResult<()> {
+    async fn run(&self, oper: &UpdateWorkset<'a>) -> BaseResult<()> {
         //
         let mut state = self.state.lock().unwrap();
 
@@ -124,72 +121,74 @@ impl<'a> Run<UpdateWorkset<'a>> for Mock {
 }
 
 impl<'a> Step<GetWorksetInfo<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &GetWorksetInfo<'a>,
-    ) -> RegularResult<WorksetInfo> {
+    ) -> BaseResult<WorksetInfo> {
         get_workset_info(&context.state, oper.id)
     }
 }
 
 impl<'a> Step<ListWorksetInfos<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &ListWorksetInfos<'a>,
-    ) -> RegularResult<Vec<WorksetInfo>> {
-        Ok(list_workset_infos(&context.state, oper))
+    ) -> BaseResult<Vec<WorksetInfo>> {
+        accept(list_workset_infos(&context.state, oper))
     }
 }
 
 impl<'a> Step<GetWorksetInfoExcluded<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &GetWorksetInfoExcluded<'a>,
-    ) -> RegularResult<WorksetInfo> {
+    ) -> BaseResult<WorksetInfo> {
         get_workset_info(&context.state, oper.id)
     }
 }
 
 impl<'a> Step<ListWorksetInfosExcluded<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &ListWorksetInfosExcluded<'a>,
-    ) -> RegularResult<Vec<WorksetInfo>> {
-        Ok(context
-            .state
-            .worksets
-            .iter()
-            .filter(|workset_info| workset_info.team_id == oper.team_id)
-            .cloned()
-            .collect())
+    ) -> BaseResult<Vec<WorksetInfo>> {
+        accept(
+            context
+                .state
+                .worksets
+                .iter()
+                .filter(|workset_info| workset_info.team_id == oper.team_id)
+                .cloned()
+                .collect(),
+        )
     }
 }
 
 impl<'a> Step<CreateWorkset<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &CreateWorkset<'a>,
-    ) -> RegularResult<WorksetInfo> {
+    ) -> BaseResult<WorksetInfo> {
         //
         if context
             .state
@@ -215,19 +214,19 @@ impl<'a> Step<CreateWorkset<'a>, MockContext> for Mock {
 
         context.state.worksets.push(workset_info.clone());
 
-        Ok(workset_info)
+        accept(workset_info)
     }
 }
 
 impl<'a> Step<DeleteWorkset<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &DeleteWorkset<'a>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         //
         let position = context
             .state
@@ -275,19 +274,19 @@ impl<'a> Step<DeleteWorkset<'a>, MockContext> for Mock {
             !deleted_chapter_ids.contains(&assignment_info.chapter_id)
         });
 
-        Ok(())
+        accept(())
     }
 }
 
 impl<'a> Step<AllocWorksetComicIndex<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &AllocWorksetComicIndex<'a>,
-    ) -> RegularResult<i32> {
+    ) -> BaseResult<i32> {
         //
         // verify the workset exists
         context
@@ -304,19 +303,19 @@ impl<'a> Step<AllocWorksetComicIndex<'a>, MockContext> for Mock {
             .filter(|comic_info| comic_info.workset_id == oper.id)
             .count() as i32;
 
-        Ok(index)
+        accept(index)
     }
 }
 
 impl<'a> Step<UpdateWorksetComicCount<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &UpdateWorksetComicCount<'a>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         //
         let workset_info = context
             .state
@@ -329,6 +328,6 @@ impl<'a> Step<UpdateWorksetComicCount<'a>, MockContext> for Mock {
 
         workset_info.updated_at = now();
 
-        Ok(())
+        accept(())
     }
 }

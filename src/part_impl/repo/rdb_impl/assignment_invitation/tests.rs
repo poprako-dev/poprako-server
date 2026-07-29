@@ -12,7 +12,7 @@ use crate::part::repo::oper::assignment_invitation::{
 };
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
-use crate::result::RegularError;
+use crate::result::BaseError;
 use crate::value::role::{RoleField, RoleMask};
 
 const PREFIX: &str = "rdb-test-assignment-invitation-domain-";
@@ -58,7 +58,7 @@ async fn assignment_invitation_roundtrip_reads_test_database_url() {
             )
             .await?;
 
-            Ok::<(), RegularError>(())
+            Ok::<(), BaseError>(())
         })
         .await
         .ok()

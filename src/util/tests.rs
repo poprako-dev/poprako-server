@@ -45,6 +45,6 @@ fn decompress_archive_rejects_damaged_bytes() {
 
     assert!(matches!(
         decode_result,
-        Err(RegularError::Unrecoverable { .. })
+        Err(BaseError::Unrecoverable { .. })
     ));
 }
