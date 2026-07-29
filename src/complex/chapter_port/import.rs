@@ -26,13 +26,17 @@ impl ChapterImportComplex {
 
         validate_label_plus_header(&mut lines)?;
 
-        let mut pages = Vec::new();
-
-        let mut current_page: Option<Vec<UnitTranslationImport>> = None;
-
-        let mut current_unit: Option<LabelPlusUnit> = None;
-
-        let mut main_text_lines = Vec::new();
+        let (
+            mut pages,
+            mut current_page,
+            mut current_unit,
+            mut main_text_lines,
+        ) = (
+            Vec::new(),
+            None::<Vec<UnitTranslationImport>>,
+            None::<LabelPlusUnit>,
+            Vec::new(),
+        );
 
         for line in lines {
             //
@@ -140,11 +144,10 @@ impl ChapterImportComplex {
         label_plus: bool,
     ) -> UnitEdit {
         //
-        let translation =
-            build_translation(parsed_unit, user_id, can_translate, label_plus);
-
-        let revision =
-            build_revision(parsed_unit, user_id, can_proofread, label_plus);
+        let (translation, revision) = (
+            build_translation(parsed_unit, user_id, can_translate, label_plus),
+            build_revision(parsed_unit, user_id, can_proofread, label_plus),
+        );
 
         UnitEdit::Create {
             id: unit_id,
@@ -304,9 +307,8 @@ fn parse_poprako_page(
         return Err(args_err("error-invalid-chapter-import-content"));
     }
 
-    let mut seen_indexes = HashMap::new();
-
-    let mut units = Vec::with_capacity(page.units.len());
+    let (mut seen_indexes, mut units) =
+        (HashMap::new(), Vec::with_capacity(page.units.len()));
 
     for unit in page.units {
         //

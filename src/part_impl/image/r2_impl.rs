@@ -58,29 +58,30 @@ impl R2ImagePool {
     pub fn from_env() -> anyhow::Result<Self> {
         //
         // Internal implementation detail.
-        let account_id = std::env::var("R2_ACCOUNT_ID").with_context(
-            || "[R2ImagePool::from_env] R2_ACCOUNT_ID is not set",
-        )?;
+        let (account_id, access_key_id) = (
+            std::env::var("R2_ACCOUNT_ID").with_context(
+                || "[R2ImagePool::from_env] R2_ACCOUNT_ID is not set",
+            )?,
+            std::env::var("R2_ACCESS_KEY_ID").with_context(
+                || "[R2ImagePool::from_env] R2_ACCESS_KEY_ID is not set",
+            )?,
+        );
 
-        let access_key_id = std::env::var("R2_ACCESS_KEY_ID").with_context(
-            || "[R2ImagePool::from_env] R2_ACCESS_KEY_ID is not set",
-        )?;
-
-        let secret_access_key = std::env::var("R2_SECRET_ACCESS_KEY")
-            .with_context(
+        let (secret_access_key, region) = (
+            std::env::var("R2_SECRET_ACCESS_KEY").with_context(
                 || "[R2ImagePool::from_env] R2_SECRET_ACCESS_KEY is not set",
-            )?;
+            )?,
+            std::env::var("R2_REGION").unwrap_or_else(|_| "auto".to_string()),
+        );
 
-        let region =
-            std::env::var("R2_REGION").unwrap_or_else(|_| "auto".to_string());
-
-        let bucket = std::env::var("R2_BUCKET_NAME").with_context(
-            || "[R2ImagePool::from_env] R2_BUCKET_NAME is not set",
-        )?;
-
-        let domain = std::env::var("R2_CUSTOM_DOMAIN").with_context(
-            || "[R2ImagePool::from_env] R2_CUSTOM_DOMAIN is not set",
-        )?;
+        let (bucket, domain) = (
+            std::env::var("R2_BUCKET_NAME").with_context(
+                || "[R2ImagePool::from_env] R2_BUCKET_NAME is not set",
+            )?,
+            std::env::var("R2_CUSTOM_DOMAIN").with_context(
+                || "[R2ImagePool::from_env] R2_CUSTOM_DOMAIN is not set",
+            )?,
+        );
 
         let endpoint =
             format!("https://{}.r2.cloudflarestorage.com", account_id);
@@ -134,19 +135,20 @@ impl ImagePool for R2ImagePool {
     async fn get_upload_url(&self, key: &str) -> BaseRest<Url> {
         //
         // Internal implementation detail.
-        let content_type =
+        let (content_type, presigning_config) = (
             detect_content_type(key).ok_or_else(|| BaseError::Expected {
                 variant: ExpectedVariant::Args,
                 message: trl("error-unsupported-file-type"),
-            })?;
-
-        let presigning_config = PresigningConfig::expires_in(PUT_SIGNED_EXPIRATION)
-            .map_err(|err| BaseError::Unrecoverable {
-                message: format!(
-                    "[R2ImagePool::get_upload_url] failed to build presigning config: {}",
-                    err
-                ),
-            })?;
+            })?,
+            PresigningConfig::expires_in(PUT_SIGNED_EXPIRATION).map_err(
+                |err| BaseError::Unrecoverable {
+                    message: format!(
+                        "[R2ImagePool::get_upload_url] failed to build presigning config: {}",
+                        err
+                    ),
+                },
+            )?,
+        );
 
         let presigned_request = self
             .client
@@ -179,22 +181,23 @@ impl ImagePool for R2ImagePool {
     ) -> BaseRest<ImageUploadSlot> {
         //
         // Internal implementation detail.
-        let content_length =
+        let (content_length, presigning_config) = (
             i64::try_from(spec.content_length).map_err(|_| {
                 BaseError::Unrecoverable {
-                message:
-                    "[R2ImagePool::get_upload_slot] content length exceeds i64"
-                        .into(),
-            }
-            })?;
-
-        let presigning_config = PresigningConfig::expires_in(PUT_SIGNED_EXPIRATION)
-            .map_err(|err| BaseError::Unrecoverable {
-                message: format!(
-                    "[R2ImagePool::get_upload_slot] failed to build presigning config: {}",
-                    err
-                ),
-            })?;
+                    message:
+                        "[R2ImagePool::get_upload_slot] content length exceeds i64"
+                            .into(),
+                }
+            })?,
+            PresigningConfig::expires_in(PUT_SIGNED_EXPIRATION).map_err(
+                |err| BaseError::Unrecoverable {
+                    message: format!(
+                        "[R2ImagePool::get_upload_slot] failed to build presigning config: {}",
+                        err
+                    ),
+                },
+            )?,
+        );
 
         let presigned_request = self
             .client

@@ -123,9 +123,10 @@ fn order_unit_infos(unit_infos: Vec<UnitInfo>) -> BaseRest<Vec<UnitInfo>> {
         return Err(corrupt_unit_chain_err());
     };
 
-    let mut current_id = Some((*head_id).to_string());
-
-    let mut visible_infos = Vec::with_capacity(infos_by_id.len());
+    let (mut current_id, mut visible_infos) = (
+        Some((*head_id).to_string()),
+        Vec::with_capacity(infos_by_id.len()),
+    );
 
     while let Some(id) = current_id {
         //
@@ -323,11 +324,13 @@ async fn get_snapshot_excluded(
         .await
         .map_err(diesel)?;
 
-    let unit_infos: Vec<UnitInfo> =
-        unit_rows.into_iter().map(Into::into).collect::<Vec<_>>();
-
-    let mut assignment_infos_by_chapter: HashMap<String, Vec<AssignmentInfo>> =
-        HashMap::new();
+    let (unit_infos, mut assignment_infos_by_chapter): (
+        Vec<UnitInfo>,
+        HashMap<String, Vec<AssignmentInfo>>,
+    ) = (
+        unit_rows.into_iter().map(Into::into).collect::<Vec<_>>(),
+        HashMap::<String, Vec<AssignmentInfo>>::new(),
+    );
 
     for mut assignment_info in assignment_infos {
         //
@@ -377,13 +380,14 @@ async fn get_snapshot_excluded(
         .into_iter()
         .map(|chapter_info| {
             //
-            let assignment_infos = assignment_infos_by_chapter
-                .remove(&chapter_info.id)
-                .unwrap_or_default();
-
-            let page_snapshots = page_snapshots_by_chapter
-                .remove(&chapter_info.id)
-                .unwrap_or_default();
+            let (assignment_infos, page_snapshots) = (
+                assignment_infos_by_chapter
+                    .remove(&chapter_info.id)
+                    .unwrap_or_default(),
+                page_snapshots_by_chapter
+                    .remove(&chapter_info.id)
+                    .unwrap_or_default(),
+            );
 
             ComicArchiveChapterSnapshot {
                 chapter_info,

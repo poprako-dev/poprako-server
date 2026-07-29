@@ -142,9 +142,8 @@ where
 
             let archived_comic_id = comic_archive_entry.record.id.clone();
 
-            let mut delete_ids = Vec::new();
-
-            let mut delete_payloads = Vec::new();
+            let (mut delete_ids, mut delete_payloads) =
+                (Vec::new(), Vec::new());
 
             for image_key in image_keys {
                 //

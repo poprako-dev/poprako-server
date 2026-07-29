@@ -75,9 +75,10 @@ impl RdbProm {
 
         let (done_send, done) = watch::channel(false);
 
-        let drive = RdbDrive::new(core.clone());
-
-        let repo = RdbPromRepo::new(RdbRepo::new(core.clone()));
+        let (drive, repo) = (
+            RdbDrive::new(core.clone()),
+            RdbPromRepo::new(RdbRepo::new(core.clone())),
+        );
 
         let handler = handler::RdbPromHandler::new(
             core,

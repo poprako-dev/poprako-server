@@ -161,11 +161,11 @@ where
             .step_on(repo, context)
             .await?;
 
-            let mut task_ids = Vec::new();
-
-            let mut task_payloads = Vec::new();
-
-            let mut task_delays = Vec::new();
+            let (mut task_ids, mut task_payloads, mut task_delays) = (
+                Vec::new(),
+                Vec::new(),
+                Vec::new(),
+            );
 
             if let Some(prev_image_key) = prev_image_key {
                 //
@@ -189,12 +189,12 @@ where
 
             task_delays.push(Some(Duration::from_secs(15 * 60)));
 
-            let advance_id = next_snowflake_id();
-
-            let advance_payload =
+            let (advance_id, advance_payload) = (
+                next_snowflake_id(),
                 TaskPayload::Chapter(ChapterPayload::TryAdvanceRawProvideStage {
                     chapter_id: locked_page_info.chapter_id.clone(),
-                });
+                }),
+            );
 
             let advance_task = Task {
                 id: &advance_id,
@@ -487,9 +487,7 @@ where
         .step_on(repo, context)
         .await?;
 
-        let mut delete_ids = Vec::new();
-
-        let mut delete_payloads = Vec::new();
+        let (mut delete_ids, mut delete_payloads) = (Vec::new(), Vec::new());
 
         for page_info in page_infos {
             if let Some(object_key) = page_info.image_key {

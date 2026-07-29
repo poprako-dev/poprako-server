@@ -311,11 +311,8 @@ where
         image::ResourceKind::TeamAvatar,
     )?;
 
-    let transaction_image_hash = instr.image_hash.clone();
-
-    let image_ext = instr.ext;
-
-    let new_byte_len = instr.new_byte_len;
+    let (transaction_image_hash, image_ext, new_byte_len) =
+        (instr.image_hash.clone(), instr.ext, instr.new_byte_len);
 
     TeamPermComplex::ensure_user_can_reserve_avatar(
         &mut run_proxy! {
@@ -345,11 +342,8 @@ where
                 ));
             }
 
-            let mut batch_ids = Vec::new();
-
-            let mut batch_payloads = Vec::new();
-
-            let mut batch_delays = Vec::new();
+            let (mut batch_ids, mut batch_payloads, mut batch_delays) =
+                (Vec::new(), Vec::new(), Vec::new());
 
             // If replacing an existing avatar, schedule deletion of the old object.
             if let Some(prev_key) = &avatar_reservation.prev_object_key {

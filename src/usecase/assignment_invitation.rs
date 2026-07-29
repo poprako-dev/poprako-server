@@ -156,9 +156,8 @@ where
                 }
             }
 
-            let assignment_invitation_id = gen_assignment_invitation_id();
-
-            let code = gen_code();
+            let (assignment_invitation_id, code) =
+                (gen_assignment_invitation_id(), gen_code());
 
             let assignment_invitation_entry = AssignmentInvitationEntry {
                 id: assignment_invitation_id,
@@ -179,9 +178,8 @@ where
                 invitation_id: assignment_invitation_info.id.clone(),
             };
 
-            let purge_payload = TaskPayload::Invitation(purge_event);
-
-            let purge_task_id = next_snowflake_id();
+            let (purge_payload, purge_task_id) =
+                (TaskPayload::Invitation(purge_event), next_snowflake_id());
 
             let purge_task = Task {
                 id: &purge_task_id,

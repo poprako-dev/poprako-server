@@ -328,11 +328,8 @@ where
         image::ResourceKind::ComicCover,
     )?;
 
-    let transaction_image_hash = instr.image_hash.clone();
-
-    let image_ext = instr.ext;
-
-    let new_byte_len = instr.new_byte_len;
+    let (transaction_image_hash, image_ext, new_byte_len) =
+        (instr.image_hash.clone(), instr.ext, instr.new_byte_len);
 
     ComicPermComplex::ensure_user_can_reserve_cover(
         &mut run_proxy! {
@@ -365,11 +362,8 @@ where
                 ));
             }
 
-            let mut batch_ids = Vec::new();
-
-            let mut batch_payloads = Vec::new();
-
-            let mut batch_delays = Vec::new();
+            let (mut batch_ids, mut batch_payloads, mut batch_delays) =
+                (Vec::new(), Vec::new(), Vec::new());
 
             if let Some(prev_object_key) = &cover_reservation.prev_object_key {
                 //

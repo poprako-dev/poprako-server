@@ -35,9 +35,10 @@ fn normalize_targets(targets: Vec<String>) -> BaseRest<Vec<String>> {
         return Err(expected("error-term-targets-required"));
     }
 
-    let mut normalized_targets = Vec::with_capacity(targets.len());
-
-    let mut seen_targets = HashSet::with_capacity(targets.len());
+    let (mut normalized_targets, mut seen_targets) = (
+        Vec::with_capacity(targets.len()),
+        HashSet::with_capacity(targets.len()),
+    );
 
     for target in targets {
         //
@@ -92,11 +93,11 @@ impl TermComplex {
         creator_id: String,
     ) -> BaseRest<TermEntry> {
         //
-        let source = normalize_source(source)?;
-
-        let targets = normalize_targets(targets)?;
-
-        let comment = normalize_comment(comment);
+        let (source, targets, comment) = (
+            normalize_source(source)?,
+            normalize_targets(targets)?,
+            normalize_comment(comment),
+        );
 
         accept(TermEntry {
             id: next_snowflake_id(),
@@ -116,11 +117,11 @@ impl TermComplex {
         comment: Option<String>,
     ) -> BaseRest<TermRepl> {
         //
-        let source = normalize_source(source)?;
-
-        let targets = normalize_targets(targets)?;
-
-        let comment = normalize_comment(comment);
+        let (source, targets, comment) = (
+            normalize_source(source)?,
+            normalize_targets(targets)?,
+            normalize_comment(comment),
+        );
 
         accept(TermRepl {
             id,
