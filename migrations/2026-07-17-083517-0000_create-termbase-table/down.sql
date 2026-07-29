@@ -1,2 +1,1 @@
-DROP TABLE IF EXISTS "t_term";
 DROP TABLE IF EXISTS "t_termbase";

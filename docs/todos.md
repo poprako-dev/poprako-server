@@ -9,6 +9,8 @@
 - [x] Hash to dedup upload images.
 - [x] Batch list for assignments.
 - [ ] Makeup migration SQLs.
-- [ ] Async comic archive.
+- [x] Async comic archive.
 - [ ] Decouple SQL tables(and their domains).
-- [ ] Export info of archived comics.
+- [x] Export info of archived comics.
+- [ ] Unexpected left `drive`.
+- [ ] Split _event_ and _override data_.

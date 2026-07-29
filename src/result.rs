@@ -9,8 +9,10 @@ use poprako_orchestra::nucl::Error as NuclError;
 pub enum ExpectedVariant {
     /// Invalid or missing arguments.
     Args,
+
     /// Authentication failure.
     Auth,
+
     /// Permission denied.
     Perm,
 }
@@ -22,11 +24,13 @@ pub enum ExpectedVariant {
 pub enum Error {
     /// An expected application condition — the error can be communicated to the client.
     Expected {
+        //
         /// Classification of the expected error variant.
         variant: ExpectedVariant,
         /// Human-readable detail about the error condition.
         message: String,
     },
+
     /// An unexpected system-level failure — cannot be recovered mid-request.
     Unrecoverable {
         /// Description of the system failure.

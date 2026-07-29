@@ -9,7 +9,7 @@ use crate::complex::util::{
     check_user_is_team_admin, check_user_is_team_member,
 };
 use crate::model::comic::{ComicInfoListKind, ComicInfoListSpec};
-use crate::part::prom::payload::Payload;
+use crate::part::prom::payload::TaskPayload;
 use crate::part::repo::oper::assignment::DeleteAssignments;
 use crate::part::repo::oper::assignment_invitation::DeleteAssignmentInvitations;
 use crate::part::repo::oper::chapter::{
@@ -66,9 +66,9 @@ impl WorksetComplex {
             + for<'a> Proxy<GetTermbaseInfoExcluded<'a>, Error = BaseError>
             + for<'a> Proxy<DeleteTerms<'a>, Error = BaseError>
             + for<'a> Proxy<DeleteTermbase<'a>, Error = BaseError>
-            + for<'a> Proxy<Defer<'a, String, Payload, ()>, Error = BaseError>
+            + for<'a> Proxy<Defer<'a, String, TaskPayload, ()>, Error = BaseError>
             + for<'t, 'a> Proxy<
-                DeferBatch<'t, 'a, String, Payload, ()>,
+                DeferBatch<'t, 'a, String, TaskPayload, ()>,
                 Error = BaseError,
             >,
     {

@@ -7,7 +7,7 @@ use axum::middleware::from_fn;
 use axum::routing::get;
 use tower::ServiceExt as _;
 
-use crate::api::http::shared::metric::read_total;
+use crate::api::http::shared::read_total;
 
 // record_response_metric(record_response_metric)(positive): dynamic paths use the matched route template.
 

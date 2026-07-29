@@ -14,13 +14,20 @@ use crate::data::comic::{
 };
 use crate::model::comic::ComicInfo;
 use crate::model::workset::WorksetInfo;
-use crate::part::prom::payload::Payload;
-use crate::part::prom::payload::image::{
-    Payload as ImagePayload, ResourceKind,
-};
+use crate::part::prom::payload::TaskPayload;
+use crate::part::prom::payload::image::{ImagePayload, ResourceKind};
 use crate::test_util::{
     assert_expected_message, assert_one_image_check_record,
 };
+use crate::value::image::{ImageExt, ImageHash};
+
+fn reserve_params(ext: ImageExt, hash_byte: u8) -> ReserveComicCoverParams {
+    ReserveComicCoverParams {
+        image_hash: ImageHash::new([hash_byte; 32]),
+        new_byte_len: 4096,
+        ext,
+    }
+}
 
 #[tokio::test]
 async fn reserve_cover_updates_state_enqueues_check_and_returns_put_url() {
@@ -34,15 +41,10 @@ async fn reserve_cover_updates_state_enqueues_check_and_returns_put_url() {
     mock.seed_comic(comic("comic-1", "workset-1", 0));
 
     let reserved = reserve_cover(
-        &mock,
-        &mock,
-        &mock,
-        &mock,
+        (&mock, &mock, &mock, &mock),
         token("user-1"),
         "comic-1".into(),
-        ReserveComicCoverParams {
-            file_ext: "png".into(),
-        },
+        reserve_params(ImageExt::Png, 1),
     )
     .await;
 
@@ -52,10 +54,10 @@ async fn reserve_cover_updates_state_enqueues_check_and_returns_put_url() {
 
     let snapshot = mock.snapshot();
 
-    assert_eq!(reserved.cover_version, 1);
+    assert_eq!(reserved.slot.as_ref().unwrap().image_version, 1);
 
     assert_eq!(
-        reserved.put_url,
+        reserved.slot.as_ref().unwrap().put_url,
         "https://test.local/put/comic_cover/comic-1-1.png"
     );
 
@@ -78,15 +80,10 @@ async fn reserve_cover_rolls_back_missing_comic() {
     let mock = Mock::new();
 
     let err = reserve_cover(
-        &mock,
-        &mock,
-        &mock,
-        &mock,
+        (&mock, &mock, &mock, &mock),
         token("user-1"),
         "missing".into(),
-        ReserveComicCoverParams {
-            file_ext: "png".into(),
-        },
+        reserve_params(ImageExt::Png, 1),
     )
     .await
     .err()
@@ -115,10 +112,10 @@ async fn mark_cover_uploaded_marks_matching_version() {
     });
 
     mark_cover_uploaded(
-        &mock,
+        (&mock, &mock, &mock),
         token("user-1"),
         "comic-1".into(),
-        MarkComicCoverUploadedParams { cover_version: 2 },
+        MarkComicCoverUploadedParams { image_version: 2 },
     )
     .await
     .ok()
@@ -143,20 +140,20 @@ async fn mark_cover_uploaded_accepts_repeated_matching_version() {
     });
 
     let first = mark_cover_uploaded(
-        &mock,
+        (&mock, &mock, &mock),
         token("user-1"),
         "comic-1".into(),
-        MarkComicCoverUploadedParams { cover_version: 2 },
+        MarkComicCoverUploadedParams { image_version: 2 },
     )
     .await;
 
     assert!(first.is_ok());
 
     let second = mark_cover_uploaded(
-        &mock,
+        (&mock, &mock, &mock),
         token("user-1"),
         "comic-1".into(),
-        MarkComicCoverUploadedParams { cover_version: 2 },
+        MarkComicCoverUploadedParams { image_version: 2 },
     )
     .await;
 
@@ -181,10 +178,10 @@ async fn mark_cover_uploaded_rejects_stale_version() {
     });
 
     let err = mark_cover_uploaded(
-        &mock,
+        (&mock, &mock, &mock),
         token("user-1"),
         "comic-1".into(),
-        MarkComicCoverUploadedParams { cover_version: 1 },
+        MarkComicCoverUploadedParams { image_version: 1 },
     )
     .await
     .err()
@@ -216,27 +213,22 @@ async fn mark_cover_uploaded_rejects_old_reservation_replay() {
     });
 
     let reserved = reserve_cover(
-        &mock,
-        &mock,
-        &mock,
-        &mock,
+        (&mock, &mock, &mock, &mock),
         token("user-1"),
         "comic-1".into(),
-        ReserveComicCoverParams {
-            file_ext: "png".into(),
-        },
+        reserve_params(ImageExt::Png, 1),
     )
     .await
     .ok()
     .unwrap();
 
-    assert_eq!(reserved.cover_version, 2);
+    assert_eq!(reserved.slot.as_ref().unwrap().image_version, 2);
 
     let err = mark_cover_uploaded(
-        &mock,
+        (&mock, &mock, &mock),
         token("user-1"),
         "comic-1".into(),
-        MarkComicCoverUploadedParams { cover_version: 1 },
+        MarkComicCoverUploadedParams { image_version: 1 },
     )
     .await
     .err()
@@ -273,7 +265,7 @@ async fn delete_removes_comic_updates_count_and_enqueues_cover_delete() {
         "cover.png",
     ));
 
-    delete(&mock, &mock, &mock, token("user-1"), "comic-1".into())
+    delete((&mock, &mock, &mock), token("user-1"), "comic-1".into())
         .await
         .ok()
         .unwrap();
@@ -288,7 +280,7 @@ async fn delete_removes_comic_updates_count_and_enqueues_cover_delete() {
 
     assert!(matches!(
         snapshot.prom_records[0].payload(),
-        Payload::Image(ImagePayload::Delete { object_key }) if object_key == "cover.png"
+        TaskPayload::Image(ImagePayload::Delete { object_key }) if object_key == "cover.png"
     ));
 }
 
@@ -301,7 +293,7 @@ async fn delete_rolls_back_missing_comic() {
 
     mock.seed_member(admin_member("user-1", "team-1"));
 
-    let err = delete(&mock, &mock, &mock, token("user-1"), "missing".into())
+    let err = delete((&mock, &mock, &mock), token("user-1"), "missing".into())
         .await
         .err()
         .unwrap();

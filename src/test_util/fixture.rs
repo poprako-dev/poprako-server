@@ -6,6 +6,7 @@ use crate::complex::user::UserComplex;
 use crate::model::team::TeamInfo;
 use crate::model::user::{UserCredential, UserInfo};
 use crate::model::workset::WorksetInfo;
+use crate::value::image::{ImageExt, ImageHash};
 
 /// Builds a [`UserInfo`] fixture with default timestamps and no avatar.
 pub fn user(id: &str, qid: &str, nickname: &str) -> UserInfo {
@@ -19,6 +20,8 @@ pub fn user(id: &str, qid: &str, nickname: &str) -> UserInfo {
         avatar_key: None,
         avatar_uploaded: false,
         avatar_version: 0,
+        avatar_hash: ImageHash::default(),
+        avatar_ext: ImageExt::Png,
         is_sadmin: false,
         last_active_at: time,
         created_at: time,
@@ -62,6 +65,8 @@ pub fn team(id: &str, name: &str, description: &str) -> TeamInfo {
         avatar_key: None,
         avatar_uploaded: false,
         avatar_version: 0,
+        avatar_hash: ImageHash::default(),
+        avatar_ext: ImageExt::Png,
         created_at: time,
         updated_at: time,
     }

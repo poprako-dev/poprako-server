@@ -29,6 +29,7 @@ mod tests;
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct HttpError {
+    //
     /// HTTP status code returned to the client (e.g. 404, 500).
     #[serde(skip)]
     #[cfg_attr(feature = "swagger", schema(ignore))]
@@ -135,6 +136,7 @@ impl IntoResponse for HttpError {
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct HttpBody<T> {
+    //
     /// HTTP status code set on the response (e.g. 200, 201).
     #[serde(skip)]
     #[cfg_attr(feature = "swagger", schema(ignore))]

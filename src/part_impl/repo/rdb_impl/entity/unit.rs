@@ -10,6 +10,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_unit;
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_unit)]
 pub struct UnitRow {
+    //
     pub f_id: String,
 
     pub f_page_id: String,
@@ -35,6 +36,7 @@ pub struct UnitRow {
 #[derive(Insertable)]
 #[diesel(table_name = t_unit)]
 pub struct UnitEntry<'a> {
+    //
     pub f_id: &'a str,
 
     pub f_page_id: &'a str,
@@ -60,6 +62,7 @@ pub struct UnitEntry<'a> {
 #[derive(AsChangeset)]
 #[diesel(table_name = t_unit)]
 pub struct UnitAspect<'a> {
+    //
     pub f_index: Option<i32>,
 
     pub f_is_bubble: Option<bool>,

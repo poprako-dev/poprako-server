@@ -5,6 +5,7 @@ use time::OffsetDateTime;
 /// A persisted page unit in final page order.
 #[cfg_attr(test, derive(Clone))]
 pub struct UnitInfo {
+    //
     /// Server-assigned unique identifier for this unit.
     pub id: String,
 
@@ -49,6 +50,7 @@ impl UnitInfo {
 /// Complete mutable payload supplied by unit opers.
 #[cfg_attr(test, derive(Clone))]
 pub struct UnitContent {
+    //
     /// Whether this unit is a speech bubble contour.
     pub is_bubble: bool,
     /// Whether the proofread text has been reviewed and accepted.
@@ -77,6 +79,7 @@ pub struct UnitContent {
 /// `before_id` the server cannot find) appends the unit to the tail.
 #[cfg_attr(test, derive(Clone))]
 pub struct UnitDiff {
+    //
     /// Foreign key of the page being diffed.
     pub page_id: String,
     /// Ordered list of unit operations to apply.
@@ -94,6 +97,7 @@ pub struct UnitDiff {
 pub enum UnitOper {
     /// Create a new unit with a client id and content payload.
     Create {
+        //
         /// Client-assigned local identifier for the new unit.
         id: String,
         /// Text content and translation state for the unit.
@@ -101,8 +105,10 @@ pub enum UnitOper {
         /// Optional unit ID to place this new unit before in ordering.
         before_id: Option<String>,
     },
+
     /// Update an existing unit with new content payload.
     Save {
+        //
         /// Server-assigned identifier of the unit to update.
         id: String,
         /// Updated text content and translation state.
@@ -110,6 +116,7 @@ pub enum UnitOper {
         /// Optional unit ID to reorder this unit before.
         before_id: Option<String>,
     },
+
     /// Remove an existing unit by server id.
     Delete {
         /// Server-assigned identifier of the unit to remove.
@@ -120,6 +127,7 @@ pub enum UnitOper {
 /// Persisted index for one surviving unit.
 #[derive(Clone)]
 pub struct UnitIndex {
+    //
     /// Server-assigned identifier of the indexed unit.
     pub id: String,
     /// Zero-based display ordering index within the page.
@@ -129,6 +137,7 @@ pub struct UnitIndex {
 /// Index update for one unit whose persisted order changed.
 #[cfg_attr(test, derive(Clone))]
 pub struct UnitIndexUpdate {
+    //
     /// Server-assigned identifier of the reordered unit.
     pub id: String,
     /// New zero-based display ordering index for this unit.
@@ -138,6 +147,7 @@ pub struct UnitIndexUpdate {
 /// Unit count snapshot for a page or counter delta target.
 #[derive(Clone, Copy, Default)]
 pub struct UnitCounters {
+    //
     /// Total number of units on the page or target.
     pub total_unit_count: i32,
     /// Number of units with translated content.
@@ -150,6 +160,7 @@ pub struct UnitCounters {
 #[derive(Default)]
 #[cfg_attr(test, derive(Clone, Copy))]
 pub struct UnitCounterDelta {
+    //
     /// Change in total unit count since the reference snapshot.
     pub total_unit_count: i32,
     /// Change in translated unit count since the reference snapshot.
@@ -161,6 +172,7 @@ pub struct UnitCounterDelta {
 /// Mapping from a client local unit id to a server unit id.
 #[cfg_attr(test, derive(Clone))]
 pub struct UnitIdMapper {
+    //
     /// Client-provided local identifier before server resolution.
     pub local_id: String,
     /// Server-assigned identifier mapped from the local id.
@@ -170,6 +182,7 @@ pub struct UnitIdMapper {
 /// Result of applying unit opers to a page snapshot.
 #[cfg_attr(test, derive(Clone))]
 pub struct UnitApplyAck {
+    //
     /// Final set of applied unit operations.
     pub opers: Vec<UnitOper>,
     /// Mappings from client local ids to resolved server ids.

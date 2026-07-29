@@ -10,6 +10,7 @@ use time::OffsetDateTime;
 /// [`SystemMailInfoVal`]: crate::data::system_mail::SystemMailInfoVal
 #[cfg_attr(test, derive(Clone))]
 pub struct SystemMailInfo {
+    //
     /// The unique identifier for this system mail record.
     pub id: String,
 
@@ -31,6 +32,7 @@ pub struct SystemMailInfo {
 /// The data needed to insert a new system mail row.
 #[cfg_attr(test, derive(Clone))]
 pub struct SystemMailEntry {
+    //
     /// The unique identifier for the new system mail record.
     pub id: String,
 
@@ -45,6 +47,7 @@ pub struct SystemMailEntry {
 
 /// Filtering and pagination parameters for listing a user's system mail.
 pub struct SystemMailInfoListSpec {
+    //
     /// The user whose mail inbox is being queried.
     pub receiver_id: String,
     /// Read-status filter mode for the mail listing.
@@ -60,8 +63,10 @@ pub struct SystemMailInfoListSpec {
 pub enum SystemMailInfoListKind {
     /// Include mail regardless of read status.
     All,
+
     /// Include only read mail.
     Read,
+
     /// Include only unread mail.
     Unread,
 }

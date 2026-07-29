@@ -1,7 +1,5 @@
 //! Data transfer objects for page use cases.
 
-use std::collections::BTreeMap;
-
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "swagger")]
@@ -9,6 +7,7 @@ use utoipa::ToSchema;
 
 use poprako_util::time::ToUnixMilli;
 
+use crate::data::image::ImageUploadSlotVal;
 use crate::model::page::{PageImageSpec, PageInfo};
 use crate::part::image::ImagePool;
 use crate::result::{BaseResult, accept};
@@ -21,6 +20,7 @@ mod tests;
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct PageInfoVal {
+    //
     /// Unique page identifier.
     pub id: String,
 
@@ -38,8 +38,6 @@ pub struct PageInfoVal {
 
     /// Content hash of the page image.
     pub image_hash: ImageHash,
-    /// Size of the page image in bytes.
-    pub byte_length: u64,
     /// File format.
     pub ext: ImageExt,
 
@@ -83,7 +81,6 @@ impl PageInfoVal {
             image_url: image_url.map(Into::into),
             image_thumbnail_url: image_thumbnail_url.map(Into::into),
             image_hash: model.image_hash,
-            byte_length: model.image_byte_length,
             ext: model.image_ext,
             total_unit_count: model.total_unit_count,
             translated_unit_count: model.translated_unit_count,
@@ -98,6 +95,7 @@ impl PageInfoVal {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ReserveChapterPagesParams {
+    //
     /// Target chapter identifier.
     pub chapter_id: String,
     /// Page images to reserve for the chapter.
@@ -108,12 +106,15 @@ pub struct ReserveChapterPagesParams {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct PageImageParams {
+    //
     /// Existing page identifier, if updating an existing page.
     pub page_id: Option<String>,
     /// Content hash of the page image.
     pub image_hash: ImageHash,
-    /// Size of the page image in bytes.
-    pub byte_length: u64,
+    /// Size used to constrain a newly requested upload slot.
+    ///
+    /// Existing manifest entries may omit this when no upload slot is needed.
+    pub new_byte_len: Option<u64>,
     /// File format.
     pub ext: ImageExt,
 }
@@ -123,7 +124,7 @@ impl From<PageImageParams> for PageImageSpec {
         Self {
             page_id: params.page_id,
             image_hash: params.image_hash,
-            byte_length: params.byte_length,
+            new_byte_len: params.new_byte_len,
             ext: params.ext,
         }
     }
@@ -141,40 +142,30 @@ pub struct ReserveChapterPagesPayload {
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ReservedPagePayload {
+    //
     /// Reserved page identifier.
     pub page_id: String,
+
     /// Ordinal position within the chapter.
     pub index: u32,
     /// Content hash of the page image.
     pub image_hash: ImageHash,
-    /// Size of the page image in bytes.
-    pub byte_length: u64,
     /// File format.
     pub ext: ImageExt,
-    /// Presigned upload slot, if a new image must be uploaded.
-    pub slot: Option<PageSlotVal>,
-}
 
-/// Presigned slot for a pending page-image upload.
-#[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
-pub struct PageSlotVal {
-    /// Presigned PUT URL for the image upload.
-    pub put_url: String,
-    /// Monotonic version number for idempotent upload confirmation.
-    pub image_version: u32,
-    /// Required HTTP headers for the presigned PUT request.
-    pub headers: BTreeMap<String, String>,
+    /// Presigned upload slot, if a new image must be uploaded.
+    pub slot: Option<ImageUploadSlotVal>,
 }
 
 /// Input parameters for reserving one page image.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ReservePageImageParams {
+    //
     /// Content hash of the page image to reserve.
     pub image_hash: ImageHash,
     /// Size of the page image in bytes.
-    pub byte_length: u64,
+    pub new_byte_len: u64,
     /// File format.
     pub ext: ImageExt,
 }

@@ -22,7 +22,7 @@ use crate::part::repo::oper::member::{
 use crate::part::repo::oper::member_invitation::{
     GetMemberInvitationInfoExcluded, UpdateMemberInvitation,
 };
-use crate::part::repo::oper::team::GetTeamInfoExcluded;
+use crate::part::repo::oper::team::LockTeam;
 use crate::part::repo::oper::user::GetUserInfoExcluded;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
@@ -37,8 +37,7 @@ mod tests;
 /// the transaction before inserting the membership.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn create<N, C, R>(
-    nucl: &N,
-    repo: &R,
+    (nucl, repo): (&N, &R),
     token: UserToken,
     params: CreateMemberParams,
 ) -> BaseResult<CreateMemberPayload>
@@ -73,7 +72,7 @@ where
 
             repo.step(
                 context,
-                &GetTeamInfoExcluded::Id {
+                &LockTeam {
                     id: &params.team_id,
                 },
             )
@@ -123,9 +122,7 @@ where
 /// Joins the current user to a team with a pending invitation code.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn join_team<N, C, R, I>(
-    nucl: &N,
-    repo: &R,
-    image_pool: &I,
+    (nucl, repo, image_pool): (&N, &R, &I),
     token: UserToken,
     params: JoinTeamParams,
 ) -> BaseResult<MemberInfoVal>
@@ -214,8 +211,7 @@ where
 /// The caller must already be a member of the target team.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos<C, R, I>(
-    repo: &R,
-    image_pool: &I,
+    (repo, image_pool): (&R, &I),
     token: UserToken,
     params: ListMemberInfosParams,
 ) -> BaseResult<Vec<MemberInfoVal>>
@@ -257,8 +253,7 @@ where
 /// The caller must be a team admin of the target member's team.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn update_roles<N, C, R>(
-    nucl: &N,
-    repo: &R,
+    (nucl, repo): (&N, &R),
     token: UserToken,
     params: UpdateMemberRolesParams,
 ) -> BaseResult<()>
@@ -312,8 +307,7 @@ where
 /// The caller must be a team admin of the target member's team.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn delete<N, C, R>(
-    nucl: &N,
-    repo: &R,
+    (nucl, repo): (&N, &R),
     token: UserToken,
     id: String,
 ) -> BaseResult<()>

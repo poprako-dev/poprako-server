@@ -14,7 +14,7 @@ async fn delete_removes_user_credentials_members_and_enqueues_avatar_delete() {
 
     mock.seed_member(member("member-2", "user-1", "Nick", "team-2"));
 
-    delete(&mock, &mock, &mock, token("user-1"), "user-1".into())
+    delete((&mock, &mock, &mock), token("user-1"), "user-1".into())
         .await
         .unwrap();
 
@@ -42,7 +42,7 @@ async fn delete_without_uploaded_avatar_does_not_enqueue_prom() {
         credential("user-1", "password"),
     );
 
-    delete(&mock, &mock, &mock, token("user-1"), "user-1".into())
+    delete((&mock, &mock, &mock), token("user-1"), "user-1".into())
         .await
         .unwrap();
 
@@ -59,7 +59,7 @@ async fn delete_rejects_non_owner_without_mutation() {
         credential("user-1", "password"),
     );
 
-    let err = delete(&mock, &mock, &mock, token("user-2"), "user-1".into())
+    let err = delete((&mock, &mock, &mock), token("user-2"), "user-1".into())
         .await
         .err()
         .unwrap();
@@ -78,7 +78,7 @@ async fn delete_rolls_back_missing_user() {
     //
     let mock = Mock::new();
 
-    let err = delete(&mock, &mock, &mock, token("user-1"), "user-1".into())
+    let err = delete((&mock, &mock, &mock), token("user-1"), "user-1".into())
         .await
         .err()
         .unwrap();

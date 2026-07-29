@@ -28,7 +28,7 @@ use crate::model::unit::UnitInfo;
 use crate::model::user::{UserCredential, UserInfo};
 use crate::model::workset::WorksetInfo;
 use crate::part::effect::event::Event;
-use crate::part::prom::payload::{Payload, image};
+use crate::part::prom::payload::{TaskPayload, image};
 use crate::part::repo::oper::member::CreateMember;
 use crate::part::repo::oper::user::GetUserInfo;
 use crate::part_impl::prom::mock_impl::MockPromRecord;
@@ -75,6 +75,7 @@ pub mod workset;
 /// In-memory state holding all mock repository records.
 #[cfg_attr(test, derive(Clone, Default))]
 pub struct MockState {
+    //
     /// Mock storage for user records.
     pub users: Vec<UserInfo>,
     /// Mock storage for user credential records.
@@ -120,6 +121,7 @@ pub struct MockState {
 #[cfg_attr(test, derive(Clone))]
 /// Immutable snapshot of the full mock state — used for asserting test outcomes.
 pub struct MockSnapshot {
+    //
     /// Snapshot of user records at the capture time.
     pub users: Vec<UserInfo>,
     /// Snapshot of credential records at the capture time.
@@ -192,6 +194,7 @@ impl From<MockState> for MockSnapshot {
 /// The transactional context passed to [`Nucl::coord`] calls,
 /// providing mutable access to the mock state during a simulated transaction.
 pub struct MockContext {
+    //
     /// Mutable mock repository state visible within the current transaction.
     pub state: MockState,
     /// When true, archive persistence will fail before transaction commit.
@@ -203,6 +206,7 @@ pub struct MockContext {
 #[cfg_attr(test, derive(Clone, Default))]
 /// Toggleable failure flags for testing error paths in mock adapters.
 pub struct MockFlags {
+    //
     /// Simulates a token authentication failure.
     pub token_failure: bool,
     /// Simulates an image retrieval failure from object storage.
@@ -214,10 +218,6 @@ pub struct MockFlags {
     pub image_head_failure: bool,
     /// Simulates the head-object reporting the object as absent.
     pub image_head_absent: bool,
-    /// Simulates a SHA-256 hash mismatch in head-object response.
-    pub image_head_hash_mismatch: bool,
-    /// Simulates a content-length mismatch in head-object response.
-    pub image_head_length_mismatch: bool,
 
     /// Simulates a failure in object deletion from storage.
     pub image_delete_failure: bool,
@@ -232,6 +232,7 @@ pub struct MockFlags {
 /// `Arc<Mutex<...>>` for concurrent test access.
 #[cfg_attr(test, derive(Clone, Default))]
 pub struct Mock {
+    //
     /// Shared mutable mock repository state for concurrent test access.
     pub state: Arc<Mutex<MockState>>,
     /// Shared mutable mock failure flags for testing error paths.
@@ -388,24 +389,6 @@ impl Mock {
     pub fn with_image_head_absent(self) -> Self {
         //
         self.flags.lock().unwrap().image_head_absent = true;
-
-        self
-    }
-
-    /// Report a mismatching SHA-256 checksum from head-object opers.
-    #[allow(dead_code)]
-    pub fn with_image_head_hash_mismatch(self) -> Self {
-        //
-        self.flags.lock().unwrap().image_head_hash_mismatch = true;
-
-        self
-    }
-
-    /// Report a mismatching content length from head-object opers.
-    #[allow(dead_code)]
-    pub fn with_image_head_length_mismatch(self) -> Self {
-        //
-        self.flags.lock().unwrap().image_head_length_mismatch = true;
 
         self
     }

@@ -13,7 +13,7 @@ use crate::part::repo::oper::page::{
     UpdatePageManifest,
 };
 use crate::part_impl::repo::mock_impl::page::{
-    get_page_by_id, list_all_pages, list_first_pages, page_from_entry,
+    get_page_by_id, list_first_pages, list_infos, page_from_entry,
 };
 use crate::part_impl::repo::mock_impl::{Mock, MockContext, expected, now};
 use crate::result::{BaseError, BaseResult, accept};
@@ -35,7 +35,7 @@ impl<'a> Run<ListPageInfos<'a>> for Mock {
         //
         let state = self.state.lock().unwrap();
 
-        accept(list_all_pages(&state, oper.chapter_id))
+        accept(list_infos(&state, oper.chapter_id))
     }
 }
 
@@ -72,7 +72,7 @@ impl<'a> Step<ListPageInfos<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &ListPageInfos<'a>,
     ) -> BaseResult<Vec<PageInfo>> {
-        accept(list_all_pages(&context.state, oper.chapter_id))
+        accept(list_infos(&context.state, oper.chapter_id))
     }
 }
 
@@ -85,7 +85,7 @@ impl<'a> Step<ListPageInfosExcluded<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &ListPageInfosExcluded<'a>,
     ) -> BaseResult<Vec<PageInfo>> {
-        accept(list_all_pages(&context.state, oper.chapter_id))
+        accept(list_infos(&context.state, oper.chapter_id))
     }
 }
 impl<'a> Step<CreatePages<'a>, MockContext> for Mock {
@@ -303,8 +303,6 @@ impl<'a> Step<UpdatePageManifest<'a>, MockContext> for Mock {
         page_info.image_version = oper.update.image_version;
 
         page_info.image_hash = oper.update.image_hash.clone();
-
-        page_info.image_byte_length = oper.update.image_byte_len;
 
         page_info.image_ext = oper.update.image_ext;
 

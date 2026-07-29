@@ -16,7 +16,7 @@ use crate::data::unit::{
 use crate::model::user::UserToken;
 use crate::usecase;
 
-/// `GET /api/v1/pages/{page_id}/units` — list all units under a page.
+/// `GET /api/v1/pages/{page_id}/units` — list units under a page.
 #[cfg_attr(feature = "swagger", utoipa::path(
     get,
     path = "/api/v1/pages/{page_id}/units",
@@ -29,7 +29,7 @@ use crate::usecase;
     ),
 ))]
 #[instrument(level = "info", err(Debug), skip_all)]
-pub async fn list_all_infos(
+pub async fn list_infos(
     State(harn): State<AppHarn>,
     Path(page_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
@@ -37,7 +37,7 @@ pub async fn list_all_infos(
     //
     let params = ListPageUnitInfosParams { page_id };
 
-    usecase::unit::list_all_infos(harn.repo(), user_token, params)
+    usecase::unit::list_infos((harn.repo(),), user_token, params)
         .await?
         .accept(StatusCode::OK)
 }
@@ -68,7 +68,7 @@ pub async fn save_infos(
 
     ensure_path_matches_body_id(&page_id, &params.diff.page_id)?;
 
-    usecase::unit::save(harn.drive(), harn.repo(), user_token, params)
+    usecase::unit::save((harn.drive(), harn.repo()), user_token, params)
         .await?
         .accept(StatusCode::OK)
 }

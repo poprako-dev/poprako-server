@@ -1,16 +1,17 @@
 //! Mock implementation of [ImagePool] and [ImageManager] for testing
 //! signed URL resolution with deterministic output.
 
+use std::collections::BTreeMap;
+
 use url::Url;
 
 use poprako_util::i18n::trl;
 
 use crate::part::image::{
-    ImageManager, ImageObjectInfo, ImagePool, ImageUploadSlot, ImageUploadSpec,
+    ImageManager, ImagePool, ImageUploadSlot, ImageUploadSpec,
 };
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
-use crate::value::image::ImageHash;
 
 /// Mock implementation of [ImagePool].
 ///
@@ -80,14 +81,12 @@ impl ImagePool for Mock {
             Url::parse(&format!("https://test.local/put/{}", spec.object_key))
                 .unwrap();
 
-        let mut headers = std::collections::BTreeMap::new();
+        let mut headers = BTreeMap::new();
+
+        headers
+            .insert("content-length".into(), spec.content_length.to_string());
 
         headers.insert("content-type".into(), spec.content_type.into());
-
-        headers.insert(
-            "x-amz-checksum-sha256".into(),
-            spec.checksum_sha256.to_base64(),
-        );
 
         accept(ImageUploadSlot { url, headers })
     }
@@ -95,10 +94,7 @@ impl ImagePool for Mock {
 
 /// Mock implementation of [ImageManager].
 impl ImageManager for Mock {
-    async fn head_object(
-        &self,
-        key: &str,
-    ) -> BaseResult<Option<ImageObjectInfo>> {
+    async fn object_exists(&self, _: &str) -> BaseResult<bool> {
         //
         if self.flags.lock().unwrap().image_head_failure {
             return Err(BaseError::Expected {
@@ -108,49 +104,10 @@ impl ImageManager for Mock {
         }
 
         if self.flags.lock().unwrap().image_head_absent {
-            return accept(None);
+            return accept(false);
         }
 
-        let flags = self.flags.lock().unwrap().clone();
-
-        let page_identity = self
-            .state
-            .lock()
-            .unwrap()
-            .pages
-            .iter()
-            .find(|page_info| page_info.image_key.as_deref() == Some(key))
-            .map(|page_info| {
-                (page_info.image_byte_length, page_info.image_hash.clone())
-            });
-
-        let expected_byte_length = page_identity
-            .as_ref()
-            .map(|(byte_length, _)| *byte_length)
-            .unwrap_or(4096);
-
-        let expected_checksum_sha256 = page_identity
-            .map(|(_, checksum_sha256)| checksum_sha256)
-            .unwrap_or_else(|| ImageHash::new([0; 32]));
-
-        let byte_length = match flags.image_head_length_mismatch {
-            //
-            true => 1,
-
-            false => expected_byte_length,
-        };
-
-        let checksum_sha256 = match flags.image_head_hash_mismatch {
-            //
-            true => ImageHash::new([255; 32]),
-
-            false => expected_checksum_sha256,
-        };
-
-        accept(Some(ImageObjectInfo {
-            byte_length,
-            checksum_sha256,
-        }))
+        accept(true)
     }
 
     async fn delete_object(&self, key: &str) -> BaseResult<()> {

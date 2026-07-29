@@ -2,6 +2,8 @@
 
 use time::OffsetDateTime;
 
+use crate::value::image::{ImageExt, ImageHash};
+
 /// A teamrecord as stored in the database.
 ///
 /// Carries raw [`OffsetDateTime`] timestamps; convert to [`TeamInfoVal`] for
@@ -10,6 +12,7 @@ use time::OffsetDateTime;
 /// [`TeamInfoVal`]: crate::data::team::TeamInfoVal
 #[derive(Clone)]
 pub struct TeamInfo {
+    //
     /// The unique identifier for this team.
     pub id: String,
 
@@ -24,6 +27,10 @@ pub struct TeamInfo {
     pub avatar_uploaded: bool,
     /// Monotonically increasing version counter for the avatar.
     pub avatar_version: u32,
+    /// SHA-256 identity of the reserved avatar content.
+    pub avatar_hash: ImageHash,
+    /// File format persisted with the avatar identity.
+    pub avatar_ext: ImageExt,
 
     /// Timestamp when this team was created.
     pub created_at: OffsetDateTime,
@@ -33,6 +40,7 @@ pub struct TeamInfo {
 
 /// Filtering and pagination parameters for listing teams.
 pub struct TeamInfoListSpec {
+    //
     /// Membership filter mode for the team listing.
     pub kind: TeamInfoListKind,
 
@@ -46,6 +54,7 @@ pub struct TeamInfoListSpec {
 pub enum TeamInfoListKind {
     /// Include all teams.
     All,
+
     /// Include only teams joined by the specified user.
     JoinedBy {
         /// ID of the user whose team memberships to list.
@@ -56,6 +65,7 @@ pub enum TeamInfoListKind {
 /// The data needed to create a new team.
 #[cfg_attr(test, derive(Clone))]
 pub struct TeamEntry {
+    //
     /// The unique identifier for the new team.
     pub id: String,
 
@@ -74,12 +84,15 @@ pub struct TeamEntry {
 /// [`UserAvatarReservation`]: crate::model::user::UserAvatarReservation
 #[cfg_attr(test, derive(Clone))]
 pub struct TeamAvatarReservation {
+    //
     /// Newly generated object-storage key for the avatar upload slot.
     pub object_key: String,
     /// Previous avatar key that should be cleaned up from storage, if any.
     pub prev_object_key: Option<String>,
     /// The new version number that must match on upload confirmation.
     pub avatar_version: u32,
+    /// Whether a PUT capability and delayed check are required.
+    pub upload_required: bool,
 }
 
 // TODO: update

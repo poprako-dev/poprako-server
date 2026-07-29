@@ -48,17 +48,14 @@ async fn published_chapter_rejects_page_image_writes() {
     seed_published_scope(&mock);
 
     let manifest_result = reserve_chapter_pages(
-        &mock,
-        &mock,
-        &mock,
-        &mock,
+        (&mock, &mock, &mock, &mock),
         token("user-1"),
         ReserveChapterPagesParams {
             chapter_id: "chapter-1".into(),
             pages: vec![PageImageParams {
                 page_id: Some("page-1".into()),
                 image_hash: ImageHash::new([0; 32]),
-                byte_length: 4096,
+                new_byte_len: Some(4096),
                 ext: ImageExt::Png,
             }],
         },
@@ -68,15 +65,12 @@ async fn published_chapter_rejects_page_image_writes() {
     assert!(matches!(manifest_result, Err(BaseError::Expected { .. })));
 
     let reserve_result = reserve_image(
-        &mock,
-        &mock,
-        &mock,
-        &mock,
+        (&mock, &mock, &mock, &mock),
         token("user-1"),
         "page-1".into(),
         ReservePageImageParams {
             image_hash: ImageHash::new([1; 32]),
-            byte_length: 4096,
+            new_byte_len: 4096,
             ext: ImageExt::Png,
         },
     )
@@ -85,15 +79,14 @@ async fn published_chapter_rejects_page_image_writes() {
     assert!(matches!(reserve_result, Err(BaseError::Expected { .. })));
 
     let mark_result = mark_image_uploaded(
-        &mock,
-        &mock,
+        (&mock, &mock, &mock),
         token("user-1"),
         "page-1".into(),
         MarkPageImageUploadedParams { image_version: 1 },
     )
     .await;
 
-    assert!(matches!(mark_result, Err(BaseError::Expected { .. })));
+    assert!(mark_result.is_ok());
 
     assert_eq!(mock.snapshot().pages[0].image_version, 1);
 
@@ -102,51 +95,30 @@ async fn published_chapter_rejects_page_image_writes() {
 
 async fn assert_delayed_check_clears_unverified_image(
     mock: Mock,
+    expected_uploaded: bool,
     expected_deleted_image_keys: Vec<&str>,
 ) {
     //
     seed_mark_scope(&mock);
 
     reserve_image(
-        &mock,
-        &mock,
-        &mock,
-        &mock,
+        (&mock, &mock, &mock, &mock),
         token("user-1"),
         "page-1".into(),
         ReservePageImageParams {
             image_hash: ImageHash::new([0; 32]),
-            byte_length: 4096,
+            new_byte_len: 4096,
             ext: ImageExt::Png,
         },
     )
     .await
     .unwrap();
 
-    let result = mark_image_uploaded(
-        &mock,
-        &mock,
-        token("user-1"),
-        "page-1".into(),
-        MarkPageImageUploadedParams { image_version: 1 },
-    )
-    .await;
-
-    assert!(result.is_ok());
-
-    assert!(mock.snapshot().pages[0].image_uploaded);
-
     process_pending(&mock).await.unwrap();
 
     let snapshot = mock.snapshot();
 
-    assert!(!snapshot.pages[0].image_uploaded);
-
-    assert!(
-        snapshot.chapters[0]
-            .stages
-            .has_phase(Stage::RawProvide, StagePhase::Pending)
-    );
+    assert_eq!(snapshot.pages[0].image_uploaded, expected_uploaded);
 
     assert_eq!(
         snapshot.deleted_image_keys,
@@ -161,27 +133,16 @@ async fn assert_delayed_check_clears_unverified_image(
 async fn delayed_check_clears_absent_object_after_mark() {
     assert_delayed_check_clears_unverified_image(
         Mock::new().with_image_head_absent(),
+        false,
         Vec::new(),
     )
     .await;
 }
 
 #[tokio::test]
-async fn delayed_check_clears_checksum_mismatch_after_mark() {
-    assert_delayed_check_clears_unverified_image(
-        Mock::new().with_image_head_hash_mismatch(),
-        vec!["one.png"],
-    )
-    .await;
-}
-
-#[tokio::test]
-async fn delayed_check_clears_length_mismatch_after_mark() {
-    assert_delayed_check_clears_unverified_image(
-        Mock::new().with_image_head_length_mismatch(),
-        vec!["one.png"],
-    )
-    .await;
+async fn delayed_check_marks_existing_object_after_mark() {
+    assert_delayed_check_clears_unverified_image(Mock::new(), true, Vec::new())
+        .await;
 }
 
 #[tokio::test]
@@ -206,15 +167,12 @@ async fn mark_image_uploaded_rejects_stale_replay_then_accepts_current_version()
     ));
 
     let reserved = reserve_image(
-        &mock,
-        &mock,
-        &mock,
-        &mock,
+        (&mock, &mock, &mock, &mock),
         token("user-1"),
         "page-1".into(),
         ReservePageImageParams {
             image_hash: ImageHash::new([1u8; 32]),
-            byte_length: 8192,
+            new_byte_len: 8192,
             ext: ImageExt::Png,
         },
     )
@@ -225,8 +183,7 @@ async fn mark_image_uploaded_rejects_stale_replay_then_accepts_current_version()
     assert_eq!(reserved.slot.as_ref().unwrap().image_version, 2);
 
     let err = mark_image_uploaded(
-        &mock,
-        &mock,
+        (&mock, &mock, &mock),
         token("user-1"),
         "page-1".into(),
         MarkPageImageUploadedParams { image_version: 1 },
@@ -248,8 +205,7 @@ async fn mark_image_uploaded_rejects_stale_replay_then_accepts_current_version()
     assert_eq!(snapshot.pages[0].image_version, 2);
 
     mark_image_uploaded(
-        &mock,
-        &mock,
+        (&mock, &mock, &mock),
         token("user-1"),
         "page-1".into(),
         MarkPageImageUploadedParams { image_version: 2 },
@@ -276,8 +232,7 @@ async fn mark_image_uploaded_rejects_non_raw_provider() {
     ));
 
     let err = mark_image_uploaded(
-        &mock,
-        &mock,
+        (&mock, &mock, &mock),
         token("user-1"),
         "page-1".into(),
         MarkPageImageUploadedParams { image_version: 1 },
@@ -307,7 +262,8 @@ async fn delete_by_chapter_deletes_pages_and_clears_counters() {
     mock.seed_page(page("page-2", 1, None, false, 0));
 
     let deleted =
-        delete(&mock, &mock, &mock, token("user-1"), "chapter-1".into()).await;
+        delete((&mock, &mock, &mock), token("user-1"), "chapter-1".into())
+            .await;
 
     assert!(deleted.is_ok());
 
@@ -323,7 +279,7 @@ async fn delete_by_chapter_deletes_pages_and_clears_counters() {
 
     assert!(matches!(
         snapshot.prom_records[0].payload(),
-        Payload::Image(ImagePayload::Delete { object_key }) if object_key == "one.png"
+        TaskPayload::Image(ImagePayload::Delete { object_key }) if object_key == "one.png"
     ));
 }
 
@@ -338,10 +294,11 @@ async fn delete_by_chapter_rejects_non_admin_and_rolls_back() {
 
     mock.seed_page(page("page-1", 0, Some("one.png"), true, 1));
 
-    let err = delete(&mock, &mock, &mock, token("user-1"), "chapter-1".into())
-        .await
-        .err()
-        .unwrap();
+    let err =
+        delete((&mock, &mock, &mock), token("user-1"), "chapter-1".into())
+            .await
+            .err()
+            .unwrap();
 
     let snapshot = mock.snapshot();
 

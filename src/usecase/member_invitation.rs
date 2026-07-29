@@ -24,8 +24,8 @@ use crate::model::member_invitation::{
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
 use crate::part::prom::Prom;
-use crate::part::prom::payload::Payload;
-use crate::part::prom::payload::invitation::PurgeExpiredInvitation;
+use crate::part::prom::payload::TaskPayload;
+use crate::part::prom::payload::invitation::InvitationPayload;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::member_invitation::MemberInvitationRepo;
 use crate::part::repo::oper::member::FindMemberInfo;
@@ -46,9 +46,7 @@ const EXPIRY_DELAY: Duration = Duration::from_secs(5 * 24 * 60 * 60);
 /// Creates a pending invitation for a team.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn create<N, C, R, P>(
-    nucl: &N,
-    repo: &R,
-    prom: &P,
+    (nucl, repo, prom): (&N, &R, &P),
     token: UserToken,
     params: CreateMemberInvitationParams,
 ) -> BaseResult<CreateMemberInvitationPayload>
@@ -125,11 +123,11 @@ where
                 )
                 .await?;
 
-            let purge_event = PurgeExpiredInvitation::Member {
+            let purge_event = InvitationPayload::Member {
                 invitation_id: member_invitation_info.id.clone(),
             };
 
-            let purge_payload = Payload::PurgeExpiredInvitation(purge_event);
+            let purge_payload = TaskPayload::Invitation(purge_event);
 
             let purge_task_id = next_snowflake_id();
 
@@ -154,8 +152,7 @@ where
 /// Lists invitations for a team.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos<C, R, I>(
-    repo: &R,
-    image_pool: &I,
+    (repo, image_pool): (&R, &I),
     token: UserToken,
     params: ListMemberInvitationInfosParams,
 ) -> BaseResult<Vec<MemberInvitationInfoVal>>
@@ -214,8 +211,7 @@ where
 /// Updates the roles of an invitation.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn update_roles<N, C, R>(
-    nucl: &N,
-    repo: &R,
+    (nucl, repo): (&N, &R),
     token: UserToken,
     params: UpdateMemberInvitationRolesParams,
 ) -> BaseResult<()>
@@ -262,8 +258,7 @@ where
 /// Deletes an invitation.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn delete<N, C, R>(
-    nucl: &N,
-    repo: &R,
+    (nucl, repo): (&N, &R),
     token: UserToken,
     id: String,
 ) -> BaseResult<()>

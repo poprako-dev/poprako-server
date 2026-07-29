@@ -6,16 +6,13 @@ use axum::extract::{MatchedPath, Request};
 use axum::middleware::Next;
 use axum::response::Response;
 
-use crate::api::http::shared::metric::record_response;
+use crate::api::http::shared::record_response;
 
 #[cfg(test)]
 mod tests;
 
 /// Records the response status and matched route template.
-pub(crate) async fn record_response_metric(
-    request: Request,
-    next: Next,
-) -> Response {
+pub async fn record_response_metric(request: Request, next: Next) -> Response {
     //
     let start = Instant::now();
 

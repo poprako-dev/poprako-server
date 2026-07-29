@@ -19,6 +19,7 @@ pub struct ManifestMatch {
 
 /// Stable matching result for an authoritative page manifest.
 pub struct ManifestPlan {
+    //
     /// Ordered match results aligning each input page to an existing page or a new slot.
     pub matches: Vec<ManifestMatch>,
     /// Indexes of existing pages that were not matched and should be removed.
@@ -30,21 +31,6 @@ fn args_err(key: &str) -> BaseError {
         variant: ExpectedVariant::Args,
         message: trl(key),
     }
-}
-
-fn validate_same_hash_metadata(
-    page_info: &PageInfo,
-    page_spec: &PageImageSpec,
-) -> BaseResult<()> {
-    //
-    if page_info.image_hash == page_spec.image_hash
-        && (page_info.image_byte_length != page_spec.byte_length
-            || page_info.image_ext != page_spec.ext)
-    {
-        return Err(args_err("error-invalid-page-image-identity"));
-    }
-
-    accept(())
 }
 
 fn candidate_order(left: &PageInfo, right: &PageInfo) -> Ordering {
@@ -81,11 +67,6 @@ pub fn build(
             })
             .ok_or_else(|| args_err("error-page-not-found"))?;
 
-        validate_same_hash_metadata(
-            &existing_page_infos[existing_index],
-            page_spec,
-        )?;
-
         consumed_existing_indexes.insert(existing_index);
 
         assigned_existing_indexes[request_index] = Some(existing_index);
@@ -103,6 +84,7 @@ pub fn build(
             .filter(|(existing_index, page_info)| {
                 !consumed_existing_indexes.contains(existing_index)
                     && page_info.image_hash == page_spec.image_hash
+                    && page_info.image_ext == page_spec.ext
             })
             .min_by(|(_, left), (_, right)| candidate_order(left, right))
             .map(|(existing_index, _)| existing_index);
@@ -110,11 +92,6 @@ pub fn build(
         let Some(existing_index) = existing_index else {
             continue;
         };
-
-        validate_same_hash_metadata(
-            &existing_page_infos[existing_index],
-            page_spec,
-        )?;
 
         consumed_existing_indexes.insert(existing_index);
 

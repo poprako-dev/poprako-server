@@ -7,6 +7,8 @@ use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 use poprako_orchestra_extra::prom::task::Task;
 use tracing::instrument;
 
+use poprako_util::i18n::trl;
+
 use crate::complex::assignment::AssignmentComplex;
 use crate::complex::chapter::ChapterComplex;
 use crate::complex::comic::{ComicComplex, ComicPermComplex};
@@ -16,13 +18,14 @@ use crate::data::comic::{
     MarkComicCoverUploadedParams, ReserveComicCoverParams,
     ReserveComicCoverPayload, UpdateComicInfoParams,
 };
+use crate::data::image::ImageUploadSlotVal;
 use crate::model::assignment::AssignmentEntry;
 use crate::model::chapter::ChapterEntry;
 use crate::model::comic::{ComicEntry, ComicInfoUpdate};
 use crate::model::user::UserToken;
-use crate::part::image::ImagePool;
+use crate::part::image::{ImageManager, ImagePool, ImageUploadSpec};
 use crate::part::prom::Prom;
-use crate::part::prom::payload::{Payload, image};
+use crate::part::prom::payload::{TaskPayload, image};
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::chapter::ChapterRepo;
@@ -58,7 +61,7 @@ use crate::part::repo::term::TermRepo;
 use crate::part::repo::termbase::TermbaseRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 
 pub use list::list_infos;
 
@@ -79,8 +82,7 @@ pub mod tests;
 /// 6. Creates an ADMIN assignment on the new chapter for the caller.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn create<N, C, R>(
-    nucl: &N,
-    repo: &R,
+    (nucl, repo): (&N, &R),
     token: UserToken,
     params: CreateComicParams,
 ) -> BaseResult<CreateComicPayload>
@@ -230,8 +232,7 @@ where
 /// Fetches a comic by ID with cover URL resolution.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn get_info<C, R, I>(
-    repo: &R,
-    image_pool: &I,
+    (repo, image_pool): (&R, &I),
     token: UserToken,
     id: String,
 ) -> BaseResult<ComicInfoVal>
@@ -286,7 +287,7 @@ where
 /// Updates a comic's title, author, and description.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn update_info<C, R>(
-    repo: &R,
+    (repo,): (&R,),
     token: UserToken,
     params: UpdateComicInfoParams,
 ) -> BaseResult<()>
@@ -323,10 +324,7 @@ where
 /// Reserves a new comic cover upload slot.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn reserve_cover<N, C, R, P, I>(
-    nucl: &N,
-    repo: &R,
-    prom: &P,
-    image_pool: &I,
+    (nucl, repo, prom, image_pool): (&N, &R, &P, &I),
     token: UserToken,
     id: String,
     params: ReserveComicCoverParams,
@@ -338,6 +336,17 @@ where
     P: Prom<C> + Send + Sync,
     I: ImagePool,
 {
+    ImageComplex::ensure_byte_length(
+        params.new_byte_len,
+        image::ResourceKind::ComicCover,
+    )?;
+
+    let transaction_image_hash = params.image_hash.clone();
+
+    let image_ext = params.ext;
+
+    let new_byte_len = params.new_byte_len;
+
     ComicPermComplex::ensure_user_can_reserve_cover(
         &mut run_proxy! {
             repo =>
@@ -350,7 +359,7 @@ where
     )
     .await?;
 
-    let (object_key, cover_version) = nucl
+    let (object_key, cover_version, upload_required) = nucl
         .coord(async move |context| {
             //
             let cover_reservation = repo
@@ -358,10 +367,19 @@ where
                     context,
                     &ReserveComicCover {
                         id: &id,
-                        file_extension: &params.file_ext,
+                        image_hash: &transaction_image_hash,
+                        image_ext,
                     },
                 )
                 .await?;
+
+            if !cover_reservation.upload_required {
+                return accept((
+                    cover_reservation.object_key,
+                    cover_reservation.cover_version,
+                    false,
+                ));
+            }
 
             let mut batch_ids = Vec::new();
 
@@ -373,25 +391,29 @@ where
                 //
                 batch_ids.push(ImageComplex::gen_delete_id());
 
-                batch_payloads.push(Payload::Image(image::Payload::Delete {
-                    object_key: prev_object_key.clone(),
-                }));
+                batch_payloads.push(TaskPayload::Image(
+                    image::ImagePayload::Delete {
+                        object_key: prev_object_key.clone(),
+                    },
+                ));
 
                 batch_delays.push(None);
             }
 
             batch_ids.push(ImageComplex::gen_check_id());
 
-            batch_payloads.push(Payload::Image(image::Payload::CheckUpload {
-                resource_kind: image::ResourceKind::ComicCover,
-                resource_id: id.clone(),
-                object_key: cover_reservation.object_key.clone(),
-                version: cover_reservation.cover_version,
-            }));
+            batch_payloads.push(TaskPayload::Image(
+                image::ImagePayload::CheckUpload {
+                    resource_kind: image::ResourceKind::ComicCover,
+                    resource_id: id.clone(),
+                    object_key: cover_reservation.object_key.clone(),
+                    version: cover_reservation.cover_version,
+                },
+            ));
 
             batch_delays.push(Some(Duration::from_secs(15 * 60)));
 
-            let batch_tasks: Vec<Task<'_, String, Payload>> = batch_ids
+            let batch_tasks: Vec<Task<'_, String, TaskPayload>> = batch_ids
                 .iter()
                 .zip(batch_payloads.iter())
                 .zip(batch_delays.iter())
@@ -407,28 +429,49 @@ where
             accept((
                 cover_reservation.object_key,
                 cover_reservation.cover_version,
+                true,
             ))
         })
         .await?;
 
-    let put_url = image_pool.get_upload_url(&object_key).await?.to_string();
+    let slot = match upload_required {
+        //
+        true => {
+            //
+            let upload_spec = ImageUploadSpec {
+                object_key: &object_key,
+                content_type: image_ext.content_type(),
+                content_length: new_byte_len,
+            };
 
-    accept(ReserveComicCoverPayload {
-        put_url,
-        cover_version,
-    })
+            let upload_slot = image_pool.get_upload_slot(upload_spec).await?;
+
+            Some(ImageUploadSlotVal {
+                put_url: upload_slot.url.to_string(),
+                image_version: cover_version,
+                headers: upload_slot.headers,
+            })
+        }
+
+        false => None,
+    };
+
+    accept(ReserveComicCoverPayload { slot })
 }
 
 /// Marks a reserved comic cover as successfully uploaded.
 #[instrument(level = "info", err(Debug), skip_all)]
-pub async fn mark_cover_uploaded<C, R>(
-    repo: &R,
+pub async fn mark_cover_uploaded<N, C, R, I>(
+    (nucl, repo, image_manager): (&N, &R, &I),
     token: UserToken,
     id: String,
     params: MarkComicCoverUploadedParams,
 ) -> BaseResult<()>
 where
-    R: ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
+    N: Nucl<Context = C, Error = BaseError>,
+    C: Send,
+    R: ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Send + Sync,
+    I: ImageManager,
 {
     ComicPermComplex::ensure_user_can_mark_cover_uploaded(
         &mut run_proxy! {
@@ -442,10 +485,73 @@ where
     )
     .await?;
 
-    repo.run(&MarkComicCoverUploaded {
-        id: &id,
-        cover_version: params.cover_version,
-        cover_key: None,
+    let comic_info = repo
+        .run(&GetComicInfo {
+            id: &id,
+            incls: &[],
+        })
+        .await?;
+
+    if comic_info.cover_version != params.image_version {
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: trl("error-stale-cover-upload"),
+        });
+    }
+
+    if comic_info.cover_uploaded {
+        return accept(());
+    }
+
+    let cover_key =
+        comic_info
+            .cover_key
+            .clone()
+            .ok_or_else(|| BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: trl("error-stale-cover-upload"),
+            })?;
+
+    if !image_manager.object_exists(&cover_key).await? {
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: trl("error-stale-cover-upload"),
+        });
+    }
+
+    nucl.coord(async move |context| {
+        //
+        let locked_comic_info = repo
+            .step(
+                context,
+                &GetComicInfoExcluded {
+                    id: &id,
+                    incls: &[],
+                },
+            )
+            .await?;
+
+        if locked_comic_info.cover_version != params.image_version
+            || locked_comic_info.cover_key.as_deref() != Some(&cover_key)
+        {
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: trl("error-stale-cover-upload"),
+            });
+        }
+
+        repo.step(
+            context,
+            &MarkComicCoverUploaded {
+                id: &id,
+                cover_version: params.image_version,
+                cover_key: Some(&cover_key),
+                cover_uploaded: true,
+            },
+        )
+        .await?;
+
+        accept(())
     })
     .await?;
 
@@ -455,9 +561,7 @@ where
 /// Deletes a comic and updates the parent workset counter.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn delete<N, C, R, P>(
-    nucl: &N,
-    repo: &R,
-    prom: &P,
+    (nucl, repo, prom): (&N, &R, &P),
     token: UserToken,
     id: String,
 ) -> BaseResult<()>
@@ -515,8 +619,8 @@ where
                     for<'a> DeleteTerms<'a>,
                     for<'a> DeleteTermbase<'a>;
                 prom =>
-                    for<'a> Defer<'a, String, Payload, ()>,
-                    for<'t, 'a> DeferBatch<'t, 'a, String, Payload, ()>;
+                    for<'a> Defer<'a, String, TaskPayload, ()>,
+                    for<'t, 'a> DeferBatch<'t, 'a, String, TaskPayload, ()>;
             },
             &id,
         )

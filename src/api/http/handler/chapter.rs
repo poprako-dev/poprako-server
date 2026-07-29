@@ -34,6 +34,7 @@ use crate::value::chapter::ChapterInclOpt;
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ChapterListQuery {
+    //
     /// Related rows to embed. Repeatable. Values: `comic`, `comic.workset`,
     /// `comic.workset.team`, `comic.creator`, `creator`. Dotted values imply
     /// their parent segments.
@@ -65,7 +66,7 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(params): Json<CreateChapterParams>,
 ) -> HttpResult<CreateChapterPayload> {
-    usecase::chapter::create(harn.drive(), harn.repo(), user_token, params)
+    usecase::chapter::create((harn.drive(), harn.repo()), user_token, params)
         .await?
         .accept(StatusCode::CREATED)
 }
@@ -98,8 +99,7 @@ pub async fn list_infos(
     };
 
     usecase::chapter::list_infos(
-        harn.repo(),
-        harn.image_pool(),
+        (harn.repo(), harn.image_pool()),
         user_token,
         params,
     )
@@ -124,7 +124,7 @@ pub async fn get_pinned(
     Path(comic_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<Option<ChapterInfoVal>> {
-    usecase::chapter::get_pinned(harn.repo(), user_token, comic_id)
+    usecase::chapter::get_pinned((harn.repo(),), user_token, comic_id)
         .await?
         .accept(StatusCode::OK)
 }
@@ -147,7 +147,7 @@ pub async fn get_info(
     Path(chapter_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<ChapterInfoVal> {
-    usecase::chapter::get_info(harn.repo(), user_token, chapter_id)
+    usecase::chapter::get_info((harn.repo(),), user_token, chapter_id)
         .await?
         .accept(StatusCode::OK)
 }
@@ -177,8 +177,7 @@ pub async fn update_info(
     ensure_path_matches_body_id(&chapter_id, &params.id)?;
 
     usecase::chapter::update_info(
-        harn.drive(),
-        harn.repo(),
+        (harn.drive(), harn.repo()),
         user_token,
         params,
     )
@@ -212,10 +211,7 @@ pub async fn advance_stage(
     ensure_path_matches_body_id(&chapter_id, &params.id)?;
 
     usecase::chapter::update_stage(
-        harn.drive(),
-        harn.repo(),
-        harn.prom(),
-        harn.develop(),
+        (harn.drive(), harn.repo(), harn.prom(), harn.develop()),
         user_token,
         params,
     )
@@ -244,9 +240,7 @@ pub async fn delete(
 ) -> HttpNoContent {
     //
     usecase::chapter::delete(
-        harn.drive(),
-        harn.repo(),
-        harn.prom(),
+        (harn.drive(), harn.repo(), harn.prom()),
         user_token,
         chapter_id,
     )

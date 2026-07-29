@@ -34,6 +34,7 @@ use crate::value::member_invitation::MemberInvitationInclOpt;
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct MemberInvitationListQuery {
+    //
     /// When `Some(true)`, returns only unconsumed invitations;
     /// `Some(false)` returns only consumed ones; `None` returns all.
     pub pending: Option<bool>,
@@ -68,9 +69,7 @@ pub async fn create(
     Json(params): Json<CreateMemberInvitationParams>,
 ) -> HttpResult<CreateMemberInvitationPayload> {
     usecase::member_invitation::create(
-        harn.drive(),
-        harn.repo(),
-        harn.prom(),
+        (harn.drive(), harn.repo(), harn.prom()),
         user_token,
         params,
     )
@@ -107,8 +106,7 @@ pub async fn list_infos(
     };
 
     usecase::member_invitation::list_infos(
-        harn.repo(),
-        harn.image_pool(),
+        (harn.repo(), harn.image_pool()),
         user_token,
         params,
     )
@@ -141,8 +139,7 @@ pub async fn update_roles(
     ensure_path_matches_body_id(&member_invitation_id, &params.id)?;
 
     usecase::member_invitation::update_roles(
-        harn.drive(),
-        harn.repo(),
+        (harn.drive(), harn.repo()),
         user_token,
         params,
     )
@@ -171,8 +168,7 @@ pub async fn delete(
 ) -> HttpNoContent {
     //
     usecase::member_invitation::delete(
-        harn.drive(),
-        harn.repo(),
+        (harn.drive(), harn.repo()),
         user_token,
         member_invitation_id,
     )

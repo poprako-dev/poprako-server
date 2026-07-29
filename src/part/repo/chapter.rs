@@ -4,8 +4,9 @@ use crate::part::repo::oper::chapter::{
     AdjustChapterUnitCounters, CompleteChapterRawProvide, CreateChapter,
     DeleteChapter, FindPinnedChapterInfo, GetChapterInfo,
     GetChapterInfoExcluded, ListChapterInfos, ListChapterInfosExcluded,
-    ListPinnedChapterInfos, ResetChapterRawProvide, SetChapterPageCounters,
-    StartChapterStage, UnpinOtherChapters, UpdateChapter, UpdateChapterStage,
+    ListPinnedChapterInfos, LockChapters, ResetChapterRawProvide,
+    SetChapterPageCounters, StartChapterStage, UnpinOtherChapters,
+    UpdateChapter, UpdateChapterStage,
 };
 use crate::result::BaseError;
 
@@ -23,6 +24,7 @@ pub trait ChapterRepo<C>:
     + for<'a, 'b> Step<GetChapterInfo<'a, 'b>, C, Error = BaseError>
     + for<'a, 'b> Step<GetChapterInfoExcluded<'a, 'b>, C, Error = BaseError>
     + for<'a> Step<ListChapterInfosExcluded<'a>, C, Error = BaseError>
+    + for<'a> Step<LockChapters<'a>, C, Error = BaseError>
     + for<'a, 'b> Step<FindPinnedChapterInfo<'a, 'b>, C, Error = BaseError>
     + for<'a> Step<CreateChapter<'a>, C, Error = BaseError>
     + for<'a> Step<UpdateChapter<'a>, C, Error = BaseError>
@@ -46,6 +48,7 @@ impl<T, C> ChapterRepo<C> for T where
         + for<'a, 'b> Step<GetChapterInfo<'a, 'b>, C, Error = BaseError>
         + for<'a, 'b> Step<GetChapterInfoExcluded<'a, 'b>, C, Error = BaseError>
         + for<'a> Step<ListChapterInfosExcluded<'a>, C, Error = BaseError>
+        + for<'a> Step<LockChapters<'a>, C, Error = BaseError>
         + for<'a, 'b> Step<FindPinnedChapterInfo<'a, 'b>, C, Error = BaseError>
         + for<'a> Step<CreateChapter<'a>, C, Error = BaseError>
         + for<'a> Step<UpdateChapter<'a>, C, Error = BaseError>

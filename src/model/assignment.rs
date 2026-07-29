@@ -23,6 +23,7 @@ use crate::value::role::{RoleField, RoleMask};
 /// chapter (translator, proofreader, etc.).
 #[cfg_attr(test, derive(Clone))]
 pub struct AssignmentInfo {
+    //
     /// Unique identifier for the assignment record.
     pub id: String,
 
@@ -50,6 +51,7 @@ pub struct AssignmentInfo {
 /// The `roles` mask specifies the initial set of roles.
 #[cfg_attr(test, derive(Clone))]
 pub struct AssignmentEntry {
+    //
     /// Unique identifier to insert for the new assignment row.
     pub id: String,
 
@@ -71,6 +73,7 @@ pub struct AssignmentEntry {
 /// [`AssignmentComplex::merge_roles`]: crate::complex::assignment::AssignmentComplex::merge_roles
 #[cfg_attr(test, derive(Clone))]
 pub struct AssignmentRoleUpdate {
+    //
     /// Unique identifier of the assignment whose roles are being changed.
     pub id: String,
 
@@ -82,6 +85,7 @@ pub struct AssignmentRoleUpdate {
 pub enum AssignmentInfoListSpec {
     /// List assignments on a specific chapter, optionally filtered by role.
     Chapter {
+        //
         /// Foreign key scoping the listing to a single chapter.
         chapter_id: String,
         /// Optional role filter; only assignments with this role in their mask
@@ -94,8 +98,10 @@ pub enum AssignmentInfoListSpec {
         /// Maximum number of records to return.
         limit: u32,
     },
+
     /// List assignments owned by a specific user, optionally filtered by role.
     User {
+        //
         /// User identifier scoping the listing to assignments owned by this user.
         owner_id: String,
         /// Optional role filter; only assignments with this role in their mask

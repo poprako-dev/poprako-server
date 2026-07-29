@@ -7,6 +7,7 @@ use crate::value::role::RoleMask;
 /// An invitation record for joining a chapter assignment.
 #[cfg_attr(test, derive(Clone))]
 pub struct AssignmentInvitationInfo {
+    //
     /// Unique identifier for the invitation record.
     pub id: String,
 
@@ -35,6 +36,7 @@ pub struct AssignmentInvitationInfo {
 
 /// The data needed to insert an assignment invitation row.
 pub struct AssignmentInvitationEntry {
+    //
     /// Unique identifier to insert for the new invitation row.
     pub id: String,
 
@@ -55,6 +57,7 @@ pub struct AssignmentInvitationEntry {
 
 /// Filtering and pagination parameters for listing assignment invitations.
 pub struct AssignmentInvitationListSpec {
+    //
     /// Foreign key scoping the listing to invitations for this chapter.
     pub chapter_id: String,
     /// Consumption status filter controlling which subset of invitations to return.
@@ -70,8 +73,10 @@ pub struct AssignmentInvitationListSpec {
 pub enum AssignmentInvitationListKind {
     /// Include invitations regardless of consumption status.
     All,
+
     /// Include only invitations that have not yet been consumed.
     Pending,
+
     /// Include only invitations that have already been consumed.
     Used,
 }

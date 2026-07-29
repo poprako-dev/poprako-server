@@ -15,8 +15,8 @@ use crate::api::http::handler::{
     system_mail, team, term, termbase, unit, user, workset,
 };
 use crate::api::http::middleware::auth::authorize;
-use crate::api::http::middleware::metric::record_response_metric;
 use crate::api::http::middleware::rate_limit::rate_limit;
+use crate::api::http::middleware::record_response_metric;
 use crate::api::http::middleware::trace::{
     propagate_request_id, set_request_id, trace_request,
 };
@@ -163,12 +163,13 @@ pub fn new(harn: AppHarn) -> Router<AppHarn> {
     let v1_page = Router::new()
         .route(
             "/chapters/{chapter_id}/pages",
-            get(page::list_all_infos).delete(page::delete),
+            get(page::list_infos).delete(page::delete),
         )
         .route(
             "/chapters/{chapter_id}/pages/reserve",
             post(page::reserve_chapter_pages),
         )
+        .route("/pages/{page_id}", get(page::get_info))
         .route("/pages/{page_id}/image/reserve", post(page::reserve_image))
         .route(
             "/pages/{page_id}/image/mark-uploaded",
@@ -176,7 +177,7 @@ pub fn new(harn: AppHarn) -> Router<AppHarn> {
         );
 
     let v1_unit = Router::new()
-        .route("/pages/{page_id}/units", get(unit::list_all_infos))
+        .route("/pages/{page_id}/units", get(unit::list_infos))
         .route("/pages/{page_id}/units/save", post(unit::save_infos));
 
     let v1_assignment = Router::new()

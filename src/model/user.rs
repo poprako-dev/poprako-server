@@ -2,6 +2,8 @@
 
 use time::OffsetDateTime;
 
+use crate::value::image::{ImageExt, ImageHash};
+
 /// A deserialized authentication token identifying a user session.
 #[derive(Clone, Debug)]
 pub struct UserToken {
@@ -18,6 +20,7 @@ pub struct UserToken {
 /// [`UserInfoVal`]: crate::data::user::UserInfoVal
 #[derive(Clone)]
 pub struct UserInfo {
+    //
     /// Server-assigned unique user identifier.
     pub id: String,
 
@@ -32,6 +35,10 @@ pub struct UserInfo {
     pub avatar_uploaded: bool,
     /// Monotonically increasing version number for cache-busting the avatar URL.
     pub avatar_version: u32,
+    /// SHA-256 identity of the reserved avatar content.
+    pub avatar_hash: ImageHash,
+    /// File format persisted with the avatar identity.
+    pub avatar_ext: ImageExt,
 
     /// Whether this user has super-administrator privileges.
     pub is_sadmin: bool,
@@ -48,6 +55,7 @@ pub struct UserInfo {
 /// The data needed to insert a new user row.
 #[cfg_attr(test, derive(Clone))]
 pub struct UserEntry {
+    //
     /// Server-assigned unique user identifier.
     pub id: String,
 
@@ -67,17 +75,21 @@ pub struct UserEntry {
 /// and the version number that must match when marking the upload complete.
 #[cfg_attr(test, derive(Clone))]
 pub struct UserAvatarReservation {
+    //
     /// Generated object-storage key for the client to upload the new avatar to.
     pub object_key: String,
     /// Previous avatar key to delete after the new upload succeeds, absent when there was no prior avatar.
     pub prev_object_key: Option<String>,
     /// Expected version number that must match when confirming the upload.
     pub avatar_version: u32,
+    /// Whether a PUT capability and delayed check are required.
+    pub upload_required: bool,
 }
 
 /// A stored password credential used during login verification.
 #[cfg_attr(test, derive(Clone))]
 pub struct UserCredential {
+    //
     /// Foreign key referencing the user this credential belongs to.
     pub user_id: String,
     /// Bcrypt or similar hashed password for login verification.

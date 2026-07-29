@@ -19,7 +19,6 @@ fn page(
         image_uploaded,
         image_version: 1,
         image_hash: ImageHash::new([hash; 32]),
-        image_byte_length: 4096,
         image_ext: ImageExt::Png,
         total_unit_count,
         translated_unit_count: 0,
@@ -33,7 +32,7 @@ fn input(page_id: Option<&str>, hash: u8) -> PageImageSpec {
     PageImageSpec {
         page_id: page_id.map(Into::into),
         image_hash: ImageHash::new([hash; 32]),
-        byte_length: 4096,
+        new_byte_len: Some(4096),
         ext: ImageExt::Png,
     }
 }
@@ -96,15 +95,18 @@ fn explicit_identity_can_replace_the_image_hash() {
 }
 
 #[test]
-fn same_hash_with_conflicting_metadata_is_rejected() {
+fn same_hash_with_different_extension_is_a_distinct_identity() {
     //
     let existing_page_infos = vec![page("page-a", 0, 0, 0, true)];
 
     let mut page_input = input(None, 0);
 
-    page_input.byte_length = 4097;
+    page_input.ext = ImageExt::Jpg;
 
-    let result = build("chapter-1", &existing_page_infos, &[page_input]);
+    let manifest_plan =
+        build("chapter-1", &existing_page_infos, &[page_input]).unwrap();
 
-    assert!(matches!(result, Err(BaseError::Expected { .. })));
+    assert!(manifest_plan.matches[0].existing_index.is_none());
+
+    assert_eq!(manifest_plan.deleted_existing_indexes, vec![0]);
 }

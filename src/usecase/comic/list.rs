@@ -31,8 +31,7 @@ use crate::value::comic::ComicWithOpt;
 /// Lists comics for a workset with optional filters and derived data.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos<C, R, I>(
-    repo: &R,
-    image_pool: &I,
+    (repo, image_pool): (&R, &I),
     token: UserToken,
     params: ListComicInfosParams,
 ) -> BaseResult<ListComicInfosPayload>

@@ -23,6 +23,7 @@ use crate::value::role::RoleMask;
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateMemberInvitationParams {
+    //
     /// Owning team identifier.
     pub team_id: String,
 
@@ -41,6 +42,7 @@ pub struct CreateMemberInvitationParams {
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateMemberInvitationPayload {
+    //
     /// Unique identifier of the created invitation.
     pub id: String,
     /// Opaque invitation code presented by the invitee to claim the invitation.
@@ -57,6 +59,7 @@ pub struct CreateMemberInvitationPayload {
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ListMemberInvitationInfosParams {
+    //
     /// Parent team whose invitations to list.
     pub team_id: String,
 
@@ -83,6 +86,7 @@ pub struct ListMemberInvitationInfosParams {
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct MemberInvitationInfoVal {
+    //
     /// Unique identifier.
     pub id: String,
 
@@ -153,6 +157,7 @@ impl MemberInvitationInfoVal {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateMemberInvitationRolesParams {
+    //
     /// Invitation identifier.
     pub id: String,
     /// New role mask for the invitation.

@@ -180,13 +180,13 @@ preload_by_ids! {
         row: UserRow,
         info: UserInfo,
         table: t_user,
-        convert: From,
+        convert: TryFrom,
     }
     TeamByIds {
         row: TeamRow,
         info: TeamInfo,
         table: t_team,
-        convert: From,
+        convert: TryFrom,
     }
     WorksetByIds {
         row: WorksetRow,
@@ -198,7 +198,7 @@ preload_by_ids! {
         row: ComicRow,
         info: ComicInfo,
         table: t_comic,
-        convert: From,
+        convert: TryFrom,
     }
     ChapterByIds {
         row: ChapterRow,

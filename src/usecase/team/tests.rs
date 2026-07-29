@@ -40,10 +40,8 @@ use crate::model::comic::ComicInfo;
 use crate::model::member::MemberInfo;
 use crate::model::team::TeamInfo;
 use crate::model::user::{UserCredential, UserInfo, UserToken};
-use crate::part::prom::payload::Payload;
-use crate::part::prom::payload::image::{
-    Payload as ImagePayload, ResourceKind,
-};
+use crate::part::prom::payload::TaskPayload;
+use crate::part::prom::payload::image::{ImagePayload, ResourceKind};
 use crate::part_impl::prom::mock_impl::MockPromRecord;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
@@ -52,6 +50,7 @@ use crate::test_util::{
     assert_expected_message, assert_expected_variant,
     assert_one_image_check_record,
 };
+use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
 mod avatar;
@@ -106,6 +105,8 @@ fn comic_with_uploaded_cover(
         cover_key: Some(cover_key.into()),
         cover_uploaded: true,
         cover_version: 1,
+        cover_hash: ImageHash::default(),
+        cover_ext: ImageExt::Png,
         chapter_count: 0,
         creator_id: "user-1".into(),
         workset: None,
@@ -144,6 +145,8 @@ fn user(id: &str, is_sadmin: bool) -> UserInfo {
         avatar_key: None,
         avatar_uploaded: false,
         avatar_version: 0,
+        avatar_hash: ImageHash::default(),
+        avatar_ext: ImageExt::Png,
         is_sadmin,
         last_active_at: time,
         created_at: time,
@@ -167,13 +170,15 @@ fn list_params(
 /// Builds a [`ReserveTeamAvatarData`] fixture.
 fn reserve_params(file_ext: &str) -> ReserveTeamAvatarParams {
     ReserveTeamAvatarParams {
-        file_ext: file_ext.into(),
+        image_hash: ImageHash::new([1; 32]),
+        new_byte_len: 4096,
+        ext: ImageExt::parse(file_ext).unwrap(),
     }
 }
 
 /// Builds a [`MarkTeamAvatarUploadedData`] fixture.
-fn mark_params(avatar_version: u32) -> MarkTeamAvatarUploadedParams {
-    MarkTeamAvatarUploadedParams { avatar_version }
+fn mark_params(image_version: u32) -> MarkTeamAvatarUploadedParams {
+    MarkTeamAvatarUploadedParams { image_version }
 }
 
 /// Builds an [`UpdateTeamInfoData`] fixture.
@@ -196,7 +201,7 @@ fn count_delete_records(records: &[MockPromRecord], object_key: &str) -> usize {
         .filter(|record| {
             matches!(
                 record.payload(),
-                Payload::Image(ImagePayload::Delete { object_key: key })
+                TaskPayload::Image(ImagePayload::Delete { object_key: key })
                     if key == object_key
             )
         })
@@ -211,9 +216,7 @@ async fn create_persists_team_and_returns_info() {
     mock.seed_user(user("user-1", true), credential("user-1"));
 
     let val = create(
-        &mock,
-        &mock,
-        &mock,
+        (&mock, &mock, &mock),
         token("user-1"),
         CreateTeamParams {
             name: "Team".into(),
@@ -242,9 +245,7 @@ async fn create_makes_creator_admin_member() {
     mock.seed_user(user("user-1", true), credential("user-1"));
 
     let val = create(
-        &mock,
-        &mock,
-        &mock,
+        (&mock, &mock, &mock),
         token("user-1"),
         CreateTeamParams {
             name: "Team".into(),
@@ -275,9 +276,7 @@ async fn create_propagates_repo_failure() {
     mock.seed_user(user("user-1", true), credential("user-1"));
 
     let err = create(
-        &mock,
-        &mock,
-        &mock,
+        (&mock, &mock, &mock),
         token("user-1"),
         CreateTeamParams {
             name: "Team".into(),
@@ -305,7 +304,7 @@ async fn get_info_returns_uploaded_avatar_url() {
         2,
     ));
 
-    let val = get_info(&mock, &mock, "team-1".into()).await.unwrap();
+    let val = get_info((&mock, &mock), "team-1".into()).await.unwrap();
 
     assert_eq!(val.id, "team-1");
 
@@ -327,7 +326,10 @@ async fn get_info_propagates_missing_team() {
     //
     let mock = Mock::new();
 
-    let err = get_info(&mock, &mock, "team-1".into()).await.err().unwrap();
+    let err = get_info((&mock, &mock), "team-1".into())
+        .await
+        .err()
+        .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Args);
 }
@@ -350,8 +352,7 @@ async fn list_infos_returns_paged_teams() {
     mock.seed_member(member("member-3", "user-2", "team-1"));
 
     let val = list_infos(
-        &mock,
-        &mock,
+        (&mock, &mock),
         token("user-1"),
         list_params(Some("user-1"), 0, 1),
     )
@@ -371,8 +372,7 @@ async fn list_infos_returns_empty_page_when_offset_exceeds_data() {
     mock.seed_team(team("team-1", "A", "Desc"));
 
     let val = list_infos(
-        &mock,
-        &mock,
+        (&mock, &mock),
         token("user-1"),
         list_params(Some("user-1"), 10, 10),
     )
@@ -392,7 +392,7 @@ async fn list_infos_all_teams_requires_sadmin() {
     mock.seed_user(user("user-1", false), credential("user-1"));
 
     let err =
-        list_infos(&mock, &mock, token("user-1"), list_params(None, 0, 10))
+        list_infos((&mock, &mock), token("user-1"), list_params(None, 0, 10))
             .await
             .err()
             .unwrap();
@@ -410,7 +410,7 @@ async fn update_info_updates_team() {
     mock.seed_member(member("member-1", "user-1", "team-1"));
 
     update_info(
-        &mock,
+        (&mock,),
         token("user-1"),
         update_params("team-1", "New", "New Desc"),
     )
@@ -432,7 +432,7 @@ async fn update_info_propagates_missing_team() {
     mock.seed_member(member("member-1", "user-1", "team-1"));
 
     let err = update_info(
-        &mock,
+        (&mock,),
         token("user-1"),
         update_params("team-1", "New", "New Desc"),
     )

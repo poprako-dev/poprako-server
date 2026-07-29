@@ -16,7 +16,7 @@ use crate::data::comic_archive::{
 };
 use crate::model::user::UserToken;
 use crate::part::prom::Prom;
-use crate::part::prom::payload::{Payload, image};
+use crate::part::prom::payload::{TaskPayload, image};
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::comic_archive::ComicArchiveRepo;
 use crate::part::repo::member::MemberRepo;
@@ -38,7 +38,7 @@ mod tests;
 /// Exports selected retained UTC month slots for one team.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn export<C, R>(
-    repo: &R,
+    (repo,): (&R,),
     token: UserToken,
     team_id: String,
     params: ExportComicArchivesParams,
@@ -94,9 +94,7 @@ where
 /// Archive one active comic, its descendants, and all retained image keys.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn archive<N, C, R, P>(
-    nucl: &N,
-    repo: &R,
-    prom: &P,
+    (nucl, repo, prom): (&N, &R, &P),
     token: UserToken,
     comic_id: String,
 ) -> BaseResult<ArchiveComicPayload>
@@ -136,15 +134,15 @@ where
 
             let archived_at = OffsetDateTime::now_utc();
 
-            let (comic_archive_write, image_keys) =
-                ComicArchiveComplex::prepare_write(
+            let (comic_archive_entry, image_keys) =
+                ComicArchiveComplex::prepare_entry(
                     comic_archive_snapshot,
                     token.user_id,
                     archived_at,
                 )
                 .await?;
 
-            let archived_comic_id = comic_archive_write.record.id.clone();
+            let archived_comic_id = comic_archive_entry.record.id.clone();
 
             let mut delete_ids = Vec::new();
 
@@ -154,12 +152,14 @@ where
                 //
                 delete_ids.push(next_snowflake_id());
 
-                delete_payloads.push(Payload::Image(image::Payload::Delete {
-                    object_key: image_key,
-                }));
+                delete_payloads.push(TaskPayload::Image(
+                    image::ImagePayload::Delete {
+                        object_key: image_key,
+                    },
+                ));
             }
 
-            let delete_tasks: Vec<Task<'_, String, Payload>> = delete_ids
+            let delete_tasks: Vec<Task<'_, String, TaskPayload>> = delete_ids
                 .iter()
                 .zip(delete_payloads.iter())
                 .map(|(id, payload)| Task {
@@ -174,7 +174,7 @@ where
             repo.step(
                 context,
                 &CommitComicArchive {
-                    write: &comic_archive_write,
+                    entry: &comic_archive_entry,
                 },
             )
             .await?;

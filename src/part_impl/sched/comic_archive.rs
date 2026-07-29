@@ -8,10 +8,10 @@ use diesel_async::RunQueryDsl;
 use poprako_orchestra::Nucl;
 use time::{Date, Month, OffsetDateTime, PrimitiveDateTime, Time};
 use tokio::sync::watch;
+use tokio_util::sync::CancellationToken;
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
-use tokio_util::sync::CancellationToken;
 
 use crate::model::system_mail::SystemMailEntry;
 use crate::part_impl::drive::rdb_impl::RdbDrive;
@@ -34,6 +34,7 @@ mod tests;
 const PURGE_INTERVAL: Duration = Duration::from_secs(7 * 24 * 60 * 60);
 
 struct ExpiredSlot {
+    //
     team_id: String,
     start: OffsetDateTime,
 }

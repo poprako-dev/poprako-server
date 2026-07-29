@@ -67,14 +67,17 @@ impl Oper for PollPending {
 /// Returns `true` if the claim succeeded (i.e. the row was still
 /// Pending), `false` if another worker claimed it first.
 pub struct ClaimPending<'a> {
+    //
     /// ID of the local-message row to claim.
     id: &'a str,
+    /// Lease observed by the poller.
+    lease: i64,
 }
 
 impl<'a> ClaimPending<'a> {
-    /// Builds an operation that claims the message identified by `id`.
-    pub fn new(id: &'a str) -> Self {
-        Self { id }
+    /// Builds an operation that claims the observed message attempt.
+    pub fn new(id: &'a str, lease: i64) -> Self {
+        Self { id, lease }
     }
 }
 
@@ -84,14 +87,17 @@ impl Oper for ClaimPending<'_> {
 
 /// Mark a record as successfully completed.
 pub struct CompleteMessage<'a> {
+    //
     /// ID of the local-message row to mark complete.
     id: &'a str,
+    /// Lease owned by the worker attempt.
+    lease: i64,
 }
 
 impl<'a> CompleteMessage<'a> {
-    /// Builds an operation that completes the message identified by `id`.
-    pub fn new(id: &'a str) -> Self {
-        Self { id }
+    /// Builds an operation that completes the identified worker attempt.
+    pub fn new(id: &'a str, lease: i64) -> Self {
+        Self { id, lease }
     }
 }
 
@@ -101,16 +107,23 @@ impl Oper for CompleteMessage<'_> {
 
 /// Mark a record as dead with an error message.
 pub struct FailMessage<'a> {
+    //
     /// ID of the local-message row to mark as failed.
     id: &'a str,
+    /// Lease owned by the worker attempt.
+    lease: i64,
     /// Error description attached to the failure record.
     error: &'a str,
 }
 
 impl<'a> FailMessage<'a> {
     /// Builds an operation that permanently fails the message identified by `id`.
-    pub fn new(id: &'a str, err_msg: &'a str) -> Self {
-        Self { id, error: err_msg }
+    pub fn new(id: &'a str, lease: i64, err_msg: &'a str) -> Self {
+        Self {
+            id,
+            lease,
+            error: err_msg,
+        }
     }
 }
 
@@ -120,8 +133,11 @@ impl Oper for FailMessage<'_> {
 
 /// Reset one failed processing attempt back to pending for a later retry.
 pub struct RetryMessage<'a> {
+    //
     /// ID of the local-message row to retry.
     id: &'a str,
+    /// Lease owned by the worker attempt.
+    lease: i64,
     /// Error description logged from the previous attempt.
     error: &'a str,
     /// Timestamp after which the retry becomes visible for processing.
@@ -132,11 +148,13 @@ impl<'a> RetryMessage<'a> {
     /// Builds an operation that schedules the message identified by `id` for retry.
     pub fn new(
         id: &'a str,
+        lease: i64,
         err_msg: &'a str,
         visible_at: &'a OffsetDateTime,
     ) -> Self {
         Self {
             id,
+            lease,
             error: err_msg,
             visible_at,
         }
@@ -166,6 +184,7 @@ impl Oper for ResetStuck<'_> {
 
 /// Deletes completed and dead records after their independent retention cutoffs.
 pub struct PurgeCompleted<'a> {
+    //
     /// Cutoff timestamp for completed records to purge.
     completed_before: &'a OffsetDateTime,
     /// Cutoff timestamp for dead records to purge.
@@ -241,6 +260,7 @@ where
                 t_local_message::f_topic,
                 t_local_message::f_payload,
                 t_local_message::f_retried_count,
+                t_local_message::f_lease,
             ))
             .load(context.conn())
             .await
@@ -273,7 +293,8 @@ where
                 .filter(
                     t_local_message::f_status
                         .eq(LocalMessageStatus::Pending.as_str()),
-                ),
+                )
+                .filter(t_local_message::f_lease.eq(oper.lease)),
         )
         .set((
             t_local_message::f_status
@@ -306,7 +327,13 @@ where
         use diesel_async::RunQueryDsl;
 
         diesel::update(
-            t_local_message::table.filter(t_local_message::f_id.eq(oper.id)),
+            t_local_message::table
+                .filter(t_local_message::f_id.eq(oper.id))
+                .filter(
+                    t_local_message::f_status
+                        .eq(LocalMessageStatus::Processing.as_str()),
+                )
+                .filter(t_local_message::f_lease.eq(oper.lease)),
         )
         .set((
             t_local_message::f_status
@@ -339,7 +366,13 @@ where
         use diesel_async::RunQueryDsl;
 
         diesel::update(
-            t_local_message::table.filter(t_local_message::f_id.eq(oper.id)),
+            t_local_message::table
+                .filter(t_local_message::f_id.eq(oper.id))
+                .filter(
+                    t_local_message::f_status
+                        .eq(LocalMessageStatus::Processing.as_str()),
+                )
+                .filter(t_local_message::f_lease.eq(oper.lease)),
         )
         .set((
             t_local_message::f_status.eq(LocalMessageStatus::Dead.as_str()),
@@ -372,7 +405,13 @@ where
         use diesel_async::RunQueryDsl;
 
         diesel::update(
-            t_local_message::table.filter(t_local_message::f_id.eq(oper.id)),
+            t_local_message::table
+                .filter(t_local_message::f_id.eq(oper.id))
+                .filter(
+                    t_local_message::f_status
+                        .eq(LocalMessageStatus::Processing.as_str()),
+                )
+                .filter(t_local_message::f_lease.eq(oper.lease)),
         )
         .set((
             t_local_message::f_status.eq(LocalMessageStatus::Pending.as_str()),
@@ -420,6 +459,7 @@ where
             t_local_message::f_status.eq(LocalMessageStatus::Dead.as_str()),
             t_local_message::f_last_error
                 .eq(Some("processing timeout exceeded")),
+            t_local_message::f_lease.eq(t_local_message::f_lease + 1),
             t_local_message::f_updated_at.eq(OffsetDateTime::now_utc()),
         ))
         .execute(context.conn())

@@ -113,7 +113,7 @@ impl AssignmentPermComplex {
     pub async fn ensure_user_can_update_roles<P>(
         proxy: &mut P,
         current_user_id: &str,
-        target_user_id: &str,
+        subject_user_id: &str,
         chapter_id: &str,
         roles: RoleMask,
     ) -> BaseResult<()>
@@ -130,14 +130,14 @@ impl AssignmentPermComplex {
             check_self_reduce(
                 proxy,
                 current_user_id,
-                target_user_id,
+                subject_user_id,
                 chapter_id,
                 roles,
             )
             .await?;
         }
 
-        check_target_roles(proxy, target_user_id, chapter_id, roles).await
+        check_target_roles(proxy, subject_user_id, chapter_id, roles).await
     }
 
     /// Verify the caller may delete the target assignment.
@@ -270,21 +270,21 @@ where
 async fn check_self_reduce<P>(
     proxy: &mut P,
     current_user_id: &str,
-    target_user_id: &str,
+    subject_user_id: &str,
     chapter_id: &str,
     roles: RoleMask,
 ) -> BaseResult<()>
 where
     P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
 {
-    if current_user_id != target_user_id {
+    if current_user_id != subject_user_id {
         return Err(assignment_self_reduce_err());
     }
 
     let assignment_info = proxy
         .exec(&FindAssignmentInfo::ChapterUser {
             chapter_id,
-            user_id: target_user_id,
+            user_id: subject_user_id,
         })
         .await?;
 

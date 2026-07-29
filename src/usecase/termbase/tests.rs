@@ -19,6 +19,7 @@ use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
 use crate::test_util::fixture::team;
+use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
 fn token(user_id: &str) -> UserToken {
@@ -70,6 +71,8 @@ fn comic(id: &str, workset_id: &str) -> ComicInfo {
         cover_key: None,
         cover_uploaded: false,
         cover_version: 0,
+        cover_hash: ImageHash::default(),
+        cover_ext: ImageExt::Png,
         chapter_count: 0,
         creator_id: "user-1".into(),
         workset: None,
@@ -142,7 +145,7 @@ async fn create_normalizes_and_persists_for_proofreader() {
         RoleMask::from(RoleField::PROOFREADER),
     ));
 
-    let payload = create(&mock, &mock, token("user-1"), create_params())
+    let payload = create((&mock, &mock), token("user-1"), create_params())
         .await
         .unwrap();
 
@@ -170,7 +173,7 @@ async fn create_rejects_admin_without_proofreader() {
         RoleMask::from(RoleField::ADMIN),
     ));
 
-    let error = create(&mock, &mock, token("user-1"), create_params())
+    let error = create((&mock, &mock), token("user-1"), create_params())
         .await
         .unwrap_err();
 
@@ -191,7 +194,7 @@ async fn create_rejects_invalid_scope() {
         description: None,
     };
 
-    let error = create(&mock, &mock, token("user-1"), params)
+    let error = create((&mock, &mock), token("user-1"), params)
         .await
         .unwrap_err();
 
@@ -250,7 +253,7 @@ async fn list_comic_infos_inherits_team_and_excludes_sibling() {
         limit: 20,
     };
 
-    let infos = list_comic_infos(&mock, token("user-1"), params)
+    let infos = list_comic_infos((&mock,), token("user-1"), params)
         .await
         .unwrap();
 
@@ -295,7 +298,7 @@ async fn list_comic_infos_does_not_search_description() {
         limit: 20,
     };
 
-    let infos = list_comic_infos(&mock, token("user-1"), params)
+    let infos = list_comic_infos((&mock,), token("user-1"), params)
         .await
         .unwrap();
 
@@ -324,7 +327,7 @@ async fn delete_removes_child_terms() {
 
     mock.seed_term(term("term-1", "termbase-1"));
 
-    delete(&mock, &mock, token("user-1"), "termbase-1".into())
+    delete((&mock, &mock), token("user-1"), "termbase-1".into())
         .await
         .unwrap();
 

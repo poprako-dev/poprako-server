@@ -18,9 +18,9 @@ use crate::part_impl::shared::RdbConn;
 use crate::part_impl::shared::result::{diesel, expected};
 use crate::result::{BaseResult, accept};
 
-/// Query all unit infos for a page, ordered by index then ID.
+/// Queries unit infos for a page, ordered by index then ID.
 #[instrument(level = "info", err(Debug), skip_all)]
-pub async fn list_all_infos_by_page_id(
+pub async fn list_infos(
     conn: &mut RdbConn,
     page_id: &str,
 ) -> BaseResult<Vec<UnitInfo>> {
@@ -214,7 +214,7 @@ pub async fn count_by_page_id(
     page_id: &str,
 ) -> BaseResult<UnitCounters> {
     //
-    let infos = list_all_infos_by_page_id(conn, page_id).await?;
+    let infos = list_infos(conn, page_id).await?;
 
     let counters = infos.iter().fold(
         UnitCounters::default(),

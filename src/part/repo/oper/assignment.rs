@@ -10,10 +10,13 @@ use crate::value::role::RoleField;
 /// Finds an optional assignment.
 pub enum FindAssignmentInfo<'a, 'b> {
     ChapterUser {
+        //
         chapter_id: &'a str,
         user_id: &'a str,
     },
+
     UserComic {
+        //
         user_id: &'a str,
         comic_id: &'a str,
         incls: &'b [AssignmentInclOpt],
@@ -26,6 +29,7 @@ impl Oper for FindAssignmentInfo<'_, '_> {
 
 /// Gets an assignment that must exist.
 pub struct GetAssignmentInfo<'a, 'b> {
+    //
     pub id: &'a str,
     pub incls: &'b [AssignmentInclOpt],
 }
@@ -39,12 +43,16 @@ pub enum ListAssignmentInfos<'a, 'b> {
     Spec {
         spec: &'a AssignmentInfoListSpec,
     },
+
     Chapter {
+        //
         chapter_id: &'a str,
         role: Option<RoleField>,
         incls: &'b [AssignmentInclOpt],
     },
+
     Chapters {
+        //
         chapter_ids: &'a [String],
         incls: &'b [AssignmentInclOpt],
     },
@@ -84,6 +92,7 @@ impl Oper for UpdateAssignmentRoles<'_> {
 /// Deletes assignments selected by identifier or chapter.
 pub enum DeleteAssignments<'a> {
     Id { id: &'a str },
+
     Chapter { chapter_id: &'a str },
 }
 

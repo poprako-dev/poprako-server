@@ -7,9 +7,12 @@ use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 use poprako_orchestra_extra::prom::task::Task;
 use tracing::instrument;
 
+use poprako_util::i18n::trl;
+
 use crate::complex::image::ImageComplex;
 use crate::complex::member::MemberComplex;
 use crate::complex::team::{TeamComplex, TeamPermComplex};
+use crate::data::image::ImageUploadSlotVal;
 use crate::data::team::{
     CreateTeamParams, ListTeamInfosParams, MarkTeamAvatarUploadedParams,
     ReserveTeamAvatarParams, ReserveTeamAvatarPayload, TeamInfoVal,
@@ -20,9 +23,9 @@ use crate::model::team::{
     TeamEntry, TeamInfo, TeamInfoListKind, TeamInfoListSpec,
 };
 use crate::model::user::UserToken;
-use crate::part::image::ImagePool;
+use crate::part::image::{ImageManager, ImagePool, ImageUploadSpec};
 use crate::part::prom::Prom;
-use crate::part::prom::payload::{Payload, image};
+use crate::part::prom::payload::{TaskPayload, image};
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::chapter::ChapterRepo;
@@ -62,7 +65,7 @@ use crate::part::repo::termbase::TermbaseRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::part::repo::user::UserRepo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 use crate::value::role::{RoleField, RoleMask};
 
 #[cfg(test)]
@@ -79,9 +82,7 @@ mod tests;
 /// * `I: ImagePool` — Resolves the avatar signed URL.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn create<N, C, R, I>(
-    nucl: &N,
-    repo: &R,
-    image_pool: &I,
+    (nucl, repo, image_pool): (&N, &R, &I),
     token: UserToken,
     params: CreateTeamParams,
 ) -> BaseResult<TeamInfoVal>
@@ -91,7 +92,7 @@ where
     R: TeamRepo<C> + UserRepo<C> + MemberRepo<C> + Send + Sync,
     I: ImagePool,
 {
-    TeamPermComplex::ensure_user_can_list_all(
+    TeamPermComplex::ensure_user_can_create(
         &mut run_proxy! {
             repo => for<'a> GetUserInfo<'a>;
         },
@@ -108,7 +109,6 @@ where
     let team_info: TeamInfo = nucl
         .coord(async move |context| {
             //
-
             let user_info = repo
                 .step(context, &GetUserInfoExcluded::Id { id: &token.user_id })
                 .await?;
@@ -152,8 +152,7 @@ where
 /// * `I: ImagePool` — Resolves the avatar signed URL.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn get_info<C, R, I>(
-    repo: &R,
-    image_pool: &I,
+    (repo, image_pool): (&R, &I),
     id: String,
 ) -> BaseResult<TeamInfoVal>
 where
@@ -178,9 +177,9 @@ where
 /// * `I: ImagePool` — Resolves avatar signed URLs.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos<C, R, I>(
-    repo: &R,
-    image_pool: &I,
+    (repo, image_pool): (&R, &I),
     token: UserToken,
+    // FIXME: use try_into()?
     params: ListTeamInfosParams,
 ) -> BaseResult<Vec<TeamInfoVal>>
 where
@@ -189,11 +188,18 @@ where
 {
     let kind = match params.user_id {
         //
-        Some(user_id) => TeamInfoListKind::JoinedBy { user_id },
+        Some(user_id) => {
+            //
+            if user_id != token.user_id {
+                todo!()
+            }
+
+            TeamInfoListKind::JoinedBy { user_id }
+        }
 
         None => {
             //
-            TeamPermComplex::ensure_user_can_list_all(
+            TeamPermComplex::ensure_user_can_list_infos(
                 &mut run_proxy! {
                     repo => for<'a> GetUserInfo<'a>;
                 },
@@ -239,7 +245,7 @@ where
 /// * `R: TeamRepo<C>` — Team storage.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn update_info<C, R>(
-    repo: &R,
+    (repo,): (&R,),
     token: UserToken,
     params: UpdateTeamInfoParams,
 ) -> BaseResult<()>
@@ -287,10 +293,7 @@ where
 /// * `I: ImagePool` — Generates the signed upload URL.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn reserve_avatar<N, C, R, P, I>(
-    nucl: &N,
-    repo: &R,
-    prom: &P,
-    image_pool: &I,
+    (nucl, repo, prom, image_pool): (&N, &R, &P, &I),
     token: UserToken,
     id: String,
     params: ReserveTeamAvatarParams,
@@ -302,6 +305,17 @@ where
     P: Prom<C> + Send + Sync,
     I: ImagePool,
 {
+    ImageComplex::ensure_byte_length(
+        params.new_byte_len,
+        image::ResourceKind::TeamAvatar,
+    )?;
+
+    let transaction_image_hash = params.image_hash.clone();
+
+    let image_ext = params.ext;
+
+    let new_byte_len = params.new_byte_len;
+
     TeamPermComplex::ensure_user_can_reserve_avatar(
         &mut run_proxy! {
             repo => for<'a> FindMemberInfo<'a>;
@@ -311,7 +325,7 @@ where
     )
     .await?;
 
-    let (object_key, avatar_version) = nucl
+    let (object_key, avatar_version, upload_required) = nucl
         .coord(async move |context| {
             //
             let avatar_reservation = repo
@@ -319,10 +333,19 @@ where
                     context,
                     &ReserveTeamAvatar {
                         id: &id,
-                        file_ext: &params.file_ext,
+                        image_hash: &transaction_image_hash,
+                        image_ext,
                     },
                 )
                 .await?;
+
+            if !avatar_reservation.upload_required {
+                return accept((
+                    avatar_reservation.object_key,
+                    avatar_reservation.avatar_version,
+                    false,
+                ));
+            }
 
             let mut batch_ids = Vec::new();
 
@@ -335,9 +358,11 @@ where
                 //
                 batch_ids.push(ImageComplex::gen_delete_id());
 
-                batch_payloads.push(Payload::Image(image::Payload::Delete {
-                    object_key: prev_key.clone(),
-                }));
+                batch_payloads.push(TaskPayload::Image(
+                    image::ImagePayload::Delete {
+                        object_key: prev_key.clone(),
+                    },
+                ));
 
                 batch_delays.push(None);
             }
@@ -345,16 +370,18 @@ where
             // Schedule an upload verification check 15 minutes from now.
             batch_ids.push(ImageComplex::gen_check_id());
 
-            batch_payloads.push(Payload::Image(image::Payload::CheckUpload {
-                resource_kind: image::ResourceKind::TeamAvatar,
-                resource_id: id.clone(),
-                object_key: avatar_reservation.object_key.clone(),
-                version: avatar_reservation.avatar_version,
-            }));
+            batch_payloads.push(TaskPayload::Image(
+                image::ImagePayload::CheckUpload {
+                    resource_kind: image::ResourceKind::TeamAvatar,
+                    resource_id: id.clone(),
+                    object_key: avatar_reservation.object_key.clone(),
+                    version: avatar_reservation.avatar_version,
+                },
+            ));
 
             batch_delays.push(Some(Duration::from_secs(15 * 60)));
 
-            let batch_tasks: Vec<Task<'_, String, Payload>> = batch_ids
+            let batch_tasks: Vec<Task<'_, String, TaskPayload>> = batch_ids
                 .iter()
                 .zip(batch_payloads.iter())
                 .zip(batch_delays.iter())
@@ -370,18 +397,36 @@ where
             accept((
                 avatar_reservation.object_key,
                 avatar_reservation.avatar_version,
+                true,
             ))
         })
         .await?;
     // Generate signed URL after commit — the PUT URL should only be issued
     // once the reservation is durable.
 
-    let put_url = image_pool.get_upload_url(&object_key).await?.to_string();
+    let slot = match upload_required {
+        //
+        true => {
+            //
+            let upload_spec = ImageUploadSpec {
+                object_key: &object_key,
+                content_type: image_ext.content_type(),
+                content_length: new_byte_len,
+            };
 
-    accept(ReserveTeamAvatarPayload {
-        put_url,
-        avatar_version,
-    })
+            let upload_slot = image_pool.get_upload_slot(upload_spec).await?;
+
+            Some(ImageUploadSlotVal {
+                put_url: upload_slot.url.to_string(),
+                image_version: avatar_version,
+                headers: upload_slot.headers,
+            })
+        }
+
+        false => None,
+    };
+
+    accept(ReserveTeamAvatarPayload { slot })
 }
 
 /// Marks a reserved team avatar as successfully uploaded.
@@ -394,14 +439,17 @@ where
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C>` — Team storage.
 #[instrument(level = "info", err(Debug), skip_all)]
-pub async fn mark_avatar_uploaded<C, R>(
-    repo: &R,
+pub async fn mark_avatar_uploaded<N, C, R, I>(
+    (nucl, repo, image_manager): (&N, &R, &I),
     token: UserToken,
     id: String,
     params: MarkTeamAvatarUploadedParams,
 ) -> BaseResult<()>
 where
-    R: TeamRepo<C> + MemberRepo<C> + Sync,
+    N: Nucl<Context = C, Error = BaseError>,
+    C: Send,
+    R: TeamRepo<C> + MemberRepo<C> + Send + Sync,
+    I: ImageManager,
 {
     TeamPermComplex::ensure_user_can_mark_avatar_uploaded(
         &mut run_proxy! {
@@ -412,10 +460,62 @@ where
     )
     .await?;
 
-    repo.run(&UpdateTeam::MarkAvatarUploaded {
-        id: &id,
-        avatar_version: params.avatar_version,
-        avatar_key: None,
+    let team_info = repo.run(&GetTeamInfo::Id { id: &id }).await?;
+
+    if team_info.avatar_version != params.image_version {
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: trl("error-stale-avatar-upload"),
+        });
+    }
+
+    if team_info.avatar_uploaded {
+        return accept(());
+    }
+
+    let avatar_key =
+        team_info
+            .avatar_key
+            .clone()
+            .ok_or_else(|| BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: trl("error-stale-avatar-upload"),
+            })?;
+
+    if !image_manager.object_exists(&avatar_key).await? {
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: trl("error-stale-avatar-upload"),
+        });
+    }
+
+    nucl.coord(async move |context| {
+        //
+        let locked_team_info = repo
+            .step(context, &GetTeamInfoExcluded::Id { id: &id })
+            .await?;
+
+        if locked_team_info.avatar_version != params.image_version
+            || locked_team_info.avatar_key.as_deref() != Some(&avatar_key)
+        {
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: trl("error-stale-avatar-upload"),
+            });
+        }
+
+        repo.step(
+            context,
+            &UpdateTeam::MarkAvatarUploaded {
+                id: &id,
+                avatar_version: params.image_version,
+                avatar_key: Some(&avatar_key),
+                avatar_uploaded: true,
+            },
+        )
+        .await?;
+
+        accept(())
     })
     .await?;
 
@@ -440,9 +540,7 @@ where
 /// * `P: Prom<C>` — Prom enqueuer for deferred avatar deletion.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn delete<N, C, R, P>(
-    nucl: &N,
-    repo: &R,
-    prom: &P,
+    (nucl, repo, prom): (&N, &R, &P),
     token: UserToken,
     id: String,
 ) -> BaseResult<()>
@@ -506,8 +604,8 @@ where
                     for<'a> ListMemberInfosExcluded<'a>,
                     for<'a> DeleteMember<'a>;
                 prom =>
-                    for<'a> Defer<'a, String, Payload, ()>,
-                    for<'t, 'a> DeferBatch<'t, 'a, String, Payload, ()>;
+                    for<'a> Defer<'a, String, TaskPayload, ()>,
+                    for<'t, 'a> DeferBatch<'t, 'a, String, TaskPayload, ()>;
             },
             &id,
         )

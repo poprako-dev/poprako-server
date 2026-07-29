@@ -12,7 +12,7 @@ use crate::data::workset::{
 use crate::model::user::UserToken;
 use crate::model::workset::{WorksetEntry, WorksetInfoUpdate};
 use crate::part::prom::Prom;
-use crate::part::prom::payload::Payload;
+use crate::part::prom::payload::TaskPayload;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::chapter::ChapterRepo;
@@ -53,8 +53,7 @@ pub mod tests;
 /// Creates a new workset inside a team.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn create<N, C, R>(
-    nucl: &N,
-    repo: &R,
+    (nucl, repo): (&N, &R),
     token: UserToken,
     params: CreateWorksetParams,
 ) -> BaseResult<CreateWorksetPayload>
@@ -111,7 +110,7 @@ where
 /// Fetches a workset by ID.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn get_info<C, R>(
-    repo: &R,
+    (repo,): (&R,),
     token: UserToken,
     id: String,
 ) -> BaseResult<WorksetInfoVal>
@@ -137,7 +136,7 @@ where
 /// Lists worksets for a team.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos<C, R>(
-    repo: &R,
+    (repo,): (&R,),
     token: UserToken,
     params: ListWorksetInfosParams,
 ) -> BaseResult<Vec<WorksetInfoVal>>
@@ -167,7 +166,7 @@ where
 /// Updates a workset's name and description.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn update_info<C, R>(
-    repo: &R,
+    (repo,): (&R,),
     token: UserToken,
     params: UpdateWorksetInfoParams,
 ) -> BaseResult<()>
@@ -202,9 +201,7 @@ where
 /// Deletes a workset and its child data.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn delete<N, C, R, P>(
-    nucl: &N,
-    repo: &R,
-    prom: &P,
+    (nucl, repo, prom): (&N, &R, &P),
     token: UserToken,
     id: String,
 ) -> BaseResult<()>
@@ -264,8 +261,8 @@ where
                     for<'a> DeleteTerms<'a>,
                     for<'a> DeleteTermbase<'a>;
                 prom =>
-                    for<'a> Defer<'a, String, Payload, ()>,
-                    for<'t, 'a> DeferBatch<'t, 'a, String, Payload, ()>;
+                    for<'a> Defer<'a, String, TaskPayload, ()>,
+                    for<'t, 'a> DeferBatch<'t, 'a, String, TaskPayload, ()>;
             },
             &id,
         )

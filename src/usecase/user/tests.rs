@@ -38,10 +38,8 @@ use crate::data::user::{
 use crate::model::member::MemberInfo;
 use crate::model::user::{UserInfo, UserToken};
 use crate::part::effect::event::Event;
-use crate::part::prom::payload::Payload;
-use crate::part::prom::payload::image::{
-    Payload as ImagePayload, ResourceKind,
-};
+use crate::part::prom::payload::TaskPayload;
+use crate::part::prom::payload::image::{ImagePayload, ResourceKind};
 use crate::part_impl::prom::mock_impl::MockPromRecord;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
@@ -50,6 +48,7 @@ use crate::test_util::{
     assert_expected_message, assert_expected_variant,
     assert_one_image_check_record,
 };
+use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
 mod delete;
@@ -120,13 +119,15 @@ fn update_password_params(
 /// Builds a [`ReserveUserAvatarData`] fixture.
 fn reserve_params(file_ext: &str) -> ReserveUserAvatarParams {
     ReserveUserAvatarParams {
-        file_ext: file_ext.into(),
+        image_hash: ImageHash::new([1; 32]),
+        new_byte_len: 4096,
+        ext: ImageExt::parse(file_ext).unwrap(),
     }
 }
 
 /// Builds a [`MarkUserAvatarUploadedData`] fixture.
-fn mark_params(avatar_version: u32) -> MarkUserAvatarUploadedParams {
-    MarkUserAvatarUploadedParams { avatar_version }
+fn mark_params(image_version: u32) -> MarkUserAvatarUploadedParams {
+    MarkUserAvatarUploadedParams { image_version }
 }
 
 /// Counts deferred image-delete records matching the given object key.
@@ -136,7 +137,7 @@ fn count_delete_records(records: &[MockPromRecord], object_key: &str) -> usize {
         .filter(|record| {
             matches!(
                 record.payload(),
-                Payload::Image(ImagePayload::Delete { object_key: key })
+                TaskPayload::Image(ImagePayload::Delete { object_key: key })
                     if key == object_key
             )
         })
@@ -153,7 +154,7 @@ async fn get_info_emits_active_for_self() {
         credential("user-1", "password"),
     );
 
-    let val = get_info(&mock, &mock, &mock, token("user-1"), "user-1".into())
+    let val = get_info((&mock, &mock, &mock), token("user-1"), "user-1".into())
         .await
         .unwrap();
 
@@ -182,7 +183,7 @@ async fn get_info_does_not_emit_active_for_other_user() {
         credential("user-2", "password"),
     );
 
-    get_info(&mock, &mock, &mock, token("user-1"), "user-2".into())
+    get_info((&mock, &mock, &mock), token("user-1"), "user-2".into())
         .await
         .unwrap();
 
@@ -194,7 +195,7 @@ async fn get_info_propagates_missing_user() {
     //
     let mock = Mock::new();
 
-    let err = get_info(&mock, &mock, &mock, token("user-1"), "user-1".into())
+    let err = get_info((&mock, &mock, &mock), token("user-1"), "user-1".into())
         .await
         .err()
         .unwrap();
@@ -215,8 +216,7 @@ async fn update_info_updates_user_and_member_nickname() {
     mock.seed_member(member("member-1", "user-1", "Old", "team-1"));
 
     update_info(
-        &mock,
-        &mock,
+        (&mock, &mock),
         token("user-1"),
         update_params("user-1", "qid-new", "New"),
     )
@@ -243,8 +243,7 @@ async fn update_info_rejects_non_owner_without_mutation() {
     );
 
     let err = update_info(
-        &mock,
-        &mock,
+        (&mock, &mock),
         token("user-2"),
         update_params("user-1", "qid-new", "New"),
     )
@@ -267,8 +266,7 @@ async fn update_info_rolls_back_missing_user() {
     let mock = Mock::new();
 
     let err = update_info(
-        &mock,
-        &mock,
+        (&mock, &mock),
         token("user-1"),
         update_params("user-1", "qid-new", "New"),
     )
@@ -292,8 +290,7 @@ async fn update_password_replaces_the_verified_password() {
     );
 
     update_password(
-        &mock,
-        &mock,
+        (&mock, &mock),
         token("user-1"),
         "user-1".into(),
         update_password_params("old-password", "new-password"),
@@ -331,8 +328,7 @@ async fn update_password_rejects_an_incorrect_current_password() {
     );
 
     let err = update_password(
-        &mock,
-        &mock,
+        (&mock, &mock),
         token("user-1"),
         "user-1".into(),
         update_password_params("wrong-password", "new-password"),
@@ -365,20 +361,17 @@ async fn reserve_avatar_updates_state_enqueues_check_and_returns_put_url() {
     );
 
     let val = reserve_avatar(
-        &mock,
-        &mock,
-        &mock,
-        &mock,
+        (&mock, &mock, &mock, &mock),
         token("user-1"),
         reserve_params("png"),
     )
     .await
     .unwrap();
 
-    assert_eq!(val.avatar_version, 1);
+    assert_eq!(val.slot.as_ref().unwrap().image_version, 1);
 
     assert_eq!(
-        val.put_url,
+        val.slot.as_ref().unwrap().put_url,
         "https://test.local/put/user_avatar/user-1-1.png"
     );
 
@@ -411,10 +404,7 @@ async fn reserve_avatar_replacing_avatar_enqueues_delete_and_check() {
     );
 
     reserve_avatar(
-        &mock,
-        &mock,
-        &mock,
-        &mock,
+        (&mock, &mock, &mock, &mock),
         token("user-1"),
         reserve_params("jpg"),
     )
@@ -440,10 +430,7 @@ async fn reserve_avatar_rolls_back_missing_user() {
     let mock = Mock::new();
 
     let err = reserve_avatar(
-        &mock,
-        &mock,
-        &mock,
-        &mock,
+        (&mock, &mock, &mock, &mock),
         token("user-1"),
         reserve_params("png"),
     )
@@ -471,10 +458,7 @@ async fn reserve_avatar_propagates_put_url_failure_after_commit() {
     );
 
     let err = reserve_avatar(
-        &mock,
-        &mock,
-        &mock,
-        &mock,
+        (&mock, &mock, &mock, &mock),
         token("user-1"),
         reserve_params("png"),
     )
@@ -505,8 +489,7 @@ async fn mark_avatar_uploaded_marks_matching_version() {
     );
 
     mark_avatar_uploaded(
-        &mock,
-        &mock,
+        (&mock, &mock, &mock),
         token("user-1"),
         "user-1".into(),
         mark_params(2),
@@ -528,8 +511,7 @@ async fn mark_avatar_uploaded_accepts_repeated_matching_version() {
     );
 
     let first = mark_avatar_uploaded(
-        &mock,
-        &mock,
+        (&mock, &mock, &mock),
         token("user-1"),
         "user-1".into(),
         mark_params(2),
@@ -539,8 +521,7 @@ async fn mark_avatar_uploaded_accepts_repeated_matching_version() {
     assert!(first.is_ok());
 
     let second = mark_avatar_uploaded(
-        &mock,
-        &mock,
+        (&mock, &mock, &mock),
         token("user-1"),
         "user-1".into(),
         mark_params(2),
@@ -563,8 +544,7 @@ async fn mark_avatar_uploaded_rejects_non_owner() {
     );
 
     let err = mark_avatar_uploaded(
-        &mock,
-        &mock,
+        (&mock, &mock, &mock),
         token("user-2"),
         "user-1".into(),
         mark_params(2),
@@ -589,8 +569,7 @@ async fn mark_avatar_uploaded_rolls_back_stale_version() {
     );
 
     let err = mark_avatar_uploaded(
-        &mock,
-        &mock,
+        (&mock, &mock, &mock),
         token("user-1"),
         "user-1".into(),
         mark_params(1),
@@ -619,10 +598,7 @@ async fn mark_avatar_uploaded_rejects_old_reservation_replay() {
     );
 
     let reserved = reserve_avatar(
-        &mock,
-        &mock,
-        &mock,
-        &mock,
+        (&mock, &mock, &mock, &mock),
         token("user-1"),
         reserve_params("png"),
     )
@@ -630,11 +606,10 @@ async fn mark_avatar_uploaded_rejects_old_reservation_replay() {
     .ok()
     .unwrap();
 
-    assert_eq!(reserved.avatar_version, 2);
+    assert_eq!(reserved.slot.as_ref().unwrap().image_version, 2);
 
     let err = mark_avatar_uploaded(
-        &mock,
-        &mock,
+        (&mock, &mock, &mock),
         token("user-1"),
         "user-1".into(),
         mark_params(1),

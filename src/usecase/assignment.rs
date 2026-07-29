@@ -44,8 +44,7 @@ mod tests;
 /// Lists assignments by chapter or owner user.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos<C, R, I>(
-    repo: &R,
-    image_pool: &I,
+    (repo, image_pool): (&R, &I),
     token: UserToken,
     params: ListAssignmentInfosParams,
 ) -> BaseResult<Vec<AssignmentInfoVal>>
@@ -127,8 +126,7 @@ where
 /// Joins a chapter assignment with requested roles.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn join<N, C, R>(
-    nucl: &N,
-    repo: &R,
+    (nucl, repo): (&N, &R),
     token: UserToken,
     params: JoinChapterAssignmentParams,
 ) -> BaseResult<AssignmentInfoVal>
@@ -191,7 +189,7 @@ where
                 )
                 .await?;
 
-            ChapterComplex::ensure_user_write_allowed(&chapter_info)?;
+            ChapterComplex::ensure_chapter_writable(&chapter_info)?;
 
             let existing_assignment_info = repo
                 .step(
@@ -248,8 +246,7 @@ where
 /// Updates assignment roles.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn update_roles<N, C, R>(
-    nucl: &N,
-    repo: &R,
+    (nucl, repo): (&N, &R),
     token: UserToken,
     params: UpdateAssignmentRolesParams,
 ) -> BaseResult<()>
@@ -307,7 +304,7 @@ where
             )
             .await?;
 
-        ChapterComplex::ensure_user_write_allowed(&chapter_info)?;
+        ChapterComplex::ensure_chapter_writable(&chapter_info)?;
 
         let assignment_infos = repo
             .step(
@@ -403,8 +400,7 @@ fn assignment_admin_required_err() -> BaseError {
 /// Deletes one assignment by identifier.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn delete<N, C, R>(
-    nucl: &N,
-    repo: &R,
+    (nucl, repo): (&N, &R),
     token: UserToken,
     id: String,
 ) -> BaseResult<()>

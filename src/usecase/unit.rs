@@ -48,8 +48,8 @@ const MAX_UNITS_PER_PAGE: usize = 100;
 
 /// Lists all units under one page.
 #[instrument(level = "info", err(Debug), skip_all)]
-pub async fn list_all_infos<C, R>(
-    repo: &R,
+pub async fn list_infos<C, R>(
+    (repo,): (&R,),
     token: UserToken,
     params: ListPageUnitInfosParams,
 ) -> BaseResult<ListPageUnitInfosPayload>
@@ -100,8 +100,7 @@ where
 /// Saves unit opers under one page.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn save<N, C, R>(
-    nucl: &N,
-    repo: &R,
+    (nucl, repo): (&N, &R),
     token: UserToken,
     params: SavePageUnitsParams,
 ) -> BaseResult<SavePageUnitsPayload>
@@ -169,7 +168,7 @@ where
                 )
                 .await?;
 
-            ChapterComplex::ensure_user_write_allowed(&chapter_info)?;
+            ChapterComplex::ensure_chapter_writable(&chapter_info)?;
 
             let page_info = repo
                 .step(context, &GetPageInfoExcluded { id: &page_id })
@@ -320,18 +319,20 @@ where
         })
         .await?;
 
-    spawn_starts((*repo).clone(), saved_units.chapter_id, stages);
+    spawn_starts(((*repo).clone(),), saved_units.chapter_id, stages);
 
     accept(saved_units.payload)
 }
 
 struct SavePageUnitsResult {
+    //
     payload: SavePageUnitsPayload,
     chapter_id: String,
 }
 
 /// Carries the validated opers and local ID maps produced by applying a diff.
 struct UnitApplyParts {
+    //
     opers: Vec<UnitOper>,
     local_id_maps: Vec<UnitIdMapper>,
 }

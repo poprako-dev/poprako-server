@@ -8,8 +8,8 @@ use poprako_util::time::ToUnixMilli;
 use crate::complex::util::check_user_is_team_admin;
 use crate::model::assignment::AssignmentInfo;
 use crate::model::comic_archive::{
-    ComicArchiveChapterSnapshot, ComicArchiveRecord, ComicArchiveSnapshot,
-    ComicArchiveWrite,
+    ComicArchiveChapterSnapshot, ComicArchiveEntry, ComicArchiveRecord,
+    ComicArchiveSnapshot,
 };
 use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
@@ -27,24 +27,24 @@ pub struct ComicArchiveComplex;
 
 impl ComicArchiveComplex {
     /// Builds one compressed archive row and deduplicated image keys on Tokio's blocking pool.
-    pub async fn prepare_write(
+    pub async fn prepare_entry(
         comic_archive_snapshot: ComicArchiveSnapshot,
         archiver_id: String,
         archived_at: OffsetDateTime,
-    ) -> BaseResult<(ComicArchiveWrite, Vec<String>)> {
+    ) -> BaseResult<(ComicArchiveEntry, Vec<String>)> {
         tokio::task::spawn_blocking(move || {
             //
             let image_keys = collect_image_keys(&comic_archive_snapshot);
 
-            let comic_archive_write =
-                build_write(comic_archive_snapshot, archiver_id, archived_at)?;
+            let comic_archive_entry =
+                build_entry(comic_archive_snapshot, archiver_id, archived_at)?;
 
-            accept((comic_archive_write, image_keys))
+            accept((comic_archive_entry, image_keys))
         })
         .await
         .map_err(|error| BaseError::Unrecoverable {
             message: format!(
-                "[ComicArchiveComplex::prepare_write] blocking task failed: {}",
+                "[ComicArchiveComplex::prepare_entry] blocking task failed: {}",
                 error
             ),
         })?
@@ -52,11 +52,11 @@ impl ComicArchiveComplex {
 }
 
 /// Builds one compressed archive row and source cleanup identifiers.
-fn build_write(
+fn build_entry(
     comic_archive_snapshot: ComicArchiveSnapshot,
     archiver_id: String,
     archived_at: OffsetDateTime,
-) -> BaseResult<ComicArchiveWrite> {
+) -> BaseResult<ComicArchiveEntry> {
     //
     let archived_comic_id = next_snowflake_id();
 
@@ -68,7 +68,7 @@ fn build_write(
         archived_payload: serde_json::to_string(&comic_payload).map_err(|error| {
             BaseError::Unrecoverable {
                 message: format!(
-                    "[ComicArchiveComplex::build_write] failed to serialize archive payload: {}",
+                    "[ComicArchiveComplex::build_entry] failed to serialize archive payload: {}",
                     error
                 ),
             }
@@ -93,7 +93,7 @@ fn build_write(
         );
     }
 
-    accept(ComicArchiveWrite {
+    accept(ComicArchiveEntry {
         record,
         source_comic_id: comic_archive_snapshot.comic_info.id,
         source_chapter_ids,

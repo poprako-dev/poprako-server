@@ -33,6 +33,16 @@ COMMENT_NODE_TYPES = {
     "line_comment",
     "block_comment",
 }
+BLOCK_CONTAINERS = {
+    "block",
+    "match_block",
+}
+STRUCT_FIELD_CONTAINERS = {
+    "field_declaration_list",
+}
+ENUM_VARIANT_CONTAINERS = {
+    "enum_variant_list",
+}
 
 BARE_SEPARATOR_RE = re.compile(r"^\s*//\s*$")
 
@@ -102,7 +112,11 @@ class RustSpacingChecker:
         edits: list[TextEdit] = []
 
         for container in nodes:
-            if container.type not in {"block", "match_block"}:
+            if container.type not in (
+                BLOCK_CONTAINERS
+                | STRUCT_FIELD_CONTAINERS
+                | ENUM_VARIANT_CONTAINERS
+            ):
                 continue
 
             container_diagnostics, container_edits = self._analyze_container(
@@ -168,7 +182,7 @@ class RustSpacingChecker:
             first=first,
         )
 
-        # 多 statement / 多 match arm block：
+        # 多 statement / 多 match arm block 与多字段 struct：
         #
         # if condition {
         #     //
@@ -181,10 +195,16 @@ class RustSpacingChecker:
         # 单 statement / 单 arm block 也不要求 `//`。
         if (
             len(units) >= 2
+            and container.type in (BLOCK_CONTAINERS | STRUCT_FIELD_CONTAINERS)
             and not line_is_only_open_brace(lines, brace)
             and not separator_rows
         ):
             kind = unit_kind(container)
+            description = (
+                "multi-field struct"
+                if container.type == "field_declaration_list"
+                else f"multi-{kind} block"
+            )
 
             diagnostics.append(
                 Diagnostic(
@@ -193,7 +213,7 @@ class RustSpacingChecker:
                     col=first.start_point.column + 1,
                     code="BLK000",
                     message=(
-                        f"multi-{kind} block whose opening brace is not on its "
+                        f"{description} whose opening brace is not on its "
                         f"own line requires a bare `//` separator before its "
                         f"first {kind}"
                     ),
@@ -219,7 +239,11 @@ class RustSpacingChecker:
         #     //
         #     return;
         # }
-        if len(units) == 1 and separator_rows:
+        if (
+            len(units) == 1
+            and container.type in (BLOCK_CONTAINERS | STRUCT_FIELD_CONTAINERS)
+            and separator_rows
+        ):
             diagnostics.append(
                 Diagnostic(
                     path=path,
@@ -244,9 +268,12 @@ class RustSpacingChecker:
                     )
                 )
 
-        # 同一 block 内任意两个直接 statement 之间必须有空行。
-        # 同一 match block 内任意两个 match arm 之间也必须有空行。
+        # 同一 block 内任意两个直接 statement、同一 match block 内任意两个
+        # match arm，以及同一 enum 内任意两个 variant 之间必须有空行。
         for previous, current in zip(units, units[1:]):
+            if container.type not in (BLOCK_CONTAINERS | ENUM_VARIANT_CONTAINERS):
+                continue
+
             current_anchor = unit_anchor(container, current)
 
             # 同一行上的两个 unit（如 `};`）之间不需要空行。
@@ -347,6 +374,20 @@ def direct_units(container: Node) -> list[Node]:
             if child.type not in COMMENT_NODE_TYPES | {"attribute_item"}
         ]
 
+    if container.type == "field_declaration_list":
+        return [
+            child
+            for child in container.named_children
+            if child.type == "field_declaration"
+        ]
+
+    if container.type == "enum_variant_list":
+        return [
+            child
+            for child in container.named_children
+            if child.type == "enum_variant"
+        ]
+
     return []
 
 
@@ -373,6 +414,12 @@ def unit_anchor(container: Node, unit: Node) -> Node:
 def unit_kind(container: Node) -> str:
     if container.type == "match_block":
         return "match arm"
+
+    if container.type == "enum_variant_list":
+        return "enum variant"
+
+    if container.type == "field_declaration_list":
+        return "struct field"
 
     return "statement"
 
@@ -776,11 +823,12 @@ def main() -> int:
 
     parser.add_argument(
         "--fix",
-        action="store_true",
+        action=argparse.BooleanOptionalAction,
+        default=True,
         help=(
             "Apply BLK000, BLK001, and BLK002 fixes in place, "
             "then run the checker again. Files containing Rust "
-            "parse errors are not changed."
+            "parse errors are not changed. Pass --no-fix to check only."
         ),
     )
 

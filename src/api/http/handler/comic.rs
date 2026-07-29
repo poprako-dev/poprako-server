@@ -51,7 +51,7 @@ pub async fn export_archives(
     Extension(user_token): Extension<UserToken>,
     Query(params): Query<ExportComicArchivesParams>,
 ) -> HttpResult<ExportComicArchivesPayload> {
-    usecase::comic_archive::export(harn.repo(), user_token, team_id, params)
+    usecase::comic_archive::export((harn.repo(),), user_token, team_id, params)
         .await?
         .accept(StatusCode::OK)
 }
@@ -67,6 +67,7 @@ pub async fn export_archives(
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ComicListQuery {
+    //
     /// Fuzzy title substring filter (case-insensitive).
     pub fuzzy_title: Option<String>,
 
@@ -109,7 +110,7 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(params): Json<CreateComicParams>,
 ) -> HttpResult<CreateComicPayload> {
-    usecase::comic::create(harn.drive(), harn.repo(), user_token, params)
+    usecase::comic::create((harn.drive(), harn.repo()), user_token, params)
         .await?
         .accept(StatusCode::CREATED)
 }
@@ -146,8 +147,7 @@ pub async fn list_infos(
     };
 
     usecase::comic::list_infos(
-        harn.repo(),
-        harn.image_pool(),
+        (harn.repo(), harn.image_pool()),
         user_token,
         params,
     )
@@ -174,8 +174,7 @@ pub async fn get_info(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<ComicInfoVal> {
     usecase::comic::get_info(
-        harn.repo(),
-        harn.image_pool(),
+        (harn.repo(), harn.image_pool()),
         user_token,
         comic_id,
     )
@@ -207,7 +206,7 @@ pub async fn update_info(
     //
     ensure_path_matches_body_id(&comic_id, &params.id)?;
 
-    usecase::comic::update_info(harn.repo(), user_token, params).await?;
+    usecase::comic::update_info((harn.repo(),), user_token, params).await?;
 
     no_content()
 }
@@ -233,10 +232,7 @@ pub async fn reserve_cover(
     Json(params): Json<ReserveComicCoverParams>,
 ) -> HttpResult<ReserveComicCoverPayload> {
     usecase::comic::reserve_cover(
-        harn.drive(),
-        harn.repo(),
-        harn.prom(),
-        harn.image_pool(),
+        (harn.drive(), harn.repo(), harn.prom(), harn.image_pool()),
         user_token,
         comic_id,
         params,
@@ -267,7 +263,7 @@ pub async fn mark_cover_uploaded(
 ) -> HttpNoContent {
     //
     usecase::comic::mark_cover_uploaded(
-        harn.repo(),
+        (harn.drive(), harn.repo(), harn.image_pool()),
         user_token,
         comic_id,
         params,
@@ -296,9 +292,7 @@ pub async fn archive(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<ArchiveComicPayload> {
     usecase::comic_archive::archive(
-        harn.drive(),
-        harn.repo(),
-        harn.prom(),
+        (harn.drive(), harn.repo(), harn.prom()),
         user_token,
         comic_id,
     )
@@ -326,9 +320,7 @@ pub async fn delete(
 ) -> HttpNoContent {
     //
     usecase::comic::delete(
-        harn.drive(),
-        harn.repo(),
-        harn.prom(),
+        (harn.drive(), harn.repo(), harn.prom()),
         user_token,
         comic_id,
     )

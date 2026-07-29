@@ -75,7 +75,7 @@ impl ChapterComplex {
     }
 
     /// Rejects user mutations once a chapter has been published.
-    pub fn ensure_user_write_allowed(
+    pub fn ensure_chapter_writable(
         chapter_info: &ChapterInfo,
     ) -> BaseResult<()> {
         //

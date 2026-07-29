@@ -12,6 +12,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_workset;
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_workset)]
 pub struct WorksetRow {
+    //
     pub f_id: String,
     pub f_team_id: String,
     pub f_index: i32,
@@ -32,6 +33,7 @@ pub struct WorksetRow {
 #[derive(Insertable)]
 #[diesel(table_name = t_workset)]
 pub struct WorksetRowEntry<'a> {
+    //
     pub f_id: &'a str,
     pub f_team_id: &'a str,
     pub f_index: i32,
@@ -49,6 +51,7 @@ pub struct WorksetRowEntry<'a> {
 #[derive(AsChangeset)]
 #[diesel(table_name = t_workset)]
 pub struct WorksetAspect<'a> {
+    //
     pub f_name: Option<&'a str>,
     pub f_description: Option<Option<&'a str>>,
 

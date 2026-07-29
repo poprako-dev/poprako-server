@@ -58,11 +58,11 @@ async fn main() -> anyhow::Result<()> {
 
     let image_pool = R2ImagePool::from_env()?;
 
-    let prom = RdbProm::new(core.clone(), image_pool.clone());
+    let develop = AsyncEffectDevelop::new(repo_effect, 1024);
+
+    let prom = RdbProm::new(core.clone(), image_pool.clone(), develop.clone());
 
     let sched = GeneralSched::new(core.clone());
-
-    let develop = AsyncEffectDevelop::new(repo_effect, 1024);
 
     let harn: AppHarn = Harn::new(drive, repo, prom, auth, image_pool, develop);
 
@@ -76,9 +76,9 @@ async fn main() -> anyhow::Result<()> {
 
     let serve_outcome = poprako_server::serve(harn.clone(), http_addr).await;
 
-    harn.develop().close().await;
-
     harn.prom().close().await;
+
+    harn.develop().close().await;
 
     sched.close().await;
 

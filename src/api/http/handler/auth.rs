@@ -49,10 +49,7 @@ pub async fn register(
 ) -> HttpResult<RegisterAuthPayload> {
     //
     let reply = usecase::auth::register(
-        harn.drive(),
-        harn.repo(),
-        harn.auth(),
-        harn.develop(),
+        (harn.drive(), harn.repo(), harn.auth(), harn.develop()),
         params,
     )
     .await?;
@@ -84,7 +81,8 @@ pub async fn login(
     Json(params): Json<LoginAuthParams>,
 ) -> HttpResult<LoginAuthPayload> {
     //
-    let reply = usecase::auth::login(harn.repo(), harn.auth(), params).await?;
+    let reply =
+        usecase::auth::login((harn.repo(), harn.auth()), params).await?;
 
     let cookie = auth_cookie(&reply.token);
 

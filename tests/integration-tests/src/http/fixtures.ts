@@ -31,7 +31,7 @@ import type {
     PoprakoExportVal,
     ReserveChapterPagesVal,
     ReservedPageVal,
-    ReserveVersionVal,
+    ReserveImagePayload,
     SavePageUnitsVal,
     SystemMailInfoVal,
     TeamInfoVal,
@@ -178,14 +178,46 @@ export async function updateTeam(
 export async function reserveTeamAvatar(
     api: ApiClient,
     teamId: string,
-    fileExt: string,
-): Promise<ReserveVersionVal> {
-    return expectSuccessData(
-        await api.post<SuccessBody<ReserveVersionVal>>(`/api/v1/teams/${teamId}/avatar/reserve`, {
-            file_ext: fileExt,
+    ext: ImageExtension,
+): Promise<ReserveImagePayload> {
+    return reserveAndUploadImage(
+        api,
+        `/api/v1/teams/${teamId}/avatar/reserve`,
+        `poprako-team-avatar-${teamId}-${ext}`,
+        ext,
+    );
+}
+
+async function reserveAndUploadImage(
+    api: ApiClient,
+    path: string,
+    content: string,
+    ext: ImageExtension,
+): Promise<ReserveImagePayload> {
+    const imageBytes = new TextEncoder().encode(content);
+
+    const imageHash = createHash("sha256").update(imageBytes).digest("base64");
+
+    const reserved = expectSuccessData(
+        await api.post<SuccessBody<ReserveImagePayload>>(path, {
+            image_hash: imageHash,
+            new_byte_len: imageBytes.byteLength,
+            ext,
         }),
         200,
     );
+
+    if (reserved.slot) {
+        const response = await fetch(reserved.slot.put_url, {
+            method: "PUT",
+            headers: reserved.slot.headers,
+            body: imageBytes,
+        });
+
+        assert.ok(response.ok, `image upload failed with status ${response.status}`);
+    }
+
+    return reserved;
 }
 
 export async function markTeamAvatarUploaded(
@@ -195,7 +227,7 @@ export async function markTeamAvatarUploaded(
 ): Promise<void> {
     expectNoContent(
         await api.post<null>(`/api/v1/teams/${teamId}/avatar/mark-uploaded`, {
-            avatar_version: avatarVersion,
+            image_version: avatarVersion,
         }),
     );
 }
@@ -205,13 +237,13 @@ export async function markTeamAvatarUploaded(
 export async function reserveUserAvatar(
     api: ApiClient,
     userId: string,
-    fileExt: string,
-): Promise<ReserveVersionVal> {
-    return expectSuccessData(
-        await api.post<SuccessBody<ReserveVersionVal>>(`/api/v1/users/${userId}/avatar/reserve`, {
-            file_ext: fileExt,
-        }),
-        200,
+    ext: ImageExtension,
+): Promise<ReserveImagePayload> {
+    return reserveAndUploadImage(
+        api,
+        `/api/v1/users/${userId}/avatar/reserve`,
+        `poprako-user-avatar-${userId}-${ext}`,
+        ext,
     );
 }
 
@@ -222,7 +254,7 @@ export async function markUserAvatarUploaded(
 ): Promise<void> {
     expectNoContent(
         await api.post<null>(`/api/v1/users/${userId}/avatar/mark-uploaded`, {
-            avatar_version: avatarVersion,
+            image_version: avatarVersion,
         }),
     );
 }
@@ -435,13 +467,13 @@ export async function updateComic(
 export async function reserveComicCover(
     api: ApiClient,
     comicId: string,
-    fileExt: string,
-): Promise<ReserveVersionVal> {
-    return expectSuccessData(
-        await api.post<SuccessBody<ReserveVersionVal>>(`/api/v1/comics/${comicId}/cover/reserve`, {
-            file_ext: fileExt,
-        }),
-        200,
+    ext: ImageExtension,
+): Promise<ReserveImagePayload> {
+    return reserveAndUploadImage(
+        api,
+        `/api/v1/comics/${comicId}/cover/reserve`,
+        `poprako-comic-cover-${comicId}-${ext}`,
+        ext,
     );
 }
 
@@ -452,7 +484,7 @@ export async function markComicCoverUploaded(
 ): Promise<void> {
     expectNoContent(
         await api.post<null>(`/api/v1/comics/${comicId}/cover/mark-uploaded`, {
-            cover_version: coverVersion,
+            image_version: coverVersion,
         }),
     );
 }
@@ -554,12 +586,12 @@ const TEST_PAGE_BYTES = new TextEncoder().encode("poprako-page-integration");
 
 const TEST_PAGE_HASH = createHash("sha256").update(TEST_PAGE_BYTES).digest("base64");
 
-export function newPageManifest(pageCount: number, extension: ImageExtension): PageImageInput[] {
+export function newPageManifest(pageCount: number, ext: ImageExtension): PageImageInput[] {
     return Array.from({ length: pageCount }, () => ({
         page_id: null,
         image_hash: TEST_PAGE_HASH,
-        byte_length: TEST_PAGE_BYTES.byteLength,
-        extension,
+        new_byte_len: TEST_PAGE_BYTES.byteLength,
+        ext,
     }));
 }
 
@@ -608,17 +640,17 @@ export async function listChapterPages(api: ApiClient, chapterId: string): Promi
 export async function reservePageImage(
     api: ApiClient,
     pageId: string,
-    extension: ImageExtension,
+    ext: ImageExtension,
 ): Promise<ReservedPageVal> {
-    const imageBytes = new TextEncoder().encode(`poprako-page-replacement-${pageId}-${extension}`);
+    const imageBytes = new TextEncoder().encode(`poprako-page-replacement-${pageId}-${ext}`);
 
     const imageHash = createHash("sha256").update(imageBytes).digest("base64");
 
     const reserved = expectSuccessData(
         await api.post<SuccessBody<ReservedPageVal>>(`/api/v1/pages/${pageId}/image/reserve`, {
             image_hash: imageHash,
-            byte_length: imageBytes.byteLength,
-            extension,
+            new_byte_len: imageBytes.byteLength,
+            ext,
         }),
         200,
     );

@@ -23,8 +23,7 @@ mod tests;
 /// Lists comments under a team.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos<C, R, I>(
-    repo: &R,
-    image_pool: &I,
+    (repo, image_pool): (&R, &I),
     token: UserToken,
     params: ListCommentInfosParams,
 ) -> BaseResult<Vec<CommentInfoVal>>
@@ -62,8 +61,7 @@ where
 /// Creates a comment under a team.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn create<N, C, R>(
-    nucl: &N,
-    repo: &R,
+    (nucl, repo): (&N, &R),
     token: UserToken,
     params: CreateCommentParams,
 ) -> BaseResult<CreateCommentPayload>

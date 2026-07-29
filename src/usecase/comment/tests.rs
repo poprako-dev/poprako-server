@@ -16,6 +16,7 @@ use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::{assert_expected_variant, now};
 use crate::value::comment::CommentInclOpt;
+use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
 fn token(user_id: &str) -> UserToken {
@@ -42,6 +43,8 @@ fn user(id: &str, nickname: &str) -> UserInfo {
         avatar_key: None,
         avatar_uploaded: false,
         avatar_version: 0,
+        avatar_hash: ImageHash::default(),
+        avatar_ext: ImageExt::Png,
         is_sadmin: false,
         last_active_at: time,
         created_at: time,
@@ -125,8 +128,7 @@ async fn list_infos_team_member_lists_team_comments() {
     mock.seed_comment(comment("comment-2", "team-2", "author-user", time));
 
     let comment_info_vals = list_infos(
-        &mock,
-        &mock,
+        (&mock, &mock),
         token("viewer-user"),
         list_params("team-1", Vec::new()),
     )
@@ -155,8 +157,7 @@ async fn list_infos_user_include_follows_request() {
     mock.seed_comment(comment("comment-1", "team-1", "author-user", time));
 
     let without_user = list_infos(
-        &mock,
-        &mock,
+        (&mock, &mock),
         token("viewer-user"),
         list_params("team-1", Vec::new()),
     )
@@ -167,8 +168,7 @@ async fn list_infos_user_include_follows_request() {
     assert!(without_user.ok().unwrap()[0].user.is_none());
 
     let with_user = list_infos(
-        &mock,
-        &mock,
+        (&mock, &mock),
         token("viewer-user"),
         list_params("team-1", vec![CommentInclOpt::User]),
     )
@@ -189,8 +189,7 @@ async fn list_infos_non_member_is_rejected() {
     mock.seed_comment(comment("comment-1", "team-1", "author-user", now()));
 
     let err = list_infos(
-        &mock,
-        &mock,
+        (&mock, &mock),
         token("outsider-user"),
         list_params("team-1", Vec::new()),
     )
@@ -208,11 +207,14 @@ async fn create_team_member_creates_comment() {
 
     seed_member(&mock, "viewer-user", "team-1");
 
-    let created_comment =
-        create(&mock, &mock, token("viewer-user"), create_params("team-1"))
-            .await
-            .ok()
-            .unwrap();
+    let created_comment = create(
+        (&mock, &mock),
+        token("viewer-user"),
+        create_params("team-1"),
+    )
+    .await
+    .ok()
+    .unwrap();
 
     let snapshot = mock.snapshot();
 
@@ -231,8 +233,7 @@ async fn create_non_member_is_rejected_without_mutation() {
     let mock = Mock::new();
 
     let err = create(
-        &mock,
-        &mock,
+        (&mock, &mock),
         token("outsider-user"),
         create_params("team-1"),
     )

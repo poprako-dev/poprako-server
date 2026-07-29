@@ -20,7 +20,7 @@ use crate::data::page::{
 use crate::model::user::UserToken;
 use crate::usecase;
 
-/// `GET /api/v1/chapters/{chapter_id}/pages` — list all pages in a chapter.
+/// `GET /api/v1/chapters/{chapter_id}/pages` — list pages in a chapter.
 #[cfg_attr(feature = "swagger", utoipa::path(
     get,
     path = "/api/v1/chapters/{chapter_id}/pages",
@@ -32,7 +32,7 @@ use crate::usecase;
     ),
 ))]
 #[instrument(level = "info", err(Debug), skip_all)]
-pub async fn list_all_infos(
+pub async fn list_infos(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
@@ -40,11 +40,37 @@ pub async fn list_all_infos(
     //
     let params = ListPageInfosParams { chapter_id };
 
-    usecase::page::list_all_infos(
-        harn.repo(),
-        harn.image_pool(),
+    usecase::page::list_infos(
+        (harn.repo(), harn.image_pool()),
         user_token,
         params,
+    )
+    .await?
+    .accept(StatusCode::OK)
+}
+
+/// `GET /api/v1/pages/{page_id}` — fetch one page.
+#[cfg_attr(feature = "swagger", utoipa::path(
+    get,
+    path = "/api/v1/pages/{page_id}",
+    tag = "pages",
+    params(("page_id" = String, Path, description = "Page ID")),
+    responses(
+        (status = 200, description = "Page info retrieved", body = HttpBody<PageInfoVal>),
+        (status = 403, description = "No permission to view this page"),
+        (status = 404, description = "Page not found"),
+    ),
+))]
+#[instrument(level = "info", err(Debug), skip_all)]
+pub async fn get_info(
+    State(harn): State<AppHarn>,
+    Path(page_id): Path<String>,
+    Extension(user_token): Extension<UserToken>,
+) -> HttpResult<PageInfoVal> {
+    usecase::page::get_info(
+        (harn.repo(), harn.image_pool()),
+        user_token,
+        page_id,
     )
     .await?
     .accept(StatusCode::OK)
@@ -69,9 +95,7 @@ pub async fn delete(
 ) -> HttpNoContent {
     //
     usecase::page::delete(
-        harn.drive(),
-        harn.repo(),
-        harn.prom(),
+        (harn.drive(), harn.repo(), harn.prom()),
         user_token,
         chapter_id,
     )
@@ -105,10 +129,7 @@ pub async fn reserve_chapter_pages(
     ensure_path_matches_body_id(&chapter_id, &params.chapter_id)?;
 
     usecase::page::reserve_chapter_pages(
-        harn.drive(),
-        harn.repo(),
-        harn.prom(),
-        harn.image_pool(),
+        (harn.drive(), harn.repo(), harn.prom(), harn.image_pool()),
         user_token,
         params,
     )
@@ -137,10 +158,7 @@ pub async fn reserve_image(
     Json(params): Json<ReservePageImageParams>,
 ) -> HttpResult<ReservedPagePayload> {
     usecase::page::reserve_image(
-        harn.drive(),
-        harn.repo(),
-        harn.prom(),
-        harn.image_pool(),
+        (harn.drive(), harn.repo(), harn.prom(), harn.image_pool()),
         user_token,
         page_id,
         params,
@@ -171,8 +189,7 @@ pub async fn mark_image_uploaded(
 ) -> HttpNoContent {
     //
     usecase::page::mark_image_uploaded(
-        harn.drive(),
-        harn.repo(),
+        (harn.drive(), harn.repo(), harn.image_pool()),
         user_token,
         page_id,
         params,

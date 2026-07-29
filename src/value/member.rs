@@ -17,6 +17,7 @@ use crate::value::incl::InclOpt;
 pub enum MemberInclOpt {
     /// Embed the member's user profile (`user`).
     User,
+
     /// Embed the member's team (`team`).
     Team,
 }

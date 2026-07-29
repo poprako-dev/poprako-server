@@ -6,10 +6,9 @@ use poprako_orchestra::{Run, Step};
 use time::OffsetDateTime;
 use tracing::instrument;
 
-use self::list::{list_all_infos_by_chapter, list_all_infos_by_chapters};
+use self::list::list_infos;
 use crate::model::assignment::{
-    AssignmentEntry, AssignmentInfo, AssignmentInfoListSpec,
-    AssignmentRoleUpdate,
+    AssignmentEntry, AssignmentInfo, AssignmentRoleUpdate,
 };
 use crate::part::repo::oper::assignment::{
     CreateAssignment, DeleteAssignments, FindAssignmentInfo, GetAssignmentInfo,
@@ -28,7 +27,6 @@ use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{BaseError, BaseResult, accept};
 use crate::value::assignment::AssignmentInclOpt;
-use crate::value::role::RoleField;
 
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;
@@ -130,102 +128,6 @@ async fn get_info_by_id(
     .await?;
 
     accept(info)
-}
-
-/// Queries assignment rows filtered by the given spec and populates includes.
-#[instrument(level = "info", err(Debug), skip_all)]
-async fn list_infos(
-    conn: &mut RdbConn,
-    spec: &AssignmentInfoListSpec,
-) -> BaseResult<Vec<AssignmentInfo>> {
-    //
-    let (role, incl_opt, offset, limit, mut query) = match spec {
-        //
-        AssignmentInfoListSpec::Chapter {
-            chapter_id,
-            role,
-            incl_opt,
-            offset,
-            limit,
-        } => (
-            role,
-            incl_opt,
-            offset,
-            limit,
-            t_assignment
-                .filter(f_chapter_id.eq(chapter_id.as_str()))
-                .into_boxed(),
-        ),
-
-        AssignmentInfoListSpec::User {
-            owner_id,
-            role,
-            incl_opt,
-            offset,
-            limit,
-        } => (
-            role,
-            incl_opt,
-            offset,
-            limit,
-            t_assignment
-                .filter(f_user_id.eq(owner_id.as_str()))
-                .into_boxed(),
-        ),
-    };
-
-    if let Some(role) = role {
-        query = match *role {
-            //
-            RoleField::RAW_PROVIDER => {
-                query.filter(f_assigned_raw_provider_at.is_not_null())
-            }
-
-            RoleField::TRANSLATOR => {
-                query.filter(f_assigned_translator_at.is_not_null())
-            }
-
-            RoleField::PROOFREADER => {
-                query.filter(f_assigned_proofreader_at.is_not_null())
-            }
-
-            RoleField::TYPESETTER => {
-                query.filter(f_assigned_typesetter_at.is_not_null())
-            }
-
-            RoleField::REDRAWER => {
-                query.filter(f_assigned_redrawer_at.is_not_null())
-            }
-
-            RoleField::REVIEWER => {
-                query.filter(f_assigned_reviewer_at.is_not_null())
-            }
-
-            RoleField::PUBLISHER => {
-                query.filter(f_assigned_publisher_at.is_not_null())
-            }
-
-            RoleField::ADMIN => query.filter(f_assigned_admin_at.is_not_null()),
-
-            _ => query,
-        };
-    }
-
-    let rows: Vec<AssignmentRow> = query
-        .select(AssignmentRow::as_select())
-        .order_by((f_created_at.desc(), f_id.asc()))
-        .offset(*offset as i64)
-        .limit(*limit as i64)
-        .load(conn)
-        .await
-        .map_err(diesel)?;
-
-    let mut infos = rows_into_infos(rows)?;
-
-    incl::assignment::populate_assignment_incls(conn, &mut infos, incl_opt)
-        .await?;
-
-    accept(infos)
 }
 
 /// Queries all assignment rows for a chapter under `FOR UPDATE` lock.
@@ -364,33 +266,7 @@ impl Run<ListAssignmentInfos<'_, '_>> for RdbRepo {
         &self,
         oper: &ListAssignmentInfos<'_, '_>,
     ) -> BaseResult<Vec<AssignmentInfo>> {
-        match oper {
-            //
-            ListAssignmentInfos::Spec { spec } => {
-                submit_query!(self.core, list_infos, spec)
-            }
-
-            ListAssignmentInfos::Chapter {
-                chapter_id,
-                role,
-                incls,
-            } => submit_query!(
-                self.core,
-                list_all_infos_by_chapter,
-                chapter_id,
-                *role,
-                incls
-            ),
-
-            ListAssignmentInfos::Chapters { chapter_ids, incls } => {
-                submit_query!(
-                    self.core,
-                    list_all_infos_by_chapters,
-                    chapter_ids,
-                    incls
-                )
-            }
-        }
+        submit_query!(self.core, list_infos, oper)
     }
 }
 
@@ -415,31 +291,7 @@ impl Step<ListAssignmentInfos<'_, '_>, RdbContext> for RdbRepo {
         context: &mut RdbContext,
         oper: &ListAssignmentInfos<'_, '_>,
     ) -> BaseResult<Vec<AssignmentInfo>> {
-        match oper {
-            //
-            ListAssignmentInfos::Spec { spec } => {
-                list_infos(context.conn(), spec).await
-            }
-
-            ListAssignmentInfos::Chapter {
-                chapter_id,
-                role,
-                incls,
-            } => {
-                list_all_infos_by_chapter(
-                    context.conn(),
-                    chapter_id,
-                    *role,
-                    incls,
-                )
-                .await
-            }
-
-            ListAssignmentInfos::Chapters { chapter_ids, incls } => {
-                list_all_infos_by_chapters(context.conn(), chapter_ids, incls)
-                    .await
-            }
-        }
+        list_infos(context.conn(), oper).await
     }
 }
 

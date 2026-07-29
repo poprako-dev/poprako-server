@@ -19,6 +19,7 @@ use crate::value::comment::CommentInclOpt;
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CommentInfoVal {
+    //
     /// Unique comment identifier.
     pub id: String,
 
@@ -70,6 +71,7 @@ impl CommentInfoVal {
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ListCommentInfosParams {
+    //
     /// Parent team whose comments to list.
     pub team_id: String,
 
@@ -98,6 +100,7 @@ impl From<ListCommentInfosParams> for CommentListSpec {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateCommentParams {
+    //
     /// Target team identifier.
     pub team_id: String,
     /// Comment body text.

@@ -7,7 +7,7 @@ use tracing::instrument;
 use crate::complex::chapter::{ChapterComplex, ChapterPermComplex};
 use crate::model::user::UserToken;
 use crate::part::prom::Prom;
-use crate::part::prom::payload::Payload;
+use crate::part::prom::payload::TaskPayload;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::chapter::ChapterRepo;
@@ -33,9 +33,7 @@ use crate::result::{BaseError, BaseResult, accept};
 /// Deletes one chapter and its descendant core records.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn delete<N, C, R, P>(
-    nucl: &N,
-    repo: &R,
-    prom: &P,
+    (nucl, repo, prom): (&N, &R, &P),
     token: UserToken,
     id: String,
 ) -> BaseResult<()>
@@ -84,7 +82,7 @@ where
                     for<'a> UnpinOtherChapters<'a>,
                     for<'a> UpdateComicChapterCount<'a>,
                     for<'a> TouchComicLastActive<'a>;
-                prom => for<'t, 'a> DeferBatch<'t, 'a, String, Payload, ()>;
+                prom => for<'t, 'a> DeferBatch<'t, 'a, String, TaskPayload, ()>;
             },
             &id,
         )

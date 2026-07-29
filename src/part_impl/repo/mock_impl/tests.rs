@@ -1,5 +1,7 @@
 use super::*;
 
+use crate::value::image::{ImageExt, ImageHash};
+
 // run_reads_seeded_user(GetUserInfo)(positive): a seeded user should be readable outside a transaction.
 // nucl_coord_commits_repo_and_prom(CreateMember, Defer)(positive): successful coordination should commit repo and prom state together.
 // nucl_coord_rolls_back_repo_and_prom(CreateMember, Defer)(negative): failed coordination should discard repo and prom state together.
@@ -16,6 +18,8 @@ fn user(id: &str) -> UserInfo {
         avatar_key: None,
         avatar_uploaded: false,
         avatar_version: 0,
+        avatar_hash: ImageHash::default(),
+        avatar_ext: ImageExt::Png,
         is_sadmin: false,
         last_active_at: time,
         created_at: time,
@@ -73,12 +77,13 @@ async fn nucl_coord_commits_repo_and_prom() {
 
             let prom_id = "prom-1".to_string();
 
-            let payload = Payload::Image(image::Payload::CheckUpload {
-                resource_kind: image::ResourceKind::UserAvatar,
-                resource_id: "user-1".to_string(),
-                object_key: "key".to_string(),
-                version: 1,
-            });
+            let payload =
+                TaskPayload::Image(image::ImagePayload::CheckUpload {
+                    resource_kind: image::ResourceKind::UserAvatar,
+                    resource_id: "user-1".to_string(),
+                    object_key: "key".to_string(),
+                    version: 1,
+                });
 
             let task = Task {
                 id: &prom_id,
@@ -131,7 +136,7 @@ async fn nucl_coord_rolls_back_repo_and_prom() {
 
             let prom_id = "prom-1".to_string();
 
-            let payload = Payload::Image(image::Payload::Delete {
+            let payload = TaskPayload::Image(image::ImagePayload::Delete {
                 object_key: "key".to_string(),
             });
 

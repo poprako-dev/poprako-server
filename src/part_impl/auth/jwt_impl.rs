@@ -19,6 +19,7 @@ mod tests;
 
 /// JWT issuer for user session tokens.
 pub struct JwtAuth {
+    //
     /// Token lifetime in seconds from issuance.
     expiration_seconds: i64,
 
@@ -32,6 +33,7 @@ pub struct JwtAuth {
 /// Internal JWT claim structure used for token signing.
 #[derive(Debug, Serialize)]
 struct SignClaims<'a> {
+    //
     sub: &'a str,
     user_id: &'a str,
 
