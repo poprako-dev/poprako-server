@@ -160,7 +160,7 @@ where
                 .await?;
 
             if member_invitation_info.invitee_qid != current_user_info.qid {
-                return Err(invalid_invitation_error());
+                return Err(invalid_invitation_err());
             }
 
             let existing_member_info = repo
@@ -174,7 +174,7 @@ where
                 .await?;
 
             if existing_member_info.is_some() {
-                return Err(already_team_member_error());
+                return Err(already_team_member_err());
             }
 
             let member_entry = MemberEntry {
@@ -352,7 +352,7 @@ where
 }
 
 /// Constructs an args error for an invalid invitation code.
-fn invalid_invitation_error() -> BaseError {
+fn invalid_invitation_err() -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Args,
         message: trl("error-no-pending-invitation"),
@@ -360,7 +360,7 @@ fn invalid_invitation_error() -> BaseError {
 }
 
 /// Constructs an args error for a user already in the team.
-fn already_team_member_error() -> BaseError {
+fn already_team_member_err() -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Args,
         message: trl("error-already-team-member"),

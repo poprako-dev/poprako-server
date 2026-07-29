@@ -19,60 +19,28 @@
 #![warn(clippy::pedantic)]
 #![warn(clippy::nursery)]
 
-#[cfg(feature = "swagger-ui")]
-use std::io::Write as _;
 use std::net::{SocketAddr, ToSocketAddrs};
 use std::sync::Arc;
 
 use anyhow::Context as _;
-#[cfg(feature = "swagger-ui")]
-use utoipa::OpenApi as _;
 
 use poprako_server::{
-    AppConfig, AppHarn, AsyncEffectDevelop, Harn, JwtAuth, R2ImagePool,
-    RdbCore, RdbDrive, RdbProm, RdbRepo, RdbSched, init_prometheus, serve,
+    AppConfig, AppHarn, AsyncEffectDevelop, GeneralSched, Harn, JwtAuth,
+    R2ImagePool, RdbCore, RdbDrive, RdbProm, RdbRepo,
 };
 
 /// Application entry point.
 ///
 /// Parses CLI flags, loads configuration, initializes runtime dependencies
-/// (database pool, authentication, image pool, effect dispatcher, Prometheus
-/// collector), wires them into an application harness, and starts the HTTP
-/// server. Pass `--swagger` to print the `OpenAPI` spec to stdout instead of
-/// starting the server.
+/// (database pool, authentication, image pool, effect dispatcher), wires them
+/// into an application harness, and starts the HTTP server. Pass `--swagger`
+/// to print the `OpenAPI` spec to stdout instead of starting the server.
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     //
-    // CLI: --swagger to print swagger.json.
-    #[cfg(feature = "swagger-ui")]
-    if std::env::args().any(|a| a == "--swagger") {
-        //
-        #[allow(clippy::print_stdout)]
-        {
-            let doc = poprako_server::ApiDoc::openapi();
-
-            let swagger_json = serde_json::to_string_pretty(&doc)?;
-
-            std::io::stdout().write_all(swagger_json.as_bytes())?;
-        }
-
-        return Ok(());
-    }
-
     dotenvy::dotenv().expect(".env file should be valid");
 
-    tracing_subscriber::fmt()
-        .with_env_filter(
-            tracing_subscriber::EnvFilter::builder()
-                .with_default_directive(
-                    tracing_subscriber::filter::LevelFilter::INFO.into(),
-                )
-                .from_env_lossy(),
-        )
-        .with_ansi(cfg!(debug_assertions))
-        .init();
-
-    init_prometheus()?;
+    poprako_server::init_log();
 
     let config = AppConfig::from_default_file()
         .await
@@ -92,7 +60,7 @@ async fn main() -> anyhow::Result<()> {
 
     let prom = RdbProm::new(core.clone(), image_pool.clone());
 
-    let sched = RdbSched::new(core.clone());
+    let sched = GeneralSched::new(core.clone());
 
     let develop = AsyncEffectDevelop::new(repo_effect, 1024);
 
@@ -106,7 +74,7 @@ async fn main() -> anyhow::Result<()> {
     .next()
     .context("no address resolved for HTTP listen address")?;
 
-    let serve_result = serve(harn.clone(), http_addr).await;
+    let serve_outcome = poprako_server::serve(harn.clone(), http_addr).await;
 
     harn.develop().close().await;
 
@@ -114,5 +82,5 @@ async fn main() -> anyhow::Result<()> {
 
     sched.close().await;
 
-    serve_result
+    serve_outcome
 }

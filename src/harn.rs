@@ -30,6 +30,7 @@ use crate::result::BaseError;
 /// Provides accessors to each subsystem (drive, repo, prom, auth, image_pool,
 /// develop) and is designed to be cheaply cloned via `Arc<HarnInner>`.
 pub struct Harn<C, N, R, P, A, I, V> {
+    /// Reference-counted inner harness that holds all port implementations.
     inner: Arc<HarnInner<C, N, R, P, A, I, V>>,
 }
 

@@ -46,7 +46,7 @@ impl ChapterPortPermComplex {
             Err(BaseError::Expected {
                 variant: ExpectedVariant::Perm,
                 ..
-            }) => Err(chapter_port_export_permission_error()),
+            }) => Err(chapter_port_export_permission_err()),
 
             Err(e) => Err(e),
         }
@@ -71,7 +71,7 @@ impl ChapterPortPermComplex {
             Err(BaseError::Expected {
                 variant: ExpectedVariant::Perm,
                 ..
-            }) => Err(chapter_port_import_permission_error()),
+            }) => Err(chapter_port_import_permission_err()),
 
             Err(e) => Err(e),
         }
@@ -79,7 +79,7 @@ impl ChapterPortPermComplex {
 }
 
 /// Construct a "chapter port export permission required" permission error.
-fn chapter_port_export_permission_error() -> BaseError {
+fn chapter_port_export_permission_err() -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Perm,
         message: trl("error-chapter-port-export-permission-required"),
@@ -87,7 +87,7 @@ fn chapter_port_export_permission_error() -> BaseError {
 }
 
 /// Construct a "chapter port import permission required" permission error.
-fn chapter_port_import_permission_error() -> BaseError {
+fn chapter_port_import_permission_err() -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Perm,
         message: trl("error-chapter-port-import-permission-required"),

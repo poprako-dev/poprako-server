@@ -3,10 +3,11 @@
 use axum::Json;
 use axum::extract::{Extension, Path, State};
 use axum::http::StatusCode;
+use axum_extra::extract::Query;
 use serde::Deserialize;
 use tracing::instrument;
 
-#[cfg(feature = "swagger-ui")]
+#[cfg(feature = "swagger")]
 use utoipa::IntoParams;
 
 use crate::api::http::handler::util::ensure_path_matches_body_id;
@@ -22,7 +23,9 @@ use crate::data::member::{
 use crate::model::user::UserToken;
 use crate::usecase;
 use crate::value::member::MemberInclOpt;
-use crate::value::query::GroupedQuery;
+
+#[cfg(test)]
+mod tests;
 
 /// Query for the current-user memberships list endpoint (`/members/me`).
 ///
@@ -30,15 +33,11 @@ use crate::value::query::GroupedQuery;
 ///
 /// Example: `?incl=user&incl=team&offset=0&limit=20`.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
-#[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
+#[cfg_attr(feature = "swagger", derive(IntoParams))]
+#[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct MemberMeListQuery {
     /// Related rows to embed. Repeatable. Values: `user`, `team`.
-    #[serde(
-        default,
-        rename = "incl",
-        deserialize_with = "crate::value::query::deserialize_vec"
-    )]
+    #[serde(default, rename = "incl")]
     pub incl_opt: Vec<MemberInclOpt>,
 
     /// Pagination offset (0-based).
@@ -49,7 +48,7 @@ pub struct MemberMeListQuery {
 }
 
 /// `POST /api/v1/members` — create a member under a team.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     post,
     path = "/api/v1/members",
     tag = "members",
@@ -73,7 +72,7 @@ pub async fn create(
 }
 
 /// `GET /api/v1/members` — list members by team or owner.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     get,
     path = "/api/v1/members",
     tag = "members",
@@ -89,7 +88,7 @@ pub async fn create(
 pub async fn list_infos(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    GroupedQuery(params): GroupedQuery<ListMemberInfosParams>,
+    Query(params): Query<ListMemberInfosParams>,
 ) -> HttpResult<Vec<MemberInfoVal>> {
     usecase::member::list_infos(
         harn.repo(),
@@ -102,7 +101,7 @@ pub async fn list_infos(
 }
 
 /// `GET /api/v1/members/me` — list the current user's memberships.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     get,
     path = "/api/v1/members/me",
     tag = "members",
@@ -116,7 +115,7 @@ pub async fn list_infos(
 pub async fn list_my_infos(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    GroupedQuery(query): GroupedQuery<MemberMeListQuery>,
+    Query(query): Query<MemberMeListQuery>,
 ) -> HttpResult<Vec<MemberInfoVal>> {
     //
     let params = ListMemberInfosParams {
@@ -140,7 +139,7 @@ pub async fn list_my_infos(
 }
 
 /// `PUT /api/v1/members/{member_id}/roles` — update a member's roles.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     put,
     path = "/api/v1/members/{member_id}/roles",
     tag = "members",
@@ -175,7 +174,7 @@ pub async fn update_roles(
 }
 
 /// `DELETE /api/v1/members/{member_id}` — delete a member.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     delete,
     path = "/api/v1/members/{member_id}",
     tag = "members",
@@ -200,7 +199,7 @@ pub async fn delete(
 }
 
 /// `POST /api/v1/members/join` — join a team via invitation code.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     post,
     path = "/api/v1/members/join",
     tag = "members",

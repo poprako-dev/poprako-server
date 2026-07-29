@@ -12,7 +12,7 @@ artifacts without an active maintainer or regeneration path.
 - `how-to-implement-api-http.md` defines active Axum, router, and OpenAPI work.
 - `unit-save-api.md` defines the public page-unit save contract.
 - `swagger.json` is a checked-in generated artifact. Regenerate it with
-  `cargo run --features swagger-ui -- --swagger`; do not edit it by hand.
+  `just swagger` or `cargo run -p poprako-swagger`; do not edit it by hand.
 
 Integration-test documentation belongs in `tests/integration-tests/` and must
 track the TypeScript suite there. Do not duplicate implementation plans here.

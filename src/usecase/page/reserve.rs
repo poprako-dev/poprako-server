@@ -15,10 +15,10 @@ use crate::complex::image::ImageComplex;
 use crate::complex::page::manifest::build;
 use crate::complex::page::{PageComplex, PagePermComplex};
 use crate::data::page::{
-    PageImageUploadPayload, ReserveChapterPagesParams,
-    ReserveChapterPagesPayload, ReservedPagePayload,
+    PageSlotVal, ReserveChapterPagesParams, ReserveChapterPagesPayload,
+    ReservedPagePayload,
 };
-use crate::model::page::{PageEntry, PageManifestUpdate};
+use crate::model::page::{PageEntry, PageImageSpec, PageManifestUpdate};
 use crate::model::user::UserToken;
 use crate::part::image::{ImagePool, ImageUploadSpec};
 use crate::part::prom::Prom;
@@ -40,7 +40,7 @@ use crate::part::repo::oper::page::{
 use crate::part::repo::page::PageRepo;
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
-use crate::value::image::{ImageExtension, ImageHash};
+use crate::value::image::{ImageExt, ImageHash};
 
 const MAX_IMAGE_BYTE_LENGTH: u64 = 20 * 1024 * 1024;
 
@@ -96,23 +96,30 @@ where
     P: Prom<C> + Send + Sync,
     I: ImagePool,
 {
+    let ReserveChapterPagesParams { chapter_id, pages } = params;
+
+    let page_specs = pages
+        .into_iter()
+        .map(PageImageSpec::from)
+        .collect::<Vec<_>>();
+
     let page_count =
-        i32::try_from(params.pages.len()).map_err(|_| BaseError::Expected {
+        i32::try_from(page_specs.len()).map_err(|_| BaseError::Expected {
             variant: ExpectedVariant::Args,
             message: trl("error-invalid-page-count"),
         })?;
 
     validate_page_count(page_count)?;
 
-    for page_input in &params.pages {
-        validate_image_byte_length(page_input.byte_length)?;
+    for page_spec in &page_specs {
+        validate_image_byte_length(page_spec.byte_length)?;
     }
 
     let mut explicit_page_ids = HashSet::new();
 
-    for page_input in &params.pages {
+    for page_spec in &page_specs {
         //
-        let Some(page_id) = &page_input.page_id else {
+        let Some(page_id) = &page_spec.page_id else {
             continue;
         };
 
@@ -132,7 +139,7 @@ where
         image_version: u32,
         image_hash: ImageHash,
         byte_length: u64,
-        extension: ImageExtension,
+        ext: ImageExt,
     }
 
     PagePermComplex::ensure_user_can_reserve(
@@ -140,7 +147,7 @@ where
             repo => for<'a, 'b> FindAssignmentInfo<'a, 'b>;
         },
         &token.user_id,
-        &params.chapter_id,
+        &chapter_id,
     )
     .await?;
 
@@ -151,7 +158,7 @@ where
                 .step(
                     context,
                     &GetChapterInfoExcluded {
-                        id: &params.chapter_id,
+                        id: &chapter_id,
                         incls: &[],
                     },
                 )
@@ -171,7 +178,7 @@ where
             let manifest_plan = build(
                 &chapter_info.id,
                 &existing_page_infos,
-                &params.pages,
+                &page_specs,
             )?;
 
             repo.step(
@@ -196,7 +203,7 @@ where
 
             let mut proofread_unit_count = 0;
 
-            for (raw_index, page_input) in params.pages.iter().enumerate() {
+            for (raw_index, page_spec) in page_specs.iter().enumerate() {
                 //
                 let index = i32::try_from(raw_index).map_err(|_| BaseError::Expected {
                     variant: ExpectedVariant::Args,
@@ -217,7 +224,7 @@ where
                     proofread_unit_count += existing_page_info.proofread_unit_count;
 
                     let identity_changed =
-                        existing_page_info.image_hash != page_input.image_hash;
+                        existing_page_info.image_hash != page_spec.image_hash;
 
                     let image_version = match identity_changed {
                         //
@@ -238,7 +245,7 @@ where
                             &chapter_info.id,
                             &existing_page_info.id,
                             image_version,
-                            page_input.extension.suffix(),
+                            page_spec.ext.suffix(),
                         )),
 
                         false => existing_page_info.image_key.clone(),
@@ -263,9 +270,9 @@ where
                         image_key: image_key.clone(),
                         image_uploaded,
                         image_version,
-                        image_hash: page_input.image_hash.clone(),
-                        image_byte_len: page_input.byte_length,
-                        image_ext: page_input.extension,
+                        image_hash: page_spec.image_hash.clone(),
+                        image_byte_len: page_spec.byte_length,
+                        image_ext: page_spec.ext,
                     };
 
                     repo.step(
@@ -293,9 +300,9 @@ where
                             })?),
                         },
                         image_version,
-                        image_hash: page_input.image_hash.clone(),
-                        byte_length: page_input.byte_length,
-                        extension: page_input.extension,
+                        image_hash: page_spec.image_hash.clone(),
+                        byte_length: page_spec.byte_length,
+                        ext: page_spec.ext,
                     });
 
                     continue;
@@ -309,7 +316,7 @@ where
                     &chapter_info.id,
                     &page_id,
                     image_version,
-                    page_input.extension.suffix(),
+                    page_spec.ext.suffix(),
                 );
 
                 let page_entry = PageEntry {
@@ -318,9 +325,9 @@ where
                     index,
                     image_key: Some(object_key.clone()),
                     image_version,
-                    image_hash: page_input.image_hash.clone(),
-                    image_byte_len: page_input.byte_length,
-                    image_ext: page_input.extension,
+                    image_hash: page_spec.image_hash.clone(),
+                    image_byte_len: page_spec.byte_length,
+                    image_ext: page_spec.ext,
                 };
 
                 page_entries.push(page_entry);
@@ -332,9 +339,9 @@ where
                     })?,
                     object_key: Some(object_key),
                     image_version,
-                    image_hash: page_input.image_hash.clone(),
-                    byte_length: page_input.byte_length,
-                    extension: page_input.extension,
+                    image_hash: page_spec.image_hash.clone(),
+                    byte_length: page_spec.byte_length,
+                    ext: page_spec.ext,
                 });
             }
 
@@ -491,21 +498,21 @@ where
     let pages = futures_util::future::join_all(reservations.into_iter().map(
         |reservation| async move {
             //
-            let upload = match reservation.object_key {
+            let slot = match reservation.object_key {
                 //
                 Some(object_key) => {
                     //
                     let upload_spec = ImageUploadSpec {
                         object_key: &object_key,
-                        content_type: reservation.extension.content_type(),
+                        content_type: reservation.ext.content_type(),
                         checksum_sha256: &reservation.image_hash,
                         content_length: reservation.byte_length,
                     };
 
                     let upload_target =
-                        image_pool.get_upload_target(upload_spec).await?;
+                        image_pool.get_upload_slot(upload_spec).await?;
 
-                    Some(PageImageUploadPayload {
+                    Some(PageSlotVal {
                         put_url: upload_target.url.to_string(),
                         image_version: reservation.image_version,
                         headers: upload_target.headers,
@@ -520,8 +527,8 @@ where
                 index: reservation.index,
                 image_hash: reservation.image_hash,
                 byte_length: reservation.byte_length,
-                extension: reservation.extension,
-                upload,
+                ext: reservation.ext,
+                slot,
             })
         },
     ))

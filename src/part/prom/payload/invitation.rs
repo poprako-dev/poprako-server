@@ -4,8 +4,14 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum PurgeExpiredInvitation {
     /// Purge a pending assignment invitation.
-    Assignment { invitation_id: String },
+    Assignment {
+        /// ID of the invitation record to purge.
+        invitation_id: String,
+    },
 
     /// Purge a pending member invitation.
-    Member { invitation_id: String },
+    Member {
+        /// ID of the invitation record to purge.
+        invitation_id: String,
+    },
 }

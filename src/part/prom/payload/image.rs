@@ -18,11 +18,18 @@ pub enum ResourceKind {
 pub enum Payload {
     /// Verify that an uploaded image object exists and confirm the current DB ownership.
     CheckUpload {
+        /// Discriminator for the resource type that owns this image.
         resource_kind: ResourceKind,
+        /// ID of the resource that owns this image.
         resource_id: String,
+        /// Object-storage key of the uploaded image.
         object_key: String,
+        /// Version counter for optimistic concurrency.
         version: u32,
     },
     /// Delete an image object by object-storage key.
-    Delete { object_key: String },
+    Delete {
+        /// Object-storage key of the image to delete.
+        object_key: String,
+    },
 }

@@ -6,8 +6,7 @@ use url::Url;
 use poprako_util::i18n::trl;
 
 use crate::part::image::{
-    ImageManager, ImageObjectInfo, ImagePool, ImageUploadSpec,
-    ImageUploadTarget,
+    ImageManager, ImageObjectInfo, ImagePool, ImageUploadSlot, ImageUploadSpec,
 };
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
@@ -65,10 +64,10 @@ impl ImagePool for Mock {
         accept(Url::parse(&format!("https://test.local/put/{}", key)).unwrap())
     }
 
-    async fn get_upload_target(
+    async fn get_upload_slot(
         &self,
         spec: ImageUploadSpec<'_>,
-    ) -> BaseResult<ImageUploadTarget> {
+    ) -> BaseResult<ImageUploadSlot> {
         //
         if self.flags.lock().unwrap().image_put_failure {
             return Err(BaseError::Expected {
@@ -90,7 +89,7 @@ impl ImagePool for Mock {
             spec.checksum_sha256.to_base64(),
         );
 
-        accept(ImageUploadTarget { url, headers })
+        accept(ImageUploadSlot { url, headers })
     }
 }
 
@@ -175,7 +174,7 @@ impl ImageManager for Mock {
 
 // gen_download_url_returns_stable_url(ImagePool::gen_download_url)(positive): download URLs should be deterministic for assertions.
 // get_upload_url_returns_stable_url(ImagePool::get_upload_url)(positive): upload URLs should be deterministic for assertions.
-// gen_download_url_failure_returns_expected_error(ImagePool::gen_download_url)(negative): configured get failures should return an expected error.
+// gen_download_url_failure_returns_expected_err(ImagePool::gen_download_url)(negative): configured get failures should return an expected error.
 
 /// Mock helper that returns a stable deterministic upload URL.
 #[tokio::test]
@@ -194,17 +193,17 @@ async fn get_upload_url_returns_stable_url() {
 
 /// Mock helper that returns an expected error when download failure is configured.
 #[tokio::test]
-async fn gen_download_url_failure_returns_expected_error() {
+async fn gen_download_url_failure_returns_expected_err() {
     //
     let mock = Mock::new().with_image_get_failure();
 
-    let err = ImagePool::gen_download_url(&mock, "avatar.png")
+    let err_download = ImagePool::gen_download_url(&mock, "avatar.png")
         .await
         .err()
         .unwrap();
 
     assert!(matches!(
-        err,
+        err_download,
         BaseError::Expected {
             variant: ExpectedVariant::Args,
             ..

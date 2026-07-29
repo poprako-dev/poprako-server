@@ -29,13 +29,18 @@ use crate::result::BaseError;
 /// Background worker that polls the `t_local_message` table, dispatches by topic,
 /// and completes or fails each record.
 pub struct RdbPromHandler<N, R, I> {
+    /// Database connection pool for handler-internal queries.
     pub(super) core: RdbCore,
+    /// Transaction coordinator used for handler-level database operations.
     pub(super) nucl: N,
 
+    /// Repository wrapping message lifecycle and domain queries.
     pub(super) repo: RdbPromRepo<R>,
 
+    /// Object storage client for image verification and cleanup.
     pub(super) image_pool: I,
 
+    /// Shutdown signal propagated from the owning [`RdbProm`].
     pub(super) token: CancellationToken,
 }
 

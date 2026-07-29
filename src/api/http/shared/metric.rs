@@ -6,7 +6,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use axum::extract::MatchedPath;
 use axum::response::Response;
 use serde::Serialize;
-#[cfg(feature = "swagger-ui")]
+#[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
 #[cfg(test)]
@@ -20,25 +20,34 @@ static METRIC_WINDOW: LazyLock<MetricWindow> = LazyLock::new(MetricWindow::new);
 
 /// Aggregate metrics for the current time window.
 #[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub(crate) struct MetricTotal {
+    /// Total request count in the current sliding window.
     pub(crate) total: u64,
+    /// Mean latency across all requests in the window, in milliseconds.
     pub(crate) average_latency_ms: f64,
 
+    /// Accumulated latency in microseconds used to compute the average.
     #[serde(skip)]
     total_latency_micros: u64,
 
+    /// Count of 4xx/5xx responses grouped by their HTTP status code.
     pub(crate) by_error: HashMap<u16, u64>,
+    /// Count of requests grouped by the matched route template.
     pub(crate) by_path: HashMap<String, u64>,
+    /// Per-minute breakdown for the most recent 30 minutes.
     pub(crate) minutes: Vec<MetricMinute>,
 }
 
 /// Aggregate metrics for one minute in the recent sliding window.
 #[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub(crate) struct MetricMinute {
+    /// Unix timestamp truncated to minute granularity.
     pub(crate) minute: u64,
+    /// Request count recorded in this minute.
     pub(crate) total: u64,
+    /// Mean latency for requests in this minute, in milliseconds.
     pub(crate) average_latency_ms: f64,
 }
 
@@ -104,11 +113,8 @@ impl MetricWindow {
 
         let mut bucket = lock_bucket(&self.buckets[bucket_index]);
 
-        match bucket.minute == minute {
-            //
-            true => {}
-
-            false => bucket.reset(minute),
+        if bucket.minute != minute {
+            bucket.reset(minute);
         }
 
         bucket.total = bucket.total.saturating_add(1);
@@ -120,9 +126,9 @@ impl MetricWindow {
 
         if status >= 400 {
             //
-            let error_total = bucket.by_error.entry(status).or_default();
+            let err_total = bucket.by_error.entry(status).or_default();
 
-            *error_total = error_total.saturating_add(1);
+            *err_total = err_total.saturating_add(1);
         }
 
         let Some(matched_path) = matched_path else {

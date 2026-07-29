@@ -23,17 +23,25 @@ use crate::value::role::{RoleField, RoleMask};
 /// chapter (translator, proofreader, etc.).
 #[cfg_attr(test, derive(Clone))]
 pub struct AssignmentInfo {
+    /// Unique identifier for the assignment record.
     pub id: String,
 
+    /// Foreign key to the chapter the user is assigned to.
     pub chapter_id: String,
+    /// Foreign key to the assigned user.
     pub user_id: String,
 
+    /// Optional joined user data included when the query specifies user expansion.
     pub user: Option<UserInfo>,
+    /// Optional joined chapter data included when the query specifies chapter expansion.
     pub chapter: Option<ChapterInfo>,
 
+    /// Bitmask of workflow roles the user holds for this chapter.
     pub roles: RoleMask,
 
+    /// Timestamp when the assignment was created.
     pub created_at: OffsetDateTime,
+    /// Timestamp of the last modification to the assignment.
     pub updated_at: OffsetDateTime,
 }
 
@@ -42,11 +50,15 @@ pub struct AssignmentInfo {
 /// The `roles` mask specifies the initial set of roles.
 #[cfg_attr(test, derive(Clone))]
 pub struct AssignmentEntry {
+    /// Unique identifier to insert for the new assignment row.
     pub id: String,
 
+    /// Foreign key identifying the chapter whose workflow is joined.
     pub chapter_id: String,
+    /// Foreign key identifying the user being added to the chapter workflow.
     pub user_id: String,
 
+    /// Initial bitmask of workflow roles granted to this user.
     pub roles: RoleMask,
 }
 
@@ -59,8 +71,10 @@ pub struct AssignmentEntry {
 /// [`AssignmentComplex::merge_roles`]: crate::complex::assignment::AssignmentComplex::merge_roles
 #[cfg_attr(test, derive(Clone))]
 pub struct AssignmentRoleUpdate {
+    /// Unique identifier of the assignment whose roles are being changed.
     pub id: String,
 
+    /// Updated bitmask of workflow roles after applying the add or remove merge.
     pub roles: RoleMask,
 }
 
@@ -68,18 +82,30 @@ pub struct AssignmentRoleUpdate {
 pub enum AssignmentInfoListSpec {
     /// List assignments on a specific chapter, optionally filtered by role.
     Chapter {
+        /// Foreign key scoping the listing to a single chapter.
         chapter_id: String,
+        /// Optional role filter; only assignments with this role in their mask
+        /// are returned when set.
         role: Option<RoleField>,
+        /// Flags controlling which optional associations are joined into results.
         incl_opt: Vec<AssignmentInclOpt>,
+        /// Number of records to skip for pagination.
         offset: u32,
+        /// Maximum number of records to return.
         limit: u32,
     },
     /// List assignments owned by a specific user, optionally filtered by role.
     User {
+        /// User identifier scoping the listing to assignments owned by this user.
         owner_id: String,
+        /// Optional role filter; only assignments with this role in their mask
+        /// are returned when set.
         role: Option<RoleField>,
+        /// Flags controlling which optional associations are joined into results.
         incl_opt: Vec<AssignmentInclOpt>,
+        /// Number of records to skip for pagination.
         offset: u32,
+        /// Maximum number of records to return.
         limit: u32,
     },
 }

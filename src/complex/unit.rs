@@ -62,7 +62,7 @@ impl UnitComplex {
                     validate_payload(&payload)?;
 
                     if !local_ids.insert(id.clone()) {
-                        return Err(unit_invalid_oper_error());
+                        return Err(unit_invalid_oper_err());
                     }
 
                     let unit_id = Self::gen_id();
@@ -224,7 +224,7 @@ impl UnitPermComplex {
             Err(BaseError::Expected {
                 variant: ExpectedVariant::Perm,
                 ..
-            }) => Err(unit_list_permission_error()),
+            }) => Err(unit_list_permission_err()),
 
             Err(e) => Err(e),
         }
@@ -249,7 +249,7 @@ impl UnitPermComplex {
             Err(BaseError::Expected {
                 variant: ExpectedVariant::Perm,
                 ..
-            }) => Err(unit_edit_permission_error()),
+            }) => Err(unit_edit_permission_err()),
 
             Err(e) => Err(e),
         }
@@ -265,7 +265,7 @@ fn validate_page_id(page_id: &str) -> BaseResult<()> {
 fn validate_id(id: &str) -> BaseResult<()> {
     //
     if id.is_empty() {
-        return Err(unit_invalid_oper_error());
+        return Err(unit_invalid_oper_err());
     }
 
     accept(())
@@ -275,7 +275,7 @@ fn validate_id(id: &str) -> BaseResult<()> {
 fn validate_optional_id(id: &Option<String>) -> BaseResult<()> {
     //
     if id.as_ref().map(|id| id.is_empty()).unwrap_or(false) {
-        return Err(unit_invalid_oper_error());
+        return Err(unit_invalid_oper_err());
     }
 
     accept(())
@@ -309,7 +309,7 @@ fn validate_text_editor(
         //
         (true, Some(editor_id)) => validate_id(editor_id),
 
-        (true, None) => Err(unit_invalid_oper_error()),
+        (true, None) => Err(unit_invalid_oper_err()),
 
         (false, _) => accept(()),
     }
@@ -375,7 +375,7 @@ fn compact_index_updates_from_order(
 }
 
 /// Construct an "invalid unit operation" args error.
-fn unit_invalid_oper_error() -> BaseError {
+fn unit_invalid_oper_err() -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Args,
         message: trl("error-invalid-unit-oper"),
@@ -383,7 +383,7 @@ fn unit_invalid_oper_error() -> BaseError {
 }
 
 /// Construct a "unit list permission required" error.
-fn unit_list_permission_error() -> BaseError {
+fn unit_list_permission_err() -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Perm,
         message: trl("error-unit-list-permission-required"),
@@ -391,7 +391,7 @@ fn unit_list_permission_error() -> BaseError {
 }
 
 /// Construct a "unit edit permission required" error.
-fn unit_edit_permission_error() -> BaseError {
+fn unit_edit_permission_err() -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Perm,
         message: trl("error-unit-edit-permission-required"),

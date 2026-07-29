@@ -3,7 +3,7 @@
 
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "swagger-ui")]
+#[cfg(feature = "swagger")]
 use utoipa::{IntoParams, ToSchema};
 
 use futures::future::OptionFuture;
@@ -21,8 +21,9 @@ use crate::value::role::RoleMask;
 /// that will be granted upon acceptance. The actual in-app user lookup
 /// happens during the registration flow.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateMemberInvitationParams {
+    /// Owning team identifier.
     pub team_id: String,
 
     /// The QQ ID of the person being invited (not a user UUID).
@@ -38,9 +39,11 @@ pub struct CreateMemberInvitationParams {
 /// The `code` is a short opaque token the invitee presents during
 /// registration to claim the invitation.
 #[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateMemberInvitationPayload {
+    /// Unique identifier of the created invitation.
     pub id: String,
+    /// Opaque invitation code presented by the invitee to claim the invitation.
     pub code: String,
 }
 
@@ -51,8 +54,8 @@ pub struct CreateMemberInvitationPayload {
 ///
 /// Example: `/api/v1/teams/{team_id}/member-invitations?pending=true&incl=invitor&offset=0&limit=20`.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
-#[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
+#[cfg_attr(feature = "swagger", derive(IntoParams))]
+#[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ListMemberInvitationInfosParams {
     /// Parent team whose invitations to list.
     pub team_id: String,
@@ -62,14 +65,12 @@ pub struct ListMemberInvitationInfosParams {
     pub pending: Option<bool>,
 
     /// Related rows to embed. Repeatable. Values: `invitor`.
-    #[serde(
-        default,
-        rename = "incl",
-        deserialize_with = "crate::value::query::deserialize_vec"
-    )]
+    #[serde(default, rename = "incl")]
     pub incl_opt: Vec<MemberInvitationInclOpt>,
 
+    /// Pagination offset.
     pub offset: u32,
+    /// Maximum number of results per page.
     pub limit: u32,
 }
 
@@ -80,21 +81,29 @@ pub struct ListMemberInvitationInfosParams {
 ///
 /// [`MemberInvitationInfo`]: crate::model::member_invitation::MemberInvitationInfo
 #[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct MemberInvitationInfoVal {
+    /// Unique identifier.
     pub id: String,
 
+    /// Owning team identifier.
     pub team_id: String,
 
+    /// Identifier of the user who created the invitation.
     pub invitor_id: String,
+    /// Resolved invitor user information, present only when requested via incl.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub invitor: Option<UserInfoVal>,
 
+    /// QQ ID of the person being invited.
     pub invitee_qid: String,
+    /// Opaque invitation code.
     pub code: String,
 
+    /// Whether the invitation has not yet been consumed.
     pub pending: bool,
 
+    /// Role mask assigned to the invitee upon acceptance.
     pub roles: RoleMask,
 }
 
@@ -142,8 +151,10 @@ impl MemberInvitationInfoVal {
 
 /// Input parameters for updating a pending invitation's roles.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateMemberInvitationRolesParams {
+    /// Invitation identifier.
     pub id: String,
+    /// New role mask for the invitation.
     pub roles: RoleMask,
 }

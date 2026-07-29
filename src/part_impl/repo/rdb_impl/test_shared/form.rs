@@ -4,7 +4,7 @@ use crate::model::page::PageEntry;
 use crate::model::team::TeamEntry;
 use crate::model::user::UserEntry;
 use crate::model::workset::WorksetEntry;
-use crate::value::image::ImageExtension;
+use crate::value::image::ImageExt;
 
 pub fn user_entry(prefix: &str, name: &str) -> UserEntry {
     UserEntry {
@@ -73,6 +73,6 @@ pub fn page_entry(prefix: &str, chapter_entry: &ChapterEntry) -> PageEntry {
         image_version: 0,
         image_hash: Default::default(),
         image_byte_len: 1,
-        image_ext: ImageExtension::Jpg,
+        image_ext: ImageExt::Jpg,
     }
 }

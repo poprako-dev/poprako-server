@@ -29,7 +29,7 @@ pub struct TranslationExportQuery {
 }
 
 /// `POST /api/v1/chapters/{chapter_id}/translations/import` — import translations.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     post,
     path = "/api/v1/chapters/{chapter_id}/translations/import",
     tag = "chapter-port",
@@ -63,7 +63,7 @@ pub async fn import(
 ///
 /// `format=poprako` returns a JSON document (`application/json`); `format=label-plus`
 /// returns a LabelPlus text document (`text/plain`).
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     get,
     path = "/api/v1/chapters/{chapter_id}/translations/export",
     tag = "chapter-port",
@@ -95,7 +95,7 @@ pub async fn export(
 ///
 /// `format=poprako` downloads a JSON document (`application/json`);
 /// `format=label-plus` downloads a LabelPlus text document (`text/plain`).
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     get,
     path = "/api/v1/chapters/{chapter_id}/translations/export/download",
     tag = "chapter-port",
@@ -129,7 +129,7 @@ struct TranslationExportPayload {
     /// MIME type of the response body.
     content_type: &'static str,
     /// File extension for download filenames.
-    extension: &'static str,
+    ext: &'static str,
     /// Raw bytes of the serialised export.
     body: Bytes,
 }
@@ -166,7 +166,7 @@ async fn export_payload(
 
             Ok(TranslationExportPayload {
                 content_type: "application/json",
-                extension: "json",
+                ext: "json",
                 body: Bytes::from(body),
             })
         }
@@ -182,7 +182,7 @@ async fn export_payload(
 
             Ok(TranslationExportPayload {
                 content_type: "text/plain; charset=utf-8",
-                extension: "txt",
+                ext: "txt",
                 body: Bytes::from(content),
             })
         }
@@ -215,7 +215,7 @@ fn download_response(
     payload: TranslationExportPayload,
 ) -> Result<Response, HttpError> {
     //
-    let filename = format!("{}.{}", filename_base, payload.extension);
+    let filename = format!("{}.{}", filename_base, payload.ext);
 
     Response::builder()
         .status(StatusCode::OK)

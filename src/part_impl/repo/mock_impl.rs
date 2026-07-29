@@ -75,50 +75,90 @@ pub mod workset;
 /// In-memory state holding all mock repository records.
 #[cfg_attr(test, derive(Clone, Default))]
 pub struct MockState {
+    /// Mock storage for user records.
     pub users: Vec<UserInfo>,
+    /// Mock storage for user credential records.
     pub credentials: Vec<UserCredential>,
+    /// Mock storage for announcement records.
     pub announcements: Vec<AnnouncementInfo>,
+    /// Mock storage for comment records.
     pub comments: Vec<CommentInfo>,
+    /// Mock storage for team records.
     pub teams: Vec<TeamInfo>,
+    /// Mock storage for team membership records.
     pub members: Vec<MemberInfo>,
+    /// Mock storage for pending member invitation records.
     pub member_invitations: Vec<MemberInvitationInfo>,
+    /// Mock storage for workset records.
     pub worksets: Vec<WorksetInfo>,
+    /// Mock storage for comic records.
     pub comics: Vec<ComicInfo>,
+    /// Mock storage for termbase records.
     pub termbases: Vec<TermbaseInfo>,
+    /// Mock storage for terminology entry records.
     pub terms: Vec<TermInfo>,
+    /// Mock storage for chapter records.
     pub chapters: Vec<ChapterInfo>,
+    /// Mock storage for assignment records.
     pub assignments: Vec<AssignmentInfo>,
+    /// Mock storage for assignment invitation records.
     pub assignment_invitations: Vec<AssignmentInvitationInfo>,
+    /// Mock storage for page records.
     pub pages: Vec<PageInfo>,
+    /// Mock storage for unit records.
     pub units: Vec<UnitInfo>,
+    /// Mock storage for system mail records.
     pub system_mails: Vec<SystemMailInfo>,
+    /// Mock storage for archived comic records.
     pub comic_archives: Vec<ComicArchiveRecord>,
+    /// Mock storage for deferred prom action records.
     pub prom_records: Vec<MockPromRecord>,
+    /// Mock storage for keys of images deleted from object storage.
     pub deleted_image_keys: Vec<String>,
 }
 
 #[cfg_attr(test, derive(Clone))]
 /// Immutable snapshot of the full mock state — used for asserting test outcomes.
 pub struct MockSnapshot {
+    /// Snapshot of user records at the capture time.
     pub users: Vec<UserInfo>,
+    /// Snapshot of credential records at the capture time.
     pub credentials: Vec<UserCredential>,
+    /// Snapshot of announcement records at the capture time.
     pub announcements: Vec<AnnouncementInfo>,
+    /// Snapshot of comment records at the capture time.
     pub comments: Vec<CommentInfo>,
+    /// Snapshot of team records at the capture time.
     pub teams: Vec<TeamInfo>,
+    /// Snapshot of membership records at the capture time.
     pub members: Vec<MemberInfo>,
+    /// Snapshot of member invitation records at the capture time.
     pub member_invitations: Vec<MemberInvitationInfo>,
+    /// Snapshot of workset records at the capture time.
     pub worksets: Vec<WorksetInfo>,
+    /// Snapshot of comic records at the capture time.
     pub comics: Vec<ComicInfo>,
+    /// Snapshot of termbase records at the capture time.
     pub termbases: Vec<TermbaseInfo>,
+    /// Snapshot of terminology entry records at the capture time.
     pub terms: Vec<TermInfo>,
+    /// Snapshot of chapter records at the capture time.
     pub chapters: Vec<ChapterInfo>,
+    /// Snapshot of assignment records at the capture time.
     pub assignments: Vec<AssignmentInfo>,
+    /// Snapshot of assignment invitation records at the capture time.
     pub assignment_invitations: Vec<AssignmentInvitationInfo>,
+    /// Snapshot of page records at the capture time.
     pub pages: Vec<PageInfo>,
+    /// Snapshot of unit records at the capture time.
     pub units: Vec<UnitInfo>,
+    /// Snapshot of system mail records at the capture time.
     pub system_mails: Vec<SystemMailInfo>,
+    /// Snapshot of archived comic records at the capture time.
     pub comic_archives: Vec<ComicArchiveRecord>,
+    /// Snapshot of deferred prom action records at the capture time.
     pub prom_records: Vec<MockPromRecord>,
+    /// Snapshot of deleted image keys at the capture time.
     pub deleted_image_keys: Vec<String>,
 }
 
@@ -152,25 +192,38 @@ impl From<MockState> for MockSnapshot {
 /// The transactional context passed to [`Nucl::coord`] calls,
 /// providing mutable access to the mock state during a simulated transaction.
 pub struct MockContext {
+    /// Mutable mock repository state visible within the current transaction.
     pub state: MockState,
+    /// When true, archive persistence will fail before transaction commit.
     pub archive_commit_failure: bool,
+    /// When true, team creation will fail before transaction commit.
     pub create_team_failure: bool,
 }
 
 #[cfg_attr(test, derive(Clone, Default))]
 /// Toggleable failure flags for testing error paths in mock adapters.
 pub struct MockFlags {
+    /// Simulates a token authentication failure.
     pub token_failure: bool,
+    /// Simulates an image retrieval failure from object storage.
     pub image_get_failure: bool,
+    /// Simulates an image upload failure to object storage.
     pub image_put_failure: bool,
 
+    /// Simulates a failure in head-object metadata retrieval.
     pub image_head_failure: bool,
+    /// Simulates the head-object reporting the object as absent.
     pub image_head_absent: bool,
+    /// Simulates a SHA-256 hash mismatch in head-object response.
     pub image_head_hash_mismatch: bool,
+    /// Simulates a content-length mismatch in head-object response.
     pub image_head_length_mismatch: bool,
 
+    /// Simulates a failure in object deletion from storage.
     pub image_delete_failure: bool,
+    /// Simulates a failure in archive persistence within a transaction.
     pub archive_commit_failure: bool,
+    /// Simulates a failure in team creation within a transaction.
     pub create_team_failure: bool,
 }
 
@@ -179,8 +232,11 @@ pub struct MockFlags {
 /// `Arc<Mutex<...>>` for concurrent test access.
 #[cfg_attr(test, derive(Clone, Default))]
 pub struct Mock {
+    /// Shared mutable mock repository state for concurrent test access.
     pub state: Arc<Mutex<MockState>>,
+    /// Shared mutable mock failure flags for testing error paths.
     pub flags: Arc<Mutex<MockFlags>>,
+    /// Shared event buffer collecting emitted domain events during tests.
     pub events: Arc<Mutex<Vec<Event>>>,
 }
 

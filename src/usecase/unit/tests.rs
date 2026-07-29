@@ -25,7 +25,7 @@ use crate::model::workset::WorksetInfo;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::{BaseError, ExpectedVariant, accept};
 use crate::value::chapter::{Stage, StageMask, StagePhase};
-use crate::value::image::{ImageExtension, ImageHash};
+use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
 mod basic;
@@ -182,7 +182,7 @@ fn page(id: &str, total: i32, translated: i32, proofread: i32) -> PageInfo {
         image_version: 0,
         image_hash: ImageHash::new([0u8; 32]),
         image_byte_length: 4096,
-        image_extension: ImageExtension::Png,
+        image_ext: ImageExt::Png,
         total_unit_count: total,
         translated_unit_count: translated,
         proofread_unit_count: proofread,

@@ -168,14 +168,14 @@ where
         .await?;
 
     let Some(assignment_info) = assignment_info else {
-        return Err(page_reserve_role_error());
+        return Err(page_reserve_role_err());
     };
 
     if !assignment_info
         .roles
         .has_any_role(&[RoleField::RAW_PROVIDER, RoleField::REVIEWER])
     {
-        return Err(page_reserve_role_error());
+        return Err(page_reserve_role_err());
     }
 
     accept(())
@@ -199,14 +199,14 @@ where
         .await?;
 
     let Some(assignment_info) = assignment_info else {
-        return Err(page_upload_role_error());
+        return Err(page_upload_role_err());
     };
 
     if !assignment_info
         .roles
         .has_any_role(&[RoleField::RAW_PROVIDER])
     {
-        return Err(page_upload_role_error());
+        return Err(page_upload_role_err());
     }
 
     accept(())
@@ -239,7 +239,7 @@ where
 }
 
 /// Construct a "page reserve role required" permission error.
-fn page_reserve_role_error() -> BaseError {
+fn page_reserve_role_err() -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Perm,
         message: trl("error-page-reserve-role-required"),
@@ -247,7 +247,7 @@ fn page_reserve_role_error() -> BaseError {
 }
 
 /// Construct a "page upload role required" permission error.
-fn page_upload_role_error() -> BaseError {
+fn page_upload_role_err() -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Perm,
         message: trl("error-page-upload-role-required"),

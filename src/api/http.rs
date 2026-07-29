@@ -1,8 +1,6 @@
 //! Active HTTP API module: result types, auth token constants, middleware,
 //! handlers, router, OpenAPI, and server entry point.
 
-pub use shared::prometheus::init_prometheus;
-
 mod shared;
 
 // FIXME: why all pub?
@@ -20,7 +18,7 @@ pub mod router;
 pub mod server;
 
 /// OpenAPI documentation types.
-#[cfg(feature = "swagger-ui")]
+#[cfg(feature = "swagger")]
 pub mod openapi;
 
 /// HTTP result types and response utilities.

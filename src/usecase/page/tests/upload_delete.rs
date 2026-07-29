@@ -1,7 +1,7 @@
 use super::*;
 
 use crate::data::page::{MarkPageImageUploadedParams, ReservePageImageParams};
-use crate::value::image::{ImageExtension, ImageHash};
+use crate::value::image::{ImageExt, ImageHash};
 
 fn seed_mark_scope(mock: &Mock) {
     //
@@ -59,7 +59,7 @@ async fn published_chapter_rejects_page_image_writes() {
                 page_id: Some("page-1".into()),
                 image_hash: ImageHash::new([0; 32]),
                 byte_length: 4096,
-                extension: ImageExtension::Png,
+                ext: ImageExt::Png,
             }],
         },
     )
@@ -77,7 +77,7 @@ async fn published_chapter_rejects_page_image_writes() {
         ReservePageImageParams {
             image_hash: ImageHash::new([1; 32]),
             byte_length: 4096,
-            extension: ImageExtension::Png,
+            ext: ImageExt::Png,
         },
     )
     .await;
@@ -117,7 +117,7 @@ async fn assert_delayed_check_clears_unverified_image(
         ReservePageImageParams {
             image_hash: ImageHash::new([0; 32]),
             byte_length: 4096,
-            extension: ImageExtension::Png,
+            ext: ImageExt::Png,
         },
     )
     .await
@@ -215,14 +215,14 @@ async fn mark_image_uploaded_rejects_stale_replay_then_accepts_current_version()
         ReservePageImageParams {
             image_hash: ImageHash::new([1u8; 32]),
             byte_length: 8192,
-            extension: ImageExtension::Png,
+            ext: ImageExt::Png,
         },
     )
     .await
     .ok()
     .unwrap();
 
-    assert_eq!(reserved.upload.as_ref().unwrap().image_version, 2);
+    assert_eq!(reserved.slot.as_ref().unwrap().image_version, 2);
 
     let err = mark_image_uploaded(
         &mock,

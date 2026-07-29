@@ -48,8 +48,8 @@ use crate::data::member_invitation::{
     MemberInvitationInfoVal, UpdateMemberInvitationRolesParams,
 };
 use crate::data::page::{
-    MarkPageImageUploadedParams, PageImageParams, PageImageUploadPayload,
-    PageInfoVal, ReserveChapterPagesParams, ReserveChapterPagesPayload,
+    MarkPageImageUploadedParams, PageImageParams, PageInfoVal, PageSlotVal,
+    ReserveChapterPagesParams, ReserveChapterPagesPayload,
     ReservePageImageParams, ReservedPagePayload,
 };
 use crate::data::system_mail::{MarkSystemMailReadParams, SystemMailInfoVal};
@@ -217,7 +217,7 @@ use crate::value::role::RoleField;
         ImportChapterTranslationPayload,
         PageInfoVal,
         PageImageParams,
-        PageImageUploadPayload,
+        PageSlotVal,
         ReserveChapterPagesParams,
         ReserveChapterPagesPayload,
         ReservePageImageParams,

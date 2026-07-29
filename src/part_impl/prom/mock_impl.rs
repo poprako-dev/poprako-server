@@ -35,6 +35,7 @@ mod tests;
 /// A recorded deferred action stored in the mock context during transactional testing.
 #[cfg_attr(test, derive(Clone))]
 pub struct MockPromRecord {
+    /// Server-assigned unique identifier for the prom record.
     id: String,
 
     /// Serialized JSON of the [`Payload`].
@@ -43,6 +44,7 @@ pub struct MockPromRecord {
     /// for assertions.
     payload_json: String,
 
+    /// Timestamp after which the record is eligible for processing.
     visible_at: OffsetDateTime,
 }
 
@@ -463,7 +465,7 @@ fn classify_current_identity(
     current_object_key: Option<&str>,
     image_version: u32,
     object_key: &str,
-    error_message: &'static str,
+    err_message: &'static str,
 ) -> BaseResult<ResourceState> {
     match (
         current_version == image_version,
@@ -475,7 +477,7 @@ fn classify_current_identity(
         (true, false) => accept(ResourceState::Mismatched),
 
         (true, true) => Err(BaseError::Unrecoverable {
-            message: error_message.into(),
+            message: err_message.into(),
         }),
     }
 }
