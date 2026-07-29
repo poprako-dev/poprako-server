@@ -18,7 +18,7 @@ mod tests;
 ///
 /// Available in both debug and release builds. Non-loopback requests get a
 /// body-less `404` so the endpoint is not advertised externally.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     get,
     path = "/api/health",
     tag = "health",
@@ -47,7 +47,7 @@ pub async fn check_health(
 ///
 /// Non-loopback requests receive a body-less `404` so the endpoint is not
 /// advertised externally.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     get,
     path = "/api/health/detailed-metrics",
     tag = "health",

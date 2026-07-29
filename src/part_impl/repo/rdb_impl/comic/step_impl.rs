@@ -1,6 +1,4 @@
-use diesel::pg::Pg;
 use diesel::prelude::*;
-use diesel::sql_types::Bool;
 use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 use tracing::instrument;
@@ -14,6 +12,18 @@ use crate::part_impl::repo::rdb_impl::entity::comic::{
     ComicAspect, ComicRow, ComicRowEntry,
 };
 use crate::part_impl::repo::rdb_impl::incl;
+use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::{
+    f_comic_id as chapter_comic_id, f_is_pinned as chapter_is_pinned,
+    f_proofread_at as chapter_proofread_at,
+    f_proofreading_at as chapter_proofreading_at,
+    f_published_at as chapter_published_at,
+    f_reviewed_at as chapter_reviewed_at,
+    f_translated_at as chapter_translated_at,
+    f_translating_at as chapter_translating_at,
+    f_typeset_at as chapter_typeset_at,
+    f_typesetting_at as chapter_typesetting_at,
+    f_uploaded_at as chapter_uploaded_at, t_chapter,
+};
 use crate::part_impl::repo::rdb_impl::schema::t_comic::dsl::*;
 use crate::part_impl::shared::RdbConn;
 use crate::part_impl::shared::result::{diesel, expected, next_version};
@@ -22,117 +32,104 @@ use crate::value::chapter::{Stage, StageMask, StagePhase};
 use crate::value::comic::ComicInclOpt;
 use crate::value::index::user_index_to_stored_index;
 
-/// Generates a raw SQL predicate for a single-stage (one-shot) workflow column and phase.
-fn one_shot_predicate(column: &str, phase: StagePhase) -> &'static str {
-    match (column, phase) {
-        //
-        ("f_uploaded_at", StagePhase::Pending) => {
-            "pinned_chapter.f_uploaded_at IS NULL"
-        }
-
-        ("f_uploaded_at", StagePhase::Completed) => {
-            "pinned_chapter.f_uploaded_at IS NOT NULL"
-        }
-
-        ("f_reviewed_at", StagePhase::Pending) => {
-            "pinned_chapter.f_reviewed_at IS NULL"
-        }
-
-        ("f_reviewed_at", StagePhase::Completed) => {
-            "pinned_chapter.f_reviewed_at IS NOT NULL"
-        }
-
-        ("f_published_at", StagePhase::Pending) => {
-            "pinned_chapter.f_published_at IS NULL"
-        }
-
-        ("f_published_at", StagePhase::Completed) => {
-            "pinned_chapter.f_published_at IS NOT NULL"
-        }
-
-        (_, StagePhase::Active) => "FALSE",
-
-        _ => "FALSE",
-    }
-}
-
-/// Generates a SQL predicate for a two-stage (started/completed) workflow column and phase.
-fn two_step_predicate(
-    started_column: &str,
-    completed_column: &str,
-    phase: StagePhase,
-) -> String {
-    match phase {
-        //
-        StagePhase::Pending => format!(
-            "pinned_chapter.{} IS NULL AND pinned_chapter.{} IS NULL",
-            started_column, completed_column,
-        ),
-
-        StagePhase::Active => format!(
-            "pinned_chapter.{} IS NOT NULL AND pinned_chapter.{} IS NULL",
-            started_column, completed_column,
-        ),
-
-        StagePhase::Completed => {
-            format!("pinned_chapter.{} IS NOT NULL", completed_column)
-        }
-    }
-}
-
-/// Generates a workflow predicate for a given stage and phase.
-fn stage_predicate(stage: Stage, phase: StagePhase) -> String {
-    match stage {
-        //
-        Stage::RawProvide => one_shot_predicate("f_uploaded_at", phase).into(),
-
-        Stage::Translate => {
-            two_step_predicate("f_translating_at", "f_translated_at", phase)
-        }
-
-        Stage::Proofread => {
-            two_step_predicate("f_proofreading_at", "f_proofread_at", phase)
-        }
-
-        Stage::TypesetRedraw => {
-            two_step_predicate("f_typesetting_at", "f_typeset_at", phase)
-        }
-
-        Stage::Review => one_shot_predicate("f_reviewed_at", phase).into(),
-
-        Stage::Publish => one_shot_predicate("f_published_at", phase).into(),
-    }
-}
-
-/// Builds an optional `EXISTS` subquery SQL string from a stage mask workflow filter.
-fn workflow_filter_sql(stage_mask: StageMask) -> Option<String> {
+/// Resolves comic IDs whose pinned chapter matches every requested workflow phase.
+async fn list_matching_stage_comic_ids(
+    conn: &mut RdbConn,
+    stage_mask: StageMask,
+) -> BaseResult<Option<Vec<String>>> {
     //
-    let predicates = StageMask::stages()
+    let stages = StageMask::stages()
         .iter()
-        .filter(|stage| !stage_mask.ignores_stage(**stage))
-        .map(|stage| stage_predicate(*stage, stage_mask.get_phase(*stage)))
+        .copied()
+        .filter(|stage| !stage_mask.ignores_stage(*stage))
         .collect::<Vec<_>>();
 
-    if predicates.is_empty() {
-        return None;
+    if stages.is_empty() {
+        return accept(None);
     }
 
-    let mut sql = String::from(
-        "EXISTS (SELECT 1 FROM t_chapter AS pinned_chapter \
-         WHERE pinned_chapter.f_comic_id = t_comic.f_id \
-         AND pinned_chapter.f_is_pinned = TRUE",
-    );
+    let mut query = t_chapter
+        .filter(chapter_is_pinned.eq(true))
+        .select(chapter_comic_id)
+        .distinct()
+        .into_boxed();
 
-    for predicate in predicates {
+    for stage in stages {
         //
-        sql.push_str(" AND ");
+        let phase = stage_mask.get_phase(stage);
 
-        sql.push_str(&predicate);
+        query = match (stage, phase) {
+            //
+            (Stage::RawProvide, StagePhase::Pending) => {
+                query.filter(chapter_uploaded_at.is_null())
+            }
+
+            (Stage::RawProvide, StagePhase::Completed) => {
+                query.filter(chapter_uploaded_at.is_not_null())
+            }
+
+            (Stage::Translate, StagePhase::Pending) => query
+                .filter(chapter_translating_at.is_null())
+                .filter(chapter_translated_at.is_null()),
+
+            (Stage::Translate, StagePhase::Active) => query
+                .filter(chapter_translating_at.is_not_null())
+                .filter(chapter_translated_at.is_null()),
+
+            (Stage::Translate, StagePhase::Completed) => {
+                query.filter(chapter_translated_at.is_not_null())
+            }
+
+            (Stage::Proofread, StagePhase::Pending) => query
+                .filter(chapter_proofreading_at.is_null())
+                .filter(chapter_proofread_at.is_null()),
+
+            (Stage::Proofread, StagePhase::Active) => query
+                .filter(chapter_proofreading_at.is_not_null())
+                .filter(chapter_proofread_at.is_null()),
+
+            (Stage::Proofread, StagePhase::Completed) => {
+                query.filter(chapter_proofread_at.is_not_null())
+            }
+
+            (Stage::TypesetRedraw, StagePhase::Pending) => query
+                .filter(chapter_typesetting_at.is_null())
+                .filter(chapter_typeset_at.is_null()),
+
+            (Stage::TypesetRedraw, StagePhase::Active) => query
+                .filter(chapter_typesetting_at.is_not_null())
+                .filter(chapter_typeset_at.is_null()),
+
+            (Stage::TypesetRedraw, StagePhase::Completed) => {
+                query.filter(chapter_typeset_at.is_not_null())
+            }
+
+            (Stage::Review, StagePhase::Pending) => {
+                query.filter(chapter_reviewed_at.is_null())
+            }
+
+            (Stage::Review, StagePhase::Completed) => {
+                query.filter(chapter_reviewed_at.is_not_null())
+            }
+
+            (Stage::Publish, StagePhase::Pending) => {
+                query.filter(chapter_published_at.is_null())
+            }
+
+            (Stage::Publish, StagePhase::Completed) => {
+                query.filter(chapter_published_at.is_not_null())
+            }
+
+            (
+                Stage::RawProvide | Stage::Review | Stage::Publish,
+                StagePhase::Active,
+            ) => return accept(Some(Vec::new())),
+        };
     }
 
-    sql.push(')');
+    let comic_ids = query.load(conn).await.map_err(diesel)?;
 
-    Some(sql)
+    accept(Some(comic_ids))
 }
 
 /// Parses a fuzzy title value as an integer and converts to a stored index.
@@ -181,6 +178,15 @@ pub async fn list_infos(
     spec: &ComicInfoListSpec,
 ) -> BaseResult<Vec<ComicInfo>> {
     //
+    let stage_comic_ids = match &spec.kind {
+        //
+        ComicInfoListKind::All => None,
+
+        ComicInfoListKind::Stages(stage_mask) => {
+            list_matching_stage_comic_ids(conn, *stage_mask).await?
+        }
+    };
+
     let mut query = t_comic
         .filter(f_workset_id.eq(spec.workset_id.as_str()))
         .select(ComicRow::as_select())
@@ -199,10 +205,8 @@ pub async fn list_infos(
         };
     }
 
-    if let ComicInfoListKind::Stages(stage_mask) = &spec.kind
-        && let Some(sql) = workflow_filter_sql(*stage_mask)
-    {
-        query = query.filter(diesel::dsl::sql::<Bool>(&sql));
+    if let Some(comic_ids) = stage_comic_ids {
+        query = query.filter(f_id.eq_any(comic_ids));
     }
 
     let rows: Vec<ComicRow> = query
@@ -353,41 +357,87 @@ pub async fn list_infos_excluded(
     spec: &ComicInfoListSpec,
 ) -> BaseResult<Vec<ComicInfo>> {
     //
-    let mut predicate: Box<
-        dyn BoxableExpression<t_comic, Pg, SqlType = Bool> + '_,
-    > = Box::new(f_workset_id.eq(spec.workset_id.as_str()));
-
-    if let Some(fuzzy_title) = &spec.fuzzy_title {
-        //
-        let pattern = format!("%{}%", fuzzy_title);
-
-        predicate = match stored_index_from_numeric_fuzzy(fuzzy_title) {
-            //
-            Some(index) => Box::new(
-                predicate
-                    .and(f_composed_title.ilike(pattern).or(f_index.eq(index))),
-            ),
-
-            None => Box::new(predicate.and(f_composed_title.ilike(pattern))),
+    macro_rules! load_rows {
+        ($query:expr) => {
+            $query
+                .select(ComicRow::as_select())
+                .order_by((f_last_active_at.desc(), f_index.asc()))
+                .offset(spec.offset as i64)
+                .limit(spec.limit as i64)
+                .for_update()
+                .load(conn)
+                .await
+                .map_err(diesel)?
         };
     }
 
-    if let ComicInfoListKind::Stages(stage_mask) = &spec.kind
-        && let Some(sql) = workflow_filter_sql(*stage_mask)
-    {
-        predicate = Box::new(predicate.and(diesel::dsl::sql::<Bool>(&sql)));
-    }
+    let stage_comic_ids = match &spec.kind {
+        //
+        ComicInfoListKind::All => None,
 
-    let rows: Vec<ComicRow> = t_comic
-        .filter(predicate)
-        .select(ComicRow::as_select())
-        .order_by((f_last_active_at.desc(), f_index.asc()))
-        .offset(spec.offset as i64)
-        .limit(spec.limit as i64)
-        .for_update()
-        .load(conn)
-        .await
-        .map_err(diesel)?;
+        ComicInfoListKind::Stages(stage_mask) => {
+            list_matching_stage_comic_ids(conn, *stage_mask).await?
+        }
+    };
+
+    let rows: Vec<ComicRow> =
+        match (spec.fuzzy_title.as_deref(), stage_comic_ids) {
+            //
+            (None, None) => load_rows!(
+                t_comic.filter(f_workset_id.eq(spec.workset_id.as_str()))
+            ),
+
+            (None, Some(comic_ids)) => load_rows!(
+                t_comic
+                    .filter(f_workset_id.eq(spec.workset_id.as_str()))
+                    .filter(f_id.eq_any(comic_ids))
+            ),
+
+            (Some(fuzzy_title), stage_comic_ids) => {
+                //
+                let pattern = format!("%{}%", fuzzy_title);
+
+                match (
+                    stored_index_from_numeric_fuzzy(fuzzy_title),
+                    stage_comic_ids,
+                ) {
+                    //
+                    (Some(index), None) => load_rows!(
+                        t_comic
+                            .filter(f_workset_id.eq(spec.workset_id.as_str()),)
+                            .filter(
+                                f_composed_title
+                                    .ilike(pattern)
+                                    .or(f_index.eq(index)),
+                            )
+                    ),
+
+                    (Some(index), Some(comic_ids)) => load_rows!(
+                        t_comic
+                            .filter(f_workset_id.eq(spec.workset_id.as_str()),)
+                            .filter(
+                                f_composed_title
+                                    .ilike(pattern)
+                                    .or(f_index.eq(index)),
+                            )
+                            .filter(f_id.eq_any(comic_ids))
+                    ),
+
+                    (None, None) => load_rows!(
+                        t_comic
+                            .filter(f_workset_id.eq(spec.workset_id.as_str()),)
+                            .filter(f_composed_title.ilike(pattern))
+                    ),
+
+                    (None, Some(comic_ids)) => load_rows!(
+                        t_comic
+                            .filter(f_workset_id.eq(spec.workset_id.as_str()),)
+                            .filter(f_composed_title.ilike(pattern))
+                            .filter(f_id.eq_any(comic_ids))
+                    ),
+                }
+            }
+        };
 
     let mut comic_infos = rows.into_iter().map(Into::into).collect::<Vec<_>>();
 

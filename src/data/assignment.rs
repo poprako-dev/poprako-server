@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "swagger-ui")]
+#[cfg(feature = "swagger")]
 use utoipa::{IntoParams, ToSchema};
 
 use futures::future::OptionFuture;
@@ -20,21 +20,29 @@ use crate::value::role::{RoleField, RoleMask};
 
 /// Presentation-ready chapter assignment information.
 #[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct AssignmentInfoVal {
+    /// Unique identifier of the assignment.
     pub id: String,
 
+    /// Owning chapter identifier.
     pub chapter_id: String,
+    /// Assigned user identifier.
     pub user_id: String,
 
     #[serde(skip_serializing_if = "Option::is_none")]
+    /// Resolved user information, when included.
     pub user: Option<UserInfoVal>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    /// Resolved chapter information, when included.
     pub chapter: Option<ChapterInfoVal>,
 
+    /// Role mask assigned to this user for the chapter.
     pub roles: RoleMask,
 
+    /// Timestamp of creation in milliseconds.
     pub created_at: i64,
+    /// Timestamp of last update in milliseconds.
     pub updated_at: i64,
 }
 
@@ -100,8 +108,8 @@ impl AssignmentInfoVal {
 ///
 /// Example: `/api/v1/assignments?chapter_id=c_1&role=1&incl=chapter.comic.workset.team&offset=0&limit=20`.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
-#[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
+#[cfg_attr(feature = "swagger", derive(IntoParams))]
+#[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ListAssignmentInfosParams {
     /// Chapter mode: list assignments on this chapter. Mutually exclusive with
     /// `owner_id`.
@@ -119,14 +127,12 @@ pub struct ListAssignmentInfosParams {
     /// `chapter.comic`, `chapter.comic.workset`, `chapter.comic.workset.team`,
     /// `chapter.creator`, `chapter.comic.creator`. Dotted values imply their
     /// parent segments.
-    #[serde(
-        default,
-        rename = "incl",
-        deserialize_with = "crate::value::query::deserialize_vec"
-    )]
+    #[serde(default, rename = "incl")]
     pub incl_opt: Vec<AssignmentInclOpt>,
 
+    /// Pagination offset.
     pub offset: u32,
+    /// Maximum number of results per page.
     pub limit: u32,
 }
 
@@ -135,13 +141,13 @@ impl TryInto<AssignmentInfoListSpec> for ListAssignmentInfosParams {
 
     fn try_into(self) -> BaseResult<AssignmentInfoListSpec> {
         //
-        let invalid_args_err = || BaseError::Expected {
+        let invalid_args = || BaseError::Expected {
             variant: ExpectedVariant::Args,
             message: trl("error-chapter-or-user-required"),
         };
 
         if self.chapter_id.is_some() == self.owner_id.is_some() {
-            return Err(invalid_args_err());
+            return Err(invalid_args());
         }
 
         if let Some(chapter_id) = self.chapter_id {
@@ -155,7 +161,7 @@ impl TryInto<AssignmentInfoListSpec> for ListAssignmentInfosParams {
         }
 
         accept(AssignmentInfoListSpec::User {
-            owner_id: self.owner_id.ok_or_else(invalid_args_err)?,
+            owner_id: self.owner_id.ok_or_else(invalid_args)?,
             role: self.role,
             incl_opt: self.incl_opt,
             offset: self.offset,
@@ -166,11 +172,14 @@ impl TryInto<AssignmentInfoListSpec> for ListAssignmentInfosParams {
 
 /// Input parameters for updating assignment roles.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateAssignmentRolesParams {
+    /// Target chapter identifier.
     pub chapter_id: String,
+    /// Target user identifier.
     pub user_id: String,
 
+    /// New role mask to apply.
     pub roles: RoleMask,
 }
 
@@ -180,9 +189,11 @@ pub struct UpdateAssignmentRolesParams {
 /// The role mask must contain role bits that are valid for volunteer
 /// assignment; the use case layer validates this before applying.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct JoinChapterAssignmentParams {
+    /// Chapter to join as an assignee.
     pub chapter_id: String,
 
+    /// Volunteer role mask.
     pub roles: RoleMask,
 }

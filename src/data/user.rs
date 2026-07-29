@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "swagger-ui")]
+#[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
 use poprako_util::time::ToUnixMilli;
@@ -17,22 +17,33 @@ use crate::result::{BaseResult, accept};
 /// resolves the avatar key to a signed download URL via [`ImagePool`] when
 /// the avatar has been uploaded.
 #[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UserInfoVal {
+    /// Unique user identifier.
     pub id: String,
 
+    /// User display nickname.
     pub nickname: String,
+    /// Unique qualified identifier used for login lookup.
     pub qid: String,
 
+    /// Resolved signed download URL for the avatar image, or [`None`] if
+    /// no avatar has been uploaded.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub avatar_url: Option<String>,
+    /// Resolved signed download URL for the avatar thumbnail, or [`None`] if
+    /// no avatar has been uploaded.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub avatar_thumbnail_url: Option<String>,
 
+    /// Whether this user has super-admin privileges.
     pub is_sadmin: bool,
+    /// Timestamp of the user's most recent activity, in milliseconds since Unix epoch.
     pub last_active_at: i64,
 
+    /// Timestamp of user account creation, in milliseconds since Unix epoch.
     pub created_at: i64,
+    /// Timestamp of the last profile update, in milliseconds since Unix epoch.
     pub updated_at: i64,
 }
 
@@ -79,26 +90,32 @@ impl UserInfoVal {
 
 /// Input parameters for updating a user's profile.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateUserInfoParams {
+    /// User identifier to update.
     pub id: String,
 
+    /// Updated qualified identifier for login.
     pub qid: String,
+    /// Updated display nickname.
     pub nickname: String,
 }
 
 /// Input parameters for replacing the authenticated user's password.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateUserPasswordParams {
+    /// Current password for verification before change.
     pub current_password: String,
+    /// Desired new password.
     pub new_password: String,
 }
 
 /// Input parameters for reserving a new avatar upload slot.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ReserveUserAvatarParams {
+    /// File extension for the avatar image (determines object-storage key suffix).
     pub file_ext: String,
 }
 
@@ -107,9 +124,11 @@ pub struct ReserveUserAvatarParams {
 /// The client uses `put_url` to upload the avatar image directly to object
 /// storage. `avatar_version` must be echoed back when confirming the upload.
 #[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ReserveUserAvatarPayload {
+    /// Signed PUT URL for uploading the avatar image to object storage.
     pub put_url: String,
+    /// Version token that must be echoed when confirming the upload.
     pub avatar_version: u32,
 }
 
@@ -117,7 +136,8 @@ pub struct ReserveUserAvatarPayload {
 ///
 /// `avatar_version` must match the version returned by the reservation step.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct MarkUserAvatarUploadedParams {
+    /// Avatar version returned by the reservation step.
     pub avatar_version: u32,
 }

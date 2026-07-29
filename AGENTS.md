@@ -72,7 +72,7 @@ When a behavior changes, update only the layers it needs, in this order:
 
 HTTP routes are active under `/api/v1`; health is `/api/health`. Handlers use
 `Accept as _`, propagate use-case errors with `?`, and keep router and
-`#[utoipa::path]` declarations aligned. The `swagger-ui` Cargo feature exposes
+`#[utoipa::path]` declarations aligned. The `swagger` Cargo feature exposes
 `/api/swagger-ui` and `/api/openapi.json`; `--swagger` prints the generated
 specification.
 

@@ -81,16 +81,11 @@ where
         drop(worker_senders);
 
         for worker_handle in worker_handles {
-            match worker_handle.await {
-                //
-                Ok(()) => {}
-
-                Err(error) => {
-                    tracing::error!(
-                        error = ?error,
-                        "[RdbPromHandler::run] worker task failed",
-                    );
-                }
+            if let Err(error) = worker_handle.await {
+                tracing::error!(
+                    error = ?error,
+                    "[RdbPromHandler::run] worker task failed",
+                );
             }
         }
     }
@@ -336,19 +331,19 @@ where
     }
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn fail(&self, id: &str, error: &str) -> BaseResult<()> {
+    async fn fail(&self, id: &str, message: &str) -> BaseResult<()> {
         //
         let conn = self.core.get().await?;
 
         let mut context = RdbContext::new(conn);
 
         self.repo
-            .step(&mut context, &FailMessage::new(id, error))
+            .step(&mut context, &FailMessage::new(id, message))
             .await
     }
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn retry(&self, id: &str, error: &str) -> BaseResult<()> {
+    async fn retry(&self, id: &str, message: &str) -> BaseResult<()> {
         //
         let conn = self.core.get().await?;
 
@@ -357,7 +352,7 @@ where
         let visible_at = OffsetDateTime::now_utc() + RETRY_DELAY;
 
         self.repo
-            .step(&mut context, &RetryMessage::new(id, error, &visible_at))
+            .step(&mut context, &RetryMessage::new(id, message, &visible_at))
             .await
     }
 
@@ -386,15 +381,14 @@ where
 
     async fn log_purge_completed(&self) {
         match self.purge_completed().await {
-            //
-            Ok(purged_count) if purged_count > 0 => {
-                tracing::info!(
-                    purged_count,
-                    "[RdbPromHandler::run] purged expired completed messages",
-                );
+            Ok(purged_count) => {
+                if purged_count > 0 {
+                    tracing::info!(
+                        purged_count,
+                        "[RdbPromHandler::run] purged expired completed messages",
+                    );
+                }
             }
-
-            Ok(_) => {}
 
             Err(error) => {
                 tracing::error!(

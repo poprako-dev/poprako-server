@@ -1,0 +1,13 @@
+[package]
+name = "poprako-swagger"
+version = "0.1.0"
+edition = "2024"
+description = "Standalone binary to generate the PopRaKo OpenAPI specification"
+license = "MIT"
+publish = false
+
+[dependencies]
+anyhow = "1.0"
+poprako-server = { path = "..", features = ["swagger"] }
+serde_json = "1.0"
+utoipa = "5.5.0"

@@ -46,7 +46,9 @@ mod tests;
 /// Call [`close`](RdbProm::close) before dropping to finish in-flight work
 /// gracefully. Pending records remain durable for the next worker start.
 pub struct RdbProm {
+    /// Cancellation token to signal graceful shutdown of the prom processor.
     token: CancellationToken,
+    /// Watch receiver that signals when background processing drains.
     done: watch::Receiver<bool>,
 }
 
@@ -95,17 +97,12 @@ impl RdbProm {
 
         let mut done = self.done.clone();
 
-        match done.wait_for(|done| *done).await {
-            //
-            Ok(_) => {}
-
-            Err(error) => {
-                tracing::error!(
-                    error = %error,
-                    "[RdbProm::close] background task ended without completion",
-                );
-            }
-        };
+        if let Err(error) = done.wait_for(|done| *done).await {
+            tracing::error!(
+                error = %error,
+                "[RdbProm::close] background task ended without completion",
+            );
+        }
     }
 }
 

@@ -74,7 +74,7 @@ where
             user_id: &token.user_id,
         })
         .await?
-        .ok_or_else(unit_edit_permission_error)?;
+        .ok_or_else(unit_edit_permission_err)?;
 
     let label_plus = matches!(params.format, TranslationFormat::LabelPlus);
 
@@ -302,7 +302,7 @@ fn counter_delta(
 }
 
 /// Constructs a permission error for missing unit edit access.
-fn unit_edit_permission_error() -> BaseError {
+fn unit_edit_permission_err() -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Perm,
         message: trl("error-unit-edit-permission-required"),

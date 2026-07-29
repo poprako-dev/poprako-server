@@ -121,10 +121,10 @@ where
     let SavePageUnitsParams { page_id, diff } = params;
 
     if diff.page_id != page_id {
-        return Err(unit_invalid_oper_error());
+        return Err(unit_invalid_oper_err());
     }
 
-    let unit_diff = diff.into_model().ok_or_else(unit_invalid_oper_error)?;
+    let unit_diff = diff.into_model().ok_or_else(unit_invalid_oper_err)?;
 
     let UnitApplyParts {
         opers,
@@ -133,7 +133,7 @@ where
 
     // A single unit save batch must not exceed 100 operations.
     if !(1..=100).contains(&opers.len()) {
-        return Err(unit_invalid_oper_error());
+        return Err(unit_invalid_oper_err());
     }
 
     let stages = submitted_stage_starts(&opers);
@@ -153,10 +153,10 @@ where
         page_scope.total_unit_count as usize + net_create_count;
 
     if resulting_count > MAX_UNITS_PER_PAGE {
-        return Err(unit_invalid_oper_error());
+        return Err(unit_invalid_oper_err());
     }
 
-    let save_result = nucl
+    let saved_units = nucl
         .coord(async move |context| {
             //
             let chapter_info = repo
@@ -320,9 +320,9 @@ where
         })
         .await?;
 
-    spawn_starts((*repo).clone(), save_result.chapter_id, stages);
+    spawn_starts((*repo).clone(), saved_units.chapter_id, stages);
 
-    accept(save_result.payload)
+    accept(saved_units.payload)
 }
 
 struct SavePageUnitsResult {
@@ -401,7 +401,7 @@ fn counter_delta(
 }
 
 /// Constructs an args error for an invalid unit operation.
-fn unit_invalid_oper_error() -> BaseError {
+fn unit_invalid_oper_err() -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Args,
         message: trl("error-invalid-unit-oper"),

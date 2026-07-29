@@ -14,8 +14,8 @@ use crate::complex::chapter::ChapterComplex;
 use crate::complex::image::ImageComplex;
 use crate::complex::page::{PageComplex, PagePermComplex};
 use crate::data::page::{
-    ListPageInfosParams, MarkPageImageUploadedParams, PageImageUploadPayload,
-    PageInfoVal, ReservePageImageParams, ReservedPagePayload,
+    ListPageInfosParams, MarkPageImageUploadedParams, PageInfoVal, PageSlotVal,
+    ReservePageImageParams, ReservedPagePayload,
 };
 use crate::model::page::PageManifestUpdate;
 use crate::model::user::UserToken;
@@ -102,7 +102,7 @@ where
 
             if same_hash
                 && (locked_page_info.image_byte_length != params.byte_length
-                    || locked_page_info.image_extension != params.extension)
+                    || locked_page_info.image_ext != params.ext)
             {
                 return Err(BaseError::Expected {
                     variant: ExpectedVariant::Args,
@@ -140,7 +140,7 @@ where
                         &locked_page_info.chapter_id,
                         &locked_page_info.id,
                         image_version,
-                        params.extension.suffix(),
+                        params.ext.suffix(),
                     );
 
                     (
@@ -159,7 +159,7 @@ where
                 image_version,
                 image_hash: params.image_hash.clone(),
                 image_byte_len: params.byte_length,
-                image_ext: params.extension,
+                image_ext: params.ext,
             };
 
             let updated_page_info = repo
@@ -226,21 +226,20 @@ where
 
     let (page_info, object_key) = reservation;
 
-    let upload = match object_key {
+    let slot = match object_key {
         //
         Some(object_key) => {
             //
             let upload_spec = ImageUploadSpec {
                 object_key: &object_key,
-                content_type: page_info.image_extension.content_type(),
+                content_type: page_info.image_ext.content_type(),
                 checksum_sha256: &page_info.image_hash,
                 content_length: page_info.image_byte_length,
             };
 
-            let upload_target =
-                image_pool.get_upload_target(upload_spec).await?;
+            let upload_target = image_pool.get_upload_slot(upload_spec).await?;
 
-            Some(PageImageUploadPayload {
+            Some(PageSlotVal {
                 put_url: upload_target.url.to_string(),
                 image_version: page_info.image_version,
                 headers: upload_target.headers,
@@ -260,8 +259,8 @@ where
         })?,
         image_hash: page_info.image_hash,
         byte_length: page_info.image_byte_length,
-        extension: page_info.image_extension,
-        upload,
+        ext: page_info.image_ext,
+        slot,
     })
 }
 

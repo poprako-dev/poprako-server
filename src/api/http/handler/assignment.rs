@@ -3,9 +3,8 @@
 use axum::Json;
 use axum::extract::{Extension, Path, State};
 use axum::http::StatusCode;
+use axum_extra::extract::Query;
 use tracing::instrument;
-
-use crate::value::query::GroupedQuery;
 
 use crate::api::http::handler::util::ensure_path_matches_body_id;
 #[allow(unused_imports)]
@@ -21,7 +20,7 @@ use crate::model::user::UserToken;
 use crate::usecase;
 
 /// `GET /api/v1/assignments` — list assignments by chapter or owner.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     get,
     path = "/api/v1/assignments",
     tag = "assignments",
@@ -37,7 +36,7 @@ use crate::usecase;
 pub async fn list_infos(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    GroupedQuery(params): GroupedQuery<ListAssignmentInfosParams>,
+    Query(params): Query<ListAssignmentInfosParams>,
 ) -> HttpResult<Vec<AssignmentInfoVal>> {
     usecase::assignment::list_infos(
         harn.repo(),
@@ -50,7 +49,7 @@ pub async fn list_infos(
 }
 
 /// `PUT /api/v1/chapters/{chapter_id}/assignments/{user_id}/roles` — update roles.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     put,
     path = "/api/v1/chapters/{chapter_id}/assignments/{user_id}/roles",
     tag = "assignments",
@@ -90,7 +89,7 @@ pub async fn update_roles(
 }
 
 /// `DELETE /api/v1/assignments/{assignment_id}` — delete an assignment.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     delete,
     path = "/api/v1/assignments/{assignment_id}",
     tag = "assignments",
@@ -120,7 +119,7 @@ pub async fn delete(
 }
 
 /// `POST /api/v1/assignments/join` — join a chapter assignment with roles.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     post,
     path = "/api/v1/assignments/join",
     tag = "assignments",

@@ -34,8 +34,11 @@ mod user;
 /// [`close`](AsyncEffectDevelop::close) before dropping to drain pending
 /// events gracefully.
 pub struct AsyncEffectDevelop {
+    /// Bounded channel sender for enqueueing events.
     send: Sender<Event>,
+    /// Cancellation token to signal graceful shutdown.
     token: CancellationToken,
+    /// Watch receiver that signals when background processing completes.
     done: watch::Receiver<bool>,
 }
 
@@ -80,17 +83,12 @@ impl AsyncEffectDevelop {
 
         let mut done = self.done.clone();
 
-        match done.wait_for(|done| *done).await {
-            //
-            Ok(_) => {}
-
-            Err(error) => {
-                tracing::error!(
-                    error = %error,
-                    "[AsyncEffectDevelop::close] background task ended without completion",
-                );
-            }
-        };
+        if let Err(error) = done.wait_for(|done| *done).await {
+            tracing::error!(
+                error = %error,
+                "[AsyncEffectDevelop::close] background task ended without completion",
+            );
+        }
     }
 }
 

@@ -160,7 +160,7 @@ where
                     .await?;
 
                 if existing_assignment_info.is_some() {
-                    return Err(invitee_assigned_error());
+                    return Err(invitee_assigned_err());
                 }
             }
 
@@ -298,7 +298,7 @@ where
                 .await?;
 
             if assignment_invitation_info.invitee_qid != current_user_info.qid {
-                return Err(invalid_invitation_error());
+                return Err(invalid_invitation_err());
             }
 
             validate_roles(assignment_invitation_info.roles)?;
@@ -345,14 +345,14 @@ where
                 .await?;
 
             let Some(member_info) = member_info else {
-                return Err(assignment_role_not_assignable_perm_error());
+                return Err(assignment_role_not_assignable_perm_err());
             };
 
             if !member_info
                 .roles
                 .contains_mask(assignment_invitation_info.roles)
             {
-                return Err(assignment_role_not_assignable_perm_error());
+                return Err(assignment_role_not_assignable_perm_err());
             }
 
             let existing_assignment_info = repo
@@ -437,11 +437,11 @@ where
         .await?;
 
     let Some(assignment_info) = assignment_info else {
-        return Err(chapter_admin_error());
+        return Err(chapter_admin_err());
     };
 
     if !assignment_info.roles.has_any_role(&[RoleField::ADMIN]) {
-        return Err(chapter_admin_error());
+        return Err(chapter_admin_err());
     }
 
     accept(())
@@ -470,14 +470,14 @@ fn gen_code() -> String {
 fn validate_roles(roles: RoleMask) -> BaseResult<()> {
     //
     if u32::from(roles) == 0 || roles.has_any_role(&[RoleField::ADMIN]) {
-        return Err(assignment_role_not_assignable_args_error());
+        return Err(assignment_role_not_assignable_args_err());
     }
 
     accept(())
 }
 
 /// Constructs an args error for an invalid invitation code.
-fn invalid_invitation_error() -> BaseError {
+fn invalid_invitation_err() -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Args,
         message: trl("error-no-pending-invitation"),
@@ -485,7 +485,7 @@ fn invalid_invitation_error() -> BaseError {
 }
 
 /// Constructs an args error for an already assigned invitee.
-fn invitee_assigned_error() -> BaseError {
+fn invitee_assigned_err() -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Args,
         message: trl("error-assignment-already-exists"),
@@ -493,7 +493,7 @@ fn invitee_assigned_error() -> BaseError {
 }
 
 /// Constructs a permission error when the caller is not a chapter admin.
-fn chapter_admin_error() -> BaseError {
+fn chapter_admin_err() -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Perm,
         message: trl("error-chapter-admin-required"),
@@ -501,7 +501,7 @@ fn chapter_admin_error() -> BaseError {
 }
 
 /// Constructs an args error for unassignable chapter roles.
-fn assignment_role_not_assignable_args_error() -> BaseError {
+fn assignment_role_not_assignable_args_err() -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Args,
         message: trl("error-chapter-role-not-assignable"),
@@ -509,7 +509,7 @@ fn assignment_role_not_assignable_args_error() -> BaseError {
 }
 
 /// Constructs a permission error for unassignable chapter roles.
-fn assignment_role_not_assignable_perm_error() -> BaseError {
+fn assignment_role_not_assignable_perm_err() -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Perm,
         message: trl("error-chapter-role-not-assignable"),

@@ -6,7 +6,9 @@ use serde::Deserialize;
 /// Runtime configuration for the HTTP server.
 #[derive(Debug, Deserialize)]
 pub struct AppConfig {
+    /// IP address or hostname the HTTP server binds to.
     pub http_host: String,
+    /// TCP port the HTTP server listens on.
     pub http_port: u16,
 }
 

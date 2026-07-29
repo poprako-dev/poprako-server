@@ -38,16 +38,16 @@ fn image_hash_rejects_noncanonical_encodings() {
 fn image_extensions_provide_fixed_content_types() {
     //
     let mappings = [
-        (ImageExtension::Jpg, "jpg", "image/jpeg"),
-        (ImageExtension::Jpeg, "jpeg", "image/jpeg"),
-        (ImageExtension::Png, "png", "image/png"),
-        (ImageExtension::Gif, "gif", "image/gif"),
-        (ImageExtension::Webp, "webp", "image/webp"),
-        (ImageExtension::Svg, "svg", "image/svg+xml"),
-        (ImageExtension::Avif, "avif", "image/avif"),
-        (ImageExtension::Bmp, "bmp", "image/bmp"),
-        (ImageExtension::Tif, "tif", "image/tiff"),
-        (ImageExtension::Tiff, "tiff", "image/tiff"),
+        (ImageExt::Jpg, "jpg", "image/jpeg"),
+        (ImageExt::Jpeg, "jpeg", "image/jpeg"),
+        (ImageExt::Png, "png", "image/png"),
+        (ImageExt::Gif, "gif", "image/gif"),
+        (ImageExt::Webp, "webp", "image/webp"),
+        (ImageExt::Svg, "svg", "image/svg+xml"),
+        (ImageExt::Avif, "avif", "image/avif"),
+        (ImageExt::Bmp, "bmp", "image/bmp"),
+        (ImageExt::Tif, "tif", "image/tiff"),
+        (ImageExt::Tiff, "tiff", "image/tiff"),
     ];
 
     for (image_extension, suffix, content_type) in mappings {
@@ -57,5 +57,5 @@ fn image_extensions_provide_fixed_content_types() {
         assert_eq!(image_extension.content_type(), content_type);
     }
 
-    assert!(ImageExtension::parse("exe").is_none());
+    assert!(ImageExt::parse("exe").is_none());
 }

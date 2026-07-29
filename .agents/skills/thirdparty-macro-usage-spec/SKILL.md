@@ -29,7 +29,7 @@ Do not import `error`, `warn`, `info`, `debug`, or `trace` as bare macros.
 ## Active framework locations
 
 - Serde derives and `#[serde(...)]` attributes belong in `data` and values.
-- `#[cfg_attr(feature = "swagger-ui", ...)]` OpenAPI derives and `#[utoipa::path]` annotations belong in API DTOs and handlers.
+- `#[cfg_attr(feature = "swagger", ...)]` OpenAPI derives and `#[utoipa::path]` annotations belong in API DTOs and handlers.
 - Diesel derives and `#[diesel(...)]` attributes belong in `part_impl/repo/rdb_impl/entity`. Refer to the generated table module through its local path; never introduce `use ...::schema` or `schema::`.
 - `#[async_trait]` is used for async port and adapter implementations.
 

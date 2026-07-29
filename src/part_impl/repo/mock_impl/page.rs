@@ -59,7 +59,7 @@ fn page_from_entry(entry: &PageEntry) -> PageInfo {
         image_version: entry.image_version,
         image_hash: entry.image_hash.clone(),
         image_byte_length: entry.image_byte_len,
-        image_extension: entry.image_ext,
+        image_ext: entry.image_ext,
         total_unit_count: 0,
         translated_unit_count: 0,
         proofread_unit_count: 0,

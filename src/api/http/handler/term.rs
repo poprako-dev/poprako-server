@@ -6,7 +6,7 @@ use axum::http::StatusCode;
 use serde::Deserialize;
 use tracing::instrument;
 
-#[cfg(feature = "swagger-ui")]
+#[cfg(feature = "swagger")]
 use utoipa::IntoParams;
 
 use crate::api::http::handler::util::ensure_path_matches_body_id;
@@ -24,18 +24,20 @@ use crate::usecase;
 
 /// Query parameters for terms inside one terminology base.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
-#[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
+#[cfg_attr(feature = "swagger", derive(IntoParams))]
+#[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct TermListQuery {
     /// Optional case-insensitive source substring.
     pub fuzzy_source: Option<String>,
 
+    /// Number of records to skip for pagination.
     pub offset: u32,
+    /// Maximum number of records to return.
     pub limit: u32,
 }
 
 /// `POST /api/v1/terms` — create a terminology entry.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     post,
     path = "/api/v1/terms",
     tag = "terms",
@@ -58,7 +60,7 @@ pub async fn create(
 }
 
 /// `GET /api/v1/termbases/{termbase_id}/terms` — list terms in one base.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     get,
     path = "/api/v1/termbases/{termbase_id}/terms",
     tag = "terms",
@@ -90,7 +92,7 @@ pub async fn list_infos(
 }
 
 /// `GET /api/v1/terms/{term_id}` — fetch a terminology entry.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     get,
     path = "/api/v1/terms/{term_id}",
     tag = "terms",
@@ -113,7 +115,7 @@ pub async fn get_info(
 }
 
 /// `PUT /api/v1/terms/{term_id}` — replace terminology-entry fields.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     put,
     path = "/api/v1/terms/{term_id}",
     tag = "terms",
@@ -142,7 +144,7 @@ pub async fn update_info(
 }
 
 /// `DELETE /api/v1/terms/{term_id}` — delete a terminology entry.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     delete,
     path = "/api/v1/terms/{term_id}",
     tag = "terms",

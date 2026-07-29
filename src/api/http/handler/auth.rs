@@ -31,7 +31,7 @@ fn auth_cookie(token: &str) -> Cookie<'static> {
 ///
 /// Public route. On success, sets the `authorization-token` cookie and returns
 /// the new user id with a signed token.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     post,
     path = "/api/v1/auth/register",
     tag = "auth",
@@ -68,7 +68,7 @@ pub async fn register(
 ///
 /// Public route. On success, sets the `authorization-token` cookie and returns
 /// the user id with a signed token.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     post,
     path = "/api/v1/auth/login",
     tag = "auth",
@@ -97,7 +97,7 @@ pub async fn login(
 ///
 /// Public route. Logs the client out by clearing the `authorization-token`
 /// cookie. The client will no longer send the token on subsequent requests.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     post,
     path = "/api/v1/auth/logout",
     tag = "auth",

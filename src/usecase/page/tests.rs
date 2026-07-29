@@ -40,7 +40,7 @@ use crate::test_util::{
     assert_one_image_check_record,
 };
 use crate::value::chapter::{Stage, StageMask, StagePhase};
-use crate::value::image::{ImageExtension, ImageHash};
+use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
 mod reserve;
@@ -169,7 +169,7 @@ fn page(
         image_version,
         image_hash: ImageHash::new([0u8; 32]),
         image_byte_length: 4096,
-        image_extension: ImageExtension::Png,
+        image_ext: ImageExt::Png,
         total_unit_count: 0,
         translated_unit_count: 0,
         proofread_unit_count: 0,
@@ -212,7 +212,7 @@ async fn reserve_image_replaces_key_and_enqueues_prom() {
         ReservePageImageParams {
             image_hash: ImageHash::new([1u8; 32]),
             byte_length: 8192,
-            extension: ImageExtension::Jpg,
+            ext: ImageExt::Jpg,
         },
     )
     .await;
@@ -225,10 +225,10 @@ async fn reserve_image_replaces_key_and_enqueues_prom() {
 
     assert_eq!(reserved.page_id, "page-1");
 
-    assert_eq!(reserved.upload.as_ref().unwrap().image_version, 2);
+    assert_eq!(reserved.slot.as_ref().unwrap().image_version, 2);
 
     assert_eq!(
-        reserved.upload.as_ref().unwrap().put_url,
+        reserved.slot.as_ref().unwrap().put_url,
         "https://test.local/put/page/chapter_chapter-1/page-1-2.jpg"
     );
 
@@ -282,13 +282,13 @@ async fn reserve_image_reuses_same_uploaded_identity_without_version_bump() {
         ReservePageImageParams {
             image_hash: ImageHash::new([0; 32]),
             byte_length: 4096,
-            extension: ImageExtension::Png,
+            ext: ImageExt::Png,
         },
     )
     .await
     .unwrap();
 
-    assert!(reserved.upload.is_none());
+    assert!(reserved.slot.is_none());
 
     assert_eq!(mock.snapshot().pages[0].image_version, 4);
 
@@ -320,17 +320,17 @@ async fn reserve_image_resigns_same_pending_identity() {
         ReservePageImageParams {
             image_hash: ImageHash::new([0; 32]),
             byte_length: 4096,
-            extension: ImageExtension::Png,
+            ext: ImageExt::Png,
         },
     )
     .await
     .unwrap();
 
-    assert_eq!(reserved.upload.as_ref().unwrap().image_version, 4);
+    assert_eq!(reserved.slot.as_ref().unwrap().image_version, 4);
 
     assert!(
         reserved
-            .upload
+            .slot
             .as_ref()
             .unwrap()
             .put_url
@@ -373,7 +373,7 @@ async fn reserve_image_rejects_same_hash_with_conflicting_metadata() {
         ReservePageImageParams {
             image_hash: ImageHash::new([0; 32]),
             byte_length: 4097,
-            extension: ImageExtension::Png,
+            ext: ImageExt::Png,
         },
     )
     .await;
@@ -400,7 +400,7 @@ async fn reserve_image_rejects_missing_page() {
         ReservePageImageParams {
             image_hash: ImageHash::new([1u8; 32]),
             byte_length: 8192,
-            extension: ImageExtension::Jpg,
+            ext: ImageExt::Jpg,
         },
     )
     .await

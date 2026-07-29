@@ -2,7 +2,7 @@ use super::*;
 
 use time::OffsetDateTime;
 
-use crate::value::image::{ImageExtension, ImageHash};
+use crate::value::image::{ImageExt, ImageHash};
 
 fn page(
     id: &str,
@@ -20,7 +20,7 @@ fn page(
         image_version: 1,
         image_hash: ImageHash::new([hash; 32]),
         image_byte_length: 4096,
-        image_extension: ImageExtension::Png,
+        image_ext: ImageExt::Png,
         total_unit_count,
         translated_unit_count: 0,
         proofread_unit_count: 0,
@@ -29,12 +29,12 @@ fn page(
     }
 }
 
-fn input(page_id: Option<&str>, hash: u8) -> PageImageParams {
-    PageImageParams {
+fn input(page_id: Option<&str>, hash: u8) -> PageImageSpec {
+    PageImageSpec {
         page_id: page_id.map(Into::into),
         image_hash: ImageHash::new([hash; 32]),
         byte_length: 4096,
-        extension: ImageExtension::Png,
+        ext: ImageExt::Png,
     }
 }
 

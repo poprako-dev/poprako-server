@@ -10,7 +10,7 @@ use time::Duration;
 
 use crate::part_impl::prom::rdb_impl::entity::LocalMessageEntry;
 use crate::part_impl::prom::rdb_impl::test_shared;
-use crate::part_impl::repo::rdb_impl::{RdbRepo, schema};
+use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::shared::{RdbContext, RdbCore};
 
 const PREFIX: &str = "rdb-test-prom-purge-";
@@ -78,12 +78,14 @@ pub async fn poll_pending_selects_one_visible_message_per_idle_topic(
 
     let mut conn = shared.get().await.ok().unwrap();
 
-    diesel::insert_into(schema::t_local_message::table)
-        .values(&entries)
-        .execute(&mut conn)
-        .await
-        .ok()
-        .unwrap();
+    diesel::insert_into(
+        crate::part_impl::repo::rdb_impl::schema::t_local_message::table,
+    )
+    .values(&entries)
+    .execute(&mut conn)
+    .await
+    .ok()
+    .unwrap();
 
     let repo = RdbPromRepo::new(RdbRepo::new(shared.clone()));
 
@@ -141,12 +143,14 @@ pub async fn retry_message_allows_later_topic_message_to_advance(
 
     let mut conn = shared.get().await.ok().unwrap();
 
-    diesel::insert_into(schema::t_local_message::table)
-        .values(&entries)
-        .execute(&mut conn)
-        .await
-        .ok()
-        .unwrap();
+    diesel::insert_into(
+        crate::part_impl::repo::rdb_impl::schema::t_local_message::table,
+    )
+    .values(&entries)
+    .execute(&mut conn)
+    .await
+    .ok()
+    .unwrap();
 
     let repo = RdbPromRepo::new(RdbRepo::new(shared.clone()));
 
@@ -250,18 +254,20 @@ pub async fn completed_message_purge_preserves_non_completed_records(
 
     let mut conn = shared.get().await.ok().unwrap();
 
-    diesel::insert_into(schema::t_local_message::table)
-        .values(&[
-            stale_completed_entry,
-            recent_completed_entry,
-            pending_entry,
-            dead_entry,
-            stale_dead_entry,
-        ])
-        .execute(&mut conn)
-        .await
-        .ok()
-        .unwrap();
+    diesel::insert_into(
+        crate::part_impl::repo::rdb_impl::schema::t_local_message::table,
+    )
+    .values(&[
+        stale_completed_entry,
+        recent_completed_entry,
+        pending_entry,
+        dead_entry,
+        stale_dead_entry,
+    ])
+    .execute(&mut conn)
+    .await
+    .ok()
+    .unwrap();
 
     let repo = RdbPromRepo::new(RdbRepo::new(shared.clone()));
 
@@ -282,14 +288,23 @@ pub async fn completed_message_purge_preserves_non_completed_records(
 
     assert_eq!(purged_count, 2);
 
-    let remaining_ids: Vec<String> = schema::t_local_message::table
-        .filter(schema::t_local_message::f_id.like(format!("{}%", PREFIX)))
-        .order_by(schema::t_local_message::f_id.asc())
-        .select(schema::t_local_message::f_id)
-        .load(&mut conn)
-        .await
-        .ok()
-        .unwrap();
+    let remaining_ids: Vec<String> =
+        crate::part_impl::repo::rdb_impl::schema::t_local_message::table
+            .filter(
+                crate::part_impl::repo::rdb_impl::schema::t_local_message::f_id
+                    .like(format!("{}%", PREFIX)),
+            )
+            .order_by(
+                crate::part_impl::repo::rdb_impl::schema::t_local_message::f_id
+                    .asc(),
+            )
+            .select(
+                crate::part_impl::repo::rdb_impl::schema::t_local_message::f_id,
+            )
+            .load(&mut conn)
+            .await
+            .ok()
+            .unwrap();
 
     assert_eq!(
         remaining_ids,

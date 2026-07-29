@@ -32,6 +32,7 @@ pub mod tests;
 ///
 /// [`RdbPromHandler`]: super::handler::RdbPromHandler
 pub struct RdbPromRepo<R> {
+    /// Delegate application repository used by topic handlers.
     repo: R,
 }
 
@@ -66,6 +67,7 @@ impl Oper for PollPending {
 /// Returns `true` if the claim succeeded (i.e. the row was still
 /// Pending), `false` if another worker claimed it first.
 pub struct ClaimPending<'a> {
+    /// ID of the local-message row to claim.
     id: &'a str,
 }
 
@@ -82,6 +84,7 @@ impl Oper for ClaimPending<'_> {
 
 /// Mark a record as successfully completed.
 pub struct CompleteMessage<'a> {
+    /// ID of the local-message row to mark complete.
     id: &'a str,
 }
 
@@ -98,14 +101,16 @@ impl Oper for CompleteMessage<'_> {
 
 /// Mark a record as dead with an error message.
 pub struct FailMessage<'a> {
+    /// ID of the local-message row to mark as failed.
     id: &'a str,
+    /// Error description attached to the failure record.
     error: &'a str,
 }
 
 impl<'a> FailMessage<'a> {
     /// Builds an operation that permanently fails the message identified by `id`.
-    pub fn new(id: &'a str, error: &'a str) -> Self {
-        Self { id, error }
+    pub fn new(id: &'a str, err_msg: &'a str) -> Self {
+        Self { id, error: err_msg }
     }
 }
 
@@ -115,8 +120,11 @@ impl Oper for FailMessage<'_> {
 
 /// Reset one failed processing attempt back to pending for a later retry.
 pub struct RetryMessage<'a> {
+    /// ID of the local-message row to retry.
     id: &'a str,
+    /// Error description logged from the previous attempt.
     error: &'a str,
+    /// Timestamp after which the retry becomes visible for processing.
     visible_at: &'a OffsetDateTime,
 }
 
@@ -124,12 +132,12 @@ impl<'a> RetryMessage<'a> {
     /// Builds an operation that schedules the message identified by `id` for retry.
     pub fn new(
         id: &'a str,
-        error: &'a str,
+        err_msg: &'a str,
         visible_at: &'a OffsetDateTime,
     ) -> Self {
         Self {
             id,
-            error,
+            error: err_msg,
             visible_at,
         }
     }
@@ -141,6 +149,7 @@ impl Oper for RetryMessage<'_> {
 
 /// Reset processing records stuck before a cutoff timestamp.
 pub struct ResetStuck<'a> {
+    /// Cutoff timestamp; any record stuck in Processing before this is reset.
     before: &'a OffsetDateTime,
 }
 
@@ -157,7 +166,9 @@ impl Oper for ResetStuck<'_> {
 
 /// Deletes completed and dead records after their independent retention cutoffs.
 pub struct PurgeCompleted<'a> {
+    /// Cutoff timestamp for completed records to purge.
     completed_before: &'a OffsetDateTime,
+    /// Cutoff timestamp for dead records to purge.
     dead_before: &'a OffsetDateTime,
 }
 

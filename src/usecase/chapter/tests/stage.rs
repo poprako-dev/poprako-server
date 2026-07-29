@@ -175,7 +175,7 @@ async fn update_stage_publish_enqueues_page_image_delete() {
 
     assert_eq!(snapshot.pages[0].image_byte_length, 4096);
 
-    assert_eq!(snapshot.pages[0].image_extension, ImageExtension::Png);
+    assert_eq!(snapshot.pages[0].image_ext, ImageExt::Png);
 
     let events = mock.drain_events();
 

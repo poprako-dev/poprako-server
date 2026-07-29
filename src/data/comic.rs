@@ -8,7 +8,7 @@
 
 use futures::future::OptionFuture;
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "swagger-ui")]
+#[cfg(feature = "swagger")]
 use utoipa::{IntoParams, ToSchema};
 
 use poprako_util::time::ToUnixMilli;
@@ -37,15 +37,21 @@ mod tests;
 ///
 /// [`ComicInfo`]: crate::model::comic::ComicInfo
 #[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ComicInfoVal {
+    /// Unique comic identifier.
     pub id: String,
 
+    /// Parent workset identifier this comic belongs to.
     pub workset_id: String,
+    /// Ordinal position of the comic within its workset.
     pub index: i32,
 
+    /// Comic title.
     pub title: String,
+    /// Comic author name.
     pub author: String,
+    /// Optional description or synopsis of the comic content.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
 
@@ -53,23 +59,33 @@ pub struct ComicInfoVal {
     /// no cover has been uploaded.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cover_url: Option<String>,
+    /// Resolved signed download URL for the cover thumbnail, or [`None`] if
+    /// no cover has been uploaded.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cover_thumbnail_url: Option<String>,
 
+    /// Total number of chapters in this comic.
     pub chapter_count: i32,
 
+    /// Identifier of the user who created the comic entry.
     pub creator_id: String,
 
+    /// Resolved workset summary, included when the `workset` expansion option is requested.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub workset: Option<WorksetInfoVal>,
+    /// Resolved team summary for the owning workset, included when the `team` expansion option is requested.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub team: Option<TeamInfoVal>,
+    /// Resolved creator profile, included when the `creator` expansion option is requested.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub creator: Option<UserInfoVal>,
 
+    /// Timestamp of the most recent activity on the comic, in milliseconds since Unix epoch.
     pub last_active_at: i64,
 
+    /// Timestamp of comic creation, in milliseconds since Unix epoch.
     pub created_at: i64,
+    /// Timestamp of the last comic update, in milliseconds since Unix epoch.
     pub updated_at: i64,
 }
 
@@ -143,12 +159,16 @@ impl ComicInfoVal {
 /// can be customised via `first_chapter_subtitle`; when absent, a
 /// locale-aware default (e.g. "Ch. 1") is generated.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateComicParams {
+    /// Parent workset identifier.
     pub workset_id: String,
 
+    /// Comic title.
     pub title: String,
+    /// Comic author name.
     pub author: String,
+    /// Optional description of the comic.
     pub description: Option<String>,
 
     /// Optional subtitle for the first chapter created alongside the comic.
@@ -164,9 +184,11 @@ pub struct CreateComicParams {
 ///
 /// Includes the IDs of both the new comic and its auto-created first chapter.
 #[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateComicPayload {
+    /// Newly created comic identifier.
     pub id: String,
+    /// Identifier of the auto-created first chapter.
     pub chapter_id: String,
 }
 
@@ -176,40 +198,43 @@ pub struct CreateComicPayload {
 ///
 /// [`reserve_cover`]: crate::usecase::comic::reserve_cover
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateComicInfoParams {
+    /// Comic identifier.
     pub id: String,
 
+    /// Updated comic title.
     pub title: String,
+    /// Updated author name.
     pub author: String,
+    /// Updated description.
     pub description: Option<String>,
 }
 
 /// Input parameters for listing comics within a workset.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
-#[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
+#[cfg_attr(feature = "swagger", derive(IntoParams))]
+#[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ListComicInfosParams {
+    /// Parent workset identifier.
     pub workset_id: String,
 
+    /// Optional fuzzy title filter.
     pub fuzzy_title: Option<String>,
+    /// Optional stage mask filter.
     pub stages: Option<u32>,
 
-    #[serde(
-        default,
-        rename = "incl",
-        deserialize_with = "crate::value::query::deserialize_vec"
-    )]
+    /// Optional related data to include in results.
+    #[serde(default, rename = "incl")]
     pub incl_opt: Vec<ComicInclOpt>,
 
-    #[serde(
-        default,
-        rename = "with",
-        deserialize_with = "crate::value::query::deserialize_vec"
-    )]
+    /// Optional expansion options for the result set.
+    #[serde(default, rename = "with")]
     pub with_opt: Vec<ComicWithOpt>,
 
+    /// Pagination offset.
     pub offset: u32,
+    /// Maximum number of results per page.
     pub limit: u32,
 }
 
@@ -244,8 +269,9 @@ impl TryFrom<ListComicInfosParams> for ComicInfoListSpec {
 /// The file extension determines the object-storage key suffix. After
 /// reservation the client uploads directly to the returned PUT URL.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ReserveComicCoverParams {
+    /// File extension for the cover image (determines object-storage key suffix).
     pub file_ext: String,
 }
 
@@ -254,9 +280,11 @@ pub struct ReserveComicCoverParams {
 /// The client uses `put_url` to upload the cover image directly to object
 /// storage. `cover_version` must be echoed back when confirming the upload.
 #[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ReserveComicCoverPayload {
+    /// Signed PUT URL for uploading the cover image to object storage.
     pub put_url: String,
+    /// Version token that must be echoed when confirming the upload.
     pub cover_version: u32,
 }
 
@@ -264,7 +292,8 @@ pub struct ReserveComicCoverPayload {
 ///
 /// `cover_version` must match the version returned by the reservation step.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct MarkComicCoverUploadedParams {
+    /// Cover version returned by the reservation step.
     pub cover_version: u32,
 }

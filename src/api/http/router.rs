@@ -20,7 +20,7 @@ use crate::api::http::middleware::rate_limit::rate_limit;
 use crate::api::http::middleware::trace::{
     propagate_request_id, set_request_id, trace_request,
 };
-#[cfg(feature = "swagger-ui")]
+#[cfg(feature = "swagger")]
 use crate::api::http::openapi::ApiDoc;
 use crate::api::http::state::AppHarn;
 
@@ -272,7 +272,7 @@ pub fn new(harn: AppHarn) -> Router<AppHarn> {
         .layer(from_fn(record_response_metric));
 
     // Swagger UI — debug builds only
-    #[cfg(feature = "swagger-ui")]
+    #[cfg(feature = "swagger")]
     let router = {
         //
         use utoipa::OpenApi as _;

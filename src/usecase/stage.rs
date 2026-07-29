@@ -12,17 +12,19 @@ where
         + Sync
         + 'static,
 {
+    // NOTE: Stage starts are intentionally best-effort. A task may be dropped
+    // or fail because the same stage can be advanced manually when needed.
     tokio::spawn(async move {
         for stage in stages {
             //
-            let result = repo
+            let outcome = repo
                 .run(&StartChapterStage {
                     id: &chapter_id,
                     stage,
                 })
                 .await;
 
-            if let Err(error) = result {
+            if let Err(error) = outcome {
                 tracing::warn!(
                     error = ?error,
                     chapter_id = %chapter_id,

@@ -18,17 +18,17 @@ pub async fn handle<R>(repo: &R, task: &CheckUploadFinish) -> TaskFlow
 where
     R: ChapterRepo<RdbContext> + Send + Sync,
 {
-    let result = repo
+    let outcome = repo
         .run(&CompleteChapterRawProvide {
             id: &task.chapter_id,
         })
         .await;
 
-    resolve_task_flow(result)
+    resolve_task_flow(outcome)
 }
 
-fn resolve_task_flow(result: BaseResult<bool>) -> TaskFlow {
-    match result {
+fn resolve_task_flow(outcome: BaseResult<bool>) -> TaskFlow {
+    match outcome {
         //
         Ok(true) => TaskFlow::Complete,
 

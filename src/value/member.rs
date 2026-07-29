@@ -2,7 +2,7 @@
 
 use serde::Deserialize;
 
-#[cfg(feature = "swagger-ui")]
+#[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
 use crate::value::incl::InclOpt;
@@ -12,7 +12,7 @@ use crate::value::incl::InclOpt;
 /// Each opt embeds additional related data into the returned
 /// `MemberInfoVal`.
 #[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum MemberInclOpt {
     /// Embed the member's user profile (`user`).

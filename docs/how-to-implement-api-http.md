@@ -55,7 +55,7 @@ whenever adding or changing code under `src/api/http/`.
    - Add `#[utoipa::path(...)]` on the handler.
    - Keep the documented method and path exactly aligned with the router.
    - Add request/response schemas to `src/api/http/openapi.rs` when needed.
-   - OpenAPI derives and routes are gated by the `swagger-ui` Cargo feature.
+   - OpenAPI derives and routes are gated by the `swagger` Cargo feature.
    - Swagger and OpenAPI routes live outside versioned API routes:
      `/api/swagger-ui` and `/api/openapi.json`, not under `/api/v1`.
 

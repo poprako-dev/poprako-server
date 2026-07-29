@@ -274,7 +274,9 @@ where
                 for<'a, 'b> FindAssignmentInfo<'a, 'b>;
         },
         &token.user_id,
-        &params,
+        &params.user_id,
+        &params.chapter_id,
+        params.roles,
     )
     .await?;
 
@@ -329,7 +331,7 @@ where
                     assignment_info,
                     params.roles,
                 ) {
-                    return Err(assignment_admin_required_error());
+                    return Err(assignment_admin_required_err());
                 }
 
                 if !AssignmentComplex::chapter_has_admin_after_role_update(
@@ -337,7 +339,7 @@ where
                     &params.user_id,
                     params.roles,
                 ) {
-                    return Err(assignment_admin_required_error());
+                    return Err(assignment_admin_required_err());
                 }
 
                 let assignment_role_update = AssignmentRoleUpdate {
@@ -361,7 +363,7 @@ where
                     &params.user_id,
                     params.roles,
                 ) {
-                    return Err(assignment_admin_required_error());
+                    return Err(assignment_admin_required_err());
                 }
 
                 let assignment_entry = AssignmentEntry {
@@ -391,7 +393,7 @@ where
 }
 
 /// Constructs a permission error for admin-role removal.
-fn assignment_admin_required_error() -> BaseError {
+fn assignment_admin_required_err() -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Perm,
         message: trl("error-forbidden"),

@@ -20,7 +20,7 @@ use crate::model::user::UserToken;
 use crate::usecase;
 
 /// `POST /api/v1/teams` — create a new team.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     post,
     path = "/api/v1/teams",
     tag = "teams",
@@ -49,7 +49,7 @@ pub async fn create(
 }
 
 /// `GET /api/v1/teams` — list teams with pagination.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     get,
     path = "/api/v1/teams",
     tag = "teams",
@@ -78,7 +78,7 @@ pub async fn list_infos(
 }
 
 /// `GET /api/v1/teams/{team_id}` — fetch a team by id.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     get,
     path = "/api/v1/teams/{team_id}",
     tag = "teams",
@@ -100,7 +100,7 @@ pub async fn get_info(
 }
 
 /// `PUT /api/v1/teams/{team_id}` — update a team's profile.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     put,
     path = "/api/v1/teams/{team_id}",
     tag = "teams",
@@ -129,7 +129,7 @@ pub async fn update_info(
 }
 
 /// `POST /api/v1/teams/{team_id}/avatar/reserve` — reserve a team avatar upload slot.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     post,
     path = "/api/v1/teams/{team_id}/avatar/reserve",
     tag = "teams",
@@ -162,7 +162,7 @@ pub async fn reserve_avatar(
 }
 
 /// `POST /api/v1/teams/{team_id}/avatar/mark-uploaded` — confirm a team avatar upload.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     post,
     path = "/api/v1/teams/{team_id}/avatar/mark-uploaded",
     tag = "teams",
@@ -194,7 +194,7 @@ pub async fn mark_avatar_uploaded(
 }
 
 /// `DELETE /api/v1/teams/{team_id}` — delete a team and all descendants.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     delete,
     path = "/api/v1/teams/{team_id}",
     tag = "teams",

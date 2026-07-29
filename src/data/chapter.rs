@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "swagger-ui")]
+#[cfg(feature = "swagger")]
 use utoipa::{IntoParams, ToSchema};
 
 use futures::future::OptionFuture;
@@ -26,31 +26,48 @@ use crate::value::role::RoleMask;
 ///
 /// [`ChapterInfo`]: crate::model::chapter::ChapterInfo
 #[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ChapterInfoVal {
+    /// Unique chapter identifier.
     pub id: String,
+    /// Owning comic identifier.
     pub comic_id: String,
 
+    /// Included comic information; present only when requested via inclusion
+    /// options.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub comic: Option<ComicInfoVal>,
 
+    /// Whether the chapter is pinned to the top of its comic's chapter list.
     pub is_pinned: bool,
+    /// Ordinal position within the parent comic.
     pub index: i32,
+    /// Display subtitle for the chapter.
     pub subtitle: String,
 
+    /// Total number of image pages in the chapter.
     pub page_count: i32,
+    /// Total number of translation units across all pages.
     pub total_unit_count: i32,
+    /// Number of units whose translation has been completed.
     pub translated_unit_count: i32,
+    /// Number of units whose proofread has been completed.
     pub proofread_unit_count: i32,
 
+    /// Bitmask encoding the current workflow-stage states.
     pub stages: StageMask,
 
+    /// Creator user identifier.
     pub creator_id: String,
 
+    /// Included creator information; present only when requested via inclusion
+    /// options.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub creator: Option<UserInfoVal>,
 
+    /// Timestamp of creation, in Unix milliseconds.
     pub created_at: i64,
+    /// Timestamp of last update, in Unix milliseconds.
     pub updated_at: i64,
 }
 
@@ -121,8 +138,9 @@ impl ChapterInfoVal {
 
 /// Input parameters for creating a new chapter.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateChapterParams {
+    /// Identifier of the parent comic to create the chapter in.
     pub comic_id: String,
 
     /// Optional display subtitle; defaults to a generated value
@@ -138,8 +156,9 @@ pub struct CreateChapterParams {
 
 /// Return value from a successful chapter creation.
 #[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateChapterPayload {
+    /// Unique identifier of the newly created chapter.
     pub id: String,
 }
 
@@ -150,8 +169,8 @@ pub struct CreateChapterPayload {
 ///
 /// Example: `/api/v1/comics/{comic_id}/chapters?incl=comic.workset.team&incl=creator&offset=0&limit=20`.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
-#[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
+#[cfg_attr(feature = "swagger", derive(IntoParams))]
+#[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ListChapterInfosParams {
     /// Parent comic whose chapters to list.
     pub comic_id: String,
@@ -159,24 +178,26 @@ pub struct ListChapterInfosParams {
     /// Related rows to embed. Repeatable. Values: `comic`, `comic.workset`,
     /// `comic.workset.team`, `comic.creator`, `creator`. Dotted values imply
     /// their parent segments.
-    #[serde(
-        default,
-        rename = "incl",
-        deserialize_with = "crate::value::query::deserialize_vec"
-    )]
+    #[serde(default, rename = "incl")]
     pub incl_opt: Vec<ChapterInclOpt>,
 
+    /// Pagination offset: number of chapters to skip before beginning the
+    /// result set.
     pub offset: u32,
+    /// Maximum number of chapters to return.
     pub limit: u32,
 }
 
 /// Input parameters for partially updating a chapter's profile.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateChapterInfoParams {
+    /// Chapter identifier to update.
     pub id: String,
 
+    /// New display subtitle; `None` leaves the current value unchanged.
     pub subtitle: Option<String>,
+    /// New pin status; `None` leaves the current value unchanged.
     pub pin: Option<bool>,
 }
 
@@ -186,10 +207,13 @@ pub struct UpdateChapterInfoParams {
 /// on the `translate` stage. The use case layer validates that the
 /// transition is legal for the current stage phase before applying it.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateChapterStageParams {
+    /// Chapter identifier to update.
     pub id: String,
 
+    /// Workflow stage to operate on.
     pub stage: Stage,
+    /// Operation to apply to the target stage (e.g. start, finish, revert).
     pub oper: StageOper,
 }

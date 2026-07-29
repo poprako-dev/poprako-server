@@ -22,7 +22,7 @@ use crate::model::user::UserToken;
 use crate::usecase;
 
 /// `GET /api/v1/users/me` — current user's profile.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     get,
     path = "/api/v1/users/me",
     tag = "users",
@@ -51,7 +51,7 @@ pub async fn get_my_info(
 }
 
 /// `GET /api/v1/users/{user_id}` — a user's profile by id.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     get,
     path = "/api/v1/users/{user_id}",
     tag = "users",
@@ -80,7 +80,7 @@ pub async fn get_info(
 }
 
 /// `PUT /api/v1/users/{user_id}` — update a user's profile.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     put,
     path = "/api/v1/users/{user_id}",
     tag = "users",
@@ -110,7 +110,7 @@ pub async fn update_info(
 }
 
 /// `PUT /api/v1/users/{user_id}/password` — replace the current user's password.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     put,
     path = "/api/v1/users/{user_id}/password",
     tag = "users",
@@ -143,7 +143,7 @@ pub async fn update_password(
 }
 
 /// `DELETE /api/v1/users/{user_id}` — delete a user account.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     delete,
     path = "/api/v1/users/{user_id}",
     tag = "users",
@@ -174,7 +174,7 @@ pub async fn delete(
 }
 
 /// `POST /api/v1/users/{user_id}/avatar/reserve` — reserve an avatar upload slot.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     post,
     path = "/api/v1/users/{user_id}/avatar/reserve",
     tag = "users",
@@ -208,7 +208,7 @@ pub async fn reserve_avatar(
 }
 
 /// `POST /api/v1/users/{user_id}/avatar/mark-uploaded` — confirm an avatar upload.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     post,
     path = "/api/v1/users/{user_id}/avatar/mark-uploaded",
     tag = "users",

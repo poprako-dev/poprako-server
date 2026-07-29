@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "swagger-ui")]
+#[cfg(feature = "swagger")]
 use utoipa::{IntoParams, ToSchema};
 
 use futures::future::OptionFuture;
@@ -17,17 +17,23 @@ use crate::value::comment::CommentInclOpt;
 
 /// Presentation-ready team board comment information.
 #[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CommentInfoVal {
+    /// Unique comment identifier.
     pub id: String,
 
+    /// Owning team identifier.
     pub team_id: String,
+    /// Authoring user identifier.
     pub user_id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    /// Author user information, present when requested via inclusion options.
     pub user: Option<UserInfoVal>,
 
+    /// Comment body text.
     pub content: String,
 
+    /// Timestamp of creation in milliseconds since Unix epoch.
     pub created_at: i64,
 }
 
@@ -61,21 +67,19 @@ impl CommentInfoVal {
 ///
 /// Example: `/api/v1/teams/{team_id}/comments?incl=user&offset=0&limit=20`.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
-#[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
+#[cfg_attr(feature = "swagger", derive(IntoParams))]
+#[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ListCommentInfosParams {
     /// Parent team whose comments to list.
     pub team_id: String,
 
     /// Related rows to embed. Repeatable. Values: `user`.
-    #[serde(
-        default,
-        rename = "incl",
-        deserialize_with = "crate::value::query::deserialize_vec"
-    )]
+    #[serde(default, rename = "incl")]
     pub incl_opt: Vec<CommentInclOpt>,
 
+    /// Pagination offset.
     pub offset: u32,
+    /// Maximum number of results per page.
     pub limit: u32,
 }
 
@@ -92,15 +96,18 @@ impl From<ListCommentInfosParams> for CommentListSpec {
 
 /// Input parameters for creating a comment.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateCommentParams {
+    /// Target team identifier.
     pub team_id: String,
+    /// Comment body text.
     pub content: String,
 }
 
 /// Return value from creating a comment.
 #[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateCommentPayload {
+    /// Identifier of the newly created comment.
     pub id: String,
 }

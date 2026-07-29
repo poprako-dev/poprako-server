@@ -52,8 +52,11 @@ struct MacroNestedInfo {
 
 /// Owner fixture used to compile-test macro expansion.
 pub(super) struct MacroTestInfo {
+    /// User ID used in the preloadable macro expansion test.
     user_id: String,
+    /// Optional user info for testing nested preloadable expansion.
     user: Option<UserInfo>,
+    /// Optional nested info for testing multi-level preloadable expansion.
     nested: Option<MacroNestedInfo>,
 }
 

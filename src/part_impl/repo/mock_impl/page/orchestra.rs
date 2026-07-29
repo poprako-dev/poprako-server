@@ -306,7 +306,7 @@ impl<'a> Step<UpdatePageManifest<'a>, MockContext> for Mock {
 
         page_info.image_byte_length = oper.update.image_byte_len;
 
-        page_info.image_extension = oper.update.image_ext;
+        page_info.image_ext = oper.update.image_ext;
 
         page_info.updated_at = now();
 
