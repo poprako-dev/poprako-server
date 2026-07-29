@@ -23,9 +23,11 @@ use crate::value::chapter::{Stage, StageMask, StagePhase};
 use crate::value::comic::ComicInclOpt;
 use crate::value::index::user_index_to_stored_index;
 
-impl ComicRepo<RdbContext> for RdbRepo {}
-
 mod orchestra;
+#[cfg(all(test, feature = "repo"))]
+mod tests;
+
+impl ComicRepo<RdbContext> for RdbRepo {}
 
 /// Generates a raw SQL predicate for a single-stage (one-shot) workflow column and phase.
 fn one_shot_predicate(column: &str, phase: StagePhase) -> &'static str {
@@ -489,6 +491,3 @@ pub(super) async fn touch_last_active(
 
     Ok(())
 }
-
-#[cfg(all(test, feature = "repo"))]
-mod tests;

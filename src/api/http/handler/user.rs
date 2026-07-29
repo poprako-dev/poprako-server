@@ -15,7 +15,8 @@ use crate::api::http::result::{
 use crate::api::http::state::AppHarn;
 use crate::data::user::{
     MarkUserAvatarUploadedParams, ReserveUserAvatarParams,
-    ReserveUserAvatarPayload, UpdateUserInfoParams, UserInfoVal,
+    ReserveUserAvatarPayload, UpdateUserInfoParams, UpdateUserPasswordParams,
+    UserInfoVal,
 };
 use crate::model::user::UserToken;
 use crate::usecase;
@@ -104,6 +105,39 @@ pub async fn update_info(
 
     usecase::user::update_info(harn.drive(), harn.repo(), user_token, params)
         .await?;
+
+    no_content()
+}
+
+/// `PUT /api/v1/users/{user_id}/password` — replace the current user's password.
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
+    put,
+    path = "/api/v1/users/{user_id}/password",
+    tag = "users",
+    params(("user_id" = String, Path, description = "Target user ID (must match authenticated user)")),
+    request_body = UpdateUserPasswordParams,
+    responses(
+        (status = 204, description = "Password updated"),
+        (status = 401, description = "Current password is incorrect"),
+        (status = 403, description = "Cannot modify another user's password"),
+    ),
+))]
+#[instrument(level = "info", err(Debug), skip_all)]
+pub async fn update_password(
+    State(harn): State<AppHarn>,
+    Path(user_id): Path<String>,
+    Extension(user_token): Extension<UserToken>,
+    Json(params): Json<UpdateUserPasswordParams>,
+) -> HttpNoContent {
+    //
+    usecase::user::update_password(
+        harn.drive(),
+        harn.repo(),
+        user_token,
+        user_id,
+        params,
+    )
+    .await?;
 
     no_content()
 }

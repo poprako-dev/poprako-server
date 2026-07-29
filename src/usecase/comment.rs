@@ -1,7 +1,6 @@
 //! Comment use cases — list and create team board comments.
 
 use poprako_orchestra::{Nucl, run_proxy};
-
 use tracing::instrument;
 
 use crate::complex::comment::{CommentComplex, CommentPermComplex};

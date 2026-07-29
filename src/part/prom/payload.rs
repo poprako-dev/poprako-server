@@ -2,6 +2,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::part::prom::payload::image::Payload as ImagePayload;
 
+/// Deferred image payloads.
+pub mod image;
+
 /// Deferred-action payload grouped by resource domain.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Payload {
@@ -17,6 +20,3 @@ impl Payload {
         }
     }
 }
-
-/// Deferred image payloads.
-pub mod image;

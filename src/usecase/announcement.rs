@@ -1,7 +1,6 @@
 //! Announcement use cases — list and create team announcements.
 
 use poprako_orchestra::{Nucl, run_proxy};
-
 use tracing::instrument;
 
 use crate::complex::announcement::{

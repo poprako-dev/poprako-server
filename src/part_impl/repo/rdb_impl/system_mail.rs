@@ -3,10 +3,12 @@
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use poprako_orchestra::Run;
-
 use tracing::instrument;
 
-use crate::model::system_mail::{SystemMailEntry, SystemMailInfo};
+use crate::model::system_mail::{
+    SystemMailEntry, SystemMailInfo, SystemMailInfoListKind,
+    SystemMailInfoListSpec,
+};
 use crate::part::repo::oper::system_mail::{
     ListSystemMailInfos, MarkSystemMailRead, SendSystemMail, SendSystemMails,
 };
@@ -19,6 +21,9 @@ use crate::part_impl::repo::rdb_impl::schema::t_system_mail::dsl::*;
 use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
+
+#[cfg(all(test, feature = "repo"))]
+mod tests;
 
 impl SystemMailRepo<RdbContext> for RdbRepo {}
 
@@ -61,29 +66,31 @@ async fn send_batch(
     Ok(())
 }
 
-/// Query system mail for a receiver, optionally filtered by read status.
+/// Query system mail selected by a list specification.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn list_infos(
     conn: &mut RdbConn,
-    receiver_id: &str,
-    read: Option<bool>,
-    offset: u32,
-    limit: u32,
+    spec: &SystemMailInfoListSpec,
 ) -> RegularResult<Vec<SystemMailInfo>> {
     //
     let mut query = t_system_mail
-        .filter(f_receiver_id.eq(receiver_id))
+        .filter(f_receiver_id.eq(spec.receiver_id.as_str()))
         .select(SystemMailRow::as_select())
         .into_boxed();
 
-    if let Some(read) = read {
-        query = query.filter(f_read.eq(read));
-    }
+    query = match &spec.kind {
+        //
+        SystemMailInfoListKind::All => query,
+
+        SystemMailInfoListKind::Read => query.filter(f_read.eq(true)),
+
+        SystemMailInfoListKind::Unread => query.filter(f_read.eq(false)),
+    };
 
     let rows: Vec<SystemMailRow> = query
         .order_by(f_created_at.desc())
-        .offset(offset as i64)
-        .limit(limit as i64)
+        .offset(spec.offset as i64)
+        .limit(spec.limit as i64)
         .load(conn)
         .await
         .map_err(diesel)?;
@@ -151,14 +158,7 @@ impl Run<ListSystemMailInfos<'_>> for RdbRepo {
         &self,
         oper: &ListSystemMailInfos<'_>,
     ) -> RegularResult<Vec<SystemMailInfo>> {
-        submit_query!(
-            self.core,
-            list_infos,
-            oper.receiver_id,
-            oper.read,
-            oper.offset,
-            oper.limit
-        )
+        submit_query!(self.core, list_infos, oper.spec)
     }
 }
 
@@ -170,6 +170,3 @@ impl Run<MarkSystemMailRead<'_>> for RdbRepo {
         submit_query!(self.core, mark_read, oper.id, oper.user_id)
     }
 }
-
-#[cfg(all(test, feature = "repo"))]
-mod tests;

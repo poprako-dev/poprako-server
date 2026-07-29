@@ -2,6 +2,7 @@
 
 use super::*;
 
+use crate::model::team::{TeamInfoListKind, TeamInfoListSpec};
 use crate::part::repo::oper::team::{GetTeamInfo, ListTeamInfos, UpdateTeam};
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
 
@@ -18,11 +19,15 @@ async fn team_roundtrip_reads_test_database_url() {
 
     let repo = RdbRepo::new(shared.clone());
 
+    let team_info_list_spec = TeamInfoListSpec {
+        kind: TeamInfoListKind::All,
+        offset: 0,
+        limit: 10,
+    };
+
     let team_infos = repo
         .run(&ListTeamInfos {
-            user_id: None,
-            offset: 0,
-            limit: 10,
+            spec: &team_info_list_spec,
         })
         .await
         .ok()

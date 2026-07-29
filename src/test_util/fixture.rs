@@ -29,7 +29,7 @@ pub fn user(id: &str, qid: &str, nickname: &str) -> UserInfo {
 /// Builds a [`UserCredential`] with a properly hashed password.
 pub fn credential(user_id: &str, password: &str) -> UserCredential {
     //
-    let password_hash = match UserComplex::hash_password(password) {
+    let password_hash = match UserComplex::hash_password_for_test(password) {
         //
         Ok(password_hash) => password_hash,
 

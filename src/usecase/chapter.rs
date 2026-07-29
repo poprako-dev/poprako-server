@@ -2,7 +2,6 @@
 
 use poprako_orchestra::{Nucl, run_proxy, step_proxy};
 use poprako_orchestra_extra::prom::oper::DeferBatch;
-
 use tracing::instrument;
 
 use crate::complex::assignment::AssignmentComplex;

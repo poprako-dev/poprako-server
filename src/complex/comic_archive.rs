@@ -23,93 +23,138 @@ use crate::util::{compress_archive, next_snowflake_id};
 pub struct ComicArchiveComplex;
 
 impl ComicArchiveComplex {
-    /// Build the compressed archive rows and source cleanup identifiers.
-    pub fn build_write(
+    /// Builds compressed archive rows and deduplicated image keys on Tokio's blocking pool.
+    pub async fn prepare_write(
         comic_archive_snapshot: ComicArchiveSnapshot,
         archiver_id: String,
         archived_at: OffsetDateTime,
-    ) -> RegularResult<ComicArchiveWrite> {
-        //
-        let archived_comic_id = next_snowflake_id();
+    ) -> RegularResult<(ComicArchiveWrite, Vec<String>)> {
+        tokio::task::spawn_blocking(move || {
+            let image_keys = collect_image_keys(&comic_archive_snapshot);
 
-        let archived_chapter_ids = comic_archive_snapshot
-            .chapter_snapshots
-            .iter()
-            .map(|_| next_snowflake_id())
-            .collect::<Vec<_>>();
+            let comic_archive_write =
+                build_write(comic_archive_snapshot, archiver_id, archived_at)?;
 
-        let archived_translation_ids = comic_archive_snapshot
-            .chapter_snapshots
-            .iter()
-            .map(|_| next_snowflake_id())
-            .collect::<Vec<_>>();
+            Ok((comic_archive_write, image_keys))
+        })
+        .await
+        .map_err(|error| RegularError::Unrecoverable {
+            message: format!(
+                "[ComicArchiveComplex::prepare_write] blocking task failed: {}",
+                error
+            ),
+        })?
+    }
+}
 
-        let comic_payload =
-            build_comic_payload(&comic_archive_snapshot, &archived_chapter_ids);
+/// Builds compressed archive rows and source cleanup identifiers.
+fn build_write(
+    comic_archive_snapshot: ComicArchiveSnapshot,
+    archiver_id: String,
+    archived_at: OffsetDateTime,
+) -> RegularResult<ComicArchiveWrite> {
+    let archived_comic_id = next_snowflake_id();
 
-        let comic_record = ComicArchiveRecord {
-            id: archived_comic_id.clone(),
-            archived_bytes: compress_archive(&comic_payload)?,
+    let archived_chapter_ids = comic_archive_snapshot
+        .chapter_snapshots
+        .iter()
+        .map(|_| next_snowflake_id())
+        .collect::<Vec<_>>();
+
+    let archived_translation_ids = comic_archive_snapshot
+        .chapter_snapshots
+        .iter()
+        .map(|_| next_snowflake_id())
+        .collect::<Vec<_>>();
+
+    let comic_payload =
+        build_comic_payload(&comic_archive_snapshot, &archived_chapter_ids);
+
+    let comic_record = ComicArchiveRecord {
+        id: archived_comic_id.clone(),
+        archived_bytes: compress_archive(&comic_payload)?,
+        archiver_id: archiver_id.clone(),
+        created_at: archived_at,
+    };
+
+    let mut chapter_records = Vec::new();
+
+    let mut translation_records = Vec::new();
+
+    let mut source_chapter_ids = Vec::new();
+
+    let mut source_page_ids = Vec::new();
+
+    for (index, chapter_snapshot) in
+        comic_archive_snapshot.chapter_snapshots.iter().enumerate()
+    {
+        let archived_chapter_id = &archived_chapter_ids[index];
+
+        let archived_translation_id = &archived_translation_ids[index];
+
+        let chapter_payload =
+            build_chapter_payload(chapter_snapshot, &archived_comic_id)?;
+
+        let translation_payload =
+            build_translation_payload(chapter_snapshot, archived_chapter_id);
+
+        chapter_records.push(ComicArchiveRecord {
+            id: archived_chapter_id.clone(),
+            archived_bytes: compress_archive(&chapter_payload)?,
             archiver_id: archiver_id.clone(),
             created_at: archived_at,
-        };
+        });
 
-        let mut chapter_records = Vec::new();
+        translation_records.push(ComicArchiveRecord {
+            id: archived_translation_id.clone(),
+            archived_bytes: compress_archive(&translation_payload)?,
+            archiver_id: archiver_id.clone(),
+            created_at: archived_at,
+        });
 
-        let mut translation_records = Vec::new();
+        source_chapter_ids.push(chapter_snapshot.chapter_info.id.clone());
 
-        let mut source_chapter_ids = Vec::new();
-
-        let mut source_page_ids = Vec::new();
-
-        for (index, chapter_snapshot) in
-            comic_archive_snapshot.chapter_snapshots.iter().enumerate()
-        {
-            let archived_chapter_id = &archived_chapter_ids[index];
-
-            let archived_translation_id = &archived_translation_ids[index];
-
-            let chapter_payload =
-                build_chapter_payload(chapter_snapshot, &archived_comic_id)?;
-
-            let translation_payload = build_translation_payload(
-                chapter_snapshot,
-                archived_chapter_id,
-            );
-
-            chapter_records.push(ComicArchiveRecord {
-                id: archived_chapter_id.clone(),
-                archived_bytes: compress_archive(&chapter_payload)?,
-                archiver_id: archiver_id.clone(),
-                created_at: archived_at,
-            });
-
-            translation_records.push(ComicArchiveRecord {
-                id: archived_translation_id.clone(),
-                archived_bytes: compress_archive(&translation_payload)?,
-                archiver_id: archiver_id.clone(),
-                created_at: archived_at,
-            });
-
-            source_chapter_ids.push(chapter_snapshot.chapter_info.id.clone());
-
-            source_page_ids.extend(
-                chapter_snapshot
-                    .page_snapshots
-                    .iter()
-                    .map(|page_snapshot| page_snapshot.page_info.id.clone()),
-            );
-        }
-
-        Ok(ComicArchiveWrite {
-            comic_record,
-            chapter_records,
-            translation_records,
-            source_comic_id: comic_archive_snapshot.comic_info.id,
-            source_chapter_ids,
-            source_page_ids,
-        })
+        source_page_ids.extend(
+            chapter_snapshot
+                .page_snapshots
+                .iter()
+                .map(|page_snapshot| page_snapshot.page_info.id.clone()),
+        );
     }
+
+    Ok(ComicArchiveWrite {
+        comic_record,
+        chapter_records,
+        translation_records,
+        source_comic_id: comic_archive_snapshot.comic_info.id,
+        source_chapter_ids,
+        source_page_ids,
+    })
+}
+
+/// Collects every current comic or page object key, including reserved uploads.
+fn collect_image_keys(
+    comic_archive_snapshot: &ComicArchiveSnapshot,
+) -> Vec<String> {
+    let mut image_keys = Vec::new();
+
+    if let Some(cover_key) = &comic_archive_snapshot.comic_info.cover_key {
+        image_keys.push(cover_key.clone());
+    }
+
+    for chapter_snapshot in &comic_archive_snapshot.chapter_snapshots {
+        for page_snapshot in &chapter_snapshot.page_snapshots {
+            if let Some(image_key) = &page_snapshot.page_info.image_key {
+                image_keys.push(image_key.clone());
+            }
+        }
+    }
+
+    image_keys.sort();
+
+    image_keys.dedup();
+
+    image_keys
 }
 
 /// Permission gates for immutable comic archive operations.

@@ -15,9 +15,9 @@ use crate::result::RegularResult;
 use crate::value::chapter::{ChapterInclOpt, StageMask};
 use crate::value::incl::expand_incl_opts;
 
-impl ChapterRepo<MockContext> for Mock {}
-
 mod orchestra;
+
+impl ChapterRepo<MockContext> for Mock {}
 
 /// Looks up a chapter by id from the mock state, applying include options to resolve relations.
 pub(super) fn get_chapter_by_id(

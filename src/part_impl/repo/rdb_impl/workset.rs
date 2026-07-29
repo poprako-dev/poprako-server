@@ -4,7 +4,6 @@ use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use poprako_orchestra::{Run, Step};
 use time::OffsetDateTime;
-
 use tracing::instrument;
 
 use crate::model::workset::{WorksetEntry, WorksetInfo, WorksetInfoUpdate};

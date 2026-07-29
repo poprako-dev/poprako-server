@@ -31,7 +31,7 @@ connect:
 check-fix:
     cargo fmt \
         && cargo check \
-        && cargo clippy --fix --lib -p poprako-r --allow-dirty -- --no-deps
+        && cargo clippy --fix --lib -p poprako-server --allow-dirty -- --no-deps
 
 prod-build:
     scripts/docker-build-prod.sh

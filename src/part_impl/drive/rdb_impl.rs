@@ -3,7 +3,6 @@
 use diesel_async::{AnsiTransactionManager, TransactionManager};
 use poprako_orchestra::Nucl;
 use poprako_orchestra::nucl::Error as NuclError;
-
 use tracing::instrument;
 
 use crate::part_impl::shared::result::diesel;

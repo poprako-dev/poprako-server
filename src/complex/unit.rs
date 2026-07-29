@@ -23,6 +23,9 @@ use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
 use crate::util::next_snowflake_id;
 
+#[cfg(test)]
+mod tests;
+
 /// Domain opers for page units.
 pub struct UnitComplex;
 
@@ -394,6 +397,3 @@ fn unit_edit_permission_error() -> RegularError {
         message: trl("error-unit-edit-permission-required"),
     }
 }
-
-#[cfg(test)]
-mod tests;

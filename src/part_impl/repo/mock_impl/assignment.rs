@@ -1,11 +1,9 @@
 //! Mock implementation of assignment repository operations.
 
+use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
-use poprako_orchestra::{Run, Step};
-
 use self::incl::apply_assignment_incls;
-
 use crate::model::assignment::{
     AssignmentEntry, AssignmentInfo, AssignmentInfoListSpec,
 };

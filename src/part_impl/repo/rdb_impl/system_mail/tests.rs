@@ -2,7 +2,9 @@
 
 use super::*;
 
-use crate::model::system_mail::SystemMailEntry;
+use crate::model::system_mail::{
+    SystemMailEntry, SystemMailInfoListKind, SystemMailInfoListSpec,
+};
 use crate::part::repo::oper::system_mail::{
     ListSystemMailInfos, MarkSystemMailRead, SendSystemMail,
 };
@@ -35,12 +37,16 @@ async fn system_mail_roundtrip_reads_test_database_url() {
     .ok()
     .unwrap();
 
+    let unread_system_mail_list_spec = SystemMailInfoListSpec {
+        receiver_id: user_fixture.user_entry.id.clone(),
+        kind: SystemMailInfoListKind::Unread,
+        offset: 0,
+        limit: 10,
+    };
+
     let system_mail_infos = repo
         .run(&ListSystemMailInfos {
-            receiver_id: &user_fixture.user_entry.id,
-            read: Some(false),
-            offset: 0,
-            limit: 10,
+            spec: &unread_system_mail_list_spec,
         })
         .await
         .ok()
@@ -56,12 +62,16 @@ async fn system_mail_roundtrip_reads_test_database_url() {
     .ok()
     .unwrap();
 
+    let read_system_mail_list_spec = SystemMailInfoListSpec {
+        receiver_id: user_fixture.user_entry.id.clone(),
+        kind: SystemMailInfoListKind::Read,
+        offset: 0,
+        limit: 10,
+    };
+
     let read_system_mail_infos = repo
         .run(&ListSystemMailInfos {
-            receiver_id: &user_fixture.user_entry.id,
-            read: Some(true),
-            offset: 0,
-            limit: 10,
+            spec: &read_system_mail_list_spec,
         })
         .await
         .ok()

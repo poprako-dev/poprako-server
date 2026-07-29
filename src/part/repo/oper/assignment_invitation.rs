@@ -1,9 +1,8 @@
 use poprako_orchestra::Oper;
 
-use poprako_util::page::Page;
-
 use crate::model::assignment_invitation::{
     AssignmentInvitationEntry, AssignmentInvitationInfo,
+    AssignmentInvitationListSpec,
 };
 
 pub struct CreateAssignmentInvitation<'a> {
@@ -15,9 +14,7 @@ impl<'a> Oper for CreateAssignmentInvitation<'a> {
 }
 
 pub struct ListAssignmentInvitationInfos<'a> {
-    pub chapter_id: &'a str,
-    pub pending: Option<bool>,
-    pub page: Page,
+    pub spec: &'a AssignmentInvitationListSpec,
 }
 
 impl<'a> Oper for ListAssignmentInvitationInfos<'a> {
