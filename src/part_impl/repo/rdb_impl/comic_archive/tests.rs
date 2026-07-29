@@ -8,7 +8,7 @@ use poprako_orchestra::Nucl as _;
 use time::OffsetDateTime;
 
 use crate::complex::comic_archive::ComicArchiveComplex;
-use crate::model::comic_archive::{ArchivedComicPayload, ComicArchiveWrite};
+use crate::model::comic_archive::ComicArchiveWrite;
 use crate::part::repo::oper::comic_archive::{
     CommitComicArchive, GetComicArchiveSnapshotExcluded,
 };
@@ -19,11 +19,13 @@ use crate::part_impl::repo::rdb_impl::schema::{
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
 use crate::part_impl::shared::RdbCore;
 use crate::result::BaseError;
-use crate::util::decompress_archive;
 
 const PREFIX: &str = "rdb-test-comic-archive-domain-";
 
+/// Verifies comic archive roundtrip via testcontainers.
+/// Verifies comic archive roundtrip via testcontainers.
 pub async fn comic_archive_roundtrip_uses_testcontainer(shared: RdbCore) {
+    //
     test_shared::reset(&shared, PREFIX).await;
 
     let page_fixture = test_shared::seed_page(&shared, PREFIX).await;
@@ -88,18 +90,18 @@ pub async fn comic_archive_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let (
         archive_team_id,
-        comic_archived_bytes,
+        comic_archived_payload,
         comic_archiver_id,
         comic_created_at,
     ) = t_comic_archive::table
         .filter(t_comic_archive::f_id.eq(&comic_archive_write.record.id))
         .select((
             t_comic_archive::f_team_id,
-            t_comic_archive::f_archived_bytes,
+            t_comic_archive::f_archived_payload,
             t_comic_archive::f_archiver_id,
             t_comic_archive::f_created_at,
         ))
-        .first::<(String, Vec<u8>, String, OffsetDateTime)>(&mut conn)
+        .first::<(String, String, String, OffsetDateTime)>(&mut conn)
         .await
         .unwrap();
 
@@ -110,8 +112,8 @@ pub async fn comic_archive_roundtrip_uses_testcontainer(shared: RdbCore) {
         .await
         .unwrap();
 
-    let archived_comic_payload: ArchivedComicPayload =
-        decompress_archive(&comic_archived_bytes).unwrap();
+    let archived_comic_payload: serde_json::Value =
+        serde_json::from_str(&comic_archived_payload).unwrap();
 
     assert_eq!(archive_team_id, page_fixture.team_entry.id);
 
@@ -119,17 +121,23 @@ pub async fn comic_archive_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     assert_eq!(comic_created_at, comic_archive_write.record.created_at);
 
-    assert_eq!(archived_comic_payload.source_comic_id, source_comic_id);
+    assert_eq!(archived_comic_payload["source_comic_id"], source_comic_id);
 
     assert_eq!(
-        archived_comic_payload.chapters[0].source_chapter_id,
+        archived_comic_payload["chapters"][0]["source_chapter_id"],
         page_fixture.chapter_entry.id
     );
 
-    assert_eq!(archived_comic_payload.chapters[0].pages.len(), 1);
+    assert_eq!(
+        archived_comic_payload["chapters"][0]["pages"]
+            .as_array()
+            .unwrap()
+            .len(),
+        1
+    );
 
     assert_eq!(
-        archived_comic_payload.chapters[0].pages[0].source_page_id,
+        archived_comic_payload["chapters"][0]["pages"][0]["source_page_id"],
         page_fixture.page_entry.id
     );
 

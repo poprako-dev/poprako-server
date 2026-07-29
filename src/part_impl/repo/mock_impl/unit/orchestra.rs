@@ -7,7 +7,7 @@ use crate::part::repo::oper::unit::{
     SaveUnit, UpdateUnitIndexes,
 };
 use crate::part_impl::repo::mock_impl::unit::{
-    count_units, create_unit, list_all_units, list_units, save_unit,
+    count_units, create_unit, list_all_units, save_unit,
 };
 use crate::part_impl::repo::mock_impl::{Mock, MockContext, expected, now};
 use crate::result::{BaseError, BaseResult, accept};
@@ -19,16 +19,7 @@ impl<'a> Run<ListUnitInfos<'a>> for Mock {
         //
         let state = self.state.lock().unwrap();
 
-        match oper {
-            //
-            ListUnitInfos::Page { page_id, page } => {
-                accept(list_units(&state, page_id, *page))
-            }
-
-            ListUnitInfos::AllPage { page_id } => {
-                accept(list_all_units(&state, page_id))
-            }
-        }
+        accept(list_all_units(&state, oper.page_id))
     }
 }
 impl<'a> Step<ListUnitInfos<'a>, MockContext> for Mock {
@@ -39,16 +30,7 @@ impl<'a> Step<ListUnitInfos<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &ListUnitInfos<'a>,
     ) -> BaseResult<Vec<UnitInfo>> {
-        match oper {
-            //
-            ListUnitInfos::Page { page_id, page } => {
-                accept(list_units(&context.state, page_id, *page))
-            }
-
-            ListUnitInfos::AllPage { page_id } => {
-                accept(list_all_units(&context.state, page_id))
-            }
-        }
+        accept(list_all_units(&context.state, oper.page_id))
     }
 }
 impl<'a> Step<CreateUnit<'a>, MockContext> for Mock {

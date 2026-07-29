@@ -17,7 +17,6 @@ use crate::part::repo::oper::termbase::{
     ListTermbaseInfos, ListTermbaseInfosExcluded, TouchTermbase,
     UpdateTermbase, UpdateTermbaseTermCount,
 };
-use crate::part::repo::termbase::TermbaseRepo;
 use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::termbase::{
     TermbaseRow, TermbaseRowEntry,
@@ -29,8 +28,6 @@ use crate::result::{BaseError, BaseResult, accept};
 
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;
-
-impl TermbaseRepo<RdbContext> for RdbRepo {}
 
 fn escape_ilike_pattern(input: &str) -> String {
     input
@@ -237,129 +234,129 @@ async fn delete(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
     accept(())
 }
 
-impl<'a> Run<GetTermbaseInfo<'a>> for RdbRepo {
+impl Run<GetTermbaseInfo<'_>> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
-        oper: &GetTermbaseInfo<'a>,
+        oper: &GetTermbaseInfo<'_>,
     ) -> BaseResult<TermbaseInfo> {
         submit_query!(self.core, get_info, oper.id)
     }
 }
 
-impl<'a> Run<ListTermbaseInfos<'a>> for RdbRepo {
+impl Run<ListTermbaseInfos<'_>> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
-        oper: &ListTermbaseInfos<'a>,
+        oper: &ListTermbaseInfos<'_>,
     ) -> BaseResult<Vec<TermbaseInfo>> {
         submit_query!(self.core, list_infos, oper.spec)
     }
 }
 
-impl<'a> Step<CreateTermbase<'a>, RdbContext> for RdbRepo {
+impl Step<CreateTermbase<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &CreateTermbase<'a>,
+        oper: &CreateTermbase<'_>,
     ) -> BaseResult<TermbaseInfo> {
         create(context.conn(), oper.entry).await
     }
 }
 
-impl<'a> Step<GetTermbaseInfo<'a>, RdbContext> for RdbRepo {
+impl Step<GetTermbaseInfo<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &GetTermbaseInfo<'a>,
+        oper: &GetTermbaseInfo<'_>,
     ) -> BaseResult<TermbaseInfo> {
         get_info(context.conn(), oper.id).await
     }
 }
 
-impl<'a> Step<GetTermbaseInfoExcluded<'a>, RdbContext> for RdbRepo {
+impl Step<GetTermbaseInfoExcluded<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &GetTermbaseInfoExcluded<'a>,
+        oper: &GetTermbaseInfoExcluded<'_>,
     ) -> BaseResult<TermbaseInfo> {
         get_info_excluded(context.conn(), oper.id).await
     }
 }
 
-impl<'a> Step<ListTermbaseInfosExcluded<'a>, RdbContext> for RdbRepo {
+impl Step<ListTermbaseInfosExcluded<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &ListTermbaseInfosExcluded<'a>,
+        oper: &ListTermbaseInfosExcluded<'_>,
     ) -> BaseResult<Vec<TermbaseInfo>> {
         list_infos_excluded(context.conn(), oper).await
     }
 }
 
-impl<'a> Step<UpdateTermbase<'a>, RdbContext> for RdbRepo {
+impl Step<UpdateTermbase<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &UpdateTermbase<'a>,
+        oper: &UpdateTermbase<'_>,
     ) -> BaseResult<()> {
         update_info(context.conn(), oper.update).await
     }
 }
 
-impl<'a> Step<UpdateTermbaseTermCount<'a>, RdbContext> for RdbRepo {
+impl Step<UpdateTermbaseTermCount<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &UpdateTermbaseTermCount<'a>,
+        oper: &UpdateTermbaseTermCount<'_>,
     ) -> BaseResult<()> {
         update_term_count(context.conn(), oper.id, oper.delta).await
     }
 }
 
-impl<'a> Step<TouchTermbase<'a>, RdbContext> for RdbRepo {
+impl Step<TouchTermbase<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &TouchTermbase<'a>,
+        oper: &TouchTermbase<'_>,
     ) -> BaseResult<()> {
         touch(context.conn(), oper.id).await
     }
 }
 
-impl<'a> Step<DeleteTermbase<'a>, RdbContext> for RdbRepo {
+impl Step<DeleteTermbase<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &DeleteTermbase<'a>,
+        oper: &DeleteTermbase<'_>,
     ) -> BaseResult<()> {
         delete(context.conn(), oper.id).await
     }

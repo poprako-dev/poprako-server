@@ -11,13 +11,10 @@ use crate::part::repo::oper::user::{
     CreateUser, DeleteUser, FindUserInfo, GetUserCredential, GetUserInfo,
     GetUserInfoExcluded, ReserveUserAvatar, UpdateUser,
 };
-use crate::part::repo::user::UserRepo;
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
 use crate::result::{BaseError, BaseResult, accept};
-
-impl UserRepo<MockContext> for Mock {}
 
 fn create_user(
     state: &mut MockState,

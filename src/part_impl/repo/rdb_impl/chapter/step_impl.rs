@@ -282,6 +282,7 @@ pub async fn start_stage(
         Stage::Translate => diesel::update(
             t_chapter
                 .filter(f_id.eq(id))
+                .filter(f_published_at.is_null())
                 .filter(f_translating_at.is_null())
                 .filter(f_translated_at.is_null()),
         )
@@ -293,6 +294,7 @@ pub async fn start_stage(
         Stage::Proofread => diesel::update(
             t_chapter
                 .filter(f_id.eq(id))
+                .filter(f_published_at.is_null())
                 .filter(f_proofreading_at.is_null())
                 .filter(f_proofread_at.is_null()),
         )
@@ -304,6 +306,7 @@ pub async fn start_stage(
         Stage::TypesetRedraw => diesel::update(
             t_chapter
                 .filter(f_id.eq(id))
+                .filter(f_published_at.is_null())
                 .filter(f_typesetting_at.is_null())
                 .filter(f_typeset_at.is_null()),
         )
@@ -364,6 +367,24 @@ pub async fn complete_raw_provide(
         .map_err(diesel)?;
 
     accept(uploaded.unwrap_or(true))
+}
+
+/// Clears raw-provision completion while preserving every other stage.
+#[instrument(level = "info", err(Debug), skip_all)]
+pub async fn reset_raw_provide(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
+    //
+    let now = OffsetDateTime::now_utc();
+
+    diesel::update(t_chapter.filter(f_id.eq(id)))
+        .set((
+            f_uploaded_at.eq(None::<OffsetDateTime>),
+            f_updated_at.eq(now),
+        ))
+        .execute(conn)
+        .await
+        .map_err(diesel)?;
+
+    accept(())
 }
 
 /// Sets the page and unit counters on a chapter row.

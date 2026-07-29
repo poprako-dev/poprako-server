@@ -6,7 +6,6 @@ use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
 use crate::model::comment::{CommentEntry, CommentInfo, CommentListSpec};
-use crate::part::repo::comment::CommentRepo;
 use crate::part::repo::oper::comment::{CreateComment, ListCommentInfos};
 use crate::part_impl::repo::rdb_impl::entity::comment::{
     CommentRow, CommentRowEntry,
@@ -19,8 +18,6 @@ use crate::result::{BaseError, BaseResult, accept};
 
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;
-
-impl CommentRepo<RdbContext> for RdbRepo {}
 
 /// Query comment infos matching the given list spec, with optional includes.
 #[instrument(level = "info", err(Debug), skip_all)]

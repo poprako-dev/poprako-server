@@ -10,6 +10,7 @@ use tracing::instrument;
 use poprako_util::i18n::trl;
 
 use crate::complex::assignment::AssignmentComplex;
+use crate::complex::chapter::ChapterComplex;
 use crate::data::assignment::AssignmentInfoVal;
 use crate::data::assignment_invitation::{
     AssignmentInvitationInfoVal, CreateAssignmentInvitationParams,
@@ -39,7 +40,7 @@ use crate::part::repo::oper::assignment_invitation::{
     GetAssignmentInvitationInfo, GetAssignmentInvitationInfoExcluded,
     ListAssignmentInvitationInfos, MarkAssignmentInvitationUsed,
 };
-use crate::part::repo::oper::chapter::GetChapterInfo;
+use crate::part::repo::oper::chapter::GetChapterInfoExcluded;
 use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::user::{FindUserInfo, GetUserInfoExcluded};
@@ -111,6 +112,7 @@ where
     C: Send,
     R: AssignmentInvitationRepo<C>
         + AssignmentRepo<C>
+        + ChapterRepo<C>
         + UserRepo<C>
         + Send
         + Sync,
@@ -123,6 +125,17 @@ where
     let (assignment_invitation_id, code) = nucl
         .coord(async move |context| {
             //
+            let chapter_info = repo
+                .step(
+                    context,
+                    &GetChapterInfoExcluded {
+                        id: &params.chapter_id,
+                        incls: &[],
+                    },
+                )
+                .await?;
+
+            ChapterComplex::ensure_user_write_allowed(&chapter_info)?;
 
             let invitee_user_info = repo
                 .step(
@@ -293,12 +306,14 @@ where
             let chapter_info = repo
                 .step(
                     context,
-                    &GetChapterInfo {
+                    &GetChapterInfoExcluded {
                         id: &assignment_invitation_info.chapter_id,
                         incls: &[],
                     },
                 )
                 .await?;
+
+            ChapterComplex::ensure_user_write_allowed(&chapter_info)?;
 
             let comic_info = repo
                 .step(

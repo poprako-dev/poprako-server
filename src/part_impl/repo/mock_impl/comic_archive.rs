@@ -1,22 +1,47 @@
 //! In-memory comic archive repository operations for use-case tests.
 
-use poprako_orchestra::Step;
+use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
 use crate::model::comic_archive::{
     ComicArchiveChapterSnapshot, ComicArchivePageSnapshot,
     ComicArchiveSnapshot, ComicArchiveWrite,
 };
-use crate::part::repo::comic_archive::ComicArchiveRepo;
 use crate::part::repo::oper::comic_archive::{
     CommitComicArchive, GetComicArchiveSnapshotExcluded,
+    ListComicArchivePayloads,
 };
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, expected, unrecoverable,
 };
 use crate::result::{BaseError, BaseResult, accept};
 
-impl ComicArchiveRepo<MockContext> for Mock {}
+impl Run<ListComicArchivePayloads<'_>> for Mock {
+    type Error = BaseError;
+
+    #[instrument(level = "info", err(Debug), skip_all)]
+    async fn run(
+        &self,
+        oper: &ListComicArchivePayloads<'_>,
+    ) -> BaseResult<Vec<(time::OffsetDateTime, String)>> {
+        let state = self.state.lock().unwrap();
+
+        let payloads = state
+            .comic_archives
+            .iter()
+            .filter(|record| record.team_id == oper.team_id)
+            .filter(|record| {
+                oper.months.iter().any(|month| {
+                    record.created_at >= month.start
+                        && record.created_at < month.end
+                })
+            })
+            .map(|record| (record.created_at, record.archived_payload.clone()))
+            .collect();
+
+        accept(payloads)
+    }
+}
 
 /// Clone a fully assembled archive snapshot from locked mock state.
 fn get_snapshot_excluded(

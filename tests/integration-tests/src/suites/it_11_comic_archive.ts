@@ -7,17 +7,18 @@
 // Postconditions:
 //   - An independent archive workset remains active for final cleanup.
 //   - The archived comic subtree is absent from active tables and represented
-//     by one row in each archive table.
+//     by one immutable JSON-text archive row.
 //
 // Covers archive creation, permission rejection (non-admin member),
-// repeated-archive failure, child-resource inaccessibility, audit fields,
-// outbox delete records, active-data cleanup, and stable workset comic counts.
+// repeated-archive failure, retained month export, child-resource
+// inaccessibility, audit fields, outbox delete records, active-data cleanup,
+// and stable workset comic counts.
 
 import assert from "node:assert/strict";
 
 import { grantChapterWorkerRoles, withDatabaseClient } from "../db/seed.js";
-import { expectError } from "../http/assertions.js";
-import type { ErrorBody } from "../http/apiClient.js";
+import { expectError, expectSuccessData } from "../http/assertions.js";
+import type { ErrorBody, SuccessBody } from "../http/apiClient.js";
 import {
     archiveComic,
     createChapter,
@@ -25,6 +26,7 @@ import {
     createWorkset,
     getWorkset,
     listWorksetComics,
+    newPageManifest,
     reserveChapterPages,
     reserveComicCover,
 } from "../http/fixtures.js";
@@ -63,8 +65,8 @@ export async function runIt11Module(ctx: RunCtx): Promise<void> {
     await grantChapterWorkerRoles(chapter2.id, ctx.ids.defaultUserId);
 
     // Reserve one page in each chapter.
-    await reserveChapterPages(ctx.sadmin, comic.chapter_id, 1, "png");
-    await reserveChapterPages(ctx.sadmin, chapter2.id, 1, "png");
+    await reserveChapterPages(ctx.sadmin, comic.chapter_id, newPageManifest(1, "png"));
+    await reserveChapterPages(ctx.sadmin, chapter2.id, newPageManifest(1, "png"));
 
     await reserveComicCover(ctx.sadmin, comic.id, "png");
 
@@ -110,6 +112,23 @@ export async function runIt11Module(ctx: RunCtx): Promise<void> {
 
     assert.notEqual(archive_comic_val.archived_comic_id, comic.id);
 
+    // ---------- export selected retained month ----------
+
+    const archive_month = new Date().toISOString().slice(0, 7);
+    const export_response = await ctx.sadmin.get<
+        SuccessBody<Record<string, string[]>>
+    >(
+        `/api/v1/teams/${ctx.ids.defaultTeamId}/comic-archives/export?month=${archive_month}`,
+    );
+    const exported_months = expectSuccessData<Record<string, string[]>>(
+        export_response,
+        200,
+    );
+    const exported_comics = exported_months[archive_month]!;
+
+    assert.equal(exported_comics.length, 1);
+    assert.equal(JSON.parse(exported_comics[0]!).source_comic_id, comic.id);
+
     // ---------- active-comic and its chapters are inaccessible ----------
 
     expectError(await ctx.sadmin.get<ErrorBody>(`/api/v1/comics/${comic.id}`), 422, 2);
@@ -153,16 +172,10 @@ export async function runIt11Module(ctx: RunCtx): Promise<void> {
     // ---------- archive audit rows and outbox ----------
 
     const archive_rows = await withDatabaseClient(async (client) => {
-        const [comic_rows, chapter_rows, translation_rows, delete_rows] = await Promise.all([
+        const [comic_rows, delete_rows] = await Promise.all([
             client.query<ArchiveAuditRow>(
-                `SELECT "f_archiver_id", "f_created_at" FROM "t_archived_comic" WHERE "f_id" = $1`,
+                `SELECT "f_archiver_id", "f_created_at" FROM "t_comic_archive" WHERE "f_id" = $1`,
                 [archive_comic_val.archived_comic_id],
-            ),
-            client.query<ArchiveAuditRow>(
-                `SELECT "f_archiver_id", "f_created_at" FROM "t_archived_chapter"`,
-            ),
-            client.query<ArchiveAuditRow>(
-                `SELECT "f_archiver_id", "f_created_at" FROM "t_archived_translation"`,
             ),
             client.query<{ object_key: string }>(
                 `
@@ -175,33 +188,12 @@ export async function runIt11Module(ctx: RunCtx): Promise<void> {
             ),
         ]);
 
-        return { comic_rows, chapter_rows, translation_rows, delete_rows };
+        return { comic_rows, delete_rows };
     });
 
     assert.equal(archive_rows.comic_rows.rows.length, 1);
-
-    // Two chapters → two archive rows each in chapter and translation tables.
-    assert.equal(archive_rows.chapter_rows.rows.length, 2);
-    assert.equal(archive_rows.translation_rows.rows.length, 2);
-
     assert.equal(archive_rows.comic_rows.rows[0]!.f_archiver_id, ctx.ids.defaultUserId);
-    assert.equal(archive_rows.chapter_rows.rows[0]!.f_archiver_id, ctx.ids.defaultUserId);
-    assert.equal(archive_rows.translation_rows.rows[0]!.f_archiver_id, ctx.ids.defaultUserId);
-
-    // All archive rows share the same created_at timestamp.
-    for (const row of archive_rows.chapter_rows.rows) {
-        assert.equal(
-            archive_rows.comic_rows.rows[0]!.f_created_at.getTime(),
-            row.f_created_at.getTime(),
-        );
-    }
-
-    for (const row of archive_rows.translation_rows.rows) {
-        assert.equal(
-            archive_rows.comic_rows.rows[0]!.f_created_at.getTime(),
-            row.f_created_at.getTime(),
-        );
-    }
+    assert.ok(Number.isFinite(archive_rows.comic_rows.rows[0]!.f_created_at.getTime()));
 
     // Image delete keys in outbox cover both the reserved cover and all page images.
     const delete_keys = archive_rows.delete_rows.rows
@@ -214,7 +206,7 @@ export async function runIt11Module(ctx: RunCtx): Promise<void> {
     // All reserved page images across both chapters must have delete entries.
     // Two pages total → at least 2 page-key delete entries.
     const page_delete_keys = delete_keys.filter(
-        (object_key) => object_key.startsWith("chapter_"),
+        (object_key) => object_key.startsWith("page/chapter_"),
     );
 
     assert.ok(page_delete_keys.length >= 2, "all reserved page images must have delete entries");

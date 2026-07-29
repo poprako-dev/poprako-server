@@ -1,7 +1,7 @@
 //! Member handlers: create, join, list, role update, and deletion.
 
 use axum::Json;
-use axum::extract::{Extension, Path, Query, State};
+use axum::extract::{Extension, Path, State};
 use axum::http::StatusCode;
 use serde::Deserialize;
 use tracing::instrument;
@@ -22,6 +22,7 @@ use crate::data::member::{
 use crate::model::user::UserToken;
 use crate::usecase;
 use crate::value::member::MemberInclOpt;
+use crate::value::query::GroupedQuery;
 
 /// Query for the current-user memberships list endpoint (`/members/me`).
 ///
@@ -88,7 +89,7 @@ pub async fn create(
 pub async fn list_infos(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    Query(params): Query<ListMemberInfosParams>,
+    GroupedQuery(params): GroupedQuery<ListMemberInfosParams>,
 ) -> HttpResult<Vec<MemberInfoVal>> {
     usecase::member::list_infos(
         harn.repo(),
@@ -115,7 +116,7 @@ pub async fn list_infos(
 pub async fn list_my_infos(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    Query(query): Query<MemberMeListQuery>,
+    GroupedQuery(query): GroupedQuery<MemberMeListQuery>,
 ) -> HttpResult<Vec<MemberInfoVal>> {
     //
     let params = ListMemberInfosParams {

@@ -16,7 +16,10 @@ use crate::value::announcement::AnnouncementInclOpt;
 
 const PREFIX: &str = "rdb-test-announcement-domain-";
 
+/// Verifies announcement roundtrip via testcontainers.
+/// Verifies announcement roundtrip via testcontainers.
 pub async fn announcement_roundtrip_uses_testcontainer(shared: RdbCore) {
+    //
     test_shared::reset(&shared, PREFIX).await;
 
     let team_fixture = test_shared::seed_user_and_team(&shared, PREFIX).await;

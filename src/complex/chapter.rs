@@ -73,6 +73,24 @@ impl ChapterComplex {
 
         accept(chapter_stage_update)
     }
+
+    /// Rejects user mutations once a chapter has been published.
+    pub fn ensure_user_write_allowed(
+        chapter_info: &ChapterInfo,
+    ) -> BaseResult<()> {
+        //
+        if chapter_info
+            .stages
+            .has_phase(Stage::Publish, StagePhase::Completed)
+        {
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: trl("error-chapter-published-frozen"),
+            });
+        }
+
+        accept(())
+    }
 }
 
 /// Generate a human-readable default subtitle for a chapter, e.g. `"Ch. 1"`.

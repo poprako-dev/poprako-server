@@ -13,7 +13,10 @@ use crate::part_impl::shared::RdbCore;
 
 const PREFIX: &str = "rdb-test-system-mail-domain-";
 
+/// Verifies system mail roundtrip via testcontainers.
+/// Verifies system mail roundtrip via testcontainers.
 pub async fn system_mail_roundtrip_uses_testcontainer(shared: RdbCore) {
+    //
     test_shared::reset(&shared, PREFIX).await;
 
     let user_fixture = test_shared::seed_user(&shared, PREFIX).await;

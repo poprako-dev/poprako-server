@@ -10,7 +10,10 @@ use crate::part_impl::shared::RdbCore;
 
 const PREFIX: &str = "rdb-test-user-domain-";
 
+/// Verifies user roundtrip via testcontainers.
+/// Verifies user roundtrip via testcontainers.
 pub async fn user_roundtrip_uses_testcontainer(shared: RdbCore) {
+    //
     test_shared::reset(&shared, PREFIX).await;
 
     let user_fixture = test_shared::seed_user(&shared, PREFIX).await;

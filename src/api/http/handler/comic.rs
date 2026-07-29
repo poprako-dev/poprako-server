@@ -1,7 +1,7 @@
 //! Comic handlers: CRUD, cover upload flow, and immutable archiving.
 
 use axum::Json;
-use axum::extract::{Extension, Path, Query, State};
+use axum::extract::{Extension, Path, State};
 use axum::http::StatusCode;
 use serde::Deserialize;
 use tracing::instrument;
@@ -21,10 +21,41 @@ use crate::data::comic::{
     ReserveComicCoverPayload, UpdateComicInfoParams,
 };
 use crate::data::comic_archive::ArchiveComicPayload;
+use crate::data::comic_archive::{
+    ExportComicArchivesParams, ExportComicArchivesPayload,
+};
 use crate::data::comic_list::ListComicInfosPayload;
 use crate::model::user::UserToken;
 use crate::usecase;
 use crate::value::comic::{ComicInclOpt, ComicWithOpt};
+use crate::value::query::GroupedQuery;
+
+/// `GET /api/v1/teams/{team_id}/comic-archives/export` — export retained archive month slots.
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
+    get,
+    path = "/api/v1/teams/{team_id}/comic-archives/export",
+    tag = "comics",
+    params(
+        ("team_id" = String, Path, description = "Team ID"),
+        ExportComicArchivesParams,
+    ),
+    responses(
+        (status = 200, description = "Archive JSON strings grouped by UTC month", body = HttpBody<ExportComicArchivesPayload>),
+        (status = 403, description = "No permission to export this team's archives"),
+        (status = 422, description = "Invalid or expired month selection"),
+    ),
+))]
+#[instrument(level = "info", err(Debug), skip_all)]
+pub async fn export_archives(
+    State(harn): State<AppHarn>,
+    Path(team_id): Path<String>,
+    Extension(user_token): Extension<UserToken>,
+    GroupedQuery(params): GroupedQuery<ExportComicArchivesParams>,
+) -> HttpResult<ExportComicArchivesPayload> {
+    usecase::comic_archive::export(harn.repo(), user_token, team_id, params)
+        .await?
+        .accept(StatusCode::OK)
+}
 
 /// Query for listing comics within a workset.
 ///
@@ -110,7 +141,7 @@ pub async fn list_infos(
     State(harn): State<AppHarn>,
     Path(workset_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Query(query): Query<ComicListQuery>,
+    GroupedQuery(query): GroupedQuery<ComicListQuery>,
 ) -> HttpResult<ListComicInfosPayload> {
     //
     let params = ListComicInfosParams {

@@ -1,7 +1,7 @@
 //! Announcement handlers: create and list.
 
 use axum::Json;
-use axum::extract::{Extension, Path, Query, State};
+use axum::extract::{Extension, Path, State};
 use axum::http::StatusCode;
 use serde::Deserialize;
 use tracing::instrument;
@@ -19,6 +19,7 @@ use crate::data::announcement::{
 use crate::model::user::UserToken;
 use crate::usecase;
 use crate::value::announcement::AnnouncementInclOpt;
+use crate::value::query::GroupedQuery;
 
 /// Query for listing announcements within a team.
 ///
@@ -84,7 +85,7 @@ pub async fn list_infos(
     State(harn): State<AppHarn>,
     Path(team_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Query(query): Query<AnnouncementListQuery>,
+    GroupedQuery(query): GroupedQuery<AnnouncementListQuery>,
 ) -> HttpResult<Vec<AnnouncementInfoVal>> {
     //
     let params = ListAnnouncementInfosParams {

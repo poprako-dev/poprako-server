@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 
 import { testEnv } from "../config/env.js";
 import {
@@ -24,9 +25,12 @@ import type {
     LoginVal,
     MemberInfoVal,
     MemberInvitationInfoVal,
+    ImageExtension,
     PageInfoVal,
+    PageImageInput,
     PoprakoExportVal,
     ReserveChapterPagesVal,
+    ReservedPageVal,
     ReserveVersionVal,
     SavePageUnitsVal,
     SystemMailInfoVal,
@@ -546,23 +550,52 @@ export async function revertStage(
 
 // ---------- page ----------
 
+const TEST_PAGE_BYTES = new TextEncoder().encode("poprako-page-integration");
+
+const TEST_PAGE_HASH = createHash("sha256").update(TEST_PAGE_BYTES).digest("base64");
+
+export function newPageManifest(pageCount: number, extension: ImageExtension): PageImageInput[] {
+    return Array.from({ length: pageCount }, () => ({
+        page_id: null,
+        image_hash: TEST_PAGE_HASH,
+        byte_length: TEST_PAGE_BYTES.byteLength,
+        extension,
+    }));
+}
+
+async function uploadReservedPages(reservedPages: ReservedPageVal[]): Promise<void> {
+    for (const reservedPage of reservedPages) {
+        if (!reservedPage.upload) continue;
+
+        const response = await fetch(reservedPage.upload.put_url, {
+            method: "PUT",
+            headers: reservedPage.upload.headers,
+            body: TEST_PAGE_BYTES,
+        });
+
+        assert.ok(response.ok, `page upload failed with status ${response.status}`);
+    }
+}
+
 export async function reserveChapterPages(
     api: ApiClient,
     chapterId: string,
-    pageCount: number,
-    fileExt: string,
+    pages: PageImageInput[],
 ): Promise<ReserveChapterPagesVal> {
-    return expectSuccessData(
+    const reserved = expectSuccessData(
         await api.post<SuccessBody<ReserveChapterPagesVal>>(
             `/api/v1/chapters/${chapterId}/pages/reserve`,
             {
                 chapter_id: chapterId,
-                file_ext: fileExt,
-                page_count: pageCount,
+                pages,
             },
         ),
         200,
     );
+
+    await uploadReservedPages(reserved.pages);
+
+    return reserved;
 }
 
 export async function listChapterPages(api: ApiClient, chapterId: string): Promise<PageInfoVal[]> {
@@ -575,14 +608,32 @@ export async function listChapterPages(api: ApiClient, chapterId: string): Promi
 export async function reservePageImage(
     api: ApiClient,
     pageId: string,
-    fileExt: string,
-): Promise<ReserveVersionVal> {
-    return expectSuccessData(
-        await api.post<SuccessBody<ReserveVersionVal>>(`/api/v1/pages/${pageId}/image/reserve`, {
-            file_ext: fileExt,
+    extension: ImageExtension,
+): Promise<ReservedPageVal> {
+    const imageBytes = new TextEncoder().encode(`poprako-page-replacement-${pageId}-${extension}`);
+
+    const imageHash = createHash("sha256").update(imageBytes).digest("base64");
+
+    const reserved = expectSuccessData(
+        await api.post<SuccessBody<ReservedPageVal>>(`/api/v1/pages/${pageId}/image/reserve`, {
+            image_hash: imageHash,
+            byte_length: imageBytes.byteLength,
+            extension,
         }),
         200,
     );
+
+    if (reserved.upload) {
+        const response = await fetch(reserved.upload.put_url, {
+            method: "PUT",
+            headers: reserved.upload.headers,
+            body: imageBytes,
+        });
+
+        assert.ok(response.ok, `page upload failed with status ${response.status}`);
+    }
+
+    return reserved;
 }
 
 export async function markPageImageUploaded(

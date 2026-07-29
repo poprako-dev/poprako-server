@@ -8,7 +8,7 @@ pub struct CreateTeam<'a> {
     pub entry: &'a TeamEntry,
 }
 
-impl<'a> Oper for CreateTeam<'a> {
+impl Oper for CreateTeam<'_> {
     type Output = TeamInfo;
 }
 
@@ -16,7 +16,7 @@ pub enum GetTeamInfo<'a> {
     Id { id: &'a str },
 }
 
-impl<'a> Oper for GetTeamInfo<'a> {
+impl Oper for GetTeamInfo<'_> {
     type Output = TeamInfo;
 }
 
@@ -24,7 +24,7 @@ pub struct ListTeamInfos<'a> {
     pub spec: &'a TeamInfoListSpec,
 }
 
-impl<'a> Oper for ListTeamInfos<'a> {
+impl Oper for ListTeamInfos<'_> {
     type Output = Vec<TeamInfo>;
 }
 
@@ -41,7 +41,7 @@ pub enum UpdateTeam<'a> {
     },
 }
 
-impl<'a> Oper for UpdateTeam<'a> {
+impl Oper for UpdateTeam<'_> {
     type Output = ();
 }
 
@@ -50,7 +50,7 @@ pub struct ReserveTeamAvatar<'a> {
     pub file_ext: &'a str,
 }
 
-impl<'a> Oper for ReserveTeamAvatar<'a> {
+impl Oper for ReserveTeamAvatar<'_> {
     type Output = TeamAvatarReservation;
 }
 
@@ -58,7 +58,7 @@ pub enum GetTeamInfoExcluded<'a> {
     Id { id: &'a str },
 }
 
-impl<'a> Oper for GetTeamInfoExcluded<'a> {
+impl Oper for GetTeamInfoExcluded<'_> {
     type Output = TeamInfo;
 }
 
@@ -66,7 +66,7 @@ pub struct DeleteTeam<'a> {
     pub id: &'a str,
 }
 
-impl<'a> Oper for DeleteTeam<'a> {
+impl Oper for DeleteTeam<'_> {
     type Output = ();
 }
 
@@ -74,6 +74,6 @@ pub struct AllocTeamWorksetIndex<'a> {
     pub id: &'a str,
 }
 
-impl<'a> Oper for AllocTeamWorksetIndex<'a> {
+impl Oper for AllocTeamWorksetIndex<'_> {
     type Output = i32;
 }

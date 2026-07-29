@@ -14,6 +14,7 @@ use crate::model::user::UserToken;
 use crate::model::workset::WorksetInfo;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::value::chapter::{Stage, StageMask, StagePhase};
+use crate::value::image::{ImageExtension, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
 fn token(user_id: &str) -> UserToken {
@@ -122,6 +123,9 @@ fn page(
         image_key: image_key.map(Into::into),
         image_uploaded,
         image_version: 1,
+        image_hash: ImageHash::new([0u8; 32]),
+        image_byte_length: 4096,
+        image_extension: ImageExtension::Png,
         total_unit_count: 1,
         translated_unit_count: 1,
         proofread_unit_count: 0,

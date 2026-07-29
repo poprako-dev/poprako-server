@@ -12,7 +12,7 @@ use crate::result::BaseResult;
 #[cfg(all(test, feature = "rdb", feature = "prom_impl"))]
 mod tests;
 
-/// Completes raw provision or retries while chapter uploads are incomplete.
+/// Attempts raw-provision completion once and completes even while uploads remain pending.
 #[instrument(level = "info", skip_all)]
 pub async fn handle<R>(repo: &R, task: &CheckUploadFinish) -> TaskFlow
 where
@@ -32,9 +32,7 @@ fn resolve_task_flow(result: BaseResult<bool>) -> TaskFlow {
         //
         Ok(true) => TaskFlow::Complete,
 
-        Ok(false) => {
-            TaskFlow::Retry("chapter page uploads are incomplete".into())
-        }
+        Ok(false) => TaskFlow::Complete,
 
         Err(error) => TaskFlow::Retry(format!("{:?}", error)),
     }

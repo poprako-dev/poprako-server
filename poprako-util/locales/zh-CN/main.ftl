@@ -76,6 +76,15 @@ error-comic-not-found = 该漫画不存在
 error-avatar-version-mismatch = 头像图片版本不匹配
 error-cover-version-mismatch = 封面图片版本不匹配
 error-chapter-pages-already-reserved = 该章节已预留页面
+error-duplicate-page-id = 页面清单包含重复的显式页面 ID
+error-invalid-page-image-identity = 页面图片元数据与内容哈希冲突
+error-invalid-image-byte-length = 页面图片大小必须为 1 字节至 20 MiB
+error-page-image-object-invalid = 页面图片对象不存在或内容身份不匹配
+error-chapter-published-frozen = 已发布章节不可修改
+error-invalid-comic-archive-month-count = 请选择 1 至 12 个归档月份
+error-invalid-comic-archive-month = 归档月份必须使用 YYYY-MM 格式
+error-duplicate-comic-archive-month = 归档月份不可重复
+error-comic-archive-month-not-retained = 归档月份不在保留期限内
 
 chapter-default-subtitle = 第{ $number }话
 
@@ -90,3 +99,5 @@ mail-workflow-review = 监修
 mail-workflow-publish = 发布
 mail-chapter-progress-title = 你参加的漫画『{ $comic_title }』#{ $chapter_index } 章节有进度更新
 mail-chapter-progress-body = 「{ $team_name }」-「{ $workset_name }」漫画 #{ $comic_index }『{ $comic_title }』章节 #{ $chapter_index }「{ $workflow }」已完成。
+mail-comic-archive-purged-title = 漫画归档已到期清理
+mail-comic-archive-purged-body = 系统已按保留策略清理漫画归档

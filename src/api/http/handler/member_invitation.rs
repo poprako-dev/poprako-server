@@ -1,7 +1,7 @@
 //! Member invitation handlers: create, list, role update, and deletion.
 
 use axum::Json;
-use axum::extract::{Extension, Path, Query, State};
+use axum::extract::{Extension, Path, State};
 use axum::http::StatusCode;
 use serde::Deserialize;
 use tracing::instrument;
@@ -23,6 +23,7 @@ use crate::data::member_invitation::{
 use crate::model::user::UserToken;
 use crate::usecase;
 use crate::value::member_invitation::MemberInvitationInclOpt;
+use crate::value::query::GroupedQuery;
 
 /// Query for listing invitations within a team.
 ///
@@ -98,7 +99,7 @@ pub async fn list_infos(
     State(harn): State<AppHarn>,
     Path(team_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Query(query): Query<MemberInvitationListQuery>,
+    GroupedQuery(query): GroupedQuery<MemberInvitationListQuery>,
 ) -> HttpResult<Vec<MemberInvitationInfoVal>> {
     //
     let params = ListMemberInvitationInfosParams {

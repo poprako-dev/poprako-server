@@ -1,9 +1,7 @@
-//! Includes module declarations and re-exports from the framework sub-module.
-//!
-//! Concrete per-entity include implementations live in child modules.
-//! Framework types (traits, generic engine, `*ByIds` loaders) live in
-//! [`framework`].
+//! Includes module declarations and private declarative macros.
 
+#[macro_use]
+mod macros;
 mod framework;
 
 /// Include logic for announcements.
@@ -20,3 +18,6 @@ pub mod comment;
 pub mod member;
 /// Include logic for member invitations.
 pub mod member_invitation;
+
+#[cfg(test)]
+mod tests;

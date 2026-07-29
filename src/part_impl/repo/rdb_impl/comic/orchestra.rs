@@ -17,41 +17,41 @@ use crate::part_impl::repo::rdb_impl::comic::step_impl::{
 use crate::part_impl::shared::RdbContext;
 use crate::result::{BaseError, BaseResult};
 
-impl<'a, 'b> Run<GetComicInfo<'a, 'b>> for RdbRepo {
+impl Run<GetComicInfo<'_, '_>> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn run(&self, oper: &GetComicInfo<'a, 'b>) -> BaseResult<ComicInfo> {
+    async fn run(&self, oper: &GetComicInfo<'_, '_>) -> BaseResult<ComicInfo> {
         submit_query!(self.core, get_info_by_id, oper.id, oper.incls)
     }
 }
 
-impl<'a> Run<ListComicInfos<'a>> for RdbRepo {
+impl Run<ListComicInfos<'_>> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
-        oper: &ListComicInfos<'a>,
+        oper: &ListComicInfos<'_>,
     ) -> BaseResult<Vec<ComicInfo>> {
         submit_query!(self.core, list_infos, oper.spec)
     }
 }
 
-impl<'a> Run<UpdateComic<'a>> for RdbRepo {
+impl Run<UpdateComic<'_>> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn run(&self, oper: &UpdateComic<'a>) -> BaseResult<()> {
+    async fn run(&self, oper: &UpdateComic<'_>) -> BaseResult<()> {
         submit_query!(self.core, update_info, oper.update)
     }
 }
 
-impl<'a> Run<MarkComicCoverUploaded<'a>> for RdbRepo {
+impl Run<MarkComicCoverUploaded<'_>> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn run(&self, oper: &MarkComicCoverUploaded<'a>) -> BaseResult<()> {
+    async fn run(&self, oper: &MarkComicCoverUploaded<'_>) -> BaseResult<()> {
         submit_query!(
             self.core,
             mark_cover_uploaded,
@@ -62,92 +62,92 @@ impl<'a> Run<MarkComicCoverUploaded<'a>> for RdbRepo {
     }
 }
 
-impl<'a, 'b> Step<GetComicInfo<'a, 'b>, RdbContext> for RdbRepo {
+impl Step<GetComicInfo<'_, '_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &GetComicInfo<'a, 'b>,
+        oper: &GetComicInfo<'_, '_>,
     ) -> BaseResult<ComicInfo> {
         get_info_by_id(context.conn(), oper.id, oper.incls).await
     }
 }
 
-impl<'a> Step<ListComicInfos<'a>, RdbContext> for RdbRepo {
+impl Step<ListComicInfos<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &ListComicInfos<'a>,
+        oper: &ListComicInfos<'_>,
     ) -> BaseResult<Vec<ComicInfo>> {
         list_infos(context.conn(), oper.spec).await
     }
 }
 
-impl<'a, 'b> Step<GetComicInfoExcluded<'a, 'b>, RdbContext> for RdbRepo {
+impl Step<GetComicInfoExcluded<'_, '_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &GetComicInfoExcluded<'a, 'b>,
+        oper: &GetComicInfoExcluded<'_, '_>,
     ) -> BaseResult<ComicInfo> {
         get_info_excluded(context.conn(), oper.id, oper.incls).await
     }
 }
 
-impl<'a> Step<ListComicInfosExcluded<'a>, RdbContext> for RdbRepo {
+impl Step<ListComicInfosExcluded<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &ListComicInfosExcluded<'a>,
+        oper: &ListComicInfosExcluded<'_>,
     ) -> BaseResult<Vec<ComicInfo>> {
         list_infos_excluded(context.conn(), oper.spec).await
     }
 }
 
-impl<'a> Step<CreateComic<'a>, RdbContext> for RdbRepo {
+impl Step<CreateComic<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &CreateComic<'a>,
+        oper: &CreateComic<'_>,
     ) -> BaseResult<ComicInfo> {
         create(context.conn(), oper.entry).await
     }
 }
 
-impl<'a> Step<ReserveComicCover<'a>, RdbContext> for RdbRepo {
+impl Step<ReserveComicCover<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &ReserveComicCover<'a>,
+        oper: &ReserveComicCover<'_>,
     ) -> BaseResult<ComicCoverReservation> {
         reserve_cover(context.conn(), oper.id, oper.file_extension).await
     }
 }
 
-impl<'a> Step<MarkComicCoverUploaded<'a>, RdbContext> for RdbRepo {
+impl Step<MarkComicCoverUploaded<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &MarkComicCoverUploaded<'a>,
+        oper: &MarkComicCoverUploaded<'_>,
     ) -> BaseResult<()> {
         mark_cover_uploaded(
             context.conn(),
@@ -159,53 +159,53 @@ impl<'a> Step<MarkComicCoverUploaded<'a>, RdbContext> for RdbRepo {
     }
 }
 
-impl<'a> Step<DeleteComic<'a>, RdbContext> for RdbRepo {
+impl Step<DeleteComic<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &DeleteComic<'a>,
+        oper: &DeleteComic<'_>,
     ) -> BaseResult<()> {
         delete(context.conn(), oper.id).await
     }
 }
 
-impl<'a> Step<AllocComicChapterIndex<'a>, RdbContext> for RdbRepo {
+impl Step<AllocComicChapterIndex<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &AllocComicChapterIndex<'a>,
+        oper: &AllocComicChapterIndex<'_>,
     ) -> BaseResult<i32> {
         incr_chapter_next_index(context.conn(), oper.id).await
     }
 }
 
-impl<'a> Step<UpdateComicChapterCount<'a>, RdbContext> for RdbRepo {
+impl Step<UpdateComicChapterCount<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &UpdateComicChapterCount<'a>,
+        oper: &UpdateComicChapterCount<'_>,
     ) -> BaseResult<()> {
         update_chapter_count(context.conn(), oper.id, oper.delta).await
     }
 }
 
-impl<'a> Step<TouchComicLastActive<'a>, RdbContext> for RdbRepo {
+impl Step<TouchComicLastActive<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &TouchComicLastActive<'a>,
+        oper: &TouchComicLastActive<'_>,
     ) -> BaseResult<()> {
         touch_last_active(context.conn(), oper.id).await
     }

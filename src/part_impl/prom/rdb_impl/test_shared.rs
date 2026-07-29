@@ -7,12 +7,14 @@ use crate::part_impl::shared::result::diesel as diesel_error;
 use crate::result::{BaseResult, accept};
 
 pub async fn reset(shared: &RdbCore, prefix: &str) {
+    //
     cleanup(shared, prefix).await.unwrap();
 
     assert_no_leftovers(shared, prefix).await.unwrap();
 }
 
 pub async fn cleanup(shared: &RdbCore, prefix: &str) -> BaseResult<()> {
+    //
     let mut conn = shared.get().await?;
 
     let id_pattern = format!("{}%", prefix);
@@ -31,6 +33,7 @@ pub async fn assert_no_leftovers(
     shared: &RdbCore,
     prefix: &str,
 ) -> BaseResult<()> {
+    //
     let mut conn = shared.get().await?;
 
     let id_pattern = format!("{}%", prefix);

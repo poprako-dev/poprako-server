@@ -9,7 +9,6 @@ use crate::model::announcement::{
     AnnouncementEntry, AnnouncementInfo, AnnouncementListSpec,
 };
 use crate::model::user::UserInfo;
-use crate::part::repo::announcement::AnnouncementRepo;
 use crate::part::repo::oper::announcement::{
     CreateAnnouncement, ListAnnouncementInfos,
 };
@@ -18,8 +17,6 @@ use crate::part_impl::repo::mock_impl::{
 };
 use crate::result::{BaseError, BaseResult, accept};
 use crate::value::announcement::AnnouncementInclOpt;
-
-impl AnnouncementRepo<MockContext> for Mock {}
 
 fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
     state

@@ -1,20 +1,13 @@
 //! Mock implementation of `UnitRepo`.
 
-use poprako_util::page::Page;
-
 use crate::model::unit::{UnitContent, UnitCounters, UnitInfo};
-use crate::part::repo::unit::UnitRepo;
-use crate::part_impl::repo::mock_impl::{
-    Mock, MockContext, MockState, expected, now,
-};
+use crate::part_impl::repo::mock_impl::{MockState, expected, now};
 use crate::result::{BaseResult, accept};
 
 mod orchestra;
 
 #[cfg(test)]
 mod tests;
-
-impl UnitRepo<MockContext> for Mock {}
 
 fn list_all_units(state: &MockState, page_id: &str) -> Vec<UnitInfo> {
     //
@@ -32,14 +25,6 @@ fn list_all_units(state: &MockState, page_id: &str) -> Vec<UnitInfo> {
     });
 
     unit_infos
-}
-
-fn list_units(state: &MockState, page_id: &str, page: Page) -> Vec<UnitInfo> {
-    list_all_units(state, page_id)
-        .into_iter()
-        .skip(page.offset as usize)
-        .take(page.limit as usize)
-        .collect()
 }
 
 fn count_units(state: &MockState, page_id: &str) -> UnitCounters {

@@ -21,6 +21,7 @@ use crate::model::unit::{UnitIndex, UnitInfo};
 use crate::model::user::UserInfo;
 use crate::model::workset::WorksetInfo;
 use crate::value::chapter::StageMask;
+use crate::value::image::{ImageExtension, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
 const CHAPTER_COUNT: usize = 8;
@@ -154,6 +155,9 @@ fn archive_snapshot() -> Option<ComicArchiveSnapshot> {
                     )),
                     image_uploaded: true,
                     image_version: 1,
+                    image_hash: ImageHash::new([0u8; 32]),
+                    image_byte_length: 4096,
+                    image_extension: ImageExtension::Webp,
                     total_unit_count: UNIT_COUNT as i32,
                     translated_unit_count: UNIT_COUNT as i32,
                     proofread_unit_count: UNIT_COUNT as i32,
@@ -247,7 +251,7 @@ fn unit_info(
         id: format!("unit-{}-{}-{}", chapter_index, page_index, unit_index),
         page_id: page_id.into(),
         index: unit_index as i32,
-        is_bubble: unit_index % 2 == 0,
+        is_bubble: unit_index.is_multiple_of(2),
         is_proofread: true,
         x_coord: unit_index as f64,
         y_coord: page_index as f64,
@@ -328,6 +332,9 @@ fn export_input() -> LabelPlusExportInput {
             image_key: Some(format!("pages/{}.png", page_index)),
             image_uploaded: true,
             image_version: 1,
+            image_hash: ImageHash::new([0u8; 32]),
+            image_byte_length: 4096,
+            image_extension: ImageExtension::Png,
             total_unit_count: UNIT_COUNT as i32,
             translated_unit_count: UNIT_COUNT as i32,
             proofread_unit_count: UNIT_COUNT as i32,

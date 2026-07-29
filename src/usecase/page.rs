@@ -3,24 +3,24 @@
 use std::time::Duration;
 
 use poprako_orchestra::{Nucl, run_proxy};
-use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
+use poprako_orchestra_extra::prom::oper::DeferBatch;
 use poprako_orchestra_extra::prom::task::Task;
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
 
+use self::reserve::validate_image_byte_length;
+use crate::complex::chapter::ChapterComplex;
 use crate::complex::image::ImageComplex;
 use crate::complex::page::{PageComplex, PagePermComplex};
 use crate::data::page::{
-    ListPageInfosParams, MarkPageImageUploadedParams, PageCreationPayload,
-    PageInfoVal, ReserveChapterPagesParams, ReserveChapterPagesPayload,
-    ReservePageImageParams, ReservePageImagePayload,
+    ListPageInfosParams, MarkPageImageUploadedParams, PageImageUploadPayload,
+    PageInfoVal, ReservePageImageParams, ReservedPagePayload,
 };
-use crate::model::page::PageEntry;
+use crate::model::page::PageManifestUpdate;
 use crate::model::user::UserToken;
-use crate::part::image::ImagePool;
+use crate::part::image::{ImagePool, ImageUploadSpec};
 use crate::part::prom::Prom;
-use crate::part::prom::payload::chapter::CheckUploadFinish;
 use crate::part::prom::payload::{Payload, image};
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
@@ -28,217 +28,25 @@ use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
 use crate::part::repo::oper::chapter::{
-    GetChapterInfo, GetChapterInfoExcluded, SetChapterPageCounters,
+    GetChapterInfo, GetChapterInfoExcluded, ResetChapterRawProvide,
+    SetChapterPageCounters,
 };
 use crate::part::repo::oper::comic::{GetComicInfo, TouchComicLastActive};
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::page::{
-    CreatePages, DeletePages, GetPageInfo, ListPageInfos,
-    MarkPageImageUploaded, ReservePageImage,
+    DeletePages, GetPageInfo, GetPageInfoExcluded, ListPageInfos,
+    MarkPageImageUploaded, UpdatePageManifest,
 };
 use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
-use crate::util::next_snowflake_id;
 
+pub use reserve::reserve_chapter_pages;
+
+mod reserve;
 #[cfg(test)]
 mod tests;
-
-/// Reserves upload slots for all pages in an empty chapter.
-#[instrument(level = "info", err(Debug), skip_all)]
-pub async fn reserve_chapter_pages<N, C, R, P, I>(
-    nucl: &N,
-    repo: &R,
-    prom: &P,
-    image_pool: &I,
-    token: UserToken,
-    params: ReserveChapterPagesParams,
-) -> BaseResult<ReserveChapterPagesPayload>
-where
-    N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
-    R: ChapterRepo<C>
-        + ComicRepo<C>
-        + AssignmentRepo<C>
-        + PageRepo<C>
-        + Send
-        + Sync,
-    P: Prom<C> + Send + Sync,
-    I: ImagePool,
-{
-    validate_page_count(params.page_count)?;
-
-    /// Holds the ID, storage key, and version for one reserved page upload.
-    struct PageReservation {
-        page_id: String,
-        object_key: String,
-        image_version: u32,
-    }
-
-    PagePermComplex::ensure_user_can_reserve(
-        &mut run_proxy! {
-            repo => for<'a, 'b> FindAssignmentInfo<'a, 'b>;
-        },
-        &token.user_id,
-        &params.chapter_id,
-    )
-    .await?;
-
-    let reservations = nucl
-        .coord(async move |context| {
-            //
-            let chapter_info = repo
-                .step(
-                    context,
-                    &GetChapterInfoExcluded {
-                        id: &params.chapter_id,
-                        incls: &[],
-                    },
-                )
-                .await?;
-
-            if chapter_info.page_count != 0 {
-                return Err(BaseError::Expected {
-                    variant: ExpectedVariant::Args,
-                    message: trl("error-chapter-pages-already-reserved"),
-                });
-            }
-
-            let mut page_entries =
-                Vec::with_capacity(params.page_count as usize);
-
-            let mut reservations =
-                Vec::with_capacity(params.page_count as usize);
-
-            for index in 0..params.page_count {
-                //
-                let page_id = PageComplex::gen_id();
-
-                let image_version = 1;
-
-                let object_key = PageComplex::gen_image_key(
-                    &chapter_info.id,
-                    &page_id,
-                    image_version,
-                    &params.file_ext,
-                );
-
-                let page_entry = PageEntry {
-                    id: page_id.clone(),
-                    chapter_id: chapter_info.id.clone(),
-                    index,
-                    image_key: Some(object_key.clone()),
-                    image_version,
-                };
-
-                page_entries.push(page_entry);
-
-                reservations.push(PageReservation {
-                    page_id,
-                    object_key,
-                    image_version,
-                });
-            }
-
-            repo.step(
-                context,
-                &CreatePages {
-                    entries: &page_entries,
-                },
-            )
-            .await?;
-
-            let mut check_ids = Vec::new();
-
-            let mut check_payloads = Vec::new();
-
-            for reservation in &reservations {
-                //
-                check_ids.push(ImageComplex::gen_check_id());
-
-                check_payloads.push(Payload::Image(
-                    image::Payload::CheckUpload {
-                        resource_kind: image::ResourceKind::PageImage,
-                        resource_id: reservation.page_id.clone(),
-                        object_key: reservation.object_key.clone(),
-                        version: reservation.image_version,
-                    },
-                ));
-            }
-
-            let check_tasks: Vec<Task<'_, String, Payload>> = check_ids
-                .iter()
-                .zip(check_payloads.iter())
-                .map(|(id, payload)| Task {
-                    id,
-                    payload,
-                    delay: Some(Duration::from_secs(15 * 60)),
-                })
-                .collect();
-
-            prom.step(context, &DeferBatch::new(&check_tasks)).await?;
-
-            let advance_id = next_snowflake_id();
-
-            let advance_payload =
-                Payload::CheckChapterUploadFinish(CheckUploadFinish {
-                    chapter_id: chapter_info.id.clone(),
-                });
-
-            let advance_task = Task {
-                id: &advance_id,
-                payload: &advance_payload,
-                delay: Some(Duration::from_secs(20 * 60)),
-            };
-
-            prom.step(context, &Defer::new(advance_task)).await?;
-
-            repo.step(
-                context,
-                &SetChapterPageCounters {
-                    id: &chapter_info.id,
-                    page_count: params.page_count,
-                    total_unit_count: 0,
-                    translated_unit_count: 0,
-                    proofread_unit_count: 0,
-                },
-            )
-            .await?;
-
-            repo.step(
-                context,
-                &TouchComicLastActive {
-                    id: &chapter_info.comic_id,
-                },
-            )
-            .await?;
-
-            accept(reservations)
-        })
-        .await?;
-
-    let creations = futures_util::future::join_all(
-        reservations.into_iter().map(|reservation| async move {
-            //
-            let put_url = image_pool
-                .get_upload_url(&reservation.object_key)
-                .await?
-                .to_string();
-
-            accept(PageCreationPayload {
-                page_id: reservation.page_id,
-                put_url,
-                image_version: reservation.image_version,
-            })
-        }),
-    )
-    .await
-    .into_iter()
-    .collect::<BaseResult<Vec<_>>>()?;
-
-    accept(ReserveChapterPagesPayload { creations })
-}
 
 /// Reserves a replacement image upload slot for one page.
 #[instrument(level = "info", err(Debug), skip_all)]
@@ -250,15 +58,15 @@ pub async fn reserve_image<N, C, R, P, I>(
     token: UserToken,
     id: String,
     params: ReservePageImageParams,
-) -> BaseResult<ReservePageImagePayload>
+) -> BaseResult<ReservedPagePayload>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
-    R: PageRepo<C> + AssignmentRepo<C> + Send + Sync,
+    R: ChapterRepo<C> + PageRepo<C> + AssignmentRepo<C> + Send + Sync,
     P: Prom<C> + Send + Sync,
     I: ImagePool,
 {
-    let page_id = id.clone();
+    validate_image_byte_length(params.byte_length)?;
 
     let page_info = repo.run(&GetPageInfo { id: &id }).await?;
 
@@ -271,54 +79,138 @@ where
     )
     .await?;
 
-    let file_ext = params.file_ext;
-
-    let (object_key, image_version) = nucl
+    let reservation = nucl
         .coord(async move |context| {
             //
-            let page_reservation = repo
+            repo.step(
+                context,
+                &GetChapterInfoExcluded {
+                    id: &page_info.chapter_id,
+                    incls: &[],
+                },
+            )
+            .await
+            .and_then(|chapter_info| {
+                ChapterComplex::ensure_user_write_allowed(&chapter_info)
+            })?;
+
+            let locked_page_info = repo
+                .step(context, &GetPageInfoExcluded { id: &id })
+                .await?;
+
+            let same_hash = locked_page_info.image_hash == params.image_hash;
+
+            if same_hash
+                && (locked_page_info.image_byte_length != params.byte_length
+                    || locked_page_info.image_extension != params.extension)
+            {
+                return Err(BaseError::Expected {
+                    variant: ExpectedVariant::Args,
+                    message: trl("error-invalid-page-image-identity"),
+                });
+            }
+
+            if same_hash && locked_page_info.image_uploaded {
+                return accept((locked_page_info, None));
+            }
+
+            let (image_key, image_version, previous_image_key) = match same_hash {
+                //
+                true => (
+                    locked_page_info.image_key.clone().ok_or_else(|| {
+                        BaseError::Unrecoverable {
+                            message: "[reserve_image] pending page image key is missing"
+                                .into(),
+                        }
+                    })?,
+                    locked_page_info.image_version,
+                    None,
+                ),
+
+                false => {
+                    //
+                    let image_version = locked_page_info
+                        .image_version
+                        .checked_add(1)
+                        .ok_or_else(|| BaseError::Unrecoverable {
+                            message: "[reserve_image] image version overflow".into(),
+                        })?;
+
+                    let image_key = PageComplex::gen_image_key(
+                        &locked_page_info.chapter_id,
+                        &locked_page_info.id,
+                        image_version,
+                        params.extension.suffix(),
+                    );
+
+                    (
+                        image_key,
+                        image_version,
+                        locked_page_info.image_key.clone(),
+                    )
+                }
+            };
+
+            let page_manifest_update = PageManifestUpdate {
+                id: locked_page_info.id.clone(),
+                index: locked_page_info.index,
+                image_key: Some(image_key.clone()),
+                image_uploaded: false,
+                image_version,
+                image_hash: params.image_hash.clone(),
+                image_byte_len: params.byte_length,
+                image_ext: params.extension,
+            };
+
+            let updated_page_info = repo
                 .step(
                     context,
-                    &ReservePageImage {
-                        id: &id,
-                        file_ext: &file_ext,
+                    &UpdatePageManifest {
+                        update: &page_manifest_update,
                     },
                 )
                 .await?;
 
-            let mut batch_ids = Vec::new();
+            repo.step(
+                context,
+                &ResetChapterRawProvide {
+                    id: &locked_page_info.chapter_id,
+                },
+            )
+            .await?;
 
-            let mut batch_payloads = Vec::new();
+            let mut task_ids = Vec::new();
 
-            let mut batch_delays = Vec::new();
+            let mut task_payloads = Vec::new();
 
-            if let Some(prev_object_key) = &page_reservation.prev_object_key
-                && prev_object_key != &page_reservation.object_key
-            {
-                batch_ids.push(ImageComplex::gen_delete_id());
+            let mut task_delays = Vec::new();
 
-                batch_payloads.push(Payload::Image(image::Payload::Delete {
-                    object_key: prev_object_key.clone(),
+            if let Some(previous_image_key) = previous_image_key {
+                //
+                task_ids.push(ImageComplex::gen_delete_id());
+
+                task_payloads.push(Payload::Image(image::Payload::Delete {
+                    object_key: previous_image_key,
                 }));
 
-                batch_delays.push(None);
+                task_delays.push(None);
             }
 
-            batch_ids.push(ImageComplex::gen_check_id());
+            task_ids.push(ImageComplex::gen_check_id());
 
-            batch_payloads.push(Payload::Image(image::Payload::CheckUpload {
+            task_payloads.push(Payload::Image(image::Payload::CheckUpload {
                 resource_kind: image::ResourceKind::PageImage,
-                resource_id: page_info.id.clone(),
-                object_key: page_reservation.object_key.clone(),
-                version: page_reservation.image_version,
+                resource_id: locked_page_info.id.clone(),
+                object_key: image_key.clone(),
+                version: image_version,
             }));
 
-            batch_delays.push(Some(Duration::from_secs(15 * 60)));
+            task_delays.push(Some(Duration::from_secs(15 * 60)));
 
-            let batch_tasks: Vec<Task<'_, String, Payload>> = batch_ids
+            let image_tasks: Vec<Task<'_, String, Payload>> = task_ids
                 .iter()
-                .zip(batch_payloads.iter())
-                .zip(batch_delays.iter())
+                .zip(task_payloads.iter())
+                .zip(task_delays.iter())
                 .map(|((id, payload), delay)| Task {
                     id,
                     payload,
@@ -326,27 +218,57 @@ where
                 })
                 .collect();
 
-            prom.step(context, &DeferBatch::new(&batch_tasks)).await?;
+            prom.step(context, &DeferBatch::new(&image_tasks)).await?;
 
-            accept((
-                page_reservation.object_key,
-                page_reservation.image_version,
-            ))
+            accept((updated_page_info, Some(image_key)))
         })
         .await?;
 
-    let put_url = image_pool.get_upload_url(&object_key).await?.to_string();
+    let (page_info, object_key) = reservation;
 
-    accept(ReservePageImagePayload {
-        page_id,
-        put_url,
-        image_version,
+    let upload = match object_key {
+        //
+        Some(object_key) => {
+            //
+            let upload_spec = ImageUploadSpec {
+                object_key: &object_key,
+                content_type: page_info.image_extension.content_type(),
+                checksum_sha256: &page_info.image_hash,
+                content_length: page_info.image_byte_length,
+            };
+
+            let upload_target =
+                image_pool.get_upload_target(upload_spec).await?;
+
+            Some(PageImageUploadPayload {
+                put_url: upload_target.url.to_string(),
+                image_version: page_info.image_version,
+                headers: upload_target.headers,
+            })
+        }
+
+        None => None,
+    };
+
+    accept(ReservedPagePayload {
+        page_id: page_info.id,
+        index: u32::try_from(page_info.index).map_err(|_| {
+            BaseError::Unrecoverable {
+                message: "[reserve_image] page index must be non-negative"
+                    .into(),
+            }
+        })?,
+        image_hash: page_info.image_hash,
+        byte_length: page_info.image_byte_length,
+        extension: page_info.image_extension,
+        upload,
     })
 }
 
 /// Lists pages under one chapter.
 #[instrument(level = "info", err(Debug), skip_all)]
-pub async fn list_infos<C, R, I>(
+/// Lists all pages for a chapter.
+pub async fn list_all_infos<C, R, I>(
     repo: &R,
     image_pool: &I,
     token: UserToken,
@@ -377,10 +299,8 @@ where
     .await?;
 
     let page_infos = repo
-        .run(&ListPageInfos::Chapter {
+        .run(&ListPageInfos {
             chapter_id: &params.chapter_id,
-            offset: params.offset,
-            limit: params.limit,
         })
         .await?;
 
@@ -406,7 +326,7 @@ pub async fn mark_image_uploaded<N, C, R>(
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
-    R: PageRepo<C> + AssignmentRepo<C> + Send + Sync,
+    R: ChapterRepo<C> + PageRepo<C> + AssignmentRepo<C> + Send + Sync,
 {
     let page_info = repo.run(&GetPageInfo { id: &id }).await?;
 
@@ -419,14 +339,56 @@ where
     )
     .await?;
 
+    if page_info.image_version != params.image_version {
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: trl("error-stale-page-image-upload"),
+        });
+    }
+
+    let image_key =
+        page_info
+            .image_key
+            .clone()
+            .ok_or_else(|| BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: trl("error-stale-page-image-upload"),
+            })?;
+
     nucl.coord(async move |context| {
         //
+        let chapter_info = repo
+            .step(
+                context,
+                &GetChapterInfoExcluded {
+                    id: &page_info.chapter_id,
+                    incls: &[],
+                },
+            )
+            .await?;
+
+        ChapterComplex::ensure_user_write_allowed(&chapter_info)?;
+
+        let locked_page_info =
+            repo.step(context, &GetPageInfoExcluded { id: &id }).await?;
+
+        if locked_page_info.image_version != params.image_version
+            || locked_page_info.image_key.as_deref() != Some(&image_key)
+            || locked_page_info.image_hash != page_info.image_hash
+            || locked_page_info.image_byte_length != page_info.image_byte_length
+        {
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: trl("error-stale-page-image-upload"),
+            });
+        }
+
         repo.step(
             context,
             &MarkPageImageUploaded {
                 id: &id,
                 image_version: params.image_version,
-                image_key: None,
+                image_key: Some(image_key.as_str()),
             },
         )
         .await?;
@@ -488,7 +450,7 @@ where
         let page_infos = repo
             .step(
                 context,
-                &ListPageInfos::AllChapter {
+                &ListPageInfos {
                     chapter_id: &chapter_info.id,
                 },
             )
@@ -552,19 +514,6 @@ where
         accept(())
     })
     .await?;
-
-    accept(())
-}
-
-/// Validates that the page count is positive.
-fn validate_page_count(page_count: i32) -> BaseResult<()> {
-    //
-    if page_count <= 0 {
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message: trl("error-invalid-page-count"),
-        });
-    }
 
     accept(())
 }

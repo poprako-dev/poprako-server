@@ -34,12 +34,30 @@ const STUCK_RESET_INTERVAL: Duration = Duration::minutes(1);
 const RETRY_DELAY: Duration = Duration::minutes(5);
 const PROCESSING_TIMEOUT: Duration = Duration::minutes(15);
 const COMPLETED_RETENTION: Duration = Duration::days(7);
+const DEAD_RETENTION: Duration = Duration::days(30);
 const COMPLETED_PURGE_INTERVAL: Duration = Duration::hours(1);
 
 const FNV_OFFSET_BASIS: u64 = 14_695_981_039_346_656_037;
 const FNV_PRIME: u64 = 1_099_511_628_211;
 
 type WorkerSender = mpsc::UnboundedSender<LocalMessageRow>;
+
+/// Enforces the retry limit for a task flow.
+///
+/// When the task has been retried 3 or more times, transitions from
+/// [`TaskFlow::Retry`] to [`TaskFlow::Dead`] so the message is not
+/// requeued indefinitely.
+pub(super) fn enforce_retry_limit(
+    task_flow: TaskFlow,
+    retried_count: i64,
+) -> TaskFlow {
+    match (task_flow, retried_count >= 3) {
+        //
+        (TaskFlow::Retry(error), true) => TaskFlow::Dead(error),
+
+        (task_flow, _) => task_flow,
+    }
+}
 
 impl<I> RdbPromHandler<RdbDrive, RdbRepo, I>
 where
@@ -239,15 +257,20 @@ where
 
     #[instrument(level = "info", skip_all)]
     async fn process_row(&self, row: &LocalMessageRow) {
-        match dispatch_payload(
+        //
+        let task_flow = dispatch_payload(
             &self.nucl,
             self.repo.inner(),
             &self.image_pool,
             &row.f_topic,
             &row.f_payload,
         )
-        .await
-        {
+        .await;
+
+        let task_flow = enforce_retry_limit(task_flow, row.f_retried_count);
+
+        match task_flow {
+            //
             TaskFlow::Complete => {
                 if let Err(error) = self.complete(&row.f_id).await {
                     tracing::error!(
@@ -389,10 +412,15 @@ where
 
         let mut context = RdbContext::new(conn);
 
-        let before = OffsetDateTime::now_utc() - COMPLETED_RETENTION;
+        let completed_before = OffsetDateTime::now_utc() - COMPLETED_RETENTION;
+
+        let dead_before = OffsetDateTime::now_utc() - DEAD_RETENTION;
 
         self.repo
-            .step(&mut context, &PurgeCompleted::new(&before))
+            .step(
+                &mut context,
+                &PurgeCompleted::new(&completed_before, &dead_before),
+            )
             .await
     }
 }

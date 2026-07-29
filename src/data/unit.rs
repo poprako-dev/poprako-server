@@ -60,13 +60,10 @@ impl From<UnitInfo> for UnitInfoVal {
     }
 }
 
-/// Input parameters for listing units under one page.
+/// Input parameters for listing all units under one page.
 #[derive(Debug, Deserialize)]
 pub struct ListPageUnitInfosParams {
     pub page_id: String,
-
-    pub offset: u32,
-    pub limit: u32,
 }
 
 /// Return value for listing units under one page.

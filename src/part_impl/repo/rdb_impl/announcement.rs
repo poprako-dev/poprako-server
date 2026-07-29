@@ -8,7 +8,6 @@ use tracing::instrument;
 use crate::model::announcement::{
     AnnouncementEntry, AnnouncementInfo, AnnouncementListSpec,
 };
-use crate::part::repo::announcement::AnnouncementRepo;
 use crate::part::repo::oper::announcement::{
     CreateAnnouncement, ListAnnouncementInfos,
 };
@@ -23,8 +22,6 @@ use crate::result::{BaseError, BaseResult, accept};
 
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;
-
-impl AnnouncementRepo<RdbContext> for RdbRepo {}
 
 /// Queries announcement rows filtered by team ID, ordered by creation time descending.
 #[instrument(level = "info", err(Debug), skip_all)]
