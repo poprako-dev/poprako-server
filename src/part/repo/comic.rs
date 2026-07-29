@@ -1,7 +1,7 @@
 use poprako_orchestra::{Run, Step};
 
 use crate::part::repo::oper::comic::{
-    AllocateComicChapterIndex, CreateComic, DeleteComic, GetComicInfo,
+    AllocComicChapterIndex, CreateComic, DeleteComic, GetComicInfo,
     GetComicInfoExcluded, ListComicInfos, ListComicInfosExcluded,
     MarkComicCoverUploaded, ReserveComicCover, TouchComicLastActive,
     UpdateComic, UpdateComicChapterCount,
@@ -25,7 +25,7 @@ pub trait ComicRepo<C>:
     + for<'a> Step<ReserveComicCover<'a>, C, Error = RegularError>
     + for<'a> Step<MarkComicCoverUploaded<'a>, C, Error = RegularError>
     + for<'a> Step<DeleteComic<'a>, C, Error = RegularError>
-    + for<'a> Step<AllocateComicChapterIndex<'a>, C, Error = RegularError>
+    + for<'a> Step<AllocComicChapterIndex<'a>, C, Error = RegularError>
     + for<'a> Step<UpdateComicChapterCount<'a>, C, Error = RegularError>
     + for<'a> Step<TouchComicLastActive<'a>, C, Error = RegularError>
 {

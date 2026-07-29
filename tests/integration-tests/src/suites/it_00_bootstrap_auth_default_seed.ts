@@ -75,11 +75,10 @@ export async function runIt00Module(ctx: RunCtx): Promise<void> {
 
     assert.ok(defaultTeam, "default team must be present in /teams");
 
-    // default team.workset_next_index is a non-negative integer.
+    // default team exists and has valid timestamps.
     const teamInfo = await getTeam(ctx.sadmin, ctx.ids.defaultTeamId);
 
-    assert.ok(Number.isInteger(teamInfo.workset_next_index));
-    assert.ok(teamInfo.workset_next_index >= 0, "workset_next_index must be non-negative");
+    assert.ok(teamInfo.id, "team id must be present");
 
     // Timestamp fields are Unix-ms integers and created_at <= updated_at.
     assertTimestampMs(teamInfo.created_at);

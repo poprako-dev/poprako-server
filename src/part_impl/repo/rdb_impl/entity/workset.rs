@@ -109,7 +109,6 @@ impl From<WorksetRow> for WorksetInfo {
             name: v.f_name,
             description: v.f_description,
             comic_count: v.f_comic_count,
-            comic_next_index: v.f_comic_next_index,
             created_at: v.f_created_at,
             updated_at: v.f_updated_at,
         }

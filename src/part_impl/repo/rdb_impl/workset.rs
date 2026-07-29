@@ -9,7 +9,7 @@ use tracing::instrument;
 
 use crate::model::workset::{WorksetEntry, WorksetInfo, WorksetInfoUpdate};
 use crate::part::repo::oper::workset::{
-    AllocateWorksetComicIndex, CreateWorkset, DeleteWorkset, GetWorksetInfo,
+    AllocWorksetComicIndex, CreateWorkset, DeleteWorkset, GetWorksetInfo,
     GetWorksetInfoExcluded, ListWorksetInfos, ListWorksetInfosExcluded,
     UpdateWorkset, UpdateWorksetComicCount,
 };
@@ -148,10 +148,7 @@ async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
 }
 
 #[instrument(level = "info", err(Debug), skip_all)]
-async fn allocate_comic_index(
-    conn: &mut RdbConn,
-    id: &str,
-) -> RegularResult<i32> {
+async fn alloc_comic_index(conn: &mut RdbConn, id: &str) -> RegularResult<i32> {
     //
     let index: i32 = diesel::update(t_workset.filter(f_id.eq(id)))
         .set(f_comic_next_index.eq(f_comic_next_index + 1))
@@ -290,16 +287,16 @@ impl<'a> Step<DeleteWorkset<'a>, RdbContext> for RdbRepo {
     }
 }
 
-impl<'a> Step<AllocateWorksetComicIndex<'a>, RdbContext> for RdbRepo {
+impl<'a> Step<AllocWorksetComicIndex<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &AllocateWorksetComicIndex<'a>,
+        oper: &AllocWorksetComicIndex<'a>,
     ) -> RegularResult<i32> {
-        allocate_comic_index(context.conn(), oper.id).await
+        alloc_comic_index(context.conn(), oper.id).await
     }
 }
 

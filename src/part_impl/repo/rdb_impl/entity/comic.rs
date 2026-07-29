@@ -187,7 +187,6 @@ impl From<ComicRow> for ComicInfo {
             cover_uploaded: v.f_cover_uploaded,
             cover_version: v.f_cover_version,
             chapter_count: v.f_chapter_count,
-            chapter_next_index: v.f_chapter_next_index,
             creator_id: v.f_creator_id,
             workset: None,
             team: None,

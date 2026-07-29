@@ -31,6 +31,7 @@ pub struct ChapterInfoVal {
     pub id: String,
     pub comic_id: String,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub comic: Option<ComicInfoVal>,
 
     pub is_pinned: bool,
@@ -46,6 +47,7 @@ pub struct ChapterInfoVal {
 
     pub creator_id: String,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub creator: Option<UserInfoVal>,
 
     pub created_at: i64,

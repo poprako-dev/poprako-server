@@ -82,11 +82,11 @@ impl<'a> Oper for DeleteComic<'a> {
     type Output = ();
 }
 
-pub struct AllocateComicChapterIndex<'a> {
+pub struct AllocComicChapterIndex<'a> {
     pub id: &'a str,
 }
 
-impl<'a> Oper for AllocateComicChapterIndex<'a> {
+impl<'a> Oper for AllocComicChapterIndex<'a> {
     type Output = i32;
 }
 

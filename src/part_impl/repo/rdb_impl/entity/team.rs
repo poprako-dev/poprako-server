@@ -118,7 +118,6 @@ impl From<TeamRow> for TeamInfo {
             avatar_key: v.f_avatar_key,
             avatar_uploaded: v.f_avatar_uploaded,
             avatar_version: v.f_avatar_version,
-            workset_next_index: v.f_workset_next_index,
             created_at: v.f_created_at,
             updated_at: v.f_updated_at,
         }

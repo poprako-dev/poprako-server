@@ -24,7 +24,9 @@ pub struct UserInfoVal {
     pub nickname: String,
     pub qid: String,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub avatar_url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub avatar_thumbnail_url: Option<String>,
 
     pub is_sadmin: bool,

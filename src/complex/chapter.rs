@@ -374,7 +374,7 @@ where
         }
 
         (Stage::Translate, StageOper::Revert) => {
-            roles.has_any_role(&[RoleField::PROOFREADER])
+            roles.has_any_role(&[RoleField::TRANSLATOR, RoleField::PROOFREADER])
         }
 
         (Stage::Proofread, StageOper::Advance | StageOper::Revert) => {

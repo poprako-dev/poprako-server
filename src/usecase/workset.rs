@@ -33,7 +33,7 @@ use crate::part::repo::oper::comic::{
 };
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::page::{DeletePages, ListPageInfos};
-use crate::part::repo::oper::team::AllocateTeamWorksetIndex;
+use crate::part::repo::oper::team::AllocTeamWorksetIndex;
 use crate::part::repo::oper::workset::{
     CreateWorkset, DeleteWorkset, GetWorksetInfo, GetWorksetInfoExcluded,
     ListWorksetInfos, UpdateWorkset, UpdateWorksetComicCount,
@@ -75,7 +75,7 @@ where
             let index = repo
                 .step(
                     context,
-                    &AllocateTeamWorksetIndex {
+                    &AllocTeamWorksetIndex {
                         id: &params.team_id,
                     },
                 )

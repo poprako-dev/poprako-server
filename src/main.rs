@@ -1,5 +1,5 @@
-#![deny(unsafe_code)]
 #![recursion_limit = "256"]
+#![deny(unsafe_code)]
 #![deny(clippy::correctness)]
 #![deny(clippy::suspicious)]
 #![deny(clippy::complexity)]

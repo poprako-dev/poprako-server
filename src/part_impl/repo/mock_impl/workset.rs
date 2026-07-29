@@ -6,7 +6,7 @@ use tracing::instrument;
 
 use crate::model::workset::{WorksetInfo, WorksetInfoUpdate};
 use crate::part::repo::oper::workset::{
-    AllocateWorksetComicIndex, CreateWorkset, DeleteWorkset, GetWorksetInfo,
+    AllocWorksetComicIndex, CreateWorkset, DeleteWorkset, GetWorksetInfo,
     GetWorksetInfoExcluded, ListWorksetInfos, ListWorksetInfosExcluded,
     UpdateWorkset, UpdateWorksetComicCount,
 };
@@ -210,7 +210,6 @@ impl<'a> Step<CreateWorkset<'a>, MockContext> for Mock {
             name: oper.entry.name.clone(),
             description: oper.entry.description.clone(),
             comic_count: 0,
-            comic_next_index: 0,
             created_at: time,
             updated_at: time,
         };
@@ -281,28 +280,30 @@ impl<'a> Step<DeleteWorkset<'a>, MockContext> for Mock {
     }
 }
 
-impl<'a> Step<AllocateWorksetComicIndex<'a>, MockContext> for Mock {
+impl<'a> Step<AllocWorksetComicIndex<'a>, MockContext> for Mock {
     type Error = RegularError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
-        oper: &AllocateWorksetComicIndex<'a>,
+        oper: &AllocWorksetComicIndex<'a>,
     ) -> RegularResult<i32> {
         //
-        let workset_info = context
+        // verify the workset exists
+        context
             .state
             .worksets
-            .iter_mut()
-            .find(|workset_info| workset_info.id == oper.id)
+            .iter()
+            .find(|ws| ws.id == oper.id)
             .ok_or_else(|| expected("error-workset-not-found"))?;
 
-        let index = workset_info.comic_next_index;
-
-        workset_info.comic_next_index += 1;
-
-        workset_info.updated_at = now();
+        let index = context
+            .state
+            .comics
+            .iter()
+            .filter(|comic_info| comic_info.workset_id == oper.id)
+            .count() as i32;
 
         Ok(index)
     }

@@ -107,7 +107,6 @@ fn comic_with_uploaded_cover(
         cover_uploaded: true,
         cover_version: 1,
         chapter_count: 0,
-        chapter_next_index: 0,
         creator_id: "user-1".into(),
         workset: None,
         team: None,
