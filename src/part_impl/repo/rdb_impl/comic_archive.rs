@@ -59,9 +59,9 @@ use crate::part_impl::repo::rdb_impl::schema::t_user::dsl::{
 use crate::part_impl::repo::rdb_impl::schema::t_workset::dsl::{
     f_id as workset_id, t_workset,
 };
-use crate::part_impl::shared::result::{diesel, expected};
-use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{BaseError, BaseRest, accept};
+use crate::shared::result::{diesel, expected};
+use crate::shared::{RdbConn, RdbContext};
 use crate::value::comic_archive::ComicArchiveMonth;
 
 /// Comic archive RDB integration tests.

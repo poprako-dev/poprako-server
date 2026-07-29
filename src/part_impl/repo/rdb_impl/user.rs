@@ -20,9 +20,9 @@ use crate::part_impl::repo::rdb_impl::entity::user::{
     UserAspect, UserCredentialRow, UserRow, UserRowEntry,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_user::dsl::*;
-use crate::part_impl::shared::result::{diesel, expected, next_version};
-use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{BaseError, BaseRest, accept};
+use crate::shared::result::{diesel, expected, next_version};
+use crate::shared::{RdbConn, RdbContext};
 use crate::value::image::{ImageExt, ImageHash};
 
 /// User RDB integration tests.

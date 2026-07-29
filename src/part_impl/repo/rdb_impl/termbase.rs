@@ -22,9 +22,9 @@ use crate::part_impl::repo::rdb_impl::entity::termbase::{
     TermbaseRow, TermbaseRowEntry,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_termbase::dsl::*;
-use crate::part_impl::shared::result::{diesel, expected};
-use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{BaseError, BaseRest, accept};
+use crate::shared::result::{diesel, expected};
+use crate::shared::{RdbConn, RdbContext};
 
 /// Termbase RDB integration tests.
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]

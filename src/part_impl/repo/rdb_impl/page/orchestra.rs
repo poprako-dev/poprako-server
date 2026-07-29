@@ -20,8 +20,8 @@ use crate::part_impl::repo::rdb_impl::page::step_impl::{
     mark_image_uploaded, reserve_image, set_image_uploaded, set_unit_counters,
     shift_indexes_temporary, update_manifest,
 };
-use crate::part_impl::shared::RdbContext;
 use crate::result::{BaseError, BaseRest, ExpectedVariant};
+use crate::shared::RdbContext;
 
 impl Run<GetPageInfo<'_>> for RdbRepo {
     // Use base error for page read orchestration through the query dispatcher.

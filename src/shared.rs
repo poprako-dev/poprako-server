@@ -1,4 +1,4 @@
-//! Shared Diesel-backed repository internals.
+//! Shared RDB infrastructure for production adapters and extras.
 
 use std::sync::Arc;
 

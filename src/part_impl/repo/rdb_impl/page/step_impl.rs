@@ -20,9 +20,9 @@ use crate::part_impl::repo::rdb_impl::schema::t_page::dsl::*;
 use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{
     f_page_id as unit_f_page_id, t_unit,
 };
-use crate::part_impl::shared::RdbConn;
-use crate::part_impl::shared::result::{diesel, expected, next_version};
 use crate::result::{BaseError, BaseRest, accept};
+use crate::shared::RdbConn;
+use crate::shared::result::{diesel, expected, next_version};
 
 /// Load a single page info by ID.
 #[instrument(level = "info", err(Debug), skip_all)]

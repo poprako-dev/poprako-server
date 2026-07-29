@@ -19,9 +19,9 @@ use crate::part::repo::oper::term::{
 use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::term::{TermRow, TermRowEntry};
 use crate::part_impl::repo::rdb_impl::schema::t_term::dsl::*;
-use crate::part_impl::shared::result::{diesel, expected};
-use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{BaseError, BaseRest, accept};
+use crate::shared::result::{diesel, expected};
+use crate::shared::{RdbConn, RdbContext};
 
 /// Term RDB integration tests.
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]

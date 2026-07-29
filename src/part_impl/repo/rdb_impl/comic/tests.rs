@@ -10,7 +10,7 @@ use crate::part::repo::oper::comic::{
     GetComicInfo, ListComicInfos, UpdateComic,
 };
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
-use crate::part_impl::shared::RdbCore;
+use crate::shared::RdbCore;
 use crate::value::comic::ComicInclOpt;
 
 const PREFIX: &str = "rdb-test-comic-domain-";

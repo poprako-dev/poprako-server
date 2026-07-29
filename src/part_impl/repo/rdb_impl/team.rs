@@ -21,9 +21,9 @@ use crate::part_impl::repo::rdb_impl::entity::team::{
 };
 use crate::part_impl::repo::rdb_impl::schema::t_member;
 use crate::part_impl::repo::rdb_impl::schema::t_team::dsl::*;
-use crate::part_impl::shared::result::{diesel, expected, next_version};
-use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{BaseError, BaseRest, accept};
+use crate::shared::result::{diesel, expected, next_version};
+use crate::shared::{RdbConn, RdbContext};
 use crate::value::image::{ImageExt, ImageHash};
 
 /// Team RDB integration tests.

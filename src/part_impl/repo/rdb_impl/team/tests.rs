@@ -6,7 +6,7 @@ use crate::model::read::spec::team::{TeamListKind, TeamListSpec};
 use crate::model::write::team::TeamRepl;
 use crate::part::repo::oper::team::{GetTeamInfo, ListTeamInfos, UpdateTeam};
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
-use crate::part_impl::shared::RdbCore;
+use crate::shared::RdbCore;
 
 const PREFIX: &str = "rdb-test-team-domain-";
 

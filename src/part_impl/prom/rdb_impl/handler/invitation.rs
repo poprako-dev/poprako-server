@@ -9,7 +9,7 @@ use crate::part::repo::member_invitation::MemberInvitationRepo;
 use crate::part::repo::oper::assignment_invitation::PurgeExpiredAssignmentInvitation;
 use crate::part::repo::oper::member_invitation::PurgeExpiredMemberInvitation;
 use crate::part_impl::prom::rdb_impl::handler::task_flow::TaskFlow;
-use crate::part_impl::shared::RdbContext;
+use crate::shared::RdbContext;
 
 /// Purges an expired invitation when it is still pending.
 #[instrument(level = "info", skip_all)]

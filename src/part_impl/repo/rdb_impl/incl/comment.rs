@@ -2,8 +2,8 @@ use crate::model::read::proj::comment::CommentInfo;
 use crate::part_impl::repo::rdb_impl::incl::framework::{
     BatchByIds, Incl, UserByIds, populate,
 };
-use crate::part_impl::shared::RdbConn;
 use crate::result::BaseRest;
+use crate::shared::RdbConn;
 use crate::value::comment::CommentInclOpt;
 use crate::value::incl::expand_incl_opts;
 

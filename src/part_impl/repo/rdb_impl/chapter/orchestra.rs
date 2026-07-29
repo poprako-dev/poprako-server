@@ -20,8 +20,8 @@ use crate::part_impl::repo::rdb_impl::chapter::step_impl::{
     lock_chapters, reset_raw_provide, set_page_counters, start_stage,
     unpin_others, update_info, update_stage,
 };
-use crate::part_impl::shared::RdbContext;
 use crate::result::{BaseError, BaseRest};
+use crate::shared::RdbContext;
 
 impl Run<GetChapterInfo<'_, '_>> for RdbRepo {
     // Map failed query execution for chapter lookup into repository-level base error.

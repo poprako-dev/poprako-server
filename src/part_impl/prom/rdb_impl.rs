@@ -24,9 +24,9 @@ use crate::part_impl::prom::rdb_impl::entity::LocalMessageEntry;
 use crate::part_impl::prom::rdb_impl::repo::RdbPromRepo;
 use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::schema::t_local_message;
-use crate::part_impl::shared::result::diesel;
-use crate::part_impl::shared::{RdbContext, RdbCore};
 use crate::result::{BaseError, BaseRest, accept};
+use crate::shared::result::diesel;
+use crate::shared::{RdbContext, RdbCore};
 
 // Internal organization of the `entity` module.
 mod entity;

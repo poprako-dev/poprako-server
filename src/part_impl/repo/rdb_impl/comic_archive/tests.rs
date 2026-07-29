@@ -17,8 +17,8 @@ use crate::part_impl::repo::rdb_impl::schema::{
     t_chapter, t_comic, t_comic_archive, t_page, t_workset,
 };
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
-use crate::part_impl::shared::RdbCore;
 use crate::result::BaseError;
+use crate::shared::RdbCore;
 
 const PREFIX: &str = "rdb-test-comic-archive-domain-";
 

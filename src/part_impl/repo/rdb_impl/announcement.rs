@@ -16,9 +16,9 @@ use crate::part_impl::repo::rdb_impl::entity::announcement::{
 };
 use crate::part_impl::repo::rdb_impl::schema::t_announcement::dsl::*;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, incl};
-use crate::part_impl::shared::result::diesel;
-use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{BaseError, BaseRest, accept};
+use crate::shared::result::diesel;
+use crate::shared::{RdbConn, RdbContext};
 
 /// Announcement RDB integration tests.
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]

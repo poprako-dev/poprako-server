@@ -23,8 +23,8 @@ use crate::part_impl::prom::rdb_impl::repo::{
     ResetStuck, RetryMessage,
 };
 use crate::part_impl::repo::rdb_impl::RdbRepo;
-use crate::part_impl::shared::RdbContext;
 use crate::result::BaseRest;
+use crate::shared::RdbContext;
 
 #[cfg(all(test, feature = "rdb", feature = "prom_impl"))]
 // Internal organization of the `tests` module.

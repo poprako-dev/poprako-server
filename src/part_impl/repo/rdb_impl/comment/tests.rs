@@ -9,8 +9,8 @@ use crate::model::write::comment::CommentEntry;
 use crate::part::repo::oper::comment::{CreateComment, ListCommentInfos};
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
-use crate::part_impl::shared::RdbCore;
 use crate::result::BaseError;
+use crate::shared::RdbCore;
 use crate::value::comment::CommentInclOpt;
 
 const PREFIX: &str = "rdb-test-comment-domain-";

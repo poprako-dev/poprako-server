@@ -69,11 +69,11 @@ async fn main() -> anyhow::Result<()> {
         "{}:{}",
         config.http_host, config.http_port
     ))
-    .context("failed to resolve HTTP listen address")?
-    .next()
+    .into_iter()
+    .find_map(|mut addrs| addrs.next())
     .context("no address resolved for HTTP listen address")?;
 
-    let serve_outcome = poprako_server::serve(harn.clone(), http_addr).await;
+    let serve_rest = poprako_server::serve(harn.clone(), http_addr).await;
 
     harn.prom().close().await;
 
@@ -81,5 +81,5 @@ async fn main() -> anyhow::Result<()> {
 
     sched.close().await;
 
-    serve_outcome
+    serve_rest
 }

@@ -1,6 +1,6 @@
 use super::*;
 
-use crate::part_impl::shared::test_rdb::start;
+use crate::shared::test_rdb::start;
 
 #[tokio::test]
 #[serial_test::serial(repo_rdb)]

@@ -12,8 +12,8 @@ use crate::part::repo::oper::assignment_invitation::{
 };
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
-use crate::part_impl::shared::RdbCore;
 use crate::result::BaseError;
+use crate::shared::RdbCore;
 use crate::value::assignment_invitation::AssignmentInvitationStatus;
 use crate::value::role::{RoleField, RoleMask};
 
