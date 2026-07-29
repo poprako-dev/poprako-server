@@ -10,9 +10,8 @@ use crate::data::instr::page::{
     ListPageInfosInstr, MarkPageImageUploadedInstr, ReserveChapterPagesInstr,
     ReservePageImageInstr,
 };
-use crate::data::val::page::{
-    PageInfoVal, ReserveChapterPagesVal, ReservedPageVal,
-};
+use crate::data::val::page::{ReserveChapterPagesVal, ReservedPageVal};
+use crate::data::view::page::PageInfoView;
 
 #[allow(unused_imports)]
 use crate::api::http::result::{
@@ -29,7 +28,7 @@ use crate::usecase;
     tag = "pages",
     params(("chapter_id" = String, Path, description = "Chapter ID")),
     responses(
-        (status = 200, description = "Pages listed", body = HttpBody<Vec<PageInfoVal>>),
+        (status = 200, description = "Pages listed", body = HttpBody<Vec<PageInfoView>>),
         (status = 403, description = "No permission to list pages in this chapter"),
     ),
 ))]
@@ -38,7 +37,7 @@ pub async fn list_infos(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-) -> HttpResult<Vec<PageInfoVal>> {
+) -> HttpResult<Vec<PageInfoView>> {
     //
     let instr = ListPageInfosInstr { chapter_id };
 
@@ -58,7 +57,7 @@ pub async fn list_infos(
     tag = "pages",
     params(("page_id" = String, Path, description = "Page ID")),
     responses(
-        (status = 200, description = "Page info retrieved", body = HttpBody<PageInfoVal>),
+        (status = 200, description = "Page info retrieved", body = HttpBody<PageInfoView>),
         (status = 403, description = "No permission to view this page"),
         (status = 404, description = "Page not found"),
     ),
@@ -68,7 +67,7 @@ pub async fn get_info(
     State(harn): State<AppHarn>,
     Path(page_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-) -> HttpResult<PageInfoVal> {
+) -> HttpResult<PageInfoView> {
     usecase::page::get_info(
         (harn.repo(), harn.image_pool()),
         user_token,

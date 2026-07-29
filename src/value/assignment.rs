@@ -10,7 +10,7 @@ use crate::value::incl::InclOpt;
 /// Incl opts for assignment info queries.
 ///
 /// Each opt embeds additional related data into the returned
-/// `AssignmentInfoVal`. Dotted opts implicitly pull in the segments before
+/// `AssignmentInfoView`. Dotted opts implicitly pull in the segments before
 /// the dot (e.g. `chapter.comic.workset.team` also embeds `chapter`,
 /// `chapter.comic`, and `chapter.comic.workset`).
 #[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq)]

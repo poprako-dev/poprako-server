@@ -10,7 +10,8 @@ use crate::data::instr::termbase::{
     CreateTermbaseInstr, ListComicTermbaseInfosInstr,
     ListTeamTermbaseInfosInstr, UpdateTermbaseInfoInstr,
 };
-use crate::data::val::termbase::{CreateTermbaseVal, TermbaseInfoVal};
+use crate::data::val::termbase::CreateTermbaseVal;
+use crate::data::view::termbase::TermbaseInfoView;
 use crate::model::read::spec::termbase::TermbaseListSpec;
 use crate::model::shared::user::UserToken;
 use crate::part::repo::comic::ComicRepo;
@@ -124,7 +125,7 @@ pub async fn get_info<C, R>(
     (repo,): (&R,),
     token: UserToken,
     id: String,
-) -> BaseRest<TermbaseInfoVal>
+) -> BaseRest<TermbaseInfoView>
 where
     R: TermbaseRepo<C> + ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
 {
@@ -151,7 +152,7 @@ pub async fn list_team_infos<C, R>(
     (repo,): (&R,),
     token: UserToken,
     instr: ListTeamTermbaseInfosInstr,
-) -> BaseRest<Vec<TermbaseInfoVal>>
+) -> BaseRest<Vec<TermbaseInfoView>>
 where
     R: TermbaseRepo<C> + MemberRepo<C> + Sync,
 {
@@ -186,7 +187,7 @@ pub async fn list_comic_infos<C, R>(
     (repo,): (&R,),
     token: UserToken,
     instr: ListComicTermbaseInfosInstr,
-) -> BaseRest<Vec<TermbaseInfoVal>>
+) -> BaseRest<Vec<TermbaseInfoView>>
 where
     R: TermbaseRepo<C> + ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
 {

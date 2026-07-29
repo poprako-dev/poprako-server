@@ -1,8 +1,9 @@
 //! Data transfer objects that sit between the external world and use cases.
 //!
-//! Request instructions live under [`instr`], direct response values under
-//! [`val`], and response-only nested views under [`view`]. Timestamps are
-//! converted to Unix milliseconds, and image keys are resolved through
+//! Request instructions live under [`instr`], direct non-`Info` response values
+//! under [`val`], and response views under [`view`]. Every direct projection
+//! of a model `*Info` is an `*InfoView`, including list elements. Timestamps
+//! are converted to Unix milliseconds, and image keys are resolved through
 //! [`ImagePool`].
 //!
 //! [`ImagePool`]: crate::part::image::ImagePool

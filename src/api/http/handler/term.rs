@@ -9,7 +9,8 @@ use tracing::instrument;
 use crate::data::instr::term::{
     CreateTermInstr, ListTermInfosInstr, UpdateTermInfoInstr,
 };
-use crate::data::val::term::{CreateTermVal, TermInfoVal};
+use crate::data::val::term::CreateTermVal;
+use crate::data::view::term::TermInfoView;
 
 #[cfg(feature = "swagger")]
 use utoipa::IntoParams;
@@ -68,7 +69,7 @@ pub async fn create(
     tag = "terms",
     params(("termbase_id" = String, Path, description = "Termbase ID"), TermListQuery),
     responses(
-        (status = 200, description = "Terms listed", body = HttpBody<Vec<TermInfoVal>>),
+        (status = 200, description = "Terms listed", body = HttpBody<Vec<TermInfoView>>),
         (status = 403, description = "Team membership required"),
         (status = 422, description = "Termbase not found"),
     ),
@@ -79,7 +80,7 @@ pub async fn list_infos(
     Path(termbase_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
     Query(query): Query<TermListQuery>,
-) -> HttpResult<Vec<TermInfoVal>> {
+) -> HttpResult<Vec<TermInfoView>> {
     //
     let instr = ListTermInfosInstr {
         termbase_id,
@@ -100,7 +101,7 @@ pub async fn list_infos(
     tag = "terms",
     params(("term_id" = String, Path, description = "Term ID")),
     responses(
-        (status = 200, description = "Term retrieved", body = HttpBody<TermInfoVal>),
+        (status = 200, description = "Term retrieved", body = HttpBody<TermInfoView>),
         (status = 403, description = "Team membership required"),
         (status = 422, description = "Term not found"),
     ),
@@ -110,7 +111,7 @@ pub async fn get_info(
     State(harn): State<AppHarn>,
     Path(term_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-) -> HttpResult<TermInfoVal> {
+) -> HttpResult<TermInfoView> {
     usecase::term::get_info((harn.repo(),), user_token, term_id)
         .await?
         .accept(StatusCode::OK)

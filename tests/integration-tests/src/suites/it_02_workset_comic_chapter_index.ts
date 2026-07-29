@@ -60,7 +60,7 @@ import {
     updateTeam,
     updateWorkset,
 } from "../http/fixtures.js";
-import type { ChapterInfoVal, ComicInfoVal, TeamInfoVal, WorksetInfoVal } from "../http/types.js";
+import type { ChapterInfoView, ComicInfoView, TeamInfoView, WorksetInfoView } from "../http/types.js";
 import { stagePhase } from "../state/stages.js";
 import { titled } from "../state/prefix.js";
 import type { ChapterRefs, RunCtx } from "../state/runCtx.js";
@@ -76,7 +76,7 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
     // ---------- C1. create 4 worksets, verify index monotonic ----------
 
     const worksetLabels = ["连载池", "短篇池", "加急池", "归档池"];
-    const createdWorksets: WorksetInfoVal[] = [];
+    const createdWorksets: WorksetInfoView[] = [];
 
     for (let i = 0; i < worksetLabels.length; i++) {
         const label = worksetLabels[i]!;

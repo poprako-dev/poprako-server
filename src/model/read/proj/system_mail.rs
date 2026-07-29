@@ -7,7 +7,7 @@ use time::OffsetDateTime;
 /// Carries a raw [`OffsetDateTime`] timestamp; convert to [`SystemMailVal`] for
 /// presentation.
 ///
-/// [`SystemMailInfoVal`]: crate::data::val::system_mail::SystemMailInfoVal
+/// [`SystemMailInfoView`]: crate::data::view::system_mail::SystemMailInfoView
 #[cfg_attr(test, derive(Clone))]
 pub struct SystemMailInfo {
     //

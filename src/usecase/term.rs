@@ -10,7 +10,8 @@ use crate::complex::termbase::TermbasePermComplex;
 use crate::data::instr::term::{
     CreateTermInstr, ListTermInfosInstr, UpdateTermInfoInstr,
 };
-use crate::data::val::term::{CreateTermVal, TermInfoVal};
+use crate::data::val::term::CreateTermVal;
+use crate::data::view::term::TermInfoView;
 use crate::model::read::spec::term::TermListSpec;
 use crate::model::shared::user::UserToken;
 use crate::part::repo::comic::ComicRepo;
@@ -106,7 +107,7 @@ pub async fn get_info<C, R>(
     (repo,): (&R,),
     token: UserToken,
     id: String,
-) -> BaseRest<TermInfoVal>
+) -> BaseRest<TermInfoView>
 where
     R: TermbaseRepo<C>
         + TermRepo<C>
@@ -144,7 +145,7 @@ pub async fn list_infos<C, R>(
     (repo,): (&R,),
     token: UserToken,
     instr: ListTermInfosInstr,
-) -> BaseRest<Vec<TermInfoVal>>
+) -> BaseRest<Vec<TermInfoView>>
 where
     R: TermbaseRepo<C>
         + TermRepo<C>

@@ -16,9 +16,8 @@ use crate::data::instr::member_invitation::{
     CreateMemberInvitationInstr, ListMemberInvitationInfosInstr,
     UpdateMemberInvitationRolesInstr,
 };
-use crate::data::val::member_invitation::{
-    CreateMemberInvitationVal, MemberInvitationInfoVal,
-};
+use crate::data::val::member_invitation::CreateMemberInvitationVal;
+use crate::data::view::member_invitation::MemberInvitationInfoView;
 use crate::model::read::spec::member_invitation::MemberInvitationListSpec;
 use crate::model::shared::user::UserToken;
 use crate::model::write::member_invitation::{
@@ -151,7 +150,7 @@ pub async fn list_infos<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
     instr: ListMemberInvitationInfosInstr,
-) -> BaseRest<Vec<MemberInvitationInfoVal>>
+) -> BaseRest<Vec<MemberInvitationInfoView>>
 where
     R: MemberInvitationRepo<C> + MemberRepo<C> + Sync,
     I: ImagePool,
@@ -193,7 +192,7 @@ where
 
     for member_invitation_info in member_invitation_infos {
         member_invitation_info_vals.push(
-            MemberInvitationInfoVal::from_model(
+            MemberInvitationInfoView::from_model(
                 image_pool,
                 member_invitation_info,
             )

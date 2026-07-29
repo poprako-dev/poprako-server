@@ -11,7 +11,8 @@ use crate::data::instr::member::{
     CreateMemberInstr, JoinTeamInstr, ListMemberInfosInstr,
     UpdateMemberRolesInstr,
 };
-use crate::data::val::member::{CreateMemberVal, MemberInfoVal};
+use crate::data::val::member::CreateMemberVal;
+use crate::data::view::member::MemberInfoView;
 
 #[cfg(feature = "swagger")]
 use utoipa::IntoParams;
@@ -83,7 +84,7 @@ pub async fn create(
     description = "Lists members. Exactly one of `owner_id` or `team_id` is required. In `owner_id` mode, `role` and `fuzzy_nickname` must be omitted. In `team_id` mode, `fuzzy_nickname` and `role` are optional. `incl` embeds related rows. Examples: `/api/v1/members?team_id=t_1&fuzzy_nickname=al&role=1&incl=user`, `/api/v1/members?owner_id=u_1&incl=team`.",
     params(ListMemberInfosInstr),
     responses(
-        (status = 200, description = "Members listed", body = HttpBody<Vec<MemberInfoVal>>),
+        (status = 200, description = "Members listed", body = HttpBody<Vec<MemberInfoView>>),
         (status = 422, description = "Exactly one of owner_id or team_id is required, or owner_id combined with role/fuzzy_nickname"),
         (status = 403, description = "No permission to list members in this team"),
     ),
@@ -93,7 +94,7 @@ pub async fn list_infos(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
     Query(instr): Query<ListMemberInfosInstr>,
-) -> HttpResult<Vec<MemberInfoVal>> {
+) -> HttpResult<Vec<MemberInfoView>> {
     usecase::member::list_infos(
         (harn.repo(), harn.image_pool()),
         user_token,
@@ -110,7 +111,7 @@ pub async fn list_infos(
     tag = "members",
     params(MemberMeListQuery),
     responses(
-        (status = 200, description = "Current user memberships", body = HttpBody<Vec<MemberInfoVal>>),
+        (status = 200, description = "Current user memberships", body = HttpBody<Vec<MemberInfoView>>),
         (status = 401, description = "Authentication required"),
     ),
 ))]
@@ -119,7 +120,7 @@ pub async fn list_my_infos(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
     Query(query): Query<MemberMeListQuery>,
-) -> HttpResult<Vec<MemberInfoVal>> {
+) -> HttpResult<Vec<MemberInfoView>> {
     //
     let instr = ListMemberInfosInstr {
         owner_id: Some(user_token.user_id.clone()),
@@ -206,7 +207,7 @@ pub async fn delete(
     tag = "members",
     request_body = JoinTeamInstr,
     responses(
-        (status = 201, description = "Joined team", body = HttpBody<MemberInfoVal>),
+        (status = 201, description = "Joined team", body = HttpBody<MemberInfoView>),
         (status = 422, description = "Invitation does not target this user or already a member"),
         (status = 404, description = "Invitation code not found"),
     ),
@@ -216,7 +217,7 @@ pub async fn join(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
     Json(instr): Json<JoinTeamInstr>,
-) -> HttpResult<MemberInfoVal> {
+) -> HttpResult<MemberInfoView> {
     usecase::member::join_team(
         (harn.drive(), harn.repo(), harn.image_pool()),
         user_token,

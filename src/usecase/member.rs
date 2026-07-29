@@ -10,7 +10,8 @@ use crate::data::instr::member::{
     CreateMemberInstr, JoinTeamInstr, ListMemberInfosInstr,
     UpdateMemberRolesInstr,
 };
-use crate::data::val::member::{CreateMemberVal, MemberInfoVal};
+use crate::data::val::member::CreateMemberVal;
+use crate::data::view::member::MemberInfoView;
 use crate::model::read::spec::member::MemberListSpec;
 use crate::model::shared::user::UserToken;
 use crate::model::write::member::{MemberEntry, MemberRoleRepl};
@@ -118,7 +119,7 @@ pub async fn join_team<N, C, R, I>(
     (nucl, repo, image_pool): (&N, &R, &I),
     token: UserToken,
     instr: JoinTeamInstr,
-) -> BaseRest<MemberInfoVal>
+) -> BaseRest<MemberInfoView>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -181,7 +182,7 @@ where
         })
         .await?;
 
-    MemberInfoVal::from_model(image_pool, member_info).await
+    MemberInfoView::from_model(image_pool, member_info).await
 }
 
 /// Lists members under one team.
@@ -192,7 +193,7 @@ pub async fn list_infos<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
     instr: ListMemberInfosInstr,
-) -> BaseRest<Vec<MemberInfoVal>>
+) -> BaseRest<Vec<MemberInfoView>>
 where
     R: MemberRepo<C> + Sync,
     I: ImagePool,
@@ -220,7 +221,7 @@ where
 
     for member_info in member_infos {
         member_info_vals
-            .push(MemberInfoVal::from_model(image_pool, member_info).await?);
+            .push(MemberInfoView::from_model(image_pool, member_info).await?);
     }
 
     accept(member_info_vals)

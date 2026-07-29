@@ -10,7 +10,8 @@ use crate::data::instr::termbase::{
     CreateTermbaseInstr, ListComicTermbaseInfosInstr,
     ListTeamTermbaseInfosInstr, UpdateTermbaseInfoInstr,
 };
-use crate::data::val::termbase::{CreateTermbaseVal, TermbaseInfoVal};
+use crate::data::val::termbase::CreateTermbaseVal;
+use crate::data::view::termbase::TermbaseInfoView;
 
 #[cfg(feature = "swagger")]
 use utoipa::IntoParams;
@@ -69,7 +70,7 @@ pub async fn create(
     tag = "termbases",
     params(("team_id" = String, Path, description = "Team ID"), TermbaseListQuery),
     responses(
-        (status = 200, description = "Team termbases listed", body = HttpBody<Vec<TermbaseInfoVal>>),
+        (status = 200, description = "Team termbases listed", body = HttpBody<Vec<TermbaseInfoView>>),
         (status = 403, description = "Team membership required"),
     ),
 ))]
@@ -79,7 +80,7 @@ pub async fn list_team_infos(
     Path(team_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
     Query(query): Query<TermbaseListQuery>,
-) -> HttpResult<Vec<TermbaseInfoVal>> {
+) -> HttpResult<Vec<TermbaseInfoView>> {
     //
     let instr = ListTeamTermbaseInfosInstr {
         team_id,
@@ -100,7 +101,7 @@ pub async fn list_team_infos(
     tag = "termbases",
     params(("comic_id" = String, Path, description = "Comic ID"), TermbaseListQuery),
     responses(
-        (status = 200, description = "Comic-visible termbases listed", body = HttpBody<Vec<TermbaseInfoVal>>),
+        (status = 200, description = "Comic-visible termbases listed", body = HttpBody<Vec<TermbaseInfoView>>),
         (status = 403, description = "Team membership required"),
         (status = 422, description = "Comic not found"),
     ),
@@ -111,7 +112,7 @@ pub async fn list_comic_infos(
     Path(comic_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
     Query(query): Query<TermbaseListQuery>,
-) -> HttpResult<Vec<TermbaseInfoVal>> {
+) -> HttpResult<Vec<TermbaseInfoView>> {
     //
     let instr = ListComicTermbaseInfosInstr {
         comic_id,
@@ -132,7 +133,7 @@ pub async fn list_comic_infos(
     tag = "termbases",
     params(("termbase_id" = String, Path, description = "Termbase ID")),
     responses(
-        (status = 200, description = "Termbase retrieved", body = HttpBody<TermbaseInfoVal>),
+        (status = 200, description = "Termbase retrieved", body = HttpBody<TermbaseInfoView>),
         (status = 403, description = "Team membership required"),
         (status = 422, description = "Termbase not found"),
     ),
@@ -142,7 +143,7 @@ pub async fn get_info(
     State(harn): State<AppHarn>,
     Path(termbase_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-) -> HttpResult<TermbaseInfoVal> {
+) -> HttpResult<TermbaseInfoView> {
     usecase::termbase::get_info((harn.repo(),), user_token, termbase_id)
         .await?
         .accept(StatusCode::OK)

@@ -8,7 +8,7 @@
 
 use serde::Serialize;
 
-use poprako_util::time::ToUnixMilli;
+use poprako_util::time::ToUnixMilli as _;
 
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;

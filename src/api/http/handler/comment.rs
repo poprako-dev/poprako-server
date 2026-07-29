@@ -8,7 +8,8 @@ use serde::Deserialize;
 use tracing::instrument;
 
 use crate::data::instr::comment::{CreateCommentInstr, ListCommentInfosInstr};
-use crate::data::val::comment::{CommentInfoVal, CreateCommentVal};
+use crate::data::val::comment::CreateCommentVal;
+use crate::data::view::comment::CommentInfoView;
 
 #[cfg(feature = "swagger")]
 use utoipa::IntoParams;
@@ -72,7 +73,7 @@ pub async fn create(
     description = "Lists a team's board comments. `incl` embeds related rows. Example: `/api/v1/teams/{team_id}/comments?incl=user&offset=0&limit=20`.",
     params(("team_id" = String, Path, description = "Team ID"), CommentListQuery),
     responses(
-        (status = 200, description = "Comments listed", body = HttpBody<Vec<CommentInfoVal>>),
+        (status = 200, description = "Comments listed", body = HttpBody<Vec<CommentInfoView>>),
         (status = 403, description = "No permission to list comments in this team"),
     ),
 ))]
@@ -82,7 +83,7 @@ pub async fn list_infos(
     Path(team_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
     Query(query): Query<CommentListQuery>,
-) -> HttpResult<Vec<CommentInfoVal>> {
+) -> HttpResult<Vec<CommentInfoView>> {
     //
     let instr = ListCommentInfosInstr {
         team_id,

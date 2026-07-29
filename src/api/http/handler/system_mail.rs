@@ -8,7 +8,7 @@ use tracing::instrument;
 use crate::data::instr::system_mail::{
     ListSystemMailInfosInstr, MarkSystemMailReadInstr,
 };
-use crate::data::val::system_mail::SystemMailInfoVal;
+use crate::data::view::system_mail::SystemMailInfoView;
 
 #[allow(unused_imports)]
 use crate::api::http::result::{
@@ -25,7 +25,7 @@ use crate::usecase;
     tag = "system-mails",
     params(ListSystemMailInfosInstr),
     responses(
-        (status = 200, description = "System mails listed", body = HttpBody<Vec<SystemMailInfoVal>>),
+        (status = 200, description = "System mails listed", body = HttpBody<Vec<SystemMailInfoView>>),
         (status = 401, description = "Authentication required"),
     ),
 ))]
@@ -34,7 +34,7 @@ pub async fn list_infos(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
     Query(instr): Query<ListSystemMailInfosInstr>,
-) -> HttpResult<Vec<SystemMailInfoVal>> {
+) -> HttpResult<Vec<SystemMailInfoView>> {
     usecase::system_mail::list_infos((harn.repo(),), user_token, instr)
         .await?
         .accept(StatusCode::OK)

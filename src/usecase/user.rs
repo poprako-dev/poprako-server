@@ -15,8 +15,9 @@ use crate::data::instr::user::{
     MarkUserAvatarUploadedInstr, ReserveUserAvatarInstr, UpdateUserInfoInstr,
     UpdateUserPasswordInstr,
 };
-use crate::data::val::user::{ReserveUserAvatarVal, UserInfoVal};
+use crate::data::val::user::ReserveUserAvatarVal;
 use crate::data::view::image::ImageUploadSlotView;
+use crate::data::view::user::UserInfoView;
 use crate::model::shared::user::UserToken;
 use crate::model::write::member::MemberNicknameRepl;
 use crate::model::write::user::{UserAvatarRepl, UserCredsRepl, UserInfoRepl};
@@ -58,7 +59,7 @@ pub async fn get_info<C, R, I, V>(
     (repo, image_pool, develop): (&R, &I, &V),
     token: UserToken,
     id: String,
-) -> BaseRest<UserInfoVal>
+) -> BaseRest<UserInfoView>
 where
     R: UserRepo<C>,
     I: ImagePool,
@@ -76,7 +77,7 @@ where
         develop.develop(event).await;
     }
 
-    UserInfoVal::from_model(image_pool, user_info).await
+    UserInfoView::from_model(image_pool, user_info).await
 }
 
 /// Updates a user's QQ ID and nickname.

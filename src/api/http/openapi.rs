@@ -52,40 +52,43 @@ use crate::data::instr::user::{
     UpdateUserPasswordInstr,
 };
 use crate::data::instr::workset::{CreateWorksetInstr, UpdateWorksetInfoInstr};
-use crate::data::val::announcement::{
-    AnnouncementInfoVal, CreateAnnouncementVal,
-};
-use crate::data::val::assignment::AssignmentInfoVal;
-use crate::data::val::assignment_invitation::{
-    AssignmentInvitationInfoVal, CreateAssignmentInvitationVal,
-};
+use crate::data::val::announcement::CreateAnnouncementVal;
+use crate::data::val::assignment_invitation::CreateAssignmentInvitationVal;
 use crate::data::val::auth::{LoginAuthVal, RegisterAuthVal};
-use crate::data::val::chapter::{ChapterInfoVal, CreateChapterVal};
+use crate::data::val::chapter::CreateChapterVal;
 use crate::data::val::chapter_port::{
     ExportChapterTranslationVal, ImportChapterTranslationVal,
 };
-use crate::data::val::comic::{
-    ComicInfoVal, CreateComicVal, ReserveComicCoverVal,
-};
+use crate::data::val::comic::{CreateComicVal, ReserveComicCoverVal};
 use crate::data::val::comic_archive::ArchiveComicVal;
 use crate::data::val::comic_list::ListComicInfosVal;
-use crate::data::val::comment::{CommentInfoVal, CreateCommentVal};
-use crate::data::val::member::{CreateMemberVal, MemberInfoVal};
-use crate::data::val::member_invitation::{
-    CreateMemberInvitationVal, MemberInvitationInfoVal,
-};
-use crate::data::val::page::{
-    PageInfoVal, ReserveChapterPagesVal, ReservedPageVal,
-};
-use crate::data::val::system_mail::SystemMailInfoVal;
-use crate::data::val::team::{ReserveTeamAvatarVal, TeamInfoVal};
-use crate::data::val::term::{CreateTermVal, TermInfoVal};
-use crate::data::val::termbase::{CreateTermbaseVal, TermbaseInfoVal};
+use crate::data::val::comment::CreateCommentVal;
+use crate::data::val::member::CreateMemberVal;
+use crate::data::val::member_invitation::CreateMemberInvitationVal;
+use crate::data::val::page::{ReserveChapterPagesVal, ReservedPageVal};
+use crate::data::val::team::ReserveTeamAvatarVal;
+use crate::data::val::term::CreateTermVal;
+use crate::data::val::termbase::CreateTermbaseVal;
 use crate::data::val::unit::ListPageUnitInfosVal;
-use crate::data::val::user::{ReserveUserAvatarVal, UserInfoVal};
-use crate::data::val::workset::{CreateWorksetVal, WorksetInfoVal};
+use crate::data::val::user::ReserveUserAvatarVal;
+use crate::data::val::workset::CreateWorksetVal;
+use crate::data::view::announcement::AnnouncementInfoView;
+use crate::data::view::assignment::AssignmentInfoView;
+use crate::data::view::assignment_invitation::AssignmentInvitationInfoView;
+use crate::data::view::chapter::ChapterInfoView;
+use crate::data::view::comic::ComicInfoView;
+use crate::data::view::comment::CommentInfoView;
 use crate::data::view::image::ImageUploadSlotView;
+use crate::data::view::member::MemberInfoView;
+use crate::data::view::member_invitation::MemberInvitationInfoView;
+use crate::data::view::page::PageInfoView;
+use crate::data::view::system_mail::SystemMailInfoView;
+use crate::data::view::team::TeamInfoView;
+use crate::data::view::term::TermInfoView;
+use crate::data::view::termbase::TermbaseInfoView;
 use crate::data::view::unit::UnitInfoView;
+use crate::data::view::user::UserInfoView;
+use crate::data::view::workset::WorksetInfoView;
 use crate::value::announcement::AnnouncementInclOpt;
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::chapter::ChapterInclOpt;
@@ -193,23 +196,23 @@ use crate::value::role::RoleField;
         RegisterAuthVal,
         LoginAuthInstr,
         LoginAuthVal,
-        UserInfoVal,
+        UserInfoView,
         UpdateUserInfoInstr,
         UpdateUserPasswordInstr,
         ReserveUserAvatarInstr,
         ReserveUserAvatarVal,
         MarkUserAvatarUploadedInstr,
-        TeamInfoVal,
+        TeamInfoView,
         CreateTeamInstr,
         UpdateTeamInfoInstr,
         ReserveTeamAvatarInstr,
         ReserveTeamAvatarVal,
         MarkTeamAvatarUploadedInstr,
-        WorksetInfoVal,
+        WorksetInfoView,
         CreateWorksetInstr,
         CreateWorksetVal,
         UpdateWorksetInfoInstr,
-        ComicInfoVal,
+        ComicInfoView,
         ListComicInfosVal,
         CreateComicInstr,
         CreateComicVal,
@@ -218,7 +221,7 @@ use crate::value::role::RoleField;
         ReserveComicCoverVal,
         MarkComicCoverUploadedInstr,
         ArchiveComicVal,
-        ChapterInfoVal,
+        ChapterInfoView,
         CreateChapterInstr,
         CreateChapterVal,
         UpdateChapterInfoInstr,
@@ -226,7 +229,7 @@ use crate::value::role::RoleField;
         ExportChapterTranslationVal,
         ImportChapterTranslationInstr,
         ImportChapterTranslationVal,
-        PageInfoVal,
+        PageInfoView,
         PageImageInstr,
         ImageUploadSlotView,
         ReserveChapterPagesInstr,
@@ -240,35 +243,35 @@ use crate::value::role::RoleField;
         UnitCoordInstr,
         UnitTranslationInstr,
         UnitRevisionInstr,
-        AssignmentInfoVal,
+        AssignmentInfoView,
         JoinChapterAssignmentInstr,
         UpdateAssignmentRolesInstr,
-        AssignmentInvitationInfoVal,
+        AssignmentInvitationInfoView,
         CreateAssignmentInvitationInstr,
         CreateAssignmentInvitationVal,
         JoinAssignmentInvitationInstr,
-        SystemMailInfoVal,
+        SystemMailInfoView,
         MarkSystemMailReadInstr,
-        AnnouncementInfoVal,
+        AnnouncementInfoView,
         CreateAnnouncementInstr,
         CreateAnnouncementVal,
-        CommentInfoVal,
+        CommentInfoView,
         CreateCommentInstr,
         CreateCommentVal,
-        TermbaseInfoVal,
+        TermbaseInfoView,
         CreateTermbaseInstr,
         CreateTermbaseVal,
         UpdateTermbaseInfoInstr,
-        TermInfoVal,
+        TermInfoView,
         CreateTermInstr,
         CreateTermVal,
         UpdateTermInfoInstr,
-        MemberInfoVal,
+        MemberInfoView,
         CreateMemberInstr,
         CreateMemberVal,
         JoinTeamInstr,
         UpdateMemberRolesInstr,
-        MemberInvitationInfoVal,
+        MemberInvitationInfoView,
         CreateMemberInvitationInstr,
         CreateMemberInvitationVal,
         UpdateMemberInvitationRolesInstr,

@@ -6,10 +6,28 @@ use serde::Deserialize;
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
-pub use crate::data::instr::image::{
-    MarkImageUploadedInstr as MarkUserAvatarUploadedInstr,
-    ReserveImageInstr as ReserveUserAvatarInstr,
-};
+use crate::value::image::{ImageExt, ImageHash};
+
+/// Request to reserve a user avatar upload.
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
+pub struct ReserveUserAvatarInstr {
+    //
+    /// SHA-256 identity of the exact avatar bytes.
+    pub image_hash: ImageHash,
+    /// Upload size used for validation and PUT signing.
+    pub new_byte_len: u64,
+    /// Avatar file format.
+    pub ext: ImageExt,
+}
+
+/// Request to confirm one reserved user avatar version.
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
+pub struct MarkUserAvatarUploadedInstr {
+    /// Version returned in the avatar upload slot.
+    pub image_version: u32,
+}
 
 /// Input parameters for updating a user's profile.
 #[derive(Debug, Deserialize)]

@@ -12,7 +12,7 @@ use crate::data::instr::assignment::{
     JoinChapterAssignmentInstr, ListAssignmentInfosInstr,
     UpdateAssignmentRolesInstr,
 };
-use crate::data::val::assignment::AssignmentInfoVal;
+use crate::data::view::assignment::AssignmentInfoView;
 use crate::model::read::spec::assignment::AssignmentListSpec;
 use crate::model::shared::user::UserToken;
 use crate::model::write::assignment::{AssignmentEntry, AssignmentRoleRepl};
@@ -48,7 +48,7 @@ pub async fn list_infos<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
     instr: ListAssignmentInfosInstr,
-) -> BaseRest<Vec<AssignmentInfoVal>>
+) -> BaseRest<Vec<AssignmentInfoView>>
 where
     R: AssignmentRepo<C>
         + ChapterRepo<C>
@@ -112,7 +112,7 @@ where
             .map(String::as_str);
 
         assignment_info_vals.push(
-            AssignmentInfoVal::from_model(
+            AssignmentInfoView::from_model(
                 image_pool,
                 assignment_info,
                 fallback_cover_key,
@@ -130,7 +130,7 @@ pub async fn join<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
     instr: JoinChapterAssignmentInstr,
-) -> BaseRest<AssignmentInfoVal>
+) -> BaseRest<AssignmentInfoView>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -231,7 +231,7 @@ where
         })
         .await?;
 
-    accept(AssignmentInfoVal::from(assignment_info))
+    accept(AssignmentInfoView::from(assignment_info))
 }
 
 /// Updates assignment roles.

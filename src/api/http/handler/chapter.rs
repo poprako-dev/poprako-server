@@ -11,7 +11,8 @@ use crate::data::instr::chapter::{
     CreateChapterInstr, ListChapterInfosInstr, UpdateChapterInfoInstr,
     UpdateChapterStageInstr,
 };
-use crate::data::val::chapter::{ChapterInfoVal, CreateChapterVal};
+use crate::data::val::chapter::CreateChapterVal;
+use crate::data::view::chapter::ChapterInfoView;
 
 #[cfg(feature = "swagger")]
 use utoipa::IntoParams;
@@ -81,7 +82,7 @@ pub async fn create(
     description = "Lists chapters of a comic. `incl` embeds related rows; dotted values imply their parent segments. Example: `/api/v1/comics/{comic_id}/chapters?incl=comic.workset.team&incl=creator&offset=0&limit=20`.",
     params(("comic_id" = String, Path, description = "Comic ID"), ChapterListQuery),
     responses(
-        (status = 200, description = "Chapters listed", body = HttpBody<Vec<ChapterInfoVal>>),
+        (status = 200, description = "Chapters listed", body = HttpBody<Vec<ChapterInfoView>>),
         (status = 403, description = "No permission to list chapters in this comic"),
     ),
 ))]
@@ -91,7 +92,7 @@ pub async fn list_infos(
     Path(comic_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
     Query(query): Query<ChapterListQuery>,
-) -> HttpResult<Vec<ChapterInfoVal>> {
+) -> HttpResult<Vec<ChapterInfoView>> {
     //
     let instr = ListChapterInfosInstr {
         comic_id,
@@ -116,7 +117,7 @@ pub async fn list_infos(
     tag = "chapters",
     params(("comic_id" = String, Path, description = "Comic ID")),
     responses(
-        (status = 200, description = "Pinned chapter (or null)", body = HttpBody<Option<ChapterInfoVal>>),
+        (status = 200, description = "Pinned chapter (or null)", body = HttpBody<Option<ChapterInfoView>>),
         (status = 403, description = "No permission to view this comic's pinned chapter"),
     ),
 ))]
@@ -125,7 +126,7 @@ pub async fn get_pinned(
     State(harn): State<AppHarn>,
     Path(comic_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-) -> HttpResult<Option<ChapterInfoVal>> {
+) -> HttpResult<Option<ChapterInfoView>> {
     usecase::chapter::get_pinned((harn.repo(),), user_token, comic_id)
         .await?
         .accept(StatusCode::OK)
@@ -138,7 +139,7 @@ pub async fn get_pinned(
     tag = "chapters",
     params(("chapter_id" = String, Path, description = "Chapter ID")),
     responses(
-        (status = 200, description = "Chapter info retrieved", body = HttpBody<ChapterInfoVal>),
+        (status = 200, description = "Chapter info retrieved", body = HttpBody<ChapterInfoView>),
         (status = 403, description = "No permission to view this chapter"),
         (status = 404, description = "Chapter not found"),
     ),
@@ -148,7 +149,7 @@ pub async fn get_info(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-) -> HttpResult<ChapterInfoVal> {
+) -> HttpResult<ChapterInfoView> {
     usecase::chapter::get_info((harn.repo(),), user_token, chapter_id)
         .await?
         .accept(StatusCode::OK)

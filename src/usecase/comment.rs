@@ -5,7 +5,8 @@ use tracing::instrument;
 
 use crate::complex::comment::{CommentComplex, CommentPermComplex};
 use crate::data::instr::comment::{CreateCommentInstr, ListCommentInfosInstr};
-use crate::data::val::comment::{CommentInfoVal, CreateCommentVal};
+use crate::data::val::comment::CreateCommentVal;
+use crate::data::view::comment::CommentInfoView;
 use crate::model::read::spec::comment::CommentListSpec;
 use crate::model::shared::user::UserToken;
 use crate::model::write::comment::CommentEntry;
@@ -26,7 +27,7 @@ pub async fn list_infos<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
     instr: ListCommentInfosInstr,
-) -> BaseRest<Vec<CommentInfoVal>>
+) -> BaseRest<Vec<CommentInfoView>>
 where
     R: CommentRepo<C> + MemberRepo<C> + Sync,
     I: ImagePool,
@@ -52,7 +53,7 @@ where
 
     for comment_info in comment_infos {
         comment_info_vals
-            .push(CommentInfoVal::from_model(image_pool, comment_info).await?);
+            .push(CommentInfoView::from_model(image_pool, comment_info).await?);
     }
 
     accept(comment_info_vals)

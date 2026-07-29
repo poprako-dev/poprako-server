@@ -11,9 +11,8 @@ use crate::data::instr::member_invitation::{
     CreateMemberInvitationInstr, ListMemberInvitationInfosInstr,
     UpdateMemberInvitationRolesInstr,
 };
-use crate::data::val::member_invitation::{
-    CreateMemberInvitationVal, MemberInvitationInfoVal,
-};
+use crate::data::val::member_invitation::CreateMemberInvitationVal;
+use crate::data::view::member_invitation::MemberInvitationInfoView;
 
 #[cfg(feature = "swagger")]
 use utoipa::IntoParams;
@@ -88,7 +87,7 @@ pub async fn create(
     description = "Lists a team's member invitations. `pending` filters by consumption state; `incl` embeds related rows. Example: `/api/v1/teams/{team_id}/member-invitations?pending=true&incl=invitor&offset=0&limit=20`.",
     params(("team_id" = String, Path, description = "Team ID"), MemberInvitationListQuery),
     responses(
-        (status = 200, description = "Invitations listed", body = HttpBody<Vec<MemberInvitationInfoVal>>),
+        (status = 200, description = "Invitations listed", body = HttpBody<Vec<MemberInvitationInfoView>>),
         (status = 403, description = "No permission to list invitations in this team"),
     ),
 ))]
@@ -98,7 +97,7 @@ pub async fn list_infos(
     Path(team_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
     Query(query): Query<MemberInvitationListQuery>,
-) -> HttpResult<Vec<MemberInvitationInfoVal>> {
+) -> HttpResult<Vec<MemberInvitationInfoView>> {
     //
     let instr = ListMemberInvitationInfosInstr {
         team_id,

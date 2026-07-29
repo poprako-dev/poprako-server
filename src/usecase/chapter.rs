@@ -13,7 +13,8 @@ use crate::data::instr::chapter::{
     CreateChapterInstr, ListChapterInfosInstr, UpdateChapterInfoInstr,
     UpdateChapterStageInstr,
 };
-use crate::data::val::chapter::{ChapterInfoVal, CreateChapterVal};
+use crate::data::val::chapter::CreateChapterVal;
+use crate::data::view::chapter::ChapterInfoView;
 use crate::model::read::spec::chapter::ChapterListSpec;
 use crate::model::shared::user::UserToken;
 use crate::model::write::assignment::AssignmentEntry;
@@ -66,7 +67,7 @@ pub async fn list_infos<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
     instr: ListChapterInfosInstr,
-) -> BaseRest<Vec<ChapterInfoVal>>
+) -> BaseRest<Vec<ChapterInfoView>>
 where
     R: ChapterRepo<C>
         + ComicRepo<C>
@@ -124,7 +125,7 @@ where
             .map(String::as_str);
 
         chapter_info_vals.push(
-            ChapterInfoVal::from_model(
+            ChapterInfoView::from_model(
                 image_pool,
                 chapter_info,
                 fallback_cover_key,
@@ -142,7 +143,7 @@ pub async fn get_info<C, R>(
     (repo,): (&R,),
     token: UserToken,
     id: String,
-) -> BaseRest<ChapterInfoVal>
+) -> BaseRest<ChapterInfoView>
 where
     R: ChapterRepo<C> + ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
 {
@@ -166,7 +167,7 @@ where
     .run_on(repo)
     .await?;
 
-    accept(ChapterInfoVal::from(chapter_info))
+    accept(ChapterInfoView::from(chapter_info))
 }
 
 /// Fetches the pinned chapter under one comic.
@@ -175,7 +176,7 @@ pub async fn get_pinned<C, R>(
     (repo,): (&R,),
     token: UserToken,
     comic_id: String,
-) -> BaseRest<Option<ChapterInfoVal>>
+) -> BaseRest<Option<ChapterInfoView>>
 where
     R: ChapterRepo<C> + ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
 {
@@ -198,7 +199,7 @@ where
     .run_on(repo)
     .await?;
 
-    accept(chapter_info.map(ChapterInfoVal::from))
+    accept(chapter_info.map(ChapterInfoView::from))
 }
 
 /// Creates a new chapter.

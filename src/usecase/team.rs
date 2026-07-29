@@ -18,8 +18,9 @@ use crate::data::instr::team::{
     CreateTeamInstr, ListTeamInfosInstr, MarkTeamAvatarUploadedInstr,
     ReserveTeamAvatarInstr, UpdateTeamInfoInstr,
 };
-use crate::data::val::team::{ReserveTeamAvatarVal, TeamInfoVal};
+use crate::data::val::team::ReserveTeamAvatarVal;
 use crate::data::view::image::ImageUploadSlotView;
+use crate::data::view::team::TeamInfoView;
 use crate::model::read::proj::team::TeamInfo;
 use crate::model::read::spec::team::{TeamListKind, TeamListSpec};
 use crate::model::shared::user::UserToken;
@@ -88,7 +89,7 @@ pub async fn create<N, C, R, I>(
     (nucl, repo, image_pool): (&N, &R, &I),
     token: UserToken,
     instr: CreateTeamInstr,
-) -> BaseRest<TeamInfoVal>
+) -> BaseRest<TeamInfoView>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -139,7 +140,7 @@ where
         .await?;
 
     // FIXME: no need to use info val in create.
-    TeamInfoVal::from_model(image_pool, team_info).await
+    TeamInfoView::from_model(image_pool, team_info).await
 }
 
 /// Fetches a team by ID with avatar URL resolution.
@@ -155,12 +156,12 @@ where
 pub async fn get_info<C, R, I>(
     (repo, image_pool): (&R, &I),
     id: String,
-) -> BaseRest<TeamInfoVal>
+) -> BaseRest<TeamInfoView>
 where
     R: TeamRepo<C>,
     I: ImagePool,
 {
-    TeamInfoVal::from_model(
+    TeamInfoView::from_model(
         image_pool,
         GetTeamInfo::Id { id: &id }.run_on(repo).await?,
     )
@@ -182,7 +183,7 @@ pub async fn list_infos<C, R, I>(
     token: UserToken,
     // FIXME: use try_into()?
     instr: ListTeamInfosInstr,
-) -> BaseRest<Vec<TeamInfoVal>>
+) -> BaseRest<Vec<TeamInfoView>>
 where
     R: TeamRepo<C> + UserRepo<C> + Sync,
     I: ImagePool,
@@ -227,7 +228,7 @@ where
     let team_info_vals = futures_util::future::join_all(
         team_infos
             .into_iter()
-            .map(|team_info| TeamInfoVal::from_model(image_pool, team_info)),
+            .map(|team_info| TeamInfoView::from_model(image_pool, team_info)),
     )
     .await
     .into_iter()

@@ -2,8 +2,6 @@
 
 /// Announcement value DTOs.
 pub mod announcement;
-/// Assignment value DTOs.
-pub mod assignment;
 /// Assignment invitation value DTOs.
 pub mod assignment_invitation;
 /// Authentication value DTOs.
@@ -20,16 +18,12 @@ pub mod comic_archive;
 pub mod comic_list;
 /// Comment value DTOs.
 pub mod comment;
-/// Image value DTOs.
-pub mod image;
 /// Member value DTOs.
 pub mod member;
 /// Member-invitation value DTOs.
 pub mod member_invitation;
 /// Page value DTOs.
 pub mod page;
-/// System-mail value DTOs.
-pub mod system_mail;
 /// Team value DTOs.
 pub mod team;
 /// Term value DTOs.

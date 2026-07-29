@@ -155,7 +155,7 @@ def self_test() -> int:
             "struct InternalHelper;\n",
         )
         (root / "src" / "data" / "val" / "team.rs").write_text(
-            "pub struct TeamInfoVal;\n",
+            "pub struct CreateTeamVal;\n",
         )
         (root / "src" / "data" / "view" / "team.rs").write_text(
             "pub struct TeamMemberView;\n",
@@ -166,9 +166,8 @@ def self_test() -> int:
             return 1
 
         (root / "src" / "data" / "instr" / "team.rs").write_text(
-            "pub struct CreateInstr;\n"
-            "pub struct TeamInfoVal;\n"
-            "pub struct TeamMemberView;\n",
+            "pub struct CreateData;\n"
+            "pub struct TeamInfoData;\n"
         )
         diagnostics = check_root(root)
 

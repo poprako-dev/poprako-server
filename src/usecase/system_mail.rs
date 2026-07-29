@@ -6,7 +6,7 @@ use tracing::instrument;
 use poprako_util::time::ToUnixMilli as _;
 
 use crate::data::instr::system_mail::ListSystemMailInfosInstr;
-use crate::data::val::system_mail::SystemMailInfoVal;
+use crate::data::view::system_mail::SystemMailInfoView;
 use crate::model::read::spec::system_mail::{
     SystemMailListKind, SystemMailListSpec,
 };
@@ -37,7 +37,7 @@ pub async fn list_infos<R>(
     (repo,): (&R,),
     token: UserToken,
     instr: ListSystemMailInfosInstr,
-) -> BaseRest<Vec<SystemMailInfoVal>>
+) -> BaseRest<Vec<SystemMailInfoView>>
 where
     R: SystemMailRepo,
 {
@@ -65,7 +65,7 @@ where
 
     let system_mail_vals = system_mail_infos
         .into_iter()
-        .map(|system_mail_info| SystemMailInfoVal {
+        .map(|system_mail_info| SystemMailInfoView {
             id: system_mail_info.id,
             title: system_mail_info.title,
             content: system_mail_info.content,

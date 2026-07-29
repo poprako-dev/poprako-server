@@ -9,9 +9,8 @@ use crate::complex::announcement::{
 use crate::data::instr::announcement::{
     CreateAnnouncementInstr, ListAnnouncementInfosInstr,
 };
-use crate::data::val::announcement::{
-    AnnouncementInfoVal, CreateAnnouncementVal,
-};
+use crate::data::val::announcement::CreateAnnouncementVal;
+use crate::data::view::announcement::AnnouncementInfoView;
 use crate::model::read::spec::announcement::AnnouncementListSpec;
 use crate::model::shared::user::UserToken;
 use crate::model::write::announcement::AnnouncementEntry;
@@ -34,7 +33,7 @@ pub async fn list_infos<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
     instr: ListAnnouncementInfosInstr,
-) -> BaseRest<Vec<AnnouncementInfoVal>>
+) -> BaseRest<Vec<AnnouncementInfoView>>
 where
     R: AnnouncementRepo<C> + MemberRepo<C> + Sync,
     I: ImagePool,
@@ -61,7 +60,7 @@ where
 
     for announcement_info in announcement_infos {
         announcement_info_vals.push(
-            AnnouncementInfoVal::from_model(image_pool, announcement_info)
+            AnnouncementInfoView::from_model(image_pool, announcement_info)
                 .await?,
         );
     }

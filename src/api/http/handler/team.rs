@@ -15,7 +15,8 @@ use crate::data::instr::team::{
     CreateTeamInstr, ListTeamInfosInstr, MarkTeamAvatarUploadedInstr,
     ReserveTeamAvatarInstr, UpdateTeamInfoInstr,
 };
-use crate::data::val::team::{ReserveTeamAvatarVal, TeamInfoVal};
+use crate::data::val::team::ReserveTeamAvatarVal;
+use crate::data::view::team::TeamInfoView;
 use crate::model::shared::user::UserToken;
 use crate::usecase;
 
@@ -26,7 +27,7 @@ use crate::usecase;
     tag = "teams",
     request_body = CreateTeamInstr,
     responses(
-        (status = 201, description = "Team created", body = HttpBody<TeamInfoVal>),
+        (status = 201, description = "Team created", body = HttpBody<TeamInfoView>),
         (status = 401, description = "Authentication required"),
         (status = 403, description = "Only super-admins can create teams"),
     ),
@@ -36,7 +37,7 @@ pub async fn create(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
     Json(instr): Json<CreateTeamInstr>,
-) -> HttpResult<TeamInfoVal> {
+) -> HttpResult<TeamInfoView> {
     usecase::team::create(
         (harn.drive(), harn.repo(), harn.image_pool()),
         user_token,
@@ -54,7 +55,7 @@ pub async fn create(
     description = "Lists teams. Omit `user_id` to list all teams (super-admin only, otherwise `403`); supply `user_id` to list teams that user has joined. Examples: `/api/v1/teams?user_id=u_1&offset=0&limit=20`, `/api/v1/teams?offset=0&limit=20` (super-admin).",
     params(ListTeamInfosInstr),
     responses(
-        (status = 200, description = "Teams listed", body = HttpBody<Vec<TeamInfoVal>>),
+        (status = 200, description = "Teams listed", body = HttpBody<Vec<TeamInfoView>>),
         (status = 401, description = "Authentication required"),
         (status = 403, description = "Listing all teams requires super-admin"),
     ),
@@ -64,7 +65,7 @@ pub async fn list_infos(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
     Query(instr): Query<ListTeamInfosInstr>,
-) -> HttpResult<Vec<TeamInfoVal>> {
+) -> HttpResult<Vec<TeamInfoView>> {
     usecase::team::list_infos(
         (harn.repo(), harn.image_pool()),
         user_token,
@@ -81,7 +82,7 @@ pub async fn list_infos(
     tag = "teams",
     params(("team_id" = String, Path, description = "Team ID")),
     responses(
-        (status = 200, description = "Team info retrieved", body = HttpBody<TeamInfoVal>),
+        (status = 200, description = "Team info retrieved", body = HttpBody<TeamInfoView>),
         (status = 401, description = "Authentication required"),
         (status = 404, description = "Team not found"),
     ),
@@ -90,7 +91,7 @@ pub async fn list_infos(
 pub async fn get_info(
     State(harn): State<AppHarn>,
     Path(team_id): Path<String>,
-) -> HttpResult<TeamInfoVal> {
+) -> HttpResult<TeamInfoView> {
     usecase::team::get_info((harn.repo(), harn.image_pool()), team_id)
         .await?
         .accept(StatusCode::OK)

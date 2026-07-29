@@ -10,10 +10,9 @@ use crate::data::instr::assignment_invitation::{
     CreateAssignmentInvitationInstr, JoinAssignmentInvitationInstr,
     ListAssignmentInvitationInfosInstr,
 };
-use crate::data::val::assignment::AssignmentInfoVal;
-use crate::data::val::assignment_invitation::{
-    AssignmentInvitationInfoVal, CreateAssignmentInvitationVal,
-};
+use crate::data::val::assignment_invitation::CreateAssignmentInvitationVal;
+use crate::data::view::assignment::AssignmentInfoView;
+use crate::data::view::assignment_invitation::AssignmentInvitationInfoView;
 
 #[cfg(feature = "swagger")]
 use utoipa::IntoParams;
@@ -80,7 +79,7 @@ pub async fn create(
     description = "Lists a chapter's assignment invitations. `pending` filters by consumption state. Example: `/api/v1/chapters/{chapter_id}/assignment-invitations?pending=true&offset=0&limit=20`.",
     params(("chapter_id" = String, Path, description = "Chapter ID"), AssignmentInvitationListQuery),
     responses(
-        (status = 200, description = "Invitations listed", body = HttpBody<Vec<AssignmentInvitationInfoVal>>),
+        (status = 200, description = "Invitations listed", body = HttpBody<Vec<AssignmentInvitationInfoView>>),
         (status = 403, description = "No permission to list invitations in this chapter"),
     ),
 ))]
@@ -90,7 +89,7 @@ pub async fn list_infos(
     Path(chapter_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
     Query(query): Query<AssignmentInvitationListQuery>,
-) -> HttpResult<Vec<AssignmentInvitationInfoVal>> {
+) -> HttpResult<Vec<AssignmentInvitationInfoView>> {
     //
     let instr = ListAssignmentInvitationInfosInstr {
         chapter_id,
@@ -144,7 +143,7 @@ pub async fn delete(
     tag = "assignment-invitations",
     request_body = JoinAssignmentInvitationInstr,
     responses(
-        (status = 201, description = "Joined assignment", body = HttpBody<AssignmentInfoVal>),
+        (status = 201, description = "Joined assignment", body = HttpBody<AssignmentInfoView>),
         (status = 422, description = "Invitation does not target this user"),
         (status = 403, description = "Role not assignable or no permission"),
         (status = 404, description = "Invitation code not found"),
@@ -155,7 +154,7 @@ pub async fn join(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
     Json(instr): Json<JoinAssignmentInvitationInstr>,
-) -> HttpResult<AssignmentInfoVal> {
+) -> HttpResult<AssignmentInfoView> {
     usecase::assignment_invitation::join(
         (harn.drive(), harn.repo(), harn.image_pool()),
         user_token,

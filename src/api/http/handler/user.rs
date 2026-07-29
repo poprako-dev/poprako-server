@@ -17,7 +17,8 @@ use crate::data::instr::user::{
     MarkUserAvatarUploadedInstr, ReserveUserAvatarInstr, UpdateUserInfoInstr,
     UpdateUserPasswordInstr,
 };
-use crate::data::val::user::{ReserveUserAvatarVal, UserInfoVal};
+use crate::data::val::user::ReserveUserAvatarVal;
+use crate::data::view::user::UserInfoView;
 use crate::model::shared::user::UserToken;
 use crate::usecase;
 
@@ -27,7 +28,7 @@ use crate::usecase;
     path = "/api/v1/users/me",
     tag = "users",
     responses(
-        (status = 200, description = "Current user profile", body = HttpBody<UserInfoVal>),
+        (status = 200, description = "Current user profile", body = HttpBody<UserInfoView>),
         (status = 401, description = "Authentication required"),
     ),
 ))]
@@ -35,7 +36,7 @@ use crate::usecase;
 pub async fn get_my_info(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-) -> HttpResult<UserInfoVal> {
+) -> HttpResult<UserInfoView> {
     //
     let id = user_token.user_id.clone();
 
@@ -55,7 +56,7 @@ pub async fn get_my_info(
     tag = "users",
     params(("user_id" = String, Path, description = "Target user ID")),
     responses(
-        (status = 200, description = "User profile retrieved", body = HttpBody<UserInfoVal>),
+        (status = 200, description = "User profile retrieved", body = HttpBody<UserInfoView>),
         (status = 401, description = "Authentication required"),
         (status = 404, description = "User not found"),
     ),
@@ -65,7 +66,7 @@ pub async fn get_info(
     State(harn): State<AppHarn>,
     Path(user_id): Path<String>,
     Extension(token): Extension<UserToken>,
-) -> HttpResult<UserInfoVal> {
+) -> HttpResult<UserInfoView> {
     usecase::user::get_info(
         (harn.repo(), harn.image_pool(), harn.develop()),
         token,

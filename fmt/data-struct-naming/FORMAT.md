@@ -5,19 +5,21 @@ encoded by the `src/data` submodule:
 
 ```rust
 use crate::data::instr::team::CreateTeamInstr;
-use crate::data::val::team::TeamInfoVal;
+use crate::data::view::team::TeamInfoView;
 use crate::data::view::team::TeamMemberView;
 
-fn create(instr: CreateTeamInstr) -> TeamInfoVal { /* ... */ }
+fn create(instr: CreateTeamInstr) -> TeamInfoView { /* ... */ }
 ```
 
 In `src/data/instr/team.rs`, write `CreateTeamInstr`, not `CreateInstr`. Every
 public data type has one boundary role:
 
 - Usecase and handler inputs end in `Instr`.
-- Direct usecase response DTOs end in `Val`.
-- Response-only nested structures end in `View`.
-- A type that is both a direct response and nested response remains a `Val`.
+- Direct response DTOs that are not model `Info` projections end in `Val`.
+- Every direct projection of a model `*Info` is named `*InfoView`, even when
+  the endpoint returns it directly or wraps it in `Vec`, `Option`, or another
+  response DTO.
+- Other response-only nested structures end in `View`.
 
 Legacy role suffixes are forbidden. A persisted creation input belongs in the
 model layer as a domain-qualified `Entry`.

@@ -15,10 +15,9 @@ use crate::data::instr::assignment_invitation::{
     CreateAssignmentInvitationInstr, JoinAssignmentInvitationInstr,
     ListAssignmentInvitationInfosInstr,
 };
-use crate::data::val::assignment::AssignmentInfoVal;
-use crate::data::val::assignment_invitation::{
-    AssignmentInvitationInfoVal, CreateAssignmentInvitationVal,
-};
+use crate::data::val::assignment_invitation::CreateAssignmentInvitationVal;
+use crate::data::view::assignment::AssignmentInfoView;
+use crate::data::view::assignment_invitation::AssignmentInvitationInfoView;
 use crate::model::read::spec::assignment_invitation::AssignmentInvitationListSpec;
 use crate::model::shared::user::UserToken;
 use crate::model::write::assignment::AssignmentEntry;
@@ -65,7 +64,7 @@ pub async fn list_infos<C, R>(
     (repo,): (&R,),
     token: UserToken,
     instr: ListAssignmentInvitationInfosInstr,
-) -> BaseRest<Vec<AssignmentInvitationInfoVal>>
+) -> BaseRest<Vec<AssignmentInvitationInfoView>>
 where
     R: AssignmentInvitationRepo<C> + AssignmentRepo<C> + Sync,
 {
@@ -96,7 +95,7 @@ where
     accept(
         assignment_invitation_infos
             .into_iter()
-            .map(AssignmentInvitationInfoVal::from)
+            .map(AssignmentInvitationInfoView::from)
             .collect(),
     )
 }
@@ -254,7 +253,7 @@ pub async fn join<N, C, R, I>(
     (nucl, repo, image_pool): (&N, &R, &I),
     token: UserToken,
     instr: JoinAssignmentInvitationInstr,
-) -> BaseRest<AssignmentInfoVal>
+) -> BaseRest<AssignmentInfoView>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -384,7 +383,7 @@ where
         })
         .await?;
 
-    AssignmentInfoVal::from_model(image_pool, assignment_info, None).await
+    AssignmentInfoView::from_model(image_pool, assignment_info, None).await
 }
 
 // Verifies that the current user is assigned as a chapter administrator.
