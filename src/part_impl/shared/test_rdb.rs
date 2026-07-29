@@ -21,6 +21,7 @@ impl TestRdb {
 }
 
 fn run_migrations(database_url: &str) {
+    //
     let mut conn = PgConnection::establish(database_url)
         .expect("test PostgreSQL connection should be established");
 
@@ -29,6 +30,7 @@ fn run_migrations(database_url: &str) {
 }
 
 pub async fn start() -> TestRdb {
+    //
     let container = Postgres::default()
         .with_tag("18-alpine")
         .start()

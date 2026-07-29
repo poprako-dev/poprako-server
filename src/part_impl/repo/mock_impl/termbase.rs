@@ -9,13 +9,10 @@ use crate::part::repo::oper::termbase::{
     ListTermbaseInfos, ListTermbaseInfosExcluded, TouchTermbase,
     UpdateTermbase, UpdateTermbaseTermCount,
 };
-use crate::part::repo::termbase::TermbaseRepo;
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
 use crate::result::{BaseError, BaseResult, accept};
-
-impl TermbaseRepo<MockContext> for Mock {}
 
 fn get_info(state: &MockState, id: &str) -> BaseResult<TermbaseInfo> {
     state
@@ -55,8 +52,7 @@ fn page_infos(
     limit: u32,
 ) -> Vec<TermbaseInfo> {
     //
-    termbase_infos
-        .sort_by(|left, right| right.updated_at.cmp(&left.updated_at));
+    termbase_infos.sort_by_key(|right| std::cmp::Reverse(right.updated_at));
 
     termbase_infos
         .into_iter()

@@ -7,8 +7,6 @@ use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 use tracing::instrument;
 
-use poprako_util::page::Page;
-
 use crate::model::unit::{
     UnitContent, UnitCounters, UnitIndex, UnitIndexUpdate, UnitInfo,
 };
@@ -20,28 +18,7 @@ use crate::part_impl::shared::RdbConn;
 use crate::part_impl::shared::result::{diesel, expected};
 use crate::result::{BaseResult, accept};
 
-/// Query a paginated list of unit infos for a page, ordered by index then ID.
-#[instrument(level = "info", err(Debug), skip_all)]
-pub async fn list_infos_by_page_id(
-    conn: &mut RdbConn,
-    page_id: &str,
-    page: Page,
-) -> BaseResult<Vec<UnitInfo>> {
-    //
-    let rows: Vec<UnitRow> = t_unit
-        .filter(f_page_id.eq(page_id))
-        .select(UnitRow::as_select())
-        .order_by((f_index.asc(), f_id.asc()))
-        .limit(page.limit as i64)
-        .offset(page.offset as i64)
-        .load(conn)
-        .await
-        .map_err(diesel)?;
-
-    accept(rows.into_iter().map(Into::into).collect())
-}
-
-/// Query all unit infos for a page, ordered by index then ID (no pagination).
+/// Query all unit infos for a page, ordered by index then ID.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_all_infos_by_page_id(
     conn: &mut RdbConn,

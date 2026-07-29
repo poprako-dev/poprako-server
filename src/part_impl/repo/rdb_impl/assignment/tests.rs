@@ -20,7 +20,10 @@ use crate::value::role::{RoleField, RoleMask};
 
 const PREFIX: &str = "rdb-test-assignment-domain-";
 
+/// Verifies assignment roundtrip via testcontainers.
+/// Verifies assignment roundtrip via testcontainers.
 pub async fn assignment_roundtrip_uses_testcontainer(shared: RdbCore) {
+    //
     test_shared::reset(&shared, PREFIX).await;
 
     let chapter_fixture = test_shared::seed_chapter(&shared, PREFIX).await;

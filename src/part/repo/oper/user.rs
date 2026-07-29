@@ -8,7 +8,7 @@ pub struct CreateUser<'a> {
     pub entry: &'a UserEntry,
 }
 
-impl<'a> Oper for CreateUser<'a> {
+impl Oper for CreateUser<'_> {
     type Output = UserInfo;
 }
 
@@ -16,7 +16,7 @@ pub enum GetUserInfo<'a> {
     Id { id: &'a str },
 }
 
-impl<'a> Oper for GetUserInfo<'a> {
+impl Oper for GetUserInfo<'_> {
     type Output = UserInfo;
 }
 
@@ -24,7 +24,7 @@ pub enum GetUserCredential<'a> {
     Qid { qid: &'a str },
 }
 
-impl<'a> Oper for GetUserCredential<'a> {
+impl Oper for GetUserCredential<'_> {
     type Output = UserCredential;
 }
 
@@ -32,7 +32,7 @@ pub enum FindUserInfo<'a> {
     Qid { qid: &'a str },
 }
 
-impl<'a> Oper for FindUserInfo<'a> {
+impl Oper for FindUserInfo<'_> {
     type Output = Option<UserInfo>;
 }
 
@@ -56,7 +56,7 @@ pub enum UpdateUser<'a> {
     },
 }
 
-impl<'a> Oper for UpdateUser<'a> {
+impl Oper for UpdateUser<'_> {
     type Output = ();
 }
 
@@ -65,7 +65,7 @@ pub struct ReserveUserAvatar<'a> {
     pub file_ext: &'a str,
 }
 
-impl<'a> Oper for ReserveUserAvatar<'a> {
+impl Oper for ReserveUserAvatar<'_> {
     type Output = UserAvatarReservation;
 }
 
@@ -73,7 +73,7 @@ pub enum GetUserInfoExcluded<'a> {
     Id { id: &'a str },
 }
 
-impl<'a> Oper for GetUserInfoExcluded<'a> {
+impl Oper for GetUserInfoExcluded<'_> {
     type Output = UserInfo;
 }
 
@@ -81,6 +81,6 @@ pub struct DeleteUser<'a> {
     pub id: &'a str,
 }
 
-impl<'a> Oper for DeleteUser<'a> {
+impl Oper for DeleteUser<'_> {
     type Output = ();
 }

@@ -2,29 +2,24 @@ use std::collections::HashMap;
 
 use poprako_orchestra::Oper;
 
-use crate::model::page::{PageEntry, PageImageReservation, PageInfo};
+use crate::model::page::{
+    PageEntry, PageImageReservation, PageInfo, PageManifestUpdate,
+};
 use crate::model::unit::UnitCounters;
 
 pub struct GetPageInfo<'a> {
     pub id: &'a str,
 }
 
-impl<'a> Oper for GetPageInfo<'a> {
+impl Oper for GetPageInfo<'_> {
     type Output = PageInfo;
 }
 
-pub enum ListPageInfos<'a> {
-    Chapter {
-        chapter_id: &'a str,
-        offset: u32,
-        limit: u32,
-    },
-    AllChapter {
-        chapter_id: &'a str,
-    },
+pub struct ListPageInfos<'a> {
+    pub chapter_id: &'a str,
 }
 
-impl<'a> Oper for ListPageInfos<'a> {
+impl Oper for ListPageInfos<'_> {
     type Output = Vec<PageInfo>;
 }
 
@@ -33,7 +28,7 @@ pub struct ListFirstPageInfos<'a> {
     pub chapter_ids: &'a [String],
 }
 
-impl<'a> Oper for ListFirstPageInfos<'a> {
+impl Oper for ListFirstPageInfos<'_> {
     type Output = HashMap<String, PageInfo>;
 }
 
@@ -41,7 +36,7 @@ pub struct CreatePages<'a> {
     pub entries: &'a [PageEntry],
 }
 
-impl<'a> Oper for CreatePages<'a> {
+impl Oper for CreatePages<'_> {
     type Output = Vec<PageInfo>;
 }
 
@@ -49,7 +44,43 @@ pub struct GetPageInfoExcluded<'a> {
     pub id: &'a str,
 }
 
-impl<'a> Oper for GetPageInfoExcluded<'a> {
+/// Lists all chapter pages in stable order while holding row locks.
+pub struct ListPageInfosExcluded<'a> {
+    pub chapter_id: &'a str,
+}
+
+impl Oper for ListPageInfosExcluded<'_> {
+    type Output = Vec<PageInfo>;
+}
+
+/// Moves normal indexes into the transaction-local negative range.
+pub struct ShiftPageIndexesTemporary<'a> {
+    pub chapter_id: &'a str,
+}
+
+impl Oper for ShiftPageIndexesTemporary<'_> {
+    type Output = ();
+}
+
+/// Updates one retained page to its final manifest identity and position.
+pub struct UpdatePageManifest<'a> {
+    pub update: &'a PageManifestUpdate,
+}
+
+/// Invalidates all page image keys after chapter publication.
+pub struct ClearPageImagesForPublish<'a> {
+    pub chapter_id: &'a str,
+}
+
+impl Oper for ClearPageImagesForPublish<'_> {
+    type Output = Vec<String>;
+}
+
+impl Oper for UpdatePageManifest<'_> {
+    type Output = PageInfo;
+}
+
+impl Oper for GetPageInfoExcluded<'_> {
     type Output = PageInfo;
 }
 
@@ -58,7 +89,7 @@ pub struct ReservePageImage<'a> {
     pub file_ext: &'a str,
 }
 
-impl<'a> Oper for ReservePageImage<'a> {
+impl Oper for ReservePageImage<'_> {
     type Output = PageImageReservation;
 }
 
@@ -68,7 +99,19 @@ pub struct MarkPageImageUploaded<'a> {
     pub image_key: Option<&'a str>,
 }
 
-impl<'a> Oper for MarkPageImageUploaded<'a> {
+impl Oper for MarkPageImageUploaded<'_> {
+    type Output = ();
+}
+
+/// Sets one page image's verified upload state for its current identity.
+pub struct SetPageImageUploaded<'a> {
+    pub id: &'a str,
+    pub image_version: u32,
+    pub image_key: &'a str,
+    pub image_uploaded: bool,
+}
+
+impl Oper for SetPageImageUploaded<'_> {
     type Output = ();
 }
 
@@ -77,14 +120,15 @@ pub struct SetPageUnitCounters<'a> {
     pub counters: UnitCounters,
 }
 
-impl<'a> Oper for SetPageUnitCounters<'a> {
+impl Oper for SetPageUnitCounters<'_> {
     type Output = ();
 }
 
 pub enum DeletePages<'a> {
     Chapter { chapter_id: &'a str },
+    Ids { ids: &'a [String] },
 }
 
-impl<'a> Oper for DeletePages<'a> {
+impl Oper for DeletePages<'_> {
     type Output = ();
 }

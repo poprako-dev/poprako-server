@@ -94,7 +94,7 @@ diesel::table! {
     t_comic_archive (f_id) {
         f_id -> Text,
         f_team_id -> Text,
-        f_archived_bytes -> Bytea,
+        f_archived_payload -> Text,
         f_archiver_id -> Text,
         f_created_at -> Timestamptz,
     }
@@ -168,6 +168,9 @@ diesel::table! {
         f_image_key -> Nullable<Text>,
         f_image_uploaded -> Bool,
         f_image_version -> Int8,
+        f_image_hash -> Bytea,
+        f_image_byte_length -> Int8,
+        f_image_extension -> Text,
         f_total_unit_count -> Int4,
         f_translated_unit_count -> Int4,
         f_proofread_unit_count -> Int4,

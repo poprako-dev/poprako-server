@@ -4,8 +4,8 @@ use poprako_orchestra::{Nucl, run_proxy, step_proxy};
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
-use poprako_util::page::Page;
 
+use crate::complex::chapter::ChapterComplex;
 use crate::complex::unit::{UnitComplex, UnitPermComplex};
 use crate::data::unit::{
     ListPageUnitInfosParams, ListPageUnitInfosPayload, SavePageUnitsParams,
@@ -21,7 +21,7 @@ use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
 use crate::part::repo::oper::chapter::{
-    AdjustChapterUnitCounters, GetChapterInfo,
+    AdjustChapterUnitCounters, GetChapterInfo, GetChapterInfoExcluded,
 };
 use crate::part::repo::oper::comic::{GetComicInfo, TouchComicLastActive};
 use crate::part::repo::oper::member::FindMemberInfo;
@@ -43,9 +43,12 @@ use crate::value::chapter::Stage;
 #[cfg(test)]
 mod tests;
 
-/// Lists units under one page.
+/// Maximum number of units allowed on a single page.
+const MAX_UNITS_PER_PAGE: usize = 100;
+
+/// Lists all units under one page.
 #[instrument(level = "info", err(Debug), skip_all)]
-pub async fn list_infos<C, R>(
+pub async fn list_all_infos<C, R>(
     repo: &R,
     token: UserToken,
     params: ListPageUnitInfosParams,
@@ -81,12 +84,8 @@ where
     .await?;
 
     let unit_infos = repo
-        .run(&ListUnitInfos::Page {
+        .run(&ListUnitInfos {
             page_id: &page_info.id,
-            page: Page {
-                offset: params.offset,
-                limit: params.limit,
-            },
         })
         .await?;
 
@@ -132,11 +131,46 @@ where
         local_id_maps,
     } = UnitApplyParts::from(UnitComplex::prepare_diff(unit_diff)?);
 
+    // A single unit save batch must not exceed 100 operations.
+    if !(1..=100).contains(&opers.len()) {
+        return Err(unit_invalid_oper_error());
+    }
+
     let stages = submitted_stage_starts(&opers);
+
+    let page_scope = repo.run(&GetPageInfo { id: &page_id }).await?;
+
+    let net_create_count = opers
+        .iter()
+        .filter(|oper| matches!(oper, UnitOper::Create { .. }))
+        .count()
+        - opers
+            .iter()
+            .filter(|oper| matches!(oper, UnitOper::Delete { .. }))
+            .count();
+
+    let resulting_count =
+        page_scope.total_unit_count as usize + net_create_count;
+
+    if resulting_count > MAX_UNITS_PER_PAGE {
+        return Err(unit_invalid_oper_error());
+    }
 
     let save_result = nucl
         .coord(async move |context| {
             //
+            let chapter_info = repo
+                .step(
+                    context,
+                    &GetChapterInfoExcluded {
+                        id: &page_scope.chapter_id,
+                        incls: &[],
+                    },
+                )
+                .await?;
+
+            ChapterComplex::ensure_user_write_allowed(&chapter_info)?;
+
             let page_info = repo
                 .step(context, &GetPageInfoExcluded { id: &page_id })
                 .await?;
@@ -151,16 +185,6 @@ where
                 &page_info.chapter_id,
             )
             .await?;
-
-            let chapter_info = repo
-                .step(
-                    context,
-                    &GetChapterInfo {
-                        id: &page_info.chapter_id,
-                        incls: &[],
-                    },
-                )
-                .await?;
 
             let current_indexes = repo
                 .step(

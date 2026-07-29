@@ -60,12 +60,11 @@ use crate::part::repo::unit::UnitRepo;
 use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseError, BaseResult, accept};
 
-#[cfg(test)]
-pub mod tests;
+pub use list::list_infos;
 
 mod list;
-
-pub use list::list_infos;
+#[cfg(test)]
+pub mod tests;
 
 /// Creates a new comic inside a workset together with its first
 /// chapter and a creator admin assignment.

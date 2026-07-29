@@ -9,7 +9,7 @@ pub struct CreateMember<'a> {
     pub entry: &'a MemberEntry,
 }
 
-impl<'a> Oper for CreateMember<'a> {
+impl Oper for CreateMember<'_> {
     type Output = MemberInfo;
 }
 
@@ -23,7 +23,7 @@ pub enum UpdateMember<'a> {
     },
 }
 
-impl<'a> Oper for UpdateMember<'a> {
+impl Oper for UpdateMember<'_> {
     type Output = ();
 }
 
@@ -32,7 +32,7 @@ pub enum ListMemberInfos<'a> {
     User { user_id: &'a str },
 }
 
-impl<'a> Oper for ListMemberInfos<'a> {
+impl Oper for ListMemberInfos<'_> {
     type Output = Vec<MemberInfo>;
 }
 
@@ -40,7 +40,7 @@ pub enum FindMemberInfo<'a> {
     UserTeam { user_id: &'a str, team_id: &'a str },
 }
 
-impl<'a> Oper for FindMemberInfo<'a> {
+impl Oper for FindMemberInfo<'_> {
     type Output = Option<MemberInfo>;
 }
 
@@ -51,7 +51,7 @@ pub enum GetMemberInfo<'a, 'b> {
     },
 }
 
-impl<'a, 'b> Oper for GetMemberInfo<'a, 'b> {
+impl Oper for GetMemberInfo<'_, '_> {
     type Output = MemberInfo;
 }
 
@@ -60,7 +60,7 @@ pub enum ListMemberInfosExcluded<'a> {
     Team { team_id: &'a str },
 }
 
-impl<'a> Oper for ListMemberInfosExcluded<'a> {
+impl Oper for ListMemberInfosExcluded<'_> {
     type Output = Vec<MemberInfo>;
 }
 
@@ -68,6 +68,6 @@ pub struct DeleteMember<'a> {
     pub id: &'a str,
 }
 
-impl<'a> Oper for DeleteMember<'a> {
+impl Oper for DeleteMember<'_> {
     type Output = ();
 }

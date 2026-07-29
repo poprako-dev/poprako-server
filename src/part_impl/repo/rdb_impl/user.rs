@@ -14,7 +14,6 @@ use crate::part::repo::oper::user::{
     CreateUser, DeleteUser, FindUserInfo, GetUserCredential, GetUserInfo,
     GetUserInfoExcluded, ReserveUserAvatar, UpdateUser,
 };
-use crate::part::repo::user::UserRepo;
 use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::user::{
     UserAspect, UserCredentialRow, UserRow, UserRowEntry,
@@ -26,8 +25,6 @@ use crate::result::{BaseError, BaseResult, accept};
 
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;
-
-impl UserRepo<RdbContext> for RdbRepo {}
 
 // ── Free functions ──────────────────────────────────────────────────────────
 
@@ -286,13 +283,13 @@ async fn delete(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
     accept(())
 }
 
-impl<'a> Run<GetUserInfo<'a>> for RdbRepo {
+impl Run<GetUserInfo<'_>> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
-        oper: &GetUserInfo<'a>,
+        oper: &GetUserInfo<'_>,
     ) -> Result<UserInfo, Self::Error> {
         match oper {
             GetUserInfo::Id { id } => {
@@ -302,13 +299,13 @@ impl<'a> Run<GetUserInfo<'a>> for RdbRepo {
     }
 }
 
-impl<'a> Run<GetUserCredential<'a>> for RdbRepo {
+impl Run<GetUserCredential<'_>> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
-        oper: &GetUserCredential<'a>,
+        oper: &GetUserCredential<'_>,
     ) -> Result<UserCredential, Self::Error> {
         match oper {
             GetUserCredential::Qid { qid } => {
@@ -318,13 +315,13 @@ impl<'a> Run<GetUserCredential<'a>> for RdbRepo {
     }
 }
 
-impl<'a> Run<FindUserInfo<'a>> for RdbRepo {
+impl Run<FindUserInfo<'_>> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
-        oper: &FindUserInfo<'a>,
+        oper: &FindUserInfo<'_>,
     ) -> Result<Option<UserInfo>, Self::Error> {
         match oper {
             FindUserInfo::Qid { qid } => {
@@ -334,11 +331,11 @@ impl<'a> Run<FindUserInfo<'a>> for RdbRepo {
     }
 }
 
-impl<'a> Run<UpdateUser<'a>> for RdbRepo {
+impl Run<UpdateUser<'_>> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn run(&self, oper: &UpdateUser<'a>) -> BaseResult<()> {
+    async fn run(&self, oper: &UpdateUser<'_>) -> BaseResult<()> {
         match oper {
             //
             UpdateUser::TouchLastActive { id } => {
@@ -375,27 +372,27 @@ impl<'a> Run<UpdateUser<'a>> for RdbRepo {
     }
 }
 
-impl<'a> Step<CreateUser<'a>, RdbContext> for RdbRepo {
+impl Step<CreateUser<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &CreateUser<'a>,
+        oper: &CreateUser<'_>,
     ) -> BaseResult<UserInfo> {
         create(context.conn(), oper.entry).await
     }
 }
 
-impl<'a> Step<FindUserInfo<'a>, RdbContext> for RdbRepo {
+impl Step<FindUserInfo<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &FindUserInfo<'a>,
+        oper: &FindUserInfo<'_>,
     ) -> BaseResult<Option<UserInfo>> {
         match oper {
             FindUserInfo::Qid { qid } => {
@@ -405,14 +402,14 @@ impl<'a> Step<FindUserInfo<'a>, RdbContext> for RdbRepo {
     }
 }
 
-impl<'a> Step<UpdateUser<'a>, RdbContext> for RdbRepo {
+impl Step<UpdateUser<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &UpdateUser<'a>,
+        oper: &UpdateUser<'_>,
     ) -> BaseResult<()> {
         match oper {
             //
@@ -445,27 +442,27 @@ impl<'a> Step<UpdateUser<'a>, RdbContext> for RdbRepo {
     }
 }
 
-impl<'a> Step<ReserveUserAvatar<'a>, RdbContext> for RdbRepo {
+impl Step<ReserveUserAvatar<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &ReserveUserAvatar<'a>,
+        oper: &ReserveUserAvatar<'_>,
     ) -> BaseResult<UserAvatarReservation> {
         reserve_avatar(context.conn(), oper.id, oper.file_ext).await
     }
 }
 
-impl<'a> Step<GetUserInfoExcluded<'a>, RdbContext> for RdbRepo {
+impl Step<GetUserInfoExcluded<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &GetUserInfoExcluded<'a>,
+        oper: &GetUserInfoExcluded<'_>,
     ) -> BaseResult<UserInfo> {
         match oper {
             GetUserInfoExcluded::Id { id } => {
@@ -475,14 +472,14 @@ impl<'a> Step<GetUserInfoExcluded<'a>, RdbContext> for RdbRepo {
     }
 }
 
-impl<'a> Step<DeleteUser<'a>, RdbContext> for RdbRepo {
+impl Step<DeleteUser<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &DeleteUser<'a>,
+        oper: &DeleteUser<'_>,
     ) -> BaseResult<()> {
         delete(context.conn(), oper.id).await
     }

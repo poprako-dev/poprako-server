@@ -9,113 +9,95 @@ use crate::part::repo::oper::unit::{
 use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::unit::step_impl::{
     count_by_page_id, create_unit, delete_by_id_in_page,
-    list_all_infos_by_page_id, list_indexes_by_page_id, list_infos_by_page_id,
-    save_unit, update_indexes_by_page_id,
+    list_all_infos_by_page_id, list_indexes_by_page_id, save_unit,
+    update_indexes_by_page_id,
 };
 use crate::part_impl::shared::RdbContext;
 use crate::result::{BaseError, BaseResult};
 
-impl<'a> Run<ListUnitInfos<'a>> for RdbRepo {
+impl Run<ListUnitInfos<'_>> for RdbRepo {
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn run(&self, oper: &ListUnitInfos<'a>) -> BaseResult<Vec<UnitInfo>> {
-        match oper {
-            //
-            ListUnitInfos::Page { page_id, page } => {
-                submit_query!(self.core, list_infos_by_page_id, page_id, *page)
-            }
-
-            ListUnitInfos::AllPage { page_id } => {
-                submit_query!(self.core, list_all_infos_by_page_id, page_id)
-            }
-        }
+    async fn run(&self, oper: &ListUnitInfos<'_>) -> BaseResult<Vec<UnitInfo>> {
+        submit_query!(self.core, list_all_infos_by_page_id, oper.page_id)
     }
 }
 
-impl<'a> Step<ListUnitInfos<'a>, RdbContext> for RdbRepo {
+impl Step<ListUnitInfos<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &ListUnitInfos<'a>,
+        oper: &ListUnitInfos<'_>,
     ) -> BaseResult<Vec<UnitInfo>> {
-        match oper {
-            //
-            ListUnitInfos::Page { page_id, page } => {
-                list_infos_by_page_id(context.conn(), page_id, *page).await
-            }
-
-            ListUnitInfos::AllPage { page_id } => {
-                list_all_infos_by_page_id(context.conn(), page_id).await
-            }
-        }
+        list_all_infos_by_page_id(context.conn(), oper.page_id).await
     }
 }
 
-impl<'a> Step<CreateUnit<'a>, RdbContext> for RdbRepo {
+impl Step<CreateUnit<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &CreateUnit<'a>,
+        oper: &CreateUnit<'_>,
     ) -> BaseResult<()> {
         create_unit(context.conn(), oper.page_id, oper.id, oper.payload).await
     }
 }
-impl<'a> Step<SaveUnit<'a>, RdbContext> for RdbRepo {
+impl Step<SaveUnit<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &SaveUnit<'a>,
+        oper: &SaveUnit<'_>,
     ) -> BaseResult<()> {
         save_unit(context.conn(), oper.page_id, oper.id, oper.payload).await
     }
 }
-impl<'a> Step<DeleteUnit<'a>, RdbContext> for RdbRepo {
+impl Step<DeleteUnit<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &DeleteUnit<'a>,
+        oper: &DeleteUnit<'_>,
     ) -> BaseResult<()> {
         delete_by_id_in_page(context.conn(), oper.page_id, oper.id).await
     }
 }
-impl<'a> Step<ListUnitIndexes<'a>, RdbContext> for RdbRepo {
+impl Step<ListUnitIndexes<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &ListUnitIndexes<'a>,
+        oper: &ListUnitIndexes<'_>,
     ) -> BaseResult<Vec<UnitIndex>> {
         list_indexes_by_page_id(context.conn(), oper.page_id).await
     }
 }
-impl<'a> Step<UpdateUnitIndexes<'a>, RdbContext> for RdbRepo {
+impl Step<UpdateUnitIndexes<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &UpdateUnitIndexes<'a>,
+        oper: &UpdateUnitIndexes<'_>,
     ) -> BaseResult<()> {
         update_indexes_by_page_id(context.conn(), oper.page_id, oper.updates)
             .await
     }
 }
-impl<'a> Step<CountUnits<'a>, RdbContext> for RdbRepo {
+impl Step<CountUnits<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &CountUnits<'a>,
+        oper: &CountUnits<'_>,
     ) -> BaseResult<UnitCounters> {
         count_by_page_id(context.conn(), oper.page_id).await
     }

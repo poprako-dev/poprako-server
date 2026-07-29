@@ -4,6 +4,8 @@ pub mod announcement;
 pub mod assignment;
 /// Comment value types.
 pub mod comment;
+/// Image content identity value types.
+pub mod image;
 /// Include declarations for repo queries.
 pub mod incl;
 /// Index computation helpers.
@@ -15,6 +17,8 @@ pub mod role;
 pub mod chapter;
 /// Comic value types.
 pub mod comic;
+/// Comic archive month-slot values.
+pub mod comic_archive;
 /// Member value types.
 pub mod member;
 /// Member invitation value types.

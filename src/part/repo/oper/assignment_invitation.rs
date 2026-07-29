@@ -9,7 +9,7 @@ pub struct CreateAssignmentInvitation<'a> {
     pub entry: &'a AssignmentInvitationEntry,
 }
 
-impl<'a> Oper for CreateAssignmentInvitation<'a> {
+impl Oper for CreateAssignmentInvitation<'_> {
     type Output = AssignmentInvitationInfo;
 }
 
@@ -17,7 +17,7 @@ pub struct ListAssignmentInvitationInfos<'a> {
     pub spec: &'a AssignmentInvitationListSpec,
 }
 
-impl<'a> Oper for ListAssignmentInvitationInfos<'a> {
+impl Oper for ListAssignmentInvitationInfos<'_> {
     type Output = Vec<AssignmentInvitationInfo>;
 }
 
@@ -25,7 +25,7 @@ pub enum GetAssignmentInvitationInfo<'a> {
     Id { id: &'a str },
 }
 
-impl<'a> Oper for GetAssignmentInvitationInfo<'a> {
+impl Oper for GetAssignmentInvitationInfo<'_> {
     type Output = AssignmentInvitationInfo;
 }
 
@@ -33,7 +33,7 @@ pub struct GetAssignmentInvitationInfoExcluded<'a> {
     pub code: &'a str,
 }
 
-impl<'a> Oper for GetAssignmentInvitationInfoExcluded<'a> {
+impl Oper for GetAssignmentInvitationInfoExcluded<'_> {
     type Output = AssignmentInvitationInfo;
 }
 
@@ -41,7 +41,7 @@ pub struct MarkAssignmentInvitationUsed<'a> {
     pub id: &'a str,
 }
 
-impl<'a> Oper for MarkAssignmentInvitationUsed<'a> {
+impl Oper for MarkAssignmentInvitationUsed<'_> {
     type Output = ();
 }
 
@@ -50,7 +50,7 @@ pub struct PurgeExpiredAssignmentInvitation<'a> {
     pub id: &'a str,
 }
 
-impl<'a> Oper for PurgeExpiredAssignmentInvitation<'a> {
+impl Oper for PurgeExpiredAssignmentInvitation<'_> {
     type Output = ();
 }
 
@@ -59,6 +59,6 @@ pub enum DeleteAssignmentInvitations<'a> {
     Chapter { chapter_id: &'a str },
 }
 
-impl<'a> Oper for DeleteAssignmentInvitations<'a> {
+impl Oper for DeleteAssignmentInvitations<'_> {
     type Output = ();
 }

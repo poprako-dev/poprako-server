@@ -5,14 +5,19 @@
 use poprako_orchestra::Nucl;
 use tracing::instrument;
 
-use crate::part::image::ImageManager;
+use crate::part::image::{ImageManager, ImageObjectInfo};
 use crate::part::prom::payload::image::{Payload, ResourceKind};
+use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
+use crate::part::repo::oper::chapter::{
+    CompleteChapterRawProvide, ResetChapterRawProvide,
+};
 use crate::part::repo::oper::comic::{
     GetComicInfoExcluded, MarkComicCoverUploaded,
 };
 use crate::part::repo::oper::page::{
-    GetPageInfoExcluded, MarkPageImageUploaded,
+    GetPageInfo, GetPageInfoExcluded, MarkPageImageUploaded,
+    SetPageImageUploaded,
 };
 use crate::part::repo::oper::team::{GetTeamInfoExcluded, UpdateTeam};
 use crate::part::repo::oper::user::{GetUserInfoExcluded, UpdateUser};
@@ -66,7 +71,8 @@ pub async fn handle<N, R, I>(
 ) -> TaskFlow
 where
     N: Nucl<Context = RdbContext, Error = BaseError>,
-    R: UserRepo<RdbContext>
+    R: ChapterRepo<RdbContext>
+        + UserRepo<RdbContext>
         + TeamRepo<RdbContext>
         + ComicRepo<RdbContext>
         + PageRepo<RdbContext>
@@ -113,7 +119,8 @@ async fn handle_check_uploaded<N, R, I>(
 ) -> TaskFlow
 where
     N: Nucl<Context = RdbContext, Error = BaseError>,
-    R: UserRepo<RdbContext>
+    R: ChapterRepo<RdbContext>
+        + UserRepo<RdbContext>
         + TeamRepo<RdbContext>
         + ComicRepo<RdbContext>
         + PageRepo<RdbContext>
@@ -121,18 +128,46 @@ where
         + Sync,
     I: ImageManager + Send + Sync,
 {
-    let exists = match image_pool.head_object(object_key).await {
+    let object_info = match image_pool.head_object(object_key).await {
         //
-        Ok(exists) => exists,
+        Ok(object_info) => object_info,
 
         Err(error) => return TaskFlow::Retry(format!("{:?}", error)),
     };
 
-    match exists {
+    match object_info {
         //
-        false => TaskFlow::Complete,
+        None => match kind {
+            //
+            ResourceKind::PageImage => {
+                process_unverified_page_image(
+                    nucl,
+                    repo,
+                    resource_id,
+                    object_key,
+                    image_version,
+                )
+                .await
+            }
 
-        true => {
+            _ => TaskFlow::Complete,
+        },
+
+        Some(object_info) => {
+            //
+            if kind == ResourceKind::PageImage {
+                return process_existing_page_image(
+                    nucl,
+                    repo,
+                    image_pool,
+                    resource_id,
+                    object_key,
+                    image_version,
+                    object_info,
+                )
+                .await;
+            }
+
             process_existing_image(
                 nucl,
                 repo,
@@ -148,6 +183,165 @@ where
 }
 
 #[instrument(level = "info", skip_all)]
+async fn process_existing_page_image<N, R, I>(
+    nucl: &N,
+    repo: &R,
+    image_pool: &I,
+    resource_id: &str,
+    object_key: &str,
+    image_version: u32,
+    object_info: ImageObjectInfo,
+) -> TaskFlow
+where
+    N: Nucl<Context = RdbContext, Error = BaseError>,
+    R: ChapterRepo<RdbContext> + PageRepo<RdbContext> + Send + Sync,
+    I: ImageManager + Send + Sync,
+{
+    let page_info = match repo.run(&GetPageInfo { id: resource_id }).await {
+        //
+        Ok(page_info) => page_info,
+
+        Err(BaseError::Expected { .. }) => {
+            return handle_delete(image_pool, object_key).await;
+        }
+
+        Err(error) => return TaskFlow::Retry(format!("{:?}", error)),
+    };
+
+    match (
+        page_info.image_version == image_version,
+        page_info.image_key.as_deref() == Some(object_key),
+    ) {
+        //
+        (false, _) => return TaskFlow::Complete,
+
+        (true, false) => return handle_delete(image_pool, object_key).await,
+
+        (true, true) => {}
+    }
+
+    if page_info.image_byte_length != object_info.byte_length
+        || page_info.image_hash != object_info.checksum_sha256
+    {
+        let verification_result = process_unverified_page_image(
+            nucl,
+            repo,
+            resource_id,
+            object_key,
+            image_version,
+        )
+        .await;
+
+        match verification_result {
+            //
+            TaskFlow::Complete => {
+                return handle_delete(image_pool, object_key).await;
+            }
+
+            _ => return verification_result,
+        }
+    }
+
+    let result: BaseResult<bool> = nucl
+        .coord(async move |context| {
+            //
+            repo.step(
+                context,
+                &MarkPageImageUploaded {
+                    id: resource_id,
+                    image_version,
+                    image_key: Some(object_key),
+                },
+            )
+            .await?;
+
+            repo.step(
+                context,
+                &CompleteChapterRawProvide {
+                    id: &page_info.chapter_id,
+                },
+            )
+            .await?;
+
+            accept(true)
+        })
+        .await
+        .map_err(Into::into);
+
+    match result {
+        //
+        Ok(_) => TaskFlow::Complete,
+
+        Err(BaseError::Expected { .. }) => TaskFlow::Complete,
+
+        Err(error) => TaskFlow::Retry(format!("{:?}", error)),
+    }
+}
+
+/// Clears an unverified current page image and returns raw provision to pending.
+#[instrument(level = "info", skip_all)]
+async fn process_unverified_page_image<N, R>(
+    nucl: &N,
+    repo: &R,
+    resource_id: &str,
+    object_key: &str,
+    image_version: u32,
+) -> TaskFlow
+where
+    N: Nucl<Context = RdbContext, Error = BaseError>,
+    R: ChapterRepo<RdbContext> + PageRepo<RdbContext> + Send + Sync,
+{
+    let page_info = match repo.run(&GetPageInfo { id: resource_id }).await {
+        //
+        Ok(page_info) => page_info,
+
+        Err(BaseError::Expected { .. }) => return TaskFlow::Complete,
+
+        Err(error) => return TaskFlow::Retry(format!("{:?}", error)),
+    };
+
+    if page_info.image_version != image_version
+        || page_info.image_key.as_deref() != Some(object_key)
+    {
+        return TaskFlow::Complete;
+    }
+
+    let result: BaseResult<()> = nucl
+        .coord(async move |context| {
+            //
+            repo.step(
+                context,
+                &SetPageImageUploaded {
+                    id: resource_id,
+                    image_version,
+                    image_key: object_key,
+                    image_uploaded: false,
+                },
+            )
+            .await?;
+
+            repo.step(
+                context,
+                &ResetChapterRawProvide {
+                    id: &page_info.chapter_id,
+                },
+            )
+            .await?;
+
+            accept(())
+        })
+        .await
+        .map_err(Into::into);
+
+    match result {
+        //
+        Ok(()) | Err(BaseError::Expected { .. }) => TaskFlow::Complete,
+
+        Err(error) => TaskFlow::Retry(format!("{:?}", error)),
+    }
+}
+
+#[instrument(level = "info", skip_all)]
 async fn process_existing_image<N, R, I>(
     nucl: &N,
     repo: &R,
@@ -159,7 +353,8 @@ async fn process_existing_image<N, R, I>(
 ) -> TaskFlow
 where
     N: Nucl<Context = RdbContext, Error = BaseError>,
-    R: UserRepo<RdbContext>
+    R: ChapterRepo<RdbContext>
+        + UserRepo<RdbContext>
         + TeamRepo<RdbContext>
         + ComicRepo<RdbContext>
         + PageRepo<RdbContext>

@@ -125,7 +125,7 @@ where
         }
 
         Payload::PurgeExpiredInvitation(event) => {
-            invitation::handle(nucl, repo, &event).await
+            invitation::handle(repo, &event).await
         }
     }
 }

@@ -7,15 +7,12 @@ use tracing::instrument;
 
 use crate::model::comment::{CommentEntry, CommentInfo, CommentListSpec};
 use crate::model::user::UserInfo;
-use crate::part::repo::comment::CommentRepo;
 use crate::part::repo::oper::comment::{CreateComment, ListCommentInfos};
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
 use crate::result::{BaseError, BaseResult, accept};
 use crate::value::comment::CommentInclOpt;
-
-impl CommentRepo<MockContext> for Mock {}
 
 fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
     state

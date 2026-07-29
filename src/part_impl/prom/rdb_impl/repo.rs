@@ -155,17 +155,22 @@ impl Oper for ResetStuck<'_> {
     type Output = ();
 }
 
-/// Delete completed records that have passed the retention cutoff.
-///
-/// Dead records deliberately remain available for manual investigation.
+/// Deletes completed and dead records after their independent retention cutoffs.
 pub struct PurgeCompleted<'a> {
-    before: &'a OffsetDateTime,
+    completed_before: &'a OffsetDateTime,
+    dead_before: &'a OffsetDateTime,
 }
 
 impl<'a> PurgeCompleted<'a> {
-    /// Builds an operation that removes completed messages before the cutoff.
-    pub fn new(before: &'a OffsetDateTime) -> Self {
-        Self { before }
+    /// Builds terminal-message purge cutoffs.
+    pub fn new(
+        completed_before: &'a OffsetDateTime,
+        dead_before: &'a OffsetDateTime,
+    ) -> Self {
+        Self {
+            completed_before,
+            dead_before,
+        }
     }
 }
 
@@ -224,6 +229,7 @@ where
                 t_local_message::f_id,
                 t_local_message::f_topic,
                 t_local_message::f_payload,
+                t_local_message::f_retried_count,
             ))
             .load(context.conn())
             .await
@@ -448,13 +454,16 @@ where
 
         use diesel_async::RunQueryDsl;
 
+        let expired_completed = t_local_message::f_status
+            .eq(LocalMessageStatus::Completed.as_str())
+            .and(t_local_message::f_updated_at.lt(*oper.completed_before));
+
+        let expired_dead = t_local_message::f_status
+            .eq(LocalMessageStatus::Dead.as_str())
+            .and(t_local_message::f_updated_at.lt(*oper.dead_before));
+
         let purged_count = diesel::delete(
-            t_local_message::table
-                .filter(
-                    t_local_message::f_status
-                        .eq(LocalMessageStatus::Completed.as_str()),
-                )
-                .filter(t_local_message::f_updated_at.lt(*oper.before)),
+            t_local_message::table.filter(expired_completed.or(expired_dead)),
         )
         .execute(context.conn())
         .await

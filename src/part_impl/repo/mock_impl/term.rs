@@ -8,13 +8,10 @@ use crate::part::repo::oper::term::{
     CreateTerm, DeleteTerm, DeleteTerms, GetTermInfo, GetTermInfoExcluded,
     ListTermInfos, UpdateTerm,
 };
-use crate::part::repo::term::TermRepo;
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
 use crate::result::{BaseError, BaseResult, accept};
-
-impl TermRepo<MockContext> for Mock {}
 
 fn get_info(state: &MockState, id: &str) -> BaseResult<TermInfo> {
     state
@@ -56,7 +53,7 @@ fn list_infos(state: &MockState, spec: &TermInfoListSpec) -> Vec<TermInfo> {
         });
     }
 
-    term_infos.sort_by(|left, right| right.updated_at.cmp(&left.updated_at));
+    term_infos.sort_by_key(|right| std::cmp::Reverse(right.updated_at));
 
     term_infos
         .into_iter()

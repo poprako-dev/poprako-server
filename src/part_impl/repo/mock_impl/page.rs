@@ -3,15 +3,10 @@
 use std::collections::HashMap;
 
 use crate::model::page::{PageEntry, PageInfo};
-use crate::part::repo::page::PageRepo;
-use crate::part_impl::repo::mock_impl::{
-    Mock, MockContext, MockState, expected, now,
-};
+use crate::part_impl::repo::mock_impl::{MockState, expected, now};
 use crate::result::BaseResult;
 
 mod orchestra;
-
-impl PageRepo<MockContext> for Mock {}
 
 fn get_page_by_id(state: &MockState, id: &str) -> BaseResult<PageInfo> {
     state
@@ -34,28 +29,6 @@ fn list_all_pages(state: &MockState, chapter_id: &str) -> Vec<PageInfo> {
     page_infos.sort_by_key(|left| left.index);
 
     page_infos
-}
-
-fn list_pages(
-    state: &MockState,
-    chapter_id: &str,
-    offset: u32,
-    limit: u32,
-) -> Vec<PageInfo> {
-    //
-    let page_infos = list_all_pages(state, chapter_id);
-
-    let offset = offset as usize;
-
-    let limit = limit as usize;
-
-    if offset >= page_infos.len() {
-        return Vec::new();
-    }
-
-    let end = std::cmp::min(offset + limit, page_infos.len());
-
-    page_infos[offset..end].to_vec()
 }
 
 fn list_first_pages(
@@ -84,6 +57,9 @@ fn page_from_entry(entry: &PageEntry) -> PageInfo {
         image_key: entry.image_key.clone(),
         image_uploaded: false,
         image_version: entry.image_version,
+        image_hash: entry.image_hash.clone(),
+        image_byte_length: entry.image_byte_len,
+        image_extension: entry.image_ext,
         total_unit_count: 0,
         translated_unit_count: 0,
         proofread_unit_count: 0,

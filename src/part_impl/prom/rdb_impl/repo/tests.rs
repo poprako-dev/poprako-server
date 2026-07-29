@@ -33,9 +33,12 @@ fn local_message_entry(
     }
 }
 
+/// Verifies polling is fair across topics and skips topics with processing
+/// work.
 pub async fn poll_pending_selects_one_visible_message_per_idle_topic(
     shared: RdbCore,
 ) {
+    //
     test_shared::reset(&shared, POLL_PREFIX).await;
 
     let now = OffsetDateTime::now_utc();
@@ -111,9 +114,12 @@ pub async fn poll_pending_selects_one_visible_message_per_idle_topic(
         .unwrap();
 }
 
+/// Verifies delayed retries are equivalent to re-enqueueing behind visible
+/// work.
 pub async fn retry_message_allows_later_topic_message_to_advance(
     shared: RdbCore,
 ) {
+    //
     test_shared::reset(&shared, POLL_PREFIX).await;
 
     let now = OffsetDateTime::now_utc();
@@ -182,9 +188,12 @@ pub async fn retry_message_allows_later_topic_message_to_advance(
         .unwrap();
 }
 
+/// Verifies expired completed records are purged while recent completed,
+/// pending, and dead records remain.
 pub async fn completed_message_purge_preserves_non_completed_records(
     shared: RdbCore,
 ) {
+    //
     test_shared::reset(&shared, PREFIX).await;
 
     let now = OffsetDateTime::now_utc();
@@ -229,6 +238,16 @@ pub async fn completed_message_purge_preserves_non_completed_records(
         f_updated_at: now - Duration::days(8),
     };
 
+    let stale_dead_entry = LocalMessageEntry {
+        f_id: "rdb-test-prom-purge-stale-dead",
+        f_topic: "image",
+        f_status: LocalMessageStatus::Dead,
+        f_payload: serde_json::json!({}),
+        f_visible_at: now - Duration::days(31),
+        f_created_at: now - Duration::days(31),
+        f_updated_at: now - Duration::days(31),
+    };
+
     let mut conn = shared.get().await.ok().unwrap();
 
     diesel::insert_into(schema::t_local_message::table)
@@ -237,6 +256,7 @@ pub async fn completed_message_purge_preserves_non_completed_records(
             recent_completed_entry,
             pending_entry,
             dead_entry,
+            stale_dead_entry,
         ])
         .execute(&mut conn)
         .await
@@ -245,17 +265,22 @@ pub async fn completed_message_purge_preserves_non_completed_records(
 
     let repo = RdbPromRepo::new(RdbRepo::new(shared.clone()));
 
-    let before = now - Duration::days(7);
+    let completed_before = now - Duration::days(7);
+
+    let dead_before = now - Duration::days(30);
 
     let mut context = RdbContext::new(shared.get().await.ok().unwrap());
 
     let purged_count = repo
-        .step(&mut context, &PurgeCompleted::new(&before))
+        .step(
+            &mut context,
+            &PurgeCompleted::new(&completed_before, &dead_before),
+        )
         .await
         .ok()
         .unwrap();
 
-    assert_eq!(purged_count, 1);
+    assert_eq!(purged_count, 2);
 
     let remaining_ids: Vec<String> = schema::t_local_message::table
         .filter(schema::t_local_message::f_id.like(format!("{}%", PREFIX)))

@@ -9,13 +9,10 @@ use crate::part::repo::oper::workset::{
     GetWorksetInfoExcluded, ListWorksetInfos, ListWorksetInfosExcluded,
     UpdateWorkset, UpdateWorksetComicCount,
 };
-use crate::part::repo::workset::WorksetRepo;
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
 use crate::result::{BaseError, BaseResult, accept};
-
-impl WorksetRepo<MockContext> for Mock {}
 
 fn get_workset_info(state: &MockState, id: &str) -> BaseResult<WorksetInfo> {
     state
@@ -40,13 +37,9 @@ fn list_workset_infos(
 
     workset_infos.sort_by_key(|workset_info| workset_info.index);
 
-    let Some(page) = oper.page else {
-        return workset_infos;
-    };
+    let offset = oper.offset as usize;
 
-    let offset = page.offset as usize;
-
-    let limit = page.limit as usize;
+    let limit = oper.limit as usize;
 
     match offset >= workset_infos.len() {
         //

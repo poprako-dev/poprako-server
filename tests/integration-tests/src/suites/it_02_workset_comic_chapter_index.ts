@@ -194,7 +194,7 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
         assert.equal(comicInfo.workset_id, serialWsId);
         assert.equal(comicInfo.index, i, `comic ${spec.label} index monotonic`);
         assert.equal(comicInfo.chapter_count, 1);
-        assert.equal(comicInfo.cover_url, null);
+        assert.equal(comicInfo.cover_url ?? null, null);
 
         const chapterInfo = await getChapter(ctx.sadmin, comic.chapter_id);
 
@@ -409,8 +409,8 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
         assert.equal(ch.comic?.workset?.id, serialWsId);
         assert.ok(ch.comic?.team, "workset.team incl populates comic.team");
         assert.equal(ch.comic?.team?.id, teamId);
-        // creator not requested — must be null
-        assert.equal(ch.creator, null, "creator not included");
+        // creator not requested — must be omitted
+        assert.equal(ch.creator, undefined, "creator not included");
     }
 
     // C5.8: non-admin create chapter -> 403/4
