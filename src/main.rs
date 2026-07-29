@@ -5,7 +5,7 @@
 #![deny(clippy::complexity)]
 #![deny(clippy::perf)]
 #![deny(clippy::unwrap_used)]
-// #![deny(clippy::expect_used)]
+#![deny(clippy::expect_used)]
 #![deny(clippy::panic)]
 #![deny(clippy::todo)]
 #![deny(clippy::unimplemented)]
@@ -38,7 +38,7 @@ use poprako_server::{
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     //
-    dotenvy::dotenv().expect(".env file should be valid");
+    dotenvy::dotenv().context(".env file should be valid")?;
 
     poprako_server::init_log();
 
