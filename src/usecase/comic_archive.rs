@@ -82,7 +82,7 @@ where
                 )
                 .await?;
 
-            let archived_comic_id = comic_archive_write.comic_record.id.clone();
+            let archived_comic_id = comic_archive_write.record.id.clone();
 
             let mut delete_ids = Vec::new();
 

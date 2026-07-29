@@ -26,9 +26,7 @@ use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::assignment::AssignmentRow;
 use crate::part_impl::repo::rdb_impl::entity::chapter::ChapterRow;
 use crate::part_impl::repo::rdb_impl::entity::comic::ComicRow;
-use crate::part_impl::repo::rdb_impl::entity::comic_archive::{
-    ArchivedChapterEntry, ArchivedComicEntry, ArchivedTranslationEntry,
-};
+use crate::part_impl::repo::rdb_impl::entity::comic_archive::ComicArchiveEntry;
 use crate::part_impl::repo::rdb_impl::entity::page::PageRow;
 use crate::part_impl::repo::rdb_impl::entity::unit::UnitRow;
 use crate::part_impl::repo::rdb_impl::entity::user::UserRow;
@@ -46,6 +44,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::{
 use crate::part_impl::repo::rdb_impl::schema::t_comic::dsl::{
     f_id as comic_id, t_comic,
 };
+use crate::part_impl::repo::rdb_impl::schema::t_comic_archive;
 use crate::part_impl::repo::rdb_impl::schema::t_page::dsl::{
     f_chapter_id as page_chapter_id, f_id as page_id, f_index as page_index,
     t_page,
@@ -58,9 +57,6 @@ use crate::part_impl::repo::rdb_impl::schema::t_user::dsl::{
 };
 use crate::part_impl::repo::rdb_impl::schema::t_workset::dsl::{
     f_id as workset_id, t_workset,
-};
-use crate::part_impl::repo::rdb_impl::schema::{
-    t_archived_chapter, t_archived_comic, t_archived_translation,
 };
 use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::shared::{RdbConn, RdbContext};
@@ -264,49 +260,21 @@ async fn get_snapshot_excluded(
     })
 }
 
-/// Insert archive rows and remove the active comic subtree without touching workset counters.
+/// Insert one archive row and remove the active comic subtree without touching workset counters.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn commit(
     conn: &mut RdbConn,
     comic_archive_write: &ComicArchiveWrite,
 ) -> BaseResult<()> {
     //
-    let comic_entry =
-        ArchivedComicEntry::from(&comic_archive_write.comic_record);
+    let comic_archive_entry =
+        ComicArchiveEntry::from(&comic_archive_write.record);
 
-    diesel::insert_into(t_archived_comic::table)
-        .values(&comic_entry)
+    diesel::insert_into(t_comic_archive::table)
+        .values(&comic_archive_entry)
         .execute(conn)
         .await
         .map_err(diesel)?;
-
-    let chapter_entries = comic_archive_write
-        .chapter_records
-        .iter()
-        .map(ArchivedChapterEntry::from)
-        .collect::<Vec<_>>();
-
-    if !chapter_entries.is_empty() {
-        diesel::insert_into(t_archived_chapter::table)
-            .values(&chapter_entries)
-            .execute(conn)
-            .await
-            .map_err(diesel)?;
-    }
-
-    let translation_entries = comic_archive_write
-        .translation_records
-        .iter()
-        .map(ArchivedTranslationEntry::from)
-        .collect::<Vec<_>>();
-
-    if !translation_entries.is_empty() {
-        diesel::insert_into(t_archived_translation::table)
-            .values(&translation_entries)
-            .execute(conn)
-            .await
-            .map_err(diesel)?;
-    }
 
     diesel::delete(t_assignment_invitation.filter(
         invitation_chapter_id.eq_any(&comic_archive_write.source_chapter_ids),

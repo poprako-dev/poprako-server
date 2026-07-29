@@ -56,6 +56,13 @@ use crate::data::team::{
     CreateTeamParams, MarkTeamAvatarUploadedParams, ReserveTeamAvatarParams,
     ReserveTeamAvatarPayload, TeamInfoVal, UpdateTeamInfoParams,
 };
+use crate::data::term::{
+    CreateTermParams, CreateTermPayload, TermInfoVal, UpdateTermInfoParams,
+};
+use crate::data::termbase::{
+    CreateTermbaseParams, CreateTermbasePayload, TermbaseInfoVal,
+    UpdateTermbaseInfoParams,
+};
 use crate::data::unit::{
     ListPageUnitInfosPayload, SavePageUnitsParams, SavePageUnitsPayload,
     UnitDiffParams, UnitInfoVal, UnitOperParams,
@@ -145,6 +152,17 @@ use crate::value::role::RoleField;
         handler::announcement::list_infos,
         handler::comment::create,
         handler::comment::list_infos,
+        handler::termbase::create,
+        handler::termbase::list_team_infos,
+        handler::termbase::list_comic_infos,
+        handler::termbase::get_info,
+        handler::termbase::update_info,
+        handler::termbase::delete,
+        handler::term::create,
+        handler::term::list_infos,
+        handler::term::get_info,
+        handler::term::update_info,
+        handler::term::delete,
         handler::member::create,
         handler::member::list_infos,
         handler::member::list_my_infos,
@@ -223,6 +241,14 @@ use crate::value::role::RoleField;
         CommentInfoVal,
         CreateCommentParams,
         CreateCommentPayload,
+        TermbaseInfoVal,
+        CreateTermbaseParams,
+        CreateTermbasePayload,
+        UpdateTermbaseInfoParams,
+        TermInfoVal,
+        CreateTermParams,
+        CreateTermPayload,
+        UpdateTermInfoParams,
         MemberInfoVal,
         CreateMemberParams,
         CreateMemberPayload,

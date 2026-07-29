@@ -34,7 +34,7 @@ the seed-only state in its `finally` block. Every current module exports
 | it_01 | `it_01_member_invitation_register_roles.ts` | Invitations, registration, member lists, and role permissions. |
 | it_02 | `it_02_workset_comic_chapter_index.ts` | Workset, comic, chapter indexes, pinning, profile updates, and positionally aligned comic/pinned-chapter list payloads. |
 | it_03 | `it_03_page_reserve_image.ts` | Page reservation, image confirmation, and page rebuilds. |
-| it_04 | `it_04_assignment_invitation.ts` | Assignment joins, invitations, updates, and deletion. |
+| it_04 | `it_04_assignment_invitation.ts` | Assignment joins, invitations, role updates, self role removal, and deletion. |
 | it_05 | `it_05_unit_save_order_count.ts` | Unit ordering, counts, and translation import/export. |
 | it_06 | `it_06_unit_concurrency.ts` | Parallel unit writes, merge behavior, and replay. |
 | it_07 | `it_07_workflow_sysmail.ts` | Workflow transitions and deferred system mail. |
@@ -42,6 +42,7 @@ the seed-only state in its `finally` block. Every current module exports
 | it_09 | `it_09_cross_team_permission.ts` | Cross-team authorization isolation. |
 | it_10 | `it_10_cascade_delete_cleanup.ts` | Cascade deletion and cleanup side effects. |
 | it_11 | `it_11_comic_archive.ts` | Immutable comic archive rows and image-delete prom records. |
+| it_12 | `it_12_termbase_term.ts` | Termbase/term lifecycle, inherited lookup, fuzzy isolation, proofreader permissions, response contracts, and termbase/comic/team cascades. |
 
 ## Shared fixtures and invariants
 

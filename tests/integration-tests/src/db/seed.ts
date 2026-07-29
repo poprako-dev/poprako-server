@@ -233,14 +233,14 @@ export async function cleanupToSeed(): Promise<void> {
       await client.query(`DELETE FROM "t_assignment_invitation"`);
       await client.query(`DELETE FROM "t_assignment"`);
 
-      // 3. Units, pages, chapters, comics, worksets (leaf -> root).
+      // 3. Units, pages, chapters, terminology, comics, worksets (leaf -> root).
       await client.query(`DELETE FROM "t_unit"`);
       await client.query(`DELETE FROM "t_page"`);
       await client.query(`DELETE FROM "t_chapter"`);
+      await client.query(`DELETE FROM "t_term"`);
+      await client.query(`DELETE FROM "t_termbase"`);
       await client.query(`DELETE FROM "t_comic"`);
-      await client.query(`DELETE FROM "t_archived_translation"`);
-      await client.query(`DELETE FROM "t_archived_chapter"`);
-      await client.query(`DELETE FROM "t_archived_comic"`);
+      await client.query(`DELETE FROM "t_comic_archive"`);
       await client.query(`DELETE FROM "t_workset"`);
 
       // 4. Memberships and invitations (depend on team + user).

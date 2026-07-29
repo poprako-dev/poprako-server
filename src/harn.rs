@@ -18,6 +18,8 @@ use crate::part::repo::member_invitation::MemberInvitationRepo;
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::system_mail::SystemMailRepo;
 use crate::part::repo::team::TeamRepo;
+use crate::part::repo::term::TermRepo;
+use crate::part::repo::termbase::TermbaseRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::part::repo::user::UserRepo;
 use crate::part::repo::workset::WorksetRepo;
@@ -65,6 +67,8 @@ where
         + PageRepo<C>
         + SystemMailRepo<C>
         + TeamRepo<C>
+        + TermRepo<C>
+        + TermbaseRepo<C>
         + UnitRepo<C>
         + UserRepo<C>
         + WorksetRepo<C>,

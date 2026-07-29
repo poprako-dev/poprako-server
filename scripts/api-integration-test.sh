@@ -15,6 +15,10 @@ if [ -f "$env_file" ]; then
     set +a
 fi
 
+RUST_LOG="${INTEGRATION_RUST_LOG:-$RUST_LOG}"
+
+export RUST_LOG
+
 integration_database_url="${INTEGRATION_DATABASE_URL:-}"
 
 if [ -z "$integration_database_url" ]; then
@@ -62,7 +66,7 @@ fi
 if [ "$start_api_server" = "1" ]; then
     existing_status=$(curl -s -o /dev/null -w '%{http_code}' "$api_base_url/api/health" || true)
 
-    if [ "$existing_status" = "204" ]; then
+    if [ "$existing_status" = "200" ]; then
         echo "API server already responds at $api_base_url; stop it or set START_API_SERVER=0" >&2
         exit 1
     fi
@@ -82,7 +86,7 @@ if [ "$start_api_server" = "1" ]; then
 
         status=$(curl -s -o /dev/null -w '%{http_code}' "$api_base_url/api/health" || true)
 
-        if [ "$status" = "204" ]; then
+        if [ "$status" = "200" ]; then
             health_ok=1
             break
         fi

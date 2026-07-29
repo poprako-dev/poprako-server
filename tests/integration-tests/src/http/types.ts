@@ -52,6 +52,29 @@ export interface ComicInfoVal {
     updated_at: number;
 }
 
+export interface TermbaseInfoVal {
+    id: string;
+    team_id?: string;
+    comic_id?: string;
+    name: string;
+    description?: string;
+    term_count: number;
+    creator_id: string;
+    created_at: number;
+    updated_at: number;
+}
+
+export interface TermInfoVal {
+    id: string;
+    termbase_id: string;
+    source: string;
+    targets: string[];
+    comment?: string;
+    creator_id: string;
+    created_at: number;
+    updated_at: number;
+}
+
 export interface ListComicInfosPayload {
     comics: ComicInfoVal[];
     pinned_chapters: (ChapterInfoVal | null)[];

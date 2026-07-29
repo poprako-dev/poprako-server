@@ -112,7 +112,7 @@ fn get_snapshot_excluded(
     })
 }
 
-/// Persist archive rows and delete active records in the mock transaction state.
+/// Persist one archive row and delete active records in the mock transaction state.
 fn commit(
     context: &mut MockContext,
     comic_archive_write: &ComicArchiveWrite,
@@ -126,18 +126,8 @@ fn commit(
 
     context
         .state
-        .archived_comics
-        .push(comic_archive_write.comic_record.clone());
-
-    context
-        .state
-        .archived_chapters
-        .extend(comic_archive_write.chapter_records.iter().cloned());
-
-    context
-        .state
-        .archived_translations
-        .extend(comic_archive_write.translation_records.iter().cloned());
+        .comic_archives
+        .push(comic_archive_write.record.clone());
 
     context
         .state

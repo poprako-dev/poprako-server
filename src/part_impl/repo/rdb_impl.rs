@@ -34,6 +34,10 @@ pub mod schema;
 pub mod system_mail;
 /// Team repository operations.
 pub mod team;
+/// Term repository operations.
+pub mod term;
+/// Termbase repository operations.
+pub mod termbase;
 #[cfg(all(test, feature = "repo"))]
 pub mod test_shared;
 /// Unit repository operations.
