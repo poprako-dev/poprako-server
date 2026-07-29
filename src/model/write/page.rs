@@ -4,9 +4,9 @@
 //! Each page belongs to exactly one chapter and carries denormalised progress
 //! counters that aggregate to the parent chapter's overview totals.
 //!
-//! Convert to [`PageInfoVal`] for presentation.
+//! Convert to [`PageInfoView`] for presentation.
 //!
-//! [`PageInfoVal`]: crate::data::val::page::PageInfoVal
+//! [`PageInfoView`]: crate::data::view::page::PageInfoView
 
 use crate::value::image::{ImageExt, ImageHash};
 

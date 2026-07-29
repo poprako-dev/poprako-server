@@ -39,7 +39,7 @@ import {
     login,
     logout,
 } from "../http/fixtures.js";
-import type { LoginVal, MemberInfoVal, TeamInfoVal } from "../http/types.js";
+import type { LoginVal, MemberInfoView, TeamInfoView } from "../http/types.js";
 import { testEnv } from "../config/env.js";
 import type { RunCtx } from "../state/runCtx.js";
 

@@ -2,8 +2,10 @@
 
 ## Data layer naming
 
-Request-equivalent structures use the `Instr` suffix, direct response-equivalent
-structures use `Val`, and response-only nested structures use `View`.
+Request-equivalent structures use the `Instr` suffix, direct response DTOs use
+`Val`, and response-only structures use `View`. A direct projection of a model
+`*Info` is always an `*InfoView`, including when returned alone or wrapped in a
+`Vec`, `Option`, or another response DTO.
 
 The role is also represented by the submodule path:
 

@@ -14,14 +14,31 @@ use crate::model::read::spec::comic::{ComicListKind, ComicListSpec};
 use crate::result::{BaseError, BaseRest, accept};
 use crate::value::chapter::StageMask;
 use crate::value::comic::{ComicInclOpt, ComicWithOpt};
+use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::RoleMask;
 #[cfg(feature = "swagger")]
 use utoipa::{IntoParams, ToSchema};
 
-pub use crate::data::instr::image::{
-    MarkImageUploadedInstr as MarkComicCoverUploadedInstr,
-    ReserveImageInstr as ReserveComicCoverInstr,
-};
+/// Request to reserve a comic cover upload.
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
+pub struct ReserveComicCoverInstr {
+    //
+    /// SHA-256 identity of the exact cover bytes.
+    pub image_hash: ImageHash,
+    /// Upload size used for validation and PUT signing.
+    pub new_byte_len: u64,
+    /// Cover file format.
+    pub ext: ImageExt,
+}
+
+/// Request to confirm one reserved comic cover version.
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
+pub struct MarkComicCoverUploadedInstr {
+    /// Version returned in the cover upload slot.
+    pub image_version: u32,
+}
 
 /// Input parameters for creating a new comic inside a workset.
 ///

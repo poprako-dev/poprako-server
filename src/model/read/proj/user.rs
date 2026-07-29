@@ -6,11 +6,11 @@ use crate::value::image::{ImageExt, ImageHash};
 
 /// A userprofile record as stored in the database.
 ///
-/// Carries raw [`OffsetDateTime`] timestamps; convert to [`UserInfoVal`] for
+/// Carries raw [`OffsetDateTime`] timestamps; convert to [`UserInfoView`] for
 /// presentation. Avatar fields track a multi-step upload flow: a key is
 /// reserved, the client uploads to that key, then the upload is marked complete.
 ///
-/// [`UserInfoVal`]: crate::data::val::user::UserInfoVal
+/// [`UserInfoView`]: crate::data::view::user::UserInfoView
 #[derive(Clone)]
 pub struct UserInfo {
     //

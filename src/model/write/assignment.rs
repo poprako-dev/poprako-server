@@ -4,10 +4,10 @@
 //! Each assignment carries a [`RoleMask`] bitmap. The individual
 //! workflow stages a user can act on are derived from the mask.
 //!
-//! Convert to [`AssignmentInfoVal`] for presentation.
+//! Convert to [`AssignmentInfoView`] for presentation.
 //!
 //! [`RoleMask`]: crate::value::role::RoleMask
-//! [`AssignmentInfoVal`]: crate::data::val::chapter::AssignmentInfoVal
+//! [`AssignmentInfoView`]: crate::data::view::chapter::AssignmentInfoView
 
 use crate::value::role::RoleMask;
 

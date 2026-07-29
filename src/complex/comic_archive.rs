@@ -3,7 +3,7 @@
 use poprako_orchestra::{OperProxy as _, Proxy};
 use time::OffsetDateTime;
 
-use poprako_util::time::ToUnixMilli;
+use poprako_util::time::ToUnixMilli as _;
 
 use crate::complex::util::check_user_is_team_admin;
 use crate::model::read::proj::assignment::AssignmentInfo;

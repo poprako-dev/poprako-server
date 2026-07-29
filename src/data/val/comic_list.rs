@@ -4,9 +4,9 @@
 
 use serde::Serialize;
 
-use crate::data::val::assignment::AssignmentInfoVal;
-use crate::data::val::chapter::ChapterInfoVal;
-use crate::data::val::comic::ComicInfoVal;
+use crate::data::view::assignment::AssignmentInfoView;
+use crate::data::view::chapter::ChapterInfoView;
+use crate::data::view::comic::ComicInfoView;
 
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
@@ -21,12 +21,12 @@ use utoipa::ToSchema;
 pub struct ListComicInfosVal {
     //
     /// Comic information for the listed comics.
-    pub comics: Vec<ComicInfoVal>,
+    pub comics: Vec<ComicInfoView>,
 
     /// Pinned chapter for each comic, positionally aligned with `comics`.
     /// `None` when the comic has no pinned chapter.
-    pub pinned_chapters: Vec<Option<ChapterInfoVal>>,
+    pub pinned_chapters: Vec<Option<ChapterInfoView>>,
 
     /// Assignments for each pinned chapter, positionally aligned with `comics`.
-    pub pinned_chapter_assignments: Vec<Vec<AssignmentInfoVal>>,
+    pub pinned_chapter_assignments: Vec<Vec<AssignmentInfoView>>,
 }

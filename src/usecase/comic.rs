@@ -19,9 +19,8 @@ use crate::data::instr::comic::{
     CreateComicInstr, MarkComicCoverUploadedInstr, ReserveComicCoverInstr,
     UpdateComicInfoInstr,
 };
-use crate::data::val::comic::{
-    ComicInfoVal, CreateComicVal, ReserveComicCoverVal,
-};
+use crate::data::val::comic::{CreateComicVal, ReserveComicCoverVal};
+use crate::data::view::comic::ComicInfoView;
 use crate::data::view::image::ImageUploadSlotView;
 use crate::model::shared::user::UserToken;
 use crate::model::write::assignment::AssignmentEntry;
@@ -222,7 +221,7 @@ pub async fn get_info<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
     id: String,
-) -> BaseRest<ComicInfoVal>
+) -> BaseRest<ComicInfoView>
 where
     R: ComicRepo<C>
         + WorksetRepo<C>
@@ -263,7 +262,7 @@ where
     )
     .await?;
 
-    ComicInfoVal::from_model(
+    ComicInfoView::from_model(
         image_pool,
         comic_info,
         fallback_cover_keys.get(&id).map(String::as_str),

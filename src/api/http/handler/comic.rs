@@ -12,13 +12,12 @@ use crate::data::instr::comic::{
     ReserveComicCoverInstr, UpdateComicInfoInstr,
 };
 use crate::data::instr::comic_archive::ExportComicArchivesInstr;
-use crate::data::val::comic::{
-    ComicInfoVal, CreateComicVal, ReserveComicCoverVal,
-};
+use crate::data::val::comic::{CreateComicVal, ReserveComicCoverVal};
 use crate::data::val::comic_archive::{
     ArchiveComicVal, ExportComicArchivesVal,
 };
 use crate::data::val::comic_list::ListComicInfosVal;
+use crate::data::view::comic::ComicInfoView;
 
 #[cfg(feature = "swagger")]
 use utoipa::IntoParams;
@@ -166,7 +165,7 @@ pub async fn list_infos(
     tag = "comics",
     params(("comic_id" = String, Path, description = "Comic ID")),
     responses(
-        (status = 200, description = "Comic info retrieved", body = HttpBody<ComicInfoVal>),
+        (status = 200, description = "Comic info retrieved", body = HttpBody<ComicInfoView>),
         (status = 403, description = "No permission to view this comic"),
         (status = 404, description = "Comic not found"),
     ),
@@ -176,7 +175,7 @@ pub async fn get_info(
     State(harn): State<AppHarn>,
     Path(comic_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-) -> HttpResult<ComicInfoVal> {
+) -> HttpResult<ComicInfoView> {
     usecase::comic::get_info(
         (harn.repo(), harn.image_pool()),
         user_token,

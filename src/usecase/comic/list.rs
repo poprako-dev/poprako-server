@@ -7,10 +7,10 @@ use poprako_util::i18n::trl;
 
 use crate::complex::comic::{ComicComplex, ComicPermComplex};
 use crate::data::instr::comic::ListComicInfosInstr;
-use crate::data::val::assignment::AssignmentInfoVal;
-use crate::data::val::chapter::ChapterInfoVal;
-use crate::data::val::comic::ComicInfoVal;
 use crate::data::val::comic_list::ListComicInfosVal;
+use crate::data::view::assignment::AssignmentInfoView;
+use crate::data::view::chapter::ChapterInfoView;
+use crate::data::view::comic::ComicInfoView;
 use crate::model::read::spec::comic::ComicListSpec;
 use crate::model::shared::user::UserToken;
 use crate::part::image::ImagePool;
@@ -137,35 +137,35 @@ where
             false => HashMap::new(),
         };
 
-    let mut comic_info_vals = Vec::with_capacity(comic_infos.len());
+    let mut comic_info_views = Vec::with_capacity(comic_infos.len());
 
-    let mut pinned_chapter_vals = Vec::with_capacity(comic_infos.len());
+    let mut pinned_chapter_views = Vec::with_capacity(comic_infos.len());
 
-    let mut pinned_chapter_assignment_vals =
+    let mut pinned_chapter_assignment_views =
         Vec::with_capacity(comic_infos.len());
 
     for comic_info in comic_infos {
         //
-        let (pinned_chapter_val, pinned_chapter_assignment_val) =
+        let (pinned_chapter_view, assignment_views_for_chapter) =
             match pinned_chapter_infos.remove(&comic_info.id) {
                 //
                 Some(chapter_info) => {
                     //
-                    let assignment_vals = pinned_chapter_assignment_infos
+                    let assignment_views = pinned_chapter_assignment_infos
                         .remove(&chapter_info.id)
                         .unwrap_or_default()
                         .into_iter()
-                        .map(AssignmentInfoVal::from)
+                        .map(AssignmentInfoView::from)
                         .collect();
 
-                    let chapter_val = ChapterInfoVal::from_model(
+                    let chapter_view = ChapterInfoView::from_model(
                         image_pool,
                         chapter_info,
                         None,
                     )
                     .await?;
 
-                    (Some(chapter_val), assignment_vals)
+                    (Some(chapter_view), assignment_views)
                 }
 
                 None => (None, Vec::new()),
@@ -174,8 +174,8 @@ where
         let fallback_cover_key =
             fallback_cover_keys.get(&comic_info.id).map(String::as_str);
 
-        comic_info_vals.push(
-            ComicInfoVal::from_model(
+        comic_info_views.push(
+            ComicInfoView::from_model(
                 image_pool,
                 comic_info,
                 fallback_cover_key,
@@ -183,14 +183,14 @@ where
             .await?,
         );
 
-        pinned_chapter_vals.push(pinned_chapter_val);
+        pinned_chapter_views.push(pinned_chapter_view);
 
-        pinned_chapter_assignment_vals.push(pinned_chapter_assignment_val);
+        pinned_chapter_assignment_views.push(assignment_views_for_chapter);
     }
 
     accept(ListComicInfosVal {
-        comics: comic_info_vals,
-        pinned_chapters: pinned_chapter_vals,
-        pinned_chapter_assignments: pinned_chapter_assignment_vals,
+        comics: comic_info_views,
+        pinned_chapters: pinned_chapter_views,
+        pinned_chapter_assignments: pinned_chapter_assignment_views,
     })
 }

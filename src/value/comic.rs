@@ -10,7 +10,7 @@ use crate::value::incl::InclOpt;
 /// Incl opts for comic info queries.
 ///
 /// Each opt embeds additional related data into the returned
-/// [`ComicInfoVal`]. Dotted opts implicitly pull in the segments before the
+/// [`ComicInfoView`]. Dotted opts implicitly pull in the segments before the
 /// dot (e.g. `workset.team` also embeds `workset`).
 #[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]

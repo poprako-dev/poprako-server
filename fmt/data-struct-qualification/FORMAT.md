@@ -5,7 +5,7 @@ from its role and domain module, then use the type bare:
 
 ```rust
 use crate::data::instr::team::CreateTeamInstr;
-use crate::data::val::team::TeamInfoVal;
+use crate::data::view::team::TeamInfoView;
 ```
 
 Legacy wrappers, root data re-exports, and module-qualified uses such as

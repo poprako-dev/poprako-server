@@ -6,10 +6,10 @@ use crate::value::image::{ImageExt, ImageHash};
 
 /// A teamrecord as stored in the database.
 ///
-/// Carries raw [`OffsetDateTime`] timestamps; convert to [`TeamInfoVal`] for
+/// Carries raw [`OffsetDateTime`] timestamps; convert to [`TeamInfoView`] for
 /// presentation.
 ///
-/// [`TeamInfoVal`]: crate::data::val::team::TeamInfoVal
+/// [`TeamInfoView`]: crate::data::view::team::TeamInfoView
 #[derive(Clone)]
 pub struct TeamInfo {
     //

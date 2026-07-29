@@ -1,9 +1,9 @@
 //! Domain models for comics inside worksets — core metadata, cover-storage
 //! tracking, and denormalised chapter counters.
 //!
-//! Convert to [`ComicInfoVal`] for presentation outside the domain layer.
+//! Convert to [`ComicInfoView`] for presentation outside the domain layer.
 //!
-//! [`ComicInfoVal`]: crate::data::val::comic::ComicInfoVal
+//! [`ComicInfoView`]: crate::data::view::comic::ComicInfoView
 
 /// The data needed to insert a new comic row.
 ///

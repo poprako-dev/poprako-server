@@ -3,9 +3,9 @@ use super::*;
 use crate::data::instr::comic::CreateComicInstr;
 
 #[test]
-fn comic_info_val_omits_none_fields() {
+fn comic_info_view_omits_none_fields() {
     //
-    let comic_info_val = ComicInfoVal {
+    let comic_info_view = ComicInfoView {
         id: "comic-1".into(),
         workset_id: "workset-1".into(),
         index: 1,
@@ -24,7 +24,7 @@ fn comic_info_val_omits_none_fields() {
         updated_at: 0,
     };
 
-    let serialized = serde_json::to_value(comic_info_val).unwrap();
+    let serialized = serde_json::to_value(comic_info_view).unwrap();
 
     let serde_json::Value::Object(object) = serialized else {
         panic!("comic info value must serialize as an object");

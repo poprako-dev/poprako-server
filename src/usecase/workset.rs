@@ -10,7 +10,8 @@ use crate::complex::workset::{WorksetComplex, WorksetPermComplex};
 use crate::data::instr::workset::{
     CreateWorksetInstr, ListWorksetInfosInstr, UpdateWorksetInfoInstr,
 };
-use crate::data::val::workset::{CreateWorksetVal, WorksetInfoVal};
+use crate::data::val::workset::CreateWorksetVal;
+use crate::data::view::workset::WorksetInfoView;
 use crate::model::shared::user::UserToken;
 use crate::model::write::workset::{WorksetEntry, WorksetRepl};
 use crate::part::prom::Prom;
@@ -108,7 +109,7 @@ pub async fn get_info<C, R>(
     (repo,): (&R,),
     token: UserToken,
     id: String,
-) -> BaseRest<WorksetInfoVal>
+) -> BaseRest<WorksetInfoView>
 where
     R: WorksetRepo<C> + MemberRepo<C> + Sync,
 {
@@ -134,7 +135,7 @@ pub async fn list_infos<C, R>(
     (repo,): (&R,),
     token: UserToken,
     instr: ListWorksetInfosInstr,
-) -> BaseRest<Vec<WorksetInfoVal>>
+) -> BaseRest<Vec<WorksetInfoView>>
 where
     R: WorksetRepo<C> + MemberRepo<C> + Sync,
 {

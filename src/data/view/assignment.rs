@@ -1,28 +1,30 @@
-//! Val DTOs for the assignment domain.
-
-//! Data transfer objects for assignment use cases.
+//! View DTOs for the assignment domain.
 
 use serde::Serialize;
 
-use crate::data::val::chapter::ChapterInfoVal;
-use crate::data::val::user::UserInfoVal;
+use crate::data::view::chapter::ChapterInfoView;
+
+use crate::data::view::user::UserInfoView;
 
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
 use futures::future::OptionFuture;
 
-use poprako_util::time::ToUnixMilli;
+use poprako_util::time::ToUnixMilli as _;
 
 use crate::model::read::proj::assignment::AssignmentInfo;
+
 use crate::part::image::ImagePool;
+
 use crate::result::{BaseRest, accept};
+
 use crate::value::role::RoleMask;
 
 /// Presentation-ready chapter assignment information.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
-pub struct AssignmentInfoVal {
+pub struct AssignmentInfoView {
     //
     /// Unique identifier of the assignment.
     pub id: String,
@@ -34,10 +36,10 @@ pub struct AssignmentInfoVal {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Resolved user information, when included.
-    pub user: Option<UserInfoVal>,
+    pub user: Option<UserInfoView>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Resolved chapter information, when included.
-    pub chapter: Option<ChapterInfoVal>,
+    pub chapter: Option<ChapterInfoView>,
 
     /// Role mask assigned to this user for the chapter.
     pub roles: RoleMask,
@@ -48,7 +50,7 @@ pub struct AssignmentInfoVal {
     pub updated_at: i64,
 }
 
-impl AssignmentInfoVal {
+impl AssignmentInfoView {
     /// Build a response value and eagerly resolve included user/chapter references.
     /// Converts an assignment model into a presentation-ready value,
     /// resolving included user avatar when present.
@@ -65,12 +67,12 @@ impl AssignmentInfoVal {
             chapter_id: model.chapter_id,
             user_id: model.user_id,
             user: OptionFuture::from(model.user.map(|user_info| {
-                UserInfoVal::from_model(image_pool, user_info)
+                UserInfoView::from_model(image_pool, user_info)
             }))
             .await
             .transpose()?,
             chapter: OptionFuture::from(model.chapter.map(|chapter_info| {
-                ChapterInfoVal::from_model(
+                ChapterInfoView::from_model(
                     image_pool,
                     chapter_info,
                     fallback_cover_key,
@@ -85,7 +87,7 @@ impl AssignmentInfoVal {
     }
 }
 
-impl From<AssignmentInfo> for AssignmentInfoVal {
+impl From<AssignmentInfo> for AssignmentInfoView {
     // Convert one persisted assignment into API value shape.
     fn from(model: AssignmentInfo) -> Self {
         Self {

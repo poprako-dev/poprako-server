@@ -3,9 +3,9 @@
 //!
 //! See [`StagePhase`] and [`WorkflowStage`](crate::value::chapter::WorkflowStage)
 //! for the six production stages and their phase transitions.
-//! Convert to [`ChapterInfoVal`] for presentation.
+//! Convert to [`ChapterInfoView`] for presentation.
 //!
-//! [`ChapterInfoVal`]: crate::data::val::chapter::ChapterInfoVal
+//! [`ChapterInfoView`]: crate::data::view::chapter::ChapterInfoView
 //! [`StagePhase`]: crate::value::chapter::StagePhase
 
 use crate::value::chapter::StageMask;

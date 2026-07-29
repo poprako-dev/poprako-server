@@ -1,6 +1,6 @@
 use poprako_orchestra::OperRun as _;
 
-use crate::part::effect::EffectDevelop;
+use crate::part::effect::EffectDevelop as _;
 use crate::part::effect::event::Event;
 use crate::part::effect::event::chapter::ChapterWorkflowCompletedPayload;
 use crate::part::prom::payload::chapter::ChapterPayload;

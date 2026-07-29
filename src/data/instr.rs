@@ -18,8 +18,6 @@ pub mod comic;
 pub mod comic_archive;
 /// Comment instruction DTOs.
 pub mod comment;
-/// Image instruction DTOs.
-pub mod image;
 /// Member instruction DTOs.
 pub mod member;
 /// Member-invitation instruction DTOs.

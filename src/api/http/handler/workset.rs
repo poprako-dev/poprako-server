@@ -11,7 +11,8 @@ use crate::api::http::handler::util::{
 use crate::data::instr::workset::{
     CreateWorksetInstr, ListWorksetInfosInstr, UpdateWorksetInfoInstr,
 };
-use crate::data::val::workset::{CreateWorksetVal, WorksetInfoVal};
+use crate::data::val::workset::CreateWorksetVal;
+use crate::data::view::workset::WorksetInfoView;
 
 #[allow(unused_imports)]
 use crate::api::http::result::{
@@ -52,7 +53,7 @@ pub async fn create(
     tag = "worksets",
     params(("team_id" = String, Path, description = "Team ID"), Pagination),
     responses(
-        (status = 200, description = "Worksets listed", body = HttpBody<Vec<WorksetInfoVal>>),
+        (status = 200, description = "Worksets listed", body = HttpBody<Vec<WorksetInfoView>>),
         (status = 401, description = "Authentication required"),
         (status = 403, description = "No permission to list worksets in this team"),
     ),
@@ -63,7 +64,7 @@ pub async fn list_infos(
     Path(team_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
     Query(pagination): Query<Pagination>,
-) -> HttpResult<Vec<WorksetInfoVal>> {
+) -> HttpResult<Vec<WorksetInfoView>> {
     //
     let instr = ListWorksetInfosInstr {
         team_id,
@@ -83,7 +84,7 @@ pub async fn list_infos(
     tag = "worksets",
     params(("workset_id" = String, Path, description = "Workset ID")),
     responses(
-        (status = 200, description = "Workset info retrieved", body = HttpBody<WorksetInfoVal>),
+        (status = 200, description = "Workset info retrieved", body = HttpBody<WorksetInfoView>),
         (status = 401, description = "Authentication required"),
         (status = 403, description = "No permission to view this workset"),
         (status = 404, description = "Workset not found"),
@@ -94,7 +95,7 @@ pub async fn get_info(
     State(harn): State<AppHarn>,
     Path(workset_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-) -> HttpResult<WorksetInfoVal> {
+) -> HttpResult<WorksetInfoView> {
     usecase::workset::get_info((harn.repo(),), user_token, workset_id)
         .await?
         .accept(StatusCode::OK)

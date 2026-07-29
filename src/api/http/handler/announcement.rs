@@ -10,9 +10,8 @@ use tracing::instrument;
 use crate::data::instr::announcement::{
     CreateAnnouncementInstr, ListAnnouncementInfosInstr,
 };
-use crate::data::val::announcement::{
-    AnnouncementInfoVal, CreateAnnouncementVal,
-};
+use crate::data::val::announcement::CreateAnnouncementVal;
+use crate::data::view::announcement::AnnouncementInfoView;
 
 #[cfg(feature = "swagger")]
 use utoipa::IntoParams;
@@ -80,7 +79,7 @@ pub async fn create(
     description = "Lists a team's announcements. `incl` embeds related rows. Example: `/api/v1/teams/{team_id}/announcements?incl=user&offset=0&limit=20`.",
     params(("team_id" = String, Path, description = "Team ID"), AnnouncementListQuery),
     responses(
-        (status = 200, description = "Announcements listed", body = HttpBody<Vec<AnnouncementInfoVal>>),
+        (status = 200, description = "Announcements listed", body = HttpBody<Vec<AnnouncementInfoView>>),
         (status = 403, description = "No permission to list announcements in this team"),
     ),
 ))]
@@ -90,7 +89,7 @@ pub async fn list_infos(
     Path(team_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
     Query(query): Query<AnnouncementListQuery>,
-) -> HttpResult<Vec<AnnouncementInfoVal>> {
+) -> HttpResult<Vec<AnnouncementInfoView>> {
     //
     let instr = ListAnnouncementInfosInstr {
         team_id,

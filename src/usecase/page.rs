@@ -15,8 +15,9 @@ use crate::complex::page::{PageComplex, PagePermComplex};
 use crate::data::instr::page::{
     ListPageInfosInstr, MarkPageImageUploadedInstr, ReservePageImageInstr,
 };
-use crate::data::val::page::{PageInfoVal, ReservedPageVal};
+use crate::data::val::page::ReservedPageVal;
 use crate::data::view::image::ImageUploadSlotView;
+use crate::data::view::page::PageInfoView;
 use crate::model::shared::user::UserToken;
 use crate::model::write::page::{PageImageRepl, PageManifestRepl};
 use crate::part::image::{ImageManager, ImagePool, ImageUploadSpec};
@@ -265,7 +266,7 @@ pub async fn list_infos<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
     instr: ListPageInfosInstr,
-) -> BaseRest<Vec<PageInfoVal>>
+) -> BaseRest<Vec<PageInfoView>>
 where
     R: PageRepo<C>
         + ChapterRepo<C>
@@ -299,7 +300,7 @@ where
     futures_util::future::join_all(
         page_infos
             .into_iter()
-            .map(|page_info| PageInfoVal::from_model(image_pool, page_info)),
+            .map(|page_info| PageInfoView::from_model(image_pool, page_info)),
     )
     .await
     .into_iter()
@@ -312,7 +313,7 @@ pub async fn get_info<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
     id: String,
-) -> BaseRest<PageInfoVal>
+) -> BaseRest<PageInfoView>
 where
     R: PageRepo<C>
         + ChapterRepo<C>
@@ -339,7 +340,7 @@ where
     )
     .await?;
 
-    PageInfoVal::from_model(image_pool, page_info).await
+    PageInfoView::from_model(image_pool, page_info).await
 }
 
 /// Marks one page image as uploaded.

@@ -1,6 +1,4 @@
-//! Val DTOs for the system mail domain.
-
-//! Data transfer objects for system mail use cases.
+//! View DTOs for the system-mail domain.
 
 use serde::Serialize;
 
@@ -13,7 +11,7 @@ use utoipa::ToSchema;
 /// and omits the internal `receiver_id` field.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
-pub struct SystemMailInfoVal {
+pub struct SystemMailInfoView {
     //
     /// Unique identifier.
     pub id: String,

@@ -23,7 +23,7 @@ use crate::data::instr::member::{
     CreateMemberInstr, ListMemberInfosInstr, UpdateMemberRolesInstr,
 };
 
-use poprako_util::time::ToUnixMilli;
+use poprako_util::time::ToUnixMilli as _;
 
 use crate::model::read::proj::member::MemberInfo;
 use crate::model::read::proj::team::TeamInfo;
