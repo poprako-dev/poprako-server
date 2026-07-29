@@ -2,10 +2,10 @@ use poprako_orchestra::Nucl;
 use poprako_orchestra::nucl::Error as NuclError;
 
 use crate::part_impl::repo::mock_impl::{Mock, MockContext};
-use crate::result::RegularError;
+use crate::result::BaseError;
 
 impl Nucl for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     type Context = MockContext;
 

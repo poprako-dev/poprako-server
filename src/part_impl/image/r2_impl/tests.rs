@@ -9,6 +9,7 @@ use super::*;
 fn detect_content_type_maps_supported_extensions() {
     //
     assert_eq!(detect_content_type("avatar.PNG"), Some("image/png"));
+
     assert_eq!(detect_content_type("avatar.webp"), Some("image/webp"));
 }
 
@@ -19,6 +20,7 @@ fn detect_content_type_rejects_unknown_extension() {
 
 #[test]
 fn gen_download_url_uses_custom_domain() {
+    //
     let url = build_public_url(
         "https://images.example.test/root/",
         "avatars/user-1.png",
@@ -34,6 +36,7 @@ fn gen_download_url_uses_custom_domain() {
 
 #[test]
 fn gen_thumbnail_download_url_uses_cloudflare_image_resizing() {
+    //
     let thumbnail_path = format!(
         "cdn-cgi/image/{}/{}",
         THUMBNAIL_TRANSFORM, "chapters/chapter-1/pages/page-1.jpg"

@@ -25,7 +25,7 @@ use crate::part::repo::oper::chapter::GetChapterInfo;
 use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::workset::GetWorksetInfo;
-use crate::result::{ExpectedVariant, RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 use crate::value::chapter::{Stage, StageOper, StagePhase, try_modify_stage};
 use crate::value::index::stored_index_to_user_index;
@@ -57,7 +57,7 @@ impl ChapterComplex {
         chapter_info: &ChapterInfo,
         stage: Stage,
         oper: StageOper,
-    ) -> RegularResult<ChapterStageUpdate> {
+    ) -> BaseResult<ChapterStageUpdate> {
         //
         let current_phase = get_phase(chapter_info, stage);
 
@@ -68,7 +68,7 @@ impl ChapterComplex {
             stages: chapter_info.stages.try_set_phase(stage, next_phase)?,
         };
 
-        Ok(chapter_stage_update)
+        accept(chapter_stage_update)
     }
 }
 
@@ -105,11 +105,11 @@ impl ChapterPermComplex {
         proxy: &mut P,
         user_id: &str,
         comic_id: &str,
-    ) -> RegularResult<()>
+    ) -> BaseResult<()>
     where
-        P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = RegularError>
-            + for<'a> Proxy<GetWorksetInfo<'a>, Error = RegularError>
-            + for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>,
+        P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
+            + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+            + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
         check_team_member_by_comic(proxy, user_id, comic_id).await
     }
@@ -119,12 +119,12 @@ impl ChapterPermComplex {
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,
-    ) -> RegularResult<()>
+    ) -> BaseResult<()>
     where
-        P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = RegularError>
-            + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = RegularError>
-            + for<'a> Proxy<GetWorksetInfo<'a>, Error = RegularError>
-            + for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>,
+        P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
+            + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
+            + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+            + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
         check_team_member_by_chapter(proxy, user_id, chapter_id).await
     }
@@ -136,11 +136,11 @@ impl ChapterPermComplex {
         proxy: &mut P,
         user_id: &str,
         comic_id: &str,
-    ) -> RegularResult<()>
+    ) -> BaseResult<()>
     where
-        P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = RegularError>
-            + for<'a> Proxy<GetWorksetInfo<'a>, Error = RegularError>
-            + for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>,
+        P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
+            + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+            + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
         check_team_member_by_comic(proxy, user_id, comic_id).await
     }
@@ -150,11 +150,11 @@ impl ChapterPermComplex {
         proxy: &mut P,
         user_id: &str,
         comic_id: &str,
-    ) -> RegularResult<()>
+    ) -> BaseResult<()>
     where
-        P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = RegularError>
-            + for<'a> Proxy<GetWorksetInfo<'a>, Error = RegularError>
-            + for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>,
+        P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
+            + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+            + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
         check_team_admin_by_comic(proxy, user_id, comic_id).await
     }
@@ -164,9 +164,9 @@ impl ChapterPermComplex {
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,
-    ) -> RegularResult<()>
+    ) -> BaseResult<()>
     where
-        P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = RegularError>,
+        P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
     {
         check_admin(proxy, user_id, chapter_id).await
     }
@@ -178,9 +178,9 @@ impl ChapterPermComplex {
         chapter_id: &str,
         stage: Stage,
         oper: StageOper,
-    ) -> RegularResult<()>
+    ) -> BaseResult<()>
     where
-        P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = RegularError>,
+        P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
     {
         check_workflow_role(proxy, user_id, chapter_id, stage, oper).await
     }
@@ -195,11 +195,11 @@ impl ChapterPermComplex {
         user_id: &str,
         chapter_info: &ChapterInfo,
         roles: RoleMask,
-    ) -> RegularResult<()>
+    ) -> BaseResult<()>
     where
-        P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = RegularError>
-            + for<'a> Proxy<GetWorksetInfo<'a>, Error = RegularError>
-            + for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>,
+        P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
+            + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+            + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
         check_join_role(proxy, user_id, chapter_info, roles).await
     }
@@ -209,12 +209,12 @@ impl ChapterPermComplex {
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,
-    ) -> RegularResult<()>
+    ) -> BaseResult<()>
     where
-        P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = RegularError>
-            + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = RegularError>
-            + for<'a> Proxy<GetWorksetInfo<'a>, Error = RegularError>
-            + for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>,
+        P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
+            + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
+            + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+            + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
         check_team_admin_by_chapter(proxy, user_id, chapter_id).await
     }
@@ -226,11 +226,11 @@ async fn check_team_member_by_comic<P>(
     proxy: &mut P,
     user_id: &str,
     comic_id: &str,
-) -> RegularResult<()>
+) -> BaseResult<()>
 where
-    P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = RegularError>
-        + for<'a> Proxy<GetWorksetInfo<'a>, Error = RegularError>
-        + for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>,
+    P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
+        + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+        + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
 {
     let team_id = resolve_team_id_from_comic(proxy, comic_id).await?;
 
@@ -242,12 +242,12 @@ async fn check_team_member_by_chapter<P>(
     proxy: &mut P,
     user_id: &str,
     chapter_id: &str,
-) -> RegularResult<()>
+) -> BaseResult<()>
 where
-    P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = RegularError>
-        + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = RegularError>
-        + for<'a> Proxy<GetWorksetInfo<'a>, Error = RegularError>
-        + for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>,
+    P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
+        + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
+        + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+        + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
 {
     let chapter_info = proxy
         .exec(&GetChapterInfo {
@@ -264,11 +264,11 @@ async fn check_team_admin_by_comic<P>(
     proxy: &mut P,
     user_id: &str,
     comic_id: &str,
-) -> RegularResult<()>
+) -> BaseResult<()>
 where
-    P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = RegularError>
-        + for<'a> Proxy<GetWorksetInfo<'a>, Error = RegularError>
-        + for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>,
+    P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
+        + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+        + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
 {
     let team_id = resolve_team_id_from_comic(proxy, comic_id).await?;
 
@@ -280,12 +280,12 @@ async fn check_team_admin_by_chapter<P>(
     proxy: &mut P,
     user_id: &str,
     chapter_id: &str,
-) -> RegularResult<()>
+) -> BaseResult<()>
 where
-    P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = RegularError>
-        + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = RegularError>
-        + for<'a> Proxy<GetWorksetInfo<'a>, Error = RegularError>
-        + for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>,
+    P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
+        + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
+        + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+        + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
 {
     let chapter_info = proxy
         .exec(&GetChapterInfo {
@@ -302,9 +302,9 @@ async fn check_admin<P>(
     proxy: &mut P,
     user_id: &str,
     chapter_id: &str,
-) -> RegularResult<()>
+) -> BaseResult<()>
 where
-    P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = RegularError>,
+    P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
 {
     let assignment_info = proxy
         .exec(&FindAssignmentInfo::ChapterUser {
@@ -321,7 +321,7 @@ where
         return Err(chapter_admin_error());
     }
 
-    Ok(())
+    accept(())
 }
 
 /// Verify the caller is permitted to perform the given workflow transition
@@ -342,9 +342,9 @@ async fn check_workflow_role<P>(
     chapter_id: &str,
     stage: Stage,
     oper: StageOper,
-) -> RegularResult<()>
+) -> BaseResult<()>
 where
-    P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = RegularError>,
+    P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
 {
     let assignment_info = proxy
         .exec(&FindAssignmentInfo::ChapterUser {
@@ -360,7 +360,7 @@ where
     let roles = assignment_info.roles;
 
     if roles.has_any_role(&[RoleField::REVIEWER]) {
-        return Ok(());
+        return accept(());
     }
 
     let allowed = match (stage, oper) {
@@ -396,7 +396,7 @@ where
         return Err(chapter_workflow_role_error());
     }
 
-    Ok(())
+    accept(())
 }
 
 /// Verify the caller may join a chapter with the given role mask.
@@ -409,11 +409,11 @@ async fn check_join_role<P>(
     user_id: &str,
     chapter_info: &ChapterInfo,
     roles: RoleMask,
-) -> RegularResult<()>
+) -> BaseResult<()>
 where
-    P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = RegularError>
-        + for<'a> Proxy<GetWorksetInfo<'a>, Error = RegularError>
-        + for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>,
+    P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
+        + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+        + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
 {
     if roles.has_any_role(&[RoleField::ADMIN]) {
         return Err(chapter_role_not_assignable_args_error());
@@ -430,30 +430,30 @@ where
         .await?;
 
     let Some(member_info) = member_info else {
-        return Err(RegularError::Expected {
+        return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
             message: trl("error-team-member-required"),
         });
     };
 
     if !member_info.roles.contains_mask(roles) {
-        return Err(RegularError::Expected {
+        return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
             message: trl("error-chapter-role-not-assignable"),
         });
     }
 
-    Ok(())
+    accept(())
 }
 
 /// Resolve the owning team identifier by fetching a comic and its parent workset.
 async fn resolve_team_id_from_comic<P>(
     proxy: &mut P,
     comic_id: &str,
-) -> RegularResult<String>
+) -> BaseResult<String>
 where
-    P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = RegularError>
-        + for<'a> Proxy<GetWorksetInfo<'a>, Error = RegularError>,
+    P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
+        + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>,
 {
     let comic_info = proxy
         .exec(&GetComicInfo {
@@ -468,28 +468,28 @@ where
         })
         .await?;
 
-    Ok(workset_info.team_id)
+    accept(workset_info.team_id)
 }
 
 /// Construct a "chapter admin required" permission error.
-fn chapter_admin_error() -> RegularError {
-    RegularError::Expected {
+fn chapter_admin_error() -> BaseError {
+    BaseError::Expected {
         variant: ExpectedVariant::Perm,
         message: trl("error-chapter-admin-required"),
     }
 }
 
 /// Construct a "workflow role required for this transition" permission error.
-fn chapter_workflow_role_error() -> RegularError {
-    RegularError::Expected {
+fn chapter_workflow_role_error() -> BaseError {
+    BaseError::Expected {
         variant: ExpectedVariant::Perm,
         message: trl("error-chapter-workflow-role-required"),
     }
 }
 
 /// Construct an "admin role not assignable through join" args error.
-fn chapter_role_not_assignable_args_error() -> RegularError {
-    RegularError::Expected {
+fn chapter_role_not_assignable_args_error() -> BaseError {
+    BaseError::Expected {
         variant: ExpectedVariant::Args,
         message: trl("error-chapter-role-not-assignable"),
     }

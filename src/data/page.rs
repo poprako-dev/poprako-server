@@ -9,7 +9,7 @@ use poprako_util::time::ToUnixMilli;
 
 use crate::model::page::PageInfo;
 use crate::part::image::ImagePool;
-use crate::result::RegularResult;
+use crate::result::{BaseResult, accept};
 
 /// Presentation-ready page information.
 #[derive(Debug, Serialize)]
@@ -38,7 +38,7 @@ impl PageInfoVal {
     pub async fn from_model<P>(
         image_pool: &P,
         model: PageInfo,
-    ) -> RegularResult<Self>
+    ) -> BaseResult<Self>
     where
         P: ImagePool,
     {
@@ -53,7 +53,7 @@ impl PageInfoVal {
                 _ => (None, None),
             };
 
-        Ok(Self {
+        accept(Self {
             id: model.id,
             chapter_id: model.chapter_id,
             index: model.index,

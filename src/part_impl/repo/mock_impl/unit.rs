@@ -7,7 +7,7 @@ use crate::part::repo::unit::UnitRepo;
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
-use crate::result::RegularResult;
+use crate::result::{BaseResult, accept};
 
 mod orchestra;
 #[cfg(test)]
@@ -193,7 +193,7 @@ fn create_unit(
     page_id: &str,
     id: &str,
     payload: &UnitContent,
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     if state.units.iter().any(|unit_info| unit_info.id == id) {
         return Err(expected("error-unit-duplicate"));
@@ -205,7 +205,7 @@ fn create_unit(
 
     state.units.push(unit_info);
 
-    Ok(())
+    accept(())
 }
 
 fn save_unit(
@@ -213,7 +213,7 @@ fn save_unit(
     page_id: &str,
     id: &str,
     payload: &UnitContent,
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     let existing_position =
         state.units.iter().position(|unit_info| unit_info.id == id);
@@ -228,5 +228,5 @@ fn save_unit(
 
     write_payload(&mut state.units[existing_position], payload);
 
-    Ok(())
+    accept(())
 }

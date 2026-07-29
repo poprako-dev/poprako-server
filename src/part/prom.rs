@@ -4,7 +4,7 @@ use poprako_orchestra::Step;
 use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 
 use crate::part::prom::payload::Payload;
-use crate::result::RegularError;
+use crate::result::BaseError;
 
 /// Deferred-action payloads.
 pub mod payload;
@@ -23,11 +23,11 @@ pub mod payload;
 /// implementation that reorders, interleaves, or drops tasks violates
 /// this contract and may cause orphaned storage objects or stale state.
 pub trait Prom<C>:
-    for<'a> Step<Defer<'a, String, Payload, ()>, C, Error = RegularError>
+    for<'a> Step<Defer<'a, String, Payload, ()>, C, Error = BaseError>
     + for<'t, 'a> Step<
         DeferBatch<'t, 'a, String, Payload, ()>,
         C,
-        Error = RegularError,
+        Error = BaseError,
     >
 {
 }

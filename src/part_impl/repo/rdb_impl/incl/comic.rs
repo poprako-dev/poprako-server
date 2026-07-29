@@ -8,7 +8,7 @@ use crate::part_impl::repo::rdb_impl::incl::{
     self, Incl, TeamByIds, UserByIds, WorksetByIds,
 };
 use crate::part_impl::shared::RdbConn;
-use crate::result::RegularResult;
+use crate::result::{BaseResult, accept};
 use crate::value::comic::ComicInclOpt;
 use crate::value::incl::expand_incl_opts;
 
@@ -72,7 +72,7 @@ pub async fn populate_comic_incls(
     conn: &mut RdbConn,
     infos: &mut [ComicInfo],
     incl_opt: &[ComicInclOpt],
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     for incl_opt in expand_incl_opts(incl_opt) {
         match incl_opt {
@@ -91,5 +91,5 @@ pub async fn populate_comic_incls(
         }
     }
 
-    Ok(())
+    accept(())
 }

@@ -13,7 +13,7 @@ use crate::data::comic::ComicInfoVal;
 use crate::data::user::UserInfoVal;
 use crate::model::chapter::ChapterInfo;
 use crate::part::image::ImagePool;
-use crate::result::RegularResult;
+use crate::result::{BaseResult, accept};
 use crate::value::chapter::{ChapterInclOpt, Stage, StageMask, StageOper};
 
 /// Presentation-ready chapter information.
@@ -82,11 +82,11 @@ impl ChapterInfoVal {
         image_pool: &P,
         model: ChapterInfo,
         fallback_cover_key: Option<&str>,
-    ) -> RegularResult<Self>
+    ) -> BaseResult<Self>
     where
         P: ImagePool,
     {
-        Ok(Self {
+        accept(Self {
             id: model.id,
             comic_id: model.comic_id,
             comic: OptionFuture::from(model.comic.map(|comic_info| {

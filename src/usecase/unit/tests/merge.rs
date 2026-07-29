@@ -330,7 +330,7 @@ fn build_seeded_mock(initial_units: &[OracleUnit]) -> Mock {
 async fn apply_save_to_mock(
     mock: &Mock,
     opers: &[UnitOperParams],
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     save_infos(
         mock,
@@ -346,7 +346,7 @@ async fn apply_save_to_mock(
     )
     .await?;
 
-    Ok(())
+    accept(())
 }
 
 fn collect_sorted_units(units: &[UnitInfo], page_id: &str) -> Vec<UnitInfo> {

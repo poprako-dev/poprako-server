@@ -12,7 +12,7 @@ use time::OffsetDateTime;
 
 use crate::part::prom::payload::Payload;
 use crate::part_impl::repo::rdb_impl::schema::t_local_message;
-use crate::result::{RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, accept};
 
 /// Lifecycle status of a local message record in the prom queue.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, AsExpression)]
@@ -68,11 +68,11 @@ impl<'a> LocalMessageEntry<'a> {
     pub fn from_task(
         task: &Task<'a, String, Payload>,
         now: OffsetDateTime,
-    ) -> RegularResult<Self> {
+    ) -> BaseResult<Self> {
         //
         let f_payload =
             serde_json::to_value(task.payload).map_err(|error| {
-                RegularError::Unrecoverable {
+                BaseError::Unrecoverable {
                     message: format!(
                         "failed to serialize prom payload: {}",
                         error
@@ -80,7 +80,7 @@ impl<'a> LocalMessageEntry<'a> {
                 }
             })?;
 
-        Ok(Self {
+        accept(Self {
             f_id: task.id.as_ref(),
             f_topic: task.payload.topic(),
             f_status: LocalMessageStatus::Pending,

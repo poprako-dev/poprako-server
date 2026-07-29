@@ -6,7 +6,7 @@ use crate::part::repo::oper::assignment::FindAssignmentInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::term::DeleteTerms;
 use crate::part::repo::oper::termbase::{DeleteTermbase, LockTermbaseExcluded};
-use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
+use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::role::RoleField;
 
@@ -15,11 +15,11 @@ pub struct TermbaseComplex;
 
 impl TermbaseComplex {
     /// Deletes a termbase and its child terms inside an existing transaction context.
-    pub async fn delete_cascade<P>(proxy: &mut P, id: &str) -> RegularResult<()>
+    pub async fn delete_cascade<P>(proxy: &mut P, id: &str) -> BaseResult<()>
     where
-        P: for<'a> Proxy<LockTermbaseExcluded<'a>, Error = RegularError>
-            + for<'a, 'b> Proxy<DeleteTerms<'a, 'b>, Error = RegularError>
-            + for<'a> Proxy<DeleteTermbase<'a>, Error = RegularError>,
+        P: for<'a> Proxy<LockTermbaseExcluded<'a>, Error = BaseError>
+            + for<'a, 'b> Proxy<DeleteTerms<'a, 'b>, Error = BaseError>
+            + for<'a> Proxy<DeleteTermbase<'a>, Error = BaseError>,
     {
         proxy.exec(&LockTermbaseExcluded { id }).await?;
 
@@ -42,9 +42,9 @@ impl TermbasePermComplex {
         proxy: &mut P,
         user_id: &str,
         team_id: &str,
-    ) -> RegularResult<()>
+    ) -> BaseResult<()>
     where
-        P: for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>,
+        P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
         let member_info = proxy
             .exec(&FindMemberInfo::UserTeam { user_id, team_id })
@@ -67,10 +67,10 @@ impl TermbasePermComplex {
         proxy: &mut P,
         user_id: &str,
         comic_id: &str,
-    ) -> RegularResult<()>
+    ) -> BaseResult<()>
     where
-        P: for<'a> Proxy<FindAssignmentInfo<'a, 'a>, Error = RegularError>
-            + for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>,
+        P: for<'a> Proxy<FindAssignmentInfo<'a, 'a>, Error = BaseError>
+            + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
         let assignment_info = proxy
             .exec(&FindAssignmentInfo::UserComic {
@@ -86,7 +86,7 @@ impl TermbasePermComplex {
             .and_then(|c| c.comic)
             .and_then(|c| c.team)
             .map(|t| t.id)
-            .ok_or_else(|| RegularError::Unrecoverable {
+            .ok_or_else(|| BaseError::Unrecoverable {
                 message: "TODO".to_string(),
             })?;
 
@@ -98,8 +98,8 @@ impl TermbasePermComplex {
     }
 }
 
-fn perm_denied() -> RegularError {
-    RegularError::Expected {
+fn perm_denied() -> BaseError {
+    BaseError::Expected {
         variant: ExpectedVariant::Perm,
         message: trl("error-forbidden"),
     }

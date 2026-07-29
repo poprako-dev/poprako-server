@@ -26,7 +26,7 @@ use crate::part::repo::oper::workset::{
     DeleteWorkset, GetWorksetInfo, GetWorksetInfoExcluded,
     UpdateWorksetComicCount,
 };
-use crate::result::{RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, accept};
 use crate::util::next_snowflake_id;
 
 /// Domain opers for workset entities.
@@ -39,33 +39,29 @@ impl WorksetComplex {
     }
 
     /// Deletes a workset subtree inside an existing transaction context.
-    pub async fn delete_cascade<P>(proxy: &mut P, id: &str) -> RegularResult<()>
+    pub async fn delete_cascade<P>(proxy: &mut P, id: &str) -> BaseResult<()>
     where
-        P: for<'a> Proxy<GetWorksetInfoExcluded<'a>, Error = RegularError>
-            + for<'a> Proxy<ListComicInfosExcluded<'a>, Error = RegularError>
-            + for<'a> Proxy<DeleteWorkset<'a>, Error = RegularError>
-            + for<'a, 'b> Proxy<
-                GetComicInfoExcluded<'a, 'b>,
-                Error = RegularError,
-            > + for<'a> Proxy<ListChapterInfosExcluded<'a>, Error = RegularError>
-            + for<'a> Proxy<DeleteComic<'a>, Error = RegularError>
-            + for<'a> Proxy<UpdateWorksetComicCount<'a>, Error = RegularError>
-            + for<'a, 'b> Proxy<
-                GetChapterInfoExcluded<'a, 'b>,
-                Error = RegularError,
-            > + for<'a> Proxy<ListPageInfos<'a>, Error = RegularError>
-            + for<'a> Proxy<DeleteAssignmentInvitations<'a>, Error = RegularError>
-            + for<'a> Proxy<DeleteAssignments<'a>, Error = RegularError>
-            + for<'a> Proxy<DeletePages<'a>, Error = RegularError>
-            + for<'a> Proxy<DeleteChapter<'a>, Error = RegularError>
-            + for<'a> Proxy<UpdateChapter<'a>, Error = RegularError>
-            + for<'a> Proxy<UnpinOtherChapters<'a>, Error = RegularError>
-            + for<'a> Proxy<UpdateComicChapterCount<'a>, Error = RegularError>
-            + for<'a> Proxy<TouchComicLastActive<'a>, Error = RegularError>
-            + for<'a> Proxy<Defer<'a, String, Payload, ()>, Error = RegularError>
+        P: for<'a> Proxy<GetWorksetInfoExcluded<'a>, Error = BaseError>
+            + for<'a> Proxy<ListComicInfosExcluded<'a>, Error = BaseError>
+            + for<'a> Proxy<DeleteWorkset<'a>, Error = BaseError>
+            + for<'a, 'b> Proxy<GetComicInfoExcluded<'a, 'b>, Error = BaseError>
+            + for<'a> Proxy<ListChapterInfosExcluded<'a>, Error = BaseError>
+            + for<'a> Proxy<DeleteComic<'a>, Error = BaseError>
+            + for<'a> Proxy<UpdateWorksetComicCount<'a>, Error = BaseError>
+            + for<'a, 'b> Proxy<GetChapterInfoExcluded<'a, 'b>, Error = BaseError>
+            + for<'a> Proxy<ListPageInfos<'a>, Error = BaseError>
+            + for<'a> Proxy<DeleteAssignmentInvitations<'a>, Error = BaseError>
+            + for<'a> Proxy<DeleteAssignments<'a>, Error = BaseError>
+            + for<'a> Proxy<DeletePages<'a>, Error = BaseError>
+            + for<'a> Proxy<DeleteChapter<'a>, Error = BaseError>
+            + for<'a> Proxy<UpdateChapter<'a>, Error = BaseError>
+            + for<'a> Proxy<UnpinOtherChapters<'a>, Error = BaseError>
+            + for<'a> Proxy<UpdateComicChapterCount<'a>, Error = BaseError>
+            + for<'a> Proxy<TouchComicLastActive<'a>, Error = BaseError>
+            + for<'a> Proxy<Defer<'a, String, Payload, ()>, Error = BaseError>
             + for<'t, 'a> Proxy<
                 DeferBatch<'t, 'a, String, Payload, ()>,
-                Error = RegularError,
+                Error = BaseError,
             >,
     {
         // SAFETY: Lock the root workset row (FOR UPDATE) to serialize with
@@ -111,7 +107,7 @@ impl WorksetComplex {
             })
             .await?;
 
-        Ok(())
+        accept(())
     }
 }
 
@@ -124,9 +120,9 @@ impl WorksetPermComplex {
         proxy: &mut P,
         user_id: &str,
         team_id: &str,
-    ) -> RegularResult<()>
+    ) -> BaseResult<()>
     where
-        P: for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>,
+        P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
         check_user_is_team_admin(proxy, user_id, team_id).await
     }
@@ -136,9 +132,9 @@ impl WorksetPermComplex {
         proxy: &mut P,
         user_id: &str,
         team_id: &str,
-    ) -> RegularResult<()>
+    ) -> BaseResult<()>
     where
-        P: for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>,
+        P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
         check_user_is_team_member(proxy, user_id, team_id).await
     }
@@ -148,10 +144,10 @@ impl WorksetPermComplex {
         proxy: &mut P,
         user_id: &str,
         workset_id: &str,
-    ) -> RegularResult<()>
+    ) -> BaseResult<()>
     where
-        P: for<'a> Proxy<GetWorksetInfo<'a>, Error = RegularError>
-            + for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>,
+        P: for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+            + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
         let team_id = Self::resolve_team_id(proxy, workset_id).await?;
 
@@ -163,10 +159,10 @@ impl WorksetPermComplex {
         proxy: &mut P,
         user_id: &str,
         workset_id: &str,
-    ) -> RegularResult<()>
+    ) -> BaseResult<()>
     where
-        P: for<'a> Proxy<GetWorksetInfo<'a>, Error = RegularError>
-            + for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>,
+        P: for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+            + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
         let team_id = Self::resolve_team_id(proxy, workset_id).await?;
 
@@ -178,10 +174,10 @@ impl WorksetPermComplex {
         proxy: &mut P,
         user_id: &str,
         workset_id: &str,
-    ) -> RegularResult<()>
+    ) -> BaseResult<()>
     where
-        P: for<'a> Proxy<GetWorksetInfo<'a>, Error = RegularError>
-            + for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>,
+        P: for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+            + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
         let team_id = Self::resolve_team_id(proxy, workset_id).await?;
 
@@ -192,13 +188,13 @@ impl WorksetPermComplex {
     async fn resolve_team_id<P>(
         proxy: &mut P,
         workset_id: &str,
-    ) -> RegularResult<String>
+    ) -> BaseResult<String>
     where
-        P: for<'a> Proxy<GetWorksetInfo<'a>, Error = RegularError>,
+        P: for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>,
     {
         let workset_info =
             proxy.exec(&GetWorksetInfo { id: workset_id }).await?;
 
-        Ok(workset_info.team_id)
+        accept(workset_info.team_id)
     }
 }

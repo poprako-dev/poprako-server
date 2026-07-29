@@ -14,7 +14,7 @@ use crate::part::repo::member_invitation::MemberInvitationRepo;
 use crate::part::repo::oper::member_invitation::{
     CreateMemberInvitation, DeleteMemberInvitation, GetMemberInvitationInfo,
     GetMemberInvitationInfoExcluded, ListMemberInvitationInfos,
-    UpdateMemberInvitation,
+    PurgeExpiredMemberInvitation, UpdateMemberInvitation,
 };
 use crate::part_impl::repo::rdb_impl::entity::member_invitation::{
     MemberInvitationAspect, MemberInvitationRow, MemberInvitationRowEntry,
@@ -23,7 +23,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_member_invitation::dsl::*;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, incl};
 use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::shared::{RdbConn, RdbContext};
-use crate::result::{RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, accept};
 use crate::value::member_invitation::MemberInvitationInclOpt;
 use crate::value::role::RoleMask;
 
@@ -39,7 +39,7 @@ impl MemberInvitationRepo<RdbContext> for RdbRepo {}
 async fn list_infos(
     conn: &mut RdbConn,
     spec: &MemberInvitationListSpec,
-) -> RegularResult<Vec<MemberInvitationInfo>> {
+) -> BaseResult<Vec<MemberInvitationInfo>> {
     //
     let mut query = t_member_invitation
         .filter(f_team_id.eq(spec.team_id.as_str()))
@@ -76,7 +76,7 @@ async fn list_infos(
     )
     .await?;
 
-    Ok(infos)
+    accept(infos)
 }
 
 /// Load a single invitation info by ID with optional includes.
@@ -85,7 +85,7 @@ async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
     incl_opt: &[MemberInvitationInclOpt],
-) -> RegularResult<MemberInvitationInfo> {
+) -> BaseResult<MemberInvitationInfo> {
     //
     let row: MemberInvitationRow = t_member_invitation
         .filter(f_id.eq(id))
@@ -105,7 +105,7 @@ async fn get_info_by_id(
     )
     .await?;
 
-    Ok(info)
+    accept(info)
 }
 
 /// Create a new member invitation and return its info.
@@ -113,7 +113,7 @@ async fn get_info_by_id(
 async fn create(
     conn: &mut RdbConn,
     entry: &MemberInvitationEntry,
-) -> RegularResult<MemberInvitationInfo> {
+) -> BaseResult<MemberInvitationInfo> {
     //
     let entry = MemberInvitationRowEntry::from(entry);
 
@@ -132,7 +132,7 @@ async fn create(
 async fn get_info_by_code(
     conn: &mut RdbConn,
     code: &str,
-) -> RegularResult<MemberInvitationInfo> {
+) -> BaseResult<MemberInvitationInfo> {
     //
     let row: MemberInvitationRow = t_member_invitation
         .filter(f_code.eq(code))
@@ -152,7 +152,7 @@ async fn get_info_by_code(
 async fn get_info_by_code_excluded(
     conn: &mut RdbConn,
     code: &str,
-) -> RegularResult<MemberInvitationInfo> {
+) -> BaseResult<MemberInvitationInfo> {
     //
     let row: MemberInvitationRow = t_member_invitation
         .filter(f_code.eq(code))
@@ -170,10 +170,7 @@ async fn get_info_by_code_excluded(
 
 /// Mark a pending invitation as used.
 #[instrument(level = "info", err(Debug), skip_all)]
-async fn mark_pending_as_used(
-    conn: &mut RdbConn,
-    id: &str,
-) -> RegularResult<()> {
+async fn mark_pending_as_used(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -185,7 +182,7 @@ async fn mark_pending_as_used(
         .await
         .map_err(diesel)?;
 
-    Ok(())
+    accept(())
 }
 
 /// Update the roles on an existing invitation.
@@ -194,7 +191,7 @@ async fn update_info(
     conn: &mut RdbConn,
     id: &str,
     roles: RoleMask,
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -207,41 +204,57 @@ async fn update_info(
         .await
         .map_err(diesel)?;
 
-    Ok(())
+    accept(())
 }
 
 /// Delete a member invitation by ID.
 #[instrument(level = "info", err(Debug), skip_all)]
-async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
+async fn delete(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
     //
     diesel::delete(t_member_invitation.filter(f_id.eq(id)))
         .execute(conn)
         .await
         .map_err(diesel)?;
 
-    Ok(())
+    accept(())
+}
+
+/// Deletes a member invitation only while it remains pending.
+#[instrument(level = "info", err(Debug), skip_all)]
+async fn purge_pending(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
+    //
+    diesel::delete(
+        t_member_invitation
+            .filter(f_id.eq(id))
+            .filter(f_pending.eq(true)),
+    )
+    .execute(conn)
+    .await
+    .map_err(diesel)?;
+
+    accept(())
 }
 
 impl<'a> Run<ListMemberInvitationInfos<'a>> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListMemberInvitationInfos<'a>,
-    ) -> RegularResult<Vec<MemberInvitationInfo>> {
+    ) -> BaseResult<Vec<MemberInvitationInfo>> {
         submit_query!(self.core, list_infos, oper.spec)
     }
 }
 
 impl<'a, 'b> Run<GetMemberInvitationInfo<'a, 'b>> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &GetMemberInvitationInfo<'a, 'b>,
-    ) -> RegularResult<MemberInvitationInfo> {
+    ) -> BaseResult<MemberInvitationInfo> {
         match oper {
             //
             GetMemberInvitationInfo::Id { id, incls } => {
@@ -256,27 +269,27 @@ impl<'a, 'b> Run<GetMemberInvitationInfo<'a, 'b>> for RdbRepo {
 }
 
 impl<'a> Step<CreateMemberInvitation<'a>, RdbContext> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &CreateMemberInvitation<'a>,
-    ) -> RegularResult<MemberInvitationInfo> {
+    ) -> BaseResult<MemberInvitationInfo> {
         create(context.conn(), oper.entry).await
     }
 }
 
 impl<'a, 'b> Step<GetMemberInvitationInfo<'a, 'b>, RdbContext> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &GetMemberInvitationInfo<'a, 'b>,
-    ) -> RegularResult<MemberInvitationInfo> {
+    ) -> BaseResult<MemberInvitationInfo> {
         match oper {
             //
             GetMemberInvitationInfo::Id { id, incls } => {
@@ -291,14 +304,14 @@ impl<'a, 'b> Step<GetMemberInvitationInfo<'a, 'b>, RdbContext> for RdbRepo {
 }
 
 impl<'a> Step<UpdateMemberInvitation<'a>, RdbContext> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &UpdateMemberInvitation<'a>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         match oper {
             //
             UpdateMemberInvitation::Info { update } => {
@@ -314,14 +327,14 @@ impl<'a> Step<UpdateMemberInvitation<'a>, RdbContext> for RdbRepo {
 }
 
 impl<'a> Step<GetMemberInvitationInfoExcluded<'a>, RdbContext> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &GetMemberInvitationInfoExcluded<'a>,
-    ) -> RegularResult<MemberInvitationInfo> {
+    ) -> BaseResult<MemberInvitationInfo> {
         match oper {
             GetMemberInvitationInfoExcluded::Code { code } => {
                 get_info_by_code_excluded(context.conn(), code).await
@@ -331,14 +344,27 @@ impl<'a> Step<GetMemberInvitationInfoExcluded<'a>, RdbContext> for RdbRepo {
 }
 
 impl<'a> Step<DeleteMemberInvitation<'a>, RdbContext> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &DeleteMemberInvitation<'a>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         delete(context.conn(), oper.id).await
+    }
+}
+
+impl<'a> Step<PurgeExpiredMemberInvitation<'a>, RdbContext> for RdbRepo {
+    type Error = BaseError;
+
+    #[instrument(level = "info", err(Debug), skip_all)]
+    async fn step(
+        &self,
+        context: &mut RdbContext,
+        oper: &PurgeExpiredMemberInvitation<'a>,
+    ) -> BaseResult<()> {
+        purge_pending(context.conn(), oper.id).await
     }
 }

@@ -3,21 +3,19 @@
 //!
 //! Topic dispatch routes to [`image`].
 
-use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration as StdDuration;
 
 use poprako_orchestra::{Nucl, Step as _};
 use time::{Duration, OffsetDateTime};
-use tokio::sync::oneshot::{
-    Receiver as OneshotReceiver, Sender as OneshotSender,
-};
 use tokio::time::sleep;
+use tokio_util::sync::CancellationToken;
 use tracing::instrument;
 
 use crate::part::image::ImageManager;
 use crate::part::prom::payload::Payload;
+use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::comic::ComicRepo;
+use crate::part::repo::member_invitation::MemberInvitationRepo;
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
@@ -27,10 +25,12 @@ use crate::part_impl::prom::rdb_impl::repo::{
     RdbPromRepo, ResetStuck, RetryMessage,
 };
 use crate::part_impl::shared::{RdbContext, RdbCore};
-use crate::result::{RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult};
 
 /// Prom image event handler.
 mod image;
+/// Prom invitation event handler.
+mod invitation;
 #[cfg(all(test, feature = "repo"))]
 mod tests {
     // image_payloads_from_rdb_dispatch(dispatch_payload)(positive): payloads stored by the RDB defer path are decoded and dispatched by their topic.
@@ -182,7 +182,7 @@ mod tests {
 }
 
 /// Interval between successive poll cycles in the prom background worker.
-const POLL_INTERVAL: StdDuration = StdDuration::from_secs(5);
+const POLL_INTERVAL: StdDuration = StdDuration::from_secs(300);
 const RETRY_DELAY: Duration = Duration::minutes(5);
 const PROCESSING_TIMEOUT: Duration = Duration::minutes(15);
 const COMPLETED_RETENTION: Duration = Duration::days(7);
@@ -208,15 +208,15 @@ pub struct RdbPromHandler<D, R, I> {
 
     image_pool: I,
 
-    shutdown_recv: OneshotReceiver<()>,
-    done_send: OneshotSender<()>,
-    accepting: Arc<AtomicBool>,
+    token: CancellationToken,
 }
 
 impl<D, R, I> RdbPromHandler<D, R, I>
 where
-    D: Nucl<Context = RdbContext, Error = RegularError>,
-    R: ComicRepo<RdbContext>
+    D: Nucl<Context = RdbContext, Error = BaseError>,
+    R: AssignmentInvitationRepo<RdbContext>
+        + ComicRepo<RdbContext>
+        + MemberInvitationRepo<RdbContext>
         + PageRepo<RdbContext>
         + TeamRepo<RdbContext>
         + UserRepo<RdbContext>
@@ -231,32 +231,34 @@ where
         nucl: D,
         repo: RdbPromRepo<R>,
         image_pool: I,
-        shutdown_recv: OneshotReceiver<()>,
-        done_send: OneshotSender<()>,
-        accepting: Arc<AtomicBool>,
+        token: CancellationToken,
     ) -> Self {
         Self {
             core,
             nucl,
             repo,
             image_pool,
-            shutdown_recv,
-            done_send,
-            accepting,
+            token,
         }
     }
 
     #[instrument(level = "info", skip_all)]
-    /// Runs the prom polling loop — polls, dispatches, completes, and purges until shutdown.
-    pub async fn run(mut self) {
+    /// Runs the prom polling loop until cancellation, finishing the current cycle before exit.
+    pub async fn run(self) {
         //
         let mut next_completed_purge_at = OffsetDateTime::now_utc();
 
         loop {
             //
+            if self.token.is_cancelled() {
+                break;
+            }
+
+            //
             let now = OffsetDateTime::now_utc();
 
             if now >= next_completed_purge_at {
+                //
                 match self.purge_completed().await {
                     //
                     Ok(purged_count) => {
@@ -303,41 +305,15 @@ where
             }
 
             tokio::select! {
+                biased;
+                () = self.token.cancelled() => break,
                 _ = sleep(POLL_INTERVAL) => {}
-                _ = &mut self.shutdown_recv => {
-                    self.accepting.store(false, Ordering::Release);
-                    break;
-                }
             }
         }
-
-        // Drain one final poll cycle before exiting.
-        match self.poll().await {
-            //
-            Ok(rows) => {
-                for row in &rows {
-                    self.process_row(row).await;
-                }
-            }
-
-            Err(e) => {
-                tracing::error!(
-                    error = ?e,
-                    "[RdbPromHandler::run] final poll after shutdown failed",
-                );
-            }
-        }
-
-        self.done_send.send(()).unwrap_or_else(|error| {
-            tracing::warn!(
-                error = ?error,
-                "[RdbPromHandler::run] completion receiver already dropped",
-            );
-        });
     }
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn poll(&self) -> RegularResult<Vec<LocalMessageRow>> {
+    async fn poll(&self) -> BaseResult<Vec<LocalMessageRow>> {
         //
         let conn = self.core.get().await?;
 
@@ -429,7 +405,7 @@ where
     }
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn claim(&self, id: &str) -> RegularResult<bool> {
+    async fn claim(&self, id: &str) -> BaseResult<bool> {
         //
         let conn = self.core.get().await?;
 
@@ -439,7 +415,7 @@ where
     }
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn complete(&self, id: &str) -> RegularResult<()> {
+    async fn complete(&self, id: &str) -> BaseResult<()> {
         //
         let conn = self.core.get().await?;
 
@@ -451,7 +427,7 @@ where
     }
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn fail(&self, id: &str, error: &str) -> RegularResult<()> {
+    async fn fail(&self, id: &str, error: &str) -> BaseResult<()> {
         //
         let conn = self.core.get().await?;
 
@@ -463,7 +439,7 @@ where
     }
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn retry(&self, id: &str, error: &str) -> RegularResult<()> {
+    async fn retry(&self, id: &str, error: &str) -> BaseResult<()> {
         //
         let conn = self.core.get().await?;
 
@@ -477,7 +453,7 @@ where
     }
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn reset_stuck(&self) -> RegularResult<()> {
+    async fn reset_stuck(&self) -> BaseResult<()> {
         //
         let conn = self.core.get().await?;
 
@@ -491,7 +467,7 @@ where
     }
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn purge_completed(&self) -> RegularResult<usize> {
+    async fn purge_completed(&self) -> BaseResult<usize> {
         //
         let conn = self.core.get().await?;
 
@@ -515,8 +491,10 @@ async fn dispatch_payload<D, R, I>(
     payload: &serde_json::Value,
 ) -> TaskFlow
 where
-    D: Nucl<Context = RdbContext, Error = RegularError>,
-    R: ComicRepo<RdbContext>
+    D: Nucl<Context = RdbContext, Error = BaseError>,
+    R: AssignmentInvitationRepo<RdbContext>
+        + ComicRepo<RdbContext>
+        + MemberInvitationRepo<RdbContext>
         + PageRepo<RdbContext>
         + TeamRepo<RdbContext>
         + UserRepo<RdbContext>
@@ -545,8 +523,13 @@ where
     }
 
     match payload {
+        //
         Payload::Image(task) => {
             image::handle(nucl, repo, image_pool, &task).await
+        }
+
+        Payload::PurgeExpiredInvitation(event) => {
+            invitation::handle(nucl, repo, &event).await
         }
     }
 }

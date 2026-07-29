@@ -17,7 +17,7 @@ use crate::part_impl::prom::rdb_impl::entity::{
 use crate::part_impl::repo::rdb_impl::schema::t_local_message;
 use crate::part_impl::shared::RdbContext;
 use crate::part_impl::shared::result::diesel;
-use crate::result::{RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, accept};
 
 #[cfg(all(test, feature = "repo"))]
 mod tests;
@@ -177,14 +177,14 @@ impl<R> Step<PollPending, RdbContext> for RdbPromRepo<R>
 where
     R: Sync,
 {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         _oper: &PollPending,
-    ) -> RegularResult<Vec<LocalMessageRow>> {
+    ) -> BaseResult<Vec<LocalMessageRow>> {
         //
         use diesel::prelude::*;
 
@@ -207,7 +207,7 @@ where
             .await
             .map_err(diesel)?;
 
-        Ok(local_message_rows)
+        accept(local_message_rows)
     }
 }
 
@@ -215,14 +215,14 @@ impl<'a, R> Step<ClaimPending<'a>, RdbContext> for RdbPromRepo<R>
 where
     R: Sync,
 {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &ClaimPending<'a>,
-    ) -> RegularResult<bool> {
+    ) -> BaseResult<bool> {
         //
         use diesel::prelude::*;
 
@@ -245,7 +245,7 @@ where
         .await
         .map_err(diesel)?;
 
-        Ok(updated > 0)
+        accept(updated > 0)
     }
 }
 
@@ -253,14 +253,14 @@ impl<'a, R> Step<CompleteMessage<'a>, RdbContext> for RdbPromRepo<R>
 where
     R: Sync,
 {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &CompleteMessage<'a>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         //
         use diesel::prelude::*;
 
@@ -278,7 +278,7 @@ where
         .await
         .map_err(diesel)?;
 
-        Ok(())
+        accept(())
     }
 }
 
@@ -286,14 +286,14 @@ impl<'a, R> Step<FailMessage<'a>, RdbContext> for RdbPromRepo<R>
 where
     R: Sync,
 {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &FailMessage<'a>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         //
         use diesel::prelude::*;
 
@@ -311,7 +311,7 @@ where
         .await
         .map_err(diesel)?;
 
-        Ok(())
+        accept(())
     }
 }
 
@@ -319,14 +319,14 @@ impl<'a, R> Step<RetryMessage<'a>, RdbContext> for RdbPromRepo<R>
 where
     R: Sync,
 {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &RetryMessage<'a>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         //
         use diesel::prelude::*;
 
@@ -347,7 +347,7 @@ where
         .await
         .map_err(diesel)?;
 
-        Ok(())
+        accept(())
     }
 }
 
@@ -355,14 +355,14 @@ impl<'a, R> Step<ResetStuck<'a>, RdbContext> for RdbPromRepo<R>
 where
     R: Sync,
 {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &ResetStuck<'a>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         //
         use diesel::prelude::*;
 
@@ -405,7 +405,7 @@ where
         .await
         .map_err(diesel)?;
 
-        Ok(())
+        accept(())
     }
 }
 
@@ -413,14 +413,14 @@ impl<'a, R> Step<PurgeCompleted<'a>, RdbContext> for RdbPromRepo<R>
 where
     R: Sync,
 {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &PurgeCompleted<'a>,
-    ) -> RegularResult<usize> {
+    ) -> BaseResult<usize> {
         //
         use diesel::prelude::*;
 
@@ -438,6 +438,6 @@ where
         .await
         .map_err(diesel)?;
 
-        Ok(purged_count)
+        accept(purged_count)
     }
 }

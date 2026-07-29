@@ -60,3 +60,12 @@ pub struct DeleteMemberInvitation<'a> {
 impl<'a> Oper for DeleteMemberInvitation<'a> {
     type Output = ();
 }
+
+/// Purges one expired member invitation when it remains pending.
+pub struct PurgeExpiredMemberInvitation<'a> {
+    pub id: &'a str,
+}
+
+impl<'a> Oper for PurgeExpiredMemberInvitation<'a> {
+    type Output = ();
+}

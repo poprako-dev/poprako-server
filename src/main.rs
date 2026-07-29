@@ -42,6 +42,7 @@ use poprako_server::{
 /// starting the server.
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    //
     // CLI: --swagger to print swagger.json.
     #[cfg(feature = "swagger-ui")]
     if std::env::args().any(|a| a == "--swagger") {
@@ -69,7 +70,7 @@ async fn main() -> anyhow::Result<()> {
                 .from_env_lossy(),
         )
         .with_span_events(tracing_subscriber::fmt::format::FmtSpan::CLOSE)
-        .with_ansi(false)
+        .with_ansi(cfg!(debug_assertions))
         .init();
 
     let config = AppConfig::from_default_file()
@@ -102,5 +103,11 @@ async fn main() -> anyhow::Result<()> {
     .next()
     .context("no address resolved for HTTP listen address")?;
 
-    serve(harn, http_addr).await
+    let serve_result = serve(harn.clone(), http_addr).await;
+
+    harn.develop().close().await;
+
+    harn.prom().close().await;
+
+    serve_result
 }

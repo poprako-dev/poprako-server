@@ -2,6 +2,7 @@
 // develop_dispatches_chapter_workflow_completed(AsyncEffectDevelop::develop)(positive): workflow completion should notify next-phase and reviewer assignees.
 // develop_dispatches_chapter_published(AsyncEffectDevelop::develop)(positive): chapter publication should notify reviewer assignees.
 // close_is_idempotent(AsyncEffectDevelop::close)(negative): repeated close calls should return without blocking.
+// close_is_concurrent(AsyncEffectDevelop::close)(negative): concurrent close calls should observe the same completion state.
 
 use super::*;
 
@@ -242,4 +243,16 @@ async fn close_is_idempotent() {
     develop.close().await;
 
     develop.close().await;
+}
+
+#[tokio::test]
+async fn close_is_concurrent() {
+    //
+    let mock = Arc::new(Mock::new());
+
+    let develop = AsyncEffectDevelop::new(mock, 8);
+
+    let (first, second) = tokio::join!(develop.close(), develop.close());
+
+    assert_eq!((first, second), ((), ()));
 }

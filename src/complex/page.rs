@@ -12,7 +12,7 @@ use crate::part::repo::oper::chapter::GetChapterInfo;
 use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::workset::GetWorksetInfo;
-use crate::result::{ExpectedVariant, RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 use crate::value::role::RoleField;
 
@@ -48,9 +48,9 @@ impl PagePermComplex {
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,
-    ) -> RegularResult<()>
+    ) -> BaseResult<()>
     where
-        P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = RegularError>,
+        P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
     {
         check_reserve_role(proxy, user_id, chapter_id).await
     }
@@ -60,13 +60,13 @@ impl PagePermComplex {
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,
-    ) -> RegularResult<()>
+    ) -> BaseResult<()>
     where
-        P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = RegularError>
-            + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = RegularError>
-            + for<'a> Proxy<GetWorksetInfo<'a>, Error = RegularError>
-            + for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>
-            + for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = RegularError>,
+        P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
+            + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
+            + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+            + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>
+            + for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
     {
         let chapter_info = proxy
             .exec(&GetChapterInfo {
@@ -93,7 +93,7 @@ impl PagePermComplex {
                 .await;
 
         if member_check.is_ok() {
-            return Ok(());
+            return accept(());
         }
 
         check_any_assignment(proxy, user_id, chapter_id).await
@@ -104,9 +104,9 @@ impl PagePermComplex {
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,
-    ) -> RegularResult<()>
+    ) -> BaseResult<()>
     where
-        P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = RegularError>,
+        P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
     {
         check_upload_role(proxy, user_id, chapter_id).await
     }
@@ -116,12 +116,12 @@ impl PagePermComplex {
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,
-    ) -> RegularResult<()>
+    ) -> BaseResult<()>
     where
-        P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = RegularError>
-            + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = RegularError>
-            + for<'a> Proxy<GetWorksetInfo<'a>, Error = RegularError>
-            + for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>,
+        P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
+            + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
+            + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+            + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
         let chapter_info = proxy
             .exec(&GetChapterInfo {
@@ -153,9 +153,9 @@ async fn check_reserve_role<P>(
     proxy: &mut P,
     user_id: &str,
     chapter_id: &str,
-) -> RegularResult<()>
+) -> BaseResult<()>
 where
-    P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = RegularError>,
+    P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
 {
     let assignment_info = proxy
         .exec(&FindAssignmentInfo::ChapterUser {
@@ -175,7 +175,7 @@ where
         return Err(page_reserve_role_error());
     }
 
-    Ok(())
+    accept(())
 }
 
 /// Verify the caller is assigned as `RAW_PROVIDER` on the chapter, which
@@ -184,9 +184,9 @@ async fn check_upload_role<P>(
     proxy: &mut P,
     user_id: &str,
     chapter_id: &str,
-) -> RegularResult<()>
+) -> BaseResult<()>
 where
-    P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = RegularError>,
+    P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
 {
     let assignment_info = proxy
         .exec(&FindAssignmentInfo::ChapterUser {
@@ -206,7 +206,7 @@ where
         return Err(page_upload_role_error());
     }
 
-    Ok(())
+    accept(())
 }
 
 /// Verify the caller has any assignment on the chapter (any role qualifies).
@@ -214,9 +214,9 @@ async fn check_any_assignment<P>(
     proxy: &mut P,
     user_id: &str,
     chapter_id: &str,
-) -> RegularResult<()>
+) -> BaseResult<()>
 where
-    P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = RegularError>,
+    P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
 {
     let assignment_info = proxy
         .exec(&FindAssignmentInfo::ChapterUser {
@@ -226,26 +226,26 @@ where
         .await?;
 
     if assignment_info.is_none() {
-        return Err(RegularError::Expected {
+        return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
             message: trl("error-team-member-required"),
         });
     }
 
-    Ok(())
+    accept(())
 }
 
 /// Construct a "page reserve role required" permission error.
-fn page_reserve_role_error() -> RegularError {
-    RegularError::Expected {
+fn page_reserve_role_error() -> BaseError {
+    BaseError::Expected {
         variant: ExpectedVariant::Perm,
         message: trl("error-page-reserve-role-required"),
     }
 }
 
 /// Construct a "page upload role required" permission error.
-fn page_upload_role_error() -> RegularError {
-    RegularError::Expected {
+fn page_upload_role_error() -> BaseError {
+    BaseError::Expected {
         variant: ExpectedVariant::Perm,
         message: trl("error-page-upload-role-required"),
     }

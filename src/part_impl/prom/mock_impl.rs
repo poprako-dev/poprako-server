@@ -9,17 +9,20 @@ use time::OffsetDateTime;
 use crate::model::user::{UserCredential, UserInfo};
 use crate::part::image::ImageManager;
 use crate::part::prom::Prom;
+use crate::part::prom::payload::invitation::PurgeExpiredInvitation;
 use crate::part::prom::payload::{Payload, image};
+use crate::part::repo::oper::assignment_invitation::PurgeExpiredAssignmentInvitation;
 use crate::part::repo::oper::comic::{
     GetComicInfoExcluded, MarkComicCoverUploaded,
 };
+use crate::part::repo::oper::member_invitation::PurgeExpiredMemberInvitation;
 use crate::part::repo::oper::page::{
     GetPageInfoExcluded, MarkPageImageUploaded,
 };
 use crate::part::repo::oper::team::{GetTeamInfoExcluded, UpdateTeam};
 use crate::part::repo::oper::user::{GetUserInfoExcluded, UpdateUser};
 use crate::part_impl::repo::mock_impl::{Mock, MockContext};
-use crate::result::{RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, accept};
 
 mod tests;
 
@@ -61,7 +64,7 @@ impl Prom<MockContext> for Mock {}
 
 /// Defers one record in the coordinated mock state.
 impl<'a> Step<Defer<'a, String, Payload, ()>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     async fn step(
         &self,
@@ -71,7 +74,7 @@ impl<'a> Step<Defer<'a, String, Payload, ()>, MockContext> for Mock {
         //
         let payload_json =
             serde_json::to_string(oper.task.payload).map_err(|error| {
-                RegularError::Unrecoverable {
+                BaseError::Unrecoverable {
                     message: format!(
                         "failed to serialize prom payload: {}",
                         error
@@ -86,14 +89,14 @@ impl<'a> Step<Defer<'a, String, Payload, ()>, MockContext> for Mock {
                 + oper.task.delay.unwrap_or_default(),
         });
 
-        Ok(())
+        accept(())
     }
 }
 
 impl<'t, 'a> Step<DeferBatch<'t, 'a, String, Payload, ()>, MockContext>
     for Mock
 {
-    type Error = RegularError;
+    type Error = BaseError;
 
     async fn step(
         &self,
@@ -113,7 +116,7 @@ impl<'t, 'a> Step<DeferBatch<'t, 'a, String, Payload, ()>, MockContext>
             .await?;
         }
 
-        Ok(())
+        accept(())
     }
 }
 
@@ -122,7 +125,7 @@ async fn defer_payload(
     context: &mut MockContext,
     id: &str,
     payload: Payload,
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     let id = id.to_string();
 
@@ -187,7 +190,7 @@ async fn defer_records_payload() {
             )
             .await?;
 
-            Ok::<(), RegularError>(())
+            Ok::<(), BaseError>(())
         })
         .await
         .is_ok()
@@ -229,7 +232,7 @@ async fn process_pending_marks_uploaded_image() {
         )
         .await?;
 
-        Ok::<(), RegularError>(())
+        Ok::<(), BaseError>(())
     })
     .await
     .ok()
@@ -267,7 +270,7 @@ async fn process_pending_keeps_stale_image_for_ordered_delete() {
         )
         .await?;
 
-        Ok::<(), RegularError>(())
+        Ok::<(), BaseError>(())
     })
     .await
     .ok()
@@ -304,7 +307,7 @@ async fn process_pending_deletes_missing_resource_image() {
         )
         .await?;
 
-        Ok::<(), RegularError>(())
+        Ok::<(), BaseError>(())
     })
     .await
     .ok()
@@ -328,7 +331,7 @@ async fn process_pending_deletes_missing_resource_image() {
 ///
 /// Call this after a usecase has enqueued prom records to exercise
 /// the full deferred-action chain within an integration test.
-pub async fn process_pending(mock: &Mock) -> RegularResult<()> {
+pub async fn process_pending(mock: &Mock) -> BaseResult<()> {
     //
     let snapshot = mock.snapshot();
 
@@ -337,20 +340,53 @@ pub async fn process_pending(mock: &Mock) -> RegularResult<()> {
         let payload = record.payload();
 
         match payload {
+            //
             Payload::Image(task) => {
                 process_image_task(mock, &task).await?;
+            }
+
+            Payload::PurgeExpiredInvitation(event) => {
+                process_invitation_event(mock, &event).await?;
             }
         }
     }
 
-    Ok(())
+    accept(())
+}
+
+async fn process_invitation_event(
+    mock: &Mock,
+    event: &PurgeExpiredInvitation,
+) -> BaseResult<()> {
+    //
+    mock.coord(async move |context| match event {
+        //
+        PurgeExpiredInvitation::Assignment { invitation_id } => {
+            mock.step(
+                context,
+                &PurgeExpiredAssignmentInvitation { id: invitation_id },
+            )
+            .await
+        }
+
+        PurgeExpiredInvitation::Member { invitation_id } => {
+            mock.step(
+                context,
+                &PurgeExpiredMemberInvitation { id: invitation_id },
+            )
+            .await
+        }
+    })
+    .await?;
+
+    accept(())
 }
 
 /// Process a single image task against the mock's in-memory image pool.
 async fn process_image_task(
     image_pool: &Mock,
     task: &image::Payload,
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     match task {
         //
         image::Payload::CheckUpload {
@@ -371,7 +407,7 @@ async fn process_image_task(
                 .await
             }
 
-            false => Ok(()),
+            false => accept(()),
         },
 
         image::Payload::Delete { object_key } => {
@@ -386,16 +422,16 @@ async fn process_existing_image(
     resource_id: &str,
     object_key: &str,
     image_version: u32,
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     let resource_state = mock
         .coord(async move |context| {
             match mark_uploaded(mock, context, kind, resource_id, image_version)
                 .await
             {
-                Ok(()) => Ok(ResourceState::Current),
+                Ok(()) => accept(ResourceState::Current),
 
-                Err(RegularError::Expected { .. }) => {
+                Err(BaseError::Expected { .. }) => {
                     classify_expected_mark(
                         mock,
                         context,
@@ -413,7 +449,7 @@ async fn process_existing_image(
 
     match resource_state {
         //
-        ResourceState::Current | ResourceState::Stale => Ok(()),
+        ResourceState::Current | ResourceState::Stale => accept(()),
 
         ResourceState::Missing => mock.delete_object(object_key).await,
     }
@@ -425,12 +461,10 @@ async fn mark_uploaded(
     kind: image::ResourceKind,
     resource_id: &str,
     image_version: u32,
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     match kind {
         //
         image::ResourceKind::UserAvatar => {
-            //
-
             mock.step(
                 context,
                 &UpdateUser::MarkAvatarUploaded {
@@ -442,8 +476,6 @@ async fn mark_uploaded(
         }
 
         image::ResourceKind::TeamAvatar => {
-            //
-
             mock.step(
                 context,
                 &UpdateTeam::MarkAvatarUploaded {
@@ -491,14 +523,14 @@ fn classify_current_version(
     current_version: u32,
     image_version: u32,
     error_message: &'static str,
-) -> RegularResult<ResourceState> {
+) -> BaseResult<ResourceState> {
     match current_version == image_version {
         //
-        true => Err(RegularError::Unrecoverable {
+        true => Err(BaseError::Unrecoverable {
             message: error_message.into(),
         }),
 
-        false => Ok(ResourceState::Stale),
+        false => accept(ResourceState::Stale),
     }
 }
 
@@ -508,12 +540,10 @@ async fn classify_expected_mark(
     kind: image::ResourceKind,
     resource_id: &str,
     image_version: u32,
-) -> RegularResult<ResourceState> {
+) -> BaseResult<ResourceState> {
     match kind {
         //
         image::ResourceKind::UserAvatar => {
-            //
-
             match mock
                 .step(context, &GetUserInfoExcluded::Id { id: resource_id })
                 .await
@@ -525,8 +555,8 @@ async fn classify_expected_mark(
                     "[MockProm::classify_expected_mark] current user avatar version failed to mark uploaded",
                 ),
 
-                Err(RegularError::Expected { .. }) => {
-                    Ok(ResourceState::Missing)
+                Err(BaseError::Expected { .. }) => {
+                    accept(ResourceState::Missing)
                 }
 
                 Err(error) => Err(error),
@@ -534,8 +564,6 @@ async fn classify_expected_mark(
         }
 
         image::ResourceKind::TeamAvatar => {
-            //
-
             match mock
                 .step(context, &GetTeamInfoExcluded::Id { id: resource_id })
                 .await
@@ -547,8 +575,8 @@ async fn classify_expected_mark(
                     "[MockProm::classify_expected_mark] current team avatar version failed to mark uploaded",
                 ),
 
-                Err(RegularError::Expected { .. }) => {
-                    Ok(ResourceState::Missing)
+                Err(BaseError::Expected { .. }) => {
+                    accept(ResourceState::Missing)
                 }
 
                 Err(error) => Err(error),
@@ -572,8 +600,8 @@ async fn classify_expected_mark(
                     "[MockProm::classify_expected_mark] current comic cover version failed to mark uploaded",
                 ),
 
-                Err(RegularError::Expected { .. }) => {
-                    Ok(ResourceState::Missing)
+                Err(BaseError::Expected { .. }) => {
+                    accept(ResourceState::Missing)
                 }
 
                 Err(error) => Err(error),
@@ -591,8 +619,8 @@ async fn classify_expected_mark(
                     "[MockProm::classify_expected_mark] current page image version failed to mark uploaded",
                 ),
 
-                Err(RegularError::Expected { .. }) => {
-                    Ok(ResourceState::Missing)
+                Err(BaseError::Expected { .. }) => {
+                    accept(ResourceState::Missing)
                 }
 
                 Err(error) => Err(error),

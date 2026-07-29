@@ -19,7 +19,7 @@ use crate::part::repo::oper::announcement::{
     CreateAnnouncement, ListAnnouncementInfos,
 };
 use crate::part::repo::oper::member::FindMemberInfo;
-use crate::result::{RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, accept};
 
 #[cfg(test)]
 mod tests;
@@ -31,7 +31,7 @@ pub async fn list_infos<C, R, I>(
     image_pool: &I,
     token: UserToken,
     params: ListAnnouncementInfosParams,
-) -> RegularResult<Vec<AnnouncementInfoVal>>
+) -> BaseResult<Vec<AnnouncementInfoVal>>
 where
     R: AnnouncementRepo<C> + MemberRepo<C> + Sync,
     I: ImagePool,
@@ -63,7 +63,7 @@ where
         );
     }
 
-    Ok(announcement_info_vals)
+    accept(announcement_info_vals)
 }
 
 /// Creates an announcement under a team.
@@ -73,9 +73,9 @@ pub async fn create<N, C, R>(
     repo: &R,
     token: UserToken,
     params: CreateAnnouncementParams,
-) -> RegularResult<CreateAnnouncementPayload>
+) -> BaseResult<CreateAnnouncementPayload>
 where
-    N: Nucl<Context = C, Error = RegularError>,
+    N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     R: AnnouncementRepo<C> + MemberRepo<C> + Send + Sync,
 {
@@ -109,7 +109,7 @@ where
         })
         .await?;
 
-    Ok(CreateAnnouncementPayload {
+    accept(CreateAnnouncementPayload {
         id: announcement_info.id,
     })
 }

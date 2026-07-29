@@ -7,7 +7,7 @@ use crate::part_impl::repo::rdb_impl::incl::{
     self, Incl, TeamByIds, UserByIds,
 };
 use crate::part_impl::shared::RdbConn;
-use crate::result::RegularResult;
+use crate::result::{BaseResult, accept};
 use crate::value::member::MemberInclOpt;
 
 /// Include struct for eager-loading [`UserInfo`] data into [`MemberInfo`] query results.
@@ -50,7 +50,7 @@ pub async fn populate_member_incls(
     conn: &mut RdbConn,
     infos: &mut [MemberInfo],
     incl_opt: &[MemberInclOpt],
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     if incl_opt.contains(&MemberInclOpt::User) {
         incl::populate::<MemberUserIncl>(conn, infos).await?;
@@ -60,5 +60,5 @@ pub async fn populate_member_incls(
         incl::populate::<MemberTeamIncl>(conn, infos).await?;
     }
 
-    Ok(())
+    accept(())
 }

@@ -15,7 +15,7 @@ use crate::part::repo::system_mail::SystemMailRepo;
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
-use crate::result::{ExpectedVariant, RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 
 impl SystemMailRepo<MockContext> for Mock {}
 
@@ -33,7 +33,7 @@ fn insert_mail(state: &mut MockState, entry: &SystemMailEntry) {
 fn send_system_mail(
     state: &mut MockState,
     entry: &SystemMailEntry,
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     if state
         .system_mails
@@ -45,13 +45,13 @@ fn send_system_mail(
 
     insert_mail(state, entry);
 
-    Ok(())
+    accept(())
 }
 
 fn send_system_mails(
     state: &mut MockState,
     entries: &[SystemMailEntry],
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     for system_mail_entry in entries {
         //
@@ -74,7 +74,7 @@ fn send_system_mails(
         insert_mail(state, system_mail_entry);
     }
 
-    Ok(())
+    accept(())
 }
 
 fn list_system_mail_infos(
@@ -113,7 +113,7 @@ fn mark_system_mail_read(
     state: &mut MockState,
     id: &str,
     user_id: &str,
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     let system_mail_info = state
         .system_mails
@@ -122,7 +122,7 @@ fn mark_system_mail_read(
         .ok_or_else(|| expected("error-system-mail-not-found"))?;
 
     if system_mail_info.receiver_id != user_id {
-        return Err(RegularError::Expected {
+        return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
             message: "error-forbidden".into(),
         });
@@ -130,14 +130,14 @@ fn mark_system_mail_read(
 
     system_mail_info.read = true;
 
-    Ok(())
+    accept(())
 }
 
 impl Run<SendSystemMail<'_>> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn run(&self, oper: &SendSystemMail<'_>) -> RegularResult<()> {
+    async fn run(&self, oper: &SendSystemMail<'_>) -> BaseResult<()> {
         //
         let mut state = self.state.lock().unwrap();
 
@@ -146,10 +146,10 @@ impl Run<SendSystemMail<'_>> for Mock {
 }
 
 impl Run<SendSystemMails<'_>> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn run(&self, oper: &SendSystemMails<'_>) -> RegularResult<()> {
+    async fn run(&self, oper: &SendSystemMails<'_>) -> BaseResult<()> {
         //
         let mut state = self.state.lock().unwrap();
 
@@ -158,25 +158,25 @@ impl Run<SendSystemMails<'_>> for Mock {
 }
 
 impl Run<ListSystemMailInfos<'_>> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListSystemMailInfos<'_>,
-    ) -> RegularResult<Vec<SystemMailInfo>> {
+    ) -> BaseResult<Vec<SystemMailInfo>> {
         //
         let state = self.state.lock().unwrap();
 
-        Ok(list_system_mail_infos(&state, oper))
+        accept(list_system_mail_infos(&state, oper))
     }
 }
 
 impl Run<MarkSystemMailRead<'_>> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn run(&self, oper: &MarkSystemMailRead<'_>) -> RegularResult<()> {
+    async fn run(&self, oper: &MarkSystemMailRead<'_>) -> BaseResult<()> {
         //
         let mut state = self.state.lock().unwrap();
 

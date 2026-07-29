@@ -45,6 +45,15 @@ impl<'a> Oper for MarkAssignmentInvitationUsed<'a> {
     type Output = ();
 }
 
+/// Purges one expired assignment invitation when it remains pending.
+pub struct PurgeExpiredAssignmentInvitation<'a> {
+    pub id: &'a str,
+}
+
+impl<'a> Oper for PurgeExpiredAssignmentInvitation<'a> {
+    type Output = ();
+}
+
 pub enum DeleteAssignmentInvitations<'a> {
     Id { id: &'a str },
     Chapter { chapter_id: &'a str },

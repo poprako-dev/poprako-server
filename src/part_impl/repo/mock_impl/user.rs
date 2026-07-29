@@ -15,14 +15,14 @@ use crate::part::repo::user::UserRepo;
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
-use crate::result::{RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, accept};
 
 impl UserRepo<MockContext> for Mock {}
 
 fn create_user(
     state: &mut MockState,
     entry: &UserEntry,
-) -> RegularResult<UserInfo> {
+) -> BaseResult<UserInfo> {
     //
     if state.users.iter().any(|user| user.id == entry.id)
         || state.users.iter().any(|user| user.qid == entry.qid)
@@ -52,10 +52,10 @@ fn create_user(
         password_hash: entry.password_hash.clone(),
     });
 
-    Ok(user_info)
+    accept(user_info)
 }
 
-fn get_user_info(state: &MockState, id: &str) -> RegularResult<UserInfo> {
+fn get_user_info(state: &MockState, id: &str) -> BaseResult<UserInfo> {
     state
         .users
         .iter()
@@ -75,7 +75,7 @@ fn find_user_info(state: &MockState, qid: &str) -> Option<UserInfo> {
 fn get_user_credential(
     state: &MockState,
     qid: &str,
-) -> RegularResult<UserCredential> {
+) -> BaseResult<UserCredential> {
     //
     let user_info = state
         .users
@@ -91,10 +91,7 @@ fn get_user_credential(
         .ok_or_else(|| expected("error-user-not-found"))
 }
 
-fn update_user(
-    state: &mut MockState,
-    oper: &UpdateUser<'_>,
-) -> RegularResult<()> {
+fn update_user(state: &mut MockState, oper: &UpdateUser<'_>) -> BaseResult<()> {
     //
     let (id, update) = match oper {
         //
@@ -143,6 +140,7 @@ fn update_user(
     match oper {
         //
         UpdateUser::PasswordHash { id, password_hash } => {
+            //
             let credential = state
                 .credentials
                 .iter_mut()
@@ -157,14 +155,14 @@ fn update_user(
         | UpdateUser::TouchLastActive { .. } => {}
     }
 
-    Ok(())
+    accept(())
 }
 
 impl<'a> Run<GetUserInfo<'a>> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn run(&self, oper: &GetUserInfo<'a>) -> RegularResult<UserInfo> {
+    async fn run(&self, oper: &GetUserInfo<'a>) -> BaseResult<UserInfo> {
         //
         let state = self.state.lock().unwrap();
 
@@ -175,13 +173,13 @@ impl<'a> Run<GetUserInfo<'a>> for Mock {
 }
 
 impl<'a> Run<GetUserCredential<'a>> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &GetUserCredential<'a>,
-    ) -> RegularResult<UserCredential> {
+    ) -> BaseResult<UserCredential> {
         //
         let state = self.state.lock().unwrap();
 
@@ -192,27 +190,27 @@ impl<'a> Run<GetUserCredential<'a>> for Mock {
 }
 
 impl<'a> Run<FindUserInfo<'a>> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &FindUserInfo<'a>,
-    ) -> RegularResult<Option<UserInfo>> {
+    ) -> BaseResult<Option<UserInfo>> {
         //
         let state = self.state.lock().unwrap();
 
         match oper {
-            FindUserInfo::Qid { qid } => Ok(find_user_info(&state, qid)),
+            FindUserInfo::Qid { qid } => accept(find_user_info(&state, qid)),
         }
     }
 }
 
 impl<'a> Run<UpdateUser<'a>> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn run(&self, oper: &UpdateUser<'a>) -> RegularResult<()> {
+    async fn run(&self, oper: &UpdateUser<'a>) -> BaseResult<()> {
         //
         let mut state = self.state.lock().unwrap();
 
@@ -221,57 +219,57 @@ impl<'a> Run<UpdateUser<'a>> for Mock {
 }
 
 impl<'a> Step<CreateUser<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &CreateUser<'a>,
-    ) -> RegularResult<UserInfo> {
+    ) -> BaseResult<UserInfo> {
         create_user(&mut context.state, oper.entry)
     }
 }
 
 impl<'a> Step<FindUserInfo<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &FindUserInfo<'a>,
-    ) -> RegularResult<Option<UserInfo>> {
+    ) -> BaseResult<Option<UserInfo>> {
         match oper {
             FindUserInfo::Qid { qid } => {
-                Ok(find_user_info(&context.state, qid))
+                accept(find_user_info(&context.state, qid))
             }
         }
     }
 }
 
 impl<'a> Step<UpdateUser<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &UpdateUser<'a>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         update_user(&mut context.state, oper)
     }
 }
 
 impl<'a> Step<ReserveUserAvatar<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &ReserveUserAvatar<'a>,
-    ) -> RegularResult<UserAvatarReservation> {
+    ) -> BaseResult<UserAvatarReservation> {
         //
         let user_info = context
             .state
@@ -295,7 +293,7 @@ impl<'a> Step<ReserveUserAvatar<'a>, MockContext> for Mock {
 
         user_info.updated_at = now();
 
-        Ok(UserAvatarReservation {
+        accept(UserAvatarReservation {
             object_key,
             prev_object_key,
             avatar_version,
@@ -304,14 +302,14 @@ impl<'a> Step<ReserveUserAvatar<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<GetUserInfoExcluded<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &GetUserInfoExcluded<'a>,
-    ) -> RegularResult<UserInfo> {
+    ) -> BaseResult<UserInfo> {
         match oper {
             GetUserInfoExcluded::Id { id } => get_user_info(&context.state, id),
         }
@@ -319,14 +317,14 @@ impl<'a> Step<GetUserInfoExcluded<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<DeleteUser<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &DeleteUser<'a>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         //
         let position = context
             .state
@@ -357,6 +355,6 @@ impl<'a> Step<DeleteUser<'a>, MockContext> for Mock {
             .system_mails
             .retain(|mail| mail.receiver_id != oper.id);
 
-        Ok(())
+        accept(())
     }
 }

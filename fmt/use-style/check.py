@@ -302,7 +302,7 @@ def category(leaf: Leaf, local_crates: set[str]) -> str:
     if root in {"crate", "self"}:
         return "crate"
 
-    if root in local_crates or root.endswith("_util"):
+    if root in local_crates:
         return "local_crate"
 
     return "third_party"

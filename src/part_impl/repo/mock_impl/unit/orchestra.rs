@@ -10,116 +10,115 @@ use crate::part_impl::repo::mock_impl::unit::{
     count_units, create_unit, list_all_units, list_units, save_unit,
 };
 use crate::part_impl::repo::mock_impl::{Mock, MockContext, expected, now};
-use crate::result::{RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, accept};
 
 impl<'a> Run<ListUnitInfos<'a>> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn run(
-        &self,
-        oper: &ListUnitInfos<'a>,
-    ) -> RegularResult<Vec<UnitInfo>> {
+    async fn run(&self, oper: &ListUnitInfos<'a>) -> BaseResult<Vec<UnitInfo>> {
         //
         let state = self.state.lock().unwrap();
 
         match oper {
             //
             ListUnitInfos::Page { page_id, page } => {
-                Ok(list_units(&state, page_id, *page))
+                accept(list_units(&state, page_id, *page))
             }
 
             ListUnitInfos::AllPage { page_id } => {
-                Ok(list_all_units(&state, page_id))
+                accept(list_all_units(&state, page_id))
             }
         }
     }
 }
 impl<'a> Step<ListUnitInfos<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &ListUnitInfos<'a>,
-    ) -> RegularResult<Vec<UnitInfo>> {
+    ) -> BaseResult<Vec<UnitInfo>> {
         match oper {
             //
             ListUnitInfos::Page { page_id, page } => {
-                Ok(list_units(&context.state, page_id, *page))
+                accept(list_units(&context.state, page_id, *page))
             }
 
             ListUnitInfos::AllPage { page_id } => {
-                Ok(list_all_units(&context.state, page_id))
+                accept(list_all_units(&context.state, page_id))
             }
         }
     }
 }
 impl<'a> Step<CreateUnit<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &CreateUnit<'a>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         create_unit(&mut context.state, oper.page_id, oper.id, oper.payload)
     }
 }
 impl<'a> Step<SaveUnit<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &SaveUnit<'a>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         save_unit(&mut context.state, oper.page_id, oper.id, oper.payload)
     }
 }
 impl<'a> Step<DeleteUnit<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &DeleteUnit<'a>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         //
         context.state.units.retain(|info| {
             !(info.page_id == oper.page_id && info.id == oper.id)
         });
 
-        Ok(())
+        accept(())
     }
 }
 impl<'a> Step<ListUnitIndexes<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &ListUnitIndexes<'a>,
-    ) -> RegularResult<Vec<UnitIndex>> {
-        Ok(context
-            .state
-            .units
-            .iter()
-            .filter(|info| info.page_id == oper.page_id)
-            .map(|info| UnitIndex {
-                id: info.id.clone(),
-                index: info.index,
-            })
-            .collect())
+    ) -> BaseResult<Vec<UnitIndex>> {
+        accept(
+            context
+                .state
+                .units
+                .iter()
+                .filter(|info| info.page_id == oper.page_id)
+                .map(|info| UnitIndex {
+                    id: info.id.clone(),
+                    index: info.index,
+                })
+                .collect(),
+        )
     }
 }
 impl<'a> Step<UpdateUnitIndexes<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &UpdateUnitIndexes<'a>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         //
         for update in oper.updates {
             //
@@ -137,17 +136,17 @@ impl<'a> Step<UpdateUnitIndexes<'a>, MockContext> for Mock {
             info.updated_at = now();
         }
 
-        Ok(())
+        accept(())
     }
 }
 impl<'a> Step<CountUnits<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &CountUnits<'a>,
-    ) -> RegularResult<UnitCounters> {
-        Ok(count_units(&context.state, oper.page_id))
+    ) -> BaseResult<UnitCounters> {
+        accept(count_units(&context.state, oper.page_id))
     }
 }

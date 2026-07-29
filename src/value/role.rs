@@ -9,7 +9,7 @@ use utoipa::ToSchema;
 
 use poprako_util::i18n::trl;
 
-use crate::result::{ExpectedVariant, RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 
 #[cfg(test)]
 mod tests;
@@ -119,21 +119,21 @@ impl RoleMask {
 
 /// Convert a raw `u32` to a [`RoleBit`], validating it is a single valid bit.
 impl TryFrom<u32> for RoleField {
-    type Error = RegularError;
+    type Error = BaseError;
 
-    fn try_from(value: u32) -> RegularResult<Self> {
+    fn try_from(value: u32) -> BaseResult<Self> {
         //
         if value == 0
             || !Self::VALID_VALUES.contains(&value)
             || value.count_ones() != 1
         {
-            return Err(RegularError::Expected {
+            return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
                 message: trl("error-invalid-role"),
             });
         }
 
-        Ok(Self(value))
+        accept(Self(value))
     }
 }
 
@@ -176,18 +176,18 @@ impl From<RoleField> for RoleMask {
 
 /// Convert a raw `u32` to a [`RoleMask`], validating it contains only valid bits.
 impl TryFrom<u32> for RoleMask {
-    type Error = RegularError;
+    type Error = BaseError;
 
-    fn try_from(value: u32) -> RegularResult<Self> {
+    fn try_from(value: u32) -> BaseResult<Self> {
         //
         if value == 0 || value & !Self::VALID_BITS != 0 {
-            return Err(RegularError::Expected {
+            return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
                 message: trl("error-invalid-role"),
             });
         }
 
-        Ok(Self(value))
+        accept(Self(value))
     }
 }
 

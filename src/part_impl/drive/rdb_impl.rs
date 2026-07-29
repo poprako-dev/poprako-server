@@ -7,7 +7,7 @@ use tracing::instrument;
 
 use crate::part_impl::shared::result::diesel;
 use crate::part_impl::shared::{RdbContext, RdbCore};
-use crate::result::RegularError;
+use crate::result::BaseError;
 
 /// Diesel-backed transaction driver that wraps operations in database transactions.
 ///
@@ -25,7 +25,7 @@ impl RdbDrive {
 }
 
 impl Nucl for RdbDrive {
-    type Error = RegularError;
+    type Error = BaseError;
 
     type Context = RdbContext;
 

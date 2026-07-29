@@ -54,7 +54,7 @@ use crate::part::repo::team::TeamRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::part::repo::user::UserRepo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::{RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, accept};
 use crate::value::role::{RoleField, RoleMask};
 
 #[cfg(test)]
@@ -76,9 +76,9 @@ pub async fn create<N, C, R, I>(
     image_pool: &I,
     token: UserToken,
     params: CreateTeamParams,
-) -> RegularResult<TeamInfoVal>
+) -> BaseResult<TeamInfoVal>
 where
-    N: Nucl<Context = C, Error = RegularError>,
+    N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     R: TeamRepo<C> + UserRepo<C> + MemberRepo<C> + Send + Sync,
     I: ImagePool,
@@ -98,7 +98,7 @@ where
     };
 
     let team_info: TeamInfo = nucl
-        .coord(async move |context| -> RegularResult<TeamInfo> {
+        .coord(async move |context| {
             //
 
             let user_info = repo
@@ -125,7 +125,7 @@ where
             )
             .await?;
 
-            Ok(team_info)
+            accept(team_info)
         })
         .await?;
 
@@ -147,7 +147,7 @@ pub async fn get_info<C, R, I>(
     repo: &R,
     image_pool: &I,
     id: String,
-) -> RegularResult<TeamInfoVal>
+) -> BaseResult<TeamInfoVal>
 where
     R: TeamRepo<C>,
     I: ImagePool,
@@ -174,7 +174,7 @@ pub async fn list_infos<C, R, I>(
     image_pool: &I,
     token: UserToken,
     params: ListTeamInfosParams,
-) -> RegularResult<Vec<TeamInfoVal>>
+) -> BaseResult<Vec<TeamInfoVal>>
 where
     R: TeamRepo<C> + UserRepo<C> + Sync,
     I: ImagePool,
@@ -184,6 +184,7 @@ where
         Some(user_id) => TeamInfoListKind::JoinedBy { user_id },
 
         None => {
+            //
             TeamPermComplex::ensure_user_can_list_all(
                 &mut run_proxy! {
                     repo => for<'a> GetUserInfo<'a>;
@@ -215,9 +216,9 @@ where
     )
     .await
     .into_iter()
-    .collect::<RegularResult<Vec<_>>>()?;
+    .collect::<BaseResult<Vec<_>>>()?;
 
-    Ok(team_info_vals)
+    accept(team_info_vals)
 }
 
 /// Updates a team's name and description.
@@ -233,7 +234,7 @@ pub async fn update_info<C, R>(
     repo: &R,
     token: UserToken,
     params: UpdateTeamInfoParams,
-) -> RegularResult<()>
+) -> BaseResult<()>
 where
     R: TeamRepo<C> + MemberRepo<C> + Sync,
 {
@@ -255,7 +256,7 @@ where
     })
     .await?;
 
-    Ok(())
+    accept(())
 }
 
 /// Reserves a new avatar upload slot for a team.
@@ -285,9 +286,9 @@ pub async fn reserve_avatar<N, C, R, P, I>(
     token: UserToken,
     id: String,
     params: ReserveTeamAvatarParams,
-) -> RegularResult<ReserveTeamAvatarPayload>
+) -> BaseResult<ReserveTeamAvatarPayload>
 where
-    N: Nucl<Context = C, Error = RegularError>,
+    N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     R: TeamRepo<C> + MemberRepo<C> + Send + Sync,
     P: Prom<C> + Send + Sync,
@@ -303,7 +304,7 @@ where
     .await?;
 
     let (object_key, avatar_version) = nucl
-        .coord(async move |context| -> RegularResult<(String, u32)> {
+        .coord(async move |context| {
             //
             let avatar_reservation = repo
                 .step(
@@ -323,6 +324,7 @@ where
 
             // If replacing an existing avatar, schedule deletion of the old object.
             if let Some(prev_key) = &avatar_reservation.prev_object_key {
+                //
                 batch_ids.push(ImageComplex::gen_delete_id());
 
                 batch_payloads.push(Payload::Image(image::Payload::Delete {
@@ -357,7 +359,7 @@ where
 
             prom.step(context, &DeferBatch::new(&batch_tasks)).await?;
 
-            Ok((
+            accept((
                 avatar_reservation.object_key,
                 avatar_reservation.avatar_version,
             ))
@@ -368,7 +370,7 @@ where
 
     let put_url = image_pool.get_upload_url(&object_key).await?.to_string();
 
-    Ok(ReserveTeamAvatarPayload {
+    accept(ReserveTeamAvatarPayload {
         put_url,
         avatar_version,
     })
@@ -389,7 +391,7 @@ pub async fn mark_avatar_uploaded<C, R>(
     token: UserToken,
     id: String,
     params: MarkTeamAvatarUploadedParams,
-) -> RegularResult<()>
+) -> BaseResult<()>
 where
     R: TeamRepo<C> + MemberRepo<C> + Sync,
 {
@@ -408,7 +410,7 @@ where
     })
     .await?;
 
-    Ok(())
+    accept(())
 }
 
 /// Deletes a team and all associated params.
@@ -434,9 +436,9 @@ pub async fn delete<N, C, R, P>(
     prom: &P,
     token: UserToken,
     id: String,
-) -> RegularResult<()>
+) -> BaseResult<()>
 where
-    N: Nucl<Context = C, Error = RegularError>,
+    N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     R: TeamRepo<C>
         + WorksetRepo<C>
@@ -460,7 +462,7 @@ where
     )
     .await?;
 
-    nucl.coord(async move |context| -> RegularResult<()> {
+    nucl.coord(async move |context| {
         //
         TeamComplex::delete_cascade(
             &mut step_proxy! {
@@ -494,9 +496,9 @@ where
         )
         .await?;
 
-        Ok(())
+        accept(())
     })
     .await?;
 
-    Ok(())
+    accept(())
 }
