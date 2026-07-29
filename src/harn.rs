@@ -29,11 +29,11 @@ use crate::result::BaseError;
 ///
 /// Provides accessors to each subsystem (drive, repo, prom, auth, image_pool,
 /// develop) and is designed to be cheaply cloned via `Arc<HarnInner>`.
-pub struct Harn<C, D, R, P, A, I, V> {
-    inner: Arc<HarnInner<C, D, R, P, A, I, V>>,
+pub struct Harn<C, N, R, P, A, I, V> {
+    inner: Arc<HarnInner<C, N, R, P, A, I, V>>,
 }
 
-impl<C, D, R, P, A, I, V> Clone for Harn<C, D, R, P, A, I, V> {
+impl<C, N, R, P, A, I, V> Clone for Harn<C, N, R, P, A, I, V> {
     fn clone(&self) -> Self {
         Self {
             inner: Arc::clone(&self.inner),
@@ -42,8 +42,8 @@ impl<C, D, R, P, A, I, V> Clone for Harn<C, D, R, P, A, I, V> {
 }
 
 /// Inner, non-cloneable state shared across all `Harn` clones via `Arc`.
-struct HarnInner<C, D, R, P, A, I, V> {
-    drive: D,
+struct HarnInner<C, N, R, P, A, I, V> {
+    drive: N,
     repo: R,
     prom: P,
     auth: A,
@@ -53,9 +53,9 @@ struct HarnInner<C, D, R, P, A, I, V> {
     _p: PhantomData<C>,
 }
 
-impl<C, D, R, P, A, I, V> Harn<C, D, R, P, A, I, V>
+impl<C, N, R, P, A, I, V> Harn<C, N, R, P, A, I, V>
 where
-    D: Nucl<Context = C, Error = BaseError>,
+    N: Nucl<Context = C, Error = BaseError>,
     R: AnnouncementRepo<C>
         + AssignmentRepo<C>
         + AssignmentInvitationRepo<C>
@@ -79,7 +79,7 @@ where
 {
     /// Builds a new `Harn` from the given port implementations.
     pub fn new(
-        drive: D,
+        drive: N,
         repo: R,
         prom: P,
         auth: A,
@@ -100,7 +100,7 @@ where
     }
 
     /// Returns a reference to the transaction driver.
-    pub fn drive(&self) -> &D {
+    pub fn drive(&self) -> &N {
         &self.inner.drive
     }
 

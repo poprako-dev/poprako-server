@@ -17,10 +17,11 @@ use crate::api::http::result::{
 use crate::api::http::state::AppHarn;
 use crate::data::comic::{
     ComicInfoVal, CreateComicParams, CreateComicPayload, ListComicInfosParams,
-    ListComicInfosPayload, MarkComicCoverUploadedParams,
-    ReserveComicCoverParams, ReserveComicCoverPayload, UpdateComicInfoParams,
+    MarkComicCoverUploadedParams, ReserveComicCoverParams,
+    ReserveComicCoverPayload, UpdateComicInfoParams,
 };
 use crate::data::comic_archive::ArchiveComicPayload;
+use crate::data::comic_list::ListComicInfosPayload;
 use crate::model::user::UserToken;
 use crate::usecase;
 use crate::value::comic::{ComicInclOpt, ComicWithOpt};
@@ -51,7 +52,9 @@ pub struct ComicListQuery {
     )]
     pub incl_opt: Vec<ComicInclOpt>,
 
-    /// Derived rows to attach. Repeatable. Values: `pinned_chapter`.
+    /// Derived rows to attach. Repeatable. Values: `pinned_chapter`,
+    /// `pinned_chapter_assignment`. The assignment option requires the chapter
+    /// option.
     #[serde(
         default,
         rename = "with",
@@ -99,7 +102,7 @@ pub async fn create(
     responses(
         (status = 200, description = "Comics listed", body = HttpBody<ListComicInfosPayload>),
         (status = 403, description = "No permission to list comics in this workset"),
-        (status = 422, description = "Invalid workflow-stage filter"),
+        (status = 422, description = "Invalid query option combination or workflow-stage filter"),
     ),
 ))]
 #[instrument(level = "info", err(Debug), skip_all)]

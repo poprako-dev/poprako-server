@@ -10,7 +10,7 @@ use crate::part::repo::oper::page::{
     SetPageUnitCounters,
 };
 use crate::part_impl::repo::rdb_impl::RdbRepo;
-use crate::part_impl::repo::rdb_impl::page::{
+use crate::part_impl::repo::rdb_impl::page::step_impl::{
     create_batch, delete_by_chapter_id, get_info_by_id, get_info_excluded,
     list_all_infos_by_chapter_id, list_first_infos_by_chapter_ids,
     list_infos_by_chapter_id, mark_image_uploaded, reserve_image,
@@ -165,7 +165,13 @@ impl<'a> Step<MarkPageImageUploaded<'a>, RdbContext> for RdbRepo {
         context: &mut RdbContext,
         oper: &MarkPageImageUploaded<'a>,
     ) -> BaseResult<()> {
-        mark_image_uploaded(context.conn(), oper.id, oper.image_version).await
+        mark_image_uploaded(
+            context.conn(),
+            oper.id,
+            oper.image_version,
+            oper.image_key,
+        )
+        .await
     }
 }
 

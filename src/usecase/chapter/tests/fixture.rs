@@ -11,13 +11,13 @@ use crate::model::user::UserToken;
 use crate::model::workset::WorksetInfo;
 use crate::value::chapter::StageMask;
 
-pub(super) fn token(user_id: &str) -> UserToken {
+pub fn token(user_id: &str) -> UserToken {
     UserToken {
         user_id: user_id.into(),
     }
 }
 
-pub(super) fn workset(id: &str, team_id: &str) -> WorksetInfo {
+pub fn workset(id: &str, team_id: &str) -> WorksetInfo {
     //
     let time = OffsetDateTime::now_utc();
 
@@ -33,7 +33,7 @@ pub(super) fn workset(id: &str, team_id: &str) -> WorksetInfo {
     }
 }
 
-pub(super) fn comic(id: &str, workset_id: &str) -> ComicInfo {
+pub fn comic(id: &str, workset_id: &str) -> ComicInfo {
     //
     let time = OffsetDateTime::now_utc();
 
@@ -58,7 +58,7 @@ pub(super) fn comic(id: &str, workset_id: &str) -> ComicInfo {
     }
 }
 
-pub(super) fn chapter(
+pub fn chapter(
     id: &str,
     comic_id: &str,
     index: i32,
@@ -86,11 +86,7 @@ pub(super) fn chapter(
     }
 }
 
-pub(super) fn member(
-    user_id: &str,
-    team_id: &str,
-    role_mask: RoleMask,
-) -> MemberInfo {
+pub fn member(user_id: &str, team_id: &str, role_mask: RoleMask) -> MemberInfo {
     MemberInfo {
         id: format!("member-{}-{}", user_id, team_id),
         user_id: user_id.into(),
@@ -103,7 +99,7 @@ pub(super) fn member(
     }
 }
 
-pub(super) fn assignment(
+pub fn assignment(
     chapter_id: &str,
     user_id: &str,
     role_mask: RoleMask,
@@ -123,11 +119,7 @@ pub(super) fn assignment(
     }
 }
 
-pub(super) fn page(
-    id: &str,
-    chapter_id: &str,
-    image_key: Option<&str>,
-) -> PageInfo {
+pub fn page(id: &str, chapter_id: &str, image_key: Option<&str>) -> PageInfo {
     //
     let time = OffsetDateTime::now_utc();
 
@@ -146,7 +138,7 @@ pub(super) fn page(
     }
 }
 
-pub(super) fn seed_scope(mock: &Mock, user_id: &str, role_mask: RoleMask) {
+pub fn seed_scope(mock: &Mock, user_id: &str, role_mask: RoleMask) {
     //
     mock.seed_workset(workset("workset-1", "team-1"));
 

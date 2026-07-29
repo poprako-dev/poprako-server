@@ -9,7 +9,7 @@ use crate::part::repo::oper::comic::{
     UpdateComic, UpdateComicChapterCount,
 };
 use crate::part_impl::repo::rdb_impl::RdbRepo;
-use crate::part_impl::repo::rdb_impl::comic::{
+use crate::part_impl::repo::rdb_impl::comic::step_impl::{
     create, delete, get_info_by_id, get_info_excluded, incr_chapter_next_index,
     list_infos, list_infos_excluded, mark_cover_uploaded, reserve_cover,
     touch_last_active, update_chapter_count, update_info,
@@ -56,7 +56,8 @@ impl<'a> Run<MarkComicCoverUploaded<'a>> for RdbRepo {
             self.core,
             mark_cover_uploaded,
             oper.id,
-            oper.cover_version
+            oper.cover_version,
+            oper.cover_key
         )
     }
 }
@@ -148,7 +149,13 @@ impl<'a> Step<MarkComicCoverUploaded<'a>, RdbContext> for RdbRepo {
         context: &mut RdbContext,
         oper: &MarkComicCoverUploaded<'a>,
     ) -> BaseResult<()> {
-        mark_cover_uploaded(context.conn(), oper.id, oper.cover_version).await
+        mark_cover_uploaded(
+            context.conn(),
+            oper.id,
+            oper.cover_version,
+            oper.cover_key,
+        )
+        .await
     }
 }
 

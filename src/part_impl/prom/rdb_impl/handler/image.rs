@@ -19,7 +19,7 @@ use crate::part::repo::oper::user::{GetUserInfoExcluded, UpdateUser};
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
-use crate::part_impl::prom::rdb_impl::handler::TaskFlow;
+use crate::part_impl::prom::rdb_impl::handler::task_flow::TaskFlow;
 use crate::part_impl::shared::RdbContext;
 use crate::result::{BaseError, BaseResult, accept};
 
@@ -30,20 +30,29 @@ enum ResourceState {
     Stale,
     /// The referenced resource no longer exists.
     Missing,
+    /// The version is current but the persisted object key differs.
+    Mismatched,
 }
 
-fn classify_current_version(
+fn classify_current_identity(
     current_version: u32,
+    current_object_key: Option<&str>,
     image_version: u32,
+    object_key: &str,
     error_message: &'static str,
 ) -> BaseResult<ResourceState> {
-    match current_version == image_version {
+    match (
+        current_version == image_version,
+        current_object_key == Some(object_key),
+    ) {
         //
-        true => Err(BaseError::Unrecoverable {
+        (false, _) => accept(ResourceState::Stale),
+
+        (true, false) => accept(ResourceState::Mismatched),
+
+        (true, true) => Err(BaseError::Unrecoverable {
             message: error_message.into(),
         }),
-
-        false => accept(ResourceState::Stale),
     }
 }
 
@@ -158,9 +167,15 @@ where
         + Sync,
     I: ImageManager + Send + Sync,
 {
-    let resource_state =
-        mark_current_or_classify(nucl, repo, kind, resource_id, image_version)
-            .await;
+    let resource_state = mark_current_or_classify(
+        nucl,
+        repo,
+        kind,
+        resource_id,
+        object_key,
+        image_version,
+    )
+    .await;
 
     match resource_state {
         //
@@ -172,6 +187,10 @@ where
             handle_delete(image_pool, object_key).await
         }
 
+        Ok(ResourceState::Mismatched) => TaskFlow::Dead(
+            "prom image identity does not match current resource".into(),
+        ),
+
         Err(error) => TaskFlow::Retry(format!("{:?}", error)),
     }
 }
@@ -182,6 +201,7 @@ async fn mark_current_or_classify<N, R>(
     repo: &R,
     kind: ResourceKind,
     resource_id: &str,
+    object_key: &str,
     image_version: u32,
 ) -> BaseResult<ResourceState>
 where
@@ -200,6 +220,7 @@ where
                 context,
                 kind,
                 resource_id,
+                object_key,
                 image_version,
             )
             .await
@@ -212,6 +233,7 @@ where
                         context,
                         kind,
                         resource_id,
+                        object_key,
                         image_version,
                     )
                     .await
@@ -231,6 +253,7 @@ async fn mark_uploaded_by_kind<R>(
     context: &mut RdbContext,
     kind: ResourceKind,
     resource_id: &str,
+    object_key: &str,
     image_version: u32,
 ) -> BaseResult<()>
 where
@@ -249,6 +272,7 @@ where
                 &UpdateUser::MarkAvatarUploaded {
                     id: resource_id,
                     avatar_version: image_version,
+                    avatar_key: Some(object_key),
                 },
             )
             .await
@@ -260,6 +284,7 @@ where
                 &UpdateTeam::MarkAvatarUploaded {
                     id: resource_id,
                     avatar_version: image_version,
+                    avatar_key: Some(object_key),
                 },
             )
             .await
@@ -271,6 +296,7 @@ where
                 &MarkComicCoverUploaded {
                     id: resource_id,
                     cover_version: image_version,
+                    cover_key: Some(object_key),
                 },
             )
             .await
@@ -282,6 +308,7 @@ where
                 &MarkPageImageUploaded {
                     id: resource_id,
                     image_version,
+                    image_key: Some(object_key),
                 },
             )
             .await
@@ -295,6 +322,7 @@ async fn classify_expected_mark<R>(
     context: &mut RdbContext,
     kind: ResourceKind,
     resource_id: &str,
+    object_key: &str,
     image_version: u32,
 ) -> BaseResult<ResourceState>
 where
@@ -313,9 +341,11 @@ where
                 .await
             {
                 //
-                Ok(user_info) => classify_current_version(
+                Ok(user_info) => classify_current_identity(
                     user_info.avatar_version,
+                    user_info.avatar_key.as_deref(),
                     image_version,
+                    object_key,
                     "[RdbPromImageHandler::classify_expected_mark] current user avatar version failed to mark uploaded",
                 ),
 
@@ -333,9 +363,11 @@ where
                 .await
             {
                 //
-                Ok(team_info) => classify_current_version(
+                Ok(team_info) => classify_current_identity(
                     team_info.avatar_version,
+                    team_info.avatar_key.as_deref(),
                     image_version,
+                    object_key,
                     "[RdbPromImageHandler::classify_expected_mark] current team avatar version failed to mark uploaded",
                 ),
 
@@ -358,9 +390,11 @@ where
                 )
                 .await
             {
-                Ok(comic_info) => classify_current_version(
+                Ok(comic_info) => classify_current_identity(
                     comic_info.cover_version,
+                    comic_info.cover_key.as_deref(),
                     image_version,
+                    object_key,
                     "[RdbPromImageHandler::classify_expected_mark] current comic cover version failed to mark uploaded",
                 ),
 
@@ -377,9 +411,11 @@ where
                 .step(context, &GetPageInfoExcluded { id: resource_id })
                 .await
             {
-                Ok(page_info) => classify_current_version(
+                Ok(page_info) => classify_current_identity(
                     page_info.image_version,
+                    page_info.image_key.as_deref(),
                     image_version,
+                    object_key,
                     "[RdbPromImageHandler::classify_expected_mark] current page image version failed to mark uploaded",
                 ),
 

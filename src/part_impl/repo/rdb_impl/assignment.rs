@@ -6,6 +6,7 @@ use poprako_orchestra::{Run, Step};
 use time::OffsetDateTime;
 use tracing::instrument;
 
+use self::list::{list_all_infos_by_chapter, list_all_infos_by_chapters};
 use crate::model::assignment::{
     AssignmentEntry, AssignmentInfo, AssignmentInfoListSpec,
     AssignmentRoleUpdate,
@@ -30,8 +31,10 @@ use crate::result::{BaseError, BaseResult, accept};
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::role::RoleField;
 
-#[cfg(all(test, feature = "repo"))]
-mod tests;
+#[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
+pub mod tests;
+
+mod list;
 
 impl AssignmentRepo<RdbContext> for RdbRepo {}
 
@@ -228,71 +231,6 @@ async fn list_infos(
     accept(infos)
 }
 
-/// Queries all assignment rows for a given chapter, optionally filtered by role.
-#[instrument(level = "info", err(Debug), skip_all)]
-async fn list_all_infos_by_chapter(
-    conn: &mut RdbConn,
-    chapter_id: &str,
-    role: Option<RoleField>,
-    incl_opt: &[AssignmentInclOpt],
-) -> BaseResult<Vec<AssignmentInfo>> {
-    //
-    let mut query = t_assignment
-        .filter(f_chapter_id.eq(chapter_id))
-        .into_boxed();
-
-    if let Some(role) = role {
-        query = match role {
-            //
-            RoleField::RAW_PROVIDER => {
-                query.filter(f_assigned_raw_provider_at.is_not_null())
-            }
-
-            RoleField::TRANSLATOR => {
-                query.filter(f_assigned_translator_at.is_not_null())
-            }
-
-            RoleField::PROOFREADER => {
-                query.filter(f_assigned_proofreader_at.is_not_null())
-            }
-
-            RoleField::TYPESETTER => {
-                query.filter(f_assigned_typesetter_at.is_not_null())
-            }
-
-            RoleField::REDRAWER => {
-                query.filter(f_assigned_redrawer_at.is_not_null())
-            }
-
-            RoleField::REVIEWER => {
-                query.filter(f_assigned_reviewer_at.is_not_null())
-            }
-
-            RoleField::PUBLISHER => {
-                query.filter(f_assigned_publisher_at.is_not_null())
-            }
-
-            RoleField::ADMIN => query.filter(f_assigned_admin_at.is_not_null()),
-
-            _ => query,
-        };
-    }
-
-    let rows: Vec<AssignmentRow> = query
-        .select(AssignmentRow::as_select())
-        .order_by((f_created_at.desc(), f_id.asc()))
-        .load(conn)
-        .await
-        .map_err(diesel)?;
-
-    let mut infos = rows_into_infos(rows)?;
-
-    incl::assignment::populate_assignment_incls(conn, &mut infos, incl_opt)
-        .await?;
-
-    accept(infos)
-}
-
 /// Queries all assignment rows for a chapter under `FOR UPDATE` lock.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn list_chapter_assignments_excluded(
@@ -446,6 +384,15 @@ impl Run<ListAssignmentInfos<'_, '_>> for RdbRepo {
                 *role,
                 incls
             ),
+
+            ListAssignmentInfos::Chapters { chapter_ids, incls } => {
+                submit_query!(
+                    self.core,
+                    list_all_infos_by_chapters,
+                    chapter_ids,
+                    incls
+                )
+            }
         }
     }
 }
@@ -489,6 +436,11 @@ impl Step<ListAssignmentInfos<'_, '_>, RdbContext> for RdbRepo {
                     incls,
                 )
                 .await
+            }
+
+            ListAssignmentInfos::Chapters { chapter_ids, incls } => {
+                list_all_infos_by_chapters(context.conn(), chapter_ids, incls)
+                    .await
             }
         }
     }

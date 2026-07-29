@@ -41,6 +41,7 @@ fn member(user_id: &str, team_id: &str, roles: RoleMask) -> MemberInfo {
 }
 
 fn workset(id: &str, team_id: &str) -> WorksetInfo {
+    //
     let time = OffsetDateTime::now_utc();
 
     WorksetInfo {
@@ -56,6 +57,7 @@ fn workset(id: &str, team_id: &str) -> WorksetInfo {
 }
 
 fn comic(id: &str, workset_id: &str) -> ComicInfo {
+    //
     let time = OffsetDateTime::now_utc();
 
     ComicInfo {
@@ -86,6 +88,7 @@ fn termbase(
     name: &str,
     description: Option<&str>,
 ) -> TermbaseInfo {
+    //
     let time = OffsetDateTime::now_utc();
 
     TermbaseInfo {
@@ -102,6 +105,7 @@ fn termbase(
 }
 
 fn term(id: &str, termbase_id: &str) -> TermInfo {
+    //
     let time = OffsetDateTime::now_utc();
 
     TermInfo {
@@ -127,6 +131,7 @@ fn create_params() -> CreateTermbaseParams {
 
 #[tokio::test]
 async fn create_normalizes_and_persists_for_proofreader() {
+    //
     let mock = Mock::new();
 
     mock.seed_team(team("team-1", "Team", "Desc"));
@@ -154,6 +159,7 @@ async fn create_normalizes_and_persists_for_proofreader() {
 
 #[tokio::test]
 async fn create_rejects_admin_without_proofreader() {
+    //
     let mock = Mock::new();
 
     mock.seed_team(team("team-1", "Team", "Desc"));
@@ -175,6 +181,7 @@ async fn create_rejects_admin_without_proofreader() {
 
 #[tokio::test]
 async fn create_rejects_invalid_scope() {
+    //
     let mock = Mock::new();
 
     let params = CreateTermbaseParams {
@@ -195,6 +202,7 @@ async fn create_rejects_invalid_scope() {
 
 #[tokio::test]
 async fn list_comic_infos_inherits_team_and_excludes_sibling() {
+    //
     let mock = Mock::new();
 
     mock.seed_team(team("team-1", "Team", "Desc"));
@@ -257,6 +265,7 @@ async fn list_comic_infos_inherits_team_and_excludes_sibling() {
 
 #[tokio::test]
 async fn list_comic_infos_does_not_search_description() {
+    //
     let mock = Mock::new();
 
     mock.seed_team(team("team-1", "Team", "Desc"));
@@ -295,6 +304,7 @@ async fn list_comic_infos_does_not_search_description() {
 
 #[tokio::test]
 async fn delete_removes_child_terms() {
+    //
     let mock = Mock::new();
 
     mock.seed_team(team("team-1", "Team", "Desc"));
@@ -327,6 +337,7 @@ async fn delete_removes_child_terms() {
 
 #[tokio::test]
 async fn delete_team_cascade_removes_direct_termbases_and_terms() {
+    //
     let mock = Mock::new();
 
     mock.seed_termbase(termbase(

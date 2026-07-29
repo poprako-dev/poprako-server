@@ -38,8 +38,10 @@ pub mod team;
 pub mod term;
 /// Termbase repository operations.
 pub mod termbase;
-#[cfg(all(test, feature = "repo"))]
+#[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod test_shared;
+#[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
+mod tests;
 /// Unit repository operations.
 pub mod unit;
 /// User repository operations.

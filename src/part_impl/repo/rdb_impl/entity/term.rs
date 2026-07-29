@@ -59,6 +59,7 @@ impl From<TermRow> for TermInfo {
 
 impl<'a> From<&'a TermEntry> for TermRowEntry<'a> {
     fn from(term_entry: &'a TermEntry) -> Self {
+        //
         let now = OffsetDateTime::now_utc();
 
         Self {

@@ -1,10 +1,9 @@
 //! Diesel-backed terminology-entry repository operations.
 
-use diesel::ExpressionMethods as _;
-use diesel::OptionalExtension as _;
-use diesel::PgTextExpressionMethods as _;
-use diesel::QueryDsl as _;
-use diesel::SelectableHelper as _;
+use diesel::{
+    ExpressionMethods as _, OptionalExtension as _,
+    PgTextExpressionMethods as _, QueryDsl as _, SelectableHelper as _,
+};
 use diesel_async::RunQueryDsl as _;
 use poprako_orchestra::{Run, Step};
 use time::OffsetDateTime;
@@ -25,8 +24,8 @@ use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{BaseError, BaseResult, accept};
 
-#[cfg(all(test, feature = "repo"))]
-mod tests;
+#[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
+pub mod tests;
 
 impl TermRepo<RdbContext> for RdbRepo {}
 
@@ -39,6 +38,7 @@ fn escape_ilike_pattern(input: &str) -> String {
 
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn get_info(conn: &mut RdbConn, id: &str) -> BaseResult<TermInfo> {
+    //
     let row: TermRow = t_term
         .filter(f_id.eq(id))
         .select(TermRow::as_select())
@@ -56,6 +56,7 @@ async fn get_info_excluded(
     conn: &mut RdbConn,
     id: &str,
 ) -> BaseResult<TermInfo> {
+    //
     let row: TermRow = t_term
         .filter(f_id.eq(id))
         .select(TermRow::as_select())
@@ -74,12 +75,14 @@ async fn list_infos(
     conn: &mut RdbConn,
     spec: &TermInfoListSpec,
 ) -> BaseResult<Vec<TermInfo>> {
+    //
     let mut query = t_term
         .filter(f_termbase_id.eq(&spec.termbase_id))
         .select(TermRow::as_select())
         .into_boxed();
 
     if let Some(fuzzy_source) = &spec.fuzzy_source {
+        //
         let escaped = escape_ilike_pattern(fuzzy_source);
 
         let pattern = format!("%{}%", escaped);
@@ -103,6 +106,7 @@ async fn create(
     conn: &mut RdbConn,
     term_entry: &TermEntry,
 ) -> BaseResult<TermInfo> {
+    //
     let entry = TermRowEntry::from(term_entry);
 
     let row: TermRow = diesel::insert_into(t_term)
@@ -120,6 +124,7 @@ async fn update_info(
     conn: &mut RdbConn,
     update: &TermInfoUpdate,
 ) -> BaseResult<()> {
+    //
     let targets = update
         .targets
         .iter()
@@ -142,6 +147,7 @@ async fn update_info(
 
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn delete(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
+    //
     diesel::delete(t_term.filter(f_id.eq(id)))
         .execute(conn)
         .await
@@ -152,6 +158,7 @@ async fn delete(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
 
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn delete_terms(conn: &mut RdbConn, termbase_id: &str) -> BaseResult<()> {
+    //
     diesel::delete(t_term.filter(f_termbase_id.eq(termbase_id)))
         .execute(conn)
         .await

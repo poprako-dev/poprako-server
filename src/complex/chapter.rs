@@ -21,7 +21,9 @@ use crate::complex::util::{
     check_user_is_team_member,
 };
 use crate::model::chapter::{ChapterInfo, ChapterStageUpdate};
-use crate::part::repo::oper::assignment::FindAssignmentInfo;
+use crate::part::repo::oper::assignment::{
+    FindAssignmentInfo, ListAssignmentInfos,
+};
 use crate::part::repo::oper::chapter::GetChapterInfo;
 use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
@@ -192,7 +194,8 @@ impl ChapterPermComplex {
         oper: StageOper,
     ) -> BaseResult<()>
     where
-        P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
+        P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>
+            + for<'a, 'b> Proxy<ListAssignmentInfos<'a, 'b>, Error = BaseError>,
     {
         check_workflow_role(proxy, user_id, chapter_id, stage, oper).await
     }
@@ -342,13 +345,86 @@ where
 ///
 /// | Stage | Event | Required role |
 /// |---|---|---|
-/// | `RawProvide` | `Advance` | `RAW_PROVIDER` |
-/// | `Translate` | `Advance` | `TRANSLATOR` |
-/// | `Translate` | `Revert` | `PROOFREADER` |
-/// | `Proofread` | `Advance`/`Revert` | `PROOFREADER` |
-/// | `TypesetRedraw` | `Advance`/`Revert` | `TYPESETTER` or `REDRAWER` |
-/// | `Review` | `Advance`/`Revert` | `REVIEWER` |
-/// | `Publish` | `Advance` | `PUBLISHER` |
+/// Return the workflow roles required to perform `oper` on `stage`.
+///
+/// Returns an empty slice when the combination is unlisted (i.e., disallowed
+/// unless the caller holds `ADMIN`).
+fn required_roles_for_transition(
+    stage: Stage,
+    oper: StageOper,
+) -> &'static [RoleField] {
+    match (stage, oper) {
+        //
+        (Stage::RawProvide, StageOper::Advance) => &[RoleField::RAW_PROVIDER],
+
+        (Stage::Translate, StageOper::Advance) => &[RoleField::TRANSLATOR],
+
+        (Stage::Translate, StageOper::Revert) => {
+            &[RoleField::TRANSLATOR, RoleField::PROOFREADER]
+        }
+
+        (Stage::Proofread, StageOper::Advance | StageOper::Revert) => {
+            &[RoleField::PROOFREADER]
+        }
+
+        (Stage::TypesetRedraw, StageOper::Advance | StageOper::Revert) => {
+            &[RoleField::TYPESETTER, RoleField::REDRAWER]
+        }
+
+        (Stage::Review, StageOper::Advance | StageOper::Revert) => {
+            &[RoleField::REVIEWER]
+        }
+
+        (Stage::Publish, StageOper::Advance) => &[RoleField::PUBLISHER],
+
+        _ => &[],
+    }
+}
+
+/// Verify that at least one person on the chapter holds the role(s) required
+/// for advancing `stage`. A workflow stage cannot be advanced unless someone
+/// is assigned to the corresponding role.
+///
+/// Called only for [`StageOper::Advance`]; revert operations do not require a
+/// role holder.
+async fn check_chapter_has_role_holder<P>(
+    proxy: &mut P,
+    chapter_id: &str,
+    stage: Stage,
+) -> BaseResult<()>
+where
+    P: for<'a, 'b> Proxy<ListAssignmentInfos<'a, 'b>, Error = BaseError>,
+{
+    let required_roles =
+        required_roles_for_transition(stage, StageOper::Advance);
+
+    let assignment_infos = proxy
+        .exec(&ListAssignmentInfos::Chapter {
+            chapter_id,
+            role: None,
+            incls: &[],
+        })
+        .await?;
+
+    let has_holder = assignment_infos
+        .iter()
+        .any(|info| info.roles.has_any_role(required_roles));
+
+    if !has_holder {
+        return Err(chapter_no_role_holder_error());
+    }
+
+    accept(())
+}
+
+/// | Stage | `Advance` | `Revert` |
+/// |---|---|---|
+/// | `RawProvide` | `RAW_PROVIDER` | - |
+/// | `Translate` | `TRANSLATOR` | `PROOFREADER` |
+/// | `Proofread` | `PROOFREADER` | `PROOFREADER` |
+/// | `TypesetRedraw` | `TYPESETTER` or `REDRAWER` | `TYPESETTER` or `REDRAWER` |
+/// | `Review` | `REVIEWER` | `REVIEWER` |
+/// | `Publish` | `PUBLISHER` | - |
 async fn check_workflow_role<P>(
     proxy: &mut P,
     user_id: &str,
@@ -357,7 +433,8 @@ async fn check_workflow_role<P>(
     oper: StageOper,
 ) -> BaseResult<()>
 where
-    P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
+    P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>
+        + for<'a, 'b> Proxy<ListAssignmentInfos<'a, 'b>, Error = BaseError>,
 {
     let assignment_info = proxy
         .exec(&FindAssignmentInfo::ChapterUser {
@@ -370,46 +447,27 @@ where
         return Err(chapter_workflow_role_error());
     };
 
+    // Domain invariant: a workflow stage cannot be advanced unless at least
+    // one person on the chapter holds the required workflow role. This runs
+    // before the admin bypass so that even admins must ensure the position is
+    // filled.
+    if oper == StageOper::Advance {
+        check_chapter_has_role_holder(proxy, chapter_id, stage).await?;
+    }
+
     let roles = assignment_info.roles;
 
     if roles.has_any_role(&[RoleField::ADMIN]) {
         return accept(());
     }
 
-    let allowed = match (stage, oper) {
-        //
-        (Stage::RawProvide, StageOper::Advance) => {
-            roles.has_any_role(&[RoleField::RAW_PROVIDER])
-        }
+    let required_roles = required_roles_for_transition(stage, oper);
 
-        (Stage::Translate, StageOper::Advance) => {
-            roles.has_any_role(&[RoleField::TRANSLATOR])
-        }
+    if required_roles.is_empty() {
+        return Err(chapter_workflow_role_error());
+    }
 
-        (Stage::Translate, StageOper::Revert) => {
-            roles.has_any_role(&[RoleField::TRANSLATOR, RoleField::PROOFREADER])
-        }
-
-        (Stage::Proofread, StageOper::Advance | StageOper::Revert) => {
-            roles.has_any_role(&[RoleField::PROOFREADER])
-        }
-
-        (Stage::TypesetRedraw, StageOper::Advance | StageOper::Revert) => {
-            roles.has_any_role(&[RoleField::TYPESETTER, RoleField::REDRAWER])
-        }
-
-        (Stage::Review, StageOper::Advance | StageOper::Revert) => {
-            roles.has_any_role(&[RoleField::REVIEWER])
-        }
-
-        (Stage::Publish, StageOper::Advance) => {
-            roles.has_any_role(&[RoleField::PUBLISHER])
-        }
-
-        _ => false,
-    };
-
-    if !allowed {
+    if !roles.has_any_role(required_roles) {
         return Err(chapter_workflow_role_error());
     }
 
@@ -501,6 +559,15 @@ fn chapter_workflow_role_error() -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Perm,
         message: trl("error-chapter-workflow-role-required"),
+    }
+}
+
+/// Construct a "no one holds the required workflow role on this chapter"
+/// permission error.
+fn chapter_no_role_holder_error() -> BaseError {
+    BaseError::Expected {
+        variant: ExpectedVariant::Perm,
+        message: trl("error-chapter-no-role-holder"),
     }
 }
 

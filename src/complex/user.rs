@@ -62,7 +62,7 @@ impl UserComplex {
 
     /// Hashes a plaintext password using the sync runtime (test-only helper).
     #[cfg(test)]
-    pub(crate) fn hash_password_for_test(password: &str) -> BaseResult<String> {
+    pub fn hash_password_for_test(password: &str) -> BaseResult<String> {
         hash_password_sync(password)
     }
 

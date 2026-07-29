@@ -1,4 +1,4 @@
-// comic_archive_roundtrip_reads_test_database_url(GetComicArchiveSnapshotExcluded, CommitComicArchive)(positive): archive rows persist as decodable bytes while active data is removed without changing workset counts.
+// comic_archive_roundtrip_uses_testcontainer(GetComicArchiveSnapshotExcluded, CommitComicArchive)(positive): archive rows persist as decodable bytes while active data is removed without changing workset counts.
 
 use super::*;
 
@@ -17,16 +17,13 @@ use crate::part_impl::repo::rdb_impl::schema::{
     t_chapter, t_comic, t_comic_archive, t_page, t_workset,
 };
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
+use crate::part_impl::shared::RdbCore;
 use crate::result::BaseError;
 use crate::util::decompress_archive;
 
 const PREFIX: &str = "rdb-test-comic-archive-domain-";
 
-#[tokio::test]
-async fn comic_archive_roundtrip_reads_test_database_url() {
-    //
-    let shared = test_shared::shared().await;
-
+pub async fn comic_archive_roundtrip_uses_testcontainer(shared: RdbCore) {
     test_shared::reset(&shared, PREFIX).await;
 
     let page_fixture = test_shared::seed_page(&shared, PREFIX).await;
@@ -117,6 +114,7 @@ async fn comic_archive_roundtrip_reads_test_database_url() {
         decompress_archive(&comic_archived_bytes).unwrap();
 
     assert_eq!(archive_team_id, page_fixture.team_entry.id);
+
     assert_eq!(comic_archiver_id, archiver_id);
 
     assert_eq!(comic_created_at, comic_archive_write.record.created_at);

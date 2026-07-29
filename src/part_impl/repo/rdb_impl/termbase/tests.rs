@@ -10,6 +10,7 @@ use crate::part::repo::oper::termbase::{
 };
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
+use crate::part_impl::shared::RdbCore;
 
 const PREFIX: &str = "rdb-test-termbase-domain-";
 
@@ -33,10 +34,7 @@ async fn create_termbase(
         .unwrap()
 }
 
-#[tokio::test]
-async fn termbase_constraints_and_query_roundtrip() {
-    let shared = test_shared::shared().await;
-
+pub async fn termbase_constraints_and_query_roundtrip(shared: RdbCore) {
     let comic_fixture = test_shared::seed_comic(&shared, PREFIX).await;
 
     let repo = RdbRepo::new(shared.clone());

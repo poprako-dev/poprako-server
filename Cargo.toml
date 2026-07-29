@@ -18,7 +18,9 @@ mod_module_files = "deny"
 
 [features]
 benchmark = []
-repo = []
+rdb = []
+prom_impl = []
+repo_impl = []
 swagger-ui = ["utoipa-swagger-ui", "utoipa"]
 
 [dependencies]
@@ -64,6 +66,8 @@ poprako-orchestra-extra = { version = "0.2.0", features = ["promise"] }
 
 [dev-dependencies]
 criterion = { version = "0.7", features = ["async_tokio"] }
+serial_test = "3.5.0"
+testcontainers-modules = { version = "0.15.0", features = ["postgres"] }
 
 [[bench]]
 name = "test_benchmark"

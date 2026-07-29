@@ -415,6 +415,7 @@ where
     repo.run(&UpdateTeam::MarkAvatarUploaded {
         id: &id,
         avatar_version: params.avatar_version,
+        avatar_key: None,
     })
     .await?;
 

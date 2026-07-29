@@ -1,4 +1,4 @@
-// assignment_invitation_roundtrip_reads_test_database_url(CreateAssignmentInvitation, ListAssignmentInvitationInfos, MarkAssignmentInvitationUsed)(positive): assignment invitation repo creates, lists, and marks invitations used in the local test database.
+// assignment_invitation_roundtrip_uses_testcontainer(CreateAssignmentInvitation, ListAssignmentInvitationInfos, MarkAssignmentInvitationUsed)(positive): assignment invitation repo creates, lists, and marks invitations used in an isolated PostgreSQL container.
 
 use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 
@@ -12,16 +12,15 @@ use crate::part::repo::oper::assignment_invitation::{
 };
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
+use crate::part_impl::shared::RdbCore;
 use crate::result::BaseError;
 use crate::value::role::{RoleField, RoleMask};
 
 const PREFIX: &str = "rdb-test-assignment-invitation-domain-";
 
-#[tokio::test]
-async fn assignment_invitation_roundtrip_reads_test_database_url() {
-    //
-    let shared = test_shared::shared().await;
-
+pub async fn assignment_invitation_roundtrip_uses_testcontainer(
+    shared: RdbCore,
+) {
     test_shared::reset(&shared, PREFIX).await;
 
     let chapter_fixture = test_shared::seed_chapter(&shared, PREFIX).await;

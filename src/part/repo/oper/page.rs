@@ -65,6 +65,7 @@ impl<'a> Oper for ReservePageImage<'a> {
 pub struct MarkPageImageUploaded<'a> {
     pub id: &'a str,
     pub image_version: u32,
+    pub image_key: Option<&'a str>,
 }
 
 impl<'a> Oper for MarkPageImageUploaded<'a> {

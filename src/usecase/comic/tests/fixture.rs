@@ -1,6 +1,7 @@
 use super::*;
 
 use crate::data::comic::CreateComicParams;
+use crate::model::assignment::AssignmentInfo;
 use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
 use crate::model::member::MemberInfo;
@@ -8,7 +9,7 @@ use crate::model::page::PageInfo;
 use crate::model::user::UserToken;
 use crate::value::role::{RoleField, RoleMask};
 
-pub(super) fn comic(id: &str, workset_id: &str, index: i32) -> ComicInfo {
+pub fn comic(id: &str, workset_id: &str, index: i32) -> ComicInfo {
     //
     let time = OffsetDateTime::now_utc();
 
@@ -33,7 +34,7 @@ pub(super) fn comic(id: &str, workset_id: &str, index: i32) -> ComicInfo {
     }
 }
 
-pub(super) fn comic_with_uploaded_cover(
+pub fn comic_with_uploaded_cover(
     id: &str,
     workset_id: &str,
     cover_key: &str,
@@ -46,11 +47,7 @@ pub(super) fn comic_with_uploaded_cover(
     }
 }
 
-pub(super) fn chapter(
-    id: &str,
-    comic_id: &str,
-    stage_mask: StageMask,
-) -> ChapterInfo {
+pub fn chapter(id: &str, comic_id: &str, stage_mask: StageMask) -> ChapterInfo {
     //
     let time = OffsetDateTime::now_utc();
 
@@ -73,7 +70,23 @@ pub(super) fn chapter(
     }
 }
 
-pub(super) fn page(
+pub fn assignment(id: &str, chapter_id: &str, user_id: &str) -> AssignmentInfo {
+    //
+    let time = OffsetDateTime::now_utc();
+
+    AssignmentInfo {
+        id: id.into(),
+        chapter_id: chapter_id.into(),
+        user_id: user_id.into(),
+        user: None,
+        chapter: None,
+        roles: RoleMask::from(RoleField::TRANSLATOR),
+        created_at: time,
+        updated_at: time,
+    }
+}
+
+pub fn page(
     id: &str,
     chapter_id: &str,
     index: i32,
@@ -98,7 +111,7 @@ pub(super) fn page(
     }
 }
 
-pub(super) fn create_params(workset_id: &str) -> CreateComicParams {
+pub fn create_params(workset_id: &str) -> CreateComicParams {
     CreateComicParams {
         workset_id: workset_id.into(),
         title: "new".into(),
@@ -109,13 +122,13 @@ pub(super) fn create_params(workset_id: &str) -> CreateComicParams {
     }
 }
 
-pub(super) fn token(user_id: &str) -> UserToken {
+pub fn token(user_id: &str) -> UserToken {
     UserToken {
         user_id: user_id.into(),
     }
 }
 
-pub(super) fn admin_member(user_id: &str, team_id: &str) -> MemberInfo {
+pub fn admin_member(user_id: &str, team_id: &str) -> MemberInfo {
     MemberInfo {
         id: format!("member-{}-{}", user_id, team_id),
         user_id: user_id.into(),

@@ -2,7 +2,9 @@ use tracing::instrument;
 
 use crate::model::member_invitation::MemberInvitationInfo;
 use crate::model::user::UserInfo;
-use crate::part_impl::repo::rdb_impl::incl::{self, Incl, UserByIds};
+use crate::part_impl::repo::rdb_impl::incl::framework::{
+    self as incl, Incl, UserByIds,
+};
 use crate::part_impl::shared::RdbConn;
 use crate::result::{BaseResult, accept};
 use crate::value::member_invitation::MemberInvitationInclOpt;

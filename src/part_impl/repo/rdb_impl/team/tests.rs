@@ -1,18 +1,15 @@
-// team_roundtrip_reads_test_database_url(ListTeamInfos, UpdateTeam, GetTeamInfo)(positive): team repo persists, lists, and updates a team in the local test database.
+// team_roundtrip_uses_testcontainer(ListTeamInfos, UpdateTeam, GetTeamInfo)(positive): team repo persists, lists, and updates a team in an isolated PostgreSQL container.
 
 use super::*;
 
 use crate::model::team::{TeamInfoListKind, TeamInfoListSpec};
 use crate::part::repo::oper::team::{GetTeamInfo, ListTeamInfos, UpdateTeam};
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
+use crate::part_impl::shared::RdbCore;
 
 const PREFIX: &str = "rdb-test-team-domain-";
 
-#[tokio::test]
-async fn team_roundtrip_reads_test_database_url() {
-    //
-    let shared = test_shared::shared().await;
-
+pub async fn team_roundtrip_uses_testcontainer(shared: RdbCore) {
     test_shared::reset(&shared, PREFIX).await;
 
     let team_fixture = test_shared::seed_user_and_team(&shared, PREFIX).await;

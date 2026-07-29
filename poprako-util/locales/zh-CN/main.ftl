@@ -22,6 +22,7 @@ error-team-or-user-required = 必须提供 team_id 或 user_id
 
 error-token-sign-failed = 令牌签署失败
 error-chapter-or-user-required = 必须提供 chapter_id 或 owner_id
+error-pinned-chapter-with-required = with=pinned_chapter_assignment 必须和 with=pinned_chapter 同时提供
 error-workset-not-found = 该作品集不存在
 error-member-not-found = 该成员不存在
 error-team-member-required = 您不是该汉化组的成员
@@ -44,6 +45,7 @@ error-invalid-stage-phase = 无效的工作流阶段状态
 error-chapter-admin-required = 需要章节管理权限
 error-chapter-reviewer-required = 需要章节监修权限
 error-chapter-workflow-role-required = 缺少所需的章节工作流权限
+error-chapter-no-role-holder = 该章节中无人担任所需的工作流岗位，请先分配对应人员
 error-chapter-assignee-required = 需要章节分工
 error-chapter-translator-or-proofreader-required = 需要章节翻译或校对分工
 error-chapter-role-not-assignable = 章节角色不可领取

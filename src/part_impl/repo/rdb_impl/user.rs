@@ -20,12 +20,12 @@ use crate::part_impl::repo::rdb_impl::entity::user::{
     UserAspect, UserCredentialRow, UserRow, UserRowEntry,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_user::dsl::*;
-use crate::part_impl::shared::result::{diesel, expected, version};
+use crate::part_impl::shared::result::{diesel, expected, next_version};
 use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{BaseError, BaseResult, accept};
 
-#[cfg(all(test, feature = "repo"))]
-mod tests;
+#[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
+pub mod tests;
 
 impl UserRepo<RdbContext> for RdbRepo {}
 
@@ -162,25 +162,25 @@ async fn reserve_avatar(
     //
     let now = OffsetDateTime::now_utc();
 
-    let (prev_key, raw_version): (Option<String>, i64) =
-        diesel::update(t_user.filter(f_id.eq(id)))
-            .set((
-                f_avatar_key.eq::<Option<&str>>(None),
-                f_avatar_uploaded.eq(false),
-                f_avatar_version.eq(f_avatar_version + 1),
-                f_updated_at.eq(now),
-            ))
-            .returning((f_avatar_key, f_avatar_version))
-            .get_result::<(Option<String>, i64)>(conn)
-            .await
-            .map_err(diesel)?;
+    let (prev_key, raw_version): (Option<String>, i64) = t_user
+        .filter(f_id.eq(id))
+        .select((f_avatar_key, f_avatar_version))
+        .for_update()
+        .get_result(conn)
+        .await
+        .map_err(diesel)?;
 
-    let version = version(raw_version)?;
+    let version = next_version(raw_version)?;
 
     let object_key = UserComplex::gen_avatar_key(id, version, file_ext);
 
     diesel::update(t_user.filter(f_id.eq(id)))
-        .set((f_avatar_key.eq(Some(&object_key)), f_updated_at.eq(now)))
+        .set((
+            f_avatar_key.eq(Some(&object_key)),
+            f_avatar_uploaded.eq(false),
+            f_avatar_version.eq(i64::from(version)),
+            f_updated_at.eq(now),
+        ))
         .execute(conn)
         .await
         .map_err(diesel)?;
@@ -198,18 +198,36 @@ async fn mark_avatar_uploaded(
     conn: &mut RdbConn,
     id: &str,
     version: u32,
+    avatar_key: Option<&str>,
 ) -> BaseResult<()> {
     //
     let now = OffsetDateTime::now_utc();
 
-    let affected = diesel::update(
-        t_user
-            .filter(f_id.eq(id))
-            .filter(f_avatar_version.eq(i64::from(version))),
-    )
-    .set((f_avatar_uploaded.eq(true), f_updated_at.eq(now)))
-    .execute(conn)
-    .await
+    let affected = match avatar_key {
+        //
+        Some(avatar_key) => {
+            diesel::update(
+                t_user
+                    .filter(f_id.eq(id))
+                    .filter(f_avatar_version.eq(i64::from(version)))
+                    .filter(f_avatar_key.eq(avatar_key)),
+            )
+            .set((f_avatar_uploaded.eq(true), f_updated_at.eq(now)))
+            .execute(conn)
+            .await
+        }
+
+        None => {
+            diesel::update(
+                t_user
+                    .filter(f_id.eq(id))
+                    .filter(f_avatar_version.eq(i64::from(version))),
+            )
+            .set((f_avatar_uploaded.eq(true), f_updated_at.eq(now)))
+            .execute(conn)
+            .await
+        }
+    }
     .map_err(diesel)?;
 
     if affected == 0 {
@@ -331,12 +349,17 @@ impl<'a> Run<UpdateUser<'a>> for RdbRepo {
                 submit_query!(self.core, update_info, id, qid, nickname)
             }
 
-            UpdateUser::MarkAvatarUploaded { id, avatar_version } => {
+            UpdateUser::MarkAvatarUploaded {
+                id,
+                avatar_version,
+                avatar_key,
+            } => {
                 submit_query!(
                     self.core,
                     mark_avatar_uploaded,
                     id,
-                    *avatar_version
+                    *avatar_version,
+                    *avatar_key
                 )
             }
 
@@ -397,8 +420,18 @@ impl<'a> Step<UpdateUser<'a>, RdbContext> for RdbRepo {
                 update_info(context.conn(), id, qid, nickname).await
             }
 
-            UpdateUser::MarkAvatarUploaded { id, avatar_version } => {
-                mark_avatar_uploaded(context.conn(), id, *avatar_version).await
+            UpdateUser::MarkAvatarUploaded {
+                id,
+                avatar_version,
+                avatar_key,
+            } => {
+                mark_avatar_uploaded(
+                    context.conn(),
+                    id,
+                    *avatar_version,
+                    *avatar_key,
+                )
+                .await
             }
 
             UpdateUser::TouchLastActive { id } => {
