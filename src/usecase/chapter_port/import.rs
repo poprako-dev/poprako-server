@@ -8,13 +8,12 @@ use crate::complex::chapter_port::{
     ChapterImportComplex, ChapterPortPermComplex,
 };
 use crate::complex::unit::UnitComplex;
-use crate::data::chapter_port::{
-    ImportChapterTranslationParams, ImportChapterTranslationPayload,
-};
-use crate::model::page::PageInfo;
+use crate::data::instr::chapter_port::ImportChapterTranslationInstr;
+use crate::data::val::chapter_port::ImportChapterTranslationVal;
+use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::unit::UnitCounters;
+use crate::model::shared::user::UserToken;
 use crate::model::unit_port::UnitTranslationImport;
-use crate::model::user::UserToken;
 use crate::model::write::unit::UnitEdit;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
@@ -46,9 +45,9 @@ mod tests;
 pub async fn import<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
-    params: ImportChapterTranslationParams,
+    instr: ImportChapterTranslationInstr,
     chapter_id: String,
-) -> BaseRest<ImportChapterTranslationPayload>
+) -> BaseRest<ImportChapterTranslationVal>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -88,22 +87,22 @@ where
             .has_any_role(&[RoleField::PROOFREADER]),
     };
 
-    let label_plus = matches!(params.format, TranslationFormat::LabelPlus);
+    let label_plus = matches!(instr.format, TranslationFormat::LabelPlus);
 
-    let imported_pages = match params.format {
+    let imported_pages = match instr.format {
         //
         TranslationFormat::LabelPlus => {
-            ChapterImportComplex::parse_label_plus(&params.content)?
+            ChapterImportComplex::parse_label_plus(&instr.content)?
         }
 
         TranslationFormat::PopRaKo => {
-            ChapterImportComplex::parse_poprako(&params.content)?
+            ChapterImportComplex::parse_poprako(&instr.content)?
         }
     };
 
     let stage_chapter_id = chapter_id.clone();
 
-    let import_payload = nucl
+    let val = nucl
         .coord(async move |context| {
             //
             let chapter_info = GetChapterInfoExcluded {
@@ -192,7 +191,7 @@ where
             .step_on(repo, context)
             .await?;
 
-            accept(ImportChapterTranslationPayload {
+            accept(ImportChapterTranslationVal {
                 imported_page_count: page_scopes.len() as i32,
                 imported_unit_count,
             })
@@ -203,7 +202,7 @@ where
 
     spawn_starts(((*repo).clone(),), stage_chapter_id, stages);
 
-    accept(import_payload)
+    accept(val)
 }
 
 // Builds page edits from imported units for scenario coverage.

@@ -4,7 +4,7 @@ use poprako_orchestra_extra::prom::task::Task;
 
 use crate::complex::chapter::ChapterComplex;
 use crate::complex::image::ImageComplex;
-use crate::model::chapter::ChapterInfoUpdate;
+use crate::model::write::chapter::ChapterPatch;
 use crate::part::prom::payload::{TaskPayload, image};
 use crate::part::repo::oper::assignment::DeleteAssignments;
 use crate::part::repo::oper::assignment_invitation::DeleteAssignmentInvitations;
@@ -131,17 +131,18 @@ where
             Error = BaseError,
         >,
 {
-    let delete_ids = object_keys
-        .iter()
-        .map(|_| ImageComplex::gen_delete_id())
-        .collect::<Vec<_>>();
-
-    let payloads = object_keys
-        .into_iter()
-        .map(|object_key| {
-            TaskPayload::Image(image::ImagePayload::Delete { object_key })
-        })
-        .collect::<Vec<_>>();
+    let (delete_ids, payloads) = (
+        object_keys
+            .iter()
+            .map(|_| ImageComplex::gen_delete_id())
+            .collect::<Vec<_>>(),
+        object_keys
+            .into_iter()
+            .map(|object_key| {
+                TaskPayload::Image(image::ImagePayload::Delete { object_key })
+            })
+            .collect::<Vec<_>>(),
+    );
 
     let tasks = delete_ids
         .iter()
@@ -194,7 +195,7 @@ where
         return accept(());
     };
 
-    let chapter_info_update = ChapterInfoUpdate {
+    let chapter_info_update = ChapterPatch {
         id: chapter_info.id.clone(),
         subtitle: None,
         pin: Some(true),

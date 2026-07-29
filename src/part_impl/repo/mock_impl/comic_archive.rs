@@ -6,11 +6,11 @@ use poprako_orchestra::{Run, Step};
 use time::OffsetDateTime;
 use tracing::instrument;
 
-use crate::model::comic_archive::{
-    ComicArchiveChapterSnapshot, ComicArchiveEntry, ComicArchivePageSnapshot,
-    ComicArchiveSnapshot,
+use crate::model::read::proj::comic_archive::{
+    ComicArchiveChapterSnapshot, ComicArchivePageSnapshot, ComicArchiveSnapshot,
 };
 use crate::model::read::proj::unit::UnitInfo;
+use crate::model::write::comic_archive::ComicArchiveEntry;
 use crate::part::repo::oper::comic_archive::{
     CommitComicArchive, GetComicArchiveSnapshotExcluded,
     ListComicArchivePayloads,

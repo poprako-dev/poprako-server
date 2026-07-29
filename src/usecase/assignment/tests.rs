@@ -1,16 +1,17 @@
 use super::*;
-
-use crate::data::assignment::{
-    ListAssignmentInfosParams, UpdateAssignmentRolesParams,
+use crate::data::instr::assignment::{
+    ListAssignmentInfosInstr, UpdateAssignmentRolesInstr,
 };
-use crate::model::assignment::AssignmentInfo;
-use crate::model::chapter::ChapterInfo;
-use crate::model::comic::ComicInfo;
-use crate::model::member::MemberInfo;
-use crate::model::page::PageInfo;
-use crate::model::team::TeamInfo;
-use crate::model::user::{UserCredential, UserInfo, UserToken};
-use crate::model::workset::WorksetInfo;
+
+use crate::model::read::proj::assignment::AssignmentInfo;
+use crate::model::read::proj::chapter::ChapterInfo;
+use crate::model::read::proj::comic::ComicInfo;
+use crate::model::read::proj::member::MemberInfo;
+use crate::model::read::proj::page::PageInfo;
+use crate::model::read::proj::team::TeamInfo;
+use crate::model::read::proj::user::{UserCredential, UserInfo};
+use crate::model::read::proj::workset::WorksetInfo;
+use crate::model::shared::user::UserToken;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::test_util::now;
 use crate::value::chapter::{Stage, StageMask, StagePhase};
@@ -229,9 +230,9 @@ fn page(id: &str, chapter_id: &str, image_key: &str) -> PageInfo {
     }
 }
 
-// Build list params that filter by chapter id.
-fn list_by_chapter_data(chapter_id: &str) -> ListAssignmentInfosParams {
-    ListAssignmentInfosParams {
+// Build list instr that filter by chapter id.
+fn list_by_chapter_data(chapter_id: &str) -> ListAssignmentInfosInstr {
+    ListAssignmentInfosInstr {
         incl_opt: Vec::new(),
         chapter_id: Some(chapter_id.into()),
         owner_id: None,
@@ -241,9 +242,9 @@ fn list_by_chapter_data(chapter_id: &str) -> ListAssignmentInfosParams {
     }
 }
 
-// Build list params that filter by owner id.
-fn list_by_user_data(owner_id: &str) -> ListAssignmentInfosParams {
-    ListAssignmentInfosParams {
+// Build list instr that filter by owner id.
+fn list_by_user_data(owner_id: &str) -> ListAssignmentInfosInstr {
+    ListAssignmentInfosInstr {
         incl_opt: Vec::new(),
         chapter_id: None,
         owner_id: Some(owner_id.into()),
@@ -253,13 +254,13 @@ fn list_by_user_data(owner_id: &str) -> ListAssignmentInfosParams {
     }
 }
 
-// Build role-update params for assignment mutability tests.
+// Build role-update instr for assignment mutability tests.
 fn update_roles_data(
     chapter_id: &str,
     user_id: &str,
     role_mask: RoleMask,
-) -> UpdateAssignmentRolesParams {
-    UpdateAssignmentRolesParams {
+) -> UpdateAssignmentRolesInstr {
+    UpdateAssignmentRolesInstr {
         chapter_id: chapter_id.into(),
         user_id: user_id.into(),
         roles: role_mask,

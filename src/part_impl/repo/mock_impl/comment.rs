@@ -5,8 +5,10 @@ use std::cmp::Reverse;
 use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
-use crate::model::comment::{CommentEntry, CommentInfo, CommentListSpec};
-use crate::model::user::UserInfo;
+use crate::model::read::proj::comment::CommentInfo;
+use crate::model::read::proj::user::UserInfo;
+use crate::model::read::spec::comment::CommentListSpec;
+use crate::model::write::comment::CommentEntry;
 use crate::part::repo::oper::comment::{CreateComment, ListCommentInfos};
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,

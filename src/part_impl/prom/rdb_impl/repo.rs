@@ -518,13 +518,14 @@ where
 
         use diesel_async::RunQueryDsl;
 
-        let expired_completed = t_local_message::f_status
-            .eq(LocalMessageStatus::Completed.as_str())
-            .and(t_local_message::f_updated_at.lt(*oper.completed_before));
-
-        let expired_dead = t_local_message::f_status
-            .eq(LocalMessageStatus::Dead.as_str())
-            .and(t_local_message::f_updated_at.lt(*oper.dead_before));
+        let (expired_completed, expired_dead) = (
+            t_local_message::f_status
+                .eq(LocalMessageStatus::Completed.as_str())
+                .and(t_local_message::f_updated_at.lt(*oper.completed_before)),
+            t_local_message::f_status
+                .eq(LocalMessageStatus::Dead.as_str())
+                .and(t_local_message::f_updated_at.lt(*oper.dead_before)),
+        );
 
         let purged_count = diesel::delete(
             t_local_message::table.filter(expired_completed.or(expired_dead)),

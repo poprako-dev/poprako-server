@@ -6,7 +6,8 @@ use poprako_orchestra::{Run, Step};
 use time::OffsetDateTime;
 use tracing::instrument;
 
-use crate::model::workset::{WorksetEntry, WorksetInfo, WorksetInfoUpdate};
+use crate::model::read::proj::workset::WorksetInfo;
+use crate::model::write::workset::{WorksetEntry, WorksetRepl};
 use crate::part::repo::oper::workset::{
     AllocWorksetComicIndex, CreateWorkset, DeleteWorkset, GetWorksetInfo,
     GetWorksetInfoExcluded, ListWorksetInfos, ListWorksetInfosExcluded,
@@ -78,10 +79,7 @@ async fn list_infos(
 
 #[instrument(level = "info", err(Debug), skip_all)]
 // Update mutable metadata for an existing workset.
-async fn update_info(
-    conn: &mut RdbConn,
-    update: &WorksetInfoUpdate,
-) -> BaseRest<()> {
+async fn update_info(conn: &mut RdbConn, update: &WorksetRepl) -> BaseRest<()> {
     //
     // Build an aspect object and persist nickname/description updates with timestamp.
     let now = OffsetDateTime::now_utc();

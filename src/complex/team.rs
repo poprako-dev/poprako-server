@@ -114,11 +114,12 @@ impl TeamComplex {
         if let Some(avatar_key) = &team_info.avatar_key
             && team_info.is_avatar_uploaded
         {
-            let delete_id = ImageComplex::gen_delete_id();
-
-            let payload = TaskPayload::Image(image::ImagePayload::Delete {
-                object_key: avatar_key.clone(),
-            });
+            let (delete_id, payload) = (
+                ImageComplex::gen_delete_id(),
+                TaskPayload::Image(image::ImagePayload::Delete {
+                    object_key: avatar_key.clone(),
+                }),
+            );
 
             let task = Task {
                 id: &delete_id,

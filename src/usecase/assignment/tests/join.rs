@@ -3,8 +3,8 @@
 // join(join)(negative): user cannot join with roles outside team membership.
 
 use super::*;
+use crate::data::instr::assignment::JoinChapterAssignmentInstr;
 
-use crate::data::assignment::JoinChapterAssignmentParams;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
 
@@ -20,7 +20,7 @@ async fn join_creates_assignment() {
     let joined = join(
         (&mock, &mock),
         token("user-1"),
-        JoinChapterAssignmentParams {
+        JoinChapterAssignmentInstr {
             chapter_id: "chapter-1".into(),
             roles: role(RoleField::TRANSLATOR),
         },
@@ -57,7 +57,7 @@ async fn join_unions_existing_assignment_roles() {
     let joined = join(
         (&mock, &mock),
         token("user-1"),
-        JoinChapterAssignmentParams {
+        JoinChapterAssignmentInstr {
             chapter_id: "chapter-1".into(),
             roles: role(RoleField::PROOFREADER),
         },
@@ -87,7 +87,7 @@ async fn join_rejects_role_outside_member_mask() {
     let err = join(
         (&mock, &mock),
         token("user-1"),
-        JoinChapterAssignmentParams {
+        JoinChapterAssignmentInstr {
             chapter_id: "chapter-1".into(),
             roles: role(RoleField::PROOFREADER),
         },
@@ -120,7 +120,7 @@ async fn join_rejects_published_chapter() {
     let result = join(
         (&mock, &mock),
         token("user-1"),
-        JoinChapterAssignmentParams {
+        JoinChapterAssignmentInstr {
             chapter_id: "chapter-1".into(),
             roles: role(RoleField::TRANSLATOR),
         },

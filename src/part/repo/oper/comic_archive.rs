@@ -1,7 +1,8 @@
 use poprako_orchestra::Oper;
 use time::OffsetDateTime;
 
-use crate::model::comic_archive::{ComicArchiveEntry, ComicArchiveSnapshot};
+use crate::model::read::proj::comic_archive::ComicArchiveSnapshot;
+use crate::model::write::comic_archive::ComicArchiveEntry;
 use crate::value::comic_archive::ComicArchiveMonth;
 
 /// Lists archive JSON strings for selected retained month slots.

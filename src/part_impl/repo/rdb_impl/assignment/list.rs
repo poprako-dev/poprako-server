@@ -2,7 +2,8 @@ use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use tracing::instrument;
 
-use crate::model::assignment::{AssignmentInfo, AssignmentInfoListSpec};
+use crate::model::read::proj::assignment::AssignmentInfo;
+use crate::model::read::spec::assignment::AssignmentListSpec;
 use crate::part::repo::oper::assignment::ListAssignmentInfos;
 use crate::part_impl::repo::rdb_impl::entity::assignment::AssignmentRow;
 use crate::part_impl::repo::rdb_impl::incl;
@@ -25,7 +26,7 @@ pub async fn list_infos(
         //
         ListAssignmentInfos::Spec { spec } => match spec {
             //
-            AssignmentInfoListSpec::Chapter {
+            AssignmentListSpec::Chapter {
                 chapter_id,
                 role,
                 incl_opt,
@@ -40,7 +41,7 @@ pub async fn list_infos(
                     .into_boxed(),
             ),
 
-            AssignmentInfoListSpec::User {
+            AssignmentListSpec::User {
                 owner_id,
                 role,
                 incl_opt,

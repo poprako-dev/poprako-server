@@ -5,7 +5,7 @@
 #![deny(clippy::complexity)]
 #![deny(clippy::perf)]
 #![deny(clippy::unwrap_used)]
-// #![deny(clippy::expect_used)]
+#![deny(clippy::expect_used)]
 #![deny(clippy::panic)]
 #![deny(clippy::todo)]
 #![deny(clippy::unimplemented)]
@@ -38,7 +38,7 @@ use poprako_server::{
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     //
-    dotenvy::dotenv().expect(".env file should be valid");
+    dotenvy::dotenv().context(".env file should be valid")?;
 
     poprako_server::init_log();
 
@@ -48,21 +48,20 @@ async fn main() -> anyhow::Result<()> {
 
     let core = RdbCore::from_env()?;
 
-    let drive = RdbDrive::new(core.clone());
+    let (drive, repo, repo_effect) = (
+        RdbDrive::new(core.clone()),
+        RdbRepo::new(core.clone()),
+        Arc::new(RdbRepo::new(core.clone())),
+    );
 
-    let repo = RdbRepo::new(core.clone());
-
-    let repo_effect = Arc::new(RdbRepo::new(core.clone()));
-
-    let auth = JwtAuth::from_env()?;
-
-    let image_pool = R2ImagePool::from_env()?;
+    let (auth, image_pool) = (JwtAuth::from_env()?, R2ImagePool::from_env()?);
 
     let develop = AsyncEffectDevelop::new(repo_effect, 1024);
 
-    let prom = RdbProm::new(core.clone(), image_pool.clone(), develop.clone());
-
-    let sched = GeneralSched::new(core.clone());
+    let (prom, sched) = (
+        RdbProm::new(core.clone(), image_pool.clone(), develop.clone()),
+        GeneralSched::new(core.clone()),
+    );
 
     let harn: AppHarn = Harn::new(drive, repo, prom, auth, image_pool, develop);
 

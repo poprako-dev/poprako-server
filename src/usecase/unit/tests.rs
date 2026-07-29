@@ -4,19 +4,19 @@
 // save_edits(save_edits)(negative): translator revision edits are rejected and rolled back.
 
 use super::*;
+use crate::data::instr::unit::{
+    ListPageUnitInfosInstr, SavePageUnitEditsInstr, UnitCoordInstr,
+    UnitEditInstr, UnitRevisionInstr, UnitTranslationInstr,
+};
 
 use time::OffsetDateTime;
 
-use crate::data::unit::{
-    ListPageUnitInfosParams, SavePageUnitEditsParams, UnitCoordVal,
-    UnitEditVal, UnitRevisionVal, UnitTranslationVal,
-};
-use crate::model::assignment::AssignmentInfo;
-use crate::model::chapter::ChapterInfo;
-use crate::model::comic::ComicInfo;
-use crate::model::page::PageInfo;
-use crate::model::user::UserToken;
-use crate::model::workset::WorksetInfo;
+use crate::model::read::proj::assignment::AssignmentInfo;
+use crate::model::read::proj::chapter::ChapterInfo;
+use crate::model::read::proj::comic::ComicInfo;
+use crate::model::read::proj::page::PageInfo;
+use crate::model::read::proj::workset::WorksetInfo;
+use crate::model::shared::user::UserToken;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::{BaseError, ExpectedVariant};
 use crate::util::Patch;
@@ -32,7 +32,7 @@ async fn create_uses_token_identity_and_updates_counters() {
     save_edits(
         (&mock, &mock),
         token("translator-1"),
-        save_params(vec![create("local-1", None, Some("translated"))]),
+        save_instr(vec![create("local-1", None, Some("translated"))]),
     )
     .await
     .unwrap();
@@ -61,7 +61,7 @@ async fn delete_then_patch_restores_the_tombstone() {
     save_edits(
         (&mock, &mock),
         token("translator-1"),
-        save_params(vec![create("local-1", None, Some("text"))]),
+        save_instr(vec![create("local-1", None, Some("text"))]),
     )
     .await
     .unwrap();
@@ -71,7 +71,7 @@ async fn delete_then_patch_restores_the_tombstone() {
     save_edits(
         (&mock, &mock),
         token("translator-1"),
-        save_params(vec![UnitEditVal::Delete {
+        save_instr(vec![UnitEditInstr::Delete {
             id: unit_id.clone(),
         }]),
     )
@@ -85,7 +85,7 @@ async fn delete_then_patch_restores_the_tombstone() {
     save_edits(
         (&mock, &mock),
         token("translator-1"),
-        save_params(vec![UnitEditVal::Patch {
+        save_instr(vec![UnitEditInstr::Patch {
             id: unit_id,
             next_id: Patch::Skip,
             is_bubble: Some(false),
@@ -114,7 +114,7 @@ async fn translator_revision_edit_is_rejected_without_mutation() {
     save_edits(
         (&mock, &mock),
         token("translator-1"),
-        save_params(vec![create("local-1", None, Some("text"))]),
+        save_instr(vec![create("local-1", None, Some("text"))]),
     )
     .await
     .unwrap();
@@ -124,13 +124,13 @@ async fn translator_revision_edit_is_rejected_without_mutation() {
     let error = save_edits(
         (&mock, &mock),
         token("translator-1"),
-        save_params(vec![UnitEditVal::Patch {
+        save_instr(vec![UnitEditInstr::Patch {
             id: before.units[0].id.clone(),
             next_id: Patch::Skip,
             is_bubble: None,
             coord: None,
             translation: Patch::Skip,
-            revision: Patch::Assign(UnitRevisionVal {
+            revision: Patch::Assign(UnitRevisionInstr {
                 is_proofread: true,
                 proofread_text: Some("proofread".to_string()),
             }),
@@ -165,16 +165,16 @@ async fn proofreader_and_dual_role_apply_only_their_allowed_fields() {
     save_edits(
         (&proofreader, &proofreader),
         token("translator-1"),
-        save_params(vec![UnitEditVal::Create {
+        save_instr(vec![UnitEditInstr::Create {
             local_id: "proofreader-local".to_string(),
             next_id: None,
             is_bubble: true,
-            coord: UnitCoordVal {
+            coord: UnitCoordInstr {
                 x_coord: 1.0,
                 y_coord: 2.0,
             },
             translation: None,
-            revision: Some(UnitRevisionVal {
+            revision: Some(UnitRevisionInstr {
                 is_proofread: true,
                 proofread_text: Some("proofread".to_string()),
             }),
@@ -198,18 +198,18 @@ async fn proofreader_and_dual_role_apply_only_their_allowed_fields() {
     save_edits(
         (&dual, &dual),
         token("translator-1"),
-        save_params(vec![UnitEditVal::Create {
+        save_instr(vec![UnitEditInstr::Create {
             local_id: "dual-local".to_string(),
             next_id: None,
             is_bubble: true,
-            coord: UnitCoordVal {
+            coord: UnitCoordInstr {
                 x_coord: 1.0,
                 y_coord: 2.0,
             },
-            translation: Some(UnitTranslationVal {
+            translation: Some(UnitTranslationInstr {
                 translated_text: "translated".to_string(),
             }),
-            revision: Some(UnitRevisionVal {
+            revision: Some(UnitRevisionInstr {
                 is_proofread: true,
                 proofread_text: Some("proofread".to_string()),
             }),
@@ -233,7 +233,7 @@ async fn concurrent_same_anchor_inserts_preserve_all_nodes() {
     save_edits(
         (&mock, &mock),
         token("translator-1"),
-        save_params(vec![create("anchor-local", None, Some("anchor"))]),
+        save_instr(vec![create("anchor-local", None, Some("anchor"))]),
     )
     .await
     .unwrap();
@@ -248,7 +248,7 @@ async fn concurrent_same_anchor_inserts_preserve_all_nodes() {
         save_edits(
             (&first_mock, &first_mock),
             token("translator-1"),
-            save_params(vec![create(
+            save_instr(vec![create(
                 "first-local",
                 Some(first_anchor),
                 Some("first"),
@@ -263,7 +263,7 @@ async fn concurrent_same_anchor_inserts_preserve_all_nodes() {
         save_edits(
             (&second_mock, &second_mock),
             token("translator-1"),
-            save_params(vec![create(
+            save_instr(vec![create(
                 "second-local",
                 Some(anchor_id),
                 Some("second"),
@@ -279,7 +279,7 @@ async fn concurrent_same_anchor_inserts_preserve_all_nodes() {
     let listed = list_infos(
         (&mock,),
         token("translator-1"),
-        ListPageUnitInfosParams {
+        ListPageUnitInfosInstr {
             page_id: "page-1".to_string(),
         },
     )
@@ -294,9 +294,9 @@ async fn concurrent_same_anchor_inserts_preserve_all_nodes() {
     );
 }
 
-// Build save request params for a fixed page id.
-fn save_params(edits: Vec<UnitEditVal>) -> SavePageUnitEditsParams {
-    SavePageUnitEditsParams {
+// Build save request instr for a fixed page id.
+fn save_instr(edits: Vec<UnitEditInstr>) -> SavePageUnitEditsInstr {
+    SavePageUnitEditsInstr {
         page_id: "page-1".to_string(),
         edits,
     }
@@ -307,16 +307,16 @@ fn create(
     local_id: &str,
     next_id: Option<String>,
     translated_text: Option<&str>,
-) -> UnitEditVal {
-    UnitEditVal::Create {
+) -> UnitEditInstr {
+    UnitEditInstr::Create {
         local_id: local_id.to_string(),
         next_id,
         is_bubble: true,
-        coord: UnitCoordVal {
+        coord: UnitCoordInstr {
             x_coord: 1.0,
             y_coord: 2.0,
         },
-        translation: translated_text.map(|text| UnitTranslationVal {
+        translation: translated_text.map(|text| UnitTranslationInstr {
             translated_text: text.to_string(),
         }),
         revision: None,

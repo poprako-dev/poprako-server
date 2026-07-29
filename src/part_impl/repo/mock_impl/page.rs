@@ -2,7 +2,8 @@
 
 use std::collections::HashMap;
 
-use crate::model::page::{PageEntry, PageInfo};
+use crate::model::read::proj::page::PageInfo;
+use crate::model::write::page::PageEntry;
 use crate::part_impl::repo::mock_impl::{MockState, expected, now};
 use crate::result::BaseRest;
 

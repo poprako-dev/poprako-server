@@ -1,6 +1,6 @@
 //! Authentication token port.
 
-use crate::model::user::UserToken;
+use crate::model::shared::user::UserToken;
 use crate::result::BaseRest;
 
 /// Signs and verifies authentication tokens for user sessions.

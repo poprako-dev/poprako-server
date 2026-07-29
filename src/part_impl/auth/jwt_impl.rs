@@ -10,7 +10,7 @@ use tracing::instrument;
 
 use poprako_util::i18n::trl;
 
-use crate::model::user::UserToken;
+use crate::model::shared::user::UserToken;
 use crate::part::auth::TokenAuth;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
@@ -46,9 +46,10 @@ impl JwtAuth {
 
         let expiration_seconds = expiration_hours * 3600;
 
-        let encoding_key = EncodingKey::from_secret(secret.as_bytes());
-
-        let decoding_key = DecodingKey::from_secret(secret.as_bytes());
+        let (encoding_key, decoding_key) = (
+            EncodingKey::from_secret(secret.as_bytes()),
+            DecodingKey::from_secret(secret.as_bytes()),
+        );
 
         accept(Self {
             expiration_seconds,

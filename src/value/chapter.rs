@@ -20,6 +20,7 @@ mod tests;
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(rename_all = "kebab-case")]
 pub enum StagePhase {
+    //
     /// The stage has not started yet.
     Pending,
 
@@ -35,6 +36,7 @@ pub enum StagePhase {
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(rename_all = "kebab-case")]
 pub enum Stage {
+    //
     /// Raw provide phase.
     RawProvide,
 
@@ -75,6 +77,7 @@ pub fn is_valid_stage_phase(stage: Stage, phase: StagePhase) -> bool {
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(rename_all = "kebab-case")]
 pub enum StageOper {
+    //
     /// Advance to the next phase.
     Advance,
 
@@ -486,11 +489,12 @@ impl From<StageMask> for u32 {
 /// Incl opts for chapter info queries.
 ///
 /// Each opt embeds additional related data into the returned
-/// `ChapterInfoVal`. Dotted opts implicitly pull in the segments before the
+/// `ChapterInfoView`. Dotted opts implicitly pull in the segments before the
 /// dot (e.g. `comic.workset.team` also embeds `comic` and `comic.workset`).
 #[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub enum ChapterInclOpt {
+    //
     /// Embed the parent comic (`comic`).
     #[serde(rename = "comic")]
     Comic,

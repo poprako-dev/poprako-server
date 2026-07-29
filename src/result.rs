@@ -7,6 +7,7 @@ use poprako_orchestra::nucl::Error as NuclError;
 /// Categorizes an expected application error by its origin domain.
 #[derive(Debug)]
 pub enum ExpectedVariant {
+    //
     /// Invalid or missing arguments.
     Args,
 
@@ -22,6 +23,7 @@ pub enum ExpectedVariant {
 /// an unrecoverable system-level failure.
 #[derive(Debug)]
 pub enum Error {
+    //
     /// An expected application condition — the error can be communicated to the client.
     Expected {
         //

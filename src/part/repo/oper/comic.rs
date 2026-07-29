@@ -1,8 +1,9 @@
 use poprako_orchestra::Oper;
 
-use crate::model::comic::{
-    ComicCoverReservation, ComicEntry, ComicInfo, ComicInfoListSpec,
-    ComicInfoUpdate,
+use crate::model::read::proj::comic::ComicInfo;
+use crate::model::read::spec::comic::ComicListSpec;
+use crate::model::write::comic::{
+    ComicCoverReservation, ComicEntry, ComicRepl,
 };
 use crate::value::comic::ComicInclOpt;
 use crate::value::image::{ImageExt, ImageHash};
@@ -31,7 +32,7 @@ pub struct GetComicInfo<'a, 'b> {
 #[oper(output = Vec<ComicInfo>)]
 pub struct ListComicInfos<'a> {
     /// The filter and pagination specification.
-    pub spec: &'a ComicInfoListSpec,
+    pub spec: &'a ComicListSpec,
 }
 
 /// Retrieves a single comic's info with excluded relations omitted.
@@ -50,7 +51,7 @@ pub struct GetComicInfoExcluded<'a, 'b> {
 #[oper(output = Vec<ComicInfo>)]
 pub struct ListComicInfosExcluded<'a> {
     /// The filter and pagination specification.
-    pub spec: &'a ComicInfoListSpec,
+    pub spec: &'a ComicListSpec,
 }
 
 /// Updates an existing comic's fields.
@@ -58,7 +59,7 @@ pub struct ListComicInfosExcluded<'a> {
 #[oper(output = ())]
 pub struct UpdateComic<'a> {
     /// The update payload.
-    pub update: &'a ComicInfoUpdate,
+    pub update: &'a ComicRepl,
 }
 
 /// Reserves a cover image slot for a comic.

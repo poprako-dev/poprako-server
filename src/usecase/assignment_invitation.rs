@@ -11,17 +11,17 @@ use poprako_util::i18n::trl;
 
 use crate::complex::assignment::AssignmentComplex;
 use crate::complex::chapter::ChapterComplex;
-use crate::data::assignment::AssignmentInfoVal;
-use crate::data::assignment_invitation::{
-    AssignmentInvitationInfoVal, CreateAssignmentInvitationParams,
-    CreateAssignmentInvitationPayload, JoinAssignmentInvitationParams,
-    ListAssignmentInvitationInfosParams,
+use crate::data::instr::assignment_invitation::{
+    CreateAssignmentInvitationInstr, JoinAssignmentInvitationInstr,
+    ListAssignmentInvitationInfosInstr,
 };
-use crate::model::assignment::AssignmentEntry;
-use crate::model::assignment_invitation::{
-    AssignmentInvitationEntry, AssignmentInvitationListSpec,
-};
-use crate::model::user::UserToken;
+use crate::data::val::assignment_invitation::CreateAssignmentInvitationVal;
+use crate::data::view::assignment::AssignmentInfoView;
+use crate::data::view::assignment_invitation::AssignmentInvitationInfoView;
+use crate::model::read::spec::assignment_invitation::AssignmentInvitationListSpec;
+use crate::model::shared::user::UserToken;
+use crate::model::write::assignment::AssignmentEntry;
+use crate::model::write::assignment_invitation::AssignmentInvitationEntry;
 use crate::part::image::ImagePool;
 use crate::part::prom::Prom;
 use crate::part::prom::payload::TaskPayload;
@@ -63,14 +63,14 @@ const EXPIRY_DELAY: Duration = Duration::from_secs(3 * 24 * 60 * 60);
 pub async fn list_infos<C, R>(
     (repo,): (&R,),
     token: UserToken,
-    params: ListAssignmentInvitationInfosParams,
-) -> BaseRest<Vec<AssignmentInvitationInfoVal>>
+    instr: ListAssignmentInvitationInfosInstr,
+) -> BaseRest<Vec<AssignmentInvitationInfoView>>
 where
     R: AssignmentInvitationRepo<C> + AssignmentRepo<C> + Sync,
 {
-    ensure_user_admin(repo, &token.user_id, &params.chapter_id).await?;
+    ensure_user_admin(repo, &token.user_id, &instr.chapter_id).await?;
 
-    let status = match params.is_pending {
+    let status = match instr.is_pending {
         //
         Some(true) => AssignmentInvitationStatus::Pending,
 
@@ -80,10 +80,10 @@ where
     };
 
     let assignment_invitation_list_spec = AssignmentInvitationListSpec {
-        chapter_id: params.chapter_id,
+        chapter_id: instr.chapter_id,
         status,
-        offset: params.offset,
-        limit: params.limit,
+        offset: instr.offset,
+        limit: instr.limit,
     };
 
     let assignment_invitation_infos = ListAssignmentInvitationInfos {
@@ -95,7 +95,7 @@ where
     accept(
         assignment_invitation_infos
             .into_iter()
-            .map(AssignmentInvitationInfoVal::from)
+            .map(AssignmentInvitationInfoView::from)
             .collect(),
     )
 }
@@ -105,8 +105,8 @@ where
 pub async fn create<N, C, R, P>(
     (nucl, repo, prom): (&N, &R, &P),
     token: UserToken,
-    params: CreateAssignmentInvitationParams,
-) -> BaseRest<CreateAssignmentInvitationPayload>
+    instr: CreateAssignmentInvitationInstr,
+) -> BaseRest<CreateAssignmentInvitationVal>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -118,15 +118,15 @@ where
         + Sync,
     P: Prom<C> + Send + Sync,
 {
-    validate_roles(params.roles)?;
+    validate_roles(instr.roles)?;
 
-    ensure_user_admin(repo, &token.user_id, &params.chapter_id).await?;
+    ensure_user_admin(repo, &token.user_id, &instr.chapter_id).await?;
 
     let (assignment_invitation_id, code) = nucl
         .coord(async move |context| {
             //
             let chapter_info = GetChapterInfoExcluded {
-                id: &params.chapter_id,
+                id: &instr.chapter_id,
                 incls: &[],
             }
             .step_on(repo, context)
@@ -135,7 +135,7 @@ where
             ChapterComplex::ensure_chapter_writable(&chapter_info)?;
 
             let invitee_user_info = FindUserInfo::Qid {
-                qid: &params.invitee_qid,
+                qid: &instr.invitee_qid,
             }
             .step_on(repo, context)
             .await?;
@@ -145,7 +145,7 @@ where
 
                 let existing_assignment_info =
                     FindAssignmentInfo::ChapterUser {
-                        chapter_id: &params.chapter_id,
+                        chapter_id: &instr.chapter_id,
                         user_id: &invitee_user_info.id,
                     }
                     .step_on(repo, context)
@@ -156,17 +156,16 @@ where
                 }
             }
 
-            let assignment_invitation_id = gen_assignment_invitation_id();
-
-            let code = gen_code();
+            let (assignment_invitation_id, code) =
+                (gen_assignment_invitation_id(), gen_code());
 
             let assignment_invitation_entry = AssignmentInvitationEntry {
                 id: assignment_invitation_id,
-                chapter_id: params.chapter_id,
+                chapter_id: instr.chapter_id,
                 inviter_id: token.user_id,
-                invitee_qid: params.invitee_qid,
+                invitee_qid: instr.invitee_qid,
                 code,
-                roles: params.roles,
+                roles: instr.roles,
             };
 
             let assignment_invitation_info = CreateAssignmentInvitation {
@@ -179,9 +178,8 @@ where
                 invitation_id: assignment_invitation_info.id.clone(),
             };
 
-            let purge_payload = TaskPayload::Invitation(purge_event);
-
-            let purge_task_id = next_snowflake_id();
+            let (purge_payload, purge_task_id) =
+                (TaskPayload::Invitation(purge_event), next_snowflake_id());
 
             let purge_task = Task {
                 id: &purge_task_id,
@@ -198,7 +196,7 @@ where
         })
         .await?;
 
-    accept(CreateAssignmentInvitationPayload {
+    accept(CreateAssignmentInvitationVal {
         id: assignment_invitation_id,
         code,
     })
@@ -246,14 +244,14 @@ where
 #[instrument(
     level = "info",
     err(Debug),
-    skip(nucl, repo, image_pool, params),
+    skip(nucl, repo, image_pool, instr),
     fields(code = "[REDACTED]")
 )]
 pub async fn join<N, C, R, I>(
     (nucl, repo, image_pool): (&N, &R, &I),
     token: UserToken,
-    params: JoinAssignmentInvitationParams,
-) -> BaseRest<AssignmentInfoVal>
+    instr: JoinAssignmentInvitationInstr,
+) -> BaseRest<AssignmentInfoView>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -281,7 +279,7 @@ where
             .await?;
 
             let assignment_invitation_info =
-                GetAssignmentInvitationInfoExcluded { code: &params.code }
+                GetAssignmentInvitationInfoExcluded { code: &instr.code }
                     .step_on(repo, context)
                     .await?;
 
@@ -383,7 +381,7 @@ where
         })
         .await?;
 
-    AssignmentInfoVal::from_model(image_pool, assignment_info, None).await
+    AssignmentInfoView::from_model(image_pool, assignment_info, None).await
 }
 
 // Verifies that the current user is assigned as a chapter administrator.

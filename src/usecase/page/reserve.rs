@@ -14,12 +14,11 @@ use crate::complex::chapter::ChapterComplex;
 use crate::complex::image::ImageComplex;
 use crate::complex::page::manifest::build;
 use crate::complex::page::{PageComplex, PagePermComplex};
-use crate::data::image::ImageUploadSlotVal;
-use crate::data::page::{
-    ReserveChapterPagesParams, ReserveChapterPagesPayload, ReservedPagePayload,
-};
-use crate::model::page::{PageEntry, PageImageSpec, PageManifestUpdate};
-use crate::model::user::UserToken;
+use crate::data::instr::page::ReserveChapterPagesInstr;
+use crate::data::val::page::{ReserveChapterPagesVal, ReservedPageVal};
+use crate::data::view::image::ImageUploadSlotView;
+use crate::model::shared::user::UserToken;
+use crate::model::write::page::{PageEntry, PageImageSpec, PageManifestRepl};
 use crate::part::image::{ImagePool, ImageUploadSpec};
 use crate::part::prom::Prom;
 use crate::part::prom::payload::chapter::ChapterPayload;
@@ -63,8 +62,8 @@ pub fn validate_page_count(page_count: i32) -> BaseRest<()> {
 pub async fn reserve_chapter_pages<N, C, R, P, I>(
     (nucl, repo, prom, image_pool): (&N, &R, &P, &I),
     token: UserToken,
-    params: ReserveChapterPagesParams,
-) -> BaseRest<ReserveChapterPagesPayload>
+    instr: ReserveChapterPagesInstr,
+) -> BaseRest<ReserveChapterPagesVal>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -77,7 +76,7 @@ where
     P: Prom<C> + Send + Sync,
     I: ImagePool,
 {
-    let ReserveChapterPagesParams { chapter_id, pages } = params;
+    let ReserveChapterPagesInstr { chapter_id, pages } = instr;
 
     let page_specs = pages
         .into_iter()
@@ -186,19 +185,15 @@ where
             .step_on(repo, context)
             .await?;
 
-            let mut page_entries =
-                Vec::with_capacity(page_count as usize);
-
-            let mut reservations =
-                Vec::with_capacity(page_count as usize);
+            let (mut page_entries, mut reservations) = (
+                Vec::with_capacity(page_count as usize),
+                Vec::with_capacity(page_count as usize),
+            );
 
             let mut delete_object_keys = Vec::new();
 
-            let mut total_unit_count = 0;
-
-            let mut translated_unit_count = 0;
-
-            let mut proofread_unit_count = 0;
+            let (mut total_unit_count, mut translated_unit_count, mut proofread_unit_count) =
+                (0, 0, 0);
 
             for (raw_index, page_spec) in page_specs.iter().enumerate() {
                 //
@@ -269,7 +264,7 @@ where
                         delete_object_keys.push(object_key.clone());
                     }
 
-                    let page_manifest_update = PageManifestUpdate {
+                    let page_manifest_update = PageManifestRepl {
                         id: existing_page_info.id.clone(),
                         index,
                         image_key: image_key.clone(),
@@ -321,9 +316,7 @@ where
                     }
                 })?;
 
-                let page_id = PageComplex::gen_id();
-
-                let image_version = 1;
+                let (page_id, image_version) = (PageComplex::gen_id(), 1);
 
                 let object_key = PageComplex::gen_image_key(
                     &chapter_info.id,
@@ -386,11 +379,11 @@ where
             .step_on(repo, context)
             .await?;
 
-            let mut task_ids = Vec::new();
-
-            let mut task_payloads = Vec::new();
-
-            let mut task_delays = Vec::new();
+            let (mut task_ids, mut task_payloads, mut task_delays) = (
+                Vec::new(),
+                Vec::new(),
+                Vec::new(),
+            );
 
             for object_key in &delete_object_keys {
                 //
@@ -448,12 +441,12 @@ where
             .step_on(repo, context)
             .await?;
 
-            let advance_id = next_snowflake_id();
-
-            let advance_payload =
+            let (advance_id, advance_payload) = (
+                next_snowflake_id(),
                 TaskPayload::Chapter(ChapterPayload::TryAdvanceRawProvideStage {
                     chapter_id: chapter_info.id.clone(),
-                });
+                }),
+            );
 
             let advance_task = Task {
                 id: &advance_id,
@@ -489,7 +482,7 @@ where
                     let upload_target =
                         image_pool.get_upload_slot(upload_spec).await?;
 
-                    Some(ImageUploadSlotVal {
+                    Some(ImageUploadSlotView {
                         put_url: upload_target.url.to_string(),
                         image_version: reservation.image_version,
                         headers: upload_target.headers,
@@ -499,7 +492,7 @@ where
                 None => None,
             };
 
-            accept(ReservedPagePayload {
+            accept(ReservedPageVal {
                 page_id: reservation.page_id,
                 index: reservation.index,
                 image_hash: reservation.image_hash,
@@ -512,5 +505,5 @@ where
     .into_iter()
     .collect::<BaseRest<Vec<_>>>()?;
 
-    accept(ReserveChapterPagesPayload { pages })
+    accept(ReserveChapterPagesVal { pages })
 }

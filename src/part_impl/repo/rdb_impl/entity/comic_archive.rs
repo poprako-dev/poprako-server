@@ -3,7 +3,7 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::model::comic_archive::ComicArchiveRecord;
+use crate::model::read::proj::comic_archive::ComicArchiveRecord;
 use crate::part_impl::repo::rdb_impl::schema::t_comic_archive;
 
 /// Insertable row for `t_comic_archive`.

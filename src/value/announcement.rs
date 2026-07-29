@@ -10,7 +10,7 @@ use crate::value::incl::InclOpt;
 /// Incl opts for announcement info queries.
 ///
 /// Each opt embeds additional related data into the returned
-/// `AnnouncementInfoVal`.
+/// `AnnouncementInfoView`.
 #[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(rename_all = "snake_case")]

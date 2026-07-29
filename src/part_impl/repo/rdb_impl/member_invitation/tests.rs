@@ -4,9 +4,8 @@ use super::*;
 
 use poprako_orchestra::Nucl as _;
 
-use crate::model::member_invitation::{
-    MemberInvitationEntry, MemberInvitationListSpec,
-};
+use crate::model::read::spec::member_invitation::MemberInvitationListSpec;
+use crate::model::write::member_invitation::MemberInvitationEntry;
 use crate::part::repo::oper::member_invitation::{
     CreateMemberInvitation, ListMemberInvitationInfos, UpdateMemberInvitation,
 };
@@ -14,8 +13,9 @@ use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
 use crate::part_impl::shared::RdbCore;
 use crate::result::BaseError;
-use crate::value::member_invitation::MemberInvitationInclOpt;
-use crate::value::member_invitation::MemberInvitationStatus;
+use crate::value::member_invitation::{
+    MemberInvitationInclOpt, MemberInvitationStatus,
+};
 use crate::value::role::{RoleField, RoleMask};
 
 const PREFIX: &str = "rdb-test-member-invitation-domain-";

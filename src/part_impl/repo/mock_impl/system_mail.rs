@@ -5,9 +5,9 @@ use std::cmp::Reverse;
 use poprako_orchestra::Run;
 use tracing::instrument;
 
-use crate::model::system_mail::{
-    SystemMailEntry, SystemMailInfo, SystemMailInfoListKind,
-};
+use crate::model::read::proj::system_mail::SystemMailInfo;
+use crate::model::read::spec::system_mail::SystemMailListKind;
+use crate::model::write::system_mail::SystemMailEntry;
 use crate::part::repo::oper::system_mail::{
     ListSystemMailInfos, MarkSystemMailRead, SendSystemMail, SendSystemMails,
 };
@@ -96,13 +96,13 @@ fn list_system_mail_infos(
             system_mail_info.receiver_id == oper.spec.receiver_id
                 && match &oper.spec.kind {
                     //
-                    // Internal state field `SystemMailInfoListKind`.
+                    // Internal state field `SystemMailListKind`.
                     // Internal implementation detail.
-                    SystemMailInfoListKind::All => true,
+                    SystemMailListKind::All => true,
 
-                    SystemMailInfoListKind::Read => system_mail_info.is_read,
+                    SystemMailListKind::Read => system_mail_info.is_read,
 
-                    SystemMailInfoListKind::Unread => !system_mail_info.is_read,
+                    SystemMailListKind::Unread => !system_mail_info.is_read,
                 }
         })
         .cloned()

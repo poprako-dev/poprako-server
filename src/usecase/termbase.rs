@@ -6,12 +6,14 @@ use poprako_orchestra::{
 use tracing::instrument;
 
 use crate::complex::termbase::{TermbaseComplex, TermbasePermComplex};
-use crate::data::termbase::{
-    CreateTermbaseParams, CreateTermbasePayload, ListComicTermbaseInfosParams,
-    ListTeamTermbaseInfosParams, TermbaseInfoVal, UpdateTermbaseInfoParams,
+use crate::data::instr::termbase::{
+    CreateTermbaseInstr, ListComicTermbaseInfosInstr,
+    ListTeamTermbaseInfosInstr, UpdateTermbaseInfoInstr,
 };
-use crate::model::termbase::TermbaseInfoListSpec;
-use crate::model::user::UserToken;
+use crate::data::val::termbase::CreateTermbaseVal;
+use crate::data::view::termbase::TermbaseInfoView;
+use crate::model::read::spec::termbase::TermbaseListSpec;
+use crate::model::shared::user::UserToken;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::comic::{GetComicInfo, GetComicInfoExcluded};
@@ -39,8 +41,8 @@ mod tests;
 pub async fn create<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
-    params: CreateTermbaseParams,
-) -> BaseRest<CreateTermbasePayload>
+    instr: CreateTermbaseInstr,
+) -> BaseRest<CreateTermbaseVal>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -53,10 +55,10 @@ where
         + Sync,
 {
     let termbase_entry = TermbaseComplex::build_entry(
-        params.team_id,
-        params.comic_id,
-        params.name,
-        params.description,
+        instr.team_id,
+        instr.comic_id,
+        instr.name,
+        instr.description,
         token.user_id.clone(),
     )?;
 
@@ -114,7 +116,7 @@ where
         })
         .await?;
 
-    accept(CreateTermbasePayload { id: termbase_id })
+    accept(CreateTermbaseVal { id: termbase_id })
 }
 
 /// Fetches a terminology base by ID.
@@ -123,7 +125,7 @@ pub async fn get_info<C, R>(
     (repo,): (&R,),
     token: UserToken,
     id: String,
-) -> BaseRest<TermbaseInfoVal>
+) -> BaseRest<TermbaseInfoView>
 where
     R: TermbaseRepo<C> + ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
 {
@@ -149,8 +151,8 @@ where
 pub async fn list_team_infos<C, R>(
     (repo,): (&R,),
     token: UserToken,
-    params: ListTeamTermbaseInfosParams,
-) -> BaseRest<Vec<TermbaseInfoVal>>
+    instr: ListTeamTermbaseInfosInstr,
+) -> BaseRest<Vec<TermbaseInfoView>>
 where
     R: TermbaseRepo<C> + MemberRepo<C> + Sync,
 {
@@ -159,15 +161,15 @@ where
             repo => for<'a> FindMemberInfo<'a>;
         },
         &token.user_id,
-        &params.team_id,
+        &instr.team_id,
     )
     .await?;
 
-    let termbase_info_list_spec = TermbaseInfoListSpec::Team {
-        team_id: params.team_id,
-        fuzzy_name: TermbaseComplex::normalize_fuzzy_name(params.fuzzy_name),
-        offset: params.offset,
-        limit: params.limit,
+    let termbase_info_list_spec = TermbaseListSpec::Team {
+        team_id: instr.team_id,
+        fuzzy_name: TermbaseComplex::normalize_fuzzy_name(instr.fuzzy_name),
+        offset: instr.offset,
+        limit: instr.limit,
     };
 
     let termbase_infos = ListTermbaseInfos {
@@ -184,8 +186,8 @@ where
 pub async fn list_comic_infos<C, R>(
     (repo,): (&R,),
     token: UserToken,
-    params: ListComicTermbaseInfosParams,
-) -> BaseRest<Vec<TermbaseInfoVal>>
+    instr: ListComicTermbaseInfosInstr,
+) -> BaseRest<Vec<TermbaseInfoView>>
 where
     R: TermbaseRepo<C> + ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
 {
@@ -196,7 +198,7 @@ where
                 for<'a> GetWorksetInfo<'a>,
                 for<'a> FindMemberInfo<'a>;
         },
-        &params.comic_id,
+        &instr.comic_id,
     )
     .await?;
 
@@ -212,12 +214,12 @@ where
     )
     .await?;
 
-    let termbase_info_list_spec = TermbaseInfoListSpec::Comic {
+    let termbase_info_list_spec = TermbaseListSpec::Comic {
         team_id,
-        comic_id: params.comic_id,
-        fuzzy_name: TermbaseComplex::normalize_fuzzy_name(params.fuzzy_name),
-        offset: params.offset,
-        limit: params.limit,
+        comic_id: instr.comic_id,
+        fuzzy_name: TermbaseComplex::normalize_fuzzy_name(instr.fuzzy_name),
+        offset: instr.offset,
+        limit: instr.limit,
     };
 
     let termbase_infos = ListTermbaseInfos {
@@ -234,7 +236,7 @@ where
 pub async fn update_info<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
-    params: UpdateTermbaseInfoParams,
+    instr: UpdateTermbaseInfoInstr,
 ) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
@@ -246,11 +248,8 @@ where
         + Send
         + Sync,
 {
-    let termbase_info_update = TermbaseComplex::build_update(
-        params.id,
-        params.name,
-        params.description,
-    )?;
+    let termbase_info_update =
+        TermbaseComplex::build_update(instr.id, instr.name, instr.description)?;
 
     nucl.coord(async move |context| {
         //

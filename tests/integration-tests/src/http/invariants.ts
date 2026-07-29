@@ -18,13 +18,13 @@ import {
 } from "./fixtures.js";
 import type { ApiClient } from "./apiClient.js";
 import type {
-    ChapterInfoVal,
-    ComicInfoVal,
-    MemberInfoVal,
-    PageInfoVal,
-    SystemMailInfoVal,
-    UnitInfoVal,
-    WorksetInfoVal,
+    ChapterInfoView,
+    ComicInfoView,
+    MemberInfoView,
+    PageInfoView,
+    SystemMailInfoView,
+    UnitInfoView,
+    WorksetInfoView,
 } from "./types.js";
 import type { StageName } from "../state/stages.js";
 
@@ -277,7 +277,7 @@ export async function assertPageExportInvariant(
     assert.ok(exportPage, `export missing page ${pageId}`);
 
     // unit ids must match exactly between list and export
-    const listIds = new Set(units.unit_infos.map((unit: UnitInfoVal) => unit.id));
+    const listIds = new Set(units.unit_infos.map((unit: UnitInfoView) => unit.id));
     const exportIds = new Set(exportPage.units.map((unit) => unit.unit_id));
 
     assert.deepEqual(
@@ -297,7 +297,7 @@ export async function assertPageExportInvariant(
 // Assert every workflow stage in the chapter `stages` mask is consistent with
 // the pipeline ordering: a stage may be Completed only if every earlier stage
 // is Completed; one-shot stages never report Active.
-export function assertStagesPipelineConsistent(chapter: ChapterInfoVal): void {
+export function assertStagesPipelineConsistent(chapter: ChapterInfoView): void {
     let prevCompleted = true;
 
     for (const stage of ["raw-provide", "translate", "proofread", "typeset-redraw", "review", "publish"] as StageName[]) {
@@ -374,7 +374,7 @@ export async function assertSubtreeInvariants(
 
 // Convenience: verify a list of members has unique (user_id, team_id) pairs
 // and every member carries the required fields.
-export function assertMemberListWellFormed(members: MemberInfoVal[]): void {
+export function assertMemberListWellFormed(members: MemberInfoView[]): void {
     const keys = new Set<string>();
 
     for (const member of members) {
@@ -397,7 +397,7 @@ export async function assertChapterPageCountersConsistent(
     chapterId: string,
 ): Promise<void> {
     const chapter = await getChapter(api, chapterId);
-    const pages: PageInfoVal[] = await listChapterPages(api, chapterId);
+    const pages: PageInfoView[] = await listChapterPages(api, chapterId);
 
     assert.equal(chapter.page_count, pages.length);
 
@@ -412,4 +412,4 @@ export async function assertChapterPageCountersConsistent(
 
 // Re-export the value-types this module's helpers expose in their signatures,
 // so callers can import them alongside the invariant functions.
-export type { ComicInfoVal, SystemMailInfoVal, WorksetInfoVal };
+export type { ComicInfoView, SystemMailInfoView, WorksetInfoView };

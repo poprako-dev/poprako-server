@@ -6,7 +6,7 @@
 # ]
 # ///
 
-"""Enforce domain-qualified Params, Payload, and serde Val data type names."""
+"""Enforce domain-qualified Instr, Val, and View data type names."""
 
 from __future__ import annotations
 
@@ -24,7 +24,8 @@ from production_source import production_source
 
 DEFAULT_ROOT = Path(__file__).parents[2]
 LAYER = "data"
-ROLE_SUFFIXES = ("Params", "Payload", "Val")
+ROLES = ("instr", "val", "view")
+ROLE_SUFFIXES = {"instr": "Instr", "val": "Val", "view": "View"}
 ACTION_PREFIXES = (
     "Archive",
     "Create",
@@ -44,7 +45,11 @@ PARSER = tree_sitter.Parser(tree_sitter.Language(tree_sitter_rust.language()))
 
 
 def rust_files(root: Path) -> list[Path]:
-    return sorted((root / "src" / LAYER).rglob("*.rs"))
+    return sorted(
+        path
+        for role in ROLES
+        for path in (root / "src" / LAYER / role).glob("*.rs")
+    )
 
 
 def pascal_name(module: str) -> str:
@@ -56,9 +61,14 @@ def pascal_name(module: str) -> str:
 def domain_names(root: Path) -> set[str]:
     modules = {
         path.stem
-        for layer in ("model", "data")
+        for layer in ("model",)
         for path in (root / "src" / layer).glob("*.rs")
     }
+    modules.update(
+        path.stem
+        for role in ROLES
+        for path in (root / "src" / LAYER / role).glob("*.rs")
+    )
 
     return {pascal_name(module) for module in modules}
 
@@ -84,10 +94,18 @@ def is_public(declaration: tree_sitter.Node, name: tree_sitter.Node, source: byt
     return prefix.startswith(b"pub")
 
 
+def role_and_domain(path: Path, root: Path) -> tuple[str, str]:
+    relative = path.relative_to(root).parts
+    role_index = relative.index(LAYER)
+
+    return relative[role_index + 1], pascal_name(path.stem)
+
+
 def check_file(path: Path, root: Path, domains: set[str]) -> list[str]:
     source = production_source(path, root)
     tree = PARSER.parse(source)
-    source_domain = pascal_name(path.stem)
+    role, source_domain = role_and_domain(path, root)
+    expected_suffix = ROLE_SUFFIXES[role]
     diagnostics: list[str] = []
 
     for declaration in descendants(tree.root_node, DECLARATION_KINDS):
@@ -108,14 +126,9 @@ def check_file(path: Path, root: Path, domains: set[str]) -> list[str]:
                 f"{location}: public data type {type_name} must contain its domain or an explicit action target",
             )
 
-        if not type_name.endswith(ROLE_SUFFIXES):
+        if not type_name.endswith(expected_suffix):
             diagnostics.append(
-                f"{location}: public data type {type_name} must end with Params, Payload, or Val",
-            )
-
-        if "Form" in type_name:
-            diagnostics.append(
-                f"{location}: public data type {type_name} must not use Form",
+                f"{location}: public data type {type_name} in data/{role} must end with {expected_suffix}",
             )
 
     return diagnostics
@@ -134,23 +147,27 @@ def check_root(root: Path) -> list[str]:
 def self_test() -> int:
     with tempfile.TemporaryDirectory() as directory:
         root = Path(directory)
-        data = root / "src" / "data"
-        data.mkdir(parents=True)
-        (data / "team.rs").write_text(
-            "pub struct CreateTeamParams;\n"
-            "pub struct CreateTeamPayload;\n"
-            "pub struct TeamInfoVal;\n"
+        for role in ROLES:
+            (root / "src" / "data" / role).mkdir(parents=True)
+
+        (root / "src" / "data" / "instr" / "team.rs").write_text(
+            "pub struct CreateTeamInstr;\n"
             "struct InternalHelper;\n",
+        )
+        (root / "src" / "data" / "val" / "team.rs").write_text(
+            "pub struct CreateTeamVal;\n",
+        )
+        (root / "src" / "data" / "view" / "team.rs").write_text(
+            "pub struct TeamMemberView;\n",
         )
 
         if check_root(root):
             print("self-test: valid data fixture was rejected", file=sys.stderr)
             return 1
 
-        (data / "team.rs").write_text(
-            "pub struct CreateParams;\n"
-            "pub struct TeamCreateData;\n"
-            "pub struct TeamFormParams;\n",
+        (root / "src" / "data" / "instr" / "team.rs").write_text(
+            "pub struct CreateData;\n"
+            "pub struct TeamInfoData;\n"
         )
         diagnostics = check_root(root)
 

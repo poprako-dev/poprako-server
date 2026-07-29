@@ -1,9 +1,8 @@
 use poprako_orchestra::Oper;
 
-use crate::model::assignment::{
-    AssignmentEntry, AssignmentInfo, AssignmentInfoListSpec,
-    AssignmentRoleUpdate,
-};
+use crate::model::read::proj::assignment::AssignmentInfo;
+use crate::model::read::spec::assignment::AssignmentListSpec;
+use crate::model::write::assignment::{AssignmentEntry, AssignmentRoleRepl};
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::role::RoleField;
 
@@ -11,6 +10,7 @@ use crate::value::role::RoleField;
 #[derive(Oper)]
 #[oper(output = Option<AssignmentInfo>)]
 pub enum FindAssignmentInfo<'a, 'b> {
+    //
     /// Finds by chapter and user.
     ChapterUser {
         //
@@ -47,10 +47,11 @@ pub struct GetAssignmentInfo<'a, 'b> {
 #[derive(Oper)]
 #[oper(output = Vec<AssignmentInfo>)]
 pub enum ListAssignmentInfos<'a, 'b> {
+    //
     /// Lists by a query specification.
     Spec {
         /// Query specification for filtering assignments.
-        spec: &'a AssignmentInfoListSpec,
+        spec: &'a AssignmentListSpec,
     },
 
     /// Lists by a single chapter.
@@ -98,13 +99,14 @@ pub struct CreateAssignment<'a> {
 #[oper(output = AssignmentInfo)]
 pub struct UpdateAssignmentRoles<'a> {
     /// The role update data.
-    pub update: &'a AssignmentRoleUpdate,
+    pub update: &'a AssignmentRoleRepl,
 }
 
 /// Deletes assignments selected by identifier or chapter.
 #[derive(Oper)]
 #[oper(output = ())]
 pub enum DeleteAssignments<'a> {
+    //
     /// Deletes by assignment identifier.
     Id {
         /// Assignment identifier.

@@ -20,7 +20,8 @@ use crate::complex::util::{
     check_user_is_team_admin, check_user_is_team_admin_with_roles,
     check_user_is_team_member,
 };
-use crate::model::chapter::{ChapterInfo, ChapterStageUpdate};
+use crate::model::read::proj::chapter::ChapterInfo;
+use crate::model::write::chapter::ChapterStageRepl;
 use crate::part::repo::oper::assignment::{
     FindAssignmentInfo, ListAssignmentInfos,
 };
@@ -55,19 +56,19 @@ impl ChapterComplex {
             .unwrap_or_else(|| default_subtitle(index))
     }
 
-    /// Compute the next [`ChapterStageUpdate`] by applying a [`StageOper`]
+    /// Compute the next [`ChapterStageRepl`] by applying a [`StageOper`]
     /// to the current [`WorkflowStage`] phase of a chapter.
     pub fn build_stage_update(
         chapter_info: &ChapterInfo,
         stage: Stage,
         oper: StageOper,
-    ) -> BaseRest<ChapterStageUpdate> {
+    ) -> BaseRest<ChapterStageRepl> {
         //
         let current_phase = get_phase(chapter_info, stage);
 
         let next_phase = try_modify_stage((stage, current_phase), oper)?;
 
-        let chapter_stage_update = ChapterStageUpdate {
+        let chapter_stage_update = ChapterStageRepl {
             id: chapter_info.id.clone(),
             stages: chapter_info.stages.try_set_phase(stage, next_phase)?,
         };

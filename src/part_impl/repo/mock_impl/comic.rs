@@ -2,12 +2,12 @@ use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
 use crate::complex::comic::ComicComplex;
-use crate::model::comic::{
-    ComicCoverReservation, ComicInfo, ComicInfoListKind, ComicInfoListSpec,
-};
-use crate::model::team::TeamInfo;
-use crate::model::user::UserInfo;
-use crate::model::workset::WorksetInfo;
+use crate::model::read::proj::comic::ComicInfo;
+use crate::model::read::proj::team::TeamInfo;
+use crate::model::read::proj::user::UserInfo;
+use crate::model::read::proj::workset::WorksetInfo;
+use crate::model::read::spec::comic::{ComicListKind, ComicListSpec};
+use crate::model::write::comic::ComicCoverReservation;
 use crate::part::repo::oper::comic::{
     AllocComicChapterIndex, CreateComic, DeleteComic, GetComicInfo,
     GetComicInfoExcluded, ListComicInfos, ListComicInfosExcluded,
@@ -162,13 +162,13 @@ fn comic_matches_fuzzy(comic_info: &ComicInfo, fuzzy_title: &str) -> bool {
 fn comic_matches_kind(
     state: &MockState,
     comic_info: &ComicInfo,
-    kind: &ComicInfoListKind,
+    kind: &ComicListKind,
 ) -> bool {
     match kind {
         //
-        ComicInfoListKind::All => true,
+        ComicListKind::All => true,
 
-        ComicInfoListKind::Stages(stage_mask) => state
+        ComicListKind::Stages(stage_mask) => state
             .chapters
             .iter()
             .find(|chapter_info| {
@@ -229,10 +229,7 @@ fn get_comic_info(
 }
 
 // Build filtered, sorted and paginated comic lists.
-fn list_comic_infos(
-    state: &MockState,
-    spec: &ComicInfoListSpec,
-) -> Vec<ComicInfo> {
+fn list_comic_infos(state: &MockState, spec: &ComicListSpec) -> Vec<ComicInfo> {
     //
     let mut comic_infos = state
         .comics

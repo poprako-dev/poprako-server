@@ -18,16 +18,16 @@ async fn reserve_chapter_pages_creates_pages_and_urls() {
     let reserved = reserve_chapter_pages(
         (&mock, &mock, &mock, &mock),
         token("user-1"),
-        ReserveChapterPagesParams {
+        ReserveChapterPagesInstr {
             chapter_id: "chapter-1".into(),
             pages: vec![
-                PageImageParams {
+                PageImageInstr {
                     page_id: None,
                     image_hash: ImageHash::new([0u8; 32]),
                     new_byte_len: Some(4096),
                     ext: ImageExt::Png,
                 },
-                PageImageParams {
+                PageImageInstr {
                     page_id: None,
                     image_hash: ImageHash::new([0u8; 32]),
                     new_byte_len: Some(4096),
@@ -151,16 +151,16 @@ async fn reserve_chapter_pages_replaces_existing_manifest() {
     let result = reserve_chapter_pages(
         (&mock, &mock, &mock, &mock),
         token("user-1"),
-        ReserveChapterPagesParams {
+        ReserveChapterPagesInstr {
             chapter_id: "chapter-1".into(),
             pages: vec![
-                PageImageParams {
+                PageImageInstr {
                     page_id: Some("page-1".into()),
                     image_hash: ImageHash::new([0; 32]),
                     new_byte_len: None,
                     ext: ImageExt::Png,
                 },
-                PageImageParams {
+                PageImageInstr {
                     page_id: None,
                     image_hash: ImageHash::new([1; 32]),
                     new_byte_len: Some(4096),
@@ -214,9 +214,9 @@ async fn reserve_chapter_pages_preserves_pending_page_without_new_byte_len() {
     let reserved = reserve_chapter_pages(
         (&mock, &mock, &mock, &mock),
         token("user-1"),
-        ReserveChapterPagesParams {
+        ReserveChapterPagesInstr {
             chapter_id: "chapter-1".into(),
-            pages: vec![PageImageParams {
+            pages: vec![PageImageInstr {
                 page_id: Some("page-1".into()),
                 image_hash: ImageHash::new([0; 32]),
                 new_byte_len: None,
@@ -267,9 +267,9 @@ async fn reserve_chapter_pages_resigns_pending_page_with_new_byte_len() {
     let reserved = reserve_chapter_pages(
         (&mock, &mock, &mock, &mock),
         token("user-1"),
-        ReserveChapterPagesParams {
+        ReserveChapterPagesInstr {
             chapter_id: "chapter-1".into(),
-            pages: vec![PageImageParams {
+            pages: vec![PageImageInstr {
                 page_id: Some("page-1".into()),
                 image_hash: ImageHash::new([0; 32]),
                 new_byte_len: Some(4096),
@@ -319,9 +319,9 @@ async fn reserve_chapter_pages_rejects_new_page_without_new_byte_len() {
     let err = reserve_chapter_pages(
         (&mock, &mock, &mock, &mock),
         token("user-1"),
-        ReserveChapterPagesParams {
+        ReserveChapterPagesInstr {
             chapter_id: "chapter-1".into(),
-            pages: vec![PageImageParams {
+            pages: vec![PageImageInstr {
                 page_id: None,
                 image_hash: ImageHash::new([1; 32]),
                 new_byte_len: None,
@@ -366,9 +366,9 @@ async fn reserve_chapter_pages_rejects_replacement_without_new_byte_len() {
     let err = reserve_chapter_pages(
         (&mock, &mock, &mock, &mock),
         token("user-1"),
-        ReserveChapterPagesParams {
+        ReserveChapterPagesInstr {
             chapter_id: "chapter-1".into(),
-            pages: vec![PageImageParams {
+            pages: vec![PageImageInstr {
                 page_id: Some("page-1".into()),
                 image_hash: ImageHash::new([1; 32]),
                 new_byte_len: None,
@@ -415,9 +415,9 @@ async fn reserve_chapter_pages_replaces_explicit_image_and_deletes_old_key() {
     let reserved = reserve_chapter_pages(
         (&mock, &mock, &mock, &mock),
         token("user-1"),
-        ReserveChapterPagesParams {
+        ReserveChapterPagesInstr {
             chapter_id: "chapter-1".into(),
-            pages: vec![PageImageParams {
+            pages: vec![PageImageInstr {
                 page_id: Some("page-1".into()),
                 image_hash: ImageHash::new([1; 32]),
                 new_byte_len: Some(8192),
@@ -465,16 +465,16 @@ async fn reserve_chapter_pages_keeps_raw_pending_when_uploads_are_missing() {
     let reserved = reserve_chapter_pages(
         (&mock, &mock, &mock, &mock),
         token("user-1"),
-        ReserveChapterPagesParams {
+        ReserveChapterPagesInstr {
             chapter_id: "chapter-1".into(),
             pages: vec![
-                PageImageParams {
+                PageImageInstr {
                     page_id: None,
                     image_hash: ImageHash::new([0u8; 32]),
                     new_byte_len: Some(4096),
                     ext: ImageExt::Png,
                 },
-                PageImageParams {
+                PageImageInstr {
                     page_id: None,
                     image_hash: ImageHash::new([0u8; 32]),
                     new_byte_len: Some(4096),
@@ -515,7 +515,7 @@ async fn reserve_chapter_pages_rejects_invalid_count() {
     let err = reserve_chapter_pages(
         (&mock, &mock, &mock, &mock),
         token("user-1"),
-        ReserveChapterPagesParams {
+        ReserveChapterPagesInstr {
             chapter_id: "chapter-1".into(),
             pages: Vec::new(),
         },

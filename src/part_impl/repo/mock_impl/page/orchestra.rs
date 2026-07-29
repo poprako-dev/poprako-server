@@ -4,7 +4,8 @@ use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
 use crate::complex::page::PageComplex;
-use crate::model::page::{PageImageReservation, PageInfo};
+use crate::model::read::proj::page::PageInfo;
+use crate::model::write::page::PageImageReservation;
 use crate::part::repo::oper::page::{
     ClearPageImagesForPublish, CreatePages, DeletePages, GetPageInfo,
     GetPageInfoExcluded, ListFirstPageInfos, ListPageInfos,
@@ -205,11 +206,11 @@ impl<'a> Step<MarkPageImageUploaded<'a>, MockContext> for Mock {
             .state
             .pages
             .iter_mut()
-            .find(|info| info.id == oper.id)
+            .find(|info| info.id == oper.repl.id)
             .ok_or_else(|| expected("error-page-not-found"))?;
 
-        if page_info.image_version != oper.image_version
-            || oper.image_key.is_some_and(|image_key| {
+        if page_info.image_version != oper.repl.image_version
+            || oper.repl.image_key.as_deref().is_some_and(|image_key| {
                 page_info.image_key.as_deref() != Some(image_key)
             })
         {
@@ -239,16 +240,16 @@ impl<'a> Step<SetPageImageUploaded<'a>, MockContext> for Mock {
             .state
             .pages
             .iter_mut()
-            .find(|info| info.id == oper.id)
+            .find(|info| info.id == oper.repl.id)
             .ok_or_else(|| expected("error-page-not-found"))?;
 
-        if page_info.image_version != oper.image_version
-            || page_info.image_key.as_deref() != Some(oper.image_key)
+        if page_info.image_version != oper.repl.image_version
+            || page_info.image_key.as_deref() != oper.repl.image_key.as_deref()
         {
             return Err(expected("error-stale-page-image-upload"));
         }
 
-        page_info.is_image_uploaded = oper.image_uploaded;
+        page_info.is_image_uploaded = oper.repl.is_image_uploaded;
 
         page_info.updated_at = now();
 

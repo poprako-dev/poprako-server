@@ -1,4 +1,4 @@
-use crate::model::comment::CommentInfo;
+use crate::model::read::proj::comment::CommentInfo;
 use crate::part_impl::repo::rdb_impl::incl::framework::{
     BatchByIds, Incl, UserByIds, populate,
 };

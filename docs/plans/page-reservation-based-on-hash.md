@@ -162,7 +162,7 @@ struct ReservePageImageParams {
 
 ### 3.4 Page list
 
-现有 `PageInfoVal` 必须增加：
+现有 `PageInfoView` 必须增加：
 
 ```rust
 image_hash: ImageHash,

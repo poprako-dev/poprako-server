@@ -4,6 +4,7 @@ use crate::util::Patch;
 /// One normalized Unit mutation.
 #[derive(Debug, Clone, PartialEq)]
 pub enum UnitEdit {
+    //
     /// Creates one Unit with complete structural fields.
     Create {
         //

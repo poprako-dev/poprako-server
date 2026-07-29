@@ -4,9 +4,10 @@ use time::OffsetDateTime;
 use tracing::instrument;
 
 use crate::complex::comic::ComicComplex;
-use crate::model::comic::{
-    ComicCoverReservation, ComicEntry, ComicInfo, ComicInfoListKind,
-    ComicInfoListSpec, ComicInfoUpdate,
+use crate::model::read::proj::comic::ComicInfo;
+use crate::model::read::spec::comic::{ComicListKind, ComicListSpec};
+use crate::model::write::comic::{
+    ComicCoverReservation, ComicEntry, ComicRepl,
 };
 use crate::part_impl::repo::rdb_impl::entity::comic::{
     ComicAspect, ComicRow, ComicRowEntry,
@@ -66,14 +67,14 @@ pub async fn get_info_by_id(
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos(
     conn: &mut RdbConn,
-    spec: &ComicInfoListSpec,
+    spec: &ComicListSpec,
 ) -> BaseRest<Vec<ComicInfo>> {
     //
     let stage_comic_ids = match &spec.kind {
         //
-        ComicInfoListKind::All => None,
+        ComicListKind::All => None,
 
-        ComicInfoListKind::Stages(stage_mask) => {
+        ComicListKind::Stages(stage_mask) => {
             list_matching_stage_comic_ids(conn, *stage_mask).await?
         }
     };
@@ -122,7 +123,7 @@ pub async fn list_infos(
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn update_info(
     conn: &mut RdbConn,
-    update: &ComicInfoUpdate,
+    update: &ComicRepl,
 ) -> BaseRest<()> {
     //
     let now = OffsetDateTime::now_utc();
@@ -249,7 +250,7 @@ pub async fn get_info_excluded(
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos_excluded(
     conn: &mut RdbConn,
-    spec: &ComicInfoListSpec,
+    spec: &ComicListSpec,
 ) -> BaseRest<Vec<ComicInfo>> {
     //
     macro_rules! load_rows {
@@ -268,9 +269,9 @@ pub async fn list_infos_excluded(
 
     let stage_comic_ids = match &spec.kind {
         //
-        ComicInfoListKind::All => None,
+        ComicListKind::All => None,
 
-        ComicInfoListKind::Stages(stage_mask) => {
+        ComicListKind::Stages(stage_mask) => {
             list_matching_stage_comic_ids(conn, *stage_mask).await?
         }
     };

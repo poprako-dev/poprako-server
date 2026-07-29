@@ -10,11 +10,12 @@ use crate::value::incl::InclOpt;
 /// Incl opts for member info queries.
 ///
 /// Each opt embeds additional related data into the returned
-/// `MemberInfoVal`.
+/// `MemberInfoView`.
 #[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum MemberInclOpt {
+    //
     /// Embed the member's user profile (`user`).
     User,
 

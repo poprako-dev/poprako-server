@@ -15,16 +15,17 @@ use crate::complex::assignment::AssignmentComplex;
 use crate::complex::chapter::ChapterComplex;
 use crate::complex::comic::{ComicComplex, ComicPermComplex};
 use crate::complex::image::ImageComplex;
-use crate::data::comic::{
-    ComicInfoVal, CreateComicParams, CreateComicPayload,
-    MarkComicCoverUploadedParams, ReserveComicCoverParams,
-    ReserveComicCoverPayload, UpdateComicInfoParams,
+use crate::data::instr::comic::{
+    CreateComicInstr, MarkComicCoverUploadedInstr, ReserveComicCoverInstr,
+    UpdateComicInfoInstr,
 };
-use crate::data::image::ImageUploadSlotVal;
-use crate::model::assignment::AssignmentEntry;
-use crate::model::chapter::ChapterEntry;
-use crate::model::comic::{ComicEntry, ComicInfoUpdate};
-use crate::model::user::UserToken;
+use crate::data::val::comic::{CreateComicVal, ReserveComicCoverVal};
+use crate::data::view::comic::ComicInfoView;
+use crate::data::view::image::ImageUploadSlotView;
+use crate::model::shared::user::UserToken;
+use crate::model::write::assignment::AssignmentEntry;
+use crate::model::write::chapter::ChapterEntry;
+use crate::model::write::comic::{ComicEntry, ComicRepl};
 use crate::part::image::{ImageManager, ImagePool, ImageUploadSpec};
 use crate::part::prom::Prom;
 use crate::part::prom::payload::{TaskPayload, image};
@@ -88,8 +89,8 @@ pub mod tests;
 pub async fn create<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
-    params: CreateComicParams,
-) -> BaseRest<CreateComicPayload>
+    instr: CreateComicInstr,
+) -> BaseRest<CreateComicVal>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -108,8 +109,8 @@ where
                 for<'a> FindMemberInfo<'a>;
         },
         &token.user_id,
-        &params.workset_id,
-        params.preset_assignment_roles,
+        &instr.workset_id,
+        instr.preset_assignment_roles,
     )
     .await?;
 
@@ -117,18 +118,18 @@ where
         .coord(async move |context| {
             //
             let index = AllocWorksetComicIndex {
-                id: &params.workset_id,
+                id: &instr.workset_id,
             }
             .step_on(repo, context)
             .await?;
 
             let comic_entry = ComicEntry {
                 id: ComicComplex::gen_id(),
-                workset_id: params.workset_id,
+                workset_id: instr.workset_id,
                 index,
-                title: params.title,
-                author: params.author,
-                description: params.description,
+                title: instr.title,
+                author: instr.author,
+                description: instr.description,
                 creator_id: token.user_id.clone(),
             };
 
@@ -150,7 +151,7 @@ where
                 .await?;
 
             let subtitle = ChapterComplex::subtitle_or_default(
-                params.first_chapter_subtitle,
+                instr.first_chapter_subtitle,
                 chapter_index,
             );
 
@@ -194,7 +195,7 @@ where
                 chapter_id: chapter_info.id.clone(),
                 user_id: token.user_id,
                 roles: AssignmentComplex::creator_roles(
-                    params.preset_assignment_roles,
+                    instr.preset_assignment_roles,
                 ),
             };
 
@@ -208,7 +209,7 @@ where
         })
         .await?;
 
-    accept(CreateComicPayload {
+    accept(CreateComicVal {
         id: comic_id,
         chapter_id,
     })
@@ -220,7 +221,7 @@ pub async fn get_info<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
     id: String,
-) -> BaseRest<ComicInfoVal>
+) -> BaseRest<ComicInfoView>
 where
     R: ComicRepo<C>
         + WorksetRepo<C>
@@ -261,7 +262,7 @@ where
     )
     .await?;
 
-    ComicInfoVal::from_model(
+    ComicInfoView::from_model(
         image_pool,
         comic_info,
         fallback_cover_keys.get(&id).map(String::as_str),
@@ -274,7 +275,7 @@ where
 pub async fn update_info<C, R>(
     (repo,): (&R,),
     token: UserToken,
-    params: UpdateComicInfoParams,
+    instr: UpdateComicInfoInstr,
 ) -> BaseRest<()>
 where
     R: ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
@@ -287,15 +288,15 @@ where
                 for<'a> FindMemberInfo<'a>;
         },
         &token.user_id,
-        &params.id,
+        &instr.id,
     )
     .await?;
 
-    let comic_info_update = ComicInfoUpdate {
-        id: params.id,
-        title: params.title,
-        author: params.author,
-        description: params.description,
+    let comic_info_update = ComicRepl {
+        id: instr.id,
+        title: instr.title,
+        author: instr.author,
+        description: instr.description,
     };
 
     UpdateComic {
@@ -313,8 +314,8 @@ pub async fn reserve_cover<N, C, R, P, I>(
     (nucl, repo, prom, image_pool): (&N, &R, &P, &I),
     token: UserToken,
     id: String,
-    params: ReserveComicCoverParams,
-) -> BaseRest<ReserveComicCoverPayload>
+    instr: ReserveComicCoverInstr,
+) -> BaseRest<ReserveComicCoverVal>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -323,15 +324,12 @@ where
     I: ImagePool,
 {
     ImageComplex::ensure_byte_length(
-        params.new_byte_len,
+        instr.new_byte_len,
         image::ResourceKind::ComicCover,
     )?;
 
-    let transaction_image_hash = params.image_hash.clone();
-
-    let image_ext = params.ext;
-
-    let new_byte_len = params.new_byte_len;
+    let (transaction_image_hash, image_ext, new_byte_len) =
+        (instr.image_hash.clone(), instr.ext, instr.new_byte_len);
 
     ComicPermComplex::ensure_user_can_reserve_cover(
         &mut run_proxy! {
@@ -364,11 +362,8 @@ where
                 ));
             }
 
-            let mut batch_ids = Vec::new();
-
-            let mut batch_payloads = Vec::new();
-
-            let mut batch_delays = Vec::new();
+            let (mut batch_ids, mut batch_payloads, mut batch_delays) =
+                (Vec::new(), Vec::new(), Vec::new());
 
             if let Some(prev_object_key) = &cover_reservation.prev_object_key {
                 //
@@ -429,7 +424,7 @@ where
 
             let upload_slot = image_pool.get_upload_slot(upload_spec).await?;
 
-            Some(ImageUploadSlotVal {
+            Some(ImageUploadSlotView {
                 put_url: upload_slot.url.to_string(),
                 image_version: cover_version,
                 headers: upload_slot.headers,
@@ -439,7 +434,7 @@ where
         false => None,
     };
 
-    accept(ReserveComicCoverPayload { slot })
+    accept(ReserveComicCoverVal { slot })
 }
 
 /// Marks a reserved comic cover as successfully uploaded.
@@ -448,7 +443,7 @@ pub async fn mark_cover_uploaded<N, C, R, I>(
     (nucl, repo, image_manager): (&N, &R, &I),
     token: UserToken,
     id: String,
-    params: MarkComicCoverUploadedParams,
+    instr: MarkComicCoverUploadedInstr,
 ) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
@@ -475,7 +470,7 @@ where
     .run_on(repo)
     .await?;
 
-    if comic_info.cover_version != params.image_version {
+    if comic_info.cover_version != instr.image_version {
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
             message: trl("error-stale-cover-upload"),
@@ -511,7 +506,7 @@ where
         .step_on(repo, context)
         .await?;
 
-        if locked_comic_info.cover_version != params.image_version
+        if locked_comic_info.cover_version != instr.image_version
             || locked_comic_info.cover_key.as_deref() != Some(&cover_key)
         {
             return Err(BaseError::Expected {
@@ -522,7 +517,7 @@ where
 
         MarkComicCoverUploaded {
             id: &id,
-            cover_version: params.image_version,
+            cover_version: instr.image_version,
             cover_key: Some(&cover_key),
             cover_uploaded: true,
         }

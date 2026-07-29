@@ -13,7 +13,7 @@ async fn reserve_avatar_updates_state_enqueues_check_and_returns_put_url() {
         (&mock, &mock, &mock, &mock),
         token("user-1"),
         "team-1".into(),
-        reserve_params("png"),
+        reserve_instr("png"),
     )
     .await
     .unwrap();
@@ -56,7 +56,7 @@ async fn reserve_avatar_replacing_avatar_enqueues_delete_and_check() {
         (&mock, &mock, &mock, &mock),
         token("user-1"),
         "team-1".into(),
-        reserve_params("jpg"),
+        reserve_instr("jpg"),
     )
     .await
     .unwrap();
@@ -85,7 +85,7 @@ async fn reserve_avatar_rolls_back_missing_team() {
         (&mock, &mock, &mock, &mock),
         token("user-1"),
         "team-1".into(),
-        reserve_params("png"),
+        reserve_instr("png"),
     )
     .await
     .err()
@@ -113,7 +113,7 @@ async fn reserve_avatar_propagates_put_url_failure_after_commit() {
         (&mock, &mock, &mock, &mock),
         token("user-1"),
         "team-1".into(),
-        reserve_params("png"),
+        reserve_instr("png"),
     )
     .await
     .err()
@@ -144,7 +144,7 @@ async fn mark_avatar_uploaded_marks_matching_version() {
         (&mock, &mock, &mock),
         token("user-1"),
         "team-1".into(),
-        mark_params(2),
+        mark_instr(2),
     )
     .await
     .unwrap();
@@ -165,7 +165,7 @@ async fn mark_avatar_uploaded_accepts_repeated_matching_version() {
         (&mock, &mock, &mock),
         token("user-1"),
         "team-1".into(),
-        mark_params(2),
+        mark_instr(2),
     )
     .await;
 
@@ -175,7 +175,7 @@ async fn mark_avatar_uploaded_accepts_repeated_matching_version() {
         (&mock, &mock, &mock),
         token("user-1"),
         "team-1".into(),
-        mark_params(2),
+        mark_instr(2),
     )
     .await;
 
@@ -197,7 +197,7 @@ async fn mark_avatar_uploaded_rejects_stale_version() {
         (&mock, &mock, &mock),
         token("user-1"),
         "team-1".into(),
-        mark_params(1),
+        mark_instr(1),
     )
     .await
     .err()
@@ -227,7 +227,7 @@ async fn mark_avatar_uploaded_rejects_old_reservation_replay() {
         (&mock, &mock, &mock, &mock),
         token("user-1"),
         "team-1".into(),
-        reserve_params("png"),
+        reserve_instr("png"),
     )
     .await
     .ok()
@@ -239,7 +239,7 @@ async fn mark_avatar_uploaded_rejects_old_reservation_replay() {
         (&mock, &mock, &mock),
         token("user-1"),
         "team-1".into(),
-        mark_params(1),
+        mark_instr(1),
     )
     .await
     .err()

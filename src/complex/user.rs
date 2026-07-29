@@ -37,9 +37,8 @@ impl UserComplex {
     /// TODO: no need to return bool.
     pub async fn verify_password(password: &str, password_hash: &str) -> bool {
         //
-        let password = password.to_owned();
-
-        let password_hash = password_hash.to_owned();
+        let (password, password_hash) =
+            (password.to_owned(), password_hash.to_owned());
 
         match tokio::task::spawn_blocking(move || {
             verify_password_sync(&password, &password_hash)

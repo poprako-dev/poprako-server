@@ -11,13 +11,16 @@ use poprako_util::i18n::trl;
 
 use crate::complex::image::ImageComplex;
 use crate::complex::user::UserComplex;
-use crate::data::image::ImageUploadSlotVal;
-use crate::data::user::{
-    MarkUserAvatarUploadedParams, ReserveUserAvatarParams,
-    ReserveUserAvatarPayload, UpdateUserInfoParams, UpdateUserPasswordParams,
-    UserInfoVal,
+use crate::data::instr::user::{
+    MarkUserAvatarUploadedInstr, ReserveUserAvatarInstr, UpdateUserInfoInstr,
+    UpdateUserPasswordInstr,
 };
-use crate::model::user::UserToken;
+use crate::data::val::user::ReserveUserAvatarVal;
+use crate::data::view::image::ImageUploadSlotView;
+use crate::data::view::user::UserInfoView;
+use crate::model::shared::user::UserToken;
+use crate::model::write::member::MemberNicknameRepl;
+use crate::model::write::user::{UserAvatarRepl, UserCredsRepl, UserInfoRepl};
 use crate::part::effect::EffectDevelop;
 use crate::part::effect::event::Event;
 use crate::part::effect::event::user::UserActivePayload;
@@ -56,7 +59,7 @@ pub async fn get_info<C, R, I, V>(
     (repo, image_pool, develop): (&R, &I, &V),
     token: UserToken,
     id: String,
-) -> BaseRest<UserInfoVal>
+) -> BaseRest<UserInfoView>
 where
     R: UserRepo<C>,
     I: ImagePool,
@@ -74,7 +77,7 @@ where
         develop.develop(event).await;
     }
 
-    UserInfoVal::from_model(image_pool, user_info).await
+    UserInfoView::from_model(image_pool, user_info).await
 }
 
 /// Updates a user's QQ ID and nickname.
@@ -82,7 +85,7 @@ where
 /// Transactional flow:
 ///
 /// 1. **Permission check:** the caller (`token.user_id`) must match the
-///    target user (`params.id`). Returns `Perm` error on mismatch.
+///    target user (`instr.id`). Returns `Perm` error on mismatch.
 /// 2. Updates the user's own record via [`UpdateUser::Info`].
 /// 3. Propagates the new nickname to all of the user's memberships via
 ///    [`UpdateMember::UserNickname`].
@@ -96,7 +99,7 @@ where
 pub async fn update_info<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
-    params: UpdateUserInfoParams,
+    instr: UpdateUserInfoInstr,
 ) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
@@ -104,29 +107,33 @@ where
     R: UserRepo<C> + MemberRepo<C> + Send + Sync,
 {
     // Only the user themselves can update their own profile.
-    if token.user_id != params.id {
+    if token.user_id != instr.id {
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
             message: trl("error-forbidden"),
         });
     }
 
+    let user_repl = UserInfoRepl {
+        id: token.user_id.clone(),
+        qid: instr.qid,
+        nickname: instr.nickname,
+    };
+
+    let member_repl = MemberNicknameRepl {
+        user_id: token.user_id.clone(),
+        user_nickname: user_repl.nickname.clone(),
+    };
+
     nucl.coord(async move |context| {
         //
-        UpdateUser::Info {
-            id: &token.user_id,
-            qid: &params.qid,
-            nickname: &params.nickname,
-        }
-        .step_on(repo, context)
-        .await?;
+        UpdateUser::Info { repl: &user_repl }
+            .step_on(repo, context)
+            .await?;
 
-        UpdateMember::UserNickname {
-            user_id: &token.user_id,
-            user_nickname: &params.nickname,
-        }
-        .step_on(repo, context)
-        .await?;
+        UpdateMember::UserNickname { repl: &member_repl }
+            .step_on(repo, context)
+            .await?;
 
         accept(())
     })
@@ -139,14 +146,14 @@ where
 #[instrument(
     level = "info",
     err(Debug),
-    skip(nucl, repo, params),
+    skip(nucl, repo, instr),
     fields(current_password = "[REDACTED]", new_password = "[REDACTED]",)
 )]
 pub async fn update_password<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
     user_id: String,
-    params: UpdateUserPasswordParams,
+    instr: UpdateUserPasswordInstr,
 ) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
@@ -169,7 +176,7 @@ where
     .await?;
 
     if !UserComplex::verify_password(
-        &params.current_password,
+        &instr.current_password,
         &user_credential.password_hash,
     )
     .await
@@ -180,17 +187,18 @@ where
         });
     }
 
-    let password_hash =
-        UserComplex::hash_password(&params.new_password).await?;
+    let password_hash = UserComplex::hash_password(&instr.new_password).await?;
+
+    let repl = UserCredsRepl {
+        id: user_id.clone(),
+        password_hash,
+    };
 
     nucl.coord(async move |context| {
         //
-        UpdateUser::PasswordHash {
-            id: &user_id,
-            password_hash: &password_hash,
-        }
-        .step_on(repo, context)
-        .await?;
+        UpdateUser::PasswordHash { repl: &repl }
+            .step_on(repo, context)
+            .await?;
 
         accept(())
     })
@@ -223,8 +231,8 @@ where
 pub async fn reserve_avatar<N, C, R, P, I>(
     (nucl, repo, prom, image_pool): (&N, &R, &P, &I),
     token: UserToken,
-    params: ReserveUserAvatarParams,
-) -> BaseRest<ReserveUserAvatarPayload>
+    instr: ReserveUserAvatarInstr,
+) -> BaseRest<ReserveUserAvatarVal>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -233,15 +241,12 @@ where
     I: ImagePool,
 {
     ImageComplex::ensure_byte_length(
-        params.new_byte_len,
+        instr.new_byte_len,
         image::ResourceKind::UserAvatar,
     )?;
 
-    let transaction_image_hash = params.image_hash.clone();
-
-    let image_ext = params.ext;
-
-    let new_byte_len = params.new_byte_len;
+    let (transaction_image_hash, image_ext, new_byte_len) =
+        (instr.image_hash.clone(), instr.ext, instr.new_byte_len);
 
     let (object_key, avatar_version, upload_required) = nucl
         .coord(async move |context| {
@@ -254,11 +259,8 @@ where
             .step_on(repo, context)
             .await?;
 
-            let mut batch_ids = Vec::new();
-
-            let mut batch_payloads = Vec::new();
-
-            let mut batch_delays = Vec::new();
+            let (mut batch_ids, mut batch_payloads, mut batch_delays) =
+                (Vec::new(), Vec::new(), Vec::new());
 
             if !avatar_reservation.is_upload_required {
                 return accept((
@@ -327,7 +329,7 @@ where
 
             let upload_slot = image_pool.get_upload_slot(upload_spec).await?;
 
-            Some(ImageUploadSlotVal {
+            Some(ImageUploadSlotView {
                 put_url: upload_slot.url.to_string(),
                 image_version: avatar_version,
                 headers: upload_slot.headers,
@@ -337,7 +339,7 @@ where
         false => None,
     };
 
-    accept(ReserveUserAvatarPayload { slot })
+    accept(ReserveUserAvatarVal { slot })
 }
 
 /// Marks a reserved user avatar as successfully uploaded.
@@ -356,7 +358,7 @@ pub async fn mark_avatar_uploaded<N, C, R, I>(
     (nucl, repo, image_manager): (&N, &R, &I),
     token: UserToken,
     id: String,
-    params: MarkUserAvatarUploadedParams,
+    instr: MarkUserAvatarUploadedInstr,
 ) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
@@ -373,7 +375,7 @@ where
 
     let user_info = GetUserInfo::Id { id: &id }.run_on(repo).await?;
 
-    if user_info.avatar_version != params.image_version {
+    if user_info.avatar_version != instr.image_version {
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
             message: trl("error-stale-avatar-upload"),
@@ -400,13 +402,20 @@ where
         });
     }
 
+    let repl = UserAvatarRepl {
+        id: id.clone(),
+        avatar_version: instr.image_version,
+        avatar_key: Some(avatar_key.clone()),
+        is_avatar_uploaded: true,
+    };
+
     nucl.coord(async move |context| {
         //
         let locked_user_info = GetUserInfoExcluded::Id { id: &id }
             .step_on(repo, context)
             .await?;
 
-        if locked_user_info.avatar_version != params.image_version
+        if locked_user_info.avatar_version != instr.image_version
             || locked_user_info.avatar_key.as_deref() != Some(&avatar_key)
         {
             return Err(BaseError::Expected {
@@ -415,14 +424,9 @@ where
             });
         }
 
-        UpdateUser::MarkAvatarUploaded {
-            id: &id,
-            avatar_version: params.image_version,
-            avatar_key: Some(&avatar_key),
-            avatar_uploaded: true,
-        }
-        .step_on(repo, context)
-        .await?;
+        UpdateUser::MarkAvatarUploaded { repl: &repl }
+            .step_on(repo, context)
+            .await?;
 
         accept(())
     })
@@ -431,7 +435,7 @@ where
     accept(())
 }
 
-/// Deletes a user account and all associated params.
+/// Deletes a user account and all associated instr.
 ///
 /// Transactional cascade:
 ///
@@ -496,11 +500,12 @@ where
         if let Some(avatar_key) = &user_info.avatar_key
             && user_info.is_avatar_uploaded
         {
-            let delete_id = ImageComplex::gen_delete_id();
-
-            let payload = TaskPayload::Image(image::ImagePayload::Delete {
-                object_key: avatar_key.clone(),
-            });
+            let (delete_id, payload) = (
+                ImageComplex::gen_delete_id(),
+                TaskPayload::Image(image::ImagePayload::Delete {
+                    object_key: avatar_key.clone(),
+                }),
+            );
 
             let task = Task {
                 id: &delete_id,

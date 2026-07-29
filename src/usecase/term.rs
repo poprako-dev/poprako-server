@@ -7,12 +7,13 @@ use tracing::instrument;
 
 use crate::complex::term::TermComplex;
 use crate::complex::termbase::TermbasePermComplex;
-use crate::data::term::{
-    CreateTermParams, CreateTermPayload, ListTermInfosParams, TermInfoVal,
-    UpdateTermInfoParams,
+use crate::data::instr::term::{
+    CreateTermInstr, ListTermInfosInstr, UpdateTermInfoInstr,
 };
-use crate::model::term::TermInfoListSpec;
-use crate::model::user::UserToken;
+use crate::data::val::term::CreateTermVal;
+use crate::data::view::term::TermInfoView;
+use crate::model::read::spec::term::TermListSpec;
+use crate::model::shared::user::UserToken;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::comic::GetComicInfo;
@@ -39,8 +40,8 @@ mod tests;
 pub async fn create<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
-    params: CreateTermParams,
-) -> BaseRest<CreateTermPayload>
+    instr: CreateTermInstr,
+) -> BaseRest<CreateTermVal>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -53,10 +54,10 @@ where
         + Sync,
 {
     let term_entry = TermComplex::build_entry(
-        params.termbase_id,
-        params.source,
-        params.targets,
-        params.comment,
+        instr.termbase_id,
+        instr.source,
+        instr.targets,
+        instr.comment,
         token.user_id.clone(),
     )?;
 
@@ -97,7 +98,7 @@ where
         })
         .await?;
 
-    accept(CreateTermPayload { id: term_id })
+    accept(CreateTermVal { id: term_id })
 }
 
 /// Fetches a terminology entry by ID.
@@ -106,7 +107,7 @@ pub async fn get_info<C, R>(
     (repo,): (&R,),
     token: UserToken,
     id: String,
-) -> BaseRest<TermInfoVal>
+) -> BaseRest<TermInfoView>
 where
     R: TermbaseRepo<C>
         + TermRepo<C>
@@ -143,8 +144,8 @@ where
 pub async fn list_infos<C, R>(
     (repo,): (&R,),
     token: UserToken,
-    params: ListTermInfosParams,
-) -> BaseRest<Vec<TermInfoVal>>
+    instr: ListTermInfosInstr,
+) -> BaseRest<Vec<TermInfoView>>
 where
     R: TermbaseRepo<C>
         + TermRepo<C>
@@ -154,7 +155,7 @@ where
         + Sync,
 {
     let termbase_info = GetTermbaseInfo {
-        id: &params.termbase_id,
+        id: &instr.termbase_id,
     }
     .run_on(repo)
     .await?;
@@ -171,11 +172,11 @@ where
     )
     .await?;
 
-    let term_info_list_spec = TermInfoListSpec {
-        termbase_id: params.termbase_id,
-        fuzzy_source: TermComplex::normalize_fuzzy_source(params.fuzzy_source),
-        offset: params.offset,
-        limit: params.limit,
+    let term_info_list_spec = TermListSpec {
+        termbase_id: instr.termbase_id,
+        fuzzy_source: TermComplex::normalize_fuzzy_source(instr.fuzzy_source),
+        offset: instr.offset,
+        limit: instr.limit,
     };
 
     let term_infos = ListTermInfos {
@@ -192,7 +193,7 @@ where
 pub async fn update_info<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
-    params: UpdateTermInfoParams,
+    instr: UpdateTermInfoInstr,
 ) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
@@ -206,10 +207,10 @@ where
         + Sync,
 {
     let term_info_update = TermComplex::build_update(
-        params.id,
-        params.source,
-        params.targets,
-        params.comment,
+        instr.id,
+        instr.source,
+        instr.targets,
+        instr.comment,
     )?;
 
     let term_info = GetTermInfo {

@@ -4,7 +4,7 @@ use poprako_orchestra::Run;
 use step_impl::*;
 use tracing::instrument;
 
-use crate::model::member::MemberInfo;
+use crate::model::read::proj::member::MemberInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::result::{BaseError, BaseRest};

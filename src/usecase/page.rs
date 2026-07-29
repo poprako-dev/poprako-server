@@ -12,13 +12,14 @@ use poprako_util::i18n::trl;
 use crate::complex::chapter::ChapterComplex;
 use crate::complex::image::ImageComplex;
 use crate::complex::page::{PageComplex, PagePermComplex};
-use crate::data::image::ImageUploadSlotVal;
-use crate::data::page::{
-    ListPageInfosParams, MarkPageImageUploadedParams, PageInfoVal,
-    ReservePageImageParams, ReservedPagePayload,
+use crate::data::instr::page::{
+    ListPageInfosInstr, MarkPageImageUploadedInstr, ReservePageImageInstr,
 };
-use crate::model::page::PageManifestUpdate;
-use crate::model::user::UserToken;
+use crate::data::val::page::ReservedPageVal;
+use crate::data::view::image::ImageUploadSlotView;
+use crate::data::view::page::PageInfoView;
+use crate::model::shared::user::UserToken;
+use crate::model::write::page::{PageImageRepl, PageManifestRepl};
 use crate::part::image::{ImageManager, ImagePool, ImageUploadSpec};
 use crate::part::prom::Prom;
 use crate::part::prom::payload::chapter::ChapterPayload;
@@ -57,8 +58,8 @@ pub async fn reserve_image<N, C, R, P, I>(
     (nucl, repo, prom, image_pool): (&N, &R, &P, &I),
     token: UserToken,
     id: String,
-    params: ReservePageImageParams,
-) -> BaseRest<ReservedPagePayload>
+    instr: ReservePageImageInstr,
+) -> BaseRest<ReservedPageVal>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -67,7 +68,7 @@ where
     I: ImagePool,
 {
     ImageComplex::ensure_byte_length(
-        params.new_byte_len,
+        instr.new_byte_len,
         image::ResourceKind::PageImage,
     )?;
 
@@ -100,8 +101,8 @@ where
             let locked_page_info = GetPageInfoExcluded { id: &id }.step_on(repo, context).await?;
 
             let same_identity =
-                locked_page_info.image_hash == params.image_hash
-                    && locked_page_info.image_ext == params.ext;
+                locked_page_info.image_hash == instr.image_hash
+                    && locked_page_info.image_ext == instr.ext;
 
             if same_identity && locked_page_info.is_image_uploaded {
                 return accept((locked_page_info, None));
@@ -133,7 +134,7 @@ where
                         &locked_page_info.chapter_id,
                         &locked_page_info.id,
                         image_version,
-                        params.ext.suffix(),
+                        instr.ext.suffix(),
                     );
 
                     (
@@ -144,14 +145,14 @@ where
                 }
             };
 
-            let page_manifest_update = PageManifestUpdate {
+            let page_manifest_update = PageManifestRepl {
                 id: locked_page_info.id.clone(),
                 index: locked_page_info.index,
                 image_key: Some(image_key.clone()),
                 is_image_uploaded: false,
                 image_version,
-                image_hash: params.image_hash.clone(),
-                image_ext: params.ext,
+                image_hash: instr.image_hash.clone(),
+                image_ext: instr.ext,
             };
 
             let updated_page_info = UpdatePageManifest {
@@ -160,11 +161,11 @@ where
             .step_on(repo, context)
             .await?;
 
-            let mut task_ids = Vec::new();
-
-            let mut task_payloads = Vec::new();
-
-            let mut task_delays = Vec::new();
+            let (mut task_ids, mut task_payloads, mut task_delays) = (
+                Vec::new(),
+                Vec::new(),
+                Vec::new(),
+            );
 
             if let Some(prev_image_key) = prev_image_key {
                 //
@@ -188,12 +189,12 @@ where
 
             task_delays.push(Some(Duration::from_secs(15 * 60)));
 
-            let advance_id = next_snowflake_id();
-
-            let advance_payload =
+            let (advance_id, advance_payload) = (
+                next_snowflake_id(),
                 TaskPayload::Chapter(ChapterPayload::TryAdvanceRawProvideStage {
                     chapter_id: locked_page_info.chapter_id.clone(),
-                });
+                }),
+            );
 
             let advance_task = Task {
                 id: &advance_id,
@@ -230,12 +231,12 @@ where
             let upload_spec = ImageUploadSpec {
                 object_key: &object_key,
                 content_type: page_info.image_ext.content_type(),
-                content_length: params.new_byte_len,
+                content_length: instr.new_byte_len,
             };
 
             let upload_target = image_pool.get_upload_slot(upload_spec).await?;
 
-            Some(ImageUploadSlotVal {
+            Some(ImageUploadSlotView {
                 put_url: upload_target.url.to_string(),
                 image_version: page_info.image_version,
                 headers: upload_target.headers,
@@ -245,7 +246,7 @@ where
         None => None,
     };
 
-    accept(ReservedPagePayload {
+    accept(ReservedPageVal {
         page_id: page_info.id,
         index: u32::try_from(page_info.index).map_err(|_| {
             BaseError::Unrecoverable {
@@ -264,8 +265,8 @@ where
 pub async fn list_infos<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
-    params: ListPageInfosParams,
-) -> BaseRest<Vec<PageInfoVal>>
+    instr: ListPageInfosInstr,
+) -> BaseRest<Vec<PageInfoView>>
 where
     R: PageRepo<C>
         + ChapterRepo<C>
@@ -286,12 +287,12 @@ where
                 for<'a, 'b> FindAssignmentInfo<'a, 'b>;
         },
         &token.user_id,
-        &params.chapter_id,
+        &instr.chapter_id,
     )
     .await?;
 
     let page_infos = ListPageInfos {
-        chapter_id: &params.chapter_id,
+        chapter_id: &instr.chapter_id,
     }
     .run_on(repo)
     .await?;
@@ -299,7 +300,7 @@ where
     futures_util::future::join_all(
         page_infos
             .into_iter()
-            .map(|page_info| PageInfoVal::from_model(image_pool, page_info)),
+            .map(|page_info| PageInfoView::from_model(image_pool, page_info)),
     )
     .await
     .into_iter()
@@ -312,7 +313,7 @@ pub async fn get_info<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
     id: String,
-) -> BaseRest<PageInfoVal>
+) -> BaseRest<PageInfoView>
 where
     R: PageRepo<C>
         + ChapterRepo<C>
@@ -339,7 +340,7 @@ where
     )
     .await?;
 
-    PageInfoVal::from_model(image_pool, page_info).await
+    PageInfoView::from_model(image_pool, page_info).await
 }
 
 /// Marks one page image as uploaded.
@@ -348,7 +349,7 @@ pub async fn mark_image_uploaded<N, C, R, I>(
     (nucl, repo, image_manager): (&N, &R, &I),
     token: UserToken,
     id: String,
-    params: MarkPageImageUploadedParams,
+    instr: MarkPageImageUploadedInstr,
 ) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
@@ -367,7 +368,7 @@ where
     )
     .await?;
 
-    if page_info.image_version != params.image_version {
+    if page_info.image_version != instr.image_version {
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
             message: trl("error-stale-page-image-upload"),
@@ -394,6 +395,13 @@ where
         });
     }
 
+    let repl = PageImageRepl {
+        id: id.clone(),
+        image_version: instr.image_version,
+        image_key: Some(image_key.clone()),
+        is_image_uploaded: true,
+    };
+
     nucl.coord(async move |context| {
         //
         // NOTE: Chapter -> Page is the shared lock order that prevents both
@@ -411,7 +419,7 @@ where
             .step_on(repo, context)
             .await?;
 
-        if locked_page_info.image_version != params.image_version
+        if locked_page_info.image_version != instr.image_version
             || locked_page_info.image_key.as_deref() != Some(&image_key)
         {
             return Err(BaseError::Expected {
@@ -420,13 +428,9 @@ where
             });
         }
 
-        MarkPageImageUploaded {
-            id: &id,
-            image_version: params.image_version,
-            image_key: Some(image_key.as_str()),
-        }
-        .step_on(repo, context)
-        .await?;
+        MarkPageImageUploaded { repl: &repl }
+            .step_on(repo, context)
+            .await?;
 
         accept(())
     })
@@ -483,9 +487,7 @@ where
         .step_on(repo, context)
         .await?;
 
-        let mut delete_ids = Vec::new();
-
-        let mut delete_payloads = Vec::new();
+        let (mut delete_ids, mut delete_payloads) = (Vec::new(), Vec::new());
 
         for page_info in page_infos {
             if let Some(object_key) = page_info.image_key {

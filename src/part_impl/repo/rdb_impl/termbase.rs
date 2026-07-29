@@ -9,9 +9,9 @@ use poprako_orchestra::{Run, Step};
 use time::OffsetDateTime;
 use tracing::instrument;
 
-use crate::model::termbase::{
-    TermbaseEntry, TermbaseInfo, TermbaseInfoListSpec, TermbaseInfoUpdate,
-};
+use crate::model::read::proj::termbase::TermbaseInfo;
+use crate::model::read::spec::termbase::TermbaseListSpec;
+use crate::model::write::termbase::{TermbaseEntry, TermbaseRepl};
 use crate::part::repo::oper::termbase::{
     CreateTermbase, DeleteTermbase, GetTermbaseInfo, GetTermbaseInfoExcluded,
     ListTermbaseInfos, ListTermbaseInfosExcluded, TouchTermbase,
@@ -94,7 +94,7 @@ async fn get_info_excluded(
 // List termbase rows with team/comic filter and optional fuzzy name.
 async fn list_infos(
     conn: &mut RdbConn,
-    spec: &TermbaseInfoListSpec,
+    spec: &TermbaseListSpec,
 ) -> BaseRest<Vec<TermbaseInfo>> {
     //
     // Build one query path that branches on scope and optional fuzzy name.
@@ -102,7 +102,7 @@ async fn list_infos(
 
     let (fuzzy_name, offset, limit) = match spec {
         //
-        TermbaseInfoListSpec::Team {
+        TermbaseListSpec::Team {
             team_id,
             fuzzy_name,
             offset,
@@ -114,7 +114,7 @@ async fn list_infos(
             (fuzzy_name, offset, limit)
         }
 
-        TermbaseInfoListSpec::Comic {
+        TermbaseListSpec::Comic {
             team_id,
             comic_id,
             fuzzy_name,
@@ -203,7 +203,7 @@ async fn create(
 // Update termbase descriptive fields.
 async fn update_info(
     conn: &mut RdbConn,
-    update: &TermbaseInfoUpdate,
+    update: &TermbaseRepl,
 ) -> BaseRest<()> {
     //
     // Keep `updated_at` current while applying partial name/description updates.

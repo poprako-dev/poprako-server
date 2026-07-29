@@ -22,6 +22,7 @@ from production_source import production_source
 
 
 ROOT = Path(__file__).parents[2]
+DATA_ROLES = ("instr", "val", "view")
 PARSER = tree_sitter.Parser(tree_sitter.Language(tree_sitter_rust.language()))
 
 
@@ -57,6 +58,13 @@ def node_text(source: bytes, node: tree_sitter.Node) -> str:
 
 
 def layer_domains(root: Path, layer: str) -> set[str]:
+    if layer == "data":
+        return {
+            path.stem
+            for role in DATA_ROLES
+            for path in (root / "src" / layer / role).glob("*.rs")
+        }
+
     return {path.stem for path in (root / "src" / layer).glob("*.rs")}
 
 
@@ -131,17 +139,39 @@ def check_file(path: Path, root: Path, layer: str, domains: set[str]) -> list[st
                         f"crate::{layer}::{domain}",
                     )
 
-            if segments[:2] == ["crate", layer] and len(segments) == 3 and segments[2] in domains:
+            if (
+                segments[:2] == ["crate", layer]
+                and len(segments) == 3
+                and segments[2] in domains
+            ):
                 imported_modules.add(segments[2])
                 errors.append(
                     f"{path.relative_to(root)}:{path_node.start_point.row + 1}: "
                     f"DIR002: import a concrete type from crate::{layer}::{segments[2]}",
                 )
 
-            if segments[:2] == ["crate", layer] and len(segments) == 3 and segments[2][:1].isupper():
+            if (
+                segments[:2] == ["crate", layer]
+                and len(segments) == 3
+                and segments[2][:1].isupper()
+            ):
                 errors.append(
                     f"{path.relative_to(root)}:{path_node.start_point.row + 1}: "
                     f"DIR003: root {layer} re-exports are forbidden; import its domain type directly",
+                )
+
+            if (
+                layer == "data"
+                and segments[:2] == ["crate", layer]
+                and len(segments) == 4
+                and segments[2] in DATA_ROLES
+                and segments[3] in domains
+                and source[path_node.end_byte : path_node.end_byte + 3] != b"::{"
+            ):
+                imported_modules.add(segments[3])
+                errors.append(
+                    f"{path.relative_to(root)}:{path_node.start_point.row + 1}: "
+                    f"DIR002: import a concrete type from crate::{layer}::{segments[2]}::{segments[3]}",
                 )
 
     for path_node in descendants(tree.root_node, "scoped_identifier"):
@@ -159,6 +189,19 @@ def check_file(path: Path, root: Path, layer: str, domains: set[str]) -> list[st
             errors.append(
                 f"{path.relative_to(root)}:{path_node.start_point.row + 1}: "
                 f"DIR005: import and use {segments[3]} bare",
+            )
+
+        if (
+            layer == "data"
+            and len(segments) >= 5
+            and segments[:2] == ["crate", layer]
+            and segments[2] in DATA_ROLES
+            and segments[3] in domains
+            and segments[4][:1].isupper()
+        ):
+            errors.append(
+                f"{path.relative_to(root)}:{path_node.start_point.row + 1}: "
+                f"DIR005: import and use {segments[4]} bare",
             )
 
         if len(segments) == 2 and segments[0] in imported_modules and segments[1][:1].isupper():

@@ -1,8 +1,9 @@
 use poprako_orchestra::Oper;
 
-use crate::model::member_invitation::{
-    MemberInvitationEntry, MemberInvitationInfo, MemberInvitationListSpec,
-    MemberInvitationUpdate,
+use crate::model::read::proj::member_invitation::MemberInvitationInfo;
+use crate::model::read::spec::member_invitation::MemberInvitationListSpec;
+use crate::model::write::member_invitation::{
+    MemberInvitationEntry, MemberInvitationRoleRepl,
 };
 use crate::value::member_invitation::MemberInvitationInclOpt;
 
@@ -26,6 +27,7 @@ pub struct ListMemberInvitationInfos<'a> {
 #[derive(Oper)]
 #[oper(output = MemberInvitationInfo)]
 pub enum GetMemberInvitationInfo<'a, 'b> {
+    //
     /// Retrieves by invitation ID.
     Id {
         //
@@ -46,10 +48,11 @@ pub enum GetMemberInvitationInfo<'a, 'b> {
 #[derive(Oper)]
 #[oper(output = ())]
 pub enum UpdateMemberInvitation<'a> {
+    //
     /// Updates the invitation fields.
     Info {
         /// The update payload.
-        update: &'a MemberInvitationUpdate,
+        update: &'a MemberInvitationRoleRepl,
     },
 
     /// Marks the invitation as used.

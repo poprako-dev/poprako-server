@@ -1,4 +1,4 @@
-use crate::model::chapter::ChapterInfo;
+use crate::model::read::proj::chapter::ChapterInfo;
 use crate::part_impl::repo::rdb_impl::incl::framework::{
     BatchByIds, ComicByIds, Incl, TeamByIds, UserByIds, WorksetByIds, populate,
 };

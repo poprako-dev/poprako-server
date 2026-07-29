@@ -38,7 +38,7 @@ async fn list_infos_returns_pinned_chapter_assignments_in_comic_order() {
     let list = list_infos(
         (&mock, &mock),
         token("user-1"),
-        ListComicInfosParams {
+        ListComicInfosInstr {
             incl_opt: Vec::new(),
             with_opt: vec![
                 ComicWithOpt::PinnedChapter,
@@ -85,7 +85,7 @@ async fn list_infos_rejects_assignments_without_pinned_chapters() {
     let err = list_infos(
         (&mock, &mock),
         token("user-1"),
-        ListComicInfosParams {
+        ListComicInfosInstr {
             incl_opt: Vec::new(),
             with_opt: vec![ComicWithOpt::PinnedChapterAssignment],
             workset_id: "workset-1".into(),
@@ -132,7 +132,7 @@ async fn list_infos_filters_by_fuzzy_title() {
     let list = list_infos(
         (&mock, &mock),
         token("user-1"),
-        ListComicInfosParams {
+        ListComicInfosInstr {
             incl_opt: Vec::new(),
             with_opt: vec![],
             workset_id: "workset-1".into(),
@@ -153,7 +153,7 @@ async fn list_infos_filters_by_fuzzy_title() {
     let list = list_infos(
         (&mock, &mock),
         token("user-1"),
-        ListComicInfosParams {
+        ListComicInfosInstr {
             incl_opt: Vec::new(),
             with_opt: vec![],
             workset_id: "workset-1".into(),
@@ -174,7 +174,7 @@ async fn list_infos_filters_by_fuzzy_title() {
     let list = list_infos(
         (&mock, &mock),
         token("user-1"),
-        ListComicInfosParams {
+        ListComicInfosInstr {
             incl_opt: Vec::new(),
             with_opt: vec![],
             workset_id: "workset-1".into(),

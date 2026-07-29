@@ -8,14 +8,14 @@ use poprako_util::i18n::trl;
 use crate::complex::assignment::{AssignmentComplex, AssignmentPermComplex};
 use crate::complex::chapter::{ChapterComplex, ChapterPermComplex};
 use crate::complex::comic::ComicComplex;
-use crate::data::assignment::{
-    AssignmentInfoVal, JoinChapterAssignmentParams, ListAssignmentInfosParams,
-    UpdateAssignmentRolesParams,
+use crate::data::instr::assignment::{
+    JoinChapterAssignmentInstr, ListAssignmentInfosInstr,
+    UpdateAssignmentRolesInstr,
 };
-use crate::model::assignment::{
-    AssignmentEntry, AssignmentInfoListSpec, AssignmentRoleUpdate,
-};
-use crate::model::user::UserToken;
+use crate::data::view::assignment::AssignmentInfoView;
+use crate::model::read::spec::assignment::AssignmentListSpec;
+use crate::model::shared::user::UserToken;
+use crate::model::write::assignment::{AssignmentEntry, AssignmentRoleRepl};
 use crate::part::image::ImagePool;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
@@ -47,8 +47,8 @@ mod tests;
 pub async fn list_infos<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
-    params: ListAssignmentInfosParams,
-) -> BaseRest<Vec<AssignmentInfoVal>>
+    instr: ListAssignmentInfosInstr,
+) -> BaseRest<Vec<AssignmentInfoView>>
 where
     R: AssignmentRepo<C>
         + ChapterRepo<C>
@@ -60,7 +60,7 @@ where
         + Sync,
     I: ImagePool,
 {
-    let assignment_list_spec: AssignmentInfoListSpec = params.try_into()?;
+    let assignment_list_spec: AssignmentListSpec = instr.try_into()?;
 
     AssignmentPermComplex::ensure_user_can_list_infos(
         &mut run_proxy! {
@@ -112,7 +112,7 @@ where
             .map(String::as_str);
 
         assignment_info_vals.push(
-            AssignmentInfoVal::from_model(
+            AssignmentInfoView::from_model(
                 image_pool,
                 assignment_info,
                 fallback_cover_key,
@@ -129,8 +129,8 @@ where
 pub async fn join<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
-    params: JoinChapterAssignmentParams,
-) -> BaseRest<AssignmentInfoVal>
+    instr: JoinChapterAssignmentInstr,
+) -> BaseRest<AssignmentInfoView>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -143,7 +143,7 @@ where
         + Sync,
 {
     let chapter_info = GetChapterInfo {
-        id: &params.chapter_id,
+        id: &instr.chapter_id,
         incls: &[],
     }
     .run_on(repo)
@@ -159,7 +159,7 @@ where
         },
         &token.user_id,
         &chapter_info,
-        params.roles,
+        instr.roles,
     )
     .await?;
 
@@ -172,8 +172,8 @@ where
                 for<'a, 'b> GetChapterInfo<'a, 'b>;
         },
         &token.user_id,
-        &params.chapter_id,
-        params.roles,
+        &instr.chapter_id,
+        instr.roles,
     )
     .await?;
 
@@ -181,7 +181,7 @@ where
         .coord(async move |context| {
             //
             let chapter_info = GetChapterInfoExcluded {
-                id: &params.chapter_id,
+                id: &instr.chapter_id,
                 incls: &[],
             }
             .step_on(repo, context)
@@ -190,7 +190,7 @@ where
             ChapterComplex::ensure_chapter_writable(&chapter_info)?;
 
             let existing_assignment_info = FindAssignmentInfo::ChapterUser {
-                chapter_id: &params.chapter_id,
+                chapter_id: &instr.chapter_id,
                 user_id: &token.user_id,
             }
             .step_on(repo, context)
@@ -202,7 +202,7 @@ where
                     //
                     let assignment_role_update = AssignmentComplex::merge_roles(
                         &existing_assignment_info,
-                        params.roles,
+                        instr.roles,
                     );
 
                     UpdateAssignmentRoles {
@@ -216,9 +216,9 @@ where
                     //
                     let assignment_entry = AssignmentEntry {
                         id: AssignmentComplex::gen_id(),
-                        chapter_id: params.chapter_id,
+                        chapter_id: instr.chapter_id,
                         user_id: token.user_id,
-                        roles: params.roles,
+                        roles: instr.roles,
                     };
 
                     CreateAssignment {
@@ -231,7 +231,7 @@ where
         })
         .await?;
 
-    accept(AssignmentInfoVal::from(assignment_info))
+    accept(AssignmentInfoView::from(assignment_info))
 }
 
 /// Updates assignment roles.
@@ -239,7 +239,7 @@ where
 pub async fn update_roles<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
-    params: UpdateAssignmentRolesParams,
+    instr: UpdateAssignmentRolesInstr,
 ) -> BaseRest<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
@@ -262,9 +262,9 @@ where
                 for<'a, 'b> FindAssignmentInfo<'a, 'b>;
         },
         &token.user_id,
-        &params.user_id,
-        &params.chapter_id,
-        params.roles,
+        &instr.user_id,
+        &instr.chapter_id,
+        instr.roles,
     )
     .await?;
 
@@ -277,16 +277,16 @@ where
                 for<'a> FindMemberInfo<'a>,
                 for<'a, 'b> FindAssignmentInfo<'a, 'b>;
         },
-        &params.user_id,
-        &params.chapter_id,
-        params.roles,
+        &instr.user_id,
+        &instr.chapter_id,
+        instr.roles,
     )
     .await?;
 
     nucl.coord(async move |context| {
         //
         let chapter_info = GetChapterInfoExcluded {
-            id: &params.chapter_id,
+            id: &instr.chapter_id,
             incls: &[],
         }
         .step_on(repo, context)
@@ -295,14 +295,14 @@ where
         ChapterComplex::ensure_chapter_writable(&chapter_info)?;
 
         let assignment_infos = ListAssignmentInfosExcluded::Chapter {
-            chapter_id: &params.chapter_id,
+            chapter_id: &instr.chapter_id,
         }
         .step_on(repo, context)
         .await?;
 
         let existing_assignment_info = assignment_infos
             .iter()
-            .find(|assignment_info| assignment_info.user_id == params.user_id);
+            .find(|assignment_info| assignment_info.user_id == instr.user_id);
 
         match existing_assignment_info {
             //
@@ -311,22 +311,22 @@ where
                 if AssignmentComplex::is_self_admin_role_removal(
                     &token.user_id,
                     assignment_info,
-                    params.roles,
+                    instr.roles,
                 ) {
                     return Err(assignment_admin_required_err());
                 }
 
                 if !AssignmentComplex::chapter_has_admin_after_role_update(
                     &assignment_infos,
-                    &params.user_id,
-                    params.roles,
+                    &instr.user_id,
+                    instr.roles,
                 ) {
                     return Err(assignment_admin_required_err());
                 }
 
-                let assignment_role_update = AssignmentRoleUpdate {
+                let assignment_role_update = AssignmentRoleRepl {
                     id: assignment_info.id.clone(),
-                    roles: params.roles,
+                    roles: instr.roles,
                 };
 
                 UpdateAssignmentRoles {
@@ -340,17 +340,17 @@ where
                 //
                 if !AssignmentComplex::chapter_has_admin_after_role_update(
                     &assignment_infos,
-                    &params.user_id,
-                    params.roles,
+                    &instr.user_id,
+                    instr.roles,
                 ) {
                     return Err(assignment_admin_required_err());
                 }
 
                 let assignment_entry = AssignmentEntry {
                     id: AssignmentComplex::gen_id(),
-                    chapter_id: params.chapter_id,
-                    user_id: params.user_id,
-                    roles: params.roles,
+                    chapter_id: instr.chapter_id,
+                    user_id: instr.user_id,
+                    roles: instr.roles,
                 };
 
                 CreateAssignment {

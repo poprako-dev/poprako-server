@@ -10,8 +10,8 @@ use tracing::instrument;
 use poprako_util::i18n::{trl, trl_kv};
 
 use crate::complex::system_mail::SystemMailComplex;
-use crate::model::chapter::ChapterInfo;
-use crate::model::system_mail::SystemMailEntry;
+use crate::model::read::proj::chapter::ChapterInfo;
+use crate::model::write::system_mail::SystemMailEntry;
 use crate::part::effect::event::chapter::{
     ChapterPublishedPayload, ChapterWorkflowCompletedPayload,
 };
@@ -188,9 +188,10 @@ where
         return Vec::new();
     };
 
-    let title = trl_kv("mail-chapter-progress-title", &args);
-
-    let content = trl_kv("mail-chapter-progress-body", &args);
+    let (title, content) = (
+        trl_kv("mail-chapter-progress-title", &args),
+        trl_kv("mail-chapter-progress-body", &args),
+    );
 
     assignment_infos
         .into_iter()

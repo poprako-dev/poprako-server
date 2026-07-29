@@ -10,7 +10,7 @@ use tracing::instrument;
 use poprako_util::i18n::{trl, trl_kv};
 
 use crate::complex::system_mail::SystemMailComplex;
-use crate::model::system_mail::SystemMailEntry;
+use crate::model::write::system_mail::SystemMailEntry;
 use crate::part::effect::event::user::{
     UserActivePayload, UserSignedUpPayload,
 };

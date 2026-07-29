@@ -2,18 +2,18 @@
 // import(import)(negative): page-count mismatch rejects import and leaves units and counters unchanged.
 
 use super::*;
+use crate::data::instr::chapter_port::ImportChapterTranslationInstr;
 
 use time::OffsetDateTime;
 
-use crate::data::chapter_port::ImportChapterTranslationParams;
-use crate::model::assignment::AssignmentInfo;
-use crate::model::chapter::ChapterInfo;
-use crate::model::comic::ComicInfo;
-use crate::model::page::PageInfo;
+use crate::model::read::proj::assignment::AssignmentInfo;
+use crate::model::read::proj::chapter::ChapterInfo;
+use crate::model::read::proj::comic::ComicInfo;
+use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::unit::UnitInfo;
+use crate::model::read::proj::workset::WorksetInfo;
 use crate::model::shared::unit::UnitCoord;
-use crate::model::user::UserToken;
-use crate::model::workset::WorksetInfo;
+use crate::model::shared::user::UserToken;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
@@ -230,7 +230,7 @@ async fn import_label_plus_material_updates_units_and_counters() {
     let imported = import(
         (&mock, &mock),
         token("user-1"),
-        ImportChapterTranslationParams {
+        ImportChapterTranslationInstr {
             format: TranslationFormat::LabelPlus,
             content: LABEL_PLUS_MATERIAL.into(),
         },
@@ -304,7 +304,7 @@ async fn import_rejects_page_count_mismatch_without_mutation() {
     let err = import(
         (&mock, &mock),
         token("user-1"),
-        ImportChapterTranslationParams {
+        ImportChapterTranslationInstr {
             format: TranslationFormat::LabelPlus,
             content: LABEL_PLUS_MATERIAL.into(),
         },

@@ -3,7 +3,7 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::model::team::TeamInfo;
+use crate::model::read::proj::team::TeamInfo;
 use crate::part_impl::repo::rdb_impl::schema::t_team;
 use crate::result::{BaseError, BaseRest, accept};
 use crate::value::image::{ImageExt, ImageHash};
@@ -139,21 +139,20 @@ impl TryFrom<TeamRow> for TeamInfo {
 
     fn try_from(v: TeamRow) -> BaseRest<Self> {
         //
-        let avatar_hash_bytes: [u8; 32] =
+        let (avatar_hash_bytes, avatar_ext) = (
             v.f_avatar_hash.try_into().map_err(|_| {
                 BaseError::Unrecoverable {
                     message: "[TeamRow] f_avatar_hash must contain 32 bytes"
                         .into(),
                 }
-            })?;
-
-        let avatar_ext =
+            })?,
             ImageExt::parse(&v.f_avatar_extension).ok_or_else(|| {
                 BaseError::Unrecoverable {
                     message: "[TeamRow] f_avatar_extension must be supported"
                         .into(),
                 }
-            })?;
+            })?,
+        );
 
         accept(TeamInfo {
             id: v.f_id,

@@ -1,4 +1,4 @@
-use crate::model::assignment::AssignmentInfo;
+use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::part_impl::repo::rdb_impl::incl::framework::{
     BatchByIds, ChapterByIds, ComicByIds, Incl, TeamByIds, UserByIds,
     WorksetByIds, populate,

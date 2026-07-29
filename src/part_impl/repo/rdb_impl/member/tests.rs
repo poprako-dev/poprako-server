@@ -4,7 +4,8 @@ use super::*;
 
 use poprako_orchestra::{Nucl as _, Step as _};
 
-use crate::model::member::{MemberEntry, MemberListSpec, MemberRoleUpdate};
+use crate::model::read::spec::member::MemberListSpec;
+use crate::model::write::member::{MemberEntry, MemberRoleRepl};
 use crate::part::repo::oper::member::{
     CreateMember, GetMemberInfo, ListMemberInfos, UpdateMember,
 };
@@ -81,7 +82,7 @@ pub async fn member_roundtrip_uses_testcontainer(shared: RdbCore) {
         team_fixture.user_entry.id
     );
 
-    let member_role_update = MemberRoleUpdate {
+    let member_role_update = MemberRoleRepl {
         id: member_entry.id.clone(),
         roles: member_role,
     };
