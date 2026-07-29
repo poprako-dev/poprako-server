@@ -76,6 +76,7 @@ pub async fn list_infos(
     Extension(user_token): Extension<UserToken>,
     Query(query): Query<TermListQuery>,
 ) -> HttpResult<Vec<TermInfoVal>> {
+    //
     let params = ListTermInfosParams {
         termbase_id,
         fuzzy_source: query.fuzzy_source,
@@ -131,6 +132,7 @@ pub async fn update_info(
     Extension(user_token): Extension<UserToken>,
     Json(params): Json<UpdateTermInfoParams>,
 ) -> HttpNoContent {
+    //
     ensure_path_matches_body_id(&term_id, &params.id)?;
 
     usecase::term::update_info(harn.drive(), harn.repo(), user_token, params)
@@ -157,6 +159,7 @@ pub async fn delete(
     Path(term_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
+    //
     usecase::term::delete(harn.drive(), harn.repo(), user_token, term_id)
         .await?;
 

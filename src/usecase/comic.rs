@@ -1,6 +1,5 @@
 //! Comic use cases — create, read, update, cover management, and deletion.
 
-use std::collections::HashMap;
 use std::time::Duration;
 
 use poprako_orchestra::{Nucl, run_proxy, step_proxy};
@@ -12,15 +11,14 @@ use crate::complex::assignment::AssignmentComplex;
 use crate::complex::chapter::ChapterComplex;
 use crate::complex::comic::{ComicComplex, ComicPermComplex};
 use crate::complex::image::ImageComplex;
-use crate::data::chapter::ChapterInfoVal;
 use crate::data::comic::{
-    ComicInfoVal, CreateComicParams, CreateComicPayload, ListComicInfosParams,
-    ListComicInfosPayload, MarkComicCoverUploadedParams,
-    ReserveComicCoverParams, ReserveComicCoverPayload, UpdateComicInfoParams,
+    ComicInfoVal, CreateComicParams, CreateComicPayload,
+    MarkComicCoverUploadedParams, ReserveComicCoverParams,
+    ReserveComicCoverPayload, UpdateComicInfoParams,
 };
 use crate::model::assignment::AssignmentEntry;
 use crate::model::chapter::ChapterEntry;
-use crate::model::comic::{ComicEntry, ComicInfoListSpec, ComicInfoUpdate};
+use crate::model::comic::{ComicEntry, ComicInfoUpdate};
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
 use crate::part::prom::Prom;
@@ -41,9 +39,8 @@ use crate::part::repo::oper::chapter::{
 };
 use crate::part::repo::oper::comic::{
     AllocComicChapterIndex, CreateComic, DeleteComic, GetComicInfo,
-    GetComicInfoExcluded, ListComicInfos, MarkComicCoverUploaded,
-    ReserveComicCover, TouchComicLastActive, UpdateComic,
-    UpdateComicChapterCount,
+    GetComicInfoExcluded, MarkComicCoverUploaded, ReserveComicCover,
+    TouchComicLastActive, UpdateComic, UpdateComicChapterCount,
 };
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::page::{
@@ -62,10 +59,13 @@ use crate::part::repo::termbase::TermbaseRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseError, BaseResult, accept};
-use crate::value::comic::ComicWithOpt;
 
 #[cfg(test)]
 pub mod tests;
+
+mod list;
+
+pub use list::list_infos;
 
 /// Creates a new comic inside a workset together with its first
 /// chapter and a creator admin assignment.
@@ -284,112 +284,6 @@ where
     .await
 }
 
-/// Lists comics for a workset with optional title filter, completion filter, and pagination.
-#[instrument(level = "info", err(Debug), skip_all)]
-pub async fn list_infos<C, R, I>(
-    repo: &R,
-    image_pool: &I,
-    token: UserToken,
-    params: ListComicInfosParams,
-) -> BaseResult<ListComicInfosPayload>
-where
-    R: ComicRepo<C>
-        + WorksetRepo<C>
-        + MemberRepo<C>
-        + ChapterRepo<C>
-        + PageRepo<C>
-        + Sync,
-    I: ImagePool,
-{
-    ComicPermComplex::ensure_user_can_list_infos(
-        &mut run_proxy! {
-            repo =>
-                for<'a> GetWorksetInfo<'a>,
-                for<'a> FindMemberInfo<'a>;
-        },
-        &token.user_id,
-        &params.workset_id,
-    )
-    .await?;
-
-    let with_pinned_chapter =
-        params.with_opt.contains(&ComicWithOpt::PinnedChapter);
-
-    let spec: ComicInfoListSpec = params.try_into()?;
-
-    let comic_infos = repo.run(&ListComicInfos { spec: &spec }).await?;
-
-    let comic_ids = comic_infos
-        .iter()
-        .map(|comic_info| comic_info.id.clone())
-        .collect::<Vec<_>>();
-
-    let fallback_cover_keys = ComicComplex::resolve_fallback_cover_keys(
-        &mut run_proxy! {
-            repo =>
-                for<'a> ListPinnedChapterInfos<'a>,
-                for<'a> ListFirstPageInfos<'a>;
-        },
-        &comic_ids,
-    )
-    .await?;
-
-    // NOTE: `with` cannot be executed elegantly by repo layer,
-    // so we have to handle it in usecase layer.
-    let mut pinned_chapter_infos = match with_pinned_chapter {
-        //
-        true => {
-            //
-            let comic_ids: Vec<String> =
-                comic_infos.iter().map(|info| info.id.clone()).collect();
-
-            repo.run(&ListPinnedChapterInfos {
-                comic_ids: &comic_ids,
-            })
-            .await?
-        }
-
-        false => HashMap::new(),
-    };
-
-    let mut comic_info_vals = Vec::with_capacity(comic_infos.len());
-
-    let mut pinned_chapter_vals = Vec::with_capacity(comic_infos.len());
-
-    for comic_info in comic_infos {
-        //
-        let pinned_chapter_val =
-            match pinned_chapter_infos.remove(&comic_info.id) {
-                //
-                Some(chapter_info) => Some(
-                    ChapterInfoVal::from_model(image_pool, chapter_info, None)
-                        .await?,
-                ),
-
-                None => None,
-            };
-
-        let fallback_cover_key =
-            fallback_cover_keys.get(&comic_info.id).map(String::as_str);
-
-        comic_info_vals.push(
-            ComicInfoVal::from_model(
-                image_pool,
-                comic_info,
-                fallback_cover_key,
-            )
-            .await?,
-        );
-
-        pinned_chapter_vals.push(pinned_chapter_val);
-    }
-
-    accept(ListComicInfosPayload {
-        comics: comic_info_vals,
-        pinned_chapters: pinned_chapter_vals,
-    })
-}
-
 /// Updates a comic's title, author, and description.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn update_info<C, R>(
@@ -552,6 +446,7 @@ where
     repo.run(&MarkComicCoverUploaded {
         id: &id,
         cover_version: params.cover_version,
+        cover_key: None,
     })
     .await?;
 

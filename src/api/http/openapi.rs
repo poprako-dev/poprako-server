@@ -30,11 +30,12 @@ use crate::data::chapter_port::{
     ImportChapterTranslationPayload,
 };
 use crate::data::comic::{
-    ComicInfoVal, CreateComicParams, CreateComicPayload, ListComicInfosPayload,
+    ComicInfoVal, CreateComicParams, CreateComicPayload,
     MarkComicCoverUploadedParams, ReserveComicCoverParams,
     ReserveComicCoverPayload, UpdateComicInfoParams,
 };
 use crate::data::comic_archive::ArchiveComicPayload;
+use crate::data::comic_list::ListComicInfosPayload;
 use crate::data::comment::{
     CommentInfoVal, CreateCommentParams, CreateCommentPayload,
 };

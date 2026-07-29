@@ -20,6 +20,7 @@ error-team-not-found = Team not found
 error-team-or-user-required = Either team_id or user_id must be provided
 error-token-sign-failed = Failed to sign token
 error-chapter-or-user-required = Either chapter_id or owner_id must be provided
+error-pinned-chapter-with-required = with=pinned_chapter_assignment requires with=pinned_chapter
 error-workset-not-found = Workset not found
 error-member-not-found = Member not found
 error-team-member-required = You are not a member of this team
@@ -42,6 +43,7 @@ error-invalid-stage-phase = Invalid workflow stage phase
 error-chapter-admin-required = Chapter admin role is required
 error-chapter-reviewer-required = Chapter reviewer role is required
 error-chapter-workflow-role-required = Required chapter workflow role is missing
+error-chapter-no-role-holder = No one on the chapter holds the required workflow role
 error-chapter-assignee-required = Chapter assignment is required
 error-chapter-translator-or-proofreader-required = Chapter translator or proofreader assignment is required
 error-chapter-role-not-assignable = Chapter role is not assignable

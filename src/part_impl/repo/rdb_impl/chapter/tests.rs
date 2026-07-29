@@ -1,6 +1,4 @@
-// chapter_roundtrip_reads_test_database_url(ChapterRepo)(positive): chapter repo persists, lists, and finds pinned chapter rows in the local test database.
-
-use super::*;
+// chapter_roundtrip_uses_testcontainer(ChapterRepo)(positive): chapter repo persists, lists, and finds pinned chapter rows in an isolated PostgreSQL container.
 
 use poprako_orchestra::{Nucl, Run as _, Step as _};
 
@@ -11,16 +9,13 @@ use crate::part::repo::oper::chapter::{
 };
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
+use crate::part_impl::shared::RdbCore;
 use crate::result::accept;
 use crate::value::chapter::{ChapterInclOpt, Stage, StageMask, StagePhase};
 
 const PREFIX: &str = "rdb-test-chapter-domain-";
 
-#[tokio::test]
-async fn chapter_roundtrip_reads_test_database_url() {
-    //
-    let shared = test_shared::shared().await;
-
+pub async fn chapter_roundtrip_uses_testcontainer(shared: RdbCore) {
     test_shared::reset(&shared, PREFIX).await;
 
     let chapter_fixture = test_shared::seed_chapter(&shared, PREFIX).await;

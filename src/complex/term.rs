@@ -16,6 +16,7 @@ fn expected(message: &str) -> BaseError {
 }
 
 fn normalize_source(source: String) -> BaseResult<String> {
+    //
     let source = source.trim().to_string();
 
     if source.is_empty() {
@@ -26,6 +27,7 @@ fn normalize_source(source: String) -> BaseResult<String> {
 }
 
 fn normalize_targets(targets: Vec<String>) -> BaseResult<Vec<String>> {
+    //
     if targets.is_empty() {
         return Err(expected("error-term-targets-required"));
     }
@@ -35,6 +37,7 @@ fn normalize_targets(targets: Vec<String>) -> BaseResult<Vec<String>> {
     let mut seen_targets = HashSet::with_capacity(targets.len());
 
     for target in targets {
+        //
         let target = target.trim().to_string();
 
         if target.is_empty() {
@@ -53,10 +56,13 @@ fn normalize_targets(targets: Vec<String>) -> BaseResult<Vec<String>> {
 
 fn normalize_comment(comment: Option<String>) -> Option<String> {
     comment.and_then(|comment| {
+        //
         let comment = comment.trim().to_string();
 
         match comment.is_empty() {
+            //
             true => None,
+
             false => Some(comment),
         }
     })
@@ -81,6 +87,7 @@ impl TermComplex {
         comment: Option<String>,
         creator_id: String,
     ) -> BaseResult<TermEntry> {
+        //
         let source = normalize_source(source)?;
 
         let targets = normalize_targets(targets)?;
@@ -104,6 +111,7 @@ impl TermComplex {
         targets: Vec<String>,
         comment: Option<String>,
     ) -> BaseResult<TermInfoUpdate> {
+        //
         let source = normalize_source(source)?;
 
         let targets = normalize_targets(targets)?;

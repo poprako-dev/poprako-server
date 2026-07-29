@@ -1,0 +1,64 @@
+use super::*;
+
+use crate::part_impl::shared::test_rdb::start;
+
+#[tokio::test]
+#[serial_test::serial(repo_rdb)]
+async fn repo_rdb_impls_use_testcontainer() {
+    let test_rdb = start().await;
+
+    let shared = test_rdb.core();
+
+    announcement::tests::announcement_roundtrip_uses_testcontainer(
+        shared.clone(),
+    )
+    .await;
+
+    assignment::tests::assignment_roundtrip_uses_testcontainer(shared.clone())
+        .await;
+
+    assignment_invitation::tests::assignment_invitation_roundtrip_uses_testcontainer(
+        shared.clone(),
+    )
+    .await;
+
+    chapter::tests::chapter_roundtrip_uses_testcontainer(shared.clone()).await;
+
+    comic::tests::comic_roundtrip_uses_testcontainer(shared.clone()).await;
+
+    comic_archive::tests::comic_archive_roundtrip_uses_testcontainer(
+        shared.clone(),
+    )
+    .await;
+
+    comment::tests::comment_roundtrip_uses_testcontainer(shared.clone()).await;
+
+    member::tests::member_roundtrip_uses_testcontainer(shared.clone()).await;
+
+    member_invitation::tests::member_invitation_roundtrip_uses_testcontainer(
+        shared.clone(),
+    )
+    .await;
+
+    page::tests::page_roundtrip_uses_testcontainer(shared.clone()).await;
+
+    system_mail::tests::system_mail_roundtrip_uses_testcontainer(
+        shared.clone(),
+    )
+    .await;
+
+    team::tests::team_roundtrip_uses_testcontainer(shared.clone()).await;
+
+    term::tests::term_array_unique_and_fuzzy_roundtrip(shared.clone()).await;
+
+    termbase::tests::termbase_constraints_and_query_roundtrip(shared.clone())
+        .await;
+
+    unit::tests::unit_roundtrip_uses_testcontainer(shared.clone()).await;
+
+    user::tests::user_roundtrip_uses_testcontainer(shared.clone()).await;
+
+    workset::tests::workset_roundtrip_uses_testcontainer(shared).await;
+
+    drop(test_rdb);
+}

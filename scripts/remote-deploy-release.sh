@@ -42,8 +42,8 @@ preserve_production_env() {
     [ -n "$production_value" ] || return 0
 
     next_env_file=$(mktemp)
-    grep -v "^${key}=" "$tmp_env_file" > "$next_env_file" || true
-    printf '%s=%s\n' "$key" "$production_value" >> "$next_env_file"
+    grep -v "^${key}=" "$tmp_env_file" >"$next_env_file" || true
+    printf '%s=%s\n' "$key" "$production_value" >>"$next_env_file"
     mv "$next_env_file" "$tmp_env_file"
 }
 
@@ -70,7 +70,7 @@ mkdir -p "$shared_dir"
 tmp_env_file=$(mktemp)
 trap 'rm -f "$tmp_env_file"' EXIT INT TERM HUP
 
-grep -v '^DATABASE_URL=' "$source_env_file" > "$tmp_env_file" || true
+grep -v '^DATABASE_URL=' "$source_env_file" >"$tmp_env_file" || true
 
 for env_key in \
     JWT_SECRET \
@@ -92,7 +92,7 @@ for env_key in \
 done
 
 printf 'DATABASE_URL=postgres://%s:%s@prod-postgres:5432/db_poprako_server_prod\n' \
-    "$database_user" "$database_password" >> "$tmp_env_file"
+    "$database_user" "$database_password" >>"$tmp_env_file"
 
 mv "$tmp_env_file" "$runtime_env_file"
 trap - EXIT INT TERM HUP

@@ -61,6 +61,7 @@ where
 
     let term_id = nucl
         .coord(async move |context| {
+            //
             let termbase_info = repo
                 .step(
                     context,
@@ -223,6 +224,7 @@ where
         .await?;
 
     nucl.coord(async move |context| {
+        //
         let termbase_info = repo
             .step(
                 context,
@@ -298,6 +300,7 @@ where
     let term_info = repo.run(&GetTermInfo { id: &id }).await?;
 
     nucl.coord(async move |context| {
+        //
         let termbase_info = repo
             .step(
                 context,

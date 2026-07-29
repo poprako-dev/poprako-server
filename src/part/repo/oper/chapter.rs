@@ -94,7 +94,9 @@ impl<'a> Oper for StartChapterStage<'a> {
     type Output = bool;
 }
 
-/// Completes raw provision when every page image has been uploaded.
+/// Resolves raw provision when complete or no longer present.
+///
+/// Returns `false` only while page uploads are still incomplete.
 pub struct CompleteChapterRawProvide<'a> {
     pub id: &'a str,
 }

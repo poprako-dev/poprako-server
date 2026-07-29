@@ -34,7 +34,7 @@ impl Oper for GetAssignmentInfo<'_, '_> {
     type Output = AssignmentInfo;
 }
 
-/// Lists assignments selected by a query specification or chapter.
+/// Lists assignments selected by a query specification or chapter set.
 pub enum ListAssignmentInfos<'a, 'b> {
     Spec {
         spec: &'a AssignmentInfoListSpec,
@@ -42,6 +42,10 @@ pub enum ListAssignmentInfos<'a, 'b> {
     Chapter {
         chapter_id: &'a str,
         role: Option<RoleField>,
+        incls: &'b [AssignmentInclOpt],
+    },
+    Chapters {
+        chapter_ids: &'a [String],
         incls: &'b [AssignmentInclOpt],
     },
 }

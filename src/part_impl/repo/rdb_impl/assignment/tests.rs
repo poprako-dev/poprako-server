@@ -1,4 +1,4 @@
-// assignment_roundtrip_reads_test_database_url(CreateAssignment, ListAssignmentInfos, GetAssignmentInfo, UpdateAssignmentRoles)(positive): assignment repo creates, lists, fetches, and updates roles in the local test database.
+// assignment_roundtrip_uses_testcontainer(CreateAssignment, ListAssignmentInfos::Spec, ListAssignmentInfos::Chapters, GetAssignmentInfo, UpdateAssignmentRoles)(positive): assignment repo creates, lists, fetches, and updates roles in an isolated PostgreSQL container.
 
 use super::*;
 
@@ -13,17 +13,14 @@ use crate::part::repo::oper::assignment::{
 };
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
+use crate::part_impl::shared::RdbCore;
 use crate::result::BaseError;
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::role::{RoleField, RoleMask};
 
 const PREFIX: &str = "rdb-test-assignment-domain-";
 
-#[tokio::test]
-async fn assignment_roundtrip_reads_test_database_url() {
-    //
-    let shared = test_shared::shared().await;
-
+pub async fn assignment_roundtrip_uses_testcontainer(shared: RdbCore) {
     test_shared::reset(&shared, PREFIX).await;
 
     let chapter_fixture = test_shared::seed_chapter(&shared, PREFIX).await;
@@ -86,6 +83,21 @@ async fn assignment_roundtrip_reads_test_database_url() {
         assignment_infos[0].user.as_ref().unwrap().id,
         assignee_form.id
     );
+
+    let chapter_ids = vec![chapter_fixture.chapter_entry.id.clone()];
+
+    let assignment_infos = repo
+        .run(&ListAssignmentInfos::Chapters {
+            chapter_ids: &chapter_ids,
+            incls: &[],
+        })
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(assignment_infos.len(), 1);
+
+    assert_eq!(assignment_infos[0].id, assignment_entry.id);
 
     let assignment_role_update = AssignmentRoleUpdate {
         id: assignment_entry.id.clone(),

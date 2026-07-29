@@ -1,4 +1,4 @@
-// member_invitation_roundtrip_reads_test_database_url(MemberInvitationRepo)(positive): member invitation repo creates, lists, and marks invitations used in the local test database.
+// member_invitation_roundtrip_uses_testcontainer(MemberInvitationRepo)(positive): member invitation repo creates, lists, and marks invitations used in an isolated PostgreSQL container.
 
 use super::*;
 
@@ -12,17 +12,14 @@ use crate::part::repo::oper::member_invitation::{
 };
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
+use crate::part_impl::shared::RdbCore;
 use crate::result::BaseError;
 use crate::value::member_invitation::MemberInvitationInclOpt;
 use crate::value::role::{RoleField, RoleMask};
 
 const PREFIX: &str = "rdb-test-member-invitation-domain-";
 
-#[tokio::test]
-async fn member_invitation_roundtrip_reads_test_database_url() {
-    //
-    let shared = test_shared::shared().await;
-
+pub async fn member_invitation_roundtrip_uses_testcontainer(shared: RdbCore) {
     test_shared::reset(&shared, PREFIX).await;
 
     let team_fixture = test_shared::seed_user_and_team(&shared, PREFIX).await;

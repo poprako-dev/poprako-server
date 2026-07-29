@@ -13,7 +13,6 @@ use utoipa::{IntoParams, ToSchema};
 
 use poprako_util::time::ToUnixMilli;
 
-use crate::data::chapter::ChapterInfoVal;
 use crate::data::team::TeamInfoVal;
 use crate::data::user::UserInfoVal;
 use crate::data::workset::WorksetInfoVal;
@@ -25,65 +24,7 @@ use crate::value::comic::{ComicInclOpt, ComicWithOpt};
 use crate::value::role::RoleMask;
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn comic_info_val_omits_none_fields() {
-        //
-        let comic_info_val = ComicInfoVal {
-            id: "comic-1".into(),
-            workset_id: "workset-1".into(),
-            index: 1,
-            title: "Comic".into(),
-            author: "Author".into(),
-            description: None,
-            cover_url: None,
-            cover_thumbnail_url: None,
-            chapter_count: 0,
-            creator_id: "user-1".into(),
-            workset: None,
-            team: None,
-            creator: None,
-            last_active_at: 0,
-            created_at: 0,
-            updated_at: 0,
-        };
-
-        let serialized = serde_json::to_value(comic_info_val).unwrap();
-
-        let serde_json::Value::Object(object) = serialized else {
-            panic!("comic info value must serialize as an object");
-        };
-
-        for field_name in [
-            "description",
-            "cover_url",
-            "cover_thumbnail_url",
-            "workset",
-            "team",
-            "creator",
-        ] {
-            assert!(!object.contains_key(field_name));
-        }
-    }
-
-    #[test]
-    fn create_comic_params_deserializes_missing_optional_fields_as_none() {
-        //
-        let create_comic_params =
-            serde_json::from_value::<CreateComicParams>(serde_json::json!({
-                "workset_id": "workset-1",
-                "title": "Comic",
-                "author": "Author",
-            }))
-            .unwrap();
-
-        assert!(create_comic_params.description.is_none());
-
-        assert!(create_comic_params.first_chapter_subtitle.is_none());
-    }
-}
+mod tests;
 
 /// Presentation-ready comic information.
 ///
@@ -270,17 +211,6 @@ pub struct ListComicInfosParams {
 
     pub offset: u32,
     pub limit: u32,
-}
-
-/// Presentation-ready comic list and optional pinned chapters.
-///
-/// `pinned_chapters` is positionally aligned with `comics`. Its entries are
-/// populated only when the request includes `with=pinned_chapter`.
-#[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct ListComicInfosPayload {
-    pub comics: Vec<ComicInfoVal>,
-    pub pinned_chapters: Vec<Option<ChapterInfoVal>>,
 }
 
 impl TryFrom<ListComicInfosParams> for ComicInfoListSpec {

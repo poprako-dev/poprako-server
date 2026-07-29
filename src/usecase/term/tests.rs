@@ -36,6 +36,7 @@ fn member(user_id: &str, roles: RoleMask) -> MemberInfo {
 }
 
 fn termbase() -> TermbaseInfo {
+    //
     let time = OffsetDateTime::now_utc();
 
     TermbaseInfo {
@@ -52,6 +53,7 @@ fn termbase() -> TermbaseInfo {
 }
 
 fn seed_proofreader_scope(mock: &Mock) {
+    //
     mock.seed_team(team("team-1", "Team", "Desc"));
 
     mock.seed_member(member("user-1", RoleMask::from(RoleField::PROOFREADER)));
@@ -70,6 +72,7 @@ fn create_params() -> CreateTermParams {
 
 #[tokio::test]
 async fn create_normalizes_and_increments_count() {
+    //
     let mock = Mock::new();
 
     seed_proofreader_scope(&mock);
@@ -95,6 +98,7 @@ async fn create_normalizes_and_increments_count() {
 
 #[tokio::test]
 async fn create_rejects_duplicate_normalized_targets() {
+    //
     let mock = Mock::new();
 
     seed_proofreader_scope(&mock);
@@ -119,6 +123,7 @@ async fn create_rejects_duplicate_normalized_targets() {
 
 #[tokio::test]
 async fn list_infos_searches_only_source() {
+    //
     let mock = Mock::new();
 
     seed_proofreader_scope(&mock);
@@ -156,6 +161,7 @@ async fn list_infos_searches_only_source() {
 
 #[tokio::test]
 async fn update_replaces_fields_and_touches_parent() {
+    //
     let mock = Mock::new();
 
     seed_proofreader_scope(&mock);
@@ -190,6 +196,7 @@ async fn update_replaces_fields_and_touches_parent() {
 
 #[tokio::test]
 async fn delete_removes_term_and_decrements_count() {
+    //
     let mock = Mock::new();
 
     seed_proofreader_scope(&mock);

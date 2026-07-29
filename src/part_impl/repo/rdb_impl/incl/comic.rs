@@ -4,8 +4,8 @@ use crate::model::comic::ComicInfo;
 use crate::model::team::TeamInfo;
 use crate::model::user::UserInfo;
 use crate::model::workset::WorksetInfo;
-use crate::part_impl::repo::rdb_impl::incl::{
-    self, Incl, TeamByIds, UserByIds, WorksetByIds,
+use crate::part_impl::repo::rdb_impl::incl::framework::{
+    self as incl, Incl, TeamByIds, UserByIds, WorksetByIds,
 };
 use crate::part_impl::shared::RdbConn;
 use crate::result::{BaseResult, accept};

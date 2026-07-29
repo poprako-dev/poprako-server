@@ -20,7 +20,7 @@ mod orchestra;
 impl ChapterRepo<MockContext> for Mock {}
 
 /// Looks up a chapter by id from the mock state, applying include options to resolve relations.
-pub(super) fn get_chapter_by_id(
+pub fn get_chapter_by_id(
     state: &MockState,
     id: &str,
     incl_opt: &[ChapterInclOpt],
@@ -39,7 +39,7 @@ pub(super) fn get_chapter_by_id(
 }
 
 /// Returns all chapters for a comic from the mock state, sorted by index descending.
-pub(super) fn list_all_chapters(
+pub fn list_all_chapters(
     state: &MockState,
     comic_id: &str,
 ) -> Vec<ChapterInfo> {
@@ -57,7 +57,7 @@ pub(super) fn list_all_chapters(
 }
 
 /// Inserts a new chapter into the mock state, returning the created [`ChapterInfo`].
-pub(super) fn create_chapter(
+pub fn create_chapter(
     state: &mut MockState,
     chapter_entry: &ChapterEntry,
 ) -> BaseResult<ChapterInfo> {
@@ -222,7 +222,7 @@ fn apply_comic_creator_incl(
 
 /// Applies the requested include options to a [`ChapterInfo`], resolving
 /// comic, workset, team, and creator relations from the mock state.
-pub(super) fn apply_chapter_incls(
+pub fn apply_chapter_incls(
     state: &MockState,
     chapter_info: &mut ChapterInfo,
     incl_opt: &[ChapterInclOpt],

@@ -192,7 +192,11 @@ impl<'a> Step<MarkPageImageUploaded<'a>, MockContext> for Mock {
             .find(|info| info.id == oper.id)
             .ok_or_else(|| expected("error-page-not-found"))?;
 
-        if page_info.image_version != oper.image_version {
+        if page_info.image_version != oper.image_version
+            || oper.image_key.is_some_and(|image_key| {
+                page_info.image_key.as_deref() != Some(image_key)
+            })
+        {
             return Err(expected("error-stale-page-image-upload"));
         }
 

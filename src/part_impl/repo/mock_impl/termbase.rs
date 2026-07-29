@@ -54,6 +54,7 @@ fn page_infos(
     offset: u32,
     limit: u32,
 ) -> Vec<TermbaseInfo> {
+    //
     termbase_infos
         .sort_by(|left, right| right.updated_at.cmp(&left.updated_at));
 
@@ -68,7 +69,9 @@ fn list_infos(
     state: &MockState,
     spec: &TermbaseInfoListSpec,
 ) -> Vec<TermbaseInfo> {
+    //
     let (mut termbase_infos, fuzzy_name, offset, limit) = match spec {
+        //
         TermbaseInfoListSpec::Team {
             team_id,
             fuzzy_name,
@@ -87,6 +90,7 @@ fn list_infos(
             *offset,
             *limit,
         ),
+
         TermbaseInfoListSpec::Comic {
             team_id,
             comic_id,
@@ -110,6 +114,7 @@ fn list_infos(
     };
 
     if let Some(fuzzy_name) = fuzzy_name {
+        //
         let fuzzy_name = fuzzy_name.to_lowercase();
 
         termbase_infos.retain(|termbase_info| {
@@ -128,6 +133,7 @@ impl<'a> Run<GetTermbaseInfo<'a>> for Mock {
         &self,
         oper: &GetTermbaseInfo<'a>,
     ) -> BaseResult<TermbaseInfo> {
+        //
         let state = self.state.lock().unwrap();
 
         get_info(&state, oper.id)
@@ -142,6 +148,7 @@ impl<'a> Run<ListTermbaseInfos<'a>> for Mock {
         &self,
         oper: &ListTermbaseInfos<'a>,
     ) -> BaseResult<Vec<TermbaseInfo>> {
+        //
         let state = self.state.lock().unwrap();
 
         accept(list_infos(&state, oper.spec))
@@ -157,6 +164,7 @@ impl<'a> Step<CreateTermbase<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &CreateTermbase<'a>,
     ) -> BaseResult<TermbaseInfo> {
+        //
         if name_conflicts(
             &context.state,
             None,
@@ -222,14 +230,17 @@ impl<'a> Step<ListTermbaseInfosExcluded<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &ListTermbaseInfosExcluded<'a>,
     ) -> BaseResult<Vec<TermbaseInfo>> {
+        //
         let termbase_infos = context
             .state
             .termbases
             .iter()
             .filter(|termbase_info| match oper {
+                //
                 ListTermbaseInfosExcluded::Team { team_id } => {
                     termbase_info.team_id.as_deref() == Some(*team_id)
                 }
+
                 ListTermbaseInfosExcluded::Comic { comic_id } => {
                     termbase_info.comic_id.as_deref() == Some(*comic_id)
                 }
@@ -250,6 +261,7 @@ impl<'a> Step<UpdateTermbase<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &UpdateTermbase<'a>,
     ) -> BaseResult<()> {
+        //
         let current = get_info(&context.state, &oper.update.id)?;
 
         if name_conflicts(
@@ -288,6 +300,7 @@ impl<'a> Step<UpdateTermbaseTermCount<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &UpdateTermbaseTermCount<'a>,
     ) -> BaseResult<()> {
+        //
         let termbase_info = context
             .state
             .termbases
@@ -318,6 +331,7 @@ impl<'a> Step<TouchTermbase<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &TouchTermbase<'a>,
     ) -> BaseResult<()> {
+        //
         let termbase_info = context
             .state
             .termbases
@@ -340,6 +354,7 @@ impl<'a> Step<DeleteTermbase<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &DeleteTermbase<'a>,
     ) -> BaseResult<()> {
+        //
         let position = context
             .state
             .termbases

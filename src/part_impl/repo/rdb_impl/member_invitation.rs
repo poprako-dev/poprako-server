@@ -27,8 +27,8 @@ use crate::result::{BaseError, BaseResult, accept};
 use crate::value::member_invitation::MemberInvitationInclOpt;
 use crate::value::role::RoleMask;
 
-#[cfg(all(test, feature = "repo"))]
-mod tests;
+#[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
+pub mod tests;
 
 impl MemberInvitationRepo<RdbContext> for RdbRepo {}
 

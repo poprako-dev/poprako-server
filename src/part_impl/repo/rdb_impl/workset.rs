@@ -308,3 +308,6 @@ impl<'a> Step<UpdateWorksetComicCount<'a>, RdbContext> for RdbRepo {
         update_comic_count(context.conn(), oper.id, oper.delta).await
     }
 }
+
+#[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
+pub mod tests;
