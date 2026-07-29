@@ -87,9 +87,8 @@ impl TermbaseComplex {
             _ => return Err(invalid_scope_err()),
         }
 
-        let name = normalize_name(name)?;
-
-        let description = normalize_optional(description);
+        let (name, description) =
+            (normalize_name(name)?, normalize_optional(description));
 
         accept(TermbaseEntry {
             id: next_snowflake_id(),
@@ -108,9 +107,8 @@ impl TermbaseComplex {
         description: Option<String>,
     ) -> BaseRest<TermbaseRepl> {
         //
-        let name = normalize_name(name)?;
-
-        let description = normalize_optional(description);
+        let (name, description) =
+            (normalize_name(name)?, normalize_optional(description));
 
         accept(TermbaseRepl {
             id,

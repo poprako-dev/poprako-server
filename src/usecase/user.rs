@@ -245,11 +245,8 @@ where
         image::ResourceKind::UserAvatar,
     )?;
 
-    let transaction_image_hash = instr.image_hash.clone();
-
-    let image_ext = instr.ext;
-
-    let new_byte_len = instr.new_byte_len;
+    let (transaction_image_hash, image_ext, new_byte_len) =
+        (instr.image_hash.clone(), instr.ext, instr.new_byte_len);
 
     let (object_key, avatar_version, upload_required) = nucl
         .coord(async move |context| {
@@ -262,11 +259,8 @@ where
             .step_on(repo, context)
             .await?;
 
-            let mut batch_ids = Vec::new();
-
-            let mut batch_payloads = Vec::new();
-
-            let mut batch_delays = Vec::new();
+            let (mut batch_ids, mut batch_payloads, mut batch_delays) =
+                (Vec::new(), Vec::new(), Vec::new());
 
             if !avatar_reservation.is_upload_required {
                 return accept((
@@ -506,11 +500,12 @@ where
         if let Some(avatar_key) = &user_info.avatar_key
             && user_info.is_avatar_uploaded
         {
-            let delete_id = ImageComplex::gen_delete_id();
-
-            let payload = TaskPayload::Image(image::ImagePayload::Delete {
-                object_key: avatar_key.clone(),
-            });
+            let (delete_id, payload) = (
+                ImageComplex::gen_delete_id(),
+                TaskPayload::Image(image::ImagePayload::Delete {
+                    object_key: avatar_key.clone(),
+                }),
+            );
 
             let task = Task {
                 id: &delete_id,

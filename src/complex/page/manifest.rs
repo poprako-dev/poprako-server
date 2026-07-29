@@ -34,9 +34,8 @@ pub fn build(
     page_specs: &[PageImageSpec],
 ) -> BaseRest<ManifestPlan> {
     //
-    let mut assigned_existing_indexes = vec![None; page_specs.len()];
-
-    let mut consumed_existing_indexes = HashSet::new();
+    let (mut assigned_existing_indexes, mut consumed_existing_indexes) =
+        (vec![None; page_specs.len()], HashSet::new());
 
     for (request_index, page_spec) in page_specs.iter().enumerate() {
         //

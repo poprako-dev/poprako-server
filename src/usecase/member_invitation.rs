@@ -99,9 +99,10 @@ where
                 }
             }
 
-            let member_invitation_id = MemberInvitationComplex::gen_id();
-
-            let code = MemberInvitationComplex::gen_code();
+            let (member_invitation_id, code) = (
+                MemberInvitationComplex::gen_id(),
+                MemberInvitationComplex::gen_code(),
+            );
 
             let member_invitation_entry = MemberInvitationEntry {
                 id: member_invitation_id,
@@ -122,9 +123,8 @@ where
                 invitation_id: member_invitation_info.id.clone(),
             };
 
-            let purge_payload = TaskPayload::Invitation(purge_event);
-
-            let purge_task_id = next_snowflake_id();
+            let (purge_payload, purge_task_id) =
+                (TaskPayload::Invitation(purge_event), next_snowflake_id());
 
             let purge_task = Task {
                 id: &purge_task_id,

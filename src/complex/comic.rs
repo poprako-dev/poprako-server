@@ -161,11 +161,12 @@ impl ComicComplex {
         if let Some(cover_key) = &comic_info.cover_key
             && comic_info.is_cover_uploaded
         {
-            let delete_id = ImageComplex::gen_delete_id();
-
-            let payload = TaskPayload::Image(image::ImagePayload::Delete {
-                object_key: cover_key.clone(),
-            });
+            let (delete_id, payload) = (
+                ImageComplex::gen_delete_id(),
+                TaskPayload::Image(image::ImagePayload::Delete {
+                    object_key: cover_key.clone(),
+                }),
+            );
 
             let task = Task {
                 id: &delete_id,

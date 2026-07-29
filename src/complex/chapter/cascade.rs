@@ -131,17 +131,18 @@ where
             Error = BaseError,
         >,
 {
-    let delete_ids = object_keys
-        .iter()
-        .map(|_| ImageComplex::gen_delete_id())
-        .collect::<Vec<_>>();
-
-    let payloads = object_keys
-        .into_iter()
-        .map(|object_key| {
-            TaskPayload::Image(image::ImagePayload::Delete { object_key })
-        })
-        .collect::<Vec<_>>();
+    let (delete_ids, payloads) = (
+        object_keys
+            .iter()
+            .map(|_| ImageComplex::gen_delete_id())
+            .collect::<Vec<_>>(),
+        object_keys
+            .into_iter()
+            .map(|object_key| {
+                TaskPayload::Image(image::ImagePayload::Delete { object_key })
+            })
+            .collect::<Vec<_>>(),
+    );
 
     let tasks = delete_ids
         .iter()

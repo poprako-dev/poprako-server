@@ -147,9 +147,10 @@ fn build_comic_payload(
     comic_archive_snapshot: &ComicArchiveSnapshot,
 ) -> BaseRest<ArchivedComicPayload> {
     //
-    let comic_info = &comic_archive_snapshot.comic_info;
-
-    let workset_info = &comic_archive_snapshot.workset_info;
+    let (comic_info, workset_info) = (
+        &comic_archive_snapshot.comic_info,
+        &comic_archive_snapshot.workset_info,
+    );
 
     let chapters = comic_archive_snapshot
         .chapter_snapshots
@@ -280,9 +281,10 @@ fn build_entry(
     archived_at: OffsetDateTime,
 ) -> BaseRest<ComicArchiveEntry> {
     //
-    let archived_comic_id = next_snowflake_id();
-
-    let comic_payload = build_comic_payload(&comic_archive_snapshot)?;
+    let (archived_comic_id, comic_payload) = (
+        next_snowflake_id(),
+        build_comic_payload(&comic_archive_snapshot)?,
+    );
 
     let record = ComicArchiveRecord {
         id: archived_comic_id.clone(),
@@ -299,9 +301,8 @@ fn build_entry(
         created_at: archived_at,
     };
 
-    let mut source_chapter_ids = Vec::new();
-
-    let mut source_page_ids = Vec::new();
+    let (mut source_chapter_ids, mut source_page_ids) =
+        (Vec::new(), Vec::new());
 
     for chapter_snapshot in &comic_archive_snapshot.chapter_snapshots {
         //

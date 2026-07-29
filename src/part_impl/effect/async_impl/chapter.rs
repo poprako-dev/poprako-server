@@ -188,9 +188,10 @@ where
         return Vec::new();
     };
 
-    let title = trl_kv("mail-chapter-progress-title", &args);
-
-    let content = trl_kv("mail-chapter-progress-body", &args);
+    let (title, content) = (
+        trl_kv("mail-chapter-progress-title", &args),
+        trl_kv("mail-chapter-progress-body", &args),
+    );
 
     assignment_infos
         .into_iter()

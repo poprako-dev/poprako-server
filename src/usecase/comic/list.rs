@@ -46,12 +46,12 @@ where
         + Sync,
     I: ImagePool,
 {
-    let with_pinned_chapter =
-        instr.with_opt.contains(&ComicWithOpt::PinnedChapter);
-
-    let with_pinned_chapter_assignment = instr
-        .with_opt
-        .contains(&ComicWithOpt::PinnedChapterAssignment);
+    let (with_pinned_chapter, with_pinned_chapter_assignment) = (
+        instr.with_opt.contains(&ComicWithOpt::PinnedChapter),
+        instr
+            .with_opt
+            .contains(&ComicWithOpt::PinnedChapterAssignment),
+    );
 
     if with_pinned_chapter_assignment && !with_pinned_chapter {
         return Err(BaseError::Expected {
@@ -137,12 +137,15 @@ where
             false => HashMap::new(),
         };
 
-    let mut comic_info_views = Vec::with_capacity(comic_infos.len());
-
-    let mut pinned_chapter_views = Vec::with_capacity(comic_infos.len());
-
-    let mut pinned_chapter_assignment_views =
-        Vec::with_capacity(comic_infos.len());
+    let (
+        mut comic_info_views,
+        mut pinned_chapter_views,
+        mut pinned_chapter_assignment_views,
+    ) = (
+        Vec::with_capacity(comic_infos.len()),
+        Vec::with_capacity(comic_infos.len()),
+        Vec::with_capacity(comic_infos.len()),
+    );
 
     for comic_info in comic_infos {
         //

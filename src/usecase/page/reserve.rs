@@ -185,19 +185,15 @@ where
             .step_on(repo, context)
             .await?;
 
-            let mut page_entries =
-                Vec::with_capacity(page_count as usize);
-
-            let mut reservations =
-                Vec::with_capacity(page_count as usize);
+            let (mut page_entries, mut reservations) = (
+                Vec::with_capacity(page_count as usize),
+                Vec::with_capacity(page_count as usize),
+            );
 
             let mut delete_object_keys = Vec::new();
 
-            let mut total_unit_count = 0;
-
-            let mut translated_unit_count = 0;
-
-            let mut proofread_unit_count = 0;
+            let (mut total_unit_count, mut translated_unit_count, mut proofread_unit_count) =
+                (0, 0, 0);
 
             for (raw_index, page_spec) in page_specs.iter().enumerate() {
                 //
@@ -320,9 +316,7 @@ where
                     }
                 })?;
 
-                let page_id = PageComplex::gen_id();
-
-                let image_version = 1;
+                let (page_id, image_version) = (PageComplex::gen_id(), 1);
 
                 let object_key = PageComplex::gen_image_key(
                     &chapter_info.id,
@@ -385,11 +379,11 @@ where
             .step_on(repo, context)
             .await?;
 
-            let mut task_ids = Vec::new();
-
-            let mut task_payloads = Vec::new();
-
-            let mut task_delays = Vec::new();
+            let (mut task_ids, mut task_payloads, mut task_delays) = (
+                Vec::new(),
+                Vec::new(),
+                Vec::new(),
+            );
 
             for object_key in &delete_object_keys {
                 //
@@ -447,12 +441,12 @@ where
             .step_on(repo, context)
             .await?;
 
-            let advance_id = next_snowflake_id();
-
-            let advance_payload =
+            let (advance_id, advance_payload) = (
+                next_snowflake_id(),
                 TaskPayload::Chapter(ChapterPayload::TryAdvanceRawProvideStage {
                     chapter_id: chapter_info.id.clone(),
-                });
+                }),
+            );
 
             let advance_task = Task {
                 id: &advance_id,

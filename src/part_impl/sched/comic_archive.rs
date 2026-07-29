@@ -188,14 +188,15 @@ async fn purge_slot(conn: &mut RdbConn, slot: &ExpiredSlot) -> BaseRest<usize> {
         u8::from(slot.start.month())
     );
 
-    let title = trl("mail-comic-archive-purged-title");
-
-    let content = format!(
-        "{}: team {}, month {}, comics {}",
-        trl("mail-comic-archive-purged-body"),
-        slot.team_id,
-        month,
-        deleted_count
+    let (title, content) = (
+        trl("mail-comic-archive-purged-title"),
+        format!(
+            "{}: team {}, month {}, comics {}",
+            trl("mail-comic-archive-purged-body"),
+            slot.team_id,
+            month,
+            deleted_count
+        ),
     );
 
     let entries = admin_ids
