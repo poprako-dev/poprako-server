@@ -13,6 +13,7 @@ else
 fi
 
 docker buildx build \
+    --ulimit nofile=65536 \
     --platform "$platform" \
     --tag "$image_name" \
     "$output_flag" \

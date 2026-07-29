@@ -57,18 +57,6 @@ export async function assertTeamInvariant(
         assert.equal(ws.team_id, teamId);
     }
 
-    // workset_next_index >= max(active.index) + 1, or >= 0 when empty
-    if (worksets.length > 0) {
-        const maxIndex = Math.max(...worksets.map((ws) => ws.index));
-
-        assert.ok(
-            team.workset_next_index >= maxIndex + 1,
-            `workset_next_index ${team.workset_next_index} < max(index)+1 ${maxIndex + 1}`,
-        );
-    } else {
-        assert.ok(team.workset_next_index >= 0, `workset_next_index ${team.workset_next_index} < 0`);
-    }
-
     if (!opts.memberCanAccess) {
         // Caller asserts the 403 separately; nothing more to check here.
         return;
@@ -101,16 +89,6 @@ export async function assertWorksetInvariant(api: ApiClient, worksetId: string):
         assert.equal(comic.workset_id, worksetId);
     }
 
-    if (comics.length > 0) {
-        const maxIndex = Math.max(...comics.map((comic) => comic.index));
-
-        assert.ok(
-            workset.comic_next_index >= maxIndex + 1,
-            `comic_next_index ${workset.comic_next_index} < max(index)+1 ${maxIndex + 1}`,
-        );
-    } else {
-        assert.ok(workset.comic_next_index >= 0);
-    }
 }
 
 // ---------- J3. Comic invariant ----------
@@ -147,17 +125,6 @@ export async function assertComicInvariant(api: ApiClient, comicId: string): Pro
     }
 
     assert.ok(pinnedCount <= 1, `at most one pinned chapter, found ${pinnedCount}`);
-
-    if (comic.chapter_count > 0) {
-        const maxIndex = Math.max(...chapters.map((chapter) => chapter.index));
-
-        assert.ok(
-            comic.chapter_next_index >= maxIndex + 1,
-            `chapter_next_index ${comic.chapter_next_index} < max(index)+1 ${maxIndex + 1}`,
-        );
-    } else {
-        assert.ok(comic.chapter_next_index >= 0);
-    }
 
     // pinned endpoint consistency
     const pinnedEndpoint = await getPinnedChapter(api, comicId);

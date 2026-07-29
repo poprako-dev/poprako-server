@@ -9,7 +9,7 @@ use tracing::instrument;
 use crate::complex::team::TeamComplex;
 use crate::model::team::{TeamAvatarReservation, TeamEntry, TeamInfo};
 use crate::part::repo::oper::team::{
-    AllocateTeamWorksetIndex, CreateTeam, DeleteTeam, GetTeamInfo,
+    AllocTeamWorksetIndex, CreateTeam, DeleteTeam, GetTeamInfo,
     GetTeamInfoExcluded, ListTeamInfos, ReserveTeamAvatar, UpdateTeam,
 };
 use crate::part::repo::team::TeamRepo;
@@ -38,7 +38,6 @@ fn create_team(
         avatar_key: None,
         avatar_uploaded: false,
         avatar_version: 0,
-        workset_next_index: 0,
         created_at: time,
         updated_at: time,
     };
@@ -364,28 +363,30 @@ impl<'a> Step<DeleteTeam<'a>, MockContext> for Mock {
     }
 }
 
-impl<'a> Step<AllocateTeamWorksetIndex<'a>, MockContext> for Mock {
+impl<'a> Step<AllocTeamWorksetIndex<'a>, MockContext> for Mock {
     type Error = RegularError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
-        oper: &AllocateTeamWorksetIndex<'a>,
+        oper: &AllocTeamWorksetIndex<'a>,
     ) -> RegularResult<i32> {
         //
-        let team_info = context
+        // verify the team exists
+        context
             .state
             .teams
-            .iter_mut()
-            .find(|team_info| team_info.id == oper.id)
+            .iter()
+            .find(|team| team.id == oper.id)
             .ok_or_else(|| expected("error-team-not-found"))?;
 
-        let workset_index = team_info.workset_next_index;
-
-        team_info.workset_next_index += 1;
-
-        team_info.updated_at = now();
+        let workset_index = context
+            .state
+            .worksets
+            .iter()
+            .filter(|workset_info| workset_info.team_id == oper.id)
+            .count() as i32;
 
         Ok(workset_index)
     }

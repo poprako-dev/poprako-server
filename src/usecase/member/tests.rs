@@ -78,7 +78,6 @@ fn team(id: &str) -> TeamInfo {
         avatar_key: None,
         avatar_uploaded: false,
         avatar_version: 0,
-        workset_next_index: 0,
         created_at: time,
         updated_at: time,
     }
