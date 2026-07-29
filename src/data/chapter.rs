@@ -15,6 +15,7 @@ use crate::model::chapter::ChapterInfo;
 use crate::part::image::ImagePool;
 use crate::result::{BaseResult, accept};
 use crate::value::chapter::{ChapterInclOpt, Stage, StageMask, StageOper};
+use crate::value::role::RoleMask;
 
 /// Presentation-ready chapter information.
 ///
@@ -129,6 +130,10 @@ pub struct CreateChapterParams {
     ///
     /// [`default_subtitle`]: crate::complex::chapter::default_subtitle
     pub subtitle: Option<String>,
+
+    /// Roles assigned to the creator in addition to the mandatory admin role.
+    /// Every requested role must exist on the creator's team membership.
+    pub preset_assignment_roles: Option<RoleMask>,
 }
 
 /// Return value from a successful chapter creation.

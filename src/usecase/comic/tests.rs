@@ -1,5 +1,7 @@
 // create(create)(positive): creating a comic should allocate workset-scoped index and update comic count.
+// create(create)(positive): first-chapter creator preset roles are merged with chapter admin.
 // create(create)(negative): missing workset should rollback without creating a comic.
+// create(create)(negative): creator cannot preset a role missing from team membership.
 // get_info(get_info)(positive): existing comic should return uploaded cover URL.
 // get_info(get_info)(negative): missing comic should propagate an argument error.
 // list_infos(list_infos)(positive): list should return workset comics sorted by last activity.
@@ -32,10 +34,11 @@ use crate::test_util::assert_expected_variant;
 use crate::test_util::fixture::workset;
 use crate::value::chapter::{Stage, StageMask, StagePhase};
 use crate::value::comic::ComicWithOpt;
-use crate::value::role::RoleField;
+use crate::value::role::{RoleField, RoleMask};
 
 mod cover;
 mod fixture;
+mod preset_assignment;
 
 #[tokio::test]
 async fn create_allocates_index_and_updates_count() {
@@ -44,10 +47,20 @@ async fn create_allocates_index_and_updates_count() {
 
     mock.seed_workset(workset("workset-1", "team-1"));
 
-    mock.seed_member(admin_member("user-1", "team-1"));
+    let mut creator_member = admin_member("user-1", "team-1");
 
-    let created =
-        create(&mock, &mock, token("user-1"), create_params("workset-1")).await;
+    creator_member.roles = creator_member
+        .roles
+        .union(RoleMask::from(RoleField::TRANSLATOR));
+
+    mock.seed_member(creator_member);
+
+    let mut params = create_params("workset-1");
+
+    params.preset_assignment_roles =
+        Some(RoleMask::from(RoleField::TRANSLATOR));
+
+    let created = create(&mock, &mock, token("user-1"), params).await;
 
     assert!(created.is_ok());
 
@@ -94,7 +107,7 @@ async fn create_allocates_index_and_updates_count() {
     assert!(
         snapshot.assignments[0]
             .roles
-            .has_any_role(&[RoleField::ADMIN])
+            .has_every_role(&[RoleField::ADMIN, RoleField::TRANSLATOR])
     );
 }
 

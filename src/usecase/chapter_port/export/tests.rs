@@ -1,5 +1,5 @@
-// export(export)(positive): assignee exports chapter metadata and ordered text units.
-// export_label_plus(export_label_plus)(positive): assignee exports ordered pages and units as LabelPlus text.
+// export(export)(positive): assignee exports chapter metadata and ordered text units, then asynchronously starts typeset/redraw.
+// export_label_plus(export_label_plus)(positive): assignee exports ordered pages and units as LabelPlus text, then asynchronously starts typeset/redraw.
 
 use super::*;
 
@@ -13,7 +13,7 @@ use crate::model::unit::UnitInfo;
 use crate::model::user::UserToken;
 use crate::model::workset::WorksetInfo;
 use crate::part_impl::repo::mock_impl::Mock;
-use crate::value::chapter::StageMask;
+use crate::value::chapter::{Stage, StageMask, StagePhase};
 use crate::value::role::{RoleField, RoleMask};
 
 fn token(user_id: &str) -> UserToken {
@@ -176,6 +176,23 @@ fn seed_scope(mock: &Mock) {
     ));
 }
 
+async fn wait_for_typeset_redraw(mock: &Mock) {
+    //
+    for _ in 0..100 {
+        //
+        if mock.snapshot().chapters[0]
+            .stages
+            .has_phase(Stage::TypesetRedraw, StagePhase::Active)
+        {
+            return;
+        }
+
+        tokio::task::yield_now().await;
+    }
+
+    panic!("detached stage advancement did not finish");
+}
+
 #[tokio::test]
 async fn export_returns_chapter_pages_and_units() {
     //
@@ -196,6 +213,8 @@ async fn export_returns_chapter_pages_and_units() {
         Err(_) => panic!("expected export success"),
     };
 
+    wait_for_typeset_redraw(&mock).await;
+
     assert_eq!(exported.chapter_id, "chapter-1");
 
     assert_eq!(exported.chapter_index, 3);
@@ -213,6 +232,12 @@ async fn export_returns_chapter_pages_and_units() {
     assert_eq!(
         exported.pages[0].units[0].proofread_text,
         Some("alpha proof".into())
+    );
+
+    assert!(
+        mock.snapshot().chapters[0]
+            .stages
+            .has_phase(Stage::TypesetRedraw, StagePhase::Active,)
     );
 }
 
@@ -235,6 +260,8 @@ async fn export_label_plus_returns_text_payload() {
         Err(_) => panic!("expected LabelPlus export success"),
     };
 
+    wait_for_typeset_redraw(&mock).await;
+
     assert!(exported.contains("Exported by PopRaKo Web"));
 
     assert!(exported.contains(">>>>>>>>[000.png]<<<<<<<<"));
@@ -245,4 +272,10 @@ async fn export_label_plus_returns_text_payload() {
     );
 
     assert!(exported.contains("alpha proof"));
+
+    assert!(
+        mock.snapshot().chapters[0]
+            .stages
+            .has_phase(Stage::TypesetRedraw, StagePhase::Active,)
+    );
 }

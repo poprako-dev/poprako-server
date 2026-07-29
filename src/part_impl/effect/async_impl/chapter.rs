@@ -219,14 +219,14 @@ fn chapter_mail_args(
 
     args.insert(
         Cow::Borrowed("comic_index"),
-        FluentValue::from(i64::from(comic_info.index + 1)),
+        FluentValue::String(Cow::Owned((comic_info.index + 1).to_string())),
     );
 
     args.insert(Cow::Borrowed("comic_title"), FluentValue::from(short_title));
 
     args.insert(
         Cow::Borrowed("chapter_index"),
-        FluentValue::from(i64::from(chapter_info.index + 1)),
+        FluentValue::String(Cow::Owned((chapter_info.index + 1).to_string())),
     );
 
     args.insert(Cow::Borrowed("workflow"), FluentValue::from(workflow_label));

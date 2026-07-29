@@ -2,6 +2,7 @@
 // list_infos(list_infos)(positive): chapter assignee lists page units without team membership.
 // list_infos(list_infos)(negative): non-member without assignment cannot list page units.
 // save_infos(save_infos)(positive): create maps a local id, save updates, and delete removes.
+// save_infos(save_infos)(positive): successful translation and proofread submissions asynchronously start their chapter stages.
 // save_infos(save_infos)(positive): save with before_id places unit before anchor, None appends to tail.
 // save_infos(save_infos)(positive): concurrent merge applies b-then-c and c-then-b to twenty units and reaches consistent final state.
 // save_infos(save_infos)(negative): user without edit role rolls back units and counters.
@@ -23,7 +24,7 @@ use crate::model::user::UserToken;
 use crate::model::workset::WorksetInfo;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::{BaseError, ExpectedVariant, accept};
-use crate::value::chapter::StageMask;
+use crate::value::chapter::{Stage, StageMask, StagePhase};
 use crate::value::role::{RoleField, RoleMask};
 
 mod basic;
@@ -290,6 +291,20 @@ fn sorted_unit_ids(units: &[UnitInfo]) -> Vec<String> {
         .into_iter()
         .map(|unit_info| unit_info.id)
         .collect()
+}
+
+async fn wait_for_stage(mock: &Mock, stage: Stage, phase: StagePhase) {
+    //
+    for _ in 0..100 {
+        //
+        if mock.snapshot().chapters[0].stages.has_phase(stage, phase) {
+            return;
+        }
+
+        tokio::task::yield_now().await;
+    }
+
+    panic!("detached stage advancement did not finish");
 }
 
 fn assert_perm_error(error: BaseError) {

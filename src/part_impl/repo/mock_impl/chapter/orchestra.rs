@@ -5,11 +5,11 @@ use tracing::instrument;
 
 use crate::model::chapter::{ChapterInfo, ChapterInfoListSpec};
 use crate::part::repo::oper::chapter::{
-    AdjustChapterUnitCounters, CreateChapter, DeleteChapter,
-    FindPinnedChapterInfo, GetChapterInfo, GetChapterInfoExcluded,
-    ListChapterInfos, ListChapterInfosExcluded, ListPinnedChapterInfos,
-    SetChapterPageCounters, UnpinOtherChapters, UpdateChapter,
-    UpdateChapterStage,
+    AdjustChapterUnitCounters, CompleteChapterRawProvide, CreateChapter,
+    DeleteChapter, FindPinnedChapterInfo, GetChapterInfo,
+    GetChapterInfoExcluded, ListChapterInfos, ListChapterInfosExcluded,
+    ListPinnedChapterInfos, SetChapterPageCounters, StartChapterStage,
+    UnpinOtherChapters, UpdateChapter, UpdateChapterStage,
 };
 use crate::part_impl::repo::mock_impl::chapter::{
     apply_chapter_incls, create_chapter, get_chapter_by_id, list_all_chapters,
@@ -18,7 +18,7 @@ use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
 use crate::result::{BaseError, BaseResult, accept};
-use crate::value::chapter::ChapterInclOpt;
+use crate::value::chapter::{ChapterInclOpt, Stage, StagePhase};
 
 fn list_chapter_infos(
     state: &MockState,
@@ -153,6 +153,90 @@ impl<'a> Run<ListPinnedChapterInfos<'a>> for Mock {
         let state = self.state.lock().unwrap();
 
         accept(list_pinned_chapter_infos(&state, oper.comic_ids))
+    }
+}
+
+impl<'a> Run<StartChapterStage<'a>> for Mock {
+    type Error = BaseError;
+
+    #[instrument(level = "info", err(Debug), skip_all)]
+    async fn run(&self, oper: &StartChapterStage<'a>) -> BaseResult<bool> {
+        //
+        let mut state = self.state.lock().unwrap();
+
+        let Some(chapter_info) = state
+            .chapters
+            .iter_mut()
+            .find(|chapter_info| chapter_info.id == oper.id)
+        else {
+            return accept(false);
+        };
+
+        if !chapter_info
+            .stages
+            .has_phase(oper.stage, StagePhase::Pending)
+        {
+            return accept(false);
+        }
+
+        chapter_info.stages = chapter_info
+            .stages
+            .try_set_phase(oper.stage, StagePhase::Active)?;
+
+        chapter_info.updated_at = now();
+
+        accept(true)
+    }
+}
+
+impl<'a> Run<CompleteChapterRawProvide<'a>> for Mock {
+    type Error = BaseError;
+
+    #[instrument(level = "info", err(Debug), skip_all)]
+    async fn run(
+        &self,
+        oper: &CompleteChapterRawProvide<'a>,
+    ) -> BaseResult<bool> {
+        //
+        let mut state = self.state.lock().unwrap();
+
+        let page_count = state
+            .pages
+            .iter()
+            .filter(|page_info| page_info.chapter_id == oper.id)
+            .count();
+
+        let all_pages_uploaded = page_count > 0
+            && state.pages.iter().all(|page_info| {
+                page_info.chapter_id != oper.id || page_info.image_uploaded
+            });
+
+        if !all_pages_uploaded {
+            return accept(false);
+        }
+
+        let Some(chapter_info) = state
+            .chapters
+            .iter_mut()
+            .find(|chapter_info| chapter_info.id == oper.id)
+        else {
+            return accept(false);
+        };
+
+        if !chapter_info
+            .stages
+            .has_phase(Stage::RawProvide, StagePhase::Pending)
+        {
+            return accept(false);
+        }
+
+        chapter_info.stages = chapter_info
+            .stages
+            .try_set_phase(Stage::RawProvide, StagePhase::Completed)?;
+
+        chapter_info.updated_at = now();
+
+        accept(true)
     }
 }
 
