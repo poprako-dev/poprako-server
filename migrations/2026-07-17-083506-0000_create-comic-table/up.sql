@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS "t_comic" (
     "f_cover_key"           TEXT,
     "f_cover_uploaded"      BOOLEAN     NOT NULL DEFAULT FALSE,
     "f_cover_version"       BIGINT      NOT NULL DEFAULT 0,
+    "f_cover_hash"          BYTEA       NOT NULL DEFAULT decode(repeat('00', 32), 'hex'),
+    "f_cover_extension"     TEXT        NOT NULL DEFAULT 'png',
 
     "f_chapter_count"       INTEGER     NOT NULL DEFAULT 0,
     "f_chapter_next_index"  INTEGER     NOT NULL DEFAULT 0,
@@ -20,20 +22,7 @@ CREATE TABLE IF NOT EXISTS "t_comic" (
 
     "f_last_active_at"      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     "f_created_at"          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    "f_updated_at"          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    "f_updated_at"          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CHECK (octet_length("f_cover_hash") = 32)
 );
-
-CREATE UNIQUE INDEX IF NOT EXISTS "uidx_comic_workset_id_index"
-    ON "t_comic" ("f_workset_id", "f_index");
-
-CREATE INDEX IF NOT EXISTS "idx_comic_workset_id"
-    ON "t_comic" ("f_workset_id");
-
-CREATE INDEX IF NOT EXISTS "idx_comic_creator_id"
-    ON "t_comic" ("f_creator_id");
-
-CREATE INDEX IF NOT EXISTS "idx_comic_composed_title_trgm"
-    ON "t_comic" USING GIN ("f_composed_title" gin_trgm_ops);
-
-CREATE INDEX IF NOT EXISTS "idx_comic_workset_last_active"
-    ON "t_comic" ("f_workset_id", "f_last_active_at" DESC, "f_index" ASC);

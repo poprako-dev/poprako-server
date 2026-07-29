@@ -17,8 +17,8 @@ async fn list_infos_returns_units_for_team_member() {
 
     mock.seed_unit(unit("unit-a", "page-1", 0, "", Some("proof"), true));
 
-    let listed = list_all_infos(
-        &mock,
+    let listed = list_infos(
+        (&mock,),
         token("user-1"),
         ListPageUnitInfosParams {
             page_id: "page-1".into(),
@@ -61,8 +61,8 @@ async fn list_infos_returns_units_for_assignment_fallback() {
 
     mock.seed_unit(unit("unit-a", "page-1", 0, "alpha", None, false));
 
-    let listed = list_all_infos(
-        &mock,
+    let listed = list_infos(
+        (&mock,),
         token("user-2"),
         ListPageUnitInfosParams {
             page_id: "page-1".into(),
@@ -89,8 +89,8 @@ async fn list_infos_rejects_unrelated_user() {
 
     seed_scope(&mock, 0, 0, 0);
 
-    let e = list_all_infos(
-        &mock,
+    let e = list_infos(
+        (&mock,),
         token("user-2"),
         ListPageUnitInfosParams {
             page_id: "page-1".into(),
@@ -128,8 +128,7 @@ async fn save_infos_rejects_published_chapter_without_mutation() {
     }
 
     let result = save(
-        &mock,
-        &mock,
+        (&mock, &mock),
         token("user-1"),
         SavePageUnitsParams {
             page_id: "page-1".into(),
@@ -167,8 +166,7 @@ async fn save_infos_creates_updates_and_deletes_by_typed_opers() {
     mock.seed_unit(unit("unit-b", "page-1", 1, "beta", Some("proof"), true));
 
     let saved = save(
-        &mock,
-        &mock,
+        (&mock, &mock),
         token("user-1"),
         SavePageUnitsParams {
             page_id: "page-1".into(),
@@ -237,8 +235,7 @@ async fn save_infos_starts_proofread_after_transaction() {
     mock.seed_unit(unit("unit-a", "page-1", 0, "alpha", None, false));
 
     let saved = save(
-        &mock,
-        &mock,
+        (&mock, &mock),
         token("user-1"),
         SavePageUnitsParams {
             page_id: "page-1".into(),
@@ -290,8 +287,7 @@ async fn save_infos_places_unit_before_anchor_or_at_tail_by_before_id() {
     mock.seed_unit(unit("unit-b", "page-1", 1, "beta", None, false));
 
     let saved = save(
-        &mock,
-        &mock,
+        (&mock, &mock),
         token("user-1"),
         SavePageUnitsParams {
             page_id: "page-1".into(),

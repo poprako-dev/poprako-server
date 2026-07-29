@@ -1,20 +1,38 @@
 use poprako_orchestra::Run as _;
 
-use crate::part::prom::payload::chapter::CheckUploadFinish;
+use crate::part::effect::EffectDevelop;
+use crate::part::effect::event::Event;
+use crate::part::effect::event::chapter::ChapterWorkflowCompletedPayload;
+use crate::part::prom::payload::chapter::ChapterPayload;
 use crate::part::repo::oper::chapter::CompleteChapterRawProvide;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::{BaseResult, accept};
+use crate::value::chapter::Stage;
 
-/// Process a [`CheckUploadFinish`] task by running the `CompleteChapterRawProvide` repo step.
-pub async fn process_check_upload_finish(
-    mock: &Mock,
-    task: &CheckUploadFinish,
-) -> BaseResult<()> {
+/// Process a [`ChapterPayload`] task.
+pub async fn process(mock: &Mock, task: &ChapterPayload) -> BaseResult<()> {
+    match task {
+        ChapterPayload::TryAdvanceRawProvideStage { chapter_id } => {
+            process_raw_provide(mock, chapter_id).await
+        }
+    }
+}
+
+async fn process_raw_provide(mock: &Mock, chapter_id: &str) -> BaseResult<()> {
     //
-    mock.run(&CompleteChapterRawProvide {
-        id: &task.chapter_id,
-    })
-    .await?;
+    let advanced = mock
+        .run(&CompleteChapterRawProvide { id: chapter_id })
+        .await?;
+
+    if advanced {
+        mock.develop(Event::ChapterWorkflowCompleted(
+            ChapterWorkflowCompletedPayload {
+                chapter_id: chapter_id.to_string(),
+                completed_stage: Stage::RawProvide,
+            },
+        ))
+        .await;
+    }
 
     accept(())
 }

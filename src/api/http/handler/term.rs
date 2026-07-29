@@ -27,6 +27,7 @@ use crate::usecase;
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct TermListQuery {
+    //
     /// Optional case-insensitive source substring.
     pub fuzzy_source: Option<String>,
 
@@ -54,7 +55,7 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(params): Json<CreateTermParams>,
 ) -> HttpResult<CreateTermPayload> {
-    usecase::term::create(harn.drive(), harn.repo(), user_token, params)
+    usecase::term::create((harn.drive(), harn.repo()), user_token, params)
         .await?
         .accept(StatusCode::CREATED)
 }
@@ -86,7 +87,7 @@ pub async fn list_infos(
         limit: query.limit,
     };
 
-    usecase::term::list_infos(harn.repo(), user_token, params)
+    usecase::term::list_infos((harn.repo(),), user_token, params)
         .await?
         .accept(StatusCode::OK)
 }
@@ -109,7 +110,7 @@ pub async fn get_info(
     Path(term_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<TermInfoVal> {
-    usecase::term::get_info(harn.repo(), user_token, term_id)
+    usecase::term::get_info((harn.repo(),), user_token, term_id)
         .await?
         .accept(StatusCode::OK)
 }
@@ -137,7 +138,7 @@ pub async fn update_info(
     //
     ensure_path_matches_body_id(&term_id, &params.id)?;
 
-    usecase::term::update_info(harn.drive(), harn.repo(), user_token, params)
+    usecase::term::update_info((harn.drive(), harn.repo()), user_token, params)
         .await?;
 
     no_content()
@@ -162,7 +163,7 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::term::delete(harn.drive(), harn.repo(), user_token, term_id)
+    usecase::term::delete((harn.drive(), harn.repo()), user_token, term_id)
         .await?;
 
     no_content()

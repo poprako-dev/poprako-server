@@ -25,6 +25,7 @@ use crate::value::image::{ImageExt, ImageHash};
 /// [`ChapterInfo`]: crate::model::chapter::ChapterInfo
 #[cfg_attr(test, derive(Clone))]
 pub struct PageInfo {
+    //
     /// The unique identifier for this page record.
     pub id: String,
 
@@ -41,8 +42,6 @@ pub struct PageInfo {
     pub image_version: u32,
     /// Content-addressable hash of the uploaded image file.
     pub image_hash: ImageHash,
-    /// File size of the uploaded page image in bytes.
-    pub image_byte_length: u64,
     /// File format.
     pub image_ext: ImageExt,
 
@@ -62,6 +61,7 @@ pub struct PageInfo {
 /// The data needed to insert one page row.
 #[cfg_attr(test, derive(Clone))]
 pub struct PageEntry {
+    //
     /// The unique identifier for the new page record.
     pub id: String,
 
@@ -76,20 +76,19 @@ pub struct PageEntry {
     pub image_version: u32,
     /// Content-addressable hash of the initial image file.
     pub image_hash: ImageHash,
-    /// File size of the initial page image in bytes.
-    pub image_byte_len: u64,
     /// File format extension of the initial page image.
     pub image_ext: ImageExt,
 }
 
 /// One page-image identity supplied to manifest planning.
 pub struct PageImageSpec {
+    //
     /// Existing page identifier, if the manifest retains a known page.
     pub page_id: Option<String>,
     /// Content-addressable hash of the page image file.
     pub image_hash: ImageHash,
-    /// File size of the page image in bytes.
-    pub byte_length: u64,
+    /// File size when this manifest entry requests an upload slot.
+    pub new_byte_len: Option<u64>,
     /// File format of the page image.
     pub ext: ImageExt,
 }
@@ -97,6 +96,7 @@ pub struct PageImageSpec {
 /// Image reservation result for a page.
 #[cfg_attr(test, derive(Clone))]
 pub struct PageImageReservation {
+    //
     /// Newly generated object-storage key for the image upload slot.
     pub object_key: String,
     /// Previous image key that should be cleaned up from storage, if any.
@@ -107,6 +107,7 @@ pub struct PageImageReservation {
 
 /// Persisted manifest state for one retained or newly created page.
 pub struct PageManifestUpdate {
+    //
     /// The unique identifier of the page whose manifest is being updated.
     pub id: String,
     /// Updated ordinal position of the page within the chapter.
@@ -120,8 +121,6 @@ pub struct PageManifestUpdate {
     pub image_version: u32,
     /// Updated content hash of the page image file.
     pub image_hash: ImageHash,
-    /// Updated file size of the page image in bytes.
-    pub image_byte_len: u64,
     /// Updated file format extension of the page image.
     pub image_ext: ImageExt,
 }

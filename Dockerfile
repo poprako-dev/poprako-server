@@ -15,6 +15,7 @@ RUN apk add --no-cache \
 # without risking stale artifacts from a shared target cache mount.
 COPY Cargo.toml Cargo.lock ./
 COPY poprako-util ./poprako-util
+COPY poprako-swagger ./poprako-swagger
 COPY migrations ./migrations
 COPY benches ./benches
 

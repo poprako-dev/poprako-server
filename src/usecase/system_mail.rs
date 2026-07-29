@@ -33,7 +33,7 @@ mod tests;
 /// [`ListSystemMailInfosParams`]: ListSystemMailInfosParams
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos<C, R>(
-    repo: &R,
+    (repo,): (&R,),
     token: UserToken,
     params: ListSystemMailInfosParams,
 ) -> BaseResult<Vec<SystemMailInfoVal>>
@@ -88,7 +88,7 @@ where
 /// * `R: SystemMailRepo<C>` — System mail storage.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn mark_read<C, R>(
-    repo: &R,
+    (repo,): (&R,),
     token: UserToken,
     ids: Vec<String>,
 ) -> BaseResult<()>

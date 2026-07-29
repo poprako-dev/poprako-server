@@ -12,6 +12,7 @@ use crate::value::chapter_port::TranslationFormat;
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ImportChapterTranslationParams {
+    //
     /// The translation format (e.g., JSON, SRT).
     pub format: TranslationFormat,
     /// Raw translation content string.
@@ -22,6 +23,7 @@ pub struct ImportChapterTranslationParams {
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ExportChapterTranslationPayload {
+    //
     /// Chapter identifier.
     pub chapter_id: String,
     /// Ordinal index of the chapter within its comic.
@@ -43,6 +45,7 @@ pub struct ExportChapterTranslationPayload {
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ImportChapterTranslationPayload {
+    //
     /// Number of pages that were imported.
     pub imported_page_count: i32,
     /// Number of translation units that were imported.

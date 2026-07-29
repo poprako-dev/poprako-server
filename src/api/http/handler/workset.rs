@@ -40,7 +40,7 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(params): Json<CreateWorksetParams>,
 ) -> HttpResult<CreateWorksetPayload> {
-    usecase::workset::create(harn.drive(), harn.repo(), user_token, params)
+    usecase::workset::create((harn.drive(), harn.repo()), user_token, params)
         .await?
         .accept(StatusCode::CREATED)
 }
@@ -71,7 +71,7 @@ pub async fn list_infos(
         limit: pagination.limit,
     };
 
-    usecase::workset::list_infos(harn.repo(), user_token, params)
+    usecase::workset::list_infos((harn.repo(),), user_token, params)
         .await?
         .accept(StatusCode::OK)
 }
@@ -95,7 +95,7 @@ pub async fn get_info(
     Path(workset_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<WorksetInfoVal> {
-    usecase::workset::get_info(harn.repo(), user_token, workset_id)
+    usecase::workset::get_info((harn.repo(),), user_token, workset_id)
         .await?
         .accept(StatusCode::OK)
 }
@@ -124,7 +124,7 @@ pub async fn update_info(
     //
     ensure_path_matches_body_id(&workset_id, &params.id)?;
 
-    usecase::workset::update_info(harn.repo(), user_token, params).await?;
+    usecase::workset::update_info((harn.repo(),), user_token, params).await?;
 
     no_content()
 }
@@ -149,9 +149,7 @@ pub async fn delete(
 ) -> HttpNoContent {
     //
     usecase::workset::delete(
-        harn.drive(),
-        harn.repo(),
-        harn.prom(),
+        (harn.drive(), harn.repo(), harn.prom()),
         user_token,
         workset_id,
     )

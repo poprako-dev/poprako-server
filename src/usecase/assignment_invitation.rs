@@ -25,8 +25,8 @@ use crate::model::assignment_invitation::{
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
 use crate::part::prom::Prom;
-use crate::part::prom::payload::Payload;
-use crate::part::prom::payload::invitation::PurgeExpiredInvitation;
+use crate::part::prom::payload::TaskPayload;
+use crate::part::prom::payload::invitation::InvitationPayload;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::chapter::ChapterRepo;
@@ -59,7 +59,7 @@ const EXPIRY_DELAY: Duration = Duration::from_secs(3 * 24 * 60 * 60);
 /// Lists assignment invitations under one chapter.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos<C, R>(
-    repo: &R,
+    (repo,): (&R,),
     token: UserToken,
     params: ListAssignmentInvitationInfosParams,
 ) -> BaseResult<Vec<AssignmentInvitationInfoVal>>
@@ -101,9 +101,7 @@ where
 /// Creates a pending assignment invitation.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn create<N, C, R, P>(
-    nucl: &N,
-    repo: &R,
-    prom: &P,
+    (nucl, repo, prom): (&N, &R, &P),
     token: UserToken,
     params: CreateAssignmentInvitationParams,
 ) -> BaseResult<CreateAssignmentInvitationPayload>
@@ -135,7 +133,7 @@ where
                 )
                 .await?;
 
-            ChapterComplex::ensure_user_write_allowed(&chapter_info)?;
+            ChapterComplex::ensure_chapter_writable(&chapter_info)?;
 
             let invitee_user_info = repo
                 .step(
@@ -186,11 +184,11 @@ where
                 )
                 .await?;
 
-            let purge_event = PurgeExpiredInvitation::Assignment {
+            let purge_event = InvitationPayload::Assignment {
                 invitation_id: assignment_invitation_info.id.clone(),
             };
 
-            let purge_payload = Payload::PurgeExpiredInvitation(purge_event);
+            let purge_payload = TaskPayload::Invitation(purge_event);
 
             let purge_task_id = next_snowflake_id();
 
@@ -218,8 +216,7 @@ where
 /// Deletes an assignment invitation.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn delete<N, C, R>(
-    nucl: &N,
-    repo: &R,
+    (nucl, repo): (&N, &R),
     token: UserToken,
     id: String,
 ) -> BaseResult<()>
@@ -255,9 +252,7 @@ where
 /// Joins a chapter assignment with a pending invitation code.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn join<N, C, R, I>(
-    nucl: &N,
-    repo: &R,
-    image_pool: &I,
+    (nucl, repo, image_pool): (&N, &R, &I),
     token: UserToken,
     params: JoinAssignmentInvitationParams,
 ) -> BaseResult<AssignmentInfoVal>
@@ -313,7 +308,7 @@ where
                 )
                 .await?;
 
-            ChapterComplex::ensure_user_write_allowed(&chapter_info)?;
+            ChapterComplex::ensure_chapter_writable(&chapter_info)?;
 
             let comic_info = repo
                 .step(

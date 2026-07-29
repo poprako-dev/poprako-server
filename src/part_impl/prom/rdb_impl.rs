@@ -15,9 +15,10 @@ use tokio::sync::watch;
 use tokio_util::sync::CancellationToken;
 use tracing::instrument;
 
+use crate::part::effect::EffectDevelop;
 use crate::part::image::ImageManager;
 use crate::part::prom::Prom;
-use crate::part::prom::payload::Payload;
+use crate::part::prom::payload::TaskPayload;
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::prom::rdb_impl::entity::LocalMessageEntry;
 use crate::part_impl::prom::rdb_impl::repo::RdbPromRepo;
@@ -46,6 +47,7 @@ mod tests;
 /// Call [`close`](RdbProm::close) before dropping to finish in-flight work
 /// gracefully. Pending records remain durable for the next worker start.
 pub struct RdbProm {
+    //
     /// Cancellation token to signal graceful shutdown of the prom processor.
     token: CancellationToken,
     /// Watch receiver that signals when background processing drains.
@@ -58,9 +60,10 @@ impl RdbProm {
     /// The supervisor polls `t_local_message` and routes each topic to one of four
     /// serial worker tasks. Different topics can run concurrently, while messages
     /// from one topic never execute concurrently in this process.
-    pub fn new<I>(core: RdbCore, image_pool: I) -> Self
+    pub fn new<I, V>(core: RdbCore, image_pool: I, develop: V) -> Self
     where
         I: ImageManager + Send + Sync + 'static,
+        V: EffectDevelop + Send + Sync + 'static,
     {
         let token = CancellationToken::new();
 
@@ -75,6 +78,7 @@ impl RdbProm {
             drive,
             repo,
             image_pool,
+            develop,
             token.clone(),
         );
 
@@ -112,14 +116,14 @@ impl Drop for RdbProm {
     }
 }
 
-impl<'a> Step<Defer<'a, String, Payload, ()>, RdbContext> for RdbProm {
+impl<'a> Step<Defer<'a, String, TaskPayload, ()>, RdbContext> for RdbProm {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &Defer<'a, String, Payload, ()>,
+        oper: &Defer<'a, String, TaskPayload, ()>,
     ) -> BaseResult<()> {
         //
         let now = OffsetDateTime::now_utc();
@@ -136,7 +140,7 @@ impl<'a> Step<Defer<'a, String, Payload, ()>, RdbContext> for RdbProm {
     }
 }
 
-impl<'t, 'a> Step<DeferBatch<'t, 'a, String, Payload, ()>, RdbContext>
+impl<'t, 'a> Step<DeferBatch<'t, 'a, String, TaskPayload, ()>, RdbContext>
     for RdbProm
 {
     type Error = BaseError;
@@ -145,7 +149,7 @@ impl<'t, 'a> Step<DeferBatch<'t, 'a, String, Payload, ()>, RdbContext>
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &DeferBatch<'t, 'a, String, Payload, ()>,
+        oper: &DeferBatch<'t, 'a, String, TaskPayload, ()>,
     ) -> BaseResult<()> {
         //
         if oper.tasks.is_empty() {

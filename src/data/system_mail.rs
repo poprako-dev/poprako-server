@@ -10,6 +10,7 @@ use utoipa::{IntoParams, ToSchema};
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ListSystemMailInfosParams {
+    //
     /// Filter by read status. Absent returns all.
     pub read: Option<bool>,
 
@@ -26,6 +27,7 @@ pub struct ListSystemMailInfosParams {
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct SystemMailInfoVal {
+    //
     /// Unique identifier.
     pub id: String,
 

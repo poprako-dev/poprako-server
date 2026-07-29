@@ -1,7 +1,6 @@
 //! Fixed production composition for periodic background jobs.
 
 use tokio::sync::watch;
-
 use tokio_util::sync::CancellationToken;
 
 use crate::part_impl::shared::RdbCore;
@@ -10,6 +9,7 @@ mod comic_archive;
 
 /// Owns the lifecycle of the fixed production periodic-job composition.
 pub struct GeneralSched {
+    //
     /// Shared cancellation signal for every explicitly composed job.
     token: CancellationToken,
 

@@ -34,12 +34,23 @@ mod user;
 /// [`close`](AsyncEffectDevelop::close) before dropping to drain pending
 /// events gracefully.
 pub struct AsyncEffectDevelop {
+    //
     /// Bounded channel sender for enqueueing events.
     send: Sender<Event>,
     /// Cancellation token to signal graceful shutdown.
     token: CancellationToken,
     /// Watch receiver that signals when background processing completes.
     done: watch::Receiver<bool>,
+}
+
+impl Clone for AsyncEffectDevelop {
+    fn clone(&self) -> Self {
+        Self {
+            send: self.send.clone(),
+            token: self.token.clone(),
+            done: self.done.clone(),
+        }
+    }
 }
 
 impl AsyncEffectDevelop {

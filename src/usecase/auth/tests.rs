@@ -83,10 +83,7 @@ async fn register_creates_user_member_consumes_invitation_and_emits_signup() {
     ));
 
     let val = register(
-        &mock,
-        &mock,
-        &mock,
-        &mock,
+        (&mock, &mock, &mock, &mock),
         register_data("qid-1", "Nick", "code-1"),
     )
     .await
@@ -137,10 +134,7 @@ async fn register_rolls_back_when_invitee_qid_mismatches() {
     ));
 
     let err = register(
-        &mock,
-        &mock,
-        &mock,
-        &mock,
+        (&mock, &mock, &mock, &mock),
         register_data("other-qid", "Nick", "code-1"),
     )
     .await
@@ -175,10 +169,7 @@ async fn register_propagates_token_failure_after_commit_and_event() {
     ));
 
     let err = register(
-        &mock,
-        &mock,
-        &mock,
-        &mock,
+        (&mock, &mock, &mock, &mock),
         register_data("qid-1", "Nick", "code-1"),
     )
     .await
@@ -208,7 +199,7 @@ async fn login_returns_signed_token_for_matching_credentials() {
         credential("user-1", "password"),
     );
 
-    let val = login(&mock, &mock, login_data("qid-1", "password"))
+    let val = login((&mock, &mock), login_data("qid-1", "password"))
         .await
         .ok()
         .unwrap();
@@ -223,7 +214,7 @@ async fn login_propagates_missing_user() {
     //
     let mock = Mock::new();
 
-    let err = login(&mock, &mock, login_data("qid-1", "password"))
+    let err = login((&mock, &mock), login_data("qid-1", "password"))
         .await
         .err()
         .unwrap();
@@ -241,7 +232,7 @@ async fn login_rejects_wrong_password() {
         invalid_credential("user-1"),
     );
 
-    let err = login(&mock, &mock, login_data("qid-1", "password"))
+    let err = login((&mock, &mock), login_data("qid-1", "password"))
         .await
         .err()
         .unwrap();
@@ -259,7 +250,7 @@ async fn login_propagates_token_failure() {
         credential("user-1", "password"),
     );
 
-    let err = login(&mock, &mock, login_data("qid-1", "password"))
+    let err = login((&mock, &mock), login_data("qid-1", "password"))
         .await
         .err()
         .unwrap();

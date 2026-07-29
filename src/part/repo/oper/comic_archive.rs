@@ -1,11 +1,12 @@
 use poprako_orchestra::Oper;
 use time::OffsetDateTime;
 
-use crate::model::comic_archive::{ComicArchiveSnapshot, ComicArchiveWrite};
+use crate::model::comic_archive::{ComicArchiveEntry, ComicArchiveSnapshot};
 use crate::value::comic_archive::ComicArchiveMonth;
 
 /// Lists archive JSON strings for selected retained month slots.
 pub struct ListComicArchivePayloads<'a> {
+    //
     pub team_id: &'a str,
 
     pub months: &'a [ComicArchiveMonth],
@@ -24,7 +25,7 @@ impl Oper for GetComicArchiveSnapshotExcluded<'_> {
 }
 
 pub struct CommitComicArchive<'a> {
-    pub write: &'a ComicArchiveWrite,
+    pub entry: &'a ComicArchiveEntry,
 }
 
 impl Oper for CommitComicArchive<'_> {

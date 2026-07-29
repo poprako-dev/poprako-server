@@ -2,7 +2,7 @@
 
 use tracing::instrument;
 
-use crate::part::prom::payload::invitation::PurgeExpiredInvitation;
+use crate::part::prom::payload::invitation::InvitationPayload;
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::member_invitation::MemberInvitationRepo;
 use crate::part::repo::oper::assignment_invitation::PurgeExpiredAssignmentInvitation;
@@ -12,7 +12,7 @@ use crate::part_impl::shared::RdbContext;
 
 /// Purges an expired invitation when it is still pending.
 #[instrument(level = "info", skip_all)]
-pub async fn handle<R>(repo: &R, event: &PurgeExpiredInvitation) -> TaskFlow
+pub async fn handle<R>(repo: &R, event: &InvitationPayload) -> TaskFlow
 where
     R: AssignmentInvitationRepo<RdbContext>
         + MemberInvitationRepo<RdbContext>
@@ -21,12 +21,12 @@ where
 {
     let outcome = match event {
         //
-        PurgeExpiredInvitation::Assignment { invitation_id } => {
+        InvitationPayload::Assignment { invitation_id } => {
             repo.run(&PurgeExpiredAssignmentInvitation { id: invitation_id })
                 .await
         }
 
-        PurgeExpiredInvitation::Member { invitation_id } => {
+        InvitationPayload::Member { invitation_id } => {
             repo.run(&PurgeExpiredMemberInvitation { id: invitation_id })
                 .await
         }

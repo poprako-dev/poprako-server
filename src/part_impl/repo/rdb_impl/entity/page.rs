@@ -12,6 +12,7 @@ use crate::value::image::{ImageExt, ImageHash};
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_page)]
 pub struct PageRow {
+    //
     pub f_id: String,
 
     pub f_chapter_id: String,
@@ -22,7 +23,6 @@ pub struct PageRow {
     #[diesel(deserialize_as = i64)]
     pub f_image_version: u32,
     pub f_image_hash: Vec<u8>,
-    pub f_image_byte_length: i64,
     pub f_image_extension: String,
 
     pub f_total_unit_count: i32,
@@ -37,6 +37,7 @@ pub struct PageRow {
 #[derive(Insertable)]
 #[diesel(table_name = t_page)]
 pub struct PageRowEntry<'a> {
+    //
     pub f_id: &'a str,
 
     pub f_chapter_id: &'a str,
@@ -45,7 +46,6 @@ pub struct PageRowEntry<'a> {
     pub f_image_key: Option<&'a str>,
     pub f_image_version: i64,
     pub f_image_hash: Vec<u8>,
-    pub f_image_byte_length: i64,
     pub f_image_extension: &'a str,
 
     pub f_created_at: OffsetDateTime,
@@ -56,12 +56,12 @@ pub struct PageRowEntry<'a> {
 #[derive(AsChangeset)]
 #[diesel(table_name = t_page)]
 pub struct PageAspect<'a> {
+    //
     pub f_index: Option<i32>,
     pub f_image_key: Option<Option<&'a str>>,
     pub f_image_uploaded: Option<bool>,
     pub f_image_version: Option<i64>,
     pub f_image_hash: Option<&'a [u8]>,
-    pub f_image_byte_length: Option<i64>,
     pub f_image_extension: Option<&'a str>,
 
     pub f_total_unit_count: Option<i32>,
@@ -79,7 +79,6 @@ impl<'a> PageAspect<'a> {
             f_image_uploaded: None,
             f_image_version: None,
             f_image_hash: None,
-            f_image_byte_length: None,
             f_image_extension: None,
             f_total_unit_count: None,
             f_translated_unit_count: None,
@@ -151,12 +150,6 @@ impl TryFrom<PageRow> for PageInfo {
                 }
             })?;
 
-        let image_byte_length = u64::try_from(row.f_image_byte_length)
-            .map_err(|_| BaseError::Unrecoverable {
-                message: "[PageRow] f_image_byte_length must be non-negative"
-                    .into(),
-            })?;
-
         let image_extension = ImageExt::parse(&row.f_image_extension)
             .ok_or_else(|| BaseError::Unrecoverable {
                 message: "[PageRow] f_image_extension must be supported".into(),
@@ -170,7 +163,6 @@ impl TryFrom<PageRow> for PageInfo {
             image_uploaded: row.f_image_uploaded,
             image_version: row.f_image_version,
             image_hash: ImageHash::new(image_hash_bytes),
-            image_byte_length,
             image_ext: image_extension,
             total_unit_count: row.f_total_unit_count,
             translated_unit_count: row.f_translated_unit_count,
@@ -188,15 +180,6 @@ impl<'a> TryFrom<&'a PageEntry> for PageRowEntry<'a> {
         //
         let now = OffsetDateTime::now_utc();
 
-        let image_byte_length =
-            i64::try_from(entry.image_byte_len).map_err(|_| {
-                BaseError::Unrecoverable {
-                message:
-                    "[PageRowEntry] image byte length exceeds PostgreSQL BIGINT"
-                        .into(),
-            }
-            })?;
-
         Ok(Self {
             f_id: &entry.id,
             f_chapter_id: &entry.chapter_id,
@@ -204,7 +187,6 @@ impl<'a> TryFrom<&'a PageEntry> for PageRowEntry<'a> {
             f_image_key: entry.image_key.as_deref(),
             f_image_version: i64::from(entry.image_version),
             f_image_hash: entry.image_hash.bytes().to_vec(),
-            f_image_byte_length: image_byte_length,
             f_image_extension: entry.image_ext.suffix(),
             f_created_at: now,
             f_updated_at: now,

@@ -49,8 +49,7 @@ pub async fn import(
     Json(params): Json<ImportChapterTranslationParams>,
 ) -> HttpResult<ImportChapterTranslationPayload> {
     usecase::chapter_port::import(
-        harn.drive(),
-        harn.repo(),
+        (harn.drive(), harn.repo()),
         user_token,
         params,
         chapter_id,
@@ -126,6 +125,7 @@ pub async fn export_download(
 
 /// Internal payload carrying the serialised export content and its metadata.
 struct TranslationExportPayload {
+    //
     /// MIME type of the response body.
     content_type: &'static str,
     /// File extension for download filenames.
@@ -148,7 +148,7 @@ async fn export_payload(
         TranslationFormat::PopRaKo => {
             //
             let val = usecase::chapter_port::export(
-                harn.repo(),
+                (harn.repo(),),
                 user_token,
                 chapter_id,
             )
@@ -174,7 +174,7 @@ async fn export_payload(
         TranslationFormat::LabelPlus => {
             //
             let content = usecase::chapter_port::export_label_plus(
-                harn.repo(),
+                (harn.repo(),),
                 user_token,
                 chapter_id,
             )

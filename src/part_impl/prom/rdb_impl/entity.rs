@@ -10,7 +10,7 @@ use diesel::sql_types::Text;
 use poprako_orchestra_extra::prom::task::Task;
 use time::OffsetDateTime;
 
-use crate::part::prom::payload::Payload;
+use crate::part::prom::payload::TaskPayload;
 use crate::part_impl::repo::rdb_impl::schema::t_local_message;
 use crate::result::{BaseError, BaseResult, accept};
 
@@ -19,8 +19,11 @@ use crate::result::{BaseError, BaseResult, accept};
 #[diesel(sql_type = Text)]
 pub enum LocalMessageStatus {
     Pending,
+
     Processing,
+
     Completed,
+
     Dead,
 }
 
@@ -52,6 +55,7 @@ impl ToSql<Text, Pg> for LocalMessageStatus {
 #[derive(Insertable)]
 #[diesel(table_name = t_local_message)]
 pub struct LocalMessageEntry<'a> {
+    //
     pub f_id: &'a str,
     pub f_topic: &'a str,
     pub f_status: LocalMessageStatus,
@@ -66,7 +70,7 @@ pub struct LocalMessageEntry<'a> {
 
 impl<'a> LocalMessageEntry<'a> {
     pub fn from_task(
-        task: &Task<'a, String, Payload>,
+        task: &Task<'a, String, TaskPayload>,
         now: OffsetDateTime,
     ) -> BaseResult<Self> {
         //
@@ -95,8 +99,10 @@ impl<'a> LocalMessageEntry<'a> {
 /// A row read from `t_local_message` during the poll phase.
 #[derive(Debug, Queryable)]
 pub struct LocalMessageRow {
+    //
     pub f_id: String,
     pub f_topic: String,
     pub f_payload: serde_json::Value,
     pub f_retried_count: i64,
+    pub f_lease: i64,
 }

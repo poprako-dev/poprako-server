@@ -11,6 +11,12 @@ use crate::model::user::UserInfo;
 use crate::part::image::ImagePool;
 use crate::result::{BaseResult, accept};
 
+pub use crate::data::image::{
+    MarkImageUploadedParams as MarkUserAvatarUploadedParams,
+    ReserveImageParams as ReserveUserAvatarParams,
+    ReserveImagePayload as ReserveUserAvatarPayload,
+};
+
 /// Presentation-ready user profile information.
 ///
 /// Converts the raw [`UserInfo`] timestamps to Unix milliseconds and
@@ -19,6 +25,7 @@ use crate::result::{BaseResult, accept};
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UserInfoVal {
+    //
     /// Unique user identifier.
     pub id: String,
 
@@ -92,6 +99,7 @@ impl UserInfoVal {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateUserInfoParams {
+    //
     /// User identifier to update.
     pub id: String,
 
@@ -105,39 +113,9 @@ pub struct UpdateUserInfoParams {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateUserPasswordParams {
+    //
     /// Current password for verification before change.
     pub current_password: String,
     /// Desired new password.
     pub new_password: String,
-}
-
-/// Input parameters for reserving a new avatar upload slot.
-#[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
-pub struct ReserveUserAvatarParams {
-    /// File extension for the avatar image (determines object-storage key suffix).
-    pub file_ext: String,
-}
-
-/// Return value from a successful avatar reservation.
-///
-/// The client uses `put_url` to upload the avatar image directly to object
-/// storage. `avatar_version` must be echoed back when confirming the upload.
-#[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
-pub struct ReserveUserAvatarPayload {
-    /// Signed PUT URL for uploading the avatar image to object storage.
-    pub put_url: String,
-    /// Version token that must be echoed when confirming the upload.
-    pub avatar_version: u32,
-}
-
-/// Input parameters for confirming an avatar upload completed.
-///
-/// `avatar_version` must match the version returned by the reservation step.
-#[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
-pub struct MarkUserAvatarUploadedParams {
-    /// Avatar version returned by the reservation step.
-    pub avatar_version: u32,
 }

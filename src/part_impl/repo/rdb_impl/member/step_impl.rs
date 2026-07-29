@@ -21,6 +21,7 @@ use crate::value::role::{RoleField, RoleMask};
 
 /// Per-role assignment timestamps extracted from a [`RoleMask`].
 struct RoleTimestamps {
+    //
     raw_provider: Option<OffsetDateTime>,
     translator: Option<OffsetDateTime>,
     proofreader: Option<OffsetDateTime>,

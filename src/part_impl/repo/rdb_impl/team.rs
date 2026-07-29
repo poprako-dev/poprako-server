@@ -13,7 +13,8 @@ use crate::model::team::{
 };
 use crate::part::repo::oper::team::{
     AllocTeamWorksetIndex, CreateTeam, DeleteTeam, GetTeamInfo,
-    GetTeamInfoExcluded, ListTeamInfos, ReserveTeamAvatar, UpdateTeam,
+    GetTeamInfoExcluded, ListTeamInfos, LockTeam, ReserveTeamAvatar,
+    UpdateTeam,
 };
 use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::team::{
@@ -24,6 +25,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_team::dsl::*;
 use crate::part_impl::shared::result::{diesel, expected, next_version};
 use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{BaseError, BaseResult, accept};
+use crate::value::image::{ImageExt, ImageHash};
 
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;
@@ -52,7 +54,7 @@ async fn create(conn: &mut RdbConn, entry: &TeamEntry) -> BaseResult<TeamInfo> {
         .await
         .map_err(diesel)?;
 
-    accept(row.into())
+    row.try_into()
 }
 
 /// Load a single team info by ID.
@@ -68,7 +70,7 @@ async fn get_info_by_id(conn: &mut RdbConn, id: &str) -> BaseResult<TeamInfo> {
         .map_err(diesel)?
         .ok_or_else(|| expected("error-team-not-found"))?;
 
-    accept(row.into())
+    row.try_into()
 }
 
 /// Query teams selected by a list specification.
@@ -103,7 +105,7 @@ async fn list_infos(
         .await
         .map_err(diesel)?;
 
-    accept(rows.into_iter().map(Into::into).collect())
+    rows.into_iter().map(TryInto::try_into).collect()
 }
 
 /// Update a team's name and description.
@@ -135,6 +137,7 @@ async fn mark_avatar_uploaded(
     id: &str,
     version: u32,
     avatar_key: Option<&str>,
+    avatar_uploaded: bool,
 ) -> BaseResult<()> {
     //
     let now = OffsetDateTime::now_utc();
@@ -148,7 +151,7 @@ async fn mark_avatar_uploaded(
                     .filter(f_avatar_version.eq(i64::from(version)))
                     .filter(f_avatar_key.eq(avatar_key)),
             )
-            .set((f_avatar_uploaded.eq(true), f_updated_at.eq(now)))
+            .set((f_avatar_uploaded.eq(avatar_uploaded), f_updated_at.eq(now)))
             .execute(conn)
             .await
         }
@@ -159,7 +162,7 @@ async fn mark_avatar_uploaded(
                     .filter(f_id.eq(id))
                     .filter(f_avatar_version.eq(i64::from(version))),
             )
-            .set((f_avatar_uploaded.eq(true), f_updated_at.eq(now)))
+            .set((f_avatar_uploaded.eq(avatar_uploaded), f_updated_at.eq(now)))
             .execute(conn)
             .await
         }
@@ -179,28 +182,70 @@ async fn mark_avatar_uploaded(
 async fn reserve_avatar(
     conn: &mut RdbConn,
     id: &str,
-    file_ext: &str,
+    image_hash: &ImageHash,
+    image_ext: ImageExt,
 ) -> BaseResult<TeamAvatarReservation> {
     //
     let now = OffsetDateTime::now_utc();
 
-    let (prev_key, raw_version): (Option<String>, i64) = t_team
+    let (prev_key, uploaded, raw_version, stored_hash, stored_ext): (
+        Option<String>,
+        bool,
+        i64,
+        Vec<u8>,
+        String,
+    ) = t_team
         .filter(f_id.eq(id))
-        .select((f_avatar_key, f_avatar_version))
+        .select((
+            f_avatar_key,
+            f_avatar_uploaded,
+            f_avatar_version,
+            f_avatar_hash,
+            f_avatar_extension,
+        ))
         .for_update()
         .get_result(conn)
         .await
         .map_err(diesel)?;
 
+    let same_hash =
+        prev_key.is_some() && stored_hash.as_slice() == image_hash.as_bytes();
+
+    if same_hash && stored_ext != image_ext.suffix() {
+        return Err(expected("error-invalid-image-extension"));
+    }
+
+    if same_hash {
+        //
+        let object_key = prev_key.ok_or_else(|| BaseError::Unrecoverable {
+            message: "[reserve_avatar] pending avatar key is missing".into(),
+        })?;
+
+        return accept(TeamAvatarReservation {
+            object_key,
+            prev_object_key: None,
+            avatar_version: u32::try_from(raw_version).map_err(|_| {
+                BaseError::Unrecoverable {
+                    message: "[reserve_avatar] avatar version is invalid"
+                        .into(),
+                }
+            })?,
+            upload_required: !uploaded,
+        });
+    }
+
     let version = next_version(raw_version)?;
 
-    let object_key = TeamComplex::gen_avatar_key(id, version, file_ext);
+    let object_key =
+        TeamComplex::gen_avatar_key(id, version, image_ext.suffix());
 
     diesel::update(t_team.filter(f_id.eq(id)))
         .set((
             f_avatar_key.eq(Some(&object_key)),
             f_avatar_uploaded.eq(false),
             f_avatar_version.eq(i64::from(version)),
+            f_avatar_hash.eq(image_hash.as_bytes().to_vec()),
+            f_avatar_extension.eq(image_ext.suffix()),
             f_updated_at.eq(now),
         ))
         .execute(conn)
@@ -211,6 +256,7 @@ async fn reserve_avatar(
         object_key,
         prev_object_key: prev_key,
         avatar_version: version,
+        upload_required: true,
     })
 }
 
@@ -231,7 +277,24 @@ async fn get_info_excluded(
         .map_err(diesel)?
         .ok_or_else(|| expected("error-team-not-found"))?;
 
-    accept(row.into())
+    row.try_into()
+}
+
+/// Locks a team row.
+#[instrument(level = "info", err(Debug), skip_all)]
+async fn lock_team(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
+    //
+    let _: String = t_team
+        .filter(f_id.eq(id))
+        .select(f_id)
+        .for_update()
+        .get_result(conn)
+        .await
+        .optional()
+        .map_err(diesel)?
+        .ok_or_else(|| expected("error-team-not-found"))?;
+
+    accept(())
 }
 
 /// Delete a team by ID.
@@ -320,13 +383,15 @@ impl Run<UpdateTeam<'_>> for RdbRepo {
                 id,
                 avatar_version,
                 avatar_key,
+                avatar_uploaded,
             } => {
                 submit_query!(
                     self.core,
                     mark_avatar_uploaded,
                     id,
                     *avatar_version,
-                    *avatar_key
+                    *avatar_key,
+                    *avatar_uploaded
                 )
             }
         }
@@ -367,12 +432,14 @@ impl Step<UpdateTeam<'_>, RdbContext> for RdbRepo {
                 id,
                 avatar_version,
                 avatar_key,
+                avatar_uploaded,
             } => {
                 mark_avatar_uploaded(
                     context.conn(),
                     id,
                     *avatar_version,
                     *avatar_key,
+                    *avatar_uploaded,
                 )
                 .await
             }
@@ -389,7 +456,8 @@ impl Step<ReserveTeamAvatar<'_>, RdbContext> for RdbRepo {
         context: &mut RdbContext,
         oper: &ReserveTeamAvatar<'_>,
     ) -> BaseResult<TeamAvatarReservation> {
-        reserve_avatar(context.conn(), oper.id, oper.file_ext).await
+        reserve_avatar(context.conn(), oper.id, oper.image_hash, oper.image_ext)
+            .await
     }
 }
 
@@ -407,6 +475,19 @@ impl Step<GetTeamInfoExcluded<'_>, RdbContext> for RdbRepo {
                 get_info_excluded(context.conn(), id).await
             }
         }
+    }
+}
+
+impl Step<LockTeam<'_>, RdbContext> for RdbRepo {
+    type Error = BaseError;
+
+    #[instrument(level = "info", err(Debug), skip_all)]
+    async fn step(
+        &self,
+        context: &mut RdbContext,
+        oper: &LockTeam<'_>,
+    ) -> BaseResult<()> {
+        lock_team(context.conn(), oper.id).await
     }
 }
 

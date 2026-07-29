@@ -1,12 +1,14 @@
 //! In-memory terminology-entry repository operations.
 
+use std::cmp::Reverse;
+
 use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
 use crate::model::term::{TermInfo, TermInfoListSpec};
 use crate::part::repo::oper::term::{
     CreateTerm, DeleteTerm, DeleteTerms, GetTermInfo, GetTermInfoExcluded,
-    ListTermInfos, UpdateTerm,
+    ListTermInfos, LockTerm, UpdateTerm,
 };
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
@@ -53,7 +55,7 @@ fn list_infos(state: &MockState, spec: &TermInfoListSpec) -> Vec<TermInfo> {
         });
     }
 
-    term_infos.sort_by_key(|right| std::cmp::Reverse(right.updated_at));
+    term_infos.sort_by_key(|right| Reverse(right.updated_at));
 
     term_infos
         .into_iter()
@@ -143,6 +145,22 @@ impl<'a> Step<GetTermInfoExcluded<'a>, MockContext> for Mock {
         oper: &GetTermInfoExcluded<'a>,
     ) -> BaseResult<TermInfo> {
         get_info(&context.state, oper.id)
+    }
+}
+
+impl<'a> Step<LockTerm<'a>, MockContext> for Mock {
+    type Error = BaseError;
+
+    #[instrument(level = "info", err(Debug), skip_all)]
+    async fn step(
+        &self,
+        context: &mut MockContext,
+        oper: &LockTerm<'a>,
+    ) -> BaseResult<()> {
+        //
+        get_info(&context.state, oper.id)?;
+
+        accept(())
     }
 }
 

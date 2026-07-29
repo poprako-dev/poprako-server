@@ -10,6 +10,7 @@ use tokio::task::JoinHandle;
 use tokio::time::sleep;
 use tracing::instrument;
 
+use crate::part::effect::EffectDevelop;
 use crate::part::image::ImageManager;
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::prom::rdb_impl::entity::LocalMessageRow;
@@ -47,7 +48,7 @@ type WorkerSender = mpsc::UnboundedSender<LocalMessageRow>;
 /// When the task has been retried 3 or more times, transitions from
 /// [`TaskFlow::Retry`] to [`TaskFlow::Dead`] so the message is not
 /// requeued indefinitely.
-pub(super) fn enforce_retry_limit(
+pub fn enforce_retry_limit(
     task_flow: TaskFlow,
     retried_count: i64,
 ) -> TaskFlow {
@@ -59,9 +60,10 @@ pub(super) fn enforce_retry_limit(
     }
 }
 
-impl<I> RdbPromHandler<RdbDrive, RdbRepo, I>
+impl<I, V> RdbPromHandler<RdbDrive, RdbRepo, I, V>
 where
     I: ImageManager + Send + Sync + 'static,
+    V: EffectDevelop + Send + Sync + 'static,
 {
     /// Runs the polling supervisor and drains in-flight worker tasks on shutdown.
     #[instrument(level = "info", skip_all)]
@@ -201,7 +203,7 @@ where
 
         for row in rows {
             //
-            let claimed = match self.claim(&row.f_id).await {
+            let claimed = match self.claim(&row.f_id, row.f_lease).await {
                 //
                 Ok(claimed) => claimed,
 
@@ -257,6 +259,7 @@ where
             &self.nucl,
             self.repo.inner(),
             &self.image_pool,
+            &self.develop,
             &row.f_topic,
             &row.f_payload,
         )
@@ -267,7 +270,8 @@ where
         match task_flow {
             //
             TaskFlow::Complete => {
-                if let Err(error) = self.complete(&row.f_id).await {
+                if let Err(error) = self.complete(&row.f_id, row.f_lease).await
+                {
                     tracing::error!(
                         id = %row.f_id,
                         error = ?error,
@@ -277,7 +281,9 @@ where
             }
 
             TaskFlow::Retry(error) => {
-                if let Err(mark_error) = self.retry(&row.f_id, &error).await {
+                if let Err(mark_error) =
+                    self.retry(&row.f_id, row.f_lease, &error).await
+                {
                     tracing::error!(
                         id = %row.f_id,
                         original_error = %error,
@@ -296,7 +302,9 @@ where
                     "[RdbPromHandler::process_row] task failed",
                 );
 
-                if let Err(mark_error) = self.fail(&row.f_id, &error).await {
+                if let Err(mark_error) =
+                    self.fail(&row.f_id, row.f_lease, &error).await
+                {
                     tracing::error!(
                         id = %row.f_id,
                         original_error = %error,
@@ -309,41 +317,53 @@ where
     }
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn claim(&self, id: &str) -> BaseResult<bool> {
-        //
-        let conn = self.core.get().await?;
-
-        let mut context = RdbContext::new(conn);
-
-        self.repo.step(&mut context, &ClaimPending::new(id)).await
-    }
-
-    #[instrument(level = "info", err(Debug), skip_all)]
-    async fn complete(&self, id: &str) -> BaseResult<()> {
+    async fn claim(&self, id: &str, lease: i64) -> BaseResult<bool> {
         //
         let conn = self.core.get().await?;
 
         let mut context = RdbContext::new(conn);
 
         self.repo
-            .step(&mut context, &CompleteMessage::new(id))
+            .step(&mut context, &ClaimPending::new(id, lease))
             .await
     }
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn fail(&self, id: &str, message: &str) -> BaseResult<()> {
+    async fn complete(&self, id: &str, lease: i64) -> BaseResult<()> {
         //
         let conn = self.core.get().await?;
 
         let mut context = RdbContext::new(conn);
 
         self.repo
-            .step(&mut context, &FailMessage::new(id, message))
+            .step(&mut context, &CompleteMessage::new(id, lease))
             .await
     }
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn retry(&self, id: &str, message: &str) -> BaseResult<()> {
+    async fn fail(
+        &self,
+        id: &str,
+        lease: i64,
+        message: &str,
+    ) -> BaseResult<()> {
+        //
+        let conn = self.core.get().await?;
+
+        let mut context = RdbContext::new(conn);
+
+        self.repo
+            .step(&mut context, &FailMessage::new(id, lease, message))
+            .await
+    }
+
+    #[instrument(level = "info", err(Debug), skip_all)]
+    async fn retry(
+        &self,
+        id: &str,
+        lease: i64,
+        message: &str,
+    ) -> BaseResult<()> {
         //
         let conn = self.core.get().await?;
 
@@ -352,7 +372,10 @@ where
         let visible_at = OffsetDateTime::now_utc() + RETRY_DELAY;
 
         self.repo
-            .step(&mut context, &RetryMessage::new(id, message, &visible_at))
+            .step(
+                &mut context,
+                &RetryMessage::new(id, lease, message, &visible_at),
+            )
             .await
     }
 
@@ -381,6 +404,7 @@ where
 
     async fn log_purge_completed(&self) {
         match self.purge_completed().await {
+            //
             Ok(purged_count) => {
                 if purged_count > 0 {
                     tracing::info!(

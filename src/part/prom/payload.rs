@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 
-use crate::part::prom::payload::chapter::CheckUploadFinish;
-use crate::part::prom::payload::image::Payload as ImagePayload;
-use crate::part::prom::payload::invitation::PurgeExpiredInvitation;
+use crate::part::prom::payload::chapter::ChapterPayload;
+use crate::part::prom::payload::image::ImagePayload;
+use crate::part::prom::payload::invitation::InvitationPayload;
 
 /// Deferred chapter payloads.
 pub mod chapter;
@@ -10,30 +10,34 @@ pub mod chapter;
 pub mod image;
 /// Deferred invitation payloads.
 pub mod invitation;
+#[cfg(test)]
+pub mod tests;
 
-/// Deferred-action payload grouped by resource domain.
+/// One deferred task, grouped by its domain.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub enum Payload {
+pub enum TaskPayload {
     /// Advance raw provision after every chapter page is uploaded.
-    CheckChapterUploadFinish(CheckUploadFinish),
+    #[serde(rename = "AdvanceRawProvide")]
+    Chapter(ChapterPayload),
 
     /// Image-domain deferred action.
     Image(ImagePayload),
 
     /// Purge an invitation when it is still pending at its expiry time.
-    PurgeExpiredInvitation(PurgeExpiredInvitation),
+    #[serde(rename = "PurgeExpiredInvitation")]
+    Invitation(InvitationPayload),
 }
 
-impl Payload {
+impl TaskPayload {
     /// Returns the routing topic string (e.g. `"image"`) for this payload.
     pub fn topic(&self) -> &'static str {
         match self {
             //
-            Self::CheckChapterUploadFinish(_) => "check_chapter_upload_finish",
+            Self::Chapter(_) => "advance_raw_provide",
 
             Self::Image(_) => "image",
 
-            Self::PurgeExpiredInvitation(_) => "purge_expired_invitation",
+            Self::Invitation(_) => "purge_expired_invitation",
         }
     }
 }

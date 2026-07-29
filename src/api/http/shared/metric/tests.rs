@@ -1,5 +1,7 @@
 use super::*;
 
+use std::time::Duration;
+
 // read(read)(positive): current window buckets are merged by status and matched path.
 // read(read)(negative): expired, future, and overwritten buckets are excluded.
 // record(record)(positive): an unmatched response changes only the total count.
@@ -13,21 +15,21 @@ fn read_merges_current_window_buckets() {
         100,
         200,
         Some("/api/v1/users/{user_id}"),
-        std::time::Duration::from_millis(10),
+        Duration::from_millis(10),
     );
 
     metric_window.record(
         101,
         422,
         Some("/api/v1/users/{user_id}"),
-        std::time::Duration::from_millis(20),
+        Duration::from_millis(20),
     );
 
     metric_window.record(
         101,
         500,
         Some("/api/v1/comics/{comic_id}"),
-        std::time::Duration::from_millis(30),
+        Duration::from_millis(30),
     );
 
     let metric_total = metric_window.read(101);
@@ -68,33 +70,13 @@ fn read_excludes_buckets_outside_current_window() {
     //
     let metric_window = MetricWindow::new();
 
-    metric_window.record(
-        39,
-        200,
-        Some("/expired"),
-        std::time::Duration::from_millis(10),
-    );
+    metric_window.record(39, 200, Some("/expired"), Duration::from_millis(10));
 
-    metric_window.record(
-        40,
-        200,
-        Some("/expired"),
-        std::time::Duration::from_millis(10),
-    );
+    metric_window.record(40, 200, Some("/expired"), Duration::from_millis(10));
 
-    metric_window.record(
-        100,
-        200,
-        Some("/current"),
-        std::time::Duration::from_millis(10),
-    );
+    metric_window.record(100, 200, Some("/current"), Duration::from_millis(10));
 
-    metric_window.record(
-        161,
-        200,
-        Some("/future"),
-        std::time::Duration::from_millis(10),
-    );
+    metric_window.record(161, 200, Some("/future"), Duration::from_millis(10));
 
     let metric_total = metric_window.read(100);
 
@@ -112,7 +94,7 @@ fn record_without_matched_path_changes_only_total() {
     //
     let metric_window = MetricWindow::new();
 
-    metric_window.record(100, 404, None, std::time::Duration::from_millis(10));
+    metric_window.record(100, 404, None, Duration::from_millis(10));
 
     let metric_total = metric_window.read(100);
 

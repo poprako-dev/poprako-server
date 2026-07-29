@@ -27,6 +27,7 @@ use crate::usecase;
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct TermbaseListQuery {
+    //
     /// Optional case-insensitive name substring.
     pub fuzzy_name: Option<String>,
 
@@ -54,7 +55,7 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(params): Json<CreateTermbaseParams>,
 ) -> HttpResult<CreateTermbasePayload> {
-    usecase::termbase::create(harn.drive(), harn.repo(), user_token, params)
+    usecase::termbase::create((harn.drive(), harn.repo()), user_token, params)
         .await?
         .accept(StatusCode::CREATED)
 }
@@ -85,7 +86,7 @@ pub async fn list_team_infos(
         limit: query.limit,
     };
 
-    usecase::termbase::list_team_infos(harn.repo(), user_token, params)
+    usecase::termbase::list_team_infos((harn.repo(),), user_token, params)
         .await?
         .accept(StatusCode::OK)
 }
@@ -117,7 +118,7 @@ pub async fn list_comic_infos(
         limit: query.limit,
     };
 
-    usecase::termbase::list_comic_infos(harn.repo(), user_token, params)
+    usecase::termbase::list_comic_infos((harn.repo(),), user_token, params)
         .await?
         .accept(StatusCode::OK)
 }
@@ -140,7 +141,7 @@ pub async fn get_info(
     Path(termbase_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<TermbaseInfoVal> {
-    usecase::termbase::get_info(harn.repo(), user_token, termbase_id)
+    usecase::termbase::get_info((harn.repo(),), user_token, termbase_id)
         .await?
         .accept(StatusCode::OK)
 }
@@ -169,8 +170,7 @@ pub async fn update_info(
     ensure_path_matches_body_id(&termbase_id, &params.id)?;
 
     usecase::termbase::update_info(
-        harn.drive(),
-        harn.repo(),
+        (harn.drive(), harn.repo()),
         user_token,
         params,
     )
@@ -199,8 +199,7 @@ pub async fn delete(
 ) -> HttpNoContent {
     //
     usecase::termbase::delete(
-        harn.drive(),
-        harn.repo(),
+        (harn.drive(), harn.repo()),
         user_token,
         termbase_id,
     )

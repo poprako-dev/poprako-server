@@ -22,12 +22,13 @@ use crate::model::member::MemberInfo;
 use crate::model::team::TeamInfo;
 use crate::model::user::{UserCredential, UserInfo, UserToken};
 use crate::model::workset::WorksetInfo;
-use crate::part::prom::payload::Payload;
-use crate::part::prom::payload::invitation::PurgeExpiredInvitation;
+use crate::part::prom::payload::TaskPayload;
+use crate::part::prom::payload::invitation::InvitationPayload;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::{assert_expected_variant, now};
 use crate::value::chapter::{Stage, StageMask, StagePhase};
+use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
 fn token(user_id: &str) -> UserToken {
@@ -54,6 +55,8 @@ fn user(id: &str, qid: &str, nickname: &str) -> UserInfo {
         avatar_key: None,
         avatar_uploaded: false,
         avatar_version: 0,
+        avatar_hash: ImageHash::default(),
+        avatar_ext: ImageExt::Png,
         is_sadmin: false,
         last_active_at: time,
         created_at: time,
@@ -72,6 +75,8 @@ fn team(id: &str) -> TeamInfo {
         avatar_key: None,
         avatar_uploaded: false,
         avatar_version: 0,
+        avatar_hash: ImageHash::default(),
+        avatar_ext: ImageExt::Png,
         created_at: time,
         updated_at: time,
     }
@@ -107,6 +112,8 @@ fn comic(id: &str, workset_id: &str) -> ComicInfo {
         cover_key: None,
         cover_uploaded: false,
         cover_version: 0,
+        cover_hash: ImageHash::default(),
+        cover_ext: ImageExt::Png,
         chapter_count: 1,
         creator_id: "creator-user".into(),
         workset: None,
@@ -256,7 +263,7 @@ async fn list_infos_reviewer_lists_chapter_invitations() {
         role(RoleField::TRANSLATOR),
     ));
 
-    let val = list_infos(&mock, token("admin-user"), list_data())
+    let val = list_infos((&mock,), token("admin-user"), list_data())
         .await
         .unwrap();
 
@@ -278,7 +285,7 @@ async fn list_infos_non_reviewer_is_rejected() {
         role(RoleField::TRANSLATOR),
     ));
 
-    let err = list_infos(&mock, token("normal-user"), list_data())
+    let err = list_infos((&mock,), token("normal-user"), list_data())
         .await
         .err()
         .unwrap();
@@ -303,9 +310,7 @@ async fn create_reviewer_creates_pending_invitation() {
     let before = now();
 
     let val = create(
-        &mock,
-        &mock,
-        &mock,
+        (&mock, &mock, &mock),
         token("admin-user"),
         create_data("target-qid"),
     )
@@ -332,7 +337,7 @@ async fn create_reviewer_creates_pending_invitation() {
 
     assert_eq!(
         snapshot.prom_records[0].payload(),
-        Payload::PurgeExpiredInvitation(PurgeExpiredInvitation::Assignment {
+        TaskPayload::Invitation(InvitationPayload::Assignment {
             invitation_id: val.id,
         })
     );
@@ -361,9 +366,7 @@ async fn create_rejects_published_chapter() {
     }
 
     let result = create(
-        &mock,
-        &mock,
-        &mock,
+        (&mock, &mock, &mock),
         token("admin-user"),
         create_data("target-qid"),
     )
@@ -395,9 +398,7 @@ async fn create_existing_assignment_is_rejected() {
     ));
 
     let err = create(
-        &mock,
-        &mock,
-        &mock,
+        (&mock, &mock, &mock),
         token("admin-user"),
         create_data("target-qid"),
     )
@@ -427,7 +428,7 @@ async fn delete_reviewer_deletes_invitation() {
         role(RoleField::TRANSLATOR),
     ));
 
-    delete(&mock, &mock, token("admin-user"), "invitation-1".into())
+    delete((&mock, &mock), token("admin-user"), "invitation-1".into())
         .await
         .unwrap();
 
@@ -447,10 +448,11 @@ async fn delete_non_reviewer_is_rejected() {
         role(RoleField::TRANSLATOR),
     ));
 
-    let err = delete(&mock, &mock, token("normal-user"), "invitation-1".into())
-        .await
-        .err()
-        .unwrap();
+    let err =
+        delete((&mock, &mock), token("normal-user"), "invitation-1".into())
+            .await
+            .err()
+            .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Perm);
 
@@ -477,7 +479,7 @@ async fn join_invited_user_creates_assignment_and_consumes_invitation() {
         role(RoleField::TRANSLATOR),
     ));
 
-    join(&mock, &mock, &mock, token("target-user"), join_data())
+    join((&mock, &mock, &mock), token("target-user"), join_data())
         .await
         .unwrap();
 
@@ -523,7 +525,7 @@ async fn join_existing_assignment_merges_roles() {
         role(RoleField::PROOFREADER),
     ));
 
-    join(&mock, &mock, &mock, token("target-user"), join_data())
+    join((&mock, &mock, &mock), token("target-user"), join_data())
         .await
         .unwrap();
 
@@ -560,7 +562,7 @@ async fn join_mismatched_qid_is_rejected() {
         role(RoleField::TRANSLATOR),
     ));
 
-    let err = join(&mock, &mock, &mock, token("target-user"), join_data())
+    let err = join((&mock, &mock, &mock), token("target-user"), join_data())
         .await
         .err()
         .unwrap();

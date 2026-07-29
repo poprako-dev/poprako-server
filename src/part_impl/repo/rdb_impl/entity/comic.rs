@@ -6,6 +6,8 @@ use time::OffsetDateTime;
 use crate::complex::comic::ComicComplex;
 use crate::model::comic::{ComicEntry, ComicInfo};
 use crate::part_impl::repo::rdb_impl::schema::t_comic;
+use crate::result::{BaseError, BaseResult, accept};
+use crate::value::image::{ImageExt, ImageHash};
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
 
@@ -13,6 +15,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_comic;
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_comic)]
 pub struct ComicRow {
+    //
     pub f_id: String,
     pub f_workset_id: String,
     pub f_index: i32,
@@ -26,6 +29,8 @@ pub struct ComicRow {
     pub f_cover_uploaded: bool,
     #[diesel(deserialize_as = i64)]
     pub f_cover_version: u32,
+    pub f_cover_hash: Vec<u8>,
+    pub f_cover_extension: String,
 
     pub f_chapter_count: i32,
     pub f_chapter_next_index: i32,
@@ -44,6 +49,7 @@ pub struct ComicRow {
 #[derive(Insertable)]
 #[diesel(table_name = t_comic)]
 pub struct ComicRowEntry<'a> {
+    //
     pub f_id: &'a str,
     pub f_workset_id: &'a str,
     pub f_index: i32,
@@ -67,6 +73,7 @@ pub struct ComicRowEntry<'a> {
 #[derive(AsChangeset)]
 #[diesel(table_name = t_comic)]
 pub struct ComicAspect<'a> {
+    //
     pub f_title: Option<&'a str>,
     pub f_author: Option<&'a str>,
     pub f_description: Option<Option<&'a str>>,
@@ -75,6 +82,8 @@ pub struct ComicAspect<'a> {
     pub f_cover_key: Option<&'a str>,
     pub f_cover_uploaded: Option<bool>,
     pub f_cover_version: Option<i64>,
+    pub f_cover_hash: Option<&'a [u8]>,
+    pub f_cover_extension: Option<&'a str>,
 
     pub f_chapter_count: Option<i32>,
     pub f_chapter_next_index: Option<i32>,
@@ -94,6 +103,8 @@ impl<'a> ComicAspect<'a> {
             f_cover_key: None,
             f_cover_uploaded: None,
             f_cover_version: None,
+            f_cover_hash: None,
+            f_cover_extension: None,
             f_chapter_count: None,
             f_chapter_next_index: None,
             f_last_active_at: None,
@@ -150,6 +161,20 @@ impl<'a> ComicAspect<'a> {
         self
     }
 
+    pub fn cover_hash(mut self, val: &'a ImageHash) -> Self {
+        //
+        self.f_cover_hash = Some(val.as_bytes());
+
+        self
+    }
+
+    pub fn cover_ext(mut self, val: ImageExt) -> Self {
+        //
+        self.f_cover_extension = Some(val.suffix());
+
+        self
+    }
+
     pub fn chapter_count(mut self, val: i32) -> Self {
         //
         self.f_chapter_count = Some(val);
@@ -174,9 +199,28 @@ impl<'a> ComicAspect<'a> {
 
 // ── Conversions ────────────────────────────────────────────────────────────
 
-impl From<ComicRow> for ComicInfo {
-    fn from(v: ComicRow) -> Self {
-        ComicInfo {
+impl TryFrom<ComicRow> for ComicInfo {
+    type Error = BaseError;
+
+    fn try_from(v: ComicRow) -> BaseResult<Self> {
+        //
+        let cover_hash_bytes: [u8; 32] =
+            v.f_cover_hash.try_into().map_err(|_| {
+                BaseError::Unrecoverable {
+                    message: "[ComicRow] f_cover_hash must contain 32 bytes"
+                        .into(),
+                }
+            })?;
+
+        let cover_ext =
+            ImageExt::parse(&v.f_cover_extension).ok_or_else(|| {
+                BaseError::Unrecoverable {
+                    message: "[ComicRow] f_cover_extension must be supported"
+                        .into(),
+                }
+            })?;
+
+        accept(ComicInfo {
             id: v.f_id,
             workset_id: v.f_workset_id,
             index: v.f_index,
@@ -186,6 +230,8 @@ impl From<ComicRow> for ComicInfo {
             cover_key: v.f_cover_key,
             cover_uploaded: v.f_cover_uploaded,
             cover_version: v.f_cover_version,
+            cover_hash: ImageHash::new(cover_hash_bytes),
+            cover_ext,
             chapter_count: v.f_chapter_count,
             creator_id: v.f_creator_id,
             workset: None,
@@ -194,7 +240,7 @@ impl From<ComicRow> for ComicInfo {
             last_active_at: v.f_last_active_at,
             created_at: v.f_created_at,
             updated_at: v.f_updated_at,
-        }
+        })
     }
 }
 

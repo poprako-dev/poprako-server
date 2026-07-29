@@ -29,8 +29,7 @@ async fn update_roles_reviewer_creates_missing_assignment() {
     mock.seed_member(member("target-user", role(RoleField::TRANSLATOR)));
 
     update_roles(
-        &mock,
-        &mock,
+        (&mock, &mock),
         token("reviewer-user"),
         update_roles_data(
             "chapter-1",
@@ -71,8 +70,7 @@ async fn update_roles_reviewer_overwrites_existing_assignment_roles() {
     mock.seed_member(member("target-user", role(RoleField::PROOFREADER)));
 
     update_roles(
-        &mock,
-        &mock,
+        (&mock, &mock),
         token("reviewer-user"),
         update_roles_data(
             "chapter-1",
@@ -119,8 +117,7 @@ async fn update_roles_self_role_reduction_updates_assignment() {
     ));
 
     update_roles(
-        &mock,
-        &mock,
+        (&mock, &mock),
         token("worker-user"),
         update_roles_data(
             "chapter-1",
@@ -151,8 +148,7 @@ async fn update_roles_self_role_expansion_is_rejected() {
     ));
 
     let err = update_roles(
-        &mock,
-        &mock,
+        (&mock, &mock),
         token("worker-user"),
         update_roles_data(
             "chapter-1",
@@ -183,8 +179,7 @@ async fn update_roles_self_role_reduction_requires_member_role() {
     mock.seed_member(member("worker-user", role(RoleField::PROOFREADER)));
 
     let err = update_roles(
-        &mock,
-        &mock,
+        (&mock, &mock),
         token("worker-user"),
         update_roles_data(
             "chapter-1",
@@ -215,8 +210,7 @@ async fn update_roles_non_reviewer_does_not_update_another_user() {
     mock.seed_member(member("target-user", role(RoleField::PROOFREADER)));
 
     let err = update_roles(
-        &mock,
-        &mock,
+        (&mock, &mock),
         token("worker-user"),
         update_roles_data(
             "chapter-1",
@@ -247,8 +241,7 @@ async fn update_roles_admin_role_is_rejected() {
     mock.seed_member(member("target-user", role(RoleField::ADMIN)));
 
     let err = update_roles(
-        &mock,
-        &mock,
+        (&mock, &mock),
         token("admin-user"),
         update_roles_data("chapter-1", "target-user", role(RoleField::ADMIN)),
     )
@@ -275,8 +268,7 @@ async fn update_roles_target_member_role_mismatch_is_rejected() {
     mock.seed_member(member("target-user", role(RoleField::TRANSLATOR)));
 
     let err = update_roles(
-        &mock,
-        &mock,
+        (&mock, &mock),
         token("admin-user"),
         update_roles_data(
             "chapter-1",
@@ -310,8 +302,7 @@ async fn update_roles_only_chapter_admin_does_not_remove_own_admin_role() {
     ));
 
     let err = update_roles(
-        &mock,
-        &mock,
+        (&mock, &mock),
         token("admin-user"),
         update_roles_data(
             "chapter-1",

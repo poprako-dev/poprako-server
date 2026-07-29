@@ -39,8 +39,7 @@ pub async fn list_infos(
     Query(params): Query<ListAssignmentInfosParams>,
 ) -> HttpResult<Vec<AssignmentInfoVal>> {
     usecase::assignment::list_infos(
-        harn.repo(),
-        harn.image_pool(),
+        (harn.repo(), harn.image_pool()),
         user_token,
         params,
     )
@@ -78,8 +77,7 @@ pub async fn update_roles(
     ensure_path_matches_body_id(&user_id, &params.user_id)?;
 
     usecase::assignment::update_roles(
-        harn.drive(),
-        harn.repo(),
+        (harn.drive(), harn.repo()),
         user_token,
         params,
     )
@@ -108,8 +106,7 @@ pub async fn delete(
 ) -> HttpNoContent {
     //
     usecase::assignment::delete(
-        harn.drive(),
-        harn.repo(),
+        (harn.drive(), harn.repo()),
         user_token,
         assignment_id,
     )
@@ -136,7 +133,7 @@ pub async fn join(
     Extension(user_token): Extension<UserToken>,
     Json(params): Json<JoinChapterAssignmentParams>,
 ) -> HttpResult<AssignmentInfoVal> {
-    usecase::assignment::join(harn.drive(), harn.repo(), user_token, params)
+    usecase::assignment::join((harn.drive(), harn.repo()), user_token, params)
         .await?
         .accept(StatusCode::CREATED)
 }

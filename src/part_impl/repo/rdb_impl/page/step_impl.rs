@@ -62,9 +62,9 @@ pub async fn get_info_excluded(
     row.try_into()
 }
 
-/// Query all page infos for a chapter, ordered by index.
+/// Queries page infos for a chapter, ordered by index.
 #[instrument(level = "info", err(Debug), skip_all)]
-pub async fn list_all_infos_by_chapter_id(
+pub async fn list_infos(
     conn: &mut RdbConn,
     chapter_id: &str,
 ) -> BaseResult<Vec<PageInfo>> {
@@ -80,9 +80,9 @@ pub async fn list_all_infos_by_chapter_id(
     rows.into_iter().map(TryInto::try_into).collect()
 }
 
-/// Lists all pages while retaining row locks for a manifest transaction.
+/// Lists page infos while retaining row locks for a manifest transaction.
 #[instrument(level = "info", err(Debug), skip_all)]
-pub async fn list_all_infos_excluded_by_chapter_id(
+pub async fn list_infos_excluded(
     conn: &mut RdbConn,
     chapter_id: &str,
 ) -> BaseResult<Vec<PageInfo>> {
@@ -130,15 +130,6 @@ pub async fn update_manifest(
 
     let image_hash = update.image_hash.bytes();
 
-    let image_byte_length =
-        i64::try_from(update.image_byte_len).map_err(|_| {
-            BaseError::Unrecoverable {
-            message:
-                "[update_manifest] image byte length exceeds PostgreSQL BIGINT"
-                    .into(),
-        }
-        })?;
-
     let row: PageRow = diesel::update(t_page.filter(f_id.eq(&update.id)))
         .set((
             f_index.eq(update.index),
@@ -146,7 +137,6 @@ pub async fn update_manifest(
             f_image_uploaded.eq(update.image_uploaded),
             f_image_version.eq(i64::from(update.image_version)),
             f_image_hash.eq(image_hash.to_vec()),
-            f_image_byte_length.eq(image_byte_length),
             f_image_extension.eq(update.image_ext.suffix()),
             f_updated_at.eq(now),
         ))

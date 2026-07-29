@@ -10,6 +10,7 @@ use crate::model::user::UserToken;
 
 #[derive(Debug, Deserialize)]
 struct TestClaims {
+    //
     sub: String,
     user_id: String,
 }

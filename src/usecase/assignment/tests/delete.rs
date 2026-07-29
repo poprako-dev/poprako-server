@@ -21,8 +21,7 @@ async fn delete_owner_deletes_own_assignment() {
     ));
 
     delete(
-        &mock,
-        &mock,
+        (&mock, &mock),
         token("worker-user"),
         "assignment-chapter-1-worker-user".into(),
     )
@@ -52,8 +51,7 @@ async fn delete_reviewer_deletes_another_user_assignment() {
     ));
 
     delete(
-        &mock,
-        &mock,
+        (&mock, &mock),
         token("admin-user"),
         "assignment-chapter-1-target-user".into(),
     )
@@ -83,8 +81,7 @@ async fn delete_non_reviewer_does_not_delete_another_user_assignment() {
     ));
 
     let err = delete(
-        &mock,
-        &mock,
+        (&mock, &mock),
         token("worker-user"),
         "assignment-chapter-1-target-user".into(),
     )

@@ -13,6 +13,7 @@ use crate::model::termbase::TermbaseInfo;
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct TermbaseInfoVal {
+    //
     /// Unique terminology-base identifier.
     pub id: String,
 
@@ -61,6 +62,7 @@ impl From<TermbaseInfo> for TermbaseInfoVal {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateTermbaseParams {
+    //
     /// Team scope identifier; absent for comic-scoped termbases.
     pub team_id: Option<String>,
     /// Comic scope identifier; absent for team-scoped termbases.
@@ -84,6 +86,7 @@ pub struct CreateTermbasePayload {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateTermbaseInfoParams {
+    //
     /// Terminology-base identifier to update.
     pub id: String,
 
@@ -95,6 +98,7 @@ pub struct UpdateTermbaseInfoParams {
 
 /// Input parameters for listing team-owned terminology bases.
 pub struct ListTeamTermbaseInfosParams {
+    //
     /// Owning team identifier.
     pub team_id: String,
 
@@ -109,6 +113,7 @@ pub struct ListTeamTermbaseInfosParams {
 
 /// Input parameters for listing terminology bases visible from a comic.
 pub struct ListComicTermbaseInfosParams {
+    //
     /// Owning comic identifier.
     pub comic_id: String,
 

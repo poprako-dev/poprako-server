@@ -23,7 +23,7 @@ use crate::part::effect::event::chapter::{
 };
 use crate::part::image::ImagePool;
 use crate::part::prom::Prom;
-use crate::part::prom::payload::Payload;
+use crate::part::prom::payload::TaskPayload;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
@@ -33,9 +33,8 @@ use crate::part::repo::oper::assignment::{
 };
 use crate::part::repo::oper::chapter::{
     CreateChapter, FindPinnedChapterInfo, GetChapterInfo,
-    GetChapterInfoExcluded, ListChapterInfos, ListChapterInfosExcluded,
-    ListPinnedChapterInfos, UnpinOtherChapters, UpdateChapter,
-    UpdateChapterStage,
+    GetChapterInfoExcluded, ListChapterInfos, ListPinnedChapterInfos,
+    LockChapters, UnpinOtherChapters, UpdateChapter, UpdateChapterStage,
 };
 use crate::part::repo::oper::comic::{
     AllocComicChapterIndex, GetComicInfo, TouchComicLastActive,
@@ -60,8 +59,7 @@ mod tests;
 /// Lists chapters under one comic.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos<C, R, I>(
-    repo: &R,
-    image_pool: &I,
+    (repo, image_pool): (&R, &I),
     token: UserToken,
     params: ListChapterInfosParams,
 ) -> BaseResult<Vec<ChapterInfoVal>>
@@ -137,7 +135,7 @@ where
 /// Fetches a chapter by ID.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn get_info<C, R>(
-    repo: &R,
+    (repo,): (&R,),
     token: UserToken,
     id: String,
 ) -> BaseResult<ChapterInfoVal>
@@ -170,7 +168,7 @@ where
 /// Fetches the pinned chapter under one comic.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn get_pinned<C, R>(
-    repo: &R,
+    (repo,): (&R,),
     token: UserToken,
     comic_id: String,
 ) -> BaseResult<Option<ChapterInfoVal>>
@@ -202,8 +200,7 @@ where
 /// Creates a new chapter.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn create<N, C, R>(
-    nucl: &N,
-    repo: &R,
+    (nucl, repo): (&N, &R),
     token: UserToken,
     params: CreateChapterParams,
 ) -> BaseResult<CreateChapterPayload>
@@ -236,7 +233,7 @@ where
             //
             repo.step(
                 context,
-                &ListChapterInfosExcluded {
+                &LockChapters {
                     comic_id: &params.comic_id,
                 },
             )
@@ -327,8 +324,7 @@ where
 /// Updates chapter metadata.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn update_info<N, C, R>(
-    nucl: &N,
-    repo: &R,
+    (nucl, repo): (&N, &R),
     token: UserToken,
     params: UpdateChapterInfoParams,
 ) -> BaseResult<()>
@@ -358,7 +354,7 @@ where
             )
             .await?;
 
-        ChapterComplex::ensure_user_write_allowed(&chapter_info)?;
+        ChapterComplex::ensure_chapter_writable(&chapter_info)?;
 
         if params.subtitle.is_some() || params.pin.is_some() {
             //
@@ -373,7 +369,7 @@ where
 
                 repo.step(
                     context,
-                    &ListChapterInfosExcluded {
+                    &LockChapters {
                         comic_id: &chapter_info.comic_id,
                     },
                 )
@@ -416,10 +412,7 @@ where
 /// Updates chapter workflow state.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn update_stage<N, C, R, P, V>(
-    nucl: &N,
-    repo: &R,
-    prom: &P,
-    develop: &V,
+    (nucl, repo, prom, develop): (&N, &R, &P, &V),
     token: UserToken,
     params: UpdateChapterStageParams,
 ) -> BaseResult<()>
@@ -461,7 +454,7 @@ where
                 )
                 .await?;
 
-            ChapterComplex::ensure_user_write_allowed(&chapter_info)?;
+            ChapterComplex::ensure_chapter_writable(&chapter_info)?;
 
             let was_published = chapter_info.stages.get_phase(Stage::Publish)
                 == StagePhase::Completed;
@@ -512,7 +505,7 @@ where
                     &mut step_proxy! {
                         context;
                         repo => for<'a> ClearPageImagesForPublish<'a>;
-                        prom => for<'t, 'a> DeferBatch<'t, 'a, String, Payload, ()>;
+                        prom => for<'t, 'a> DeferBatch<'t, 'a, String, TaskPayload, ()>;
                     },
                     &chapter_info.id,
                 )

@@ -42,8 +42,7 @@ mod tests;
 /// Imports chapter translation text into existing pages.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn import<N, C, R>(
-    nucl: &N,
-    repo: &R,
+    (nucl, repo): (&N, &R),
     token: UserToken,
     params: ImportChapterTranslationParams,
     chapter_id: String,
@@ -102,7 +101,7 @@ where
                 )
                 .await?;
 
-            ChapterComplex::ensure_user_write_allowed(&chapter_info)?;
+            ChapterComplex::ensure_chapter_writable(&chapter_info)?;
 
             let page_infos = repo
                 .step(

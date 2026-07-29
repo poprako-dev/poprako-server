@@ -16,8 +16,7 @@ use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::term::{
-    CreateTerm, DeleteTerm, GetTermInfo, GetTermInfoExcluded, ListTermInfos,
-    UpdateTerm,
+    CreateTerm, DeleteTerm, GetTermInfo, ListTermInfos, LockTerm, UpdateTerm,
 };
 use crate::part::repo::oper::termbase::{
     GetTermbaseInfo, GetTermbaseInfoExcluded, TouchTermbase,
@@ -35,8 +34,7 @@ mod tests;
 /// Creates a terminology entry inside a terminology base.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn create<N, C, R>(
-    nucl: &N,
-    repo: &R,
+    (nucl, repo): (&N, &R),
     token: UserToken,
     params: CreateTermParams,
 ) -> BaseResult<CreateTermPayload>
@@ -107,7 +105,7 @@ where
 /// Fetches a terminology entry by ID.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn get_info<C, R>(
-    repo: &R,
+    (repo,): (&R,),
     token: UserToken,
     id: String,
 ) -> BaseResult<TermInfoVal>
@@ -145,7 +143,7 @@ where
 /// Lists terminology entries inside one terminology base.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos<C, R>(
-    repo: &R,
+    (repo,): (&R,),
     token: UserToken,
     params: ListTermInfosParams,
 ) -> BaseResult<Vec<TermInfoVal>>
@@ -194,8 +192,7 @@ where
 /// Replaces a terminology entry's source, targets, and comment.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn update_info<N, C, R>(
-    nucl: &N,
-    repo: &R,
+    (nucl, repo): (&N, &R),
     token: UserToken,
     params: UpdateTermInfoParams,
 ) -> BaseResult<()>
@@ -249,7 +246,7 @@ where
 
         repo.step(
             context,
-            &GetTermInfoExcluded {
+            &LockTerm {
                 id: &term_info_update.id,
             },
         )
@@ -281,8 +278,7 @@ where
 /// Deletes a terminology entry.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn delete<N, C, R>(
-    nucl: &N,
-    repo: &R,
+    (nucl, repo): (&N, &R),
     token: UserToken,
     id: String,
 ) -> BaseResult<()>
@@ -323,9 +319,7 @@ where
         )
         .await?;
 
-        let term_info = repo
-            .step(context, &GetTermInfoExcluded { id: &term_info.id })
-            .await?;
+        repo.step(context, &LockTerm { id: &term_info.id }).await?;
 
         repo.step(context, &DeleteTerm { id: &term_info.id })
             .await?;

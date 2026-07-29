@@ -85,6 +85,7 @@ impl Oper for GetPageInfoExcluded<'_> {
 }
 
 pub struct ReservePageImage<'a> {
+    //
     pub id: &'a str,
     pub file_ext: &'a str,
 }
@@ -94,6 +95,7 @@ impl Oper for ReservePageImage<'_> {
 }
 
 pub struct MarkPageImageUploaded<'a> {
+    //
     pub id: &'a str,
     pub image_version: u32,
     pub image_key: Option<&'a str>,
@@ -105,6 +107,7 @@ impl Oper for MarkPageImageUploaded<'_> {
 
 /// Sets one page image's verified upload state for its current identity.
 pub struct SetPageImageUploaded<'a> {
+    //
     pub id: &'a str,
     pub image_version: u32,
     pub image_key: &'a str,
@@ -116,6 +119,7 @@ impl Oper for SetPageImageUploaded<'_> {
 }
 
 pub struct SetPageUnitCounters<'a> {
+    //
     pub id: &'a str,
     pub counters: UnitCounters,
 }
@@ -126,6 +130,7 @@ impl Oper for SetPageUnitCounters<'_> {
 
 pub enum DeletePages<'a> {
     Chapter { chapter_id: &'a str },
+
     Ids { ids: &'a [String] },
 }
 

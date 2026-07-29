@@ -3,7 +3,7 @@
 use poprako_orchestra::Step;
 use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 
-use crate::part::prom::payload::Payload;
+use crate::part::prom::payload::TaskPayload;
 use crate::result::BaseError;
 
 /// Deferred-action payloads.
@@ -24,9 +24,9 @@ pub mod payload;
 /// object key before marking an upload complete. Generated object keys must not
 /// be reused by later resource versions.
 pub trait Prom<C>:
-    for<'a> Step<Defer<'a, String, Payload, ()>, C, Error = BaseError>
+    for<'a> Step<Defer<'a, String, TaskPayload, ()>, C, Error = BaseError>
     + for<'t, 'a> Step<
-        DeferBatch<'t, 'a, String, Payload, ()>,
+        DeferBatch<'t, 'a, String, TaskPayload, ()>,
         C,
         Error = BaseError,
     >

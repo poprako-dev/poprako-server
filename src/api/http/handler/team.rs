@@ -38,9 +38,7 @@ pub async fn create(
     Json(params): Json<CreateTeamParams>,
 ) -> HttpResult<TeamInfoVal> {
     usecase::team::create(
-        harn.drive(),
-        harn.repo(),
-        harn.image_pool(),
+        (harn.drive(), harn.repo(), harn.image_pool()),
         user_token,
         params,
     )
@@ -68,8 +66,7 @@ pub async fn list_infos(
     Query(params): Query<ListTeamInfosParams>,
 ) -> HttpResult<Vec<TeamInfoVal>> {
     usecase::team::list_infos(
-        harn.repo(),
-        harn.image_pool(),
+        (harn.repo(), harn.image_pool()),
         user_token,
         params,
     )
@@ -94,7 +91,7 @@ pub async fn get_info(
     State(harn): State<AppHarn>,
     Path(team_id): Path<String>,
 ) -> HttpResult<TeamInfoVal> {
-    usecase::team::get_info(harn.repo(), harn.image_pool(), team_id)
+    usecase::team::get_info((harn.repo(), harn.image_pool()), team_id)
         .await?
         .accept(StatusCode::OK)
 }
@@ -123,7 +120,7 @@ pub async fn update_info(
     //
     ensure_path_matches_body_id(&team_id, &params.id)?;
 
-    usecase::team::update_info(harn.repo(), user_token, params).await?;
+    usecase::team::update_info((harn.repo(),), user_token, params).await?;
 
     no_content()
 }
@@ -149,10 +146,7 @@ pub async fn reserve_avatar(
     Json(params): Json<ReserveTeamAvatarParams>,
 ) -> HttpResult<ReserveTeamAvatarPayload> {
     usecase::team::reserve_avatar(
-        harn.drive(),
-        harn.repo(),
-        harn.prom(),
-        harn.image_pool(),
+        (harn.drive(), harn.repo(), harn.prom(), harn.image_pool()),
         user_token,
         team_id,
         params,
@@ -183,7 +177,7 @@ pub async fn mark_avatar_uploaded(
 ) -> HttpNoContent {
     //
     usecase::team::mark_avatar_uploaded(
-        harn.repo(),
+        (harn.drive(), harn.repo(), harn.image_pool()),
         user_token,
         team_id,
         params,
@@ -213,9 +207,7 @@ pub async fn delete(
 ) -> HttpNoContent {
     //
     usecase::team::delete(
-        harn.drive(),
-        harn.repo(),
-        harn.prom(),
+        (harn.drive(), harn.repo(), harn.prom()),
         user_token,
         team_id,
     )

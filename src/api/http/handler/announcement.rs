@@ -30,6 +30,7 @@ use crate::value::announcement::AnnouncementInclOpt;
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct AnnouncementListQuery {
+    //
     /// Related rows to embed. Repeatable. Values: `user`.
     #[serde(default, rename = "incl")]
     pub incl_opt: Vec<AnnouncementInclOpt>,
@@ -59,9 +60,13 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(params): Json<CreateAnnouncementParams>,
 ) -> HttpResult<CreateAnnouncementPayload> {
-    usecase::announcement::create(harn.drive(), harn.repo(), user_token, params)
-        .await?
-        .accept(StatusCode::CREATED)
+    usecase::announcement::create(
+        (harn.drive(), harn.repo()),
+        user_token,
+        params,
+    )
+    .await?
+    .accept(StatusCode::CREATED)
 }
 
 /// `GET /api/v1/teams/{team_id}/announcements` — list a team's announcements.
@@ -92,8 +97,7 @@ pub async fn list_infos(
     };
 
     usecase::announcement::list_infos(
-        harn.repo(),
-        harn.image_pool(),
+        (harn.repo(), harn.image_pool()),
         user_token,
         params,
     )

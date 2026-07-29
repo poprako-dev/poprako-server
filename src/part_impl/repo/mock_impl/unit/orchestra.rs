@@ -7,7 +7,7 @@ use crate::part::repo::oper::unit::{
     SaveUnit, UpdateUnitIndexes,
 };
 use crate::part_impl::repo::mock_impl::unit::{
-    count_units, create_unit, list_all_units, save_unit,
+    count_units, create_unit, list_infos, save_unit,
 };
 use crate::part_impl::repo::mock_impl::{Mock, MockContext, expected, now};
 use crate::result::{BaseError, BaseResult, accept};
@@ -19,7 +19,7 @@ impl<'a> Run<ListUnitInfos<'a>> for Mock {
         //
         let state = self.state.lock().unwrap();
 
-        accept(list_all_units(&state, oper.page_id))
+        accept(list_infos(&state, oper.page_id))
     }
 }
 impl<'a> Step<ListUnitInfos<'a>, MockContext> for Mock {
@@ -30,7 +30,7 @@ impl<'a> Step<ListUnitInfos<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &ListUnitInfos<'a>,
     ) -> BaseResult<Vec<UnitInfo>> {
-        accept(list_all_units(&context.state, oper.page_id))
+        accept(list_infos(&context.state, oper.page_id))
     }
 }
 impl<'a> Step<CreateUnit<'a>, MockContext> for Mock {

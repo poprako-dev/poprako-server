@@ -37,6 +37,8 @@ fn comic(id: &str) -> ComicInfo {
         cover_key: None,
         cover_uploaded: false,
         cover_version: 0,
+        cover_hash: ImageHash::default(),
+        cover_ext: ImageExt::Png,
         chapter_count: 1,
         creator_id: "user-1".into(),
         workset: None,
@@ -124,7 +126,6 @@ fn page(
         image_uploaded,
         image_version: 1,
         image_hash: ImageHash::new([0u8; 32]),
-        image_byte_length: 4096,
         image_ext: ImageExt::Png,
         total_unit_count: 1,
         translated_unit_count: 1,
@@ -208,7 +209,7 @@ async fn export_returns_chapter_pages_and_units() {
 
     mock.seed_unit(unit("unit-a", "page-1", 0, "alpha", Some("alpha proof")));
 
-    let exported = export(&mock, token("user-1"), "chapter-1".into()).await;
+    let exported = export((&mock,), token("user-1"), "chapter-1".into()).await;
 
     let exported = match exported {
         //
@@ -255,7 +256,7 @@ async fn export_label_plus_returns_text_payload() {
     mock.seed_unit(unit("unit-a", "page-1", 0, "alpha", Some("alpha proof")));
 
     let exported =
-        export_label_plus(&mock, token("user-1"), "chapter-1".into()).await;
+        export_label_plus((&mock,), token("user-1"), "chapter-1".into()).await;
 
     let exported = match exported {
         //

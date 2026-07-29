@@ -57,7 +57,8 @@ impl Run<MarkComicCoverUploaded<'_>> for RdbRepo {
             mark_cover_uploaded,
             oper.id,
             oper.cover_version,
-            oper.cover_key
+            oper.cover_key,
+            oper.cover_uploaded
         )
     }
 }
@@ -136,7 +137,8 @@ impl Step<ReserveComicCover<'_>, RdbContext> for RdbRepo {
         context: &mut RdbContext,
         oper: &ReserveComicCover<'_>,
     ) -> BaseResult<ComicCoverReservation> {
-        reserve_cover(context.conn(), oper.id, oper.file_extension).await
+        reserve_cover(context.conn(), oper.id, oper.image_hash, oper.image_ext)
+            .await
     }
 }
 
@@ -154,6 +156,7 @@ impl Step<MarkComicCoverUploaded<'_>, RdbContext> for RdbRepo {
             oper.id,
             oper.cover_version,
             oper.cover_key,
+            oper.cover_uploaded,
         )
         .await
     }

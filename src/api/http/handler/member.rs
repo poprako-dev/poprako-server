@@ -36,6 +36,7 @@ mod tests;
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct MemberMeListQuery {
+    //
     /// Related rows to embed. Repeatable. Values: `user`, `team`.
     #[serde(default, rename = "incl")]
     pub incl_opt: Vec<MemberInclOpt>,
@@ -66,7 +67,7 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(params): Json<CreateMemberParams>,
 ) -> HttpResult<CreateMemberPayload> {
-    usecase::member::create(harn.drive(), harn.repo(), user_token, params)
+    usecase::member::create((harn.drive(), harn.repo()), user_token, params)
         .await?
         .accept(StatusCode::CREATED)
 }
@@ -91,8 +92,7 @@ pub async fn list_infos(
     Query(params): Query<ListMemberInfosParams>,
 ) -> HttpResult<Vec<MemberInfoVal>> {
     usecase::member::list_infos(
-        harn.repo(),
-        harn.image_pool(),
+        (harn.repo(), harn.image_pool()),
         user_token,
         params,
     )
@@ -129,8 +129,7 @@ pub async fn list_my_infos(
     };
 
     usecase::member::list_infos(
-        harn.repo(),
-        harn.image_pool(),
+        (harn.repo(), harn.image_pool()),
         user_token,
         params,
     )
@@ -163,8 +162,7 @@ pub async fn update_roles(
     ensure_path_matches_body_id(&member_id, &params.id)?;
 
     usecase::member::update_roles(
-        harn.drive(),
-        harn.repo(),
+        (harn.drive(), harn.repo()),
         user_token,
         params,
     )
@@ -192,7 +190,7 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::member::delete(harn.drive(), harn.repo(), user_token, member_id)
+    usecase::member::delete((harn.drive(), harn.repo()), user_token, member_id)
         .await?;
 
     no_content()
@@ -217,9 +215,7 @@ pub async fn join(
     Json(params): Json<JoinTeamParams>,
 ) -> HttpResult<MemberInfoVal> {
     usecase::member::join_team(
-        harn.drive(),
-        harn.repo(),
-        harn.image_pool(),
+        (harn.drive(), harn.repo(), harn.image_pool()),
         user_token,
         params,
     )

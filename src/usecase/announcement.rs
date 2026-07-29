@@ -27,8 +27,7 @@ mod tests;
 /// Lists announcements under a team.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos<C, R, I>(
-    repo: &R,
-    image_pool: &I,
+    (repo, image_pool): (&R, &I),
     token: UserToken,
     params: ListAnnouncementInfosParams,
 ) -> BaseResult<Vec<AnnouncementInfoVal>>
@@ -69,8 +68,7 @@ where
 /// Creates an announcement under a team.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn create<N, C, R>(
-    nucl: &N,
-    repo: &R,
+    (nucl, repo): (&N, &R),
     token: UserToken,
     params: CreateAnnouncementParams,
 ) -> BaseResult<CreateAnnouncementPayload>

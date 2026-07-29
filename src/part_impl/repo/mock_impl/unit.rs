@@ -9,7 +9,7 @@ mod orchestra;
 #[cfg(test)]
 mod tests;
 
-fn list_all_units(state: &MockState, page_id: &str) -> Vec<UnitInfo> {
+fn list_infos(state: &MockState, page_id: &str) -> Vec<UnitInfo> {
     //
     let mut unit_infos = state
         .units

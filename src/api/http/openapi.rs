@@ -39,6 +39,7 @@ use crate::data::comic_list::ListComicInfosPayload;
 use crate::data::comment::{
     CommentInfoVal, CreateCommentParams, CreateCommentPayload,
 };
+use crate::data::image::ImageUploadSlotVal;
 use crate::data::member::{
     CreateMemberParams, CreateMemberPayload, JoinTeamParams, MemberInfoVal,
     UpdateMemberRolesParams,
@@ -48,7 +49,7 @@ use crate::data::member_invitation::{
     MemberInvitationInfoVal, UpdateMemberInvitationRolesParams,
 };
 use crate::data::page::{
-    MarkPageImageUploadedParams, PageImageParams, PageInfoVal, PageSlotVal,
+    MarkPageImageUploadedParams, PageImageParams, PageInfoVal,
     ReserveChapterPagesParams, ReserveChapterPagesPayload,
     ReservePageImageParams, ReservedPagePayload,
 };
@@ -133,12 +134,13 @@ use crate::value::role::RoleField;
         handler::chapter_port::import,
         handler::chapter_port::export,
         handler::chapter_port::export_download,
-        handler::page::list_all_infos,
+        handler::page::list_infos,
+        handler::page::get_info,
         handler::page::delete,
         handler::page::reserve_chapter_pages,
         handler::page::reserve_image,
         handler::page::mark_image_uploaded,
-        handler::unit::list_all_infos,
+        handler::unit::list_infos,
         handler::unit::save_infos,
         handler::assignment::list_infos,
         handler::assignment::update_roles,
@@ -217,7 +219,7 @@ use crate::value::role::RoleField;
         ImportChapterTranslationPayload,
         PageInfoVal,
         PageImageParams,
-        PageSlotVal,
+        ImageUploadSlotVal,
         ReserveChapterPagesParams,
         ReserveChapterPagesPayload,
         ReservePageImageParams,

@@ -22,10 +22,7 @@ async fn update_stage_admin_advances_any_stage() {
     ));
 
     update_stage(
-        &mock,
-        &mock,
-        &mock,
-        &mock,
+        (&mock, &mock, &mock, &mock),
         token("user-1"),
         UpdateChapterStageParams {
             id: "chapter-1".into(),
@@ -60,10 +57,7 @@ async fn update_stage_rejects_reviewer_outside_review_stage() {
     ));
 
     let err = update_stage(
-        &mock,
-        &mock,
-        &mock,
-        &mock,
+        (&mock, &mock, &mock, &mock),
         token("user-1"),
         UpdateChapterStageParams {
             id: "chapter-1".into(),
@@ -102,10 +96,7 @@ async fn update_stage_rejects_invalid_transition() {
     ));
 
     let err = update_stage(
-        &mock,
-        &mock,
-        &mock,
-        &mock,
+        (&mock, &mock, &mock, &mock),
         token("user-1"),
         UpdateChapterStageParams {
             id: "chapter-1".into(),
@@ -138,10 +129,7 @@ async fn update_stage_publish_enqueues_page_image_delete() {
     mock.seed_page(page("page-1", "chapter-1", Some("page-1.png")));
 
     update_stage(
-        &mock,
-        &mock,
-        &mock,
-        &mock,
+        (&mock, &mock, &mock, &mock),
         token("user-1"),
         UpdateChapterStageParams {
             id: "chapter-1".into(),
@@ -157,7 +145,7 @@ async fn update_stage_publish_enqueues_page_image_delete() {
 
     assert_eq!(snapshot.prom_records.len(), 1);
 
-    let Payload::Image(ImagePayload::Delete { object_key }) =
+    let TaskPayload::Image(ImagePayload::Delete { object_key }) =
         snapshot.prom_records[0].payload()
     else {
         panic!("expected image delete payload");
@@ -172,8 +160,6 @@ async fn update_stage_publish_enqueues_page_image_delete() {
     assert_eq!(snapshot.pages[0].image_version, 2);
 
     assert_eq!(snapshot.pages[0].image_hash, ImageHash::new([0; 32]));
-
-    assert_eq!(snapshot.pages[0].image_byte_length, 4096);
 
     assert_eq!(snapshot.pages[0].image_ext, ImageExt::Png);
 
@@ -209,8 +195,7 @@ async fn published_chapter_rejects_metadata_and_stage_updates() {
     ));
 
     let info_result = update_info(
-        &mock,
-        &mock,
+        (&mock, &mock),
         token("user-1"),
         UpdateChapterInfoParams {
             id: "chapter-1".into(),
@@ -223,10 +208,7 @@ async fn published_chapter_rejects_metadata_and_stage_updates() {
     assert!(matches!(info_result, Err(BaseError::Expected { .. })));
 
     let stage_result = update_stage(
-        &mock,
-        &mock,
-        &mock,
-        &mock,
+        (&mock, &mock, &mock, &mock),
         token("user-1"),
         UpdateChapterStageParams {
             id: "chapter-1".into(),

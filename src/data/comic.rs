@@ -23,6 +23,12 @@ use crate::value::chapter::StageMask;
 use crate::value::comic::{ComicInclOpt, ComicWithOpt};
 use crate::value::role::RoleMask;
 
+pub use crate::data::image::{
+    MarkImageUploadedParams as MarkComicCoverUploadedParams,
+    ReserveImageParams as ReserveComicCoverParams,
+    ReserveImagePayload as ReserveComicCoverPayload,
+};
+
 #[cfg(test)]
 mod tests;
 
@@ -39,6 +45,7 @@ mod tests;
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ComicInfoVal {
+    //
     /// Unique comic identifier.
     pub id: String,
 
@@ -161,6 +168,7 @@ impl ComicInfoVal {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateComicParams {
+    //
     /// Parent workset identifier.
     pub workset_id: String,
 
@@ -186,6 +194,7 @@ pub struct CreateComicParams {
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateComicPayload {
+    //
     /// Newly created comic identifier.
     pub id: String,
     /// Identifier of the auto-created first chapter.
@@ -200,6 +209,7 @@ pub struct CreateComicPayload {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateComicInfoParams {
+    //
     /// Comic identifier.
     pub id: String,
 
@@ -216,6 +226,7 @@ pub struct UpdateComicInfoParams {
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ListComicInfosParams {
+    //
     /// Parent workset identifier.
     pub workset_id: String,
 
@@ -262,38 +273,4 @@ impl TryFrom<ListComicInfosParams> for ComicInfoListSpec {
             limit: params.limit,
         })
     }
-}
-
-/// Input parameters for reserving a new comic cover upload slot.
-///
-/// The file extension determines the object-storage key suffix. After
-/// reservation the client uploads directly to the returned PUT URL.
-#[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
-pub struct ReserveComicCoverParams {
-    /// File extension for the cover image (determines object-storage key suffix).
-    pub file_ext: String,
-}
-
-/// Return value from a successful cover reservation.
-///
-/// The client uses `put_url` to upload the cover image directly to object
-/// storage. `cover_version` must be echoed back when confirming the upload.
-#[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
-pub struct ReserveComicCoverPayload {
-    /// Signed PUT URL for uploading the cover image to object storage.
-    pub put_url: String,
-    /// Version token that must be echoed when confirming the upload.
-    pub cover_version: u32,
-}
-
-/// Input parameters for confirming a comic cover upload completed.
-///
-/// `cover_version` must match the version returned by the reservation step.
-#[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
-pub struct MarkComicCoverUploadedParams {
-    /// Cover version returned by the reservation step.
-    pub cover_version: u32,
 }

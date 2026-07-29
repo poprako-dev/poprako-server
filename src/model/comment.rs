@@ -8,6 +8,7 @@ use crate::value::comment::CommentInclOpt;
 /// A team board comment as stored in the database, with optional included user data.
 #[cfg_attr(test, derive(Clone))]
 pub struct CommentInfo {
+    //
     /// Unique identifier for the comment.
     pub id: String,
 
@@ -28,6 +29,7 @@ pub struct CommentInfo {
 /// The data needed to insert a team board comment row.
 #[cfg_attr(test, derive(Clone))]
 pub struct CommentEntry {
+    //
     /// Unique identifier for the new comment.
     pub id: String,
 
@@ -42,6 +44,7 @@ pub struct CommentEntry {
 
 /// Filtering, pagination, and include parameters for listing comments.
 pub struct CommentListSpec {
+    //
     /// The team whose board comments should be listed.
     pub team_id: String,
     /// Additional data to include in each result, such as the author user record.

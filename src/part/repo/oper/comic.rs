@@ -5,6 +5,7 @@ use crate::model::comic::{
     ComicInfoUpdate,
 };
 use crate::value::comic::ComicInclOpt;
+use crate::value::image::{ImageExt, ImageHash};
 
 pub struct CreateComic<'a> {
     pub entry: &'a ComicEntry,
@@ -15,6 +16,7 @@ impl Oper for CreateComic<'_> {
 }
 
 pub struct GetComicInfo<'a, 'b> {
+    //
     pub id: &'a str,
     pub incls: &'b [ComicInclOpt],
 }
@@ -32,6 +34,7 @@ impl Oper for ListComicInfos<'_> {
 }
 
 pub struct GetComicInfoExcluded<'a, 'b> {
+    //
     pub id: &'a str,
     pub incls: &'b [ComicInclOpt],
 }
@@ -57,8 +60,10 @@ impl Oper for UpdateComic<'_> {
 }
 
 pub struct ReserveComicCover<'a> {
+    //
     pub id: &'a str,
-    pub file_extension: &'a str,
+    pub image_hash: &'a ImageHash,
+    pub image_ext: ImageExt,
 }
 
 impl Oper for ReserveComicCover<'_> {
@@ -66,9 +71,11 @@ impl Oper for ReserveComicCover<'_> {
 }
 
 pub struct MarkComicCoverUploaded<'a> {
+    //
     pub id: &'a str,
     pub cover_version: u32,
     pub cover_key: Option<&'a str>,
+    pub cover_uploaded: bool,
 }
 
 impl Oper for MarkComicCoverUploaded<'_> {
@@ -92,6 +99,7 @@ impl Oper for AllocComicChapterIndex<'_> {
 }
 
 pub struct UpdateComicChapterCount<'a> {
+    //
     pub id: &'a str,
     pub delta: i32,
 }

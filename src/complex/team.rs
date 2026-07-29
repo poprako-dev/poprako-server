@@ -11,7 +11,7 @@ use crate::complex::image::ImageComplex;
 use crate::complex::termbase::TermbaseComplex;
 use crate::complex::util::check_user_is_team_admin;
 use crate::complex::workset::WorksetComplex;
-use crate::part::prom::payload::{Payload, image};
+use crate::part::prom::payload::{TaskPayload, image};
 use crate::part::repo::oper::assignment::DeleteAssignments;
 use crate::part::repo::oper::assignment_invitation::DeleteAssignmentInvitations;
 use crate::part::repo::oper::chapter::{
@@ -86,9 +86,9 @@ impl TeamComplex {
             + for<'a> Proxy<DeleteTermbase<'a>, Error = BaseError>
             + for<'a> Proxy<ListMemberInfosExcluded<'a>, Error = BaseError>
             + for<'a> Proxy<DeleteMember<'a>, Error = BaseError>
-            + for<'a> Proxy<Defer<'a, String, Payload, ()>, Error = BaseError>
+            + for<'a> Proxy<Defer<'a, String, TaskPayload, ()>, Error = BaseError>
             + for<'t, 'a> Proxy<
-                DeferBatch<'t, 'a, String, Payload, ()>,
+                DeferBatch<'t, 'a, String, TaskPayload, ()>,
                 Error = BaseError,
             >,
     {
@@ -116,7 +116,7 @@ impl TeamComplex {
         {
             let delete_id = ImageComplex::gen_delete_id();
 
-            let payload = Payload::Image(image::Payload::Delete {
+            let payload = TaskPayload::Image(image::ImagePayload::Delete {
                 object_key: avatar_key.clone(),
             });
 
@@ -202,8 +202,19 @@ impl TeamPermComplex {
         check_user_is_team_admin(proxy, user_id, team_id).await
     }
 
-    /// Verify the user has super-admin privileges required to list all teams.
-    pub async fn ensure_user_can_list_all<P>(
+    /// Verify the user can create a team.
+    pub async fn ensure_user_can_create<P>(
+        proxy: &mut P,
+        user_id: &str,
+    ) -> BaseResult<()>
+    where
+        P: for<'a> Proxy<GetUserInfo<'a>, Error = BaseError>,
+    {
+        Self::check_user_is_sadmin(proxy, user_id).await
+    }
+
+    /// Verify the user can list team infos.
+    pub async fn ensure_user_can_list_infos<P>(
         proxy: &mut P,
         user_id: &str,
     ) -> BaseResult<()>

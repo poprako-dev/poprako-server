@@ -6,6 +6,8 @@
 // reserve_image(reserve_image)(negative): missing page propagates an argument error.
 // list_infos(list_infos)(positive): team member lists pages sorted by index with uploaded-image URLs only.
 // list_infos(list_infos)(negative): non-member without assignment cannot list pages.
+// get_info(get_info)(positive): team member receives one uploaded page with download URLs.
+// get_info(get_info)(negative): non-member without assignment cannot read a page.
 // mark_image_uploaded(mark_image_uploaded)(positive): raw provider records matching upload version without storage I/O and repeated confirmation is idempotent.
 // mark_image_uploaded(mark_image_uploaded)(negative): stale upload version cannot confirm or pollute current image state.
 // mark_image_uploaded(mark_image_uploaded)(negative): non-raw-provider cannot confirm upload.
@@ -27,11 +29,9 @@ use crate::model::member::MemberInfo;
 use crate::model::page::PageInfo;
 use crate::model::user::UserToken;
 use crate::model::workset::WorksetInfo;
-use crate::part::prom::payload::Payload;
-use crate::part::prom::payload::chapter::CheckUploadFinish;
-use crate::part::prom::payload::image::{
-    Payload as ImagePayload, ResourceKind,
-};
+use crate::part::prom::payload::TaskPayload;
+use crate::part::prom::payload::chapter::ChapterPayload;
+use crate::part::prom::payload::image::{ImagePayload, ResourceKind};
 use crate::part_impl::prom::mock_impl::process_pending;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
@@ -83,6 +83,8 @@ fn comic(id: &str, workset_id: &str) -> ComicInfo {
         cover_key: None,
         cover_uploaded: false,
         cover_version: 0,
+        cover_hash: ImageHash::default(),
+        cover_ext: ImageExt::Png,
         chapter_count: 1,
         creator_id: "user-1".into(),
         workset: None,
@@ -168,7 +170,6 @@ fn page(
         image_uploaded,
         image_version,
         image_hash: ImageHash::new([0u8; 32]),
-        image_byte_length: 4096,
         image_ext: ImageExt::Png,
         total_unit_count: 0,
         translated_unit_count: 0,
@@ -203,15 +204,12 @@ async fn reserve_image_replaces_key_and_enqueues_prom() {
     ));
 
     let reserved = reserve_image(
-        &mock,
-        &mock,
-        &mock,
-        &mock,
+        (&mock, &mock, &mock, &mock),
         token("user-1"),
         "page-1".into(),
         ReservePageImageParams {
             image_hash: ImageHash::new([1u8; 32]),
-            byte_length: 8192,
+            new_byte_len: 8192,
             ext: ImageExt::Jpg,
         },
     )
@@ -241,11 +239,11 @@ async fn reserve_image_replaces_key_and_enqueues_prom() {
 
     assert_eq!(snapshot.pages[0].image_version, 2);
 
-    assert_eq!(snapshot.prom_records.len(), 2);
+    assert_eq!(snapshot.prom_records.len(), 3);
 
     assert!(matches!(
         snapshot.prom_records[0].payload(),
-        Payload::Image(ImagePayload::Delete { object_key }) if object_key == "old.png"
+        TaskPayload::Image(ImagePayload::Delete { object_key }) if object_key == "old.png"
     ));
 
     assert_one_image_check_record(
@@ -273,15 +271,12 @@ async fn reserve_image_reuses_same_uploaded_identity_without_version_bump() {
     ));
 
     let reserved = reserve_image(
-        &mock,
-        &mock,
-        &mock,
-        &mock,
+        (&mock, &mock, &mock, &mock),
         token("user-1"),
         "page-1".into(),
         ReservePageImageParams {
             image_hash: ImageHash::new([0; 32]),
-            byte_length: 4096,
+            new_byte_len: 4096,
             ext: ImageExt::Png,
         },
     )
@@ -311,15 +306,12 @@ async fn reserve_image_resigns_same_pending_identity() {
     ));
 
     let reserved = reserve_image(
-        &mock,
-        &mock,
-        &mock,
-        &mock,
+        (&mock, &mock, &mock, &mock),
         token("user-1"),
         "page-1".into(),
         ReservePageImageParams {
             image_hash: ImageHash::new([0; 32]),
-            byte_length: 4096,
+            new_byte_len: 4096,
             ext: ImageExt::Png,
         },
     )
@@ -349,7 +341,7 @@ async fn reserve_image_resigns_same_pending_identity() {
 }
 
 #[tokio::test]
-async fn reserve_image_rejects_same_hash_with_conflicting_metadata() {
+async fn reserve_image_replaces_same_hash_with_different_extension() {
     //
     let mock = Mock::new();
 
@@ -363,26 +355,42 @@ async fn reserve_image_rejects_same_hash_with_conflicting_metadata() {
         RoleMask::from(RoleField::RAW_PROVIDER),
     ));
 
-    let result = reserve_image(
-        &mock,
-        &mock,
-        &mock,
-        &mock,
+    let reserved = reserve_image(
+        (&mock, &mock, &mock, &mock),
         token("user-1"),
         "page-1".into(),
         ReservePageImageParams {
             image_hash: ImageHash::new([0; 32]),
-            byte_length: 4097,
-            ext: ImageExt::Png,
+            new_byte_len: 4097,
+            ext: ImageExt::Webp,
         },
     )
-    .await;
+    .await
+    .unwrap();
 
-    assert!(matches!(result, Err(BaseError::Expected { .. })));
+    let snapshot = mock.snapshot();
 
-    assert_eq!(mock.snapshot().pages[0].image_version, 4);
+    assert_eq!(reserved.slot.as_ref().unwrap().image_version, 5);
 
-    assert!(mock.snapshot().prom_records.is_empty());
+    assert_eq!(snapshot.pages[0].image_version, 5);
+
+    assert_eq!(snapshot.pages[0].image_ext, ImageExt::Webp);
+
+    assert!(snapshot.prom_records.iter().any(|record| {
+        matches!(
+            record.payload(),
+            TaskPayload::Image(ImagePayload::Delete { object_key })
+                if object_key == "same.png"
+        )
+    }));
+
+    assert_one_image_check_record(
+        &snapshot.prom_records,
+        ResourceKind::PageImage,
+        "page-1",
+        snapshot.pages[0].image_key.as_deref().unwrap(),
+        5,
+    );
 }
 
 #[tokio::test]
@@ -391,15 +399,12 @@ async fn reserve_image_rejects_missing_page() {
     let mock = Mock::new();
 
     let err = reserve_image(
-        &mock,
-        &mock,
-        &mock,
-        &mock,
+        (&mock, &mock, &mock, &mock),
         token("user-1"),
         "missing".into(),
         ReservePageImageParams {
             image_hash: ImageHash::new([1u8; 32]),
-            byte_length: 8192,
+            new_byte_len: 8192,
             ext: ImageExt::Jpg,
         },
     )
@@ -423,9 +428,8 @@ async fn list_infos_sorts_and_resolves_uploaded_url() {
 
     mock.seed_page(page("page-1", 1, Some("one.png"), false, 1));
 
-    let list = list_all_infos(
-        &mock,
-        &mock,
+    let list = list_infos(
+        (&mock, &mock),
         token("user-1"),
         ListPageInfosParams {
             chapter_id: "chapter-1".into(),
@@ -463,9 +467,8 @@ async fn list_infos_rejects_non_member_without_assignment() {
 
     seed_scope(&mock);
 
-    let err = list_all_infos(
-        &mock,
-        &mock,
+    let err = list_infos(
+        (&mock, &mock),
         token("user-1"),
         ListPageInfosParams {
             chapter_id: "chapter-1".into(),
@@ -474,6 +477,51 @@ async fn list_infos_rejects_non_member_without_assignment() {
     .await
     .err()
     .unwrap();
+
+    assert_expected_variant(err, ExpectedVariant::Perm);
+}
+
+#[tokio::test]
+async fn get_info_resolves_uploaded_urls() {
+    //
+    let mock = Mock::new();
+
+    seed_scope(&mock);
+
+    mock.seed_member(member("user-1", RoleMask::from(RoleField::TRANSLATOR)));
+
+    mock.seed_page(page("page-1", 0, Some("one.png"), true, 1));
+
+    let found = get_info((&mock, &mock), token("user-1"), "page-1".into())
+        .await
+        .unwrap();
+
+    assert_eq!(found.id, "page-1");
+
+    assert_eq!(
+        found.image_url,
+        Some("https://test.local/get/one.png".into())
+    );
+
+    assert_eq!(
+        found.image_thumbnail_url,
+        Some("https://test.local/cdn-cgi/image/width=300,fit=scale-down,quality=80,format=auto,metadata=none/one.png".into())
+    );
+}
+
+#[tokio::test]
+async fn get_info_rejects_non_member_without_assignment() {
+    //
+    let mock = Mock::new();
+
+    seed_scope(&mock);
+
+    mock.seed_page(page("page-1", 0, Some("one.png"), true, 1));
+
+    let err = get_info((&mock, &mock), token("user-1"), "page-1".into())
+        .await
+        .err()
+        .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Perm);
 }
@@ -494,8 +542,7 @@ async fn mark_image_uploaded_marks_once_and_idempotent() {
     ));
 
     let first = mark_image_uploaded(
-        &mock,
-        &mock,
+        (&mock, &mock, &mock),
         token("user-1"),
         "page-1".into(),
         MarkPageImageUploadedParams { image_version: 2 },
@@ -505,8 +552,7 @@ async fn mark_image_uploaded_marks_once_and_idempotent() {
     assert!(first.is_ok());
 
     let second = mark_image_uploaded(
-        &mock,
-        &mock,
+        (&mock, &mock, &mock),
         token("user-1"),
         "page-1".into(),
         MarkPageImageUploadedParams { image_version: 2 },

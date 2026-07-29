@@ -171,7 +171,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, default=ROOT)
     parser.add_argument("--layer", choices=("model", "data"), required=True)
-    parser.add_argument("--fix", action="store_true")
+    parser.add_argument("--fix", action=argparse.BooleanOptionalAction, default=True)
     args = parser.parse_args()
     root = args.root.resolve()
     domains = layer_domains(root, args.layer)

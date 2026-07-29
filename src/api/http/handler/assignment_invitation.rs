@@ -30,6 +30,7 @@ use crate::usecase;
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct AssignmentInvitationListQuery {
+    //
     /// When `Some(true)`, returns only unconsumed invitations;
     /// `Some(false)` returns only consumed ones; `None` returns all.
     pub pending: Option<bool>,
@@ -60,9 +61,7 @@ pub async fn create(
     Json(params): Json<CreateAssignmentInvitationParams>,
 ) -> HttpResult<CreateAssignmentInvitationPayload> {
     usecase::assignment_invitation::create(
-        harn.drive(),
-        harn.repo(),
-        harn.prom(),
+        (harn.drive(), harn.repo(), harn.prom()),
         user_token,
         params,
     )
@@ -97,9 +96,13 @@ pub async fn list_infos(
         limit: query.limit,
     };
 
-    usecase::assignment_invitation::list_infos(harn.repo(), user_token, params)
-        .await?
-        .accept(StatusCode::OK)
+    usecase::assignment_invitation::list_infos(
+        (harn.repo(),),
+        user_token,
+        params,
+    )
+    .await?
+    .accept(StatusCode::OK)
 }
 
 /// `DELETE /api/v1/assignment-invitations/{assignment_invitation_id}` — delete.
@@ -122,8 +125,7 @@ pub async fn delete(
 ) -> HttpNoContent {
     //
     usecase::assignment_invitation::delete(
-        harn.drive(),
-        harn.repo(),
+        (harn.drive(), harn.repo()),
         user_token,
         assignment_invitation_id,
     )
@@ -152,9 +154,7 @@ pub async fn join(
     Json(params): Json<JoinAssignmentInvitationParams>,
 ) -> HttpResult<AssignmentInfoVal> {
     usecase::assignment_invitation::join(
-        harn.drive(),
-        harn.repo(),
-        harn.image_pool(),
+        (harn.drive(), harn.repo(), harn.image_pool()),
         user_token,
         params,
     )

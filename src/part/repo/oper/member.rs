@@ -15,9 +15,11 @@ impl Oper for CreateMember<'_> {
 
 pub enum UpdateMember<'a> {
     UserNickname {
+        //
         user_id: &'a str,
         user_nickname: &'a str,
     },
+
     Role {
         update: &'a MemberRoleUpdate,
     },
@@ -29,6 +31,7 @@ impl Oper for UpdateMember<'_> {
 
 pub enum ListMemberInfos<'a> {
     Spec { spec: &'a MemberListSpec },
+
     User { user_id: &'a str },
 }
 
@@ -37,7 +40,11 @@ impl Oper for ListMemberInfos<'_> {
 }
 
 pub enum FindMemberInfo<'a> {
-    UserTeam { user_id: &'a str, team_id: &'a str },
+    UserTeam {
+        //
+        user_id: &'a str,
+        team_id: &'a str,
+    },
 }
 
 impl Oper for FindMemberInfo<'_> {
@@ -46,6 +53,7 @@ impl Oper for FindMemberInfo<'_> {
 
 pub enum GetMemberInfo<'a, 'b> {
     Id {
+        //
         id: &'a str,
         incls: &'b [MemberInclOpt],
     },
@@ -57,6 +65,7 @@ impl Oper for GetMemberInfo<'_, '_> {
 
 pub enum ListMemberInfosExcluded<'a> {
     User { user_id: &'a str },
+
     Team { team_id: &'a str },
 }
 

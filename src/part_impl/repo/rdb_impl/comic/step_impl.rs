@@ -27,9 +27,10 @@ use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::{
 use crate::part_impl::repo::rdb_impl::schema::t_comic::dsl::*;
 use crate::part_impl::shared::RdbConn;
 use crate::part_impl::shared::result::{diesel, expected, next_version};
-use crate::result::{BaseResult, accept};
+use crate::result::{BaseError, BaseResult, accept};
 use crate::value::chapter::{Stage, StageMask, StagePhase};
 use crate::value::comic::ComicInclOpt;
+use crate::value::image::{ImageExt, ImageHash};
 use crate::value::index::user_index_to_stored_index;
 
 /// Resolves comic IDs whose pinned chapter matches every requested workflow phase.
@@ -159,7 +160,7 @@ pub async fn get_info_by_id(
         .map_err(diesel)?
         .ok_or_else(|| expected("error-comic-not-found"))?;
 
-    let mut info: ComicInfo = row.into();
+    let mut info: ComicInfo = row.try_into()?;
 
     incl::comic::populate_comic_incls(
         conn,
@@ -217,7 +218,10 @@ pub async fn list_infos(
         .await
         .map_err(diesel)?;
 
-    let mut infos: Vec<ComicInfo> = rows.into_iter().map(Into::into).collect();
+    let mut infos: Vec<ComicInfo> = rows
+        .into_iter()
+        .map(TryInto::try_into)
+        .collect::<BaseResult<_>>()?;
 
     incl::comic::populate_comic_incls(conn, &mut infos, &spec.incl_opt).await?;
 
@@ -263,6 +267,7 @@ pub async fn mark_cover_uploaded(
     id: &str,
     version: u32,
     cover_key: Option<&str>,
+    cover_uploaded: bool,
 ) -> BaseResult<()> {
     //
     let now = OffsetDateTime::now_utc();
@@ -276,7 +281,7 @@ pub async fn mark_cover_uploaded(
                     .filter(f_cover_version.eq(i64::from(version)))
                     .filter(f_cover_key.eq(cover_key)),
             )
-            .set((f_cover_uploaded.eq(true), f_updated_at.eq(now)))
+            .set((f_cover_uploaded.eq(cover_uploaded), f_updated_at.eq(now)))
             .execute(conn)
             .await
         }
@@ -287,7 +292,7 @@ pub async fn mark_cover_uploaded(
                     .filter(f_id.eq(id))
                     .filter(f_cover_version.eq(i64::from(version))),
             )
-            .set((f_cover_uploaded.eq(true), f_updated_at.eq(now)))
+            .set((f_cover_uploaded.eq(cover_uploaded), f_updated_at.eq(now)))
             .execute(conn)
             .await
         }
@@ -317,7 +322,7 @@ pub async fn create(
         .await
         .map_err(diesel)?;
 
-    accept(row.into())
+    row.try_into()
 }
 
 /// Locks a single comic row by ID.
@@ -338,7 +343,7 @@ pub async fn get_info_excluded(
         .map_err(diesel)?
         .ok_or_else(|| expected("error-comic-not-found"))?;
 
-    let mut comic_info = row.into();
+    let mut comic_info = row.try_into()?;
 
     incl::comic::populate_comic_incls(
         conn,
@@ -439,7 +444,10 @@ pub async fn list_infos_excluded(
             }
         };
 
-    let mut comic_infos = rows.into_iter().map(Into::into).collect::<Vec<_>>();
+    let mut comic_infos = rows
+        .into_iter()
+        .map(TryInto::try_into)
+        .collect::<BaseResult<Vec<_>>>()?;
 
     incl::comic::populate_comic_incls(conn, &mut comic_infos, &spec.incl_opt)
         .await?;
@@ -452,28 +460,69 @@ pub async fn list_infos_excluded(
 pub async fn reserve_cover(
     conn: &mut RdbConn,
     id: &str,
-    file_ext: &str,
+    image_hash: &ImageHash,
+    image_ext: ImageExt,
 ) -> BaseResult<ComicCoverReservation> {
     //
     let now = OffsetDateTime::now_utc();
 
-    let (prev_key, raw_version): (Option<String>, i64) = t_comic
+    let (prev_key, uploaded, raw_version, stored_hash, stored_ext): (
+        Option<String>,
+        bool,
+        i64,
+        Vec<u8>,
+        String,
+    ) = t_comic
         .filter(f_id.eq(id))
-        .select((f_cover_key, f_cover_version))
+        .select((
+            f_cover_key,
+            f_cover_uploaded,
+            f_cover_version,
+            f_cover_hash,
+            f_cover_extension,
+        ))
         .for_update()
         .get_result(conn)
         .await
         .map_err(diesel)?;
 
+    let same_hash =
+        prev_key.is_some() && stored_hash.as_slice() == image_hash.as_bytes();
+
+    if same_hash && stored_ext != image_ext.suffix() {
+        return Err(expected("error-invalid-image-extension"));
+    }
+
+    if same_hash {
+        //
+        let object_key = prev_key.ok_or_else(|| BaseError::Unrecoverable {
+            message: "[reserve_cover] pending cover key is missing".into(),
+        })?;
+
+        return accept(ComicCoverReservation {
+            object_key,
+            prev_object_key: None,
+            cover_version: u32::try_from(raw_version).map_err(|_| {
+                BaseError::Unrecoverable {
+                    message: "[reserve_cover] cover version is invalid".into(),
+                }
+            })?,
+            upload_required: !uploaded,
+        });
+    }
+
     let cover_version = next_version(raw_version)?;
 
-    let object_key = ComicComplex::gen_cover_key(id, cover_version, file_ext);
+    let object_key =
+        ComicComplex::gen_cover_key(id, cover_version, image_ext.suffix());
 
     diesel::update(t_comic.filter(f_id.eq(id)))
         .set((
             f_cover_key.eq(Some(&object_key)),
             f_cover_uploaded.eq(false),
             f_cover_version.eq(i64::from(cover_version)),
+            f_cover_hash.eq(image_hash.as_bytes().to_vec()),
+            f_cover_extension.eq(image_ext.suffix()),
             f_updated_at.eq(now),
         ))
         .execute(conn)
@@ -484,6 +533,7 @@ pub async fn reserve_cover(
         object_key,
         prev_object_key: prev_key,
         cover_version,
+        upload_required: true,
     })
 }
 

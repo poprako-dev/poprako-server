@@ -1,8 +1,12 @@
 use serde::{Deserialize, Serialize};
 
-/// Deferred check that advances raw provision after all page uploads finish.
+/// Deferred chapter task payload.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct CheckUploadFinish {
-    /// Unique identifier of the chapter to verify upload completion for.
-    pub chapter_id: String,
+#[serde(untagged)]
+pub enum ChapterPayload {
+    /// Advance raw provision after all page uploads finish.
+    TryAdvanceRawProvideStage {
+        /// Unique identifier of the chapter to verify upload completion for.
+        chapter_id: String,
+    },
 }

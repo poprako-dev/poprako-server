@@ -4,8 +4,8 @@ use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
 use crate::model::comic_archive::{
-    ComicArchiveChapterSnapshot, ComicArchivePageSnapshot,
-    ComicArchiveSnapshot, ComicArchiveWrite,
+    ComicArchiveChapterSnapshot, ComicArchiveEntry, ComicArchivePageSnapshot,
+    ComicArchiveSnapshot,
 };
 use crate::part::repo::oper::comic_archive::{
     CommitComicArchive, GetComicArchiveSnapshotExcluded,
@@ -141,7 +141,7 @@ fn get_snapshot_excluded(
 /// Persist one archive row and delete active records in the mock transaction state.
 fn commit(
     context: &mut MockContext,
-    comic_archive_write: &ComicArchiveWrite,
+    comic_archive_entry: &ComicArchiveEntry,
 ) -> BaseResult<()> {
     //
     if context.archive_commit_failure {
@@ -153,43 +153,43 @@ fn commit(
     context
         .state
         .comic_archives
-        .push(comic_archive_write.record.clone());
+        .push(comic_archive_entry.record.clone());
 
     context
         .state
         .assignment_invitations
         .retain(|assignment_invitation_info| {
-            !comic_archive_write
+            !comic_archive_entry
                 .source_chapter_ids
                 .contains(&assignment_invitation_info.chapter_id)
         });
 
     context.state.assignments.retain(|assignment_info| {
-        !comic_archive_write
+        !comic_archive_entry
             .source_chapter_ids
             .contains(&assignment_info.chapter_id)
     });
 
     context.state.units.retain(|unit_info| {
-        !comic_archive_write
+        !comic_archive_entry
             .source_page_ids
             .contains(&unit_info.page_id)
     });
 
     context.state.pages.retain(|page_info| {
-        !comic_archive_write
+        !comic_archive_entry
             .source_chapter_ids
             .contains(&page_info.chapter_id)
     });
 
     context.state.chapters.retain(|chapter_info| {
-        !comic_archive_write
+        !comic_archive_entry
             .source_chapter_ids
             .contains(&chapter_info.id)
     });
 
     context.state.comics.retain(|comic_info| {
-        comic_info.id != comic_archive_write.source_comic_id
+        comic_info.id != comic_archive_entry.source_comic_id
     });
 
     accept(())
@@ -217,6 +217,6 @@ impl<'a> Step<CommitComicArchive<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &CommitComicArchive<'a>,
     ) -> BaseResult<()> {
-        commit(context, oper.write)
+        commit(context, oper.entry)
     }
 }

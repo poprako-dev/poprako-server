@@ -2,8 +2,9 @@ use super::*;
 
 use crate::model::assignment_invitation::AssignmentInvitationInfo;
 use crate::model::member_invitation::MemberInvitationInfo;
-use crate::part::prom::payload::invitation::PurgeExpiredInvitation;
+use crate::part::prom::payload::invitation::InvitationPayload;
 use crate::test_util::now;
+use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
 // defer_batch_records_payloads(Prom::step)(positive): batch deferral should store every record in transaction state.
@@ -21,10 +22,10 @@ async fn defer_batch_records_payloads() {
             let ids = ["prom-1".to_string(), "prom-2".to_string()];
 
             let payloads = [
-                Payload::Image(image::Payload::Delete {
+                TaskPayload::Image(image::ImagePayload::Delete {
                     object_key: "one.png".to_string(),
                 }),
-                Payload::Image(image::Payload::Delete {
+                TaskPayload::Image(image::ImagePayload::Delete {
                     object_key: "two.png".to_string(),
                 }),
             ];
@@ -120,20 +121,16 @@ async fn purge_expired_invitations() {
         ];
 
         let payloads = [
-            Payload::PurgeExpiredInvitation(
-                PurgeExpiredInvitation::Assignment {
-                    invitation_id: "assignment-pending".to_string(),
-                },
-            ),
-            Payload::PurgeExpiredInvitation(
-                PurgeExpiredInvitation::Assignment {
-                    invitation_id: "assignment-accepted".to_string(),
-                },
-            ),
-            Payload::PurgeExpiredInvitation(PurgeExpiredInvitation::Member {
+            TaskPayload::Invitation(InvitationPayload::Assignment {
+                invitation_id: "assignment-pending".to_string(),
+            }),
+            TaskPayload::Invitation(InvitationPayload::Assignment {
+                invitation_id: "assignment-accepted".to_string(),
+            }),
+            TaskPayload::Invitation(InvitationPayload::Member {
                 invitation_id: "member-pending".to_string(),
             }),
-            Payload::PurgeExpiredInvitation(PurgeExpiredInvitation::Member {
+            TaskPayload::Invitation(InvitationPayload::Member {
                 invitation_id: "member-accepted".to_string(),
             }),
         ];
@@ -186,7 +183,7 @@ async fn defer_payload(
     mock: &Mock,
     context: &mut MockContext,
     id: &str,
-    payload: Payload,
+    payload: TaskPayload,
 ) -> BaseResult<()> {
     //
     let id = id.to_string();
@@ -218,6 +215,8 @@ fn user_info(id: &str, avatar_key: &str, avatar_version: u32) -> UserInfo {
         avatar_key: Some(avatar_key.to_string()),
         avatar_uploaded: false,
         avatar_version,
+        avatar_hash: ImageHash::default(),
+        avatar_ext: ImageExt::Png,
         is_sadmin: false,
         last_active_at: now,
         created_at: now,
@@ -247,7 +246,7 @@ async fn defer_records_payload() {
                 &prom,
                 context,
                 "prom-1",
-                Payload::Image(image::Payload::Delete {
+                TaskPayload::Image(image::ImagePayload::Delete {
                     object_key: "key".to_string(),
                 }),
             )
@@ -286,7 +285,7 @@ async fn process_pending_marks_uploaded_image() {
             &prom,
             context,
             "prom-1",
-            Payload::Image(image::Payload::CheckUpload {
+            TaskPayload::Image(image::ImagePayload::CheckUpload {
                 resource_kind: image::ResourceKind::UserAvatar,
                 resource_id: "user-1".to_string(),
                 object_key: "avatar.png".to_string(),
@@ -324,7 +323,7 @@ async fn process_pending_ignores_stale_image_check() {
             &prom,
             context,
             "prom-1",
-            Payload::Image(image::Payload::CheckUpload {
+            TaskPayload::Image(image::ImagePayload::CheckUpload {
                 resource_kind: image::ResourceKind::UserAvatar,
                 resource_id: "user-1".to_string(),
                 object_key: "avatar-v1.png".to_string(),
@@ -366,7 +365,7 @@ async fn process_pending_rejects_mismatched_image_key() {
             &prom,
             context,
             "prom-1",
-            Payload::Image(image::Payload::CheckUpload {
+            TaskPayload::Image(image::ImagePayload::CheckUpload {
                 resource_kind: image::ResourceKind::UserAvatar,
                 resource_id: "user-1".to_string(),
                 object_key: "avatar-other.png".to_string(),
@@ -387,7 +386,7 @@ async fn process_pending_rejects_mismatched_image_key() {
 }
 
 #[tokio::test]
-async fn process_pending_deletes_missing_resource_image() {
+async fn process_pending_keeps_missing_resource_image() {
     //
     let mock = Mock::new();
 
@@ -399,7 +398,7 @@ async fn process_pending_deletes_missing_resource_image() {
             &prom,
             context,
             "prom-1",
-            Payload::Image(image::Payload::CheckUpload {
+            TaskPayload::Image(image::ImagePayload::CheckUpload {
                 resource_kind: image::ResourceKind::UserAvatar,
                 resource_id: "missing-user".to_string(),
                 object_key: "orphan-avatar.png".to_string(),
@@ -416,8 +415,5 @@ async fn process_pending_deletes_missing_resource_image() {
 
     process_pending(&mock).await.ok().unwrap();
 
-    assert_eq!(
-        mock.snapshot().deleted_image_keys,
-        vec!["orphan-avatar.png".to_string()]
-    );
+    assert!(mock.snapshot().deleted_image_keys.is_empty());
 }
