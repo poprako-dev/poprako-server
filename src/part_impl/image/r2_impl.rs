@@ -141,22 +141,22 @@ impl ImagePool for R2ImagePool {
 
             None => {
                 //
-                let error_message = trl("error-unsupported-file-type");
+                let err_message = trl("error-unsupported-file-type");
 
-                let file_extension = key.rsplit('.').next().unwrap_or("(none)");
+                let file_ext = key.rsplit('.').next().unwrap_or("(none)");
 
                 tracing::warn!(
                     error_variant = ?ExpectedVariant::Args,
-                    error_message = %error_message,
+                    err_message = %err_message,
                     object_key = %key,
-                    file_extension = %file_extension,
+                    file_ext = %file_ext,
                     operation = "get_upload_url",
                     "expected error: unsupported image file type",
                 );
 
                 return Err(BaseError::Expected {
                     variant: ExpectedVariant::Args,
-                    message: error_message,
+                    message: err_message,
                 });
             }
         };

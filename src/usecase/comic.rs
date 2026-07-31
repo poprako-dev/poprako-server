@@ -472,11 +472,11 @@ where
 
     if comic_info.cover_version != instr.image_version {
         //
-        let error_message = trl("error-stale-cover-upload");
+        let err_message = trl("error-stale-cover-upload");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Args,
-            error_message = %error_message,
+            err_message = %err_message,
             comic_id = %id,
             user_id = %token.user_id,
             image_version = instr.image_version,
@@ -486,7 +486,7 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: error_message,
+            message: err_message,
         });
     }
 
@@ -496,11 +496,11 @@ where
 
     let cover_key = comic_info.cover_key.clone().ok_or_else(|| {
         //
-        let error_message = trl("error-stale-cover-upload");
+        let err_message = trl("error-stale-cover-upload");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Args,
-            error_message = %error_message,
+            err_message = %err_message,
             comic_id = %id,
             user_id = %token.user_id,
             image_version = instr.image_version,
@@ -510,17 +510,17 @@ where
 
         BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: error_message,
+            message: err_message,
         }
     })?;
 
     if !image_manager.object_exists(&cover_key).await? {
         //
-        let error_message = trl("error-stale-cover-upload");
+        let err_message = trl("error-stale-cover-upload");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Args,
-            error_message = %error_message,
+            err_message = %err_message,
             comic_id = %id,
             user_id = %token.user_id,
             image_version = instr.image_version,
@@ -530,7 +530,7 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: error_message,
+            message: err_message,
         });
     }
 
@@ -546,11 +546,11 @@ where
         if locked_comic_info.cover_version != instr.image_version
             || locked_comic_info.cover_key.as_deref() != Some(&cover_key)
         {
-            let error_message = trl("error-stale-cover-upload");
+            let err_message = trl("error-stale-cover-upload");
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %error_message,
+                err_message = %err_message,
                 comic_id = %id,
                 user_id = %token.user_id,
                 image_version = instr.image_version,
@@ -561,7 +561,7 @@ where
 
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: error_message,
+                message: err_message,
             });
         }
 

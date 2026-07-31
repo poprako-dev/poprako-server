@@ -221,11 +221,11 @@ where
 
                 (false, _) | (true, false) => {
                     //
-                    let error_message = "stale page image identity";
+                    let err_message = "stale page image identity";
 
                     tracing::warn!(
                         error_variant = ?ExpectedVariant::Args,
-                        error_message = %error_message,
+                        err_message = %err_message,
                         resource_kind = ?image_identity.kind,
                         resource_id = %image_identity.resource_id,
                         image_version = image_identity.version,
@@ -239,7 +239,7 @@ where
 
                     return Err(BaseError::Expected {
                         variant: ExpectedVariant::Args,
-                        message: error_message.into(),
+                        message: err_message.into(),
                     });
                 }
             }
@@ -379,11 +379,11 @@ where
 
                 (false, _) | (true, false) => {
                     //
-                    let error_message = "stale page image identity";
+                    let err_message = "stale page image identity";
 
                     tracing::warn!(
                         error_variant = ?ExpectedVariant::Args,
-                        error_message = %error_message,
+                        err_message = %err_message,
                         resource_kind = ?image_identity.kind,
                         resource_id = %image_identity.resource_id,
                         image_version = image_identity.version,
@@ -397,7 +397,7 @@ where
 
                     return Err(BaseError::Expected {
                         variant: ExpectedVariant::Args,
-                        message: error_message.into(),
+                        message: err_message.into(),
                     });
                 }
             }

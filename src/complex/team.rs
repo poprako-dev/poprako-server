@@ -237,11 +237,11 @@ impl TeamPermComplex {
 
         if !user_info.is_sadmin {
             //
-            let error_message = trl("error-sadmin-required");
+            let err_message = trl("error-sadmin-required");
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Perm,
-                error_message = %error_message,
+                err_message = %err_message,
                 user_id = %user_id,
                 is_sadmin = user_info.is_sadmin,
                 "expected error: super-admin permission required",
@@ -249,7 +249,7 @@ impl TeamPermComplex {
 
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Perm,
-                message: error_message,
+                message: err_message,
             });
         }
 

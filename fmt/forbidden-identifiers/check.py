@@ -443,6 +443,7 @@ CTX_STATIC         = "static"
 CTX_ENUM_VARIANT   = "enum_variant"
 CTX_TYPE           = "type"
 CTX_FIELD          = "field"
+CTX_MACRO_FIELD    = "macro_field"
 
 
 def check_identifier_name(
@@ -471,6 +472,20 @@ def check_identifier_name(
         return
 
     segments = split_identifier(name)
+
+    # Structured macro field keys are identifiers too, but their `err` form
+    # follows the established tracing field convention.  Only the forbidden
+    # `error` segment is checked here.
+    if context == CTX_MACRO_FIELD:
+        if "error" in segments:
+            diagnostics.append(
+                error_line(
+                    path, root, name_node,
+                    "FBD003",
+                    f"'{name}' — 'error' is forbidden — use 'err' instead",
+                ),
+            )
+        return
 
     # --- error segment → always forbidden (FBD003) -----------------------
     # Skipped for type names and field declarations — only "extension"
@@ -597,6 +612,29 @@ def collect_definition_names(
             if child.type == "identifier":
                 names.append((text(source, child), child, CTX_PARAMETER, False))
                 break
+
+    # --- structured macro field key ---
+    if node.type == "macro_invocation":
+        token_tree = next(
+            (
+                child
+                for child in node.named_children
+                if child.type == "token_tree"
+            ),
+            None,
+        )
+
+        if token_tree is not None:
+            children = token_tree.children
+
+            for index, child in enumerate(children[:-1]):
+                next_child = children[index + 1]
+
+                if (
+                    child.type == "identifier"
+                    and next_child.text == b"="
+                ):
+                    names.append((text(source, child), child, CTX_MACRO_FIELD, False))
 
     # --- let binding (pattern → identifier, with Error-type detection) ---
     if node.type == "let_declaration":
@@ -805,6 +843,29 @@ def self_test() -> int:
 
         if not all("FBD003" in d for d in diagnostics):
             print("self-test FBD003: wrong code", file=sys.stderr)
+            return 1
+
+        # ── error in structured macro field keys ────────────────────────
+
+        fixture.write_text(
+            "fn process() {\n"
+            "    tracing::warn!(\n"
+            "        error_variant = ?SomeError,\n"
+            "        err_message = %message,\n"
+            "        \"failed\",\n"
+            "    );\n"
+            "}\n"
+        )
+
+        diagnostics = check_root(root)
+
+        if len(diagnostics) != 1 or "error_variant" not in diagnostics[0]:
+            print(
+                "self-test FBD003-macro-field: error_variant was not flagged",
+                file=sys.stderr,
+            )
+            for diagnostic in diagnostics:
+                print(f"  {diagnostic}", file=sys.stderr)
             return 1
 
         # ── err in fn names: only _err suffix allowed ────────────────────

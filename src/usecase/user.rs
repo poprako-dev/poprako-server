@@ -52,17 +52,17 @@ mod tests;
 /// * `C` — Context anchor.
 /// * `R: UserRepo<C>` — User storage.
 /// * `I: ImagePool` — Resolves the avatar signed URL.
-/// * `V: EffectDevelop` — Processes the activity event (only for self-reads).
+/// * `D: EffectDevelop` — Processes the activity event (only for self-reads).
 #[instrument(level = "info", err(Debug), skip(repo, image_pool, develop))]
-pub async fn get_info<C, R, I, V>(
-    (repo, image_pool, develop): (&R, &I, &V),
+pub async fn get_info<C, R, I, D>(
+    (repo, image_pool, develop): (&R, &I, &D),
     token: UserToken,
     id: String,
 ) -> BaseRest<UserInfoView>
 where
     R: UserRepo<C>,
     I: ImagePool,
-    V: EffectDevelop + Send + Sync,
+    D: EffectDevelop + Send + Sync,
 {
     let user_info = GetUserInfo::Id { id: &id }.run_on(repo).await?;
 
@@ -107,11 +107,11 @@ where
     // Only the user themselves can update their own profile.
     if token.user_id != instr.id {
         //
-        let error_message = trl("error-forbidden");
+        let err_message = trl("error-forbidden");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Perm,
-            error_message = %error_message,
+            err_message = %err_message,
             user_id = %token.user_id,
             target_user_id = %instr.id,
             "expected error: user profile ownership required",
@@ -119,7 +119,7 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: error_message,
+            message: err_message,
         });
     }
 
@@ -171,11 +171,11 @@ where
 {
     if token.user_id != user_id {
         //
-        let error_message = trl("error-forbidden");
+        let err_message = trl("error-forbidden");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Perm,
-            error_message = %error_message,
+            err_message = %err_message,
             user_id = %token.user_id,
             target_user_id = %user_id,
             "expected error: password update ownership required",
@@ -183,7 +183,7 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: error_message,
+            message: err_message,
         });
     }
 
@@ -201,11 +201,11 @@ where
     )
     .await
     {
-        let error_message = trl("error-wrong-credentials");
+        let err_message = trl("error-wrong-credentials");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Auth,
-            error_message = %error_message,
+            err_message = %err_message,
             user_id = %user_id,
             qid = %user_info.qid,
             "expected error: current password verification failed",
@@ -213,7 +213,7 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Auth,
-            message: error_message,
+            message: err_message,
         });
     }
 
@@ -398,11 +398,11 @@ where
 {
     if token.user_id != id {
         //
-        let error_message = trl("error-forbidden");
+        let err_message = trl("error-forbidden");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Perm,
-            error_message = %error_message,
+            err_message = %err_message,
             user_id = %token.user_id,
             target_user_id = %id,
             "expected error: avatar upload ownership required",
@@ -410,7 +410,7 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: error_message,
+            message: err_message,
         });
     }
 
@@ -418,11 +418,11 @@ where
 
     if user_info.avatar_version != instr.image_version {
         //
-        let error_message = trl("error-stale-avatar-upload");
+        let err_message = trl("error-stale-avatar-upload");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Args,
-            error_message = %error_message,
+            err_message = %err_message,
             user_id = %token.user_id,
             target_user_id = %id,
             image_version = instr.image_version,
@@ -432,7 +432,7 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: error_message,
+            message: err_message,
         });
     }
 
@@ -442,11 +442,11 @@ where
 
     let avatar_key = user_info.avatar_key.clone().ok_or_else(|| {
         //
-        let error_message = trl("error-stale-avatar-upload");
+        let err_message = trl("error-stale-avatar-upload");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Args,
-            error_message = %error_message,
+            err_message = %err_message,
             user_id = %token.user_id,
             target_user_id = %id,
             image_version = instr.image_version,
@@ -456,17 +456,17 @@ where
 
         BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: error_message,
+            message: err_message,
         }
     })?;
 
     if !image_manager.object_exists(&avatar_key).await? {
         //
-        let error_message = trl("error-stale-avatar-upload");
+        let err_message = trl("error-stale-avatar-upload");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Args,
-            error_message = %error_message,
+            err_message = %err_message,
             user_id = %token.user_id,
             target_user_id = %id,
             image_version = instr.image_version,
@@ -476,7 +476,7 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: error_message,
+            message: err_message,
         });
     }
 
@@ -496,11 +496,11 @@ where
         if locked_user_info.avatar_version != instr.image_version
             || locked_user_info.avatar_key.as_deref() != Some(&avatar_key)
         {
-            let error_message = trl("error-stale-avatar-upload");
+            let err_message = trl("error-stale-avatar-upload");
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %error_message,
+                err_message = %err_message,
                 user_id = %token.user_id,
                 target_user_id = %id,
                 image_version = instr.image_version,
@@ -511,7 +511,7 @@ where
 
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: error_message,
+                message: err_message,
             });
         }
 
@@ -559,11 +559,11 @@ where
 {
     if token.user_id != id {
         //
-        let error_message = trl("error-forbidden");
+        let err_message = trl("error-forbidden");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Perm,
-            error_message = %error_message,
+            err_message = %err_message,
             user_id = %token.user_id,
             target_user_id = %id,
             "expected error: user deletion ownership required",
@@ -571,7 +571,7 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: error_message,
+            message: err_message,
         });
     }
 

@@ -15,18 +15,18 @@ fn normalize_source(source: String) -> BaseRest<String> {
 
     if source.is_empty() {
         //
-        let error_message = trl("error-term-source-required");
+        let err_message = trl("error-term-source-required");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Args,
-            error_message = %error_message,
+            err_message = %err_message,
             source = %source,
             "expected error: term source required",
         );
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: error_message,
+            message: err_message,
         });
     }
 
@@ -38,18 +38,18 @@ fn normalize_targets(targets: Vec<String>) -> BaseRest<Vec<String>> {
     //
     if targets.is_empty() {
         //
-        let error_message = trl("error-term-targets-required");
+        let err_message = trl("error-term-targets-required");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Args,
-            error_message = %error_message,
+            err_message = %err_message,
             target_count = targets.len(),
             "expected error: term targets required",
         );
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: error_message,
+            message: err_message,
         });
     }
 
@@ -64,11 +64,11 @@ fn normalize_targets(targets: Vec<String>) -> BaseRest<Vec<String>> {
 
         if target.is_empty() {
             //
-            let error_message = trl("error-term-target-required");
+            let err_message = trl("error-term-target-required");
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %error_message,
+                err_message = %err_message,
                 target = %target,
                 target_count = normalized_targets.len(),
                 "expected error: term target required",
@@ -76,17 +76,17 @@ fn normalize_targets(targets: Vec<String>) -> BaseRest<Vec<String>> {
 
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: error_message,
+                message: err_message,
             });
         }
 
         if !seen_targets.insert(target.to_lowercase()) {
             //
-            let error_message = trl("error-term-target-duplicate");
+            let err_message = trl("error-term-target-duplicate");
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %error_message,
+                err_message = %err_message,
                 target = %target,
                 target_count = normalized_targets.len(),
                 "expected error: duplicate term target",
@@ -94,7 +94,7 @@ fn normalize_targets(targets: Vec<String>) -> BaseRest<Vec<String>> {
 
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: error_message,
+                message: err_message,
             });
         }
 

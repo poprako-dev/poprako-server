@@ -92,11 +92,11 @@ where
 
                 if invitee_member_info.is_some() {
                     //
-                    let error_message = trl("error-already-team-member");
+                    let err_message = trl("error-already-team-member");
 
                     tracing::warn!(
                         error_variant = ?ExpectedVariant::Args,
-                        error_message = %error_message,
+                        err_message = %err_message,
                         team_id = %instr.team_id,
                         user_id = %token.user_id,
                         invitee_user_id = %invitee_user_info.id,
@@ -106,7 +106,7 @@ where
 
                     return Err(BaseError::Expected {
                         variant: ExpectedVariant::Args,
-                        message: error_message,
+                        message: err_message,
                     });
                 }
             }

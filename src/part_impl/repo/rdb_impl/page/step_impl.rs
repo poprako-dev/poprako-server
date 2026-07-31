@@ -42,11 +42,11 @@ pub async fn get_info_by_id(
         .map_err(diesel)?
         .ok_or_else(|| {
             //
-            let error_message = trl("error-page-not-found");
+            let err_message = trl("error-page-not-found");
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %error_message,
+                err_message = %err_message,
                 page_id = %id,
                 stage = "get_info_by_id",
                 "expected error: page not found",
@@ -54,7 +54,7 @@ pub async fn get_info_by_id(
 
             BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: error_message,
+                message: err_message,
             }
         })?;
 
@@ -78,11 +78,11 @@ pub async fn get_info_excluded(
         .map_err(diesel)?
         .ok_or_else(|| {
             //
-            let error_message = trl("error-page-not-found");
+            let err_message = trl("error-page-not-found");
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %error_message,
+                err_message = %err_message,
                 page_id = %id,
                 stage = "get_info_excluded",
                 "expected error: page not found",
@@ -90,7 +90,7 @@ pub async fn get_info_excluded(
 
             BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: error_message,
+                message: err_message,
             }
         })?;
 
@@ -368,11 +368,11 @@ pub async fn mark_image_uploaded(
 
     if affected == 0 {
         //
-        let error_message = trl("error-stale-page-image-upload");
+        let err_message = trl("error-stale-page-image-upload");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Args,
-            error_message = %error_message,
+            err_message = %err_message,
             page_id = %id,
             image_version = version,
             image_key_present = image_key.is_some(),
@@ -384,7 +384,7 @@ pub async fn mark_image_uploaded(
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: error_message,
+            message: err_message,
         });
     }
 
@@ -416,11 +416,11 @@ pub async fn set_image_uploaded(
 
     if affected == 0 {
         //
-        let error_message = trl("error-stale-page-image-upload");
+        let err_message = trl("error-stale-page-image-upload");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Args,
-            error_message = %error_message,
+            err_message = %err_message,
             page_id = %id,
             image_version = version,
             image_key_present = true,
@@ -432,7 +432,7 @@ pub async fn set_image_uploaded(
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: error_message,
+            message: err_message,
         });
     }
 

@@ -37,10 +37,10 @@ pub trait EffectEvent {
     fn into_iter(self) -> Self::Iter;
 
     /// Dispatches this event through `develop`.
-    fn develop_on<V>(self, develop: &V) -> impl Future<Output = ()> + Send
+    fn develop_on<D>(self, develop: &D) -> impl Future<Output = ()> + Send
     where
         Self: Sized + Send,
-        V: EffectDevelop + ?Sized,
+        D: EffectDevelop + ?Sized,
     {
         develop.develop(self)
     }

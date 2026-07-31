@@ -169,11 +169,11 @@ where
 
     let Some(assignment_info) = assignment_info else {
         //
-        let error_message = trl("error-page-reserve-role-required");
+        let err_message = trl("error-page-reserve-role-required");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Perm,
-            error_message = %error_message,
+            err_message = %err_message,
             user_id = %user_id,
             chapter_id = %chapter_id,
             "expected error: page reservation assignment missing",
@@ -181,7 +181,7 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: error_message,
+            message: err_message,
         });
     };
 
@@ -189,11 +189,11 @@ where
         .roles
         .has_any_role(&[RoleField::RAW_PROVIDER, RoleField::REVIEWER])
     {
-        let error_message = trl("error-page-reserve-role-required");
+        let err_message = trl("error-page-reserve-role-required");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Perm,
-            error_message = %error_message,
+            err_message = %err_message,
             user_id = %user_id,
             chapter_id = %chapter_id,
             assignment_roles = ?assignment_info.roles,
@@ -202,7 +202,7 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: error_message,
+            message: err_message,
         });
     }
 
@@ -228,11 +228,11 @@ where
 
     let Some(assignment_info) = assignment_info else {
         //
-        let error_message = trl("error-page-upload-role-required");
+        let err_message = trl("error-page-upload-role-required");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Perm,
-            error_message = %error_message,
+            err_message = %err_message,
             user_id = %user_id,
             chapter_id = %chapter_id,
             "expected error: page upload assignment missing",
@@ -240,7 +240,7 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: error_message,
+            message: err_message,
         });
     };
 
@@ -248,11 +248,11 @@ where
         .roles
         .has_any_role(&[RoleField::RAW_PROVIDER])
     {
-        let error_message = trl("error-page-upload-role-required");
+        let err_message = trl("error-page-upload-role-required");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Perm,
-            error_message = %error_message,
+            err_message = %err_message,
             user_id = %user_id,
             chapter_id = %chapter_id,
             assignment_roles = ?assignment_info.roles,
@@ -261,7 +261,7 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: error_message,
+            message: err_message,
         });
     }
 
@@ -286,11 +286,11 @@ where
 
     if assignment_info.is_none() {
         //
-        let error_message = trl("error-team-member-required");
+        let err_message = trl("error-team-member-required");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Perm,
-            error_message = %error_message,
+            err_message = %err_message,
             user_id = %user_id,
             chapter_id = %chapter_id,
             "expected error: page assignment required",
@@ -298,7 +298,7 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: error_message,
+            message: err_message,
         });
     }
 

@@ -230,7 +230,7 @@ async fn get_snapshot_excluded(
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %message,
+                err_message = %message,
                 comic_id = %source_comic_id,
                 operation = "get comic archive snapshot",
                 "expected comic archive error",
@@ -264,7 +264,7 @@ async fn get_snapshot_excluded(
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %message,
+                err_message = %message,
                 comic_id = %source_comic_id,
                 workset_id = %comic_info.workset_id,
                 operation = "get comic archive snapshot",
@@ -392,7 +392,7 @@ async fn get_snapshot_excluded(
 
                     tracing::warn!(
                         error_variant = ?ExpectedVariant::Args,
-                        error_message = %message,
+                        err_message = %message,
                         comic_id = %source_comic_id,
                         chapter_id = %assignment_info.chapter_id,
                         assignment_id = %assignment_info.id,

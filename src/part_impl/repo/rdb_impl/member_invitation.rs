@@ -115,7 +115,7 @@ async fn get_info_by_id(
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %message,
+                err_message = %message,
                 invitation_id = %id,
                 operation = "get member invitation info",
                 "expected member invitation error",
@@ -185,7 +185,7 @@ async fn get_info_by_code(
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %message,
+                err_message = %message,
                 invitation_code = %code,
                 pending = true,
                 operation = "get pending member invitation by code",
@@ -229,7 +229,7 @@ async fn get_info_by_code_excluded(
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %message,
+                err_message = %message,
                 invitation_code = %code,
                 pending = true,
                 operation = "lock pending member invitation by code",

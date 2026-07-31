@@ -29,12 +29,12 @@ use crate::result::BaseError;
 ///
 /// Provides accessors to each subsystem (drive, repo, prom, auth, image_pool,
 /// develop) and is designed to be cheaply cloned via `Arc<HarnInner>`.
-pub struct Harn<C, N, R, P, A, I, V> {
+pub struct Harn<C, N, R, P, A, I, D> {
     /// Reference-counted inner harness that holds all port implementations.
-    inner: Arc<HarnInner<C, N, R, P, A, I, V>>,
+    inner: Arc<HarnInner<C, N, R, P, A, I, D>>,
 }
 
-impl<C, N, R, P, A, I, V> Clone for Harn<C, N, R, P, A, I, V> {
+impl<C, N, R, P, A, I, D> Clone for Harn<C, N, R, P, A, I, D> {
     // Clones the harness by bumping the inner `Arc` reference count.
     fn clone(&self) -> Self {
         Self {
@@ -44,7 +44,7 @@ impl<C, N, R, P, A, I, V> Clone for Harn<C, N, R, P, A, I, V> {
 }
 
 // Inner, non-cloneable state shared across all `Harn` clones via `Arc`.
-struct HarnInner<C, N, R, P, A, I, V> {
+struct HarnInner<C, N, R, P, A, I, D> {
     //
     // Transaction driver (Nucl).
     drive: N,
@@ -57,12 +57,12 @@ struct HarnInner<C, N, R, P, A, I, V> {
     // Image pool for upload / download URL signing.
     image_pool: I,
     // Side-effect (event) processor.
-    develop: V,
+    develop: D,
     // Phantom type parameter marker.
     _p: PhantomData<C>,
 }
 
-impl<C, N, R, P, A, I, V> Harn<C, N, R, P, A, I, V>
+impl<C, N, R, P, A, I, D> Harn<C, N, R, P, A, I, D>
 where
     N: Nucl<Context = C, Error = BaseError>,
     R: AnnouncementRepo<C>
@@ -84,7 +84,7 @@ where
     P: Prom<C>,
     A: TokenAuth,
     I: ImagePool + Sync,
-    V: EffectDevelop + Sync,
+    D: EffectDevelop + Sync,
 {
     /// Builds a new `Harn` from the given port implementations.
     pub fn new(
@@ -93,7 +93,7 @@ where
         prom: P,
         auth: A,
         image_pool: I,
-        develop: V,
+        develop: D,
     ) -> Self {
         Self {
             inner: Arc::new(HarnInner {
@@ -134,7 +134,7 @@ where
     }
 
     /// Returns a reference to the side-effect (event) processor.
-    pub fn develop(&self) -> &V {
+    pub fn develop(&self) -> &D {
         &self.inner.develop
     }
 }

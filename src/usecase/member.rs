@@ -82,11 +82,11 @@ where
 
             if existing_member_info.is_some() {
                 //
-                let error_message = trl("error-already-team-member");
+                let err_message = trl("error-already-team-member");
 
                 tracing::warn!(
                     error_variant = ?ExpectedVariant::Args,
-                    error_message = %error_message,
+                    err_message = %err_message,
                     team_id = %instr.team_id,
                     user_id = %token.user_id,
                     target_user_id = %instr.user_id,
@@ -96,7 +96,7 @@ where
 
                 return Err(BaseError::Expected {
                     variant: ExpectedVariant::Args,
-                    message: error_message,
+                    message: err_message,
                 });
             }
 
@@ -158,11 +158,11 @@ where
 
             if member_invitation_info.invitee_qid != current_user_info.qid {
                 //
-                let error_message = trl("error-no-pending-invitation");
+                let err_message = trl("error-no-pending-invitation");
 
                 tracing::warn!(
                     error_variant = ?ExpectedVariant::Args,
-                    error_message = %error_message,
+                    err_message = %err_message,
                     user_id = %current_user_id,
                     invitee_qid = %current_user_info.qid,
                     invitation_invitee_qid = %member_invitation_info.invitee_qid,
@@ -172,7 +172,7 @@ where
 
                 return Err(BaseError::Expected {
                     variant: ExpectedVariant::Args,
-                    message: error_message,
+                    message: err_message,
                 });
             }
 
@@ -185,11 +185,11 @@ where
 
             if existing_member_info.is_some() {
                 //
-                let error_message = trl("error-already-team-member");
+                let err_message = trl("error-already-team-member");
 
                 tracing::warn!(
                     error_variant = ?ExpectedVariant::Args,
-                    error_message = %error_message,
+                    err_message = %err_message,
                     user_id = %current_user_id,
                     team_id = %member_invitation_info.team_id,
                     "expected error: user is already a team member",
@@ -197,7 +197,7 @@ where
 
                 return Err(BaseError::Expected {
                     variant: ExpectedVariant::Args,
-                    message: error_message,
+                    message: err_message,
                 });
             }
 

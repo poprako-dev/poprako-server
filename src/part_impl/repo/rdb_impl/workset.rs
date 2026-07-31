@@ -64,7 +64,7 @@ async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<WorksetInfo> {
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %message,
+                err_message = %message,
                 workset_id = %id,
                 operation = "get workset info",
                 "expected workset error",
@@ -167,7 +167,7 @@ async fn get_info_excluded(
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %message,
+                err_message = %message,
                 workset_id = %id,
                 operation = "lock workset info",
                 "expected workset error",

@@ -50,11 +50,11 @@ pub fn build(
             })
             .ok_or_else(|| {
                 //
-                let error_message = trl("error-page-not-found");
+                let err_message = trl("error-page-not-found");
 
                 tracing::warn!(
                     error_variant = ?ExpectedVariant::Args,
-                    error_message = %error_message,
+                    err_message = %err_message,
                     chapter_id = %chapter_id,
                     page_id = %page_id,
                     request_index = request_index,
@@ -64,7 +64,7 @@ pub fn build(
 
                 BaseError::Expected {
                     variant: ExpectedVariant::Args,
-                    message: error_message,
+                    message: err_message,
                 }
             })?;
 

@@ -2,7 +2,8 @@
 
 Function names, local variables, parameters, constants, statics, enum
 variants, type names (struct, enum, trait, type alias, union), and struct
-fields must not contain forbidden word segments.
+fields must not contain forbidden word segments. Structured macro field keys
+are checked for the forbidden `error` segment as well.
 
 Identifiers inside `#[cfg(test)]` modules (including `tests.rs` and `tests/`
 directories) and repository-layer files (`src/part/repo/`,

@@ -99,11 +99,11 @@ pub async fn apply_edits(
                 //
                 let Some(entry) = UnitEntry::from_edit(page_id, edit) else {
                     //
-                    let error_message = trl("error-invalid-unit-oper");
+                    let err_message = trl("error-invalid-unit-oper");
 
                     tracing::warn!(
                         error_variant = ?ExpectedVariant::Args,
-                        error_message = %error_message,
+                        err_message = %err_message,
                         page_id = %page_id,
                         unit_id = %id,
                         operation = "create",
@@ -113,7 +113,7 @@ pub async fn apply_edits(
 
                     return Err(BaseError::Expected {
                         variant: ExpectedVariant::Args,
-                        message: error_message,
+                        message: err_message,
                     });
                 };
 
@@ -136,11 +136,11 @@ pub async fn apply_edits(
 
                 if affected != 1 {
                     //
-                    let error_message = trl("error-invalid-unit-oper");
+                    let err_message = trl("error-invalid-unit-oper");
 
                     tracing::warn!(
                         error_variant = ?ExpectedVariant::Args,
-                        error_message = %error_message,
+                        err_message = %err_message,
                         page_id = %page_id,
                         unit_id = %id,
                         operation = "delete",
@@ -151,7 +151,7 @@ pub async fn apply_edits(
 
                     return Err(BaseError::Expected {
                         variant: ExpectedVariant::Args,
-                        message: error_message,
+                        message: err_message,
                     });
                 }
             }
@@ -168,11 +168,11 @@ pub async fn apply_edits(
 
                 if affected != 1 {
                     //
-                    let error_message = trl("error-invalid-unit-oper");
+                    let err_message = trl("error-invalid-unit-oper");
 
                     tracing::warn!(
                         error_variant = ?ExpectedVariant::Args,
-                        error_message = %error_message,
+                        err_message = %err_message,
                         page_id = %page_id,
                         unit_id = %id,
                         operation = "save",
@@ -183,7 +183,7 @@ pub async fn apply_edits(
 
                     return Err(BaseError::Expected {
                         variant: ExpectedVariant::Args,
-                        message: error_message,
+                        message: err_message,
                     });
                 }
             }
@@ -213,11 +213,11 @@ pub async fn apply_edits(
 
         if affected != 1 {
             //
-            let error_message = trl("error-invalid-unit-oper");
+            let err_message = trl("error-invalid-unit-oper");
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %error_message,
+                err_message = %err_message,
                 page_id = %page_id,
                 unit_id = %id,
                 index,
@@ -230,7 +230,7 @@ pub async fn apply_edits(
 
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: error_message,
+                message: err_message,
             });
         }
     }
@@ -337,11 +337,11 @@ fn apply_order_edits<'a>(
 
         if find_order_pos(&ordered_ids, id).is_some() {
             //
-            let error_message = trl("error-invalid-unit-oper");
+            let err_message = trl("error-invalid-unit-oper");
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %error_message,
+                err_message = %err_message,
                 unit_id = %id,
                 existing_order_count = ordered_ids.len(),
                 operation = "create",
@@ -351,7 +351,7 @@ fn apply_order_edits<'a>(
 
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: error_message,
+                message: err_message,
             });
         }
 
@@ -398,11 +398,11 @@ fn apply_order_edits<'a>(
 
     if visible_count > 100 {
         //
-        let error_message = trl("error-invalid-unit-oper");
+        let err_message = trl("error-invalid-unit-oper");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Args,
-            error_message = %error_message,
+            err_message = %err_message,
             visible_count,
             max_visible_count = 100,
             operation = "reorder",
@@ -412,7 +412,7 @@ fn apply_order_edits<'a>(
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: error_message,
+            message: err_message,
         });
     }
 
@@ -464,11 +464,11 @@ fn move_order<'a>(
     //
     let Some(pos) = find_order_pos(ordered_ids, id) else {
         //
-        let error_message = trl("error-invalid-unit-oper");
+        let err_message = trl("error-invalid-unit-oper");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Args,
-            error_message = %error_message,
+            err_message = %err_message,
             unit_id = %id,
             next_unit_id = ?next_id,
             order_count = ordered_ids.len(),
@@ -479,7 +479,7 @@ fn move_order<'a>(
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: error_message,
+            message: err_message,
         });
     };
 
@@ -490,11 +490,11 @@ fn move_order<'a>(
         Some(next_id) => {
             find_order_pos(ordered_ids, next_id).ok_or_else(|| {
                 //
-                let error_message = trl("error-invalid-unit-oper");
+                let err_message = trl("error-invalid-unit-oper");
 
                 tracing::warn!(
                     error_variant = ?ExpectedVariant::Args,
-                    error_message = %error_message,
+                    err_message = %err_message,
                     unit_id = %id,
                     next_unit_id = %next_id,
                     order_count = ordered_ids.len(),
@@ -505,7 +505,7 @@ fn move_order<'a>(
 
                 BaseError::Expected {
                     variant: ExpectedVariant::Args,
-                    message: error_message,
+                    message: err_message,
                 }
             })?
         }

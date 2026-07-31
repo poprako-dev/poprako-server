@@ -65,11 +65,11 @@ pub async fn get_info_by_id(
         .map_err(diesel)?
         .ok_or_else(|| {
             //
-            let error_message = trl("error-invitation-not-found");
+            let err_message = trl("error-invitation-not-found");
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %error_message,
+                err_message = %err_message,
                 invitation_id = %id,
                 stage = "get_info_by_id",
                 "expected error: assignment invitation not found",
@@ -77,7 +77,7 @@ pub async fn get_info_by_id(
 
             BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: error_message,
+                message: err_message,
             }
         })?;
 
@@ -102,11 +102,11 @@ pub async fn get_info_by_code_excluded(
         .map_err(diesel)?
         .ok_or_else(|| {
             //
-            let error_message = trl("error-no-pending-invitation");
+            let err_message = trl("error-no-pending-invitation");
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %error_message,
+                err_message = %err_message,
                 invitation_code_length = code.len(),
                 pending = true,
                 stage = "get_info_by_code_excluded",
@@ -115,7 +115,7 @@ pub async fn get_info_by_code_excluded(
 
             BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: error_message,
+                message: err_message,
             }
         })?;
 
@@ -165,11 +165,11 @@ pub async fn mark_pending_as_used(
 
     if affected == 0 {
         //
-        let error_message = trl("error-invitation-not-found");
+        let err_message = trl("error-invitation-not-found");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Args,
-            error_message = %error_message,
+            err_message = %err_message,
             invitation_id = %id,
             pending = true,
             affected,
@@ -179,7 +179,7 @@ pub async fn mark_pending_as_used(
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: error_message,
+            message: err_message,
         });
     }
 

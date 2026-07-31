@@ -77,7 +77,7 @@ async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<TermbaseInfo> {
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %message,
+                err_message = %message,
                 termbase_id = %id,
                 operation = "get termbase info",
                 "expected termbase error",
@@ -120,7 +120,7 @@ async fn get_info_excluded(
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %message,
+                err_message = %message,
                 termbase_id = %id,
                 operation = "lock termbase info",
                 "expected termbase error",

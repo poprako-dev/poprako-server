@@ -43,11 +43,11 @@ pub async fn get_info_by_id(
         .map_err(diesel)?
         .ok_or_else(|| {
             //
-            let error_message = trl("error-chapter-not-found");
+            let err_message = trl("error-chapter-not-found");
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %error_message,
+                err_message = %err_message,
                 chapter_id = %id,
                 stage = "get_info_by_id",
                 "expected error: chapter not found",
@@ -55,7 +55,7 @@ pub async fn get_info_by_id(
 
             BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: error_message,
+                message: err_message,
             }
         })?;
 
@@ -89,11 +89,11 @@ pub async fn get_info_excluded(
         .map_err(diesel)?
         .ok_or_else(|| {
             //
-            let error_message = trl("error-chapter-not-found");
+            let err_message = trl("error-chapter-not-found");
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %error_message,
+                err_message = %err_message,
                 chapter_id = %id,
                 stage = "get_info_excluded",
                 "expected error: chapter not found",
@@ -101,7 +101,7 @@ pub async fn get_info_excluded(
 
             BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: error_message,
+                message: err_message,
             }
         })?;
 

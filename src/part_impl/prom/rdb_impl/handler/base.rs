@@ -29,7 +29,7 @@ use crate::shared::{RdbContext, RdbCore};
 
 /// Background worker that polls the `t_local_message` table, dispatches by topic,
 /// and completes or fails each record.
-pub struct RdbPromHandler<N, R, I, V> {
+pub struct RdbPromHandler<N, R, I, D> {
     //
     /// Database connection pool for handler-internal queries.
     pub core: RdbCore,
@@ -42,13 +42,13 @@ pub struct RdbPromHandler<N, R, I, V> {
     /// Object storage client for image verification and cleanup.
     pub image_pool: I,
     /// Shared side-effect developer for automatic workflow events.
-    pub develop: V,
+    pub develop: D,
 
     /// Shutdown signal propagated from the owning [`RdbProm`].
     pub token: CancellationToken,
 }
 
-impl<N, R, I, V> RdbPromHandler<N, R, I, V>
+impl<N, R, I, D> RdbPromHandler<N, R, I, D>
 where
     N: Nucl<Context = RdbContext, Error = BaseError>,
     R: AssignmentInvitationRepo<RdbContext>
@@ -62,7 +62,7 @@ where
         + Sync
         + 'static,
     I: ImageManager + Send + Sync + 'static,
-    V: EffectDevelop + Send + Sync + 'static,
+    D: EffectDevelop + Send + Sync + 'static,
 {
     /// Builds a new prom background handler from its core, nucl, repo, and lifecycle channels.
     pub fn new(
@@ -70,7 +70,7 @@ where
         nucl: N,
         repo: RdbPromRepo<R>,
         image_pool: I,
-        develop: V,
+        develop: D,
         token: CancellationToken,
     ) -> Self {
         Self {
@@ -86,11 +86,11 @@ where
 
 /// Decodes and dispatches one persisted prom payload.
 #[instrument(level = "info", skip_all)]
-pub async fn dispatch_payload<N, R, I>(
+pub async fn dispatch_payload<N, R, I, D>(
     nucl: &N,
     repo: &R,
     image_pool: &I,
-    develop: &(impl EffectDevelop + Sync),
+    develop: &D,
     topic: &str,
     payload: &serde_json::Value,
 ) -> TaskFlow
@@ -106,6 +106,7 @@ where
         + Send
         + Sync,
     I: ImageManager + Send + Sync,
+    D: EffectDevelop + Sync,
 {
     let payload: TaskPayload = match serde_json::from_value(payload.clone()) {
         //
