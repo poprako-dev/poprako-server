@@ -25,8 +25,8 @@ use std::sync::Arc;
 use anyhow::Context as _;
 
 use poprako_server::{
-    AppConfig, AppHarn, AsyncEffectDevelop, Harn, JwtAuth, R2ImagePool,
-    RdbCore, RdbDrive, RdbProm, RdbRepo, Sched,
+    AppConfig, AsyncEffectDevelop, Harn, JwtAuth, R2ImagePool, RdbCore,
+    RdbDrive, RdbProm, RdbRepo, Sched,
 };
 
 /// Application entry point.
@@ -48,15 +48,13 @@ async fn main() -> anyhow::Result<()> {
 
     let core = RdbCore::from_env()?;
 
-    let (drive, repo, repo_effect) = (
-        RdbDrive::new(core.clone()),
-        RdbRepo::new(core.clone()),
-        Arc::new(RdbRepo::new(core.clone())),
-    );
+    let (drive, repo) =
+        (RdbDrive::new(core.clone()), RdbRepo::new(core.clone()));
 
     let (auth, image_pool) = (JwtAuth::from_env()?, R2ImagePool::from_env()?);
 
-    let develop = AsyncEffectDevelop::new(repo_effect, 1024);
+    let develop =
+        AsyncEffectDevelop::new(Arc::new(RdbRepo::new(core.clone())), 1024);
 
     let (prom, sched) = (
         RdbProm::new(core.clone(), image_pool.clone(), develop.clone()),

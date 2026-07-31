@@ -219,7 +219,7 @@ async fn get_info_excluded(conn: &mut RdbConn, id: &str) -> BaseRest<TermInfo> {
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %message,
+                err_message = %message,
                 term_id = %id,
                 operation = "get locked term info",
                 "expected term error",
@@ -259,7 +259,7 @@ async fn lock_term(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %message,
+                err_message = %message,
                 term_id = %id,
                 operation = "lock term row",
                 "expected term error",
@@ -356,7 +356,7 @@ async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<TermInfo> {
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %message,
+                err_message = %message,
                 term_id = %id,
                 operation = "get term info",
                 "expected term error",

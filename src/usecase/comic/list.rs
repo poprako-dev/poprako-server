@@ -55,11 +55,11 @@ where
 
     if with_pinned_chapter_assignment && !with_pinned_chapter {
         //
-        let error_message = trl("error-pinned-chapter-with-required");
+        let err_message = trl("error-pinned-chapter-with-required");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Args,
-            error_message = %error_message,
+            err_message = %err_message,
             workset_id = %instr.workset_id,
             user_id = %token.user_id,
             with_pinned_chapter,
@@ -69,7 +69,7 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: error_message,
+            message: err_message,
         });
     }
 

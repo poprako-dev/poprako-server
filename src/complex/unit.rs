@@ -77,11 +77,11 @@ impl UnitComplex {
         //
         if !(1..=100).contains(&edits.len()) {
             //
-            let error_message = trl("error-invalid-unit-oper");
+            let err_message = trl("error-invalid-unit-oper");
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %error_message,
+                err_message = %err_message,
                 edit_count = edits.len(),
                 base_id_count = base_ids.len(),
                 "expected error: unit edit count is invalid",
@@ -89,7 +89,7 @@ impl UnitComplex {
 
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: error_message,
+                message: err_message,
             });
         }
 
@@ -190,11 +190,11 @@ impl UnitComplex {
         if create_count != created_ids.len()
             || created_ids.iter().any(|id| base_ids.contains(id))
         {
-            let error_message = trl("error-invalid-unit-oper");
+            let err_message = trl("error-invalid-unit-oper");
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %error_message,
+                err_message = %err_message,
                 edit_count = edits.len(),
                 base_id_count = base_ids.len(),
                 create_count = create_count,
@@ -204,7 +204,7 @@ impl UnitComplex {
 
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: error_message,
+                message: err_message,
             });
         }
 
@@ -216,11 +216,11 @@ impl UnitComplex {
 
                 UnitEdit::Delete { id } if !base_ids.contains(id.as_str()) => {
                     //
-                    let error_message = trl("error-invalid-unit-oper");
+                    let err_message = trl("error-invalid-unit-oper");
 
                     tracing::warn!(
                         error_variant = ?ExpectedVariant::Args,
-                        error_message = %error_message,
+                        err_message = %err_message,
                         unit_id = %id,
                         operation = "delete",
                         "expected error: unit delete target is invalid",
@@ -228,7 +228,7 @@ impl UnitComplex {
 
                     return Err(BaseError::Expected {
                         variant: ExpectedVariant::Args,
-                        message: error_message,
+                        message: err_message,
                     });
                 }
 
@@ -236,11 +236,11 @@ impl UnitComplex {
                     if !base_ids.contains(id.as_str())
                         && !created_ids.contains(id.as_str()) =>
                 {
-                    let error_message = trl("error-invalid-unit-oper");
+                    let err_message = trl("error-invalid-unit-oper");
 
                     tracing::warn!(
                         error_variant = ?ExpectedVariant::Args,
-                        error_message = %error_message,
+                        err_message = %err_message,
                         unit_id = %id,
                         operation = "save",
                         "expected error: unit save target is invalid",
@@ -248,7 +248,7 @@ impl UnitComplex {
 
                     return Err(BaseError::Expected {
                         variant: ExpectedVariant::Args,
-                        message: error_message,
+                        message: err_message,
                     });
                 }
 
@@ -277,11 +277,11 @@ impl UnitComplex {
                     && !created_ids.contains(next_id.as_str()))
                 || deleted_ids.contains(next_id.as_str())
             {
-                let error_message = trl("error-invalid-unit-oper");
+                let err_message = trl("error-invalid-unit-oper");
 
                 tracing::warn!(
                     error_variant = ?ExpectedVariant::Args,
-                    error_message = %error_message,
+                    err_message = %err_message,
                     unit_id = %id,
                     next_unit_id = %next_id,
                     "expected error: unit next pointer is invalid",
@@ -289,7 +289,7 @@ impl UnitComplex {
 
                 return Err(BaseError::Expected {
                     variant: ExpectedVariant::Args,
-                    message: error_message,
+                    message: err_message,
                 });
             }
 

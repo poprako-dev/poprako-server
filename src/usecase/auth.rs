@@ -50,7 +50,7 @@ mod tests;
 /// * `C` — Context anchor (see the [repo module](crate::part::repo) for details).
 /// * `R` — Repository bundle: [`UserRepo`], [`MemberRepo`], [`MemberInvitationRepo`].
 /// * `A: TokenAuth` — Signs the session token.
-/// * `V: EffectDevelop` — Processes the signup event.
+/// * `D: EffectDevelop` — Processes the signup event.
 #[instrument(
     level = "info",
     err(Debug),
@@ -62,8 +62,8 @@ mod tests;
         code = "[REDACTED]",
     ),
 )]
-pub async fn register<N, C, R, A, V>(
-    (nucl, repo, auth, develop): (&N, &R, &A, &V),
+pub async fn register<N, C, R, A, D>(
+    (nucl, repo, auth, develop): (&N, &R, &A, &D),
     instr: RegisterAuthInstr,
 ) -> BaseRest<RegisterAuthVal>
 where
@@ -71,7 +71,7 @@ where
     C: Send,
     R: UserRepo<C> + MemberRepo<C> + MemberInvitationRepo<C> + Send + Sync,
     A: TokenAuth,
-    V: EffectDevelop + Send + Sync,
+    D: EffectDevelop + Send + Sync,
 {
     let (user_id, team_id, invitor_id, invitee_qid) = nucl
         .coord(async move |context| {
@@ -85,11 +85,11 @@ where
             // Verify the invitation was issued for this QQ ID.
             if invitation_info.invitee_qid != instr.qid {
                 //
-                let error_message = trl("error-invalid-invitation-code");
+                let err_message = trl("error-invalid-invitation-code");
 
                 tracing::warn!(
                     error_variant = ?ExpectedVariant::Args,
-                    error_message = %error_message,
+                    err_message = %err_message,
                     invitee_qid = %instr.qid,
                     invitation_invitee_qid = %invitation_info.invitee_qid,
                     "expected error: invitation code does not match invitee",
@@ -97,7 +97,7 @@ where
 
                 return Err(BaseError::Expected {
                     variant: ExpectedVariant::Args,
-                    message: error_message,
+                    message: err_message,
                 });
             }
 
@@ -200,18 +200,18 @@ where
     )
     .await
     {
-        let error_message = trl("error-wrong-credentials");
+        let err_message = trl("error-wrong-credentials");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Auth,
-            error_message = %error_message,
+            err_message = %err_message,
             qid = %instr.qid,
             "expected error: invalid login credentials",
         );
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Auth,
-            message: error_message,
+            message: err_message,
         });
     }
 

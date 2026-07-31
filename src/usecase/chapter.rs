@@ -451,8 +451,8 @@ where
 
 /// Updates chapter workflow state.
 #[instrument(level = "info", err(Debug), skip(nucl, repo, prom, develop))]
-pub async fn update_stage<N, C, R, P, V>(
-    (nucl, repo, prom, develop): (&N, &R, &P, &V),
+pub async fn update_stage<N, C, R, P, D>(
+    (nucl, repo, prom, develop): (&N, &R, &P, &D),
     token: UserToken,
     instr: UpdateChapterStageInstr,
 ) -> BaseRest<()>
@@ -466,7 +466,7 @@ where
         + Send
         + Sync,
     P: Prom<C> + Send + Sync,
-    V: EffectDevelop + Send + Sync,
+    D: EffectDevelop + Send + Sync,
 {
     ChapterPermComplex::ensure_user_can_update_stage(
         &mut run_proxy! {

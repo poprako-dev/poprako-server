@@ -27,11 +27,11 @@ where
 
     if member_info.is_none() {
         //
-        let error_message = trl("error-team-member-required");
+        let err_message = trl("error-team-member-required");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Perm,
-            error_message = %error_message,
+            err_message = %err_message,
             user_id = %user_id,
             team_id = %team_id,
             "expected error: team membership required",
@@ -39,7 +39,7 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: error_message,
+            message: err_message,
         });
     }
 
@@ -61,11 +61,11 @@ where
 
     let Some(member_info) = member_info else {
         //
-        let error_message = trl("error-team-proofreader-required");
+        let err_message = trl("error-team-proofreader-required");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Perm,
-            error_message = %error_message,
+            err_message = %err_message,
             user_id = %user_id,
             team_id = %team_id,
             "expected error: team proofreader membership missing",
@@ -73,17 +73,17 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: error_message,
+            message: err_message,
         });
     };
 
     if !member_info.roles.has_any_role(&[RoleField::PROOFREADER]) {
         //
-        let error_message = trl("error-team-proofreader-required");
+        let err_message = trl("error-team-proofreader-required");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Perm,
-            error_message = %error_message,
+            err_message = %err_message,
             user_id = %user_id,
             team_id = %team_id,
             member_roles = ?member_info.roles,
@@ -92,7 +92,7 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: error_message,
+            message: err_message,
         });
     }
 
@@ -115,11 +115,11 @@ where
 
     let Some(member_info) = member_info else {
         //
-        let error_message = trl("error-team-admin-required");
+        let err_message = trl("error-team-admin-required");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Perm,
-            error_message = %error_message,
+            err_message = %err_message,
             user_id = %user_id,
             team_id = %team_id,
             required_roles = ?required_roles,
@@ -128,17 +128,17 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: error_message,
+            message: err_message,
         });
     };
 
     if !member_info.roles.has_any_role(&[RoleField::ADMIN]) {
         //
-        let error_message = trl("error-team-admin-required");
+        let err_message = trl("error-team-admin-required");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Perm,
-            error_message = %error_message,
+            err_message = %err_message,
             user_id = %user_id,
             team_id = %team_id,
             member_roles = ?member_info.roles,
@@ -148,18 +148,18 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: error_message,
+            message: err_message,
         });
     }
 
     if required_roles
         .is_some_and(|roles| !member_info.roles.contains_mask(roles))
     {
-        let error_message = trl("error-chapter-role-not-assignable");
+        let err_message = trl("error-chapter-role-not-assignable");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Perm,
-            error_message = %error_message,
+            err_message = %err_message,
             user_id = %user_id,
             team_id = %team_id,
             required_roles = ?required_roles,
@@ -169,7 +169,7 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: error_message,
+            message: err_message,
         });
     }
 
@@ -241,11 +241,11 @@ where
 
     if assignment_info.is_none() {
         //
-        let error_message = trl("error-chapter-assignee-required");
+        let err_message = trl("error-chapter-assignee-required");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Perm,
-            error_message = %error_message,
+            err_message = %err_message,
             user_id = %user_id,
             chapter_id = %chapter_id,
             "expected error: chapter assignee required",
@@ -253,7 +253,7 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: error_message,
+            message: err_message,
         });
     }
 
@@ -278,12 +278,12 @@ where
 
     let Some(assignment_info) = assignment_info else {
         //
-        let error_message =
+        let err_message =
             trl("error-chapter-translator-or-proofreader-required");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Perm,
-            error_message = %error_message,
+            err_message = %err_message,
             user_id = %user_id,
             chapter_id = %chapter_id,
             "expected error: chapter translator or proofreader assignment missing",
@@ -291,7 +291,7 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: error_message,
+            message: err_message,
         });
     };
 
@@ -299,12 +299,12 @@ where
         .roles
         .has_any_role(&[RoleField::TRANSLATOR, RoleField::PROOFREADER])
     {
-        let error_message =
+        let err_message =
             trl("error-chapter-translator-or-proofreader-required");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Perm,
-            error_message = %error_message,
+            err_message = %err_message,
             user_id = %user_id,
             chapter_id = %chapter_id,
             assignment_roles = ?assignment_info.roles,
@@ -313,7 +313,7 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: error_message,
+            message: err_message,
         });
     }
 

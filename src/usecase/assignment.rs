@@ -314,11 +314,11 @@ where
                     instr.roles,
                 ) {
                     //
-                    let error_message = trl("error-forbidden");
+                    let err_message = trl("error-forbidden");
 
                     tracing::warn!(
                         error_variant = ?ExpectedVariant::Perm,
-                        error_message = %error_message,
+                        err_message = %err_message,
                         chapter_id = %instr.chapter_id,
                         user_id = %token.user_id,
                         target_user_id = %instr.user_id,
@@ -329,7 +329,7 @@ where
 
                     return Err(BaseError::Expected {
                         variant: ExpectedVariant::Perm,
-                        message: error_message,
+                        message: err_message,
                     });
                 }
 
@@ -339,11 +339,11 @@ where
                     instr.roles,
                 ) {
                     //
-                    let error_message = trl("error-forbidden");
+                    let err_message = trl("error-forbidden");
 
                     tracing::warn!(
                         error_variant = ?ExpectedVariant::Perm,
-                        error_message = %error_message,
+                        err_message = %err_message,
                         chapter_id = %instr.chapter_id,
                         user_id = %token.user_id,
                         target_user_id = %instr.user_id,
@@ -354,7 +354,7 @@ where
 
                     return Err(BaseError::Expected {
                         variant: ExpectedVariant::Perm,
-                        message: error_message,
+                        message: err_message,
                     });
                 }
 
@@ -378,11 +378,11 @@ where
                     instr.roles,
                 ) {
                     //
-                    let error_message = trl("error-forbidden");
+                    let err_message = trl("error-forbidden");
 
                     tracing::warn!(
                         error_variant = ?ExpectedVariant::Perm,
-                        error_message = %error_message,
+                        err_message = %err_message,
                         chapter_id = %instr.chapter_id,
                         user_id = %token.user_id,
                         target_user_id = %instr.user_id,
@@ -393,7 +393,7 @@ where
 
                     return Err(BaseError::Expected {
                         variant: ExpectedVariant::Perm,
-                        message: error_message,
+                        message: err_message,
                     });
                 }
 

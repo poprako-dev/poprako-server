@@ -143,11 +143,11 @@ where
 
                 if existing_assignment_info.is_some() {
                     //
-                    let error_message = trl("error-assignment-already-exists");
+                    let err_message = trl("error-assignment-already-exists");
 
                     tracing::warn!(
                         error_variant = ?ExpectedVariant::Args,
-                        error_message = %error_message,
+                        err_message = %err_message,
                         chapter_id = %instr.chapter_id,
                         user_id = %token.user_id,
                         invitee_user_id = %invitee_user_info.id,
@@ -158,7 +158,7 @@ where
 
                     return Err(BaseError::Expected {
                         variant: ExpectedVariant::Args,
-                        message: error_message,
+                        message: err_message,
                     });
                 }
             }
@@ -292,11 +292,11 @@ where
 
             if assignment_invitation_info.invitee_qid != current_user_info.qid {
                 //
-                let error_message = trl("error-no-pending-invitation");
+                let err_message = trl("error-no-pending-invitation");
 
                 tracing::warn!(
                     error_variant = ?ExpectedVariant::Args,
-                    error_message = %error_message,
+                    err_message = %err_message,
                     user_id = %current_user_id,
                     invitee_qid = %current_user_info.qid,
                     invitation_invitee_qid = %assignment_invitation_info.invitee_qid,
@@ -306,7 +306,7 @@ where
 
                 return Err(BaseError::Expected {
                     variant: ExpectedVariant::Args,
-                    message: error_message,
+                    message: err_message,
                 });
             }
 
@@ -347,11 +347,11 @@ where
 
             let Some(member_info) = member_info else {
                 //
-                let error_message = trl("error-chapter-role-not-assignable");
+                let err_message = trl("error-chapter-role-not-assignable");
 
                 tracing::warn!(
                     error_variant = ?ExpectedVariant::Perm,
-                    error_message = %error_message,
+                    err_message = %err_message,
                     chapter_id = %assignment_invitation_info.chapter_id,
                     user_id = %current_user_id,
                     team_id = %workset_info.team_id,
@@ -361,7 +361,7 @@ where
 
                 return Err(BaseError::Expected {
                     variant: ExpectedVariant::Perm,
-                    message: error_message,
+                    message: err_message,
                 });
             };
 
@@ -369,11 +369,11 @@ where
                 .roles
                 .contains_mask(assignment_invitation_info.roles)
             {
-                let error_message = trl("error-chapter-role-not-assignable");
+                let err_message = trl("error-chapter-role-not-assignable");
 
                 tracing::warn!(
                     error_variant = ?ExpectedVariant::Perm,
-                    error_message = %error_message,
+                    err_message = %err_message,
                     chapter_id = %assignment_invitation_info.chapter_id,
                     user_id = %current_user_id,
                     team_id = %workset_info.team_id,
@@ -384,7 +384,7 @@ where
 
                 return Err(BaseError::Expected {
                     variant: ExpectedVariant::Perm,
-                    message: error_message,
+                    message: err_message,
                 });
             }
 
@@ -462,11 +462,11 @@ where
 
     let Some(assignment_info) = assignment_info else {
         //
-        let error_message = trl("error-chapter-admin-required");
+        let err_message = trl("error-chapter-admin-required");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Perm,
-            error_message = %error_message,
+            err_message = %err_message,
             chapter_id = %chapter_id,
             user_id = %current_user_id,
             "expected error: chapter administrator permission required",
@@ -474,17 +474,17 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: error_message,
+            message: err_message,
         });
     };
 
     if !assignment_info.roles.has_any_role(&[RoleField::ADMIN]) {
         //
-        let error_message = trl("error-chapter-admin-required");
+        let err_message = trl("error-chapter-admin-required");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Perm,
-            error_message = %error_message,
+            err_message = %err_message,
             chapter_id = %chapter_id,
             user_id = %current_user_id,
             roles = ?assignment_info.roles,
@@ -493,7 +493,7 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: error_message,
+            message: err_message,
         });
     }
 
@@ -509,11 +509,11 @@ fn validate_roles(
     //
     if u32::from(roles) == 0 || roles.has_any_role(&[RoleField::ADMIN]) {
         //
-        let error_message = trl("error-chapter-role-not-assignable");
+        let err_message = trl("error-chapter-role-not-assignable");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Args,
-            error_message = %error_message,
+            err_message = %err_message,
             chapter_id = %chapter_id,
             user_id = %user_id,
             roles = ?roles,
@@ -522,7 +522,7 @@ fn validate_roles(
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: error_message,
+            message: err_message,
         });
     }
 

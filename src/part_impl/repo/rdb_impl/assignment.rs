@@ -143,7 +143,7 @@ async fn get_info_by_id(
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %message,
+                err_message = %message,
                 assignment_id = %id,
                 operation = "get assignment info",
                 "expected assignment error",
@@ -240,7 +240,7 @@ async fn put_roles(
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %message,
+                err_message = %message,
                 assignment_id = %update.id,
                 operation = "update assignment roles",
                 "expected assignment error",

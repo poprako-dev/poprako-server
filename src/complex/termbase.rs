@@ -26,18 +26,18 @@ fn normalize_name(name: String) -> BaseRest<String> {
 
     if name.is_empty() {
         //
-        let error_message = trl("error-termbase-name-required");
+        let err_message = trl("error-termbase-name-required");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Args,
-            error_message = %error_message,
+            err_message = %err_message,
             termbase_name = %name,
             "expected error: termbase name required",
         );
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: error_message,
+            message: err_message,
         });
     }
 
@@ -83,11 +83,11 @@ impl TermbaseComplex {
 
             _ => {
                 //
-                let error_message = trl("error-invalid-termbase-scope");
+                let err_message = trl("error-invalid-termbase-scope");
 
                 tracing::warn!(
                     error_variant = ?ExpectedVariant::Args,
-                    error_message = %error_message,
+                    err_message = %err_message,
                     team_id = ?team_id,
                     comic_id = ?comic_id,
                     "expected error: invalid termbase ownership scope",
@@ -95,7 +95,7 @@ impl TermbaseComplex {
 
                 return Err(BaseError::Expected {
                     variant: ExpectedVariant::Args,
-                    message: error_message,
+                    message: err_message,
                 });
             }
         }
@@ -244,11 +244,11 @@ impl TermbasePermComplex {
 
         let Some(comic_id) = &termbase_info.comic_id else {
             //
-            let error_message = trl("error-invalid-termbase-scope");
+            let err_message = trl("error-invalid-termbase-scope");
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %error_message,
+                err_message = %err_message,
                 termbase_id = %termbase_info.id,
                 team_id = ?termbase_info.team_id,
                 comic_id = ?termbase_info.comic_id,
@@ -257,7 +257,7 @@ impl TermbasePermComplex {
 
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: error_message,
+                message: err_message,
             });
         };
 

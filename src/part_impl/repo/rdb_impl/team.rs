@@ -93,7 +93,7 @@ async fn get_info_by_id(conn: &mut RdbConn, id: &str) -> BaseRest<TeamInfo> {
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %message,
+                err_message = %message,
                 team_id = %id,
                 operation = "get team info",
                 "expected team error",
@@ -208,7 +208,7 @@ async fn mark_avatar_uploaded(
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Args,
-            error_message = %message,
+            err_message = %message,
             team_id = %id,
             image_version = version,
             avatar_key = ?avatar_key,
@@ -265,7 +265,7 @@ async fn reserve_avatar(
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Args,
-            error_message = %message,
+            err_message = %message,
             team_id = %id,
             image_version = raw_version,
             stored_extension = %stored_ext,
@@ -348,7 +348,7 @@ async fn get_info_excluded(conn: &mut RdbConn, id: &str) -> BaseRest<TeamInfo> {
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %message,
+                err_message = %message,
                 team_id = %id,
                 operation = "lock team info",
                 "expected team error",
@@ -387,7 +387,7 @@ async fn lock_team(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %message,
+                err_message = %message,
                 team_id = %id,
                 operation = "lock team row",
                 "expected team error",

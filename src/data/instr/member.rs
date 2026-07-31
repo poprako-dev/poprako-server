@@ -97,11 +97,11 @@ impl TryInto<MemberListSpec> for ListMemberInfosInstr {
 
         if owner_id.is_some() == team_id.is_some() {
             //
-            let error_message = trl("error-team-or-user-required");
+            let err_message = trl("error-team-or-user-required");
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %error_message,
+                err_message = %err_message,
                 owner_id = ?owner_id,
                 team_id = ?team_id,
                 role = ?role,
@@ -111,17 +111,17 @@ impl TryInto<MemberListSpec> for ListMemberInfosInstr {
 
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: error_message,
+                message: err_message,
             });
         }
 
         if owner_id.is_some() && role.is_some() {
             //
-            let error_message = trl("error-team-or-user-required");
+            let err_message = trl("error-team-or-user-required");
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %error_message,
+                err_message = %err_message,
                 owner_id = ?owner_id,
                 team_id = ?team_id,
                 role = ?role,
@@ -131,7 +131,7 @@ impl TryInto<MemberListSpec> for ListMemberInfosInstr {
 
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: error_message,
+                message: err_message,
             });
         }
 
@@ -146,11 +146,11 @@ impl TryInto<MemberListSpec> for ListMemberInfosInstr {
 
         let Some(team_id) = team_id else {
             //
-            let error_message = trl("error-team-or-user-required");
+            let err_message = trl("error-team-or-user-required");
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %error_message,
+                err_message = %err_message,
                 owner_id = ?owner_id,
                 team_id = ?team_id,
                 role = ?role,
@@ -160,7 +160,7 @@ impl TryInto<MemberListSpec> for ListMemberInfosInstr {
 
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: error_message,
+                message: err_message,
             });
         };
 

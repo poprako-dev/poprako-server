@@ -48,12 +48,12 @@ impl ChapterPortPermComplex {
                 ..
             }) => {
                 //
-                let error_message =
+                let err_message =
                     trl("error-chapter-port-export-permission-required");
 
                 tracing::warn!(
                     error_variant = ?ExpectedVariant::Perm,
-                    error_message = %error_message,
+                    err_message = %err_message,
                     user_id = %user_id,
                     chapter_id = %chapter_id,
                     operation = "export",
@@ -62,7 +62,7 @@ impl ChapterPortPermComplex {
 
                 Err(BaseError::Expected {
                     variant: ExpectedVariant::Perm,
-                    message: error_message,
+                    message: err_message,
                 })
             }
 
@@ -91,12 +91,12 @@ impl ChapterPortPermComplex {
                 ..
             }) => {
                 //
-                let error_message =
+                let err_message =
                     trl("error-chapter-port-import-permission-required");
 
                 tracing::warn!(
                     error_variant = ?ExpectedVariant::Perm,
-                    error_message = %error_message,
+                    err_message = %err_message,
                     user_id = %user_id,
                     chapter_id = %chapter_id,
                     operation = "import",
@@ -105,7 +105,7 @@ impl ChapterPortPermComplex {
 
                 Err(BaseError::Expected {
                     variant: ExpectedVariant::Perm,
-                    message: error_message,
+                    message: err_message,
                 })
             }
 

@@ -177,7 +177,7 @@ pub async fn get_info_by_id(
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %message,
+                err_message = %message,
                 member_id = %id,
                 operation = "get member info",
                 "expected member error",

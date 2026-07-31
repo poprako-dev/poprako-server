@@ -55,7 +55,7 @@ pub fn diesel(source: DieselError) -> BaseError {
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %message,
+                err_message = %message,
                 database_error = "unique violation",
                 database_message = information.message(),
                 database_details = ?information.details(),
@@ -78,7 +78,7 @@ pub fn diesel(source: DieselError) -> BaseError {
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %message,
+                err_message = %message,
                 database_error = "not found",
                 "[shared::diesel] unexpected Diesel NotFound; use optional() and map None at call site"
             );

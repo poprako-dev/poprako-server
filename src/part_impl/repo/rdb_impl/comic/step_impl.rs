@@ -53,11 +53,11 @@ pub async fn get_info_by_id(
         .map_err(diesel)?
         .ok_or_else(|| {
             //
-            let error_message = trl("error-comic-not-found");
+            let err_message = trl("error-comic-not-found");
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %error_message,
+                err_message = %err_message,
                 comic_id = %id,
                 stage = "get_info_by_id",
                 "expected error: comic not found",
@@ -65,7 +65,7 @@ pub async fn get_info_by_id(
 
             BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: error_message,
+                message: err_message,
             }
         })?;
 
@@ -210,11 +210,11 @@ pub async fn mark_cover_uploaded(
 
     if affected == 0 {
         //
-        let error_message = trl("error-cover-version-mismatch");
+        let err_message = trl("error-cover-version-mismatch");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Args,
-            error_message = %error_message,
+            err_message = %err_message,
             comic_id = %id,
             version,
             cover_key_present = cover_key.is_some(),
@@ -226,7 +226,7 @@ pub async fn mark_cover_uploaded(
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: error_message,
+            message: err_message,
         });
     }
 
@@ -270,11 +270,11 @@ pub async fn get_info_excluded(
         .map_err(diesel)?
         .ok_or_else(|| {
             //
-            let error_message = trl("error-comic-not-found");
+            let err_message = trl("error-comic-not-found");
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %error_message,
+                err_message = %err_message,
                 comic_id = %id,
                 stage = "get_info_excluded",
                 "expected error: comic not found",
@@ -282,7 +282,7 @@ pub async fn get_info_excluded(
 
             BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: error_message,
+                message: err_message,
             }
         })?;
 
@@ -434,11 +434,11 @@ pub async fn reserve_cover(
 
     if same_hash && stored_ext != image_ext.suffix() {
         //
-        let error_message = trl("error-invalid-image-extension");
+        let err_message = trl("error-invalid-image-extension");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Args,
-            error_message = %error_message,
+            err_message = %err_message,
             comic_id = %id,
             image_version = raw_version,
             cover_key_present = prev_key.is_some(),
@@ -450,7 +450,7 @@ pub async fn reserve_cover(
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: error_message,
+            message: err_message,
         });
     }
 

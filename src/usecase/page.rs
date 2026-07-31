@@ -370,11 +370,11 @@ where
 
     if page_info.image_version != instr.image_version {
         //
-        let error_message = trl("error-stale-page-image-upload");
+        let err_message = trl("error-stale-page-image-upload");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Args,
-            error_message = %error_message,
+            err_message = %err_message,
             page_id = %id,
             chapter_id = %page_info.chapter_id,
             user_id = %token.user_id,
@@ -385,7 +385,7 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: error_message,
+            message: err_message,
         });
     }
 
@@ -395,11 +395,11 @@ where
 
     let image_key = page_info.image_key.clone().ok_or_else(|| {
         //
-        let error_message = trl("error-stale-page-image-upload");
+        let err_message = trl("error-stale-page-image-upload");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Args,
-            error_message = %error_message,
+            err_message = %err_message,
             page_id = %id,
             chapter_id = %page_info.chapter_id,
             user_id = %token.user_id,
@@ -410,17 +410,17 @@ where
 
         BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: error_message,
+            message: err_message,
         }
     })?;
 
     if !image_manager.object_exists(&image_key).await? {
         //
-        let error_message = trl("error-stale-page-image-upload");
+        let err_message = trl("error-stale-page-image-upload");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Args,
-            error_message = %error_message,
+            err_message = %err_message,
             page_id = %id,
             chapter_id = %page_info.chapter_id,
             user_id = %token.user_id,
@@ -431,7 +431,7 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: error_message,
+            message: err_message,
         });
     }
 
@@ -462,11 +462,11 @@ where
         if locked_page_info.image_version != instr.image_version
             || locked_page_info.image_key.as_deref() != Some(&image_key)
         {
-            let error_message = trl("error-stale-page-image-upload");
+            let err_message = trl("error-stale-page-image-upload");
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %error_message,
+                err_message = %err_message,
                 page_id = %id,
                 chapter_id = %page_info.chapter_id,
                 user_id = %token.user_id,
@@ -478,7 +478,7 @@ where
 
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: error_message,
+                message: err_message,
             });
         }
 

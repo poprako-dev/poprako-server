@@ -66,10 +66,10 @@ impl RdbProm {
     /// The supervisor polls `t_local_message` and routes each topic to one of four
     /// serial worker tasks. Different topics can run concurrently, while messages
     /// from one topic never execute concurrently in this process.
-    pub fn new<I, V>(core: RdbCore, image_pool: I, develop: V) -> Self
+    pub fn new<I, D>(core: RdbCore, image_pool: I, develop: D) -> Self
     where
         I: ImageManager + Send + Sync + 'static,
-        V: EffectDevelop + Send + Sync + 'static,
+        D: EffectDevelop + Send + Sync + 'static,
     {
         let token = CancellationToken::new();
 

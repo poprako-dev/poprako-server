@@ -235,11 +235,11 @@ where
 
     if assignment_info.is_none() {
         //
-        let error_message = trl("error-forbidden");
+        let err_message = trl("error-forbidden");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Perm,
-            error_message = %error_message,
+            err_message = %err_message,
             user_id = %user_id,
             chapter_id = %chapter_id,
             team_id = %team_id,
@@ -248,7 +248,7 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: error_message,
+            message: err_message,
         });
     }
 
@@ -277,11 +277,11 @@ where
 
     if !user_info.is_sadmin {
         //
-        let error_message = trl("error-forbidden");
+        let err_message = trl("error-forbidden");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Perm,
-            error_message = %error_message,
+            err_message = %err_message,
             current_user_id = %current_user_id,
             owner_id = %owner_id,
             "expected error: assignment list permission denied",
@@ -289,7 +289,7 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: error_message,
+            message: err_message,
         });
     }
 
@@ -314,11 +314,11 @@ where
 
     let Some(assignment_info) = assignment_info else {
         //
-        let error_message = trl("error-chapter-admin-required");
+        let err_message = trl("error-chapter-admin-required");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Perm,
-            error_message = %error_message,
+            err_message = %err_message,
             user_id = %user_id,
             chapter_id = %chapter_id,
             "expected error: chapter admin assignment missing",
@@ -326,17 +326,17 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: error_message,
+            message: err_message,
         });
     };
 
     if !assignment_info.roles.has_any_role(&[RoleField::ADMIN]) {
         //
-        let error_message = trl("error-chapter-admin-required");
+        let err_message = trl("error-chapter-admin-required");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Perm,
-            error_message = %error_message,
+            err_message = %err_message,
             user_id = %user_id,
             chapter_id = %chapter_id,
             assignment_roles = ?assignment_info.roles,
@@ -345,7 +345,7 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: error_message,
+            message: err_message,
         });
     }
 
@@ -367,11 +367,11 @@ where
 {
     if current_user_id != subject_user_id {
         //
-        let error_message = trl("error-forbidden");
+        let err_message = trl("error-forbidden");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Perm,
-            error_message = %error_message,
+            err_message = %err_message,
             current_user_id = %current_user_id,
             subject_user_id = %subject_user_id,
             chapter_id = %chapter_id,
@@ -381,7 +381,7 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: error_message,
+            message: err_message,
         });
     }
 
@@ -394,11 +394,11 @@ where
 
     let Some(assignment_info) = assignment_info else {
         //
-        let error_message = trl("error-forbidden");
+        let err_message = trl("error-forbidden");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Perm,
-            error_message = %error_message,
+            err_message = %err_message,
             current_user_id = %current_user_id,
             subject_user_id = %subject_user_id,
             chapter_id = %chapter_id,
@@ -408,17 +408,17 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: error_message,
+            message: err_message,
         });
     };
 
     if !assignment_info.roles.contains_mask(roles) {
         //
-        let error_message = trl("error-forbidden");
+        let err_message = trl("error-forbidden");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Perm,
-            error_message = %error_message,
+            err_message = %err_message,
             current_user_id = %current_user_id,
             subject_user_id = %subject_user_id,
             chapter_id = %chapter_id,
@@ -429,7 +429,7 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: error_message,
+            message: err_message,
         });
     }
 
@@ -452,11 +452,11 @@ where
 {
     if roles.has_any_role(&[RoleField::ADMIN]) {
         //
-        let error_message = trl("error-chapter-role-not-assignable");
+        let err_message = trl("error-chapter-role-not-assignable");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Args,
-            error_message = %error_message,
+            err_message = %err_message,
             user_id = %user_id,
             chapter_id = %chapter_id,
             roles = ?roles,
@@ -465,7 +465,7 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: error_message,
+            message: err_message,
         });
     }
 
@@ -480,11 +480,11 @@ where
 
     let Some(member_info) = member_info else {
         //
-        let error_message = trl("error-chapter-role-not-assignable");
+        let err_message = trl("error-chapter-role-not-assignable");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Perm,
-            error_message = %error_message,
+            err_message = %err_message,
             user_id = %user_id,
             chapter_id = %chapter_id,
             team_id = %team_id,
@@ -494,17 +494,17 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: error_message,
+            message: err_message,
         });
     };
 
     if !member_info.roles.contains_mask(roles) {
         //
-        let error_message = trl("error-chapter-role-not-assignable");
+        let err_message = trl("error-chapter-role-not-assignable");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Perm,
-            error_message = %error_message,
+            err_message = %err_message,
             user_id = %user_id,
             chapter_id = %chapter_id,
             team_id = %team_id,
@@ -515,7 +515,7 @@ where
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: error_message,
+            message: err_message,
         });
     }
 

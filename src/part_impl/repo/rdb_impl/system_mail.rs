@@ -120,7 +120,7 @@ async fn mark_read(
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %message,
+                err_message = %message,
                 system_mail_id = %id,
                 receiver_user_id = %user_id,
                 operation = "mark system mail read",
@@ -140,7 +140,7 @@ async fn mark_read(
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Perm,
-            error_message = %message,
+            err_message = %message,
             system_mail_id = %id,
             receiver_user_id = %user_id,
             actual_receiver_user_id = %mail.f_receiver_id,

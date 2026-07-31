@@ -73,10 +73,10 @@ pub fn enforce_retry_limit(
     }
 }
 
-impl<I, V> RdbPromHandler<RdbDrive, RdbRepo, I, V>
+impl<I, D> RdbPromHandler<RdbDrive, RdbRepo, I, D>
 where
     I: ImageManager + Send + Sync + 'static,
-    V: EffectDevelop + Send + Sync + 'static,
+    D: EffectDevelop + Send + Sync + 'static,
 {
     /// Runs the polling supervisor and drains in-flight worker tasks on shutdown.
     #[instrument(level = "info", skip_all)]

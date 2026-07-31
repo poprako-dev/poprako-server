@@ -186,11 +186,11 @@ impl Step<SetPageImageUploaded<'_>, RdbContext> for RdbRepo {
             oper.repl.image_version,
             oper.repl.image_key.as_deref().ok_or_else(|| {
                 //
-                let error_message = String::from("page image key is required");
+                let err_message = String::from("page image key is required");
 
                 tracing::warn!(
                     error_variant = ?ExpectedVariant::Args,
-                    error_message = %error_message,
+                    err_message = %err_message,
                     page_id = %oper.repl.id,
                     image_version = oper.repl.image_version,
                     image_key_present = oper.repl.image_key.is_some(),
@@ -201,7 +201,7 @@ impl Step<SetPageImageUploaded<'_>, RdbContext> for RdbRepo {
 
                 BaseError::Expected {
                     variant: ExpectedVariant::Args,
-                    message: error_message,
+                    message: err_message,
                 }
             })?,
             oper.repl.is_image_uploaded,

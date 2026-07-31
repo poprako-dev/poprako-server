@@ -17,16 +17,16 @@ use crate::value::chapter::Stage;
 
 /// Attempts raw-provision completion once and completes even while uploads remain pending.
 #[instrument(level = "info", skip_all)]
-pub async fn handle<N, R, V>(
+pub async fn handle<N, R, D>(
     nucl: &N,
     repo: &R,
-    develop: &V,
+    develop: &D,
     task: &ChapterPayload,
 ) -> TaskFlow
 where
     N: Nucl<Context = RdbContext, Error = BaseError>,
     R: ChapterRepo<RdbContext> + Send + Sync,
-    V: EffectDevelop + Sync,
+    D: EffectDevelop + Sync,
 {
     match task {
         ChapterPayload::TryAdvanceRawProvideStage { chapter_id } => {
@@ -36,16 +36,16 @@ where
 }
 
 // Internal implementation of `handle_raw_provide`.
-async fn handle_raw_provide<N, R, V>(
+async fn handle_raw_provide<N, R, D>(
     nucl: &N,
     repo: &R,
-    develop: &V,
+    develop: &D,
     chapter_id: &str,
 ) -> TaskFlow
 where
     N: Nucl<Context = RdbContext, Error = BaseError>,
     R: ChapterRepo<RdbContext> + Send + Sync,
-    V: EffectDevelop + Sync,
+    D: EffectDevelop + Sync,
 {
     let outcome: BaseRest<bool> = nucl
         .coord(async move |context| {

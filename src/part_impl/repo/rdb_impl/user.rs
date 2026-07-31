@@ -72,7 +72,7 @@ async fn get_credential_by_qid(
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %message,
+                err_message = %message,
                 user_qid = %qid,
                 operation = "get user credential",
                 "expected user error",
@@ -215,7 +215,7 @@ async fn reserve_avatar(
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Args,
-            error_message = %message,
+            err_message = %message,
             user_id = %id,
             image_version = raw_version,
             stored_extension = %stored_ext,
@@ -321,7 +321,7 @@ async fn mark_avatar_uploaded(
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Args,
-            error_message = %message,
+            err_message = %message,
             user_id = %id,
             image_version = version,
             avatar_key = ?avatar_key,
@@ -383,7 +383,7 @@ async fn get_info_by_id_excluded(
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %message,
+                err_message = %message,
                 user_id = %id,
                 operation = "lock user info",
                 "expected user error",
@@ -422,7 +422,7 @@ async fn get_info_by_id(conn: &mut RdbConn, id: &str) -> BaseRest<UserInfo> {
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %message,
+                err_message = %message,
                 user_id = %id,
                 operation = "get user info",
                 "expected user error",

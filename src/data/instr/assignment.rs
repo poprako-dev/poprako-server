@@ -72,11 +72,11 @@ impl TryInto<AssignmentListSpec> for ListAssignmentInfosInstr {
 
         if chapter_id.is_some() == owner_id.is_some() {
             //
-            let error_message = trl("error-chapter-or-user-required");
+            let err_message = trl("error-chapter-or-user-required");
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %error_message,
+                err_message = %err_message,
                 chapter_id = ?chapter_id,
                 owner_id = ?owner_id,
                 role = ?role,
@@ -85,7 +85,7 @@ impl TryInto<AssignmentListSpec> for ListAssignmentInfosInstr {
 
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: error_message,
+                message: err_message,
             });
         }
 
@@ -101,11 +101,11 @@ impl TryInto<AssignmentListSpec> for ListAssignmentInfosInstr {
 
         let Some(owner_id) = owner_id else {
             //
-            let error_message = trl("error-chapter-or-user-required");
+            let err_message = trl("error-chapter-or-user-required");
 
             tracing::warn!(
                 error_variant = ?ExpectedVariant::Args,
-                error_message = %error_message,
+                err_message = %err_message,
                 chapter_id = ?chapter_id,
                 owner_id = ?owner_id,
                 role = ?role,
@@ -114,7 +114,7 @@ impl TryInto<AssignmentListSpec> for ListAssignmentInfosInstr {
 
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: error_message,
+                message: err_message,
             });
         };
 
