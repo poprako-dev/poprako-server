@@ -73,11 +73,7 @@ async fn main() -> anyhow::Result<()> {
 
     let serve_rest = poprako_server::serve(harn.clone(), http_addr).await;
 
-    harn.prom().close().await;
-
-    harn.develop().close().await;
-
-    sched.close().await;
+    tokio::join!(harn.prom().close(), harn.develop().close(), sched.close());
 
     serve_rest
 }

@@ -3,8 +3,9 @@
 use poprako_orchestra::{Nucl, OperStep as _};
 use tracing::instrument;
 
+use crate::part::effect::event::Event;
 use crate::part::effect::event::chapter::ChapterWorkflowCompletedEvent;
-use crate::part::effect::{EffectDevelop, EffectEvent as _};
+use crate::part::effect::{Develop, EffectEvent as _};
 use crate::part::prom::payload::chapter::ChapterPayload;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::oper::chapter::{
@@ -26,7 +27,7 @@ pub async fn handle<N, R, D>(
 where
     N: Nucl<Context = RdbContext, Error = BaseError>,
     R: ChapterRepo<RdbContext> + Send + Sync,
-    D: EffectDevelop + Sync,
+    D: Develop + Sync,
 {
     match task {
         ChapterPayload::TryAdvanceRawProvideStage { chapter_id } => {
@@ -45,7 +46,7 @@ async fn handle_raw_provide<N, R, D>(
 where
     N: Nucl<Context = RdbContext, Error = BaseError>,
     R: ChapterRepo<RdbContext> + Send + Sync,
-    D: EffectDevelop + Sync,
+    D: Develop + Sync,
 {
     let outcome: BaseRest<bool> = nucl
         .coord(async move |context| {
@@ -75,10 +76,10 @@ where
         Ok(true) => {
             //
             // Internal implementation detail.
-            ChapterWorkflowCompletedEvent {
+            Event::ChapterWorkflowCompleted(ChapterWorkflowCompletedEvent {
                 chapter_id: chapter_id.to_string(),
                 completed_stage: Stage::RawProvide,
-            }
+            })
             .develop_on(develop)
             .await;
 

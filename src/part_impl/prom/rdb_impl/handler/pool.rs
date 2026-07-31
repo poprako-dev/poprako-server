@@ -10,7 +10,7 @@ use tokio::task::JoinHandle;
 use tokio::time::sleep;
 use tracing::instrument;
 
-use crate::part::effect::EffectDevelop;
+use crate::part::effect::Develop;
 use crate::part::image::ImageManager;
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::prom::rdb_impl::entity::LocalMessageRow;
@@ -76,7 +76,7 @@ pub fn enforce_retry_limit(
 impl<I, D> RdbPromHandler<RdbDrive, RdbRepo, I, D>
 where
     I: ImageManager + Send + Sync + 'static,
-    D: EffectDevelop + Send + Sync + 'static,
+    D: Develop + Send + Sync + 'static,
 {
     /// Runs the polling supervisor and drains in-flight worker tasks on shutdown.
     #[instrument(level = "info", skip_all)]

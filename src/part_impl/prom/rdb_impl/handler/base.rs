@@ -11,7 +11,7 @@ use poprako_orchestra::Nucl;
 use tokio_util::sync::CancellationToken;
 use tracing::instrument;
 
-use crate::part::effect::EffectDevelop;
+use crate::part::effect::Develop;
 use crate::part::image::ImageManager;
 use crate::part::prom::payload::TaskPayload;
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
@@ -62,7 +62,7 @@ where
         + Sync
         + 'static,
     I: ImageManager + Send + Sync + 'static,
-    D: EffectDevelop + Send + Sync + 'static,
+    D: Develop + Send + Sync + 'static,
 {
     /// Builds a new prom background handler from its core, nucl, repo, and lifecycle channels.
     pub fn new(
@@ -106,7 +106,7 @@ where
         + Send
         + Sync,
     I: ImageManager + Send + Sync,
-    D: EffectDevelop + Sync,
+    D: Develop + Sync,
 {
     let payload: TaskPayload = match serde_json::from_value(payload.clone()) {
         //

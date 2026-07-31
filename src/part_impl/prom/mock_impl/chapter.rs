@@ -1,6 +1,7 @@
 use poprako_orchestra::OperRun as _;
 
 use crate::part::effect::EffectEvent as _;
+use crate::part::effect::event::Event;
 use crate::part::effect::event::chapter::ChapterWorkflowCompletedEvent;
 use crate::part::prom::payload::chapter::ChapterPayload;
 use crate::part::repo::oper::chapter::CompleteChapterRawProvide;
@@ -26,10 +27,10 @@ async fn process_raw_provide(mock: &Mock, chapter_id: &str) -> BaseRest<()> {
         .await?;
 
     if advanced {
-        ChapterWorkflowCompletedEvent {
+        Event::ChapterWorkflowCompleted(ChapterWorkflowCompletedEvent {
             chapter_id: chapter_id.to_string(),
             completed_stage: Stage::RawProvide,
-        }
+        })
         .develop_on(mock)
         .await;
     }

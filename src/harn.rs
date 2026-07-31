@@ -4,7 +4,7 @@ use std::sync::Arc;
 use poprako_orchestra::Nucl;
 
 use crate::part::auth::TokenAuth;
-use crate::part::effect::EffectDevelop;
+use crate::part::effect::Develop;
 use crate::part::image::ImagePool;
 use crate::part::prom::Prom;
 use crate::part::repo::announcement::AnnouncementRepo;
@@ -84,7 +84,7 @@ where
     P: Prom<C>,
     A: TokenAuth,
     I: ImagePool + Sync,
-    D: EffectDevelop + Sync,
+    D: Develop + Sync,
 {
     /// Builds a new `Harn` from the given port implementations.
     pub fn new(
