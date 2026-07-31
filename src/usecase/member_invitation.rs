@@ -95,7 +95,7 @@ where
                     let err_message = trl("error-already-team-member");
 
                     tracing::warn!(
-                        error_variant = ?ExpectedVariant::Args,
+                        err_variant = ?ExpectedVariant::Args,
                         err_message = %err_message,
                         team_id = %instr.team_id,
                         user_id = %token.user_id,

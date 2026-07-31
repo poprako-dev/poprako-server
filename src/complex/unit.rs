@@ -80,7 +80,7 @@ impl UnitComplex {
             let err_message = trl("error-invalid-unit-oper");
 
             tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
+                err_variant = ?ExpectedVariant::Args,
                 err_message = %err_message,
                 edit_count = edits.len(),
                 base_id_count = base_ids.len(),
@@ -193,7 +193,7 @@ impl UnitComplex {
             let err_message = trl("error-invalid-unit-oper");
 
             tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
+                err_variant = ?ExpectedVariant::Args,
                 err_message = %err_message,
                 edit_count = edits.len(),
                 base_id_count = base_ids.len(),
@@ -219,7 +219,7 @@ impl UnitComplex {
                     let err_message = trl("error-invalid-unit-oper");
 
                     tracing::warn!(
-                        error_variant = ?ExpectedVariant::Args,
+                        err_variant = ?ExpectedVariant::Args,
                         err_message = %err_message,
                         unit_id = %id,
                         operation = "delete",
@@ -239,7 +239,7 @@ impl UnitComplex {
                     let err_message = trl("error-invalid-unit-oper");
 
                     tracing::warn!(
-                        error_variant = ?ExpectedVariant::Args,
+                        err_variant = ?ExpectedVariant::Args,
                         err_message = %err_message,
                         unit_id = %id,
                         operation = "save",
@@ -280,7 +280,7 @@ impl UnitComplex {
                 let err_message = trl("error-invalid-unit-oper");
 
                 tracing::warn!(
-                    error_variant = ?ExpectedVariant::Args,
+                    err_variant = ?ExpectedVariant::Args,
                     err_message = %err_message,
                     unit_id = %id,
                     next_unit_id = %next_id,

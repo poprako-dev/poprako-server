@@ -86,7 +86,7 @@ impl ChapterComplex {
             let err_message = trl("error-chapter-published-frozen");
 
             tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
+                err_variant = ?ExpectedVariant::Args,
                 err_message = %err_message,
                 chapter_id = %chapter_info.id,
                 stage = ?Stage::Publish,
@@ -393,7 +393,7 @@ where
         let err_message = trl("error-chapter-no-role-holder");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Perm,
+            err_variant = ?ExpectedVariant::Perm,
             err_message = %err_message,
             chapter_id = %chapter_id,
             stage = ?stage,
@@ -475,7 +475,7 @@ where
         let err_message = trl("error-chapter-admin-required");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Perm,
+            err_variant = ?ExpectedVariant::Perm,
             err_message = %err_message,
             user_id = %user_id,
             chapter_id = %chapter_id,
@@ -493,7 +493,7 @@ where
         let err_message = trl("error-chapter-admin-required");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Perm,
+            err_variant = ?ExpectedVariant::Perm,
             err_message = %err_message,
             user_id = %user_id,
             chapter_id = %chapter_id,
@@ -541,7 +541,7 @@ where
         let err_message = trl("error-chapter-workflow-role-required");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Perm,
+            err_variant = ?ExpectedVariant::Perm,
             err_message = %err_message,
             user_id = %user_id,
             chapter_id = %chapter_id,
@@ -577,7 +577,7 @@ where
         let err_message = trl("error-chapter-workflow-role-required");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Perm,
+            err_variant = ?ExpectedVariant::Perm,
             err_message = %err_message,
             user_id = %user_id,
             chapter_id = %chapter_id,
@@ -599,7 +599,7 @@ where
         let err_message = trl("error-chapter-workflow-role-required");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Perm,
+            err_variant = ?ExpectedVariant::Perm,
             err_message = %err_message,
             user_id = %user_id,
             chapter_id = %chapter_id,
@@ -640,7 +640,7 @@ where
         let err_message = trl("error-chapter-role-not-assignable");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
+            err_variant = ?ExpectedVariant::Args,
             err_message = %err_message,
             user_id = %user_id,
             chapter_id = %chapter_info.id,
@@ -670,7 +670,7 @@ where
         let err_message = trl("error-team-member-required");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Perm,
+            err_variant = ?ExpectedVariant::Perm,
             err_message = %err_message,
             user_id = %user_id,
             chapter_id = %chapter_info.id,
@@ -691,7 +691,7 @@ where
         let err_message = trl("error-chapter-role-not-assignable");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Perm,
+            err_variant = ?ExpectedVariant::Perm,
             err_message = %err_message,
             user_id = %user_id,
             chapter_id = %chapter_info.id,

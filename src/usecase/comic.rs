@@ -475,7 +475,7 @@ where
         let err_message = trl("error-stale-cover-upload");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
+            err_variant = ?ExpectedVariant::Args,
             err_message = %err_message,
             comic_id = %id,
             user_id = %token.user_id,
@@ -499,7 +499,7 @@ where
         let err_message = trl("error-stale-cover-upload");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
+            err_variant = ?ExpectedVariant::Args,
             err_message = %err_message,
             comic_id = %id,
             user_id = %token.user_id,
@@ -519,7 +519,7 @@ where
         let err_message = trl("error-stale-cover-upload");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
+            err_variant = ?ExpectedVariant::Args,
             err_message = %err_message,
             comic_id = %id,
             user_id = %token.user_id,
@@ -549,7 +549,7 @@ where
             let err_message = trl("error-stale-cover-upload");
 
             tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
+                err_variant = ?ExpectedVariant::Args,
                 err_message = %err_message,
                 comic_id = %id,
                 user_id = %token.user_id,

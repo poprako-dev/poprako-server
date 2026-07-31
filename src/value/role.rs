@@ -86,7 +86,7 @@ impl TryFrom<u32> for RoleField {
             let err_message = trl("error-invalid-role");
 
             tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
+                err_variant = ?ExpectedVariant::Args,
                 err_message = %err_message,
                 raw_value = value,
                 "expected error: invalid role field",
@@ -200,7 +200,7 @@ impl TryFrom<u32> for RoleMask {
             let err_message = trl("error-invalid-role");
 
             tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
+                err_variant = ?ExpectedVariant::Args,
                 err_message = %err_message,
                 raw_value = value,
                 "expected error: invalid role mask",

@@ -172,7 +172,7 @@ where
         let err_message = trl("error-page-reserve-role-required");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Perm,
+            err_variant = ?ExpectedVariant::Perm,
             err_message = %err_message,
             user_id = %user_id,
             chapter_id = %chapter_id,
@@ -192,7 +192,7 @@ where
         let err_message = trl("error-page-reserve-role-required");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Perm,
+            err_variant = ?ExpectedVariant::Perm,
             err_message = %err_message,
             user_id = %user_id,
             chapter_id = %chapter_id,
@@ -231,7 +231,7 @@ where
         let err_message = trl("error-page-upload-role-required");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Perm,
+            err_variant = ?ExpectedVariant::Perm,
             err_message = %err_message,
             user_id = %user_id,
             chapter_id = %chapter_id,
@@ -251,7 +251,7 @@ where
         let err_message = trl("error-page-upload-role-required");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Perm,
+            err_variant = ?ExpectedVariant::Perm,
             err_message = %err_message,
             user_id = %user_id,
             chapter_id = %chapter_id,
@@ -289,7 +289,7 @@ where
         let err_message = trl("error-team-member-required");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Perm,
+            err_variant = ?ExpectedVariant::Perm,
             err_message = %err_message,
             user_id = %user_id,
             chapter_id = %chapter_id,

@@ -29,7 +29,7 @@ fn normalize_name(name: String) -> BaseRest<String> {
         let err_message = trl("error-termbase-name-required");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
+            err_variant = ?ExpectedVariant::Args,
             err_message = %err_message,
             termbase_name = %name,
             "expected error: termbase name required",
@@ -86,7 +86,7 @@ impl TermbaseComplex {
                 let err_message = trl("error-invalid-termbase-scope");
 
                 tracing::warn!(
-                    error_variant = ?ExpectedVariant::Args,
+                    err_variant = ?ExpectedVariant::Args,
                     err_message = %err_message,
                     team_id = ?team_id,
                     comic_id = ?comic_id,
@@ -247,7 +247,7 @@ impl TermbasePermComplex {
             let err_message = trl("error-invalid-termbase-scope");
 
             tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
+                err_variant = ?ExpectedVariant::Args,
                 err_message = %err_message,
                 termbase_id = %termbase_info.id,
                 team_id = ?termbase_info.team_id,

@@ -75,7 +75,7 @@ impl TryInto<AssignmentListSpec> for ListAssignmentInfosInstr {
             let err_message = trl("error-chapter-or-user-required");
 
             tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
+                err_variant = ?ExpectedVariant::Args,
                 err_message = %err_message,
                 chapter_id = ?chapter_id,
                 owner_id = ?owner_id,
@@ -104,7 +104,7 @@ impl TryInto<AssignmentListSpec> for ListAssignmentInfosInstr {
             let err_message = trl("error-chapter-or-user-required");
 
             tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
+                err_variant = ?ExpectedVariant::Args,
                 err_message = %err_message,
                 chapter_id = ?chapter_id,
                 owner_id = ?owner_id,

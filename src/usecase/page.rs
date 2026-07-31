@@ -373,7 +373,7 @@ where
         let err_message = trl("error-stale-page-image-upload");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
+            err_variant = ?ExpectedVariant::Args,
             err_message = %err_message,
             page_id = %id,
             chapter_id = %page_info.chapter_id,
@@ -398,7 +398,7 @@ where
         let err_message = trl("error-stale-page-image-upload");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
+            err_variant = ?ExpectedVariant::Args,
             err_message = %err_message,
             page_id = %id,
             chapter_id = %page_info.chapter_id,
@@ -419,7 +419,7 @@ where
         let err_message = trl("error-stale-page-image-upload");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
+            err_variant = ?ExpectedVariant::Args,
             err_message = %err_message,
             page_id = %id,
             chapter_id = %page_info.chapter_id,
@@ -465,7 +465,7 @@ where
             let err_message = trl("error-stale-page-image-upload");
 
             tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
+                err_variant = ?ExpectedVariant::Args,
                 err_message = %err_message,
                 page_id = %id,
                 chapter_id = %page_info.chapter_id,

@@ -58,7 +58,7 @@ where
         let err_message = trl("error-pinned-chapter-with-required");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
+            err_variant = ?ExpectedVariant::Args,
             err_message = %err_message,
             workset_id = %instr.workset_id,
             user_id = %token.user_id,

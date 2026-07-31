@@ -54,9 +54,9 @@ pub fn diesel(source: DieselError) -> BaseError {
             let message = trl("error-already-exists");
 
             tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
+                err_variant = ?ExpectedVariant::Args,
                 err_message = %message,
-                database_error = "unique violation",
+                database_err = "unique violation",
                 database_message = information.message(),
                 database_details = ?information.details(),
                 database_hint = ?information.hint(),
@@ -77,9 +77,9 @@ pub fn diesel(source: DieselError) -> BaseError {
             let message = trl("error-not-found");
 
             tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
+                err_variant = ?ExpectedVariant::Args,
                 err_message = %message,
-                database_error = "not found",
+                database_err = "not found",
                 "[shared::diesel] unexpected Diesel NotFound; use optional() and map None at call site"
             );
 

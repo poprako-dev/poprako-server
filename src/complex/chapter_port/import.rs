@@ -65,7 +65,7 @@ impl ChapterImportComplex {
                         trl("error-invalid-chapter-import-content");
 
                     tracing::warn!(
-                        error_variant = ?ExpectedVariant::Args,
+                        err_variant = ?ExpectedVariant::Args,
                         err_message = %err_message,
                         line = %line,
                         "expected error: chapter import unit appears before page",
@@ -117,10 +117,10 @@ impl ChapterImportComplex {
                 let err_message = trl("error-invalid-chapter-import-content");
 
                 tracing::warn!(
-                    error_variant = ?ExpectedVariant::Args,
+                    err_variant = ?ExpectedVariant::Args,
                     err_message = %err_message,
                     input_length = content.len(),
-                    parse_error = ?error,
+                    parse_err = ?error,
                     operation = "parse_poprako",
                     "expected error: chapter import JSON is invalid",
                 );
@@ -136,7 +136,7 @@ impl ChapterImportComplex {
             let err_message = trl("error-invalid-chapter-import-content");
 
             tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
+                err_variant = ?ExpectedVariant::Args,
                 err_message = %err_message,
                 field = "author",
                 input_length = content.len(),
@@ -154,7 +154,7 @@ impl ChapterImportComplex {
             let err_message = trl("error-invalid-chapter-import-content");
 
             tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
+                err_variant = ?ExpectedVariant::Args,
                 err_message = %err_message,
                 field = "title",
                 input_length = content.len(),
@@ -187,7 +187,7 @@ impl ChapterImportComplex {
             let err_message = trl("error-chapter-import-page-count-mismatch");
 
             tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
+                err_variant = ?ExpectedVariant::Args,
                 err_message = %err_message,
                 imported_page_count = imported_page_count,
                 existing_page_count = existing_page_count,
@@ -285,7 +285,7 @@ fn parse_label_plus_unit_header(line: &str) -> BaseRest<Option<LabelPlusUnit>> {
         let err_message = trl("error-invalid-chapter-import-content");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
+            err_variant = ?ExpectedVariant::Args,
             err_message = %err_message,
             line = %line,
             "expected error: chapter import unit header separator is invalid",
@@ -302,7 +302,7 @@ fn parse_label_plus_unit_header(line: &str) -> BaseRest<Option<LabelPlusUnit>> {
         let err_message = trl("error-invalid-chapter-import-content");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
+            err_variant = ?ExpectedVariant::Args,
             err_message = %err_message,
             line = %line,
             "expected error: chapter import coordinate suffix is missing",
@@ -321,7 +321,7 @@ fn parse_label_plus_unit_header(line: &str) -> BaseRest<Option<LabelPlusUnit>> {
         let err_message = trl("error-invalid-chapter-import-content");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
+            err_variant = ?ExpectedVariant::Args,
             err_message = %err_message,
             line = %line,
             part_count = parts.len(),
@@ -339,11 +339,11 @@ fn parse_label_plus_unit_header(line: &str) -> BaseRest<Option<LabelPlusUnit>> {
         let err_message = trl("error-invalid-chapter-import-content");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
+            err_variant = ?ExpectedVariant::Args,
             err_message = %err_message,
             line = %line,
             raw_index = %index_text,
-            parse_error = ?error,
+            parse_err = ?error,
             "expected error: chapter import unit index is invalid",
         );
 
@@ -358,11 +358,11 @@ fn parse_label_plus_unit_header(line: &str) -> BaseRest<Option<LabelPlusUnit>> {
         let err_message = trl("error-invalid-chapter-import-content");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
+            err_variant = ?ExpectedVariant::Args,
             err_message = %err_message,
             line = %line,
             raw_x_coord = %parts[0],
-            parse_error = ?error,
+            parse_err = ?error,
             "expected error: chapter import x coordinate is invalid",
         );
 
@@ -377,11 +377,11 @@ fn parse_label_plus_unit_header(line: &str) -> BaseRest<Option<LabelPlusUnit>> {
         let err_message = trl("error-invalid-chapter-import-content");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
+            err_variant = ?ExpectedVariant::Args,
             err_message = %err_message,
             line = %line,
             raw_y_coord = %parts[1],
-            parse_error = ?error,
+            parse_err = ?error,
             "expected error: chapter import y coordinate is invalid",
         );
 
@@ -402,7 +402,7 @@ fn parse_label_plus_unit_header(line: &str) -> BaseRest<Option<LabelPlusUnit>> {
             let err_message = trl("error-invalid-chapter-import-content");
 
             tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
+                err_variant = ?ExpectedVariant::Args,
                 err_message = %err_message,
                 line = %line,
                 raw_bubble_flag = %parts[2],
@@ -442,7 +442,7 @@ fn flush_label_plus_unit(
         let err_message = trl("error-invalid-chapter-import-content");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
+            err_variant = ?ExpectedVariant::Args,
             err_message = %err_message,
             unit_index = label_plus_unit.index,
             main_text_line_count = main_text_lines.len(),
@@ -484,7 +484,7 @@ fn parse_poprako_page(
         let err_message = trl("error-invalid-chapter-import-content");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
+            err_variant = ?ExpectedVariant::Args,
             err_message = %err_message,
             image_filename = %page.image_filename,
             unit_count = page.units.len(),
@@ -507,7 +507,7 @@ fn parse_poprako_page(
             let err_message = trl("error-invalid-chapter-import-content");
 
             tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
+                err_variant = ?ExpectedVariant::Args,
                 err_message = %err_message,
                 unit_id = %unit.id,
                 unit_index = unit.index_in_page,
@@ -525,7 +525,7 @@ fn parse_poprako_page(
             let err_message = trl("error-invalid-chapter-import-content");
 
             tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
+                err_variant = ?ExpectedVariant::Args,
                 err_message = %err_message,
                 unit_id = %unit.id,
                 unit_index = unit.index_in_page,
@@ -543,7 +543,7 @@ fn parse_poprako_page(
             let err_message = trl("error-invalid-chapter-import-content");
 
             tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
+                err_variant = ?ExpectedVariant::Args,
                 err_message = %err_message,
                 unit_id = %unit.id,
                 unit_index = unit.index_in_page,
@@ -563,7 +563,7 @@ fn parse_poprako_page(
             let err_message = trl("error-invalid-chapter-import-content");
 
             tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
+                err_variant = ?ExpectedVariant::Args,
                 err_message = %err_message,
                 unit_id = %unit.id,
                 unit_index = unit.index_in_page,
@@ -605,7 +605,7 @@ where
         let err_message = trl("error-invalid-chapter-import-content");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
+            err_variant = ?ExpectedVariant::Args,
             err_message = %err_message,
             operation = "validate_label_plus_header",
             condition = "missing_version_line",
@@ -627,7 +627,7 @@ where
         let err_message = trl("error-invalid-chapter-import-content");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
+            err_variant = ?ExpectedVariant::Args,
             err_message = %err_message,
             version_line = %version_line,
             "expected error: chapter import version line is invalid",
@@ -644,7 +644,7 @@ where
         let err_message = trl("error-invalid-chapter-import-content");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
+            err_variant = ?ExpectedVariant::Args,
             err_message = %err_message,
             version_line = %version_line,
             condition = "missing_initial_separator",
@@ -673,7 +673,7 @@ where
         let err_message = trl("error-invalid-chapter-import-content");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
+            err_variant = ?ExpectedVariant::Args,
             err_message = %err_message,
             version_line = %version_line,
             condition = "missing_content_separator",
@@ -691,7 +691,7 @@ where
         let err_message = trl("error-invalid-chapter-import-content");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
+            err_variant = ?ExpectedVariant::Args,
             err_message = %err_message,
             version_line = %version_line,
             condition = "missing_content",

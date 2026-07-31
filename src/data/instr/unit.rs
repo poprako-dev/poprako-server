@@ -269,7 +269,7 @@ where
             let err_message = trl("error-invalid-unit-oper");
 
             tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
+                err_variant = ?ExpectedVariant::Args,
                 err_message = %err_message,
                 local_id = %local_id,
                 "expected error: duplicate unit edit local id",
@@ -298,7 +298,7 @@ fn validate_id(id: &str) -> BaseRest<()> {
         let err_message = trl("error-invalid-unit-oper");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
+            err_variant = ?ExpectedVariant::Args,
             err_message = %err_message,
             local_or_unit_id = %id,
             "expected error: empty unit edit id",

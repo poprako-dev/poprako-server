@@ -96,6 +96,33 @@ def rust_files(root: Path) -> list[Path]:
     )
 
 
+def resolve_ignore_files(
+    root: Path,
+    ignore_files: list[Path],
+    ignore_lists: list[Path],
+) -> set[Path]:
+    """Resolve direct ignore paths and newline-delimited ignore lists."""
+    configured_files = list(ignore_files)
+
+    for ignore_list in ignore_lists:
+        ignore_list_path = (
+            ignore_list
+            if ignore_list.is_absolute()
+            else root / ignore_list
+        )
+
+        for line in ignore_list_path.read_text().splitlines():
+            entry = line.strip()
+
+            if entry and not entry.startswith("#"):
+                configured_files.append(Path(entry))
+
+    return {
+        (path if path.is_absolute() else root / path).resolve()
+        for path in configured_files
+    }
+
+
 def split_identifier(name: str) -> list[str]:
     """Split snake_case, SCREAMING_SNAKE_CASE, PascalCase, or camelCase into
     lowercase word segments."""
@@ -747,8 +774,13 @@ def check_file(
     return diagnostics
 
 
-def check_root(root: Path) -> list[str]:
-    files = rust_files(root)
+def check_root(root: Path, ignored_files: set[Path] | None = None) -> list[str]:
+    ignored_files = ignored_files or set()
+    files = [
+        path
+        for path in rust_files(root)
+        if path.resolve() not in ignored_files
+    ]
     test_module_set = _build_test_module_set(root, files)
 
     return [
@@ -800,6 +832,25 @@ def self_test() -> int:
             for d in check_root(root):
                 print(f"  {d}", file=sys.stderr)
             return 1
+
+        ignored_file = src / "ignored.rs"
+        ignored_file.write_text("fn ignored_result() {}\n")
+
+        if check_root(root, {ignored_file.resolve()}):
+            print("self-test: ignored file was not checked", file=sys.stderr)
+            return 1
+
+        ignore_list = root / "ignore-files.txt"
+        ignore_list.write_text(
+            "# Paths are relative to the check root.\n"
+            "src/ignored.rs\n"
+        )
+
+        if check_root(root, resolve_ignore_files(root, [], [ignore_list])):
+            print("self-test: ignore list was not applied", file=sys.stderr)
+            return 1
+
+        ignored_file.unlink()
 
         # ── test module is skipped ──────────────────────────────────────
 
@@ -1150,13 +1201,33 @@ def self_test() -> int:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, default=ROOT)
+    parser.add_argument(
+        "--ignore-file",
+        dest="ignore_files",
+        action="append",
+        type=Path,
+        default=[],
+        metavar="PATH",
+        help="skip one Rust source file; may be repeated",
+    )
+    parser.add_argument(
+        "--ignore-list",
+        dest="ignore_lists",
+        action="append",
+        type=Path,
+        default=[],
+        metavar="PATH",
+        help="read newline-delimited ignored paths; may be repeated",
+    )
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
 
     if args.self_test:
         return self_test()
 
-    diagnostics = check_root(args.root.resolve())
+    root = args.root.resolve()
+    ignored_files = resolve_ignore_files(root, args.ignore_files, args.ignore_lists)
+    diagnostics = check_root(root, ignored_files)
 
     if diagnostics:
         print("\n".join(diagnostics), file=sys.stderr)

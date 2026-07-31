@@ -37,7 +37,7 @@ impl ImageComplex {
             let err_message = trl("error-invalid-image-byte-length");
 
             tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
+                err_variant = ?ExpectedVariant::Args,
                 err_message = %err_message,
                 byte_length = byte_length,
                 max_length = max_length,

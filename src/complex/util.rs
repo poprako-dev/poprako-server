@@ -30,7 +30,7 @@ where
         let err_message = trl("error-team-member-required");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Perm,
+            err_variant = ?ExpectedVariant::Perm,
             err_message = %err_message,
             user_id = %user_id,
             team_id = %team_id,
@@ -64,7 +64,7 @@ where
         let err_message = trl("error-team-proofreader-required");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Perm,
+            err_variant = ?ExpectedVariant::Perm,
             err_message = %err_message,
             user_id = %user_id,
             team_id = %team_id,
@@ -82,7 +82,7 @@ where
         let err_message = trl("error-team-proofreader-required");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Perm,
+            err_variant = ?ExpectedVariant::Perm,
             err_message = %err_message,
             user_id = %user_id,
             team_id = %team_id,
@@ -118,7 +118,7 @@ where
         let err_message = trl("error-team-admin-required");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Perm,
+            err_variant = ?ExpectedVariant::Perm,
             err_message = %err_message,
             user_id = %user_id,
             team_id = %team_id,
@@ -137,7 +137,7 @@ where
         let err_message = trl("error-team-admin-required");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Perm,
+            err_variant = ?ExpectedVariant::Perm,
             err_message = %err_message,
             user_id = %user_id,
             team_id = %team_id,
@@ -158,7 +158,7 @@ where
         let err_message = trl("error-chapter-role-not-assignable");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Perm,
+            err_variant = ?ExpectedVariant::Perm,
             err_message = %err_message,
             user_id = %user_id,
             team_id = %team_id,
@@ -244,7 +244,7 @@ where
         let err_message = trl("error-chapter-assignee-required");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Perm,
+            err_variant = ?ExpectedVariant::Perm,
             err_message = %err_message,
             user_id = %user_id,
             chapter_id = %chapter_id,
@@ -282,7 +282,7 @@ where
             trl("error-chapter-translator-or-proofreader-required");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Perm,
+            err_variant = ?ExpectedVariant::Perm,
             err_message = %err_message,
             user_id = %user_id,
             chapter_id = %chapter_id,
@@ -303,7 +303,7 @@ where
             trl("error-chapter-translator-or-proofreader-required");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Perm,
+            err_variant = ?ExpectedVariant::Perm,
             err_message = %err_message,
             user_id = %user_id,
             chapter_id = %chapter_id,

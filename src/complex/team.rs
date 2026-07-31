@@ -240,7 +240,7 @@ impl TeamPermComplex {
             let err_message = trl("error-sadmin-required");
 
             tracing::warn!(
-                error_variant = ?ExpectedVariant::Perm,
+                err_variant = ?ExpectedVariant::Perm,
                 err_message = %err_message,
                 user_id = %user_id,
                 is_sadmin = user_info.is_sadmin,

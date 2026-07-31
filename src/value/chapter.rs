@@ -99,7 +99,7 @@ pub fn try_modify_stage(
         let err_message = trl("error-invalid-stage-phase");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
+            err_variant = ?ExpectedVariant::Args,
             err_message = %err_message,
             stage = ?stage,
             phase = ?phase,
@@ -120,7 +120,7 @@ pub fn try_modify_stage(
             let err_message = trl("error-invalid-workflow-transition");
 
             tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
+                err_variant = ?ExpectedVariant::Args,
                 err_message = %err_message,
                 stage = ?stage,
                 phase = ?phase,
@@ -155,7 +155,7 @@ pub fn try_modify_stage(
             let err_message = trl("error-invalid-workflow-transition");
 
             tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
+                err_variant = ?ExpectedVariant::Args,
                 err_message = %err_message,
                 stage = ?stage,
                 phase = ?phase,
@@ -181,7 +181,7 @@ pub fn try_modify_stage(
         let err_message = trl("error-invalid-stage-phase");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
+            err_variant = ?ExpectedVariant::Args,
             err_message = %err_message,
             stage = ?stage,
             phase = ?phase,
@@ -267,7 +267,7 @@ impl TryFrom<u8> for StagePhaseField {
             let err_message = trl("error-invalid-stage-phase");
 
             tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
+                err_variant = ?ExpectedVariant::Args,
                 err_message = %err_message,
                 raw_value = value,
                 "expected error: invalid stage phase field",
@@ -366,7 +366,7 @@ impl StageMask {
             let err_message = trl("error-invalid-stage-phase");
 
             tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
+                err_variant = ?ExpectedVariant::Args,
                 err_message = %err_message,
                 stage = ?stage,
                 phase = ?phase,
@@ -443,7 +443,7 @@ impl StageMask {
             let err_message = trl("error-invalid-stage");
 
             tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
+                err_variant = ?ExpectedVariant::Args,
                 err_message = %err_message,
                 raw_value = value,
                 allow_ignore,
@@ -517,7 +517,7 @@ impl StageMask {
             let err_message = trl("error-invalid-stage-phase");
 
             tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
+                err_variant = ?ExpectedVariant::Args,
                 err_message = %err_message,
                 stage = ?stage,
                 field = ?field,
@@ -536,7 +536,7 @@ impl StageMask {
             let err_message = trl("error-invalid-stage-phase");
 
             tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
+                err_variant = ?ExpectedVariant::Args,
                 err_message = %err_message,
                 stage = ?stage,
                 field = ?field,
@@ -555,7 +555,7 @@ impl StageMask {
             let err_message = trl("error-invalid-stage-phase");
 
             tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
+                err_variant = ?ExpectedVariant::Args,
                 err_message = %err_message,
                 stage = ?stage,
                 phase = ?phase,

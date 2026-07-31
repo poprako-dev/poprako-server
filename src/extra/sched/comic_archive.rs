@@ -54,7 +54,7 @@ pub fn spawn(core: RdbCore, token: CancellationToken) -> watch::Receiver<bool> {
 
                 Err(error) => {
                     tracing::error!(
-                        error = ?error,
+                        err = ?error,
                         "[ComicArchiveRetention::run] retention job failed",
                     );
                 }

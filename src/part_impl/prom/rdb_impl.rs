@@ -112,7 +112,7 @@ impl RdbProm {
 
         if let Err(error) = done.wait_for(|done| *done).await {
             tracing::error!(
-                error = %error,
+                err = %error,
                 "[RdbProm::close] background task ended without completion",
             );
         }

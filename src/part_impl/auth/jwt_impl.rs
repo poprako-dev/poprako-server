@@ -134,9 +134,9 @@ impl TokenAuth for JwtAuth {
             let err_message = trl("error-unauthorized");
 
             tracing::warn!(
-                error_variant = ?ExpectedVariant::Auth,
+                err_variant = ?ExpectedVariant::Auth,
                 err_message = %err_message,
-                decode_error = %err,
+                decode_err = %err,
                 "expected error: JWT verification failed",
             );
 

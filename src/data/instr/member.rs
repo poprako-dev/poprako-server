@@ -100,7 +100,7 @@ impl TryInto<MemberListSpec> for ListMemberInfosInstr {
             let err_message = trl("error-team-or-user-required");
 
             tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
+                err_variant = ?ExpectedVariant::Args,
                 err_message = %err_message,
                 owner_id = ?owner_id,
                 team_id = ?team_id,
@@ -120,7 +120,7 @@ impl TryInto<MemberListSpec> for ListMemberInfosInstr {
             let err_message = trl("error-team-or-user-required");
 
             tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
+                err_variant = ?ExpectedVariant::Args,
                 err_message = %err_message,
                 owner_id = ?owner_id,
                 team_id = ?team_id,
@@ -149,7 +149,7 @@ impl TryInto<MemberListSpec> for ListMemberInfosInstr {
             let err_message = trl("error-team-or-user-required");
 
             tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
+                err_variant = ?ExpectedVariant::Args,
                 err_message = %err_message,
                 owner_id = ?owner_id,
                 team_id = ?team_id,
