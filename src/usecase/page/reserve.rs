@@ -48,9 +48,19 @@ use crate::value::image::{ImageExt, ImageHash};
 pub fn validate_page_count(page_count: i32) -> BaseRest<()> {
     //
     if !(1..=200).contains(&page_count) {
+        //
+        let error_message = trl("error-invalid-page-count");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            error_message = %error_message,
+            page_count,
+            "expected error: invalid page count",
+        );
+
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: trl("error-invalid-page-count"),
+            message: error_message,
         });
     }
 
@@ -83,11 +93,24 @@ where
         .map(PageImageSpec::from)
         .collect::<Vec<_>>();
 
-    let page_count =
-        i32::try_from(page_specs.len()).map_err(|_| BaseError::Expected {
+    let page_count = i32::try_from(page_specs.len()).map_err(|_| {
+        //
+        let error_message = trl("error-invalid-page-count");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            error_message = %error_message,
+            chapter_id = %chapter_id,
+            user_id = %token.user_id,
+            page_count = page_specs.len(),
+            "expected error: invalid page count",
+        );
+
+        BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: trl("error-invalid-page-count"),
-        })?;
+            message: error_message,
+        }
+    })?;
 
     validate_page_count(page_count)?;
 
@@ -110,9 +133,21 @@ where
         };
 
         if !explicit_page_ids.insert(page_id) {
+            //
+            let error_message = trl("error-duplicate-page-id");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                error_message = %error_message,
+                chapter_id = %chapter_id,
+                user_id = %token.user_id,
+                page_id = %page_id,
+                "expected error: duplicate page id in reservation",
+            );
+
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: trl("error-duplicate-page-id"),
+                message: error_message,
             });
         }
     }
@@ -197,9 +232,24 @@ where
 
             for (raw_index, page_spec) in page_specs.iter().enumerate() {
                 //
-                let index = i32::try_from(raw_index).map_err(|_| BaseError::Expected {
-                    variant: ExpectedVariant::Args,
-                    message: trl("error-invalid-page-count"),
+                let index = i32::try_from(raw_index).map_err(|_| {
+                    //
+                    let error_message = trl("error-invalid-page-count");
+
+                    tracing::warn!(
+                        error_variant = ?ExpectedVariant::Args,
+                        error_message = %error_message,
+                        chapter_id = %chapter_info.id,
+                        user_id = %token.user_id,
+                        raw_index,
+                        page_count,
+                        "expected error: invalid page index",
+                    );
+
+                    BaseError::Expected {
+                        variant: ExpectedVariant::Args,
+                        message: error_message,
+                    }
                 })?;
 
                 let existing_page_info = manifest_plan.matches[raw_index]
@@ -220,9 +270,23 @@ where
                             || existing_page_info.image_ext != page_spec.ext;
 
                     if identity_changed && page_spec.new_byte_len.is_none() {
+                        //
+                        let error_message = trl("error-invalid-image-byte-length");
+
+                        tracing::warn!(
+                            error_variant = ?ExpectedVariant::Args,
+                            error_message = %error_message,
+                            chapter_id = %chapter_info.id,
+                            user_id = %token.user_id,
+                            page_id = %existing_page_info.id,
+                            raw_index,
+                            image_version = existing_page_info.image_version,
+                            "expected error: changed page image requires byte length",
+                        );
+
                         return Err(BaseError::Expected {
                             variant: ExpectedVariant::Args,
-                            message: trl("error-invalid-image-byte-length"),
+                            message: error_message,
                         });
                     }
 
@@ -310,9 +374,22 @@ where
                 }
 
                 let new_byte_len = page_spec.new_byte_len.ok_or_else(|| {
+                    //
+                    let error_message = trl("error-invalid-image-byte-length");
+
+                    tracing::warn!(
+                        error_variant = ?ExpectedVariant::Args,
+                        error_message = %error_message,
+                        chapter_id = %chapter_info.id,
+                        user_id = %token.user_id,
+                        raw_index,
+                        requested_page_id = ?page_spec.page_id,
+                        "expected error: new page image requires byte length",
+                    );
+
                     BaseError::Expected {
                         variant: ExpectedVariant::Args,
-                        message: trl("error-invalid-image-byte-length"),
+                        message: error_message,
                     }
                 })?;
 

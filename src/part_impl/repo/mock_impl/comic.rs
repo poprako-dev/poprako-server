@@ -6,7 +6,7 @@ use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::proj::team::TeamInfo;
 use crate::model::read::proj::user::UserInfo;
 use crate::model::read::proj::workset::WorksetInfo;
-use crate::model::read::spec::comic::{ComicListKind, ComicListSpec};
+use crate::model::read::spec::comic::ComicListSpec;
 use crate::model::write::comic::ComicCoverReservation;
 use crate::part::repo::oper::comic::{
     AllocComicChapterIndex, CreateComic, DeleteComic, GetComicInfo,
@@ -18,6 +18,7 @@ use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
 use crate::result::{BaseError, BaseRest, accept};
+use crate::value::chapter::StageMask;
 use crate::value::comic::ComicInclOpt;
 use crate::value::image::{ImageExt, ImageHash};
 use crate::value::incl::expand_incl_opts;
@@ -159,23 +160,23 @@ fn comic_matches_fuzzy(comic_info: &ComicInfo, fuzzy_title: &str) -> bool {
 }
 
 // Check whether a comic matches list scope constraints.
-fn comic_matches_kind(
+fn comic_matches_stages(
     state: &MockState,
     comic_info: &ComicInfo,
-    kind: &ComicListKind,
+    stages: Option<StageMask>,
 ) -> bool {
-    match kind {
+    match stages {
         //
-        ComicListKind::All => true,
-
-        ComicListKind::Stages(stage_mask) => state
+        Some(stage_mask) => state
             .chapters
             .iter()
             .find(|chapter_info| {
                 chapter_info.comic_id == comic_info.id && chapter_info.is_pinned
             })
-            .map(|chapter_info| chapter_info.stages.matches_filter(*stage_mask))
+            .map(|chapter_info| chapter_info.stages.matches_filter(stage_mask))
             .unwrap_or(false),
+
+        None => true,
     }
 }
 
@@ -241,7 +242,9 @@ fn list_comic_infos(state: &MockState, spec: &ComicListSpec) -> Vec<ComicInfo> {
                 .map(|keyword| comic_matches_fuzzy(comic_info, keyword))
                 .unwrap_or(true)
         })
-        .filter(|comic_info| comic_matches_kind(state, comic_info, &spec.kind))
+        .filter(|comic_info| {
+            comic_matches_stages(state, comic_info, spec.stages)
+        })
         .cloned()
         .collect::<Vec<_>>();
 

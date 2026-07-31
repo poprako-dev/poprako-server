@@ -48,7 +48,25 @@ pub fn build(
             .position(|page_info| {
                 page_info.id == *page_id && page_info.chapter_id == chapter_id
             })
-            .ok_or_else(|| args_err("error-page-not-found"))?;
+            .ok_or_else(|| {
+                //
+                let error_message = trl("error-page-not-found");
+
+                tracing::warn!(
+                    error_variant = ?ExpectedVariant::Args,
+                    error_message = %error_message,
+                    chapter_id = %chapter_id,
+                    page_id = %page_id,
+                    request_index = request_index,
+                    existing_page_count = existing_page_infos.len(),
+                    "expected error: manifest page not found",
+                );
+
+                BaseError::Expected {
+                    variant: ExpectedVariant::Args,
+                    message: error_message,
+                }
+            })?;
 
         consumed_existing_indexes.insert(existing_index);
 
@@ -96,14 +114,6 @@ pub fn build(
         matches,
         deleted_existing_indexes,
     })
-}
-
-// Build an args-level error using a translation key.
-fn args_err(key: &str) -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        message: trl(key),
-    }
 }
 
 // Compare two candidates by translated state, upload time, and index for stable matching.

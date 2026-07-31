@@ -11,7 +11,7 @@ pub use api::http::state::AppHarn;
 #[doc(hidden)]
 pub use complex::user::UserComplex;
 pub use config::AppConfig;
-pub use extra::sched::GeneralSched;
+pub use extra::sched::Sched;
 pub use harn::Harn;
 pub use log::init_log;
 pub use part_impl::auth::jwt_impl::JwtAuth;

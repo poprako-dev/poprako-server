@@ -9,6 +9,8 @@ use poprako_orchestra::{Run, Step};
 use time::OffsetDateTime;
 use tracing::instrument;
 
+use poprako_util::i18n::trl;
+
 use crate::model::read::proj::termbase::TermbaseInfo;
 use crate::model::read::spec::termbase::TermbaseListSpec;
 use crate::model::write::termbase::{TermbaseEntry, TermbaseRepl};
@@ -22,8 +24,8 @@ use crate::part_impl::repo::rdb_impl::entity::termbase::{
     TermbaseRow, TermbaseRowEntry,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_termbase::dsl::*;
-use crate::result::{BaseError, BaseRest, accept};
-use crate::shared::result::{diesel, expected};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::shared::result::diesel;
 use crate::shared::{RdbConn, RdbContext};
 
 /// Termbase RDB integration tests.
@@ -57,14 +59,36 @@ fn escape_ilike_pattern(input: &str) -> String {
 async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<TermbaseInfo> {
     //
     // Return explicit not-found error when the target termbase does not exist.
-    let row: TermbaseRow = t_termbase
+    let row: Option<TermbaseRow> = t_termbase
         .filter(f_id.eq(id))
         .select(TermbaseRow::as_select())
         .get_result(conn)
         .await
         .optional()
-        .map_err(diesel)?
-        .ok_or_else(|| expected("error-termbase-not-found"))?;
+        .map_err(diesel)?;
+
+    let row = match row {
+        //
+        Some(row) => row,
+
+        None => {
+            //
+            let message = trl("error-termbase-not-found");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                error_message = %message,
+                termbase_id = %id,
+                operation = "get termbase info",
+                "expected termbase error",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message,
+            });
+        }
+    };
 
     accept(row.into())
 }
@@ -77,15 +101,37 @@ async fn get_info_excluded(
 ) -> BaseRest<TermbaseInfo> {
     //
     // Take `FOR UPDATE` lock and keep semantics aligned with locked read paths.
-    let row: TermbaseRow = t_termbase
+    let row: Option<TermbaseRow> = t_termbase
         .filter(f_id.eq(id))
         .select(TermbaseRow::as_select())
         .for_update()
         .get_result(conn)
         .await
         .optional()
-        .map_err(diesel)?
-        .ok_or_else(|| expected("error-termbase-not-found"))?;
+        .map_err(diesel)?;
+
+    let row = match row {
+        //
+        Some(row) => row,
+
+        None => {
+            //
+            let message = trl("error-termbase-not-found");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                error_message = %message,
+                termbase_id = %id,
+                operation = "lock termbase info",
+                "expected termbase error",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message,
+            });
+        }
+    };
 
     accept(row.into())
 }

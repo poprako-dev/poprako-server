@@ -150,22 +150,6 @@ impl PagePermComplex {
     }
 }
 
-// Return a permission error when page image reservation requires assignment.
-fn page_reserve_role_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Perm,
-        message: trl("error-page-reserve-role-required"),
-    }
-}
-
-// Return a permission error when page image upload confirmation requires assignment.
-fn page_upload_role_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Perm,
-        message: trl("error-page-upload-role-required"),
-    }
-}
-
 // Verify the caller is assigned as `RAW_PROVIDER` or `REVIEWER` on the
 // chapter, which is required for page image reservation.
 async fn check_reserve_role<P>(
@@ -184,14 +168,42 @@ where
     .await?;
 
     let Some(assignment_info) = assignment_info else {
-        return Err(page_reserve_role_err());
+        //
+        let error_message = trl("error-page-reserve-role-required");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Perm,
+            error_message = %error_message,
+            user_id = %user_id,
+            chapter_id = %chapter_id,
+            "expected error: page reservation assignment missing",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: error_message,
+        });
     };
 
     if !assignment_info
         .roles
         .has_any_role(&[RoleField::RAW_PROVIDER, RoleField::REVIEWER])
     {
-        return Err(page_reserve_role_err());
+        let error_message = trl("error-page-reserve-role-required");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Perm,
+            error_message = %error_message,
+            user_id = %user_id,
+            chapter_id = %chapter_id,
+            assignment_roles = ?assignment_info.roles,
+            "expected error: page reservation role missing",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: error_message,
+        });
     }
 
     accept(())
@@ -215,14 +227,42 @@ where
     .await?;
 
     let Some(assignment_info) = assignment_info else {
-        return Err(page_upload_role_err());
+        //
+        let error_message = trl("error-page-upload-role-required");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Perm,
+            error_message = %error_message,
+            user_id = %user_id,
+            chapter_id = %chapter_id,
+            "expected error: page upload assignment missing",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: error_message,
+        });
     };
 
     if !assignment_info
         .roles
         .has_any_role(&[RoleField::RAW_PROVIDER])
     {
-        return Err(page_upload_role_err());
+        let error_message = trl("error-page-upload-role-required");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Perm,
+            error_message = %error_message,
+            user_id = %user_id,
+            chapter_id = %chapter_id,
+            assignment_roles = ?assignment_info.roles,
+            "expected error: page upload role missing",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: error_message,
+        });
     }
 
     accept(())
@@ -245,9 +285,20 @@ where
     .await?;
 
     if assignment_info.is_none() {
+        //
+        let error_message = trl("error-team-member-required");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Perm,
+            error_message = %error_message,
+            user_id = %user_id,
+            chapter_id = %chapter_id,
+            "expected error: page assignment required",
+        );
+
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: trl("error-team-member-required"),
+            message: error_message,
         });
     }
 

@@ -95,18 +95,42 @@ pub fn try_modify_stage(
     let (stage, phase) = current;
 
     if !is_valid_stage_phase(stage, phase) {
+        //
+        let error_message = trl("error-invalid-stage-phase");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            error_message = %error_message,
+            stage = ?stage,
+            phase = ?phase,
+            oper = ?oper,
+            "expected error: invalid current stage phase",
+        );
+
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: trl("error-invalid-stage-phase"),
+            message: error_message,
         });
     }
 
     let next_phase = match (stage, phase, oper) {
         //
         (Stage::Publish, _, StageOper::Revert) => {
+            //
+            let error_message = trl("error-invalid-workflow-transition");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                error_message = %error_message,
+                stage = ?stage,
+                phase = ?phase,
+                oper = ?oper,
+                "expected error: invalid workflow transition",
+            );
+
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: trl("error-invalid-workflow-transition"),
+                message: error_message,
             });
         }
 
@@ -127,9 +151,21 @@ pub fn try_modify_stage(
         (_, StagePhase::Active, StageOper::Advance) => StagePhase::Completed,
 
         (_, StagePhase::Completed, StageOper::Advance) => {
+            //
+            let error_message = trl("error-invalid-workflow-transition");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                error_message = %error_message,
+                stage = ?stage,
+                phase = ?phase,
+                oper = ?oper,
+                "expected error: invalid workflow transition",
+            );
+
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: trl("error-invalid-workflow-transition"),
+                message: error_message,
             });
         }
 
@@ -141,9 +177,22 @@ pub fn try_modify_stage(
     };
 
     if !is_valid_stage_phase(stage, next_phase) {
+        //
+        let error_message = trl("error-invalid-stage-phase");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            error_message = %error_message,
+            stage = ?stage,
+            phase = ?phase,
+            next_phase = ?next_phase,
+            oper = ?oper,
+            "expected error: invalid next stage phase",
+        );
+
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: trl("error-invalid-stage-phase"),
+            message: error_message,
         });
     }
 
@@ -214,9 +263,19 @@ impl TryFrom<u8> for StagePhaseField {
     fn try_from(value: u8) -> BaseRest<Self> {
         //
         if !Self::VALID_VALUES.contains(&value) {
+            //
+            let error_message = trl("error-invalid-stage-phase");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                error_message = %error_message,
+                raw_value = value,
+                "expected error: invalid stage phase field",
+            );
+
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: trl("error-invalid-stage-phase"),
+                message: error_message,
             });
         }
 
@@ -303,9 +362,21 @@ impl StageMask {
     ) -> BaseRest<Self> {
         //
         if !is_valid_stage_phase(stage, phase) {
+            //
+            let error_message = trl("error-invalid-stage-phase");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                error_message = %error_message,
+                stage = ?stage,
+                phase = ?phase,
+                current_mask = self.0,
+                "expected error: invalid stage phase for mask",
+            );
+
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: trl("error-invalid-stage-phase"),
+                message: error_message,
             });
         }
 
@@ -368,9 +439,20 @@ impl StageMask {
     fn validate_mask_value(value: u32, allow_ignore: bool) -> BaseRest<()> {
         //
         if value & !Self::VALID_BITS != 0 {
+            //
+            let error_message = trl("error-invalid-stage");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                error_message = %error_message,
+                raw_value = value,
+                allow_ignore,
+                "expected error: invalid stage mask bits",
+            );
+
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: trl("error-invalid-stage"),
+                message: error_message,
             });
         }
 
@@ -432,23 +514,59 @@ impl StageMask {
                 return accept(());
             }
 
+            let error_message = trl("error-invalid-stage-phase");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                error_message = %error_message,
+                stage = ?stage,
+                field = ?field,
+                allow_ignore,
+                "expected error: ignored stage phase is not allowed",
+            );
+
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: trl("error-invalid-stage-phase"),
+                message: error_message,
             });
         }
 
         let Some(phase) = field.as_phase() else {
+            //
+            let error_message = trl("error-invalid-stage-phase");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                error_message = %error_message,
+                stage = ?stage,
+                field = ?field,
+                allow_ignore,
+                "expected error: invalid stage phase field",
+            );
+
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: trl("error-invalid-stage-phase"),
+                message: error_message,
             });
         };
 
         if !is_valid_stage_phase(stage, phase) {
+            //
+            let error_message = trl("error-invalid-stage-phase");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                error_message = %error_message,
+                stage = ?stage,
+                phase = ?phase,
+                field = ?field,
+                allow_ignore,
+                "expected error: invalid stage phase combination",
+            );
+
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: trl("error-invalid-stage-phase"),
+                message: error_message,
             });
         }
 

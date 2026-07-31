@@ -1,11 +1,9 @@
 //! Domain event types emitted during use case execution.
 
 use crate::part::effect::event::chapter::{
-    ChapterPublishedPayload, ChapterWorkflowCompletedPayload,
+    ChapterPublishedEvent, ChapterWorkflowCompletedEvent,
 };
-use crate::part::effect::event::user::{
-    UserActivePayload, UserSignedUpPayload,
-};
+use crate::part::effect::event::user::{UserActiveEvent, UserSignedUpEvent};
 
 /// Chapter-related event payload types.
 pub mod chapter;
@@ -20,14 +18,14 @@ pub mod user;
 pub enum Event {
     //
     /// Emitted when a user shows activity (e.g., views their own profile).
-    UserActive(UserActivePayload),
+    UserActive(UserActiveEvent),
 
     /// Emitted when a new user signs up via an invitation.
-    UserSignedUp(UserSignedUpPayload),
+    UserSignedUp(UserSignedUpEvent),
 
     /// Emitted when a chapter reaches publish completion.
-    ChapterPublished(ChapterPublishedPayload),
+    ChapterPublished(ChapterPublishedEvent),
 
     /// Emitted when one chapter workflow stage reaches completion.
-    ChapterWorkflowCompleted(ChapterWorkflowCompletedPayload),
+    ChapterWorkflowCompleted(ChapterWorkflowCompletedEvent),
 }

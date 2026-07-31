@@ -76,7 +76,24 @@ where
     }
     .run_on(repo)
     .await?
-    .ok_or_else(unit_edit_permission_err)?;
+    .ok_or_else(|| {
+        //
+        let error_message = trl("error-unit-edit-permission-required");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Perm,
+            error_message = %error_message,
+            chapter_id = %chapter_id,
+            user_id = %token.user_id,
+            operation = "import chapter translation",
+            "expected error: unit edit permission required",
+        );
+
+        BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: error_message,
+        }
+    })?;
 
     let edit_perm = UnitEditPerm {
         can_translate: assignment_info
@@ -253,13 +270,4 @@ fn import_stages(edit_perm: UnitEditPerm) -> Vec<Stage> {
     }
 
     stages
-}
-
-// Returns a permission error for unauthorized unit edits.
-fn unit_edit_permission_err() -> BaseError {
-    // Return a standardized permission error for unauthorized unit edits.
-    BaseError::Expected {
-        variant: ExpectedVariant::Perm,
-        message: trl("error-unit-edit-permission-required"),
-    }
 }

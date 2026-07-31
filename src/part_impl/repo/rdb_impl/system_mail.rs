@@ -5,10 +5,10 @@ use diesel_async::RunQueryDsl;
 use poprako_orchestra::Run;
 use tracing::instrument;
 
+use poprako_util::i18n::trl;
+
 use crate::model::read::proj::system_mail::SystemMailInfo;
-use crate::model::read::spec::system_mail::{
-    SystemMailListKind, SystemMailListSpec,
-};
+use crate::model::read::spec::system_mail::SystemMailListSpec;
 use crate::model::write::system_mail::SystemMailEntry;
 use crate::part::repo::oper::system_mail::{
     ListSystemMailInfos, MarkSystemMailRead, SendSystemMail, SendSystemMails,
@@ -20,7 +20,7 @@ use crate::part_impl::repo::rdb_impl::entity::system_mail::{
 use crate::part_impl::repo::rdb_impl::schema::t_system_mail::dsl::*;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::RdbConn;
-use crate::shared::result::{diesel, expected};
+use crate::shared::result::diesel;
 
 /// System mail RDB integration tests.
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
@@ -76,13 +76,11 @@ async fn list_infos(
         .select(SystemMailRow::as_select())
         .into_boxed();
 
-    query = match &spec.kind {
+    query = match spec.is_read {
         //
-        SystemMailListKind::All => query,
+        Some(is_read) => query.filter(f_read.eq(is_read)),
 
-        SystemMailListKind::Read => query.filter(f_read.eq(true)),
-
-        SystemMailListKind::Unread => query.filter(f_read.eq(false)),
+        None => query,
     };
 
     let rows: Vec<SystemMailRow> = query
@@ -112,12 +110,47 @@ async fn mark_read(
         .optional()
         .map_err(diesel)?;
 
-    let mail = row.ok_or_else(|| expected("error-system-mail-not-found"))?;
+    let mail = match row {
+        //
+        Some(mail) => mail,
+
+        None => {
+            //
+            let message = trl("error-system-mail-not-found");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                error_message = %message,
+                system_mail_id = %id,
+                receiver_user_id = %user_id,
+                operation = "mark system mail read",
+                "expected system mail error",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message,
+            });
+        }
+    };
 
     if mail.f_receiver_id != user_id {
+        //
+        let message = "error-forbidden".to_owned();
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Perm,
+            error_message = %message,
+            system_mail_id = %id,
+            receiver_user_id = %user_id,
+            actual_receiver_user_id = %mail.f_receiver_id,
+            operation = "mark system mail read",
+            "expected system mail permission error",
+        );
+
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: "error-forbidden".into(),
+            message,
         });
     }
 

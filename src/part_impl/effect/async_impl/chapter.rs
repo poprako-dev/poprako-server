@@ -13,7 +13,7 @@ use crate::complex::system_mail::SystemMailComplex;
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::write::system_mail::SystemMailEntry;
 use crate::part::effect::event::chapter::{
-    ChapterPublishedPayload, ChapterWorkflowCompletedPayload,
+    ChapterPublishedEvent, ChapterWorkflowCompletedEvent,
 };
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
@@ -34,18 +34,17 @@ const TITLE_LIMIT: usize = 15;
 #[instrument(level = "info", skip_all)]
 pub async fn notify_next_phase<C, R>(
     repo: &R,
-    payload: &ChapterWorkflowCompletedPayload,
+    event: &ChapterWorkflowCompletedEvent,
 ) where
     R: AssignmentRepo<C> + ChapterRepo<C> + SystemMailRepo,
 {
     let Some((receiver_role, workflow_label)) =
-        next_phase_config(payload.completed_stage)
+        next_phase_config(event.completed_stage)
     else {
         return;
     };
 
-    let Some(chapter_info) = load_chapter(repo, &payload.chapter_id).await
-    else {
+    let Some(chapter_info) = load_chapter(repo, &event.chapter_id).await else {
         return;
     };
 
@@ -57,34 +56,34 @@ pub async fn notify_next_phase<C, R>(
     )
     .await;
 
-    send_batch(repo, &payload.chapter_id, system_mail_entries).await;
+    send_batch(repo, &event.chapter_id, system_mail_entries).await;
 }
 
 /// Notifies reviewer assignees after workflow progress, except typesetting completion.
 #[instrument(level = "info", skip_all)]
 pub async fn notify_reviewers_on_progress<C, R>(
     repo: &R,
-    payload: ChapterWorkflowCompletedPayload,
+    event: ChapterWorkflowCompletedEvent,
 ) where
     R: AssignmentRepo<C> + ChapterRepo<C> + SystemMailRepo,
 {
-    let Some(workflow_label) = reviewer_progress_label(payload.completed_stage)
+    let Some(workflow_label) = reviewer_progress_label(event.completed_stage)
     else {
         return;
     };
 
-    notify_reviewers(repo, &payload.chapter_id, workflow_label).await;
+    notify_reviewers(repo, &event.chapter_id, workflow_label).await;
 }
 
 /// Notifies reviewer assignees when a chapter is published.
 #[instrument(level = "info", skip_all)]
 pub async fn notify_reviewers_on_publish<C, R>(
     repo: &R,
-    payload: ChapterPublishedPayload,
+    event: ChapterPublishedEvent,
 ) where
     R: AssignmentRepo<C> + ChapterRepo<C> + SystemMailRepo,
 {
-    notify_reviewers(repo, &payload.chapter_id, trl("mail-workflow-publish"))
+    notify_reviewers(repo, &event.chapter_id, trl("mail-workflow-publish"))
         .await;
 }
 

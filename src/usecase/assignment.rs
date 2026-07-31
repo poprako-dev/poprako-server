@@ -313,7 +313,24 @@ where
                     assignment_info,
                     instr.roles,
                 ) {
-                    return Err(assignment_admin_required_err());
+                    //
+                    let error_message = trl("error-forbidden");
+
+                    tracing::warn!(
+                        error_variant = ?ExpectedVariant::Perm,
+                        error_message = %error_message,
+                        chapter_id = %instr.chapter_id,
+                        user_id = %token.user_id,
+                        target_user_id = %instr.user_id,
+                        roles = ?instr.roles,
+                        operation = "remove own administrator role",
+                        "expected error: chapter administrator permission required",
+                    );
+
+                    return Err(BaseError::Expected {
+                        variant: ExpectedVariant::Perm,
+                        message: error_message,
+                    });
                 }
 
                 if !AssignmentComplex::chapter_has_admin_after_role_update(
@@ -321,7 +338,24 @@ where
                     &instr.user_id,
                     instr.roles,
                 ) {
-                    return Err(assignment_admin_required_err());
+                    //
+                    let error_message = trl("error-forbidden");
+
+                    tracing::warn!(
+                        error_variant = ?ExpectedVariant::Perm,
+                        error_message = %error_message,
+                        chapter_id = %instr.chapter_id,
+                        user_id = %token.user_id,
+                        target_user_id = %instr.user_id,
+                        roles = ?instr.roles,
+                        operation = "remove last chapter administrator role",
+                        "expected error: chapter administrator permission required",
+                    );
+
+                    return Err(BaseError::Expected {
+                        variant: ExpectedVariant::Perm,
+                        message: error_message,
+                    });
                 }
 
                 let assignment_role_update = AssignmentRoleRepl {
@@ -343,7 +377,24 @@ where
                     &instr.user_id,
                     instr.roles,
                 ) {
-                    return Err(assignment_admin_required_err());
+                    //
+                    let error_message = trl("error-forbidden");
+
+                    tracing::warn!(
+                        error_variant = ?ExpectedVariant::Perm,
+                        error_message = %error_message,
+                        chapter_id = %instr.chapter_id,
+                        user_id = %token.user_id,
+                        target_user_id = %instr.user_id,
+                        roles = ?instr.roles,
+                        operation = "assign administrator role",
+                        "expected error: chapter administrator permission required",
+                    );
+
+                    return Err(BaseError::Expected {
+                        variant: ExpectedVariant::Perm,
+                        message: error_message,
+                    });
                 }
 
                 let assignment_entry = AssignmentEntry {
@@ -412,12 +463,4 @@ where
     let () = ();
 
     accept(())
-}
-
-// Constructs a permission error for admin-role removal.
-fn assignment_admin_required_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Perm,
-        message: trl("error-forbidden"),
-    }
 }

@@ -13,9 +13,8 @@ use crate::model::shared::user::UserToken;
 use crate::model::write::member::MemberEntry;
 use crate::model::write::user::UserEntry;
 use crate::part::auth::TokenAuth;
-use crate::part::effect::EffectDevelop;
-use crate::part::effect::event::Event;
-use crate::part::effect::event::user::UserSignedUpPayload;
+use crate::part::effect::event::user::UserSignedUpEvent;
+use crate::part::effect::{EffectDevelop, EffectEvent as _};
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::member_invitation::MemberInvitationRepo;
 use crate::part::repo::oper::member::CreateMember;
@@ -85,9 +84,20 @@ where
 
             // Verify the invitation was issued for this QQ ID.
             if invitation_info.invitee_qid != instr.qid {
+                //
+                let error_message = trl("error-invalid-invitation-code");
+
+                tracing::warn!(
+                    error_variant = ?ExpectedVariant::Args,
+                    error_message = %error_message,
+                    invitee_qid = %instr.qid,
+                    invitation_invitee_qid = %invitation_info.invitee_qid,
+                    "expected error: invitation code does not match invitee",
+                );
+
                 return Err(BaseError::Expected {
                     variant: ExpectedVariant::Args,
-                    message: trl("error-invalid-invitation-code"),
+                    message: error_message,
                 });
             }
 
@@ -135,13 +145,13 @@ where
         .await?;
 
     // Dispatch after successful commit so side effects do not run inside the transaction.
-    let event = Event::UserSignedUp(UserSignedUpPayload {
+    UserSignedUpEvent {
         team_id: team_id.clone(),
         invitor_id,
         invitee_qid,
-    });
-
-    develop.develop(event).await;
+    }
+    .develop_on(develop)
+    .await;
 
     let original_token = UserToken { user_id };
 
@@ -190,9 +200,18 @@ where
     )
     .await
     {
+        let error_message = trl("error-wrong-credentials");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Auth,
+            error_message = %error_message,
+            qid = %instr.qid,
+            "expected error: invalid login credentials",
+        );
+
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Auth,
-            message: trl("error-wrong-credentials"),
+            message: error_message,
         });
     }
 

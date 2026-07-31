@@ -81,9 +81,22 @@ where
             .await?;
 
             if existing_member_info.is_some() {
+                //
+                let error_message = trl("error-already-team-member");
+
+                tracing::warn!(
+                    error_variant = ?ExpectedVariant::Args,
+                    error_message = %error_message,
+                    team_id = %instr.team_id,
+                    user_id = %token.user_id,
+                    target_user_id = %instr.user_id,
+                    roles = ?roles,
+                    "expected error: user is already a team member",
+                );
+
                 return Err(BaseError::Expected {
                     variant: ExpectedVariant::Args,
-                    message: trl("error-already-team-member"),
+                    message: error_message,
                 });
             }
 
@@ -144,7 +157,23 @@ where
                     .await?;
 
             if member_invitation_info.invitee_qid != current_user_info.qid {
-                return Err(invalid_invitation_err());
+                //
+                let error_message = trl("error-no-pending-invitation");
+
+                tracing::warn!(
+                    error_variant = ?ExpectedVariant::Args,
+                    error_message = %error_message,
+                    user_id = %current_user_id,
+                    invitee_qid = %current_user_info.qid,
+                    invitation_invitee_qid = %member_invitation_info.invitee_qid,
+                    team_id = %member_invitation_info.team_id,
+                    "expected error: invitation does not belong to current user",
+                );
+
+                return Err(BaseError::Expected {
+                    variant: ExpectedVariant::Args,
+                    message: error_message,
+                });
             }
 
             let existing_member_info = FindMemberInfo::UserTeam {
@@ -155,7 +184,21 @@ where
             .await?;
 
             if existing_member_info.is_some() {
-                return Err(already_team_member_err());
+                //
+                let error_message = trl("error-already-team-member");
+
+                tracing::warn!(
+                    error_variant = ?ExpectedVariant::Args,
+                    error_message = %error_message,
+                    user_id = %current_user_id,
+                    team_id = %member_invitation_info.team_id,
+                    "expected error: user is already a team member",
+                );
+
+                return Err(BaseError::Expected {
+                    variant: ExpectedVariant::Args,
+                    message: error_message,
+                });
             }
 
             let member_entry = MemberEntry {
@@ -320,20 +363,4 @@ where
     let () = ();
 
     accept(())
-}
-
-// Constructs an args error for an invalid invitation code.
-fn invalid_invitation_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        message: trl("error-no-pending-invitation"),
-    }
-}
-
-// Constructs an args error for a user already in the team.
-fn already_team_member_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        message: trl("error-already-team-member"),
-    }
 }

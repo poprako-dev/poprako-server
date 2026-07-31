@@ -12,7 +12,6 @@ use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
 use crate::result::{BaseError, BaseRest, accept};
-use crate::value::assignment_invitation::AssignmentInvitationStatus;
 
 // Internal implementation of `get_info`.
 fn get_info(
@@ -45,16 +44,11 @@ fn list_infos(
         .iter()
         .filter(|info| {
             info.chapter_id == oper.spec.chapter_id
-                && match &oper.spec.status {
-                    //
-                    // Internal state field `AssignmentInvitationStatus`.
-                    // Internal implementation detail.
-                    AssignmentInvitationStatus::All => true,
-
-                    AssignmentInvitationStatus::Pending => info.is_pending,
-
-                    AssignmentInvitationStatus::Used => !info.is_pending,
-                }
+                && oper
+                    .spec
+                    .is_pending
+                    .map(|is_pending| info.is_pending == is_pending)
+                    .unwrap_or(true)
         })
         .cloned()
         .collect::<Vec<_>>();

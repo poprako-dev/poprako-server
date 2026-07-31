@@ -3,9 +3,8 @@
 use poprako_orchestra::{Nucl, OperStep as _};
 use tracing::instrument;
 
-use crate::part::effect::EffectDevelop;
-use crate::part::effect::event::Event;
-use crate::part::effect::event::chapter::ChapterWorkflowCompletedPayload;
+use crate::part::effect::event::chapter::ChapterWorkflowCompletedEvent;
+use crate::part::effect::{EffectDevelop, EffectEvent as _};
 use crate::part::prom::payload::chapter::ChapterPayload;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::oper::chapter::{
@@ -76,14 +75,12 @@ where
         Ok(true) => {
             //
             // Internal implementation detail.
-            develop
-                .develop(Event::ChapterWorkflowCompleted(
-                    ChapterWorkflowCompletedPayload {
-                        chapter_id: chapter_id.to_string(),
-                        completed_stage: Stage::RawProvide,
-                    },
-                ))
-                .await;
+            ChapterWorkflowCompletedEvent {
+                chapter_id: chapter_id.to_string(),
+                completed_stage: Stage::RawProvide,
+            }
+            .develop_on(develop)
+            .await;
 
             TaskFlow::Complete
         }

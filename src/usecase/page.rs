@@ -369,9 +369,23 @@ where
     .await?;
 
     if page_info.image_version != instr.image_version {
+        //
+        let error_message = trl("error-stale-page-image-upload");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            error_message = %error_message,
+            page_id = %id,
+            chapter_id = %page_info.chapter_id,
+            user_id = %token.user_id,
+            image_version = instr.image_version,
+            stored_image_version = page_info.image_version,
+            "expected error: stale page image upload",
+        );
+
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: trl("error-stale-page-image-upload"),
+            message: error_message,
         });
     }
 
@@ -379,19 +393,45 @@ where
         return accept(());
     }
 
-    let image_key =
-        page_info
-            .image_key
-            .clone()
-            .ok_or_else(|| BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message: trl("error-stale-page-image-upload"),
-            })?;
+    let image_key = page_info.image_key.clone().ok_or_else(|| {
+        //
+        let error_message = trl("error-stale-page-image-upload");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            error_message = %error_message,
+            page_id = %id,
+            chapter_id = %page_info.chapter_id,
+            user_id = %token.user_id,
+            image_version = instr.image_version,
+            stored_image_version = page_info.image_version,
+            "expected error: stale page image upload",
+        );
+
+        BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: error_message,
+        }
+    })?;
 
     if !image_manager.object_exists(&image_key).await? {
+        //
+        let error_message = trl("error-stale-page-image-upload");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            error_message = %error_message,
+            page_id = %id,
+            chapter_id = %page_info.chapter_id,
+            user_id = %token.user_id,
+            image_version = instr.image_version,
+            image_key = %image_key,
+            "expected error: stale page image upload",
+        );
+
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: trl("error-stale-page-image-upload"),
+            message: error_message,
         });
     }
 
@@ -422,9 +462,23 @@ where
         if locked_page_info.image_version != instr.image_version
             || locked_page_info.image_key.as_deref() != Some(&image_key)
         {
+            let error_message = trl("error-stale-page-image-upload");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                error_message = %error_message,
+                page_id = %id,
+                chapter_id = %page_info.chapter_id,
+                user_id = %token.user_id,
+                image_version = instr.image_version,
+                locked_image_version = locked_page_info.image_version,
+                image_key = %image_key,
+                "expected error: stale page image upload",
+            );
+
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: trl("error-stale-page-image-upload"),
+                message: error_message,
             });
         }
 

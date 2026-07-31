@@ -14,7 +14,6 @@ use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::util::Patch;
 use crate::value::unit::UnitEditPerm;
 
 /// Permission gates for Unit reads and edits.
@@ -49,7 +48,23 @@ impl UnitPermComplex {
             Err(BaseError::Expected {
                 variant: ExpectedVariant::Perm,
                 ..
-            }) => Err(unit_list_permission_err()),
+            }) => {
+                //
+                let error_message = trl("error-unit-list-permission-required");
+
+                tracing::warn!(
+                    error_variant = ?ExpectedVariant::Perm,
+                    error_message = %error_message,
+                    user_id = %user_id,
+                    chapter_id = %chapter_id,
+                    "expected error: unit list permission required",
+                );
+
+                Err(BaseError::Expected {
+                    variant: ExpectedVariant::Perm,
+                    message: error_message,
+                })
+            }
 
             Err(error) => Err(error),
         }
@@ -62,7 +77,21 @@ impl UnitPermComplex {
     ) -> BaseRest<()> {
         //
         if !perm.can_translate && !perm.can_proofread {
-            return Err(unit_edit_permission_err());
+            //
+            let error_message = trl("error-unit-edit-permission-required");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Perm,
+                error_message = %error_message,
+                permission = ?perm,
+                operation = "edit_fields",
+                "expected error: unit edit permission required",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Perm,
+                message: error_message,
+            });
         }
 
         for edit in edits {
@@ -75,12 +104,45 @@ impl UnitPermComplex {
                     ..
                 } => {
                     //
-                    check_optional_content_perm(
-                        translation,
-                        perm.can_translate,
-                    )?;
+                    if translation.is_some() && !perm.can_translate {
+                        //
+                        let error_message =
+                            trl("error-unit-edit-permission-required");
 
-                    check_optional_content_perm(revision, perm.can_proofread)?;
+                        tracing::warn!(
+                            error_variant = ?ExpectedVariant::Perm,
+                            error_message = %error_message,
+                            permission = ?perm,
+                            field = "translation",
+                            operation = "create",
+                            "expected error: unit translation permission required",
+                        );
+
+                        return Err(BaseError::Expected {
+                            variant: ExpectedVariant::Perm,
+                            message: error_message,
+                        });
+                    }
+
+                    if revision.is_some() && !perm.can_proofread {
+                        //
+                        let error_message =
+                            trl("error-unit-edit-permission-required");
+
+                        tracing::warn!(
+                            error_variant = ?ExpectedVariant::Perm,
+                            error_message = %error_message,
+                            permission = ?perm,
+                            field = "revision",
+                            operation = "create",
+                            "expected error: unit revision permission required",
+                        );
+
+                        return Err(BaseError::Expected {
+                            variant: ExpectedVariant::Perm,
+                            message: error_message,
+                        });
+                    }
                 }
 
                 UnitEdit::Save {
@@ -89,9 +151,45 @@ impl UnitPermComplex {
                     ..
                 } => {
                     //
-                    check_content_perm(translation, perm.can_translate)?;
+                    if !translation.is_skip() && !perm.can_translate {
+                        //
+                        let error_message =
+                            trl("error-unit-edit-permission-required");
 
-                    check_content_perm(revision, perm.can_proofread)?;
+                        tracing::warn!(
+                            error_variant = ?ExpectedVariant::Perm,
+                            error_message = %error_message,
+                            permission = ?perm,
+                            field = "translation",
+                            operation = "save",
+                            "expected error: unit translation permission required",
+                        );
+
+                        return Err(BaseError::Expected {
+                            variant: ExpectedVariant::Perm,
+                            message: error_message,
+                        });
+                    }
+
+                    if !revision.is_skip() && !perm.can_proofread {
+                        //
+                        let error_message =
+                            trl("error-unit-edit-permission-required");
+
+                        tracing::warn!(
+                            error_variant = ?ExpectedVariant::Perm,
+                            error_message = %error_message,
+                            permission = ?perm,
+                            field = "revision",
+                            operation = "save",
+                            "expected error: unit revision permission required",
+                        );
+
+                        return Err(BaseError::Expected {
+                            variant: ExpectedVariant::Perm,
+                            message: error_message,
+                        });
+                    }
                 }
 
                 UnitEdit::Delete { .. } => {}
@@ -100,43 +198,4 @@ impl UnitPermComplex {
 
         accept(())
     }
-}
-
-// Return a permission error for unit edit operations.
-fn unit_edit_permission_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Perm,
-        message: trl("error-unit-edit-permission-required"),
-    }
-}
-
-// Return a permission error for list operations.
-fn unit_list_permission_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Perm,
-        message: trl("error-unit-list-permission-required"),
-    }
-}
-
-// Validate optional content is only provided when the caller is allowed.
-fn check_optional_content_perm<T>(
-    field: &Option<T>,
-    allowed: bool,
-) -> BaseRest<()> {
-    //
-    if field.is_some() && !allowed {
-        return Err(unit_edit_permission_err());
-    }
-
-    accept(())
-}
-
-// Validate patch content is only assigned when the caller has permission.
-fn check_content_perm<T>(field: &Patch<T>, allowed: bool) -> BaseRest<()> {
-    //
-    if !field.is_skip() && !allowed {
-        return Err(unit_edit_permission_err());
-    }
-
-    accept(())
 }

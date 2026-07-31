@@ -38,7 +38,6 @@ use crate::part::repo::oper::user::FindUserInfo;
 use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
-use crate::value::member_invitation::MemberInvitationStatus;
 
 #[cfg(test)]
 // Unit tests for member invitation creation and cancellation semantics.
@@ -92,9 +91,22 @@ where
                 .await?;
 
                 if invitee_member_info.is_some() {
+                    //
+                    let error_message = trl("error-already-team-member");
+
+                    tracing::warn!(
+                        error_variant = ?ExpectedVariant::Args,
+                        error_message = %error_message,
+                        team_id = %instr.team_id,
+                        user_id = %token.user_id,
+                        invitee_user_id = %invitee_user_info.id,
+                        invitee_qid = %instr.invitee_qid,
+                        "expected error: invitee is already a team member",
+                    );
+
                     return Err(BaseError::Expected {
                         variant: ExpectedVariant::Args,
-                        message: trl("error-already-team-member"),
+                        message: error_message,
                     });
                 }
             }
@@ -164,18 +176,9 @@ where
     )
     .await?;
 
-    let status = match instr.is_pending {
-        //
-        Some(true) => MemberInvitationStatus::Pending,
-
-        Some(false) => MemberInvitationStatus::Used,
-
-        None => MemberInvitationStatus::All,
-    };
-
     let member_invitation_list_spec = MemberInvitationListSpec {
         team_id: instr.team_id,
-        status,
+        is_pending: instr.is_pending,
         incl_opt: instr.incl_opt,
         offset: instr.offset,
         limit: instr.limit,

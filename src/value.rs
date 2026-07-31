@@ -2,8 +2,6 @@
 pub mod announcement;
 /// Assignment value types.
 pub mod assignment;
-/// Assignment invitation value types.
-pub mod assignment_invitation;
 /// Comment value types.
 pub mod comment;
 /// Image content identity value types.

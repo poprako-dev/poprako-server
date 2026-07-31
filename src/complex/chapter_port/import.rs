@@ -60,9 +60,21 @@ impl ChapterImportComplex {
             if let Some(unit) = parse_label_plus_unit_header(line)? {
                 //
                 if current_page.is_none() {
-                    return Err(args_err(
-                        "error-invalid-chapter-import-content",
-                    ));
+                    //
+                    let error_message =
+                        trl("error-invalid-chapter-import-content");
+
+                    tracing::warn!(
+                        error_variant = ?ExpectedVariant::Args,
+                        error_message = %error_message,
+                        line = %line,
+                        "expected error: chapter import unit appears before page",
+                    );
+
+                    return Err(BaseError::Expected {
+                        variant: ExpectedVariant::Args,
+                        message: error_message,
+                    });
                 }
 
                 flush_label_plus_unit(
@@ -100,16 +112,59 @@ impl ChapterImportComplex {
     ) -> BaseRest<Vec<PageTranslationImport>> {
         //
         let project: ChapterPoprakoProjectImport =
-            serde_json::from_str(content).map_err(|_| {
-                args_err("error-invalid-chapter-import-content")
+            serde_json::from_str(content).map_err(|error| {
+                //
+                let error_message = trl("error-invalid-chapter-import-content");
+
+                tracing::warn!(
+                    error_variant = ?ExpectedVariant::Args,
+                    error_message = %error_message,
+                    input_length = content.len(),
+                    parse_error = ?error,
+                    operation = "parse_poprako",
+                    "expected error: chapter import JSON is invalid",
+                );
+
+                BaseError::Expected {
+                    variant: ExpectedVariant::Args,
+                    message: error_message,
+                }
             })?;
 
         if project.author.trim().is_empty() {
-            return Err(args_err("error-invalid-chapter-import-content"));
+            //
+            let error_message = trl("error-invalid-chapter-import-content");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                error_message = %error_message,
+                field = "author",
+                input_length = content.len(),
+                "expected error: chapter import author is empty",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: error_message,
+            });
         }
 
         if project.title.trim().is_empty() {
-            return Err(args_err("error-invalid-chapter-import-content"));
+            //
+            let error_message = trl("error-invalid-chapter-import-content");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                error_message = %error_message,
+                field = "title",
+                input_length = content.len(),
+                "expected error: chapter import title is empty",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: error_message,
+            });
         }
 
         let pages = project
@@ -128,7 +183,21 @@ impl ChapterImportComplex {
     ) -> BaseRest<()> {
         //
         if imported_page_count != existing_page_count {
-            return Err(args_err("error-chapter-import-page-count-mismatch"));
+            //
+            let error_message = trl("error-chapter-import-page-count-mismatch");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                error_message = %error_message,
+                imported_page_count = imported_page_count,
+                existing_page_count = existing_page_count,
+                "expected error: chapter import page count mismatch",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: error_message,
+            });
         }
 
         accept(())
@@ -180,14 +249,6 @@ struct LabelPlusUnit {
     is_bubble: bool,
 }
 
-// Construct an `Expected::Args` error with the given i18n message key.
-fn args_err(key: &str) -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        message: trl(key),
-    }
-}
-
 // Normalize a string, returning `None` when the trimmed result is empty
 // or whitespace-only.
 fn normalize_string(text: String) -> Option<String> {
@@ -220,30 +281,115 @@ fn parse_label_plus_unit_header(line: &str) -> BaseRest<Option<LabelPlusUnit>> {
     };
 
     let Some((index_text, rest)) = rest.split_once("]----------------[") else {
-        return Err(args_err("error-invalid-chapter-import-content"));
+        //
+        let error_message = trl("error-invalid-chapter-import-content");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            error_message = %error_message,
+            line = %line,
+            "expected error: chapter import unit header separator is invalid",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: error_message,
+        });
     };
 
     let Some(coord_text) = rest.strip_suffix(']') else {
-        return Err(args_err("error-invalid-chapter-import-content"));
+        //
+        let error_message = trl("error-invalid-chapter-import-content");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            error_message = %error_message,
+            line = %line,
+            "expected error: chapter import coordinate suffix is missing",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: error_message,
+        });
     };
 
     let parts = coord_text.split(',').collect::<Vec<_>>();
 
     if parts.len() != 3 {
-        return Err(args_err("error-invalid-chapter-import-content"));
+        //
+        let error_message = trl("error-invalid-chapter-import-content");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            error_message = %error_message,
+            line = %line,
+            part_count = parts.len(),
+            "expected error: chapter import coordinate count is invalid",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: error_message,
+        });
     }
 
-    let index: i32 = index_text
-        .parse()
-        .map_err(|_| args_err("error-invalid-chapter-import-content"))?;
+    let index: i32 = index_text.parse().map_err(|error| {
+        //
+        let error_message = trl("error-invalid-chapter-import-content");
 
-    let x_coord: f64 = parts[0]
-        .parse()
-        .map_err(|_| args_err("error-invalid-chapter-import-content"))?;
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            error_message = %error_message,
+            line = %line,
+            raw_index = %index_text,
+            parse_error = ?error,
+            "expected error: chapter import unit index is invalid",
+        );
 
-    let y_coord: f64 = parts[1]
-        .parse()
-        .map_err(|_| args_err("error-invalid-chapter-import-content"))?;
+        BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: error_message,
+        }
+    })?;
+
+    let x_coord: f64 = parts[0].parse().map_err(|error| {
+        //
+        let error_message = trl("error-invalid-chapter-import-content");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            error_message = %error_message,
+            line = %line,
+            raw_x_coord = %parts[0],
+            parse_error = ?error,
+            "expected error: chapter import x coordinate is invalid",
+        );
+
+        BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: error_message,
+        }
+    })?;
+
+    let y_coord: f64 = parts[1].parse().map_err(|error| {
+        //
+        let error_message = trl("error-invalid-chapter-import-content");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            error_message = %error_message,
+            line = %line,
+            raw_y_coord = %parts[1],
+            parse_error = ?error,
+            "expected error: chapter import y coordinate is invalid",
+        );
+
+        BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: error_message,
+        }
+    })?;
 
     let is_bubble = match parts[2] {
         //
@@ -251,7 +397,23 @@ fn parse_label_plus_unit_header(line: &str) -> BaseRest<Option<LabelPlusUnit>> {
 
         "2" => false,
 
-        _ => return Err(args_err("error-invalid-chapter-import-content")),
+        _ => {
+            //
+            let error_message = trl("error-invalid-chapter-import-content");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                error_message = %error_message,
+                line = %line,
+                raw_bubble_flag = %parts[2],
+                "expected error: chapter import bubble flag is invalid",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: error_message,
+            });
+        }
     };
 
     accept(Some(LabelPlusUnit {
@@ -276,7 +438,21 @@ fn flush_label_plus_unit(
     };
 
     let Some(page_units) = current_page.as_mut() else {
-        return Err(args_err("error-invalid-chapter-import-content"));
+        //
+        let error_message = trl("error-invalid-chapter-import-content");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            error_message = %error_message,
+            unit_index = label_plus_unit.index,
+            main_text_line_count = main_text_lines.len(),
+            "expected error: chapter import unit has no current page",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: error_message,
+        });
     };
 
     let main_text = normalize_string(main_text_lines.join("\n"));
@@ -304,7 +480,21 @@ fn parse_poprako_page(
 ) -> BaseRest<PageTranslationImport> {
     //
     if page.image_filename.trim().is_empty() {
-        return Err(args_err("error-invalid-chapter-import-content"));
+        //
+        let error_message = trl("error-invalid-chapter-import-content");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            error_message = %error_message,
+            image_filename = %page.image_filename,
+            unit_count = page.units.len(),
+            "expected error: chapter import image filename is empty",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: error_message,
+        });
     }
 
     let (mut seen_indexes, mut units) =
@@ -313,19 +503,77 @@ fn parse_poprako_page(
     for unit in page.units {
         //
         if unit.id.trim().is_empty() {
-            return Err(args_err("error-invalid-chapter-import-content"));
+            //
+            let error_message = trl("error-invalid-chapter-import-content");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                error_message = %error_message,
+                unit_id = %unit.id,
+                unit_index = unit.index_in_page,
+                "expected error: chapter import unit id is empty",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: error_message,
+            });
         }
 
         if unit.index_in_page < 1 {
-            return Err(args_err("error-invalid-chapter-import-content"));
+            //
+            let error_message = trl("error-invalid-chapter-import-content");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                error_message = %error_message,
+                unit_id = %unit.id,
+                unit_index = unit.index_in_page,
+                "expected error: chapter import unit index is invalid",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: error_message,
+            });
         }
 
         if !unit.x.is_finite() || !unit.y.is_finite() {
-            return Err(args_err("error-invalid-chapter-import-content"));
+            //
+            let error_message = trl("error-invalid-chapter-import-content");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                error_message = %error_message,
+                unit_id = %unit.id,
+                unit_index = unit.index_in_page,
+                x_coord = unit.x,
+                y_coord = unit.y,
+                "expected error: chapter import unit coordinate is not finite",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: error_message,
+            });
         }
 
         if seen_indexes.insert(unit.index_in_page, ()).is_some() {
-            return Err(args_err("error-invalid-chapter-import-content"));
+            //
+            let error_message = trl("error-invalid-chapter-import-content");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                error_message = %error_message,
+                unit_id = %unit.id,
+                unit_index = unit.index_in_page,
+                "expected error: duplicate chapter import unit index",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: error_message,
+            });
         }
 
         units.push(UnitTranslationImport {
@@ -353,7 +601,21 @@ where
     I: Iterator<Item = &'a str>,
 {
     let Some(version_line) = lines.next() else {
-        return Err(args_err("error-invalid-chapter-import-content"));
+        //
+        let error_message = trl("error-invalid-chapter-import-content");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            error_message = %error_message,
+            operation = "validate_label_plus_header",
+            condition = "missing_version_line",
+            "expected error: chapter import version line is missing",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: error_message,
+        });
     };
 
     if !version_line
@@ -362,11 +624,37 @@ where
         .map(|value| value.is_ascii_digit())
         .unwrap_or(false)
     {
-        return Err(args_err("error-invalid-chapter-import-content"));
+        let error_message = trl("error-invalid-chapter-import-content");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            error_message = %error_message,
+            version_line = %version_line,
+            "expected error: chapter import version line is invalid",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: error_message,
+        });
     }
 
     if lines.next() != Some("-") {
-        return Err(args_err("error-invalid-chapter-import-content"));
+        //
+        let error_message = trl("error-invalid-chapter-import-content");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            error_message = %error_message,
+            version_line = %version_line,
+            condition = "missing_initial_separator",
+            "expected error: chapter import initial separator is missing",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: error_message,
+        });
     }
 
     let mut found_separator = false;
@@ -381,11 +669,39 @@ where
     }
 
     if !found_separator {
-        return Err(args_err("error-invalid-chapter-import-content"));
+        //
+        let error_message = trl("error-invalid-chapter-import-content");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            error_message = %error_message,
+            version_line = %version_line,
+            condition = "missing_content_separator",
+            "expected error: chapter import content separator is missing",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: error_message,
+        });
     }
 
     if lines.next().is_none() {
-        return Err(args_err("error-invalid-chapter-import-content"));
+        //
+        let error_message = trl("error-invalid-chapter-import-content");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            error_message = %error_message,
+            version_line = %version_line,
+            condition = "missing_content",
+            "expected error: chapter import content is missing",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: error_message,
+        });
     }
 
     accept(())

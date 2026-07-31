@@ -11,7 +11,7 @@ use crate::value::role::RoleMask;
 
 /// Input parameters for listing invitations under one chapter.
 ///
-/// Example: `/api/v1/assignment-invitations?chapter_id=c_1&pending=true&offset=0&limit=20`.
+/// Example: `/api/v1/assignment-invitations?chapter_id=c_1&is_pending=true&offset=0&limit=20`.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]

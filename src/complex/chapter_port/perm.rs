@@ -46,7 +46,25 @@ impl ChapterPortPermComplex {
             Err(BaseError::Expected {
                 variant: ExpectedVariant::Perm,
                 ..
-            }) => Err(chapter_port_export_permission_err()),
+            }) => {
+                //
+                let error_message =
+                    trl("error-chapter-port-export-permission-required");
+
+                tracing::warn!(
+                    error_variant = ?ExpectedVariant::Perm,
+                    error_message = %error_message,
+                    user_id = %user_id,
+                    chapter_id = %chapter_id,
+                    operation = "export",
+                    "expected error: chapter port export permission required",
+                );
+
+                Err(BaseError::Expected {
+                    variant: ExpectedVariant::Perm,
+                    message: error_message,
+                })
+            }
 
             Err(e) => Err(e),
         }
@@ -71,25 +89,27 @@ impl ChapterPortPermComplex {
             Err(BaseError::Expected {
                 variant: ExpectedVariant::Perm,
                 ..
-            }) => Err(chapter_port_import_permission_err()),
+            }) => {
+                //
+                let error_message =
+                    trl("error-chapter-port-import-permission-required");
+
+                tracing::warn!(
+                    error_variant = ?ExpectedVariant::Perm,
+                    error_message = %error_message,
+                    user_id = %user_id,
+                    chapter_id = %chapter_id,
+                    operation = "import",
+                    "expected error: chapter port import permission required",
+                );
+
+                Err(BaseError::Expected {
+                    variant: ExpectedVariant::Perm,
+                    message: error_message,
+                })
+            }
 
             Err(e) => Err(e),
         }
-    }
-}
-
-// Construct a "chapter port export permission required" permission error.
-fn chapter_port_export_permission_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Perm,
-        message: trl("error-chapter-port-export-permission-required"),
-    }
-}
-
-// Construct a "chapter port import permission required" permission error.
-fn chapter_port_import_permission_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Perm,
-        message: trl("error-chapter-port-import-permission-required"),
     }
 }
