@@ -14,12 +14,12 @@ pub enum ExpectedVariant {
     /// Authentication failure.
     Auth,
 
-    /// Permission denied.
+    /// perm denied.
     Perm,
 }
 
 /// A domain error that is either an expected application condition
-/// (invalid arguments, authentication failure, missing permissions) or
+/// (invalid arguments, authentication failure, missing perms) or
 /// an unrecoverable system-level failure.
 #[derive(Debug)]
 pub enum Error {

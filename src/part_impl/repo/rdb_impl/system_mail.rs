@@ -145,7 +145,7 @@ async fn mark_read(
             receiver_user_id = %user_id,
             actual_receiver_user_id = %mail.f_receiver_id,
             operation = "mark system mail read",
-            "expected system mail permission error",
+            "expected system mail perm error",
         );
 
         return Err(BaseError::Expected {

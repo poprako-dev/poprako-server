@@ -15,7 +15,7 @@ harness and starts the Axum HTTP server.
 ```text
 src/
 ├── api/http/       # Axum handlers, middleware, router, OpenAPI, server
-├── complex/        # Pure business rules and permission checks
+├── complex/        # Pure business rules and perm checks
 ├── data/           # Request Data and response Val DTOs
 ├── harn.rs         # Production application-harness composition
 ├── model/          # Persisted application models and input forms

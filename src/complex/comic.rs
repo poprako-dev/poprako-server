@@ -1,5 +1,5 @@
 //! Complex-domain opers for comic entities: identity generation,
-//! cover-storage key management, and permission gates.
+//! cover-storage key management, and perm gates.
 
 use std::collections::HashMap;
 
@@ -190,7 +190,7 @@ impl ComicComplex {
     }
 }
 
-/// Permission-gate opers for comic entities — comic-scoped.
+/// perm-gate opers for comic entities — comic-scoped.
 pub struct ComicPermComplex;
 
 impl ComicPermComplex {

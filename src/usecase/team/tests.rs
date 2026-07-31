@@ -13,7 +13,7 @@
 // get_info(get_info)(negative): missing team should propagate an argument error.
 // list_infos(list_infos)(positive): list should return paged teams in repo order.
 // list_infos(list_infos)(negative): missing page contents should return an empty list.
-// list_infos(list_infos)(negative): listing all teams should require super-admin permission.
+// list_infos(list_infos)(negative): listing all teams should require super-admin perm.
 // update_info(update_info)(positive): existing team should update name and description.
 // update_info(update_info)(negative): missing team should propagate an argument error.
 // reserve_avatar(reserve_avatar)(positive): first reservation should update avatar state, enqueue a check, and return a put URL.

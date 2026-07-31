@@ -1,4 +1,4 @@
-//! Complex domain logic for [Member] aggregates — ID generation and permission gates.
+//! Complex domain logic for [Member] aggregates — ID generation and perm gates.
 
 use poprako_orchestra::Proxy;
 
@@ -19,7 +19,7 @@ impl MemberComplex {
     }
 }
 
-/// Permission-gate opers for team membership — team-scoped.
+/// perm-gate opers for team membership — team-scoped.
 pub struct MemberPermComplex;
 
 impl MemberPermComplex {

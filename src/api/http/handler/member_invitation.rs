@@ -60,7 +60,7 @@ pub struct MemberInvitationListQuery {
     request_body = CreateMemberInvitationInstr,
     responses(
         (status = 201, description = "Invitation created", body = HttpBody<CreateMemberInvitationVal>),
-        (status = 403, description = "No permission to create invitations in this team"),
+        (status = 403, description = "No perm to create invitations in this team"),
         (status = 409, description = "Invitee is already a member"),
     ),
 ))]
@@ -88,7 +88,7 @@ pub async fn create(
     params(("team_id" = String, Path, description = "Team ID"), MemberInvitationListQuery),
     responses(
         (status = 200, description = "Invitations listed", body = HttpBody<Vec<MemberInvitationInfoView>>),
-        (status = 403, description = "No permission to list invitations in this team"),
+        (status = 403, description = "No perm to list invitations in this team"),
     ),
 ))]
 #[instrument(level = "info", err(Debug), skip_all)]
@@ -126,7 +126,7 @@ pub async fn list_infos(
     responses(
         (status = 204, description = "Invitation roles updated"),
         (status = 422, description = "Path id does not match body id"),
-        (status = 403, description = "No permission to update this invitation"),
+        (status = 403, description = "No perm to update this invitation"),
         (status = 404, description = "Invitation not found"),
     ),
 ))]
@@ -158,7 +158,7 @@ pub async fn update_roles(
     params(("member_invitation_id" = String, Path, description = "Invitation ID")),
     responses(
         (status = 204, description = "Invitation deleted"),
-        (status = 403, description = "No permission to delete this invitation"),
+        (status = 403, description = "No perm to delete this invitation"),
         (status = 404, description = "Invitation not found"),
     ),
 ))]

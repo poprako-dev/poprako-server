@@ -60,7 +60,7 @@ pub struct MemberMeListQuery {
     request_body = CreateMemberInstr,
     responses(
         (status = 201, description = "Member created", body = HttpBody<CreateMemberVal>),
-        (status = 403, description = "No permission to create members in this team"),
+        (status = 403, description = "No perm to create members in this team"),
         (status = 404, description = "User or team not found"),
         (status = 409, description = "User is already a member"),
     ),
@@ -86,7 +86,7 @@ pub async fn create(
     responses(
         (status = 200, description = "Members listed", body = HttpBody<Vec<MemberInfoView>>),
         (status = 422, description = "Exactly one of owner_id or team_id is required, or owner_id combined with role/fuzzy_nickname"),
-        (status = 403, description = "No permission to list members in this team"),
+        (status = 403, description = "No perm to list members in this team"),
     ),
 ))]
 #[instrument(level = "info", err(Debug), skip_all)]
@@ -151,7 +151,7 @@ pub async fn list_my_infos(
     responses(
         (status = 204, description = "Member roles updated"),
         (status = 422, description = "Path id does not match body id"),
-        (status = 403, description = "No permission to update this member"),
+        (status = 403, description = "No perm to update this member"),
         (status = 404, description = "Member not found"),
     ),
 ))]
@@ -183,7 +183,7 @@ pub async fn update_roles(
     params(("member_id" = String, Path, description = "Member ID")),
     responses(
         (status = 204, description = "Member deleted"),
-        (status = 403, description = "No permission to delete this member"),
+        (status = 403, description = "No perm to delete this member"),
         (status = 404, description = "Member not found"),
     ),
 ))]

@@ -1,7 +1,7 @@
 //! Complex-domain opers for chapter entities — identity generation, workflow
-//! stage transitions, pagination helpers, and permission gates.
+//! stage transitions, pagination helpers, and perm gates.
 //!
-//! ## Permission model
+//! ## perm model
 //!
 //! Read-level access (list, get) requires the caller to be a team member of the
 //! owning workset's team. Write-level access (create, update info, delete) requires
@@ -104,8 +104,8 @@ impl ChapterComplex {
     }
 }
 
-/// Permission-gate opers for chapter entities — resolves the owning
-/// team from the chapter or comic and delegates to shared team-permission
+/// perm-gate opers for chapter entities — resolves the owning
+/// team from the chapter or comic and delegates to shared team-perm
 /// helpers (`[`check_user_is_team_member`]` / `[`check_user_is_team_admin`]`).
 ///
 /// [`check_user_is_team_member`]: crate::complex::util::check_user_is_team_member
@@ -143,7 +143,7 @@ impl ChapterPermComplex {
     }
 
     /// Verify the caller is a team member of the comic's owning workset
-    /// (same permission level as listing — pinned chapters are visible to
+    /// (same perm level as listing — pinned chapters are visible to
     /// all team members).
     pub async fn ensure_user_can_get_pinned<P>(
         proxy: &mut P,
@@ -205,7 +205,7 @@ impl ChapterPermComplex {
         check_admin(proxy, user_id, chapter_id).await
     }
 
-    /// Verify the caller has permission to apply a workflow operation.
+    /// Verify the caller has perm to apply a workflow operation.
     pub async fn ensure_user_can_update_stage<P>(
         proxy: &mut P,
         user_id: &str,

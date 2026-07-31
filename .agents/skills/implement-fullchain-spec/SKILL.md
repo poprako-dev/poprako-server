@@ -10,14 +10,14 @@ Use this workflow for a user-visible behavior in the active ports-and-steps arch
 ## 1. Establish the behavior
 
 1. Read current Rust code in the target domain and the corresponding Go business reference.
-2. Record permissions, transaction boundary, side effects, uniqueness rules, response shape, and negative cases.
+2. Record perms, transaction boundary, side effects, uniqueness rules, response shape, and negative cases.
 3. Find a nearby completed use case with the same operation shape.
 
 ## 2. Domain and transport types
 
 - Add a `value` type only for a focused shared concept.
 - Add persisted application state and forms/updates under `model`.
-- Put pure validation, ordering, and permission predicates under `complex`. It must not execute `Drive`, `Advance`, repository transactions, or prom operations.
+- Put pure validation, ordering, and perm predicates under `complex`. It must not execute `Drive`, `Advance`, repository transactions, or prom operations.
 - Add request `*Data` and response `*Val` types under `data`. Convert model timestamps to Unix milliseconds in `Val` conversions.
 
 ## 3. Repository surface and adapters
@@ -32,7 +32,7 @@ Use this workflow for a user-visible behavior in the active ports-and-steps arch
 - Public use cases are free generic functions under `usecase`.
 - Use `Execute` for independent operations. Use `Drive::with_context` and `Advance` when several writes or locks must commit atomically.
 - Bind the transaction result before returning. Schedule deferred image work through `Prom`; emit effects through the correct effect port only after transaction semantics are established.
-- Keep permission checks at the usecase boundary or in a pure permission complex helper, never in the HTTP handler or RDB adapter.
+- Keep perm checks at the usecase boundary or in a pure perm complex helper, never in the HTTP handler or RDB adapter.
 
 ## 5. HTTP exposure
 

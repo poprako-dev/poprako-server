@@ -6,5 +6,5 @@ pub use perm::ChapterPortPermComplex;
 mod export;
 // Chapter import business logic.
 mod import;
-// Chapter port permission checks.
+// Chapter port perm checks.
 mod perm;

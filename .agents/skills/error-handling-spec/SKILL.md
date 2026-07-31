@@ -9,7 +9,7 @@ The active error surface is `crate::result::{Error, ExpectedVariant, RegularErro
 
 ## Classify errors at the boundary that understands them
 
-- Use `Error::Expected` for a client-visible argument, authentication, or permission condition. Select `ExpectedVariant::{Args, Auth, Perm}` and use the established `poprako_util::i18n::trl` key when a user-facing message is needed.
+- Use `Error::Expected` for a client-visible argument, authentication, or perm condition. Select `ExpectedVariant::{Args, Auth, Perm}` and use the established `poprako_util::i18n::trl` key when a user-facing message is needed.
 - Use `Error::Unrecoverable` for failed infrastructure, invalid internal state, or any condition that must not be presented as a client mistake.
 - Preserve an existing error with `?`. Do not wrap it merely to add context if the caller already records the operation boundary.
 

@@ -59,7 +59,7 @@ pub struct ChapterListQuery {
     request_body = CreateChapterInstr,
     responses(
         (status = 201, description = "Chapter created", body = HttpBody<CreateChapterVal>),
-        (status = 403, description = "No permission to create chapters in this comic"),
+        (status = 403, description = "No perm to create chapters in this comic"),
         (status = 404, description = "Comic not found"),
     ),
 ))]
@@ -83,7 +83,7 @@ pub async fn create(
     params(("comic_id" = String, Path, description = "Comic ID"), ChapterListQuery),
     responses(
         (status = 200, description = "Chapters listed", body = HttpBody<Vec<ChapterInfoView>>),
-        (status = 403, description = "No permission to list chapters in this comic"),
+        (status = 403, description = "No perm to list chapters in this comic"),
     ),
 ))]
 #[instrument(level = "info", err(Debug), skip_all)]
@@ -118,7 +118,7 @@ pub async fn list_infos(
     params(("comic_id" = String, Path, description = "Comic ID")),
     responses(
         (status = 200, description = "Pinned chapter (or null)", body = HttpBody<Option<ChapterInfoView>>),
-        (status = 403, description = "No permission to view this comic's pinned chapter"),
+        (status = 403, description = "No perm to view this comic's pinned chapter"),
     ),
 ))]
 #[instrument(level = "info", err(Debug), skip_all)]
@@ -140,7 +140,7 @@ pub async fn get_pinned(
     params(("chapter_id" = String, Path, description = "Chapter ID")),
     responses(
         (status = 200, description = "Chapter info retrieved", body = HttpBody<ChapterInfoView>),
-        (status = 403, description = "No permission to view this chapter"),
+        (status = 403, description = "No perm to view this chapter"),
         (status = 404, description = "Chapter not found"),
     ),
 ))]
@@ -165,7 +165,7 @@ pub async fn get_info(
     responses(
         (status = 204, description = "Chapter updated"),
         (status = 422, description = "Path id does not match body id"),
-        (status = 403, description = "No permission to update this chapter"),
+        (status = 403, description = "No perm to update this chapter"),
         (status = 404, description = "Chapter not found"),
     ),
 ))]
@@ -197,7 +197,7 @@ pub async fn update_info(
     params(("chapter_id" = String, Path, description = "Chapter ID")),
     responses(
         (status = 204, description = "Chapter marked as pinned"),
-        (status = 403, description = "No permission to pin this chapter"),
+        (status = 403, description = "No perm to pin this chapter"),
         (status = 404, description = "Chapter not found"),
         (status = 422, description = "Published chapters cannot be pinned"),
     ),
@@ -229,7 +229,7 @@ pub async fn mark_pinned(
     responses(
         (status = 204, description = "Stage advanced"),
         (status = 422, description = "Path id does not match body id"),
-        (status = 403, description = "No permission to update this chapter's stage"),
+        (status = 403, description = "No perm to update this chapter's stage"),
         (status = 422, description = "Illegal workflow transition"),
     ),
 ))]
@@ -261,7 +261,7 @@ pub async fn advance_stage(
     params(("chapter_id" = String, Path, description = "Chapter ID")),
     responses(
         (status = 204, description = "Chapter deleted"),
-        (status = 403, description = "No permission to delete this chapter"),
+        (status = 403, description = "No perm to delete this chapter"),
         (status = 404, description = "Chapter not found"),
     ),
 ))]

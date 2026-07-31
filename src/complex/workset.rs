@@ -1,5 +1,5 @@
 //! Complex-domain opers for workset entities: identity generation and
-//! permission gates.
+//! perm gates.
 
 use poprako_orchestra::{OperProxy as _, Proxy};
 use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
@@ -117,7 +117,7 @@ impl WorksetComplex {
     }
 }
 
-/// Permission-gate opers for workset entities — workset-scoped.
+/// perm-gate opers for workset entities — workset-scoped.
 pub struct WorksetPermComplex;
 
 impl WorksetPermComplex {

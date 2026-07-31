@@ -43,7 +43,7 @@ use crate::value::role::{RoleField, RoleMask};
 
 // Shared fixture setup helpers for chapter test suites.
 mod fixture;
-// Preset-assignment scenarios and permission transitions.
+// Preset-assignment scenarios and perm transitions.
 mod preset_assignment;
 // Workflow-stage transition assertions for chapter usecases.
 mod stage;

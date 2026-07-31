@@ -324,7 +324,7 @@ where
                         target_user_id = %instr.user_id,
                         roles = ?instr.roles,
                         operation = "remove own administrator role",
-                        "expected error: chapter administrator permission required",
+                        "expected error: chapter administrator perm required",
                     );
 
                     return Err(BaseError::Expected {
@@ -349,7 +349,7 @@ where
                         target_user_id = %instr.user_id,
                         roles = ?instr.roles,
                         operation = "remove last chapter administrator role",
-                        "expected error: chapter administrator permission required",
+                        "expected error: chapter administrator perm required",
                     );
 
                     return Err(BaseError::Expected {
@@ -388,7 +388,7 @@ where
                         target_user_id = %instr.user_id,
                         roles = ?instr.roles,
                         operation = "assign administrator role",
-                        "expected error: chapter administrator permission required",
+                        "expected error: chapter administrator perm required",
                     );
 
                     return Err(BaseError::Expected {

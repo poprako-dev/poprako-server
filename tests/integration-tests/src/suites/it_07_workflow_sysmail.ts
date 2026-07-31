@@ -146,7 +146,7 @@ export async function runIt07Module(ctx: RunCtx): Promise<void> {
     );
 
     // revert publish -> 403/4 (role check on publish revert has no matching
-    // branch in check_workflow_role, falls to _ => false → permission error)
+    // branch in check_workflow_role, falls to _ => false → perm error)
     expectError(
         await publish01.api.post<ErrorBody>(`/api/v1/chapters/${mainChapterId}/stage/advance`, {
             id: mainChapterId,
