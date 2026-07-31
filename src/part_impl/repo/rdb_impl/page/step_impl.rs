@@ -1,7 +1,5 @@
 //! RDB-backed page repository step implementations.
 
-use std::collections::HashMap;
-
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
@@ -242,7 +240,7 @@ pub async fn clear_images_for_publish(
 pub async fn list_first_infos_by_chapter_ids(
     conn: &mut RdbConn,
     chapter_ids: &[String],
-) -> BaseRest<HashMap<String, PageInfo>> {
+) -> BaseRest<Vec<PageInfo>> {
     //
     let rows: Vec<PageRow> = t_page
         .filter(f_chapter_id.eq_any(chapter_ids))
@@ -253,14 +251,7 @@ pub async fn list_first_infos_by_chapter_ids(
         .await
         .map_err(diesel)?;
 
-    accept(
-        rows.into_iter()
-            .map(TryInto::try_into)
-            .collect::<BaseRest<Vec<PageInfo>>>()?
-            .into_iter()
-            .map(|page_info| (page_info.chapter_id.clone(), page_info))
-            .collect(),
-    )
+    rows.into_iter().map(TryInto::try_into).collect()
 }
 
 /// Batch-insert pages from a slice of model_entries and return the created infos.

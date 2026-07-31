@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use poprako_orchestra::Oper;
 
 use crate::model::read::proj::chapter::ChapterInfo;
@@ -77,7 +75,7 @@ pub struct FindPinnedChapterInfo<'a, 'b> {
 
 /// Lists pinned chapter infos for the given comics.
 #[derive(Oper)]
-#[oper(output = HashMap<String, ChapterInfo>)]
+#[oper(output = Vec<ChapterInfo>)]
 pub struct ListPinnedChapterInfos<'a> {
     /// Comic identifiers.
     pub comic_ids: &'a [String],

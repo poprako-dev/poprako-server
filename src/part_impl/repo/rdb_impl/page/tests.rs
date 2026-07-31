@@ -142,10 +142,12 @@ pub async fn page_roundtrip_uses_testcontainer(shared: RdbCore) {
         .ok()
         .unwrap();
 
-    assert_eq!(
-        first_page_infos[&page_fixture.chapter_entry.id].id,
-        page_fixture.page_entry.id
-    );
+    let first_page_info = first_page_infos
+        .iter()
+        .find(|page_info| page_info.chapter_id == page_fixture.chapter_entry.id)
+        .expect("first page info for the chapter");
+
+    assert_eq!(first_page_info.id, page_fixture.page_entry.id);
 
     test_shared::cleanup(&shared, PREFIX).await.ok().unwrap();
 

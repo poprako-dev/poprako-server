@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
@@ -54,7 +52,7 @@ impl Run<ListFirstPageInfos<'_>> for RdbRepo {
     async fn run(
         &self,
         oper: &ListFirstPageInfos<'_>,
-    ) -> BaseRest<HashMap<String, PageInfo>> {
+    ) -> BaseRest<Vec<PageInfo>> {
         submit_query!(
             self.core,
             list_first_infos_by_chapter_ids,

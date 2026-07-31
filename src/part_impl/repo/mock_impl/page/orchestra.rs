@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
@@ -55,7 +53,7 @@ impl<'a> Run<ListFirstPageInfos<'a>> for Mock {
     async fn run(
         &self,
         oper: &ListFirstPageInfos<'a>,
-    ) -> BaseRest<HashMap<String, PageInfo>> {
+    ) -> BaseRest<Vec<PageInfo>> {
         //
         // Internal implementation detail.
         let state = self.state.lock().unwrap();

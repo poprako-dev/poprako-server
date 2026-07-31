@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
@@ -85,32 +83,22 @@ fn find_pinned_chapter_info(
 fn list_pinned_chapter_infos(
     state: &MockState,
     comic_ids: &[String],
-) -> HashMap<String, ChapterInfo> {
+) -> Vec<ChapterInfo> {
     //
     // Internal implementation detail.
     // Internal implementation detail.
-    let mut chapter_infos = HashMap::new();
-
-    for comic_id in comic_ids {
-        //
-        // Internal implementation detail.
-        // Internal implementation detail.
-        let chapter_info = state
-            .chapters
-            .iter()
-            .find(|chapter_info| {
-                chapter_info.comic_id == *comic_id && chapter_info.is_pinned
-            })
-            .cloned();
-
-        let Some(chapter_info) = chapter_info else {
-            continue;
-        };
-
-        chapter_infos.insert(comic_id.clone(), chapter_info);
-    }
-
-    chapter_infos
+    comic_ids
+        .iter()
+        .filter_map(|comic_id| {
+            state
+                .chapters
+                .iter()
+                .find(|chapter_info| {
+                    chapter_info.comic_id == *comic_id && chapter_info.is_pinned
+                })
+                .cloned()
+        })
+        .collect()
 }
 
 impl<'a> Run<ListChapterInfos<'a>> for Mock {
@@ -179,7 +167,7 @@ impl<'a> Run<ListPinnedChapterInfos<'a>> for Mock {
     async fn run(
         &self,
         oper: &ListPinnedChapterInfos<'a>,
-    ) -> BaseRest<HashMap<String, ChapterInfo>> {
+    ) -> BaseRest<Vec<ChapterInfo>> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
