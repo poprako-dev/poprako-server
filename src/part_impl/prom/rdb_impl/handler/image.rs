@@ -224,7 +224,7 @@ where
                     let err_message = "stale page image identity";
 
                     tracing::warn!(
-                        error_variant = ?ExpectedVariant::Args,
+                        err_variant = ?ExpectedVariant::Args,
                         err_message = %err_message,
                         resource_kind = ?image_identity.kind,
                         resource_id = %image_identity.resource_id,
@@ -382,7 +382,7 @@ where
                     let err_message = "stale page image identity";
 
                     tracing::warn!(
-                        error_variant = ?ExpectedVariant::Args,
+                        err_variant = ?ExpectedVariant::Args,
                         err_message = %err_message,
                         resource_kind = ?image_identity.kind,
                         resource_id = %image_identity.resource_id,

@@ -146,7 +146,7 @@ where
                     let err_message = trl("error-assignment-already-exists");
 
                     tracing::warn!(
-                        error_variant = ?ExpectedVariant::Args,
+                        err_variant = ?ExpectedVariant::Args,
                         err_message = %err_message,
                         chapter_id = %instr.chapter_id,
                         user_id = %token.user_id,
@@ -295,7 +295,7 @@ where
                 let err_message = trl("error-no-pending-invitation");
 
                 tracing::warn!(
-                    error_variant = ?ExpectedVariant::Args,
+                    err_variant = ?ExpectedVariant::Args,
                     err_message = %err_message,
                     user_id = %current_user_id,
                     invitee_qid = %current_user_info.qid,
@@ -350,7 +350,7 @@ where
                 let err_message = trl("error-chapter-role-not-assignable");
 
                 tracing::warn!(
-                    error_variant = ?ExpectedVariant::Perm,
+                    err_variant = ?ExpectedVariant::Perm,
                     err_message = %err_message,
                     chapter_id = %assignment_invitation_info.chapter_id,
                     user_id = %current_user_id,
@@ -372,7 +372,7 @@ where
                 let err_message = trl("error-chapter-role-not-assignable");
 
                 tracing::warn!(
-                    error_variant = ?ExpectedVariant::Perm,
+                    err_variant = ?ExpectedVariant::Perm,
                     err_message = %err_message,
                     chapter_id = %assignment_invitation_info.chapter_id,
                     user_id = %current_user_id,
@@ -465,7 +465,7 @@ where
         let err_message = trl("error-chapter-admin-required");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Perm,
+            err_variant = ?ExpectedVariant::Perm,
             err_message = %err_message,
             chapter_id = %chapter_id,
             user_id = %current_user_id,
@@ -483,7 +483,7 @@ where
         let err_message = trl("error-chapter-admin-required");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Perm,
+            err_variant = ?ExpectedVariant::Perm,
             err_message = %err_message,
             chapter_id = %chapter_id,
             user_id = %current_user_id,
@@ -512,7 +512,7 @@ fn validate_roles(
         let err_message = trl("error-chapter-role-not-assignable");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
+            err_variant = ?ExpectedVariant::Args,
             err_message = %err_message,
             chapter_id = %chapter_id,
             user_id = %user_id,

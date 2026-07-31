@@ -41,7 +41,7 @@ impl Sched {
 
             if let Err(error) = done_recv.wait_for(|done| *done).await {
                 tracing::error!(
-                    error = %error,
+                    err = %error,
                     "[GeneralSched::close] job ended without completion",
                 );
             }

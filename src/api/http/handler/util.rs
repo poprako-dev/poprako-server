@@ -51,7 +51,7 @@ pub fn ensure_current_user(
         let err_message = trl("error-forbidden");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Perm,
+            err_variant = ?ExpectedVariant::Perm,
             err_message = %err_message,
             path_user_id = %path_user_id,
             token_user_id = %token.user_id,

@@ -317,7 +317,7 @@ where
                     let err_message = trl("error-forbidden");
 
                     tracing::warn!(
-                        error_variant = ?ExpectedVariant::Perm,
+                        err_variant = ?ExpectedVariant::Perm,
                         err_message = %err_message,
                         chapter_id = %instr.chapter_id,
                         user_id = %token.user_id,
@@ -342,7 +342,7 @@ where
                     let err_message = trl("error-forbidden");
 
                     tracing::warn!(
-                        error_variant = ?ExpectedVariant::Perm,
+                        err_variant = ?ExpectedVariant::Perm,
                         err_message = %err_message,
                         chapter_id = %instr.chapter_id,
                         user_id = %token.user_id,
@@ -381,7 +381,7 @@ where
                     let err_message = trl("error-forbidden");
 
                     tracing::warn!(
-                        error_variant = ?ExpectedVariant::Perm,
+                        err_variant = ?ExpectedVariant::Perm,
                         err_message = %err_message,
                         chapter_id = %instr.chapter_id,
                         user_id = %token.user_id,

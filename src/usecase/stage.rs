@@ -26,7 +26,7 @@ where
 
             if let Err(error) = outcome {
                 tracing::warn!(
-                    error = ?error,
+                    err = ?error,
                     chapter_id = %chapter_id,
                     stage = ?stage,
                     "detached chapter stage advancement failed",

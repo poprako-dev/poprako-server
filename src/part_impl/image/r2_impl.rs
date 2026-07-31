@@ -146,7 +146,7 @@ impl ImagePool for R2ImagePool {
                 let file_ext = key.rsplit('.').next().unwrap_or("(none)");
 
                 tracing::warn!(
-                    error_variant = ?ExpectedVariant::Args,
+                    err_variant = ?ExpectedVariant::Args,
                     err_message = %err_message,
                     object_key = %key,
                     file_ext = %file_ext,

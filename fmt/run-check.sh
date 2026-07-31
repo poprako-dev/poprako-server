@@ -30,6 +30,11 @@ for f in fmt/*/check.py; do
                 uv run --python fmt/.venv/bin/python python3 "$f" --layer "$layer" || passed=false
             done
             ;;
+        forbidden-identifiers)
+            uv run --python fmt/.venv/bin/python python3 "$f" \
+                --ignore-list fmt/forbidden-identifiers/ignore-files.txt \
+                || passed=false
+            ;;
         *)
             uv run --python fmt/.venv/bin/python python3 "$f" || passed=false
             ;;

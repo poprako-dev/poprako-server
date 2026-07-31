@@ -238,7 +238,7 @@ where
         let err_message = trl("error-forbidden");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Perm,
+            err_variant = ?ExpectedVariant::Perm,
             err_message = %err_message,
             user_id = %user_id,
             chapter_id = %chapter_id,
@@ -280,7 +280,7 @@ where
         let err_message = trl("error-forbidden");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Perm,
+            err_variant = ?ExpectedVariant::Perm,
             err_message = %err_message,
             current_user_id = %current_user_id,
             owner_id = %owner_id,
@@ -317,7 +317,7 @@ where
         let err_message = trl("error-chapter-admin-required");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Perm,
+            err_variant = ?ExpectedVariant::Perm,
             err_message = %err_message,
             user_id = %user_id,
             chapter_id = %chapter_id,
@@ -335,7 +335,7 @@ where
         let err_message = trl("error-chapter-admin-required");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Perm,
+            err_variant = ?ExpectedVariant::Perm,
             err_message = %err_message,
             user_id = %user_id,
             chapter_id = %chapter_id,
@@ -370,7 +370,7 @@ where
         let err_message = trl("error-forbidden");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Perm,
+            err_variant = ?ExpectedVariant::Perm,
             err_message = %err_message,
             current_user_id = %current_user_id,
             subject_user_id = %subject_user_id,
@@ -397,7 +397,7 @@ where
         let err_message = trl("error-forbidden");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Perm,
+            err_variant = ?ExpectedVariant::Perm,
             err_message = %err_message,
             current_user_id = %current_user_id,
             subject_user_id = %subject_user_id,
@@ -417,7 +417,7 @@ where
         let err_message = trl("error-forbidden");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Perm,
+            err_variant = ?ExpectedVariant::Perm,
             err_message = %err_message,
             current_user_id = %current_user_id,
             subject_user_id = %subject_user_id,
@@ -455,7 +455,7 @@ where
         let err_message = trl("error-chapter-role-not-assignable");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
+            err_variant = ?ExpectedVariant::Args,
             err_message = %err_message,
             user_id = %user_id,
             chapter_id = %chapter_id,
@@ -483,7 +483,7 @@ where
         let err_message = trl("error-chapter-role-not-assignable");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Perm,
+            err_variant = ?ExpectedVariant::Perm,
             err_message = %err_message,
             user_id = %user_id,
             chapter_id = %chapter_id,
@@ -503,7 +503,7 @@ where
         let err_message = trl("error-chapter-role-not-assignable");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Perm,
+            err_variant = ?ExpectedVariant::Perm,
             err_message = %err_message,
             user_id = %user_id,
             chapter_id = %chapter_id,

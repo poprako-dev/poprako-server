@@ -85,7 +85,7 @@ where
                 let err_message = trl("error-already-team-member");
 
                 tracing::warn!(
-                    error_variant = ?ExpectedVariant::Args,
+                    err_variant = ?ExpectedVariant::Args,
                     err_message = %err_message,
                     team_id = %instr.team_id,
                     user_id = %token.user_id,
@@ -161,7 +161,7 @@ where
                 let err_message = trl("error-no-pending-invitation");
 
                 tracing::warn!(
-                    error_variant = ?ExpectedVariant::Args,
+                    err_variant = ?ExpectedVariant::Args,
                     err_message = %err_message,
                     user_id = %current_user_id,
                     invitee_qid = %current_user_info.qid,
@@ -188,7 +188,7 @@ where
                 let err_message = trl("error-already-team-member");
 
                 tracing::warn!(
-                    error_variant = ?ExpectedVariant::Args,
+                    err_variant = ?ExpectedVariant::Args,
                     err_message = %err_message,
                     user_id = %current_user_id,
                     team_id = %member_invitation_info.team_id,

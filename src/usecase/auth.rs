@@ -88,7 +88,7 @@ where
                 let err_message = trl("error-invalid-invitation-code");
 
                 tracing::warn!(
-                    error_variant = ?ExpectedVariant::Args,
+                    err_variant = ?ExpectedVariant::Args,
                     err_message = %err_message,
                     invitee_qid = %instr.qid,
                     invitation_invitee_qid = %invitation_info.invitee_qid,
@@ -203,7 +203,7 @@ where
         let err_message = trl("error-wrong-credentials");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Auth,
+            err_variant = ?ExpectedVariant::Auth,
             err_message = %err_message,
             qid = %instr.qid,
             "expected error: invalid login credentials",

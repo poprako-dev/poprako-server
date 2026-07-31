@@ -53,7 +53,7 @@ impl UnitPermComplex {
                 let err_message = trl("error-unit-list-permission-required");
 
                 tracing::warn!(
-                    error_variant = ?ExpectedVariant::Perm,
+                    err_variant = ?ExpectedVariant::Perm,
                     err_message = %err_message,
                     user_id = %user_id,
                     chapter_id = %chapter_id,
@@ -81,7 +81,7 @@ impl UnitPermComplex {
             let err_message = trl("error-unit-edit-permission-required");
 
             tracing::warn!(
-                error_variant = ?ExpectedVariant::Perm,
+                err_variant = ?ExpectedVariant::Perm,
                 err_message = %err_message,
                 permission = ?perm,
                 operation = "edit_fields",
@@ -110,7 +110,7 @@ impl UnitPermComplex {
                             trl("error-unit-edit-permission-required");
 
                         tracing::warn!(
-                            error_variant = ?ExpectedVariant::Perm,
+                            err_variant = ?ExpectedVariant::Perm,
                             err_message = %err_message,
                             permission = ?perm,
                             field = "translation",
@@ -130,7 +130,7 @@ impl UnitPermComplex {
                             trl("error-unit-edit-permission-required");
 
                         tracing::warn!(
-                            error_variant = ?ExpectedVariant::Perm,
+                            err_variant = ?ExpectedVariant::Perm,
                             err_message = %err_message,
                             permission = ?perm,
                             field = "revision",
@@ -157,7 +157,7 @@ impl UnitPermComplex {
                             trl("error-unit-edit-permission-required");
 
                         tracing::warn!(
-                            error_variant = ?ExpectedVariant::Perm,
+                            err_variant = ?ExpectedVariant::Perm,
                             err_message = %err_message,
                             permission = ?perm,
                             field = "translation",
@@ -177,7 +177,7 @@ impl UnitPermComplex {
                             trl("error-unit-edit-permission-required");
 
                         tracing::warn!(
-                            error_variant = ?ExpectedVariant::Perm,
+                            err_variant = ?ExpectedVariant::Perm,
                             err_message = %err_message,
                             permission = ?perm,
                             field = "revision",

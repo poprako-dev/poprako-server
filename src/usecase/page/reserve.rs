@@ -52,7 +52,7 @@ pub fn validate_page_count(page_count: i32) -> BaseRest<()> {
         let err_message = trl("error-invalid-page-count");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
+            err_variant = ?ExpectedVariant::Args,
             err_message = %err_message,
             page_count,
             "expected error: invalid page count",
@@ -98,7 +98,7 @@ where
         let err_message = trl("error-invalid-page-count");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
+            err_variant = ?ExpectedVariant::Args,
             err_message = %err_message,
             chapter_id = %chapter_id,
             user_id = %token.user_id,
@@ -137,7 +137,7 @@ where
             let err_message = trl("error-duplicate-page-id");
 
             tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
+                err_variant = ?ExpectedVariant::Args,
                 err_message = %err_message,
                 chapter_id = %chapter_id,
                 user_id = %token.user_id,
@@ -237,7 +237,7 @@ where
                     let err_message = trl("error-invalid-page-count");
 
                     tracing::warn!(
-                        error_variant = ?ExpectedVariant::Args,
+                        err_variant = ?ExpectedVariant::Args,
                         err_message = %err_message,
                         chapter_id = %chapter_info.id,
                         user_id = %token.user_id,
@@ -274,7 +274,7 @@ where
                         let err_message = trl("error-invalid-image-byte-length");
 
                         tracing::warn!(
-                            error_variant = ?ExpectedVariant::Args,
+                            err_variant = ?ExpectedVariant::Args,
                             err_message = %err_message,
                             chapter_id = %chapter_info.id,
                             user_id = %token.user_id,
@@ -378,7 +378,7 @@ where
                     let err_message = trl("error-invalid-image-byte-length");
 
                     tracing::warn!(
-                        error_variant = ?ExpectedVariant::Args,
+                        err_variant = ?ExpectedVariant::Args,
                         err_message = %err_message,
                         chapter_id = %chapter_info.id,
                         user_id = %token.user_id,

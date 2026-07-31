@@ -159,7 +159,7 @@ async fn export_payload(
             let body = serde_json::to_vec(&val).map_err(|err| {
                 //
                 tracing::warn!(
-                    error = %err,
+                    err = %err,
                     "[chapter_port::export_payload] serialization failed",
                 );
 
@@ -202,7 +202,7 @@ fn body_response(
         .map_err(|err| {
             //
             tracing::warn!(
-                error = %err,
+                err = %err,
                 "[chapter_port::body_response] build failed",
             );
 
@@ -229,7 +229,7 @@ fn download_response(
         .map_err(|err| {
             //
             tracing::warn!(
-                error = %err,
+                err = %err,
                 "[chapter_port::download_response] build failed",
             );
 

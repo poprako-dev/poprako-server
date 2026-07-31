@@ -227,7 +227,7 @@ impl ComicArchiveMonth {
             let err_message = trl("error-invalid-comic-archive-month-count");
 
             tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
+                err_variant = ?ExpectedVariant::Args,
                 err_message = %err_message,
                 label_count = labels.len(),
                 "expected error: invalid comic archive month count",
@@ -254,7 +254,7 @@ impl ComicArchiveMonth {
                 let err_message = trl("error-duplicate-comic-archive-month");
 
                 tracing::warn!(
-                    error_variant = ?ExpectedVariant::Args,
+                    err_variant = ?ExpectedVariant::Args,
                     err_message = %err_message,
                     label = %label,
                     "expected error: duplicate comic archive month",
@@ -273,7 +273,7 @@ impl ComicArchiveMonth {
                 let err_message = trl("error-comic-archive-month-not-retained");
 
                 tracing::warn!(
-                    error_variant = ?ExpectedVariant::Args,
+                    err_variant = ?ExpectedVariant::Args,
                     err_message = %err_message,
                     label = %label,
                     year,
@@ -307,7 +307,7 @@ impl ComicArchiveMonth {
             let err_message = trl("error-invalid-comic-archive-month");
 
             tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
+                err_variant = ?ExpectedVariant::Args,
                 err_message = %err_message,
                 label = %label,
                 year,
@@ -327,7 +327,7 @@ impl ComicArchiveMonth {
                 let err_message = trl("error-invalid-comic-archive-month");
 
                 tracing::warn!(
-                    error_variant = ?ExpectedVariant::Args,
+                    err_variant = ?ExpectedVariant::Args,
                     err_message = %err_message,
                     label = %label,
                     year,
@@ -352,7 +352,7 @@ impl ComicArchiveMonth {
                     let err_message = trl("error-invalid-comic-archive-month");
 
                     tracing::warn!(
-                        error_variant = ?ExpectedVariant::Args,
+                        err_variant = ?ExpectedVariant::Args,
                         err_message = %err_message,
                         label = %label,
                         year,
@@ -375,7 +375,7 @@ impl ComicArchiveMonth {
                 let err_message = trl("error-invalid-comic-archive-month");
 
                 tracing::warn!(
-                    error_variant = ?ExpectedVariant::Args,
+                    err_variant = ?ExpectedVariant::Args,
                     err_message = %err_message,
                     label = %label,
                     next_year = next.0,
@@ -406,7 +406,7 @@ fn parse_label(label: &str) -> BaseRest<(i32, u8)> {
         let err_message = trl("error-invalid-comic-archive-month");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
+            err_variant = ?ExpectedVariant::Args,
             err_message = %err_message,
             label = %label,
             "expected error: comic archive month label has no separator",
@@ -423,7 +423,7 @@ fn parse_label(label: &str) -> BaseRest<(i32, u8)> {
         let err_message = trl("error-invalid-comic-archive-month");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
+            err_variant = ?ExpectedVariant::Args,
             err_message = %err_message,
             label = %label,
             raw_year = %year,
@@ -442,7 +442,7 @@ fn parse_label(label: &str) -> BaseRest<(i32, u8)> {
         let err_message = trl("error-invalid-comic-archive-month");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
+            err_variant = ?ExpectedVariant::Args,
             err_message = %err_message,
             label = %label,
             raw_year = %year,
@@ -461,7 +461,7 @@ fn parse_label(label: &str) -> BaseRest<(i32, u8)> {
         let err_message = trl("error-invalid-comic-archive-month");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
+            err_variant = ?ExpectedVariant::Args,
             err_message = %err_message,
             label = %label,
             year,

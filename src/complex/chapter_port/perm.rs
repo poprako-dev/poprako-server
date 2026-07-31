@@ -52,7 +52,7 @@ impl ChapterPortPermComplex {
                     trl("error-chapter-port-export-permission-required");
 
                 tracing::warn!(
-                    error_variant = ?ExpectedVariant::Perm,
+                    err_variant = ?ExpectedVariant::Perm,
                     err_message = %err_message,
                     user_id = %user_id,
                     chapter_id = %chapter_id,
@@ -95,7 +95,7 @@ impl ChapterPortPermComplex {
                     trl("error-chapter-port-import-permission-required");
 
                 tracing::warn!(
-                    error_variant = ?ExpectedVariant::Perm,
+                    err_variant = ?ExpectedVariant::Perm,
                     err_message = %err_message,
                     user_id = %user_id,
                     chapter_id = %chapter_id,

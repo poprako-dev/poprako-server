@@ -110,7 +110,7 @@ where
         let err_message = trl("error-forbidden");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Perm,
+            err_variant = ?ExpectedVariant::Perm,
             err_message = %err_message,
             user_id = %token.user_id,
             target_user_id = %instr.id,
@@ -174,7 +174,7 @@ where
         let err_message = trl("error-forbidden");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Perm,
+            err_variant = ?ExpectedVariant::Perm,
             err_message = %err_message,
             user_id = %token.user_id,
             target_user_id = %user_id,
@@ -204,7 +204,7 @@ where
         let err_message = trl("error-wrong-credentials");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Auth,
+            err_variant = ?ExpectedVariant::Auth,
             err_message = %err_message,
             user_id = %user_id,
             qid = %user_info.qid,
@@ -401,7 +401,7 @@ where
         let err_message = trl("error-forbidden");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Perm,
+            err_variant = ?ExpectedVariant::Perm,
             err_message = %err_message,
             user_id = %token.user_id,
             target_user_id = %id,
@@ -421,7 +421,7 @@ where
         let err_message = trl("error-stale-avatar-upload");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
+            err_variant = ?ExpectedVariant::Args,
             err_message = %err_message,
             user_id = %token.user_id,
             target_user_id = %id,
@@ -445,7 +445,7 @@ where
         let err_message = trl("error-stale-avatar-upload");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
+            err_variant = ?ExpectedVariant::Args,
             err_message = %err_message,
             user_id = %token.user_id,
             target_user_id = %id,
@@ -465,7 +465,7 @@ where
         let err_message = trl("error-stale-avatar-upload");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
+            err_variant = ?ExpectedVariant::Args,
             err_message = %err_message,
             user_id = %token.user_id,
             target_user_id = %id,
@@ -499,7 +499,7 @@ where
             let err_message = trl("error-stale-avatar-upload");
 
             tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
+                err_variant = ?ExpectedVariant::Args,
                 err_message = %err_message,
                 user_id = %token.user_id,
                 target_user_id = %id,
@@ -562,7 +562,7 @@ where
         let err_message = trl("error-forbidden");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Perm,
+            err_variant = ?ExpectedVariant::Perm,
             err_message = %err_message,
             user_id = %token.user_id,
             target_user_id = %id,

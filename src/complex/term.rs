@@ -18,7 +18,7 @@ fn normalize_source(source: String) -> BaseRest<String> {
         let err_message = trl("error-term-source-required");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
+            err_variant = ?ExpectedVariant::Args,
             err_message = %err_message,
             source = %source,
             "expected error: term source required",
@@ -41,7 +41,7 @@ fn normalize_targets(targets: Vec<String>) -> BaseRest<Vec<String>> {
         let err_message = trl("error-term-targets-required");
 
         tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
+            err_variant = ?ExpectedVariant::Args,
             err_message = %err_message,
             target_count = targets.len(),
             "expected error: term targets required",
@@ -67,7 +67,7 @@ fn normalize_targets(targets: Vec<String>) -> BaseRest<Vec<String>> {
             let err_message = trl("error-term-target-required");
 
             tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
+                err_variant = ?ExpectedVariant::Args,
                 err_message = %err_message,
                 target = %target,
                 target_count = normalized_targets.len(),
@@ -85,7 +85,7 @@ fn normalize_targets(targets: Vec<String>) -> BaseRest<Vec<String>> {
             let err_message = trl("error-term-target-duplicate");
 
             tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
+                err_variant = ?ExpectedVariant::Args,
                 err_message = %err_message,
                 target = %target,
                 target_count = normalized_targets.len(),
