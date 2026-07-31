@@ -6,15 +6,17 @@
 # ]
 # ///
 
-"""Forbid type-annotation hints on let bindings when turbofish is idiomatic.
+"""Forbid type-annotation hints on let bindings.
 
-Prefer turbofish over type hints::
+Prefer inference, and turbofish when a type must be pinned explicitly::
 
     let x = expr.collect::<Vec<_>>();       // GOOD
-    let x: Vec<_> = expr.collect();         // BAD — type hint instead of turbofish
-    let x = expr.collect();                 // BEST — inference when possible
+    let y = resolver.parse::<u32>()?;       // GOOD — turbofish on the call
+    let z: u32 = expr.parse()?;             // BAD — type hint on the let binding
 
-Only ``collect`` and ``parse`` are checked for now.
+The rule is uniform: no `let x: T = value` is allowed. When the value's type
+cannot be inferred, supply it as turbofish on the value's generic call instead
+of annotating the binding.
 """
 
 from __future__ import annotations
@@ -33,10 +35,6 @@ from production_source import production_source
 
 ROOT = Path(__file__).parents[2]
 PARSER = tree_sitter.Parser(tree_sitter.Language(tree_sitter_rust.language()))
-
-# Methods where turbofish is the canonical way to supply the type argument.
-TURBOFISH_METHODS = frozenset({"collect", "parse", "from_str", "from_reader", "from_slice"})
-
 
 @dataclass(frozen=True)
 class Violation:
@@ -69,35 +67,6 @@ def descendants(node: tree_sitter.Node, kind: str) -> list[tree_sitter.Node]:
     return found
 
 
-def method_name(node: tree_sitter.Node, source: bytes) -> str | None:
-    """Return the method name if `node` is a field-expression (`.method`)."""
-    if node.type == "field_expression":
-        field = node.child_by_field_name("field")
-
-        if field is not None:
-            return text(source, field)
-
-    return None
-
-
-def has_turbofish(node: tree_sitter.Node, source: bytes) -> bool:
-    """Check whether a call_expression node already carries turbofish."""
-    # tree-sitter-rust represents turbofish as a `type_arguments` child of the
-    # call_expression (or sometimes the field_expression).
-    for child in node.named_children:
-        if child.type == "type_arguments":
-            return True
-
-    func = node.child_by_field_name("function")
-
-    if func is not None:
-        for child in func.named_children:
-            if child.type == "type_arguments":
-                return True
-
-    return False
-
-
 def type_annotation_text(node: tree_sitter.Node, source: bytes) -> str | None:
     """Extract the type annotation string from a let_declaration."""
     type_node = node.child_by_field_name("type")
@@ -108,130 +77,42 @@ def type_annotation_text(node: tree_sitter.Node, source: bytes) -> str | None:
     return None
 
 
+def violation_for(path: Path, let_node: tree_sitter.Node, source: bytes) -> Violation:
+    type_ann = type_annotation_text(let_node, source)
+    type_text = type_ann if type_ann is not None else "<type>"
+
+    message = (
+        f"type hint `{type_text}` on let binding; remove the annotation and rely on inference, "
+        "or pin the type with turbofish on the value's generic call"
+    )
+
+    line = line_number(source, let_node.start_byte)
+    return Violation(path=path, line=line, code="NO_TYPE_HINT", message=message)
+
+
 def check_file(path: Path, source: bytes) -> list[Violation]:
     tree = PARSER.parse(source)
     violations: list[Violation] = []
 
     for let_node in descendants(tree.root_node, "let_declaration"):
-        type_ann = type_annotation_text(let_node, source)
-
-        if type_ann is None:
+        if type_annotation_text(let_node, source) is None:
             continue
 
-        value = let_node.child_by_field_name("value")
-
-        if value is None:
-            continue
-
-        # Drill into block, return, or parenthesized expressions.
-        inner = value
-
-        while inner.type in {"block", "return_expression", "parenthesized_expression"}:
-            inner = inner.child_by_field_name("body") or inner.named_children[0] if inner.named_children else None
-
-            if inner is None:
-                break
-
-        if inner is None or inner.type != "call_expression":
-            continue
-
-        if has_turbofish(inner, source):
-            continue
-
-        func = inner.child_by_field_name("function")
-
-        if func is None:
-            continue
-
-        name = method_name(func, source)
-
-        if name is None or name not in TURBOFISH_METHODS:
-            continue
-
-        line = line_number(source, let_node.start_byte)
-        violations.append(
-            Violation(
-                path=path,
-                line=line,
-                code="NO_TYPE_HINT",
-                message=f"type hint `{type_ann}` should be turbofish on `.{name}()`; "
-                f"write `{name}::<{type_ann}>()` instead of annotating the let binding",
-            ),
-        )
+        violations.append(violation_for(path, let_node, source))
 
     return violations
 
 
 def fix_file(path: Path, source: bytes) -> tuple[bytes, bool]:
-    tree = PARSER.parse(source)
-    edits: list[tuple[int, int, bytes]] = []
+    """Conservatively leave the source untouched.
 
-    for let_node in descendants(tree.root_node, "let_declaration"):
-        type_ann = type_annotation_text(let_node, source)
-
-        if type_ann is None:
-            continue
-
-        value = let_node.child_by_field_name("value")
-
-        if value is None:
-            continue
-
-        inner = value
-
-        while inner.type in {"block", "return_expression", "parenthesized_expression"}:
-            inner = inner.child_by_field_name("body") or inner.named_children[0] if inner.named_children else None
-
-            if inner is None:
-                break
-
-        if inner is None or inner.type != "call_expression":
-            continue
-
-        if has_turbofish(inner, source):
-            continue
-
-        func = inner.child_by_field_name("function")
-
-        if func is None:
-            continue
-
-        name = method_name(func, source)
-
-        if name is None or name not in TURBOFISH_METHODS:
-            continue
-
-        type_node = let_node.child_by_field_name("type")
-
-        if type_node is None:
-            continue
-
-        # Remove the type annotation: cut from ':' to end of type.
-        # Walk back to find the ':'
-        colon_end = type_node.start_byte
-
-        while colon_end > 0 and source[colon_end - 1 : colon_end] != b":":
-            colon_end -= 1
-
-        colon_start = colon_end - 1  # position of ':'
-
-        # Remove `: Type` — include trailing whitespace before `=`
-        remove_end = type_node.end_byte
-
-        while remove_end < len(source) and source[remove_end:remove_end + 1] in (b" ", b"\t"):
-            remove_end += 1
-
-        edits.append((colon_start, remove_end, b""))
-
-    if not edits:
-        return source, False
-
-    result = bytearray(source)
-
-    for start, end, replacement in sorted(edits, reverse=True):
-        result[start:end] = replacement
-
-    return bytes(result), True
+    Removing an annotation can silently change the inferred type (literals,
+    `as` casts, generic constructors) or break compilation entirely (Diesel
+    `.first()?` / `.load()`), and turbofish is not valid on every method.
+    Auto-editing is therefore a no-op: the check reports, and the developer
+    applies the recommended fix by hand.
+    """
+    return source, False
 
 
 def rust_files(root: Path, paths: list[Path]) -> list[Path]:
@@ -252,10 +133,10 @@ def rust_files(root: Path, paths: list[Path]) -> list[Path]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Forbid type hints where turbofish is idiomatic")
+    parser = argparse.ArgumentParser(description="Forbid type hints on let bindings")
     parser.add_argument("paths", nargs="*", type=Path)
     parser.add_argument("--root", type=Path, default=ROOT)
-    parser.add_argument("--fix", action="store_true", help="remove type annotations (add turbofish manually if needed)")
+    parser.add_argument("--fix", action="store_true", help="accepted for compatibility; auto-fix is not implemented")
     args = parser.parse_args()
 
     root = args.root.resolve()
@@ -267,17 +148,21 @@ def main() -> int:
         visible_source = production_source(path, root)
 
         if args.fix and source == visible_source:
-            fixed, changed = fix_file(path, source)
+            _, changed = fix_file(path, source)
 
             if changed:
-                path.write_bytes(fixed)
-                # Re-read and check after fix
-                source = path.read_bytes()
+                path.write_bytes(visible_source)
 
             visible_source = source
 
-        violations = check_file(path, visible_source)
-        all_violations.extend(violations)
+        all_violations.extend(check_file(path, visible_source))
+
+    if args.fix:
+        print(
+            "note: --fix is a no-op; remove or turbofish the annotation by hand "
+            "(auto-editing can change the inferred type or break compilation)",
+            file=sys.stderr,
+        )
 
     if all_violations:
         for v in sorted(all_violations, key=lambda v: (str(v.path), v.line)):

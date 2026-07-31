@@ -21,8 +21,9 @@ use crate::data::view::user::UserInfoView;
 use crate::model::shared::user::UserToken;
 use crate::model::write::member::MemberNicknameRepl;
 use crate::model::write::user::{UserAvatarRepl, UserCredsRepl, UserInfoRepl};
+use crate::part::effect::event::Event;
 use crate::part::effect::event::user::UserActiveEvent;
-use crate::part::effect::{EffectDevelop, EffectEvent as _};
+use crate::part::effect::{Develop, EffectEvent as _};
 use crate::part::image::{ImageManager, ImagePool, ImageUploadSpec};
 use crate::part::prom::Prom;
 use crate::part::prom::payload::{TaskPayload, image};
@@ -62,15 +63,15 @@ pub async fn get_info<C, R, I, D>(
 where
     R: UserRepo<C>,
     I: ImagePool,
-    D: EffectDevelop + Send + Sync,
+    D: Develop + Send + Sync,
 {
     let user_info = GetUserInfo::Id { id: &id }.run_on(repo).await?;
 
     // Dispatch an activity event when the user reads their own profile.
     if token.user_id == id {
-        UserActiveEvent {
+        Event::UserActive(UserActiveEvent {
             user_id: token.user_id,
-        }
+        })
         .develop_on(develop)
         .await;
     }

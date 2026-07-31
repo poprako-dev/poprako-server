@@ -13,8 +13,9 @@ use crate::model::shared::user::UserToken;
 use crate::model::write::member::MemberEntry;
 use crate::model::write::user::UserEntry;
 use crate::part::auth::TokenAuth;
+use crate::part::effect::event::Event;
 use crate::part::effect::event::user::UserSignedUpEvent;
-use crate::part::effect::{EffectDevelop, EffectEvent as _};
+use crate::part::effect::{Develop, EffectEvent as _};
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::member_invitation::MemberInvitationRepo;
 use crate::part::repo::oper::member::CreateMember;
@@ -71,7 +72,7 @@ where
     C: Send,
     R: UserRepo<C> + MemberRepo<C> + MemberInvitationRepo<C> + Send + Sync,
     A: TokenAuth,
-    D: EffectDevelop + Send + Sync,
+    D: Develop + Send + Sync,
 {
     let (user_id, team_id, invitor_id, invitee_qid) = nucl
         .coord(async move |context| {
@@ -145,11 +146,11 @@ where
         .await?;
 
     // Dispatch after successful commit so side effects do not run inside the transaction.
-    UserSignedUpEvent {
+    Event::UserSignedUp(UserSignedUpEvent {
         team_id: team_id.clone(),
         invitor_id,
         invitee_qid,
-    }
+    })
     .develop_on(develop)
     .await;
 

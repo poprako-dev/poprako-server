@@ -15,7 +15,7 @@ use tokio::sync::watch;
 use tokio_util::sync::CancellationToken;
 use tracing::instrument;
 
-use crate::part::effect::EffectDevelop;
+use crate::part::effect::Develop;
 use crate::part::image::ImageManager;
 use crate::part::prom::Prom;
 use crate::part::prom::payload::TaskPayload;
@@ -69,7 +69,7 @@ impl RdbProm {
     pub fn new<I, D>(core: RdbCore, image_pool: I, develop: D) -> Self
     where
         I: ImageManager + Send + Sync + 'static,
-        D: EffectDevelop + Send + Sync + 'static,
+        D: Develop + Send + Sync + 'static,
     {
         let token = CancellationToken::new();
 

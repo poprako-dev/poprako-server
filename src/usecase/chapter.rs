@@ -19,10 +19,11 @@ use crate::model::read::spec::chapter::ChapterListSpec;
 use crate::model::shared::user::UserToken;
 use crate::model::write::assignment::AssignmentEntry;
 use crate::model::write::chapter::{ChapterEntry, ChapterPatch};
+use crate::part::effect::event::Event;
 use crate::part::effect::event::chapter::{
     ChapterPublishedEvent, ChapterWorkflowCompletedEvent,
 };
-use crate::part::effect::{EffectDevelop, EffectEvent as _};
+use crate::part::effect::{Develop, EffectEvent as _};
 use crate::part::image::ImagePool;
 use crate::part::prom::Prom;
 use crate::part::prom::payload::TaskPayload;
@@ -466,7 +467,7 @@ where
         + Send
         + Sync,
     P: Prom<C> + Send + Sync,
-    D: EffectDevelop + Send + Sync,
+    D: Develop + Send + Sync,
 {
     ChapterPermComplex::ensure_user_can_update_stage(
         &mut run_proxy! {
@@ -560,16 +561,16 @@ where
         .await?;
 
     if let Some(chapter_id) = workflow_completed_chapter_id {
-        ChapterWorkflowCompletedEvent {
+        Event::ChapterWorkflowCompleted(ChapterWorkflowCompletedEvent {
             chapter_id,
             completed_stage: instr.stage,
-        }
+        })
         .develop_on(develop)
         .await;
     }
 
     if let Some(chapter_id) = published_chapter_id {
-        ChapterPublishedEvent { chapter_id }
+        Event::ChapterPublished(ChapterPublishedEvent { chapter_id })
             .develop_on(develop)
             .await;
     }
