@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
@@ -76,11 +74,11 @@ impl Run<ListPinnedChapterInfos<'_>> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    // Collect pinned chapter info for multiple comics, keyed by comic id.
+    // Collect pinned chapter info for multiple comics.
     async fn run(
         &self,
         oper: &ListPinnedChapterInfos<'_>,
-    ) -> BaseRest<HashMap<String, ChapterInfo>> {
+    ) -> BaseRest<Vec<ChapterInfo>> {
         submit_query!(self.core, list_pinned_infos_by_comic_ids, oper.comic_ids)
     }
 }

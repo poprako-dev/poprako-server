@@ -80,21 +80,25 @@ impl ComicComplex {
             ListPinnedChapterInfos { comic_ids }.proxy_on(proxy).await?;
 
         let chapter_ids = pinned_chapter_infos
-            .values()
+            .iter()
             .map(|chapter_info| chapter_info.id.clone())
             .collect::<Vec<_>>();
 
-        let first_page_infos = ListFirstPageInfos {
+        let first_page_by_chapter = ListFirstPageInfos {
             chapter_ids: &chapter_ids,
         }
         .proxy_on(proxy)
-        .await?;
+        .await?
+        .into_iter()
+        .map(|page_info| (page_info.chapter_id.clone(), page_info))
+        .collect::<HashMap<_, _>>();
 
         let mut fallback_cover_keys = HashMap::new();
 
-        for (comic_id, chapter_info) in pinned_chapter_infos {
+        for chapter_info in pinned_chapter_infos {
             //
-            let Some(page_info) = first_page_infos.get(&chapter_info.id) else {
+            let Some(page_info) = first_page_by_chapter.get(&chapter_info.id)
+            else {
                 continue;
             };
 
@@ -104,7 +108,8 @@ impl ComicComplex {
                 continue;
             };
 
-            fallback_cover_keys.insert(comic_id, image_key.clone());
+            fallback_cover_keys
+                .insert(chapter_info.comic_id, image_key.clone());
         }
 
         accept(fallback_cover_keys)

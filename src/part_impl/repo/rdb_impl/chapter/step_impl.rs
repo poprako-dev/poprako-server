@@ -1,7 +1,5 @@
 //! RDB-backed chapter repository step implementations.
 
-use std::collections::HashMap;
-
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
@@ -209,15 +207,15 @@ pub async fn find_pinned_info_by_comic_id(
     accept(Some(info))
 }
 
-/// Returns a map of comic ID to pinned chapter info for the given comic IDs.
+/// Returns the pinned chapter infos for the given comic IDs.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_pinned_infos_by_comic_ids(
     conn: &mut RdbConn,
     comic_ids: &[String],
-) -> BaseRest<HashMap<String, ChapterInfo>> {
+) -> BaseRest<Vec<ChapterInfo>> {
     //
     if comic_ids.is_empty() {
-        return accept(HashMap::new());
+        return accept(Vec::new());
     }
 
     let rows: Vec<ChapterRow> = t_chapter
@@ -228,16 +226,7 @@ pub async fn list_pinned_infos_by_comic_ids(
         .await
         .map_err(diesel)?;
 
-    let mut map = HashMap::with_capacity(rows.len());
-
-    for row in rows {
-        //
-        let info = row_into_info(row)?;
-
-        map.insert(info.comic_id.clone(), info);
-    }
-
-    accept(map)
+    rows.into_iter().map(row_into_info).collect()
 }
 
 /// Inserts a new chapter row from the given entry and returns the created info.

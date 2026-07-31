@@ -107,13 +107,14 @@ where
     // so we have to handle it in usecase layer.
     let mut pinned_chapter_infos = match with_pinned_chapter {
         //
-        true => {
-            ListPinnedChapterInfos {
-                comic_ids: &comic_ids,
-            }
-            .run_on(repo)
-            .await?
+        true => ListPinnedChapterInfos {
+            comic_ids: &comic_ids,
         }
+        .run_on(repo)
+        .await?
+        .into_iter()
+        .map(|chapter_info| (chapter_info.comic_id.clone(), chapter_info))
+        .collect::<HashMap<_, _>>(),
 
         false => HashMap::new(),
     };
