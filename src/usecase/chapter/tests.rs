@@ -31,6 +31,7 @@ use crate::data::instr::chapter::{
 
 use self::fixture::*;
 use crate::complex::chapter::ChapterComplex;
+use crate::part::effect::event::Event;
 use crate::part::prom::payload::TaskPayload;
 use crate::part::prom::payload::image::ImagePayload;
 use crate::part_impl::repo::mock_impl::Mock;

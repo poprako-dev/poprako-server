@@ -25,8 +25,8 @@ use std::sync::Arc;
 use anyhow::Context as _;
 
 use poprako_server::{
-    AppConfig, AppHarn, AsyncEffectDevelop, GeneralSched, Harn, JwtAuth,
-    R2ImagePool, RdbCore, RdbDrive, RdbProm, RdbRepo,
+    AppConfig, AppHarn, AsyncEffectDevelop, Harn, JwtAuth, R2ImagePool,
+    RdbCore, RdbDrive, RdbProm, RdbRepo, Sched,
 };
 
 /// Application entry point.
@@ -60,10 +60,10 @@ async fn main() -> anyhow::Result<()> {
 
     let (prom, sched) = (
         RdbProm::new(core.clone(), image_pool.clone(), develop.clone()),
-        GeneralSched::new(core.clone()),
+        Sched::new(core.clone()),
     );
 
-    let harn: AppHarn = Harn::new(drive, repo, prom, auth, image_pool, develop);
+    let harn = Harn::new(drive, repo, prom, auth, image_pool, develop);
 
     let http_addr: SocketAddr = ToSocketAddrs::to_socket_addrs(&format!(
         "{}:{}",

@@ -1,19 +1,18 @@
-//! Payload types for chapter domain events.
-
+//! Chapter domain events.
 use crate::value::chapter::Stage;
 
-/// Payload for the [`ChapterPublished`] event.
+/// Event emitted when a chapter reaches publish completion.
 ///
 /// [`ChapterPublished`]: crate::part::effect::event::Event::ChapterPublished
-pub struct ChapterPublishedPayload {
+pub struct ChapterPublishedEvent {
     /// Unique identifier of the published chapter.
     pub chapter_id: String,
 }
 
-/// Payload for the [`ChapterWorkflowCompleted`] event.
+/// Event emitted when a chapter workflow stage reaches completion.
 ///
 /// [`ChapterWorkflowCompleted`]: crate::part::effect::event::Event::ChapterWorkflowCompleted
-pub struct ChapterWorkflowCompletedPayload {
+pub struct ChapterWorkflowCompletedEvent {
     //
     /// Unique identifier of the chapter whose workflow completed.
     pub chapter_id: String,

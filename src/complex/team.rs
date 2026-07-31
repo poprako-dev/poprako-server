@@ -236,9 +236,20 @@ impl TeamPermComplex {
         let user_info = GetUserInfo::Id { id: user_id }.proxy_on(proxy).await?;
 
         if !user_info.is_sadmin {
+            //
+            let error_message = trl("error-sadmin-required");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Perm,
+                error_message = %error_message,
+                user_id = %user_id,
+                is_sadmin = user_info.is_sadmin,
+                "expected error: super-admin permission required",
+            );
+
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Perm,
-                message: trl("error-sadmin-required"),
+                message: error_message,
             });
         }
 

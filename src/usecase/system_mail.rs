@@ -7,9 +7,7 @@ use poprako_util::time::ToUnixMilli as _;
 
 use crate::data::instr::system_mail::ListSystemMailInfosInstr;
 use crate::data::view::system_mail::SystemMailInfoView;
-use crate::model::read::spec::system_mail::{
-    SystemMailListKind, SystemMailListSpec,
-};
+use crate::model::read::spec::system_mail::SystemMailListSpec;
 use crate::model::shared::user::UserToken;
 use crate::part::repo::oper::system_mail::{
     ListSystemMailInfos, MarkSystemMailRead,
@@ -41,18 +39,9 @@ pub async fn list_infos<R>(
 where
     R: SystemMailRepo,
 {
-    let kind = match instr.is_read {
-        //
-        Some(true) => SystemMailListKind::Read,
-
-        Some(false) => SystemMailListKind::Unread,
-
-        None => SystemMailListKind::All,
-    };
-
     let system_mail_list_spec = SystemMailListSpec {
         receiver_id: token.user_id,
-        kind,
+        is_read: instr.is_read,
         offset: instr.offset,
         limit: instr.limit,
     };

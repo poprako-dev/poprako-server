@@ -83,9 +83,20 @@ impl ChapterComplex {
             .stages
             .has_phase(Stage::Publish, StagePhase::Completed)
         {
+            let error_message = trl("error-chapter-published-frozen");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                error_message = %error_message,
+                chapter_id = %chapter_info.id,
+                stage = ?Stage::Publish,
+                stage_phase = ?StagePhase::Completed,
+                "expected error: published chapter is frozen",
+            );
+
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: trl("error-chapter-published-frozen"),
+                message: error_message,
             });
         }
 
@@ -315,15 +326,6 @@ fn required_roles_for_transition(
     }
 }
 
-// Construct a "no one holds the required workflow role on this chapter"
-// permission error.
-fn chapter_no_role_holder_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Perm,
-        message: trl("error-chapter-no-role-holder"),
-    }
-}
-
 // Resolve the owning team from a comic ID, then verify the user is a team
 // member of that team.
 async fn check_team_member_by_comic<P>(
@@ -357,22 +359,6 @@ where
     check_user_is_team_admin(proxy, user_id, &team_id).await
 }
 
-// Construct a "chapter admin required" permission error.
-fn chapter_admin_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Perm,
-        message: trl("error-chapter-admin-required"),
-    }
-}
-
-// Construct a "workflow role required for this transition" permission error.
-fn chapter_workflow_role_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Perm,
-        message: trl("error-chapter-workflow-role-required"),
-    }
-}
-
 // Verify that at least one person on the chapter holds the role(s) required
 // for advancing `stage`. A workflow stage cannot be advanced unless someone
 // is assigned to the corresponding role.
@@ -403,18 +389,25 @@ where
         .any(|info| info.roles.has_any_role(required_roles));
 
     if !has_holder {
-        return Err(chapter_no_role_holder_err());
+        //
+        let error_message = trl("error-chapter-no-role-holder");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Perm,
+            error_message = %error_message,
+            chapter_id = %chapter_id,
+            stage = ?stage,
+            required_roles = ?required_roles,
+            "expected error: chapter workflow role has no holder",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: error_message,
+        });
     }
 
     accept(())
-}
-
-// Construct an "admin role not assignable through join" args error.
-fn chapter_role_not_assignable_args_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        message: trl("error-chapter-role-not-assignable"),
-    }
 }
 
 // Resolve the owning team from a chapter, then verify the user is a team member.
@@ -478,11 +471,40 @@ where
     .await?;
 
     let Some(assignment_info) = assignment_info else {
-        return Err(chapter_admin_err());
+        //
+        let error_message = trl("error-chapter-admin-required");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Perm,
+            error_message = %error_message,
+            user_id = %user_id,
+            chapter_id = %chapter_id,
+            "expected error: chapter admin assignment missing",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: error_message,
+        });
     };
 
     if !assignment_info.roles.has_any_role(&[RoleField::ADMIN]) {
-        return Err(chapter_admin_err());
+        //
+        let error_message = trl("error-chapter-admin-required");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Perm,
+            error_message = %error_message,
+            user_id = %user_id,
+            chapter_id = %chapter_id,
+            assignment_roles = ?assignment_info.roles,
+            "expected error: chapter admin role missing",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: error_message,
+        });
     }
 
     accept(())
@@ -515,7 +537,23 @@ where
     .await?;
 
     let Some(assignment_info) = assignment_info else {
-        return Err(chapter_workflow_role_err());
+        //
+        let error_message = trl("error-chapter-workflow-role-required");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Perm,
+            error_message = %error_message,
+            user_id = %user_id,
+            chapter_id = %chapter_id,
+            stage = ?stage,
+            oper = ?oper,
+            "expected error: workflow assignment missing",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: error_message,
+        });
     };
 
     // Domain invariant: a workflow stage cannot be advanced unless at least
@@ -535,11 +573,47 @@ where
     let required_roles = required_roles_for_transition(stage, oper);
 
     if required_roles.is_empty() {
-        return Err(chapter_workflow_role_err());
+        //
+        let error_message = trl("error-chapter-workflow-role-required");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Perm,
+            error_message = %error_message,
+            user_id = %user_id,
+            chapter_id = %chapter_id,
+            stage = ?stage,
+            oper = ?oper,
+            assignment_roles = ?roles,
+            required_roles = ?required_roles,
+            "expected error: workflow transition role is not configured",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: error_message,
+        });
     }
 
     if !roles.has_any_role(required_roles) {
-        return Err(chapter_workflow_role_err());
+        //
+        let error_message = trl("error-chapter-workflow-role-required");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Perm,
+            error_message = %error_message,
+            user_id = %user_id,
+            chapter_id = %chapter_id,
+            stage = ?stage,
+            oper = ?oper,
+            assignment_roles = ?roles,
+            required_roles = ?required_roles,
+            "expected error: workflow role missing",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: error_message,
+        });
     }
 
     accept(())
@@ -562,7 +636,23 @@ where
         + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
 {
     if roles.has_any_role(&[RoleField::ADMIN]) {
-        return Err(chapter_role_not_assignable_args_err());
+        //
+        let error_message = trl("error-chapter-role-not-assignable");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            error_message = %error_message,
+            user_id = %user_id,
+            chapter_id = %chapter_info.id,
+            comic_id = %chapter_info.comic_id,
+            roles = ?roles,
+            "expected error: admin role is not assignable through join",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: error_message,
+        });
     }
 
     let team_id =
@@ -576,16 +666,45 @@ where
     .await?;
 
     let Some(member_info) = member_info else {
+        //
+        let error_message = trl("error-team-member-required");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Perm,
+            error_message = %error_message,
+            user_id = %user_id,
+            chapter_id = %chapter_info.id,
+            comic_id = %chapter_info.comic_id,
+            team_id = %team_id,
+            roles = ?roles,
+            "expected error: chapter team member is missing",
+        );
+
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: trl("error-team-member-required"),
+            message: error_message,
         });
     };
 
     if !member_info.roles.contains_mask(roles) {
+        //
+        let error_message = trl("error-chapter-role-not-assignable");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Perm,
+            error_message = %error_message,
+            user_id = %user_id,
+            chapter_id = %chapter_info.id,
+            comic_id = %chapter_info.comic_id,
+            team_id = %team_id,
+            roles = ?roles,
+            member_roles = ?member_info.roles,
+            "expected error: chapter member lacks requested roles",
+        );
+
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: trl("error-chapter-role-not-assignable"),
+            message: error_message,
         });
     }
 

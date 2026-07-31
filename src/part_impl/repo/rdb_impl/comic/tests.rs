@@ -4,7 +4,7 @@ use super::*;
 
 use poprako_orchestra::Run as _;
 
-use crate::model::read::spec::comic::{ComicListKind, ComicListSpec};
+use crate::model::read::spec::comic::ComicListSpec;
 use crate::model::write::comic::ComicRepl;
 use crate::part::repo::oper::comic::{
     GetComicInfo, ListComicInfos, UpdateComic,
@@ -28,7 +28,7 @@ pub async fn comic_roundtrip_uses_testcontainer(shared: RdbCore) {
     let comic_list_spec = ComicListSpec {
         workset_id: comic_fixture.workset_entry.id.clone(),
         fuzzy_title: Some("Comic".into()),
-        kind: ComicListKind::All,
+        stages: None,
         incl_opt: vec![ComicInclOpt::WorksetTeam],
         offset: 0,
         limit: 10,
@@ -82,7 +82,7 @@ pub async fn comic_roundtrip_uses_testcontainer(shared: RdbCore) {
     let comic_list_spec = ComicListSpec {
         workset_id: comic_fixture.workset_entry.id.clone(),
         fuzzy_title: Some("RDB Author Updated".into()),
-        kind: ComicListKind::All,
+        stages: None,
         incl_opt: Vec::new(),
         offset: 0,
         limit: 10,
@@ -103,7 +103,7 @@ pub async fn comic_roundtrip_uses_testcontainer(shared: RdbCore) {
     let comic_list_spec = ComicListSpec {
         workset_id: comic_fixture.workset_entry.id.clone(),
         fuzzy_title: Some("1".into()),
-        kind: ComicListKind::All,
+        stages: None,
         incl_opt: Vec::new(),
         offset: 0,
         limit: 10,

@@ -27,7 +27,7 @@ use crate::usecase;
 
 /// Query for listing assignment invitations under one chapter.
 ///
-/// Example: `?pending=true&offset=0&limit=20`.
+/// Example: `?is_pending=true&offset=0&limit=20`.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
@@ -76,7 +76,7 @@ pub async fn create(
     get,
     path = "/api/v1/chapters/{chapter_id}/assignment-invitations",
     tag = "assignment-invitations",
-    description = "Lists a chapter's assignment invitations. `pending` filters by consumption state. Example: `/api/v1/chapters/{chapter_id}/assignment-invitations?pending=true&offset=0&limit=20`.",
+    description = "Lists a chapter's assignment invitations. `is_pending` filters by consumption state. Example: `/api/v1/chapters/{chapter_id}/assignment-invitations?is_pending=true&offset=0&limit=20`.",
     params(("chapter_id" = String, Path, description = "Chapter ID"), AssignmentInvitationListQuery),
     responses(
         (status = 200, description = "Invitations listed", body = HttpBody<Vec<AssignmentInvitationInfoView>>),

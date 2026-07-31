@@ -48,7 +48,6 @@ use crate::part::repo::user::UserRepo;
 use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
-use crate::value::assignment_invitation::AssignmentInvitationStatus;
 use crate::value::role::{RoleField, RoleMask};
 
 #[cfg(test)]
@@ -70,18 +69,9 @@ where
 {
     ensure_user_admin(repo, &token.user_id, &instr.chapter_id).await?;
 
-    let status = match instr.is_pending {
-        //
-        Some(true) => AssignmentInvitationStatus::Pending,
-
-        Some(false) => AssignmentInvitationStatus::Used,
-
-        None => AssignmentInvitationStatus::All,
-    };
-
     let assignment_invitation_list_spec = AssignmentInvitationListSpec {
         chapter_id: instr.chapter_id,
-        status,
+        is_pending: instr.is_pending,
         offset: instr.offset,
         limit: instr.limit,
     };
@@ -118,7 +108,7 @@ where
         + Sync,
     P: Prom<C> + Send + Sync,
 {
-    validate_roles(instr.roles)?;
+    validate_roles(instr.roles, &token.user_id, &instr.chapter_id)?;
 
     ensure_user_admin(repo, &token.user_id, &instr.chapter_id).await?;
 
@@ -152,7 +142,24 @@ where
                     .await?;
 
                 if existing_assignment_info.is_some() {
-                    return Err(invitee_assigned_err());
+                    //
+                    let error_message = trl("error-assignment-already-exists");
+
+                    tracing::warn!(
+                        error_variant = ?ExpectedVariant::Args,
+                        error_message = %error_message,
+                        chapter_id = %instr.chapter_id,
+                        user_id = %token.user_id,
+                        invitee_user_id = %invitee_user_info.id,
+                        invitee_qid = %instr.invitee_qid,
+                        roles = ?instr.roles,
+                        "expected error: invitee already has a chapter assignment",
+                    );
+
+                    return Err(BaseError::Expected {
+                        variant: ExpectedVariant::Args,
+                        message: error_message,
+                    });
                 }
             }
 
@@ -284,10 +291,30 @@ where
                     .await?;
 
             if assignment_invitation_info.invitee_qid != current_user_info.qid {
-                return Err(invalid_invitation_err());
+                //
+                let error_message = trl("error-no-pending-invitation");
+
+                tracing::warn!(
+                    error_variant = ?ExpectedVariant::Args,
+                    error_message = %error_message,
+                    user_id = %current_user_id,
+                    invitee_qid = %current_user_info.qid,
+                    invitation_invitee_qid = %assignment_invitation_info.invitee_qid,
+                    invitation_code_present = true,
+                    "expected error: assignment invitation does not belong to current user",
+                );
+
+                return Err(BaseError::Expected {
+                    variant: ExpectedVariant::Args,
+                    message: error_message,
+                });
             }
 
-            validate_roles(assignment_invitation_info.roles)?;
+            validate_roles(
+                assignment_invitation_info.roles,
+                &current_user_id,
+                &assignment_invitation_info.chapter_id,
+            )?;
 
             let chapter_info = GetChapterInfoExcluded {
                 id: &assignment_invitation_info.chapter_id,
@@ -319,14 +346,46 @@ where
             .await?;
 
             let Some(member_info) = member_info else {
-                return Err(assignment_role_not_assignable_perm_err());
+                //
+                let error_message = trl("error-chapter-role-not-assignable");
+
+                tracing::warn!(
+                    error_variant = ?ExpectedVariant::Perm,
+                    error_message = %error_message,
+                    chapter_id = %assignment_invitation_info.chapter_id,
+                    user_id = %current_user_id,
+                    team_id = %workset_info.team_id,
+                    roles = ?assignment_invitation_info.roles,
+                    "expected error: invited chapter roles are not assignable",
+                );
+
+                return Err(BaseError::Expected {
+                    variant: ExpectedVariant::Perm,
+                    message: error_message,
+                });
             };
 
             if !member_info
                 .roles
                 .contains_mask(assignment_invitation_info.roles)
             {
-                return Err(assignment_role_not_assignable_perm_err());
+                let error_message = trl("error-chapter-role-not-assignable");
+
+                tracing::warn!(
+                    error_variant = ?ExpectedVariant::Perm,
+                    error_message = %error_message,
+                    chapter_id = %assignment_invitation_info.chapter_id,
+                    user_id = %current_user_id,
+                    team_id = %workset_info.team_id,
+                    roles = ?assignment_invitation_info.roles,
+                    member_roles = ?member_info.roles,
+                    "expected error: invited chapter roles are not assignable",
+                );
+
+                return Err(BaseError::Expected {
+                    variant: ExpectedVariant::Perm,
+                    message: error_message,
+                });
             }
 
             let existing_assignment_info = FindAssignmentInfo::ChapterUser {
@@ -402,32 +461,72 @@ where
     .await?;
 
     let Some(assignment_info) = assignment_info else {
-        return Err(chapter_admin_err());
+        //
+        let error_message = trl("error-chapter-admin-required");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Perm,
+            error_message = %error_message,
+            chapter_id = %chapter_id,
+            user_id = %current_user_id,
+            "expected error: chapter administrator permission required",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: error_message,
+        });
     };
 
     if !assignment_info.roles.has_any_role(&[RoleField::ADMIN]) {
-        return Err(chapter_admin_err());
+        //
+        let error_message = trl("error-chapter-admin-required");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Perm,
+            error_message = %error_message,
+            chapter_id = %chapter_id,
+            user_id = %current_user_id,
+            roles = ?assignment_info.roles,
+            "expected error: chapter administrator permission required",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: error_message,
+        });
     }
 
     accept(())
 }
 
 // Validates that the roles mask is non-empty and does not contain ADMIN.
-fn validate_roles(roles: RoleMask) -> BaseRest<()> {
+fn validate_roles(
+    roles: RoleMask,
+    user_id: &str,
+    chapter_id: &str,
+) -> BaseRest<()> {
     //
     if u32::from(roles) == 0 || roles.has_any_role(&[RoleField::ADMIN]) {
-        return Err(assignment_role_not_assignable_args_err());
+        //
+        let error_message = trl("error-chapter-role-not-assignable");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            error_message = %error_message,
+            chapter_id = %chapter_id,
+            user_id = %user_id,
+            roles = ?roles,
+            "expected error: chapter roles are not assignable",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: error_message,
+        });
     }
 
     accept(())
-}
-
-// Constructs an args error for an already assigned invitee.
-fn invitee_assigned_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        message: trl("error-assignment-already-exists"),
-    }
 }
 
 // Generates a snowflake ID for a new invitation.
@@ -447,36 +546,4 @@ fn gen_code() -> String {
     }
 
     id[len - 6..].to_string()
-}
-
-// Constructs an args error for an invalid invitation code.
-fn invalid_invitation_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        message: trl("error-no-pending-invitation"),
-    }
-}
-
-// Constructs a permission error for unassignable chapter roles.
-fn assignment_role_not_assignable_perm_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Perm,
-        message: trl("error-chapter-role-not-assignable"),
-    }
-}
-
-// Constructs a permission error when the caller is not a chapter admin.
-fn chapter_admin_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Perm,
-        message: trl("error-chapter-admin-required"),
-    }
-}
-
-// Constructs an args error for unassignable chapter roles.
-fn assignment_role_not_assignable_args_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        message: trl("error-chapter-role-not-assignable"),
-    }
 }

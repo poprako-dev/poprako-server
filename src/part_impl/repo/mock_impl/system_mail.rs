@@ -6,7 +6,6 @@ use poprako_orchestra::Run;
 use tracing::instrument;
 
 use crate::model::read::proj::system_mail::SystemMailInfo;
-use crate::model::read::spec::system_mail::SystemMailListKind;
 use crate::model::write::system_mail::SystemMailEntry;
 use crate::part::repo::oper::system_mail::{
     ListSystemMailInfos, MarkSystemMailRead, SendSystemMail, SendSystemMails,
@@ -94,16 +93,11 @@ fn list_system_mail_infos(
         .iter()
         .filter(|system_mail_info| {
             system_mail_info.receiver_id == oper.spec.receiver_id
-                && match &oper.spec.kind {
-                    //
-                    // Internal state field `SystemMailListKind`.
-                    // Internal implementation detail.
-                    SystemMailListKind::All => true,
-
-                    SystemMailListKind::Read => system_mail_info.is_read,
-
-                    SystemMailListKind::Unread => !system_mail_info.is_read,
-                }
+                && oper
+                    .spec
+                    .is_read
+                    .map(|is_read| system_mail_info.is_read == is_read)
+                    .unwrap_or(true)
         })
         .cloned()
         .collect::<Vec<_>>();

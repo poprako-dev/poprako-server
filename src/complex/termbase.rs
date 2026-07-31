@@ -19,29 +19,26 @@ use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 
-// Build an args-level error when a termbase name is empty.
-fn empty_name_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        message: trl("error-termbase-name-required"),
-    }
-}
-
-// Build an args-level error for unsupported termbase scope combinations.
-fn invalid_scope_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        message: trl("error-invalid-termbase-scope"),
-    }
-}
-
 // Trim a termbase name and reject empty values.
 fn normalize_name(name: String) -> BaseRest<String> {
     //
     let name = name.trim().to_string();
 
     if name.is_empty() {
-        return Err(empty_name_err());
+        //
+        let error_message = trl("error-termbase-name-required");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            error_message = %error_message,
+            termbase_name = %name,
+            "expected error: termbase name required",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: error_message,
+        });
     }
 
     accept(name)
@@ -84,7 +81,23 @@ impl TermbaseComplex {
             //
             (Some(_), None) | (None, Some(_)) => {}
 
-            _ => return Err(invalid_scope_err()),
+            _ => {
+                //
+                let error_message = trl("error-invalid-termbase-scope");
+
+                tracing::warn!(
+                    error_variant = ?ExpectedVariant::Args,
+                    error_message = %error_message,
+                    team_id = ?team_id,
+                    comic_id = ?comic_id,
+                    "expected error: invalid termbase ownership scope",
+                );
+
+                return Err(BaseError::Expected {
+                    variant: ExpectedVariant::Args,
+                    message: error_message,
+                });
+            }
         }
 
         let (name, description) =
@@ -230,7 +243,22 @@ impl TermbasePermComplex {
         }
 
         let Some(comic_id) = &termbase_info.comic_id else {
-            return Err(invalid_scope_err());
+            //
+            let error_message = trl("error-invalid-termbase-scope");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                error_message = %error_message,
+                termbase_id = %termbase_info.id,
+                team_id = ?termbase_info.team_id,
+                comic_id = ?termbase_info.comic_id,
+                "expected error: termbase ownership scope missing",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: error_message,
+            });
         };
 
         Self::resolve_team_id_from_comic(proxy, comic_id).await

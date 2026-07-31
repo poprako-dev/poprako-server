@@ -7,6 +7,8 @@ use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 use tracing::instrument;
 
+use poprako_util::i18n::trl;
+
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::unit::UnitCounterDelta;
 use crate::model::read::spec::chapter::ChapterListSpec;
@@ -19,9 +21,9 @@ use crate::part_impl::repo::rdb_impl::entity::chapter::{
 use crate::part_impl::repo::rdb_impl::incl;
 use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::*;
 use crate::part_impl::repo::rdb_impl::schema::t_page;
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::RdbConn;
-use crate::shared::result::{diesel, expected};
+use crate::shared::result::diesel;
 use crate::value::chapter::{ChapterInclOpt, Stage};
 
 /// Queries a single chapter row by ID and populates its includes.
@@ -39,7 +41,23 @@ pub async fn get_info_by_id(
         .await
         .optional()
         .map_err(diesel)?
-        .ok_or_else(|| expected("error-chapter-not-found"))?;
+        .ok_or_else(|| {
+            //
+            let error_message = trl("error-chapter-not-found");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                error_message = %error_message,
+                chapter_id = %id,
+                stage = "get_info_by_id",
+                "expected error: chapter not found",
+            );
+
+            BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: error_message,
+            }
+        })?;
 
     let mut info = row_into_info(row)?;
 
@@ -69,7 +87,23 @@ pub async fn get_info_excluded(
         .await
         .optional()
         .map_err(diesel)?
-        .ok_or_else(|| expected("error-chapter-not-found"))?;
+        .ok_or_else(|| {
+            //
+            let error_message = trl("error-chapter-not-found");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                error_message = %error_message,
+                chapter_id = %id,
+                stage = "get_info_excluded",
+                "expected error: chapter not found",
+            );
+
+            BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: error_message,
+            }
+        })?;
 
     let mut info = row_into_info(row)?;
 

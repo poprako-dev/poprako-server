@@ -61,31 +61,69 @@ impl TryInto<AssignmentListSpec> for ListAssignmentInfosInstr {
     // Convert validated query parameters into the domain list spec.
     fn try_into(self) -> BaseRest<AssignmentListSpec> {
         //
-        let invalid_args = || BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message: trl("error-chapter-or-user-required"),
-        };
+        let Self {
+            chapter_id,
+            owner_id,
+            role,
+            incl_opt,
+            offset,
+            limit,
+        } = self;
 
-        if self.chapter_id.is_some() == self.owner_id.is_some() {
-            return Err(invalid_args());
-        }
+        if chapter_id.is_some() == owner_id.is_some() {
+            //
+            let error_message = trl("error-chapter-or-user-required");
 
-        if let Some(chapter_id) = self.chapter_id {
-            return accept(AssignmentListSpec::Chapter {
-                chapter_id,
-                role: self.role,
-                incl_opt: self.incl_opt,
-                offset: self.offset,
-                limit: self.limit,
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                error_message = %error_message,
+                chapter_id = ?chapter_id,
+                owner_id = ?owner_id,
+                role = ?role,
+                "expected error: assignment list requires one scope identifier",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: error_message,
             });
         }
 
+        if let Some(chapter_id) = chapter_id {
+            return accept(AssignmentListSpec::Chapter {
+                chapter_id,
+                role,
+                incl_opt,
+                offset,
+                limit,
+            });
+        }
+
+        let Some(owner_id) = owner_id else {
+            //
+            let error_message = trl("error-chapter-or-user-required");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                error_message = %error_message,
+                chapter_id = ?chapter_id,
+                owner_id = ?owner_id,
+                role = ?role,
+                "expected error: assignment list owner scope is missing",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: error_message,
+            });
+        };
+
         accept(AssignmentListSpec::User {
-            owner_id: self.owner_id.ok_or_else(invalid_args)?,
-            role: self.role,
-            incl_opt: self.incl_opt,
-            offset: self.offset,
-            limit: self.limit,
+            owner_id,
+            role,
+            incl_opt,
+            offset,
+            limit,
         })
     }
 }

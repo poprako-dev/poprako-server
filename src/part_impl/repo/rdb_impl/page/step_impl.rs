@@ -7,6 +7,8 @@ use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 use tracing::instrument;
 
+use poprako_util::i18n::trl;
+
 use crate::complex::page::PageComplex;
 use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::unit::UnitCounters;
@@ -20,9 +22,9 @@ use crate::part_impl::repo::rdb_impl::schema::t_page::dsl::*;
 use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{
     f_page_id as unit_f_page_id, t_unit,
 };
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::RdbConn;
-use crate::shared::result::{diesel, expected, next_version};
+use crate::shared::result::{diesel, next_version};
 
 /// Load a single page info by ID.
 #[instrument(level = "info", err(Debug), skip_all)]
@@ -38,7 +40,23 @@ pub async fn get_info_by_id(
         .await
         .optional()
         .map_err(diesel)?
-        .ok_or_else(|| expected("error-page-not-found"))?;
+        .ok_or_else(|| {
+            //
+            let error_message = trl("error-page-not-found");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                error_message = %error_message,
+                page_id = %id,
+                stage = "get_info_by_id",
+                "expected error: page not found",
+            );
+
+            BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: error_message,
+            }
+        })?;
 
     row.try_into()
 }
@@ -58,7 +76,23 @@ pub async fn get_info_excluded(
         .await
         .optional()
         .map_err(diesel)?
-        .ok_or_else(|| expected("error-page-not-found"))?;
+        .ok_or_else(|| {
+            //
+            let error_message = trl("error-page-not-found");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                error_message = %error_message,
+                page_id = %id,
+                stage = "get_info_excluded",
+                "expected error: page not found",
+            );
+
+            BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: error_message,
+            }
+        })?;
 
     row.try_into()
 }
@@ -333,7 +367,25 @@ pub async fn mark_image_uploaded(
     .map_err(diesel)?;
 
     if affected == 0 {
-        return Err(expected("error-stale-page-image-upload"));
+        //
+        let error_message = trl("error-stale-page-image-upload");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            error_message = %error_message,
+            page_id = %id,
+            image_version = version,
+            image_key_present = image_key.is_some(),
+            image_uploaded = true,
+            affected,
+            stage = "mark_image_uploaded",
+            "expected error: stale page image upload",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: error_message,
+        });
     }
 
     accept(())
@@ -363,7 +415,25 @@ pub async fn set_image_uploaded(
     .map_err(diesel)?;
 
     if affected == 0 {
-        return Err(expected("error-stale-page-image-upload"));
+        //
+        let error_message = trl("error-stale-page-image-upload");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            error_message = %error_message,
+            page_id = %id,
+            image_version = version,
+            image_key_present = true,
+            image_uploaded,
+            affected,
+            stage = "set_image_uploaded",
+            "expected error: stale page image upload",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: error_message,
+        });
     }
 
     accept(())

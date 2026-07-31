@@ -76,7 +76,21 @@ impl UnitComplex {
     ) -> BaseRest<Vec<UnitEdit>> {
         //
         if !(1..=100).contains(&edits.len()) {
-            return Err(invalid_unit_edit_err());
+            //
+            let error_message = trl("error-invalid-unit-oper");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                error_message = %error_message,
+                edit_count = edits.len(),
+                base_id_count = base_ids.len(),
+                "expected error: unit edit count is invalid",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: error_message,
+            });
         }
 
         stable_prior(&mut edits, |edit| {
@@ -176,7 +190,22 @@ impl UnitComplex {
         if create_count != created_ids.len()
             || created_ids.iter().any(|id| base_ids.contains(id))
         {
-            return Err(invalid_unit_edit_err());
+            let error_message = trl("error-invalid-unit-oper");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                error_message = %error_message,
+                edit_count = edits.len(),
+                base_id_count = base_ids.len(),
+                create_count = create_count,
+                created_id_count = created_ids.len(),
+                "expected error: unit create edits are inconsistent",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: error_message,
+            });
         }
 
         edits.iter().try_for_each(|edit| {
@@ -186,14 +215,41 @@ impl UnitComplex {
                 UnitEdit::Create { .. } => {}
 
                 UnitEdit::Delete { id } if !base_ids.contains(id.as_str()) => {
-                    return Err(invalid_unit_edit_err());
+                    //
+                    let error_message = trl("error-invalid-unit-oper");
+
+                    tracing::warn!(
+                        error_variant = ?ExpectedVariant::Args,
+                        error_message = %error_message,
+                        unit_id = %id,
+                        operation = "delete",
+                        "expected error: unit delete target is invalid",
+                    );
+
+                    return Err(BaseError::Expected {
+                        variant: ExpectedVariant::Args,
+                        message: error_message,
+                    });
                 }
 
                 UnitEdit::Save { id, .. }
                     if !base_ids.contains(id.as_str())
                         && !created_ids.contains(id.as_str()) =>
                 {
-                    return Err(invalid_unit_edit_err());
+                    let error_message = trl("error-invalid-unit-oper");
+
+                    tracing::warn!(
+                        error_variant = ?ExpectedVariant::Args,
+                        error_message = %error_message,
+                        unit_id = %id,
+                        operation = "save",
+                        "expected error: unit save target is invalid",
+                    );
+
+                    return Err(BaseError::Expected {
+                        variant: ExpectedVariant::Args,
+                        message: error_message,
+                    });
                 }
 
                 _ => {}
@@ -221,7 +277,20 @@ impl UnitComplex {
                     && !created_ids.contains(next_id.as_str()))
                 || deleted_ids.contains(next_id.as_str())
             {
-                return Err(invalid_unit_edit_err());
+                let error_message = trl("error-invalid-unit-oper");
+
+                tracing::warn!(
+                    error_variant = ?ExpectedVariant::Args,
+                    error_message = %error_message,
+                    unit_id = %id,
+                    next_unit_id = %next_id,
+                    "expected error: unit next pointer is invalid",
+                );
+
+                return Err(BaseError::Expected {
+                    variant: ExpectedVariant::Args,
+                    message: error_message,
+                });
             }
 
             accept(())
@@ -297,13 +366,5 @@ fn inherit_option<T>(earlier: &mut Option<T>, later: &mut Option<T>) {
 fn inherit_patch<T>(earlier: &mut Patch<T>, later: &mut Patch<T>) {
     if matches!(later, Patch::Skip) {
         *later = std::mem::replace(earlier, Patch::Skip);
-    }
-}
-
-// Build a shared unit edit validation error.
-fn invalid_unit_edit_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        message: trl("error-invalid-unit-oper"),
     }
 }

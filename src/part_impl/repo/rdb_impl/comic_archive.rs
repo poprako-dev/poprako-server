@@ -8,6 +8,8 @@ use poprako_orchestra::{Run, Step};
 use time::OffsetDateTime;
 use tracing::instrument;
 
+use poprako_util::i18n::trl;
+
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::comic::ComicInfo;
@@ -59,8 +61,8 @@ use crate::part_impl::repo::rdb_impl::schema::t_user::dsl::{
 use crate::part_impl::repo::rdb_impl::schema::t_workset::dsl::{
     f_id as workset_id, t_workset,
 };
-use crate::result::{BaseError, BaseRest, accept};
-use crate::shared::result::{diesel, expected};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::shared::result::diesel;
 use crate::shared::{RdbConn, RdbContext};
 use crate::value::comic_archive::ComicArchiveMonth;
 
@@ -209,27 +211,72 @@ async fn get_snapshot_excluded(
     source_comic_id: &str,
 ) -> BaseRest<ComicArchiveSnapshot> {
     //
-    let comic_row: ComicRow = t_comic
+    let comic_row: Option<ComicRow> = t_comic
         .filter(comic_id.eq(source_comic_id))
         .select(ComicRow::as_select())
         .for_update()
         .get_result(conn)
         .await
         .optional()
-        .map_err(diesel)?
-        .ok_or_else(|| expected("error-comic-not-found"))?;
+        .map_err(diesel)?;
+
+    let comic_row = match comic_row {
+        //
+        Some(comic_row) => comic_row,
+
+        None => {
+            //
+            let message = trl("error-comic-not-found");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                error_message = %message,
+                comic_id = %source_comic_id,
+                operation = "get comic archive snapshot",
+                "expected comic archive error",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message,
+            });
+        }
+    };
 
     let comic_info: ComicInfo = comic_row.try_into()?;
 
-    let workset_row: WorksetRow = t_workset
+    let workset_row: Option<WorksetRow> = t_workset
         .filter(workset_id.eq(&comic_info.workset_id))
         .select(WorksetRow::as_select())
         .for_update()
         .get_result(conn)
         .await
         .optional()
-        .map_err(diesel)?
-        .ok_or_else(|| expected("error-workset-not-found"))?;
+        .map_err(diesel)?;
+
+    let workset_row = match workset_row {
+        //
+        Some(workset_row) => workset_row,
+
+        None => {
+            //
+            let message = trl("error-workset-not-found");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                error_message = %message,
+                comic_id = %source_comic_id,
+                workset_id = %comic_info.workset_id,
+                operation = "get comic archive snapshot",
+                "expected comic archive error",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message,
+            });
+        }
+    };
 
     let workset_info: WorksetInfo = workset_row.into();
 
@@ -334,12 +381,32 @@ async fn get_snapshot_excluded(
 
     for mut assignment_info in assignment_infos {
         //
-        assignment_info.user = Some(
-            user_infos
-                .get(&assignment_info.user_id)
-                .cloned()
-                .ok_or_else(|| expected("error-user-not-found"))?,
-        );
+        assignment_info.user =
+            Some(match user_infos.get(&assignment_info.user_id) {
+                //
+                Some(user_info) => user_info.clone(),
+
+                None => {
+                    //
+                    let message = trl("error-user-not-found");
+
+                    tracing::warn!(
+                        error_variant = ?ExpectedVariant::Args,
+                        error_message = %message,
+                        comic_id = %source_comic_id,
+                        chapter_id = %assignment_info.chapter_id,
+                        assignment_id = %assignment_info.id,
+                        user_id = %assignment_info.user_id,
+                        operation = "assemble comic archive snapshot",
+                        "expected comic archive error",
+                    );
+
+                    return Err(BaseError::Expected {
+                        variant: ExpectedVariant::Args,
+                        message,
+                    });
+                }
+            });
 
         assignment_infos_by_chapter
             .entry(assignment_info.chapter_id.clone())

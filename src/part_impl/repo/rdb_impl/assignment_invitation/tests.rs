@@ -14,7 +14,6 @@ use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
 use crate::result::BaseError;
 use crate::shared::RdbCore;
-use crate::value::assignment_invitation::AssignmentInvitationStatus;
 use crate::value::role::{RoleField, RoleMask};
 
 const PREFIX: &str = "rdb-test-assignment-invitation-domain-";
@@ -70,7 +69,7 @@ pub async fn assignment_invitation_roundtrip_uses_testcontainer(
 
     let assignment_invitation_list_spec = AssignmentInvitationListSpec {
         chapter_id: chapter_fixture.chapter_entry.id.clone(),
-        status: AssignmentInvitationStatus::Used,
+        is_pending: Some(false),
         offset: 0,
         limit: 10,
     };

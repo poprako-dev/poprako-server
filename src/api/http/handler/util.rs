@@ -47,10 +47,18 @@ pub fn ensure_current_user(
 ) -> Result<(), HttpError> {
     //
     if path_user_id != token.user_id {
-        return Err(HttpError::expected(
-            ExpectedVariant::Perm,
-            &trl("error-forbidden"),
-        ));
+        //
+        let error_message = trl("error-forbidden");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Perm,
+            error_message = %error_message,
+            path_user_id = %path_user_id,
+            token_user_id = %token.user_id,
+            "expected error: path user does not match authenticated user",
+        );
+
+        return Err(HttpError::expected(ExpectedVariant::Perm, &error_message));
     }
 
     Ok(())

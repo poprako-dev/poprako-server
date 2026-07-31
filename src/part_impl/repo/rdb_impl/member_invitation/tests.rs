@@ -13,9 +13,7 @@ use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
 use crate::result::BaseError;
 use crate::shared::RdbCore;
-use crate::value::member_invitation::{
-    MemberInvitationInclOpt, MemberInvitationStatus,
-};
+use crate::value::member_invitation::MemberInvitationInclOpt;
 use crate::value::role::{RoleField, RoleMask};
 
 const PREFIX: &str = "rdb-test-member-invitation-domain-";
@@ -67,7 +65,7 @@ pub async fn member_invitation_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let member_invitation_list_spec = MemberInvitationListSpec {
         team_id: team_fixture.team_entry.id.clone(),
-        status: MemberInvitationStatus::Used,
+        is_pending: Some(false),
         incl_opt: vec![MemberInvitationInclOpt::Invitor],
         offset: 0,
         limit: 10,

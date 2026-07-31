@@ -11,9 +11,7 @@ use poprako_util::i18n::{trl, trl_kv};
 
 use crate::complex::system_mail::SystemMailComplex;
 use crate::model::write::system_mail::SystemMailEntry;
-use crate::part::effect::event::user::{
-    UserActivePayload, UserSignedUpPayload,
-};
+use crate::part::effect::event::user::{UserActiveEvent, UserSignedUpEvent};
 use crate::part::repo::oper::system_mail::SendSystemMail;
 use crate::part::repo::oper::team::GetTeamInfo;
 use crate::part::repo::oper::user::UpdateUser;
@@ -23,19 +21,17 @@ use crate::part::repo::user::UserRepo;
 
 /// Updates the user's last-active timestamp in response to activity.
 #[instrument(level = "info", skip_all)]
-pub async fn touch_last_active<C, R>(repo: &R, payload: UserActivePayload)
+pub async fn touch_last_active<C, R>(repo: &R, event: UserActiveEvent)
 where
     R: UserRepo<C>,
 {
-    if (UpdateUser::TouchLastActive {
-        id: &payload.user_id,
-    })
-    .run_on(repo)
-    .await
-    .is_err()
+    if (UpdateUser::TouchLastActive { id: &event.user_id })
+        .run_on(repo)
+        .await
+        .is_err()
     {
         tracing::warn!(
-            user_id = %payload.user_id,
+            user_id = %event.user_id,
             "[AsyncEffectDevelop::touch_last_active] failed to update last-active timestamp",
         );
     }
@@ -43,20 +39,16 @@ where
 
 /// Notifies an invitor when a user signs up through their invitation.
 #[instrument(level = "info", skip_all)]
-pub async fn notify_invitor<C, R>(repo: &R, payload: UserSignedUpPayload)
+pub async fn notify_invitor<C, R>(repo: &R, event: UserSignedUpEvent)
 where
     R: TeamRepo<C> + SystemMailRepo,
 {
-    let team_info = GetTeamInfo::Id {
-        id: &payload.team_id,
-    }
-    .run_on(repo)
-    .await;
+    let team_info = GetTeamInfo::Id { id: &event.team_id }.run_on(repo).await;
 
     let Ok(team_info) = team_info else {
         //
         tracing::warn!(
-            team_id = %payload.team_id,
+            team_id = %event.team_id,
             "[AsyncEffectDevelop::notify_invitor] failed to look up team for signup notification",
         );
 
@@ -67,7 +59,7 @@ where
 
     args.insert(
         Cow::Borrowed("invitee_qid"),
-        FluentValue::from(payload.invitee_qid.as_str()),
+        FluentValue::from(event.invitee_qid.as_str()),
     );
 
     args.insert(
@@ -77,7 +69,7 @@ where
 
     let system_mail_entry = SystemMailEntry {
         id: SystemMailComplex::gen_id(),
-        receiver_id: payload.invitor_id,
+        receiver_id: event.invitor_id,
         title: trl("mail-invitation-used-title"),
         content: trl_kv("mail-invitation-used-body", &args),
     };
@@ -90,7 +82,7 @@ where
     .is_err()
     {
         tracing::warn!(
-            team_id = %payload.team_id,
+            team_id = %event.team_id,
             receiver_id = %system_mail_entry.receiver_id,
             "[AsyncEffectDevelop::notify_invitor] failed to send signup notification",
         );

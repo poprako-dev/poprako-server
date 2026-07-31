@@ -22,7 +22,7 @@ use crate::data::val::team::ReserveTeamAvatarVal;
 use crate::data::view::image::ImageUploadSlotView;
 use crate::data::view::team::TeamInfoView;
 use crate::model::read::proj::team::TeamInfo;
-use crate::model::read::spec::team::{TeamListKind, TeamListSpec};
+use crate::model::read::spec::team::TeamListSpec;
 use crate::model::shared::user::UserToken;
 use crate::model::write::member::MemberEntry;
 use crate::model::write::team::{TeamAvatarRepl, TeamEntry, TeamRepl};
@@ -188,19 +188,11 @@ where
     R: TeamRepo<C> + UserRepo<C> + Sync,
     I: ImagePool,
 {
-    let kind = match instr.user_id {
+    match instr.user_id.as_deref() {
         //
-        Some(user_id) => {
-            //
-            if user_id != token.user_id {
-                todo!()
-            }
-
-            TeamListKind::JoinedBy { user_id }
-        }
+        Some(user_id) if user_id != token.user_id => todo!(),
 
         None => {
-            //
             TeamPermComplex::ensure_user_can_list_infos(
                 &mut run_proxy! {
                     repo => for<'a> GetUserInfo<'a>;
@@ -208,13 +200,13 @@ where
                 &token.user_id,
             )
             .await?;
-
-            TeamListKind::All
         }
-    };
+
+        Some(_) => {}
+    }
 
     let team_info_list_spec = TeamListSpec {
-        kind,
+        user_id: instr.user_id,
         offset: instr.offset,
         limit: instr.limit,
     };
@@ -455,9 +447,22 @@ where
     let team_info = GetTeamInfo::Id { id: &id }.run_on(repo).await?;
 
     if team_info.avatar_version != instr.image_version {
+        //
+        let error_message = trl("error-stale-avatar-upload");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            error_message = %error_message,
+            team_id = %id,
+            user_id = %token.user_id,
+            image_version = instr.image_version,
+            stored_image_version = team_info.avatar_version,
+            "expected error: stale team avatar upload",
+        );
+
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: trl("error-stale-avatar-upload"),
+            message: error_message,
         });
     }
 
@@ -465,19 +470,43 @@ where
         return accept(());
     }
 
-    let avatar_key =
-        team_info
-            .avatar_key
-            .clone()
-            .ok_or_else(|| BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message: trl("error-stale-avatar-upload"),
-            })?;
+    let avatar_key = team_info.avatar_key.clone().ok_or_else(|| {
+        //
+        let error_message = trl("error-stale-avatar-upload");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            error_message = %error_message,
+            team_id = %id,
+            user_id = %token.user_id,
+            image_version = instr.image_version,
+            stored_image_version = team_info.avatar_version,
+            "expected error: stale team avatar upload",
+        );
+
+        BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: error_message,
+        }
+    })?;
 
     if !image_manager.object_exists(&avatar_key).await? {
+        //
+        let error_message = trl("error-stale-avatar-upload");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            error_message = %error_message,
+            team_id = %id,
+            user_id = %token.user_id,
+            image_version = instr.image_version,
+            avatar_key = %avatar_key,
+            "expected error: stale team avatar upload",
+        );
+
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: trl("error-stale-avatar-upload"),
+            message: error_message,
         });
     }
 
@@ -497,9 +526,22 @@ where
         if locked_team_info.avatar_version != instr.image_version
             || locked_team_info.avatar_key.as_deref() != Some(&avatar_key)
         {
+            let error_message = trl("error-stale-avatar-upload");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                error_message = %error_message,
+                team_id = %id,
+                user_id = %token.user_id,
+                image_version = instr.image_version,
+                locked_image_version = locked_team_info.avatar_version,
+                avatar_key = %avatar_key,
+                "expected error: stale team avatar upload",
+            );
+
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: trl("error-stale-avatar-upload"),
+                message: error_message,
             });
         }
 

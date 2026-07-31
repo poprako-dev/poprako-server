@@ -19,11 +19,10 @@ use crate::model::read::spec::chapter::ChapterListSpec;
 use crate::model::shared::user::UserToken;
 use crate::model::write::assignment::AssignmentEntry;
 use crate::model::write::chapter::{ChapterEntry, ChapterPatch};
-use crate::part::effect::EffectDevelop;
-use crate::part::effect::event::Event;
 use crate::part::effect::event::chapter::{
-    ChapterPublishedPayload, ChapterWorkflowCompletedPayload,
+    ChapterPublishedEvent, ChapterWorkflowCompletedEvent,
 };
+use crate::part::effect::{EffectDevelop, EffectEvent as _};
 use crate::part::image::ImagePool;
 use crate::part::prom::Prom;
 use crate::part::prom::payload::TaskPayload;
@@ -482,7 +481,7 @@ where
     )
     .await?;
 
-    let events = nucl
+    let (workflow_completed_chapter_id, published_chapter_id) = nucl
         .coord(async move |context| {
             //
             let chapter_info = GetChapterInfoExcluded {
@@ -514,18 +513,15 @@ where
             .step_on(repo, context)
             .await?;
 
-            let mut events = Vec::new();
+            let mut workflow_completed_chapter_id = None;
+
+            let mut published_chapter_id = None;
 
             if instr.oper == StageOper::Advance
                 && prev_phase != StagePhase::Completed
                 && next_phase == StagePhase::Completed
             {
-                events.push(Event::ChapterWorkflowCompleted(
-                    ChapterWorkflowCompletedPayload {
-                        chapter_id: chapter_info.id.clone(),
-                        completed_stage: instr.stage,
-                    },
-                ));
+                workflow_completed_chapter_id = Some(chapter_info.id.clone());
             }
 
             if instr.stage == Stage::Publish
@@ -547,9 +543,7 @@ where
                 )
                 .await?;
 
-                events.push(Event::ChapterPublished(ChapterPublishedPayload {
-                    chapter_id: chapter_info.id.clone(),
-                }));
+                published_chapter_id = Some(chapter_info.id.clone());
             }
 
             TouchComicLastActive {
@@ -558,11 +552,27 @@ where
             .step_on(repo, context)
             .await?;
 
-            accept(events)
+            accept((
+                workflow_completed_chapter_id,
+                published_chapter_id,
+            ))
         })
         .await?;
 
-    develop.develop(events).await;
+    if let Some(chapter_id) = workflow_completed_chapter_id {
+        ChapterWorkflowCompletedEvent {
+            chapter_id,
+            completed_stage: instr.stage,
+        }
+        .develop_on(develop)
+        .await;
+    }
+
+    if let Some(chapter_id) = published_chapter_id {
+        ChapterPublishedEvent { chapter_id }
+            .develop_on(develop)
+            .await;
+    }
 
     accept(())
 }
