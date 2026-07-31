@@ -113,7 +113,7 @@ pub struct ArchivedAssignmentPayload {
     pub source_assignment_id: String,
     /// Identifier of the user assigned to this chapter.
     pub user_id: String,
-    /// Bitmask of assigned role permissions.
+    /// Bitmask of assigned role perms.
     pub roles: u32,
     /// Unix timestamp of when the assignment was created.
     pub created_at: i64,

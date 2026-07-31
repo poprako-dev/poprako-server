@@ -1,4 +1,4 @@
-//! Newtype wrappers for role-based permission bitmasks.
+//! Newtype wrappers for role-based perm bitmasks.
 
 use std::result::Result;
 
@@ -11,11 +11,11 @@ use poprako_util::i18n::trl;
 
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
-// Test fixtures for role conversion, permission, and serde behavior.
+// Test fixtures for role conversion, perm, and serde behavior.
 #[cfg(test)]
 mod tests;
 
-/// A singular role permission flag represented as a bit position.
+/// A singular role perm flag represented as a bit position.
 ///
 /// Each role is a single bit value:
 ///
@@ -132,7 +132,7 @@ impl From<RoleField> for u32 {
     }
 }
 
-/// A composite bitmask combining multiple role permission flags.
+/// A composite bitmask combining multiple role perm flags.
 ///
 /// Bits are OR-ed together from the following role values:
 ///

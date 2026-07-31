@@ -36,7 +36,7 @@ fn token(user_id: &str) -> UserToken {
 // Build comic fixture referenced by imported chapter.
 fn comic(id: &str) -> ComicInfo {
     //
-    // Compose a stable comic fixture used by chapter/import permission checks.
+    // Compose a stable comic fixture used by chapter/import perm checks.
     let time = OffsetDateTime::now_utc();
 
     ComicInfo {
@@ -109,14 +109,14 @@ fn chapter(
     }
 }
 
-// Build assignment fixture for import permission checks.
+// Build assignment fixture for import perm checks.
 fn assignment(
     chapter_id: &str,
     user_id: &str,
     role_mask: RoleMask,
 ) -> AssignmentInfo {
     //
-    // Create a member assignment record for import permission scenarios.
+    // Create a member assignment record for import perm scenarios.
     let time = OffsetDateTime::now_utc();
 
     AssignmentInfo {

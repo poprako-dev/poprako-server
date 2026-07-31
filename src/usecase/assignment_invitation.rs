@@ -469,7 +469,7 @@ where
             err_message = %err_message,
             chapter_id = %chapter_id,
             user_id = %current_user_id,
-            "expected error: chapter administrator permission required",
+            "expected error: chapter administrator perm required",
         );
 
         return Err(BaseError::Expected {
@@ -488,7 +488,7 @@ where
             chapter_id = %chapter_id,
             user_id = %current_user_id,
             roles = ?assignment_info.roles,
-            "expected error: chapter administrator permission required",
+            "expected error: chapter administrator perm required",
         );
 
         return Err(BaseError::Expected {

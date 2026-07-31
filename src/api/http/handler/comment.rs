@@ -50,7 +50,7 @@ pub struct CommentListQuery {
     request_body = CreateCommentInstr,
     responses(
         (status = 201, description = "Comment created", body = HttpBody<CreateCommentVal>),
-        (status = 403, description = "No permission to comment in this team"),
+        (status = 403, description = "No perm to comment in this team"),
         (status = 404, description = "Team not found"),
     ),
 ))]
@@ -74,7 +74,7 @@ pub async fn create(
     params(("team_id" = String, Path, description = "Team ID"), CommentListQuery),
     responses(
         (status = 200, description = "Comments listed", body = HttpBody<Vec<CommentInfoView>>),
-        (status = 403, description = "No permission to list comments in this team"),
+        (status = 403, description = "No perm to list comments in this team"),
     ),
 ))]
 #[instrument(level = "info", err(Debug), skip_all)]

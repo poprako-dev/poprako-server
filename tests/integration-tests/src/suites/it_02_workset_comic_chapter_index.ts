@@ -19,7 +19,7 @@
 //
 // Covers test-plan: C1, C2, C3, C4, C5, C6, C7.
 //
-// Grounded permission pins (verified against src/complex):
+// Grounded perm pins (verified against src/complex):
 //   - workset/comic/chapter create/update/delete: team ADMIN. sadmin is the
 //     only team admin in the seed (member roles include ADMIN=128). The 14
 //     personas are workers (no ADMIN bit) -> 403/4 on create.

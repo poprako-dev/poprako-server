@@ -1,4 +1,4 @@
-//! Terminology-base validation, permissions, and cascade operations.
+//! Terminology-base validation, perms, and cascade operations.
 
 use poprako_orchestra::{OperProxy as _, Proxy};
 
@@ -200,7 +200,7 @@ impl TermbaseComplex {
     }
 }
 
-/// Permission checks for terminology-base and terminology-entry resources.
+/// perm checks for terminology-base and terminology-entry resources.
 pub struct TermbasePermComplex;
 
 impl TermbasePermComplex {

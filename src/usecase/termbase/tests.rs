@@ -30,7 +30,7 @@ fn token(user_id: &str) -> UserToken {
 }
 
 fn member(user_id: &str, team_id: &str, roles: RoleMask) -> MemberInfo {
-    // Build a team member fixture with role permissions.
+    // Build a team member fixture with role perms.
     MemberInfo {
         id: format!("member-{}-{}", user_id, team_id),
         user_id: user_id.into(),

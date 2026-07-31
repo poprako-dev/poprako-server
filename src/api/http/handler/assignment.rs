@@ -30,7 +30,7 @@ use crate::usecase;
     responses(
         (status = 200, description = "Assignments listed", body = HttpBody<Vec<AssignmentInfoView>>),
         (status = 422, description = "Exactly one of chapter_id or owner_id is required"),
-        (status = 403, description = "No permission to list these assignments"),
+        (status = 403, description = "No perm to list these assignments"),
     ),
 ))]
 #[instrument(level = "info", err(Debug), skip_all)]
@@ -61,7 +61,7 @@ pub async fn list_infos(
     responses(
         (status = 204, description = "Assignment roles updated"),
         (status = 422, description = "Path ids do not match body ids"),
-        (status = 403, description = "No permission to update this assignment"),
+        (status = 403, description = "No perm to update this assignment"),
         (status = 404, description = "Assignment not found"),
     ),
 ))]
@@ -95,7 +95,7 @@ pub async fn update_roles(
     params(("assignment_id" = String, Path, description = "Assignment ID")),
     responses(
         (status = 204, description = "Assignment deleted"),
-        (status = 403, description = "No permission to delete this assignment"),
+        (status = 403, description = "No perm to delete this assignment"),
         (status = 404, description = "Assignment not found"),
     ),
 ))]
@@ -124,7 +124,7 @@ pub async fn delete(
     request_body = JoinChapterAssignmentInstr,
     responses(
         (status = 201, description = "Joined assignment", body = HttpBody<AssignmentInfoView>),
-        (status = 403, description = "Role not assignable or no permission"),
+        (status = 403, description = "Role not assignable or no perm"),
         (status = 404, description = "Chapter not found"),
     ),
 ))]

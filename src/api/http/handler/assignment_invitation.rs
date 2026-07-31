@@ -52,7 +52,7 @@ pub struct AssignmentInvitationListQuery {
     request_body = CreateAssignmentInvitationInstr,
     responses(
         (status = 201, description = "Invitation created", body = HttpBody<CreateAssignmentInvitationVal>),
-        (status = 403, description = "No permission to create invitations in this chapter"),
+        (status = 403, description = "No perm to create invitations in this chapter"),
         (status = 409, description = "Invitee is already assigned"),
     ),
 ))]
@@ -80,7 +80,7 @@ pub async fn create(
     params(("chapter_id" = String, Path, description = "Chapter ID"), AssignmentInvitationListQuery),
     responses(
         (status = 200, description = "Invitations listed", body = HttpBody<Vec<AssignmentInvitationInfoView>>),
-        (status = 403, description = "No permission to list invitations in this chapter"),
+        (status = 403, description = "No perm to list invitations in this chapter"),
     ),
 ))]
 #[instrument(level = "info", err(Debug), skip_all)]
@@ -115,7 +115,7 @@ pub async fn list_infos(
     params(("assignment_invitation_id" = String, Path, description = "Invitation ID")),
     responses(
         (status = 204, description = "Invitation deleted"),
-        (status = 403, description = "No permission to delete this invitation"),
+        (status = 403, description = "No perm to delete this invitation"),
         (status = 404, description = "Invitation not found"),
     ),
 ))]
@@ -145,7 +145,7 @@ pub async fn delete(
     responses(
         (status = 201, description = "Joined assignment", body = HttpBody<AssignmentInfoView>),
         (status = 422, description = "Invitation does not target this user"),
-        (status = 403, description = "Role not assignable or no permission"),
+        (status = 403, description = "Role not assignable or no perm"),
         (status = 404, description = "Invitation code not found"),
     ),
 ))]

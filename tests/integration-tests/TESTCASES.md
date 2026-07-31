@@ -31,7 +31,7 @@ the seed-only state in its `finally` block. Every current module exports
 | Module | File | Coverage |
 | --- | --- | --- |
 | it_00 | `it_00_bootstrap_auth_default_seed.ts` | Seed data, login, and unauthenticated access. |
-| it_01 | `it_01_member_invitation_register_roles.ts` | Invitations, registration, member lists, and role permissions. |
+| it_01 | `it_01_member_invitation_register_roles.ts` | Invitations, registration, member lists, and role perms. |
 | it_02 | `it_02_workset_comic_chapter_index.ts` | Workset, comic, chapter indexes, pinning, profile updates, and positionally aligned comic/pinned-chapter list payloads. |
 | it_03 | `it_03_page_reserve_image.ts` | Authoritative hash-plus-extension manifests, optional `new_byte_len` retention, required upload lengths, duplicate-ID and count validation, checksum-bound uploads, image confirmation, replacement, deletion, and page rebuilds. |
 | it_04 | `it_04_assignment_invitation.ts` | Assignment joins, invitations, role updates, self role removal, and deletion. |
@@ -39,10 +39,10 @@ the seed-only state in its `finally` block. Every current module exports
 | it_06 | `it_06_unit_concurrency.ts` | Serialized same-Page writes, same-anchor inserts, tombstone delete/Patch commit order, and linked-list completeness. |
 | it_07 | `it_07_workflow_sysmail.ts` | Workflow transitions and deferred system mail. |
 | it_08 | `it_08_info_update_upload_mark.ts` | Resource updates, checksum-bound avatar/cover PUTs before version-only mark requests, stale upload rejection, announcements, comments, and profiles. |
-| it_09 | `it_09_cross_team_permission.ts` | Cross-team authorization isolation. |
+| it_09 | `it_09_cross_team_perm.ts` | Cross-team authorization isolation. |
 | it_10 | `it_10_cascade_delete_cleanup.ts` | Cascade deletion and cleanup side effects. |
 | it_11 | `it_11_comic_archive.ts` | Immutable JSON-text comic archives, retained month export, and image-delete prom records. |
-| it_12 | `it_12_termbase_term.ts` | Termbase/term lifecycle, inherited lookup, fuzzy isolation, proofreader permissions, response contracts, and termbase/comic/team cascades. |
+| it_12 | `it_12_termbase_term.ts` | Termbase/term lifecycle, inherited lookup, fuzzy isolation, proofreader perms, response contracts, and termbase/comic/team cascades. |
 
 ## Shared fixtures and invariants
 

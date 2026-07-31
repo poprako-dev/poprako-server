@@ -10,7 +10,7 @@
 // list(list)(positive): offset exceeding result count should return an empty vec.
 // mark_read(mark_read)(positive): should mark a batch of mails as read after verifying ownership.
 // mark_read(mark_read)(negative): a nonexistent id in the batch should short-circuit with an argument error.
-// mark_read(mark_read)(negative): a mail belonging to another user should return a permission error without mutation.
+// mark_read(mark_read)(negative): a mail belonging to another user should return a perm error without mutation.
 
 use super::*;
 use crate::data::instr::system_mail::ListSystemMailInfosInstr;

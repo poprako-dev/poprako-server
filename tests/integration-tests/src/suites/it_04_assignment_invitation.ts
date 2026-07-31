@@ -12,7 +12,7 @@
 //
 // Covers test-plan: E1, E2, E3.
 //
-// Grounded permission pins:
+// Grounded perm pins:
 //   - assignment join: caller's MEMBER roles must contain the requested
 //     assignment roles (`member.roles.contains_mask(assignment.roles)`).
 //     ADMIN bit in join roles -> 422/2 (`error-chapter-role-not-assignable`).
@@ -339,7 +339,7 @@ export async function runIt04Module(ctx: RunCtx): Promise<void> {
     // be a translator/proofreader. So also add TRANSLATOR to raw_01/02 via
     // self-join merge (member roles of raw_01 = RAW only -> cannot take
     // TRANSLATOR). So raw_01/02 CANNOT save units. it_05 will use trans_* for
-    // saves. raw_01/02 assignment is still useful for permission negatives.
+    // saves. raw_01/02 assignment is still useful for perm negatives.
     const raw01 = ctx.users.get("raw_01");
     const raw02 = ctx.users.get("raw_02");
 

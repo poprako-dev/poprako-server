@@ -1,4 +1,4 @@
-//! Domain rules and permission checks for page Units.
+//! Domain rules and perm checks for page Units.
 
 use std::collections::HashSet;
 
@@ -11,7 +11,7 @@ use crate::value::chapter::Stage;
 
 pub use perm::UnitPermComplex;
 
-// Permission gates for Unit reads and edit fields.
+// perm gates for Unit reads and edit fields.
 mod perm;
 #[cfg(test)]
 mod tests;

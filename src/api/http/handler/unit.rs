@@ -26,7 +26,7 @@ use crate::usecase;
     params(("page_id" = String, Path, description = "Page ID")),
     responses(
         (status = 200, description = "Units listed", body = HttpBody<ListPageUnitInfosVal>),
-        (status = 403, description = "No permission to list units in this page"),
+        (status = 403, description = "No perm to list units in this page"),
         (status = 404, description = "Page not found"),
     ),
 ))]
@@ -53,7 +53,7 @@ pub async fn list_infos(
     request_body = Vec<UnitEditInstr>,
     responses(
         (status = 204, description = "Unit edits saved"),
-        (status = 403, description = "No permission to save units in this page"),
+        (status = 403, description = "No perm to save units in this page"),
         (status = 422, description = "Invalid Unit edit"),
     ),
 ))]

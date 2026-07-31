@@ -17,7 +17,7 @@ import { IMPLEMENTED as IT05_IMPLEMENTED, runIt05Module } from "./suites/it_05_u
 import { IMPLEMENTED as IT06_IMPLEMENTED, runIt06Module } from "./suites/it_06_unit_concurrency.js";
 import { IMPLEMENTED as IT07_IMPLEMENTED, runIt07Module } from "./suites/it_07_workflow_sysmail.js";
 import { IMPLEMENTED as IT08_IMPLEMENTED, runIt08Module } from "./suites/it_08_info_update_upload_mark.js";
-import { IMPLEMENTED as IT09_IMPLEMENTED, runIt09Module } from "./suites/it_09_cross_team_permission.js";
+import { IMPLEMENTED as IT09_IMPLEMENTED, runIt09Module } from "./suites/it_09_cross_team_perm.js";
 import { IMPLEMENTED as IT10_IMPLEMENTED, runIt10Module } from "./suites/it_10_cascade_delete_cleanup.js";
 import { IMPLEMENTED as IT11_IMPLEMENTED, runIt11Module } from "./suites/it_11_comic_archive.js";
 import { IMPLEMENTED as IT12_IMPLEMENTED, runIt12Module } from "./suites/it_12_termbase_term.js";
@@ -48,7 +48,7 @@ import type { RunCtx } from "./state/runCtx.js";
 //   it_09 cross-team isolation (second team + outsider)
 //   it_10 cascade delete (chapter -> comic -> workset -> team)
 //   it_11 immutable comic archive and image cleanup records
-//   it_12 termbase / term lifecycle, permissions, search, and cascades
+//   it_12 termbase / term lifecycle, perms, search, and cascades
 //
 // Cleanup: `cleanupToSeed()` runs in the `finally` block BEFORE
 // `assertDatabaseIsSeedOnly()` so the assert verifies the suite self-cleans
@@ -74,7 +74,7 @@ const modules: ModuleEntry[] = [
     { name: "it_06 unit concurrency", implemented: IT06_IMPLEMENTED, run: runIt06Module },
     { name: "it_07 workflow sysmail", implemented: IT07_IMPLEMENTED, run: runIt07Module },
     { name: "it_08 info update upload mark", implemented: IT08_IMPLEMENTED, run: runIt08Module },
-    { name: "it_09 cross team permission", implemented: IT09_IMPLEMENTED, run: runIt09Module },
+    { name: "it_09 cross team perm", implemented: IT09_IMPLEMENTED, run: runIt09Module },
     { name: "it_10 cascade delete cleanup", implemented: IT10_IMPLEMENTED, run: runIt10Module },
     { name: "it_11 comic archive", implemented: IT11_IMPLEMENTED, run: runIt11Module },
     { name: "it_12 termbase term", implemented: IT12_IMPLEMENTED, run: runIt12Module },

@@ -21,7 +21,7 @@ use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
 fn token(user_id: &str) -> UserToken {
-    // Build token fixture for comment permission checks.
+    // Build token fixture for comment perm checks.
     UserToken {
         user_id: user_id.into(),
     }

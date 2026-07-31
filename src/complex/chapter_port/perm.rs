@@ -14,7 +14,7 @@ use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
-/// Chapter import and export permission rules.
+/// Chapter import and export perm rules.
 pub struct ChapterPortPermComplex;
 
 impl ChapterPortPermComplex {
@@ -49,7 +49,7 @@ impl ChapterPortPermComplex {
             }) => {
                 //
                 let err_message =
-                    trl("error-chapter-port-export-permission-required");
+                    trl("error-chapter-port-export-perm-required");
 
                 tracing::warn!(
                     err_variant = ?ExpectedVariant::Perm,
@@ -57,7 +57,7 @@ impl ChapterPortPermComplex {
                     user_id = %user_id,
                     chapter_id = %chapter_id,
                     operation = "export",
-                    "expected error: chapter port export permission required",
+                    "expected error: chapter port export perm required",
                 );
 
                 Err(BaseError::Expected {
@@ -92,7 +92,7 @@ impl ChapterPortPermComplex {
             }) => {
                 //
                 let err_message =
-                    trl("error-chapter-port-import-permission-required");
+                    trl("error-chapter-port-import-perm-required");
 
                 tracing::warn!(
                     err_variant = ?ExpectedVariant::Perm,
@@ -100,7 +100,7 @@ impl ChapterPortPermComplex {
                     user_id = %user_id,
                     chapter_id = %chapter_id,
                     operation = "import",
-                    "expected error: chapter port import permission required",
+                    "expected error: chapter port import perm required",
                 );
 
                 Err(BaseError::Expected {

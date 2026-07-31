@@ -69,7 +69,7 @@ where
 /// Marks a batch of system mails as read for the current user.
 ///
 /// Non-transactional — first fetches the mails by `ids` to verify
-/// ownership, then marks each as read. Returns a permission error
+/// ownership, then marks each as read. Returns a perm error
 /// if any mail does not belong to the user identified by `token`.
 ///
 /// # Type Parameters

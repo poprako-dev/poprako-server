@@ -52,7 +52,7 @@ pub struct AnnouncementListQuery {
     request_body = CreateAnnouncementInstr,
     responses(
         (status = 201, description = "Announcement created", body = HttpBody<CreateAnnouncementVal>),
-        (status = 403, description = "No permission to create announcements in this team"),
+        (status = 403, description = "No perm to create announcements in this team"),
         (status = 404, description = "Team not found"),
     ),
 ))]
@@ -80,7 +80,7 @@ pub async fn create(
     params(("team_id" = String, Path, description = "Team ID"), AnnouncementListQuery),
     responses(
         (status = 200, description = "Announcements listed", body = HttpBody<Vec<AnnouncementInfoView>>),
-        (status = 403, description = "No permission to list announcements in this team"),
+        (status = 403, description = "No perm to list announcements in this team"),
     ),
 ))]
 #[instrument(level = "info", err(Debug), skip_all)]

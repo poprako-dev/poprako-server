@@ -79,7 +79,7 @@ impl AssignmentComplex {
     }
 }
 
-/// Permission-gate opers for chapter assignments.
+/// perm-gate opers for chapter assignments.
 pub struct AssignmentPermComplex;
 
 impl AssignmentPermComplex {
@@ -243,7 +243,7 @@ where
             user_id = %user_id,
             chapter_id = %chapter_id,
             team_id = %team_id,
-            "expected error: assignment list permission denied",
+            "expected error: assignment list perm denied",
         );
 
         return Err(BaseError::Expected {
@@ -284,7 +284,7 @@ where
             err_message = %err_message,
             current_user_id = %current_user_id,
             owner_id = %owner_id,
-            "expected error: assignment list permission denied",
+            "expected error: assignment list perm denied",
         );
 
         return Err(BaseError::Expected {

@@ -1,4 +1,4 @@
-//! Permission gates for Unit reads and edit fields.
+//! perm gates for Unit reads and edit fields.
 
 use poprako_orchestra::Proxy;
 
@@ -16,7 +16,7 @@ use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::value::unit::UnitEditPerm;
 
-/// Permission gates for Unit reads and edits.
+/// perm gates for Unit reads and edits.
 pub struct UnitPermComplex;
 
 impl UnitPermComplex {
@@ -50,14 +50,14 @@ impl UnitPermComplex {
                 ..
             }) => {
                 //
-                let err_message = trl("error-unit-list-permission-required");
+                let err_message = trl("error-unit-list-perm-required");
 
                 tracing::warn!(
                     err_variant = ?ExpectedVariant::Perm,
                     err_message = %err_message,
                     user_id = %user_id,
                     chapter_id = %chapter_id,
-                    "expected error: unit list permission required",
+                    "expected error: unit list perm required",
                 );
 
                 Err(BaseError::Expected {
@@ -70,7 +70,7 @@ impl UnitPermComplex {
         }
     }
 
-    /// Enforces role presence and field-level content permissions.
+    /// Enforces role presence and field-level content perms.
     pub fn ensure_user_can_edit_fields(
         perm: UnitEditPerm,
         edits: &[UnitEdit],
@@ -78,14 +78,14 @@ impl UnitPermComplex {
         //
         if !perm.can_translate && !perm.can_proofread {
             //
-            let err_message = trl("error-unit-edit-permission-required");
+            let err_message = trl("error-unit-edit-perm-required");
 
             tracing::warn!(
                 err_variant = ?ExpectedVariant::Perm,
                 err_message = %err_message,
-                permission = ?perm,
+                perm = ?perm,
                 operation = "edit_fields",
-                "expected error: unit edit permission required",
+                "expected error: unit edit perm required",
             );
 
             return Err(BaseError::Expected {
@@ -107,15 +107,15 @@ impl UnitPermComplex {
                     if translation.is_some() && !perm.can_translate {
                         //
                         let err_message =
-                            trl("error-unit-edit-permission-required");
+                            trl("error-unit-edit-perm-required");
 
                         tracing::warn!(
                             err_variant = ?ExpectedVariant::Perm,
                             err_message = %err_message,
-                            permission = ?perm,
+                            perm = ?perm,
                             field = "translation",
                             operation = "create",
-                            "expected error: unit translation permission required",
+                            "expected error: unit translation perm required",
                         );
 
                         return Err(BaseError::Expected {
@@ -127,15 +127,15 @@ impl UnitPermComplex {
                     if revision.is_some() && !perm.can_proofread {
                         //
                         let err_message =
-                            trl("error-unit-edit-permission-required");
+                            trl("error-unit-edit-perm-required");
 
                         tracing::warn!(
                             err_variant = ?ExpectedVariant::Perm,
                             err_message = %err_message,
-                            permission = ?perm,
+                            perm = ?perm,
                             field = "revision",
                             operation = "create",
-                            "expected error: unit revision permission required",
+                            "expected error: unit revision perm required",
                         );
 
                         return Err(BaseError::Expected {
@@ -154,15 +154,15 @@ impl UnitPermComplex {
                     if !translation.is_skip() && !perm.can_translate {
                         //
                         let err_message =
-                            trl("error-unit-edit-permission-required");
+                            trl("error-unit-edit-perm-required");
 
                         tracing::warn!(
                             err_variant = ?ExpectedVariant::Perm,
                             err_message = %err_message,
-                            permission = ?perm,
+                            perm = ?perm,
                             field = "translation",
                             operation = "save",
-                            "expected error: unit translation permission required",
+                            "expected error: unit translation perm required",
                         );
 
                         return Err(BaseError::Expected {
@@ -174,15 +174,15 @@ impl UnitPermComplex {
                     if !revision.is_skip() && !perm.can_proofread {
                         //
                         let err_message =
-                            trl("error-unit-edit-permission-required");
+                            trl("error-unit-edit-perm-required");
 
                         tracing::warn!(
                             err_variant = ?ExpectedVariant::Perm,
                             err_message = %err_message,
-                            permission = ?perm,
+                            perm = ?perm,
                             field = "revision",
                             operation = "save",
-                            "expected error: unit revision permission required",
+                            "expected error: unit revision perm required",
                         );
 
                         return Err(BaseError::Expected {
