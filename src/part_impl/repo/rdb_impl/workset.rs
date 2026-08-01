@@ -17,7 +17,7 @@ use crate::part::repo::oper::workset::{
 };
 use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::workset::{
-    WorksetAspect, WorksetRow, WorksetRowEntry,
+    WorksetAspectRow, WorksetEntryRow, WorksetInfoRow,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_workset::dsl::*;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
@@ -46,10 +46,10 @@ async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
 async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<WorksetInfo> {
     //
     // Fetch the row by primary key and map missing rows to `error-workset-not-found`.
-    let row: Option<WorksetRow> = t_workset
+    let row = t_workset
         .filter(f_id.eq(id))
-        .select(WorksetRow::as_select())
-        .get_result(conn)
+        .select(WorksetInfoRow::as_select())
+        .get_result::<WorksetInfoRow>(conn)
         .await
         .optional()
         .map_err(diesel)?;
@@ -90,13 +90,13 @@ async fn list_infos(
     // Apply pagination and team filter so consumers can page team worksets.
     let query = t_workset
         .filter(f_team_id.eq(oper.team_id))
-        .select(WorksetRow::as_select())
+        .select(WorksetInfoRow::as_select())
         .order_by(f_index.asc())
         .offset(oper.offset as i64)
         .limit(oper.limit as i64)
         .into_boxed();
 
-    let rows: Vec<WorksetRow> = query.load(conn).await.map_err(diesel)?;
+    let rows = query.load::<WorksetInfoRow>(conn).await.map_err(diesel)?;
 
     accept(rows.into_iter().map(Into::into).collect())
 }
@@ -108,7 +108,7 @@ async fn update_info(conn: &mut RdbConn, update: &WorksetRepl) -> BaseRest<()> {
     // Build an aspect object and persist nickname/description updates with timestamp.
     let now = OffsetDateTime::now_utc();
 
-    let aspect = WorksetAspect::new(now)
+    let aspect = WorksetAspectRow::new(now)
         .name(&update.name)
         .description(update.description.as_deref());
 
@@ -129,11 +129,11 @@ async fn list_infos_excluded(
 ) -> BaseRest<Vec<WorksetInfo>> {
     //
     // Lock rows selected by team to support follow-up serial updates.
-    let rows: Vec<WorksetRow> = t_workset
+    let rows = t_workset
         .filter(f_team_id.eq(team_id))
-        .select(WorksetRow::as_select())
+        .select(WorksetInfoRow::as_select())
         .for_update()
-        .load(conn)
+        .load::<WorksetInfoRow>(conn)
         .await
         .map_err(diesel)?;
 
@@ -148,11 +148,11 @@ async fn get_info_excluded(
 ) -> BaseRest<WorksetInfo> {
     //
     // Return `error-workset-not-found` when locked read sees no row.
-    let row: Option<WorksetRow> = t_workset
+    let row = t_workset
         .filter(f_id.eq(id))
-        .select(WorksetRow::as_select())
+        .select(WorksetInfoRow::as_select())
         .for_update()
-        .get_result(conn)
+        .get_result::<WorksetInfoRow>(conn)
         .await
         .optional()
         .map_err(diesel)?;
@@ -191,12 +191,12 @@ async fn create(
 ) -> BaseRest<WorksetInfo> {
     //
     // Convert API entry into row form and read back generated values.
-    let entry = WorksetRowEntry::from(workset_entry);
+    let entry = WorksetEntryRow::from(workset_entry);
 
-    let row: WorksetRow = diesel::insert_into(t_workset)
+    let row = diesel::insert_into(t_workset)
         .values(&entry)
-        .returning(WorksetRow::as_returning())
-        .get_result(conn)
+        .returning(WorksetInfoRow::as_returning())
+        .get_result::<WorksetInfoRow>(conn)
         .await
         .map_err(diesel)?;
 
@@ -208,10 +208,10 @@ async fn create(
 async fn alloc_comic_index(conn: &mut RdbConn, id: &str) -> BaseRest<i32> {
     //
     // Increment and return previous next-index value in a single statement.
-    let index: i32 = diesel::update(t_workset.filter(f_id.eq(id)))
+    let index = diesel::update(t_workset.filter(f_id.eq(id)))
         .set(f_comic_next_index.eq(f_comic_next_index + 1))
         .returning(f_comic_next_index - 1)
-        .get_result(conn)
+        .get_result::<i32>(conn)
         .await
         .map_err(diesel)?;
 

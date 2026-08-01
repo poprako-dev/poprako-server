@@ -12,7 +12,7 @@ use crate::model::write::comic::{
     ComicCoverReservation, ComicEntry, ComicRepl,
 };
 use crate::part_impl::repo::rdb_impl::entity::comic::{
-    ComicAspect, ComicRow, ComicRowEntry,
+    ComicAspectRow, ComicEntryRow, ComicInfoRow,
 };
 use crate::part_impl::repo::rdb_impl::incl;
 use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::{
@@ -44,10 +44,10 @@ pub async fn get_info_by_id(
     incl_opt: &[ComicInclOpt],
 ) -> BaseRest<ComicInfo> {
     //
-    let row: ComicRow = t_comic
+    let row = t_comic
         .filter(f_id.eq(id))
-        .select(ComicRow::as_select())
-        .get_result(conn)
+        .select(ComicInfoRow::as_select())
+        .get_result::<ComicInfoRow>(conn)
         .await
         .optional()
         .map_err(diesel)?
@@ -69,7 +69,7 @@ pub async fn get_info_by_id(
             }
         })?;
 
-    let mut info: ComicInfo = row.try_into()?;
+    let mut info = row.try_into()?;
 
     incl::comic::populate_comic_incls(
         conn,
@@ -99,7 +99,7 @@ pub async fn list_infos(
 
     let mut query = t_comic
         .filter(f_workset_id.eq(spec.workset_id.as_str()))
-        .select(ComicRow::as_select())
+        .select(ComicInfoRow::as_select())
         .into_boxed();
 
     if let Some(fuzzy_title) = &spec.fuzzy_title {
@@ -119,18 +119,18 @@ pub async fn list_infos(
         query = query.filter(f_id.eq_any(comic_ids));
     }
 
-    let rows: Vec<ComicRow> = query
+    let rows = query
         .order_by((f_last_active_at.desc(), f_index.asc()))
         .offset(spec.offset as i64)
         .limit(spec.limit as i64)
-        .load(conn)
+        .load::<ComicInfoRow>(conn)
         .await
         .map_err(diesel)?;
 
-    let mut infos: Vec<ComicInfo> = rows
+    let mut infos = rows
         .into_iter()
         .map(TryInto::try_into)
-        .collect::<BaseRest<_>>()?;
+        .collect::<BaseRest<Vec<ComicInfo>>>()?;
 
     incl::comic::populate_comic_incls(conn, &mut infos, &spec.incl_opt).await?;
 
@@ -154,7 +154,7 @@ pub async fn update_info(
         &update.title,
     );
 
-    let aspect = ComicAspect::new(now)
+    let aspect = ComicAspectRow::new(now)
         .title(&update.title)
         .author(&update.author)
         .description(update.description.as_deref())
@@ -240,12 +240,12 @@ pub async fn create(
     comic_entry: &ComicEntry,
 ) -> BaseRest<ComicInfo> {
     //
-    let entry = ComicRowEntry::from(comic_entry);
+    let entry = ComicEntryRow::from(comic_entry);
 
-    let row: ComicRow = diesel::insert_into(t_comic)
+    let row = diesel::insert_into(t_comic)
         .values(&entry)
-        .returning(ComicRow::as_returning())
-        .get_result(conn)
+        .returning(ComicInfoRow::as_returning())
+        .get_result::<ComicInfoRow>(conn)
         .await
         .map_err(diesel)?;
 
@@ -260,11 +260,11 @@ pub async fn get_info_excluded(
     incls: &[ComicInclOpt],
 ) -> BaseRest<ComicInfo> {
     //
-    let row: ComicRow = t_comic
+    let row = t_comic
         .filter(f_id.eq(id))
-        .select(ComicRow::as_select())
+        .select(ComicInfoRow::as_select())
         .for_update()
-        .get_result(conn)
+        .get_result::<ComicInfoRow>(conn)
         .await
         .optional()
         .map_err(diesel)?
@@ -308,12 +308,12 @@ pub async fn list_infos_excluded(
     macro_rules! load_rows {
         ($query:expr) => {
             $query
-                .select(ComicRow::as_select())
+                .select(ComicInfoRow::as_select())
                 .order_by((f_last_active_at.desc(), f_index.asc()))
                 .offset(spec.offset as i64)
                 .limit(spec.limit as i64)
                 .for_update()
-                .load(conn)
+                .load::<ComicInfoRow>(conn)
                 .await
                 .map_err(diesel)?
         };
@@ -328,64 +328,63 @@ pub async fn list_infos_excluded(
         None => None,
     };
 
-    let rows: Vec<ComicRow> =
-        match (spec.fuzzy_title.as_deref(), stage_comic_ids) {
+    let rows = match (spec.fuzzy_title.as_deref(), stage_comic_ids) {
+        //
+        (None, None) => load_rows!(
+            t_comic.filter(f_workset_id.eq(spec.workset_id.as_str()))
+        ),
+
+        (None, Some(comic_ids)) => load_rows!(
+            t_comic
+                .filter(f_workset_id.eq(spec.workset_id.as_str()))
+                .filter(f_id.eq_any(comic_ids))
+        ),
+
+        (Some(fuzzy_title), stage_comic_ids) => {
             //
-            (None, None) => load_rows!(
-                t_comic.filter(f_workset_id.eq(spec.workset_id.as_str()))
-            ),
+            let pattern = format!("%{}%", fuzzy_title);
 
-            (None, Some(comic_ids)) => load_rows!(
-                t_comic
-                    .filter(f_workset_id.eq(spec.workset_id.as_str()))
-                    .filter(f_id.eq_any(comic_ids))
-            ),
-
-            (Some(fuzzy_title), stage_comic_ids) => {
+            match (
+                stored_index_from_numeric_fuzzy(fuzzy_title),
+                stage_comic_ids,
+            ) {
                 //
-                let pattern = format!("%{}%", fuzzy_title);
+                (Some(index), None) => load_rows!(
+                    t_comic
+                        .filter(f_workset_id.eq(spec.workset_id.as_str()),)
+                        .filter(
+                            f_composed_title
+                                .ilike(pattern)
+                                .or(f_index.eq(index)),
+                        )
+                ),
 
-                match (
-                    stored_index_from_numeric_fuzzy(fuzzy_title),
-                    stage_comic_ids,
-                ) {
-                    //
-                    (Some(index), None) => load_rows!(
-                        t_comic
-                            .filter(f_workset_id.eq(spec.workset_id.as_str()),)
-                            .filter(
-                                f_composed_title
-                                    .ilike(pattern)
-                                    .or(f_index.eq(index)),
-                            )
-                    ),
+                (Some(index), Some(comic_ids)) => load_rows!(
+                    t_comic
+                        .filter(f_workset_id.eq(spec.workset_id.as_str()),)
+                        .filter(
+                            f_composed_title
+                                .ilike(pattern)
+                                .or(f_index.eq(index)),
+                        )
+                        .filter(f_id.eq_any(comic_ids))
+                ),
 
-                    (Some(index), Some(comic_ids)) => load_rows!(
-                        t_comic
-                            .filter(f_workset_id.eq(spec.workset_id.as_str()),)
-                            .filter(
-                                f_composed_title
-                                    .ilike(pattern)
-                                    .or(f_index.eq(index)),
-                            )
-                            .filter(f_id.eq_any(comic_ids))
-                    ),
+                (None, None) => load_rows!(
+                    t_comic
+                        .filter(f_workset_id.eq(spec.workset_id.as_str()),)
+                        .filter(f_composed_title.ilike(pattern))
+                ),
 
-                    (None, None) => load_rows!(
-                        t_comic
-                            .filter(f_workset_id.eq(spec.workset_id.as_str()),)
-                            .filter(f_composed_title.ilike(pattern))
-                    ),
-
-                    (None, Some(comic_ids)) => load_rows!(
-                        t_comic
-                            .filter(f_workset_id.eq(spec.workset_id.as_str()),)
-                            .filter(f_composed_title.ilike(pattern))
-                            .filter(f_id.eq_any(comic_ids))
-                    ),
-                }
+                (None, Some(comic_ids)) => load_rows!(
+                    t_comic
+                        .filter(f_workset_id.eq(spec.workset_id.as_str()),)
+                        .filter(f_composed_title.ilike(pattern))
+                        .filter(f_id.eq_any(comic_ids))
+                ),
             }
-        };
+        }
+    };
 
     let mut comic_infos = rows
         .into_iter()
@@ -409,13 +408,7 @@ pub async fn reserve_cover(
     //
     let now = OffsetDateTime::now_utc();
 
-    let (prev_key, uploaded, raw_version, stored_hash, stored_ext): (
-        Option<String>,
-        bool,
-        i64,
-        Vec<u8>,
-        String,
-    ) = t_comic
+    let (prev_key, uploaded, raw_version, stored_hash, stored_ext) = t_comic
         .filter(f_id.eq(id))
         .select((
             f_cover_key,
@@ -425,7 +418,7 @@ pub async fn reserve_cover(
             f_cover_extension,
         ))
         .for_update()
-        .get_result(conn)
+        .get_result::<(Option<String>, bool, i64, Vec<u8>, String)>(conn)
         .await
         .map_err(diesel)?;
 
@@ -517,10 +510,10 @@ pub async fn incr_chapter_next_index(
     id: &str,
 ) -> BaseRest<i32> {
     //
-    let prev: i32 = diesel::update(t_comic.filter(f_id.eq(id)))
+    let prev = diesel::update(t_comic.filter(f_id.eq(id)))
         .set(f_chapter_next_index.eq(f_chapter_next_index + 1))
         .returning(f_chapter_next_index - 1)
-        .get_result(conn)
+        .get_result::<i32>(conn)
         .await
         .map_err(diesel)?;
 
@@ -550,7 +543,7 @@ pub async fn touch_last_active(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
     let now = OffsetDateTime::now_utc();
 
-    let aspect = ComicAspect::new(now).last_active_at(now);
+    let aspect = ComicAspectRow::new(now).last_active_at(now);
 
     diesel::update(t_comic.filter(f_id.eq(id)))
         .set(&aspect)

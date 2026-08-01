@@ -237,7 +237,7 @@ where
                     .eq(t_local_message::f_topic),
             );
 
-        let local_message_rows: Vec<LocalMessageRow> = t_local_message::table
+        let local_message_rows = t_local_message::table
             .filter(
                 t_local_message::f_status
                     .eq(LocalMessageStatus::Pending.as_str()),
@@ -257,7 +257,7 @@ where
                 t_local_message::f_retried_count,
                 t_local_message::f_lease,
             ))
-            .load(context.conn())
+            .load::<LocalMessageRow>(context.conn())
             .await
             .map_err(diesel)?;
 

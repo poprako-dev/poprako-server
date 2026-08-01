@@ -62,8 +62,7 @@ fn make_request_span(request: &Request) -> Span {
         .and_then(|header_value| header_value.to_str().ok())
         .unwrap_or("unknown");
 
-    let connect_info: Option<&ConnectInfo<SocketAddr>> =
-        request.extensions().get();
+    let connect_info = request.extensions().get::<ConnectInfo<SocketAddr>>();
 
     let remote_addr = connect_info
         .map(|connect_info| connect_info.0)

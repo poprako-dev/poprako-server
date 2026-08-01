@@ -10,7 +10,7 @@ use crate::model::read::spec::comment::CommentListSpec;
 use crate::model::write::comment::CommentEntry;
 use crate::part::repo::oper::comment::{CreateComment, ListCommentInfos};
 use crate::part_impl::repo::rdb_impl::entity::comment::{
-    CommentRow, CommentRowEntry,
+    CommentEntryRow, CommentInfoRow,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_comment::dsl::*;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, incl};
@@ -29,13 +29,13 @@ async fn list_infos(
     spec: &CommentListSpec,
 ) -> BaseRest<Vec<CommentInfo>> {
     //
-    let rows: Vec<CommentRow> = t_comment
+    let rows = t_comment
         .filter(f_team_id.eq(spec.team_id.as_str()))
-        .select(CommentRow::as_select())
+        .select(CommentInfoRow::as_select())
         .order_by(f_created_at.desc())
         .offset(spec.offset as i64)
         .limit(spec.limit as i64)
-        .load(conn)
+        .load::<CommentInfoRow>(conn)
         .await
         .map_err(diesel)?;
 
@@ -57,12 +57,12 @@ async fn create(
     entry: &CommentEntry,
 ) -> BaseRest<CommentInfo> {
     //
-    let entry = CommentRowEntry::from(entry);
+    let entry = CommentEntryRow::from(entry);
 
-    let row: CommentRow = diesel::insert_into(t_comment)
+    let row = diesel::insert_into(t_comment)
         .values(&entry)
-        .returning(CommentRow::as_returning())
-        .get_result(conn)
+        .returning(CommentInfoRow::as_returning())
+        .get_result::<CommentInfoRow>(conn)
         .await
         .map_err(diesel)?;
 

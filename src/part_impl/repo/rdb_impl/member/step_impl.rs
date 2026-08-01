@@ -11,7 +11,7 @@ use crate::model::read::proj::member::MemberInfo;
 use crate::model::read::spec::member::MemberListSpec;
 use crate::model::write::member::{MemberEntry, MemberRoleRepl};
 use crate::part_impl::repo::rdb_impl::entity::member::{
-    MemberAspect, MemberRow, MemberRowEntry,
+    MemberAspectRow, MemberEntryRow, MemberInfoRow,
 };
 use crate::part_impl::repo::rdb_impl::incl;
 use crate::part_impl::repo::rdb_impl::schema::t_member::dsl::*;
@@ -31,11 +31,11 @@ pub async fn find_info_by_user_id_and_team_id(
     team_id: &str,
 ) -> BaseRest<Option<MemberInfo>> {
     //
-    let row: Option<MemberRow> = t_member
+    let row = t_member
         .filter(f_user_id.eq(user_id))
         .filter(f_team_id.eq(team_id))
-        .select(MemberRow::as_select())
-        .get_result(conn)
+        .select(MemberInfoRow::as_select())
+        .get_result::<MemberInfoRow>(conn)
         .await
         .optional()
         .map_err(diesel)?;
@@ -50,7 +50,7 @@ pub async fn list_infos(
     spec: &MemberListSpec,
 ) -> BaseRest<Vec<MemberInfo>> {
     //
-    let rows: Vec<MemberRow> =
+    let rows =
         match spec {
             //
             MemberListSpec::Team {
@@ -64,7 +64,7 @@ pub async fn list_infos(
                 //
                 let mut query = t_member
                     .filter(f_team_id.eq(team_id.as_str()))
-                    .select(MemberRow::as_select())
+                    .select(MemberInfoRow::as_select())
                     .into_boxed();
 
                 if let Some(nickname) = fuzzy_nickname {
@@ -119,7 +119,7 @@ pub async fn list_infos(
                     .order_by(f_user_last_active_at.desc())
                     .offset((*offset) as i64)
                     .limit((*limit) as i64)
-                    .load(conn)
+                    .load::<MemberInfoRow>(conn)
                     .await
                     .map_err(diesel)?
             }
@@ -131,11 +131,11 @@ pub async fn list_infos(
                 ..
             } => t_member
                 .filter(f_user_id.eq(owner_id.as_str()))
-                .select(MemberRow::as_select())
+                .select(MemberInfoRow::as_select())
                 .order_by(f_user_last_active_at.desc())
                 .offset((*offset) as i64)
                 .limit((*limit) as i64)
-                .load(conn)
+                .load::<MemberInfoRow>(conn)
                 .await
                 .map_err(diesel)?,
         };
@@ -159,10 +159,10 @@ pub async fn get_info_by_id(
     incl_opt: &[MemberInclOpt],
 ) -> BaseRest<MemberInfo> {
     //
-    let row: Option<MemberRow> = t_member
+    let row = t_member
         .filter(f_id.eq(id))
-        .select(MemberRow::as_select())
-        .get_result(conn)
+        .select(MemberInfoRow::as_select())
+        .get_result::<MemberInfoRow>(conn)
         .await
         .optional()
         .map_err(diesel)?;
@@ -190,7 +190,7 @@ pub async fn get_info_by_id(
         }
     };
 
-    let mut info: MemberInfo = row.into();
+    let mut info = row.into();
 
     incl::member::populate_member_incls(
         conn,
@@ -213,10 +213,10 @@ pub async fn create(
 
     let entry = entity_from_entry(entry, now);
 
-    let row: MemberRow = diesel::insert_into(t_member)
+    let row = diesel::insert_into(t_member)
         .values(&entry)
-        .returning(MemberRow::as_returning())
-        .get_result(conn)
+        .returning(MemberInfoRow::as_returning())
+        .get_result::<MemberInfoRow>(conn)
         .await
         .map_err(diesel)?;
 
@@ -233,7 +233,7 @@ pub async fn update_user_nickname(
     //
     let now = OffsetDateTime::now_utc();
 
-    let aspect = MemberAspect::new(now).user_nickname(nickname);
+    let aspect = MemberAspectRow::new(now).user_nickname(nickname);
 
     diesel::update(t_member.filter(f_user_id.eq(user_id)))
         .set(&aspect)
@@ -251,11 +251,11 @@ pub async fn list_infos_by_user_id_excluded(
     user_id: &str,
 ) -> BaseRest<Vec<MemberInfo>> {
     //
-    let rows: Vec<MemberRow> = t_member
+    let rows = t_member
         .filter(f_user_id.eq(user_id))
-        .select(MemberRow::as_select())
+        .select(MemberInfoRow::as_select())
         .for_update()
-        .load(conn)
+        .load::<MemberInfoRow>(conn)
         .await
         .map_err(diesel)?;
 
@@ -269,11 +269,11 @@ pub async fn list_infos_by_team_id_excluded(
     team_id: &str,
 ) -> BaseRest<Vec<MemberInfo>> {
     //
-    let rows: Vec<MemberRow> = t_member
+    let rows = t_member
         .filter(f_team_id.eq(team_id))
-        .select(MemberRow::as_select())
+        .select(MemberInfoRow::as_select())
         .for_update()
-        .load(conn)
+        .load::<MemberInfoRow>(conn)
         .await
         .map_err(diesel)?;
 
@@ -287,10 +287,10 @@ pub async fn list_infos_by_user_id(
     user_id: &str,
 ) -> BaseRest<Vec<MemberInfo>> {
     //
-    let rows: Vec<MemberRow> = t_member
+    let rows = t_member
         .filter(f_user_id.eq(user_id))
-        .select(MemberRow::as_select())
-        .load(conn)
+        .select(MemberInfoRow::as_select())
+        .load::<MemberInfoRow>(conn)
         .await
         .map_err(diesel)?;
 
@@ -385,11 +385,11 @@ struct RoleTimestamps {
 fn entity_from_entry<'a>(
     entry: &'a MemberEntry,
     now: OffsetDateTime,
-) -> MemberRowEntry<'a> {
+) -> MemberEntryRow<'a> {
     //
     let timestamps = role_timestamps_from_mask(entry.roles, now);
 
-    MemberRowEntry {
+    MemberEntryRow {
         f_id: &entry.id,
         f_user_id: &entry.user_id,
         f_user_nickname: &entry.user_nickname,
@@ -413,11 +413,11 @@ fn entity_from_entry<'a>(
 fn aspect_from_role_update(
     update: &MemberRoleRepl,
     now: OffsetDateTime,
-) -> MemberAspect<'_> {
+) -> MemberAspectRow<'_> {
     //
     let timestamps = role_timestamps_from_mask(update.roles, now);
 
-    let mut aspect = MemberAspect::new(now);
+    let mut aspect = MemberAspectRow::new(now);
 
     aspect = aspect
         .assigned_raw_provider_at(timestamps.raw_provider)

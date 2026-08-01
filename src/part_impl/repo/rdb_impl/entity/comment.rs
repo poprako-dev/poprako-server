@@ -10,7 +10,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_comment;
 /// Raw database row for the `t_comment` table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_comment)]
-pub struct CommentRow {
+pub struct CommentInfoRow {
     //
     pub f_id: String,
 
@@ -22,8 +22,8 @@ pub struct CommentRow {
     pub f_created_at: OffsetDateTime,
 }
 
-impl From<CommentRow> for CommentInfo {
-    fn from(row: CommentRow) -> Self {
+impl From<CommentInfoRow> for CommentInfo {
+    fn from(row: CommentInfoRow) -> Self {
         Self {
             id: row.f_id,
             team_id: row.f_team_id,
@@ -38,7 +38,7 @@ impl From<CommentRow> for CommentInfo {
 /// Insertable struct for creating a new record in the `t_comment` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_comment)]
-pub struct CommentRowEntry<'a> {
+pub struct CommentEntryRow<'a> {
     //
     pub f_id: &'a str,
 
@@ -50,7 +50,7 @@ pub struct CommentRowEntry<'a> {
     pub f_created_at: OffsetDateTime,
 }
 
-impl<'a> From<&'a CommentEntry> for CommentRowEntry<'a> {
+impl<'a> From<&'a CommentEntry> for CommentEntryRow<'a> {
     fn from(entry: &'a CommentEntry) -> Self {
         Self {
             f_id: &entry.id,

@@ -19,7 +19,7 @@
 #![warn(clippy::pedantic)]
 #![warn(clippy::nursery)]
 
-use std::net::{SocketAddr, ToSocketAddrs};
+use std::net::ToSocketAddrs;
 use std::sync::Arc;
 
 use anyhow::Context as _;
@@ -62,7 +62,7 @@ async fn main() -> anyhow::Result<()> {
 
     let harn = Harn::new(nucl, repo, prom, auth, image_pool, develop);
 
-    let http_addr: SocketAddr = ToSocketAddrs::to_socket_addrs(&format!(
+    let http_addr = ToSocketAddrs::to_socket_addrs(&format!(
         "{}:{}",
         config.http_host, config.http_port
     ))

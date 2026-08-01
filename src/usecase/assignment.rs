@@ -13,7 +13,6 @@ use crate::data::instr::assignment::{
     UpdateAssignmentRolesInstr,
 };
 use crate::data::view::assignment::AssignmentInfoView;
-use crate::model::read::spec::assignment::AssignmentListSpec;
 use crate::model::shared::user::UserToken;
 use crate::model::write::assignment::{AssignmentEntry, AssignmentRoleRepl};
 use crate::part::image::ImagePool;
@@ -57,7 +56,7 @@ where
         + Sync,
     I: ImagePool,
 {
-    let assignment_list_spec: AssignmentListSpec = instr.try_into()?;
+    let assignment_list_spec = instr.try_into()?;
 
     AssignmentPermComplex::ensure_user_can_list_infos(
         &mut run_proxy! {
@@ -306,7 +305,7 @@ where
                         err_message = %err_message,
                         chapter_id = %instr.chapter_id,
                         user_id = %token.user_id,
-                        target_user_id = %instr.user_id,
+                        affected_user_id = %instr.user_id,
                         roles = ?instr.roles,
                         operation = "remove own administrator role",
                         "expected error: chapter administrator perm required",
@@ -331,7 +330,7 @@ where
                         err_message = %err_message,
                         chapter_id = %instr.chapter_id,
                         user_id = %token.user_id,
-                        target_user_id = %instr.user_id,
+                        affected_user_id = %instr.user_id,
                         roles = ?instr.roles,
                         operation = "remove last chapter administrator role",
                         "expected error: chapter administrator perm required",
@@ -370,7 +369,7 @@ where
                         err_message = %err_message,
                         chapter_id = %instr.chapter_id,
                         user_id = %token.user_id,
-                        target_user_id = %instr.user_id,
+                        affected_user_id = %instr.user_id,
                         roles = ?instr.roles,
                         operation = "assign administrator role",
                         "expected error: chapter administrator perm required",

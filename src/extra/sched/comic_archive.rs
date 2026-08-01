@@ -15,7 +15,7 @@ use poprako_util::i18n::trl;
 
 use crate::model::write::system_mail::SystemMailEntry;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
-use crate::part_impl::repo::rdb_impl::entity::system_mail::SystemMailRowEntry;
+use crate::part_impl::repo::rdb_impl::entity::system_mail::SystemMailEntryRow;
 use crate::part_impl::repo::rdb_impl::schema::t_comic_archive::dsl::{
     f_created_at, f_team_id, t_comic_archive,
 };
@@ -132,11 +132,11 @@ async fn list_expired_slots(
     cutoff: OffsetDateTime,
 ) -> BaseRest<Vec<ExpiredSlot>> {
     //
-    let rows: Vec<(String, OffsetDateTime)> = t_comic_archive
+    let rows = t_comic_archive
         .filter(f_created_at.lt(cutoff))
         .select((f_team_id, f_created_at))
         .order_by((f_created_at.asc(), f_team_id.asc()))
-        .load(conn)
+        .load::<(String, OffsetDateTime)>(conn)
         .await
         .map_err(diesel)?;
 
@@ -160,11 +160,11 @@ async fn purge_slot(conn: &mut RdbConn, slot: &ExpiredSlot) -> BaseRest<usize> {
     //
     let end = next_month(slot.start)?;
 
-    let admin_ids: Vec<String> = t_member
+    let admin_ids = t_member
         .filter(member_team_id.eq(&slot.team_id))
         .filter(f_assigned_admin_at.is_not_null())
         .select(f_user_id)
-        .load(conn)
+        .load::<String>(conn)
         .await
         .map_err(diesel)?;
 
@@ -215,7 +215,7 @@ async fn purge_slot(conn: &mut RdbConn, slot: &ExpiredSlot) -> BaseRest<usize> {
 
     let rows = entries
         .iter()
-        .map(SystemMailRowEntry::from)
+        .map(SystemMailEntryRow::from)
         .collect::<Vec<_>>();
 
     diesel::insert_into(t_system_mail::table)

@@ -19,7 +19,9 @@ use crate::part::repo::oper::term::{
     ListTermInfos, LockTerm, UpdateTerm,
 };
 use crate::part_impl::repo::rdb_impl::RdbRepo;
-use crate::part_impl::repo::rdb_impl::entity::term::{TermRow, TermRowEntry};
+use crate::part_impl::repo::rdb_impl::entity::term::{
+    TermEntryRow, TermInfoRow,
+};
 use crate::part_impl::repo::rdb_impl::schema::t_term::dsl::*;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::result::diesel;
@@ -183,12 +185,12 @@ async fn create(
 ) -> BaseRest<TermInfo> {
     //
     // Convert API entry to DB row shape and rely on returning() to fetch the saved state.
-    let entry = TermRowEntry::from(term_entry);
+    let entry = TermEntryRow::from(term_entry);
 
-    let row: TermRow = diesel::insert_into(t_term)
+    let row = diesel::insert_into(t_term)
         .values(&entry)
-        .returning(TermRow::as_returning())
-        .get_result(conn)
+        .returning(TermInfoRow::as_returning())
+        .get_result::<TermInfoRow>(conn)
         .await
         .map_err(diesel)?;
 
@@ -200,11 +202,11 @@ async fn create(
 async fn get_info_excluded(conn: &mut RdbConn, id: &str) -> BaseRest<TermInfo> {
     //
     // Use `for_update()` to prevent concurrent updates while resolving this term.
-    let row: Option<TermRow> = t_term
+    let row = t_term
         .filter(f_id.eq(id))
-        .select(TermRow::as_select())
+        .select(TermInfoRow::as_select())
         .for_update()
-        .get_result(conn)
+        .get_result::<TermInfoRow>(conn)
         .await
         .optional()
         .map_err(diesel)?;
@@ -240,11 +242,11 @@ async fn get_info_excluded(conn: &mut RdbConn, id: &str) -> BaseRest<TermInfo> {
 async fn lock_term(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
     // Confirm existence and keep the row locked until the current transaction ends.
-    let row: Option<String> = t_term
+    let row = t_term
         .filter(f_id.eq(id))
         .select(f_id)
         .for_update()
-        .get_result(conn)
+        .get_result::<String>(conn)
         .await
         .optional()
         .map_err(diesel)?;
@@ -310,7 +312,7 @@ async fn list_infos(
     // Start with a termbase constraint, then apply optional fuzzy source matching.
     let mut query = t_term
         .filter(f_termbase_id.eq(&spec.termbase_id))
-        .select(TermRow::as_select())
+        .select(TermInfoRow::as_select())
         .into_boxed();
 
     if let Some(fuzzy_source) = &spec.fuzzy_source {
@@ -322,11 +324,11 @@ async fn list_infos(
         query = query.filter(f_source.ilike(pattern));
     }
 
-    let rows: Vec<TermRow> = query
+    let rows = query
         .order_by(f_updated_at.desc())
         .offset(spec.offset as i64)
         .limit(spec.limit as i64)
-        .load(conn)
+        .load::<TermInfoRow>(conn)
         .await
         .map_err(diesel)?;
 
@@ -338,10 +340,10 @@ async fn list_infos(
 async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<TermInfo> {
     //
     // Read the row with strict id match and convert it to a rich term view.
-    let row: Option<TermRow> = t_term
+    let row = t_term
         .filter(f_id.eq(id))
-        .select(TermRow::as_select())
-        .get_result(conn)
+        .select(TermInfoRow::as_select())
+        .get_result::<TermInfoRow>(conn)
         .await
         .optional()
         .map_err(diesel)?;

@@ -55,7 +55,7 @@ impl ToSql<Text, Pg> for LocalMessageStatus {
 /// Insertable row for the `t_local_message` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_local_message)]
-pub struct LocalMessageEntry<'a> {
+pub struct LocalMessageEntryRow<'a> {
     //
     pub f_id: &'a str,
     pub f_topic: &'a str,
@@ -69,7 +69,7 @@ pub struct LocalMessageEntry<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> LocalMessageEntry<'a> {
+impl<'a> LocalMessageEntryRow<'a> {
     pub fn from_task(
         task: &Task<'a, String, TaskPayload>,
         now: OffsetDateTime,

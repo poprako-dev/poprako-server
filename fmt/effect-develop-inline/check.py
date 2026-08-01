@@ -6,7 +6,25 @@
 # ]
 # ///
 
-"""Require domain events to be constructed inline for `develop_on`."""
+"""Require domain events to be constructed inline on `.develop_on(develop)`.
+
+Events are dispatched through the [`Event`] enum: each variant carries a
+concrete payload struct, and dispatch happens by constructing
+``Event::Variant(Payload { ... }).develop_on(develop)`` inline at the call
+site. The checker enforces two rules:
+
+Rules
+-----
+
+* **EVD001** — an ``Event::Variant(...)`` construction must be the inline
+  receiver of ``.develop_on(develop)``. Binding an event to a variable before
+  dispatching it (or constructing it without an immediate dispatch) is
+  forbidden.
+* **EVD002** — callers must never invoke ``Develop::develop`` directly;
+  dispatch through ``Event::Variant(...).develop_on(develop)`` instead.
+
+[`Event`]: crate::part::effect::event::Event
+"""
 
 from __future__ import annotations
 
@@ -46,38 +64,6 @@ def text(source: bytes, node: tree_sitter.Node) -> str:
     return source[node.start_byte : node.end_byte].decode()
 
 
-def event_names(paths: list[Path], root: Path) -> set[str]:
-    names: set[str] = set()
-
-    for path in paths:
-        source = production_source(path, root)
-        tree = PARSER.parse(source)
-
-        for item in descendants(tree.root_node, "impl_item"):
-            item_text = text(source, item)
-            marker = "EffectEvent for "
-
-            if marker not in item_text:
-                continue
-
-            suffix = item_text.split(marker, 1)[1].lstrip()
-            name = suffix.split("<", 1)[0].split(" ", 1)[0].split("{", 1)[0]
-
-            if name.endswith("Event") and name != "Event":
-                names.add(name)
-
-    return names
-
-
-def struct_name(source: bytes, expression: tree_sitter.Node) -> str | None:
-    name = expression.child_by_field_name("name")
-
-    if name is None:
-        return None
-
-    return text(source, name).split("::")[-1]
-
-
 def method_name(source: bytes, expression: tree_sitter.Node) -> str | None:
     field = expression.child_by_field_name("field")
 
@@ -87,8 +73,32 @@ def method_name(source: bytes, expression: tree_sitter.Node) -> str | None:
     return text(source, field)
 
 
-def is_inline_develop_on(expression: tree_sitter.Node, source: bytes) -> bool:
-    parent = expression.parent
+def has_call_arguments(call: tree_sitter.Node) -> bool:
+    arguments = next(
+        (child for child in call.children if child.type == "arguments"), None
+    )
+
+    return arguments is not None and bool(arguments.named_children)
+
+
+def is_event_constructor(source: bytes, function: tree_sitter.Node) -> bool:
+    """Return True when `function` names an `Event::Variant` constructor.
+
+    The constructor is the field expression ``Event::Variant`` whose receiver
+    is the literal ``Event`` enum path. A dispatch like ``Event::Variant(...)``
+    ``.develop_on(...)`` surfaces the whole receiver as the outer call's
+    ``function``; requiring the receiver to be exactly ``Event`` keeps the
+    outer ``.develop_on`` call from being mistaken for a construction.
+    """
+    if function.type != "scoped_identifier":
+        return False
+
+    return text(source, function).split("::", 1)[0] == "Event"
+
+
+def is_inline_develop_on(receiver: tree_sitter.Node, source: bytes) -> bool:
+    """Return True when `receiver` is the inline receiver of `.develop_on(...)`."""
+    parent = receiver.parent
 
     while parent is not None and parent.type in WRAPPERS:
         parent = parent.parent
@@ -109,68 +119,47 @@ def is_inline_develop_on(expression: tree_sitter.Node, source: bytes) -> bool:
     )
 
 
-def has_call_arguments(call: tree_sitter.Node) -> bool:
-    arguments = next(
-        (child for child in call.children if child.type == "arguments"), None
-    )
-
-    return arguments is not None and bool(arguments.named_children)
-
-
-def is_internal_event_constructor(
-    source: bytes,
-    function: tree_sitter.Node,
-) -> bool:
-    segments = text(source, function).split("::")
-
-    return len(segments) >= 2 and segments[-2] == "Event"
-
-
-def check_file(path: Path, names: set[str], root: Path) -> list[str]:
+def check_file(path: Path, root: Path) -> list[str]:
     source = production_source(path, root)
     tree = PARSER.parse(source)
     errors: list[str] = []
 
-    for expression in descendants(tree.root_node, "struct_expression"):
-        name = struct_name(source, expression)
+    skip_dispatch = path.relative_to(root) == Path("src/part/effect.rs")
 
-        if name not in names or is_inline_develop_on(expression, source):
-            continue
-
-        errors.append(
-            f"{path.relative_to(root)}:{expression.start_point.row + 1}: "
-            f"EVD001: construct {name} directly as {name} {{ ... }}.develop_on(develop)",
-        )
-
-    if path.relative_to(root) == Path("src/part/effect.rs"):
-        return errors
-
+    # EVD001 — every Event::Variant(...) construction must be dispatched
+    # inline on .develop_on(develop); do not bind an event first.
     for call in descendants(tree.root_node, "call_expression"):
         function = call.child_by_field_name("function")
 
-        if (
-            function is None
-            or function.type != "field_expression"
-            or method_name(source, function) != "develop"
-            or not has_call_arguments(call)
-        ):
+        if function is None or not is_event_constructor(source, function):
+            continue
+
+        if is_inline_develop_on(call, source):
             continue
 
         errors.append(
             f"{path.relative_to(root)}:{call.start_point.row + 1}: "
-            "EVD002: dispatch events with XxxEvent { ... }.develop_on(develop)",
+            "EVD001: construct Event::Variant(...) inline on .develop_on(develop); "
+            "do not bind an event before dispatching it",
         )
 
-    for call in descendants(tree.root_node, "call_expression"):
-        function = call.child_by_field_name("function")
+    # EVD002 — never call Develop::develop(...) at a caller.
+    if not skip_dispatch:
+        for call in descendants(tree.root_node, "call_expression"):
+            function = call.child_by_field_name("function")
 
-        if function is None or not is_internal_event_constructor(source, function):
-            continue
+            if (
+                function is None
+                or function.type != "field_expression"
+                or method_name(source, function) != "develop"
+                or not has_call_arguments(call)
+            ):
+                continue
 
-        errors.append(
-            f"{path.relative_to(root)}:{call.start_point.row + 1}: "
-            "EVD003: construct the concrete XxxEvent instead of Event::Variant(...) at a caller",
-        )
+            errors.append(
+                f"{path.relative_to(root)}:{call.start_point.row + 1}: "
+                "EVD002: dispatch events with Event::Variant(...).develop_on(develop)",
+            )
 
     return errors
 
@@ -181,29 +170,34 @@ def self_test() -> int:
         source_dir = root / "src"
         source_dir.mkdir()
         fixture = source_dir / "fixture.rs"
+
+        # ── valid: inline Event::Variant(...).develop_on(develop) ─────────
         fixture.write_text(
+            "enum Event { UserActive(UserActiveEvent) }\n"
             "struct UserActiveEvent { user_id: String }\n"
             "fn valid(develop: &Develop) {\n"
-            "    UserActiveEvent { user_id: String::new() }.develop_on(develop);\n"
+            "    Event::UserActive(UserActiveEvent { user_id: String::new() })\n"
+            "        .develop_on(develop);\n"
             "}\n",
         )
 
-        if check_file(fixture, {"UserActiveEvent"}, root):
-            print("self-test: inline event development was rejected", file=sys.stderr)
+        if check_file(fixture, root):
+            print("self-test: inline event dispatch was rejected", file=sys.stderr)
             return 1
 
+        # ── invalid: bound before dispatch, and direct develop call ───────
         fixture.write_text(
+            "enum Event { UserActive(UserActiveEvent) }\n"
             "struct UserActiveEvent { user_id: String }\n"
             "fn invalid(develop: &Develop) {\n"
-            "    let event = UserActiveEvent { user_id: String::new() };\n"
+            "    let event = Event::UserActive(UserActiveEvent { user_id: String::new() });\n"
             "    develop.develop(event);\n"
-            "    Event::UserActive(UserActiveEvent { user_id: String::new() });\n"
             "}\n",
         )
-        diagnostics = check_file(fixture, {"UserActiveEvent"}, root)
+        diagnostics = check_file(fixture, root)
 
-        if len(diagnostics) != 4:
-            print("self-test: invalid event development was not rejected", file=sys.stderr)
+        if len(diagnostics) != 2:
+            print("self-test: non-inline event dispatch was not rejected", file=sys.stderr)
             print("\n".join(diagnostics), file=sys.stderr)
             return 1
 
@@ -221,8 +215,7 @@ def main() -> int:
         return self_test()
 
     paths = sorted((root / "src").rglob("*.rs"))
-    names = event_names(paths, root)
-    errors = [error for path in paths for error in check_file(path, names, root)]
+    errors = [error for path in paths for error in check_file(path, root)]
 
     if errors:
         print("\n".join(errors), file=sys.stderr)

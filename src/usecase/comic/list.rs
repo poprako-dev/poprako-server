@@ -11,7 +11,6 @@ use crate::data::val::comic_list::ListComicInfosVal;
 use crate::data::view::assignment::AssignmentInfoView;
 use crate::data::view::chapter::ChapterInfoView;
 use crate::data::view::comic::ComicInfoView;
-use crate::model::read::spec::comic::ComicListSpec;
 use crate::model::shared::user::UserToken;
 use crate::part::image::ImagePool;
 use crate::part::repo::assignment::AssignmentRepo;
@@ -84,7 +83,7 @@ where
     )
     .await?;
 
-    let spec: ComicListSpec = instr.try_into()?;
+    let spec = instr.try_into()?;
 
     let comic_infos = ListComicInfos { spec: &spec }.run_on(repo).await?;
 

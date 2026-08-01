@@ -11,8 +11,8 @@ use crate::model::read::proj::assignment_invitation::AssignmentInvitationInfo;
 use crate::model::read::spec::assignment_invitation::AssignmentInvitationListSpec;
 use crate::model::write::assignment_invitation::AssignmentInvitationEntry;
 use crate::part_impl::repo::rdb_impl::entity::assignment_invitation::{
-    AssignmentInvitationAspect, AssignmentInvitationRow,
-    AssignmentInvitationRowEntry,
+    AssignmentInvitationAspectRow, AssignmentInvitationEntryRow,
+    AssignmentInvitationInfoRow,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_assignment_invitation::dsl::*;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
@@ -37,12 +37,12 @@ pub async fn list_infos(
         None => query,
     };
 
-    let rows: Vec<AssignmentInvitationRow> = query
-        .select(AssignmentInvitationRow::as_select())
+    let rows = query
+        .select(AssignmentInvitationInfoRow::as_select())
         .order_by((f_created_at.desc(), f_id.asc()))
         .offset(spec.offset as i64)
         .limit(spec.limit as i64)
-        .load(conn)
+        .load::<AssignmentInvitationInfoRow>(conn)
         .await
         .map_err(diesel)?;
 
@@ -56,10 +56,10 @@ pub async fn get_info_by_id(
     id: &str,
 ) -> BaseRest<AssignmentInvitationInfo> {
     //
-    let row: AssignmentInvitationRow = t_assignment_invitation
+    let row = t_assignment_invitation
         .filter(f_id.eq(id))
-        .select(AssignmentInvitationRow::as_select())
-        .get_result(conn)
+        .select(AssignmentInvitationInfoRow::as_select())
+        .get_result::<AssignmentInvitationInfoRow>(conn)
         .await
         .optional()
         .map_err(diesel)?
@@ -91,12 +91,12 @@ pub async fn get_info_by_code_excluded(
     code: &str,
 ) -> BaseRest<AssignmentInvitationInfo> {
     //
-    let row: AssignmentInvitationRow = t_assignment_invitation
+    let row = t_assignment_invitation
         .filter(f_code.eq(code))
         .filter(f_pending.eq(true))
-        .select(AssignmentInvitationRow::as_select())
+        .select(AssignmentInvitationInfoRow::as_select())
         .for_update()
-        .get_result(conn)
+        .get_result::<AssignmentInvitationInfoRow>(conn)
         .await
         .optional()
         .map_err(diesel)?
@@ -129,15 +129,14 @@ pub async fn create(
     model_entry: &AssignmentInvitationEntry,
 ) -> BaseRest<AssignmentInvitationInfo> {
     //
-    let entry = AssignmentInvitationRowEntry::from(model_entry);
+    let entry = AssignmentInvitationEntryRow::from(model_entry);
 
-    let row: AssignmentInvitationRow =
-        diesel::insert_into(t_assignment_invitation)
-            .values(&entry)
-            .returning(AssignmentInvitationRow::as_returning())
-            .get_result(conn)
-            .await
-            .map_err(diesel)?;
+    let row = diesel::insert_into(t_assignment_invitation)
+        .values(&entry)
+        .returning(AssignmentInvitationInfoRow::as_returning())
+        .get_result::<AssignmentInvitationInfoRow>(conn)
+        .await
+        .map_err(diesel)?;
 
     row_into_info(row)
 }
@@ -151,7 +150,7 @@ pub async fn mark_pending_as_used(
     //
     let now = OffsetDateTime::now_utc();
 
-    let aspect = AssignmentInvitationAspect::new(now).pending(false);
+    let aspect = AssignmentInvitationAspectRow::new(now).pending(false);
 
     let affected = diesel::update(
         t_assignment_invitation
@@ -229,16 +228,16 @@ pub async fn delete_by_chapter_id(
     accept(())
 }
 
-// Converts a vector of `AssignmentInvitationRow` values into `AssignmentInvitationInfo`.
+// Converts a vector of `AssignmentInvitationInfoRow` values into `AssignmentInvitationInfo`.
 fn rows_into_infos(
-    rows: Vec<AssignmentInvitationRow>,
+    rows: Vec<AssignmentInvitationInfoRow>,
 ) -> BaseRest<Vec<AssignmentInvitationInfo>> {
     rows.into_iter().map(row_into_info).collect()
 }
 
-// Converts a single `AssignmentInvitationRow` into an `AssignmentInvitationInfo`.
+// Converts a single `AssignmentInvitationInfoRow` into an `AssignmentInvitationInfo`.
 fn row_into_info(
-    row: AssignmentInvitationRow,
+    row: AssignmentInvitationInfoRow,
 ) -> BaseRest<AssignmentInvitationInfo> {
     row.try_into()
 }

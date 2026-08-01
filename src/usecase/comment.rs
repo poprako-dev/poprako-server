@@ -32,7 +32,7 @@ where
     R: CommentRepo<C> + MemberRepo<C> + Sync,
     I: ImagePool,
 {
-    let comment_list_spec: CommentListSpec = instr.into();
+    let comment_list_spec = Into::<CommentListSpec>::into(instr);
 
     CommentPermComplex::ensure_user_can_list_infos(
         &mut run_proxy! {
