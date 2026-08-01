@@ -60,7 +60,7 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(instr): Json<CreateCommentInstr>,
 ) -> HttpResult<CreateCommentVal> {
-    usecase::comment::create((harn.drive(), harn.repo()), user_token, instr)
+    usecase::comment::create((harn.nucl(), harn.repo()), user_token, instr)
         .await?
         .accept(StatusCode::CREATED)
 }

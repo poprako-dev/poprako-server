@@ -71,7 +71,7 @@ pub async fn create(
     Json(instr): Json<CreateMemberInvitationInstr>,
 ) -> HttpResult<CreateMemberInvitationVal> {
     usecase::member_invitation::create(
-        (harn.drive(), harn.repo(), harn.prom()),
+        (harn.nucl(), harn.repo(), harn.prom()),
         user_token,
         instr,
     )
@@ -141,7 +141,7 @@ pub async fn update_roles(
     ensure_path_matches_body_id(&member_invitation_id, &instr.id)?;
 
     usecase::member_invitation::update_roles(
-        (harn.drive(), harn.repo()),
+        (harn.nucl(), harn.repo()),
         user_token,
         instr,
     )
@@ -170,7 +170,7 @@ pub async fn delete(
 ) -> HttpNoContent {
     //
     usecase::member_invitation::delete(
-        (harn.drive(), harn.repo()),
+        (harn.nucl(), harn.repo()),
         user_token,
         member_invitation_id,
     )

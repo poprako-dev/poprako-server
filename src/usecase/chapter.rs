@@ -40,16 +40,15 @@ use crate::part::repo::oper::chapter::{
     LockChapters, UnpinOtherChapters, UpdateChapter, UpdateChapterStage,
 };
 use crate::part::repo::oper::comic::{
-    AllocComicChapterIndex, GetComicInfo, TouchComicLastActive,
-    UpdateComicChapterCount,
+    AllocComicChapterIndex, TouchComicLastActive, UpdateComicChapterCount,
 };
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::page::{
     ClearPageImagesForPublish, ListFirstPageInfos,
 };
-use crate::part::repo::oper::workset::GetWorksetInfo;
+use crate::part::repo::oper::team::ResolveTeamId;
 use crate::part::repo::page::PageRepo;
-use crate::part::repo::workset::WorksetRepo;
+use crate::part::repo::team::TeamRepo;
 use crate::result::{BaseError, BaseRest, accept};
 use crate::value::chapter::{Stage, StageOper, StagePhase};
 
@@ -69,19 +68,13 @@ pub async fn list_infos<C, R, I>(
     instr: ListChapterInfosInstr,
 ) -> BaseRest<Vec<ChapterInfoView>>
 where
-    R: ChapterRepo<C>
-        + ComicRepo<C>
-        + WorksetRepo<C>
-        + MemberRepo<C>
-        + PageRepo<C>
-        + Sync,
+    R: ChapterRepo<C> + MemberRepo<C> + TeamRepo<C> + PageRepo<C> + Sync,
     I: ImagePool,
 {
     ChapterPermComplex::ensure_user_can_list_infos(
         &mut run_proxy! {
             repo =>
-                for<'a, 'b> GetComicInfo<'a, 'b>,
-                for<'a> GetWorksetInfo<'a>,
+                for<'a> ResolveTeamId<'a>,
                 for<'a> FindMemberInfo<'a>;
         },
         &token.user_id,
@@ -145,14 +138,12 @@ pub async fn get_info<C, R>(
     id: String,
 ) -> BaseRest<ChapterInfoView>
 where
-    R: ChapterRepo<C> + ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
+    R: ChapterRepo<C> + MemberRepo<C> + TeamRepo<C> + Sync,
 {
     ChapterPermComplex::ensure_user_can_get_info(
         &mut run_proxy! {
             repo =>
-                for<'a, 'b> GetChapterInfo<'a, 'b>,
-                for<'a, 'b> GetComicInfo<'a, 'b>,
-                for<'a> GetWorksetInfo<'a>,
+                for<'a> ResolveTeamId<'a>,
                 for<'a> FindMemberInfo<'a>;
         },
         &token.user_id,
@@ -178,13 +169,12 @@ pub async fn get_pinned<C, R>(
     comic_id: String,
 ) -> BaseRest<Option<ChapterInfoView>>
 where
-    R: ChapterRepo<C> + ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
+    R: ChapterRepo<C> + MemberRepo<C> + TeamRepo<C> + Sync,
 {
     ChapterPermComplex::ensure_user_can_get_pinned(
         &mut run_proxy! {
             repo =>
-                for<'a, 'b> GetComicInfo<'a, 'b>,
-                for<'a> GetWorksetInfo<'a>,
+                for<'a> ResolveTeamId<'a>,
                 for<'a> FindMemberInfo<'a>;
         },
         &token.user_id,
@@ -214,8 +204,8 @@ where
     C: Send,
     R: ChapterRepo<C>
         + ComicRepo<C>
-        + WorksetRepo<C>
         + MemberRepo<C>
+        + TeamRepo<C>
         + AssignmentRepo<C>
         + Send
         + Sync,
@@ -223,8 +213,7 @@ where
     ChapterPermComplex::ensure_user_can_create(
         &mut run_proxy! {
             repo =>
-                for<'a, 'b> GetComicInfo<'a, 'b>,
-                for<'a> GetWorksetInfo<'a>,
+                for<'a> ResolveTeamId<'a>,
                 for<'a> FindMemberInfo<'a>;
         },
         &token.user_id,

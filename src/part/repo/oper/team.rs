@@ -26,6 +26,24 @@ pub enum GetTeamInfo<'a> {
     },
 }
 
+/// Resolves the owning team from a nested domain resource.
+#[derive(Oper)]
+#[oper(output = String)]
+pub enum ResolveTeamId<'a> {
+    //
+    /// Resolve from a comic identifier.
+    Comic {
+        /// The comic identifier.
+        id: &'a str,
+    },
+
+    /// Resolve from a chapter identifier.
+    Chapter {
+        /// The chapter identifier.
+        id: &'a str,
+    },
+}
+
 /// Lists team infos matching a filter spec.
 #[derive(Oper)]
 #[oper(output = Vec<TeamInfo>)]

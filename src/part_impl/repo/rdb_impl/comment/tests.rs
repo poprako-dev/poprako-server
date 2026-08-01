@@ -7,7 +7,7 @@ use poprako_orchestra::Nucl as _;
 use crate::model::read::spec::comment::CommentListSpec;
 use crate::model::write::comment::CommentEntry;
 use crate::part::repo::oper::comment::{CreateComment, ListCommentInfos};
-use crate::part_impl::drive::rdb_impl::RdbDrive;
+use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
 use crate::result::BaseError;
 use crate::shared::RdbCore;
@@ -25,7 +25,7 @@ pub async fn comment_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let repo = RdbRepo::new(shared.clone());
 
-    let drive = RdbDrive::new(shared.clone());
+    let nucl = RdbNucl::new(shared.clone());
 
     let comment_entry = CommentEntry {
         id: format!("{}comment", PREFIX),
@@ -34,22 +34,21 @@ pub async fn comment_roundtrip_uses_testcontainer(shared: RdbCore) {
         content: "comment".into(),
     };
 
-    drive
-        .coord(async |context| {
-            //
-            repo.step(
-                context,
-                &CreateComment {
-                    entry: &comment_entry,
-                },
-            )
-            .await?;
+    nucl.coord(async |context| {
+        //
+        repo.step(
+            context,
+            &CreateComment {
+                entry: &comment_entry,
+            },
+        )
+        .await?;
 
-            Ok::<(), BaseError>(())
-        })
-        .await
-        .ok()
-        .unwrap();
+        Ok::<(), BaseError>(())
+    })
+    .await
+    .ok()
+    .unwrap();
 
     let comment_list_spec = CommentListSpec {
         team_id: team_fixture.team_entry.id.clone(),

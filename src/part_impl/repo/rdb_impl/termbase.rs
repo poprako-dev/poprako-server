@@ -1,7 +1,8 @@
 //! Diesel-backed terminology-base repository operations.
 
 use diesel::{
-    BoolExpressionMethods as _, ExpressionMethods as _, OptionalExtension as _,
+    BoolExpressionMethods as _, ExpressionMethods as _,
+    NullableExpressionMethods as _, OptionalExtension as _,
     PgTextExpressionMethods as _, QueryDsl as _, SelectableHelper as _,
 };
 use diesel_async::RunQueryDsl as _;
@@ -24,6 +25,7 @@ use crate::part_impl::repo::rdb_impl::entity::termbase::{
     TermbaseRow, TermbaseRowEntry,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_termbase::dsl::*;
+use crate::part_impl::repo::rdb_impl::schema::{t_comic, t_workset};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::result::diesel;
 use crate::shared::{RdbConn, RdbContext};
@@ -161,15 +163,22 @@ async fn list_infos(
         }
 
         TermbaseListSpec::Comic {
-            team_id,
             comic_id,
             fuzzy_name,
             offset,
             limit,
         } => {
             //
-            query =
-                query.filter(f_team_id.eq(team_id).or(f_comic_id.eq(comic_id)));
+            let owning_team_ids = t_comic::table
+                .inner_join(t_workset::table)
+                .filter(t_comic::f_id.eq(comic_id))
+                .select(t_workset::f_team_id.nullable());
+
+            query = query.filter(
+                f_team_id
+                    .eq_any(owning_team_ids)
+                    .or(f_comic_id.eq(comic_id)),
+            );
 
             (fuzzy_name, offset, limit)
         }

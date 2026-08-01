@@ -96,7 +96,7 @@ pub async fn delete(
 ) -> HttpNoContent {
     //
     usecase::page::delete(
-        (harn.drive(), harn.repo(), harn.prom()),
+        (harn.nucl(), harn.repo(), harn.prom()),
         user_token,
         chapter_id,
     )
@@ -130,7 +130,7 @@ pub async fn reserve_chapter_pages(
     ensure_path_matches_body_id(&chapter_id, &instr.chapter_id)?;
 
     usecase::page::reserve_chapter_pages(
-        (harn.drive(), harn.repo(), harn.prom(), harn.image_pool()),
+        (harn.nucl(), harn.repo(), harn.prom(), harn.image_pool()),
         user_token,
         instr,
     )
@@ -159,7 +159,7 @@ pub async fn reserve_image(
     Json(instr): Json<ReservePageImageInstr>,
 ) -> HttpResult<ReservedPageVal> {
     usecase::page::reserve_image(
-        (harn.drive(), harn.repo(), harn.prom(), harn.image_pool()),
+        (harn.nucl(), harn.repo(), harn.prom(), harn.image_pool()),
         user_token,
         page_id,
         instr,
@@ -190,7 +190,7 @@ pub async fn mark_image_uploaded(
 ) -> HttpNoContent {
     //
     usecase::page::mark_image_uploaded(
-        (harn.drive(), harn.repo(), harn.image_pool()),
+        (harn.nucl(), harn.repo(), harn.image_pool()),
         user_token,
         page_id,
         instr,

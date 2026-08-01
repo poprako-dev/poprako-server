@@ -15,9 +15,9 @@ pub use extra::sched::Sched;
 pub use harn::Harn;
 pub use log::init_log;
 pub use part_impl::auth::jwt_impl::JwtAuth;
-pub use part_impl::drive::rdb_impl::RdbDrive;
 pub use part_impl::effect::async_impl::AsyncEffectDevelop;
 pub use part_impl::image::r2_impl::R2ImagePool;
+pub use part_impl::nucl::rdb_impl::RdbNucl;
 pub use part_impl::prom::rdb_impl::RdbProm;
 pub use part_impl::repo::rdb_impl::RdbRepo;
 pub use shared::RdbCore;
@@ -45,7 +45,7 @@ mod model;
 // Port trait definitions (repo, auth, image, prom, effect) for the application
 // core.
 mod part;
-// Concrete port implementations: repo, auth, prom, image, effect, drive.
+// Concrete port implementations: repo, auth, prom, image, effect, nucl.
 mod part_impl;
 // Root error and result types used across all layers.
 mod result;

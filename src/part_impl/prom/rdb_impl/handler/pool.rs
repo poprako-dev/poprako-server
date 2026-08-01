@@ -12,7 +12,7 @@ use tracing::instrument;
 
 use crate::part::effect::Develop;
 use crate::part::image::ImageManager;
-use crate::part_impl::drive::rdb_impl::RdbDrive;
+use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::prom::rdb_impl::entity::LocalMessageRow;
 use crate::part_impl::prom::rdb_impl::handler::base::{
     RdbPromHandler, dispatch_payload,
@@ -73,7 +73,7 @@ pub fn enforce_retry_limit(
     }
 }
 
-impl<I, D> RdbPromHandler<RdbDrive, RdbRepo, I, D>
+impl<I, D> RdbPromHandler<RdbNucl, RdbRepo, I, D>
 where
     I: ImageManager + Send + Sync + 'static,
     D: Develop + Send + Sync + 'static,

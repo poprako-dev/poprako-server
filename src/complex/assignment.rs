@@ -9,11 +9,9 @@ use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::spec::assignment::AssignmentListSpec;
 use crate::model::write::assignment::AssignmentRoleRepl;
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
-use crate::part::repo::oper::chapter::GetChapterInfo;
-use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
+use crate::part::repo::oper::team::ResolveTeamId;
 use crate::part::repo::oper::user::GetUserInfo;
-use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 use crate::value::role::{RoleField, RoleMask};
@@ -90,9 +88,7 @@ impl AssignmentPermComplex {
         assignment_list_spec: &AssignmentListSpec,
     ) -> BaseRest<()>
     where
-        P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
-            + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
-            + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+        P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
             + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>
             + for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>
             + for<'a> Proxy<GetUserInfo<'a>, Error = BaseError>,
@@ -118,9 +114,7 @@ impl AssignmentPermComplex {
         roles: RoleMask,
     ) -> BaseRest<()>
     where
-        P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
-            + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
-            + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+        P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
             + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>
             + for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
     {
@@ -164,43 +158,11 @@ impl AssignmentPermComplex {
         roles: RoleMask,
     ) -> BaseRest<()>
     where
-        P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
-            + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
-            + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+        P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
             + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
         check_target_roles(proxy, user_id, chapter_id, roles).await
     }
-}
-
-// Resolve the owning team ID from a chapter ID via its comic and workset.
-async fn resolve_team_id<P>(proxy: &mut P, chapter_id: &str) -> BaseRest<String>
-where
-    P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
-        + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
-        + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>,
-{
-    let chapter_info = GetChapterInfo {
-        id: chapter_id,
-        incls: &[],
-    }
-    .proxy_on(proxy)
-    .await?;
-
-    let comic_info = GetComicInfo {
-        id: &chapter_info.comic_id,
-        incls: &[],
-    }
-    .proxy_on(proxy)
-    .await?;
-
-    let workset_info = GetWorksetInfo {
-        id: &comic_info.workset_id,
-    }
-    .proxy_on(proxy)
-    .await?;
-
-    accept(workset_info.team_id)
 }
 
 // Verify the caller may list assignments for a chapter as a team
@@ -211,13 +173,13 @@ async fn check_list_by_chapter<P>(
     chapter_id: &str,
 ) -> BaseRest<()>
 where
-    P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
-        + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
-        + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+    P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
         + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>
         + for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
 {
-    let team_id = resolve_team_id(proxy, chapter_id).await?;
+    let team_id = ResolveTeamId::Chapter { id: chapter_id }
+        .proxy_on(proxy)
+        .await?;
 
     let member_check =
         check_user_is_team_member(proxy, user_id, &team_id).await;
@@ -445,9 +407,7 @@ async fn check_target_roles<P>(
     roles: RoleMask,
 ) -> BaseRest<()>
 where
-    P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
-        + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
-        + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+    P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
         + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
 {
     if roles.has_any_role(&[RoleField::ADMIN]) {
@@ -469,7 +429,9 @@ where
         });
     }
 
-    let team_id = resolve_team_id(proxy, chapter_id).await?;
+    let team_id = ResolveTeamId::Chapter { id: chapter_id }
+        .proxy_on(proxy)
+        .await?;
 
     let member_info = FindMemberInfo::UserTeam {
         user_id,

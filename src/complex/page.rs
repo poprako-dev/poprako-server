@@ -8,10 +8,8 @@ use crate::complex::util::{
     check_user_is_team_admin, check_user_is_team_member,
 };
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
-use crate::part::repo::oper::chapter::GetChapterInfo;
-use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part::repo::oper::workset::GetWorksetInfo;
+use crate::part::repo::oper::team::ResolveTeamId;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 use crate::value::role::RoleField;
@@ -65,35 +63,16 @@ impl PagePermComplex {
         chapter_id: &str,
     ) -> BaseRest<()>
     where
-        P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
-            + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
-            + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+        P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
             + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>
             + for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
     {
-        let chapter_info = GetChapterInfo {
-            id: chapter_id,
-            incls: &[],
-        }
-        .proxy_on(proxy)
-        .await?;
-
-        let comic_info = GetComicInfo {
-            id: &chapter_info.comic_id,
-            incls: &[],
-        }
-        .proxy_on(proxy)
-        .await?;
-
-        let workset_info = GetWorksetInfo {
-            id: &comic_info.workset_id,
-        }
-        .proxy_on(proxy)
-        .await?;
+        let team_id = ResolveTeamId::Chapter { id: chapter_id }
+            .proxy_on(proxy)
+            .await?;
 
         let member_check =
-            check_user_is_team_member(proxy, user_id, &workset_info.team_id)
-                .await;
+            check_user_is_team_member(proxy, user_id, &team_id).await;
 
         if member_check.is_ok() {
             return accept(());
@@ -121,32 +100,14 @@ impl PagePermComplex {
         chapter_id: &str,
     ) -> BaseRest<()>
     where
-        P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
-            + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
-            + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+        P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
             + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
-        let chapter_info = GetChapterInfo {
-            id: chapter_id,
-            incls: &[],
-        }
-        .proxy_on(proxy)
-        .await?;
+        let team_id = ResolveTeamId::Chapter { id: chapter_id }
+            .proxy_on(proxy)
+            .await?;
 
-        let comic_info = GetComicInfo {
-            id: &chapter_info.comic_id,
-            incls: &[],
-        }
-        .proxy_on(proxy)
-        .await?;
-
-        let workset_info = GetWorksetInfo {
-            id: &comic_info.workset_id,
-        }
-        .proxy_on(proxy)
-        .await?;
-
-        check_user_is_team_admin(proxy, user_id, &workset_info.team_id).await
+        check_user_is_team_admin(proxy, user_id, &team_id).await
     }
 }
 

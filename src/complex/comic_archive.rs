@@ -11,9 +11,8 @@ use crate::model::read::proj::comic_archive::{
     ComicArchiveChapterSnapshot, ComicArchiveRecord, ComicArchiveSnapshot,
 };
 use crate::model::write::comic_archive::ComicArchiveEntry;
-use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part::repo::oper::workset::GetWorksetInfo;
+use crate::part::repo::oper::team::ResolveTeamId;
 use crate::result::{BaseError, BaseRest, accept};
 use crate::util::next_snowflake_id;
 use crate::value::comic_archive::{
@@ -74,24 +73,14 @@ impl ComicArchivePermComplex {
         comic_id: &str,
     ) -> BaseRest<()>
     where
-        P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
-            + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+        P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
             + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
-        let comic_info = GetComicInfo {
-            id: comic_id,
-            incls: &[],
-        }
-        .proxy_on(proxy)
-        .await?;
+        let team_id = ResolveTeamId::Comic { id: comic_id }
+            .proxy_on(proxy)
+            .await?;
 
-        let workset_info = GetWorksetInfo {
-            id: &comic_info.workset_id,
-        }
-        .proxy_on(proxy)
-        .await?;
-
-        check_user_is_team_admin(proxy, user_id, &workset_info.team_id).await
+        check_user_is_team_admin(proxy, user_id, &team_id).await
     }
 }
 

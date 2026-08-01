@@ -27,7 +27,7 @@ use crate::result::BaseError;
 
 /// Central application harness that wires together all port implementations.
 ///
-/// Provides accessors to each subsystem (drive, repo, prom, auth, image_pool,
+/// Provides accessors to each subsystem (nucl, repo, prom, auth, image_pool,
 /// develop) and is designed to be cheaply cloned via `Arc<HarnInner>`.
 pub struct Harn<C, N, R, P, A, I, D> {
     /// Reference-counted inner harness that holds all port implementations.
@@ -46,8 +46,8 @@ impl<C, N, R, P, A, I, D> Clone for Harn<C, N, R, P, A, I, D> {
 // Inner, non-cloneable state shared across all `Harn` clones via `Arc`.
 struct HarnInner<C, N, R, P, A, I, D> {
     //
-    // Transaction driver (Nucl).
-    drive: N,
+    // Transaction coordinator (Nucl).
+    nucl: N,
     // Repository bundle implementing all domain step traits.
     repo: R,
     // Prom (deferred task) enqueuer.
@@ -88,7 +88,7 @@ where
 {
     /// Builds a new `Harn` from the given port implementations.
     pub fn new(
-        drive: N,
+        nucl: N,
         repo: R,
         prom: P,
         auth: A,
@@ -97,7 +97,7 @@ where
     ) -> Self {
         Self {
             inner: Arc::new(HarnInner {
-                drive,
+                nucl,
                 repo,
                 prom,
                 auth,
@@ -108,9 +108,9 @@ where
         }
     }
 
-    /// Returns a reference to the transaction driver.
-    pub fn drive(&self) -> &N {
-        &self.inner.drive
+    /// Returns a reference to the transaction coordinator.
+    pub fn nucl(&self) -> &N {
+        &self.inner.nucl
     }
 
     /// Returns a reference to the repository bundle.

@@ -7,7 +7,7 @@ use crate::complex::util::{
 };
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::member_invitation::GetMemberInvitationInfo;
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest};
 use crate::util::next_snowflake_id;
 
 /// Domain opers for member invitations.
@@ -70,9 +70,19 @@ impl MemberInvitationPermComplex {
                 Error = BaseError,
             > + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
-        let team_id = Self::resolve_team_id(proxy, invitation_id).await?;
+        let member_invitation_info = GetMemberInvitationInfo::Id {
+            id: invitation_id,
+            incls: &[],
+        }
+        .proxy_on(proxy)
+        .await?;
 
-        check_user_is_team_admin(proxy, user_id, &team_id).await
+        check_user_is_team_admin(
+            proxy,
+            user_id,
+            &member_invitation_info.team_id,
+        )
+        .await
     }
 
     /// Verify the caller is a team admin and may delete the invitation.
@@ -87,22 +97,6 @@ impl MemberInvitationPermComplex {
                 Error = BaseError,
             > + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
-        let team_id = Self::resolve_team_id(proxy, invitation_id).await?;
-
-        check_user_is_team_admin(proxy, user_id, &team_id).await
-    }
-
-    // Resolve the owning team ID from an invitation ID.
-    async fn resolve_team_id<P>(
-        proxy: &mut P,
-        invitation_id: &str,
-    ) -> BaseRest<String>
-    where
-        P: for<'a, 'b> Proxy<
-                GetMemberInvitationInfo<'a, 'b>,
-                Error = BaseError,
-            >,
-    {
         let member_invitation_info = GetMemberInvitationInfo::Id {
             id: invitation_id,
             incls: &[],
@@ -110,6 +104,11 @@ impl MemberInvitationPermComplex {
         .proxy_on(proxy)
         .await?;
 
-        accept(member_invitation_info.team_id)
+        check_user_is_team_admin(
+            proxy,
+            user_id,
+            &member_invitation_info.team_id,
+        )
+        .await
     }
 }

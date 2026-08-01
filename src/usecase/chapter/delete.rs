@@ -16,18 +16,18 @@ use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::DeleteAssignments;
 use crate::part::repo::oper::assignment_invitation::DeleteAssignmentInvitations;
 use crate::part::repo::oper::chapter::{
-    DeleteChapter, GetChapterInfo, GetChapterInfoExcluded,
-    ListChapterInfosExcluded, UnpinOtherChapters, UpdateChapter,
+    DeleteChapter, GetChapterInfoExcluded, ListChapterInfosExcluded,
+    UnpinOtherChapters, UpdateChapter,
 };
 use crate::part::repo::oper::comic::{
-    GetComicInfo, TouchComicLastActive, UpdateComicChapterCount,
+    TouchComicLastActive, UpdateComicChapterCount,
 };
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::page::{DeletePages, ListPageInfos};
-use crate::part::repo::oper::workset::GetWorksetInfo;
+use crate::part::repo::oper::team::ResolveTeamId;
 use crate::part::repo::page::PageRepo;
+use crate::part::repo::team::TeamRepo;
 use crate::part::repo::unit::UnitRepo;
-use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseError, BaseRest, accept};
 
 /// Deletes one chapter and its descendant core records.
@@ -42,8 +42,8 @@ where
     C: Send,
     R: ChapterRepo<C>
         + ComicRepo<C>
-        + WorksetRepo<C>
         + MemberRepo<C>
+        + TeamRepo<C>
         + PageRepo<C>
         + AssignmentInvitationRepo<C>
         + AssignmentRepo<C>
@@ -55,9 +55,7 @@ where
     ChapterPermComplex::ensure_user_can_delete(
         &mut run_proxy! {
             repo =>
-                for<'a, 'b> GetChapterInfo<'a, 'b>,
-                for<'a, 'b> GetComicInfo<'a, 'b>,
-                for<'a> GetWorksetInfo<'a>,
+                for<'a> ResolveTeamId<'a>,
                 for<'a> FindMemberInfo<'a>;
         },
         &token.user_id,

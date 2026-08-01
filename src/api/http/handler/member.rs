@@ -71,7 +71,7 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(instr): Json<CreateMemberInstr>,
 ) -> HttpResult<CreateMemberVal> {
-    usecase::member::create((harn.drive(), harn.repo()), user_token, instr)
+    usecase::member::create((harn.nucl(), harn.repo()), user_token, instr)
         .await?
         .accept(StatusCode::CREATED)
 }
@@ -166,7 +166,7 @@ pub async fn update_roles(
     ensure_path_matches_body_id(&member_id, &instr.id)?;
 
     usecase::member::update_roles(
-        (harn.drive(), harn.repo()),
+        (harn.nucl(), harn.repo()),
         user_token,
         instr,
     )
@@ -194,7 +194,7 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::member::delete((harn.drive(), harn.repo()), user_token, member_id)
+    usecase::member::delete((harn.nucl(), harn.repo()), user_token, member_id)
         .await?;
 
     no_content()
@@ -219,7 +219,7 @@ pub async fn join(
     Json(instr): Json<JoinTeamInstr>,
 ) -> HttpResult<MemberInfoView> {
     usecase::member::join_team(
-        (harn.drive(), harn.repo(), harn.image_pool()),
+        (harn.nucl(), harn.repo(), harn.image_pool()),
         user_token,
         instr,
     )

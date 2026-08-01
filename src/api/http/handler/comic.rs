@@ -113,7 +113,7 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(instr): Json<CreateComicInstr>,
 ) -> HttpResult<CreateComicVal> {
-    usecase::comic::create((harn.drive(), harn.repo()), user_token, instr)
+    usecase::comic::create((harn.nucl(), harn.repo()), user_token, instr)
         .await?
         .accept(StatusCode::CREATED)
 }
@@ -235,7 +235,7 @@ pub async fn reserve_cover(
     Json(instr): Json<ReserveComicCoverInstr>,
 ) -> HttpResult<ReserveComicCoverVal> {
     usecase::comic::reserve_cover(
-        (harn.drive(), harn.repo(), harn.prom(), harn.image_pool()),
+        (harn.nucl(), harn.repo(), harn.prom(), harn.image_pool()),
         user_token,
         comic_id,
         instr,
@@ -266,7 +266,7 @@ pub async fn mark_cover_uploaded(
 ) -> HttpNoContent {
     //
     usecase::comic::mark_cover_uploaded(
-        (harn.drive(), harn.repo(), harn.image_pool()),
+        (harn.nucl(), harn.repo(), harn.image_pool()),
         user_token,
         comic_id,
         instr,
@@ -295,7 +295,7 @@ pub async fn archive(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<ArchiveComicVal> {
     usecase::comic_archive::archive(
-        (harn.drive(), harn.repo(), harn.prom()),
+        (harn.nucl(), harn.repo(), harn.prom()),
         user_token,
         comic_id,
     )
@@ -323,7 +323,7 @@ pub async fn delete(
 ) -> HttpNoContent {
     //
     usecase::comic::delete(
-        (harn.drive(), harn.repo(), harn.prom()),
+        (harn.nucl(), harn.repo(), harn.prom()),
         user_token,
         comic_id,
     )

@@ -9,7 +9,7 @@ use crate::model::write::member_invitation::MemberInvitationEntry;
 use crate::part::repo::oper::member_invitation::{
     CreateMemberInvitation, ListMemberInvitationInfos, UpdateMemberInvitation,
 };
-use crate::part_impl::drive::rdb_impl::RdbDrive;
+use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
 use crate::result::BaseError;
 use crate::shared::RdbCore;
@@ -28,7 +28,7 @@ pub async fn member_invitation_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let repo = RdbRepo::new(shared.clone());
 
-    let nucl = RdbDrive::new(shared.clone());
+    let nucl = RdbNucl::new(shared.clone());
 
     let member_invitation_entry = MemberInvitationEntry {
         id: format!("{}member-invitation", PREFIX),

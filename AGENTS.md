@@ -27,7 +27,7 @@ src/
 
 - `part::repo::step` describes repository operations. `Execute` performs a
   standalone operation; `Advance` performs an operation inside a transaction.
-- `Drive::with_context` supplies the transaction context. A use case owns the
+- `Nucl::coord` supplies the transaction context. A use case owns the
   transaction boundary; `complex` remains pure and never drives transactions.
 - `Harn` composes production ports. Tests use `part_impl::repo::mock_impl` and
   the test helpers local to the touched module.

@@ -26,7 +26,7 @@ use anyhow::Context as _;
 
 use poprako_server::{
     AppConfig, AsyncEffectDevelop, Harn, JwtAuth, R2ImagePool, RdbCore,
-    RdbDrive, RdbProm, RdbRepo, Sched,
+    RdbNucl, RdbProm, RdbRepo, Sched,
 };
 
 /// Application entry point.
@@ -48,8 +48,7 @@ async fn main() -> anyhow::Result<()> {
 
     let core = RdbCore::from_env()?;
 
-    let (drive, repo) =
-        (RdbDrive::new(core.clone()), RdbRepo::new(core.clone()));
+    let (nucl, repo) = (RdbNucl::new(core.clone()), RdbRepo::new(core.clone()));
 
     let (auth, image_pool) = (JwtAuth::from_env()?, R2ImagePool::from_env()?);
 
@@ -61,7 +60,7 @@ async fn main() -> anyhow::Result<()> {
         Sched::new(core.clone()),
     );
 
-    let harn = Harn::new(drive, repo, prom, auth, image_pool, develop);
+    let harn = Harn::new(nucl, repo, prom, auth, image_pool, develop);
 
     let http_addr: SocketAddr = ToSocketAddrs::to_socket_addrs(&format!(
         "{}:{}",

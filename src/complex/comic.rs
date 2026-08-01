@@ -22,13 +22,14 @@ use crate::part::repo::oper::chapter::{
     ListPinnedChapterInfos, UnpinOtherChapters, UpdateChapter,
 };
 use crate::part::repo::oper::comic::{
-    DeleteComic, GetComicInfo, GetComicInfoExcluded, TouchComicLastActive,
+    DeleteComic, GetComicInfoExcluded, TouchComicLastActive,
     UpdateComicChapterCount,
 };
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::page::{
     DeletePages, ListFirstPageInfos, ListPageInfos,
 };
+use crate::part::repo::oper::team::ResolveTeamId;
 use crate::part::repo::oper::term::DeleteTerms;
 use crate::part::repo::oper::termbase::{
     DeleteTermbase, GetTermbaseInfoExcluded, ListTermbaseInfosExcluded,
@@ -210,13 +211,13 @@ impl ComicPermComplex {
         P: for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
             + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
-        let team_id =
-            Self::resolve_team_id_from_workset(proxy, workset_id).await?;
+        let workset_info =
+            GetWorksetInfo { id: workset_id }.proxy_on(proxy).await?;
 
         check_user_is_team_admin_with_roles(
             proxy,
             user_id,
-            &team_id,
+            &workset_info.team_id,
             preset_assignment_roles,
         )
         .await
@@ -232,10 +233,10 @@ impl ComicPermComplex {
         P: for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
             + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
-        let team_id =
-            Self::resolve_team_id_from_workset(proxy, workset_id).await?;
+        let workset_info =
+            GetWorksetInfo { id: workset_id }.proxy_on(proxy).await?;
 
-        check_user_is_team_member(proxy, user_id, &team_id).await
+        check_user_is_team_member(proxy, user_id, &workset_info.team_id).await
     }
 
     /// Verify the caller is a team member of the comic's team.
@@ -245,11 +246,12 @@ impl ComicPermComplex {
         comic_id: &str,
     ) -> BaseRest<()>
     where
-        P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
-            + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+        P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
             + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
-        let team_id = Self::resolve_team_id_from_comic(proxy, comic_id).await?;
+        let team_id = ResolveTeamId::Comic { id: comic_id }
+            .proxy_on(proxy)
+            .await?;
 
         check_user_is_team_member(proxy, user_id, &team_id).await
     }
@@ -261,11 +263,12 @@ impl ComicPermComplex {
         comic_id: &str,
     ) -> BaseRest<()>
     where
-        P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
-            + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+        P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
             + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
-        let team_id = Self::resolve_team_id_from_comic(proxy, comic_id).await?;
+        let team_id = ResolveTeamId::Comic { id: comic_id }
+            .proxy_on(proxy)
+            .await?;
 
         check_user_is_team_admin(proxy, user_id, &team_id).await
     }
@@ -277,11 +280,12 @@ impl ComicPermComplex {
         comic_id: &str,
     ) -> BaseRest<()>
     where
-        P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
-            + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+        P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
             + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
-        let team_id = Self::resolve_team_id_from_comic(proxy, comic_id).await?;
+        let team_id = ResolveTeamId::Comic { id: comic_id }
+            .proxy_on(proxy)
+            .await?;
 
         check_user_is_team_admin(proxy, user_id, &team_id).await
     }
@@ -293,11 +297,12 @@ impl ComicPermComplex {
         comic_id: &str,
     ) -> BaseRest<()>
     where
-        P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
-            + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+        P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
             + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
-        let team_id = Self::resolve_team_id_from_comic(proxy, comic_id).await?;
+        let team_id = ResolveTeamId::Comic { id: comic_id }
+            .proxy_on(proxy)
+            .await?;
 
         check_user_is_team_admin(proxy, user_id, &team_id).await
     }
@@ -309,51 +314,13 @@ impl ComicPermComplex {
         comic_id: &str,
     ) -> BaseRest<()>
     where
-        P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
-            + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+        P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
             + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
-        let team_id = Self::resolve_team_id_from_comic(proxy, comic_id).await?;
+        let team_id = ResolveTeamId::Comic { id: comic_id }
+            .proxy_on(proxy)
+            .await?;
 
         check_user_is_team_admin(proxy, user_id, &team_id).await
-    }
-
-    // Resolve the owning team ID from a workset ID.
-    async fn resolve_team_id_from_workset<P>(
-        proxy: &mut P,
-        workset_id: &str,
-    ) -> BaseRest<String>
-    where
-        P: for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>,
-    {
-        let workset_info =
-            GetWorksetInfo { id: workset_id }.proxy_on(proxy).await?;
-
-        accept(workset_info.team_id)
-    }
-
-    // Resolve the owning team ID from a comic ID (via its workset).
-    async fn resolve_team_id_from_comic<P>(
-        proxy: &mut P,
-        comic_id: &str,
-    ) -> BaseRest<String>
-    where
-        P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
-            + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>,
-    {
-        let comic_info = GetComicInfo {
-            id: comic_id,
-            incls: &[],
-        }
-        .proxy_on(proxy)
-        .await?;
-
-        let workset_info = GetWorksetInfo {
-            id: &comic_info.workset_id,
-        }
-        .proxy_on(proxy)
-        .await?;
-
-        accept(workset_info.team_id)
     }
 }

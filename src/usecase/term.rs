@@ -14,10 +14,9 @@ use crate::data::val::term::CreateTermVal;
 use crate::data::view::term::TermInfoView;
 use crate::model::read::spec::term::TermListSpec;
 use crate::model::shared::user::UserToken;
-use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
-use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
+use crate::part::repo::oper::team::ResolveTeamId;
 use crate::part::repo::oper::term::{
     CreateTerm, DeleteTerm, GetTermInfo, ListTermInfos, LockTerm, UpdateTerm,
 };
@@ -25,10 +24,9 @@ use crate::part::repo::oper::termbase::{
     GetTermbaseInfo, GetTermbaseInfoExcluded, TouchTermbase,
     UpdateTermbaseTermCount,
 };
-use crate::part::repo::oper::workset::GetWorksetInfo;
+use crate::part::repo::team::TeamRepo;
 use crate::part::repo::term::TermRepo;
 use crate::part::repo::termbase::TermbaseRepo;
-use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseError, BaseRest, accept};
 
 #[cfg(test)]
@@ -47,8 +45,7 @@ where
     C: Send,
     R: TermbaseRepo<C>
         + TermRepo<C>
-        + ComicRepo<C>
-        + WorksetRepo<C>
+        + TeamRepo<C>
         + MemberRepo<C>
         + Send
         + Sync,
@@ -74,8 +71,7 @@ where
                 &mut step_proxy! {
                     context;
                     repo =>
-                        for<'a, 'b> GetComicInfo<'a, 'b>,
-                        for<'a> GetWorksetInfo<'a>,
+                        for<'a> ResolveTeamId<'a>,
                         for<'a> FindMemberInfo<'a>;
                 },
                 &token.user_id,
@@ -109,12 +105,7 @@ pub async fn get_info<C, R>(
     id: String,
 ) -> BaseRest<TermInfoView>
 where
-    R: TermbaseRepo<C>
-        + TermRepo<C>
-        + ComicRepo<C>
-        + WorksetRepo<C>
-        + MemberRepo<C>
-        + Sync,
+    R: TermbaseRepo<C> + TermRepo<C> + TeamRepo<C> + MemberRepo<C> + Sync,
 {
     let term_info = GetTermInfo { id: &id }.run_on(repo).await?;
 
@@ -127,8 +118,7 @@ where
     TermbasePermComplex::ensure_user_can_read(
         &mut run_proxy! {
             repo =>
-                for<'a, 'b> GetComicInfo<'a, 'b>,
-                for<'a> GetWorksetInfo<'a>,
+                for<'a> ResolveTeamId<'a>,
                 for<'a> FindMemberInfo<'a>;
         },
         &token.user_id,
@@ -147,12 +137,7 @@ pub async fn list_infos<C, R>(
     instr: ListTermInfosInstr,
 ) -> BaseRest<Vec<TermInfoView>>
 where
-    R: TermbaseRepo<C>
-        + TermRepo<C>
-        + ComicRepo<C>
-        + WorksetRepo<C>
-        + MemberRepo<C>
-        + Sync,
+    R: TermbaseRepo<C> + TermRepo<C> + TeamRepo<C> + MemberRepo<C> + Sync,
 {
     let termbase_info = GetTermbaseInfo {
         id: &instr.termbase_id,
@@ -163,8 +148,7 @@ where
     TermbasePermComplex::ensure_user_can_read(
         &mut run_proxy! {
             repo =>
-                for<'a, 'b> GetComicInfo<'a, 'b>,
-                for<'a> GetWorksetInfo<'a>,
+                for<'a> ResolveTeamId<'a>,
                 for<'a> FindMemberInfo<'a>;
         },
         &token.user_id,
@@ -200,8 +184,7 @@ where
     C: Send,
     R: TermbaseRepo<C>
         + TermRepo<C>
-        + ComicRepo<C>
-        + WorksetRepo<C>
+        + TeamRepo<C>
         + MemberRepo<C>
         + Send
         + Sync,
@@ -231,8 +214,7 @@ where
             &mut step_proxy! {
                 context;
                 repo =>
-                    for<'a, 'b> GetComicInfo<'a, 'b>,
-                    for<'a> GetWorksetInfo<'a>,
+                    for<'a> ResolveTeamId<'a>,
                     for<'a> FindMemberInfo<'a>;
             },
             &token.user_id,
@@ -277,8 +259,7 @@ where
     C: Send,
     R: TermbaseRepo<C>
         + TermRepo<C>
-        + ComicRepo<C>
-        + WorksetRepo<C>
+        + TeamRepo<C>
         + MemberRepo<C>
         + Send
         + Sync,
@@ -297,8 +278,7 @@ where
             &mut step_proxy! {
                 context;
                 repo =>
-                    for<'a, 'b> GetComicInfo<'a, 'b>,
-                    for<'a> GetWorksetInfo<'a>,
+                    for<'a> ResolveTeamId<'a>,
                     for<'a> FindMemberInfo<'a>;
             },
             &token.user_id,

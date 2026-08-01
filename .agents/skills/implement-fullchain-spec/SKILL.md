@@ -30,7 +30,7 @@ Use this workflow for a user-visible behavior in the active ports-and-steps arch
 ## 4. Use case and side effects
 
 - Public use cases are free generic functions under `usecase`.
-- Use `Execute` for independent operations. Use `Drive::with_context` and `Advance` when several writes or locks must commit atomically.
+- Use `Execute` for independent operations. Use `Nucl::coord` and `Advance` when several writes or locks must commit atomically.
 - Bind the transaction result before returning. Schedule deferred image work through `Prom`; emit effects through the correct effect port only after transaction semantics are established.
 - Keep perm checks at the usecase boundary or in a pure perm complex helper, never in the HTTP handler or RDB adapter.
 

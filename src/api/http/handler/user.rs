@@ -100,7 +100,7 @@ pub async fn update_info(
     //
     ensure_path_matches_body_id(&user_id, &instr.id)?;
 
-    usecase::user::update_info((harn.drive(), harn.repo()), user_token, instr)
+    usecase::user::update_info((harn.nucl(), harn.repo()), user_token, instr)
         .await?;
 
     no_content()
@@ -128,7 +128,7 @@ pub async fn update_password(
 ) -> HttpNoContent {
     //
     usecase::user::update_password(
-        (harn.drive(), harn.repo()),
+        (harn.nucl(), harn.repo()),
         user_token,
         user_id,
         instr,
@@ -158,7 +158,7 @@ pub async fn delete(
 ) -> HttpNoContent {
     //
     usecase::user::delete(
-        (harn.drive(), harn.repo(), harn.prom()),
+        (harn.nucl(), harn.repo(), harn.prom()),
         user_token,
         user_id,
     )
@@ -190,7 +190,7 @@ pub async fn reserve_avatar(
     ensure_current_user(&user_id, &user_token)?;
 
     usecase::user::reserve_avatar(
-        (harn.drive(), harn.repo(), harn.prom(), harn.image_pool()),
+        (harn.nucl(), harn.repo(), harn.prom(), harn.image_pool()),
         user_token,
         instr,
     )
@@ -219,7 +219,7 @@ pub async fn mark_avatar_uploaded(
 ) -> HttpNoContent {
     //
     usecase::user::mark_avatar_uploaded(
-        (harn.drive(), harn.repo(), harn.image_pool()),
+        (harn.nucl(), harn.repo(), harn.image_pool()),
         user_token,
         user_id,
         instr,

@@ -23,11 +23,11 @@ use crate::part::repo::oper::chapter::GetChapterInfo;
 use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::page::ListPageInfos;
+use crate::part::repo::oper::team::ResolveTeamId;
 use crate::part::repo::oper::unit::ListUnitInfos;
-use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::page::PageRepo;
+use crate::part::repo::team::TeamRepo;
 use crate::part::repo::unit::UnitRepo;
-use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseRest, accept};
 use crate::usecase::stage::spawn_starts;
 use crate::value::chapter::Stage;
@@ -46,7 +46,7 @@ pub async fn export<C, R>(
 where
     R: ChapterRepo<C>
         + ComicRepo<C>
-        + WorksetRepo<C>
+        + TeamRepo<C>
         + MemberRepo<C>
         + AssignmentRepo<C>
         + PageRepo<C>
@@ -59,9 +59,7 @@ where
     ChapterPortPermComplex::ensure_user_can_export(
         &mut run_proxy! {
             repo =>
-                for<'a, 'b> GetChapterInfo<'a, 'b>,
-                for<'a, 'b> GetComicInfo<'a, 'b>,
-                for<'a> GetWorksetInfo<'a>,
+                for<'a> ResolveTeamId<'a>,
                 for<'a> FindMemberInfo<'a>,
                 for<'a, 'b> FindAssignmentInfo<'a, 'b>;
         },
@@ -146,7 +144,7 @@ pub async fn export_label_plus<C, R>(
 where
     R: ChapterRepo<C>
         + ComicRepo<C>
-        + WorksetRepo<C>
+        + TeamRepo<C>
         + MemberRepo<C>
         + AssignmentRepo<C>
         + PageRepo<C>
@@ -159,9 +157,7 @@ where
     ChapterPortPermComplex::ensure_user_can_export(
         &mut run_proxy! {
             repo =>
-                for<'a, 'b> GetChapterInfo<'a, 'b>,
-                for<'a, 'b> GetComicInfo<'a, 'b>,
-                for<'a> GetWorksetInfo<'a>,
+                for<'a> ResolveTeamId<'a>,
                 for<'a> FindMemberInfo<'a>,
                 for<'a, 'b> FindAssignmentInfo<'a, 'b>;
         },
