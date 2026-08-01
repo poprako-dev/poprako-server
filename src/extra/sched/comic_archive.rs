@@ -14,7 +14,7 @@ use tracing::instrument;
 use poprako_util::i18n::trl;
 
 use crate::model::write::system_mail::SystemMailEntry;
-use crate::part_impl::drive::rdb_impl::RdbDrive;
+use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::rdb_impl::entity::system_mail::SystemMailRowEntry;
 use crate::part_impl::repo::rdb_impl::schema::t_comic_archive::dsl::{
     f_created_at, f_team_id, t_comic_archive,
@@ -23,9 +23,9 @@ use crate::part_impl::repo::rdb_impl::schema::t_member::dsl::{
     f_assigned_admin_at, f_team_id as member_team_id, f_user_id, t_member,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_system_mail;
-use crate::part_impl::shared::result::diesel;
-use crate::part_impl::shared::{RdbConn, RdbCore};
 use crate::result::{BaseError, BaseRest, accept};
+use crate::shared::result::diesel;
+use crate::shared::{RdbConn, RdbCore};
 use crate::util::next_snowflake_id;
 
 #[cfg(test)]
@@ -54,7 +54,7 @@ pub fn spawn(core: RdbCore, token: CancellationToken) -> watch::Receiver<bool> {
 
                 Err(error) => {
                     tracing::error!(
-                        error = ?error,
+                        err = ?error,
                         "[ComicArchiveRetention::run] retention job failed",
                     );
                 }
@@ -97,11 +97,11 @@ async fn purge_once(core: &RdbCore) -> BaseRest<usize> {
 
     let mut total_deleted = 0;
 
-    let drive = RdbDrive::new(core.clone());
+    let nucl = RdbNucl::new(core.clone());
 
     for slot in slots {
         //
-        let deleted_count = drive
+        let deleted_count = nucl
             .coord(async |context| purge_slot(context.conn(), &slot).await)
             .await?;
 

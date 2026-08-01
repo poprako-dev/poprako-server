@@ -46,35 +46,51 @@ pub fn pool_get(source: PoolError) -> BaseError {
 pub fn diesel(source: DieselError) -> BaseError {
     match source {
         //
-        DieselError::DatabaseError(DatabaseErrorKind::UniqueViolation, _) => {
+        DieselError::DatabaseError(
+            DatabaseErrorKind::UniqueViolation,
+            information,
+        ) => {
+            //
+            let message = trl("error-already-exists");
+
+            tracing::warn!(
+                err_variant = ?ExpectedVariant::Args,
+                err_message = %message,
+                database_err = "unique violation",
+                database_message = information.message(),
+                database_details = ?information.details(),
+                database_hint = ?information.hint(),
+                constraint = ?information.constraint_name(),
+                table = ?information.table_name(),
+                column = ?information.column_name(),
+                "expected error constructed from Diesel database error",
+            );
+
             BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: trl("error-already-exists"),
+                message,
             }
         }
 
         DieselError::NotFound => {
             //
+            let message = trl("error-not-found");
+
             tracing::warn!(
+                err_variant = ?ExpectedVariant::Args,
+                err_message = %message,
+                database_err = "not found",
                 "[shared::diesel] unexpected Diesel NotFound; use optional() and map None at call site"
             );
 
             BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: trl("error-not-found"),
+                message,
             }
         }
 
         err => BaseError::Unrecoverable {
             message: format!("diesel error: {}", err),
         },
-    }
-}
-
-/// Creates an `Expected` variant `RegularError` with the given i18n message key.
-pub fn expected(message: &str) -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        message: trl(message),
     }
 }

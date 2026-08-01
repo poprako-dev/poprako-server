@@ -15,18 +15,18 @@ use tokio::sync::watch;
 use tokio_util::sync::CancellationToken;
 use tracing::instrument;
 
-use crate::part::effect::EffectDevelop;
+use crate::part::effect::Develop;
 use crate::part::image::ImageManager;
 use crate::part::prom::Prom;
 use crate::part::prom::payload::TaskPayload;
-use crate::part_impl::drive::rdb_impl::RdbDrive;
+use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::prom::rdb_impl::entity::LocalMessageEntry;
 use crate::part_impl::prom::rdb_impl::repo::RdbPromRepo;
 use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::schema::t_local_message;
-use crate::part_impl::shared::result::diesel;
-use crate::part_impl::shared::{RdbContext, RdbCore};
 use crate::result::{BaseError, BaseRest, accept};
+use crate::shared::result::diesel;
+use crate::shared::{RdbContext, RdbCore};
 
 // Internal organization of the `entity` module.
 mod entity;
@@ -66,23 +66,23 @@ impl RdbProm {
     /// The supervisor polls `t_local_message` and routes each topic to one of four
     /// serial worker tasks. Different topics can run concurrently, while messages
     /// from one topic never execute concurrently in this process.
-    pub fn new<I, V>(core: RdbCore, image_pool: I, develop: V) -> Self
+    pub fn new<I, D>(core: RdbCore, image_pool: I, develop: D) -> Self
     where
         I: ImageManager + Send + Sync + 'static,
-        V: EffectDevelop + Send + Sync + 'static,
+        D: Develop + Send + Sync + 'static,
     {
         let token = CancellationToken::new();
 
         let (done_send, done) = watch::channel(false);
 
-        let (drive, repo) = (
-            RdbDrive::new(core.clone()),
+        let (nucl, repo) = (
+            RdbNucl::new(core.clone()),
             RdbPromRepo::new(RdbRepo::new(core.clone())),
         );
 
         let handler = handler::RdbPromHandler::new(
             core,
-            drive,
+            nucl,
             repo,
             image_pool,
             develop,
@@ -112,7 +112,7 @@ impl RdbProm {
 
         if let Err(error) = done.wait_for(|done| *done).await {
             tracing::error!(
-                error = %error,
+                err = %error,
                 "[RdbProm::close] background task ended without completion",
             );
         }

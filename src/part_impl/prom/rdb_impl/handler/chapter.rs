@@ -3,31 +3,31 @@
 use poprako_orchestra::{Nucl, OperStep as _};
 use tracing::instrument;
 
-use crate::part::effect::EffectDevelop;
 use crate::part::effect::event::Event;
-use crate::part::effect::event::chapter::ChapterWorkflowCompletedPayload;
+use crate::part::effect::event::chapter::ChapterWorkflowCompletedEvent;
+use crate::part::effect::{Develop, EffectEvent as _};
 use crate::part::prom::payload::chapter::ChapterPayload;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::oper::chapter::{
     CompleteChapterRawProvide, GetChapterInfoExcluded,
 };
 use crate::part_impl::prom::rdb_impl::handler::task_flow::TaskFlow;
-use crate::part_impl::shared::RdbContext;
 use crate::result::{BaseError, BaseRest, accept};
+use crate::shared::RdbContext;
 use crate::value::chapter::Stage;
 
 /// Attempts raw-provision completion once and completes even while uploads remain pending.
 #[instrument(level = "info", skip_all)]
-pub async fn handle<N, R, V>(
+pub async fn handle<N, R, D>(
     nucl: &N,
     repo: &R,
-    develop: &V,
+    develop: &D,
     task: &ChapterPayload,
 ) -> TaskFlow
 where
     N: Nucl<Context = RdbContext, Error = BaseError>,
     R: ChapterRepo<RdbContext> + Send + Sync,
-    V: EffectDevelop + Sync,
+    D: Develop + Sync,
 {
     match task {
         ChapterPayload::TryAdvanceRawProvideStage { chapter_id } => {
@@ -37,16 +37,16 @@ where
 }
 
 // Internal implementation of `handle_raw_provide`.
-async fn handle_raw_provide<N, R, V>(
+async fn handle_raw_provide<N, R, D>(
     nucl: &N,
     repo: &R,
-    develop: &V,
+    develop: &D,
     chapter_id: &str,
 ) -> TaskFlow
 where
     N: Nucl<Context = RdbContext, Error = BaseError>,
     R: ChapterRepo<RdbContext> + Send + Sync,
-    V: EffectDevelop + Sync,
+    D: Develop + Sync,
 {
     let outcome: BaseRest<bool> = nucl
         .coord(async move |context| {
@@ -76,14 +76,12 @@ where
         Ok(true) => {
             //
             // Internal implementation detail.
-            develop
-                .develop(Event::ChapterWorkflowCompleted(
-                    ChapterWorkflowCompletedPayload {
-                        chapter_id: chapter_id.to_string(),
-                        completed_stage: Stage::RawProvide,
-                    },
-                ))
-                .await;
+            Event::ChapterWorkflowCompleted(ChapterWorkflowCompletedEvent {
+                chapter_id: chapter_id.to_string(),
+                completed_stage: Stage::RawProvide,
+            })
+            .develop_on(develop)
+            .await;
 
             TaskFlow::Complete
         }

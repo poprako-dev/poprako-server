@@ -33,9 +33,21 @@ impl ImageComplex {
         };
 
         if !(1..=max_length).contains(&byte_length) {
+            //
+            let err_message = trl("error-invalid-image-byte-length");
+
+            tracing::warn!(
+                err_variant = ?ExpectedVariant::Args,
+                err_message = %err_message,
+                byte_length = byte_length,
+                max_length = max_length,
+                resource_kind = ?kind,
+                "expected error: image byte length is invalid",
+            );
+
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: trl("error-invalid-image-byte-length"),
+                message: err_message,
             });
         }
 

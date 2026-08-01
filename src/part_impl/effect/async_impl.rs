@@ -9,7 +9,7 @@ use tokio_util::sync::CancellationToken;
 use tracing::instrument;
 
 use crate::part::effect::event::Event;
-use crate::part::effect::{EffectDevelop, EventIter};
+use crate::part::effect::{Develop, EffectEvent};
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::system_mail::SystemMailRepo;
@@ -90,7 +90,7 @@ impl AsyncEffectDevelop {
 
         if let Err(error) = done.wait_for(|done| *done).await {
             tracing::error!(
-                error = %error,
+                err = %error,
                 "[AsyncEffectDevelop::close] background task ended without completion",
             );
         }
@@ -108,12 +108,12 @@ impl Clone for AsyncEffectDevelop {
     }
 }
 
-impl EffectDevelop for AsyncEffectDevelop {
+impl Develop for AsyncEffectDevelop {
     #[instrument(level = "info", skip_all)]
     // Internal implementation of `develop`.
     async fn develop<I>(&self, iter: I)
     where
-        I: EventIter + Send,
+        I: EffectEvent + Send,
     {
         if self.token.is_cancelled() {
             return;

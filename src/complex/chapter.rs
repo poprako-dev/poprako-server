@@ -1,7 +1,7 @@
 //! Complex-domain opers for chapter entities — identity generation, workflow
-//! stage transitions, pagination helpers, and permission gates.
+//! stage transitions, pagination helpers, and perm gates.
 //!
-//! ## Permission model
+//! ## perm model
 //!
 //! Read-level access (list, get) requires the caller to be a team member of the
 //! owning workset's team. Write-level access (create, update info, delete) requires
@@ -25,10 +25,8 @@ use crate::model::write::chapter::ChapterStageRepl;
 use crate::part::repo::oper::assignment::{
     FindAssignmentInfo, ListAssignmentInfos,
 };
-use crate::part::repo::oper::chapter::GetChapterInfo;
-use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part::repo::oper::workset::GetWorksetInfo;
+use crate::part::repo::oper::team::ResolveTeamId;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 use crate::value::chapter::{Stage, StageOper, StagePhase, try_modify_stage};
@@ -83,9 +81,20 @@ impl ChapterComplex {
             .stages
             .has_phase(Stage::Publish, StagePhase::Completed)
         {
+            let err_message = trl("error-chapter-published-frozen");
+
+            tracing::warn!(
+                err_variant = ?ExpectedVariant::Args,
+                err_message = %err_message,
+                chapter_id = %chapter_info.id,
+                stage = ?Stage::Publish,
+                stage_phase = ?StagePhase::Completed,
+                "expected error: published chapter is frozen",
+            );
+
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: trl("error-chapter-published-frozen"),
+                message: err_message,
             });
         }
 
@@ -93,8 +102,8 @@ impl ChapterComplex {
     }
 }
 
-/// Permission-gate opers for chapter entities — resolves the owning
-/// team from the chapter or comic and delegates to shared team-permission
+/// perm-gate opers for chapter entities — resolves the owning
+/// team from the chapter or comic and delegates to shared team-perm
 /// helpers (`[`check_user_is_team_member`]` / `[`check_user_is_team_admin`]`).
 ///
 /// [`check_user_is_team_member`]: crate::complex::util::check_user_is_team_member
@@ -109,8 +118,7 @@ impl ChapterPermComplex {
         comic_id: &str,
     ) -> BaseRest<()>
     where
-        P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
-            + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+        P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
             + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
         check_team_member_by_comic(proxy, user_id, comic_id).await
@@ -123,16 +131,14 @@ impl ChapterPermComplex {
         chapter_id: &str,
     ) -> BaseRest<()>
     where
-        P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
-            + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
-            + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+        P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
             + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
         check_team_member_by_chapter(proxy, user_id, chapter_id).await
     }
 
     /// Verify the caller is a team member of the comic's owning workset
-    /// (same permission level as listing — pinned chapters are visible to
+    /// (same perm level as listing — pinned chapters are visible to
     /// all team members).
     pub async fn ensure_user_can_get_pinned<P>(
         proxy: &mut P,
@@ -140,8 +146,7 @@ impl ChapterPermComplex {
         comic_id: &str,
     ) -> BaseRest<()>
     where
-        P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
-            + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+        P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
             + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
         check_team_member_by_comic(proxy, user_id, comic_id).await
@@ -155,11 +160,12 @@ impl ChapterPermComplex {
         preset_assignment_roles: Option<RoleMask>,
     ) -> BaseRest<()>
     where
-        P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
-            + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+        P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
             + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
-        let team_id = resolve_team_id_from_comic(proxy, comic_id).await?;
+        let team_id = ResolveTeamId::Comic { id: comic_id }
+            .proxy_on(proxy)
+            .await?;
 
         check_user_is_team_admin_with_roles(
             proxy,
@@ -194,7 +200,7 @@ impl ChapterPermComplex {
         check_admin(proxy, user_id, chapter_id).await
     }
 
-    /// Verify the caller has permission to apply a workflow operation.
+    /// Verify the caller has perm to apply a workflow operation.
     pub async fn ensure_user_can_update_stage<P>(
         proxy: &mut P,
         user_id: &str,
@@ -221,8 +227,7 @@ impl ChapterPermComplex {
         roles: RoleMask,
     ) -> BaseRest<()>
     where
-        P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
-            + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+        P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
             + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
         check_join_role(proxy, user_id, chapter_info, roles).await
@@ -235,9 +240,7 @@ impl ChapterPermComplex {
         chapter_id: &str,
     ) -> BaseRest<()>
     where
-        P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
-            + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
-            + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+        P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
             + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
         check_team_admin_by_chapter(proxy, user_id, chapter_id).await
@@ -248,31 +251,6 @@ impl ChapterPermComplex {
 // [`ChapterInfo`] record.
 fn get_phase(chapter_info: &ChapterInfo, stage: Stage) -> StagePhase {
     chapter_info.stages.get_phase(stage)
-}
-
-// Resolve the owning team identifier by fetching a comic and its parent workset.
-async fn resolve_team_id_from_comic<P>(
-    proxy: &mut P,
-    comic_id: &str,
-) -> BaseRest<String>
-where
-    P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
-        + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>,
-{
-    let comic_info = GetComicInfo {
-        id: comic_id,
-        incls: &[],
-    }
-    .proxy_on(proxy)
-    .await?;
-
-    let workset_info = GetWorksetInfo {
-        id: &comic_info.workset_id,
-    }
-    .proxy_on(proxy)
-    .await?;
-
-    accept(workset_info.team_id)
 }
 
 // Verify the caller is permitted to perform the given workflow transition
@@ -315,15 +293,6 @@ fn required_roles_for_transition(
     }
 }
 
-// Construct a "no one holds the required workflow role on this chapter"
-// permission error.
-fn chapter_no_role_holder_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Perm,
-        message: trl("error-chapter-no-role-holder"),
-    }
-}
-
 // Resolve the owning team from a comic ID, then verify the user is a team
 // member of that team.
 async fn check_team_member_by_comic<P>(
@@ -332,45 +301,14 @@ async fn check_team_member_by_comic<P>(
     comic_id: &str,
 ) -> BaseRest<()>
 where
-    P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
-        + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+    P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
         + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
 {
-    let team_id = resolve_team_id_from_comic(proxy, comic_id).await?;
+    let team_id = ResolveTeamId::Comic { id: comic_id }
+        .proxy_on(proxy)
+        .await?;
 
     check_user_is_team_member(proxy, user_id, &team_id).await
-}
-
-// Resolve the owning team from a comic, then verify the user is a team admin.
-async fn check_team_admin_by_comic<P>(
-    proxy: &mut P,
-    user_id: &str,
-    comic_id: &str,
-) -> BaseRest<()>
-where
-    P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
-        + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
-        + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
-{
-    let team_id = resolve_team_id_from_comic(proxy, comic_id).await?;
-
-    check_user_is_team_admin(proxy, user_id, &team_id).await
-}
-
-// Construct a "chapter admin required" permission error.
-fn chapter_admin_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Perm,
-        message: trl("error-chapter-admin-required"),
-    }
-}
-
-// Construct a "workflow role required for this transition" permission error.
-fn chapter_workflow_role_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Perm,
-        message: trl("error-chapter-workflow-role-required"),
-    }
 }
 
 // Verify that at least one person on the chapter holds the role(s) required
@@ -403,18 +341,25 @@ where
         .any(|info| info.roles.has_any_role(required_roles));
 
     if !has_holder {
-        return Err(chapter_no_role_holder_err());
+        //
+        let err_message = trl("error-chapter-no-role-holder");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Perm,
+            err_message = %err_message,
+            chapter_id = %chapter_id,
+            stage = ?stage,
+            required_roles = ?required_roles,
+            "expected error: chapter workflow role has no holder",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: err_message,
+        });
     }
 
     accept(())
-}
-
-// Construct an "admin role not assignable through join" args error.
-fn chapter_role_not_assignable_args_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        message: trl("error-chapter-role-not-assignable"),
-    }
 }
 
 // Resolve the owning team from a chapter, then verify the user is a team member.
@@ -424,19 +369,14 @@ async fn check_team_member_by_chapter<P>(
     chapter_id: &str,
 ) -> BaseRest<()>
 where
-    P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
-        + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
-        + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+    P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
         + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
 {
-    let chapter_info = GetChapterInfo {
-        id: chapter_id,
-        incls: &[],
-    }
-    .proxy_on(proxy)
-    .await?;
+    let team_id = ResolveTeamId::Chapter { id: chapter_id }
+        .proxy_on(proxy)
+        .await?;
 
-    check_team_member_by_comic(proxy, user_id, &chapter_info.comic_id).await
+    check_user_is_team_member(proxy, user_id, &team_id).await
 }
 
 // Resolve the owning team from a chapter, then verify the user is a team admin.
@@ -446,19 +386,14 @@ async fn check_team_admin_by_chapter<P>(
     chapter_id: &str,
 ) -> BaseRest<()>
 where
-    P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
-        + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
-        + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+    P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
         + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
 {
-    let chapter_info = GetChapterInfo {
-        id: chapter_id,
-        incls: &[],
-    }
-    .proxy_on(proxy)
-    .await?;
+    let team_id = ResolveTeamId::Chapter { id: chapter_id }
+        .proxy_on(proxy)
+        .await?;
 
-    check_team_admin_by_comic(proxy, user_id, &chapter_info.comic_id).await
+    check_user_is_team_admin(proxy, user_id, &team_id).await
 }
 
 // Verify the caller is assigned as a chapter admin on this chapter.
@@ -478,11 +413,40 @@ where
     .await?;
 
     let Some(assignment_info) = assignment_info else {
-        return Err(chapter_admin_err());
+        //
+        let err_message = trl("error-chapter-admin-required");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Perm,
+            err_message = %err_message,
+            user_id = %user_id,
+            chapter_id = %chapter_id,
+            "expected error: chapter admin assignment missing",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: err_message,
+        });
     };
 
     if !assignment_info.roles.has_any_role(&[RoleField::ADMIN]) {
-        return Err(chapter_admin_err());
+        //
+        let err_message = trl("error-chapter-admin-required");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Perm,
+            err_message = %err_message,
+            user_id = %user_id,
+            chapter_id = %chapter_id,
+            assignment_roles = ?assignment_info.roles,
+            "expected error: chapter admin role missing",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: err_message,
+        });
     }
 
     accept(())
@@ -515,7 +479,23 @@ where
     .await?;
 
     let Some(assignment_info) = assignment_info else {
-        return Err(chapter_workflow_role_err());
+        //
+        let err_message = trl("error-chapter-workflow-role-required");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Perm,
+            err_message = %err_message,
+            user_id = %user_id,
+            chapter_id = %chapter_id,
+            stage = ?stage,
+            oper = ?oper,
+            "expected error: workflow assignment missing",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: err_message,
+        });
     };
 
     // Domain invariant: a workflow stage cannot be advanced unless at least
@@ -535,11 +515,47 @@ where
     let required_roles = required_roles_for_transition(stage, oper);
 
     if required_roles.is_empty() {
-        return Err(chapter_workflow_role_err());
+        //
+        let err_message = trl("error-chapter-workflow-role-required");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Perm,
+            err_message = %err_message,
+            user_id = %user_id,
+            chapter_id = %chapter_id,
+            stage = ?stage,
+            oper = ?oper,
+            assignment_roles = ?roles,
+            required_roles = ?required_roles,
+            "expected error: workflow transition role is not configured",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: err_message,
+        });
     }
 
     if !roles.has_any_role(required_roles) {
-        return Err(chapter_workflow_role_err());
+        //
+        let err_message = trl("error-chapter-workflow-role-required");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Perm,
+            err_message = %err_message,
+            user_id = %user_id,
+            chapter_id = %chapter_id,
+            stage = ?stage,
+            oper = ?oper,
+            assignment_roles = ?roles,
+            required_roles = ?required_roles,
+            "expected error: workflow role missing",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: err_message,
+        });
     }
 
     accept(())
@@ -557,16 +573,34 @@ async fn check_join_role<P>(
     roles: RoleMask,
 ) -> BaseRest<()>
 where
-    P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
-        + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+    P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
         + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
 {
     if roles.has_any_role(&[RoleField::ADMIN]) {
-        return Err(chapter_role_not_assignable_args_err());
+        //
+        let err_message = trl("error-chapter-role-not-assignable");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Args,
+            err_message = %err_message,
+            user_id = %user_id,
+            chapter_id = %chapter_info.id,
+            comic_id = %chapter_info.comic_id,
+            roles = ?roles,
+            "expected error: admin role is not assignable through join",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: err_message,
+        });
     }
 
-    let team_id =
-        resolve_team_id_from_comic(proxy, &chapter_info.comic_id).await?;
+    let team_id = ResolveTeamId::Comic {
+        id: &chapter_info.comic_id,
+    }
+    .proxy_on(proxy)
+    .await?;
 
     let member_info = FindMemberInfo::UserTeam {
         user_id,
@@ -576,16 +610,45 @@ where
     .await?;
 
     let Some(member_info) = member_info else {
+        //
+        let err_message = trl("error-team-member-required");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Perm,
+            err_message = %err_message,
+            user_id = %user_id,
+            chapter_id = %chapter_info.id,
+            comic_id = %chapter_info.comic_id,
+            team_id = %team_id,
+            roles = ?roles,
+            "expected error: chapter team member is missing",
+        );
+
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: trl("error-team-member-required"),
+            message: err_message,
         });
     };
 
     if !member_info.roles.contains_mask(roles) {
+        //
+        let err_message = trl("error-chapter-role-not-assignable");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Perm,
+            err_message = %err_message,
+            user_id = %user_id,
+            chapter_id = %chapter_info.id,
+            comic_id = %chapter_info.comic_id,
+            team_id = %team_id,
+            roles = ?roles,
+            member_roles = ?member_info.roles,
+            "expected error: chapter member lacks requested roles",
+        );
+
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: trl("error-chapter-role-not-assignable"),
+            message: err_message,
         });
     }
 

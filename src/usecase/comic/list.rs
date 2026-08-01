@@ -54,9 +54,22 @@ where
     );
 
     if with_pinned_chapter_assignment && !with_pinned_chapter {
+        //
+        let err_message = trl("error-pinned-chapter-with-required");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Args,
+            err_message = %err_message,
+            workset_id = %instr.workset_id,
+            user_id = %token.user_id,
+            with_pinned_chapter,
+            with_pinned_chapter_assignment,
+            "expected error: pinned chapter assignment requires pinned chapter",
+        );
+
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: trl("error-pinned-chapter-with-required"),
+            message: err_message,
         });
     }
 
@@ -94,13 +107,14 @@ where
     // so we have to handle it in usecase layer.
     let mut pinned_chapter_infos = match with_pinned_chapter {
         //
-        true => {
-            ListPinnedChapterInfos {
-                comic_ids: &comic_ids,
-            }
-            .run_on(repo)
-            .await?
+        true => ListPinnedChapterInfos {
+            comic_ids: &comic_ids,
         }
+        .run_on(repo)
+        .await?
+        .into_iter()
+        .map(|chapter_info| (chapter_info.comic_id.clone(), chapter_info))
+        .collect::<HashMap<_, _>>(),
 
         false => HashMap::new(),
     };

@@ -9,11 +9,9 @@ use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::spec::assignment::AssignmentListSpec;
 use crate::model::write::assignment::AssignmentRoleRepl;
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
-use crate::part::repo::oper::chapter::GetChapterInfo;
-use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
+use crate::part::repo::oper::team::ResolveTeamId;
 use crate::part::repo::oper::user::GetUserInfo;
-use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 use crate::value::role::{RoleField, RoleMask};
@@ -79,7 +77,7 @@ impl AssignmentComplex {
     }
 }
 
-/// Permission-gate opers for chapter assignments.
+/// perm-gate opers for chapter assignments.
 pub struct AssignmentPermComplex;
 
 impl AssignmentPermComplex {
@@ -90,9 +88,7 @@ impl AssignmentPermComplex {
         assignment_list_spec: &AssignmentListSpec,
     ) -> BaseRest<()>
     where
-        P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
-            + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
-            + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+        P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
             + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>
             + for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>
             + for<'a> Proxy<GetUserInfo<'a>, Error = BaseError>,
@@ -118,9 +114,7 @@ impl AssignmentPermComplex {
         roles: RoleMask,
     ) -> BaseRest<()>
     where
-        P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
-            + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
-            + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+        P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
             + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>
             + for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
     {
@@ -164,82 +158,10 @@ impl AssignmentPermComplex {
         roles: RoleMask,
     ) -> BaseRest<()>
     where
-        P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
-            + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
-            + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+        P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
             + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
         check_target_roles(proxy, user_id, chapter_id, roles).await
-    }
-}
-
-// Resolve the owning team ID from a chapter ID via its comic and workset.
-async fn resolve_team_id<P>(proxy: &mut P, chapter_id: &str) -> BaseRest<String>
-where
-    P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
-        + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
-        + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>,
-{
-    let chapter_info = GetChapterInfo {
-        id: chapter_id,
-        incls: &[],
-    }
-    .proxy_on(proxy)
-    .await?;
-
-    let comic_info = GetComicInfo {
-        id: &chapter_info.comic_id,
-        incls: &[],
-    }
-    .proxy_on(proxy)
-    .await?;
-
-    let workset_info = GetWorksetInfo {
-        id: &comic_info.workset_id,
-    }
-    .proxy_on(proxy)
-    .await?;
-
-    accept(workset_info.team_id)
-}
-
-// Construct a generic "assignment list forbidden" permission error.
-fn assignment_list_permission_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Perm,
-        message: trl("error-forbidden"),
-    }
-}
-
-// Construct a "chapter admin required" permission error.
-fn chapter_admin_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Perm,
-        message: trl("error-chapter-admin-required"),
-    }
-}
-
-// Construct an "assignment self-reduce forbidden" permission error.
-fn assignment_self_reduce_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Perm,
-        message: trl("error-forbidden"),
-    }
-}
-
-// Construct an "admin role cannot be assigned through this flow" args error.
-fn assignment_role_not_assignable_args_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        message: trl("error-chapter-role-not-assignable"),
-    }
-}
-
-// Construct a "role not assignable because member lacks permission" error.
-fn assignment_role_not_assignable_perm_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Perm,
-        message: trl("error-chapter-role-not-assignable"),
     }
 }
 
@@ -251,13 +173,13 @@ async fn check_list_by_chapter<P>(
     chapter_id: &str,
 ) -> BaseRest<()>
 where
-    P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
-        + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
-        + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+    P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
         + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>
         + for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
 {
-    let team_id = resolve_team_id(proxy, chapter_id).await?;
+    let team_id = ResolveTeamId::Chapter { id: chapter_id }
+        .proxy_on(proxy)
+        .await?;
 
     let member_check =
         check_user_is_team_member(proxy, user_id, &team_id).await;
@@ -274,7 +196,22 @@ where
     .await?;
 
     if assignment_info.is_none() {
-        return Err(assignment_list_permission_err());
+        //
+        let err_message = trl("error-forbidden");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Perm,
+            err_message = %err_message,
+            user_id = %user_id,
+            chapter_id = %chapter_id,
+            team_id = %team_id,
+            "expected error: assignment list perm denied",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: err_message,
+        });
     }
 
     accept(())
@@ -301,7 +238,21 @@ where
     .await?;
 
     if !user_info.is_sadmin {
-        return Err(assignment_list_permission_err());
+        //
+        let err_message = trl("error-forbidden");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Perm,
+            err_message = %err_message,
+            current_user_id = %current_user_id,
+            owner_id = %owner_id,
+            "expected error: assignment list perm denied",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: err_message,
+        });
     }
 
     accept(())
@@ -324,11 +275,40 @@ where
     .await?;
 
     let Some(assignment_info) = assignment_info else {
-        return Err(chapter_admin_err());
+        //
+        let err_message = trl("error-chapter-admin-required");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Perm,
+            err_message = %err_message,
+            user_id = %user_id,
+            chapter_id = %chapter_id,
+            "expected error: chapter admin assignment missing",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: err_message,
+        });
     };
 
     if !assignment_info.roles.has_any_role(&[RoleField::ADMIN]) {
-        return Err(chapter_admin_err());
+        //
+        let err_message = trl("error-chapter-admin-required");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Perm,
+            err_message = %err_message,
+            user_id = %user_id,
+            chapter_id = %chapter_id,
+            assignment_roles = ?assignment_info.roles,
+            "expected error: chapter admin role missing",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: err_message,
+        });
     }
 
     accept(())
@@ -348,7 +328,23 @@ where
     P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
 {
     if current_user_id != subject_user_id {
-        return Err(assignment_self_reduce_err());
+        //
+        let err_message = trl("error-forbidden");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Perm,
+            err_message = %err_message,
+            current_user_id = %current_user_id,
+            subject_user_id = %subject_user_id,
+            chapter_id = %chapter_id,
+            roles = ?roles,
+            "expected error: assignment self-reduce denied",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: err_message,
+        });
     }
 
     let assignment_info = FindAssignmentInfo::ChapterUser {
@@ -359,11 +355,44 @@ where
     .await?;
 
     let Some(assignment_info) = assignment_info else {
-        return Err(assignment_self_reduce_err());
+        //
+        let err_message = trl("error-forbidden");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Perm,
+            err_message = %err_message,
+            current_user_id = %current_user_id,
+            subject_user_id = %subject_user_id,
+            chapter_id = %chapter_id,
+            roles = ?roles,
+            "expected error: assignment self-reduce target missing",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: err_message,
+        });
     };
 
     if !assignment_info.roles.contains_mask(roles) {
-        return Err(assignment_self_reduce_err());
+        //
+        let err_message = trl("error-forbidden");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Perm,
+            err_message = %err_message,
+            current_user_id = %current_user_id,
+            subject_user_id = %subject_user_id,
+            chapter_id = %chapter_id,
+            roles = ?roles,
+            assignment_roles = ?assignment_info.roles,
+            "expected error: assignment self-reduce roles not held",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: err_message,
+        });
     }
 
     accept(())
@@ -378,16 +407,31 @@ async fn check_target_roles<P>(
     roles: RoleMask,
 ) -> BaseRest<()>
 where
-    P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
-        + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
-        + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+    P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
         + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
 {
     if roles.has_any_role(&[RoleField::ADMIN]) {
-        return Err(assignment_role_not_assignable_args_err());
+        //
+        let err_message = trl("error-chapter-role-not-assignable");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Args,
+            err_message = %err_message,
+            user_id = %user_id,
+            chapter_id = %chapter_id,
+            roles = ?roles,
+            "expected error: admin role is not assignable",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: err_message,
+        });
     }
 
-    let team_id = resolve_team_id(proxy, chapter_id).await?;
+    let team_id = ResolveTeamId::Chapter { id: chapter_id }
+        .proxy_on(proxy)
+        .await?;
 
     let member_info = FindMemberInfo::UserTeam {
         user_id,
@@ -397,11 +441,44 @@ where
     .await?;
 
     let Some(member_info) = member_info else {
-        return Err(assignment_role_not_assignable_perm_err());
+        //
+        let err_message = trl("error-chapter-role-not-assignable");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Perm,
+            err_message = %err_message,
+            user_id = %user_id,
+            chapter_id = %chapter_id,
+            team_id = %team_id,
+            roles = ?roles,
+            "expected error: target member is missing",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: err_message,
+        });
     };
 
     if !member_info.roles.contains_mask(roles) {
-        return Err(assignment_role_not_assignable_perm_err());
+        //
+        let err_message = trl("error-chapter-role-not-assignable");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Perm,
+            err_message = %err_message,
+            user_id = %user_id,
+            chapter_id = %chapter_id,
+            team_id = %team_id,
+            roles = ?roles,
+            member_roles = ?member_info.roles,
+            "expected error: target member lacks requested roles",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: err_message,
+        });
     }
 
     accept(())

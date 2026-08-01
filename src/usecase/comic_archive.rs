@@ -21,14 +21,13 @@ use crate::part::prom::payload::{TaskPayload, image};
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::comic_archive::ComicArchiveRepo;
 use crate::part::repo::member::MemberRepo;
-use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::comic_archive::{
     CommitComicArchive, GetComicArchiveSnapshotExcluded,
     ListComicArchivePayloads,
 };
 use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part::repo::oper::workset::GetWorksetInfo;
-use crate::part::repo::workset::WorksetRepo;
+use crate::part::repo::oper::team::ResolveTeamId;
+use crate::part::repo::team::TeamRepo;
 use crate::result::{BaseError, BaseRest, accept};
 use crate::util::next_snowflake_id;
 use crate::value::comic_archive::ComicArchiveMonth;
@@ -103,8 +102,8 @@ where
     N: Nucl<Context = C, Error = BaseError>,
     R: ComicRepo<C>
         + ComicArchiveRepo<C>
-        + WorksetRepo<C>
         + MemberRepo<C>
+        + TeamRepo<C>
         + Send
         + Sync,
     P: Prom<C> + Send + Sync,
@@ -112,8 +111,7 @@ where
     ComicArchivePermComplex::ensure_user_can_archive(
         &mut run_proxy! {
             repo =>
-                for<'a, 'b> GetComicInfo<'a, 'b>,
-                for<'a> GetWorksetInfo<'a>,
+                for<'a> ResolveTeamId<'a>,
                 for<'a> FindMemberInfo<'a>;
         },
         &token.user_id,

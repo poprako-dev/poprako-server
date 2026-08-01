@@ -1,7 +1,7 @@
 //! Test fixtures and cases for the team use case module.
 //!
 //! Tests exercise team CRUD, avatar management, and deletion against
-//! a [`Mock`] that doubles as the driver, repository, prom enqueuer,
+//! a [`Mock`] that doubles as the coordinator, repository, prom enqueuer,
 //! and image pool. Failure flags simulate repository errors.
 //!
 //! [`Mock`]: crate::part_impl::repo::mock_impl::Mock
@@ -13,7 +13,7 @@
 // get_info(get_info)(negative): missing team should propagate an argument error.
 // list_infos(list_infos)(positive): list should return paged teams in repo order.
 // list_infos(list_infos)(negative): missing page contents should return an empty list.
-// list_infos(list_infos)(negative): listing all teams should require super-admin permission.
+// list_infos(list_infos)(negative): listing all teams should require super-admin perm.
 // update_info(update_info)(positive): existing team should update name and description.
 // update_info(update_info)(negative): missing team should propagate an argument error.
 // reserve_avatar(reserve_avatar)(positive): first reservation should update avatar state, enqueue a check, and return a put URL.

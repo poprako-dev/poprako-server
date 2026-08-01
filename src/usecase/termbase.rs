@@ -16,9 +16,9 @@ use crate::model::read::spec::termbase::TermbaseListSpec;
 use crate::model::shared::user::UserToken;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
-use crate::part::repo::oper::comic::{GetComicInfo, GetComicInfoExcluded};
+use crate::part::repo::oper::comic::GetComicInfoExcluded;
 use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part::repo::oper::team::LockTeam;
+use crate::part::repo::oper::team::{LockTeam, ResolveTeamId};
 use crate::part::repo::oper::term::DeleteTerms;
 #[allow(unused_imports)]
 use crate::part::repo::oper::termbase::{
@@ -127,15 +127,14 @@ pub async fn get_info<C, R>(
     id: String,
 ) -> BaseRest<TermbaseInfoView>
 where
-    R: TermbaseRepo<C> + ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
+    R: TermbaseRepo<C> + TeamRepo<C> + MemberRepo<C> + Sync,
 {
     let termbase_info = GetTermbaseInfo { id: &id }.run_on(repo).await?;
 
     TermbasePermComplex::ensure_user_can_read(
         &mut run_proxy! {
             repo =>
-                for<'a, 'b> GetComicInfo<'a, 'b>,
-                for<'a> GetWorksetInfo<'a>,
+                for<'a> ResolveTeamId<'a>,
                 for<'a> FindMemberInfo<'a>;
         },
         &token.user_id,
@@ -189,33 +188,20 @@ pub async fn list_comic_infos<C, R>(
     instr: ListComicTermbaseInfosInstr,
 ) -> BaseRest<Vec<TermbaseInfoView>>
 where
-    R: TermbaseRepo<C> + ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
+    R: TermbaseRepo<C> + TeamRepo<C> + MemberRepo<C> + Sync,
 {
-    let team_id = TermbasePermComplex::resolve_team_id_from_comic(
+    TermbasePermComplex::ensure_user_can_read_comic(
         &mut run_proxy! {
             repo =>
-                for<'a, 'b> GetComicInfo<'a, 'b>,
-                for<'a> GetWorksetInfo<'a>,
+                for<'a> ResolveTeamId<'a>,
                 for<'a> FindMemberInfo<'a>;
         },
+        &token.user_id,
         &instr.comic_id,
     )
     .await?;
 
-    TermbasePermComplex::ensure_user_can_read_team(
-        &mut run_proxy! {
-            repo =>
-                for<'a, 'b> GetComicInfo<'a, 'b>,
-                for<'a> GetWorksetInfo<'a>,
-                for<'a> FindMemberInfo<'a>;
-        },
-        &token.user_id,
-        &team_id,
-    )
-    .await?;
-
     let termbase_info_list_spec = TermbaseListSpec::Comic {
-        team_id,
         comic_id: instr.comic_id,
         fuzzy_name: TermbaseComplex::normalize_fuzzy_name(instr.fuzzy_name),
         offset: instr.offset,
@@ -241,12 +227,7 @@ pub async fn update_info<N, C, R>(
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
-    R: TermbaseRepo<C>
-        + ComicRepo<C>
-        + WorksetRepo<C>
-        + MemberRepo<C>
-        + Send
-        + Sync,
+    R: TermbaseRepo<C> + TeamRepo<C> + MemberRepo<C> + Send + Sync,
 {
     let termbase_info_update =
         TermbaseComplex::build_update(instr.id, instr.name, instr.description)?;
@@ -263,8 +244,7 @@ where
             &mut step_proxy! {
                 context;
                 repo =>
-                    for<'a, 'b> GetComicInfo<'a, 'b>,
-                    for<'a> GetWorksetInfo<'a>,
+                    for<'a> ResolveTeamId<'a>,
                     for<'a> FindMemberInfo<'a>;
             },
             &token.user_id,
@@ -297,8 +277,7 @@ where
     C: Send,
     R: TermbaseRepo<C>
         + TermRepo<C>
-        + ComicRepo<C>
-        + WorksetRepo<C>
+        + TeamRepo<C>
         + MemberRepo<C>
         + Send
         + Sync,
@@ -313,8 +292,7 @@ where
             &mut step_proxy! {
                 context;
                 repo =>
-                    for<'a, 'b> GetComicInfo<'a, 'b>,
-                    for<'a> GetWorksetInfo<'a>,
+                    for<'a> ResolveTeamId<'a>,
                     for<'a> FindMemberInfo<'a>;
             },
             &token.user_id,

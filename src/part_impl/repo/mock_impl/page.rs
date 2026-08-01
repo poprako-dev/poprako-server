@@ -1,7 +1,5 @@
 //! Mock implementation of `PageRepo`.
 
-use std::collections::HashMap;
-
 use crate::model::read::proj::page::PageInfo;
 use crate::model::write::page::PageEntry;
 use crate::part_impl::repo::mock_impl::{MockState, expected, now};
@@ -42,14 +40,11 @@ fn get_page_by_id(state: &MockState, id: &str) -> BaseRest<PageInfo> {
 fn list_first_pages(
     state: &MockState,
     chapter_ids: &[String],
-) -> HashMap<String, PageInfo> {
+) -> Vec<PageInfo> {
     chapter_ids
         .iter()
         .filter_map(|chapter_id| {
-            list_infos(state, chapter_id)
-                .into_iter()
-                .next()
-                .map(|page_info| (chapter_id.clone(), page_info))
+            list_infos(state, chapter_id).into_iter().next()
         })
         .collect()
 }

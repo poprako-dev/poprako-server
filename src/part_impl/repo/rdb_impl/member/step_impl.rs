@@ -5,6 +5,8 @@ use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 use tracing::instrument;
 
+use poprako_util::i18n::trl;
+
 use crate::model::read::proj::member::MemberInfo;
 use crate::model::read::spec::member::MemberListSpec;
 use crate::model::write::member::{MemberEntry, MemberRoleRepl};
@@ -13,9 +15,9 @@ use crate::part_impl::repo::rdb_impl::entity::member::{
 };
 use crate::part_impl::repo::rdb_impl::incl;
 use crate::part_impl::repo::rdb_impl::schema::t_member::dsl::*;
-use crate::part_impl::shared::RdbConn;
-use crate::part_impl::shared::result::{diesel, expected};
-use crate::result::{BaseRest, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::shared::RdbConn;
+use crate::shared::result::diesel;
 use crate::value::member::MemberInclOpt;
 use crate::value::role::{RoleField, RoleMask};
 
@@ -157,14 +159,36 @@ pub async fn get_info_by_id(
     incl_opt: &[MemberInclOpt],
 ) -> BaseRest<MemberInfo> {
     //
-    let row: MemberRow = t_member
+    let row: Option<MemberRow> = t_member
         .filter(f_id.eq(id))
         .select(MemberRow::as_select())
         .get_result(conn)
         .await
         .optional()
-        .map_err(diesel)?
-        .ok_or_else(|| expected("error-member-not-found"))?;
+        .map_err(diesel)?;
+
+    let row = match row {
+        //
+        Some(row) => row,
+
+        None => {
+            //
+            let message = trl("error-member-not-found");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                err_message = %message,
+                member_id = %id,
+                operation = "get member info",
+                "expected member error",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message,
+            });
+        }
+    };
 
     let mut info: MemberInfo = row.into();
 

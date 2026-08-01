@@ -43,7 +43,7 @@ use crate::value::comic::{ComicInclOpt, ComicWithOpt};
     ),
     responses(
         (status = 200, description = "Archive JSON strings grouped by UTC month", body = HttpBody<ExportComicArchivesVal>),
-        (status = 403, description = "No permission to export this team's archives"),
+        (status = 403, description = "No perm to export this team's archives"),
         (status = 422, description = "Invalid or expired month selection"),
     ),
 ))]
@@ -103,7 +103,7 @@ pub struct ComicListQuery {
     request_body = CreateComicInstr,
     responses(
         (status = 201, description = "Comic created", body = HttpBody<CreateComicVal>),
-        (status = 403, description = "No permission to create comics in this workset"),
+        (status = 403, description = "No perm to create comics in this workset"),
         (status = 404, description = "Workset not found"),
     ),
 ))]
@@ -113,7 +113,7 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(instr): Json<CreateComicInstr>,
 ) -> HttpResult<CreateComicVal> {
-    usecase::comic::create((harn.drive(), harn.repo()), user_token, instr)
+    usecase::comic::create((harn.nucl(), harn.repo()), user_token, instr)
         .await?
         .accept(StatusCode::CREATED)
 }
@@ -127,7 +127,7 @@ pub async fn create(
     params(("workset_id" = String, Path, description = "Workset ID"), ComicListQuery),
     responses(
         (status = 200, description = "Comics listed", body = HttpBody<ListComicInfosVal>),
-        (status = 403, description = "No permission to list comics in this workset"),
+        (status = 403, description = "No perm to list comics in this workset"),
         (status = 422, description = "Invalid query option combination or workflow-stage filter"),
     ),
 ))]
@@ -166,7 +166,7 @@ pub async fn list_infos(
     params(("comic_id" = String, Path, description = "Comic ID")),
     responses(
         (status = 200, description = "Comic info retrieved", body = HttpBody<ComicInfoView>),
-        (status = 403, description = "No permission to view this comic"),
+        (status = 403, description = "No perm to view this comic"),
         (status = 404, description = "Comic not found"),
     ),
 ))]
@@ -195,7 +195,7 @@ pub async fn get_info(
     responses(
         (status = 204, description = "Comic updated"),
         (status = 422, description = "Path id does not match body id"),
-        (status = 403, description = "No permission to update this comic"),
+        (status = 403, description = "No perm to update this comic"),
         (status = 404, description = "Comic not found"),
     ),
 ))]
@@ -223,7 +223,7 @@ pub async fn update_info(
     request_body = ReserveComicCoverInstr,
     responses(
         (status = 200, description = "Cover upload URL reserved", body = HttpBody<ReserveComicCoverVal>),
-        (status = 403, description = "No permission to modify this comic's cover"),
+        (status = 403, description = "No perm to modify this comic's cover"),
         (status = 404, description = "Comic not found"),
     ),
 ))]
@@ -235,7 +235,7 @@ pub async fn reserve_cover(
     Json(instr): Json<ReserveComicCoverInstr>,
 ) -> HttpResult<ReserveComicCoverVal> {
     usecase::comic::reserve_cover(
-        (harn.drive(), harn.repo(), harn.prom(), harn.image_pool()),
+        (harn.nucl(), harn.repo(), harn.prom(), harn.image_pool()),
         user_token,
         comic_id,
         instr,
@@ -253,7 +253,7 @@ pub async fn reserve_cover(
     request_body = MarkComicCoverUploadedInstr,
     responses(
         (status = 204, description = "Cover upload confirmed"),
-        (status = 403, description = "No permission to modify this comic's cover"),
+        (status = 403, description = "No perm to modify this comic's cover"),
         (status = 404, description = "Comic not found"),
     ),
 ))]
@@ -266,7 +266,7 @@ pub async fn mark_cover_uploaded(
 ) -> HttpNoContent {
     //
     usecase::comic::mark_cover_uploaded(
-        (harn.drive(), harn.repo(), harn.image_pool()),
+        (harn.nucl(), harn.repo(), harn.image_pool()),
         user_token,
         comic_id,
         instr,
@@ -284,7 +284,7 @@ pub async fn mark_cover_uploaded(
     params(("comic_id" = String, Path, description = "Comic ID")),
     responses(
         (status = 201, description = "Comic archived", body = HttpBody<ArchiveComicVal>),
-        (status = 403, description = "No permission to archive this comic"),
+        (status = 403, description = "No perm to archive this comic"),
         (status = 404, description = "Comic not found"),
     ),
 ))]
@@ -295,7 +295,7 @@ pub async fn archive(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<ArchiveComicVal> {
     usecase::comic_archive::archive(
-        (harn.drive(), harn.repo(), harn.prom()),
+        (harn.nucl(), harn.repo(), harn.prom()),
         user_token,
         comic_id,
     )
@@ -311,7 +311,7 @@ pub async fn archive(
     params(("comic_id" = String, Path, description = "Comic ID")),
     responses(
         (status = 204, description = "Comic deleted"),
-        (status = 403, description = "No permission to delete this comic"),
+        (status = 403, description = "No perm to delete this comic"),
         (status = 404, description = "Comic not found"),
     ),
 ))]
@@ -323,7 +323,7 @@ pub async fn delete(
 ) -> HttpNoContent {
     //
     usecase::comic::delete(
-        (harn.drive(), harn.repo(), harn.prom()),
+        (harn.nucl(), harn.repo(), harn.prom()),
         user_token,
         comic_id,
     )

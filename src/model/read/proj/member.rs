@@ -31,6 +31,6 @@ pub struct MemberInfo {
     /// The resolved team record, populated when the include option is set.
     pub team: Option<TeamInfo>,
 
-    /// Bitmask of roles and permissions assigned to this member within the team.
+    /// Bitmask of roles and perms assigned to this member within the team.
     pub roles: RoleMask,
 }

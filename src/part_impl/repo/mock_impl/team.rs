@@ -7,7 +7,6 @@ use tracing::instrument;
 
 use crate::complex::team::TeamComplex;
 use crate::model::read::proj::team::TeamInfo;
-use crate::model::read::spec::team::TeamListKind;
 use crate::model::write::team::{TeamAvatarReservation, TeamEntry};
 use crate::part::repo::oper::team::{
     AllocTeamWorksetIndex, CreateTeam, DeleteTeam, GetTeamInfo,
@@ -19,6 +18,8 @@ use crate::part_impl::repo::mock_impl::{
 };
 use crate::result::{BaseError, BaseRest, accept};
 use crate::value::image::{ImageExt, ImageHash};
+
+mod resolve;
 
 // Internal implementation of `create_team`.
 fn create_team(state: &mut MockState, entry: &TeamEntry) -> BaseRest<TeamInfo> {
@@ -67,23 +68,21 @@ fn list_team_infos(
     //
     // Internal implementation detail.
     // Internal implementation detail.
-    let mut team_infos = match &oper.spec.kind {
+    let mut team_infos = match oper.spec.user_id.as_deref() {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
-        TeamListKind::JoinedBy { user_id } => state
+        Some(user_id) => state
             .teams
             .iter()
             .filter(|team_info| {
                 state.members.iter().any(|member_info| {
-                    member_info.user_id == user_id.as_str()
+                    member_info.user_id == user_id
                         && member_info.team_id == team_info.id
                 })
             })
             .cloned()
             .collect(),
 
-        TeamListKind::All => state.teams.clone(),
+        None => state.teams.clone(),
     };
 
     team_infos.sort_by_key(|team_info| Reverse(team_info.created_at));

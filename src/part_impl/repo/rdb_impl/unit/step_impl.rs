@@ -7,15 +7,17 @@ use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 use tracing::instrument;
 
+use poprako_util::i18n::trl;
+
 use crate::model::read::proj::unit::{UnitCounters, UnitInfo, UnitOrder};
 use crate::model::write::unit::UnitEdit;
 use crate::part_impl::repo::rdb_impl::entity::unit::{
     UnitAspect, UnitEntry, UnitRow,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::*;
-use crate::part_impl::shared::RdbConn;
-use crate::part_impl::shared::result::{diesel, expected};
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::shared::RdbConn;
+use crate::shared::result::diesel;
 use crate::util::Patch;
 
 #[cfg(test)]
@@ -93,10 +95,26 @@ pub async fn apply_edits(
     for edit in edits {
         match edit {
             //
-            UnitEdit::Create { .. } => {
+            UnitEdit::Create { id, .. } => {
                 //
                 let Some(entry) = UnitEntry::from_edit(page_id, edit) else {
-                    return Err(expected("error-invalid-unit-oper"));
+                    //
+                    let err_message = trl("error-invalid-unit-oper");
+
+                    tracing::warn!(
+                        error_variant = ?ExpectedVariant::Args,
+                        err_message = %err_message,
+                        page_id = %page_id,
+                        unit_id = %id,
+                        operation = "create",
+                        stage = "apply_edits",
+                        "expected error: invalid unit operation",
+                    );
+
+                    return Err(BaseError::Expected {
+                        variant: ExpectedVariant::Args,
+                        message: err_message,
+                    });
                 };
 
                 diesel::insert_into(t_unit)
@@ -117,7 +135,24 @@ pub async fn apply_edits(
                 .map_err(diesel)?;
 
                 if affected != 1 {
-                    return Err(expected("error-invalid-unit-oper"));
+                    //
+                    let err_message = trl("error-invalid-unit-oper");
+
+                    tracing::warn!(
+                        error_variant = ?ExpectedVariant::Args,
+                        err_message = %err_message,
+                        page_id = %page_id,
+                        unit_id = %id,
+                        operation = "delete",
+                        affected,
+                        stage = "apply_edits",
+                        "expected error: invalid unit operation",
+                    );
+
+                    return Err(BaseError::Expected {
+                        variant: ExpectedVariant::Args,
+                        message: err_message,
+                    });
                 }
             }
 
@@ -132,7 +167,24 @@ pub async fn apply_edits(
                 .map_err(diesel)?;
 
                 if affected != 1 {
-                    return Err(expected("error-invalid-unit-oper"));
+                    //
+                    let err_message = trl("error-invalid-unit-oper");
+
+                    tracing::warn!(
+                        error_variant = ?ExpectedVariant::Args,
+                        err_message = %err_message,
+                        page_id = %page_id,
+                        unit_id = %id,
+                        operation = "save",
+                        affected,
+                        stage = "apply_edits",
+                        "expected error: invalid unit operation",
+                    );
+
+                    return Err(BaseError::Expected {
+                        variant: ExpectedVariant::Args,
+                        message: err_message,
+                    });
                 }
             }
         }
@@ -160,7 +212,26 @@ pub async fn apply_edits(
         .map_err(diesel)?;
 
         if affected != 1 {
-            return Err(expected("error-invalid-unit-oper"));
+            //
+            let err_message = trl("error-invalid-unit-oper");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                err_message = %err_message,
+                page_id = %page_id,
+                unit_id = %id,
+                index,
+                next_unit_id = ?next_id,
+                operation = "reorder",
+                affected,
+                stage = "apply_edits",
+                "expected error: invalid unit operation",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: err_message,
+            });
         }
     }
 
@@ -265,7 +336,23 @@ fn apply_order_edits<'a>(
         };
 
         if find_order_pos(&ordered_ids, id).is_some() {
-            return Err(expected("error-invalid-unit-oper"));
+            //
+            let err_message = trl("error-invalid-unit-oper");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                err_message = %err_message,
+                unit_id = %id,
+                existing_order_count = ordered_ids.len(),
+                operation = "create",
+                stage = "apply_order_edits",
+                "expected error: invalid unit operation",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: err_message,
+            });
         }
 
         ordered_ids.push(id);
@@ -310,7 +397,23 @@ fn apply_order_edits<'a>(
         .count();
 
     if visible_count > 100 {
-        return Err(expected("error-invalid-unit-oper"));
+        //
+        let err_message = trl("error-invalid-unit-oper");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            err_message = %err_message,
+            visible_count,
+            max_visible_count = 100,
+            operation = "reorder",
+            stage = "apply_order_edits",
+            "expected error: invalid unit operation",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: err_message,
+        });
     }
 
     accept(ordered_ids)
@@ -360,15 +463,52 @@ fn move_order<'a>(
 ) -> BaseRest<()> {
     //
     let Some(pos) = find_order_pos(ordered_ids, id) else {
-        return Err(expected("error-invalid-unit-oper"));
+        //
+        let err_message = trl("error-invalid-unit-oper");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            err_message = %err_message,
+            unit_id = %id,
+            next_unit_id = ?next_id,
+            order_count = ordered_ids.len(),
+            operation = "move",
+            stage = "move_order",
+            "expected error: invalid unit operation",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: err_message,
+        });
     };
 
     let id = ordered_ids.remove(pos);
 
     let pos = match next_id {
         //
-        Some(next_id) => find_order_pos(ordered_ids, next_id)
-            .ok_or_else(|| expected("error-invalid-unit-oper"))?,
+        Some(next_id) => {
+            find_order_pos(ordered_ids, next_id).ok_or_else(|| {
+                //
+                let err_message = trl("error-invalid-unit-oper");
+
+                tracing::warn!(
+                    error_variant = ?ExpectedVariant::Args,
+                    err_message = %err_message,
+                    unit_id = %id,
+                    next_unit_id = %next_id,
+                    order_count = ordered_ids.len(),
+                    operation = "move",
+                    stage = "move_order",
+                    "expected error: invalid unit operation",
+                );
+
+                BaseError::Expected {
+                    variant: ExpectedVariant::Args,
+                    message: err_message,
+                }
+            })?
+        }
 
         None => ordered_ids.len(),
     };

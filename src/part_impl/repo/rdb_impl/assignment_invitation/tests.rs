@@ -10,11 +10,10 @@ use crate::part::repo::oper::assignment_invitation::{
     CreateAssignmentInvitation, ListAssignmentInvitationInfos,
     MarkAssignmentInvitationUsed,
 };
-use crate::part_impl::drive::rdb_impl::RdbDrive;
+use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
-use crate::part_impl::shared::RdbCore;
 use crate::result::BaseError;
-use crate::value::assignment_invitation::AssignmentInvitationStatus;
+use crate::shared::RdbCore;
 use crate::value::role::{RoleField, RoleMask};
 
 const PREFIX: &str = "rdb-test-assignment-invitation-domain-";
@@ -32,7 +31,7 @@ pub async fn assignment_invitation_roundtrip_uses_testcontainer(
 
     let repo = RdbRepo::new(shared.clone());
 
-    let drive = RdbDrive::new(shared.clone());
+    let nucl = RdbNucl::new(shared.clone());
 
     let assignment_invitation_entry = AssignmentInvitationEntry {
         id: format!("{}assignment-invitation", PREFIX),
@@ -43,34 +42,33 @@ pub async fn assignment_invitation_roundtrip_uses_testcontainer(
         roles: RoleMask::from(RoleField::REVIEWER),
     };
 
-    drive
-        .coord(async |context| {
-            //
-            repo.step(
-                context,
-                &CreateAssignmentInvitation {
-                    entry: &assignment_invitation_entry,
-                },
-            )
-            .await?;
+    nucl.coord(async |context| {
+        //
+        repo.step(
+            context,
+            &CreateAssignmentInvitation {
+                entry: &assignment_invitation_entry,
+            },
+        )
+        .await?;
 
-            repo.step(
-                context,
-                &MarkAssignmentInvitationUsed {
-                    id: &assignment_invitation_entry.id,
-                },
-            )
-            .await?;
+        repo.step(
+            context,
+            &MarkAssignmentInvitationUsed {
+                id: &assignment_invitation_entry.id,
+            },
+        )
+        .await?;
 
-            Ok::<(), BaseError>(())
-        })
-        .await
-        .ok()
-        .unwrap();
+        Ok::<(), BaseError>(())
+    })
+    .await
+    .ok()
+    .unwrap();
 
     let assignment_invitation_list_spec = AssignmentInvitationListSpec {
         chapter_id: chapter_fixture.chapter_entry.id.clone(),
-        status: AssignmentInvitationStatus::Used,
+        is_pending: Some(false),
         offset: 0,
         limit: 10,
     };

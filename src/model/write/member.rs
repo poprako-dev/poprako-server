@@ -4,7 +4,7 @@ use crate::value::role::RoleMask;
 
 /// The data needed to insert a new membership row.
 ///
-/// Includes a [`RoleMask`] specifying the member's permissions within the team.
+/// Includes a [`RoleMask`] specifying the member's perms within the team.
 #[cfg_attr(test, derive(Clone))]
 pub struct MemberEntry {
     //
@@ -19,7 +19,7 @@ pub struct MemberEntry {
     /// The team the user is joining.
     pub team_id: String,
 
-    /// Bitmask of roles and permissions assigned to this member.
+    /// Bitmask of roles and perms assigned to this member.
     pub roles: RoleMask,
 }
 
@@ -28,7 +28,7 @@ pub struct MemberRoleRepl {
     //
     /// Identifies which membership record to update.
     pub id: String,
-    /// Updated bitmask of roles and permissions for the member.
+    /// Updated bitmask of roles and perms for the member.
     pub roles: RoleMask,
 }
 

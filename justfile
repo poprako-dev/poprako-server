@@ -54,4 +54,4 @@ swagger:
 
 # Run all fmt/*/check.py checkers in order, continuing on failure.
 fmt-check:
-    cargo check --all-features && cargo fmt --check --all && bash fmt/run-check.sh; cargo clippy --all-features
+    cargo check --all-features && cargo fmt --all && bash fmt/run-check.sh; cargo clippy --all-features

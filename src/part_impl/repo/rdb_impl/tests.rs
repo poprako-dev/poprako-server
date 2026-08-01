@@ -1,6 +1,6 @@
 use super::*;
 
-use crate::part_impl::shared::test_rdb::start;
+use crate::shared::test_rdb::start;
 
 #[tokio::test]
 #[serial_test::serial(repo_rdb)]
@@ -49,6 +49,8 @@ async fn repo_rdb_impls_use_testcontainer() {
     .await;
 
     team::tests::team_roundtrip_uses_testcontainer(shared.clone()).await;
+
+    team::tests::resolve_team_id_uses_testcontainer(shared.clone()).await;
 
     term::tests::term_array_unique_and_fuzzy_roundtrip(shared.clone()).await;
 

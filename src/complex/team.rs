@@ -1,5 +1,5 @@
 //! Complex-domain opers for team entities: identity and avatar-storage key
-//! generation, and permission checks.
+//! generation, and perm checks.
 
 use poprako_orchestra::{OperProxy as _, Proxy};
 use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
@@ -150,7 +150,7 @@ impl TeamComplex {
     }
 }
 
-/// Permission-gate opers for team entities.
+/// perm-gate opers for team entities.
 pub struct TeamPermComplex;
 
 impl TeamPermComplex {
@@ -236,9 +236,20 @@ impl TeamPermComplex {
         let user_info = GetUserInfo::Id { id: user_id }.proxy_on(proxy).await?;
 
         if !user_info.is_sadmin {
+            //
+            let err_message = trl("error-sadmin-required");
+
+            tracing::warn!(
+                err_variant = ?ExpectedVariant::Perm,
+                err_message = %err_message,
+                user_id = %user_id,
+                is_sadmin = user_info.is_sadmin,
+                "expected error: super-admin perm required",
+            );
+
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Perm,
-                message: trl("error-sadmin-required"),
+                message: err_message,
             });
         }
 

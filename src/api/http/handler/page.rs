@@ -29,7 +29,7 @@ use crate::usecase;
     params(("chapter_id" = String, Path, description = "Chapter ID")),
     responses(
         (status = 200, description = "Pages listed", body = HttpBody<Vec<PageInfoView>>),
-        (status = 403, description = "No permission to list pages in this chapter"),
+        (status = 403, description = "No perm to list pages in this chapter"),
     ),
 ))]
 #[instrument(level = "info", err(Debug), skip_all)]
@@ -58,7 +58,7 @@ pub async fn list_infos(
     params(("page_id" = String, Path, description = "Page ID")),
     responses(
         (status = 200, description = "Page info retrieved", body = HttpBody<PageInfoView>),
-        (status = 403, description = "No permission to view this page"),
+        (status = 403, description = "No perm to view this page"),
         (status = 404, description = "Page not found"),
     ),
 ))]
@@ -85,7 +85,7 @@ pub async fn get_info(
     params(("chapter_id" = String, Path, description = "Chapter ID")),
     responses(
         (status = 204, description = "All pages deleted"),
-        (status = 403, description = "No permission to delete pages in this chapter"),
+        (status = 403, description = "No perm to delete pages in this chapter"),
     ),
 ))]
 #[instrument(level = "info", err(Debug), skip_all)]
@@ -96,7 +96,7 @@ pub async fn delete(
 ) -> HttpNoContent {
     //
     usecase::page::delete(
-        (harn.drive(), harn.repo(), harn.prom()),
+        (harn.nucl(), harn.repo(), harn.prom()),
         user_token,
         chapter_id,
     )
@@ -115,7 +115,7 @@ pub async fn delete(
     responses(
         (status = 200, description = "Page upload slots reserved", body = HttpBody<ReserveChapterPagesVal>),
         (status = 422, description = "Path id does not match body chapter id"),
-        (status = 403, description = "No permission to reserve pages in this chapter"),
+        (status = 403, description = "No perm to reserve pages in this chapter"),
         (status = 422, description = "Invalid authoritative manifest, duplicate page identity, image metadata, or published chapter"),
     ),
 ))]
@@ -130,7 +130,7 @@ pub async fn reserve_chapter_pages(
     ensure_path_matches_body_id(&chapter_id, &instr.chapter_id)?;
 
     usecase::page::reserve_chapter_pages(
-        (harn.drive(), harn.repo(), harn.prom(), harn.image_pool()),
+        (harn.nucl(), harn.repo(), harn.prom(), harn.image_pool()),
         user_token,
         instr,
     )
@@ -147,7 +147,7 @@ pub async fn reserve_chapter_pages(
     request_body = ReservePageImageInstr,
     responses(
         (status = 200, description = "Page image upload URL reserved", body = HttpBody<ReservedPageVal>),
-        (status = 403, description = "No permission to modify this page's image"),
+        (status = 403, description = "No perm to modify this page's image"),
         (status = 422, description = "Page not found, conflicting image metadata, or published chapter"),
     ),
 ))]
@@ -159,7 +159,7 @@ pub async fn reserve_image(
     Json(instr): Json<ReservePageImageInstr>,
 ) -> HttpResult<ReservedPageVal> {
     usecase::page::reserve_image(
-        (harn.drive(), harn.repo(), harn.prom(), harn.image_pool()),
+        (harn.nucl(), harn.repo(), harn.prom(), harn.image_pool()),
         user_token,
         page_id,
         instr,
@@ -177,7 +177,7 @@ pub async fn reserve_image(
     request_body = MarkPageImageUploadedInstr,
     responses(
         (status = 204, description = "Page image upload confirmed"),
-        (status = 403, description = "No permission to modify this page's image"),
+        (status = 403, description = "No perm to modify this page's image"),
         (status = 422, description = "Page, image identity, storage object, or published chapter is invalid"),
     ),
 ))]
@@ -190,7 +190,7 @@ pub async fn mark_image_uploaded(
 ) -> HttpNoContent {
     //
     usecase::page::mark_image_uploaded(
-        (harn.drive(), harn.repo(), harn.image_pool()),
+        (harn.nucl(), harn.repo(), harn.image_pool()),
         user_token,
         page_id,
         instr,

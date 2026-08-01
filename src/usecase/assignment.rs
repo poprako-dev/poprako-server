@@ -19,7 +19,6 @@ use crate::model::write::assignment::{AssignmentEntry, AssignmentRoleRepl};
 use crate::part::image::ImagePool;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
-use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::{
     CreateAssignment, DeleteAssignments, FindAssignmentInfo, GetAssignmentInfo,
@@ -28,14 +27,13 @@ use crate::part::repo::oper::assignment::{
 use crate::part::repo::oper::chapter::{
     GetChapterInfo, GetChapterInfoExcluded, ListPinnedChapterInfos,
 };
-use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::page::ListFirstPageInfos;
+use crate::part::repo::oper::team::ResolveTeamId;
 use crate::part::repo::oper::user::GetUserInfo;
-use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::page::PageRepo;
+use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
-use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
 #[cfg(test)]
@@ -52,9 +50,8 @@ pub async fn list_infos<C, R, I>(
 where
     R: AssignmentRepo<C>
         + ChapterRepo<C>
-        + ComicRepo<C>
-        + WorksetRepo<C>
         + MemberRepo<C>
+        + TeamRepo<C>
         + UserRepo<C>
         + PageRepo<C>
         + Sync,
@@ -65,9 +62,7 @@ where
     AssignmentPermComplex::ensure_user_can_list_infos(
         &mut run_proxy! {
             repo =>
-                for<'a, 'b> GetChapterInfo<'a, 'b>,
-                for<'a, 'b> GetComicInfo<'a, 'b>,
-                for<'a> GetWorksetInfo<'a>,
+                for<'a> ResolveTeamId<'a>,
                 for<'a> FindMemberInfo<'a>,
                 for<'a, 'b> FindAssignmentInfo<'a, 'b>,
                 for<'a> GetUserInfo<'a>;
@@ -135,9 +130,8 @@ where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     R: ChapterRepo<C>
-        + ComicRepo<C>
-        + WorksetRepo<C>
         + MemberRepo<C>
+        + TeamRepo<C>
         + AssignmentRepo<C>
         + Send
         + Sync,
@@ -152,10 +146,8 @@ where
     ChapterPermComplex::ensure_user_can_join(
         &mut run_proxy! {
             repo =>
-                for<'a, 'b> GetComicInfo<'a, 'b>,
-                for<'a> GetWorksetInfo<'a>,
-                for<'a> FindMemberInfo<'a>,
-                for<'a, 'b> GetChapterInfo<'a, 'b>;
+                for<'a> ResolveTeamId<'a>,
+                for<'a> FindMemberInfo<'a>;
         },
         &token.user_id,
         &chapter_info,
@@ -166,10 +158,8 @@ where
     AssignmentPermComplex::ensure_user_can_take_roles(
         &mut run_proxy! {
             repo =>
-                for<'a, 'b> GetComicInfo<'a, 'b>,
-                for<'a> GetWorksetInfo<'a>,
-                for<'a> FindMemberInfo<'a>,
-                for<'a, 'b> GetChapterInfo<'a, 'b>;
+                for<'a> ResolveTeamId<'a>,
+                for<'a> FindMemberInfo<'a>;
         },
         &token.user_id,
         &instr.chapter_id,
@@ -246,18 +236,15 @@ where
     C: Send,
     R: AssignmentRepo<C>
         + ChapterRepo<C>
-        + ComicRepo<C>
-        + WorksetRepo<C>
         + MemberRepo<C>
+        + TeamRepo<C>
         + Send
         + Sync,
 {
     AssignmentPermComplex::ensure_user_can_update_roles(
         &mut run_proxy! {
             repo =>
-                for<'a, 'b> GetChapterInfo<'a, 'b>,
-                for<'a, 'b> GetComicInfo<'a, 'b>,
-                for<'a> GetWorksetInfo<'a>,
+                for<'a> ResolveTeamId<'a>,
                 for<'a> FindMemberInfo<'a>,
                 for<'a, 'b> FindAssignmentInfo<'a, 'b>;
         },
@@ -271,9 +258,7 @@ where
     AssignmentPermComplex::ensure_user_can_take_roles(
         &mut run_proxy! {
             repo =>
-                for<'a, 'b> GetChapterInfo<'a, 'b>,
-                for<'a, 'b> GetComicInfo<'a, 'b>,
-                for<'a> GetWorksetInfo<'a>,
+                for<'a> ResolveTeamId<'a>,
                 for<'a> FindMemberInfo<'a>,
                 for<'a, 'b> FindAssignmentInfo<'a, 'b>;
         },
@@ -313,7 +298,24 @@ where
                     assignment_info,
                     instr.roles,
                 ) {
-                    return Err(assignment_admin_required_err());
+                    //
+                    let err_message = trl("error-forbidden");
+
+                    tracing::warn!(
+                        err_variant = ?ExpectedVariant::Perm,
+                        err_message = %err_message,
+                        chapter_id = %instr.chapter_id,
+                        user_id = %token.user_id,
+                        target_user_id = %instr.user_id,
+                        roles = ?instr.roles,
+                        operation = "remove own administrator role",
+                        "expected error: chapter administrator perm required",
+                    );
+
+                    return Err(BaseError::Expected {
+                        variant: ExpectedVariant::Perm,
+                        message: err_message,
+                    });
                 }
 
                 if !AssignmentComplex::chapter_has_admin_after_role_update(
@@ -321,7 +323,24 @@ where
                     &instr.user_id,
                     instr.roles,
                 ) {
-                    return Err(assignment_admin_required_err());
+                    //
+                    let err_message = trl("error-forbidden");
+
+                    tracing::warn!(
+                        err_variant = ?ExpectedVariant::Perm,
+                        err_message = %err_message,
+                        chapter_id = %instr.chapter_id,
+                        user_id = %token.user_id,
+                        target_user_id = %instr.user_id,
+                        roles = ?instr.roles,
+                        operation = "remove last chapter administrator role",
+                        "expected error: chapter administrator perm required",
+                    );
+
+                    return Err(BaseError::Expected {
+                        variant: ExpectedVariant::Perm,
+                        message: err_message,
+                    });
                 }
 
                 let assignment_role_update = AssignmentRoleRepl {
@@ -343,7 +362,24 @@ where
                     &instr.user_id,
                     instr.roles,
                 ) {
-                    return Err(assignment_admin_required_err());
+                    //
+                    let err_message = trl("error-forbidden");
+
+                    tracing::warn!(
+                        err_variant = ?ExpectedVariant::Perm,
+                        err_message = %err_message,
+                        chapter_id = %instr.chapter_id,
+                        user_id = %token.user_id,
+                        target_user_id = %instr.user_id,
+                        roles = ?instr.roles,
+                        operation = "assign administrator role",
+                        "expected error: chapter administrator perm required",
+                    );
+
+                    return Err(BaseError::Expected {
+                        variant: ExpectedVariant::Perm,
+                        message: err_message,
+                    });
                 }
 
                 let assignment_entry = AssignmentEntry {
@@ -412,12 +448,4 @@ where
     let () = ();
 
     accept(())
-}
-
-// Constructs a permission error for admin-role removal.
-fn assignment_admin_required_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Perm,
-        message: trl("error-forbidden"),
-    }
 }

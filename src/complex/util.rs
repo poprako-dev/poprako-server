@@ -5,10 +5,8 @@ use poprako_orchestra::{OperProxy as _, Proxy};
 use poprako_util::i18n::trl;
 
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
-use crate::part::repo::oper::chapter::GetChapterInfo;
-use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part::repo::oper::workset::GetWorksetInfo;
+use crate::part::repo::oper::team::ResolveTeamId;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::value::role::{RoleField, RoleMask};
 
@@ -26,9 +24,20 @@ where
         .await?;
 
     if member_info.is_none() {
+        //
+        let err_message = trl("error-team-member-required");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Perm,
+            err_message = %err_message,
+            user_id = %user_id,
+            team_id = %team_id,
+            "expected error: team membership required",
+        );
+
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: trl("error-team-member-required"),
+            message: err_message,
         });
     }
 
@@ -49,16 +58,39 @@ where
         .await?;
 
     let Some(member_info) = member_info else {
+        //
+        let err_message = trl("error-team-proofreader-required");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Perm,
+            err_message = %err_message,
+            user_id = %user_id,
+            team_id = %team_id,
+            "expected error: team proofreader membership missing",
+        );
+
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: trl("error-team-proofreader-required"),
+            message: err_message,
         });
     };
 
     if !member_info.roles.has_any_role(&[RoleField::PROOFREADER]) {
+        //
+        let err_message = trl("error-team-proofreader-required");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Perm,
+            err_message = %err_message,
+            user_id = %user_id,
+            team_id = %team_id,
+            member_roles = ?member_info.roles,
+            "expected error: team proofreader role missing",
+        );
+
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: trl("error-team-proofreader-required"),
+            message: err_message,
         });
     }
 
@@ -80,25 +112,62 @@ where
         .await?;
 
     let Some(member_info) = member_info else {
+        //
+        let err_message = trl("error-team-admin-required");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Perm,
+            err_message = %err_message,
+            user_id = %user_id,
+            team_id = %team_id,
+            required_roles = ?required_roles,
+            "expected error: team admin membership missing",
+        );
+
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: trl("error-team-admin-required"),
+            message: err_message,
         });
     };
 
     if !member_info.roles.has_any_role(&[RoleField::ADMIN]) {
+        //
+        let err_message = trl("error-team-admin-required");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Perm,
+            err_message = %err_message,
+            user_id = %user_id,
+            team_id = %team_id,
+            member_roles = ?member_info.roles,
+            required_roles = ?required_roles,
+            "expected error: team admin role missing",
+        );
+
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: trl("error-team-admin-required"),
+            message: err_message,
         });
     }
 
     if required_roles
         .is_some_and(|roles| !member_info.roles.contains_mask(roles))
     {
+        let err_message = trl("error-chapter-role-not-assignable");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Perm,
+            err_message = %err_message,
+            user_id = %user_id,
+            team_id = %team_id,
+            required_roles = ?required_roles,
+            member_roles = ?member_info.roles,
+            "expected error: team member lacks required roles",
+        );
+
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: trl("error-chapter-role-not-assignable"),
+            message: err_message,
         });
     }
 
@@ -124,32 +193,14 @@ pub async fn check_user_is_team_member_by_chapter<P>(
     chapter_id: &str,
 ) -> BaseRest<()>
 where
-    P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
-        + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
-        + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+    P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
         + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
 {
-    let chapter_info = GetChapterInfo {
-        id: chapter_id,
-        incls: &[],
-    }
-    .proxy_on(proxy)
-    .await?;
+    let team_id = ResolveTeamId::Chapter { id: chapter_id }
+        .proxy_on(proxy)
+        .await?;
 
-    let comic_info = GetComicInfo {
-        id: &chapter_info.comic_id,
-        incls: &[],
-    }
-    .proxy_on(proxy)
-    .await?;
-
-    let workset_info = GetWorksetInfo {
-        id: &comic_info.workset_id,
-    }
-    .proxy_on(proxy)
-    .await?;
-
-    check_user_is_team_member(proxy, user_id, &workset_info.team_id).await
+    check_user_is_team_member(proxy, user_id, &team_id).await
 }
 
 /// Verify the user has an assignment on the chapter.
@@ -169,7 +220,21 @@ where
     .await?;
 
     if assignment_info.is_none() {
-        return Err(chapter_assignee_required_err());
+        //
+        let err_message = trl("error-chapter-assignee-required");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Perm,
+            err_message = %err_message,
+            user_id = %user_id,
+            chapter_id = %chapter_id,
+            "expected error: chapter assignee required",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: err_message,
+        });
     }
 
     accept(())
@@ -192,31 +257,45 @@ where
     .await?;
 
     let Some(assignment_info) = assignment_info else {
-        return Err(chapter_translator_or_proofreader_required_err());
+        //
+        let err_message =
+            trl("error-chapter-translator-or-proofreader-required");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Perm,
+            err_message = %err_message,
+            user_id = %user_id,
+            chapter_id = %chapter_id,
+            "expected error: chapter translator or proofreader assignment missing",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: err_message,
+        });
     };
 
     if !assignment_info
         .roles
         .has_any_role(&[RoleField::TRANSLATOR, RoleField::PROOFREADER])
     {
-        return Err(chapter_translator_or_proofreader_required_err());
+        let err_message =
+            trl("error-chapter-translator-or-proofreader-required");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Perm,
+            err_message = %err_message,
+            user_id = %user_id,
+            chapter_id = %chapter_id,
+            assignment_roles = ?assignment_info.roles,
+            "expected error: chapter translator or proofreader role missing",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: err_message,
+        });
     }
 
     accept(())
-}
-
-// Construct a "chapter assignee required" permission error.
-fn chapter_assignee_required_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Perm,
-        message: trl("error-chapter-assignee-required"),
-    }
-}
-
-// Construct a "translator or proofreader required" permission error.
-fn chapter_translator_or_proofreader_required_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Perm,
-        message: trl("error-chapter-translator-or-proofreader-required"),
-    }
 }

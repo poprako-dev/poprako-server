@@ -50,7 +50,7 @@ impl UserComplex {
             Err(error) => {
                 //
                 tracing::error!(
-                    error = %error,
+                    err = %error,
                     "[UserComplex::verify_password] blocking task failed",
                 );
 

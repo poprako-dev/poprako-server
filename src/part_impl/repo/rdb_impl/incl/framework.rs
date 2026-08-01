@@ -36,9 +36,9 @@ use crate::part_impl::repo::rdb_impl::entity::workset::WorksetRow;
 use crate::part_impl::repo::rdb_impl::schema::{
     t_chapter, t_comic, t_team, t_user, t_workset,
 };
-use crate::part_impl::shared::RdbConn;
-use crate::part_impl::shared::result::diesel;
 use crate::result::{BaseRest, accept};
+use crate::shared::RdbConn;
+use crate::shared::result::diesel;
 
 // ── BatchByIds trait ────────────────────────────────────────────────────────
 
@@ -94,10 +94,13 @@ pub trait Incl {
 /// This is the only include-driving function. Call it once per requested include
 /// variant. Works on slices (list) or single items (via `from_mut`).
 #[instrument(level = "info", err(Debug), skip_all)]
-pub async fn populate<I: Incl>(
+pub async fn populate<I>(
     conn: &mut RdbConn,
     infos: &mut [I::Owner],
-) -> BaseRest<()> {
+) -> BaseRest<()>
+where
+    I: Incl,
+{
     //
     let mut key_counts = HashMap::new();
 
@@ -132,11 +135,14 @@ pub async fn populate<I: Incl>(
 
 // Decrements a reference count and takes ownership of a loaded related entity
 // when its last reference is consumed, avoiding a clone for shared entries.
-fn take_loaded_related<Related: Clone>(
+fn take_loaded_related<Related>(
     map: &mut HashMap<String, Related>,
     key_counts: &mut HashMap<String, usize>,
     key: &str,
-) -> Option<Related> {
+) -> Option<Related>
+where
+    Related: Clone,
+{
     //
     let count = key_counts.get_mut(key)?;
 
@@ -154,10 +160,13 @@ fn take_loaded_related<Related: Clone>(
 
 // Execute a batch `SELECT … WHERE f_id IN (…)` via a [`BatchByIds`] impl.
 #[instrument(level = "info", err(Debug), skip_all)]
-async fn batch_load<B: BatchByIds>(
+async fn batch_load<B>(
     conn: &mut RdbConn,
     ids: Vec<&str>,
-) -> BaseRest<HashMap<String, B::Info>> {
+) -> BaseRest<HashMap<String, B::Info>>
+where
+    B: BatchByIds,
+{
     //
     let rows = B::load(conn, ids).await?;
 

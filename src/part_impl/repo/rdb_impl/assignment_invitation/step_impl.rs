@@ -5,6 +5,8 @@ use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 use tracing::instrument;
 
+use poprako_util::i18n::trl;
+
 use crate::model::read::proj::assignment_invitation::AssignmentInvitationInfo;
 use crate::model::read::spec::assignment_invitation::AssignmentInvitationListSpec;
 use crate::model::write::assignment_invitation::AssignmentInvitationEntry;
@@ -13,10 +15,9 @@ use crate::part_impl::repo::rdb_impl::entity::assignment_invitation::{
     AssignmentInvitationRowEntry,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_assignment_invitation::dsl::*;
-use crate::part_impl::shared::RdbConn;
-use crate::part_impl::shared::result::{diesel, expected};
-use crate::result::{BaseRest, accept};
-use crate::value::assignment_invitation::AssignmentInvitationStatus;
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::shared::RdbConn;
+use crate::shared::result::diesel;
 
 /// Queries assignment invitation rows selected by a list specification.
 #[instrument(level = "info", err(Debug), skip_all)]
@@ -29,13 +30,11 @@ pub async fn list_infos(
         .filter(f_chapter_id.eq(spec.chapter_id.as_str()))
         .into_boxed();
 
-    query = match &spec.status {
+    query = match spec.is_pending {
         //
-        AssignmentInvitationStatus::All => query,
+        Some(is_pending) => query.filter(f_pending.eq(is_pending)),
 
-        AssignmentInvitationStatus::Pending => query.filter(f_pending.eq(true)),
-
-        AssignmentInvitationStatus::Used => query.filter(f_pending.eq(false)),
+        None => query,
     };
 
     let rows: Vec<AssignmentInvitationRow> = query
@@ -64,7 +63,23 @@ pub async fn get_info_by_id(
         .await
         .optional()
         .map_err(diesel)?
-        .ok_or_else(|| expected("error-invitation-not-found"))?;
+        .ok_or_else(|| {
+            //
+            let err_message = trl("error-invitation-not-found");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                err_message = %err_message,
+                invitation_id = %id,
+                stage = "get_info_by_id",
+                "expected error: assignment invitation not found",
+            );
+
+            BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: err_message,
+            }
+        })?;
 
     row_into_info(row)
 }
@@ -85,7 +100,24 @@ pub async fn get_info_by_code_excluded(
         .await
         .optional()
         .map_err(diesel)?
-        .ok_or_else(|| expected("error-no-pending-invitation"))?;
+        .ok_or_else(|| {
+            //
+            let err_message = trl("error-no-pending-invitation");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                err_message = %err_message,
+                invitation_code_length = code.len(),
+                pending = true,
+                stage = "get_info_by_code_excluded",
+                "expected error: no pending assignment invitation",
+            );
+
+            BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: err_message,
+            }
+        })?;
 
     row_into_info(row)
 }
@@ -132,7 +164,23 @@ pub async fn mark_pending_as_used(
     .map_err(diesel)?;
 
     if affected == 0 {
-        return Err(expected("error-invitation-not-found"));
+        //
+        let err_message = trl("error-invitation-not-found");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            err_message = %err_message,
+            invitation_id = %id,
+            pending = true,
+            affected,
+            stage = "mark_pending_as_used",
+            "expected error: assignment invitation not found",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: err_message,
+        });
     }
 
     accept(())

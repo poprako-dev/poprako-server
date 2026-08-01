@@ -35,7 +35,7 @@ impl ChapterExportComplex {
             // FIXME: why ignore? and similar ones.
             write!(output, "\n\n>>>>>>>>[{}]<<<<<<<<\n", image_name).unwrap_or_else(|error| {
                 tracing::error!(
-                    error = %error,
+                    err = %error,
                     "[ChapterExportComplex::make_label_plus] failed to write page header",
                 );
             });
@@ -64,7 +64,7 @@ impl ChapterExportComplex {
                 )
                 .unwrap_or_else(|error| {
                     tracing::error!(
-                        error = %error,
+                        err = %error,
                         "[ChapterExportComplex::make_label_plus] failed to write unit line",
                     );
                 });

@@ -1,11 +1,11 @@
 //! RDB-backed chapter repository step implementations.
 
-use std::collections::HashMap;
-
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 use tracing::instrument;
+
+use poprako_util::i18n::trl;
 
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::unit::UnitCounterDelta;
@@ -19,9 +19,9 @@ use crate::part_impl::repo::rdb_impl::entity::chapter::{
 use crate::part_impl::repo::rdb_impl::incl;
 use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::*;
 use crate::part_impl::repo::rdb_impl::schema::t_page;
-use crate::part_impl::shared::RdbConn;
-use crate::part_impl::shared::result::{diesel, expected};
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::shared::RdbConn;
+use crate::shared::result::diesel;
 use crate::value::chapter::{ChapterInclOpt, Stage};
 
 /// Queries a single chapter row by ID and populates its includes.
@@ -39,7 +39,23 @@ pub async fn get_info_by_id(
         .await
         .optional()
         .map_err(diesel)?
-        .ok_or_else(|| expected("error-chapter-not-found"))?;
+        .ok_or_else(|| {
+            //
+            let err_message = trl("error-chapter-not-found");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                err_message = %err_message,
+                chapter_id = %id,
+                stage = "get_info_by_id",
+                "expected error: chapter not found",
+            );
+
+            BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: err_message,
+            }
+        })?;
 
     let mut info = row_into_info(row)?;
 
@@ -69,7 +85,23 @@ pub async fn get_info_excluded(
         .await
         .optional()
         .map_err(diesel)?
-        .ok_or_else(|| expected("error-chapter-not-found"))?;
+        .ok_or_else(|| {
+            //
+            let err_message = trl("error-chapter-not-found");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                err_message = %err_message,
+                chapter_id = %id,
+                stage = "get_info_excluded",
+                "expected error: chapter not found",
+            );
+
+            BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: err_message,
+            }
+        })?;
 
     let mut info = row_into_info(row)?;
 
@@ -175,15 +207,15 @@ pub async fn find_pinned_info_by_comic_id(
     accept(Some(info))
 }
 
-/// Returns a map of comic ID to pinned chapter info for the given comic IDs.
+/// Returns the pinned chapter infos for the given comic IDs.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_pinned_infos_by_comic_ids(
     conn: &mut RdbConn,
     comic_ids: &[String],
-) -> BaseRest<HashMap<String, ChapterInfo>> {
+) -> BaseRest<Vec<ChapterInfo>> {
     //
     if comic_ids.is_empty() {
-        return accept(HashMap::new());
+        return accept(Vec::new());
     }
 
     let rows: Vec<ChapterRow> = t_chapter
@@ -194,16 +226,7 @@ pub async fn list_pinned_infos_by_comic_ids(
         .await
         .map_err(diesel)?;
 
-    let mut map = HashMap::with_capacity(rows.len());
-
-    for row in rows {
-        //
-        let info = row_into_info(row)?;
-
-        map.insert(info.comic_id.clone(), info);
-    }
-
-    accept(map)
+    rows.into_iter().map(row_into_info).collect()
 }
 
 /// Inserts a new chapter row from the given entry and returns the created info.

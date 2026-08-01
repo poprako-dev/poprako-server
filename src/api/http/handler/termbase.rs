@@ -58,7 +58,7 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(instr): Json<CreateTermbaseInstr>,
 ) -> HttpResult<CreateTermbaseVal> {
-    usecase::termbase::create((harn.drive(), harn.repo()), user_token, instr)
+    usecase::termbase::create((harn.nucl(), harn.repo()), user_token, instr)
         .await?
         .accept(StatusCode::CREATED)
 }
@@ -173,7 +173,7 @@ pub async fn update_info(
     ensure_path_matches_body_id(&termbase_id, &instr.id)?;
 
     usecase::termbase::update_info(
-        (harn.drive(), harn.repo()),
+        (harn.nucl(), harn.repo()),
         user_token,
         instr,
     )
@@ -202,7 +202,7 @@ pub async fn delete(
 ) -> HttpNoContent {
     //
     usecase::termbase::delete(
-        (harn.drive(), harn.repo()),
+        (harn.nucl(), harn.repo()),
         user_token,
         termbase_id,
     )

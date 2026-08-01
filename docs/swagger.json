@@ -88,7 +88,7 @@
             }
           },
           "403": {
-            "description": "No permission to create announcements in this team"
+            "description": "No perm to create announcements in this team"
           },
           "404": {
             "description": "Team not found"
@@ -125,7 +125,7 @@
             }
           },
           "403": {
-            "description": "No permission to create invitations in this chapter"
+            "description": "No perm to create invitations in this chapter"
           },
           "409": {
             "description": "Invitee is already assigned"
@@ -162,7 +162,7 @@
             }
           },
           "403": {
-            "description": "Role not assignable or no permission"
+            "description": "Role not assignable or no perm"
           },
           "404": {
             "description": "Invitation code not found"
@@ -196,7 +196,7 @@
             "description": "Invitation deleted"
           },
           "403": {
-            "description": "No permission to delete this invitation"
+            "description": "No perm to delete this invitation"
           },
           "404": {
             "description": "Invitation not found"
@@ -287,7 +287,7 @@
             }
           },
           "403": {
-            "description": "No permission to list these assignments"
+            "description": "No perm to list these assignments"
           },
           "422": {
             "description": "Exactly one of chapter_id or owner_id is required"
@@ -324,7 +324,7 @@
             }
           },
           "403": {
-            "description": "Role not assignable or no permission"
+            "description": "Role not assignable or no perm"
           },
           "404": {
             "description": "Chapter not found"
@@ -355,7 +355,7 @@
             "description": "Assignment deleted"
           },
           "403": {
-            "description": "No permission to delete this assignment"
+            "description": "No perm to delete this assignment"
           },
           "404": {
             "description": "Assignment not found"
@@ -480,7 +480,7 @@
             }
           },
           "403": {
-            "description": "No permission to create chapters in this comic"
+            "description": "No perm to create chapters in this comic"
           },
           "404": {
             "description": "Comic not found"
@@ -518,7 +518,7 @@
             }
           },
           "403": {
-            "description": "No permission to view this chapter"
+            "description": "No perm to view this chapter"
           },
           "404": {
             "description": "Chapter not found"
@@ -547,7 +547,7 @@
             "description": "Chapter deleted"
           },
           "403": {
-            "description": "No permission to delete this chapter"
+            "description": "No perm to delete this chapter"
           },
           "404": {
             "description": "Chapter not found"
@@ -586,7 +586,7 @@
             "description": "Chapter updated"
           },
           "403": {
-            "description": "No permission to update this chapter"
+            "description": "No perm to update this chapter"
           },
           "404": {
             "description": "Chapter not found"
@@ -603,7 +603,7 @@
           "assignment-invitations"
         ],
         "summary": "`GET /api/v1/chapters/{chapter_id}/assignment-invitations` — list invitations.",
-        "description": "Lists a chapter's assignment invitations. `pending` filters by consumption state. Example: `/api/v1/chapters/{chapter_id}/assignment-invitations?pending=true&offset=0&limit=20`.",
+        "description": "Lists a chapter's assignment invitations. `is_pending` filters by consumption state. Example: `/api/v1/chapters/{chapter_id}/assignment-invitations?is_pending=true&offset=0&limit=20`.",
         "operationId": "list_infos",
         "parameters": [
           {
@@ -659,7 +659,7 @@
             }
           },
           "403": {
-            "description": "No permission to list invitations in this chapter"
+            "description": "No perm to list invitations in this chapter"
           }
         }
       }
@@ -706,7 +706,7 @@
             "description": "Assignment roles updated"
           },
           "403": {
-            "description": "No permission to update this assignment"
+            "description": "No perm to update this assignment"
           },
           "404": {
             "description": "Assignment not found"
@@ -740,7 +740,7 @@
             "description": "Chapter marked as pinned"
           },
           "403": {
-            "description": "No permission to pin this chapter"
+            "description": "No perm to pin this chapter"
           },
           "404": {
             "description": "Chapter not found"
@@ -781,7 +781,7 @@
             }
           },
           "403": {
-            "description": "No permission to list pages in this chapter"
+            "description": "No perm to list pages in this chapter"
           }
         }
       },
@@ -807,7 +807,7 @@
             "description": "All pages deleted"
           },
           "403": {
-            "description": "No permission to delete pages in this chapter"
+            "description": "No perm to delete pages in this chapter"
           }
         }
       }
@@ -852,7 +852,7 @@
             }
           },
           "403": {
-            "description": "No permission to reserve pages in this chapter"
+            "description": "No perm to reserve pages in this chapter"
           },
           "422": {
             "description": "Invalid authoritative manifest, duplicate page identity, image metadata, or published chapter"
@@ -893,7 +893,7 @@
             "description": "Stage advanced"
           },
           "403": {
-            "description": "No permission to update this chapter's stage"
+            "description": "No perm to update this chapter's stage"
           },
           "422": {
             "description": "Illegal workflow transition"
@@ -937,7 +937,7 @@
             }
           },
           "403": {
-            "description": "No permission to export this chapter"
+            "description": "No perm to export this chapter"
           }
         }
       }
@@ -978,7 +978,7 @@
             }
           },
           "403": {
-            "description": "No permission to export this chapter"
+            "description": "No perm to export this chapter"
           }
         }
       }
@@ -1023,7 +1023,7 @@
             }
           },
           "403": {
-            "description": "No permission to import into this chapter"
+            "description": "No perm to import into this chapter"
           },
           "422": {
             "description": "Invalid import content for the selected format"
@@ -1060,7 +1060,7 @@
             }
           },
           "403": {
-            "description": "No permission to create comics in this workset"
+            "description": "No perm to create comics in this workset"
           },
           "404": {
             "description": "Workset not found"
@@ -1098,7 +1098,7 @@
             }
           },
           "403": {
-            "description": "No permission to view this comic"
+            "description": "No perm to view this comic"
           },
           "404": {
             "description": "Comic not found"
@@ -1137,7 +1137,7 @@
             "description": "Comic updated"
           },
           "403": {
-            "description": "No permission to update this comic"
+            "description": "No perm to update this comic"
           },
           "404": {
             "description": "Comic not found"
@@ -1169,7 +1169,7 @@
             "description": "Comic deleted"
           },
           "403": {
-            "description": "No permission to delete this comic"
+            "description": "No perm to delete this comic"
           },
           "404": {
             "description": "Comic not found"
@@ -1207,7 +1207,7 @@
             }
           },
           "403": {
-            "description": "No permission to archive this comic"
+            "description": "No perm to archive this comic"
           },
           "404": {
             "description": "Comic not found"
@@ -1280,7 +1280,7 @@
             }
           },
           "403": {
-            "description": "No permission to list chapters in this comic"
+            "description": "No perm to list chapters in this comic"
           }
         }
       }
@@ -1315,7 +1315,7 @@
             }
           },
           "403": {
-            "description": "No permission to view this comic's pinned chapter"
+            "description": "No perm to view this comic's pinned chapter"
           }
         }
       }
@@ -1353,7 +1353,7 @@
             "description": "Cover upload confirmed"
           },
           "403": {
-            "description": "No permission to modify this comic's cover"
+            "description": "No perm to modify this comic's cover"
           },
           "404": {
             "description": "Comic not found"
@@ -1401,7 +1401,7 @@
             }
           },
           "403": {
-            "description": "No permission to modify this comic's cover"
+            "description": "No perm to modify this comic's cover"
           },
           "404": {
             "description": "Comic not found"
@@ -1507,7 +1507,7 @@
             }
           },
           "403": {
-            "description": "No permission to comment in this team"
+            "description": "No perm to comment in this team"
           },
           "404": {
             "description": "Team not found"
@@ -1544,7 +1544,7 @@
             }
           },
           "403": {
-            "description": "No permission to create invitations in this team"
+            "description": "No perm to create invitations in this team"
           },
           "409": {
             "description": "Invitee is already a member"
@@ -1575,7 +1575,7 @@
             "description": "Invitation deleted"
           },
           "403": {
-            "description": "No permission to delete this invitation"
+            "description": "No perm to delete this invitation"
           },
           "404": {
             "description": "Invitation not found"
@@ -1616,7 +1616,7 @@
             "description": "Invitation roles updated"
           },
           "403": {
-            "description": "No permission to update this invitation"
+            "description": "No perm to update this invitation"
           },
           "404": {
             "description": "Invitation not found"
@@ -1719,7 +1719,7 @@
             }
           },
           "403": {
-            "description": "No permission to list members in this team"
+            "description": "No perm to list members in this team"
           },
           "422": {
             "description": "Exactly one of owner_id or team_id is required, or owner_id combined with role/fuzzy_nickname"
@@ -1754,7 +1754,7 @@
             }
           },
           "403": {
-            "description": "No permission to create members in this team"
+            "description": "No perm to create members in this team"
           },
           "404": {
             "description": "User or team not found"
@@ -1885,7 +1885,7 @@
             "description": "Member deleted"
           },
           "403": {
-            "description": "No permission to delete this member"
+            "description": "No perm to delete this member"
           },
           "404": {
             "description": "Member not found"
@@ -1926,7 +1926,7 @@
             "description": "Member roles updated"
           },
           "403": {
-            "description": "No permission to update this member"
+            "description": "No perm to update this member"
           },
           "404": {
             "description": "Member not found"
@@ -1967,7 +1967,7 @@
             }
           },
           "403": {
-            "description": "No permission to view this page"
+            "description": "No perm to view this page"
           },
           "404": {
             "description": "Page not found"
@@ -2008,7 +2008,7 @@
             "description": "Page image upload confirmed"
           },
           "403": {
-            "description": "No permission to modify this page's image"
+            "description": "No perm to modify this page's image"
           },
           "422": {
             "description": "Page, image identity, storage object, or published chapter is invalid"
@@ -2056,7 +2056,7 @@
             }
           },
           "403": {
-            "description": "No permission to modify this page's image"
+            "description": "No perm to modify this page's image"
           },
           "422": {
             "description": "Page not found, conflicting image metadata, or published chapter"
@@ -2094,7 +2094,7 @@
             }
           },
           "403": {
-            "description": "No permission to list units in this page"
+            "description": "No perm to list units in this page"
           },
           "404": {
             "description": "Page not found"
@@ -2138,7 +2138,7 @@
             "description": "Unit edits saved"
           },
           "403": {
-            "description": "No permission to save units in this page"
+            "description": "No perm to save units in this page"
           },
           "422": {
             "description": "Invalid Unit edit"
@@ -2395,7 +2395,7 @@
             "description": "Team updated"
           },
           "403": {
-            "description": "No permission to update this team"
+            "description": "No perm to update this team"
           },
           "404": {
             "description": "Team not found"
@@ -2427,7 +2427,7 @@
             "description": "Team deleted"
           },
           "403": {
-            "description": "No permission to delete this team"
+            "description": "No perm to delete this team"
           },
           "404": {
             "description": "Team not found"
@@ -2500,7 +2500,7 @@
             }
           },
           "403": {
-            "description": "No permission to list announcements in this team"
+            "description": "No perm to list announcements in this team"
           }
         }
       }
@@ -2538,7 +2538,7 @@
             "description": "Avatar upload confirmed"
           },
           "403": {
-            "description": "No permission to modify this team's avatar"
+            "description": "No perm to modify this team's avatar"
           },
           "404": {
             "description": "Team not found"
@@ -2586,7 +2586,7 @@
             }
           },
           "403": {
-            "description": "No permission to modify this team's avatar"
+            "description": "No perm to modify this team's avatar"
           },
           "404": {
             "description": "Team not found"
@@ -2636,7 +2636,7 @@
             }
           },
           "403": {
-            "description": "No permission to export this team's archives"
+            "description": "No perm to export this team's archives"
           },
           "422": {
             "description": "Invalid or expired month selection"
@@ -2709,7 +2709,7 @@
             }
           },
           "403": {
-            "description": "No permission to list comments in this team"
+            "description": "No perm to list comments in this team"
           }
         }
       }
@@ -2720,7 +2720,7 @@
           "member-invitations"
         ],
         "summary": "`GET /api/v1/teams/{team_id}/member-invitations` — list a team's invitations.",
-        "description": "Lists a team's member invitations. `pending` filters by consumption state; `incl` embeds related rows. Example: `/api/v1/teams/{team_id}/member-invitations?pending=true&incl=invitor&offset=0&limit=20`.",
+        "description": "Lists a team's member invitations. `is_pending` filters by consumption state; `incl` embeds related rows. Example: `/api/v1/teams/{team_id}/member-invitations?is_pending=true&incl=invitor&offset=0&limit=20`.",
         "operationId": "list_infos",
         "parameters": [
           {
@@ -2788,7 +2788,7 @@
             }
           },
           "403": {
-            "description": "No permission to list invitations in this team"
+            "description": "No perm to list invitations in this team"
           }
         }
       }
@@ -2914,7 +2914,7 @@
             "description": "Authentication required"
           },
           "403": {
-            "description": "No permission to list worksets in this team"
+            "description": "No perm to list worksets in this team"
           }
         }
       }
@@ -3563,7 +3563,7 @@
             "description": "Authentication required"
           },
           "403": {
-            "description": "No permission to create worksets in this team"
+            "description": "No perm to create worksets in this team"
           },
           "404": {
             "description": "Team not found"
@@ -3604,7 +3604,7 @@
             "description": "Authentication required"
           },
           "403": {
-            "description": "No permission to view this workset"
+            "description": "No perm to view this workset"
           },
           "404": {
             "description": "Workset not found"
@@ -3643,7 +3643,7 @@
             "description": "Workset updated"
           },
           "403": {
-            "description": "No permission to update this workset"
+            "description": "No perm to update this workset"
           },
           "404": {
             "description": "Workset not found"
@@ -3675,7 +3675,7 @@
             "description": "Workset deleted"
           },
           "403": {
-            "description": "No permission to delete this workset"
+            "description": "No perm to delete this workset"
           },
           "404": {
             "description": "Workset not found"
@@ -3780,7 +3780,7 @@
             }
           },
           "403": {
-            "description": "No permission to list comics in this workset"
+            "description": "No perm to list comics in this workset"
           },
           "422": {
             "description": "Invalid query option combination or workflow-stage filter"
@@ -8627,14 +8627,14 @@
       "RoleField": {
         "type": "integer",
         "format": "int32",
-        "description": "A singular role permission flag represented as a bit position.\n\nEach role is a single bit value:\n\n| Value | Name          | Description             |\n|-------|---------------|-------------------------|\n| 1     | `RAW_PROVIDER` | Raw provider            |\n| 2     | `TRANSLATOR`   | Translator              |\n| 4     | `PROOFREADER`  | Proofreader             |\n| 8     | `TYPESETTER`   | Typesetter              |\n| 16    | `REDRAWER`     | Redrawer                |\n| 32    | `REVIEWER`     | Reviewer                |\n| 64    | `PUBLISHER`    | Publisher               |\n| 128   | `ADMIN`        | Admin                   |\n| 256   | `BOT`          | Bot                     |\n\nOnly a **single** valid bit is accepted; composite values are rejected.",
+        "description": "A singular role perm flag represented as a bit position.\n\nEach role is a single bit value:\n\n| Value | Name          | Description             |\n|-------|---------------|-------------------------|\n| 1     | `RAW_PROVIDER` | Raw provider            |\n| 2     | `TRANSLATOR`   | Translator              |\n| 4     | `PROOFREADER`  | Proofreader             |\n| 8     | `TYPESETTER`   | Typesetter              |\n| 16    | `REDRAWER`     | Redrawer                |\n| 32    | `REVIEWER`     | Reviewer                |\n| 64    | `PUBLISHER`    | Publisher               |\n| 128   | `ADMIN`        | Admin                   |\n| 256   | `BOT`          | Bot                     |\n\nOnly a **single** valid bit is accepted; composite values are rejected.",
         "example": 2,
         "minimum": 0
       },
       "RoleMask": {
         "type": "integer",
         "format": "int32",
-        "description": "A composite bitmask combining multiple role permission flags.\n\nBits are OR-ed together from the following role values:\n\n| Value | Name          | Description             |\n|-------|---------------|-------------------------|\n| 1     | `RAW_PROVIDER` | Raw provider            |\n| 2     | `TRANSLATOR`   | Translator              |\n| 4     | `PROOFREADER`  | Proofreader             |\n| 8     | `TYPESETTER`   | Typesetter              |\n| 16    | `REDRAWER`     | Redrawer                |\n| 32    | `REVIEWER`     | Reviewer                |\n| 64    | `PUBLISHER`    | Publisher               |\n| 128   | `ADMIN`        | Admin                   |\n| 256   | `BOT`          | Bot                     |\n\n**Examples:** `1` = RAW_PROVIDER, `6` = TRANSLATOR | PROOFREADER, `255` = all roles except BOT.",
+        "description": "A composite bitmask combining multiple role perm flags.\n\nBits are OR-ed together from the following role values:\n\n| Value | Name          | Description             |\n|-------|---------------|-------------------------|\n| 1     | `RAW_PROVIDER` | Raw provider            |\n| 2     | `TRANSLATOR`   | Translator              |\n| 4     | `PROOFREADER`  | Proofreader             |\n| 8     | `TYPESETTER`   | Typesetter              |\n| 16    | `REDRAWER`     | Redrawer                |\n| 32    | `REVIEWER`     | Reviewer                |\n| 64    | `PUBLISHER`    | Publisher               |\n| 128   | `ADMIN`        | Admin                   |\n| 256   | `BOT`          | Bot                     |\n\n**Examples:** `1` = RAW_PROVIDER, `6` = TRANSLATOR | PROOFREADER, `255` = all roles except BOT.",
         "example": 34,
         "minimum": 0
       },

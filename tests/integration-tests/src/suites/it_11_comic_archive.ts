@@ -9,7 +9,7 @@
 //   - The archived comic subtree is absent from active tables and represented
 //     by one immutable JSON-text archive row.
 //
-// Covers archive creation, permission rejection (non-admin member),
+// Covers archive creation, perm rejection (non-admin member),
 // repeated-archive failure, retained month export, child-resource
 // inaccessibility, audit fields, outbox delete records, active-data cleanup,
 // and stable workset comic counts.
@@ -70,7 +70,7 @@ export async function runIt11Module(ctx: RunCtx): Promise<void> {
 
     await reserveComicCover(ctx.sadmin, comic.id, "png");
 
-    // ---------- permission: non-admin member cannot archive ----------
+    // ---------- perm: non-admin member cannot archive ----------
 
     const guest = ctx.users.get("guest_01");
 

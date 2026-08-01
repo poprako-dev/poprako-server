@@ -1,4 +1,4 @@
-// it_01 — Member invitation, registration, member list, and role permissions.
+// it_01 — Member invitation, registration, member list, and role perms.
 //
 // Preconditions:
 //   - it_00 has run: `ctx.sadmin` is authenticated.
@@ -14,7 +14,7 @@
 //
 // Covers test-plan: B1 (batch invite 14), B2 (modify/delete invitation),
 // B3 (14 register + close the loop), B4 (member list filters + bad params),
-// B5 (member role update + permission boundary).
+// B5 (member role update + perm boundary).
 //
 // Status: IMPLEMENTED.
 //
@@ -403,7 +403,7 @@ export async function runIt01Module(ctx: RunCtx): Promise<void> {
         400,
     );
 
-    // ---------- B5. member role update + permission boundary ----------
+    // ---------- B5. member role update + perm boundary ----------
 
     // B5.1: sadmin widens guest_01's member roles to RAW | TRANSLATOR | PROOFREADER.
     const guest01 = ctx.users.get("guest_01");
@@ -468,10 +468,10 @@ export async function runIt01Module(ctx: RunCtx): Promise<void> {
     );
 
     // B5.5: sadmin does NOT delete any of the core 14 members here — they are
-    // needed by every downstream module. The delete-permission + cascade
+    // needed by every downstream module. The delete-perm + cascade
     // behaviour is covered by it_10 against a throwaway member.
     //
-    // Verify the team still has 15 members after the permission-negative cases.
+    // Verify the team still has 15 members after the perm-negative cases.
     const finalMembers = await listTeamMembers(ctx.sadmin, teamId);
 
     assert.equal(finalMembers.length, 15);

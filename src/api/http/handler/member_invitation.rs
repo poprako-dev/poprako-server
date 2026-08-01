@@ -31,7 +31,7 @@ use crate::value::member_invitation::MemberInvitationInclOpt;
 ///
 /// `incl` embeds related rows into each item.
 ///
-/// Example: `?pending=true&incl=invitor&offset=0&limit=20`.
+/// Example: `?is_pending=true&incl=invitor&offset=0&limit=20`.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
@@ -60,7 +60,7 @@ pub struct MemberInvitationListQuery {
     request_body = CreateMemberInvitationInstr,
     responses(
         (status = 201, description = "Invitation created", body = HttpBody<CreateMemberInvitationVal>),
-        (status = 403, description = "No permission to create invitations in this team"),
+        (status = 403, description = "No perm to create invitations in this team"),
         (status = 409, description = "Invitee is already a member"),
     ),
 ))]
@@ -71,7 +71,7 @@ pub async fn create(
     Json(instr): Json<CreateMemberInvitationInstr>,
 ) -> HttpResult<CreateMemberInvitationVal> {
     usecase::member_invitation::create(
-        (harn.drive(), harn.repo(), harn.prom()),
+        (harn.nucl(), harn.repo(), harn.prom()),
         user_token,
         instr,
     )
@@ -84,11 +84,11 @@ pub async fn create(
     get,
     path = "/api/v1/teams/{team_id}/member-invitations",
     tag = "member-invitations",
-    description = "Lists a team's member invitations. `pending` filters by consumption state; `incl` embeds related rows. Example: `/api/v1/teams/{team_id}/member-invitations?pending=true&incl=invitor&offset=0&limit=20`.",
+    description = "Lists a team's member invitations. `is_pending` filters by consumption state; `incl` embeds related rows. Example: `/api/v1/teams/{team_id}/member-invitations?is_pending=true&incl=invitor&offset=0&limit=20`.",
     params(("team_id" = String, Path, description = "Team ID"), MemberInvitationListQuery),
     responses(
         (status = 200, description = "Invitations listed", body = HttpBody<Vec<MemberInvitationInfoView>>),
-        (status = 403, description = "No permission to list invitations in this team"),
+        (status = 403, description = "No perm to list invitations in this team"),
     ),
 ))]
 #[instrument(level = "info", err(Debug), skip_all)]
@@ -126,7 +126,7 @@ pub async fn list_infos(
     responses(
         (status = 204, description = "Invitation roles updated"),
         (status = 422, description = "Path id does not match body id"),
-        (status = 403, description = "No permission to update this invitation"),
+        (status = 403, description = "No perm to update this invitation"),
         (status = 404, description = "Invitation not found"),
     ),
 ))]
@@ -141,7 +141,7 @@ pub async fn update_roles(
     ensure_path_matches_body_id(&member_invitation_id, &instr.id)?;
 
     usecase::member_invitation::update_roles(
-        (harn.drive(), harn.repo()),
+        (harn.nucl(), harn.repo()),
         user_token,
         instr,
     )
@@ -158,7 +158,7 @@ pub async fn update_roles(
     params(("member_invitation_id" = String, Path, description = "Invitation ID")),
     responses(
         (status = 204, description = "Invitation deleted"),
-        (status = 403, description = "No permission to delete this invitation"),
+        (status = 403, description = "No perm to delete this invitation"),
         (status = 404, description = "Invitation not found"),
     ),
 ))]
@@ -170,7 +170,7 @@ pub async fn delete(
 ) -> HttpNoContent {
     //
     usecase::member_invitation::delete(
-        (harn.drive(), harn.repo()),
+        (harn.nucl(), harn.repo()),
         user_token,
         member_invitation_id,
     )

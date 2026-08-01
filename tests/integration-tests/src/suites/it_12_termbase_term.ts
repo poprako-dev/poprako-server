@@ -1,4 +1,4 @@
-// it_12 — Termbase and term lifecycle, lookup, permissions, and cascades.
+// it_12 — Termbase and term lifecycle, lookup, perms, and cascades.
 //
 // Preconditions:
 //   - The default team, main comic, proofreader, and translator exist.
@@ -7,7 +7,7 @@
 //   - All terminology fixtures and temporary comic/team roots are deleted.
 //
 // Covers team/comic scopes, comic inheritance, name/source-only fuzzy search,
-// full replacement, target order, counters, permission isolation, path/body
+// full replacement, target order, counters, perm isolation, path/body
 // identity, duplicate normalization, and comic/termbase cascade cleanup.
 
 import assert from "node:assert/strict";

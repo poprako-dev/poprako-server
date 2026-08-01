@@ -8,10 +8,10 @@ use crate::model::write::unit::UnitEdit;
 use crate::part::repo::oper::unit::{
     ApplyUnitEdits, ListUnitInfos, ListUnitOrders,
 };
-use crate::part_impl::drive::rdb_impl::RdbDrive;
+use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
-use crate::part_impl::shared::RdbCore;
 use crate::result::accept;
+use crate::shared::RdbCore;
 use crate::util::Patch;
 
 const PREFIX: &str = "rdb-test-unit-domain-";
@@ -25,7 +25,7 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let repo = RdbRepo::new(shared.clone());
 
-    let nucl = RdbDrive::new(shared.clone());
+    let nucl = RdbNucl::new(shared.clone());
 
     let first_id = format!("{}first", PREFIX);
 

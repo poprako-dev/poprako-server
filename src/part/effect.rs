@@ -6,8 +6,8 @@
 //!
 //! The dispatch path uses two traits:
 //!
-//! 1. **[`EventIter`]** — converts an event-bearing type into an iterator
-//!    of [`Event`] values. Implemented for both single events and buffers.
+//! 1. **[`EffectEvent`]** — converts an [`Event`] or its batch into an
+//!    iterator of [`Event`] values.
 //! 2. **[`EffectDevelop`]** — the port implementation that receives and
 //!    processes the event iterator.
 
@@ -20,20 +20,29 @@ use crate::part::effect::event::Event;
 /// Domain event types.
 pub mod event;
 
-/// Trait for types that can yield an iterator of [`Event`] values.
+/// Trait for values that can be dispatched through [`EffectDevelop`].
 ///
-/// Implemented for [`Event`] (yielding a single-element iterator) and
-/// [`Vec<Event>`](Vec) (yielding a multi-element iterator), enabling
-/// both single-event and batched dispatch through [`EffectDevelop`].
-pub trait EventIter {
-    /// The iterator type yielded by [`into_iter`](EventIter::into_iter).
+/// Implementations convert themselves into one or more [`Event`] values.
+/// Construct the appropriate [`Event`] variant before calling
+/// [`develop_on`](EffectEvent::develop_on).
+pub trait EffectEvent {
+    /// The iterator type yielded by [`into_iter`](EffectEvent::into_iter).
     type Iter: Iterator<Item = Event>;
 
     /// Consumes self and returns an iterator of [`Event`] values.
     fn into_iter(self) -> Self::Iter;
+
+    /// Dispatches this event through `develop`.
+    fn develop_on<D>(self, develop: &D) -> impl Future<Output = ()> + Send
+    where
+        Self: Sized + Send,
+        D: Develop + ?Sized,
+    {
+        develop.develop(self)
+    }
 }
 
-impl EventIter for Vec<Event> {
+impl EffectEvent for Vec<Event> {
     // Event iterator for a pre-collected vector of side effects.
     type Iter = IntoIter<Event>;
 
@@ -43,7 +52,7 @@ impl EventIter for Vec<Event> {
     }
 }
 
-impl EventIter for Event {
+impl EffectEvent for Event {
     // Single-element event iterator wrapping one domain event.
     type Iter = Once<Event>;
 
@@ -58,9 +67,9 @@ impl EventIter for Event {
 /// Implementations receive an iterator of [`Event`] values and dispatch
 /// them to the appropriate side-effect handlers (logging, analytics,
 /// notifications, etc.).
-pub trait EffectDevelop {
+pub trait Develop {
     /// Dispatches each event in the provided iterator to the appropriate side-effect handlers.
     fn develop<I>(&self, iter: I) -> impl Future<Output = ()> + Send
     where
-        I: EventIter + Send;
+        I: EffectEvent + Send;
 }

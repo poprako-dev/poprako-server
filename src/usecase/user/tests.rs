@@ -2,7 +2,7 @@
 //!
 //! Tests exercise user profile reads, updates, avatar management, activity
 //! tracking, and account deletion against a [`Mock`] that doubles as the
-//! driver, repository, prom enqueuer, image pool, and effect developer.
+//! coordinator, repository, prom enqueuer, image pool, and effect developer.
 //!
 //! [`Mock`]: crate::part_impl::repo::mock_impl::Mock
 
@@ -10,7 +10,7 @@
 // get_info(get_info)(positive): reading another user should not emit UserActive.
 // get_info(get_info)(negative): missing user should propagate an argument error.
 // update_info(update_info)(positive): owner update should change user info and member nickname.
-// update_info(update_info)(negative): non-owner update should return a permission error without mutation.
+// update_info(update_info)(negative): non-owner update should return a perm error without mutation.
 // update_info(update_info)(negative): missing user should rollback the transaction.
 // reserve_avatar(reserve_avatar)(positive): first reservation should update avatar state, enqueue a check, and return a put URL.
 // reserve_avatar(reserve_avatar)(positive): replacing an avatar should enqueue delete and check messages.
@@ -18,12 +18,12 @@
 // reserve_avatar(reserve_avatar)(negative): put URL failure should propagate after transaction commit.
 // mark_avatar_uploaded(mark_avatar_uploaded)(positive): matching owner and version should mark the avatar uploaded.
 // mark_avatar_uploaded(mark_avatar_uploaded)(positive): repeated matching version confirmation should remain successful.
-// mark_avatar_uploaded(mark_avatar_uploaded)(negative): non-owner mark should return a permission error.
+// mark_avatar_uploaded(mark_avatar_uploaded)(negative): non-owner mark should return a perm error.
 // mark_avatar_uploaded(mark_avatar_uploaded)(negative): stale version should rollback uploaded state.
 // mark_avatar_uploaded(mark_avatar_uploaded)(negative): old reservation replay should fail without marking current avatar uploaded.
 // delete(delete)(positive): owner delete should remove user, credentials, and memberships, and enqueue uploaded avatar deletion.
 // delete(delete)(positive): deleting a user without an uploaded avatar should not enqueue prom records.
-// delete(delete)(negative): non-owner delete should return a permission error without mutation.
+// delete(delete)(negative): non-owner delete should return a perm error without mutation.
 // delete(delete)(negative): missing user should rollback state.
 
 use super::*;

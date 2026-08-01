@@ -6,9 +6,11 @@ use poprako_orchestra::{Run, Step};
 use time::OffsetDateTime;
 use tracing::instrument;
 
+use poprako_util::i18n::trl;
+
 use crate::complex::team::TeamComplex;
 use crate::model::read::proj::team::TeamInfo;
-use crate::model::read::spec::team::{TeamListKind, TeamListSpec};
+use crate::model::read::spec::team::TeamListSpec;
 use crate::model::write::team::{TeamAvatarReservation, TeamEntry, TeamRepl};
 use crate::part::repo::oper::team::{
     AllocTeamWorksetIndex, CreateTeam, DeleteTeam, GetTeamInfo,
@@ -21,14 +23,16 @@ use crate::part_impl::repo::rdb_impl::entity::team::{
 };
 use crate::part_impl::repo::rdb_impl::schema::t_member;
 use crate::part_impl::repo::rdb_impl::schema::t_team::dsl::*;
-use crate::part_impl::shared::result::{diesel, expected, next_version};
-use crate::part_impl::shared::{RdbConn, RdbContext};
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::shared::result::{diesel, next_version};
+use crate::shared::{RdbConn, RdbContext};
 use crate::value::image::{ImageExt, ImageHash};
 
 /// Team RDB integration tests.
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;
+
+mod resolve;
 
 // ── Free functions ──────────────────────────────────────────────────────────
 
@@ -73,19 +77,41 @@ async fn create(conn: &mut RdbConn, entry: &TeamEntry) -> BaseRest<TeamInfo> {
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn get_info_by_id(conn: &mut RdbConn, id: &str) -> BaseRest<TeamInfo> {
     //
-    let row: TeamRow = t_team
+    let row: Option<TeamRow> = t_team
         .filter(f_id.eq(id))
         .select(TeamRow::as_select())
         .get_result(conn)
         .await
         .optional()
-        .map_err(diesel)?
-        .ok_or_else(|| expected("error-team-not-found"))?;
+        .map_err(diesel)?;
+
+    let row = match row {
+        //
+        Some(row) => row,
+
+        None => {
+            //
+            let message = trl("error-team-not-found");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                err_message = %message,
+                team_id = %id,
+                operation = "get team info",
+                "expected team error",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message,
+            });
+        }
+    };
 
     row.try_into()
 }
 
-// Query teams using list-kind filters, ordering and pagination.
+// Query teams using an optional membership filter, ordering and pagination.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn list_infos(
     conn: &mut RdbConn,
@@ -94,11 +120,9 @@ async fn list_infos(
     //
     let mut query = t_team.into_boxed();
 
-    query = match &spec.kind {
+    query = match spec.user_id.as_deref() {
         //
-        TeamListKind::All => query,
-
-        TeamListKind::JoinedBy { user_id } => {
+        Some(user_id) => {
             //
             let member_team_ids = t_member::table
                 .filter(t_member::f_user_id.eq(user_id))
@@ -106,6 +130,8 @@ async fn list_infos(
 
             query.filter(f_id.eq_any(member_team_ids))
         }
+
+        None => query,
     };
 
     let rows: Vec<TeamRow> = query
@@ -179,7 +205,23 @@ async fn mark_avatar_uploaded(
     .map_err(diesel)?;
 
     if affected == 0 {
-        return Err(expected("error-avatar-version-mismatch"));
+        //
+        let message = trl("error-avatar-version-mismatch");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            err_message = %message,
+            team_id = %id,
+            image_version = version,
+            avatar_key = ?avatar_key,
+            operation = "mark team avatar uploaded",
+            "expected team avatar version error",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message,
+        });
     }
 
     accept(())
@@ -220,7 +262,24 @@ async fn reserve_avatar(
         prev_key.is_some() && stored_hash.as_slice() == image_hash.as_bytes();
 
     if same_hash && stored_ext != image_ext.suffix() {
-        return Err(expected("error-invalid-image-extension"));
+        //
+        let message = trl("error-invalid-image-extension");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            err_message = %message,
+            team_id = %id,
+            image_version = raw_version,
+            stored_extension = %stored_ext,
+            requested_extension = %image_ext.suffix(),
+            operation = "reserve team avatar",
+            "expected team avatar error",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message,
+        });
     }
 
     if same_hash {
@@ -272,15 +331,37 @@ async fn reserve_avatar(
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn get_info_excluded(conn: &mut RdbConn, id: &str) -> BaseRest<TeamInfo> {
     //
-    let row: TeamRow = t_team
+    let row: Option<TeamRow> = t_team
         .filter(f_id.eq(id))
         .select(TeamRow::as_select())
         .for_update()
         .get_result(conn)
         .await
         .optional()
-        .map_err(diesel)?
-        .ok_or_else(|| expected("error-team-not-found"))?;
+        .map_err(diesel)?;
+
+    let row = match row {
+        //
+        Some(row) => row,
+
+        None => {
+            //
+            let message = trl("error-team-not-found");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                err_message = %message,
+                team_id = %id,
+                operation = "lock team info",
+                "expected team error",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message,
+            });
+        }
+    };
 
     row.try_into()
 }
@@ -289,15 +370,37 @@ async fn get_info_excluded(conn: &mut RdbConn, id: &str) -> BaseRest<TeamInfo> {
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn lock_team(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
-    let _: String = t_team
+    let row: Option<String> = t_team
         .filter(f_id.eq(id))
         .select(f_id)
         .for_update()
         .get_result(conn)
         .await
         .optional()
-        .map_err(diesel)?
-        .ok_or_else(|| expected("error-team-not-found"))?;
+        .map_err(diesel)?;
+
+    let _ = match row {
+        //
+        Some(row) => row,
+
+        None => {
+            //
+            let message = trl("error-team-not-found");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                err_message = %message,
+                team_id = %id,
+                operation = "lock team row",
+                "expected team error",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message,
+            });
+        }
+    };
 
     accept(())
 }

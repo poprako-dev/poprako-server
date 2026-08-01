@@ -13,10 +13,11 @@ use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::proj::team::TeamInfo;
 use crate::model::read::proj::workset::WorksetInfo;
+use crate::part::effect::event::Event;
 use crate::part::effect::event::chapter::{
-    ChapterPublishedPayload, ChapterWorkflowCompletedPayload,
+    ChapterPublishedEvent, ChapterWorkflowCompletedEvent,
 };
-use crate::part::effect::event::user::UserSignedUpPayload;
+use crate::part::effect::event::user::UserSignedUpEvent;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::value::chapter::{Stage, StageMask};
 use crate::value::image::{ImageExt, ImageHash};
@@ -161,14 +162,12 @@ async fn develop_dispatches_user_signup() {
 
     let develop = AsyncEffectDevelop::new(Arc::clone(&mock), 8);
 
-    EffectDevelop::develop(
-        &develop,
-        Event::UserSignedUp(UserSignedUpPayload {
-            team_id: "team-1".to_string(),
-            invitor_id: "user-owner".to_string(),
-            invitee_qid: "10001".to_string(),
-        }),
-    )
+    Event::UserSignedUp(UserSignedUpEvent {
+        team_id: "team-1".to_string(),
+        invitor_id: "user-owner".to_string(),
+        invitee_qid: "10001".to_string(),
+    })
+    .develop_on(&develop)
     .await;
 
     develop.close().await;
@@ -202,13 +201,11 @@ async fn develop_dispatches_chapter_workflow_completed() {
 
     let develop = AsyncEffectDevelop::new(Arc::clone(&mock), 8);
 
-    EffectDevelop::develop(
-        &develop,
-        Event::ChapterWorkflowCompleted(ChapterWorkflowCompletedPayload {
-            chapter_id: "chapter-1".to_string(),
-            completed_stage: Stage::Translate,
-        }),
-    )
+    Event::ChapterWorkflowCompleted(ChapterWorkflowCompletedEvent {
+        chapter_id: "chapter-1".to_string(),
+        completed_stage: Stage::Translate,
+    })
+    .develop_on(&develop)
     .await;
 
     develop.close().await;
@@ -242,12 +239,10 @@ async fn develop_dispatches_chapter_published() {
 
     let develop = AsyncEffectDevelop::new(Arc::clone(&mock), 8);
 
-    EffectDevelop::develop(
-        &develop,
-        Event::ChapterPublished(ChapterPublishedPayload {
-            chapter_id: "chapter-1".to_string(),
-        }),
-    )
+    Event::ChapterPublished(ChapterPublishedEvent {
+        chapter_id: "chapter-1".to_string(),
+    })
+    .develop_on(&develop)
     .await;
 
     develop.close().await;

@@ -2,9 +2,9 @@ use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 
 use crate::part_impl::repo::rdb_impl::schema::t_local_message;
-use crate::part_impl::shared::RdbCore;
-use crate::part_impl::shared::result::diesel as diesel_error;
 use crate::result::{BaseRest, accept};
+use crate::shared::RdbCore;
+use crate::shared::result::diesel as diesel_error;
 
 pub async fn reset(shared: &RdbCore, prefix: &str) {
     //

@@ -21,9 +21,9 @@ use crate::data::view::user::UserInfoView;
 use crate::model::shared::user::UserToken;
 use crate::model::write::member::MemberNicknameRepl;
 use crate::model::write::user::{UserAvatarRepl, UserCredsRepl, UserInfoRepl};
-use crate::part::effect::EffectDevelop;
 use crate::part::effect::event::Event;
-use crate::part::effect::event::user::UserActivePayload;
+use crate::part::effect::event::user::UserActiveEvent;
+use crate::part::effect::{Develop, EffectEvent as _};
 use crate::part::image::{ImageManager, ImagePool, ImageUploadSpec};
 use crate::part::prom::Prom;
 use crate::part::prom::payload::{TaskPayload, image};
@@ -53,28 +53,27 @@ mod tests;
 /// * `C` — Context anchor.
 /// * `R: UserRepo<C>` — User storage.
 /// * `I: ImagePool` — Resolves the avatar signed URL.
-/// * `V: EffectDevelop` — Processes the activity event (only for self-reads).
+/// * `D: EffectDevelop` — Processes the activity event (only for self-reads).
 #[instrument(level = "info", err(Debug), skip(repo, image_pool, develop))]
-pub async fn get_info<C, R, I, V>(
-    (repo, image_pool, develop): (&R, &I, &V),
+pub async fn get_info<C, R, I, D>(
+    (repo, image_pool, develop): (&R, &I, &D),
     token: UserToken,
     id: String,
 ) -> BaseRest<UserInfoView>
 where
     R: UserRepo<C>,
     I: ImagePool,
-    V: EffectDevelop + Send + Sync,
+    D: Develop + Send + Sync,
 {
     let user_info = GetUserInfo::Id { id: &id }.run_on(repo).await?;
 
     // Dispatch an activity event when the user reads their own profile.
     if token.user_id == id {
-        //
-        let event = Event::UserActive(UserActivePayload {
+        Event::UserActive(UserActiveEvent {
             user_id: token.user_id,
-        });
-
-        develop.develop(event).await;
+        })
+        .develop_on(develop)
+        .await;
     }
 
     UserInfoView::from_model(image_pool, user_info).await
@@ -108,9 +107,20 @@ where
 {
     // Only the user themselves can update their own profile.
     if token.user_id != instr.id {
+        //
+        let err_message = trl("error-forbidden");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Perm,
+            err_message = %err_message,
+            user_id = %token.user_id,
+            target_user_id = %instr.id,
+            "expected error: user profile ownership required",
+        );
+
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: trl("error-forbidden"),
+            message: err_message,
         });
     }
 
@@ -161,9 +171,20 @@ where
     R: UserRepo<C> + Send + Sync,
 {
     if token.user_id != user_id {
+        //
+        let err_message = trl("error-forbidden");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Perm,
+            err_message = %err_message,
+            user_id = %token.user_id,
+            target_user_id = %user_id,
+            "expected error: password update ownership required",
+        );
+
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: trl("error-forbidden"),
+            message: err_message,
         });
     }
 
@@ -181,9 +202,19 @@ where
     )
     .await
     {
+        let err_message = trl("error-wrong-credentials");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Auth,
+            err_message = %err_message,
+            user_id = %user_id,
+            qid = %user_info.qid,
+            "expected error: current password verification failed",
+        );
+
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Auth,
-            message: trl("error-wrong-credentials"),
+            message: err_message,
         });
     }
 
@@ -367,18 +398,42 @@ where
     I: ImageManager,
 {
     if token.user_id != id {
+        //
+        let err_message = trl("error-forbidden");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Perm,
+            err_message = %err_message,
+            user_id = %token.user_id,
+            target_user_id = %id,
+            "expected error: avatar upload ownership required",
+        );
+
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: trl("error-forbidden"),
+            message: err_message,
         });
     }
 
     let user_info = GetUserInfo::Id { id: &id }.run_on(repo).await?;
 
     if user_info.avatar_version != instr.image_version {
+        //
+        let err_message = trl("error-stale-avatar-upload");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Args,
+            err_message = %err_message,
+            user_id = %token.user_id,
+            target_user_id = %id,
+            image_version = instr.image_version,
+            stored_image_version = user_info.avatar_version,
+            "expected error: stale user avatar upload",
+        );
+
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: trl("error-stale-avatar-upload"),
+            message: err_message,
         });
     }
 
@@ -386,19 +441,43 @@ where
         return accept(());
     }
 
-    let avatar_key =
-        user_info
-            .avatar_key
-            .clone()
-            .ok_or_else(|| BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message: trl("error-stale-avatar-upload"),
-            })?;
+    let avatar_key = user_info.avatar_key.clone().ok_or_else(|| {
+        //
+        let err_message = trl("error-stale-avatar-upload");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Args,
+            err_message = %err_message,
+            user_id = %token.user_id,
+            target_user_id = %id,
+            image_version = instr.image_version,
+            stored_image_version = user_info.avatar_version,
+            "expected error: stale user avatar upload",
+        );
+
+        BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: err_message,
+        }
+    })?;
 
     if !image_manager.object_exists(&avatar_key).await? {
+        //
+        let err_message = trl("error-stale-avatar-upload");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Args,
+            err_message = %err_message,
+            user_id = %token.user_id,
+            target_user_id = %id,
+            image_version = instr.image_version,
+            avatar_key = %avatar_key,
+            "expected error: stale user avatar upload",
+        );
+
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: trl("error-stale-avatar-upload"),
+            message: err_message,
         });
     }
 
@@ -418,9 +497,22 @@ where
         if locked_user_info.avatar_version != instr.image_version
             || locked_user_info.avatar_key.as_deref() != Some(&avatar_key)
         {
+            let err_message = trl("error-stale-avatar-upload");
+
+            tracing::warn!(
+                err_variant = ?ExpectedVariant::Args,
+                err_message = %err_message,
+                user_id = %token.user_id,
+                target_user_id = %id,
+                image_version = instr.image_version,
+                locked_image_version = locked_user_info.avatar_version,
+                avatar_key = %avatar_key,
+                "expected error: stale user avatar upload",
+            );
+
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: trl("error-stale-avatar-upload"),
+                message: err_message,
             });
         }
 
@@ -467,10 +559,20 @@ where
     P: Prom<C> + Send + Sync,
 {
     if token.user_id != id {
-        // TODO: perm check.
+        //
+        let err_message = trl("error-forbidden");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Perm,
+            err_message = %err_message,
+            user_id = %token.user_id,
+            target_user_id = %id,
+            "expected error: user deletion ownership required",
+        );
+
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: trl("error-forbidden"),
+            message: err_message,
         });
     }
 

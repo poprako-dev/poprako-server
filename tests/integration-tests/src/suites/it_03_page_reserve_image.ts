@@ -15,7 +15,7 @@
 //
 // Covers test-plan: D1, D2, D3.
 //
-// Grounded permission pins:
+// Grounded perm pins:
 //   - page reserve (batch + single): assignment with RAW_PROVIDER or REVIEWER.
 //   - page image mark-uploaded: assignment with RAW_PROVIDER.
 //   - page delete-all: team ADMIN.
