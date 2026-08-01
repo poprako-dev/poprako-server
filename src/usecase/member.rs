@@ -89,7 +89,7 @@ where
                     err_message = %err_message,
                     team_id = %instr.team_id,
                     user_id = %token.user_id,
-                    target_user_id = %instr.user_id,
+                    affected_user_id = %instr.user_id,
                     roles = ?roles,
                     "expected error: user is already a team member",
                 );
@@ -241,7 +241,7 @@ where
     R: MemberRepo<C> + Sync,
     I: ImagePool,
 {
-    let member_list_spec: MemberListSpec = instr.try_into()?;
+    let member_list_spec = instr.try_into()?;
 
     if let MemberListSpec::Team { team_id, .. } = &member_list_spec {
         MemberPermComplex::ensure_user_can_list_infos(

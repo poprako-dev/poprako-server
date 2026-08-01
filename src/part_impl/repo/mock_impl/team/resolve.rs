@@ -9,6 +9,7 @@ use crate::part_impl::repo::mock_impl::{
 };
 use crate::result::{BaseError, BaseRest, accept};
 
+// Resolve the owning team for a comic from in-memory state.
 fn resolve_comic_team_id(state: &MockState, id: &str) -> BaseRest<String> {
     //
     let comic_info = state
@@ -30,6 +31,7 @@ fn resolve_comic_team_id(state: &MockState, id: &str) -> BaseRest<String> {
     accept(workset_info.team_id.clone())
 }
 
+// Resolve the owning team for a chapter from in-memory state.
 fn resolve_chapter_team_id(state: &MockState, id: &str) -> BaseRest<String> {
     //
     let chapter_info = state
@@ -61,6 +63,7 @@ fn resolve_chapter_team_id(state: &MockState, id: &str) -> BaseRest<String> {
     accept(workset_info.team_id.clone())
 }
 
+// Dispatch a team-ownership query to the comic or chapter resolver.
 fn resolve_team_id(
     state: &MockState,
     oper: &ResolveTeamId<'_>,
@@ -74,8 +77,10 @@ fn resolve_team_id(
 }
 
 impl Run<ResolveTeamId<'_>> for Mock {
+    // BaseError for the standalone mock team-resolution projection.
     type Error = BaseError;
 
+    // Runs the team-resolution projection against the shared mock state.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
@@ -89,8 +94,10 @@ impl Run<ResolveTeamId<'_>> for Mock {
 }
 
 impl Step<ResolveTeamId<'_>, MockContext> for Mock {
+    // BaseError for the transactional mock team-resolution projection.
     type Error = BaseError;
 
+    // Runs the team-resolution projection inside the transactional mock context.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,

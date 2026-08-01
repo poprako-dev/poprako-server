@@ -22,7 +22,7 @@ use crate::part::repo::oper::termbase::{
 };
 use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::termbase::{
-    TermbaseRow, TermbaseRowEntry,
+    TermbaseEntryRow, TermbaseInfoRow,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_termbase::dsl::*;
 use crate::part_impl::repo::rdb_impl::schema::{t_comic, t_workset};
@@ -61,10 +61,10 @@ fn escape_ilike_pattern(input: &str) -> String {
 async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<TermbaseInfo> {
     //
     // Return explicit not-found error when the target termbase does not exist.
-    let row: Option<TermbaseRow> = t_termbase
+    let row = t_termbase
         .filter(f_id.eq(id))
-        .select(TermbaseRow::as_select())
-        .get_result(conn)
+        .select(TermbaseInfoRow::as_select())
+        .get_result::<TermbaseInfoRow>(conn)
         .await
         .optional()
         .map_err(diesel)?;
@@ -103,11 +103,11 @@ async fn get_info_excluded(
 ) -> BaseRest<TermbaseInfo> {
     //
     // Take `FOR UPDATE` lock and keep semantics aligned with locked read paths.
-    let row: Option<TermbaseRow> = t_termbase
+    let row = t_termbase
         .filter(f_id.eq(id))
-        .select(TermbaseRow::as_select())
+        .select(TermbaseInfoRow::as_select())
         .for_update()
-        .get_result(conn)
+        .get_result::<TermbaseInfoRow>(conn)
         .await
         .optional()
         .map_err(diesel)?;
@@ -146,7 +146,8 @@ async fn list_infos(
 ) -> BaseRest<Vec<TermbaseInfo>> {
     //
     // Build one query path that branches on scope and optional fuzzy name.
-    let mut query = t_termbase.select(TermbaseRow::as_select()).into_boxed();
+    let mut query =
+        t_termbase.select(TermbaseInfoRow::as_select()).into_boxed();
 
     let (fuzzy_name, offset, limit) = match spec {
         //
@@ -193,11 +194,11 @@ async fn list_infos(
         query = query.filter(f_name.ilike(pattern));
     }
 
-    let rows: Vec<TermbaseRow> = query
+    let rows = query
         .order_by(f_updated_at.desc())
         .offset(*offset as i64)
         .limit(*limit as i64)
-        .load(conn)
+        .load::<TermbaseInfoRow>(conn)
         .await
         .map_err(diesel)?;
 
@@ -212,21 +213,21 @@ async fn list_infos_excluded(
 ) -> BaseRest<Vec<TermbaseInfo>> {
     //
     // Lock candidate rows so subsequent writes in caller transaction stay safe.
-    let rows: Vec<TermbaseRow> = match oper {
+    let rows = match oper {
         //
         ListTermbaseInfosExcluded::Team { team_id } => t_termbase
             .filter(f_team_id.eq(team_id))
-            .select(TermbaseRow::as_select())
+            .select(TermbaseInfoRow::as_select())
             .for_update()
-            .load(conn)
+            .load::<TermbaseInfoRow>(conn)
             .await
             .map_err(diesel)?,
 
         ListTermbaseInfosExcluded::Comic { comic_id } => t_termbase
             .filter(f_comic_id.eq(comic_id))
-            .select(TermbaseRow::as_select())
+            .select(TermbaseInfoRow::as_select())
             .for_update()
-            .load(conn)
+            .load::<TermbaseInfoRow>(conn)
             .await
             .map_err(diesel)?,
     };
@@ -242,12 +243,12 @@ async fn create(
 ) -> BaseRest<TermbaseInfo> {
     //
     // Convert API entry into insert row shape and fetch persisted row.
-    let entry = TermbaseRowEntry::from(termbase_entry);
+    let entry = TermbaseEntryRow::from(termbase_entry);
 
-    let row: TermbaseRow = diesel::insert_into(t_termbase)
+    let row = diesel::insert_into(t_termbase)
         .values(&entry)
-        .returning(TermbaseRow::as_returning())
-        .get_result(conn)
+        .returning(TermbaseInfoRow::as_returning())
+        .get_result::<TermbaseInfoRow>(conn)
         .await
         .map_err(diesel)?;
 

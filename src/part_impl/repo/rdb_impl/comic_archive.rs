@@ -26,14 +26,14 @@ use crate::part::repo::oper::comic_archive::{
     ListComicArchivePayloads,
 };
 use crate::part_impl::repo::rdb_impl::RdbRepo;
-use crate::part_impl::repo::rdb_impl::entity::assignment::AssignmentRow;
-use crate::part_impl::repo::rdb_impl::entity::chapter::ChapterRow;
-use crate::part_impl::repo::rdb_impl::entity::comic::ComicRow;
-use crate::part_impl::repo::rdb_impl::entity::comic_archive::ComicArchiveRow;
-use crate::part_impl::repo::rdb_impl::entity::page::PageRow;
-use crate::part_impl::repo::rdb_impl::entity::unit::UnitRow;
-use crate::part_impl::repo::rdb_impl::entity::user::UserRow;
-use crate::part_impl::repo::rdb_impl::entity::workset::WorksetRow;
+use crate::part_impl::repo::rdb_impl::entity::assignment::AssignmentInfoRow;
+use crate::part_impl::repo::rdb_impl::entity::chapter::ChapterInfoRow;
+use crate::part_impl::repo::rdb_impl::entity::comic::ComicInfoRow;
+use crate::part_impl::repo::rdb_impl::entity::comic_archive::ComicArchiveEntryRow;
+use crate::part_impl::repo::rdb_impl::entity::page::PageInfoRow;
+use crate::part_impl::repo::rdb_impl::entity::unit::UnitInfoRow;
+use crate::part_impl::repo::rdb_impl::entity::user::UserInfoRow;
+use crate::part_impl::repo::rdb_impl::entity::workset::WorksetInfoRow;
 use crate::part_impl::repo::rdb_impl::schema::t_assignment::dsl::{
     f_chapter_id as assignment_chapter_id, t_assignment,
 };
@@ -185,9 +185,9 @@ async fn list_payloads(
         .select((f_created_at, f_archived_payload))
         .into_boxed();
 
-    let rows: Vec<ArchivePayloadRow> = query
+    let rows = query
         .order_by(f_created_at.asc())
-        .load(conn)
+        .load::<ArchivePayloadRow>(conn)
         .await
         .map_err(diesel)?;
 
@@ -211,11 +211,11 @@ async fn get_snapshot_excluded(
     source_comic_id: &str,
 ) -> BaseRest<ComicArchiveSnapshot> {
     //
-    let comic_row: Option<ComicRow> = t_comic
+    let comic_row = t_comic
         .filter(comic_id.eq(source_comic_id))
-        .select(ComicRow::as_select())
+        .select(ComicInfoRow::as_select())
         .for_update()
-        .get_result(conn)
+        .get_result::<ComicInfoRow>(conn)
         .await
         .optional()
         .map_err(diesel)?;
@@ -243,13 +243,13 @@ async fn get_snapshot_excluded(
         }
     };
 
-    let comic_info: ComicInfo = comic_row.try_into()?;
+    let comic_info = TryInto::<ComicInfo>::try_into(comic_row)?;
 
-    let workset_row: Option<WorksetRow> = t_workset
+    let workset_row = t_workset
         .filter(workset_id.eq(&comic_info.workset_id))
-        .select(WorksetRow::as_select())
+        .select(WorksetInfoRow::as_select())
         .for_update()
-        .get_result(conn)
+        .get_result::<WorksetInfoRow>(conn)
         .await
         .optional()
         .map_err(diesel)?;
@@ -278,40 +278,40 @@ async fn get_snapshot_excluded(
         }
     };
 
-    let workset_info: WorksetInfo = workset_row.into();
+    let workset_info = Into::<WorksetInfo>::into(workset_row);
 
-    let chapter_rows: Vec<ChapterRow> = t_chapter
+    let chapter_rows = t_chapter
         .filter(chapter_comic_id.eq(&comic_info.id))
-        .select(ChapterRow::as_select())
+        .select(ChapterInfoRow::as_select())
         .order_by(chapter_id.asc())
         .for_update()
-        .load(conn)
+        .load::<ChapterInfoRow>(conn)
         .await
         .map_err(diesel)?;
 
-    let chapter_infos: Vec<ChapterInfo> = chapter_rows
+    let chapter_infos = chapter_rows
         .into_iter()
         .map(ChapterInfo::try_from)
-        .collect::<BaseRest<Vec<_>>>()?;
+        .collect::<BaseRest<Vec<ChapterInfo>>>()?;
 
     let source_chapter_ids = chapter_infos
         .iter()
         .map(|chapter_info| chapter_info.id.clone())
         .collect::<Vec<_>>();
 
-    let _: Vec<String> = t_assignment_invitation
+    let _ = t_assignment_invitation
         .filter(invitation_chapter_id.eq_any(&source_chapter_ids))
         .select(invitation_id)
         .for_update()
-        .load(conn)
+        .load::<String>(conn)
         .await
         .map_err(diesel)?;
 
-    let assignment_rows: Vec<AssignmentRow> = t_assignment
+    let assignment_rows = t_assignment
         .filter(assignment_chapter_id.eq_any(&source_chapter_ids))
-        .select(AssignmentRow::as_select())
+        .select(AssignmentInfoRow::as_select())
         .for_update()
-        .load(conn)
+        .load::<AssignmentInfoRow>(conn)
         .await
         .map_err(diesel)?;
 
@@ -325,11 +325,11 @@ async fn get_snapshot_excluded(
         .map(|assignment_info| assignment_info.user_id.clone())
         .collect::<Vec<_>>();
 
-    let user_rows: Vec<UserRow> = t_user
+    let user_rows = t_user
         .filter(user_id.eq_any(&assigned_user_ids))
-        .select(UserRow::as_select())
+        .select(UserInfoRow::as_select())
         .for_update()
-        .load(conn)
+        .load::<UserInfoRow>(conn)
         .await
         .map_err(diesel)?;
 
@@ -337,45 +337,45 @@ async fn get_snapshot_excluded(
         .into_iter()
         .map(|user_row| {
             //
-            let user_info: UserInfo = user_row.try_into()?;
+            let user_info = TryInto::<UserInfo>::try_into(user_row)?;
 
             Ok((user_info.id.clone(), user_info))
         })
         .collect::<BaseRest<HashMap<_, _>>>()?;
 
-    let page_rows: Vec<PageRow> = t_page
+    let page_rows = t_page
         .filter(page_chapter_id.eq_any(&source_chapter_ids))
-        .select(PageRow::as_select())
+        .select(PageInfoRow::as_select())
         .order_by((page_chapter_id.asc(), page_index.asc(), page_id.asc()))
         .for_update()
-        .load(conn)
+        .load::<PageInfoRow>(conn)
         .await
         .map_err(diesel)?;
 
-    let page_infos: Vec<PageInfo> = page_rows
+    let page_infos = page_rows
         .into_iter()
         .map(TryInto::try_into)
-        .collect::<BaseRest<_>>()?;
+        .collect::<BaseRest<Vec<PageInfo>>>()?;
 
     let source_page_ids = page_infos
         .iter()
         .map(|page_info| page_info.id.clone())
         .collect::<Vec<_>>();
 
-    let unit_rows: Vec<UnitRow> = t_unit
+    let unit_rows = t_unit
         .filter(unit_page_id.eq_any(&source_page_ids))
-        .select(UnitRow::as_select())
+        .select(UnitInfoRow::as_select())
         .order_by(unit_page_id.asc())
         .for_update()
-        .load(conn)
+        .load::<UnitInfoRow>(conn)
         .await
         .map_err(diesel)?;
 
-    let (unit_infos, mut assignment_infos_by_chapter): (
-        Vec<UnitInfo>,
-        HashMap<String, Vec<AssignmentInfo>>,
-    ) = (
-        unit_rows.into_iter().map(Into::into).collect::<Vec<_>>(),
+    let (unit_infos, mut assignment_infos_by_chapter) = (
+        unit_rows
+            .into_iter()
+            .map(Into::into)
+            .collect::<Vec<UnitInfo>>(),
         HashMap::<String, Vec<AssignmentInfo>>::new(),
     );
 
@@ -478,7 +478,8 @@ async fn commit(
     comic_archive_entry: &ComicArchiveEntry,
 ) -> BaseRest<()> {
     //
-    let comic_archive_row = ComicArchiveRow::from(&comic_archive_entry.record);
+    let comic_archive_row =
+        ComicArchiveEntryRow::from(&comic_archive_entry.record);
 
     diesel::insert_into(t_comic_archive::table)
         .values(&comic_archive_row)

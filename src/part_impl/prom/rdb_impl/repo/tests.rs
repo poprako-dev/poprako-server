@@ -9,7 +9,7 @@ use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use time::Duration;
 
-use crate::part_impl::prom::rdb_impl::entity::LocalMessageEntry;
+use crate::part_impl::prom::rdb_impl::entity::LocalMessageEntryRow;
 use crate::part_impl::prom::rdb_impl::test_shared;
 use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::schema::t_local_message;
@@ -324,7 +324,7 @@ pub async fn completed_message_purge_preserves_non_completed_records(
 
     let now = OffsetDateTime::now_utc();
 
-    let stale_completed_entry = LocalMessageEntry {
+    let stale_completed_entry = LocalMessageEntryRow {
         f_id: "rdb-test-prom-purge-stale-completed",
         f_topic: "image",
         f_status: LocalMessageStatus::Completed,
@@ -334,7 +334,7 @@ pub async fn completed_message_purge_preserves_non_completed_records(
         f_updated_at: now - Duration::days(8),
     };
 
-    let recent_completed_entry = LocalMessageEntry {
+    let recent_completed_entry = LocalMessageEntryRow {
         f_id: "rdb-test-prom-purge-recent-completed",
         f_topic: "image",
         f_status: LocalMessageStatus::Completed,
@@ -344,7 +344,7 @@ pub async fn completed_message_purge_preserves_non_completed_records(
         f_updated_at: now - Duration::days(1),
     };
 
-    let pending_entry = LocalMessageEntry {
+    let pending_entry = LocalMessageEntryRow {
         f_id: "rdb-test-prom-purge-pending",
         f_topic: "image",
         f_status: LocalMessageStatus::Pending,
@@ -354,7 +354,7 @@ pub async fn completed_message_purge_preserves_non_completed_records(
         f_updated_at: now - Duration::days(8),
     };
 
-    let dead_entry = LocalMessageEntry {
+    let dead_entry = LocalMessageEntryRow {
         f_id: "rdb-test-prom-purge-dead",
         f_topic: "image",
         f_status: LocalMessageStatus::Dead,
@@ -364,7 +364,7 @@ pub async fn completed_message_purge_preserves_non_completed_records(
         f_updated_at: now - Duration::days(8),
     };
 
-    let stale_dead_entry = LocalMessageEntry {
+    let stale_dead_entry = LocalMessageEntryRow {
         f_id: "rdb-test-prom-purge-stale-dead",
         f_topic: "image",
         f_status: LocalMessageStatus::Dead,
@@ -440,8 +440,8 @@ fn local_message_entry(
     topic: &'static str,
     status: LocalMessageStatus,
     created_at: OffsetDateTime,
-) -> LocalMessageEntry<'static> {
-    LocalMessageEntry {
+) -> LocalMessageEntryRow<'static> {
+    LocalMessageEntryRow {
         f_id: id,
         f_topic: topic,
         f_status: status,

@@ -12,7 +12,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_workset;
 /// Raw database row for the `t_workset` table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_workset)]
-pub struct WorksetRow {
+pub struct WorksetInfoRow {
     //
     pub f_id: String,
     pub f_team_id: String,
@@ -28,8 +28,8 @@ pub struct WorksetRow {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl From<WorksetRow> for WorksetInfo {
-    fn from(v: WorksetRow) -> Self {
+impl From<WorksetInfoRow> for WorksetInfo {
+    fn from(v: WorksetInfoRow) -> Self {
         WorksetInfo {
             id: v.f_id,
             team_id: v.f_team_id,
@@ -48,7 +48,7 @@ impl From<WorksetRow> for WorksetInfo {
 /// Insertable struct for creating a new record in the `t_workset` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_workset)]
-pub struct WorksetRowEntry<'a> {
+pub struct WorksetEntryRow<'a> {
     //
     pub f_id: &'a str,
     pub f_team_id: &'a str,
@@ -61,7 +61,7 @@ pub struct WorksetRowEntry<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> From<&'a WorksetEntry> for WorksetRowEntry<'a> {
+impl<'a> From<&'a WorksetEntry> for WorksetEntryRow<'a> {
     fn from(workset_entry: &'a WorksetEntry) -> Self {
         Self {
             f_id: &workset_entry.id,
@@ -80,7 +80,7 @@ impl<'a> From<&'a WorksetEntry> for WorksetRowEntry<'a> {
 /// Aspect struct for updating specific fields of a workset record identified by id.
 #[derive(AsChangeset)]
 #[diesel(table_name = t_workset)]
-pub struct WorksetAspect<'a> {
+pub struct WorksetAspectRow<'a> {
     //
     pub f_name: Option<&'a str>,
     pub f_description: Option<Option<&'a str>>,
@@ -91,7 +91,7 @@ pub struct WorksetAspect<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> WorksetAspect<'a> {
+impl<'a> WorksetAspectRow<'a> {
     pub fn new(updated_at: OffsetDateTime) -> Self {
         Self {
             f_name: None,

@@ -17,7 +17,8 @@ use crate::part::repo::oper::member_invitation::{
     PurgeExpiredMemberInvitation, UpdateMemberInvitation,
 };
 use crate::part_impl::repo::rdb_impl::entity::member_invitation::{
-    MemberInvitationAspect, MemberInvitationRow, MemberInvitationRowEntry,
+    MemberInvitationAspectRow, MemberInvitationEntryRow,
+    MemberInvitationInfoRow,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_member_invitation::dsl::*;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, incl};
@@ -55,7 +56,7 @@ async fn list_infos(
     //
     let mut query = t_member_invitation
         .filter(f_team_id.eq(spec.team_id.as_str()))
-        .select(MemberInvitationRow::as_select())
+        .select(MemberInvitationInfoRow::as_select())
         .into_boxed();
 
     query = match spec.is_pending {
@@ -65,11 +66,11 @@ async fn list_infos(
         None => query,
     };
 
-    let rows: Vec<MemberInvitationRow> = query
+    let rows = query
         .order_by(f_created_at.desc())
         .offset(spec.offset as i64)
         .limit(spec.limit as i64)
-        .load(conn)
+        .load::<MemberInvitationInfoRow>(conn)
         .await
         .map_err(diesel)?;
 
@@ -97,10 +98,10 @@ async fn get_info_by_id(
     incl_opt: &[MemberInvitationInclOpt],
 ) -> BaseRest<MemberInvitationInfo> {
     //
-    let row: Option<MemberInvitationRow> = t_member_invitation
+    let row = t_member_invitation
         .filter(f_id.eq(id))
-        .select(MemberInvitationRow::as_select())
-        .get_result(conn)
+        .select(MemberInvitationInfoRow::as_select())
+        .get_result::<MemberInvitationInfoRow>(conn)
         .await
         .optional()
         .map_err(diesel)?;
@@ -128,7 +129,7 @@ async fn get_info_by_id(
         }
     };
 
-    let mut info: MemberInvitationInfo = row.try_into()?;
+    let mut info = row.try_into()?;
 
     incl::member_invitation::populate_member_invitation_incls(
         conn,
@@ -147,12 +148,12 @@ async fn create(
     entry: &MemberInvitationEntry,
 ) -> BaseRest<MemberInvitationInfo> {
     //
-    let entry = MemberInvitationRowEntry::from(entry);
+    let entry = MemberInvitationEntryRow::from(entry);
 
-    let row: MemberInvitationRow = diesel::insert_into(t_member_invitation)
+    let row = diesel::insert_into(t_member_invitation)
         .values(&entry)
-        .returning(MemberInvitationRow::as_returning())
-        .get_result(conn)
+        .returning(MemberInvitationInfoRow::as_returning())
+        .get_result::<MemberInvitationInfoRow>(conn)
         .await
         .map_err(diesel)?;
 
@@ -166,11 +167,11 @@ async fn get_info_by_code(
     code: &str,
 ) -> BaseRest<MemberInvitationInfo> {
     //
-    let row: Option<MemberInvitationRow> = t_member_invitation
+    let row = t_member_invitation
         .filter(f_code.eq(code))
         .filter(f_pending.eq(true))
-        .select(MemberInvitationRow::as_select())
-        .get_result(conn)
+        .select(MemberInvitationInfoRow::as_select())
+        .get_result::<MemberInvitationInfoRow>(conn)
         .await
         .optional()
         .map_err(diesel)?;
@@ -209,12 +210,12 @@ async fn get_info_by_code_excluded(
     code: &str,
 ) -> BaseRest<MemberInvitationInfo> {
     //
-    let row: Option<MemberInvitationRow> = t_member_invitation
+    let row = t_member_invitation
         .filter(f_code.eq(code))
         .filter(f_pending.eq(true))
-        .select(MemberInvitationRow::as_select())
+        .select(MemberInvitationInfoRow::as_select())
         .for_update()
-        .get_result(conn)
+        .get_result::<MemberInvitationInfoRow>(conn)
         .await
         .optional()
         .map_err(diesel)?;
@@ -252,7 +253,7 @@ async fn mark_pending_as_used(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
     let now = OffsetDateTime::now_utc();
 
-    let aspect = MemberInvitationAspect::new(now).pending(false);
+    let aspect = MemberInvitationAspectRow::new(now).pending(false);
 
     diesel::update(t_member_invitation.filter(f_id.eq(id)))
         .set(&aspect)
@@ -273,8 +274,8 @@ async fn update_info(
     //
     let now = OffsetDateTime::now_utc();
 
-    let aspect =
-        MemberInvitationAspect::new(now).role_mask(i64::from(u32::from(roles)));
+    let aspect = MemberInvitationAspectRow::new(now)
+        .role_mask(i64::from(u32::from(roles)));
 
     diesel::update(t_member_invitation.filter(f_id.eq(id)))
         .set(&aspect)

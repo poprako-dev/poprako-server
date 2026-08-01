@@ -28,11 +28,11 @@ use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::proj::team::TeamInfo;
 use crate::model::read::proj::user::UserInfo;
 use crate::model::read::proj::workset::WorksetInfo;
-use crate::part_impl::repo::rdb_impl::entity::chapter::ChapterRow;
-use crate::part_impl::repo::rdb_impl::entity::comic::ComicRow;
-use crate::part_impl::repo::rdb_impl::entity::team::TeamRow;
-use crate::part_impl::repo::rdb_impl::entity::user::UserRow;
-use crate::part_impl::repo::rdb_impl::entity::workset::WorksetRow;
+use crate::part_impl::repo::rdb_impl::entity::chapter::ChapterInfoRow;
+use crate::part_impl::repo::rdb_impl::entity::comic::ComicInfoRow;
+use crate::part_impl::repo::rdb_impl::entity::team::TeamInfoRow;
+use crate::part_impl::repo::rdb_impl::entity::user::UserInfoRow;
+use crate::part_impl::repo::rdb_impl::entity::workset::WorksetInfoRow;
 use crate::part_impl::repo::rdb_impl::schema::{
     t_chapter, t_comic, t_team, t_user, t_workset,
 };
@@ -186,31 +186,31 @@ where
 
 preload_by_ids! {
     UserByIds {
-        row: UserRow,
+        row: UserInfoRow,
         info: UserInfo,
         table: t_user,
         convert: TryFrom,
     }
     TeamByIds {
-        row: TeamRow,
+        row: TeamInfoRow,
         info: TeamInfo,
         table: t_team,
         convert: TryFrom,
     }
     WorksetByIds {
-        row: WorksetRow,
+        row: WorksetInfoRow,
         info: WorksetInfo,
         table: t_workset,
         convert: From,
     }
     ComicByIds {
-        row: ComicRow,
+        row: ComicInfoRow,
         info: ComicInfo,
         table: t_comic,
         convert: TryFrom,
     }
     ChapterByIds {
-        row: ChapterRow,
+        row: ChapterInfoRow,
         info: ChapterInfo,
         table: t_chapter,
         convert: TryFrom,

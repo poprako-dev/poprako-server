@@ -114,7 +114,7 @@ where
             err_variant = ?ExpectedVariant::Perm,
             err_message = %err_message,
             user_id = %token.user_id,
-            target_user_id = %instr.id,
+            affected_user_id = %instr.id,
             "expected error: user profile ownership required",
         );
 
@@ -178,7 +178,7 @@ where
             err_variant = ?ExpectedVariant::Perm,
             err_message = %err_message,
             user_id = %token.user_id,
-            target_user_id = %user_id,
+            affected_user_id = %user_id,
             "expected error: password update ownership required",
         );
 
@@ -405,7 +405,7 @@ where
             err_variant = ?ExpectedVariant::Perm,
             err_message = %err_message,
             user_id = %token.user_id,
-            target_user_id = %id,
+            affected_user_id = %id,
             "expected error: avatar upload ownership required",
         );
 
@@ -425,7 +425,7 @@ where
             err_variant = ?ExpectedVariant::Args,
             err_message = %err_message,
             user_id = %token.user_id,
-            target_user_id = %id,
+            affected_user_id = %id,
             image_version = instr.image_version,
             stored_image_version = user_info.avatar_version,
             "expected error: stale user avatar upload",
@@ -449,7 +449,7 @@ where
             err_variant = ?ExpectedVariant::Args,
             err_message = %err_message,
             user_id = %token.user_id,
-            target_user_id = %id,
+            affected_user_id = %id,
             image_version = instr.image_version,
             stored_image_version = user_info.avatar_version,
             "expected error: stale user avatar upload",
@@ -469,7 +469,7 @@ where
             err_variant = ?ExpectedVariant::Args,
             err_message = %err_message,
             user_id = %token.user_id,
-            target_user_id = %id,
+            affected_user_id = %id,
             image_version = instr.image_version,
             avatar_key = %avatar_key,
             "expected error: stale user avatar upload",
@@ -503,7 +503,7 @@ where
                 err_variant = ?ExpectedVariant::Args,
                 err_message = %err_message,
                 user_id = %token.user_id,
-                target_user_id = %id,
+                affected_user_id = %id,
                 image_version = instr.image_version,
                 locked_image_version = locked_user_info.avatar_version,
                 avatar_key = %avatar_key,
@@ -566,7 +566,7 @@ where
             err_variant = ?ExpectedVariant::Perm,
             err_message = %err_message,
             user_id = %token.user_id,
-            target_user_id = %id,
+            affected_user_id = %id,
             "expected error: user deletion ownership required",
         );
 

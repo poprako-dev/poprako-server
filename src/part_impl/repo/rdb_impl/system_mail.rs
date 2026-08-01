@@ -15,7 +15,7 @@ use crate::part::repo::oper::system_mail::{
 };
 use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::system_mail::{
-    SystemMailRow, SystemMailRowEntry,
+    SystemMailEntryRow, SystemMailInfoRow,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_system_mail::dsl::*;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
@@ -32,7 +32,7 @@ pub mod tests;
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn send(conn: &mut RdbConn, entry: &SystemMailEntry) -> BaseRest<()> {
     //
-    let entry = SystemMailRowEntry::from(entry);
+    let entry = SystemMailEntryRow::from(entry);
 
     diesel::insert_into(t_system_mail)
         .values(&entry)
@@ -52,8 +52,8 @@ async fn send_batch(
     //
     let entries = entries
         .iter()
-        .map(SystemMailRowEntry::from)
-        .collect::<Vec<SystemMailRowEntry<'_>>>();
+        .map(SystemMailEntryRow::from)
+        .collect::<Vec<SystemMailEntryRow<'_>>>();
 
     diesel::insert_into(t_system_mail)
         .values(&entries)
@@ -73,7 +73,7 @@ async fn list_infos(
     //
     let mut query = t_system_mail
         .filter(f_receiver_id.eq(spec.receiver_id.as_str()))
-        .select(SystemMailRow::as_select())
+        .select(SystemMailInfoRow::as_select())
         .into_boxed();
 
     query = match spec.is_read {
@@ -83,11 +83,11 @@ async fn list_infos(
         None => query,
     };
 
-    let rows: Vec<SystemMailRow> = query
+    let rows = query
         .order_by(f_created_at.desc())
         .offset(spec.offset as i64)
         .limit(spec.limit as i64)
-        .load(conn)
+        .load::<SystemMailInfoRow>(conn)
         .await
         .map_err(diesel)?;
 
@@ -102,10 +102,10 @@ async fn mark_read(
     user_id: &str,
 ) -> BaseRest<()> {
     //
-    let row: Option<SystemMailRow> = t_system_mail
+    let row = t_system_mail
         .filter(f_id.eq(id))
-        .select(SystemMailRow::as_select())
-        .get_result(conn)
+        .select(SystemMailInfoRow::as_select())
+        .get_result::<SystemMailInfoRow>(conn)
         .await
         .optional()
         .map_err(diesel)?;

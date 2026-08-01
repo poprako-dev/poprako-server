@@ -13,7 +13,7 @@ use crate::value::image::{ImageExt, ImageHash};
 /// Raw database row for the `t_user` table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_user)]
-pub struct UserRow {
+pub struct UserInfoRow {
     //
     pub f_id: String,
     pub f_nickname: String,
@@ -38,7 +38,7 @@ pub struct UserRow {
 /// table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_user)]
-pub struct UserCredentialRow {
+pub struct UserCredsRow {
     //
     pub f_id: String,
 
@@ -50,7 +50,7 @@ pub struct UserCredentialRow {
 /// Insertable struct for creating a new record in the `t_user` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_user)]
-pub struct UserRowEntry<'a> {
+pub struct UserEntryRow<'a> {
     //
     pub f_id: &'a str,
     pub f_nickname: &'a str,
@@ -69,7 +69,7 @@ pub struct UserRowEntry<'a> {
 /// Aspect struct for updating specific fields of a user record identified by id.
 #[derive(AsChangeset)]
 #[diesel(table_name = t_user)]
-pub struct UserAspect<'a> {
+pub struct UserAspectRow<'a> {
     //
     pub f_nickname: Option<&'a str>,
     pub f_qid: Option<&'a str>,
@@ -85,7 +85,7 @@ pub struct UserAspect<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> UserAspect<'a> {
+impl<'a> UserAspectRow<'a> {
     pub fn new(updated_at: OffsetDateTime) -> Self {
         Self {
             f_nickname: None,
@@ -159,22 +159,24 @@ impl<'a> UserAspect<'a> {
 
 // ── Conversions ────────────────────────────────────────────────────────────
 
-impl TryFrom<UserRow> for UserInfo {
+impl TryFrom<UserInfoRow> for UserInfo {
     type Error = BaseError;
 
-    fn try_from(v: UserRow) -> BaseRest<Self> {
+    fn try_from(v: UserInfoRow) -> BaseRest<Self> {
         //
         let (avatar_hash_bytes, avatar_ext) = (
             v.f_avatar_hash.try_into().map_err(|_| {
                 BaseError::Unrecoverable {
-                    message: "[UserRow] f_avatar_hash must contain 32 bytes"
-                        .into(),
+                    message:
+                        "[UserInfoRow] f_avatar_hash must contain 32 bytes"
+                            .into(),
                 }
             })?,
             ImageExt::parse(&v.f_avatar_extension).ok_or_else(|| {
                 BaseError::Unrecoverable {
-                    message: "[UserRow] f_avatar_extension must be supported"
-                        .into(),
+                    message:
+                        "[UserInfoRow] f_avatar_extension must be supported"
+                            .into(),
                 }
             })?,
         );
@@ -196,8 +198,8 @@ impl TryFrom<UserRow> for UserInfo {
     }
 }
 
-impl From<UserCredentialRow> for UserCredential {
-    fn from(v: UserCredentialRow) -> Self {
+impl From<UserCredsRow> for UserCredential {
+    fn from(v: UserCredsRow) -> Self {
         UserCredential {
             user_id: v.f_id,
             password_hash: v.f_password_hash,

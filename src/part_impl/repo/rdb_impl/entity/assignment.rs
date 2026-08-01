@@ -12,7 +12,7 @@ use crate::value::role::{RoleField, RoleMask};
 /// Raw database row for the `t_assignment` table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_assignment)]
-pub struct AssignmentRow {
+pub struct AssignmentInfoRow {
     //
     pub f_id: String,
     pub f_chapter_id: String,
@@ -31,12 +31,12 @@ pub struct AssignmentRow {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl TryFrom<AssignmentRow> for AssignmentInfo {
+impl TryFrom<AssignmentInfoRow> for AssignmentInfo {
     type Error = BaseError;
 
-    fn try_from(row: AssignmentRow) -> Result<Self, Self::Error> {
+    fn try_from(row: AssignmentInfoRow) -> Result<Self, Self::Error> {
         //
-        let mut bits: u32 = 0;
+        let mut bits = 0;
 
         if row.f_assigned_raw_provider_at.is_some() {
             bits |= u32::from(RoleField::RAW_PROVIDER);
@@ -88,7 +88,7 @@ impl TryFrom<AssignmentRow> for AssignmentInfo {
 /// Insertable struct for creating a new record in the `t_assignment` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_assignment)]
-pub struct AssignmentRowEntry<'a> {
+pub struct AssignmentEntryRow<'a> {
     //
     pub f_id: &'a str,
     pub f_chapter_id: &'a str,
@@ -107,7 +107,7 @@ pub struct AssignmentRowEntry<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> AssignmentRowEntry<'a> {
+impl<'a> AssignmentEntryRow<'a> {
     pub fn from_model_entry(
         model_entry: &'a AssignmentEntry,
         now: OffsetDateTime,
@@ -137,7 +137,7 @@ impl<'a> AssignmentRowEntry<'a> {
 /// Aspect struct for updating specific assignment role-timestamp fields by id.
 #[derive(AsChangeset)]
 #[diesel(table_name = t_assignment)]
-pub struct AssignmentAspect {
+pub struct AssignmentAspectRow {
     //
     pub f_assigned_raw_provider_at: Option<Option<OffsetDateTime>>,
     pub f_assigned_translator_at: Option<Option<OffsetDateTime>>,
@@ -151,7 +151,7 @@ pub struct AssignmentAspect {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl AssignmentAspect {
+impl AssignmentAspectRow {
     pub fn new(updated_at: OffsetDateTime) -> Self {
         Self {
             f_assigned_raw_provider_at: None,
@@ -189,7 +189,7 @@ impl AssignmentAspect {
 }
 
 /// Timestamps for each role on an assignment, used to build the role-timestamp
-/// mapping for `AssignmentAspect` or `AssignmentEntry`.
+/// mapping for `AssignmentAspectRow` or `AssignmentEntry`.
 pub struct AssignmentRoleTimestamps {
     //
     pub f_raw_provider: Option<OffsetDateTime>,

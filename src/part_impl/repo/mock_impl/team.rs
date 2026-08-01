@@ -19,6 +19,7 @@ use crate::part_impl::repo::mock_impl::{
 use crate::result::{BaseError, BaseRest, accept};
 use crate::value::image::{ImageExt, ImageHash};
 
+// In-memory team-ownership projections.
 mod resolve;
 
 // Internal implementation of `create_team`.
