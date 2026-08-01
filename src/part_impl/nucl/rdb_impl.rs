@@ -1,4 +1,4 @@
-//! Diesel-backed transaction driver.
+//! Diesel-backed transaction coordinator.
 
 use diesel_async::{AnsiTransactionManager, TransactionManager};
 use poprako_orchestra::Nucl;
@@ -9,23 +9,23 @@ use crate::result::BaseError;
 use crate::shared::result::diesel;
 use crate::shared::{RdbContext, RdbCore};
 
-/// Diesel-backed transaction driver that wraps operations in database transactions.
+/// Diesel-backed transaction coordinator that wraps operations in database transactions.
 ///
 /// Each call to [`Nucl::coord`] opens a new connection, begins a transaction,
 /// runs the closure, and commits or rolls back on success or failure.
-pub struct RdbDrive {
-    /// Shared database connection pool and driver state.
+pub struct RdbNucl {
+    /// Shared database connection pool used for transactions.
     core: RdbCore,
 }
 
-impl RdbDrive {
-    /// Builds a new `RdbDrive` from an [`RdbCore`] connection pool.
+impl RdbNucl {
+    /// Builds a new `RdbNucl` from an [`RdbCore`] connection pool.
     pub fn new(core: RdbCore) -> Self {
         Self { core }
     }
 }
 
-impl Nucl for RdbDrive {
+impl Nucl for RdbNucl {
     // Transaction error type propagated through the Nucl trait.
     type Error = BaseError;
 

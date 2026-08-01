@@ -9,10 +9,8 @@ use crate::complex::util::{
 };
 use crate::model::write::unit::UnitEdit;
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
-use crate::part::repo::oper::chapter::GetChapterInfo;
-use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part::repo::oper::workset::GetWorksetInfo;
+use crate::part::repo::oper::team::ResolveTeamId;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::value::unit::UnitEditPerm;
 
@@ -27,9 +25,7 @@ impl UnitPermComplex {
         chapter_id: &str,
     ) -> BaseRest<()>
     where
-        P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
-            + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
-            + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+        P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
             + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>
             + for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
     {
@@ -106,8 +102,7 @@ impl UnitPermComplex {
                     //
                     if translation.is_some() && !perm.can_translate {
                         //
-                        let err_message =
-                            trl("error-unit-edit-perm-required");
+                        let err_message = trl("error-unit-edit-perm-required");
 
                         tracing::warn!(
                             err_variant = ?ExpectedVariant::Perm,
@@ -126,8 +121,7 @@ impl UnitPermComplex {
 
                     if revision.is_some() && !perm.can_proofread {
                         //
-                        let err_message =
-                            trl("error-unit-edit-perm-required");
+                        let err_message = trl("error-unit-edit-perm-required");
 
                         tracing::warn!(
                             err_variant = ?ExpectedVariant::Perm,
@@ -153,8 +147,7 @@ impl UnitPermComplex {
                     //
                     if !translation.is_skip() && !perm.can_translate {
                         //
-                        let err_message =
-                            trl("error-unit-edit-perm-required");
+                        let err_message = trl("error-unit-edit-perm-required");
 
                         tracing::warn!(
                             err_variant = ?ExpectedVariant::Perm,
@@ -173,8 +166,7 @@ impl UnitPermComplex {
 
                     if !revision.is_skip() && !perm.can_proofread {
                         //
-                        let err_message =
-                            trl("error-unit-edit-perm-required");
+                        let err_message = trl("error-unit-edit-perm-required");
 
                         tracing::warn!(
                             err_variant = ?ExpectedVariant::Perm,

@@ -19,7 +19,7 @@ use crate::part::effect::Develop;
 use crate::part::image::ImageManager;
 use crate::part::prom::Prom;
 use crate::part::prom::payload::TaskPayload;
-use crate::part_impl::drive::rdb_impl::RdbDrive;
+use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::prom::rdb_impl::entity::LocalMessageEntry;
 use crate::part_impl::prom::rdb_impl::repo::RdbPromRepo;
 use crate::part_impl::repo::rdb_impl::RdbRepo;
@@ -75,14 +75,14 @@ impl RdbProm {
 
         let (done_send, done) = watch::channel(false);
 
-        let (drive, repo) = (
-            RdbDrive::new(core.clone()),
+        let (nucl, repo) = (
+            RdbNucl::new(core.clone()),
             RdbPromRepo::new(RdbRepo::new(core.clone())),
         );
 
         let handler = handler::RdbPromHandler::new(
             core,
-            drive,
+            nucl,
             repo,
             image_pool,
             develop,

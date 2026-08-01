@@ -69,7 +69,7 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(instr): Json<CreateChapterInstr>,
 ) -> HttpResult<CreateChapterVal> {
-    usecase::chapter::create((harn.drive(), harn.repo()), user_token, instr)
+    usecase::chapter::create((harn.nucl(), harn.repo()), user_token, instr)
         .await?
         .accept(StatusCode::CREATED)
 }
@@ -180,7 +180,7 @@ pub async fn update_info(
     ensure_path_matches_body_id(&chapter_id, &instr.id)?;
 
     usecase::chapter::update_info(
-        (harn.drive(), harn.repo()),
+        (harn.nucl(), harn.repo()),
         user_token,
         instr,
     )
@@ -210,7 +210,7 @@ pub async fn mark_pinned(
 ) -> HttpNoContent {
     //
     usecase::chapter::mark_pinned(
-        (harn.drive(), harn.repo()),
+        (harn.nucl(), harn.repo()),
         user_token,
         chapter_id,
     )
@@ -244,7 +244,7 @@ pub async fn advance_stage(
     ensure_path_matches_body_id(&chapter_id, &instr.id)?;
 
     usecase::chapter::update_stage(
-        (harn.drive(), harn.repo(), harn.prom(), harn.develop()),
+        (harn.nucl(), harn.repo(), harn.prom(), harn.develop()),
         user_token,
         instr,
     )
@@ -273,7 +273,7 @@ pub async fn delete(
 ) -> HttpNoContent {
     //
     usecase::chapter::delete(
-        (harn.drive(), harn.repo(), harn.prom()),
+        (harn.nucl(), harn.repo(), harn.prom()),
         user_token,
         chapter_id,
     )

@@ -32,6 +32,8 @@ use crate::value::image::{ImageExt, ImageHash};
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;
 
+mod resolve;
+
 // ── Free functions ──────────────────────────────────────────────────────────
 
 // Delete a team row by primary key.

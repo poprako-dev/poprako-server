@@ -1,7 +1,7 @@
 //! Test fixtures and cases for the team use case module.
 //!
 //! Tests exercise team CRUD, avatar management, and deletion against
-//! a [`Mock`] that doubles as the driver, repository, prom enqueuer,
+//! a [`Mock`] that doubles as the coordinator, repository, prom enqueuer,
 //! and image pool. Failure flags simulate repository errors.
 //!
 //! [`Mock`]: crate::part_impl::repo::mock_impl::Mock

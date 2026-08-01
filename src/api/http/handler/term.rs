@@ -57,7 +57,7 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(instr): Json<CreateTermInstr>,
 ) -> HttpResult<CreateTermVal> {
-    usecase::term::create((harn.drive(), harn.repo()), user_token, instr)
+    usecase::term::create((harn.nucl(), harn.repo()), user_token, instr)
         .await?
         .accept(StatusCode::CREATED)
 }
@@ -140,7 +140,7 @@ pub async fn update_info(
     //
     ensure_path_matches_body_id(&term_id, &instr.id)?;
 
-    usecase::term::update_info((harn.drive(), harn.repo()), user_token, instr)
+    usecase::term::update_info((harn.nucl(), harn.repo()), user_token, instr)
         .await?;
 
     no_content()
@@ -165,7 +165,7 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::term::delete((harn.drive(), harn.repo()), user_token, term_id)
+    usecase::term::delete((harn.nucl(), harn.repo()), user_token, term_id)
         .await?;
 
     no_content()

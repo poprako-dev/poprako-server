@@ -62,13 +62,9 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(instr): Json<CreateAnnouncementInstr>,
 ) -> HttpResult<CreateAnnouncementVal> {
-    usecase::announcement::create(
-        (harn.drive(), harn.repo()),
-        user_token,
-        instr,
-    )
-    .await?
-    .accept(StatusCode::CREATED)
+    usecase::announcement::create((harn.nucl(), harn.repo()), user_token, instr)
+        .await?
+        .accept(StatusCode::CREATED)
 }
 
 /// `GET /api/v1/teams/{team_id}/announcements` — list a team's announcements.

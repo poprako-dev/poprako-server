@@ -63,7 +63,7 @@ pub async fn create(
     Json(instr): Json<CreateAssignmentInvitationInstr>,
 ) -> HttpResult<CreateAssignmentInvitationVal> {
     usecase::assignment_invitation::create(
-        (harn.drive(), harn.repo(), harn.prom()),
+        (harn.nucl(), harn.repo(), harn.prom()),
         user_token,
         instr,
     )
@@ -127,7 +127,7 @@ pub async fn delete(
 ) -> HttpNoContent {
     //
     usecase::assignment_invitation::delete(
-        (harn.drive(), harn.repo()),
+        (harn.nucl(), harn.repo()),
         user_token,
         assignment_invitation_id,
     )
@@ -156,7 +156,7 @@ pub async fn join(
     Json(instr): Json<JoinAssignmentInvitationInstr>,
 ) -> HttpResult<AssignmentInfoView> {
     usecase::assignment_invitation::join(
-        (harn.drive(), harn.repo(), harn.image_pool()),
+        (harn.nucl(), harn.repo(), harn.image_pool()),
         user_token,
         instr,
     )

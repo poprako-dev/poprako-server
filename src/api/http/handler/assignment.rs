@@ -78,7 +78,7 @@ pub async fn update_roles(
     ensure_path_matches_body_id(&user_id, &instr.user_id)?;
 
     usecase::assignment::update_roles(
-        (harn.drive(), harn.repo()),
+        (harn.nucl(), harn.repo()),
         user_token,
         instr,
     )
@@ -107,7 +107,7 @@ pub async fn delete(
 ) -> HttpNoContent {
     //
     usecase::assignment::delete(
-        (harn.drive(), harn.repo()),
+        (harn.nucl(), harn.repo()),
         user_token,
         assignment_id,
     )
@@ -134,7 +134,7 @@ pub async fn join(
     Extension(user_token): Extension<UserToken>,
     Json(instr): Json<JoinChapterAssignmentInstr>,
 ) -> HttpResult<AssignmentInfoView> {
-    usecase::assignment::join((harn.drive(), harn.repo()), user_token, instr)
+    usecase::assignment::join((harn.nucl(), harn.repo()), user_token, instr)
         .await?
         .accept(StatusCode::CREATED)
 }

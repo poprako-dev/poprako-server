@@ -19,6 +19,8 @@ use crate::part_impl::repo::mock_impl::{
 use crate::result::{BaseError, BaseRest, accept};
 use crate::value::image::{ImageExt, ImageHash};
 
+mod resolve;
+
 // Internal implementation of `create_team`.
 fn create_team(state: &mut MockState, entry: &TeamEntry) -> BaseRest<TeamInfo> {
     //

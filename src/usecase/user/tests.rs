@@ -2,7 +2,7 @@
 //!
 //! Tests exercise user profile reads, updates, avatar management, activity
 //! tracking, and account deletion against a [`Mock`] that doubles as the
-//! driver, repository, prom enqueuer, image pool, and effect developer.
+//! coordinator, repository, prom enqueuer, image pool, and effect developer.
 //!
 //! [`Mock`]: crate::part_impl::repo::mock_impl::Mock
 

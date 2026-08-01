@@ -22,7 +22,7 @@ return Err(RegularError::Expected {
 
 ## Transaction and adapter boundaries
 
-- Let `Drive::with_context` errors convert through the existing `From` impl in `result.rs`; do not invent a parallel transaction-error mapper.
+- Let `Nucl::coord` errors convert through the existing `From` impl in `result.rs`; do not invent a parallel transaction-error mapper.
 - RDB adapters convert Diesel errors through `part_impl::shared::result` helpers. Keep database error classification in that adapter boundary.
 - A missing row is expected only where the local adapter maps it to a specific translated key. Follow the neighboring operation.
 

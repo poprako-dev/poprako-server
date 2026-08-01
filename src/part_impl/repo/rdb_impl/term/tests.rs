@@ -9,7 +9,7 @@ use crate::model::write::term::TermEntry;
 use crate::model::write::termbase::TermbaseEntry;
 use crate::part::repo::oper::term::{CreateTerm, GetTermInfo, ListTermInfos};
 use crate::part::repo::oper::termbase::CreateTermbase;
-use crate::part_impl::drive::rdb_impl::RdbDrive;
+use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
 use crate::result::BaseError;
 use crate::shared::RdbCore;
@@ -23,7 +23,7 @@ pub async fn term_array_unique_and_fuzzy_roundtrip(shared: RdbCore) {
 
     let repo = RdbRepo::new(shared.clone());
 
-    let drive = RdbDrive::new(shared.clone());
+    let nucl = RdbNucl::new(shared.clone());
 
     let termbase_entry = TermbaseEntry {
         id: format!("{}base", PREFIX),
@@ -34,22 +34,21 @@ pub async fn term_array_unique_and_fuzzy_roundtrip(shared: RdbCore) {
         creator_id: comic_fixture.creator_form.id.clone(),
     };
 
-    drive
-        .coord(async |context| {
-            //
-            repo.step(
-                context,
-                &CreateTermbase {
-                    entry: &termbase_entry,
-                },
-            )
-            .await?;
+    nucl.coord(async |context| {
+        //
+        repo.step(
+            context,
+            &CreateTermbase {
+                entry: &termbase_entry,
+            },
+        )
+        .await?;
 
-            Ok::<(), BaseError>(())
-        })
-        .await
-        .ok()
-        .unwrap();
+        Ok::<(), BaseError>(())
+    })
+    .await
+    .ok()
+    .unwrap();
 
     let term_entry = TermEntry {
         id: format!("{}main", PREFIX),
@@ -60,17 +59,16 @@ pub async fn term_array_unique_and_fuzzy_roundtrip(shared: RdbCore) {
         creator_id: comic_fixture.creator_form.id.clone(),
     };
 
-    drive
-        .coord(async |context| {
-            //
-            repo.step(&mut *context, &CreateTerm { entry: &term_entry })
-                .await?;
+    nucl.coord(async |context| {
+        //
+        repo.step(&mut *context, &CreateTerm { entry: &term_entry })
+            .await?;
 
-            Ok::<(), BaseError>(())
-        })
-        .await
-        .ok()
-        .unwrap();
+        Ok::<(), BaseError>(())
+    })
+    .await
+    .ok()
+    .unwrap();
 
     let persisted = repo
         .run(&GetTermInfo { id: &term_entry.id })
@@ -101,7 +99,7 @@ pub async fn term_array_unique_and_fuzzy_roundtrip(shared: RdbCore) {
         ..term_entry.clone()
     };
 
-    let duplicate_result = drive
+    let duplicate_result = nucl
         .coord(async |context| {
             repo.step(
                 context,

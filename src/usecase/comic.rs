@@ -52,6 +52,7 @@ use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::page::{
     DeletePages, ListFirstPageInfos, ListPageInfos,
 };
+use crate::part::repo::oper::team::ResolveTeamId;
 use crate::part::repo::oper::term::DeleteTerms;
 use crate::part::repo::oper::termbase::{
     DeleteTermbase, GetTermbaseInfoExcluded, ListTermbaseInfosExcluded,
@@ -60,6 +61,7 @@ use crate::part::repo::oper::workset::{
     AllocWorksetComicIndex, GetWorksetInfo, UpdateWorksetComicCount,
 };
 use crate::part::repo::page::PageRepo;
+use crate::part::repo::team::TeamRepo;
 use crate::part::repo::term::TermRepo;
 use crate::part::repo::termbase::TermbaseRepo;
 use crate::part::repo::unit::UnitRepo;
@@ -224,8 +226,8 @@ pub async fn get_info<C, R, I>(
 ) -> BaseRest<ComicInfoView>
 where
     R: ComicRepo<C>
-        + WorksetRepo<C>
         + MemberRepo<C>
+        + TeamRepo<C>
         + ChapterRepo<C>
         + PageRepo<C>
         + Sync,
@@ -234,8 +236,7 @@ where
     ComicPermComplex::ensure_user_can_get_info(
         &mut run_proxy! {
             repo =>
-                for<'a, 'b> GetComicInfo<'a, 'b>,
-                for<'a> GetWorksetInfo<'a>,
+                for<'a> ResolveTeamId<'a>,
                 for<'a> FindMemberInfo<'a>;
         },
         &token.user_id,
@@ -278,13 +279,12 @@ pub async fn update_info<C, R>(
     instr: UpdateComicInfoInstr,
 ) -> BaseRest<()>
 where
-    R: ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
+    R: ComicRepo<C> + TeamRepo<C> + MemberRepo<C> + Sync,
 {
     ComicPermComplex::ensure_user_can_update_info(
         &mut run_proxy! {
             repo =>
-                for<'a, 'b> GetComicInfo<'a, 'b>,
-                for<'a> GetWorksetInfo<'a>,
+                for<'a> ResolveTeamId<'a>,
                 for<'a> FindMemberInfo<'a>;
         },
         &token.user_id,
@@ -319,7 +319,7 @@ pub async fn reserve_cover<N, C, R, P, I>(
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
-    R: ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Send + Sync,
+    R: ComicRepo<C> + TeamRepo<C> + MemberRepo<C> + Send + Sync,
     P: Prom<C> + Send + Sync,
     I: ImagePool,
 {
@@ -334,8 +334,7 @@ where
     ComicPermComplex::ensure_user_can_reserve_cover(
         &mut run_proxy! {
             repo =>
-                for<'a, 'b> GetComicInfo<'a, 'b>,
-                for<'a> GetWorksetInfo<'a>,
+                for<'a> ResolveTeamId<'a>,
                 for<'a> FindMemberInfo<'a>;
         },
         &token.user_id,
@@ -448,14 +447,13 @@ pub async fn mark_cover_uploaded<N, C, R, I>(
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
-    R: ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Send + Sync,
+    R: ComicRepo<C> + TeamRepo<C> + MemberRepo<C> + Send + Sync,
     I: ImageManager,
 {
     ComicPermComplex::ensure_user_can_mark_cover_uploaded(
         &mut run_proxy! {
             repo =>
-                for<'a, 'b> GetComicInfo<'a, 'b>,
-                for<'a> GetWorksetInfo<'a>,
+                for<'a> ResolveTeamId<'a>,
                 for<'a> FindMemberInfo<'a>;
         },
         &token.user_id,
@@ -594,6 +592,7 @@ where
     R: ComicRepo<C>
         + WorksetRepo<C>
         + MemberRepo<C>
+        + TeamRepo<C>
         + ChapterRepo<C>
         + PageRepo<C>
         + AssignmentInvitationRepo<C>
@@ -608,8 +607,7 @@ where
     ComicPermComplex::ensure_user_can_delete(
         &mut run_proxy! {
             repo =>
-                for<'a, 'b> GetComicInfo<'a, 'b>,
-                for<'a> GetWorksetInfo<'a>,
+                for<'a> ResolveTeamId<'a>,
                 for<'a> FindMemberInfo<'a>;
         },
         &token.user_id,

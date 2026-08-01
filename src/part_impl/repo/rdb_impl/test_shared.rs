@@ -14,7 +14,7 @@ use crate::part::repo::oper::page::CreatePages;
 use crate::part::repo::oper::team::CreateTeam;
 use crate::part::repo::oper::user::CreateUser;
 use crate::part::repo::oper::workset::CreateWorkset;
-use crate::part_impl::drive::rdb_impl::RdbDrive;
+use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, schema};
 use crate::result::{BaseError, BaseRest, accept};
 use crate::shared::RdbCore;
@@ -365,7 +365,7 @@ pub async fn create_user(shared: &RdbCore, user_entry: &UserEntry) {
     //
     let repo = RdbRepo::new(shared.clone());
 
-    let nucl = RdbDrive::new(shared.clone());
+    let nucl = RdbNucl::new(shared.clone());
 
     nucl.coord(async |context| {
         //
@@ -419,7 +419,7 @@ pub async fn seed_workset(shared: &RdbCore, prefix: &str) -> WorksetFixture {
 
     let repo = RdbRepo::new(shared.clone());
 
-    let nucl = RdbDrive::new(shared.clone());
+    let nucl = RdbNucl::new(shared.clone());
 
     let workset_entry = workset_entry(prefix, &team_fixture.team_entry);
 
@@ -451,7 +451,7 @@ pub async fn seed_comic(shared: &RdbCore, prefix: &str) -> ComicFixture {
 
     let repo = RdbRepo::new(shared.clone());
 
-    let nucl = RdbDrive::new(shared.clone());
+    let nucl = RdbNucl::new(shared.clone());
 
     let creator_form = user_entry(prefix, "creator");
 
@@ -506,7 +506,7 @@ pub async fn seed_chapter(shared: &RdbCore, prefix: &str) -> ChapterFixture {
 
     let repo = RdbRepo::new(shared.clone());
 
-    let nucl = RdbDrive::new(shared.clone());
+    let nucl = RdbNucl::new(shared.clone());
 
     let chapter_entry = chapter_entry(
         prefix,
@@ -545,7 +545,7 @@ pub async fn seed_page(shared: &RdbCore, prefix: &str) -> PageFixture {
 
     let repo = RdbRepo::new(shared.clone());
 
-    let nucl = RdbDrive::new(shared.clone());
+    let nucl = RdbNucl::new(shared.clone());
 
     let page_entry = page_entry(prefix, &chapter_fixture.chapter_entry);
 

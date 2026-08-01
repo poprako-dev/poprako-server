@@ -9,7 +9,7 @@ use crate::model::write::announcement::AnnouncementEntry;
 use crate::part::repo::oper::announcement::{
     CreateAnnouncement, ListAnnouncementInfos,
 };
-use crate::part_impl::drive::rdb_impl::RdbDrive;
+use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
 use crate::result::BaseError;
 use crate::shared::RdbCore;
@@ -27,7 +27,7 @@ pub async fn announcement_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let repo = RdbRepo::new(shared.clone());
 
-    let drive = RdbDrive::new(shared.clone());
+    let nucl = RdbNucl::new(shared.clone());
 
     let announcement_entry = AnnouncementEntry {
         id: format!("{}announcement", PREFIX),
@@ -37,22 +37,21 @@ pub async fn announcement_roundtrip_uses_testcontainer(shared: RdbCore) {
         content: "announcement".into(),
     };
 
-    drive
-        .coord(async |context| {
-            //
-            repo.step(
-                context,
-                &CreateAnnouncement {
-                    entry: &announcement_entry,
-                },
-            )
-            .await?;
+    nucl.coord(async |context| {
+        //
+        repo.step(
+            context,
+            &CreateAnnouncement {
+                entry: &announcement_entry,
+            },
+        )
+        .await?;
 
-            Ok::<(), BaseError>(())
-        })
-        .await
-        .ok()
-        .unwrap();
+        Ok::<(), BaseError>(())
+    })
+    .await
+    .ok()
+    .unwrap();
 
     let announcement_list_spec = AnnouncementListSpec {
         team_id: team_fixture.team_entry.id.clone(),

@@ -10,7 +10,7 @@ use crate::part::repo::oper::page::{
     CreatePages, GetPageInfo, ListFirstPageInfos, ListPageInfos,
     ReservePageImage, SetPageUnitCounters,
 };
-use crate::part_impl::drive::rdb_impl::RdbDrive;
+use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
 use crate::result::BaseError;
 use crate::shared::RdbCore;
@@ -28,7 +28,7 @@ pub async fn page_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let repo = RdbRepo::new(shared.clone());
 
-    let drive = RdbDrive::new(shared.clone());
+    let nucl = RdbNucl::new(shared.clone());
 
     let unit_counters = UnitCounters {
         total_unit_count: 2,
@@ -36,23 +36,22 @@ pub async fn page_roundtrip_uses_testcontainer(shared: RdbCore) {
         proofread_unit_count: 1,
     };
 
-    drive
-        .coord(async |context| {
-            //
-            repo.step(
-                context,
-                &SetPageUnitCounters {
-                    id: &page_fixture.page_entry.id,
-                    counters: unit_counters,
-                },
-            )
-            .await?;
+    nucl.coord(async |context| {
+        //
+        repo.step(
+            context,
+            &SetPageUnitCounters {
+                id: &page_fixture.page_entry.id,
+                counters: unit_counters,
+            },
+        )
+        .await?;
 
-            Ok::<(), BaseError>(())
-        })
-        .await
-        .ok()
-        .unwrap();
+        Ok::<(), BaseError>(())
+    })
+    .await
+    .ok()
+    .unwrap();
 
     let page_infos = repo
         .run(&ListPageInfos {
@@ -78,24 +77,23 @@ pub async fn page_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let second_page_id = second_page_entry.id.clone();
 
-    drive
-        .coord(async |context| {
-            //
-            repo.step(
-                context,
-                &CreatePages {
-                    entries: &[second_page_entry],
-                },
-            )
-            .await?;
+    nucl.coord(async |context| {
+        //
+        repo.step(
+            context,
+            &CreatePages {
+                entries: &[second_page_entry],
+            },
+        )
+        .await?;
 
-            Ok::<(), BaseError>(())
-        })
-        .await
-        .ok()
-        .unwrap();
+        Ok::<(), BaseError>(())
+    })
+    .await
+    .ok()
+    .unwrap();
 
-    let image_reservation = drive
+    let image_reservation = nucl
         .coord(async |context| {
             repo.step(
                 context,

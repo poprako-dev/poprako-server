@@ -14,7 +14,7 @@ use tracing::instrument;
 use poprako_util::i18n::trl;
 
 use crate::model::write::system_mail::SystemMailEntry;
-use crate::part_impl::drive::rdb_impl::RdbDrive;
+use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::rdb_impl::entity::system_mail::SystemMailRowEntry;
 use crate::part_impl::repo::rdb_impl::schema::t_comic_archive::dsl::{
     f_created_at, f_team_id, t_comic_archive,
@@ -97,11 +97,11 @@ async fn purge_once(core: &RdbCore) -> BaseRest<usize> {
 
     let mut total_deleted = 0;
 
-    let drive = RdbDrive::new(core.clone());
+    let nucl = RdbNucl::new(core.clone());
 
     for slot in slots {
         //
-        let deleted_count = drive
+        let deleted_count = nucl
             .coord(async |context| purge_slot(context.conn(), &slot).await)
             .await?;
 
