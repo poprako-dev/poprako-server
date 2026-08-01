@@ -17,20 +17,20 @@ use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
 use crate::part::repo::oper::chapter::{
-    AdjustChapterUnitCounters, GetChapterInfo, GetChapterInfoExcluded,
+    AdjustChapterUnitCounters, GetChapterInfoExcluded,
 };
-use crate::part::repo::oper::comic::{GetComicInfo, TouchComicLastActive};
+use crate::part::repo::oper::comic::TouchComicLastActive;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::page::{
     GetPageInfo, GetPageInfoExcluded, SetPageUnitCounters,
 };
+use crate::part::repo::oper::team::ResolveTeamId;
 use crate::part::repo::oper::unit::{
     ApplyUnitEdits, ListUnitInfos, ListUnitOrders,
 };
-use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::page::PageRepo;
+use crate::part::repo::team::TeamRepo;
 use crate::part::repo::unit::UnitRepo;
-use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseError, BaseRest, accept};
 use crate::usecase::stage::spawn_starts;
 use crate::value::role::RoleField;
@@ -50,9 +50,7 @@ pub async fn list_infos<C, R>(
 where
     R: PageRepo<C>
         + UnitRepo<C>
-        + ChapterRepo<C>
-        + ComicRepo<C>
-        + WorksetRepo<C>
+        + TeamRepo<C>
         + MemberRepo<C>
         + AssignmentRepo<C>
         + Sync,
@@ -62,9 +60,7 @@ where
     UnitPermComplex::ensure_user_can_list_infos(
         &mut run_proxy! {
             repo =>
-                for<'a, 'b> GetChapterInfo<'a, 'b>,
-                for<'a, 'b> GetComicInfo<'a, 'b>,
-                for<'a> GetWorksetInfo<'a>,
+                for<'a> ResolveTeamId<'a>,
                 for<'a> FindMemberInfo<'a>,
                 for<'a, 'b> FindAssignmentInfo<'a, 'b>;
         },

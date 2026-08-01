@@ -2,7 +2,8 @@
 
 Function names, local variables, parameters, constants, statics, enum
 variants, type names (struct, enum, trait, type alias, union), and struct
-fields must not contain forbidden word segments.
+fields must not contain forbidden word segments. Structured macro field keys
+are checked for the forbidden `error` segment as well.
 
 Identifiers inside `#[cfg(test)]` modules (including `tests.rs` and `tests/`
 directories) and repository-layer files (`src/part/repo/`,
@@ -95,8 +96,21 @@ fn read_prev() {}
 ```bash
 uv run fmt/forbidden-identifiers/check.py
 uv run fmt/forbidden-identifiers/check.py --self-test
+
+# Ignore one file, or repeat --ignore-file for several files.
+uv run fmt/forbidden-identifiers/check.py \
+    --ignore-file src/complex/term.rs
+
+# Read ignored paths from a newline-delimited file. Empty lines and lines
+# beginning with # are ignored; paths are relative to --root.
+uv run fmt/forbidden-identifiers/check.py \
+    --ignore-list fmt/forbidden-identifiers/ignore-files.txt
 ```
 
 The script scans every `.rs` file under `src/` (excluding `schema.rs` and
 `#[cfg(test)]` modules), reports violations to stderr, and exits with 0
 (clean) or 1 (violations found). There is no `--fix` mode.
+
+`fmt/run-check.sh` supplies
+`fmt/forbidden-identifiers/ignore-files.txt` by default for the project-wide
+format check.

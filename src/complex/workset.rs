@@ -1,5 +1,5 @@
 //! Complex-domain opers for workset entities: identity generation and
-//! permission gates.
+//! perm gates.
 
 use poprako_orchestra::{OperProxy as _, Proxy};
 use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
@@ -8,7 +8,7 @@ use crate::complex::comic::ComicComplex;
 use crate::complex::util::{
     check_user_is_team_admin, check_user_is_team_member,
 };
-use crate::model::read::spec::comic::{ComicListKind, ComicListSpec};
+use crate::model::read::spec::comic::ComicListSpec;
 use crate::part::prom::payload::TaskPayload;
 use crate::part::repo::oper::assignment::DeleteAssignments;
 use crate::part::repo::oper::assignment_invitation::DeleteAssignmentInvitations;
@@ -88,7 +88,7 @@ impl WorksetComplex {
             let list_spec = ComicListSpec {
                 workset_id: workset_info.id.clone(),
                 fuzzy_title: None,
-                kind: ComicListKind::All,
+                stages: None,
                 incl_opt: Vec::new(),
                 offset: 0,
                 limit: PAGE_SIZE,
@@ -117,7 +117,7 @@ impl WorksetComplex {
     }
 }
 
-/// Permission-gate opers for workset entities — workset-scoped.
+/// perm-gate opers for workset entities — workset-scoped.
 pub struct WorksetPermComplex;
 
 impl WorksetPermComplex {
@@ -155,9 +155,10 @@ impl WorksetPermComplex {
         P: for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
             + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
-        let team_id = Self::resolve_team_id(proxy, workset_id).await?;
+        let workset_info =
+            GetWorksetInfo { id: workset_id }.proxy_on(proxy).await?;
 
-        check_user_is_team_member(proxy, user_id, &team_id).await
+        check_user_is_team_member(proxy, user_id, &workset_info.team_id).await
     }
 
     /// Verify the caller is a team admin of the workset's team.
@@ -170,9 +171,10 @@ impl WorksetPermComplex {
         P: for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
             + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
-        let team_id = Self::resolve_team_id(proxy, workset_id).await?;
+        let workset_info =
+            GetWorksetInfo { id: workset_id }.proxy_on(proxy).await?;
 
-        check_user_is_team_admin(proxy, user_id, &team_id).await
+        check_user_is_team_admin(proxy, user_id, &workset_info.team_id).await
     }
 
     /// Verify the caller is a team admin of the workset's team.
@@ -185,22 +187,9 @@ impl WorksetPermComplex {
         P: for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
             + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
-        let team_id = Self::resolve_team_id(proxy, workset_id).await?;
-
-        check_user_is_team_admin(proxy, user_id, &team_id).await
-    }
-
-    // Resolve the owning team ID from a workset ID.
-    async fn resolve_team_id<P>(
-        proxy: &mut P,
-        workset_id: &str,
-    ) -> BaseRest<String>
-    where
-        P: for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>,
-    {
         let workset_info =
             GetWorksetInfo { id: workset_id }.proxy_on(proxy).await?;
 
-        accept(workset_info.team_id)
+        check_user_is_team_admin(proxy, user_id, &workset_info.team_id).await
     }
 }

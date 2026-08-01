@@ -27,7 +27,7 @@ use crate::usecase;
 
 /// Query for listing assignment invitations under one chapter.
 ///
-/// Example: `?pending=true&offset=0&limit=20`.
+/// Example: `?is_pending=true&offset=0&limit=20`.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
@@ -52,7 +52,7 @@ pub struct AssignmentInvitationListQuery {
     request_body = CreateAssignmentInvitationInstr,
     responses(
         (status = 201, description = "Invitation created", body = HttpBody<CreateAssignmentInvitationVal>),
-        (status = 403, description = "No permission to create invitations in this chapter"),
+        (status = 403, description = "No perm to create invitations in this chapter"),
         (status = 409, description = "Invitee is already assigned"),
     ),
 ))]
@@ -63,7 +63,7 @@ pub async fn create(
     Json(instr): Json<CreateAssignmentInvitationInstr>,
 ) -> HttpResult<CreateAssignmentInvitationVal> {
     usecase::assignment_invitation::create(
-        (harn.drive(), harn.repo(), harn.prom()),
+        (harn.nucl(), harn.repo(), harn.prom()),
         user_token,
         instr,
     )
@@ -76,11 +76,11 @@ pub async fn create(
     get,
     path = "/api/v1/chapters/{chapter_id}/assignment-invitations",
     tag = "assignment-invitations",
-    description = "Lists a chapter's assignment invitations. `pending` filters by consumption state. Example: `/api/v1/chapters/{chapter_id}/assignment-invitations?pending=true&offset=0&limit=20`.",
+    description = "Lists a chapter's assignment invitations. `is_pending` filters by consumption state. Example: `/api/v1/chapters/{chapter_id}/assignment-invitations?is_pending=true&offset=0&limit=20`.",
     params(("chapter_id" = String, Path, description = "Chapter ID"), AssignmentInvitationListQuery),
     responses(
         (status = 200, description = "Invitations listed", body = HttpBody<Vec<AssignmentInvitationInfoView>>),
-        (status = 403, description = "No permission to list invitations in this chapter"),
+        (status = 403, description = "No perm to list invitations in this chapter"),
     ),
 ))]
 #[instrument(level = "info", err(Debug), skip_all)]
@@ -115,7 +115,7 @@ pub async fn list_infos(
     params(("assignment_invitation_id" = String, Path, description = "Invitation ID")),
     responses(
         (status = 204, description = "Invitation deleted"),
-        (status = 403, description = "No permission to delete this invitation"),
+        (status = 403, description = "No perm to delete this invitation"),
         (status = 404, description = "Invitation not found"),
     ),
 ))]
@@ -127,7 +127,7 @@ pub async fn delete(
 ) -> HttpNoContent {
     //
     usecase::assignment_invitation::delete(
-        (harn.drive(), harn.repo()),
+        (harn.nucl(), harn.repo()),
         user_token,
         assignment_invitation_id,
     )
@@ -145,7 +145,7 @@ pub async fn delete(
     responses(
         (status = 201, description = "Joined assignment", body = HttpBody<AssignmentInfoView>),
         (status = 422, description = "Invitation does not target this user"),
-        (status = 403, description = "Role not assignable or no permission"),
+        (status = 403, description = "Role not assignable or no perm"),
         (status = 404, description = "Invitation code not found"),
     ),
 ))]
@@ -156,7 +156,7 @@ pub async fn join(
     Json(instr): Json<JoinAssignmentInvitationInstr>,
 ) -> HttpResult<AssignmentInfoView> {
     usecase::assignment_invitation::join(
-        (harn.drive(), harn.repo(), harn.image_pool()),
+        (harn.nucl(), harn.repo(), harn.image_pool()),
         user_token,
         instr,
     )

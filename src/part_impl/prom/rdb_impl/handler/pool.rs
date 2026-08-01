@@ -10,9 +10,9 @@ use tokio::task::JoinHandle;
 use tokio::time::sleep;
 use tracing::instrument;
 
-use crate::part::effect::EffectDevelop;
+use crate::part::effect::Develop;
 use crate::part::image::ImageManager;
-use crate::part_impl::drive::rdb_impl::RdbDrive;
+use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::prom::rdb_impl::entity::LocalMessageRow;
 use crate::part_impl::prom::rdb_impl::handler::base::{
     RdbPromHandler, dispatch_payload,
@@ -23,8 +23,8 @@ use crate::part_impl::prom::rdb_impl::repo::{
     ResetStuck, RetryMessage,
 };
 use crate::part_impl::repo::rdb_impl::RdbRepo;
-use crate::part_impl::shared::RdbContext;
 use crate::result::BaseRest;
+use crate::shared::RdbContext;
 
 #[cfg(all(test, feature = "rdb", feature = "prom_impl"))]
 // Internal organization of the `tests` module.
@@ -73,10 +73,10 @@ pub fn enforce_retry_limit(
     }
 }
 
-impl<I, V> RdbPromHandler<RdbDrive, RdbRepo, I, V>
+impl<I, D> RdbPromHandler<RdbNucl, RdbRepo, I, D>
 where
     I: ImageManager + Send + Sync + 'static,
-    V: EffectDevelop + Send + Sync + 'static,
+    D: Develop + Send + Sync + 'static,
 {
     /// Runs the polling supervisor and drains in-flight worker tasks on shutdown.
     #[instrument(level = "info", skip_all)]
@@ -97,7 +97,7 @@ where
         for worker_handle in worker_handles {
             if let Err(error) = worker_handle.await {
                 tracing::error!(
-                    error = ?error,
+                    err = ?error,
                     "[RdbPromHandler::run] worker task failed",
                 );
             }
@@ -194,7 +194,7 @@ where
                     //
                     // Internal implementation detail.
                     tracing::error!(
-                        error = ?error,
+                        err = ?error,
                         "[RdbPromHandler::run] poll failed",
                     );
 
@@ -240,7 +240,7 @@ where
                 {
                     tracing::error!(
                         id = %row.f_id,
-                        error = ?error,
+                        err = ?error,
                         "[RdbPromHandler::process_row] complete failed",
                     );
                 }
@@ -252,8 +252,8 @@ where
                 {
                     tracing::error!(
                         id = %row.f_id,
-                        original_error = %error,
-                        error = ?mark_error,
+                        original_err = %error,
+                        err = ?mark_error,
                         "[RdbPromHandler::process_row] retry mark failed",
                     );
                 }
@@ -265,7 +265,7 @@ where
                 tracing::error!(
                     id = %row.f_id,
                     topic = %row.f_topic,
-                    error = %error,
+                    err = %error,
                     "[RdbPromHandler::process_row] task failed",
                 );
 
@@ -274,8 +274,8 @@ where
                 {
                     tracing::error!(
                         id = %row.f_id,
-                        original_error = %error,
-                        error = ?mark_error,
+                        original_err = %error,
+                        err = ?mark_error,
                         "[RdbPromHandler::process_row] fail mark failed",
                     );
                 }
@@ -287,7 +287,7 @@ where
     async fn log_reset_stuck(&self) {
         if let Err(error) = self.reset_stuck().await {
             tracing::error!(
-                error = ?error,
+                err = ?error,
                 "[RdbPromHandler::run] reset stuck failed",
             );
         }
@@ -309,7 +309,7 @@ where
 
             Err(error) => {
                 tracing::error!(
-                    error = ?error,
+                    err = ?error,
                     "[RdbPromHandler::run] purge completed failed",
                 );
             }
@@ -351,7 +351,7 @@ where
                     // Internal implementation detail.
                     tracing::error!(
                         id = %row.f_id,
-                        error = ?error,
+                        err = ?error,
                         "[RdbPromHandler::dispatch_rows] claim failed",
                     );
 

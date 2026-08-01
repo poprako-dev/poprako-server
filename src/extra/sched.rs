@@ -1,15 +1,16 @@
 //! Fixed production composition for periodic background jobs.
 
 use tokio::sync::watch;
+
 use tokio_util::sync::CancellationToken;
 
-use crate::part_impl::shared::RdbCore;
+use crate::shared::RdbCore;
 
 // Comic archive retention periodic job.
 mod comic_archive;
 
 /// Owns the lifecycle of the fixed production periodic-job composition.
-pub struct GeneralSched {
+pub struct Sched {
     //
     /// Shared cancellation signal for every explicitly composed job.
     token: CancellationToken,
@@ -18,7 +19,7 @@ pub struct GeneralSched {
     done_recvs: Vec<watch::Receiver<bool>>,
 }
 
-impl GeneralSched {
+impl Sched {
     /// Starts the explicitly composed periodic jobs.
     pub fn new(core: RdbCore) -> Self {
         //
@@ -40,7 +41,7 @@ impl GeneralSched {
 
             if let Err(error) = done_recv.wait_for(|done| *done).await {
                 tracing::error!(
-                    error = %error,
+                    err = %error,
                     "[GeneralSched::close] job ended without completion",
                 );
             }
@@ -48,7 +49,7 @@ impl GeneralSched {
     }
 }
 
-impl Drop for GeneralSched {
+impl Drop for Sched {
     // Cancels the scheduler token on drop to stop periodic jobs.
     fn drop(&mut self) {
         self.token.cancel();

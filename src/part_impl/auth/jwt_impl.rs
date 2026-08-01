@@ -131,9 +131,18 @@ impl TokenAuth for JwtAuth {
             // Internal state field tracing.
             tracing::debug!("[JwtAuth::verify_token] decode failed: {}", err);
 
+            let err_message = trl("error-unauthorized");
+
+            tracing::warn!(
+                err_variant = ?ExpectedVariant::Auth,
+                err_message = %err_message,
+                decode_err = %err,
+                "expected error: JWT verification failed",
+            );
+
             BaseError::Expected {
                 variant: ExpectedVariant::Auth,
-                message: trl("error-unauthorized"),
+                message: err_message,
             }
         })?;
 

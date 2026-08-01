@@ -9,6 +9,8 @@ use poprako_orchestra::{Run, Step};
 use time::OffsetDateTime;
 use tracing::instrument;
 
+use poprako_util::i18n::trl;
+
 use crate::model::read::proj::term::TermInfo;
 use crate::model::read::spec::term::TermListSpec;
 use crate::model::write::term::{TermEntry, TermRepl};
@@ -19,9 +21,9 @@ use crate::part::repo::oper::term::{
 use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::term::{TermRow, TermRowEntry};
 use crate::part_impl::repo::rdb_impl::schema::t_term::dsl::*;
-use crate::part_impl::shared::result::{diesel, expected};
-use crate::part_impl::shared::{RdbConn, RdbContext};
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::shared::result::diesel;
+use crate::shared::{RdbConn, RdbContext};
 
 /// Term RDB integration tests.
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
@@ -198,15 +200,37 @@ async fn create(
 async fn get_info_excluded(conn: &mut RdbConn, id: &str) -> BaseRest<TermInfo> {
     //
     // Use `for_update()` to prevent concurrent updates while resolving this term.
-    let row: TermRow = t_term
+    let row: Option<TermRow> = t_term
         .filter(f_id.eq(id))
         .select(TermRow::as_select())
         .for_update()
         .get_result(conn)
         .await
         .optional()
-        .map_err(diesel)?
-        .ok_or_else(|| expected("error-term-not-found"))?;
+        .map_err(diesel)?;
+
+    let row = match row {
+        //
+        Some(row) => row,
+
+        None => {
+            //
+            let message = trl("error-term-not-found");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                err_message = %message,
+                term_id = %id,
+                operation = "get locked term info",
+                "expected term error",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message,
+            });
+        }
+    };
 
     accept(row.into())
 }
@@ -216,15 +240,37 @@ async fn get_info_excluded(conn: &mut RdbConn, id: &str) -> BaseRest<TermInfo> {
 async fn lock_term(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
     // Confirm existence and keep the row locked until the current transaction ends.
-    let _: String = t_term
+    let row: Option<String> = t_term
         .filter(f_id.eq(id))
         .select(f_id)
         .for_update()
         .get_result(conn)
         .await
         .optional()
-        .map_err(diesel)?
-        .ok_or_else(|| expected("error-term-not-found"))?;
+        .map_err(diesel)?;
+
+    let _ = match row {
+        //
+        Some(row) => row,
+
+        None => {
+            //
+            let message = trl("error-term-not-found");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                err_message = %message,
+                term_id = %id,
+                operation = "lock term row",
+                "expected term error",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message,
+            });
+        }
+    };
 
     accept(())
 }
@@ -292,14 +338,36 @@ async fn list_infos(
 async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<TermInfo> {
     //
     // Read the row with strict id match and convert it to a rich term view.
-    let row: TermRow = t_term
+    let row: Option<TermRow> = t_term
         .filter(f_id.eq(id))
         .select(TermRow::as_select())
         .get_result(conn)
         .await
         .optional()
-        .map_err(diesel)?
-        .ok_or_else(|| expected("error-term-not-found"))?;
+        .map_err(diesel)?;
+
+    let row = match row {
+        //
+        Some(row) => row,
+
+        None => {
+            //
+            let message = trl("error-term-not-found");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                err_message = %message,
+                term_id = %id,
+                operation = "get term info",
+                "expected term error",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message,
+            });
+        }
+    };
 
     accept(row.into())
 }

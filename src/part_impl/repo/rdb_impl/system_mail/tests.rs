@@ -2,15 +2,13 @@
 
 use super::*;
 
-use crate::model::read::spec::system_mail::{
-    SystemMailListKind, SystemMailListSpec,
-};
+use crate::model::read::spec::system_mail::SystemMailListSpec;
 use crate::model::write::system_mail::SystemMailEntry;
 use crate::part::repo::oper::system_mail::{
     ListSystemMailInfos, MarkSystemMailRead, SendSystemMail,
 };
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
-use crate::part_impl::shared::RdbCore;
+use crate::shared::RdbCore;
 
 const PREFIX: &str = "rdb-test-system-mail-domain-";
 
@@ -40,7 +38,7 @@ pub async fn system_mail_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let unread_system_mail_list_spec = SystemMailListSpec {
         receiver_id: user_fixture.user_entry.id.clone(),
-        kind: SystemMailListKind::Unread,
+        is_read: Some(false),
         offset: 0,
         limit: 10,
     };
@@ -65,7 +63,7 @@ pub async fn system_mail_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let read_system_mail_list_spec = SystemMailListSpec {
         receiver_id: user_fixture.user_entry.id.clone(),
-        kind: SystemMailListKind::Read,
+        is_read: Some(true),
         offset: 0,
         limit: 10,
     };

@@ -1,4 +1,4 @@
-// it_09 — Cross-team isolation: second team + outsider, permission boundary.
+// it_09 — Cross-team isolation: second team + outsider, perm boundary.
 //
 // Preconditions:
 //   - it_00 + it_01 have run. it_02 has run (default team has worksets/comics

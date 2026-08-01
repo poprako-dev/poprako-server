@@ -61,7 +61,10 @@ fn name_conflicts(
 }
 
 // Internal implementation of `list_infos`.
-fn list_infos(state: &MockState, spec: &TermbaseListSpec) -> Vec<TermbaseInfo> {
+fn list_infos(
+    state: &MockState,
+    spec: &TermbaseListSpec,
+) -> BaseRest<Vec<TermbaseInfo>> {
     //
     // Internal implementation detail.
     // Internal implementation detail.
@@ -89,25 +92,54 @@ fn list_infos(state: &MockState, spec: &TermbaseListSpec) -> Vec<TermbaseInfo> {
         ),
 
         TermbaseListSpec::Comic {
-            team_id,
             comic_id,
             fuzzy_name,
             offset,
             limit,
-        } => (
-            state
-                .termbases
+        } => {
+            //
+            let owning_team_id = match state
+                .comics
                 .iter()
-                .filter(|termbase_info| {
-                    termbase_info.team_id.as_deref() == Some(team_id)
-                        || termbase_info.comic_id.as_deref() == Some(comic_id)
-                })
-                .cloned()
-                .collect::<Vec<_>>(),
-            fuzzy_name,
-            *offset,
-            *limit,
-        ),
+                .find(|comic_info| comic_info.id == *comic_id)
+            {
+                Some(comic_info) => {
+                    //
+                    let workset_info = state
+                        .worksets
+                        .iter()
+                        .find(|workset_info| {
+                            workset_info.id == comic_info.workset_id
+                        })
+                        .ok_or_else(|| BaseError::Unrecoverable {
+                            message:
+                                "[list_infos] comic references missing workset"
+                                    .into(),
+                        })?;
+
+                    Some(workset_info.team_id.as_str())
+                }
+
+                None => None,
+            };
+
+            (
+                state
+                    .termbases
+                    .iter()
+                    .filter(|termbase_info| {
+                        owning_team_id.is_some_and(|team_id| {
+                            termbase_info.team_id.as_deref() == Some(team_id)
+                        }) || termbase_info.comic_id.as_deref()
+                            == Some(comic_id)
+                    })
+                    .cloned()
+                    .collect::<Vec<_>>(),
+                fuzzy_name,
+                *offset,
+                *limit,
+            )
+        }
     };
 
     if let Some(fuzzy_name) = fuzzy_name {
@@ -121,7 +153,7 @@ fn list_infos(state: &MockState, spec: &TermbaseListSpec) -> Vec<TermbaseInfo> {
         });
     }
 
-    page_infos(termbase_infos, offset, limit)
+    accept(page_infos(termbase_infos, offset, limit))
 }
 
 // Resolve one termbase by id and return it with expected-args missing error.
@@ -165,7 +197,7 @@ impl<'a> Run<ListTermbaseInfos<'a>> for Mock {
         // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
-        accept(list_infos(&state, oper.spec))
+        list_infos(&state, oper.spec)
     }
 }
 

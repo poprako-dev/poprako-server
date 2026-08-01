@@ -1,16 +1,14 @@
 //! Domain models for member invitations.
 
-use crate::value::member_invitation::{
-    MemberInvitationInclOpt, MemberInvitationStatus,
-};
+use crate::value::member_invitation::MemberInvitationInclOpt;
 
 /// Filtering, pagination, and include parameters for listing invitations.
 pub struct MemberInvitationListSpec {
     //
     /// The team whose invitations should be listed.
     pub team_id: String,
-    /// Consumption-status filter narrowing which invitations to return.
-    pub status: MemberInvitationStatus,
+    /// Optional pending-state filter.
+    pub is_pending: Option<bool>,
     /// Additional data to include in each result, such as the inviter user record.
     pub incl_opt: Vec<MemberInvitationInclOpt>,
 

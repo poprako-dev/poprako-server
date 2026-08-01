@@ -1,4 +1,4 @@
-/// Content-field permissions derived from the current assignment.
+/// Content-field perms derived from the current assignment.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct UnitEditPerm {
     //

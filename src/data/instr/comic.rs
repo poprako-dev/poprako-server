@@ -10,7 +10,7 @@
 
 use serde::Deserialize;
 
-use crate::model::read::spec::comic::{ComicListKind, ComicListSpec};
+use crate::model::read::spec::comic::ComicListSpec;
 use crate::result::{BaseError, BaseRest, accept};
 use crate::value::chapter::StageMask;
 use crate::value::comic::{ComicInclOpt, ComicWithOpt};
@@ -126,17 +126,10 @@ impl TryFrom<ListComicInfosInstr> for ComicListSpec {
         let stages =
             instr.stages.map(StageMask::try_filter_from).transpose()?;
 
-        let kind = match stages {
-            //
-            Some(stage_mask) => ComicListKind::Stages(stage_mask),
-
-            None => ComicListKind::All,
-        };
-
         accept(Self {
             workset_id: instr.workset_id,
             fuzzy_title: instr.fuzzy_title,
-            kind,
+            stages,
             incl_opt: instr.incl_opt,
             offset: instr.offset,
             limit: instr.limit,

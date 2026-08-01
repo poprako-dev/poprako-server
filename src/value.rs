@@ -2,8 +2,6 @@
 pub mod announcement;
 /// Assignment value types.
 pub mod assignment;
-/// Assignment invitation value types.
-pub mod assignment_invitation;
 /// Comment value types.
 pub mod comment;
 /// Image content identity value types.
@@ -12,7 +10,7 @@ pub mod image;
 pub mod incl;
 /// Index computation helpers.
 pub mod index;
-/// Role and permission value types.
+/// Role and perm value types.
 pub mod role;
 
 /// Chapter value types (stage, stage phase, stage oper).

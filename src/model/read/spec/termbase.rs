@@ -19,8 +19,6 @@ pub enum TermbaseListSpec {
     /// List terminology bases visible from a comic.
     Comic {
         //
-        /// ID of the team that owns the comic.
-        team_id: String,
         /// ID of the comic whose associated termbases to list.
         comic_id: String,
         /// Optional fuzzy name filter.

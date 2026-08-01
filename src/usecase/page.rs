@@ -30,17 +30,17 @@ use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
 use crate::part::repo::oper::chapter::{
-    GetChapterInfo, GetChapterInfoExcluded, SetChapterPageCounters,
+    GetChapterInfoExcluded, SetChapterPageCounters,
 };
-use crate::part::repo::oper::comic::{GetComicInfo, TouchComicLastActive};
+use crate::part::repo::oper::comic::TouchComicLastActive;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::page::{
     DeletePages, GetPageInfo, GetPageInfoExcluded, ListPageInfos,
     MarkPageImageUploaded, UpdatePageManifest,
 };
-use crate::part::repo::oper::workset::GetWorksetInfo;
+use crate::part::repo::oper::team::ResolveTeamId;
 use crate::part::repo::page::PageRepo;
-use crate::part::repo::workset::WorksetRepo;
+use crate::part::repo::team::TeamRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 
@@ -268,21 +268,13 @@ pub async fn list_infos<C, R, I>(
     instr: ListPageInfosInstr,
 ) -> BaseRest<Vec<PageInfoView>>
 where
-    R: PageRepo<C>
-        + ChapterRepo<C>
-        + ComicRepo<C>
-        + WorksetRepo<C>
-        + MemberRepo<C>
-        + AssignmentRepo<C>
-        + Sync,
+    R: PageRepo<C> + TeamRepo<C> + MemberRepo<C> + AssignmentRepo<C> + Sync,
     I: ImagePool,
 {
     PagePermComplex::ensure_user_can_list_infos(
         &mut run_proxy! {
             repo =>
-                for<'a, 'b> GetChapterInfo<'a, 'b>,
-                for<'a, 'b> GetComicInfo<'a, 'b>,
-                for<'a> GetWorksetInfo<'a>,
+                for<'a> ResolveTeamId<'a>,
                 for<'a> FindMemberInfo<'a>,
                 for<'a, 'b> FindAssignmentInfo<'a, 'b>;
         },
@@ -315,13 +307,7 @@ pub async fn get_info<C, R, I>(
     id: String,
 ) -> BaseRest<PageInfoView>
 where
-    R: PageRepo<C>
-        + ChapterRepo<C>
-        + ComicRepo<C>
-        + WorksetRepo<C>
-        + MemberRepo<C>
-        + AssignmentRepo<C>
-        + Sync,
+    R: PageRepo<C> + TeamRepo<C> + MemberRepo<C> + AssignmentRepo<C> + Sync,
     I: ImagePool,
 {
     let page_info = GetPageInfo { id: &id }.run_on(repo).await?;
@@ -329,9 +315,7 @@ where
     PagePermComplex::ensure_user_can_list_infos(
         &mut run_proxy! {
             repo =>
-                for<'a, 'b> GetChapterInfo<'a, 'b>,
-                for<'a, 'b> GetComicInfo<'a, 'b>,
-                for<'a> GetWorksetInfo<'a>,
+                for<'a> ResolveTeamId<'a>,
                 for<'a> FindMemberInfo<'a>,
                 for<'a, 'b> FindAssignmentInfo<'a, 'b>;
         },
@@ -369,9 +353,23 @@ where
     .await?;
 
     if page_info.image_version != instr.image_version {
+        //
+        let err_message = trl("error-stale-page-image-upload");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Args,
+            err_message = %err_message,
+            page_id = %id,
+            chapter_id = %page_info.chapter_id,
+            user_id = %token.user_id,
+            image_version = instr.image_version,
+            stored_image_version = page_info.image_version,
+            "expected error: stale page image upload",
+        );
+
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: trl("error-stale-page-image-upload"),
+            message: err_message,
         });
     }
 
@@ -379,19 +377,45 @@ where
         return accept(());
     }
 
-    let image_key =
-        page_info
-            .image_key
-            .clone()
-            .ok_or_else(|| BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message: trl("error-stale-page-image-upload"),
-            })?;
+    let image_key = page_info.image_key.clone().ok_or_else(|| {
+        //
+        let err_message = trl("error-stale-page-image-upload");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Args,
+            err_message = %err_message,
+            page_id = %id,
+            chapter_id = %page_info.chapter_id,
+            user_id = %token.user_id,
+            image_version = instr.image_version,
+            stored_image_version = page_info.image_version,
+            "expected error: stale page image upload",
+        );
+
+        BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: err_message,
+        }
+    })?;
 
     if !image_manager.object_exists(&image_key).await? {
+        //
+        let err_message = trl("error-stale-page-image-upload");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Args,
+            err_message = %err_message,
+            page_id = %id,
+            chapter_id = %page_info.chapter_id,
+            user_id = %token.user_id,
+            image_version = instr.image_version,
+            image_key = %image_key,
+            "expected error: stale page image upload",
+        );
+
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: trl("error-stale-page-image-upload"),
+            message: err_message,
         });
     }
 
@@ -422,9 +446,23 @@ where
         if locked_page_info.image_version != instr.image_version
             || locked_page_info.image_key.as_deref() != Some(&image_key)
         {
+            let err_message = trl("error-stale-page-image-upload");
+
+            tracing::warn!(
+                err_variant = ?ExpectedVariant::Args,
+                err_message = %err_message,
+                page_id = %id,
+                chapter_id = %page_info.chapter_id,
+                user_id = %token.user_id,
+                image_version = instr.image_version,
+                locked_image_version = locked_page_info.image_version,
+                image_key = %image_key,
+                "expected error: stale page image upload",
+            );
+
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: trl("error-stale-page-image-upload"),
+                message: err_message,
             });
         }
 
@@ -452,9 +490,8 @@ where
     R: PageRepo<C>
         + ChapterRepo<C>
         + ComicRepo<C>
-        + WorksetRepo<C>
+        + TeamRepo<C>
         + MemberRepo<C>
-        + AssignmentRepo<C>
         + Send
         + Sync,
     P: Prom<C> + Send + Sync,
@@ -462,9 +499,7 @@ where
     PagePermComplex::ensure_user_can_delete(
         &mut run_proxy! {
             repo =>
-                for<'a, 'b> GetChapterInfo<'a, 'b>,
-                for<'a, 'b> GetComicInfo<'a, 'b>,
-                for<'a> GetWorksetInfo<'a>,
+                for<'a> ResolveTeamId<'a>,
                 for<'a> FindMemberInfo<'a>;
         },
         &token.user_id,

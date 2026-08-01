@@ -2,6 +2,7 @@
 // create(create)(negative): admin without proofreader role cannot create a termbase.
 // create(create)(negative): invalid scope is rejected without persistence.
 // list_comic_infos(list_comic_infos)(positive): comic list inherits team bases and excludes sibling comic bases.
+// list_comic_infos(list_comic_infos)(negative): comic list rejects a user outside the owning team before querying termbases.
 // list_comic_infos(list_comic_infos)(positive): fuzzy name does not search descriptions.
 // delete(delete)(positive): deleting a termbase removes all child terms.
 // delete_team_cascade(delete_team_cascade)(positive): team cascade removes direct termbases and their terms.
@@ -30,7 +31,7 @@ fn token(user_id: &str) -> UserToken {
 }
 
 fn member(user_id: &str, team_id: &str, roles: RoleMask) -> MemberInfo {
-    // Build a team member fixture with role permissions.
+    // Build a team member fixture with role perms.
     MemberInfo {
         id: format!("member-{}-{}", user_id, team_id),
         user_id: user_id.into(),
@@ -268,6 +269,39 @@ async fn list_comic_infos_inherits_team_and_excludes_sibling() {
     assert!(infos.iter().any(|info| info.id == "termbase-comic"));
 
     assert!(!infos.iter().any(|info| info.id == "termbase-sibling"));
+}
+
+#[tokio::test]
+async fn list_comic_infos_rejects_non_member() {
+    //
+    let mock = Mock::new();
+
+    mock.seed_team(team("team-1", "Team", "Desc"));
+
+    mock.seed_workset(workset("workset-1", "team-1"));
+
+    mock.seed_comic(comic("comic-1", "workset-1"));
+
+    mock.seed_termbase(termbase(
+        "termbase-team",
+        Some("team-1"),
+        None,
+        "Hero Team",
+        None,
+    ));
+
+    let instr = ListComicTermbaseInfosInstr {
+        comic_id: "comic-1".into(),
+        fuzzy_name: None,
+        offset: 0,
+        limit: 20,
+    };
+
+    let error = list_comic_infos((&mock,), token("user-outside"), instr)
+        .await
+        .unwrap_err();
+
+    assert_expected_variant(error, ExpectedVariant::Perm);
 }
 
 #[tokio::test]

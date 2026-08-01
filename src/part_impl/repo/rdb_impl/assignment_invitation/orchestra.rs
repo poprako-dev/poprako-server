@@ -13,8 +13,8 @@ use crate::part_impl::repo::rdb_impl::assignment_invitation::step_impl::{
     create, delete, delete_by_chapter_id, get_info_by_code_excluded,
     get_info_by_id, list_infos, mark_pending_as_used, purge_pending,
 };
-use crate::part_impl::shared::RdbContext;
 use crate::result::{BaseError, BaseRest};
+use crate::shared::RdbContext;
 
 impl Run<ListAssignmentInvitationInfos<'_>> for RdbRepo {
     // Non-transactional path that lists invitation infos for a list spec.

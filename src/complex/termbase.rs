@@ -1,4 +1,4 @@
-//! Terminology-base validation, permissions, and cascade operations.
+//! Terminology-base validation, perms, and cascade operations.
 
 use poprako_orchestra::{OperProxy as _, Proxy};
 
@@ -9,31 +9,14 @@ use crate::complex::util::{
 };
 use crate::model::read::proj::termbase::TermbaseInfo;
 use crate::model::write::termbase::{TermbaseEntry, TermbaseRepl};
-use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
+use crate::part::repo::oper::team::ResolveTeamId;
 use crate::part::repo::oper::term::DeleteTerms;
 use crate::part::repo::oper::termbase::{
     DeleteTermbase, GetTermbaseInfoExcluded, ListTermbaseInfosExcluded,
 };
-use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
-
-// Build an args-level error when a termbase name is empty.
-fn empty_name_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        message: trl("error-termbase-name-required"),
-    }
-}
-
-// Build an args-level error for unsupported termbase scope combinations.
-fn invalid_scope_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        message: trl("error-invalid-termbase-scope"),
-    }
-}
 
 // Trim a termbase name and reject empty values.
 fn normalize_name(name: String) -> BaseRest<String> {
@@ -41,7 +24,20 @@ fn normalize_name(name: String) -> BaseRest<String> {
     let name = name.trim().to_string();
 
     if name.is_empty() {
-        return Err(empty_name_err());
+        //
+        let err_message = trl("error-termbase-name-required");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Args,
+            err_message = %err_message,
+            termbase_name = %name,
+            "expected error: termbase name required",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: err_message,
+        });
     }
 
     accept(name)
@@ -84,7 +80,23 @@ impl TermbaseComplex {
             //
             (Some(_), None) | (None, Some(_)) => {}
 
-            _ => return Err(invalid_scope_err()),
+            _ => {
+                //
+                let err_message = trl("error-invalid-termbase-scope");
+
+                tracing::warn!(
+                    err_variant = ?ExpectedVariant::Args,
+                    err_message = %err_message,
+                    team_id = ?team_id,
+                    comic_id = ?comic_id,
+                    "expected error: invalid termbase ownership scope",
+                );
+
+                return Err(BaseError::Expected {
+                    variant: ExpectedVariant::Args,
+                    message: err_message,
+                });
+            }
         }
 
         let (name, description) =
@@ -187,55 +199,10 @@ impl TermbaseComplex {
     }
 }
 
-/// Permission checks for terminology-base and terminology-entry resources.
+/// perm checks for terminology-base and terminology-entry resources.
 pub struct TermbasePermComplex;
 
 impl TermbasePermComplex {
-    /// Resolve the owning team for a comic.
-    pub async fn resolve_team_id_from_comic<P>(
-        proxy: &mut P,
-        comic_id: &str,
-    ) -> BaseRest<String>
-    where
-        P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
-            + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>,
-    {
-        let comic_info = GetComicInfo {
-            id: comic_id,
-            incls: &[],
-        }
-        .proxy_on(proxy)
-        .await?;
-
-        let workset_info = GetWorksetInfo {
-            id: &comic_info.workset_id,
-        }
-        .proxy_on(proxy)
-        .await?;
-
-        accept(workset_info.team_id)
-    }
-
-    /// Resolve the owning team for a terminology base.
-    pub async fn resolve_team_id<P>(
-        proxy: &mut P,
-        termbase_info: &TermbaseInfo,
-    ) -> BaseRest<String>
-    where
-        P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
-            + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>,
-    {
-        if let Some(team_id) = &termbase_info.team_id {
-            return accept(team_id.clone());
-        }
-
-        let Some(comic_id) = &termbase_info.comic_id else {
-            return Err(invalid_scope_err());
-        };
-
-        Self::resolve_team_id_from_comic(proxy, comic_id).await
-    }
-
     /// Verify team membership for a terminology-base read.
     pub async fn ensure_user_can_read_team<P>(
         proxy: &mut P,
@@ -246,6 +213,23 @@ impl TermbasePermComplex {
         P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
         check_user_is_team_member(proxy, user_id, team_id).await
+    }
+
+    /// Verify team membership for terminology bases visible from a comic.
+    pub async fn ensure_user_can_read_comic<P>(
+        proxy: &mut P,
+        user_id: &str,
+        comic_id: &str,
+    ) -> BaseRest<()>
+    where
+        P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
+            + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
+    {
+        let team_id = ResolveTeamId::Comic { id: comic_id }
+            .proxy_on(proxy)
+            .await?;
+
+        check_user_is_team_member(proxy, user_id, &team_id).await
     }
 
     /// Verify proofreader membership for a terminology-base write.
@@ -267,11 +251,38 @@ impl TermbasePermComplex {
         termbase_info: &TermbaseInfo,
     ) -> BaseRest<()>
     where
-        P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
-            + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+        P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
             + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
-        let team_id = Self::resolve_team_id(proxy, termbase_info).await?;
+        let team_id = match (&termbase_info.team_id, &termbase_info.comic_id) {
+            //
+            (Some(team_id), None) => team_id.clone(),
+
+            (None, Some(comic_id)) => {
+                ResolveTeamId::Comic { id: comic_id }
+                    .proxy_on(proxy)
+                    .await?
+            }
+
+            _ => {
+                //
+                let err_message = trl("error-invalid-termbase-scope");
+
+                tracing::warn!(
+                    err_variant = ?ExpectedVariant::Args,
+                    err_message = %err_message,
+                    termbase_id = %termbase_info.id,
+                    team_id = ?termbase_info.team_id,
+                    comic_id = ?termbase_info.comic_id,
+                    "expected error: invalid termbase ownership scope",
+                );
+
+                return Err(BaseError::Expected {
+                    variant: ExpectedVariant::Args,
+                    message: err_message,
+                });
+            }
+        };
 
         check_user_is_team_member(proxy, user_id, &team_id).await
     }
@@ -283,11 +294,38 @@ impl TermbasePermComplex {
         termbase_info: &TermbaseInfo,
     ) -> BaseRest<()>
     where
-        P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
-            + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+        P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
             + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
-        let team_id = Self::resolve_team_id(proxy, termbase_info).await?;
+        let team_id = match (&termbase_info.team_id, &termbase_info.comic_id) {
+            //
+            (Some(team_id), None) => team_id.clone(),
+
+            (None, Some(comic_id)) => {
+                ResolveTeamId::Comic { id: comic_id }
+                    .proxy_on(proxy)
+                    .await?
+            }
+
+            _ => {
+                //
+                let err_message = trl("error-invalid-termbase-scope");
+
+                tracing::warn!(
+                    err_variant = ?ExpectedVariant::Args,
+                    err_message = %err_message,
+                    termbase_id = %termbase_info.id,
+                    team_id = ?termbase_info.team_id,
+                    comic_id = ?termbase_info.comic_id,
+                    "expected error: invalid termbase ownership scope",
+                );
+
+                return Err(BaseError::Expected {
+                    variant: ExpectedVariant::Args,
+                    message: err_message,
+                });
+            }
+        };
 
         check_user_is_team_proofreader(proxy, user_id, &team_id).await
     }

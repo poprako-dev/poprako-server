@@ -6,6 +6,8 @@ use poprako_orchestra::{Run, Step};
 use time::OffsetDateTime;
 use tracing::instrument;
 
+use poprako_util::i18n::trl;
+
 use crate::model::read::proj::member_invitation::MemberInvitationInfo;
 use crate::model::read::spec::member_invitation::MemberInvitationListSpec;
 use crate::model::write::member_invitation::MemberInvitationEntry;
@@ -19,12 +21,10 @@ use crate::part_impl::repo::rdb_impl::entity::member_invitation::{
 };
 use crate::part_impl::repo::rdb_impl::schema::t_member_invitation::dsl::*;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, incl};
-use crate::part_impl::shared::result::{diesel, expected};
-use crate::part_impl::shared::{RdbConn, RdbContext};
-use crate::result::{BaseError, BaseRest, accept};
-use crate::value::member_invitation::{
-    MemberInvitationInclOpt, MemberInvitationStatus,
-};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::shared::result::diesel;
+use crate::shared::{RdbConn, RdbContext};
+use crate::value::member_invitation::MemberInvitationInclOpt;
 use crate::value::role::RoleMask;
 
 /// Member invitation RDB integration tests.
@@ -58,13 +58,11 @@ async fn list_infos(
         .select(MemberInvitationRow::as_select())
         .into_boxed();
 
-    query = match &spec.status {
+    query = match spec.is_pending {
         //
-        MemberInvitationStatus::All => query,
+        Some(is_pending) => query.filter(f_pending.eq(is_pending)),
 
-        MemberInvitationStatus::Pending => query.filter(f_pending.eq(true)),
-
-        MemberInvitationStatus::Used => query.filter(f_pending.eq(false)),
+        None => query,
     };
 
     let rows: Vec<MemberInvitationRow> = query
@@ -99,14 +97,36 @@ async fn get_info_by_id(
     incl_opt: &[MemberInvitationInclOpt],
 ) -> BaseRest<MemberInvitationInfo> {
     //
-    let row: MemberInvitationRow = t_member_invitation
+    let row: Option<MemberInvitationRow> = t_member_invitation
         .filter(f_id.eq(id))
         .select(MemberInvitationRow::as_select())
         .get_result(conn)
         .await
         .optional()
-        .map_err(diesel)?
-        .ok_or_else(|| expected("error-invitation-not-found"))?;
+        .map_err(diesel)?;
+
+    let row = match row {
+        //
+        Some(row) => row,
+
+        None => {
+            //
+            let message = trl("error-invitation-not-found");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                err_message = %message,
+                invitation_id = %id,
+                operation = "get member invitation info",
+                "expected member invitation error",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message,
+            });
+        }
+    };
 
     let mut info: MemberInvitationInfo = row.try_into()?;
 
@@ -146,15 +166,38 @@ async fn get_info_by_code(
     code: &str,
 ) -> BaseRest<MemberInvitationInfo> {
     //
-    let row: MemberInvitationRow = t_member_invitation
+    let row: Option<MemberInvitationRow> = t_member_invitation
         .filter(f_code.eq(code))
         .filter(f_pending.eq(true))
         .select(MemberInvitationRow::as_select())
         .get_result(conn)
         .await
         .optional()
-        .map_err(diesel)?
-        .ok_or_else(|| expected("error-invitation-not-found"))?;
+        .map_err(diesel)?;
+
+    let row = match row {
+        //
+        Some(row) => row,
+
+        None => {
+            //
+            let message = trl("error-invitation-not-found");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                err_message = %message,
+                invitation_code = %code,
+                pending = true,
+                operation = "get pending member invitation by code",
+                "expected member invitation error",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message,
+            });
+        }
+    };
 
     row.try_into()
 }
@@ -166,7 +209,7 @@ async fn get_info_by_code_excluded(
     code: &str,
 ) -> BaseRest<MemberInvitationInfo> {
     //
-    let row: MemberInvitationRow = t_member_invitation
+    let row: Option<MemberInvitationRow> = t_member_invitation
         .filter(f_code.eq(code))
         .filter(f_pending.eq(true))
         .select(MemberInvitationRow::as_select())
@@ -174,8 +217,31 @@ async fn get_info_by_code_excluded(
         .get_result(conn)
         .await
         .optional()
-        .map_err(diesel)?
-        .ok_or_else(|| expected("error-invitation-not-found"))?;
+        .map_err(diesel)?;
+
+    let row = match row {
+        //
+        Some(row) => row,
+
+        None => {
+            //
+            let message = trl("error-invitation-not-found");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                err_message = %message,
+                invitation_code = %code,
+                pending = true,
+                operation = "lock pending member invitation by code",
+                "expected member invitation error",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message,
+            });
+        }
+    };
 
     row.try_into()
 }

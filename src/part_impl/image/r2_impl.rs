@@ -135,11 +135,34 @@ impl ImagePool for R2ImagePool {
     async fn get_upload_url(&self, key: &str) -> BaseRest<Url> {
         //
         // Internal implementation detail.
+        let content_type = match detect_content_type(key) {
+            //
+            Some(content_type) => content_type,
+
+            None => {
+                //
+                let err_message = trl("error-unsupported-file-type");
+
+                let file_ext = key.rsplit('.').next().unwrap_or("(none)");
+
+                tracing::warn!(
+                    err_variant = ?ExpectedVariant::Args,
+                    err_message = %err_message,
+                    object_key = %key,
+                    file_ext = %file_ext,
+                    operation = "get_upload_url",
+                    "expected error: unsupported image file type",
+                );
+
+                return Err(BaseError::Expected {
+                    variant: ExpectedVariant::Args,
+                    message: err_message,
+                });
+            }
+        };
+
         let (content_type, presigning_config) = (
-            detect_content_type(key).ok_or_else(|| BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message: trl("error-unsupported-file-type"),
-            })?,
+            content_type,
             PresigningConfig::expires_in(PUT_SIGNED_EXPIRATION).map_err(
                 |err| BaseError::Unrecoverable {
                     message: format!(

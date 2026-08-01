@@ -10,10 +10,10 @@ use crate::part::repo::oper::assignment::{
     CreateAssignment, GetAssignmentInfo, ListAssignmentInfos,
     UpdateAssignmentRoles,
 };
-use crate::part_impl::drive::rdb_impl::RdbDrive;
+use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
-use crate::part_impl::shared::RdbCore;
 use crate::result::BaseError;
+use crate::shared::RdbCore;
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::role::{RoleField, RoleMask};
 
@@ -29,7 +29,7 @@ pub async fn assignment_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let repo = RdbRepo::new(shared.clone());
 
-    let drive = RdbDrive::new(shared.clone());
+    let nucl = RdbNucl::new(shared.clone());
 
     let assignee_form = test_shared::user_entry(PREFIX, "assignee");
 
@@ -46,22 +46,21 @@ pub async fn assignment_roundtrip_uses_testcontainer(shared: RdbCore) {
         roles: translator_role,
     };
 
-    drive
-        .coord(async |context| {
-            //
-            repo.step(
-                context,
-                &CreateAssignment {
-                    entry: &assignment_entry,
-                },
-            )
-            .await?;
+    nucl.coord(async |context| {
+        //
+        repo.step(
+            context,
+            &CreateAssignment {
+                entry: &assignment_entry,
+            },
+        )
+        .await?;
 
-            Ok::<(), BaseError>(())
-        })
-        .await
-        .ok()
-        .unwrap();
+        Ok::<(), BaseError>(())
+    })
+    .await
+    .ok()
+    .unwrap();
 
     let assignment_list_spec = AssignmentListSpec::Chapter {
         chapter_id: chapter_fixture.chapter_entry.id.clone(),
@@ -106,22 +105,21 @@ pub async fn assignment_roundtrip_uses_testcontainer(shared: RdbCore) {
         roles: reviewer_role,
     };
 
-    drive
-        .coord(async |context| {
-            //
-            repo.step(
-                context,
-                &UpdateAssignmentRoles {
-                    update: &assignment_role_update,
-                },
-            )
-            .await?;
+    nucl.coord(async |context| {
+        //
+        repo.step(
+            context,
+            &UpdateAssignmentRoles {
+                update: &assignment_role_update,
+            },
+        )
+        .await?;
 
-            Ok::<(), BaseError>(())
-        })
-        .await
-        .ok()
-        .unwrap();
+        Ok::<(), BaseError>(())
+    })
+    .await
+    .ok()
+    .unwrap();
 
     let assignment_info = repo
         .run(&GetAssignmentInfo {

@@ -4,7 +4,7 @@
 call. They must be constructed directly in that call's argument list.
 
 ```rust
-PermissionComplex::ensure(
+permComplex::ensure(
     &mut run_proxy! {
         repo => for<'a> GetTeamInfo<'a>;
     },
@@ -17,11 +17,11 @@ Binding either macro to a local variable is forbidden, even when the variable
 is consumed only once:
 
 ```rust
-let mut permission_proxy = run_proxy! {
+let mut perm_proxy = run_proxy! {
     repo => for<'a> GetTeamInfo<'a>;
 };
 
-PermissionComplex::ensure(&mut permission_proxy, user_id).await?;
+permComplex::ensure(&mut perm_proxy, user_id).await?;
 ```
 
 The checker also rejects returning, assigning, storing, or otherwise wrapping

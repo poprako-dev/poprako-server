@@ -3,9 +3,11 @@ use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 use tracing::instrument;
 
+use poprako_util::i18n::trl;
+
 use crate::complex::comic::ComicComplex;
 use crate::model::read::proj::comic::ComicInfo;
-use crate::model::read::spec::comic::{ComicListKind, ComicListSpec};
+use crate::model::read::spec::comic::ComicListSpec;
 use crate::model::write::comic::{
     ComicCoverReservation, ComicEntry, ComicRepl,
 };
@@ -26,9 +28,9 @@ use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::{
     f_uploaded_at as chapter_uploaded_at, t_chapter,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_comic::dsl::*;
-use crate::part_impl::shared::RdbConn;
-use crate::part_impl::shared::result::{diesel, expected, next_version};
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::shared::RdbConn;
+use crate::shared::result::{diesel, next_version};
 use crate::value::chapter::{Stage, StageMask, StagePhase};
 use crate::value::comic::ComicInclOpt;
 use crate::value::image::{ImageExt, ImageHash};
@@ -49,7 +51,23 @@ pub async fn get_info_by_id(
         .await
         .optional()
         .map_err(diesel)?
-        .ok_or_else(|| expected("error-comic-not-found"))?;
+        .ok_or_else(|| {
+            //
+            let err_message = trl("error-comic-not-found");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                err_message = %err_message,
+                comic_id = %id,
+                stage = "get_info_by_id",
+                "expected error: comic not found",
+            );
+
+            BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: err_message,
+            }
+        })?;
 
     let mut info: ComicInfo = row.try_into()?;
 
@@ -63,20 +81,20 @@ pub async fn get_info_by_id(
     accept(info)
 }
 
-/// Queries comic rows filtered by workset, optional fuzzy title, and list kind.
+/// Queries comic rows filtered by workset, optional fuzzy title, and stages.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos(
     conn: &mut RdbConn,
     spec: &ComicListSpec,
 ) -> BaseRest<Vec<ComicInfo>> {
     //
-    let stage_comic_ids = match &spec.kind {
+    let stage_comic_ids = match spec.stages {
         //
-        ComicListKind::All => None,
-
-        ComicListKind::Stages(stage_mask) => {
-            list_matching_stage_comic_ids(conn, *stage_mask).await?
+        Some(stage_mask) => {
+            list_matching_stage_comic_ids(conn, stage_mask).await?
         }
+
+        None => None,
     };
 
     let mut query = t_comic
@@ -191,7 +209,25 @@ pub async fn mark_cover_uploaded(
     .map_err(diesel)?;
 
     if affected == 0 {
-        return Err(expected("error-cover-version-mismatch"));
+        //
+        let err_message = trl("error-cover-version-mismatch");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            err_message = %err_message,
+            comic_id = %id,
+            version,
+            cover_key_present = cover_key.is_some(),
+            cover_uploaded,
+            affected,
+            stage = "mark_cover_uploaded",
+            "expected error: cover version mismatch",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: err_message,
+        });
     }
 
     accept(())
@@ -232,7 +268,23 @@ pub async fn get_info_excluded(
         .await
         .optional()
         .map_err(diesel)?
-        .ok_or_else(|| expected("error-comic-not-found"))?;
+        .ok_or_else(|| {
+            //
+            let err_message = trl("error-comic-not-found");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                err_message = %err_message,
+                comic_id = %id,
+                stage = "get_info_excluded",
+                "expected error: comic not found",
+            );
+
+            BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: err_message,
+            }
+        })?;
 
     let mut comic_info = row.try_into()?;
 
@@ -267,13 +319,13 @@ pub async fn list_infos_excluded(
         };
     }
 
-    let stage_comic_ids = match &spec.kind {
+    let stage_comic_ids = match spec.stages {
         //
-        ComicListKind::All => None,
-
-        ComicListKind::Stages(stage_mask) => {
-            list_matching_stage_comic_ids(conn, *stage_mask).await?
+        Some(stage_mask) => {
+            list_matching_stage_comic_ids(conn, stage_mask).await?
         }
+
+        None => None,
     };
 
     let rows: Vec<ComicRow> =
@@ -381,7 +433,25 @@ pub async fn reserve_cover(
         prev_key.is_some() && stored_hash.as_slice() == image_hash.as_bytes();
 
     if same_hash && stored_ext != image_ext.suffix() {
-        return Err(expected("error-invalid-image-extension"));
+        //
+        let err_message = trl("error-invalid-image-extension");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            err_message = %err_message,
+            comic_id = %id,
+            image_version = raw_version,
+            cover_key_present = prev_key.is_some(),
+            stored_extension = %stored_ext,
+            requested_extension = %image_ext.suffix(),
+            stage = "reserve_cover",
+            "expected error: invalid image extension",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: err_message,
+        });
     }
 
     if same_hash {

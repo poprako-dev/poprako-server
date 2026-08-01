@@ -6,6 +6,8 @@ use poprako_orchestra::{Run, Step};
 use time::OffsetDateTime;
 use tracing::instrument;
 
+use poprako_util::i18n::trl;
+
 use crate::complex::user::UserComplex;
 use crate::model::read::proj::user::{UserCredential, UserInfo};
 use crate::model::write::user::{
@@ -20,9 +22,9 @@ use crate::part_impl::repo::rdb_impl::entity::user::{
     UserAspect, UserCredentialRow, UserRow, UserRowEntry,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_user::dsl::*;
-use crate::part_impl::shared::result::{diesel, expected, next_version};
-use crate::part_impl::shared::{RdbConn, RdbContext};
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::shared::result::{diesel, next_version};
+use crate::shared::{RdbConn, RdbContext};
 use crate::value::image::{ImageExt, ImageHash};
 
 /// User RDB integration tests.
@@ -52,14 +54,36 @@ async fn get_credential_by_qid(
 ) -> BaseRest<UserCredential> {
     //
     // Query only credential columns and convert them to user credential DTO.
-    let row: UserCredentialRow = t_user
+    let row: Option<UserCredentialRow> = t_user
         .filter(f_qid.eq(qid))
         .select(UserCredentialRow::as_select())
         .get_result(conn)
         .await
         .optional()
-        .map_err(diesel)?
-        .ok_or_else(|| expected("error-user-not-found"))?;
+        .map_err(diesel)?;
+
+    let row = match row {
+        //
+        Some(row) => row,
+
+        None => {
+            //
+            let message = trl("error-user-not-found");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                err_message = %message,
+                user_qid = %qid,
+                operation = "get user credential",
+                "expected user error",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message,
+            });
+        }
+    };
 
     accept(row.into())
 }
@@ -186,7 +210,24 @@ async fn reserve_avatar(
         prev_key.is_some() && stored_hash.as_slice() == image_hash.as_bytes();
 
     if same_hash && stored_ext != image_ext.suffix() {
-        return Err(expected("error-invalid-image-extension"));
+        //
+        let message = trl("error-invalid-image-extension");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            err_message = %message,
+            user_id = %id,
+            image_version = raw_version,
+            stored_extension = %stored_ext,
+            requested_extension = %image_ext.suffix(),
+            operation = "reserve user avatar",
+            "expected user avatar error",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message,
+        });
     }
 
     if same_hash {
@@ -275,7 +316,23 @@ async fn mark_avatar_uploaded(
     .map_err(diesel)?;
 
     if affected == 0 {
-        return Err(expected("error-avatar-version-mismatch"));
+        //
+        let message = trl("error-avatar-version-mismatch");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            err_message = %message,
+            user_id = %id,
+            image_version = version,
+            avatar_key = ?avatar_key,
+            operation = "mark user avatar uploaded",
+            "expected user avatar version error",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message,
+        });
     }
 
     accept(())
@@ -307,15 +364,37 @@ async fn get_info_by_id_excluded(
 ) -> BaseRest<UserInfo> {
     //
     // Use a row lock so later mutation in the same transaction is serialized.
-    let row: UserRow = t_user
+    let row: Option<UserRow> = t_user
         .filter(f_id.eq(id))
         .select(UserRow::as_select())
         .for_update()
         .get_result(conn)
         .await
         .optional()
-        .map_err(diesel)?
-        .ok_or_else(|| expected("error-user-not-found"))?;
+        .map_err(diesel)?;
+
+    let row = match row {
+        //
+        Some(row) => row,
+
+        None => {
+            //
+            let message = trl("error-user-not-found");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                err_message = %message,
+                user_id = %id,
+                operation = "lock user info",
+                "expected user error",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message,
+            });
+        }
+    };
 
     row.try_into()
 }
@@ -325,14 +404,36 @@ async fn get_info_by_id_excluded(
 async fn get_info_by_id(conn: &mut RdbConn, id: &str) -> BaseRest<UserInfo> {
     //
     // Query `t_user` by `f_id`, fail with `error-user-not-found` when absent.
-    let row: UserRow = t_user
+    let row: Option<UserRow> = t_user
         .filter(f_id.eq(id))
         .select(UserRow::as_select())
         .get_result(conn)
         .await
         .optional()
-        .map_err(diesel)?
-        .ok_or_else(|| expected("error-user-not-found"))?;
+        .map_err(diesel)?;
+
+    let row = match row {
+        //
+        Some(row) => row,
+
+        None => {
+            //
+            let message = trl("error-user-not-found");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                err_message = %message,
+                user_id = %id,
+                operation = "get user info",
+                "expected user error",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message,
+            });
+        }
+    };
 
     row.try_into()
 }

@@ -265,7 +265,20 @@ where
         let unit_id = gen_id();
 
         if local_id_map.insert(local_id.clone(), unit_id).is_some() {
-            return Err(invalid_unit_edit_err());
+            //
+            let err_message = trl("error-invalid-unit-oper");
+
+            tracing::warn!(
+                err_variant = ?ExpectedVariant::Args,
+                err_message = %err_message,
+                local_id = %local_id,
+                "expected error: duplicate unit edit local id",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: err_message,
+            });
         }
     }
 
@@ -281,18 +294,23 @@ where
 fn validate_id(id: &str) -> BaseRest<()> {
     //
     if id.is_empty() {
-        return Err(invalid_unit_edit_err());
+        //
+        let err_message = trl("error-invalid-unit-oper");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Args,
+            err_message = %err_message,
+            local_or_unit_id = %id,
+            "expected error: empty unit edit id",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: err_message,
+        });
     }
 
     accept(())
-}
-
-// Construct the error returned for invalid unit edit instructions.
-fn invalid_unit_edit_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        message: trl("error-invalid-unit-oper"),
-    }
 }
 
 // Resolve a local reference id or return it as-is if it is already a real id.

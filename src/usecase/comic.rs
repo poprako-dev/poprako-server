@@ -52,6 +52,7 @@ use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::page::{
     DeletePages, ListFirstPageInfos, ListPageInfos,
 };
+use crate::part::repo::oper::team::ResolveTeamId;
 use crate::part::repo::oper::term::DeleteTerms;
 use crate::part::repo::oper::termbase::{
     DeleteTermbase, GetTermbaseInfoExcluded, ListTermbaseInfosExcluded,
@@ -60,6 +61,7 @@ use crate::part::repo::oper::workset::{
     AllocWorksetComicIndex, GetWorksetInfo, UpdateWorksetComicCount,
 };
 use crate::part::repo::page::PageRepo;
+use crate::part::repo::team::TeamRepo;
 use crate::part::repo::term::TermRepo;
 use crate::part::repo::termbase::TermbaseRepo;
 use crate::part::repo::unit::UnitRepo;
@@ -224,8 +226,8 @@ pub async fn get_info<C, R, I>(
 ) -> BaseRest<ComicInfoView>
 where
     R: ComicRepo<C>
-        + WorksetRepo<C>
         + MemberRepo<C>
+        + TeamRepo<C>
         + ChapterRepo<C>
         + PageRepo<C>
         + Sync,
@@ -234,8 +236,7 @@ where
     ComicPermComplex::ensure_user_can_get_info(
         &mut run_proxy! {
             repo =>
-                for<'a, 'b> GetComicInfo<'a, 'b>,
-                for<'a> GetWorksetInfo<'a>,
+                for<'a> ResolveTeamId<'a>,
                 for<'a> FindMemberInfo<'a>;
         },
         &token.user_id,
@@ -278,13 +279,12 @@ pub async fn update_info<C, R>(
     instr: UpdateComicInfoInstr,
 ) -> BaseRest<()>
 where
-    R: ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
+    R: ComicRepo<C> + TeamRepo<C> + MemberRepo<C> + Sync,
 {
     ComicPermComplex::ensure_user_can_update_info(
         &mut run_proxy! {
             repo =>
-                for<'a, 'b> GetComicInfo<'a, 'b>,
-                for<'a> GetWorksetInfo<'a>,
+                for<'a> ResolveTeamId<'a>,
                 for<'a> FindMemberInfo<'a>;
         },
         &token.user_id,
@@ -319,7 +319,7 @@ pub async fn reserve_cover<N, C, R, P, I>(
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
-    R: ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Send + Sync,
+    R: ComicRepo<C> + TeamRepo<C> + MemberRepo<C> + Send + Sync,
     P: Prom<C> + Send + Sync,
     I: ImagePool,
 {
@@ -334,8 +334,7 @@ where
     ComicPermComplex::ensure_user_can_reserve_cover(
         &mut run_proxy! {
             repo =>
-                for<'a, 'b> GetComicInfo<'a, 'b>,
-                for<'a> GetWorksetInfo<'a>,
+                for<'a> ResolveTeamId<'a>,
                 for<'a> FindMemberInfo<'a>;
         },
         &token.user_id,
@@ -448,14 +447,13 @@ pub async fn mark_cover_uploaded<N, C, R, I>(
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
-    R: ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Send + Sync,
+    R: ComicRepo<C> + TeamRepo<C> + MemberRepo<C> + Send + Sync,
     I: ImageManager,
 {
     ComicPermComplex::ensure_user_can_mark_cover_uploaded(
         &mut run_proxy! {
             repo =>
-                for<'a, 'b> GetComicInfo<'a, 'b>,
-                for<'a> GetWorksetInfo<'a>,
+                for<'a> ResolveTeamId<'a>,
                 for<'a> FindMemberInfo<'a>;
         },
         &token.user_id,
@@ -471,9 +469,22 @@ where
     .await?;
 
     if comic_info.cover_version != instr.image_version {
+        //
+        let err_message = trl("error-stale-cover-upload");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Args,
+            err_message = %err_message,
+            comic_id = %id,
+            user_id = %token.user_id,
+            image_version = instr.image_version,
+            stored_image_version = comic_info.cover_version,
+            "expected error: stale comic cover upload",
+        );
+
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: trl("error-stale-cover-upload"),
+            message: err_message,
         });
     }
 
@@ -481,19 +492,43 @@ where
         return accept(());
     }
 
-    let cover_key =
-        comic_info
-            .cover_key
-            .clone()
-            .ok_or_else(|| BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message: trl("error-stale-cover-upload"),
-            })?;
+    let cover_key = comic_info.cover_key.clone().ok_or_else(|| {
+        //
+        let err_message = trl("error-stale-cover-upload");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Args,
+            err_message = %err_message,
+            comic_id = %id,
+            user_id = %token.user_id,
+            image_version = instr.image_version,
+            stored_image_version = comic_info.cover_version,
+            "expected error: stale comic cover upload",
+        );
+
+        BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: err_message,
+        }
+    })?;
 
     if !image_manager.object_exists(&cover_key).await? {
+        //
+        let err_message = trl("error-stale-cover-upload");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Args,
+            err_message = %err_message,
+            comic_id = %id,
+            user_id = %token.user_id,
+            image_version = instr.image_version,
+            cover_key = %cover_key,
+            "expected error: stale comic cover upload",
+        );
+
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: trl("error-stale-cover-upload"),
+            message: err_message,
         });
     }
 
@@ -509,9 +544,22 @@ where
         if locked_comic_info.cover_version != instr.image_version
             || locked_comic_info.cover_key.as_deref() != Some(&cover_key)
         {
+            let err_message = trl("error-stale-cover-upload");
+
+            tracing::warn!(
+                err_variant = ?ExpectedVariant::Args,
+                err_message = %err_message,
+                comic_id = %id,
+                user_id = %token.user_id,
+                image_version = instr.image_version,
+                locked_image_version = locked_comic_info.cover_version,
+                cover_key = %cover_key,
+                "expected error: stale comic cover upload",
+            );
+
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: trl("error-stale-cover-upload"),
+                message: err_message,
             });
         }
 
@@ -544,6 +592,7 @@ where
     R: ComicRepo<C>
         + WorksetRepo<C>
         + MemberRepo<C>
+        + TeamRepo<C>
         + ChapterRepo<C>
         + PageRepo<C>
         + AssignmentInvitationRepo<C>
@@ -558,8 +607,7 @@ where
     ComicPermComplex::ensure_user_can_delete(
         &mut run_proxy! {
             repo =>
-                for<'a, 'b> GetComicInfo<'a, 'b>,
-                for<'a> GetWorksetInfo<'a>,
+                for<'a> ResolveTeamId<'a>,
                 for<'a> FindMemberInfo<'a>;
         },
         &token.user_id,

@@ -6,7 +6,7 @@ use poprako_orchestra_extra::prom::task::Task;
 use time::OffsetDateTime;
 
 use crate::part::prom::payload::{TaskPayload, image};
-use crate::part_impl::drive::rdb_impl::RdbDrive;
+use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::prom::rdb_impl::entity::LocalMessageEntry;
 use crate::part_impl::prom::rdb_impl::handler::base::dispatch_payload;
 use crate::part_impl::prom::rdb_impl::handler::task_flow::TaskFlow;
@@ -15,7 +15,7 @@ use crate::part_impl::prom::rdb_impl::test_shared;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::schema::t_local_message;
-use crate::part_impl::shared::RdbCore;
+use crate::shared::RdbCore;
 
 // Constant definition for `PREFIX`.
 const PREFIX: &str = "rdb-test-prom-handler-";
@@ -61,7 +61,7 @@ pub async fn image_payloads_from_rdb_dispatch(shared: RdbCore) {
         .ok()
         .unwrap();
 
-    let nucl = RdbDrive::new(shared.clone());
+    let nucl = RdbNucl::new(shared.clone());
 
     let rdb_prom_repo = RdbPromRepo::new(RdbRepo::new(shared.clone()));
 

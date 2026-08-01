@@ -7,7 +7,7 @@ description: Test structure and documentation rules for active PopRaKo Rust and 
 
 Keep Rust unit and usecase tests beside the module they verify. Exercise public behavior through current mock adapters where practical; add RDB tests when correctness depends on Diesel, PostgreSQL constraints, locking, or transaction behavior.
 
-For each public usecase behavior, include a positive case and at least one relevant negative case: invalid data, missing resource, permission denial, concurrency, or rollback. Use descriptive test names and retain any nearby project-specific comment format.
+For each public usecase behavior, include a positive case and at least one relevant negative case: invalid data, missing resource, perm denial, concurrency, or rollback. Use descriptive test names and retain any nearby project-specific comment format.
 
 HTTP integration tests live under `tests/integration-tests/src/suites/`. When a suite file is added, removed, renamed, or its covered cases change, update `tests/integration-tests/TESTCASES.md` in the same change. Keep case IDs stable unless the case itself is removed.
 

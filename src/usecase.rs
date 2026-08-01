@@ -26,7 +26,7 @@
 //! | `R: XxxRepo<C>` | Repository bundle for data access |
 //! | `P: Prom<C>` | Deferred-action enqueuer |
 //! | `I: ImagePool` | Object-storage signed URL provider |
-//! | `V: EffectDevelop` | Side-effect processor for domain events |
+//! | `D: EffectDevelop` | Side-effect processor for domain events |
 //! | `A: TokenAuth` | Authentication token signer |
 //!
 //! [`Nucl::coord`]: poprako_orchestra::Nucl::coord

@@ -6,6 +6,8 @@ use poprako_orchestra::{Run, Step};
 use time::OffsetDateTime;
 use tracing::instrument;
 
+use poprako_util::i18n::trl;
+
 use crate::model::read::proj::workset::WorksetInfo;
 use crate::model::write::workset::{WorksetEntry, WorksetRepl};
 use crate::part::repo::oper::workset::{
@@ -18,9 +20,9 @@ use crate::part_impl::repo::rdb_impl::entity::workset::{
     WorksetAspect, WorksetRow, WorksetRowEntry,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_workset::dsl::*;
-use crate::part_impl::shared::result::{diesel, expected};
-use crate::part_impl::shared::{RdbConn, RdbContext};
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::shared::result::diesel;
+use crate::shared::{RdbConn, RdbContext};
 
 /// Workset RDB integration tests.
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
@@ -44,14 +46,36 @@ async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
 async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<WorksetInfo> {
     //
     // Fetch the row by primary key and map missing rows to `error-workset-not-found`.
-    let row: WorksetRow = t_workset
+    let row: Option<WorksetRow> = t_workset
         .filter(f_id.eq(id))
         .select(WorksetRow::as_select())
         .get_result(conn)
         .await
         .optional()
-        .map_err(diesel)?
-        .ok_or_else(|| expected("error-workset-not-found"))?;
+        .map_err(diesel)?;
+
+    let row = match row {
+        //
+        Some(row) => row,
+
+        None => {
+            //
+            let message = trl("error-workset-not-found");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                err_message = %message,
+                workset_id = %id,
+                operation = "get workset info",
+                "expected workset error",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message,
+            });
+        }
+    };
 
     accept(row.into())
 }
@@ -124,15 +148,37 @@ async fn get_info_excluded(
 ) -> BaseRest<WorksetInfo> {
     //
     // Return `error-workset-not-found` when locked read sees no row.
-    let row: WorksetRow = t_workset
+    let row: Option<WorksetRow> = t_workset
         .filter(f_id.eq(id))
         .select(WorksetRow::as_select())
         .for_update()
         .get_result(conn)
         .await
         .optional()
-        .map_err(diesel)?
-        .ok_or_else(|| expected("error-workset-not-found"))?;
+        .map_err(diesel)?;
+
+    let row = match row {
+        //
+        Some(row) => row,
+
+        None => {
+            //
+            let message = trl("error-workset-not-found");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                err_message = %message,
+                workset_id = %id,
+                operation = "lock workset info",
+                "expected workset error",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message,
+            });
+        }
+    };
 
     accept(row.into())
 }

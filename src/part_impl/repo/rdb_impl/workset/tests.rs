@@ -7,7 +7,7 @@ use crate::part::repo::oper::workset::{
     GetWorksetInfo, ListWorksetInfos, UpdateWorkset,
 };
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
-use crate::part_impl::shared::RdbCore;
+use crate::shared::RdbCore;
 
 const PREFIX: &str = "rdb-test-workset-domain-";
 

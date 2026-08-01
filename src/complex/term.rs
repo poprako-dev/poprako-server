@@ -8,21 +8,26 @@ use crate::model::write::term::{TermEntry, TermRepl};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 
-// Build a normalized args-level error object using the provided i18n message key.
-fn expected(message: &str) -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        message: trl(message),
-    }
-}
-
 // Trim a term source and reject empty values after normalization.
 fn normalize_source(source: String) -> BaseRest<String> {
     //
     let source = source.trim().to_string();
 
     if source.is_empty() {
-        return Err(expected("error-term-source-required"));
+        //
+        let err_message = trl("error-term-source-required");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Args,
+            err_message = %err_message,
+            source = %source,
+            "expected error: term source required",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: err_message,
+        });
     }
 
     accept(source)
@@ -32,7 +37,20 @@ fn normalize_source(source: String) -> BaseRest<String> {
 fn normalize_targets(targets: Vec<String>) -> BaseRest<Vec<String>> {
     //
     if targets.is_empty() {
-        return Err(expected("error-term-targets-required"));
+        //
+        let err_message = trl("error-term-targets-required");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Args,
+            err_message = %err_message,
+            target_count = targets.len(),
+            "expected error: term targets required",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: err_message,
+        });
     }
 
     let (mut normalized_targets, mut seen_targets) = (
@@ -45,11 +63,39 @@ fn normalize_targets(targets: Vec<String>) -> BaseRest<Vec<String>> {
         let target = target.trim().to_string();
 
         if target.is_empty() {
-            return Err(expected("error-term-target-required"));
+            //
+            let err_message = trl("error-term-target-required");
+
+            tracing::warn!(
+                err_variant = ?ExpectedVariant::Args,
+                err_message = %err_message,
+                target = %target,
+                target_count = normalized_targets.len(),
+                "expected error: term target required",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: err_message,
+            });
         }
 
         if !seen_targets.insert(target.to_lowercase()) {
-            return Err(expected("error-term-target-duplicate"));
+            //
+            let err_message = trl("error-term-target-duplicate");
+
+            tracing::warn!(
+                err_variant = ?ExpectedVariant::Args,
+                err_message = %err_message,
+                target = %target,
+                target_count = normalized_targets.len(),
+                "expected error: duplicate term target",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: err_message,
+            });
         }
 
         normalized_targets.push(target);

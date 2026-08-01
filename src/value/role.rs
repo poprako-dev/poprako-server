@@ -1,4 +1,4 @@
-//! Newtype wrappers for role-based permission bitmasks.
+//! Newtype wrappers for role-based perm bitmasks.
 
 use std::result::Result;
 
@@ -11,11 +11,11 @@ use poprako_util::i18n::trl;
 
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
-// Test fixtures for role conversion, permission, and serde behavior.
+// Test fixtures for role conversion, perm, and serde behavior.
 #[cfg(test)]
 mod tests;
 
-/// A singular role permission flag represented as a bit position.
+/// A singular role perm flag represented as a bit position.
 ///
 /// Each role is a single bit value:
 ///
@@ -83,9 +83,18 @@ impl TryFrom<u32> for RoleField {
             || !Self::VALID_VALUES.contains(&value)
             || value.count_ones() != 1
         {
+            let err_message = trl("error-invalid-role");
+
+            tracing::warn!(
+                err_variant = ?ExpectedVariant::Args,
+                err_message = %err_message,
+                raw_value = value,
+                "expected error: invalid role field",
+            );
+
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: trl("error-invalid-role"),
+                message: err_message,
             });
         }
 
@@ -123,7 +132,7 @@ impl From<RoleField> for u32 {
     }
 }
 
-/// A composite bitmask combining multiple role permission flags.
+/// A composite bitmask combining multiple role perm flags.
 ///
 /// Bits are OR-ed together from the following role values:
 ///
@@ -187,9 +196,19 @@ impl TryFrom<u32> for RoleMask {
     fn try_from(value: u32) -> BaseRest<Self> {
         //
         if value == 0 || value & !Self::VALID_BITS != 0 {
+            //
+            let err_message = trl("error-invalid-role");
+
+            tracing::warn!(
+                err_variant = ?ExpectedVariant::Args,
+                err_message = %err_message,
+                raw_value = value,
+                "expected error: invalid role mask",
+            );
+
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
-                message: trl("error-invalid-role"),
+                message: err_message,
             });
         }
 

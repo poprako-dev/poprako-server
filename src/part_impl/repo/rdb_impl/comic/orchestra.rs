@@ -15,8 +15,8 @@ use crate::part_impl::repo::rdb_impl::comic::step_impl::{
     list_infos, list_infos_excluded, mark_cover_uploaded, reserve_cover,
     touch_last_active, update_chapter_count, update_info,
 };
-use crate::part_impl::shared::RdbContext;
 use crate::result::{BaseError, BaseRest};
+use crate::shared::RdbContext;
 
 impl Run<GetComicInfo<'_, '_>> for RdbRepo {
     // Maps the `GetComicInfo` repository operation to non-transactional execution.

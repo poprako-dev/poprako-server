@@ -15,7 +15,7 @@ harness and starts the Axum HTTP server.
 ```text
 src/
 ├── api/http/       # Axum handlers, middleware, router, OpenAPI, server
-├── complex/        # Pure business rules and permission checks
+├── complex/        # Pure business rules and perm checks
 ├── data/           # Request Data and response Val DTOs
 ├── harn.rs         # Production application-harness composition
 ├── model/          # Persisted application models and input forms
@@ -27,7 +27,7 @@ src/
 
 - `part::repo::step` describes repository operations. `Execute` performs a
   standalone operation; `Advance` performs an operation inside a transaction.
-- `Drive::with_context` supplies the transaction context. A use case owns the
+- `Nucl::coord` supplies the transaction context. A use case owns the
   transaction boundary; `complex` remains pure and never drives transactions.
 - `Harn` composes production ports. Tests use `part_impl::repo::mock_impl` and
   the test helpers local to the touched module.

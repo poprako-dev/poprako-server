@@ -8,13 +8,11 @@ use crate::complex::util::{
     check_user_is_team_member_by_chapter,
 };
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
-use crate::part::repo::oper::chapter::GetChapterInfo;
-use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part::repo::oper::workset::GetWorksetInfo;
+use crate::part::repo::oper::team::ResolveTeamId;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
-/// Chapter import and export permission rules.
+/// Chapter import and export perm rules.
 pub struct ChapterPortPermComplex;
 
 impl ChapterPortPermComplex {
@@ -25,9 +23,7 @@ impl ChapterPortPermComplex {
         chapter_id: &str,
     ) -> BaseRest<()>
     where
-        P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
-            + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
-            + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+        P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
             + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>
             + for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
     {
@@ -46,7 +42,25 @@ impl ChapterPortPermComplex {
             Err(BaseError::Expected {
                 variant: ExpectedVariant::Perm,
                 ..
-            }) => Err(chapter_port_export_permission_err()),
+            }) => {
+                //
+                let err_message =
+                    trl("error-chapter-port-export-perm-required");
+
+                tracing::warn!(
+                    err_variant = ?ExpectedVariant::Perm,
+                    err_message = %err_message,
+                    user_id = %user_id,
+                    chapter_id = %chapter_id,
+                    operation = "export",
+                    "expected error: chapter port export perm required",
+                );
+
+                Err(BaseError::Expected {
+                    variant: ExpectedVariant::Perm,
+                    message: err_message,
+                })
+            }
 
             Err(e) => Err(e),
         }
@@ -71,25 +85,27 @@ impl ChapterPortPermComplex {
             Err(BaseError::Expected {
                 variant: ExpectedVariant::Perm,
                 ..
-            }) => Err(chapter_port_import_permission_err()),
+            }) => {
+                //
+                let err_message =
+                    trl("error-chapter-port-import-perm-required");
+
+                tracing::warn!(
+                    err_variant = ?ExpectedVariant::Perm,
+                    err_message = %err_message,
+                    user_id = %user_id,
+                    chapter_id = %chapter_id,
+                    operation = "import",
+                    "expected error: chapter port import perm required",
+                );
+
+                Err(BaseError::Expected {
+                    variant: ExpectedVariant::Perm,
+                    message: err_message,
+                })
+            }
 
             Err(e) => Err(e),
         }
-    }
-}
-
-// Construct a "chapter port export permission required" permission error.
-fn chapter_port_export_permission_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Perm,
-        message: trl("error-chapter-port-export-permission-required"),
-    }
-}
-
-// Construct a "chapter port import permission required" permission error.
-fn chapter_port_import_permission_err() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Perm,
-        message: trl("error-chapter-port-import-permission-required"),
     }
 }

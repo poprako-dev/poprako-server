@@ -12,13 +12,13 @@ use crate::model::write::comic_archive::ComicArchiveEntry;
 use crate::part::repo::oper::comic_archive::{
     CommitComicArchive, GetComicArchiveSnapshotExcluded,
 };
-use crate::part_impl::drive::rdb_impl::RdbDrive;
+use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::rdb_impl::schema::{
     t_chapter, t_comic, t_comic_archive, t_page, t_workset,
 };
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
-use crate::part_impl::shared::RdbCore;
 use crate::result::BaseError;
+use crate::shared::RdbCore;
 
 const PREFIX: &str = "rdb-test-comic-archive-domain-";
 
@@ -32,7 +32,7 @@ pub async fn comic_archive_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let repo = RdbRepo::new(shared.clone());
 
-    let drive = RdbDrive::new(shared.clone());
+    let nucl = RdbNucl::new(shared.clone());
 
     let source_comic_id = page_fixture.chapter_entry.comic_id.clone();
 
@@ -53,7 +53,7 @@ pub async fn comic_archive_roundtrip_uses_testcontainer(shared: RdbCore) {
             .unwrap()
     };
 
-    let comic_archive_entry = drive
+    let comic_archive_entry = nucl
         .coord(async |context| {
             //
             let comic_archive_snapshot = repo

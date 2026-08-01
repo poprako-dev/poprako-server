@@ -85,35 +85,92 @@ impl TryInto<MemberListSpec> for ListMemberInfosInstr {
     // Convert validated member query parameters into the domain list spec.
     fn try_into(self) -> BaseRest<MemberListSpec> {
         //
-        let invalid_args = || BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message: trl("error-team-or-user-required"),
-        };
+        let Self {
+            owner_id,
+            team_id,
+            fuzzy_nickname,
+            role,
+            incl_opt,
+            offset,
+            limit,
+        } = self;
 
-        if self.owner_id.is_some() == self.team_id.is_some() {
-            return Err(invalid_args());
-        }
+        if owner_id.is_some() == team_id.is_some() {
+            //
+            let err_message = trl("error-team-or-user-required");
 
-        if self.owner_id.is_some() && self.role.is_some() {
-            return Err(invalid_args());
-        }
+            tracing::warn!(
+                err_variant = ?ExpectedVariant::Args,
+                err_message = %err_message,
+                owner_id = ?owner_id,
+                team_id = ?team_id,
+                role = ?role,
+                fuzzy_nickname = ?fuzzy_nickname,
+                "expected error: member list requires one scope identifier",
+            );
 
-        if let Some(owner_id) = self.owner_id {
-            return accept(MemberListSpec::User {
-                owner_id,
-                incl_opt: self.incl_opt,
-                offset: self.offset,
-                limit: self.limit,
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: err_message,
             });
         }
 
+        if owner_id.is_some() && role.is_some() {
+            //
+            let err_message = trl("error-team-or-user-required");
+
+            tracing::warn!(
+                err_variant = ?ExpectedVariant::Args,
+                err_message = %err_message,
+                owner_id = ?owner_id,
+                team_id = ?team_id,
+                role = ?role,
+                fuzzy_nickname = ?fuzzy_nickname,
+                "expected error: member list owner scope cannot filter by role",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: err_message,
+            });
+        }
+
+        if let Some(owner_id) = owner_id {
+            return accept(MemberListSpec::User {
+                owner_id,
+                incl_opt,
+                offset,
+                limit,
+            });
+        }
+
+        let Some(team_id) = team_id else {
+            //
+            let err_message = trl("error-team-or-user-required");
+
+            tracing::warn!(
+                err_variant = ?ExpectedVariant::Args,
+                err_message = %err_message,
+                owner_id = ?owner_id,
+                team_id = ?team_id,
+                role = ?role,
+                fuzzy_nickname = ?fuzzy_nickname,
+                "expected error: member list team scope is missing",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: err_message,
+            });
+        };
+
         accept(MemberListSpec::Team {
-            team_id: self.team_id.ok_or_else(invalid_args)?,
-            fuzzy_nickname: self.fuzzy_nickname,
-            role: self.role,
-            incl_opt: self.incl_opt,
-            offset: self.offset,
-            limit: self.limit,
+            team_id,
+            fuzzy_nickname,
+            role,
+            incl_opt,
+            offset,
+            limit,
         })
     }
 }

@@ -19,11 +19,11 @@ use crate::model::read::spec::chapter::ChapterListSpec;
 use crate::model::shared::user::UserToken;
 use crate::model::write::assignment::AssignmentEntry;
 use crate::model::write::chapter::{ChapterEntry, ChapterPatch};
-use crate::part::effect::EffectDevelop;
 use crate::part::effect::event::Event;
 use crate::part::effect::event::chapter::{
-    ChapterPublishedPayload, ChapterWorkflowCompletedPayload,
+    ChapterPublishedEvent, ChapterWorkflowCompletedEvent,
 };
+use crate::part::effect::{Develop, EffectEvent as _};
 use crate::part::image::ImagePool;
 use crate::part::prom::Prom;
 use crate::part::prom::payload::TaskPayload;
@@ -40,16 +40,15 @@ use crate::part::repo::oper::chapter::{
     LockChapters, UnpinOtherChapters, UpdateChapter, UpdateChapterStage,
 };
 use crate::part::repo::oper::comic::{
-    AllocComicChapterIndex, GetComicInfo, TouchComicLastActive,
-    UpdateComicChapterCount,
+    AllocComicChapterIndex, TouchComicLastActive, UpdateComicChapterCount,
 };
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::page::{
     ClearPageImagesForPublish, ListFirstPageInfos,
 };
-use crate::part::repo::oper::workset::GetWorksetInfo;
+use crate::part::repo::oper::team::ResolveTeamId;
 use crate::part::repo::page::PageRepo;
-use crate::part::repo::workset::WorksetRepo;
+use crate::part::repo::team::TeamRepo;
 use crate::result::{BaseError, BaseRest, accept};
 use crate::value::chapter::{Stage, StageOper, StagePhase};
 
@@ -69,19 +68,13 @@ pub async fn list_infos<C, R, I>(
     instr: ListChapterInfosInstr,
 ) -> BaseRest<Vec<ChapterInfoView>>
 where
-    R: ChapterRepo<C>
-        + ComicRepo<C>
-        + WorksetRepo<C>
-        + MemberRepo<C>
-        + PageRepo<C>
-        + Sync,
+    R: ChapterRepo<C> + MemberRepo<C> + TeamRepo<C> + PageRepo<C> + Sync,
     I: ImagePool,
 {
     ChapterPermComplex::ensure_user_can_list_infos(
         &mut run_proxy! {
             repo =>
-                for<'a, 'b> GetComicInfo<'a, 'b>,
-                for<'a> GetWorksetInfo<'a>,
+                for<'a> ResolveTeamId<'a>,
                 for<'a> FindMemberInfo<'a>;
         },
         &token.user_id,
@@ -145,14 +138,12 @@ pub async fn get_info<C, R>(
     id: String,
 ) -> BaseRest<ChapterInfoView>
 where
-    R: ChapterRepo<C> + ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
+    R: ChapterRepo<C> + MemberRepo<C> + TeamRepo<C> + Sync,
 {
     ChapterPermComplex::ensure_user_can_get_info(
         &mut run_proxy! {
             repo =>
-                for<'a, 'b> GetChapterInfo<'a, 'b>,
-                for<'a, 'b> GetComicInfo<'a, 'b>,
-                for<'a> GetWorksetInfo<'a>,
+                for<'a> ResolveTeamId<'a>,
                 for<'a> FindMemberInfo<'a>;
         },
         &token.user_id,
@@ -178,13 +169,12 @@ pub async fn get_pinned<C, R>(
     comic_id: String,
 ) -> BaseRest<Option<ChapterInfoView>>
 where
-    R: ChapterRepo<C> + ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
+    R: ChapterRepo<C> + MemberRepo<C> + TeamRepo<C> + Sync,
 {
     ChapterPermComplex::ensure_user_can_get_pinned(
         &mut run_proxy! {
             repo =>
-                for<'a, 'b> GetComicInfo<'a, 'b>,
-                for<'a> GetWorksetInfo<'a>,
+                for<'a> ResolveTeamId<'a>,
                 for<'a> FindMemberInfo<'a>;
         },
         &token.user_id,
@@ -214,8 +204,8 @@ where
     C: Send,
     R: ChapterRepo<C>
         + ComicRepo<C>
-        + WorksetRepo<C>
         + MemberRepo<C>
+        + TeamRepo<C>
         + AssignmentRepo<C>
         + Send
         + Sync,
@@ -223,8 +213,7 @@ where
     ChapterPermComplex::ensure_user_can_create(
         &mut run_proxy! {
             repo =>
-                for<'a, 'b> GetComicInfo<'a, 'b>,
-                for<'a> GetWorksetInfo<'a>,
+                for<'a> ResolveTeamId<'a>,
                 for<'a> FindMemberInfo<'a>;
         },
         &token.user_id,
@@ -452,8 +441,8 @@ where
 
 /// Updates chapter workflow state.
 #[instrument(level = "info", err(Debug), skip(nucl, repo, prom, develop))]
-pub async fn update_stage<N, C, R, P, V>(
-    (nucl, repo, prom, develop): (&N, &R, &P, &V),
+pub async fn update_stage<N, C, R, P, D>(
+    (nucl, repo, prom, develop): (&N, &R, &P, &D),
     token: UserToken,
     instr: UpdateChapterStageInstr,
 ) -> BaseRest<()>
@@ -467,7 +456,7 @@ where
         + Send
         + Sync,
     P: Prom<C> + Send + Sync,
-    V: EffectDevelop + Send + Sync,
+    D: Develop + Send + Sync,
 {
     ChapterPermComplex::ensure_user_can_update_stage(
         &mut run_proxy! {
@@ -482,7 +471,7 @@ where
     )
     .await?;
 
-    let events = nucl
+    let (workflow_completed_chapter_id, published_chapter_id) = nucl
         .coord(async move |context| {
             //
             let chapter_info = GetChapterInfoExcluded {
@@ -514,18 +503,15 @@ where
             .step_on(repo, context)
             .await?;
 
-            let mut events = Vec::new();
+            let mut workflow_completed_chapter_id = None;
+
+            let mut published_chapter_id = None;
 
             if instr.oper == StageOper::Advance
                 && prev_phase != StagePhase::Completed
                 && next_phase == StagePhase::Completed
             {
-                events.push(Event::ChapterWorkflowCompleted(
-                    ChapterWorkflowCompletedPayload {
-                        chapter_id: chapter_info.id.clone(),
-                        completed_stage: instr.stage,
-                    },
-                ));
+                workflow_completed_chapter_id = Some(chapter_info.id.clone());
             }
 
             if instr.stage == Stage::Publish
@@ -547,9 +533,7 @@ where
                 )
                 .await?;
 
-                events.push(Event::ChapterPublished(ChapterPublishedPayload {
-                    chapter_id: chapter_info.id.clone(),
-                }));
+                published_chapter_id = Some(chapter_info.id.clone());
             }
 
             TouchComicLastActive {
@@ -558,11 +542,27 @@ where
             .step_on(repo, context)
             .await?;
 
-            accept(events)
+            accept((
+                workflow_completed_chapter_id,
+                published_chapter_id,
+            ))
         })
         .await?;
 
-    develop.develop(events).await;
+    if let Some(chapter_id) = workflow_completed_chapter_id {
+        Event::ChapterWorkflowCompleted(ChapterWorkflowCompletedEvent {
+            chapter_id,
+            completed_stage: instr.stage,
+        })
+        .develop_on(develop)
+        .await;
+    }
+
+    if let Some(chapter_id) = published_chapter_id {
+        Event::ChapterPublished(ChapterPublishedEvent { chapter_id })
+            .develop_on(develop)
+            .await;
+    }
 
     accept(())
 }

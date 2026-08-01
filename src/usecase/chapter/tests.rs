@@ -31,6 +31,7 @@ use crate::data::instr::chapter::{
 
 use self::fixture::*;
 use crate::complex::chapter::ChapterComplex;
+use crate::part::effect::event::Event;
 use crate::part::prom::payload::TaskPayload;
 use crate::part::prom::payload::image::ImagePayload;
 use crate::part_impl::repo::mock_impl::Mock;
@@ -42,7 +43,7 @@ use crate::value::role::{RoleField, RoleMask};
 
 // Shared fixture setup helpers for chapter test suites.
 mod fixture;
-// Preset-assignment scenarios and permission transitions.
+// Preset-assignment scenarios and perm transitions.
 mod preset_assignment;
 // Workflow-stage transition assertions for chapter usecases.
 mod stage;

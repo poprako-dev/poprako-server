@@ -1,11 +1,11 @@
 //! RDB-backed page repository step implementations.
 
-use std::collections::HashMap;
-
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 use tracing::instrument;
+
+use poprako_util::i18n::trl;
 
 use crate::complex::page::PageComplex;
 use crate::model::read::proj::page::PageInfo;
@@ -20,9 +20,9 @@ use crate::part_impl::repo::rdb_impl::schema::t_page::dsl::*;
 use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{
     f_page_id as unit_f_page_id, t_unit,
 };
-use crate::part_impl::shared::RdbConn;
-use crate::part_impl::shared::result::{diesel, expected, next_version};
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::shared::RdbConn;
+use crate::shared::result::{diesel, next_version};
 
 /// Load a single page info by ID.
 #[instrument(level = "info", err(Debug), skip_all)]
@@ -38,7 +38,23 @@ pub async fn get_info_by_id(
         .await
         .optional()
         .map_err(diesel)?
-        .ok_or_else(|| expected("error-page-not-found"))?;
+        .ok_or_else(|| {
+            //
+            let err_message = trl("error-page-not-found");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                err_message = %err_message,
+                page_id = %id,
+                stage = "get_info_by_id",
+                "expected error: page not found",
+            );
+
+            BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: err_message,
+            }
+        })?;
 
     row.try_into()
 }
@@ -58,7 +74,23 @@ pub async fn get_info_excluded(
         .await
         .optional()
         .map_err(diesel)?
-        .ok_or_else(|| expected("error-page-not-found"))?;
+        .ok_or_else(|| {
+            //
+            let err_message = trl("error-page-not-found");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                err_message = %err_message,
+                page_id = %id,
+                stage = "get_info_excluded",
+                "expected error: page not found",
+            );
+
+            BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: err_message,
+            }
+        })?;
 
     row.try_into()
 }
@@ -208,7 +240,7 @@ pub async fn clear_images_for_publish(
 pub async fn list_first_infos_by_chapter_ids(
     conn: &mut RdbConn,
     chapter_ids: &[String],
-) -> BaseRest<HashMap<String, PageInfo>> {
+) -> BaseRest<Vec<PageInfo>> {
     //
     let rows: Vec<PageRow> = t_page
         .filter(f_chapter_id.eq_any(chapter_ids))
@@ -219,14 +251,7 @@ pub async fn list_first_infos_by_chapter_ids(
         .await
         .map_err(diesel)?;
 
-    accept(
-        rows.into_iter()
-            .map(TryInto::try_into)
-            .collect::<BaseRest<Vec<PageInfo>>>()?
-            .into_iter()
-            .map(|page_info| (page_info.chapter_id.clone(), page_info))
-            .collect(),
-    )
+    rows.into_iter().map(TryInto::try_into).collect()
 }
 
 /// Batch-insert pages from a slice of model_entries and return the created infos.
@@ -333,7 +358,25 @@ pub async fn mark_image_uploaded(
     .map_err(diesel)?;
 
     if affected == 0 {
-        return Err(expected("error-stale-page-image-upload"));
+        //
+        let err_message = trl("error-stale-page-image-upload");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            err_message = %err_message,
+            page_id = %id,
+            image_version = version,
+            image_key_present = image_key.is_some(),
+            image_uploaded = true,
+            affected,
+            stage = "mark_image_uploaded",
+            "expected error: stale page image upload",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: err_message,
+        });
     }
 
     accept(())
@@ -363,7 +406,25 @@ pub async fn set_image_uploaded(
     .map_err(diesel)?;
 
     if affected == 0 {
-        return Err(expected("error-stale-page-image-upload"));
+        //
+        let err_message = trl("error-stale-page-image-upload");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            err_message = %err_message,
+            page_id = %id,
+            image_version = version,
+            image_key_present = true,
+            image_uploaded,
+            affected,
+            stage = "set_image_uploaded",
+            "expected error: stale page image upload",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: err_message,
+        });
     }
 
     accept(())

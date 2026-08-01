@@ -9,13 +9,11 @@ use crate::model::write::member_invitation::MemberInvitationEntry;
 use crate::part::repo::oper::member_invitation::{
     CreateMemberInvitation, ListMemberInvitationInfos, UpdateMemberInvitation,
 };
-use crate::part_impl::drive::rdb_impl::RdbDrive;
+use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
-use crate::part_impl::shared::RdbCore;
 use crate::result::BaseError;
-use crate::value::member_invitation::{
-    MemberInvitationInclOpt, MemberInvitationStatus,
-};
+use crate::shared::RdbCore;
+use crate::value::member_invitation::MemberInvitationInclOpt;
 use crate::value::role::{RoleField, RoleMask};
 
 const PREFIX: &str = "rdb-test-member-invitation-domain-";
@@ -30,7 +28,7 @@ pub async fn member_invitation_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let repo = RdbRepo::new(shared.clone());
 
-    let nucl = RdbDrive::new(shared.clone());
+    let nucl = RdbNucl::new(shared.clone());
 
     let member_invitation_entry = MemberInvitationEntry {
         id: format!("{}member-invitation", PREFIX),
@@ -67,7 +65,7 @@ pub async fn member_invitation_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let member_invitation_list_spec = MemberInvitationListSpec {
         team_id: team_fixture.team_entry.id.clone(),
-        status: MemberInvitationStatus::Used,
+        is_pending: Some(false),
         incl_opt: vec![MemberInvitationInclOpt::Invitor],
         offset: 0,
         limit: 10,

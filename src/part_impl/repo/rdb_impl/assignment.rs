@@ -6,6 +6,8 @@ use poprako_orchestra::{Run, Step};
 use time::OffsetDateTime;
 use tracing::instrument;
 
+use poprako_util::i18n::trl;
+
 use self::list::list_infos;
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::write::assignment::{AssignmentEntry, AssignmentRoleRepl};
@@ -22,9 +24,9 @@ use crate::part_impl::repo::rdb_impl::schema::t_chapter::{
     f_comic_id as chapter_comic_id, table as chapter_table,
 };
 use crate::part_impl::repo::rdb_impl::{RdbRepo, incl};
-use crate::part_impl::shared::result::{diesel, expected};
-use crate::part_impl::shared::{RdbConn, RdbContext};
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::shared::result::diesel;
+use crate::shared::{RdbConn, RdbContext};
 use crate::value::assignment::AssignmentInclOpt;
 
 /// Assignment RDB integration tests.
@@ -123,14 +125,36 @@ async fn get_info_by_id(
     incl_opt: &[AssignmentInclOpt],
 ) -> BaseRest<AssignmentInfo> {
     //
-    let row: AssignmentRow = t_assignment
+    let row: Option<AssignmentRow> = t_assignment
         .filter(f_id.eq(id))
         .select(AssignmentRow::as_select())
         .get_result(conn)
         .await
         .optional()
-        .map_err(diesel)?
-        .ok_or_else(|| expected("error-assignment-not-found"))?;
+        .map_err(diesel)?;
+
+    let row = match row {
+        //
+        Some(row) => row,
+
+        None => {
+            //
+            let message = trl("error-assignment-not-found");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                err_message = %message,
+                assignment_id = %id,
+                operation = "get assignment info",
+                "expected assignment error",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message,
+            });
+        }
+    };
 
     let mut info = row_into_info(row)?;
 
@@ -197,15 +221,37 @@ async fn put_roles(
 
     let aspect = AssignmentAspect::new(now).roles(timestamps);
 
-    let row: AssignmentRow =
+    let row: Option<AssignmentRow> =
         diesel::update(t_assignment.filter(f_id.eq(update.id.as_str())))
             .set(&aspect)
             .returning(AssignmentRow::as_returning())
             .get_result(conn)
             .await
             .optional()
-            .map_err(diesel)?
-            .ok_or_else(|| expected("error-assignment-not-found"))?;
+            .map_err(diesel)?;
+
+    let row = match row {
+        //
+        Some(row) => row,
+
+        None => {
+            //
+            let message = trl("error-assignment-not-found");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                err_message = %message,
+                assignment_id = %update.id,
+                operation = "update assignment roles",
+                "expected assignment error",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message,
+            });
+        }
+    };
 
     row_into_info(row)
 }

@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use poprako_orchestra::Oper;
 
 use crate::model::read::proj::page::PageInfo;
@@ -26,7 +24,7 @@ pub struct ListPageInfos<'a> {
 
 /// Finds the lowest-index page for each requested chapter.
 #[derive(Oper)]
-#[oper(output = HashMap<String, PageInfo>)]
+#[oper(output = Vec<PageInfo>)]
 pub struct ListFirstPageInfos<'a> {
     /// The chapter IDs to query.
     pub chapter_ids: &'a [String],

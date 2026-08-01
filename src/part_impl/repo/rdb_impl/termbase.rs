@@ -1,13 +1,16 @@
 //! Diesel-backed terminology-base repository operations.
 
 use diesel::{
-    BoolExpressionMethods as _, ExpressionMethods as _, OptionalExtension as _,
+    BoolExpressionMethods as _, ExpressionMethods as _,
+    NullableExpressionMethods as _, OptionalExtension as _,
     PgTextExpressionMethods as _, QueryDsl as _, SelectableHelper as _,
 };
 use diesel_async::RunQueryDsl as _;
 use poprako_orchestra::{Run, Step};
 use time::OffsetDateTime;
 use tracing::instrument;
+
+use poprako_util::i18n::trl;
 
 use crate::model::read::proj::termbase::TermbaseInfo;
 use crate::model::read::spec::termbase::TermbaseListSpec;
@@ -22,9 +25,10 @@ use crate::part_impl::repo::rdb_impl::entity::termbase::{
     TermbaseRow, TermbaseRowEntry,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_termbase::dsl::*;
-use crate::part_impl::shared::result::{diesel, expected};
-use crate::part_impl::shared::{RdbConn, RdbContext};
-use crate::result::{BaseError, BaseRest, accept};
+use crate::part_impl::repo::rdb_impl::schema::{t_comic, t_workset};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::shared::result::diesel;
+use crate::shared::{RdbConn, RdbContext};
 
 /// Termbase RDB integration tests.
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
@@ -57,14 +61,36 @@ fn escape_ilike_pattern(input: &str) -> String {
 async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<TermbaseInfo> {
     //
     // Return explicit not-found error when the target termbase does not exist.
-    let row: TermbaseRow = t_termbase
+    let row: Option<TermbaseRow> = t_termbase
         .filter(f_id.eq(id))
         .select(TermbaseRow::as_select())
         .get_result(conn)
         .await
         .optional()
-        .map_err(diesel)?
-        .ok_or_else(|| expected("error-termbase-not-found"))?;
+        .map_err(diesel)?;
+
+    let row = match row {
+        //
+        Some(row) => row,
+
+        None => {
+            //
+            let message = trl("error-termbase-not-found");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                err_message = %message,
+                termbase_id = %id,
+                operation = "get termbase info",
+                "expected termbase error",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message,
+            });
+        }
+    };
 
     accept(row.into())
 }
@@ -77,15 +103,37 @@ async fn get_info_excluded(
 ) -> BaseRest<TermbaseInfo> {
     //
     // Take `FOR UPDATE` lock and keep semantics aligned with locked read paths.
-    let row: TermbaseRow = t_termbase
+    let row: Option<TermbaseRow> = t_termbase
         .filter(f_id.eq(id))
         .select(TermbaseRow::as_select())
         .for_update()
         .get_result(conn)
         .await
         .optional()
-        .map_err(diesel)?
-        .ok_or_else(|| expected("error-termbase-not-found"))?;
+        .map_err(diesel)?;
+
+    let row = match row {
+        //
+        Some(row) => row,
+
+        None => {
+            //
+            let message = trl("error-termbase-not-found");
+
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                err_message = %message,
+                termbase_id = %id,
+                operation = "lock termbase info",
+                "expected termbase error",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message,
+            });
+        }
+    };
 
     accept(row.into())
 }
@@ -115,15 +163,22 @@ async fn list_infos(
         }
 
         TermbaseListSpec::Comic {
-            team_id,
             comic_id,
             fuzzy_name,
             offset,
             limit,
         } => {
             //
-            query =
-                query.filter(f_team_id.eq(team_id).or(f_comic_id.eq(comic_id)));
+            let owning_team_ids = t_comic::table
+                .inner_join(t_workset::table)
+                .filter(t_comic::f_id.eq(comic_id))
+                .select(t_workset::f_team_id.nullable());
+
+            query = query.filter(
+                f_team_id
+                    .eq_any(owning_team_ids)
+                    .or(f_comic_id.eq(comic_id)),
+            );
 
             (fuzzy_name, offset, limit)
         }

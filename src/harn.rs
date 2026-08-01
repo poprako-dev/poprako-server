@@ -4,7 +4,7 @@ use std::sync::Arc;
 use poprako_orchestra::Nucl;
 
 use crate::part::auth::TokenAuth;
-use crate::part::effect::EffectDevelop;
+use crate::part::effect::Develop;
 use crate::part::image::ImagePool;
 use crate::part::prom::Prom;
 use crate::part::repo::announcement::AnnouncementRepo;
@@ -27,14 +27,14 @@ use crate::result::BaseError;
 
 /// Central application harness that wires together all port implementations.
 ///
-/// Provides accessors to each subsystem (drive, repo, prom, auth, image_pool,
+/// Provides accessors to each subsystem (nucl, repo, prom, auth, image_pool,
 /// develop) and is designed to be cheaply cloned via `Arc<HarnInner>`.
-pub struct Harn<C, N, R, P, A, I, V> {
+pub struct Harn<C, N, R, P, A, I, D> {
     /// Reference-counted inner harness that holds all port implementations.
-    inner: Arc<HarnInner<C, N, R, P, A, I, V>>,
+    inner: Arc<HarnInner<C, N, R, P, A, I, D>>,
 }
 
-impl<C, N, R, P, A, I, V> Clone for Harn<C, N, R, P, A, I, V> {
+impl<C, N, R, P, A, I, D> Clone for Harn<C, N, R, P, A, I, D> {
     // Clones the harness by bumping the inner `Arc` reference count.
     fn clone(&self) -> Self {
         Self {
@@ -44,10 +44,10 @@ impl<C, N, R, P, A, I, V> Clone for Harn<C, N, R, P, A, I, V> {
 }
 
 // Inner, non-cloneable state shared across all `Harn` clones via `Arc`.
-struct HarnInner<C, N, R, P, A, I, V> {
+struct HarnInner<C, N, R, P, A, I, D> {
     //
-    // Transaction driver (Nucl).
-    drive: N,
+    // Transaction coordinator (Nucl).
+    nucl: N,
     // Repository bundle implementing all domain step traits.
     repo: R,
     // Prom (deferred task) enqueuer.
@@ -57,12 +57,12 @@ struct HarnInner<C, N, R, P, A, I, V> {
     // Image pool for upload / download URL signing.
     image_pool: I,
     // Side-effect (event) processor.
-    develop: V,
+    develop: D,
     // Phantom type parameter marker.
     _p: PhantomData<C>,
 }
 
-impl<C, N, R, P, A, I, V> Harn<C, N, R, P, A, I, V>
+impl<C, N, R, P, A, I, D> Harn<C, N, R, P, A, I, D>
 where
     N: Nucl<Context = C, Error = BaseError>,
     R: AnnouncementRepo<C>
@@ -84,20 +84,20 @@ where
     P: Prom<C>,
     A: TokenAuth,
     I: ImagePool + Sync,
-    V: EffectDevelop + Sync,
+    D: Develop + Sync,
 {
     /// Builds a new `Harn` from the given port implementations.
     pub fn new(
-        drive: N,
+        nucl: N,
         repo: R,
         prom: P,
         auth: A,
         image_pool: I,
-        develop: V,
+        develop: D,
     ) -> Self {
         Self {
             inner: Arc::new(HarnInner {
-                drive,
+                nucl,
                 repo,
                 prom,
                 auth,
@@ -108,9 +108,9 @@ where
         }
     }
 
-    /// Returns a reference to the transaction driver.
-    pub fn drive(&self) -> &N {
-        &self.inner.drive
+    /// Returns a reference to the transaction coordinator.
+    pub fn nucl(&self) -> &N {
+        &self.inner.nucl
     }
 
     /// Returns a reference to the repository bundle.
@@ -134,7 +134,7 @@ where
     }
 
     /// Returns a reference to the side-effect (event) processor.
-    pub fn develop(&self) -> &V {
+    pub fn develop(&self) -> &D {
         &self.inner.develop
     }
 }

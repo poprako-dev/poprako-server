@@ -1,17 +1,17 @@
-//! Payload types for domain events.
+//! User domain events.
 
-/// Payload for the [`UserActive`] event.
+/// Event emitted when a user becomes active.
 ///
 /// [`UserActive`]: crate::part::effect::event::Event::UserActive
-pub struct UserActivePayload {
+pub struct UserActiveEvent {
     /// Unique identifier of the user who became active.
     pub user_id: String,
 }
 
-/// Payload for the [`UserSignedUp`] event.
+/// Event emitted when a new user signs up through an invitation.
 ///
 /// [`UserSignedUp`]: crate::part::effect::event::Event::UserSignedUp
-pub struct UserSignedUpPayload {
+pub struct UserSignedUpEvent {
     //
     /// Identifier of the team the new user was invited to.
     pub team_id: String,

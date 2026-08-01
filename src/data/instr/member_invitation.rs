@@ -36,7 +36,7 @@ pub struct CreateMemberInvitationInstr {
 ///
 /// `incl` embeds related rows into each item.
 ///
-/// Example: `/api/v1/teams/{team_id}/member-invitations?pending=true&incl=invitor&offset=0&limit=20`.
+/// Example: `/api/v1/teams/{team_id}/member-invitations?is_pending=true&incl=invitor&offset=0&limit=20`.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]

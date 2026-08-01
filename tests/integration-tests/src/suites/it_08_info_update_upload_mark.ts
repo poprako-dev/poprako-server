@@ -138,7 +138,7 @@ export async function runIt08Module(ctx: RunCtx): Promise<void> {
         4,
     );
 
-    // non-existent team avatar reserve -> 403/4 (permission check for non-existing team returns perm error)
+    // non-existent team avatar reserve -> 403/4 (perm check for non-existing team returns perm error)
     expectError(
         await ctx.sadmin.post<ErrorBody>("/api/v1/teams/team-does-not-exist/avatar/reserve", {
             image_hash: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",

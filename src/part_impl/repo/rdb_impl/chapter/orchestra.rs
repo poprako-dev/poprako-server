@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
@@ -20,8 +18,8 @@ use crate::part_impl::repo::rdb_impl::chapter::step_impl::{
     lock_chapters, reset_raw_provide, set_page_counters, start_stage,
     unpin_others, update_info, update_stage,
 };
-use crate::part_impl::shared::RdbContext;
 use crate::result::{BaseError, BaseRest};
+use crate::shared::RdbContext;
 
 impl Run<GetChapterInfo<'_, '_>> for RdbRepo {
     // Map failed query execution for chapter lookup into repository-level base error.
@@ -76,11 +74,11 @@ impl Run<ListPinnedChapterInfos<'_>> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    // Collect pinned chapter info for multiple comics, keyed by comic id.
+    // Collect pinned chapter info for multiple comics.
     async fn run(
         &self,
         oper: &ListPinnedChapterInfos<'_>,
-    ) -> BaseRest<HashMap<String, ChapterInfo>> {
+    ) -> BaseRest<Vec<ChapterInfo>> {
         submit_query!(self.core, list_pinned_infos_by_comic_ids, oper.comic_ids)
     }
 }

@@ -16,9 +16,7 @@ use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected,
 };
 use crate::result::{BaseError, BaseRest, accept};
-use crate::value::member_invitation::{
-    MemberInvitationInclOpt, MemberInvitationStatus,
-};
+use crate::value::member_invitation::MemberInvitationInclOpt;
 
 // Internal implementation of `find_user`.
 fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
@@ -59,20 +57,12 @@ fn list_member_invitation_infos(
         .iter()
         .filter(|member_invitation_info| {
             member_invitation_info.team_id == spec.team_id
-                && match &spec.status {
-                    //
-                    // Internal state field `MemberInvitationStatus`.
-                    // Internal implementation detail.
-                    MemberInvitationStatus::All => true,
-
-                    MemberInvitationStatus::Pending => {
-                        member_invitation_info.is_pending
-                    }
-
-                    MemberInvitationStatus::Used => {
-                        !member_invitation_info.is_pending
-                    }
-                }
+                && spec
+                    .is_pending
+                    .map(|is_pending| {
+                        member_invitation_info.is_pending == is_pending
+                    })
+                    .unwrap_or(true)
         })
         .cloned()
         .collect::<Vec<_>>();

@@ -10,10 +10,10 @@ use crate::part::repo::oper::chapter::{
     FindPinnedChapterInfo, GetChapterInfo, ListChapterInfos, StartChapterStage,
     UpdateChapterStage,
 };
-use crate::part_impl::drive::rdb_impl::RdbDrive;
+use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
-use crate::part_impl::shared::RdbCore;
 use crate::result::accept;
+use crate::shared::RdbCore;
 use crate::value::chapter::{ChapterInclOpt, Stage, StageMask, StagePhase};
 
 const PREFIX: &str = "rdb-test-chapter-domain-";
@@ -28,7 +28,7 @@ pub async fn chapter_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let repo = RdbRepo::new(shared.clone());
 
-    let drive = RdbDrive::new(shared.clone());
+    let nucl = RdbNucl::new(shared.clone());
 
     let stage_mask = StageMask::try_from(0u32).ok().unwrap();
 
@@ -37,22 +37,21 @@ pub async fn chapter_roundtrip_uses_testcontainer(shared: RdbCore) {
         stages: stage_mask,
     };
 
-    drive
-        .coord(async |context| {
-            //
-            repo.step(
-                context,
-                &UpdateChapterStage {
-                    update: &chapter_stage_update,
-                },
-            )
-            .await?;
+    nucl.coord(async |context| {
+        //
+        repo.step(
+            context,
+            &UpdateChapterStage {
+                update: &chapter_stage_update,
+            },
+        )
+        .await?;
 
-            accept(())
-        })
-        .await
-        .ok()
-        .unwrap();
+        accept(())
+    })
+    .await
+    .ok()
+    .unwrap();
 
     let first_start = repo
         .run(&StartChapterStage {

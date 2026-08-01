@@ -2,8 +2,8 @@ use crate::model::read::proj::member::MemberInfo;
 use crate::part_impl::repo::rdb_impl::incl::framework::{
     BatchByIds, Incl, TeamByIds, UserByIds, populate,
 };
-use crate::part_impl::shared::RdbConn;
 use crate::result::BaseRest;
+use crate::shared::RdbConn;
 use crate::value::incl::expand_incl_opts;
 use crate::value::member::MemberInclOpt;
 

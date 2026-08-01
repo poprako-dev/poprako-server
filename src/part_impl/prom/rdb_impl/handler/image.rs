@@ -21,8 +21,8 @@ use crate::part::repo::user::UserRepo;
 use crate::part_impl::prom::rdb_impl::handler::image::identity::ImageIdentity;
 use crate::part_impl::prom::rdb_impl::handler::image::resource::ResourceState;
 use crate::part_impl::prom::rdb_impl::handler::task_flow::TaskFlow;
-use crate::part_impl::shared::RdbContext;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::shared::RdbContext;
 
 // Internal organization of the `identity` module.
 mod identity;
@@ -209,14 +209,39 @@ where
             .step_on(repo, context)
             .await?;
 
-            if locked_page_info.image_version != image_identity.version
-                || locked_page_info.image_key.as_deref()
-                    != Some(image_identity.object_key)
-            {
-                return Err(BaseError::Expected {
-                    variant: ExpectedVariant::Args,
-                    message: "stale page image identity".into(),
-                });
+            let image_version_matches =
+                locked_page_info.image_version == image_identity.version;
+
+            let image_key_matches = locked_page_info.image_key.as_deref()
+                == Some(image_identity.object_key);
+
+            match (image_version_matches, image_key_matches) {
+                //
+                (true, true) => {}
+
+                (false, _) | (true, false) => {
+                    //
+                    let err_message = "stale page image identity";
+
+                    tracing::warn!(
+                        err_variant = ?ExpectedVariant::Args,
+                        err_message = %err_message,
+                        resource_kind = ?image_identity.kind,
+                        resource_id = %image_identity.resource_id,
+                        image_version = image_identity.version,
+                        stored_image_version = locked_page_info.image_version,
+                        image_key_present = locked_page_info.image_key.is_some(),
+                        image_key_matches,
+                        object_key_present = !image_identity.object_key.is_empty(),
+                        operation = "process_unverified_page_image",
+                        "expected error: stale page image identity",
+                    );
+
+                    return Err(BaseError::Expected {
+                        variant: ExpectedVariant::Args,
+                        message: err_message.into(),
+                    });
+                }
             }
 
             let repl = PageImageRepl {
@@ -342,14 +367,39 @@ where
             .step_on(repo, context)
             .await?;
 
-            if locked_page_info.image_version != image_identity.version
-                || locked_page_info.image_key.as_deref()
-                    != Some(image_identity.object_key)
-            {
-                return Err(BaseError::Expected {
-                    variant: ExpectedVariant::Args,
-                    message: "stale page image identity".into(),
-                });
+            let image_version_matches =
+                locked_page_info.image_version == image_identity.version;
+
+            let image_key_matches = locked_page_info.image_key.as_deref()
+                == Some(image_identity.object_key);
+
+            match (image_version_matches, image_key_matches) {
+                //
+                (true, true) => {}
+
+                (false, _) | (true, false) => {
+                    //
+                    let err_message = "stale page image identity";
+
+                    tracing::warn!(
+                        err_variant = ?ExpectedVariant::Args,
+                        err_message = %err_message,
+                        resource_kind = ?image_identity.kind,
+                        resource_id = %image_identity.resource_id,
+                        image_version = image_identity.version,
+                        stored_image_version = locked_page_info.image_version,
+                        image_key_present = locked_page_info.image_key.is_some(),
+                        image_key_matches,
+                        object_key_present = !image_identity.object_key.is_empty(),
+                        operation = "process_existing_page_image",
+                        "expected error: stale page image identity",
+                    );
+
+                    return Err(BaseError::Expected {
+                        variant: ExpectedVariant::Args,
+                        message: err_message.into(),
+                    });
+                }
             }
 
             let repl = PageImageRepl {

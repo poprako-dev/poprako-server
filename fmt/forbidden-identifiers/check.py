@@ -96,6 +96,33 @@ def rust_files(root: Path) -> list[Path]:
     )
 
 
+def resolve_ignore_files(
+    root: Path,
+    ignore_files: list[Path],
+    ignore_lists: list[Path],
+) -> set[Path]:
+    """Resolve direct ignore paths and newline-delimited ignore lists."""
+    configured_files = list(ignore_files)
+
+    for ignore_list in ignore_lists:
+        ignore_list_path = (
+            ignore_list
+            if ignore_list.is_absolute()
+            else root / ignore_list
+        )
+
+        for line in ignore_list_path.read_text().splitlines():
+            entry = line.strip()
+
+            if entry and not entry.startswith("#"):
+                configured_files.append(Path(entry))
+
+    return {
+        (path if path.is_absolute() else root / path).resolve()
+        for path in configured_files
+    }
+
+
 def split_identifier(name: str) -> list[str]:
     """Split snake_case, SCREAMING_SNAKE_CASE, PascalCase, or camelCase into
     lowercase word segments."""
@@ -443,6 +470,7 @@ CTX_STATIC         = "static"
 CTX_ENUM_VARIANT   = "enum_variant"
 CTX_TYPE           = "type"
 CTX_FIELD          = "field"
+CTX_MACRO_FIELD    = "macro_field"
 
 
 def check_identifier_name(
@@ -471,6 +499,20 @@ def check_identifier_name(
         return
 
     segments = split_identifier(name)
+
+    # Structured macro field keys are identifiers too, but their `err` form
+    # follows the established tracing field convention.  Only the forbidden
+    # `error` segment is checked here.
+    if context == CTX_MACRO_FIELD:
+        if "error" in segments:
+            diagnostics.append(
+                error_line(
+                    path, root, name_node,
+                    "FBD003",
+                    f"'{name}' — 'error' is forbidden — use 'err' instead",
+                ),
+            )
+        return
 
     # --- error segment → always forbidden (FBD003) -----------------------
     # Skipped for type names and field declarations — only "extension"
@@ -598,6 +640,29 @@ def collect_definition_names(
                 names.append((text(source, child), child, CTX_PARAMETER, False))
                 break
 
+    # --- structured macro field key ---
+    if node.type == "macro_invocation":
+        token_tree = next(
+            (
+                child
+                for child in node.named_children
+                if child.type == "token_tree"
+            ),
+            None,
+        )
+
+        if token_tree is not None:
+            children = token_tree.children
+
+            for index, child in enumerate(children[:-1]):
+                next_child = children[index + 1]
+
+                if (
+                    child.type == "identifier"
+                    and next_child.text == b"="
+                ):
+                    names.append((text(source, child), child, CTX_MACRO_FIELD, False))
+
     # --- let binding (pattern → identifier, with Error-type detection) ---
     if node.type == "let_declaration":
         pattern = node.child_by_field_name("pattern")
@@ -709,8 +774,13 @@ def check_file(
     return diagnostics
 
 
-def check_root(root: Path) -> list[str]:
-    files = rust_files(root)
+def check_root(root: Path, ignored_files: set[Path] | None = None) -> list[str]:
+    ignored_files = ignored_files or set()
+    files = [
+        path
+        for path in rust_files(root)
+        if path.resolve() not in ignored_files
+    ]
     test_module_set = _build_test_module_set(root, files)
 
     return [
@@ -763,6 +833,25 @@ def self_test() -> int:
                 print(f"  {d}", file=sys.stderr)
             return 1
 
+        ignored_file = src / "ignored.rs"
+        ignored_file.write_text("fn ignored_result() {}\n")
+
+        if check_root(root, {ignored_file.resolve()}):
+            print("self-test: ignored file was not checked", file=sys.stderr)
+            return 1
+
+        ignore_list = root / "ignore-files.txt"
+        ignore_list.write_text(
+            "# Paths are relative to the check root.\n"
+            "src/ignored.rs\n"
+        )
+
+        if check_root(root, resolve_ignore_files(root, [], [ignore_list])):
+            print("self-test: ignore list was not applied", file=sys.stderr)
+            return 1
+
+        ignored_file.unlink()
+
         # ── test module is skipped ──────────────────────────────────────
 
         fixture.write_text(
@@ -805,6 +894,29 @@ def self_test() -> int:
 
         if not all("FBD003" in d for d in diagnostics):
             print("self-test FBD003: wrong code", file=sys.stderr)
+            return 1
+
+        # ── error in structured macro field keys ────────────────────────
+
+        fixture.write_text(
+            "fn process() {\n"
+            "    tracing::warn!(\n"
+            "        error_variant = ?SomeError,\n"
+            "        err_message = %message,\n"
+            "        \"failed\",\n"
+            "    );\n"
+            "}\n"
+        )
+
+        diagnostics = check_root(root)
+
+        if len(diagnostics) != 1 or "error_variant" not in diagnostics[0]:
+            print(
+                "self-test FBD003-macro-field: error_variant was not flagged",
+                file=sys.stderr,
+            )
+            for diagnostic in diagnostics:
+                print(f"  {diagnostic}", file=sys.stderr)
             return 1
 
         # ── err in fn names: only _err suffix allowed ────────────────────
@@ -1089,13 +1201,33 @@ def self_test() -> int:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, default=ROOT)
+    parser.add_argument(
+        "--ignore-file",
+        dest="ignore_files",
+        action="append",
+        type=Path,
+        default=[],
+        metavar="PATH",
+        help="skip one Rust source file; may be repeated",
+    )
+    parser.add_argument(
+        "--ignore-list",
+        dest="ignore_lists",
+        action="append",
+        type=Path,
+        default=[],
+        metavar="PATH",
+        help="read newline-delimited ignored paths; may be repeated",
+    )
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
 
     if args.self_test:
         return self_test()
 
-    diagnostics = check_root(args.root.resolve())
+    root = args.root.resolve()
+    ignored_files = resolve_ignore_files(root, args.ignore_files, args.ignore_lists)
+    diagnostics = check_root(root, ignored_files)
 
     if diagnostics:
         print("\n".join(diagnostics), file=sys.stderr)
