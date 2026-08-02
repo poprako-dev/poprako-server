@@ -1,7 +1,5 @@
 // chapter_roundtrip_uses_testcontainer(ChapterRepo)(positive): chapter repo persists, lists, and finds pinned chapter rows in an isolated PostgreSQL container.
 
-use super::*;
-
 use poprako_orchestra::{Nucl, Run as _, Step as _};
 
 use crate::model::read::spec::chapter::ChapterListSpec;
