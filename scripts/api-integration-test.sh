@@ -37,6 +37,14 @@ export API_BASE_URL="$api_base_url"
 db_name="${integration_database_url##*/}"
 maintenance_url="${integration_database_url%/*}/postgres"
 
+case "$db_name" in
+    *_integration) ;;
+    *)
+        echo "integration database name must end with _integration" >&2
+        exit 1
+        ;;
+esac
+
 drop_integration_db() {
     psql "$maintenance_url" \
         -c "DROP DATABASE IF EXISTS \"$db_name\" WITH (FORCE)" \
@@ -61,6 +69,9 @@ if [ "$run_migrations" = "1" ]; then
     # exist yet, then runs pending migrations. It is idempotent on subsequent
     # runs.
     diesel database setup
+    psql "$integration_database_url" \
+        --set ON_ERROR_STOP=1 \
+        --file tests/fixtures/integration-bootstrap.sql
 fi
 
 if [ "$start_api_server" = "1" ]; then

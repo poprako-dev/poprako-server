@@ -253,8 +253,9 @@ pnpm typecheck
   - The server binary never embeds, applies, or triggers migrations.
   - The three bootstrap inserts use primary-key `ON CONFLICT DO NOTHING` so
     repeated deployment preserves existing rows.
-- [ ] Remove fixed bootstrap administrator credentials from production
-  migrations, or replace them with a one-time secret provisioning process.
+- [x] Remove fixed bootstrap administrator credentials from production
+  migrations; keep deterministic bootstrap data only in the isolated HTTP
+  integration-test fixture.
 - [x] Remove the dependency on legacy production credentials at
   `/opt/poprako-s/shared/.env`.
 - [x] Retire the legacy manual deployment implementation.
@@ -391,8 +392,8 @@ The repository-local checklist was re-audited on 2026-08-02.
 - Tracked Rust files: 501.
 - Rust files above 600 lines: 15, all frozen at their current line count by
   `scripts/check-rust-lines.sh`.
-- Migration `up.sql` files: 41.
-- Migration `down.sql` files: 41.
+- Migration `up.sql` files: 39.
+- Migration `down.sql` files: 39.
 - Git tags: 0.
 - GitHub Actions workflows: 3.
 
