@@ -2,6 +2,7 @@
 name = "poprako-util"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.95"
 description = "Shared utility and i18n support for poprako-server"
 license = "MIT"
 repository = "https://github.com/poprako-dev/poprako-server"

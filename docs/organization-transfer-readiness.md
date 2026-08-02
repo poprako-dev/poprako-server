@@ -101,7 +101,7 @@ immediately after it.
 - [ ] Centralize shared dependency versions with `[workspace.dependencies]`.
 - [ ] Centralize shared lint policy with `[workspace.lints]` and inherit it in
   every member crate.
-- [ ] Select and document the supported Rust version.
+- [x] Select and document Rust 1.95 as the supported version.
   - Add `rust-version` to workspace package metadata.
   - Add a pinned `rust-toolchain.toml`.
   - Use the same exact Rust version in the Docker builder image.
@@ -115,14 +115,14 @@ immediately after it.
 
 ### Acceptance
 
-- [ ] `cargo metadata --no-deps --format-version 1` reports the correct
+- [x] `cargo metadata --no-deps --format-version 1` reports the correct
   repository and Rust version for all members.
-- [ ] Local, CI, and Docker builds use the same Rust toolchain policy.
+- [x] Local, CI, and Docker builds use the same Rust 1.95 toolchain policy.
 - [ ] No workspace member silently misses the shared lint policy.
 
 ## 5. Make repository rules enforceable
 
-- [ ] Resolve the contradictory formatting instruction in root `AGENTS.md`.
+- [x] Resolve the contradictory formatting instruction in root `AGENTS.md`.
   - Read-only verification should use `cargo fmt --all --check`.
   - Code-changing workflows may run `cargo fmt --all` before verification.
 - [ ] Decide whether the 600-line Rust file limit is mandatory.
@@ -141,7 +141,7 @@ immediately after it.
   - Check the entire workspace and all targets.
   - Treat Clippy warnings as errors.
   - Keep `just fmt-check` only as an optional local wrapper around the script.
-- [ ] Fix the current strict Clippy failures.
+- [x] Fix the current strict Clippy failures.
   - Remove four unused `super::*` imports in RDB test modules.
   - Resolve the unused `find_chapter` helper.
   - Replace the needless `.last()` traversal in the chapter-port import test.
@@ -159,13 +159,20 @@ sh fmt/run-check.sh
 
 ## 6. Continuous integration
 
-- [ ] Add a pull-request CI workflow under `.github/workflows/`.
-- [ ] Invoke `sh scripts/ci-check.sh`; do not install or require `just` in CI.
-- [ ] Run `cargo test --workspace`.
+- [x] Add a pull-request CI workflow under `.github/workflows/`.
+  - Run CI for pull requests targeting `dev` or `main`.
+  - Run branch CI after changes land on `main`; do not rerun it for pushes to
+    `dev` after a pull request has already passed.
+- [x] Invoke `sh scripts/ci-check.sh`; do not install or require `just` in CI.
+- [x] Run `cargo test --workspace` through `sh scripts/ci-test.sh`.
   - Separate fast unit tests from Docker/PostgreSQL-backed tests if needed.
   - Make required services and feature flags explicit in the workflow.
-- [ ] Validate Diesel migrations against a disposable PostgreSQL database.
-- [ ] Validate TypeScript integration-test sources.
+- [x] Validate Diesel migrations against a disposable PostgreSQL 18 Alpine
+  database, matching the Rust RDB testcontainers environment.
+  - Run every migration up, revert all migrations, and run them all again.
+  - Reject non-CI database names before the destructive rollback check.
+- [x] Validate TypeScript integration-test sources through
+  `sh scripts/ci-typecheck.sh`.
 
 ```sh
 cd tests/integration-tests
@@ -179,9 +186,9 @@ pnpm typecheck
 - [ ] Add dependency security checks.
   - Enable Dependabot for Cargo, pnpm, and GitHub Actions.
   - Add `cargo audit` or an agreed `cargo deny` policy.
-- [ ] Pin third-party GitHub Actions to full commit SHAs.
-- [ ] Give every workflow an explicit minimal `permissions` block.
-- [ ] Configure CI concurrency so superseded branch runs are cancelled.
+- [x] Pin third-party GitHub Actions to full commit SHAs.
+- [x] Give every workflow an explicit minimal `permissions` block.
+- [x] Configure CI concurrency so superseded branch runs are cancelled.
 
 ### Acceptance
 
@@ -201,6 +208,8 @@ pnpm typecheck
   - Use an organization-owned registry such as GHCR.
   - Deploy an immutable digest or commit-qualified tag, not `latest`.
 - [ ] Add a GitHub Actions deployment workflow.
+  - Trigger deployment only after changes land on `main`; never deploy from
+    `dev` or a feature branch.
   - Run all required CI checks before building a release image.
   - Build and push the image from GitHub Actions rather than a maintainer's
     machine.
