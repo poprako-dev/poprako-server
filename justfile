@@ -45,9 +45,6 @@ prod-stop:
 prod-ci-build:
     scripts/ci-build-prod.sh
 
-deploy-release:
-    sh scripts/deploy-release.sh
-
 # Generate swagger.json from the annotated OpenAPI spec.
 swagger:
     cargo run -p poprako-swagger > docs/swagger.json

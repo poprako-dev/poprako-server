@@ -77,8 +77,8 @@ immediately after it.
   it. It currently duplicates `docs/swagger.json` exactly.
 - [ ] Decide whether `application_config.json` should remain at the root or be
   renamed as an explicit local-development example.
-- [ ] Remove or clearly mark legacy `poprako-sr` names.
-  - Review `deploy/poprako-sr/`.
+- [x] Remove legacy `poprako-sr` deployment names and
+  `deploy/poprako-sr/`.
   - Review defaults in `scripts/docker-run-prod.sh`,
     `scripts/local-run-release.sh`, and `scripts/local-stop-release.sh`.
   - Review the legacy `/opt/poprako-s/shared/.env` production dependency.
@@ -181,11 +181,14 @@ pnpm typecheck
 ```
 
 - [ ] Add a scheduled or manually triggered full HTTP integration-test job.
-- [ ] Regenerate `docs/swagger.json` through a checked-in `sh` script into a
+  - Provision an isolated non-production R2 bucket first; the suite performs
+    real uploads through presigned URLs and must never target production.
+- [x] Regenerate `docs/swagger.json` through a checked-in `sh` script into a
   temporary file and fail CI when the checked-in specification differs.
 - [ ] Add dependency security checks.
-  - Enable Dependabot for Cargo, pnpm, and GitHub Actions.
-  - Add `cargo audit` or an agreed `cargo deny` policy.
+  - [x] Enable Dependabot for Cargo, pnpm, and GitHub Actions, targeting `dev`.
+  - [ ] Run pinned `cargo-audit` through `sh scripts/ci-audit.sh`; mark this
+    complete only after the first successful audit.
 - [x] Pin third-party GitHub Actions to full commit SHAs.
 - [x] Give every workflow an explicit minimal `permissions` block.
 - [x] Configure CI concurrency so superseded branch runs are cancelled.
@@ -199,45 +202,66 @@ pnpm typecheck
 
 ## 7. GitHub Actions deployment and container hardening
 
-- [ ] Pin the Docker builder to the selected Rust version.
-- [ ] Run the application as a non-root runtime user.
-- [ ] Add an image-level `HEALTHCHECK` or document why orchestration-level
-  health checks are authoritative.
-- [ ] Review the release image for unnecessary files and packages.
-- [ ] Decide on the official image registry and immutable image naming scheme.
-  - Use an organization-owned registry such as GHCR.
-  - Deploy an immutable digest or commit-qualified tag, not `latest`.
-- [ ] Add a GitHub Actions deployment workflow.
+- [x] Pin the Docker builder to the selected Rust version.
+- [x] Run the application as a non-root runtime user.
+- [x] Add an image-level `HEALTHCHECK` for `/api/health`.
+- [x] Review the release image for unnecessary files and packages.
+- [x] Use commit-qualified immutable image tags.
+  - Build `poprako-server-prod:sha-<full-commit>` on the GitHub runner.
+  - Upload the compressed image archive over authenticated SSH instead of
+    publishing `latest` or relying on a maintainer-owned registry.
+- [x] Add a `main`-only GitHub Actions deployment job.
   - Trigger deployment only after changes land on `main`; never deploy from
     `dev` or a feature branch.
   - Run all required CI checks before building a release image.
-  - Build and push the image from GitHub Actions rather than a maintainer's
+  - Build and upload the image from GitHub Actions rather than a maintainer's
     machine.
-  - Reference an immutable image digest in the deployment step.
+  - Record the full source commit, image tag, and loaded image ID.
   - Use GitHub deployment environments for production approval and audit.
 - [ ] Store production secrets in a protected GitHub environment or an
   approved external secret manager.
-  - Keep environment-specific non-secret configuration separate from secrets.
-  - Prefer short-lived or federated credentials over long-lived credentials.
-- [ ] Define the GitHub Actions-to-runtime deployment mechanism without using
-  SSH or copying a maintainer-owned `.env` file.
+  - Store all server-specific values as `production` environment secrets:
+    `DEPLOY_HOST`, `DEPLOY_PORT`, `DEPLOY_USER`, `DEPLOY_SSH_PRIVATE_KEY`,
+    `DEPLOY_KNOWN_HOSTS`, `DEPLOY_ROOT`, `DEPLOY_PUBLIC_PORT`,
+    `DEPLOY_BIND_HOST`, and `DEPLOY_DOCKER_NETWORK`.
+  - Store the complete runtime dotenv as the `DEPLOY_RUNTIME_ENV` environment
+    secret; never commit or source it from a maintainer machine.
+  - Do not commit production IP addresses, SSH usernames, filesystem paths,
+    Docker network names, credentials, or runtime configuration.
+- [x] Define the GitHub Actions-to-runtime deployment mechanism.
+  - GitHub Actions connects over SSH using a dedicated deployment account.
+  - The account must already have access to Docker, the deployment root, and
+    the pre-existing Docker network.
+  - The remote PostgreSQL 18 container is managed independently and must
+    already be healthy; application CD never creates, replaces, or restarts it.
+  - Upload only the immutable image archive, release script, and
+    GitHub-secret-derived runtime environment.
+- [x] Implement and test the single idempotent application database batch.
+  - Run it only against the independently managed, already-running PostgreSQL
+    18 service; it must not manage the PostgreSQL container lifecycle.
+  - Limit repeatable schema/bootstrap operations to `CREATE IF NOT EXISTS` and
+    `INSERT ... ON CONFLICT` semantics.
+  - `RdbCore::prepare` executes the ordered SQL batch in one transaction before
+    `poprako_server::serve`; preparation failure returns to `main` and prevents
+    the HTTP server from starting.
+  - The three bootstrap inserts use primary-key `ON CONFLICT DO NOTHING` so
+    repeated startup preserves existing rows.
 - [ ] Remove fixed bootstrap administrator credentials from production
   migrations, or replace them with a one-time secret provisioning process.
-- [ ] Remove the dependency on legacy production credentials at
-  `/opt/poprako-s/shared/.env` after migration.
-- [ ] Retire the legacy manual deployment implementation after the GitHub
-  Actions workflow is verified.
-  - Remove `scripts/deploy-release.sh` and
+- [x] Remove the dependency on legacy production credentials at
+  `/opt/poprako-s/shared/.env`.
+- [x] Retire the legacy manual deployment implementation.
+  - Removed `scripts/deploy-release.sh` and
     `scripts/remote-deploy-release.sh`.
-  - Remove obsolete manual release recipes from `justfile`.
-  - Remove the old `poprako-sr` deployment paths and names.
-- [ ] Make deployment rollback-safe.
+  - Removed the manual release recipe from `justfile`.
+  - Removed old `poprako-sr` deployment paths and names.
+- [x] Make the container replacement rollback-safe.
   - Do not delete the healthy container before the replacement is healthy.
   - Preserve the previous image and runtime configuration.
   - Automatically restore the previous release when the new health check
     fails.
-- [ ] Define release retention and cleanup for registry images and deployed
-  revisions.
+- [ ] Define release retention and cleanup for loaded Docker images, uploaded
+  image archives, and deployed revisions.
 - [ ] Add log, metric, and alert checks to the post-deployment verification.
 - [x] Change the root Agent rule so releases must use GitHub Actions rather
   than `just deploy-release`.
@@ -245,10 +269,10 @@ pnpm typecheck
 ### Acceptance
 
 - [ ] A failed deployment leaves or restores a healthy previous version.
-- [ ] Production deployment does not require a maintainer machine, SSH, or a
-  developer-owned plaintext secret file.
-- [ ] A deployed commit can be mapped to an immutable image digest and release
-  record.
+- [ ] Production deployment does not require a maintainer machine, a manually
+  initiated SSH session, or a developer-owned plaintext secret file.
+- [ ] A deployed commit can be mapped to its commit-qualified image ID and
+  release record.
 
 ## 8. Release policy
 

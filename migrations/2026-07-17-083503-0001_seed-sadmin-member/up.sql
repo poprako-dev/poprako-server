@@ -26,4 +26,5 @@ INSERT INTO "t_member" (
     NOW(),
     NOW(),
     NOW()
-);
+)
+ON CONFLICT ("f_id") DO NOTHING;

@@ -3,13 +3,16 @@
 use std::sync::Arc;
 
 use anyhow::Context as _;
-use diesel_async::AsyncPgConnection;
+use diesel::result::Error as DieselError;
 use diesel_async::pooled_connection::AsyncDieselConnectionManager;
 use diesel_async::pooled_connection::deadpool::{Object, Pool};
+use diesel_async::{
+    AsyncConnection as _, AsyncPgConnection, SimpleAsyncConnection as _,
+};
 use tracing::instrument;
 
-use self::result::{pool_build, pool_get};
-use crate::result::{BaseError, BaseRest, accept};
+use self::result::{diesel, pool_build, pool_get};
+use crate::result::{BaseRest, accept};
 
 /// Result helpers for Diesel-backed shared internals.
 pub mod result;
@@ -20,6 +23,16 @@ pub mod result;
     any(feature = "prom_impl", feature = "repo_impl")
 ))]
 pub mod test_rdb;
+#[cfg(all(
+    test,
+    feature = "rdb",
+    any(feature = "prom_impl", feature = "repo_impl")
+))]
+mod tests;
+
+// Complete ordered application-schema preparation batch generated at build time.
+const PREPARE_SQL: &str =
+    include_str!(concat!(env!("OUT_DIR"), "/prepare.sql"));
 
 // Internal type alias for the Diesel async connection pool.
 type RdbPool = Pool<AsyncPgConnection>;
@@ -53,12 +66,9 @@ impl RdbCore {
         let database_url = std::env::var("DATABASE_URL")
             .with_context(|| "[RdbCore::from_env] DATABASE_URL is not set")?;
 
-        Self::from_database_url(&database_url).map_err(|err| match err {
-            BaseError::Expected { message, .. }
-            | BaseError::Unrecoverable { message } => {
-                anyhow::anyhow!("{}", message)
-            }
-        })
+        let rdb_core = Self::from_database_url(&database_url)?;
+
+        Ok(rdb_core)
     }
 
     /// Creates a connection pool from a raw database URL string.
@@ -79,6 +89,29 @@ impl RdbCore {
     /// Retrieves a pooled connection, blocking until one is available.
     pub async fn get(&self) -> BaseRest<RdbPooledConn> {
         self.pool.get().await.map_err(pool_get)
+    }
+
+    /// Creates missing application schema and inserts missing bootstrap rows.
+    ///
+    /// The complete preparation batch runs in one transaction and is safe to
+    /// repeat. Existing bootstrap rows are preserved.
+    ///
+    /// # Errors
+    ///
+    /// Returns an unrecoverable error when a connection cannot be obtained or
+    /// the preparation transaction fails.
+    #[instrument(level = "info", err(Debug), skip_all)]
+    pub async fn prepare(&self) -> BaseRest<()> {
+        //
+        let mut conn = self.get().await?;
+
+        conn.transaction::<(), DieselError, _>(async |conn| {
+            conn.batch_execute(PREPARE_SQL).await
+        })
+        .await
+        .map_err(diesel)?;
+
+        accept(())
     }
 }
 
