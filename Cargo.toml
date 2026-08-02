@@ -55,6 +55,7 @@ tower-http = { version = "0.6", features = ["request-id", "trace"] }
 argon2 = "0.5"
 cookie = "0.18"
 crossfire = { version = "3.1.16", features = ["tokio"] }
+dashmap = "5.5.3"
 diesel = { version = "2.3.7", features = ["postgres", "serde_json", "time"] }
 diesel-async = { version = "0.9.0", features = ["deadpool", "postgres"] }
 dotenvy = "0.15.7"

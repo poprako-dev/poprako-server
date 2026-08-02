@@ -2714,6 +2714,37 @@
         }
       }
     },
+    "/api/v1/teams/{team_id}/mark-self-online": {
+      "put": {
+        "tags": [
+          "teams"
+        ],
+        "summary": "`PUT /api/v1/teams/{team_id}/mark-self-online` — refresh own lease.",
+        "operationId": "mark_self_online",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Online lease refreshed"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Team membership required"
+          }
+        }
+      }
+    },
     "/api/v1/teams/{team_id}/member-invitations": {
       "get": {
         "tags": [
@@ -2789,6 +2820,44 @@
           },
           "403": {
             "description": "No perm to list invitations in this team"
+          }
+        }
+      }
+    },
+    "/api/v1/teams/{team_id}/online-users": {
+      "get": {
+        "tags": [
+          "teams"
+        ],
+        "summary": "`GET /api/v1/teams/{team_id}/online-users` — list active team users.",
+        "operationId": "list_online_user_ids",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Online user IDs listed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpBody_Vec_String"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Team membership required"
           }
         }
       }
@@ -7225,6 +7294,29 @@
                   "description": "Timestamp of last update, in Unix milliseconds."
                 }
               }
+            }
+          }
+        }
+      },
+      "HttpBody_Vec_String": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Application-level success code, 0 for normal success.",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "string"
             }
           }
         }
