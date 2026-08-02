@@ -41,9 +41,8 @@ immediately after it.
 - [x] Add a repository `CODE_OF_CONDUCT.md`.
 - [x] Add issue forms and a pull-request template, either locally or through
   the organization's public `.github` repository.
-- [x] Add `CODEOWNERS` targeting `@poprako-dev/backend`.
-  - Require explicit ownership for `.github/workflows/`, `migrations/`,
-    `scripts/`, `Dockerfile`, and deployment configuration.
+- [x] Keep review ownership in repository rules instead of maintaining a
+  `CODEOWNERS` file for the current small team.
 - [x] Keep support and governance policies in this repository
   or the organization's shared `.github` repository.
 
@@ -52,7 +51,8 @@ immediately after it.
 - [ ] Opening an issue or pull request presents the expected templates and
   contribution guidance.
 - [x] Security reports have a documented non-public path.
-- [ ] Sensitive infrastructure changes request the correct team reviewers.
+- [x] Sensitive infrastructure changes remain subject to the repository's PR
+  approval rule without requiring a dedicated reviewer team.
 
 ## 3. Clean stale and personal repository state
 
@@ -222,6 +222,10 @@ pnpm typecheck
   - Use GitHub deployment environments for production approval and audit.
 - [ ] Store production secrets in a protected GitHub environment or an
   approved external secret manager.
+  - Use `deploy/poprako-server/github-production-secrets.env.example` as the
+    Environment-secret name and value-shape template.
+  - Use `.env.example` as the template for the multiline
+    `DEPLOY_RUNTIME_ENV` secret.
   - Store all server-specific values as `production` environment secrets:
     `DEPLOY_HOST`, `DEPLOY_PORT`, `DEPLOY_USER`, `DEPLOY_SSH_PRIVATE_KEY`,
     `DEPLOY_KNOWN_HOSTS`, `DEPLOY_ROOT`, `DEPLOY_PUBLIC_PORT`,
@@ -345,7 +349,6 @@ git remote -v
 - [ ] Configure a ruleset for the default and release branches.
   - Require pull requests.
   - Require approval from someone other than the latest pusher.
-  - Require CODEOWNERS where applicable.
   - Require resolved conversations and required CI checks.
   - Block force pushes and branch deletion.
   - Decide whether signed commits and linear history are required.
@@ -407,8 +410,9 @@ Repository-local work is complete where marked above. Transfer-day and
 organization-side checkboxes remain deliberately unchecked because they
 represent external state, not files:
 
-- `gh auth status` reports that the configured `ATOMLubover` token is invalid.
-- HTTPS access to GitHub currently times out; Git-over-SSH remains available.
-- The target organization teams, rulesets, environments, secrets, reviewers,
-  staging deployment, transfer action, and owner/security sign-offs require an
-  authenticated organization owner.
+- GitHub CLI authentication, API access, and Git-over-SSH access to
+  `poprako-dev/poprako-server` are operational.
+- The organization repository and `production` environment now exist, and all
+  required production secret names are present. Rulesets, environment
+  protection, staging deployment, and owner/security sign-offs still require
+  organization-side execution or approval.
