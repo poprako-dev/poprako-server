@@ -253,7 +253,8 @@ CHECK (f_image_byte_length BETWEEN 1 AND 20971520)
 
 - 不给 `(chapter_id, image_hash)` 建唯一索引。
 - 保留 `(chapter_id, index)` 唯一索引。
-- 通过 `just mgr-schema` 重新生成 schema，禁止直接编辑生成文件。
+- 通过 `diesel print-schema > src/part_impl/repo/rdb_impl/schema.rs`
+  重新生成 schema，禁止直接编辑生成文件。
 - Diesel entity 必须对 `u64 <-> BIGINT` 做检查转换，不能使用无保护 `as`。
 
 ---

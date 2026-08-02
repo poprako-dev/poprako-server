@@ -1,41 +1,64 @@
 ---
 name: general-conventions
-description: Project-wide Rust conventions for active PopRaKo modules. Use whenever creating, moving, refactoring, or reviewing Rust code under src/.
+description: Current PopRaKo Rust architecture, naming, construction, and repository-wide source conventions. Use for every creation, refactor, move, or review of Rust code under src/.
 ---
 
-# Active Rust Conventions
+# Active Rust conventions
 
-## Scope
+## Sources of truth
 
-Apply this skill to the active module tree: `api`, `complex`, `data`, `harn`, `model`, `part`, `part_impl`, `result`, `usecase`, and `value`. Do not follow examples or paths from removed `domain`, `infra`, query, or test-harness architectures.
+- Treat `src/lib.rs` as the authoritative module graph and read neighboring
+  code before selecting names, visibility, imports, or test placement.
+- Apply this skill only to the active `api`, `complex`, `config`, `data`,
+  `extra`, `harn`, `model`, `part`, `part_impl`, `result`, `shared`, `usecase`,
+  `util`, and `value` architecture.
+- Treat `fmt/*/FORMAT.md` and `sh fmt/run-check.sh` as authoritative for
+  mechanical layout, imports, identifiers, macro placement, and module
+  dependencies. Do not reproduce those checkers manually in a skill.
 
-## Comments and module shape
+## Layer and type names
 
-- Keep source and doc comments in English and describe current Rust behavior.
-- Read the nearby module before selecting names, visibility, imports, or tests.
-- Keep a Rust source file below 600 lines; extract a focused module before it becomes larger.
-- Prefer `pub` for a deliberate public contract. Keep implementation details private rather than relying on broad crate-scoped visibility.
+- Persisted projections live under `model::read`; mutation inputs and
+  reservations live under `model::write`.
+- Request DTOs live under `data::instr` and end in `Instr`.
+- Direct response values live under `data::val` and end in `Val`.
+- Model `*Info` projections exposed over the API live under `data::view` and
+  end in `InfoView`; other nested response structures end in `View`.
+- Repository operation descriptors live under `part::repo::oper` and carry
+  domain-qualified names. Domain repository capability traits live directly
+  under `part::repo`.
+- Use specific local names such as `comic_info`, `chapter_entry`,
+  `cover_reservation`, and `system_mail_infos`.
 
-## Imports, names, and construction
+## Construction and flow
 
-- Group standard-library, third-party, workspace, and crate imports as nearby files do. Merge matching prefixes without non-leaf brace imports.
-- Use full, domain-specific local names: `comic_info`, `workset_form`, `cover_reservation`, and `system_mail_infos`.
-- Bind a form, update, spec, or DTO before passing it to a step factory. Do not embed an inline struct literal in a step call.
-- Follow current public type names. Request DTOs end in `Data`, response DTOs end in `Val`, and repository operations are described by step types.
+- Bind domain payloads such as entries, replacements, specs, and DTOs before
+  using them. Construct one-shot Orchestra operation descriptors directly in
+  the consuming `run_on`, `step_on`, or proxy call as required by `fmt/`.
+- Use guard clauses, `match`, and `let ... else`; do not introduce
+  `if ... else`.
+- Bind the value returned by a transaction before converting or returning it.
+  For unit output, await the transaction and then return `accept(())` or the
+  nearby equivalent.
+- Keep comments and public documentation in English and about current
+  behavior. Remove commentary about retired designs instead of preserving it
+  in active modules.
+- Keep Rust files below the repository limit and extract focused sibling
+  modules using `foo.rs` plus `foo/`; do not create `mod.rs`.
 
-## Control flow and spacing
+## Public contracts and macros
 
-- Do not write `if ... else`. Use `match`, guards, early returns, or `let ... else`.
-- Leave a blank line between statements and logical groups of struct fields.
-- Remove unused parameters when the signature is controlled locally; use bare `_` only when a required trait signature forces it.
+- Keep implementation details private and make a `pub` item a deliberate
+  contract.
+- Document every public contract and follow the checked source-comment rules.
+- Import derive and attribute macros explicitly and call them by their bare
+  names. Invoke tracing event macros through `tracing::...!` with structured
+  fields.
+- Import traits used only for method resolution as `as _`.
 
-## Trait calls
+## Review
 
-Use the local project's established trait-call style. Repository operations are normally called through `repo.execute(...)` or `repo.advance(...)`; use UFCS only when it clarifies an ambiguous implementation or the nearby code does so.
-
-## Checklist
-
-- [ ] The code uses active module paths and current names.
-- [ ] Typed locals, fields, and parameters are specific.
-- [ ] No inline step struct literal or `if ... else` was added.
-- [ ] Comments and public docs describe active behavior.
+- [ ] Active paths and role suffixes match the current module graph.
+- [ ] Domain payloads are named and bound; one-shot opers remain inline.
+- [ ] The change does not introduce retired architecture terminology.
+- [ ] The project formatter/checker suite is the mechanical source of truth.

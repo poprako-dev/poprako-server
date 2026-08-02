@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 description = "Standalone binary to generate the PopRaKo OpenAPI specification"
 license = "MIT"
+repository = "https://github.com/poprako-dev/poprako-server"
 publish = false
 
 [dependencies]

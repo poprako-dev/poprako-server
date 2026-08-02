@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 
 
-SCRIPT = Path(__file__).with_name("check-spacing-style.py")
+SCRIPT = Path(__file__).with_name("check_impl.py")
 SPEC = importlib.util.spec_from_file_location("check_spacing_style", SCRIPT)
 
 assert SPEC is not None
