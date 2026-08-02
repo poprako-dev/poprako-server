@@ -1,48 +1,75 @@
 ---
 name: implement-fullchain-spec
-description: Active PopRaKo vertical-slice checklist: model/value/complex, repository steps and adapters, use case, HTTP, and tests. Use for new or changed backend behavior.
+description: Current PopRaKo vertical-slice workflow across model, data, complex, Orchestra operations, adapters, use cases, HTTP, migrations, and tests. Use for every new or changed backend behavior.
 ---
 
-# Active Vertical-Slice Workflow
+# Vertical-slice workflow
 
-Use this workflow for a user-visible behavior in the active ports-and-steps architecture. It is deliberately conditional: do not add layers a behavior does not need.
+Add only the layers the behavior needs, but keep every affected contract
+consistent from persistence to HTTP.
 
-## 1. Establish the behavior
+## 1. Establish behavior
 
-1. Read current Rust code in the target domain and the corresponding Go business reference.
-2. Record perms, transaction boundary, side effects, uniqueness rules, response shape, and negative cases.
-3. Find a nearby completed use case with the same operation shape.
+1. Read the current domain code, active business documentation, and nearby
+   tests.
+2. Record permissions, transaction boundaries, side effects, uniqueness and
+   locking rules, response shape, and negative cases.
+3. Find a completed operation with the same execution shape.
 
 ## 2. Domain and transport types
 
-- Add a `value` type only for a focused shared concept.
-- Add persisted application state and forms/updates under `model`.
-- Put pure validation, ordering, and perm predicates under `complex`. It must not execute `Drive`, `Advance`, repository transactions, or prom operations.
-- Add request `*Data` and response `*Val` types under `data`. Convert model timestamps to Unix milliseconds in `Val` conversions.
+- Put shared small concepts under `value`.
+- Put persisted projections and list specs under `model::read`; put entries,
+  modifications, replacements, and reservations under `model::write`.
+- Put pure rules and permission helpers under `complex`. A complex function may
+  use an Orchestra `Proxy<Oper>`, but it must not name a concrete repository,
+  drive a `Nucl` transaction, or call concrete `run`/`step` ports.
+- Put request DTOs under `data::instr`, direct response values under
+  `data::val`, and model projections under `data::view`. Convert timestamps to
+  Unix milliseconds at the response boundary.
 
-## 3. Repository surface and adapters
+## 3. Repository operations and adapters
 
-1. Add a step descriptor under `part/repo/step/<domain>.rs`.
-2. Add its `XxxRepo<C>` and/or `XxxRepoTransactional<C>` bound under `part/repo/<domain>.rs`.
-3. Implement matching `Execute<S>` or `Advance<S, C>` for the RDB adapter (`part_impl/repo/rdb_impl`) and mock adapter (`part_impl/repo/mock_impl`) when the behavior is tested without PostgreSQL.
-4. RDB entities belong under `part_impl/repo/rdb_impl/entity`; generated Diesel schema remains generated. Never edit `schema.rs` directly.
+1. Define a domain-qualified descriptor under `part/repo/oper/<domain>.rs`
+   with `#[oper(output = ...)]`.
+2. Add it to the domain `XxxRepo<C>` capability using `#[drive(...)]`, choosing
+   `run` for an independent operation and `step` for an operation inside a
+   caller-owned transaction.
+3. Implement `Run<Oper>` or `Step<Oper, Context>` for the RDB adapter and the
+   mock adapter needed by use-case tests.
+4. Keep RDB Orchestra implementations beside focused SQL helpers. Map Diesel
+   failures through `crate::shared::result`.
+5. Keep Diesel entities under `part_impl/repo/rdb_impl/entity`. Change
+   migrations and regenerate `schema.rs`; never edit generated schema by hand.
 
 ## 4. Use case and side effects
 
-- Public use cases are free generic functions under `usecase`.
-- Use `Execute` for independent operations. Use `Nucl::coord` and `Advance` when several writes or locks must commit atomically.
-- Bind the transaction result before returning. Schedule deferred image work through `Prom`; emit effects through the correct effect port only after transaction semantics are established.
-- Keep perm checks at the usecase boundary or in a pure perm complex helper, never in the HTTP handler or RDB adapter.
+- Implement public generic orchestration functions under `usecase`.
+- Use `.run_on(repo)` for independent operations and `.step_on(repo, context)`
+  inside `Nucl::coord`. Construct operation descriptors inline.
+- Use inline `run_proxy!` or `step_proxy!` when a pure complex helper needs a
+  restricted operation surface.
+- Persist deferred `Prom` work through `Defer` or `DeferBatch` in the owning
+  transaction. Respect its at-least-once delivery contract and make handlers
+  idempotent.
+- Emit immediate effect events only after transaction semantics are clear.
+- Keep permissions in use cases or pure complex helpers, never in handlers or
+  RDB adapters.
 
 ## 5. HTTP exposure
 
-1. Add a handler under `api/http/handler` with `#[instrument(err, skip(...))]`.
-2. Use `Accept as _`, propagate the usecase with `?`, and validate only request-boundary facts there.
-3. Register the route in `router.rs` and matching `#[utoipa::path]` metadata.
-4. Register new OpenAPI schemas in `openapi.rs` when required.
+1. Add or update the handler, instrument it with the nearby `skip_all` style,
+   and propagate the use case with `?`.
+2. Validate transport-only facts in the handler and build success responses
+   through `Accept as _` or `no_content`.
+3. Keep router paths, handler extractors, `#[utoipa::path]`, and OpenAPI schema
+   registration aligned.
 
 ## 6. Validation
 
-- Add focused positive and negative Rust tests beside the target module.
-- Add or update integration coverage and `tests/integration-tests/TESTCASES.md` for an HTTP behavior.
-- Run formatting, targeted tests, then `cargo check`; run broader tests for shared ports, transactions, or HTTP changes.
+- Add focused positive and relevant negative Rust tests.
+- Add RDB coverage for constraints, locking, queries, or transaction behavior.
+- Update the TypeScript HTTP suite and `TESTCASES.md` together when the public
+  behavior changes.
+- Run formatting checks, targeted tests, workspace checks, and broader tests in
+  proportion to the affected surface.

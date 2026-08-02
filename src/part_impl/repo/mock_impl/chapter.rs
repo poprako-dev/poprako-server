@@ -258,19 +258,3 @@ fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
         .find(|user_info| user_info.id == user_id)
         .cloned()
 }
-
-// Resolve chapter-level related chapter data from id.
-fn find_chapter(state: &MockState, id: &str) -> Option<ChapterInfo> {
-    //
-    let mut chapter_info = state
-        .chapters
-        .iter()
-        .find(|chapter_info| chapter_info.id == id)
-        .cloned()?;
-
-    chapter_info.comic = None;
-
-    chapter_info.creator = None;
-
-    Some(chapter_info)
-}

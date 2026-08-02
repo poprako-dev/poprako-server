@@ -1,40 +1,50 @@
 ---
 name: error-handling-spec
-description: Error construction and propagation rules for active PopRaKo Rust layers. Use when returning, mapping, or reviewing RegularError and HTTP errors.
+description: Active PopRaKo application, adapter, transaction, and HTTP error rules. Use whenever constructing, converting, propagating, logging, or reviewing errors in Rust code.
 ---
 
-# Error Handling
+# Error handling
 
-The active error surface is `crate::result::{Error, ExpectedVariant, RegularError, RegularResult}`. Do not introduce legacy `DomainError`, `UseCaseError`, `RootError`, or result aliases from removed architectures.
+The application error surface is
+`crate::result::{BaseError, BaseRest, ExpectedVariant, accept}`.
 
-## Classify errors at the boundary that understands them
+## Classify errors where their meaning is known
 
-- Use `Error::Expected` for a client-visible argument, authentication, or perm condition. Select `ExpectedVariant::{Args, Auth, Perm}` and use the established `poprako_util::i18n::trl` key when a user-facing message is needed.
-- Use `Error::Unrecoverable` for failed infrastructure, invalid internal state, or any condition that must not be presented as a client mistake.
-- Preserve an existing error with `?`. Do not wrap it merely to add context if the caller already records the operation boundary.
+- Use `BaseError::Expected` for client-correctable argument,
+  authentication, and permission conditions. Select
+  `ExpectedVariant::{Args, Auth, Perm}` and use an established
+  `poprako_util::i18n::trl` key for a client-visible message.
+- Use `BaseError::Unrecoverable` for infrastructure failures, corrupt
+  persisted state, and violated internal invariants.
+- Preserve a `BaseError` with `?` when the caller adds no new classification.
+  Do not wrap an error only to restate the function name.
+- Use `accept(value)` for a simple successful `BaseRest<T>` return when that is
+  the nearby convention.
 
-```rust
-return Err(RegularError::Expected {
-    variant: ExpectedVariant::Perm,
-    message: trl("error-forbidden"),
-});
-```
+## Boundaries
 
-## Transaction and adapter boundaries
+- `Nucl::coord` converts backend and step errors through the existing
+  `From<NuclError<...>> for BaseError` implementation in `src/result.rs`.
+- Diesel and pool failures use `crate::shared::result` helpers. Query code
+  should use `.optional()` when absence has local business meaning, then map
+  `None` to the appropriate translated expected error.
+- HTTP handlers return `HttpResult<T>`, propagate application errors with `?`,
+  and use `Accept as _` or `no_content` for success. Only HTTP-specific facts,
+  such as path/body identifier mismatches, are classified in handlers.
+- `From<BaseError> for HttpError` owns the application-to-HTTP mapping and must
+  not expose unrecoverable details to clients.
 
-- Let `Nucl::coord` errors convert through the existing `From` impl in `result.rs`; do not invent a parallel transaction-error mapper.
-- RDB adapters convert Diesel errors through `part_impl::shared::result` helpers. Keep database error classification in that adapter boundary.
-- A missing row is expected only where the local adapter maps it to a specific translated key. Follow the neighboring operation.
+## Observability
 
-## HTTP and logging boundaries
+Let an instrumented operation boundary record propagated failures. Add a
+direct tracing event only when an error is constructed, consumed, retried, or
+converted and the event adds structured diagnostic fields. Never record
+passwords, tokens, credentials, or private payloads.
 
-Handlers return `HttpResult<T>`, call the use case with `?`, and return successful values through `Accept as _`. Do not match application errors in a handler unless enforcing an HTTP-only condition, such as a path/body identifier mismatch.
+## Review
 
-Use `#[instrument(err, ...)]` on observable fallible operations according to `tracing-usage-spec`. Do not emit duplicate `tracing::error!` events while propagating with `?`; emit a direct event only when an error is intentionally consumed or retried.
-
-## Review checklist
-
-- [ ] The code uses the active `RegularError` / `RegularResult` surface.
-- [ ] Expected errors have the right variant and established i18n key.
-- [ ] Adapter and transaction errors use existing conversions.
-- [ ] The HTTP handler propagates usecase errors unchanged.
+- [ ] No retired error aliases or parallel transaction mappers were added.
+- [ ] Expected and unrecoverable conditions are classified at the narrowest
+  boundary that understands them.
+- [ ] Handlers propagate use-case errors without duplicating business mapping.
+- [ ] Logs contain structured context but no secret or duplicate error event.

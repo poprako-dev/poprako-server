@@ -1,22 +1,32 @@
 ---
 name: tracing-usage-spec
-description: Tracing placement for active PopRaKo code. Use when adding or reviewing #[instrument] and tracing events in use cases, HTTP handlers, or adapters.
+description: Current tracing span, event, field, redaction, and error-propagation rules for PopRaKo use cases, HTTP boundaries, schedulers, and adapters. Use whenever adding or reviewing instrumentation or logs.
 ---
 
-# Tracing Placement
+# Tracing usage
 
-Draw spans at observable operation boundaries:
+Draw spans around observable operations, not pure data transformation.
 
-| Location | `#[instrument]` |
+| Location | Convention |
 | --- | --- |
-| Public fallible usecase orchestration | Usually yes |
-| HTTP handlers | Yes |
-| RDB, R2, JWT, prom, and effect I/O adapters | When useful to observe |
-| `complex`, `model`, `value`, constructors, and conversions | No |
-| `Harn` construction and accessors | No |
+| Public fallible use case | `#[instrument(level = "info", err(Debug), skip(...))]` |
+| HTTP handler | `#[instrument(level = "info", err(Debug), skip_all)]` |
+| RDB, R2, JWT, Prom, effect, scheduler I/O | Instrument useful operation boundaries, normally with `skip_all` |
+| `complex`, `model`, `data`, `value`, constructors, conversions | No span unless they perform observable I/O |
+| `Harn` construction, clone, accessors | No span |
 
-Use `#[instrument(err, skip(...))]` for handlers and usecases. Skip harnesses, large DTOs, secrets, connection handles, and values that should not be recorded. Prefer structured event fields such as `resource_id = id`.
+- Skip ports, contexts, connection handles, large DTOs, and sensitive values.
+- Redact passwords and tokens explicitly when a useful non-secret field must
+  still be recorded.
+- Use stable structured fields such as `resource_id`, `operation`,
+  `err_variant`, and `err_message`; keep the event message static.
+- Call event macros as `tracing::info!`, `tracing::warn!`, and so on. Do not
+  import event macro names into scope.
+- Let an instrumented return record a propagated error. Emit a direct event for
+  lifecycle state, retries, intentional error consumption, or error
+  construction when structured context adds diagnostic value.
+- Never emit credentials, JWTs, plaintext passwords, presigned URLs, or full
+  private request bodies.
 
-Return errors through the instrumented boundary with `?`; do not emit a second error event while simply propagating. Emit direct tracing events for lifecycle state, retry decisions, or intentionally consumed errors.
-
-Import `instrument` and use it bare. Invoke event macros as `tracing::info!`, `tracing::warn!`, and so on.
+Import `tracing::instrument` explicitly and apply it by its bare attribute
+name.

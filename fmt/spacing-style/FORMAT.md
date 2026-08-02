@@ -1,6 +1,6 @@
 # Rust block spacing
 
-`just fmt-check` runs this checker. It validates direct statements in Rust
+`sh scripts/ci-check.sh` runs this checker. It validates direct statements in Rust
 blocks, direct match arms, enum variants, and multi-field structs:
 
 - `BLK000`: a multi-statement block or multi-field struct whose opening `{`

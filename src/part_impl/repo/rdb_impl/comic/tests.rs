@@ -1,7 +1,5 @@
 // comic_roundtrip_uses_testcontainer(ComicRepo)(positive): comic repo persists, lists by one-based display index, and refreshes composed search after update.
 
-use super::*;
-
 use poprako_orchestra::Run as _;
 
 use crate::model::read::spec::comic::ComicListSpec;
