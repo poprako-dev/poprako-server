@@ -1,0 +1,31 @@
+name: Bug report
+description: Report a reproducible defect
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: input
+    id: commit
+    attributes:
+      label: Affected commit
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Provide the smallest reproducible sequence.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+

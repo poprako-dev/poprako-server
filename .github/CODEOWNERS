@@ -1,0 +1,6 @@
+/.github/ @poprako-dev/backend
+/migrations/ @poprako-dev/backend
+/scripts/ @poprako-dev/backend
+/deploy/ @poprako-dev/backend
+/Dockerfile @poprako-dev/backend
+

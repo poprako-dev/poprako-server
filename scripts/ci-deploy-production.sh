@@ -147,7 +147,7 @@ scp \
     "scripts/ga-remote-deploy.sh" \
     "${ssh_target}:${release_dir}/"
 
-ssh \
+if ! ssh \
     -i "$private_key_file" \
     -p "$deploy_port" \
     -o BatchMode=yes \
@@ -155,4 +155,7 @@ ssh \
     -o StrictHostKeyChecking=yes \
     -o "UserKnownHostsFile=$known_hosts_file" \
     "$ssh_target" \
-    "sh '$release_dir/ga-remote-deploy.sh' '$image_name' '$image_tag' '$container_name' '$deploy_root' '$public_port' '$bind_host' '$docker_network' '$postgres_container'"
+    "sh '$release_dir/ga-remote-deploy.sh' '$image_name' '$image_tag' '$container_name' '$deploy_root' '$public_port' '$bind_host' '$docker_network' '$postgres_container'"; then
+    echo "::error title=Production deployment failed::Remote deployment or post-deployment verification failed for ${deploy_sha}"
+    exit 1
+fi

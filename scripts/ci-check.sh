@@ -15,6 +15,7 @@ if ! command -v uv >/dev/null 2>&1; then
 fi
 
 cargo fmt --all --check
+sh scripts/check-rust-lines.sh
 cargo check --workspace --all-targets --all-features
 sh fmt/run-check.sh
 cargo clippy --workspace --all-targets --all-features -- -D warnings

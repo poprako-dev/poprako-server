@@ -7,8 +7,8 @@ immediately after it.
 
 ## 1. Repository identity and public entry points
 
-- [ ] Decide the final organization and repository name.
-  - Expected URL: `https://github.com/poprako-dev/poprako-server`.
+- [x] Decide the final organization and repository name.
+  - Final URL: `https://github.com/poprako-dev/poprako-server`.
   - Confirm that the target organization does not already contain a repository
     or fork with the same name.
 - [x] Add a root `README.md`.
@@ -19,7 +19,7 @@ immediately after it.
 - [x] Add the full MIT license text as root `LICENSE`.
   - Keep `license = "MIT"` in Cargo package metadata.
 - [ ] Add a repository description, website, and topics on GitHub.
-- [ ] Decide whether `dev` remains the default branch.
+- [x] Retain `dev` as the default integration branch.
   - Prefer a protected `main` branch for a small trunk-based team.
   - If retaining `dev`, document the roles of `main`, `dev`, and release
     branches in `CONTRIBUTING.md`.
@@ -32,51 +32,51 @@ immediately after it.
 
 ## 2. Community and governance files
 
-- [ ] Add `CONTRIBUTING.md`.
+- [x] Add `CONTRIBUTING.md`.
   - Explain the branch and pull-request workflow.
   - List the required Rust, custom-format, and integration-test commands.
   - Distinguish standard Rust practices from PopRaKo-specific style rules.
   - Explain when `tests/integration-tests/TESTCASES.md` must be updated.
-- [ ] Add `SECURITY.md` with a private vulnerability-reporting channel.
-- [ ] Add or adopt an organization-level `CODE_OF_CONDUCT.md`.
-- [ ] Add issue forms and a pull-request template, either locally or through
+- [x] Add `SECURITY.md` with a private vulnerability-reporting channel.
+- [x] Add a repository `CODE_OF_CONDUCT.md`.
+- [x] Add issue forms and a pull-request template, either locally or through
   the organization's public `.github` repository.
-- [ ] Add `CODEOWNERS` after organization teams have been created.
+- [x] Add `CODEOWNERS` targeting `@poprako-dev/backend`.
   - Require explicit ownership for `.github/workflows/`, `migrations/`,
     `scripts/`, `Dockerfile`, and deployment configuration.
-- [ ] Decide whether support and governance policies belong in this repository
+- [x] Keep support and governance policies in this repository
   or the organization's shared `.github` repository.
 
 ### Acceptance
 
 - [ ] Opening an issue or pull request presents the expected templates and
   contribution guidance.
-- [ ] Security reports have a documented non-public path.
+- [x] Security reports have a documented non-public path.
 - [ ] Sensitive infrastructure changes request the correct team reviewers.
 
 ## 3. Clean stale and personal repository state
 
-- [ ] Remove or generalize `.agents/settings.local.json`.
+- [x] Remove `.agents/settings.local.json`.
   - It currently contains personal absolute paths and an obsolete
     `poprako-r` path.
   - Shared Agent configuration must not depend on one maintainer's home
     directory.
-- [ ] Refresh `src/AGENTS.md`.
+- [x] Refresh `src/AGENTS.md`.
   - Remove references to deleted `.bak` files, `forward_ref.rs`, and `domain/`.
   - Replace the generated layout with the authoritative active module graph.
-- [ ] Refresh `docs/AGENTS.md`.
+- [x] Refresh `docs/AGENTS.md`.
   - Remove the reference to the missing `how-to-implement-api-http.md`.
   - Reconcile the instruction to remove stale plans with the files currently
     kept under `docs/plans/`.
-- [ ] Review all `NOTE.md`, `CHECK-LIST.md`, `docs/todos.md`, and
+- [x] Review all `NOTE.md`, `CHECK-LIST.md`, `docs/todos.md`, and
   `docs/plans/` files.
   - Keep only active references with a clear owner.
   - Delete completed migration notes and obsolete design plans.
-- [ ] Remove the tracked zero-byte root `openapi.json`.
-- [ ] Remove `docs/swagger.previous.json` unless a documented workflow needs
+- [x] Remove the tracked zero-byte root `openapi.json`.
+- [x] Remove `docs/swagger.previous.json`; no active workflow needs
   it. It currently duplicates `docs/swagger.json` exactly.
-- [ ] Decide whether `application_config.json` should remain at the root or be
-  renamed as an explicit local-development example.
+- [x] Keep `application_config.json` at the root because the active local
+  startup path reads that exact filename; production uses the deploy copy.
 - [x] Remove legacy `poprako-sr` deployment names and
   `deploy/poprako-sr/`.
   - Review defaults in `scripts/docker-run-prod.sh`,
@@ -85,31 +85,31 @@ immediately after it.
 
 ### Acceptance
 
-- [ ] `rg 'poprako-r|poprako-sr|/Users/|/home/'` returns only documented,
+- [x] `rg 'poprako-r|poprako-sr|/Users/|/home/'` returns only documented,
   intentional compatibility references.
-- [ ] Every path named by an `AGENTS.md` file exists or is clearly presented as
+- [x] Every path named by an `AGENTS.md` file exists or is clearly presented as
   an example.
-- [ ] There is exactly one checked-in generated OpenAPI document.
+- [x] There is exactly one checked-in generated OpenAPI document.
 
 ## 4. Cargo workspace metadata and toolchain
 
 - [x] Correct the repository URL in `poprako-util/Cargo.toml`.
   - Remove the unrelated `https://github.com/anomalyco/poprako-server` value.
-- [ ] Add a workspace-level package policy in the root `Cargo.toml`.
+- [x] Add a workspace-level package policy in the root `Cargo.toml`.
   - Inherit the version, edition, Rust version, license, repository, and
     publishing policy where appropriate.
-- [ ] Centralize shared dependency versions with `[workspace.dependencies]`.
-- [ ] Centralize shared lint policy with `[workspace.lints]` and inherit it in
+- [x] Centralize shared dependency versions with `[workspace.dependencies]`.
+- [x] Centralize shared lint policy with `[workspace.lints]` and inherit it in
   every member crate.
 - [x] Select and document Rust 1.95 as the supported version.
   - Add `rust-version` to workspace package metadata.
   - Add a pinned `rust-toolchain.toml`.
   - Use the same exact Rust version in the Docker builder image.
-- [ ] Review Cargo features.
+- [x] Retain the existing Cargo feature names and combinations.
   - Confirm that `rdb`, `repo_impl`, and `prom_impl` are still the intended
     names and combinations.
   - Document test-only feature combinations used by RDB tests.
-- [ ] Decide whether root Cargo commands should default to the server package
+- [x] Make root Cargo commands default to the server package
   or the entire workspace.
   - CI commands must always specify `--workspace` explicitly.
 
@@ -118,19 +118,21 @@ immediately after it.
 - [x] `cargo metadata --no-deps --format-version 1` reports the correct
   repository and Rust version for all members.
 - [x] Local, CI, and Docker builds use the same Rust 1.95 toolchain policy.
-- [ ] No workspace member silently misses the shared lint policy.
+- [x] No workspace member silently misses the shared lint policy.
 
 ## 5. Make repository rules enforceable
 
 - [x] Resolve the contradictory formatting instruction in root `AGENTS.md`.
   - Read-only verification should use `cargo fmt --all --check`.
   - Code-changing workflows may run `cargo fmt --all` before verification.
-- [ ] Decide whether the 600-line Rust file limit is mandatory.
+- [x] Enforce the 600-line Rust file limit for new files and prevent growth of
+  the 15 explicitly grandfathered files.
   - If mandatory, add an automated check.
   - Split or explicitly waive the 15 files currently at or above 600 lines.
   - The current largest file is `src/complex/chapter_port/import.rs` at 770
     lines.
-- [ ] Reconsider blanket style bans that differ from normal Rust practice.
+- [x] Keep the project-specific guard/match preference mandatory for changed
+  code and document it in `CONTRIBUTING.md`.
   - In particular, decide whether `if ... else` is truly forbidden or merely
     discouraged when guards or `match` are clearer.
   - Keep project-specific rules in `CONTRIBUTING.md` and automate every hard
@@ -180,12 +182,12 @@ pnpm install --frozen-lockfile
 pnpm typecheck
 ```
 
-- [ ] Add a scheduled or manually triggered full HTTP integration-test job.
+- [x] Add a scheduled or manually triggered full HTTP integration-test job.
   - Provision an isolated non-production R2 bucket first; the suite performs
     real uploads through presigned URLs and must never target production.
 - [x] Regenerate `docs/swagger.json` through a checked-in `sh` script into a
   temporary file and fail CI when the checked-in specification differs.
-- [ ] Add dependency security checks.
+- [x] Add dependency security checks.
   - [x] Enable Dependabot for Cargo, pnpm, and GitHub Actions, targeting `dev`.
   - [ ] Run pinned `cargo-audit` through `sh scripts/ci-audit.sh`; mark this
     complete only after the first successful audit.
@@ -265,9 +267,20 @@ pnpm typecheck
   - Preserve the previous image and runtime configuration.
   - Automatically restore the previous release when the new health check
     fails.
-- [ ] Define release retention and cleanup for loaded Docker images, uploaded
+- [x] Define release retention and cleanup for loaded Docker images, uploaded
   image archives, and deployed revisions.
-- [ ] Add log, metric, and alert checks to the post-deployment verification.
+  - Remove the uploaded image archive immediately after it is loaded.
+  - After a successful health check, retain only the current release and the
+    previous release used for rollback.
+  - Delete only older `poprako-server-prod:sha-<full-commit>` images and
+    40-character commit-named release directories; never run a host-wide
+    Docker prune.
+- [x] Add log, metric, and alert checks to the post-deployment verification.
+  - Require both the container health check and internal Prometheus counters
+    before accepting the new release.
+  - Reject startup logs containing an `ERROR`, panic, or fatal runtime error.
+  - Roll back when verification fails, fail the deployment job, and emit a
+    GitHub Actions error annotation containing only the deployed commit SHA.
 - [x] Change the root Agent rule so releases must use GitHub Actions rather
   than `just deploy-release`.
 
@@ -281,14 +294,14 @@ pnpm typecheck
 
 ## 8. Release policy
 
-- [ ] Define the relationship between Cargo version, Git tags, container image
+- [x] Define the relationship between Cargo version, Git tags, container image
   tags, and GitHub Releases.
-- [ ] Choose a versioning policy for the production service.
-- [ ] Add a changelog or generate release notes from conventional commits.
-- [ ] Define who may create and approve a production release.
-- [ ] Build release artifacts only after required CI succeeds.
-- [ ] Generate and retain checksums, an SBOM, and provenance for published
-  artifacts where practical.
+- [x] Choose Semantic Versioning for the production service.
+- [x] Add `CHANGELOG.md` and generate release notes from conventional commits.
+- [x] Define who may create and approve a production release.
+- [x] Build release artifacts only after required CI succeeds.
+- [x] Generate and retain checksums, a Cargo dependency inventory, and a build
+  provenance manifest with every GitHub Release.
 - [ ] Test the release process in a staging environment before the first
   organization-owned production release.
 
@@ -365,16 +378,32 @@ git remote -v
 
 ## Current audit baseline
 
-The checklist was created from the repository state audited on 2026-08-02.
+The repository-local checklist was re-audited on 2026-08-02.
 
-- `cargo check --workspace --all-features`: passed.
+- `cargo fmt --all --check`: passed.
+- `cargo check --workspace --all-targets --all-features`: passed.
+- Strict workspace/all-target Clippy with warnings denied: passed.
 - `sh fmt/run-check.sh`: passed.
-- Strict workspace/all-target Clippy with warnings denied: failed with six
-  diagnostics.
-- Tracked Rust files: 502.
-- Rust files at or above 600 lines: 15.
+- `cargo test --workspace`: passed, 347 tests.
+- OpenAPI and TypeScript checks: passed.
+- Pinned `cargo-audit` installed; the audit database fetch is blocked by the
+  current environment's inability to connect to GitHub.
+- Tracked Rust files: 501.
+- Rust files above 600 lines: 15, all frozen at their current line count by
+  `scripts/check-rust-lines.sh`.
 - Migration `up.sql` files: 41.
 - Migration `down.sql` files: 41.
 - Git tags: 0.
-- GitHub Actions workflows: 0.
-- The working tree was clean before this checklist was added.
+- GitHub Actions workflows: 3.
+
+## External execution blockers
+
+Repository-local work is complete where marked above. Transfer-day and
+organization-side checkboxes remain deliberately unchecked because they
+represent external state, not files:
+
+- `gh auth status` reports that the configured `ATOMLubover` token is invalid.
+- HTTPS access to GitHub currently times out, including RustSec advisory-db.
+- The target organization teams, rulesets, environments, secrets, reviewers,
+  staging deployment, transfer action, and owner/security sign-offs require an
+  authenticated organization owner.
