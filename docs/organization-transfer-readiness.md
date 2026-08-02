@@ -189,7 +189,7 @@ pnpm typecheck
   temporary file and fail CI when the checked-in specification differs.
 - [x] Add dependency security checks.
   - [x] Enable Dependabot for Cargo, pnpm, and GitHub Actions, targeting `dev`.
-  - [ ] Run pinned `cargo-audit` through `sh scripts/ci-audit.sh`; mark this
+  - [x] Run pinned `cargo-audit` through `sh scripts/ci-audit.sh`; mark this
     complete only after the first successful audit.
 - [x] Pin third-party GitHub Actions to full commit SHAs.
 - [x] Give every workflow an explicit minimal `permissions` block.
@@ -387,8 +387,12 @@ The repository-local checklist was re-audited on 2026-08-02.
 - `sh fmt/run-check.sh`: passed.
 - `cargo test --workspace`: passed, 347 tests.
 - OpenAPI and TypeScript checks: passed.
-- Pinned `cargo-audit` installed; the audit database fetch is blocked by the
-  current environment's inability to connect to GitHub.
+- The 39 PostgreSQL 18 migrations completed twice as a single CD transaction.
+  The production migration path created no administrator or membership; the
+  isolated integration fixture created both only after migrations completed.
+- Pinned `cargo-audit` passed against 1,178 RustSec advisories. The audit also
+  removed unused AWS configuration features, legacy Rustls, and the unused RSA
+  JWT backend from the production dependency graph.
 - Tracked Rust files: 501.
 - Rust files above 600 lines: 15, all frozen at their current line count by
   `scripts/check-rust-lines.sh`.
@@ -404,7 +408,7 @@ organization-side checkboxes remain deliberately unchecked because they
 represent external state, not files:
 
 - `gh auth status` reports that the configured `ATOMLubover` token is invalid.
-- HTTPS access to GitHub currently times out, including RustSec advisory-db.
+- HTTPS access to GitHub currently times out; Git-over-SSH remains available.
 - The target organization teams, rulesets, environments, secrets, reviewers,
   staging deployment, transfer action, and owner/security sign-offs require an
   authenticated organization owner.

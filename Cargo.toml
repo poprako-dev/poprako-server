@@ -46,9 +46,8 @@ swagger = ["utoipa-swagger-ui", "utoipa"]
 
 [dependencies]
 anyhow.workspace = true
-aws-config = { version = "1" }
 aws-credential-types = { version = "1" }
-aws-sdk-s3 = { version = "1" }
+aws-sdk-s3 = { version = "1", default-features = false, features = ["default-https-client", "http-1x", "rt-tokio"] }
 axum = "0.8.9"
 axum-extra = { version = "0.12.6", features = ["query"] }
 tower = "0.5"
@@ -61,7 +60,7 @@ diesel-async = { version = "0.9.0", features = ["deadpool", "postgres"] }
 dotenvy = "0.15.7"
 fluent-templates.workspace = true
 futures-util = "0.3.32"
-jsonwebtoken = { version = "10.4.0", features = ["rust_crypto"] }
+jsonwebtoken = { version = "10.4.0", default-features = false, features = ["aws_lc_rs"] }
 metrics = "0.24.6"
 metrics-exporter-prometheus = "0.18.3"
 base62 = "2.2.4"
