@@ -31,6 +31,71 @@ container_exists() {
     docker container inspect "$1" >/dev/null 2>&1
 }
 
+is_commit_sha() {
+    candidate_sha=$1
+
+    [ "${#candidate_sha}" -eq 40 ] || return 1
+
+    case "$candidate_sha" in
+        *[!0-9a-f]*) return 1 ;;
+    esac
+}
+
+cleanup_release_directories() {
+    retained_release_sha=$1
+
+    for cleanup_dir in "${deploy_root}/releases/"*; do
+        [ -d "$cleanup_dir" ] || continue
+
+        cleanup_sha=${cleanup_dir##*/}
+        is_commit_sha "$cleanup_sha" || continue
+
+        case "$cleanup_sha" in
+            "$release_sha" | "$retained_release_sha") continue ;;
+        esac
+
+        rm -rf "$cleanup_dir"
+    done
+}
+
+cleanup_application_images() {
+    retained_image_ref=$1
+
+    docker image ls \
+        --format '{{.Repository}}:{{.Tag}}' \
+        "$image_name" |
+        while IFS= read -r cleanup_image_ref; do
+            case "$cleanup_image_ref" in
+                "$image_ref" | "$retained_image_ref") continue ;;
+                "${image_name}:sha-"*) ;;
+                *) continue ;;
+            esac
+
+            cleanup_image_sha=${cleanup_image_ref#"${image_name}:sha-"}
+            is_commit_sha "$cleanup_image_sha" || continue
+
+            docker image rm "$cleanup_image_ref" >/dev/null
+        done
+}
+
+verify_post_deployment() {
+    metrics_text=$(docker exec "$container_name" \
+        wget -q -O - \
+        http://127.0.0.1:8888/api/health/detailed-metrics)
+
+    printf '%s\n' "$metrics_text" | grep -q '^http_requests_total'
+    printf '%s\n' "$metrics_text" | grep -q '^http_responses_total'
+
+    startup_logs=$(docker logs --since 5m "$container_name" 2>&1)
+
+    if printf '%s\n' "$startup_logs" | grep -E -q \
+        '(^|[[:space:]])ERROR([[:space:]]|$)|panicked at|fatal runtime error'; then
+        echo "new release emitted an error during startup" >&2
+        printf '%s\n' "$startup_logs" >&2
+        return 1
+    fi
+}
+
 wait_for_health() {
     target_container=$1
     health_attempt=1
@@ -187,7 +252,38 @@ if ! wait_for_health "$container_name"; then
     exit 1
 fi
 
+if ! verify_post_deployment; then
+    echo "post-deployment log or metric verification failed" >&2
+    exit 1
+fi
+
 rollback_required=0
+
+previous_image_ref=
+previous_release_sha=
+
+if container_exists "$previous_name"; then
+    previous_image_ref=$(docker container inspect \
+        --format '{{.Config.Image}}' \
+        "$previous_name")
+
+    case "$previous_image_ref" in
+        "${image_name}:sha-"*)
+            previous_release_sha=${previous_image_ref#"${image_name}:sha-"}
+
+            if ! is_commit_sha "$previous_release_sha"; then
+                previous_image_ref=
+                previous_release_sha=
+            fi
+            ;;
+        *)
+            previous_image_ref=
+            ;;
+    esac
+fi
+
+cleanup_release_directories "$previous_release_sha"
+cleanup_application_images "$previous_image_ref"
 
 image_id=$(docker image inspect --format '{{.Id}}' "$image_ref")
 

@@ -104,7 +104,7 @@ fi
 cd "$project_root/tests/integration-tests"
 
 if [ ! -d node_modules ]; then
-    pnpm install
+    pnpm install --frozen-lockfile
 fi
 
 ./node_modules/.bin/tsx src/main.ts

@@ -1,17 +1,20 @@
 [package]
 name = "poprako-util"
-version = "0.1.0"
-edition = "2024"
-rust-version = "1.95"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
 description = "Shared utility and i18n support for poprako-server"
-license = "MIT"
-repository = "https://github.com/poprako-dev/poprako-server"
+license.workspace = true
+repository.workspace = true
 keywords = ["i18n", "util", "manga", "translation"]
 categories = ["internationalization", "asynchronous"]
 readme = false
-publish = false
+publish.workspace = true
+
+[lints]
+workspace = true
 
 [dependencies]
-fluent-templates = "0.14.0"
-time = "0.3.47"
-unic-langid = "0.9.6"
+fluent-templates.workspace = true
+time.workspace = true
+unic-langid.workspace = true

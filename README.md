@@ -67,6 +67,9 @@ at a database containing data that must be preserved.
 
 ## Documentation
 
+- [Contributing](CONTRIBUTING.md)
+- [Security policy](SECURITY.md)
+- [Release policy](RELEASE.md)
 - [HTTP integration test inventory](tests/integration-tests/TESTCASES.md)
 - [Organization transfer checklist](docs/organization-transfer-readiness.md)
 - [Agent and project conventions](AGENTS.md)
