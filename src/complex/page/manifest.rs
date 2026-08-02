@@ -27,93 +27,99 @@ pub struct ManifestPlan {
     pub deleted_existing_indexes: Vec<usize>,
 }
 
-/// Matches explicit identities first, then consumes automatic hash candidates.
-pub fn build(
-    chapter_id: &str,
-    existing_page_infos: &[PageInfo],
-    page_specs: &[PageImageSpec],
-) -> BaseRest<ManifestPlan> {
-    //
-    let (mut assigned_existing_indexes, mut consumed_existing_indexes) =
-        (vec![None; page_specs.len()], HashSet::new());
+/// Pure operations for authoritative chapter page manifests.
+pub struct PageManifestComplex;
 
-    for (request_index, page_spec) in page_specs.iter().enumerate() {
+impl PageManifestComplex {
+    /// Matches explicit identities first, then consumes automatic hash candidates.
+    pub fn build(
+        chapter_id: &str,
+        existing_page_infos: &[PageInfo],
+        page_specs: &[PageImageSpec],
+    ) -> BaseRest<ManifestPlan> {
         //
-        let Some(page_id) = &page_spec.page_id else {
-            continue;
-        };
+        let (mut assigned_existing_indexes, mut consumed_existing_indexes) =
+            (vec![None; page_specs.len()], HashSet::new());
 
-        let existing_index = existing_page_infos
-            .iter()
-            .position(|page_info| {
-                page_info.id == *page_id && page_info.chapter_id == chapter_id
-            })
-            .ok_or_else(|| {
-                //
-                let err_message = trl("error-page-not-found");
+        for (request_index, page_spec) in page_specs.iter().enumerate() {
+            //
+            let Some(page_id) = &page_spec.page_id else {
+                continue;
+            };
 
-                tracing::warn!(
-                    err_variant = ?ExpectedVariant::Args,
-                    err_message = %err_message,
-                    chapter_id = %chapter_id,
-                    page_id = %page_id,
-                    request_index = request_index,
-                    existing_page_count = existing_page_infos.len(),
-                    "expected error: manifest page not found",
-                );
+            let existing_index = existing_page_infos
+                .iter()
+                .position(|page_info| {
+                    page_info.id == *page_id
+                        && page_info.chapter_id == chapter_id
+                })
+                .ok_or_else(|| {
+                    //
+                    let err_message = trl("error-page-not-found");
 
-                BaseError::Expected {
-                    variant: ExpectedVariant::Args,
-                    message: err_message,
-                }
-            })?;
+                    tracing::warn!(
+                        err_variant = ?ExpectedVariant::Args,
+                        err_message = %err_message,
+                        chapter_id = %chapter_id,
+                        page_id = %page_id,
+                        request_index = request_index,
+                        existing_page_count = existing_page_infos.len(),
+                        "expected error: manifest page not found",
+                    );
 
-        consumed_existing_indexes.insert(existing_index);
+                    BaseError::Expected {
+                        variant: ExpectedVariant::Args,
+                        message: err_message,
+                    }
+                })?;
 
-        assigned_existing_indexes[request_index] = Some(existing_index);
-    }
+            consumed_existing_indexes.insert(existing_index);
 
-    for (request_index, page_spec) in page_specs.iter().enumerate() {
-        //
-        if page_spec.page_id.is_some() {
-            continue;
+            assigned_existing_indexes[request_index] = Some(existing_index);
         }
 
-        let existing_index = existing_page_infos
-            .iter()
-            .enumerate()
-            .filter(|(existing_index, page_info)| {
+        for (request_index, page_spec) in page_specs.iter().enumerate() {
+            //
+            if page_spec.page_id.is_some() {
+                continue;
+            }
+
+            let existing_index = existing_page_infos
+                .iter()
+                .enumerate()
+                .filter(|(existing_index, page_info)| {
+                    !consumed_existing_indexes.contains(existing_index)
+                        && page_info.image_hash == page_spec.image_hash
+                        && page_info.image_ext == page_spec.ext
+                })
+                .min_by(|(_, left), (_, right)| candidate_order(left, right))
+                .map(|(existing_index, _)| existing_index);
+
+            let Some(existing_index) = existing_index else {
+                continue;
+            };
+
+            consumed_existing_indexes.insert(existing_index);
+
+            assigned_existing_indexes[request_index] = Some(existing_index);
+        }
+
+        let matches = assigned_existing_indexes
+            .into_iter()
+            .map(|existing_index| ManifestMatch { existing_index })
+            .collect();
+
+        let deleted_existing_indexes = (0..existing_page_infos.len())
+            .filter(|existing_index| {
                 !consumed_existing_indexes.contains(existing_index)
-                    && page_info.image_hash == page_spec.image_hash
-                    && page_info.image_ext == page_spec.ext
             })
-            .min_by(|(_, left), (_, right)| candidate_order(left, right))
-            .map(|(existing_index, _)| existing_index);
+            .collect();
 
-        let Some(existing_index) = existing_index else {
-            continue;
-        };
-
-        consumed_existing_indexes.insert(existing_index);
-
-        assigned_existing_indexes[request_index] = Some(existing_index);
-    }
-
-    let matches = assigned_existing_indexes
-        .into_iter()
-        .map(|existing_index| ManifestMatch { existing_index })
-        .collect();
-
-    let deleted_existing_indexes = (0..existing_page_infos.len())
-        .filter(|existing_index| {
-            !consumed_existing_indexes.contains(existing_index)
+        accept(ManifestPlan {
+            matches,
+            deleted_existing_indexes,
         })
-        .collect();
-
-    accept(ManifestPlan {
-        matches,
-        deleted_existing_indexes,
-    })
+    }
 }
 
 // Compare two candidates by translated state, upload time, and index for stable matching.

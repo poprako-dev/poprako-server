@@ -2800,6 +2800,7 @@ dependencies = [
  "cookie",
  "criterion",
  "crossfire",
+ "dashmap",
  "diesel",
  "diesel-async",
  "diesel_migrations",
