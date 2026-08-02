@@ -200,7 +200,9 @@ pnpm typecheck
 - [ ] Required CI succeeds on the default branch.
 - [ ] A deliberately malformed Rust file, stale OpenAPI file, or failing test
   prevents a pull request from merging.
-- [ ] CI does not require production secrets for untrusted pull requests.
+- [x] CI does not require production secrets for untrusted pull requests.
+  - PR #26 passed all four required checks while the production deployment job
+    was skipped and no production secret was exposed to a runnable PR job.
 
 ## 7. GitHub Actions deployment and container hardening
 
@@ -220,7 +222,7 @@ pnpm typecheck
     machine.
   - Record the full source commit, image tag, and loaded image ID.
   - Use GitHub deployment environments for production approval and audit.
-- [ ] Store production secrets in a protected GitHub environment or an
+- [x] Store production secrets in a protected GitHub environment or an
   approved external secret manager.
   - Use `deploy/poprako-server/github-production-secrets.env.example` as the
     Environment-secret name and value-shape template.
@@ -319,19 +321,19 @@ pnpm typecheck
 ## 9. Transfer-day procedure
 
 - [ ] Freeze merges and deployments for the transfer window.
-- [ ] Confirm the working tree is clean and all intended branches are pushed.
+- [x] Confirm the working tree is clean and all intended branches are pushed.
 - [ ] Record current repository settings.
   - Default branch and merge methods.
   - Collaborators and permissions.
   - Branch protections or rulesets.
   - Webhooks, deploy keys, Actions secrets, environments, and Pages settings.
 - [ ] Back up critical repository and deployment configuration.
-- [ ] Confirm the target organization permits repository creation and accepts
+- [x] Confirm the target organization permits repository creation and accepts
   the final repository name.
-- [ ] Transfer the repository through GitHub repository settings.
-- [ ] Do not recreate the old personal repository at the previous path; doing
+- [x] Transfer the repository through GitHub repository settings.
+- [x] Do not recreate the old personal repository at the previous path; doing
   so can break GitHub's redirect.
-- [ ] Update local clones after transfer.
+- [x] Update local clones after transfer.
 
 ```sh
 git remote set-url origin git@github.com:poprako-dev/poprako-server.git
@@ -343,22 +345,26 @@ git remote -v
 
 ## 10. Organization-side verification
 
-- [ ] Replace direct personal collaborators with organization teams where
-  practical.
-- [ ] Apply least-privilege base permissions.
-- [ ] Configure a ruleset for the default and release branches.
+- [x] Keep direct organization ownership for the current single-member team;
+  introduce organization teams only when multiple maintainers make them
+  useful.
+- [x] Apply least-privilege base permissions.
+  - Organization members have read-only repository access by default.
+- [x] Configure a ruleset for the default and release branches.
   - Require pull requests.
-  - Require approval from someone other than the latest pusher.
+  - Require zero approvals while the organization has only one member; raise
+    this when an independent reviewer joins.
   - Require resolved conversations and required CI checks.
   - Block force pushes and branch deletion.
   - Decide whether signed commits and linear history are required.
-- [ ] Configure protected deployment environments.
+- [x] Configure protected deployment environments.
   - Restrict production deployments to approved branches or tags.
-  - Require an independent reviewer where the GitHub plan supports it.
-  - Disable administrator bypass if appropriate.
+  - `production` accepts deployments only from `main`.
+  - Add an independent reviewer and disable administrator bypass when another
+    production-capable organization member is available.
 - [ ] Re-audit webhooks, deploy keys, secrets, and GitHub App access inherited
   during transfer.
-- [ ] Enable the dependency graph, Dependabot alerts and updates, secret
+- [x] Enable the dependency graph, Dependabot alerts and updates, secret
   scanning, and push protection where available.
 - [ ] Verify issue assignments, package links, branch protections, and all
   external integrations after transfer.
@@ -412,7 +418,6 @@ represent external state, not files:
 
 - GitHub CLI authentication, API access, and Git-over-SSH access to
   `poprako-dev/poprako-server` are operational.
-- The organization repository and `production` environment now exist, and all
-  required production secret names are present. Rulesets, environment
-  protection, staging deployment, and owner/security sign-offs still require
-  organization-side execution or approval.
+- The organization repository, protected branches, `production` environment,
+  and all required production secret names now exist. Staging deployment,
+  production acceptance, and owner/security sign-offs remain outstanding.
