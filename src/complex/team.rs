@@ -9,7 +9,9 @@ use poprako_util::i18n::trl;
 
 use crate::complex::image::ImageComplex;
 use crate::complex::termbase::TermbaseComplex;
-use crate::complex::util::check_user_is_team_admin;
+use crate::complex::util::{
+    check_user_is_team_admin, check_user_is_team_member,
+};
 use crate::complex::workset::WorksetComplex;
 use crate::part::prom::payload::{TaskPayload, image};
 use crate::part::repo::oper::assignment::DeleteAssignments;
@@ -38,6 +40,9 @@ use crate::part::repo::oper::workset::{
 };
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
+
+// Process-local online-user leases grouped by team.
+mod online;
 
 /// Domain opers for team entities.
 pub struct TeamComplex;
@@ -154,6 +159,30 @@ impl TeamComplex {
 pub struct TeamPermComplex;
 
 impl TeamPermComplex {
+    /// Verify the caller may mark themselves online in the target team.
+    pub async fn ensure_user_can_mark_self_online<P>(
+        proxy: &mut P,
+        user_id: &str,
+        team_id: &str,
+    ) -> BaseRest<()>
+    where
+        P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
+    {
+        check_user_is_team_member(proxy, user_id, team_id).await
+    }
+
+    /// Verify the caller may list online users in the target team.
+    pub async fn ensure_user_can_list_online_user_ids<P>(
+        proxy: &mut P,
+        user_id: &str,
+        team_id: &str,
+    ) -> BaseRest<()>
+    where
+        P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
+    {
+        check_user_is_team_member(proxy, user_id, team_id).await
+    }
+
     /// Verify the user has super-admin privileges required to list all teams.
     /// Returns an `Expected::Perm` error if the user is not a super-admin.
     pub async fn ensure_user_can_update_info<P>(

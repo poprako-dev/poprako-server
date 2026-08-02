@@ -15,13 +15,12 @@ use crate::complex::image::ImageComplex;
 use crate::complex::member::MemberComplex;
 use crate::complex::team::{TeamComplex, TeamPermComplex};
 use crate::data::instr::team::{
-    CreateTeamInstr, ListTeamInfosInstr, MarkTeamAvatarUploadedInstr,
-    ReserveTeamAvatarInstr, UpdateTeamInfoInstr,
+    CreateTeamInstr, MarkTeamAvatarUploadedInstr, ReserveTeamAvatarInstr,
+    UpdateTeamInfoInstr,
 };
 use crate::data::val::team::ReserveTeamAvatarVal;
 use crate::data::view::image::ImageUploadSlotView;
 use crate::data::view::team::TeamInfoView;
-use crate::model::read::spec::team::TeamListSpec;
 use crate::model::shared::user::UserToken;
 use crate::model::write::member::MemberEntry;
 use crate::model::write::team::{TeamAvatarRepl, TeamEntry, TeamRepl};
@@ -48,7 +47,7 @@ use crate::part::repo::oper::member::{
 };
 use crate::part::repo::oper::page::{DeletePages, ListPageInfos};
 use crate::part::repo::oper::team::{
-    CreateTeam, DeleteTeam, GetTeamInfo, GetTeamInfoExcluded, ListTeamInfos,
+    CreateTeam, DeleteTeam, GetTeamInfo, GetTeamInfoExcluded,
     ReserveTeamAvatar, UpdateTeam,
 };
 use crate::part::repo::oper::term::DeleteTerms;
@@ -70,9 +69,18 @@ use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::value::role::{RoleField, RoleMask};
 
+pub use self::online::{list_online_user_ids, mark_self_online};
+pub use self::read::{get_info, list_infos};
+
 #[cfg(test)]
 // Unit and integration tests for team management policies.
 mod tests;
+
+// Process-local online-user lease use cases.
+mod online;
+
+// Non-transactional team read use cases.
+mod read;
 
 /// Creates a new team.
 ///
@@ -140,92 +148,6 @@ where
 
     // FIXME: no need to use info val in create.
     TeamInfoView::from_model(image_pool, team_info).await
-}
-
-/// Fetches a team by ID with avatar URL resolution.
-///
-/// Non-transactional read.
-///
-/// # Type Parameters
-///
-/// * `C` — Context anchor.
-/// * `R: TeamRepo<C>` — Team storage.
-/// * `I: ImagePool` — Resolves the avatar signed URL.
-#[instrument(level = "info", err(Debug), skip(repo, image_pool))]
-pub async fn get_info<C, R, I>(
-    (repo, image_pool): (&R, &I),
-    id: String,
-) -> BaseRest<TeamInfoView>
-where
-    R: TeamRepo<C>,
-    I: ImagePool,
-{
-    TeamInfoView::from_model(
-        image_pool,
-        GetTeamInfo::Id { id: &id }.run_on(repo).await?,
-    )
-    .await
-}
-
-/// Lists teams with pagination.
-///
-/// Non-transactional read. Each team's avatar URL is resolved individually.
-///
-/// # Type Parameters
-///
-/// * `C` — Context anchor.
-/// * `R: TeamRepo<C>` — Team storage.
-/// * `I: ImagePool` — Resolves avatar signed URLs.
-#[instrument(level = "info", err(Debug), skip(repo, image_pool))]
-pub async fn list_infos<C, R, I>(
-    (repo, image_pool): (&R, &I),
-    token: UserToken,
-    // FIXME: use try_into()?
-    instr: ListTeamInfosInstr,
-) -> BaseRest<Vec<TeamInfoView>>
-where
-    R: TeamRepo<C> + UserRepo<C> + Sync,
-    I: ImagePool,
-{
-    match instr.user_id.as_deref() {
-        //
-        Some(user_id) if user_id != token.user_id => todo!(),
-
-        None => {
-            TeamPermComplex::ensure_user_can_list_infos(
-                &mut run_proxy! {
-                    repo => for<'a> GetUserInfo<'a>;
-                },
-                &token.user_id,
-            )
-            .await?;
-        }
-
-        Some(_) => {}
-    }
-
-    let team_info_list_spec = TeamListSpec {
-        user_id: instr.user_id,
-        offset: instr.offset,
-        limit: instr.limit,
-    };
-
-    let team_infos = ListTeamInfos {
-        spec: &team_info_list_spec,
-    }
-    .run_on(repo)
-    .await?;
-
-    let team_info_vals = futures_util::future::join_all(
-        team_infos
-            .into_iter()
-            .map(|team_info| TeamInfoView::from_model(image_pool, team_info)),
-    )
-    .await
-    .into_iter()
-    .collect::<BaseRest<Vec<_>>>()?;
-
-    accept(team_info_vals)
 }
 
 /// Updates a team's name and description.
