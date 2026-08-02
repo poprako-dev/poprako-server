@@ -19,7 +19,7 @@ from tree_sitter import Language, Node, Parser
 import tree_sitter_rust
 
 
-PROJECT_ROOT = Path(__file__).parents[3]
+PROJECT_ROOT = Path(__file__).parents[2]
 sys.path.insert(0, str(PROJECT_ROOT / "fmt"))
 from production_source import production_source
 
@@ -205,7 +205,6 @@ class RustSpacingChecker:
             in (
                 BLOCK_CONTAINERS
                 | STRUCT_FIELD_CONTAINERS
-                | ENUM_VARIANT_CONTAINERS
             )
             and not line_is_only_open_brace(lines, brace)
             and not separator_rows
@@ -256,7 +255,6 @@ class RustSpacingChecker:
             in (
                 BLOCK_CONTAINERS
                 | STRUCT_FIELD_CONTAINERS
-                | ENUM_VARIANT_CONTAINERS
             )
             and separator_rows
         ):

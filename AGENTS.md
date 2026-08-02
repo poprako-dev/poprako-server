@@ -1,6 +1,11 @@
 # poprako-server - Agent Context
 
-MUST FOLLOW `just deploy-release` WHEN GENERATING RELEASE.
+MUST NOT GENERATE A RELEASE until the GitHub Actions release workflow is
+established. After that workflow exists, releases and production deployments
+MUST run through GitHub Actions. Do not use the legacy SSH deployment scripts.
+
+`just` is an optional local convenience only. CI/CD and release automation
+MUST invoke checked-in POSIX `sh` scripts directly and MUST NOT require `just`.
 
 `poprako-server` is the Rust 2024 backend for manga translation project
 management. The executable is active: `src/main.rs` wires the production
@@ -16,25 +21,27 @@ harness and starts the Axum HTTP server.
 src/
 ├── api/http/       # Axum handlers, middleware, router, OpenAPI, server
 ├── complex/        # Pure business rules and perm checks
-├── data/           # Request Data and response Val DTOs
+├── data/           # Instr requests, Val responses, and API views
 ├── harn.rs         # Production application-harness composition
 ├── model/          # Persisted application models and input forms
-├── part/           # Ports and repository step descriptors
+├── part/           # Ports and repository operation descriptors
 ├── part_impl/      # RDB, R2, JWT, prom, effect, and test-mock adapters
 ├── usecase/        # Generic application orchestration
 └── value/          # Shared value objects and enums
 ```
 
-- `part::repo::step` describes repository operations. `Execute` performs a
-  standalone operation; `Advance` performs an operation inside a transaction.
+- `part::repo::oper` contains Orchestra operation descriptors. Repository
+  capabilities declare `run` operations and transaction-scoped `step`
+  operations with `#[drive(...)]`.
 - `Nucl::coord` supplies the transaction context. A use case owns the
   transaction boundary; `complex` remains pure and never drives transactions.
 - `Harn` composes production ports. Tests use `part_impl::repo::mock_impl` and
   the test helpers local to the touched module.
 - RDB repository code and generated Diesel schema live under
   `src/part_impl/repo/rdb_impl/`. Never edit `schema.rs` directly or import it
-  through a `schema::` alias. Change migrations, run `just mgr-schema`, then
-  use the generated table module through its full local path.
+  through a `schema::` alias. Change migrations, regenerate it with
+  `diesel print-schema > src/part_impl/repo/rdb_impl/schema.rs`, then use the
+  generated table module through its full local path.
 
 ## Implementation Rules
 
@@ -58,8 +65,8 @@ When a behavior changes, update only the layers it needs, in this order:
 
 1. Read current Rust code and the corresponding business reference.
 2. Add shared `value`, `model`, or pure `complex` logic where warranted.
-3. Add `Data`/`Val` DTOs, repository steps and `XxxRepo<C>` /
-   `XxxRepoTransactional<C>` bounds.
+3. Add `Instr`/`Val`/`View` DTOs, repository operation descriptors, and the
+   required `#[drive(...)]` repository capability bounds.
 4. Implement both RDB and mock adapters as needed.
 5. Implement the use case, then the HTTP handler/router/OpenAPI surface when
    the behavior is exposed over HTTP.
@@ -75,8 +82,9 @@ HTTP routes are active under `/api/v1`; health is `/api/health`. Handlers use
 specification.
 
 For schema changes, edit matching migration `up.sql` and `down.sql`, apply or
-revert with `just mgr-run` / `just mgr-rev`, regenerate with `just mgr-schema`,
-then compile. The generated file is
+revert with `diesel migration run` / `diesel migration revert`, regenerate
+with `diesel print-schema > src/part_impl/repo/rdb_impl/schema.rs`, then
+compile. The generated file is
 `src/part_impl/repo/rdb_impl/schema.rs`.
 
 ## Project Skills and Verification

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-"""Run the shared Rust block-spacing checker through ``just fmt-check``."""
+"""Run the shared Rust block-spacing checker from the format suite."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).parents[2]
-CHECKER = ROOT / ".agents/skills/rust-spacing-style/check-spacing-style.py"
+CHECKER = ROOT / "fmt/spacing-style/check_impl.py"
 
 
 if __name__ == "__main__":
