@@ -10,4 +10,5 @@ INSERT INTO "t_user" (
     '123456',
     TRUE,
     '$argon2id$v=19$m=65536,t=3,p=4$UrCPl9xY0hk3LpfQWl+ZVA$4d+zkTiD9ghoc6XtJJSHpcvfzUpAK1IiZ5MAQezLgrE' -- 123456
-);
+)
+ON CONFLICT ("f_id") DO NOTHING;

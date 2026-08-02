@@ -1,5 +1,8 @@
 //! Application-level error and result types used throughout the domain layer.
 
+use std::error::Error;
+use std::result::Result;
+
 use poprako_orchestra::nucl::Error as NuclError;
 
 /// Categorizes an expected application error by its origin domain.
@@ -38,8 +41,20 @@ pub enum BaseError {
     },
 }
 
+impl std::fmt::Display for BaseError {
+    // Renders the classified error without exposing additional internal state.
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Expected { message, .. }
+            | Self::Unrecoverable { message } => formatter.write_str(message),
+        }
+    }
+}
+
+impl Error for BaseError {}
+
 /// Alias for [`Result`] used at module boundary layers.
-pub type BaseRest<T> = std::result::Result<T, BaseError>;
+pub type BaseRest<T> = Result<T, BaseError>;
 
 /// Wraps a value in `Ok(...)` — the simplest use-case return.
 pub fn accept<T>(v: T) -> BaseRest<T> {

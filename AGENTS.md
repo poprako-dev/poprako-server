@@ -2,7 +2,9 @@
 
 MUST NOT GENERATE A RELEASE until the GitHub Actions release workflow is
 established. After that workflow exists, releases and production deployments
-MUST run through GitHub Actions. Do not use the legacy SSH deployment scripts.
+MUST run through GitHub Actions. Production SSH is allowed only from the
+protected GitHub Actions environment through the dedicated deployment account;
+maintainer machines must not run production deployment scripts.
 
 `just` is an optional local convenience only. CI/CD and release automation
 MUST invoke checked-in POSIX `sh` scripts directly and MUST NOT require `just`.

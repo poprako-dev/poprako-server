@@ -15,7 +15,7 @@ permissions:
 
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   rust:
@@ -32,6 +32,9 @@ jobs:
 
       - name: Test Rust workspace
         run: sh scripts/ci-test.sh
+
+      - name: Check OpenAPI specification
+        run: sh scripts/ci-openapi-check.sh
 
   typescript:
     name: TypeScript
@@ -81,3 +84,50 @@ jobs:
 
       - name: Validate Diesel migrations
         run: sh scripts/ci-migration-check.sh
+
+  security:
+    name: Dependency security
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Audit Rust dependencies
+        run: sh scripts/ci-audit.sh
+
+  deploy:
+    name: Deploy production
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs:
+      - migrations
+      - rust
+      - security
+      - typescript
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment:
+      name: production
+
+    env:
+      DEPLOY_BIND_HOST: ${{ secrets.DEPLOY_BIND_HOST }}
+      DEPLOY_DOCKER_NETWORK: ${{ secrets.DEPLOY_DOCKER_NETWORK }}
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+      DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+      DEPLOY_PUBLIC_PORT: ${{ secrets.DEPLOY_PUBLIC_PORT }}
+      DEPLOY_ROOT: ${{ secrets.DEPLOY_ROOT }}
+      DEPLOY_RUNTIME_ENV: ${{ secrets.DEPLOY_RUNTIME_ENV }}
+      DEPLOY_SHA: ${{ github.sha }}
+      DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+
+    steps:
+      - name: Check out deployed commit
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Build, upload, and deploy
+        run: sh scripts/ci-deploy-production.sh
