@@ -91,6 +91,11 @@ with `diesel print-schema > src/part_impl/repo/rdb_impl/schema.rs`, then
 compile. The generated file is
 `src/part_impl/repo/rdb_impl/schema.rs`.
 
+The application must never apply migrations during startup. Production CD
+uses `scripts/ga-apply-migrations.sh` to apply all `up.sql` files in one
+transaction against an independently managed, already-running PostgreSQL 18
+container.
+
 ## Project Skills and Verification
 
 Project-local Rust guidance lives in `.agents/skills/`. Load the relevant skill

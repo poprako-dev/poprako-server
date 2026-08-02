@@ -15,6 +15,7 @@ deploy_root=${DEPLOY_ROOT:?DEPLOY_ROOT is required}
 public_port=${DEPLOY_PUBLIC_PORT:?DEPLOY_PUBLIC_PORT is required}
 bind_host=${DEPLOY_BIND_HOST:?DEPLOY_BIND_HOST is required}
 docker_network=${DEPLOY_DOCKER_NETWORK:?DEPLOY_DOCKER_NETWORK is required}
+postgres_container=${DEPLOY_POSTGRES_CONTAINER:?DEPLOY_POSTGRES_CONTAINER is required}
 container_name=poprako-server-prod
 image_name=poprako-server-prod
 
@@ -46,6 +47,7 @@ validate_simple_value "$deploy_host" DEPLOY_HOST
 validate_simple_value "$deploy_user" DEPLOY_USER
 validate_simple_value "$bind_host" DEPLOY_BIND_HOST
 validate_simple_value "$docker_network" DEPLOY_DOCKER_NETWORK
+validate_simple_value "$postgres_container" DEPLOY_POSTGRES_CONTAINER
 validate_port "$deploy_port" DEPLOY_PORT
 validate_port "$public_port" DEPLOY_PUBLIC_PORT
 
@@ -131,6 +133,7 @@ ssh \
     "mkdir -p '$release_dir' '$deploy_root/shared'"
 
 scp \
+    -r \
     -i "$private_key_file" \
     -P "$deploy_port" \
     -o BatchMode=yes \
@@ -139,6 +142,8 @@ scp \
     -o "UserKnownHostsFile=$known_hosts_file" \
     "$image_archive" \
     "$runtime_env_file" \
+    "migrations" \
+    "scripts/ga-apply-migrations.sh" \
     "scripts/ga-remote-deploy.sh" \
     "${ssh_target}:${release_dir}/"
 
@@ -150,4 +155,4 @@ ssh \
     -o StrictHostKeyChecking=yes \
     -o "UserKnownHostsFile=$known_hosts_file" \
     "$ssh_target" \
-    "sh '$release_dir/ga-remote-deploy.sh' '$image_name' '$image_tag' '$container_name' '$deploy_root' '$public_port' '$bind_host' '$docker_network'"
+    "sh '$release_dir/ga-remote-deploy.sh' '$image_name' '$image_tag' '$container_name' '$deploy_root' '$public_port' '$bind_host' '$docker_network' '$postgres_container'"

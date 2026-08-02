@@ -1,8 +1,8 @@
 #!/usr/bin/env sh
 set -eu
 
-if [ "$#" -ne 7 ]; then
-    echo "expected image, tag, container, root, port, bind host, and network" >&2
+if [ "$#" -ne 8 ]; then
+    echo "expected image, tag, container, root, port, bind host, network, and PostgreSQL container" >&2
     exit 1
 fi
 
@@ -13,6 +13,7 @@ deploy_root=$4
 public_port=$5
 bind_host=$6
 docker_network=$7
+postgres_container=$8
 
 image_ref="${image_name}:${image_tag}"
 release_sha=${image_tag#sha-}
@@ -21,6 +22,8 @@ runtime_env_file="${deploy_root}/shared/runtime.env"
 previous_env_file="${deploy_root}/shared/runtime.env.previous"
 uploaded_env_file="${release_dir}/poprako-runtime.env"
 image_archive="${release_dir}/${image_name}-${image_tag}.tar.gz"
+migration_script="${release_dir}/ga-apply-migrations.sh"
+migration_root="${release_dir}/migrations"
 previous_name="${container_name}-previous"
 rollback_required=0
 
@@ -130,8 +133,19 @@ trap 'exit 1' HUP INT TERM
     exit 1
 }
 
+[ -f "$migration_script" ] || {
+    echo "missing migration script: $migration_script" >&2
+    exit 1
+}
+
+[ -d "$migration_root" ] || {
+    echo "missing migration directory: $migration_root" >&2
+    exit 1
+}
+
 docker info >/dev/null
 docker network inspect "$docker_network" >/dev/null
+sh "$migration_script" "$migration_root" "$postgres_container"
 docker load --input "$image_archive"
 rm -f "$image_archive"
 
