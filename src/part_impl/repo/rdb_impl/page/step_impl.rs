@@ -14,7 +14,7 @@ use crate::model::write::page::{
     PageEntry, PageImageReservation, PageManifestRepl,
 };
 use crate::part_impl::repo::rdb_impl::entity::page::{
-    PageAspect, PageRow, PageRowEntry,
+    PageAspectRow, PageEntryRow, PageInfoRow,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_page::dsl::*;
 use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{
@@ -31,10 +31,10 @@ pub async fn get_info_by_id(
     id: &str,
 ) -> BaseRest<PageInfo> {
     //
-    let row: PageRow = t_page
+    let row = t_page
         .filter(f_id.eq(id))
-        .select(PageRow::as_select())
-        .get_result(conn)
+        .select(PageInfoRow::as_select())
+        .get_result::<PageInfoRow>(conn)
         .await
         .optional()
         .map_err(diesel)?
@@ -66,11 +66,11 @@ pub async fn get_info_excluded(
     id: &str,
 ) -> BaseRest<PageInfo> {
     //
-    let row: PageRow = t_page
+    let row = t_page
         .filter(f_id.eq(id))
-        .select(PageRow::as_select())
+        .select(PageInfoRow::as_select())
         .for_update()
-        .get_result(conn)
+        .get_result::<PageInfoRow>(conn)
         .await
         .optional()
         .map_err(diesel)?
@@ -102,11 +102,11 @@ pub async fn list_infos(
     chapter_id: &str,
 ) -> BaseRest<Vec<PageInfo>> {
     //
-    let rows: Vec<PageRow> = t_page
+    let rows = t_page
         .filter(f_chapter_id.eq(chapter_id))
-        .select(PageRow::as_select())
+        .select(PageInfoRow::as_select())
         .order_by(f_index.asc())
-        .load(conn)
+        .load::<PageInfoRow>(conn)
         .await
         .map_err(diesel)?;
 
@@ -120,12 +120,12 @@ pub async fn list_infos_excluded(
     chapter_id: &str,
 ) -> BaseRest<Vec<PageInfo>> {
     //
-    let rows: Vec<PageRow> = t_page
+    let rows = t_page
         .filter(f_chapter_id.eq(chapter_id))
-        .select(PageRow::as_select())
+        .select(PageInfoRow::as_select())
         .order_by((f_index.asc(), f_id.asc()))
         .for_update()
-        .load(conn)
+        .load::<PageInfoRow>(conn)
         .await
         .map_err(diesel)?;
 
@@ -163,7 +163,7 @@ pub async fn update_manifest(
 
     let image_hash = update.image_hash.bytes();
 
-    let row: PageRow = diesel::update(t_page.filter(f_id.eq(&update.id)))
+    let row = diesel::update(t_page.filter(f_id.eq(&update.id)))
         .set((
             f_index.eq(update.index),
             f_image_key.eq(update.image_key.as_deref()),
@@ -173,8 +173,8 @@ pub async fn update_manifest(
             f_image_extension.eq(update.image_ext.suffix()),
             f_updated_at.eq(now),
         ))
-        .returning(PageRow::as_returning())
-        .get_result(conn)
+        .returning(PageInfoRow::as_returning())
+        .get_result::<PageInfoRow>(conn)
         .await
         .map_err(diesel)?;
 
@@ -188,12 +188,12 @@ pub async fn clear_images_for_publish(
     chapter_id: &str,
 ) -> BaseRest<Vec<String>> {
     //
-    let rows: Vec<PageRow> = t_page
+    let rows = t_page
         .filter(f_chapter_id.eq(chapter_id))
-        .select(PageRow::as_select())
+        .select(PageInfoRow::as_select())
         .order_by((f_index.asc(), f_id.asc()))
         .for_update()
-        .load(conn)
+        .load::<PageInfoRow>(conn)
         .await
         .map_err(diesel)?;
 
@@ -242,12 +242,12 @@ pub async fn list_first_infos_by_chapter_ids(
     chapter_ids: &[String],
 ) -> BaseRest<Vec<PageInfo>> {
     //
-    let rows: Vec<PageRow> = t_page
+    let rows = t_page
         .filter(f_chapter_id.eq_any(chapter_ids))
-        .select(PageRow::as_select())
+        .select(PageInfoRow::as_select())
         .distinct_on(f_chapter_id)
         .order_by((f_chapter_id.asc(), f_index.asc()))
-        .load(conn)
+        .load::<PageInfoRow>(conn)
         .await
         .map_err(diesel)?;
 
@@ -261,15 +261,15 @@ pub async fn create_batch(
     model_entries: &[PageEntry],
 ) -> BaseRest<Vec<PageInfo>> {
     //
-    let entries: Vec<PageRowEntry> = model_entries
+    let entries = model_entries
         .iter()
-        .map(PageRowEntry::try_from)
-        .collect::<BaseRest<_>>()?;
+        .map(PageEntryRow::try_from)
+        .collect::<BaseRest<Vec<PageEntryRow>>>()?;
 
-    let rows: Vec<PageRow> = diesel::insert_into(t_page)
+    let rows = diesel::insert_into(t_page)
         .values(&entries)
-        .returning(PageRow::as_returning())
-        .get_results(conn)
+        .returning(PageInfoRow::as_returning())
+        .get_results::<PageInfoRow>(conn)
         .await
         .map_err(diesel)?;
 
@@ -287,14 +287,13 @@ pub async fn reserve_image(
     //
     let now = OffsetDateTime::now_utc();
 
-    let (chapter_id, prev_key, raw_version): (String, Option<String>, i64) =
-        t_page
-            .filter(f_id.eq(id))
-            .select((f_chapter_id, f_image_key, f_image_version))
-            .for_update()
-            .get_result(conn)
-            .await
-            .map_err(diesel)?;
+    let (chapter_id, prev_key, raw_version) = t_page
+        .filter(f_id.eq(id))
+        .select((f_chapter_id, f_image_key, f_image_version))
+        .for_update()
+        .get_result::<(String, Option<String>, i64)>(conn)
+        .await
+        .map_err(diesel)?;
 
     let image_version = next_version(raw_version)?;
 
@@ -440,7 +439,7 @@ pub async fn set_unit_counters(
     //
     let now = OffsetDateTime::now_utc();
 
-    let aspect = PageAspect::new(now)
+    let aspect = PageAspectRow::new(now)
         .total_unit_count(counters.total_unit_count)
         .translated_unit_count(counters.translated_unit_count)
         .proofread_unit_count(counters.proofread_unit_count);
@@ -461,10 +460,10 @@ pub async fn delete_by_chapter_id(
     chapter_id: &str,
 ) -> BaseRest<()> {
     //
-    let page_ids: Vec<String> = t_page
+    let page_ids = t_page
         .filter(f_chapter_id.eq(chapter_id))
         .select(f_id)
-        .load(conn)
+        .load::<String>(conn)
         .await
         .map_err(diesel)?;
 

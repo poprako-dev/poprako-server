@@ -11,7 +11,7 @@ use crate::util::Patch;
 
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_unit)]
-pub struct UnitRow {
+pub struct UnitInfoRow {
     //
     pub f_id: String,
 
@@ -35,8 +35,8 @@ pub struct UnitRow {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl From<UnitRow> for UnitInfo {
-    fn from(row: UnitRow) -> Self {
+impl From<UnitInfoRow> for UnitInfo {
+    fn from(row: UnitInfoRow) -> Self {
         Self {
             id: row.f_id,
             page_id: row.f_page_id,
@@ -60,7 +60,7 @@ impl From<UnitRow> for UnitInfo {
 
 #[derive(Insertable)]
 #[diesel(table_name = t_unit)]
-pub struct UnitEntry<'a> {
+pub struct UnitEntryRow<'a> {
     //
     pub f_id: &'a str,
 
@@ -84,7 +84,7 @@ pub struct UnitEntry<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> UnitEntry<'a> {
+impl<'a> UnitEntryRow<'a> {
     pub fn from_edit(page_id: &'a str, edit: &'a UnitEdit) -> Option<Self> {
         //
         let UnitEdit::Create {
@@ -143,7 +143,7 @@ impl<'a> UnitEntry<'a> {
 
 #[derive(AsChangeset)]
 #[diesel(table_name = t_unit)]
-pub struct UnitAspect<'a> {
+pub struct UnitAspectRow<'a> {
     //
     pub f_next_id: Option<Option<&'a str>>,
     pub f_hidden_at: Option<Option<OffsetDateTime>>,
@@ -163,7 +163,7 @@ pub struct UnitAspect<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> UnitAspect<'a> {
+impl<'a> UnitAspectRow<'a> {
     pub fn new() -> Self {
         Self {
             f_next_id: None,

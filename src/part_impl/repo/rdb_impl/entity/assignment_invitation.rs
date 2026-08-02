@@ -12,7 +12,7 @@ use crate::value::role::RoleMask;
 /// Raw database row for the `t_assignment_invitation` table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_assignment_invitation)]
-pub struct AssignmentInvitationRow {
+pub struct AssignmentInvitationInfoRow {
     //
     pub f_id: String,
 
@@ -30,10 +30,10 @@ pub struct AssignmentInvitationRow {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl TryFrom<AssignmentInvitationRow> for AssignmentInvitationInfo {
+impl TryFrom<AssignmentInvitationInfoRow> for AssignmentInvitationInfo {
     type Error = BaseError;
 
-    fn try_from(row: AssignmentInvitationRow) -> Result<Self, Self::Error> {
+    fn try_from(row: AssignmentInvitationInfoRow) -> Result<Self, Self::Error> {
         //
         let roles = RoleMask::try_from(row.f_role_mask as u32)?;
 
@@ -54,7 +54,7 @@ impl TryFrom<AssignmentInvitationRow> for AssignmentInvitationInfo {
 /// Insertable struct for creating a new record in the `t_assignment_invitation` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_assignment_invitation)]
-pub struct AssignmentInvitationRowEntry<'a> {
+pub struct AssignmentInvitationEntryRow<'a> {
     //
     pub f_id: &'a str,
 
@@ -73,7 +73,7 @@ pub struct AssignmentInvitationRowEntry<'a> {
 }
 
 impl<'a> From<&'a AssignmentInvitationEntry>
-    for AssignmentInvitationRowEntry<'a>
+    for AssignmentInvitationEntryRow<'a>
 {
     fn from(entry: &'a AssignmentInvitationEntry) -> Self {
         //
@@ -97,13 +97,13 @@ impl<'a> From<&'a AssignmentInvitationEntry>
 /// identified by id.
 #[derive(AsChangeset)]
 #[diesel(table_name = t_assignment_invitation)]
-pub struct AssignmentInvitationAspect {
+pub struct AssignmentInvitationAspectRow {
     //
     pub f_pending: Option<bool>,
     pub f_updated_at: OffsetDateTime,
 }
 
-impl AssignmentInvitationAspect {
+impl AssignmentInvitationAspectRow {
     pub fn new(updated_at: OffsetDateTime) -> Self {
         Self {
             f_pending: None,

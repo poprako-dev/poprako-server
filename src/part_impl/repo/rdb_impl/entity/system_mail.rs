@@ -12,7 +12,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_system_mail;
 /// Raw database row for the `t_system_mail` table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_system_mail)]
-pub struct SystemMailRow {
+pub struct SystemMailInfoRow {
     //
     pub f_id: String,
     pub f_receiver_id: String,
@@ -25,8 +25,8 @@ pub struct SystemMailRow {
     pub f_created_at: OffsetDateTime,
 }
 
-impl From<SystemMailRow> for SystemMailInfo {
-    fn from(v: SystemMailRow) -> Self {
+impl From<SystemMailInfoRow> for SystemMailInfo {
+    fn from(v: SystemMailInfoRow) -> Self {
         SystemMailInfo {
             id: v.f_id,
             receiver_id: v.f_receiver_id,
@@ -43,7 +43,7 @@ impl From<SystemMailRow> for SystemMailInfo {
 /// Insertable struct for creating a new record in the `t_system_mail` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_system_mail)]
-pub struct SystemMailRowEntry<'a> {
+pub struct SystemMailEntryRow<'a> {
     //
     pub f_id: &'a str,
     pub f_receiver_id: &'a str,
@@ -54,7 +54,7 @@ pub struct SystemMailRowEntry<'a> {
     pub f_created_at: OffsetDateTime,
 }
 
-impl<'a> From<&'a SystemMailEntry> for SystemMailRowEntry<'a> {
+impl<'a> From<&'a SystemMailEntry> for SystemMailEntryRow<'a> {
     fn from(entry: &'a SystemMailEntry) -> Self {
         Self {
             f_id: &entry.id,

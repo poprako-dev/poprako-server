@@ -7,7 +7,7 @@ use time::OffsetDateTime;
 
 use crate::part::prom::payload::{TaskPayload, image};
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
-use crate::part_impl::prom::rdb_impl::entity::LocalMessageEntry;
+use crate::part_impl::prom::rdb_impl::entity::LocalMessageEntryRow;
 use crate::part_impl::prom::rdb_impl::handler::base::dispatch_payload;
 use crate::part_impl::prom::rdb_impl::handler::task_flow::TaskFlow;
 use crate::part_impl::prom::rdb_impl::repo::RdbPromRepo;
@@ -39,10 +39,12 @@ pub async fn image_payloads_from_rdb_dispatch(shared: RdbCore) {
         delay: None,
     };
 
-    let delete_local_message_entry =
-        LocalMessageEntry::from_task(&delete_task, OffsetDateTime::now_utc())
-            .ok()
-            .unwrap();
+    let delete_local_message_entry = LocalMessageEntryRow::from_task(
+        &delete_task,
+        OffsetDateTime::now_utc(),
+    )
+    .ok()
+    .unwrap();
 
     let mut conn = shared.get().await.ok().unwrap();
 
@@ -100,7 +102,7 @@ pub async fn image_payloads_from_rdb_dispatch(shared: RdbCore) {
     };
 
     let check_uploaded_local_message_entry =
-        LocalMessageEntry::from_task(&check_task, OffsetDateTime::now_utc())
+        LocalMessageEntryRow::from_task(&check_task, OffsetDateTime::now_utc())
             .ok()
             .unwrap();
 

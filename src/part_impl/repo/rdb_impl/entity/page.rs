@@ -12,7 +12,7 @@ use crate::value::image::{ImageExt, ImageHash};
 /// Raw database row for the `t_page` table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_page)]
-pub struct PageRow {
+pub struct PageInfoRow {
     //
     pub f_id: String,
 
@@ -34,22 +34,23 @@ pub struct PageRow {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl TryFrom<PageRow> for PageInfo {
+impl TryFrom<PageInfoRow> for PageInfo {
     type Error = BaseError;
 
-    fn try_from(row: PageRow) -> Result<Self, Self::Error> {
+    fn try_from(row: PageInfoRow) -> Result<Self, Self::Error> {
         //
         let (image_hash_bytes, image_extension) = (
             row.f_image_hash.try_into().map_err(|_| {
                 BaseError::Unrecoverable {
-                    message: "[PageRow] f_image_hash must contain 32 bytes"
+                    message: "[PageInfoRow] f_image_hash must contain 32 bytes"
                         .into(),
                 }
             })?,
             ImageExt::parse(&row.f_image_extension).ok_or_else(|| {
                 BaseError::Unrecoverable {
-                    message: "[PageRow] f_image_extension must be supported"
-                        .into(),
+                    message:
+                        "[PageInfoRow] f_image_extension must be supported"
+                            .into(),
                 }
             })?,
         );
@@ -75,7 +76,7 @@ impl TryFrom<PageRow> for PageInfo {
 /// Insertable struct for creating a new record in the `t_page` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_page)]
-pub struct PageRowEntry<'a> {
+pub struct PageEntryRow<'a> {
     //
     pub f_id: &'a str,
 
@@ -91,7 +92,7 @@ pub struct PageRowEntry<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> TryFrom<&'a PageEntry> for PageRowEntry<'a> {
+impl<'a> TryFrom<&'a PageEntry> for PageEntryRow<'a> {
     type Error = BaseError;
 
     fn try_from(entry: &'a PageEntry) -> Result<Self, Self::Error> {
@@ -115,7 +116,7 @@ impl<'a> TryFrom<&'a PageEntry> for PageRowEntry<'a> {
 /// Aspect struct for updating specific fields of a page record identified by id.
 #[derive(AsChangeset)]
 #[diesel(table_name = t_page)]
-pub struct PageAspect<'a> {
+pub struct PageAspectRow<'a> {
     //
     pub f_index: Option<i32>,
     pub f_image_key: Option<Option<&'a str>>,
@@ -131,7 +132,7 @@ pub struct PageAspect<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> PageAspect<'a> {
+impl<'a> PageAspectRow<'a> {
     pub fn new(updated_at: OffsetDateTime) -> Self {
         Self {
             f_index: None,

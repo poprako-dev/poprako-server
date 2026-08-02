@@ -5,7 +5,7 @@ use tracing::instrument;
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::spec::assignment::AssignmentListSpec;
 use crate::part::repo::oper::assignment::ListAssignmentInfos;
-use crate::part_impl::repo::rdb_impl::entity::assignment::AssignmentRow;
+use crate::part_impl::repo::rdb_impl::entity::assignment::AssignmentInfoRow;
 use crate::part_impl::repo::rdb_impl::incl;
 use crate::part_impl::repo::rdb_impl::schema::t_assignment::dsl::*;
 use crate::result::{BaseRest, accept};
@@ -119,21 +119,21 @@ pub async fn list_infos(
     }
 
     let query = query
-        .select(AssignmentRow::as_select())
+        .select(AssignmentInfoRow::as_select())
         .order_by((f_created_at.desc(), f_id.asc()));
 
     // Pull one page when pagination is set; otherwise return the full list.
-    let rows: Vec<AssignmentRow> = match page {
+    let rows = match page {
         //
         Some((offset, limit)) => {
             query
                 .offset(offset as i64)
                 .limit(limit as i64)
-                .load(conn)
+                .load::<AssignmentInfoRow>(conn)
                 .await
         }
 
-        None => query.load(conn).await,
+        None => query.load::<AssignmentInfoRow>(conn).await,
     }
     .map_err(diesel)?;
 
@@ -148,11 +148,13 @@ pub async fn list_infos(
 
 // Map query rows into public-facing assignment infos by converting each row and
 // bubbling mapping errors immediately.
-fn rows_into_infos(rows: Vec<AssignmentRow>) -> BaseRest<Vec<AssignmentInfo>> {
+fn rows_into_infos(
+    rows: Vec<AssignmentInfoRow>,
+) -> BaseRest<Vec<AssignmentInfo>> {
     rows.into_iter().map(row_into_info).collect()
 }
 
 // Convert one persisted assignment row into the API-facing info DTO.
-fn row_into_info(row: AssignmentRow) -> BaseRest<AssignmentInfo> {
+fn row_into_info(row: AssignmentInfoRow) -> BaseRest<AssignmentInfo> {
     row.try_into()
 }

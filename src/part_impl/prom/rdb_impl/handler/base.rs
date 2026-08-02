@@ -108,7 +108,7 @@ where
     I: ImageManager + Send + Sync,
     D: Develop + Sync,
 {
-    let payload: TaskPayload = match serde_json::from_value(payload.clone()) {
+    let payload = match serde_json::from_value::<TaskPayload>(payload.clone()) {
         //
         Ok(payload) => payload,
 

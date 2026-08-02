@@ -12,7 +12,7 @@ use poprako_util::i18n::trl;
 use crate::model::read::proj::unit::{UnitCounters, UnitInfo, UnitOrder};
 use crate::model::write::unit::UnitEdit;
 use crate::part_impl::repo::rdb_impl::entity::unit::{
-    UnitAspect, UnitEntry, UnitRow,
+    UnitAspectRow, UnitEntryRow, UnitInfoRow,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::*;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
@@ -31,8 +31,8 @@ pub async fn list_infos(
     //
     let rows = t_unit
         .filter(f_page_id.eq(page_id))
-        .select(UnitRow::as_select())
-        .load::<UnitRow>(conn)
+        .select(UnitInfoRow::as_select())
+        .load::<UnitInfoRow>(conn)
         .await
         .map_err(diesel)?;
 
@@ -97,7 +97,7 @@ pub async fn apply_edits(
             //
             UnitEdit::Create { id, .. } => {
                 //
-                let Some(entry) = UnitEntry::from_edit(page_id, edit) else {
+                let Some(entry) = UnitEntryRow::from_edit(page_id, edit) else {
                     //
                     let err_message = trl("error-invalid-unit-oper");
 
@@ -129,7 +129,7 @@ pub async fn apply_edits(
                 let affected = diesel::update(
                     t_unit.filter(f_page_id.eq(page_id)).filter(f_id.eq(id)),
                 )
-                .set(UnitAspect::new().hide())
+                .set(UnitAspectRow::new().hide())
                 .execute(conn)
                 .await
                 .map_err(diesel)?;
@@ -161,7 +161,7 @@ pub async fn apply_edits(
                 let affected = diesel::update(
                     t_unit.filter(f_page_id.eq(page_id)).filter(f_id.eq(id)),
                 )
-                .set(UnitAspect::new().apply_edit(edit))
+                .set(UnitAspectRow::new().apply_edit(edit))
                 .execute(conn)
                 .await
                 .map_err(diesel)?;
@@ -206,7 +206,7 @@ pub async fn apply_edits(
         let affected = diesel::update(
             t_unit.filter(f_page_id.eq(page_id)).filter(f_id.eq(*id)),
         )
-        .set(UnitAspect::new().order(next_id))
+        .set(UnitAspectRow::new().order(next_id))
         .execute(conn)
         .await
         .map_err(diesel)?;

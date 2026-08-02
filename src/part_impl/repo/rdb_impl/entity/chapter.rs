@@ -12,7 +12,7 @@ use crate::value::chapter::{Stage, StageMask, StagePhase};
 /// Raw database row for the `t_chapter` table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_chapter)]
-pub struct ChapterRow {
+pub struct ChapterInfoRow {
     //
     pub f_id: String,
 
@@ -43,10 +43,10 @@ pub struct ChapterRow {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl TryFrom<ChapterRow> for ChapterInfo {
+impl TryFrom<ChapterInfoRow> for ChapterInfo {
     type Error = BaseError;
 
-    fn try_from(row: ChapterRow) -> Result<Self, Self::Error> {
+    fn try_from(row: ChapterInfoRow) -> Result<Self, Self::Error> {
         //
         let stages = workflow_stage_mask_from_row(&row)?;
 
@@ -73,7 +73,7 @@ impl TryFrom<ChapterRow> for ChapterInfo {
 /// Insertable struct for creating a new record in the `t_chapter` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_chapter)]
-pub struct ChapterRowEntry<'a> {
+pub struct ChapterEntryRow<'a> {
     //
     pub f_id: &'a str,
 
@@ -89,7 +89,7 @@ pub struct ChapterRowEntry<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> From<&'a ChapterEntry> for ChapterRowEntry<'a> {
+impl<'a> From<&'a ChapterEntry> for ChapterEntryRow<'a> {
     fn from(chapter_entry: &'a ChapterEntry) -> Self {
         //
         let now = OffsetDateTime::now_utc();
@@ -110,7 +110,7 @@ impl<'a> From<&'a ChapterEntry> for ChapterRowEntry<'a> {
 /// Aspect struct for updating specific fields of a chapter record identified by id.
 #[derive(AsChangeset)]
 #[diesel(table_name = t_chapter)]
-pub struct ChapterAspect<'a> {
+pub struct ChapterAspectRow<'a> {
     //
     pub f_is_pinned: Option<bool>,
     pub f_subtitle: Option<&'a str>,
@@ -132,7 +132,7 @@ pub struct ChapterAspect<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> ChapterAspect<'a> {
+impl<'a> ChapterAspectRow<'a> {
     pub fn new(updated_at: OffsetDateTime) -> Self {
         Self {
             f_is_pinned: None,
@@ -271,7 +271,7 @@ fn one_shot_timestamp(
 
 /// Resolve a two-step stage (Translate, Proofread, TypesetRedraw) to its
 /// start/completed timestamps. Returns `(Option<Option>, Option<Option>)` for
-/// use in `ChapterAspect` fields where `Some(None)` means "clear the column"
+/// use in `ChapterAspectRow` fields where `Some(None)` means "clear the column"
 /// and `Some(Some(ts))` means "set the column".
 fn two_step_timestamps(
     stages: StageMask,
@@ -293,10 +293,10 @@ fn two_step_timestamps(
     }
 }
 
-/// Build a `StageMask` from a `ChapterRow` by converting each column-pair into
+/// Build a `StageMask` from a `ChapterInfoRow` by converting each column-pair into
 /// its corresponding `StagePhase`.
 fn workflow_stage_mask_from_row(
-    row: &ChapterRow,
+    row: &ChapterInfoRow,
 ) -> Result<StageMask, BaseError> {
     //
     let stages = StageMask::try_from(0u32)?

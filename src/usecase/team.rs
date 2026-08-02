@@ -21,7 +21,6 @@ use crate::data::instr::team::{
 use crate::data::val::team::ReserveTeamAvatarVal;
 use crate::data::view::image::ImageUploadSlotView;
 use crate::data::view::team::TeamInfoView;
-use crate::model::read::proj::team::TeamInfo;
 use crate::model::read::spec::team::TeamListSpec;
 use crate::model::shared::user::UserToken;
 use crate::model::write::member::MemberEntry;
@@ -110,7 +109,7 @@ where
         description: instr.description,
     };
 
-    let team_info: TeamInfo = nucl
+    let team_info = nucl
         .coord(async move |context| {
             //
             let user_info = GetUserInfoExcluded::Id { id: &token.user_id }

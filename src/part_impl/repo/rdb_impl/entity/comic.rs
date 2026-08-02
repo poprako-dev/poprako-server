@@ -15,7 +15,7 @@ use crate::value::image::{ImageExt, ImageHash};
 /// Raw database row for the `t_comic` table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_comic)]
-pub struct ComicRow {
+pub struct ComicInfoRow {
     //
     pub f_id: String,
     pub f_workset_id: String,
@@ -44,22 +44,24 @@ pub struct ComicRow {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl TryFrom<ComicRow> for ComicInfo {
+impl TryFrom<ComicInfoRow> for ComicInfo {
     type Error = BaseError;
 
-    fn try_from(v: ComicRow) -> BaseRest<Self> {
+    fn try_from(v: ComicInfoRow) -> BaseRest<Self> {
         //
         let (cover_hash_bytes, cover_ext) = (
             v.f_cover_hash.try_into().map_err(|_| {
                 BaseError::Unrecoverable {
-                    message: "[ComicRow] f_cover_hash must contain 32 bytes"
-                        .into(),
+                    message:
+                        "[ComicInfoRow] f_cover_hash must contain 32 bytes"
+                            .into(),
                 }
             })?,
             ImageExt::parse(&v.f_cover_extension).ok_or_else(|| {
                 BaseError::Unrecoverable {
-                    message: "[ComicRow] f_cover_extension must be supported"
-                        .into(),
+                    message:
+                        "[ComicInfoRow] f_cover_extension must be supported"
+                            .into(),
                 }
             })?,
         );
@@ -93,7 +95,7 @@ impl TryFrom<ComicRow> for ComicInfo {
 /// Insertable struct for creating a new record in the `t_comic` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_comic)]
-pub struct ComicRowEntry<'a> {
+pub struct ComicEntryRow<'a> {
     //
     pub f_id: &'a str,
     pub f_workset_id: &'a str,
@@ -112,7 +114,7 @@ pub struct ComicRowEntry<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> From<&'a ComicEntry> for ComicRowEntry<'a> {
+impl<'a> From<&'a ComicEntry> for ComicEntryRow<'a> {
     fn from(comic_entry: &'a ComicEntry) -> Self {
         Self {
             f_id: &comic_entry.id,
@@ -139,7 +141,7 @@ impl<'a> From<&'a ComicEntry> for ComicRowEntry<'a> {
 /// Aspect struct for updating specific fields of a comic record identified by id.
 #[derive(AsChangeset)]
 #[diesel(table_name = t_comic)]
-pub struct ComicAspect<'a> {
+pub struct ComicAspectRow<'a> {
     //
     pub f_title: Option<&'a str>,
     pub f_author: Option<&'a str>,
@@ -160,7 +162,7 @@ pub struct ComicAspect<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> ComicAspect<'a> {
+impl<'a> ComicAspectRow<'a> {
     pub fn new(updated_at: OffsetDateTime) -> Self {
         Self {
             f_title: None,

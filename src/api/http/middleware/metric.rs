@@ -19,7 +19,7 @@ pub async fn record_response_metric(request: Request, next: Next) -> Response {
 
     let method = request.method().to_string();
 
-    let matched_path: Option<MatchedPath> = request.extensions().get().cloned();
+    let matched_path = request.extensions().get::<MatchedPath>().cloned();
 
     let response = next.run(request).await;
 

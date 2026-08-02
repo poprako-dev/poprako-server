@@ -12,7 +12,7 @@ use crate::part::repo::oper::announcement::{
     CreateAnnouncement, ListAnnouncementInfos,
 };
 use crate::part_impl::repo::rdb_impl::entity::announcement::{
-    AnnouncementRow, AnnouncementRowEntry,
+    AnnouncementEntryRow, AnnouncementInfoRow,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_announcement::dsl::*;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, incl};
@@ -31,13 +31,13 @@ async fn list_infos(
     spec: &AnnouncementListSpec,
 ) -> BaseRest<Vec<AnnouncementInfo>> {
     //
-    let rows: Vec<AnnouncementRow> = t_announcement
+    let rows = t_announcement
         .filter(f_team_id.eq(spec.team_id.as_str()))
-        .select(AnnouncementRow::as_select())
+        .select(AnnouncementInfoRow::as_select())
         .order_by(f_created_at.desc())
         .offset(spec.offset as i64)
         .limit(spec.limit as i64)
-        .load(conn)
+        .load::<AnnouncementInfoRow>(conn)
         .await
         .map_err(diesel)?;
 
@@ -63,12 +63,12 @@ async fn create(
     entry: &AnnouncementEntry,
 ) -> BaseRest<AnnouncementInfo> {
     //
-    let entry = AnnouncementRowEntry::from(entry);
+    let entry = AnnouncementEntryRow::from(entry);
 
-    let row: AnnouncementRow = diesel::insert_into(t_announcement)
+    let row = diesel::insert_into(t_announcement)
         .values(&entry)
-        .returning(AnnouncementRow::as_returning())
-        .get_result(conn)
+        .returning(AnnouncementInfoRow::as_returning())
+        .get_result::<AnnouncementInfoRow>(conn)
         .await
         .map_err(diesel)?;
 

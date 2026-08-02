@@ -19,7 +19,7 @@ use crate::part::repo::oper::team::{
 };
 use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::team::{
-    TeamAspect, TeamRow, TeamRowEntry,
+    TeamAspectRow, TeamEntryRow, TeamInfoRow,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_member;
 use crate::part_impl::repo::rdb_impl::schema::t_team::dsl::*;
@@ -32,6 +32,7 @@ use crate::value::image::{ImageExt, ImageHash};
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;
 
+// RDB team-ownership projections.
 mod resolve;
 
 // ── Free functions ──────────────────────────────────────────────────────────
@@ -54,7 +55,7 @@ async fn create(conn: &mut RdbConn, entry: &TeamEntry) -> BaseRest<TeamInfo> {
     //
     let now = OffsetDateTime::now_utc();
 
-    let entry = TeamRowEntry {
+    let entry = TeamEntryRow {
         f_id: &entry.id,
         f_name: &entry.name,
         f_description: &entry.description,
@@ -63,10 +64,10 @@ async fn create(conn: &mut RdbConn, entry: &TeamEntry) -> BaseRest<TeamInfo> {
         f_updated_at: now,
     };
 
-    let row: TeamRow = diesel::insert_into(t_team)
+    let row = diesel::insert_into(t_team)
         .values(&entry)
-        .returning(TeamRow::as_returning())
-        .get_result(conn)
+        .returning(TeamInfoRow::as_returning())
+        .get_result::<TeamInfoRow>(conn)
         .await
         .map_err(diesel)?;
 
@@ -77,10 +78,10 @@ async fn create(conn: &mut RdbConn, entry: &TeamEntry) -> BaseRest<TeamInfo> {
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn get_info_by_id(conn: &mut RdbConn, id: &str) -> BaseRest<TeamInfo> {
     //
-    let row: Option<TeamRow> = t_team
+    let row = t_team
         .filter(f_id.eq(id))
-        .select(TeamRow::as_select())
-        .get_result(conn)
+        .select(TeamInfoRow::as_select())
+        .get_result::<TeamInfoRow>(conn)
         .await
         .optional()
         .map_err(diesel)?;
@@ -134,12 +135,12 @@ async fn list_infos(
         None => query,
     };
 
-    let rows: Vec<TeamRow> = query
-        .select(TeamRow::as_select())
+    let rows = query
+        .select(TeamInfoRow::as_select())
         .order_by(f_created_at.desc())
         .offset(spec.offset as i64)
         .limit(spec.limit as i64)
-        .load(conn)
+        .load::<TeamInfoRow>(conn)
         .await
         .map_err(diesel)?;
 
@@ -152,7 +153,7 @@ async fn update_info(conn: &mut RdbConn, repl: &TeamRepl) -> BaseRest<()> {
     //
     let now = OffsetDateTime::now_utc();
 
-    let aspect = TeamAspect::new(now)
+    let aspect = TeamAspectRow::new(now)
         .name(&repl.name)
         .description(&repl.description);
 
@@ -238,13 +239,7 @@ async fn reserve_avatar(
     //
     let now = OffsetDateTime::now_utc();
 
-    let (prev_key, uploaded, raw_version, stored_hash, stored_ext): (
-        Option<String>,
-        bool,
-        i64,
-        Vec<u8>,
-        String,
-    ) = t_team
+    let (prev_key, uploaded, raw_version, stored_hash, stored_ext) = t_team
         .filter(f_id.eq(id))
         .select((
             f_avatar_key,
@@ -254,7 +249,7 @@ async fn reserve_avatar(
             f_avatar_extension,
         ))
         .for_update()
-        .get_result(conn)
+        .get_result::<(Option<String>, bool, i64, Vec<u8>, String)>(conn)
         .await
         .map_err(diesel)?;
 
@@ -331,11 +326,11 @@ async fn reserve_avatar(
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn get_info_excluded(conn: &mut RdbConn, id: &str) -> BaseRest<TeamInfo> {
     //
-    let row: Option<TeamRow> = t_team
+    let row = t_team
         .filter(f_id.eq(id))
-        .select(TeamRow::as_select())
+        .select(TeamInfoRow::as_select())
         .for_update()
-        .get_result(conn)
+        .get_result::<TeamInfoRow>(conn)
         .await
         .optional()
         .map_err(diesel)?;
@@ -370,11 +365,11 @@ async fn get_info_excluded(conn: &mut RdbConn, id: &str) -> BaseRest<TeamInfo> {
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn lock_team(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
-    let row: Option<String> = t_team
+    let row = t_team
         .filter(f_id.eq(id))
         .select(f_id)
         .for_update()
-        .get_result(conn)
+        .get_result::<String>(conn)
         .await
         .optional()
         .map_err(diesel)?;
@@ -412,10 +407,10 @@ async fn increment_workset_next_index(
     id: &str,
 ) -> BaseRest<i32> {
     //
-    let prev: i32 = diesel::update(t_team.filter(f_id.eq(id)))
+    let prev = diesel::update(t_team.filter(f_id.eq(id)))
         .set(f_workset_next_index.eq(f_workset_next_index + 1))
         .returning(f_workset_next_index - 1)
-        .get_result(conn)
+        .get_result::<i32>(conn)
         .await
         .map_err(diesel)?;
 

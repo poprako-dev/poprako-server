@@ -13,7 +13,7 @@ use crate::value::image::{ImageExt, ImageHash};
 /// Raw database row for the `t_team` table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_team)]
-pub struct TeamRow {
+pub struct TeamInfoRow {
     //
     pub f_id: String,
     pub f_name: String,
@@ -37,7 +37,7 @@ pub struct TeamRow {
 /// Insertable struct for creating a new record in the `t_team` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_team)]
-pub struct TeamRowEntry<'a> {
+pub struct TeamEntryRow<'a> {
     //
     pub f_id: &'a str,
     pub f_name: &'a str,
@@ -54,7 +54,7 @@ pub struct TeamRowEntry<'a> {
 /// Aspect struct for updating specific fields of a team record identified by id.
 #[derive(AsChangeset)]
 #[diesel(table_name = t_team)]
-pub struct TeamAspect<'a> {
+pub struct TeamAspectRow<'a> {
     //
     pub f_name: Option<&'a str>,
     pub f_description: Option<&'a str>,
@@ -68,7 +68,7 @@ pub struct TeamAspect<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> TeamAspect<'a> {
+impl<'a> TeamAspectRow<'a> {
     pub fn new(updated_at: OffsetDateTime) -> Self {
         Self {
             f_name: None,
@@ -134,22 +134,24 @@ impl<'a> TeamAspect<'a> {
 
 // ── Conversions ────────────────────────────────────────────────────────────
 
-impl TryFrom<TeamRow> for TeamInfo {
+impl TryFrom<TeamInfoRow> for TeamInfo {
     type Error = BaseError;
 
-    fn try_from(v: TeamRow) -> BaseRest<Self> {
+    fn try_from(v: TeamInfoRow) -> BaseRest<Self> {
         //
         let (avatar_hash_bytes, avatar_ext) = (
             v.f_avatar_hash.try_into().map_err(|_| {
                 BaseError::Unrecoverable {
-                    message: "[TeamRow] f_avatar_hash must contain 32 bytes"
-                        .into(),
+                    message:
+                        "[TeamInfoRow] f_avatar_hash must contain 32 bytes"
+                            .into(),
                 }
             })?,
             ImageExt::parse(&v.f_avatar_extension).ok_or_else(|| {
                 BaseError::Unrecoverable {
-                    message: "[TeamRow] f_avatar_extension must be supported"
-                        .into(),
+                    message:
+                        "[TeamInfoRow] f_avatar_extension must be supported"
+                            .into(),
                 }
             })?,
         );

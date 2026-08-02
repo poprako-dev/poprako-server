@@ -10,7 +10,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_announcement;
 /// Raw database row for the `t_announcement` table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_announcement)]
-pub struct AnnouncementRow {
+pub struct AnnouncementInfoRow {
     //
     pub f_id: String,
 
@@ -26,7 +26,7 @@ pub struct AnnouncementRow {
 /// Insertable struct for creating a new record in the `t_announcement` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_announcement)]
-pub struct AnnouncementRowEntry<'a> {
+pub struct AnnouncementEntryRow<'a> {
     //
     pub f_id: &'a str,
 
@@ -39,7 +39,7 @@ pub struct AnnouncementRowEntry<'a> {
     pub f_created_at: OffsetDateTime,
 }
 
-impl<'a> From<&'a AnnouncementEntry> for AnnouncementRowEntry<'a> {
+impl<'a> From<&'a AnnouncementEntry> for AnnouncementEntryRow<'a> {
     fn from(entry: &'a AnnouncementEntry) -> Self {
         Self {
             f_id: &entry.id,
@@ -52,8 +52,8 @@ impl<'a> From<&'a AnnouncementEntry> for AnnouncementRowEntry<'a> {
     }
 }
 
-impl From<AnnouncementRow> for AnnouncementInfo {
-    fn from(row: AnnouncementRow) -> Self {
+impl From<AnnouncementInfoRow> for AnnouncementInfo {
+    fn from(row: AnnouncementInfoRow) -> Self {
         Self {
             id: row.f_id,
             team_id: row.f_team_id,

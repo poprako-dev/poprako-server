@@ -16,8 +16,8 @@ use crate::part::repo::oper::assignment::{
     ListAssignmentInfos, ListAssignmentInfosExcluded, UpdateAssignmentRoles,
 };
 use crate::part_impl::repo::rdb_impl::entity::assignment::{
-    AssignmentAspect, AssignmentRoleTimestamps, AssignmentRow,
-    AssignmentRowEntry,
+    AssignmentAspectRow, AssignmentEntryRow, AssignmentInfoRow,
+    AssignmentRoleTimestamps,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_assignment::dsl::*;
 use crate::part_impl::repo::rdb_impl::schema::t_chapter::{
@@ -52,12 +52,14 @@ async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
 }
 
 // Convert a row into assignment info for orchestration return values.
-fn row_into_info(row: AssignmentRow) -> BaseRest<AssignmentInfo> {
+fn row_into_info(row: AssignmentInfoRow) -> BaseRest<AssignmentInfo> {
     row.try_into()
 }
 
 // Convert a row list into assignment infos for list operations.
-fn rows_into_infos(rows: Vec<AssignmentRow>) -> BaseRest<Vec<AssignmentInfo>> {
+fn rows_into_infos(
+    rows: Vec<AssignmentInfoRow>,
+) -> BaseRest<Vec<AssignmentInfo>> {
     rows.into_iter().map(row_into_info).collect()
 }
 
@@ -69,11 +71,11 @@ async fn get_info_by_chapter_id_and_user_id(
     user_id: &str,
 ) -> BaseRest<Option<AssignmentInfo>> {
     //
-    let row: Option<AssignmentRow> = t_assignment
+    let row = t_assignment
         .filter(f_chapter_id.eq(chapter_id))
         .filter(f_user_id.eq(user_id))
-        .select(AssignmentRow::as_select())
-        .get_result(conn)
+        .select(AssignmentInfoRow::as_select())
+        .get_result::<AssignmentInfoRow>(conn)
         .await
         .optional()
         .map_err(diesel)?;
@@ -90,13 +92,13 @@ async fn find_info_by_user_id_and_comic_id(
     incls: &[AssignmentInclOpt],
 ) -> BaseRest<Option<AssignmentInfo>> {
     //
-    let row: Option<AssignmentRow> = t_assignment
+    let row = t_assignment
         .inner_join(chapter_table)
         .filter(f_user_id.eq(user_id))
         .filter(chapter_comic_id.eq(comic_id))
-        .select(AssignmentRow::as_select())
+        .select(AssignmentInfoRow::as_select())
         .order_by((f_created_at.desc(), f_id.asc()))
-        .get_result(conn)
+        .get_result::<AssignmentInfoRow>(conn)
         .await
         .optional()
         .map_err(diesel)?;
@@ -125,10 +127,10 @@ async fn get_info_by_id(
     incl_opt: &[AssignmentInclOpt],
 ) -> BaseRest<AssignmentInfo> {
     //
-    let row: Option<AssignmentRow> = t_assignment
+    let row = t_assignment
         .filter(f_id.eq(id))
-        .select(AssignmentRow::as_select())
-        .get_result(conn)
+        .select(AssignmentInfoRow::as_select())
+        .get_result::<AssignmentInfoRow>(conn)
         .await
         .optional()
         .map_err(diesel)?;
@@ -175,12 +177,12 @@ async fn list_chapter_assignments_excluded(
     chapter_id: &str,
 ) -> BaseRest<Vec<AssignmentInfo>> {
     //
-    let rows: Vec<AssignmentRow> = t_assignment
+    let rows = t_assignment
         .filter(f_chapter_id.eq(chapter_id))
-        .select(AssignmentRow::as_select())
+        .select(AssignmentInfoRow::as_select())
         .order_by((f_created_at.desc(), f_id.asc()))
         .for_update()
-        .load(conn)
+        .load::<AssignmentInfoRow>(conn)
         .await
         .map_err(diesel)?;
 
@@ -196,12 +198,12 @@ async fn create(
     //
     let now = OffsetDateTime::now_utc();
 
-    let entry = AssignmentRowEntry::from_model_entry(model_entry, now);
+    let entry = AssignmentEntryRow::from_model_entry(model_entry, now);
 
-    let row: AssignmentRow = diesel::insert_into(t_assignment)
+    let row = diesel::insert_into(t_assignment)
         .values(&entry)
-        .returning(AssignmentRow::as_returning())
-        .get_result(conn)
+        .returning(AssignmentInfoRow::as_returning())
+        .get_result::<AssignmentInfoRow>(conn)
         .await
         .map_err(diesel)?;
 
@@ -219,16 +221,15 @@ async fn put_roles(
 
     let timestamps = AssignmentRoleTimestamps::from_mask(update.roles, now);
 
-    let aspect = AssignmentAspect::new(now).roles(timestamps);
+    let aspect = AssignmentAspectRow::new(now).roles(timestamps);
 
-    let row: Option<AssignmentRow> =
-        diesel::update(t_assignment.filter(f_id.eq(update.id.as_str())))
-            .set(&aspect)
-            .returning(AssignmentRow::as_returning())
-            .get_result(conn)
-            .await
-            .optional()
-            .map_err(diesel)?;
+    let row = diesel::update(t_assignment.filter(f_id.eq(update.id.as_str())))
+        .set(&aspect)
+        .returning(AssignmentInfoRow::as_returning())
+        .get_result::<AssignmentInfoRow>(conn)
+        .await
+        .optional()
+        .map_err(diesel)?;
 
     let row = match row {
         //
