@@ -1,4 +1,4 @@
-// it_09 — Cross-team isolation: second team + outsider, perm boundary.
+// it_09 — Cross-team isolation, outsider permissions, and online-user leases.
 //
 // Preconditions:
 //   - it_00 + it_01 have run. it_02 has run (default team has worksets/comics
@@ -9,7 +9,7 @@
 //   - `ctx.users.set("outsider_01", outsiderClient)`.
 //   - outsider_01 is a member of the SECOND team only (RAW_PROVIDER).
 //
-// Covers test-plan: I1.
+// Covers test-plan: I1 and team-scoped online-user presence.
 //
 // Grounded pins:
 //   - team create: sadmin only. sadmin auto-becomes ADMIN of the new team.
@@ -25,8 +25,10 @@
 
 import assert from "node:assert/strict";
 
-import { expectError } from "../http/assertions.js";
-import type { ErrorBody } from "../http/apiClient.js";
+import { testEnv } from "../config/env.js";
+import { expectError, expectNoContent, expectSuccessList } from "../http/assertions.js";
+import type { ErrorBody, SuccessBody } from "../http/apiClient.js";
+import { ApiClient } from "../http/apiClient.js";
 import {
     createMemberInvitation,
     createTeam,
@@ -210,7 +212,106 @@ export async function runIt09Module(ctx: RunCtx): Promise<void> {
         4,
     );
 
-    // ---------- I1.10 sadmin can list all teams ----------
+    // ---------- I1.10 online-user leases stay team-scoped ----------
+
+    expectNoContent(
+        await trans01.api.put<null>(`/api/v1/teams/${defaultTeamId}/mark-self-online`),
+    );
+
+    // Repeated marks renew the same lease and remain idempotent.
+    expectNoContent(
+        await trans01.api.put<null>(`/api/v1/teams/${defaultTeamId}/mark-self-online`),
+    );
+
+    expectNoContent(
+        await ctx.sadmin.put<null>(`/api/v1/teams/${defaultTeamId}/mark-self-online`),
+    );
+
+    expectNoContent(
+        await outsiderApi.put<null>(`/api/v1/teams/${secondTeam.id}/mark-self-online`),
+    );
+
+    expectNoContent(
+        await ctx.sadmin.put<null>(`/api/v1/teams/${secondTeam.id}/mark-self-online`),
+    );
+
+    const defaultOnlineUserIds = expectSuccessList<string>(
+        await ctx.sadmin.get<SuccessBody<string[]>>(
+            `/api/v1/teams/${defaultTeamId}/online-users`,
+        ),
+        200,
+    );
+
+    assert.deepEqual(
+        defaultOnlineUserIds,
+        [ctx.ids.defaultUserId, trans01.userId].sort(),
+        "default team online users must be sorted and team-scoped",
+    );
+
+    const secondOnlineUserIds = expectSuccessList<string>(
+        await outsiderApi.get<SuccessBody<string[]>>(
+            `/api/v1/teams/${secondTeam.id}/online-users`,
+        ),
+        200,
+    );
+
+    assert.deepEqual(
+        secondOnlineUserIds,
+        [ctx.ids.defaultUserId, outsiderUserId].sort(),
+        "second team online users must not include default-team-only users",
+    );
+
+    expectError(
+        await outsiderApi.put<ErrorBody>(
+            `/api/v1/teams/${defaultTeamId}/mark-self-online`,
+        ),
+        403,
+        4,
+    );
+
+    expectError(
+        await outsiderApi.get<ErrorBody>(
+            `/api/v1/teams/${defaultTeamId}/online-users`,
+        ),
+        403,
+        4,
+    );
+
+    expectError(
+        await trans01.api.put<ErrorBody>(
+            `/api/v1/teams/${secondTeam.id}/mark-self-online`,
+        ),
+        403,
+        4,
+    );
+
+    expectError(
+        await trans01.api.get<ErrorBody>(
+            `/api/v1/teams/${secondTeam.id}/online-users`,
+        ),
+        403,
+        4,
+    );
+
+    const anon = new ApiClient(testEnv.apiBaseUrl);
+
+    expectError(
+        await anon.put<ErrorBody>(
+            `/api/v1/teams/${defaultTeamId}/mark-self-online`,
+        ),
+        401,
+        3,
+    );
+
+    expectError(
+        await anon.get<ErrorBody>(
+            `/api/v1/teams/${defaultTeamId}/online-users`,
+        ),
+        401,
+        3,
+    );
+
+    // ---------- I1.11 sadmin can list all teams ----------
 
     const allTeams = await listTeams(ctx.sadmin);
 

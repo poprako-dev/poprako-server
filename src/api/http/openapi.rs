@@ -120,6 +120,8 @@ use crate::value::role::RoleField;
         handler::team::update_info,
         handler::team::reserve_avatar,
         handler::team::mark_avatar_uploaded,
+        handler::team::list_online_user_ids,
+        handler::team::mark_self_online,
         handler::team::delete,
         handler::workset::create,
         handler::workset::list_infos,
