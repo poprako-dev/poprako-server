@@ -223,7 +223,8 @@ pnpm typecheck
   - Store all server-specific values as `production` environment secrets:
     `DEPLOY_HOST`, `DEPLOY_PORT`, `DEPLOY_USER`, `DEPLOY_SSH_PRIVATE_KEY`,
     `DEPLOY_KNOWN_HOSTS`, `DEPLOY_ROOT`, `DEPLOY_PUBLIC_PORT`,
-    `DEPLOY_BIND_HOST`, and `DEPLOY_DOCKER_NETWORK`.
+    `DEPLOY_BIND_HOST`, `DEPLOY_DOCKER_NETWORK`, and
+    `DEPLOY_POSTGRES_CONTAINER`.
   - Store the complete runtime dotenv as the `DEPLOY_RUNTIME_ENV` environment
     secret; never commit or source it from a maintainer machine.
   - Do not commit production IP addresses, SSH usernames, filesystem paths,
@@ -234,18 +235,22 @@ pnpm typecheck
     the pre-existing Docker network.
   - The remote PostgreSQL 18 container is managed independently and must
     already be healthy; application CD never creates, replaces, or restarts it.
-  - Upload only the immutable image archive, release script, and
-    GitHub-secret-derived runtime environment.
-- [x] Implement and test the single idempotent application database batch.
+  - Upload only the immutable image archive, deployment scripts, migrations,
+    and GitHub-secret-derived runtime environment.
+- [x] Apply migrations as one CD-owned transaction.
   - Run it only against the independently managed, already-running PostgreSQL
     18 service; it must not manage the PostgreSQL container lifecycle.
   - Limit repeatable schema/bootstrap operations to `CREATE IF NOT EXISTS` and
     `INSERT ... ON CONFLICT` semantics.
-  - `RdbCore::prepare` executes the ordered SQL batch in one transaction before
-    `poprako_server::serve`; preparation failure returns to `main` and prevents
-    the HTTP server from starting.
+  - `scripts/ga-apply-migrations.sh` concatenates every ordered `up.sql` between
+    one `BEGIN` and `COMMIT`, then executes it with `psql` and
+    `ON_ERROR_STOP=1` inside the existing PostgreSQL container.
+  - Run the migration batch before replacing the application container. A
+    migration failure stops deployment while the previous application
+    container remains running.
+  - The server binary never embeds, applies, or triggers migrations.
   - The three bootstrap inserts use primary-key `ON CONFLICT DO NOTHING` so
-    repeated startup preserves existing rows.
+    repeated deployment preserves existing rows.
 - [ ] Remove fixed bootstrap administrator credentials from production
   migrations, or replace them with a one-time secret provisioning process.
 - [x] Remove the dependency on legacy production credentials at

@@ -116,6 +116,7 @@ jobs:
       DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
       DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
       DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+      DEPLOY_POSTGRES_CONTAINER: ${{ secrets.DEPLOY_POSTGRES_CONTAINER }}
       DEPLOY_PUBLIC_PORT: ${{ secrets.DEPLOY_PUBLIC_PORT }}
       DEPLOY_ROOT: ${{ secrets.DEPLOY_ROOT }}
       DEPLOY_RUNTIME_ENV: ${{ secrets.DEPLOY_RUNTIME_ENV }}

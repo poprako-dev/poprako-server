@@ -48,10 +48,6 @@ async fn main() -> anyhow::Result<()> {
 
     let core = RdbCore::from_env()?;
 
-    core.prepare()
-        .await
-        .context("failed to prepare application database")?;
-
     let (nucl, repo) = (RdbNucl::new(core.clone()), RdbRepo::new(core.clone()));
 
     let (auth, image_pool) = (JwtAuth::from_env()?, R2ImagePool::from_env()?);
