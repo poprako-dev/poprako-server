@@ -9,7 +9,7 @@ development.
 
 ## Requirements
 
-- Rust with Rust 2024 edition support (developed with Rust 1.94)
+- Rust 1.95 with Rust 2024 edition support
 - PostgreSQL and `diesel_cli`
 - Cloudflare R2 credentials
 

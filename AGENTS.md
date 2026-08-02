@@ -11,7 +11,9 @@ MUST invoke checked-in POSIX `sh` scripts directly and MUST NOT require `just`.
 management. The executable is active: `src/main.rs` wires the production
 harness and starts the Axum HTTP server.
 
-`cargo fmt` & `cargo check --all-features` is NECESSARY every time you make edit. But not to run fmt/ unless user ask you to do so.
+After editing Rust, run `cargo fmt --all --check` and
+`cargo check --all-features`. Run the custom `fmt/` checker suite only when the
+user asks for it or when validating the CI entry point.
 
 ## Active Architecture
 
