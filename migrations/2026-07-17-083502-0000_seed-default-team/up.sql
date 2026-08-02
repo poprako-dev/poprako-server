@@ -6,4 +6,5 @@ INSERT INTO "t_team" (
     'team-11111111111',
     'PRTS',
     'Default team'
-);
+)
+ON CONFLICT ("f_id") DO NOTHING;

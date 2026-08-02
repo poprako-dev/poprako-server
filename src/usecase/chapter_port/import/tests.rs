@@ -257,8 +257,7 @@ async fn import_label_plus_material_updates_units_and_counters() {
     let last_unit = snapshot
         .units
         .iter()
-        .filter(|unit_info| unit_info.page_id == "page-9")
-        .last()
+        .rfind(|unit_info| unit_info.page_id == "page-9")
         .unwrap();
 
     let chapter_info = snapshot

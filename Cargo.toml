@@ -1,20 +1,41 @@
 [workspace]
 members = [".", "poprako-util", "poprako-swagger"]
+default-members = ["."]
 resolver = "3"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.95"
+license = "MIT"
+repository = "https://github.com/poprako-dev/poprako-server"
+publish = false
+
+[workspace.dependencies]
+anyhow = "1.0.102"
+fluent-templates = "0.14.0"
+serde_json = "1.0.149"
+time = "0.3.47"
+unic-langid = "0.9.6"
+utoipa = "5.5.0"
+
+[workspace.lints.clippy]
+mod_module_files = "deny"
 
 [package]
 name = "poprako-server"
-version = "0.1.0"
-edition = "2024"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
 description = "Event-driven backend service for manga translation project management"
-license = "MIT"
-repository = "https://github.com/poprako-dev/poprako-server"
+license.workspace = true
+repository.workspace = true
 keywords = ["manga", "translation", "backend", "axum", "diesel"]
 categories = ["web-programming", "asynchronous"]
-publish = false
+publish.workspace = true
 
-[lints.clippy]
-mod_module_files = "deny"
+[lints]
+workspace = true
 
 [features]
 benchmark = []
@@ -24,10 +45,9 @@ repo_impl = []
 swagger = ["utoipa-swagger-ui", "utoipa"]
 
 [dependencies]
-anyhow = "1.0.102"
-aws-config = { version = "1" }
+anyhow.workspace = true
 aws-credential-types = { version = "1" }
-aws-sdk-s3 = { version = "1" }
+aws-sdk-s3 = { version = "1", default-features = false, features = ["default-https-client", "http-1x", "rt-tokio"] }
 axum = "0.8.9"
 axum-extra = { version = "0.12.6", features = ["query"] }
 tower = "0.5"
@@ -37,11 +57,10 @@ cookie = "0.18"
 crossfire = { version = "3.1.16", features = ["tokio"] }
 diesel = { version = "2.3.7", features = ["postgres", "serde_json", "time"] }
 diesel-async = { version = "0.9.0", features = ["deadpool", "postgres"] }
-diesel_migrations = "2.3.0"
 dotenvy = "0.15.7"
-fluent-templates = "0.14.0"
+fluent-templates.workspace = true
 futures-util = "0.3.32"
-jsonwebtoken = { version = "10.4.0", features = ["rust_crypto"] }
+jsonwebtoken = { version = "10.4.0", default-features = false, features = ["aws_lc_rs"] }
 metrics = "0.24.6"
 metrics-exporter-prometheus = "0.18.3"
 base62 = "2.2.4"
@@ -49,15 +68,15 @@ base64 = "0.22"
 k-snowflake = "2.1.1"
 poprako-util = { path = "poprako-util" }
 serde = { version = "1.0.228", features = ["derive"] }
-serde_json = "1.0.149"
-time = { version = "0.3.47", features = ["serde"] }
+serde_json.workspace = true
+time = { workspace = true, features = ["serde"] }
 tokio = { version = "1.52.1", features = ["full", "macros"] }
 tokio-util = { version = "0.7.18", features = ["rt"] }
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter", "time"] }
-unic-langid = "0.9.6"
+unic-langid.workspace = true
 url = "2.5.8"
-utoipa = { version = "5.5.0", features = ["axum_extras"], optional = true }
+utoipa = { workspace = true, features = ["axum_extras"], optional = true }
 utoipa-swagger-ui = { version = "9", features = ["axum"], optional = true }
 governor = "0.6"
 futures = "0.3.32"
@@ -66,6 +85,7 @@ poprako-orchestra-extra = { version = "0.2.0", features = ["promise"] }
 
 [dev-dependencies]
 criterion = { version = "0.7", features = ["async_tokio"] }
+diesel_migrations = "2.3.0"
 serial_test = "3.5.0"
 testcontainers-modules = { version = "0.15.0", features = ["postgres"] }
 

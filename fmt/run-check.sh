@@ -1,5 +1,5 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/usr/bin/env sh
+set -eu
 
 export UV_CACHE_DIR="${UV_CACHE_DIR:-$PWD/.uv-cache}"
 
@@ -49,5 +49,5 @@ for f in fmt/*/check.py; do
     echo
 done
 
-$FAILED && exit 1
+[ "$FAILED" = false ] || exit 1
 echo "all checkers passed"
