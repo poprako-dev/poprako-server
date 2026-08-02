@@ -12,7 +12,7 @@ use crate::value::role::{RoleField, RoleMask};
 /// Raw database row for the `t_member` table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_member)]
-pub struct MemberRow {
+pub struct MemberInfoRow {
     //
     pub f_id: String,
     pub f_user_id: String,
@@ -40,7 +40,7 @@ pub struct MemberRow {
 /// Insertable struct for creating a new record in the `t_member` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_member)]
-pub struct MemberRowEntry<'a> {
+pub struct MemberEntryRow<'a> {
     //
     pub f_id: &'a str,
     pub f_user_id: &'a str,
@@ -68,7 +68,7 @@ pub struct MemberRowEntry<'a> {
 /// Aspect struct for updating specific fields of a member record identified by id.
 #[derive(AsChangeset)]
 #[diesel(table_name = t_member)]
-pub struct MemberAspect<'a> {
+pub struct MemberAspectRow<'a> {
     //
     pub f_user_nickname: Option<&'a str>,
 
@@ -87,7 +87,7 @@ pub struct MemberAspect<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> MemberAspect<'a> {
+impl<'a> MemberAspectRow<'a> {
     pub fn new(updated_at: OffsetDateTime) -> Self {
         Self {
             f_user_nickname: None,
@@ -200,10 +200,10 @@ impl<'a> MemberAspect<'a> {
 
 // ── Conversions ────────────────────────────────────────────────────────────
 
-impl From<MemberRow> for MemberInfo {
-    fn from(v: MemberRow) -> Self {
+impl From<MemberInfoRow> for MemberInfo {
+    fn from(v: MemberInfoRow) -> Self {
         //
-        let mut bits: u32 = 0;
+        let mut bits = 0;
 
         if v.f_assigned_raw_provider_at.is_some() {
             bits |= u32::from(RoleField::RAW_PROVIDER);

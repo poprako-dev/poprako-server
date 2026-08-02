@@ -10,7 +10,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_termbase;
 /// Raw database row for a terminology base.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_termbase)]
-pub struct TermbaseRow {
+pub struct TermbaseInfoRow {
     //
     pub f_id: String,
 
@@ -28,8 +28,8 @@ pub struct TermbaseRow {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl From<TermbaseRow> for TermbaseInfo {
-    fn from(row: TermbaseRow) -> Self {
+impl From<TermbaseInfoRow> for TermbaseInfo {
+    fn from(row: TermbaseInfoRow) -> Self {
         Self {
             id: row.f_id,
             team_id: row.f_team_id,
@@ -47,7 +47,7 @@ impl From<TermbaseRow> for TermbaseInfo {
 /// Insertable terminology-base row.
 #[derive(Insertable)]
 #[diesel(table_name = t_termbase)]
-pub struct TermbaseRowEntry<'a> {
+pub struct TermbaseEntryRow<'a> {
     //
     pub f_id: &'a str,
 
@@ -63,7 +63,7 @@ pub struct TermbaseRowEntry<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> From<&'a TermbaseEntry> for TermbaseRowEntry<'a> {
+impl<'a> From<&'a TermbaseEntry> for TermbaseEntryRow<'a> {
     fn from(termbase_entry: &'a TermbaseEntry) -> Self {
         //
         let now = OffsetDateTime::now_utc();

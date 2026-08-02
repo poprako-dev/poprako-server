@@ -20,7 +20,7 @@ use crate::part::image::ImageManager;
 use crate::part::prom::Prom;
 use crate::part::prom::payload::TaskPayload;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
-use crate::part_impl::prom::rdb_impl::entity::LocalMessageEntry;
+use crate::part_impl::prom::rdb_impl::entity::LocalMessageEntryRow;
 use crate::part_impl::prom::rdb_impl::repo::RdbPromRepo;
 use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::schema::t_local_message;
@@ -141,7 +141,7 @@ impl<'a> Step<Defer<'a, String, TaskPayload, ()>, RdbContext> for RdbProm {
         // Internal implementation detail.
         let now = OffsetDateTime::now_utc();
 
-        let entry = LocalMessageEntry::from_task(&oper.task, now)?;
+        let entry = LocalMessageEntryRow::from_task(&oper.task, now)?;
 
         diesel::insert_into(t_local_message::table)
             .values(&entry)
@@ -177,7 +177,7 @@ impl<'t, 'a> Step<DeferBatch<'t, 'a, String, TaskPayload, ()>, RdbContext>
         let entries = oper
             .tasks
             .iter()
-            .map(|task| LocalMessageEntry::from_task(task, now))
+            .map(|task| LocalMessageEntryRow::from_task(task, now))
             .collect::<BaseRest<Vec<_>>>()?;
 
         diesel::insert_into(t_local_message::table)

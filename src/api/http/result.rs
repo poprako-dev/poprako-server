@@ -16,11 +16,10 @@ use cookie::Cookie;
 use serde::Serialize;
 
 use poprako_util::i18n::trl;
-use poprako_util::rename::StdResult;
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
-use crate::result::{Error as RegularError, ExpectedVariant};
+use crate::result::{BaseError, ExpectedVariant};
 
 #[cfg(test)]
 // HTTP result test fixtures are compiled only for tests.
@@ -97,12 +96,12 @@ impl std::fmt::Display for HttpError {
     }
 }
 
-impl From<RegularError> for HttpError {
+impl From<BaseError> for HttpError {
     // Maps the shared result error to HTTP boundary error payload.
-    fn from(source: RegularError) -> Self {
+    fn from(source: BaseError) -> Self {
         match source {
             //
-            RegularError::Expected { variant, message } => {
+            BaseError::Expected { variant, message } => {
                 //
                 tracing::debug!(
                     "[HttpError::from] expected error: {}",
@@ -112,7 +111,7 @@ impl From<RegularError> for HttpError {
                 Self::expected(variant, &message)
             }
 
-            RegularError::Unrecoverable { message } => {
+            BaseError::Unrecoverable { message } => {
                 //
                 tracing::warn!(
                     "[HttpError::from] unrecoverable error concealed: {}",
@@ -248,10 +247,10 @@ impl IntoResponse for NoContent {
 }
 
 /// Result of a valued success response.
-pub type HttpResult<T> = StdResult<HttpBody<T>, HttpError>;
+pub type HttpResult<T> = std::result::Result<HttpBody<T>, HttpError>;
 
 /// Result of an empty success response (`204 No Content`).
-pub type HttpNoContent = StdResult<NoContent, HttpError>;
+pub type HttpNoContent = std::result::Result<NoContent, HttpError>;
 
 /// Converts a usecase value into a valued [`HttpResult`] with the given status.
 pub fn accept<T>(data: T, status_code: StatusCode) -> HttpResult<T>
@@ -284,6 +283,6 @@ where
 }
 
 /// Returns a `204 No Content` result with an empty body.
-pub fn no_content() -> StdResult<NoContent, HttpError> {
+pub fn no_content() -> std::result::Result<NoContent, HttpError> {
     Ok(NoContent::new())
 }

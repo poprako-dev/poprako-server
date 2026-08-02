@@ -38,7 +38,7 @@ where
     R: AnnouncementRepo<C> + MemberRepo<C> + Sync,
     I: ImagePool,
 {
-    let announcement_list_spec: AnnouncementListSpec = instr.into();
+    let announcement_list_spec = Into::<AnnouncementListSpec>::into(instr);
 
     AnnouncementPermComplex::ensure_user_can_list_infos(
         &mut run_proxy! {

@@ -12,7 +12,7 @@ use crate::part::repo::oper::chapter::{
     CompleteChapterRawProvide, GetChapterInfoExcluded,
 };
 use crate::part_impl::prom::rdb_impl::handler::task_flow::TaskFlow;
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, accept};
 use crate::shared::RdbContext;
 use crate::value::chapter::Stage;
 
@@ -48,7 +48,7 @@ where
     R: ChapterRepo<RdbContext> + Send + Sync,
     D: Develop + Sync,
 {
-    let outcome: BaseRest<bool> = nucl
+    let outcome = nucl
         .coord(async move |context| {
             //
             // Internal implementation detail.

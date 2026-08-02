@@ -14,7 +14,7 @@ use crate::value::role::RoleMask;
 /// Raw database row for the `t_member_invitation` table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_member_invitation)]
-pub struct MemberInvitationRow {
+pub struct MemberInvitationInfoRow {
     //
     pub f_id: String,
     pub f_inviter_id: String,
@@ -30,10 +30,10 @@ pub struct MemberInvitationRow {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl TryFrom<MemberInvitationRow> for MemberInvitationInfo {
+impl TryFrom<MemberInvitationInfoRow> for MemberInvitationInfo {
     type Error = BaseError;
 
-    fn try_from(v: MemberInvitationRow) -> Result<Self, Self::Error> {
+    fn try_from(v: MemberInvitationInfoRow) -> Result<Self, Self::Error> {
         //
         let roles = RoleMask::try_from(v.f_role_mask as u32)?;
 
@@ -55,7 +55,7 @@ impl TryFrom<MemberInvitationRow> for MemberInvitationInfo {
 /// Insertable struct for creating a new record in the `t_member_invitation` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_member_invitation)]
-pub struct MemberInvitationRowEntry<'a> {
+pub struct MemberInvitationEntryRow<'a> {
     //
     pub f_id: &'a str,
     pub f_inviter_id: &'a str,
@@ -71,7 +71,7 @@ pub struct MemberInvitationRowEntry<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> From<&'a MemberInvitationEntry> for MemberInvitationRowEntry<'a> {
+impl<'a> From<&'a MemberInvitationEntry> for MemberInvitationEntryRow<'a> {
     fn from(entry: &'a MemberInvitationEntry) -> Self {
         Self {
             f_id: &entry.id,
@@ -93,7 +93,7 @@ impl<'a> From<&'a MemberInvitationEntry> for MemberInvitationRowEntry<'a> {
 /// identified by id.
 #[derive(AsChangeset)]
 #[diesel(table_name = t_member_invitation)]
-pub struct MemberInvitationAspect {
+pub struct MemberInvitationAspectRow {
     //
     pub f_pending: Option<bool>,
     pub f_role_mask: Option<i64>,
@@ -101,7 +101,7 @@ pub struct MemberInvitationAspect {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl MemberInvitationAspect {
+impl MemberInvitationAspectRow {
     pub fn new(updated_at: OffsetDateTime) -> Self {
         Self {
             f_pending: None,

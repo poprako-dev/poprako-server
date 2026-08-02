@@ -293,24 +293,6 @@ fn required_roles_for_transition(
     }
 }
 
-// Resolve the owning team from a comic ID, then verify the user is a team
-// member of that team.
-async fn check_team_member_by_comic<P>(
-    proxy: &mut P,
-    user_id: &str,
-    comic_id: &str,
-) -> BaseRest<()>
-where
-    P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
-        + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
-{
-    let team_id = ResolveTeamId::Comic { id: comic_id }
-        .proxy_on(proxy)
-        .await?;
-
-    check_user_is_team_member(proxy, user_id, &team_id).await
-}
-
 // Verify that at least one person on the chapter holds the role(s) required
 // for advancing `stage`. A workflow stage cannot be advanced unless someone
 // is assigned to the corresponding role.
@@ -360,6 +342,24 @@ where
     }
 
     accept(())
+}
+
+// Resolve the owning team from a comic ID, then verify the user is a team
+// member of that team.
+async fn check_team_member_by_comic<P>(
+    proxy: &mut P,
+    user_id: &str,
+    comic_id: &str,
+) -> BaseRest<()>
+where
+    P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
+        + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
+{
+    let team_id = ResolveTeamId::Comic { id: comic_id }
+        .proxy_on(proxy)
+        .await?;
+
+    check_user_is_team_member(proxy, user_id, &team_id).await
 }
 
 // Resolve the owning team from a chapter, then verify the user is a team member.

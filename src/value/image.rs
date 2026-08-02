@@ -47,7 +47,7 @@ impl ImageHash {
 
         let decoded = STANDARD.decode(encoded).ok()?;
 
-        let bytes: [u8; 32] = decoded.try_into().ok()?;
+        let bytes = TryInto::<[u8; 32]>::try_into(decoded).ok()?;
 
         let image_hash = Self(bytes);
 

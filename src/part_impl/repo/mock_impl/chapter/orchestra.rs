@@ -84,7 +84,6 @@ fn list_pinned_chapter_infos(
     state: &MockState,
     comic_ids: &[String],
 ) -> Vec<ChapterInfo> {
-    //
     // Internal implementation detail.
     // Internal implementation detail.
     comic_ids

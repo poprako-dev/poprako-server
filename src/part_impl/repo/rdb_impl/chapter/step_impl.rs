@@ -14,7 +14,7 @@ use crate::model::write::chapter::{
     ChapterEntry, ChapterPatch, ChapterStageRepl,
 };
 use crate::part_impl::repo::rdb_impl::entity::chapter::{
-    ChapterAspect, ChapterRow, ChapterRowEntry,
+    ChapterAspectRow, ChapterEntryRow, ChapterInfoRow,
 };
 use crate::part_impl::repo::rdb_impl::incl;
 use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::*;
@@ -32,10 +32,10 @@ pub async fn get_info_by_id(
     incl_opt: &[ChapterInclOpt],
 ) -> BaseRest<ChapterInfo> {
     //
-    let row: ChapterRow = t_chapter
+    let row = t_chapter
         .filter(f_id.eq(id))
-        .select(ChapterRow::as_select())
-        .get_result(conn)
+        .select(ChapterInfoRow::as_select())
+        .get_result::<ChapterInfoRow>(conn)
         .await
         .optional()
         .map_err(diesel)?
@@ -77,11 +77,11 @@ pub async fn get_info_excluded(
     incl_opt: &[ChapterInclOpt],
 ) -> BaseRest<ChapterInfo> {
     //
-    let row: ChapterRow = t_chapter
+    let row = t_chapter
         .filter(f_id.eq(id))
-        .select(ChapterRow::as_select())
+        .select(ChapterInfoRow::as_select())
         .for_update()
-        .get_result(conn)
+        .get_result::<ChapterInfoRow>(conn)
         .await
         .optional()
         .map_err(diesel)?
@@ -122,13 +122,13 @@ pub async fn list_infos(
     spec: &ChapterListSpec,
 ) -> BaseRest<Vec<ChapterInfo>> {
     //
-    let rows: Vec<ChapterRow> = t_chapter
+    let rows = t_chapter
         .filter(f_comic_id.eq(spec.comic_id.as_str()))
-        .select(ChapterRow::as_select())
+        .select(ChapterInfoRow::as_select())
         .order_by(f_index.desc())
         .offset(spec.offset as i64)
         .limit(spec.limit as i64)
-        .load(conn)
+        .load::<ChapterInfoRow>(conn)
         .await
         .map_err(diesel)?;
 
@@ -147,12 +147,12 @@ pub async fn list_infos_excluded(
     comic_id: &str,
 ) -> BaseRest<Vec<ChapterInfo>> {
     //
-    let rows: Vec<ChapterRow> = t_chapter
+    let rows = t_chapter
         .filter(f_comic_id.eq(comic_id))
-        .select(ChapterRow::as_select())
+        .select(ChapterInfoRow::as_select())
         .order_by(f_index.desc())
         .for_update()
-        .load(conn)
+        .load::<ChapterInfoRow>(conn)
         .await
         .map_err(diesel)?;
 
@@ -163,11 +163,11 @@ pub async fn list_infos_excluded(
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn lock_chapters(conn: &mut RdbConn, comic_id: &str) -> BaseRest<()> {
     //
-    let _: Vec<String> = t_chapter
+    let _ = t_chapter
         .filter(f_comic_id.eq(comic_id))
         .select(f_id)
         .for_update()
-        .load(conn)
+        .load::<String>(conn)
         .await
         .map_err(diesel)?;
 
@@ -182,11 +182,11 @@ pub async fn find_pinned_info_by_comic_id(
     incl_opt: &[ChapterInclOpt],
 ) -> BaseRest<Option<ChapterInfo>> {
     //
-    let row: Option<ChapterRow> = t_chapter
+    let row = t_chapter
         .filter(f_comic_id.eq(comic_id))
         .filter(f_is_pinned.eq(true))
-        .select(ChapterRow::as_select())
-        .get_result(conn)
+        .select(ChapterInfoRow::as_select())
+        .get_result::<ChapterInfoRow>(conn)
         .await
         .optional()
         .map_err(diesel)?;
@@ -218,11 +218,11 @@ pub async fn list_pinned_infos_by_comic_ids(
         return accept(Vec::new());
     }
 
-    let rows: Vec<ChapterRow> = t_chapter
+    let rows = t_chapter
         .filter(f_comic_id.eq_any(comic_ids))
         .filter(f_is_pinned.eq(true))
-        .select(ChapterRow::as_select())
-        .load(conn)
+        .select(ChapterInfoRow::as_select())
+        .load::<ChapterInfoRow>(conn)
         .await
         .map_err(diesel)?;
 
@@ -236,12 +236,12 @@ pub async fn create(
     chapter_entry: &ChapterEntry,
 ) -> BaseRest<ChapterInfo> {
     //
-    let entry = ChapterRowEntry::from(chapter_entry);
+    let entry = ChapterEntryRow::from(chapter_entry);
 
-    let row: ChapterRow = diesel::insert_into(t_chapter)
+    let row = diesel::insert_into(t_chapter)
         .values(&entry)
-        .returning(ChapterRow::as_returning())
-        .get_result(conn)
+        .returning(ChapterInfoRow::as_returning())
+        .get_result::<ChapterInfoRow>(conn)
         .await
         .map_err(diesel)?;
 
@@ -257,7 +257,7 @@ pub async fn update_info(
     //
     let now = OffsetDateTime::now_utc();
 
-    let mut aspect = ChapterAspect::new(now);
+    let mut aspect = ChapterAspectRow::new(now);
 
     if let Some(subtitle) = &update.subtitle {
         aspect = aspect.subtitle(subtitle);
@@ -285,7 +285,7 @@ pub async fn update_stage(
     //
     let now = OffsetDateTime::now_utc();
 
-    let aspect = ChapterAspect::new(now).stages(update.stages, now);
+    let aspect = ChapterAspectRow::new(now).stages(update.stages, now);
 
     diesel::update(t_chapter.filter(f_id.eq(update.id.as_str())))
         .set(&aspect)
@@ -417,7 +417,7 @@ pub async fn set_page_counters(
     //
     let now = OffsetDateTime::now_utc();
 
-    let aspect = ChapterAspect::new(now)
+    let aspect = ChapterAspectRow::new(now)
         .page_count(page_count)
         .total_unit_count(total_unit_count)
         .translated_unit_count(translated_unit_count)
@@ -493,12 +493,12 @@ pub async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     accept(())
 }
 
-// Converts a single `ChapterRow` into a `ChapterInfo`.
-fn row_into_info(row: ChapterRow) -> BaseRest<ChapterInfo> {
+// Converts a single `ChapterInfoRow` into a `ChapterInfo`.
+fn row_into_info(row: ChapterInfoRow) -> BaseRest<ChapterInfo> {
     row.try_into()
 }
 
-// Converts a vector of `ChapterRow` values into `ChapterInfo`.
-fn rows_into_infos(rows: Vec<ChapterRow>) -> BaseRest<Vec<ChapterInfo>> {
+// Converts a vector of `ChapterInfoRow` values into `ChapterInfo`.
+fn rows_into_infos(rows: Vec<ChapterInfoRow>) -> BaseRest<Vec<ChapterInfo>> {
     rows.into_iter().map(row_into_info).collect()
 }

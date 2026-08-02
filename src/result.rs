@@ -1,7 +1,5 @@
 //! Application-level error and result types used throughout the domain layer.
 
-use std::result::Result as StdResult;
-
 use poprako_orchestra::nucl::Error as NuclError;
 
 /// Categorizes an expected application error by its origin domain.
@@ -22,7 +20,7 @@ pub enum ExpectedVariant {
 /// (invalid arguments, authentication failure, missing perms) or
 /// an unrecoverable system-level failure.
 #[derive(Debug)]
-pub enum Error {
+pub enum BaseError {
     //
     /// An expected application condition — the error can be communicated to the client.
     Expected {
@@ -40,24 +38,18 @@ pub enum Error {
     },
 }
 
-/// Convenience alias for [`std::result::Result`] with the application's [`Error`] type.
-pub type Result<T> = StdResult<T, Error>;
+/// Alias for [`Result`] used at module boundary layers.
+pub type BaseRest<T> = std::result::Result<T, BaseError>;
 
 /// Wraps a value in `Ok(...)` — the simplest use-case return.
-pub fn accept<T>(v: T) -> Result<T> {
+pub fn accept<T>(v: T) -> BaseRest<T> {
     Ok(v)
 }
 
-/// Alias for [`Error`] used at module boundary layers.
-pub type BaseError = Error;
-
-/// Alias for [`Result`] used at module boundary layers.
-pub type BaseRest<T> = Result<T>;
-
-impl<BE, E> From<NuclError<BE, E>> for Error
+impl<BE, E> From<NuclError<BE, E>> for BaseError
 where
-    BE: Into<Error>,
-    E: Into<Error>,
+    BE: Into<BaseError>,
+    E: Into<BaseError>,
 {
     // Converts a Nucl error into an application-level Error, unwrapping the backend or step inner error.
     fn from(value: NuclError<BE, E>) -> Self {

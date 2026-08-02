@@ -19,7 +19,7 @@ use crate::part::repo::oper::user::{
 };
 use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::user::{
-    UserAspect, UserCredentialRow, UserRow, UserRowEntry,
+    UserAspectRow, UserCredsRow, UserEntryRow, UserInfoRow,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_user::dsl::*;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
@@ -54,10 +54,10 @@ async fn get_credential_by_qid(
 ) -> BaseRest<UserCredential> {
     //
     // Query only credential columns and convert them to user credential DTO.
-    let row: Option<UserCredentialRow> = t_user
+    let row = t_user
         .filter(f_qid.eq(qid))
-        .select(UserCredentialRow::as_select())
-        .get_result(conn)
+        .select(UserCredsRow::as_select())
+        .get_result::<UserCredsRow>(conn)
         .await
         .optional()
         .map_err(diesel)?;
@@ -96,10 +96,10 @@ async fn find_info_by_qid(
 ) -> BaseRest<Option<UserInfo>> {
     //
     // Keep lookup soft-fail to allow callers to branch on existence.
-    let row: Option<UserRow> = t_user
+    let row = t_user
         .filter(f_qid.eq(qid))
-        .select(UserRow::as_select())
-        .get_result(conn)
+        .select(UserInfoRow::as_select())
+        .get_result::<UserInfoRow>(conn)
         .await
         .optional()
         .map_err(diesel)?;
@@ -114,7 +114,7 @@ async fn create(conn: &mut RdbConn, entry: &UserEntry) -> BaseRest<UserInfo> {
     // Populate required identity and timestamp columns, then fetch created row.
     let now = OffsetDateTime::now_utc();
 
-    let entry = UserRowEntry {
+    let entry = UserEntryRow {
         f_id: &entry.id,
         f_nickname: &entry.nickname,
         f_qid: &entry.qid,
@@ -124,10 +124,10 @@ async fn create(conn: &mut RdbConn, entry: &UserEntry) -> BaseRest<UserInfo> {
         f_updated_at: now,
     };
 
-    let row: UserRow = diesel::insert_into(t_user)
+    let row = diesel::insert_into(t_user)
         .values(&entry)
-        .returning(UserRow::as_returning())
-        .get_result(conn)
+        .returning(UserInfoRow::as_returning())
+        .get_result::<UserInfoRow>(conn)
         .await
         .map_err(diesel)?;
 
@@ -141,7 +141,9 @@ async fn update_info(conn: &mut RdbConn, repl: &UserInfoRepl) -> BaseRest<()> {
     // Apply one write that updates both fields and returns success when DB update succeeds.
     let now = OffsetDateTime::now_utc();
 
-    let aspect = UserAspect::new(now).nickname(&repl.nickname).qid(&repl.qid);
+    let aspect = UserAspectRow::new(now)
+        .nickname(&repl.nickname)
+        .qid(&repl.qid);
 
     diesel::update(t_user.filter(f_id.eq(&repl.id)))
         .set(&aspect)
@@ -186,13 +188,7 @@ async fn reserve_avatar(
     // Lock the target row, compare hash/ext, then either reuse or advance avatar version.
     let now = OffsetDateTime::now_utc();
 
-    let (prev_key, uploaded, raw_version, stored_hash, stored_ext): (
-        Option<String>,
-        bool,
-        i64,
-        Vec<u8>,
-        String,
-    ) = t_user
+    let (prev_key, uploaded, raw_version, stored_hash, stored_ext) = t_user
         .filter(f_id.eq(id))
         .select((
             f_avatar_key,
@@ -202,7 +198,7 @@ async fn reserve_avatar(
             f_avatar_extension,
         ))
         .for_update()
-        .get_result(conn)
+        .get_result::<(Option<String>, bool, i64, Vec<u8>, String)>(conn)
         .await
         .map_err(diesel)?;
 
@@ -345,7 +341,7 @@ async fn touch_last_active(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     // Keep access timestamp current for activity-driven features.
     let now = OffsetDateTime::now_utc();
 
-    let aspect = UserAspect::new(now).last_active_at(now);
+    let aspect = UserAspectRow::new(now).last_active_at(now);
 
     diesel::update(t_user.filter(f_id.eq(id)))
         .set(&aspect)
@@ -364,11 +360,11 @@ async fn get_info_by_id_excluded(
 ) -> BaseRest<UserInfo> {
     //
     // Use a row lock so later mutation in the same transaction is serialized.
-    let row: Option<UserRow> = t_user
+    let row = t_user
         .filter(f_id.eq(id))
-        .select(UserRow::as_select())
+        .select(UserInfoRow::as_select())
         .for_update()
-        .get_result(conn)
+        .get_result::<UserInfoRow>(conn)
         .await
         .optional()
         .map_err(diesel)?;
@@ -404,10 +400,10 @@ async fn get_info_by_id_excluded(
 async fn get_info_by_id(conn: &mut RdbConn, id: &str) -> BaseRest<UserInfo> {
     //
     // Query `t_user` by `f_id`, fail with `error-user-not-found` when absent.
-    let row: Option<UserRow> = t_user
+    let row = t_user
         .filter(f_id.eq(id))
-        .select(UserRow::as_select())
-        .get_result(conn)
+        .select(UserInfoRow::as_select())
+        .get_result::<UserInfoRow>(conn)
         .await
         .optional()
         .map_err(diesel)?;

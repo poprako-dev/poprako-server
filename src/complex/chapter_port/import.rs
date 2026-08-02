@@ -111,25 +111,27 @@ impl ChapterImportComplex {
         content: &str,
     ) -> BaseRest<Vec<PageTranslationImport>> {
         //
-        let project: ChapterPoprakoProjectImport =
-            serde_json::from_str(content).map_err(|error| {
-                //
-                let err_message = trl("error-invalid-chapter-import-content");
+        let project =
+            serde_json::from_str::<ChapterPoprakoProjectImport>(content)
+                .map_err(|error| {
+                    //
+                    let err_message =
+                        trl("error-invalid-chapter-import-content");
 
-                tracing::warn!(
-                    err_variant = ?ExpectedVariant::Args,
-                    err_message = %err_message,
-                    input_length = content.len(),
-                    parse_err = ?error,
-                    operation = "parse_poprako",
-                    "expected error: chapter import JSON is invalid",
-                );
+                    tracing::warn!(
+                        err_variant = ?ExpectedVariant::Args,
+                        err_message = %err_message,
+                        input_length = content.len(),
+                        parse_err = ?error,
+                        operation = "parse_poprako",
+                        "expected error: chapter import JSON is invalid",
+                    );
 
-                BaseError::Expected {
-                    variant: ExpectedVariant::Args,
-                    message: err_message,
-                }
-            })?;
+                    BaseError::Expected {
+                        variant: ExpectedVariant::Args,
+                        message: err_message,
+                    }
+                })?;
 
         if project.author.trim().is_empty() {
             //
@@ -334,7 +336,7 @@ fn parse_label_plus_unit_header(line: &str) -> BaseRest<Option<LabelPlusUnit>> {
         });
     }
 
-    let index: i32 = index_text.parse().map_err(|error| {
+    let index = index_text.parse::<i32>().map_err(|error| {
         //
         let err_message = trl("error-invalid-chapter-import-content");
 
@@ -353,7 +355,7 @@ fn parse_label_plus_unit_header(line: &str) -> BaseRest<Option<LabelPlusUnit>> {
         }
     })?;
 
-    let x_coord: f64 = parts[0].parse().map_err(|error| {
+    let x_coord = parts[0].parse::<f64>().map_err(|error| {
         //
         let err_message = trl("error-invalid-chapter-import-content");
 
@@ -372,7 +374,7 @@ fn parse_label_plus_unit_header(line: &str) -> BaseRest<Option<LabelPlusUnit>> {
         }
     })?;
 
-    let y_coord: f64 = parts[1].parse().map_err(|error| {
+    let y_coord = parts[1].parse::<f64>().map_err(|error| {
         //
         let err_message = trl("error-invalid-chapter-import-content");
 

@@ -14,6 +14,7 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::result::diesel;
 use crate::shared::{RdbConn, RdbContext};
 
+// Build the client-visible error for an unresolvable comic or chapter.
 fn missing_resource(oper: &ResolveTeamId<'_>) -> BaseError {
     //
     let (message, resource_kind, resource_id) = match oper {
@@ -42,6 +43,7 @@ fn missing_resource(oper: &ResolveTeamId<'_>) -> BaseError {
     }
 }
 
+// Resolve the owning team id for a comic or chapter in a single query.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn resolve_team_id(
     conn: &mut RdbConn,
@@ -77,8 +79,10 @@ async fn resolve_team_id(
 }
 
 impl Run<ResolveTeamId<'_>> for RdbRepo {
+    // BaseError for the standalone team-resolution projection.
     type Error = BaseError;
 
+    // Executes the team-resolution projection on a pooled connection.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
@@ -89,8 +93,10 @@ impl Run<ResolveTeamId<'_>> for RdbRepo {
 }
 
 impl Step<ResolveTeamId<'_>, RdbContext> for RdbRepo {
+    // BaseError for the transactional team-resolution projection.
     type Error = BaseError;
 
+    // Executes the team-resolution projection inside the active transaction.
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
