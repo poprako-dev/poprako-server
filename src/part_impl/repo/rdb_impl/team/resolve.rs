@@ -8,7 +8,7 @@ use tracing::instrument;
 use poprako_util::i18n::trl;
 
 use crate::part::repo::oper::team::ResolveTeamId;
-use crate::part_impl::repo::rdb_impl::RdbRepo;
+use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::schema::{t_chapter, t_comic, t_workset};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::result::diesel;
@@ -78,7 +78,7 @@ async fn resolve_team_id(
     accept(team_id)
 }
 
-impl Run<ResolveTeamId<'_>> for RdbRepo {
+impl Run<ResolveTeamId<'_>> for HybRepo {
     // BaseError for the standalone team-resolution projection.
     type Error = BaseError;
 
@@ -92,7 +92,7 @@ impl Run<ResolveTeamId<'_>> for RdbRepo {
     }
 }
 
-impl Step<ResolveTeamId<'_>, RdbContext> for RdbRepo {
+impl Step<ResolveTeamId<'_>, RdbContext> for HybRepo {
     // BaseError for the transactional team-resolution projection.
     type Error = BaseError;
 

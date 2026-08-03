@@ -15,7 +15,7 @@ use crate::part::repo::oper::workset::{
     GetWorksetInfoExcluded, ListWorksetInfos, ListWorksetInfosExcluded,
     UpdateWorkset, UpdateWorksetComicCount,
 };
-use crate::part_impl::repo::rdb_impl::RdbRepo;
+use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::entity::workset::{
     WorksetAspectRow, WorksetEntryRow, WorksetInfoRow,
 };
@@ -236,7 +236,7 @@ async fn update_comic_count(
     accept(())
 }
 
-impl Run<GetWorksetInfo<'_>> for RdbRepo {
+impl Run<GetWorksetInfo<'_>> for HybRepo {
     // Use BaseError to keep run-level errors consistent.
     type Error = BaseError;
 
@@ -247,7 +247,7 @@ impl Run<GetWorksetInfo<'_>> for RdbRepo {
     }
 }
 
-impl Run<ListWorksetInfos<'_>> for RdbRepo {
+impl Run<ListWorksetInfos<'_>> for HybRepo {
     // Use BaseError to keep run-level errors consistent.
     type Error = BaseError;
 
@@ -261,7 +261,7 @@ impl Run<ListWorksetInfos<'_>> for RdbRepo {
     }
 }
 
-impl Run<UpdateWorkset<'_>> for RdbRepo {
+impl Run<UpdateWorkset<'_>> for HybRepo {
     // Use BaseError to keep run-level errors consistent.
     type Error = BaseError;
 
@@ -272,7 +272,7 @@ impl Run<UpdateWorkset<'_>> for RdbRepo {
     }
 }
 
-impl Step<GetWorksetInfo<'_>, RdbContext> for RdbRepo {
+impl Step<GetWorksetInfo<'_>, RdbContext> for HybRepo {
     // Use BaseError for transactional context operations.
     type Error = BaseError;
 
@@ -287,7 +287,7 @@ impl Step<GetWorksetInfo<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<ListWorksetInfos<'_>, RdbContext> for RdbRepo {
+impl Step<ListWorksetInfos<'_>, RdbContext> for HybRepo {
     // Use BaseError for transactional context operations.
     type Error = BaseError;
 
@@ -302,7 +302,7 @@ impl Step<ListWorksetInfos<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<GetWorksetInfoExcluded<'_>, RdbContext> for RdbRepo {
+impl Step<GetWorksetInfoExcluded<'_>, RdbContext> for HybRepo {
     // Use BaseError for transactional context operations.
     type Error = BaseError;
 
@@ -317,7 +317,7 @@ impl Step<GetWorksetInfoExcluded<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<ListWorksetInfosExcluded<'_>, RdbContext> for RdbRepo {
+impl Step<ListWorksetInfosExcluded<'_>, RdbContext> for HybRepo {
     // Use BaseError for transactional context operations.
     type Error = BaseError;
 
@@ -332,7 +332,7 @@ impl Step<ListWorksetInfosExcluded<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<CreateWorkset<'_>, RdbContext> for RdbRepo {
+impl Step<CreateWorkset<'_>, RdbContext> for HybRepo {
     // Use BaseError for transactional context operations.
     type Error = BaseError;
 
@@ -347,7 +347,7 @@ impl Step<CreateWorkset<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<DeleteWorkset<'_>, RdbContext> for RdbRepo {
+impl Step<DeleteWorkset<'_>, RdbContext> for HybRepo {
     // Use BaseError for transactional context operations.
     type Error = BaseError;
 
@@ -362,7 +362,7 @@ impl Step<DeleteWorkset<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<AllocWorksetComicIndex<'_>, RdbContext> for RdbRepo {
+impl Step<AllocWorksetComicIndex<'_>, RdbContext> for HybRepo {
     // Use BaseError for transactional context operations.
     type Error = BaseError;
 
@@ -377,7 +377,7 @@ impl Step<AllocWorksetComicIndex<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<UpdateWorksetComicCount<'_>, RdbContext> for RdbRepo {
+impl Step<UpdateWorksetComicCount<'_>, RdbContext> for HybRepo {
     // Use BaseError for transactional context operations.
     type Error = BaseError;
 

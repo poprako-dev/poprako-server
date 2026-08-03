@@ -6,7 +6,7 @@ use crate::part::repo::oper::member::{
     CreateMember, DeleteMember, FindMemberInfo, GetMemberInfo, ListMemberInfos,
     ListMemberInfosExcluded, UpdateMember,
 };
-use crate::part_impl::repo::rdb_impl::RdbRepo;
+use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::member::step_impl::{
     create, delete, find_info_by_user_id_and_team_id, get_info_by_id,
     list_infos, list_infos_by_team_id_excluded, list_infos_by_user_id,
@@ -15,7 +15,7 @@ use crate::part_impl::repo::rdb_impl::member::step_impl::{
 use crate::result::{BaseError, BaseRest};
 use crate::shared::RdbContext;
 
-impl Run<ListMemberInfos<'_>> for RdbRepo {
+impl Run<ListMemberInfos<'_>> for HybRepo {
     // Non-transactional query path for listing member infos.
     //
     // It picks the right query variant based on whether the caller provided
@@ -41,7 +41,7 @@ impl Run<ListMemberInfos<'_>> for RdbRepo {
     }
 }
 
-impl Run<GetMemberInfo<'_, '_>> for RdbRepo {
+impl Run<GetMemberInfo<'_, '_>> for HybRepo {
     // Non-transactional query path for loading one member info by identity.
     type Error = BaseError;
 
@@ -56,7 +56,7 @@ impl Run<GetMemberInfo<'_, '_>> for RdbRepo {
     }
 }
 
-impl Step<CreateMember<'_>, RdbContext> for RdbRepo {
+impl Step<CreateMember<'_>, RdbContext> for HybRepo {
     // Create a new member row inside the active transaction context.
     type Error = BaseError;
 
@@ -71,7 +71,7 @@ impl Step<CreateMember<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<UpdateMember<'_>, RdbContext> for RdbRepo {
+impl Step<UpdateMember<'_>, RdbContext> for HybRepo {
     // Apply an in-transaction member update request.
     //
     // Supported requests either adjust nickname or change role based on branch.
@@ -102,7 +102,7 @@ impl Step<UpdateMember<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<ListMemberInfos<'_>, RdbContext> for RdbRepo {
+impl Step<ListMemberInfos<'_>, RdbContext> for HybRepo {
     // Transactional list path for member info queries.
     //
     // Reuses the same selection modes as non-transactional `run` execution,
@@ -129,7 +129,7 @@ impl Step<ListMemberInfos<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<FindMemberInfo<'_>, RdbContext> for RdbRepo {
+impl Step<FindMemberInfo<'_>, RdbContext> for HybRepo {
     // Transactional lookup for a member by `(user_id, team_id)`.
     type Error = BaseError;
 
@@ -153,7 +153,7 @@ impl Step<FindMemberInfo<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<GetMemberInfo<'_, '_>, RdbContext> for RdbRepo {
+impl Step<GetMemberInfo<'_, '_>, RdbContext> for HybRepo {
     // Transactional lookup for a full member info by id and requested includes.
     type Error = BaseError;
 
@@ -172,7 +172,7 @@ impl Step<GetMemberInfo<'_, '_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<ListMemberInfosExcluded<'_>, RdbContext> for RdbRepo {
+impl Step<ListMemberInfosExcluded<'_>, RdbContext> for HybRepo {
     // Transactional list for member infos excluding one side of relation.
     //
     // One branch excludes all members for a user, the other excludes a full team.
@@ -198,7 +198,7 @@ impl Step<ListMemberInfosExcluded<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<DeleteMember<'_>, RdbContext> for RdbRepo {
+impl Step<DeleteMember<'_>, RdbContext> for HybRepo {
     // Transactional delete operation for a single member by id.
     type Error = BaseError;
 

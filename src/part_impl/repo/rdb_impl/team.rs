@@ -17,7 +17,7 @@ use crate::part::repo::oper::team::{
     GetTeamInfoExcluded, ListTeamInfos, LockTeam, ReserveTeamAvatar,
     UpdateTeam,
 };
-use crate::part_impl::repo::rdb_impl::RdbRepo;
+use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::entity::team::{
     TeamAspectRow, TeamEntryRow, TeamInfoRow,
 };
@@ -417,7 +417,7 @@ async fn increment_workset_next_index(
     accept(prev)
 }
 
-impl<'a> Run<CreateTeam<'a>> for RdbRepo {
+impl<'a> Run<CreateTeam<'a>> for HybRepo {
     // Map team creation orchestration failures to the shared base error type.
     type Error = BaseError;
 
@@ -431,7 +431,7 @@ impl<'a> Run<CreateTeam<'a>> for RdbRepo {
     }
 }
 
-impl Run<GetTeamInfo<'_>> for RdbRepo {
+impl Run<GetTeamInfo<'_>> for HybRepo {
     // Use the common base error for team info reads.
     type Error = BaseError;
 
@@ -449,7 +449,7 @@ impl Run<GetTeamInfo<'_>> for RdbRepo {
     }
 }
 
-impl Run<ListTeamInfos<'_>> for RdbRepo {
+impl Run<ListTeamInfos<'_>> for HybRepo {
     // Keep list query failures on a single repository-level error channel.
     type Error = BaseError;
 
@@ -463,7 +463,7 @@ impl Run<ListTeamInfos<'_>> for RdbRepo {
     }
 }
 
-impl Run<UpdateTeam<'_>> for RdbRepo {
+impl Run<UpdateTeam<'_>> for HybRepo {
     // Keep update orchestration failures compatible with other team operations.
     type Error = BaseError;
 
@@ -490,7 +490,7 @@ impl Run<UpdateTeam<'_>> for RdbRepo {
     }
 }
 
-impl Step<CreateTeam<'_>, RdbContext> for RdbRepo {
+impl Step<CreateTeam<'_>, RdbContext> for HybRepo {
     // Convert repository step failures to base error during transaction execution.
     type Error = BaseError;
 
@@ -505,7 +505,7 @@ impl Step<CreateTeam<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<UpdateTeam<'_>, RdbContext> for RdbRepo {
+impl Step<UpdateTeam<'_>, RdbContext> for HybRepo {
     // Keep transactional team updates on the same base error contract.
     type Error = BaseError;
 
@@ -536,7 +536,7 @@ impl Step<UpdateTeam<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<ReserveTeamAvatar<'_>, RdbContext> for RdbRepo {
+impl Step<ReserveTeamAvatar<'_>, RdbContext> for HybRepo {
     // Report avatar-reservation validation and mutation errors through base error.
     type Error = BaseError;
 
@@ -552,7 +552,7 @@ impl Step<ReserveTeamAvatar<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<GetTeamInfoExcluded<'_>, RdbContext> for RdbRepo {
+impl Step<GetTeamInfoExcluded<'_>, RdbContext> for HybRepo {
     // Preserve consistent error typing for locked team detail fetches.
     type Error = BaseError;
 
@@ -571,7 +571,7 @@ impl Step<GetTeamInfoExcluded<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<LockTeam<'_>, RdbContext> for RdbRepo {
+impl Step<LockTeam<'_>, RdbContext> for HybRepo {
     // Keep lock contention errors on the shared repository error type.
     type Error = BaseError;
 
@@ -586,7 +586,7 @@ impl Step<LockTeam<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<DeleteTeam<'_>, RdbContext> for RdbRepo {
+impl Step<DeleteTeam<'_>, RdbContext> for HybRepo {
     // Use the common base error for hard delete operations in transactions.
     type Error = BaseError;
 
@@ -601,7 +601,7 @@ impl Step<DeleteTeam<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<AllocTeamWorksetIndex<'_>, RdbContext> for RdbRepo {
+impl Step<AllocTeamWorksetIndex<'_>, RdbContext> for HybRepo {
     // Keep index allocation failures mapped to repository base errors.
     type Error = BaseError;
 

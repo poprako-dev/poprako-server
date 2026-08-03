@@ -10,7 +10,8 @@ use crate::part::repo::oper::member::{
     CreateMember, GetMemberInfo, ListMemberInfos, UpdateMember,
 };
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
-use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
+use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::result::BaseError;
 use crate::shared::RdbCore;
 use crate::value::member::MemberInclOpt;
@@ -26,7 +27,7 @@ pub async fn member_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let team_fixture = test_shared::seed_user_and_team(&shared, PREFIX).await;
 
-    let repo = RdbRepo::new(shared.clone());
+    let repo = HybRepo::new(shared.clone());
 
     let nucl = RdbNucl::new(shared.clone());
 

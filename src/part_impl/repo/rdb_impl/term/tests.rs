@@ -10,7 +10,8 @@ use crate::model::write::termbase::TermbaseEntry;
 use crate::part::repo::oper::term::{CreateTerm, GetTermInfo, ListTermInfos};
 use crate::part::repo::oper::termbase::CreateTermbase;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
-use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
+use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::result::BaseError;
 use crate::shared::RdbCore;
 
@@ -21,7 +22,7 @@ pub async fn term_array_unique_and_fuzzy_roundtrip(shared: RdbCore) {
     //
     let comic_fixture = test_shared::seed_comic(&shared, PREFIX).await;
 
-    let repo = RdbRepo::new(shared.clone());
+    let repo = HybRepo::new(shared.clone());
 
     let nucl = RdbNucl::new(shared.clone());
 

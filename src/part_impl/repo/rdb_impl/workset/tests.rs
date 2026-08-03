@@ -6,7 +6,8 @@ use crate::model::write::workset::WorksetRepl;
 use crate::part::repo::oper::workset::{
     GetWorksetInfo, ListWorksetInfos, UpdateWorkset,
 };
-use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
+use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::shared::RdbCore;
 
 const PREFIX: &str = "rdb-test-workset-domain-";
@@ -19,7 +20,7 @@ pub async fn workset_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let workset_fixture = test_shared::seed_workset(&shared, PREFIX).await;
 
-    let repo = RdbRepo::new(shared.clone());
+    let repo = HybRepo::new(shared.clone());
 
     let workset_infos = repo
         .run(&ListWorksetInfos {

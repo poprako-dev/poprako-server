@@ -9,11 +9,12 @@ use crate::model::read::proj::comment::CommentInfo;
 use crate::model::read::spec::comment::CommentListSpec;
 use crate::model::write::comment::CommentEntry;
 use crate::part::repo::oper::comment::{CreateComment, ListCommentInfos};
+use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::entity::comment::{
     CommentEntryRow, CommentInfoRow,
 };
+use crate::part_impl::repo::rdb_impl::incl;
 use crate::part_impl::repo::rdb_impl::schema::t_comment::dsl::*;
-use crate::part_impl::repo::rdb_impl::{RdbRepo, incl};
 use crate::result::{BaseError, BaseRest, accept};
 use crate::shared::result::diesel;
 use crate::shared::{RdbConn, RdbContext};
@@ -69,7 +70,7 @@ async fn create(
     accept(row.into())
 }
 
-impl Run<ListCommentInfos<'_>> for RdbRepo {
+impl Run<ListCommentInfos<'_>> for HybRepo {
     // Error type for the Run trait impl on comment list query.
     type Error = BaseError;
 
@@ -83,7 +84,7 @@ impl Run<ListCommentInfos<'_>> for RdbRepo {
     }
 }
 
-impl Step<CreateComment<'_>, RdbContext> for RdbRepo {
+impl Step<CreateComment<'_>, RdbContext> for HybRepo {
     // Error type for the Step trait impl on comment creation.
     type Error = BaseError;
 

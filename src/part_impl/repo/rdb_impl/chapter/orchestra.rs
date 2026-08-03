@@ -10,7 +10,7 @@ use crate::part::repo::oper::chapter::{
     SetChapterPageCounters, StartChapterStage, UnpinOtherChapters,
     UpdateChapter, UpdateChapterStage,
 };
-use crate::part_impl::repo::rdb_impl::RdbRepo;
+use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::chapter::step_impl::{
     adjust_unit_counters, complete_raw_provide, create, delete,
     find_pinned_info_by_comic_id, get_info_by_id, get_info_excluded,
@@ -21,7 +21,7 @@ use crate::part_impl::repo::rdb_impl::chapter::step_impl::{
 use crate::result::{BaseError, BaseRest};
 use crate::shared::RdbContext;
 
-impl Run<GetChapterInfo<'_, '_>> for RdbRepo {
+impl Run<GetChapterInfo<'_, '_>> for HybRepo {
     // Map failed query execution for chapter lookup into repository-level base error.
     type Error = BaseError;
 
@@ -36,7 +36,7 @@ impl Run<GetChapterInfo<'_, '_>> for RdbRepo {
     }
 }
 
-impl Run<ListChapterInfos<'_>> for RdbRepo {
+impl Run<ListChapterInfos<'_>> for HybRepo {
     // Map list query failures to the common base error for callers.
     type Error = BaseError;
 
@@ -50,7 +50,7 @@ impl Run<ListChapterInfos<'_>> for RdbRepo {
     }
 }
 
-impl Run<FindPinnedChapterInfo<'_, '_>> for RdbRepo {
+impl Run<FindPinnedChapterInfo<'_, '_>> for HybRepo {
     // Keep error handling consistent with other chapter lookup orchestrations.
     type Error = BaseError;
 
@@ -69,7 +69,7 @@ impl Run<FindPinnedChapterInfo<'_, '_>> for RdbRepo {
     }
 }
 
-impl Run<ListPinnedChapterInfos<'_>> for RdbRepo {
+impl Run<ListPinnedChapterInfos<'_>> for HybRepo {
     // Normalize all error paths for pinned-chapter batch reads.
     type Error = BaseError;
 
@@ -83,7 +83,7 @@ impl Run<ListPinnedChapterInfos<'_>> for RdbRepo {
     }
 }
 
-impl Run<StartChapterStage<'_>> for RdbRepo {
+impl Run<StartChapterStage<'_>> for HybRepo {
     // Ensure start-stage transition failures keep the same base error surface.
     type Error = BaseError;
 
@@ -94,7 +94,7 @@ impl Run<StartChapterStage<'_>> for RdbRepo {
     }
 }
 
-impl Run<CompleteChapterRawProvide<'_>> for RdbRepo {
+impl Run<CompleteChapterRawProvide<'_>> for HybRepo {
     // Keep completed-raw-provide orchestration errors as shared base errors.
     type Error = BaseError;
 
@@ -108,7 +108,7 @@ impl Run<CompleteChapterRawProvide<'_>> for RdbRepo {
     }
 }
 
-impl Step<CompleteChapterRawProvide<'_>, RdbContext> for RdbRepo {
+impl Step<CompleteChapterRawProvide<'_>, RdbContext> for HybRepo {
     // Keep internal step errors aligned with repository-level error semantics.
     type Error = BaseError;
 
@@ -123,7 +123,7 @@ impl Step<CompleteChapterRawProvide<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<ResetChapterRawProvide<'_>, RdbContext> for RdbRepo {
+impl Step<ResetChapterRawProvide<'_>, RdbContext> for HybRepo {
     // Preserve unified error typing for resetting raw-provide state in transaction scope.
     type Error = BaseError;
 
@@ -138,7 +138,7 @@ impl Step<ResetChapterRawProvide<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<GetChapterInfo<'_, '_>, RdbContext> for RdbRepo {
+impl Step<GetChapterInfo<'_, '_>, RdbContext> for HybRepo {
     // Keep transaction-level branch consistent with orchestrator-level error behavior.
     type Error = BaseError;
 
@@ -153,7 +153,7 @@ impl Step<GetChapterInfo<'_, '_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<GetChapterInfoExcluded<'_, '_>, RdbContext> for RdbRepo {
+impl Step<GetChapterInfoExcluded<'_, '_>, RdbContext> for HybRepo {
     // Align error type for read queries that intentionally exclude soft-deleted rows.
     type Error = BaseError;
 
@@ -168,7 +168,7 @@ impl Step<GetChapterInfoExcluded<'_, '_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<ListChapterInfosExcluded<'_>, RdbContext> for RdbRepo {
+impl Step<ListChapterInfosExcluded<'_>, RdbContext> for HybRepo {
     // Keep error surface stable for transactional filtered list queries.
     type Error = BaseError;
 
@@ -183,7 +183,7 @@ impl Step<ListChapterInfosExcluded<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<LockChapters<'_>, RdbContext> for RdbRepo {
+impl Step<LockChapters<'_>, RdbContext> for HybRepo {
     // Use the same shared error model for lock orchestration failures.
     type Error = BaseError;
 
@@ -198,7 +198,7 @@ impl Step<LockChapters<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<FindPinnedChapterInfo<'_, '_>, RdbContext> for RdbRepo {
+impl Step<FindPinnedChapterInfo<'_, '_>, RdbContext> for HybRepo {
     // Keep transactional lookup failures equivalent to non-transactional ones.
     type Error = BaseError;
 
@@ -214,7 +214,7 @@ impl Step<FindPinnedChapterInfo<'_, '_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<CreateChapter<'_>, RdbContext> for RdbRepo {
+impl Step<CreateChapter<'_>, RdbContext> for HybRepo {
     // Use a consistent error type for chapter creation inside transaction.
     type Error = BaseError;
 
@@ -229,7 +229,7 @@ impl Step<CreateChapter<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<UpdateChapter<'_>, RdbContext> for RdbRepo {
+impl Step<UpdateChapter<'_>, RdbContext> for HybRepo {
     // Normalize update errors to base repository errors under transaction.
     type Error = BaseError;
 
@@ -244,7 +244,7 @@ impl Step<UpdateChapter<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<UpdateChapterStage<'_>, RdbContext> for RdbRepo {
+impl Step<UpdateChapterStage<'_>, RdbContext> for HybRepo {
     // Keep stage-update failures in the same error vocabulary as other step operations.
     type Error = BaseError;
 
@@ -259,7 +259,7 @@ impl Step<UpdateChapterStage<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<SetChapterPageCounters<'_>, RdbContext> for RdbRepo {
+impl Step<SetChapterPageCounters<'_>, RdbContext> for HybRepo {
     // Normalize counter-write failures for transactional chapter metrics updates.
     type Error = BaseError;
 
@@ -282,7 +282,7 @@ impl Step<SetChapterPageCounters<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<AdjustChapterUnitCounters<'_>, RdbContext> for RdbRepo {
+impl Step<AdjustChapterUnitCounters<'_>, RdbContext> for HybRepo {
     // Keep delta-based unit-counter adjustments mapped to base errors.
     type Error = BaseError;
 
@@ -297,7 +297,7 @@ impl Step<AdjustChapterUnitCounters<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<UnpinOtherChapters<'_>, RdbContext> for RdbRepo {
+impl Step<UnpinOtherChapters<'_>, RdbContext> for HybRepo {
     // Keep unpinning failures aligned with other transaction-level chapter operations.
     type Error = BaseError;
 
@@ -312,7 +312,7 @@ impl Step<UnpinOtherChapters<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<DeleteChapter<'_>, RdbContext> for RdbRepo {
+impl Step<DeleteChapter<'_>, RdbContext> for HybRepo {
     // Preserve consistent error reporting for chapter deletion operations.
     type Error = BaseError;
 

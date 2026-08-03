@@ -22,7 +22,7 @@ use crate::part_impl::prom::rdb_impl::repo::{
     ClaimPending, CompleteMessage, FailMessage, PollPending, PurgeCompleted,
     ResetStuck, RetryMessage,
 };
-use crate::part_impl::repo::rdb_impl::RdbRepo;
+use crate::part_impl::repo::HybRepo;
 use crate::result::BaseRest;
 use crate::shared::RdbContext;
 
@@ -73,7 +73,7 @@ pub fn enforce_retry_limit(
     }
 }
 
-impl<I, D> RdbPromHandler<RdbNucl, RdbRepo, I, D>
+impl<I, D> RdbPromHandler<RdbNucl, HybRepo, I, D>
 where
     I: ImageManager + Send + Sync + 'static,
     D: Develop + Send + Sync + 'static,

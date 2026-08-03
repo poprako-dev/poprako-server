@@ -13,7 +13,7 @@ use crate::model::write::system_mail::SystemMailEntry;
 use crate::part::repo::oper::system_mail::{
     ListSystemMailInfos, MarkSystemMailRead, SendSystemMail, SendSystemMails,
 };
-use crate::part_impl::repo::rdb_impl::RdbRepo;
+use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::entity::system_mail::{
     SystemMailEntryRow, SystemMailInfoRow,
 };
@@ -163,7 +163,7 @@ async fn mark_read(
     accept(())
 }
 
-impl Run<SendSystemMail<'_>> for RdbRepo {
+impl Run<SendSystemMail<'_>> for HybRepo {
     // Reuse base error type for send operations.
     type Error = BaseError;
 
@@ -174,7 +174,7 @@ impl Run<SendSystemMail<'_>> for RdbRepo {
     }
 }
 
-impl Run<SendSystemMails<'_>> for RdbRepo {
+impl Run<SendSystemMails<'_>> for HybRepo {
     // Reuse base error type for bulk send operations.
     type Error = BaseError;
 
@@ -185,7 +185,7 @@ impl Run<SendSystemMails<'_>> for RdbRepo {
     }
 }
 
-impl Run<ListSystemMailInfos<'_>> for RdbRepo {
+impl Run<ListSystemMailInfos<'_>> for HybRepo {
     // Reuse base error type for listing operations.
     type Error = BaseError;
 
@@ -199,7 +199,7 @@ impl Run<ListSystemMailInfos<'_>> for RdbRepo {
     }
 }
 
-impl Run<MarkSystemMailRead<'_>> for RdbRepo {
+impl Run<MarkSystemMailRead<'_>> for HybRepo {
     // Reuse base error type for read-mark operations.
     type Error = BaseError;
 

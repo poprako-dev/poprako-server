@@ -131,4 +131,14 @@ async fn team_online_user_lists_remain_independent() {
     .unwrap();
 
     assert_eq!(online_user_ids, ["online-usecase-user-4a"]);
+
+    let online_user_ids = list_online_user_ids(
+        (&mock,),
+        token("online-usecase-user-4b"),
+        "online-usecase-team-4b".into(),
+    )
+    .await
+    .unwrap();
+
+    assert_eq!(online_user_ids, ["online-usecase-user-4b"]);
 }

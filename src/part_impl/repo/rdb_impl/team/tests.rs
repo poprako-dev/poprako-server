@@ -13,7 +13,8 @@ use crate::part::repo::oper::team::{
     GetTeamInfo, ListTeamInfos, ResolveTeamId, UpdateTeam,
 };
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
-use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
+use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::result::{BaseError, ExpectedVariant};
 use crate::shared::RdbCore;
 
@@ -39,7 +40,7 @@ pub async fn team_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let team_fixture = test_shared::seed_user_and_team(&shared, PREFIX).await;
 
-    let repo = RdbRepo::new(shared.clone());
+    let repo = HybRepo::new(shared.clone());
 
     let team_info_list_spec = TeamListSpec {
         user_id: None,
@@ -98,7 +99,7 @@ pub async fn resolve_team_id_uses_testcontainer(shared: RdbCore) {
     let chapter_fixture =
         test_shared::seed_chapter(&shared, RESOLVE_PREFIX).await;
 
-    let repo = RdbRepo::new(shared.clone());
+    let repo = HybRepo::new(shared.clone());
 
     let comic_team_id = repo
         .run(&ResolveTeamId::Comic {
