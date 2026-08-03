@@ -205,7 +205,11 @@ where
 /// * `R: TeamRepo<C>` — Team storage.
 /// * `P: Prom<C>` — Prom enqueuer for deferred image opers.
 /// * `I: ImagePool` — Generates the signed upload URL.
-#[instrument(level = "info", err(Debug), skip(nucl, repo, prom, image_pool))]
+#[instrument(
+    level = "info",
+    err(Debug),
+    skip(nucl, repo, prom, image_pool, token)
+)]
 pub async fn reserve_avatar<N, C, R, P, I>(
     (nucl, repo, prom, image_pool): (&N, &R, &P, &I),
     token: UserToken,
