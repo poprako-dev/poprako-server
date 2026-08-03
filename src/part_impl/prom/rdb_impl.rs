@@ -22,7 +22,7 @@ use crate::part::prom::payload::TaskPayload;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::prom::rdb_impl::entity::LocalMessageEntryRow;
 use crate::part_impl::prom::rdb_impl::repo::RdbPromRepo;
-use crate::part_impl::repo::rdb_impl::RdbRepo;
+use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::schema::t_local_message;
 use crate::result::{BaseError, BaseRest, accept};
 use crate::shared::result::diesel;
@@ -77,7 +77,7 @@ impl RdbProm {
 
         let (nucl, repo) = (
             RdbNucl::new(core.clone()),
-            RdbPromRepo::new(RdbRepo::new(core.clone())),
+            RdbPromRepo::new(HybRepo::new(core.clone())),
         );
 
         let handler = handler::RdbPromHandler::new(

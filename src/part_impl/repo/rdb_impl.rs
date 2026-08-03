@@ -1,6 +1,4 @@
-//! Diesel-backed repository adapter.
-
-use crate::shared::RdbCore;
+//! Diesel-backed operations for the hybrid repository adapter.
 
 // Submit query macro that allocates a connection and calls a free function.
 #[macro_use]
@@ -50,17 +48,3 @@ pub mod unit;
 pub mod user;
 /// Workset repository operations.
 pub mod workset;
-
-/// Diesel-backed repository handle wrapping a connection pool.
-#[derive(Clone)]
-pub struct RdbRepo {
-    /// Shared database connection pool and repository state.
-    core: RdbCore,
-}
-
-impl RdbRepo {
-    /// Builds a new `RdbRepo` from an [`RdbCore`] connection pool.
-    pub fn new(core: RdbCore) -> Self {
-        Self { core }
-    }
-}

@@ -6,7 +6,7 @@ use tracing::instrument;
 
 use crate::model::read::proj::member::MemberInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part_impl::repo::rdb_impl::RdbRepo;
+use crate::part_impl::repo::HybRepo;
 use crate::result::{BaseError, BaseRest};
 
 // Orchestration logic for member repository operations.
@@ -17,7 +17,7 @@ mod step_impl;
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;
 
-impl Run<FindMemberInfo<'_>> for RdbRepo {
+impl Run<FindMemberInfo<'_>> for HybRepo {
     // Error type for the Run trait impl on member lookup.
     type Error = BaseError;
 

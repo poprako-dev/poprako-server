@@ -16,12 +16,13 @@ use crate::part::repo::oper::member_invitation::{
     GetMemberInvitationInfoExcluded, ListMemberInvitationInfos,
     PurgeExpiredMemberInvitation, UpdateMemberInvitation,
 };
+use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::entity::member_invitation::{
     MemberInvitationAspectRow, MemberInvitationEntryRow,
     MemberInvitationInfoRow,
 };
+use crate::part_impl::repo::rdb_impl::incl;
 use crate::part_impl::repo::rdb_impl::schema::t_member_invitation::dsl::*;
-use crate::part_impl::repo::rdb_impl::{RdbRepo, incl};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::result::diesel;
 use crate::shared::{RdbConn, RdbContext};
@@ -302,7 +303,7 @@ async fn purge_pending(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     accept(())
 }
 
-impl Run<ListMemberInvitationInfos<'_>> for RdbRepo {
+impl Run<ListMemberInvitationInfos<'_>> for HybRepo {
     // Map list filters into shared query layer for member invitation collections.
     type Error = BaseError;
 
@@ -316,7 +317,7 @@ impl Run<ListMemberInvitationInfos<'_>> for RdbRepo {
     }
 }
 
-impl Run<GetMemberInvitationInfo<'_, '_>> for RdbRepo {
+impl Run<GetMemberInvitationInfo<'_, '_>> for HybRepo {
     // Resolve invite info by id/code in non-transactional context.
     type Error = BaseError;
 
@@ -339,7 +340,7 @@ impl Run<GetMemberInvitationInfo<'_, '_>> for RdbRepo {
     }
 }
 
-impl Step<CreateMemberInvitation<'_>, RdbContext> for RdbRepo {
+impl Step<CreateMemberInvitation<'_>, RdbContext> for HybRepo {
     // Keep transactional create failures in base error type.
     type Error = BaseError;
 
@@ -354,7 +355,7 @@ impl Step<CreateMemberInvitation<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<GetMemberInvitationInfo<'_, '_>, RdbContext> for RdbRepo {
+impl Step<GetMemberInvitationInfo<'_, '_>, RdbContext> for HybRepo {
     // Keep transactional read failures in base error type.
     type Error = BaseError;
 
@@ -378,7 +379,7 @@ impl Step<GetMemberInvitationInfo<'_, '_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<UpdateMemberInvitation<'_>, RdbContext> for RdbRepo {
+impl Step<UpdateMemberInvitation<'_>, RdbContext> for HybRepo {
     // Keep transactional update failures in base error type.
     type Error = BaseError;
 
@@ -403,7 +404,7 @@ impl Step<UpdateMemberInvitation<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<GetMemberInvitationInfoExcluded<'_>, RdbContext> for RdbRepo {
+impl Step<GetMemberInvitationInfoExcluded<'_>, RdbContext> for HybRepo {
     // Keep transactional exclusive-read failures in base error type.
     type Error = BaseError;
 
@@ -422,7 +423,7 @@ impl Step<GetMemberInvitationInfoExcluded<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<DeleteMemberInvitation<'_>, RdbContext> for RdbRepo {
+impl Step<DeleteMemberInvitation<'_>, RdbContext> for HybRepo {
     // Keep transactional delete failures in base error type.
     type Error = BaseError;
 
@@ -437,7 +438,7 @@ impl Step<DeleteMemberInvitation<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<PurgeExpiredMemberInvitation<'_>, RdbContext> for RdbRepo {
+impl Step<PurgeExpiredMemberInvitation<'_>, RdbContext> for HybRepo {
     // Keep transactional purge failures in base error type.
     type Error = BaseError;
 
@@ -452,7 +453,7 @@ impl Step<PurgeExpiredMemberInvitation<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Run<PurgeExpiredMemberInvitation<'_>> for RdbRepo {
+impl Run<PurgeExpiredMemberInvitation<'_>> for HybRepo {
     // Keep non-transactional purge failures in base error type.
     type Error = BaseError;
 

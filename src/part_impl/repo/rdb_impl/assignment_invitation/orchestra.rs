@@ -8,7 +8,7 @@ use crate::part::repo::oper::assignment_invitation::{
     ListAssignmentInvitationInfos, MarkAssignmentInvitationUsed,
     PurgeExpiredAssignmentInvitation,
 };
-use crate::part_impl::repo::rdb_impl::RdbRepo;
+use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::assignment_invitation::step_impl::{
     create, delete, delete_by_chapter_id, get_info_by_code_excluded,
     get_info_by_id, list_infos, mark_pending_as_used, purge_pending,
@@ -16,7 +16,7 @@ use crate::part_impl::repo::rdb_impl::assignment_invitation::step_impl::{
 use crate::result::{BaseError, BaseRest};
 use crate::shared::RdbContext;
 
-impl Run<ListAssignmentInvitationInfos<'_>> for RdbRepo {
+impl Run<ListAssignmentInvitationInfos<'_>> for HybRepo {
     // Non-transactional path that lists invitation infos for a list spec.
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
@@ -29,7 +29,7 @@ impl Run<ListAssignmentInvitationInfos<'_>> for RdbRepo {
         submit_query!(self.core, list_infos, oper.spec)
     }
 }
-impl Run<GetAssignmentInvitationInfo<'_>> for RdbRepo {
+impl Run<GetAssignmentInvitationInfo<'_>> for HybRepo {
     // Non-transactional path for loading one invitation info by id.
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
@@ -45,7 +45,7 @@ impl Run<GetAssignmentInvitationInfo<'_>> for RdbRepo {
         }
     }
 }
-impl Step<CreateAssignmentInvitation<'_>, RdbContext> for RdbRepo {
+impl Step<CreateAssignmentInvitation<'_>, RdbContext> for HybRepo {
     // Create invitation rows and return resulting invitation info in tx scope.
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
@@ -58,7 +58,7 @@ impl Step<CreateAssignmentInvitation<'_>, RdbContext> for RdbRepo {
         create(context.conn(), oper.entry).await
     }
 }
-impl Step<GetAssignmentInvitationInfo<'_>, RdbContext> for RdbRepo {
+impl Step<GetAssignmentInvitationInfo<'_>, RdbContext> for HybRepo {
     // Transactional fetch for one invitation info by id.
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
@@ -75,7 +75,7 @@ impl Step<GetAssignmentInvitationInfo<'_>, RdbContext> for RdbRepo {
         }
     }
 }
-impl Step<GetAssignmentInvitationInfoExcluded<'_>, RdbContext> for RdbRepo {
+impl Step<GetAssignmentInvitationInfoExcluded<'_>, RdbContext> for HybRepo {
     // Transactional lookup for invitation by code while skipping soft-excluded rows.
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
@@ -88,7 +88,7 @@ impl Step<GetAssignmentInvitationInfoExcluded<'_>, RdbContext> for RdbRepo {
         get_info_by_code_excluded(context.conn(), oper.code).await
     }
 }
-impl Step<MarkAssignmentInvitationUsed<'_>, RdbContext> for RdbRepo {
+impl Step<MarkAssignmentInvitationUsed<'_>, RdbContext> for HybRepo {
     // Transactional state transition that marks a pending invitation as used.
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
@@ -102,7 +102,7 @@ impl Step<MarkAssignmentInvitationUsed<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<PurgeExpiredAssignmentInvitation<'_>, RdbContext> for RdbRepo {
+impl Step<PurgeExpiredAssignmentInvitation<'_>, RdbContext> for HybRepo {
     // Transactional delete/update behavior for purging expired invitations.
     type Error = BaseError;
 
@@ -117,7 +117,7 @@ impl Step<PurgeExpiredAssignmentInvitation<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Run<PurgeExpiredAssignmentInvitation<'_>> for RdbRepo {
+impl Run<PurgeExpiredAssignmentInvitation<'_>> for HybRepo {
     // Non-transactional interface for purging expired invitations.
     type Error = BaseError;
 
@@ -131,7 +131,7 @@ impl Run<PurgeExpiredAssignmentInvitation<'_>> for RdbRepo {
     }
 }
 
-impl Step<DeleteAssignmentInvitations<'_>, RdbContext> for RdbRepo {
+impl Step<DeleteAssignmentInvitations<'_>, RdbContext> for HybRepo {
     // Transactional delete for invitation records.
     //
     // Deletes by invitation id or all invitations under a chapter.
