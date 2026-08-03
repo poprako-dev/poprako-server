@@ -14,6 +14,13 @@ pub fn init_prometheus() -> anyhow::Result<()> {
     let prometheus_handle = PrometheusBuilder::new()
         .with_recommended_naming(true)
         .install_recorder()
+        .inspect_err(|error| {
+            tracing::error!(
+                operation = "install_prometheus_recorder",
+                sdk_err = ?error,
+                "Prometheus SDK initialization error",
+            );
+        })
         .context("failed to install Prometheus metrics recorder")?;
 
     PROMETHEUS_HANDLE.set(prometheus_handle).map_err(|_| {

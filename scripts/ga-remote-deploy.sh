@@ -18,14 +18,66 @@ postgres_container=$8
 image_ref="${image_name}:${image_tag}"
 release_sha=${image_tag#sha-}
 release_dir="${deploy_root}/releases/${release_sha}"
-runtime_env_file="${deploy_root}/shared/runtime.env"
-previous_env_file="${deploy_root}/shared/runtime.env.previous"
-uploaded_env_file="${release_dir}/poprako-runtime.env"
+legacy_runtime_env_file="${deploy_root}/shared/runtime.env"
+legacy_previous_env_file="${deploy_root}/shared/runtime.env.previous"
 image_archive="${release_dir}/${image_name}-${image_tag}.tar.gz"
 migration_script="${release_dir}/ga-apply-migrations.sh"
 migration_root="${release_dir}/migrations"
 previous_name="${container_name}-previous"
 rollback_required=0
+
+read_runtime_value() {
+    label=$1
+
+    if ! IFS= read -r runtime_value; then
+        echo "missing runtime value for $label" >&2
+        exit 1
+    fi
+
+    if [ -z "$runtime_value" ]; then
+        echo "empty runtime value for $label" >&2
+        exit 1
+    fi
+
+    case "$runtime_value" in
+        *[[:space:]]*)
+            echo "$label must not contain whitespace" >&2
+            exit 1
+            ;;
+    esac
+}
+
+read_runtime_value DATABASE_URL
+database_url=$runtime_value
+read_runtime_value JWT_SECRET
+jwt_secret=$runtime_value
+read_runtime_value JWT_EXPIRATION_HOURS
+jwt_expiration_hours=$runtime_value
+read_runtime_value R2_ACCOUNT_ID
+r2_account_id=$runtime_value
+read_runtime_value R2_ACCESS_KEY_ID
+r2_access_key_id=$runtime_value
+read_runtime_value R2_SECRET_ACCESS_KEY
+r2_secret_access_key=$runtime_value
+read_runtime_value R2_BUCKET_NAME
+r2_bucket_name=$runtime_value
+read_runtime_value R2_REGION
+r2_region=$runtime_value
+read_runtime_value R2_CUSTOM_DOMAIN
+r2_custom_domain=$runtime_value
+read_runtime_value POPRAKO_SNOWFLAKE_NODE_ID
+snowflake_node_id=$runtime_value
+
+export DATABASE_URL=$database_url
+export JWT_SECRET=$jwt_secret
+export JWT_EXPIRATION_HOURS=$jwt_expiration_hours
+export R2_ACCOUNT_ID=$r2_account_id
+export R2_ACCESS_KEY_ID=$r2_access_key_id
+export R2_SECRET_ACCESS_KEY=$r2_secret_access_key
+export R2_BUCKET_NAME=$r2_bucket_name
+export R2_REGION=$r2_region
+export R2_CUSTOM_DOMAIN=$r2_custom_domain
+export POPRAKO_SNOWFLAKE_NODE_ID=$snowflake_node_id
 
 container_exists() {
     docker container inspect "$1" >/dev/null 2>&1
@@ -131,13 +183,6 @@ wait_for_health() {
 restore_previous() {
     rollback_required=0
 
-    if [ -f "$previous_env_file" ]; then
-        cp "$previous_env_file" "$runtime_env_file"
-        chmod 600 "$runtime_env_file"
-    else
-        rm -f "$runtime_env_file"
-    fi
-
     if container_exists "$previous_name"; then
         docker rm -f "$container_name" >/dev/null 2>&1 || true
         docker rename "$previous_name" "$container_name"
@@ -188,11 +233,6 @@ on_exit() {
 trap on_exit EXIT
 trap 'exit 1' HUP INT TERM
 
-[ -f "$uploaded_env_file" ] || {
-    echo "missing uploaded runtime environment: $uploaded_env_file" >&2
-    exit 1
-}
-
 [ -f "$image_archive" ] || {
     echo "missing uploaded image archive: $image_archive" >&2
     exit 1
@@ -214,14 +254,6 @@ sh "$migration_script" "$migration_root" "$postgres_container"
 docker load --input "$image_archive"
 rm -f "$image_archive"
 
-if [ -f "$runtime_env_file" ]; then
-    cp "$runtime_env_file" "$previous_env_file"
-    chmod 600 "$previous_env_file"
-fi
-
-mv "$uploaded_env_file" "$runtime_env_file"
-chmod 600 "$runtime_env_file"
-
 if container_exists "$previous_name"; then
     docker rm -f "$previous_name" >/dev/null
 fi
@@ -239,7 +271,16 @@ if ! docker run \
     --restart unless-stopped \
     --name "$container_name" \
     --network "$docker_network" \
-    --env-file "$runtime_env_file" \
+    --env DATABASE_URL \
+    --env JWT_SECRET \
+    --env JWT_EXPIRATION_HOURS \
+    --env R2_ACCOUNT_ID \
+    --env R2_ACCESS_KEY_ID \
+    --env R2_SECRET_ACCESS_KEY \
+    --env R2_BUCKET_NAME \
+    --env R2_REGION \
+    --env R2_CUSTOM_DOMAIN \
+    --env POPRAKO_SNOWFLAKE_NODE_ID \
     --log-opt max-size=10m \
     --log-opt max-file=5 \
     --publish "${bind_host}:${public_port}:8888" \
@@ -258,6 +299,8 @@ if ! verify_post_deployment; then
 fi
 
 rollback_required=0
+
+rm -f "$legacy_runtime_env_file" "$legacy_previous_env_file"
 
 previous_image_ref=
 previous_release_sha=

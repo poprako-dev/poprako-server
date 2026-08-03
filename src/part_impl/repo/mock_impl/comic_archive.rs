@@ -102,7 +102,7 @@ impl Run<ListComicArchivePayloads<'_>> for Mock {
     // Internal type alias for `Error`.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Internal implementation of `run`.
     async fn run(
         &self,
@@ -301,7 +301,7 @@ impl<'a> Step<GetComicArchiveSnapshotExcluded<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Internal implementation of `step`.
     async fn step(
         &self,
@@ -316,7 +316,7 @@ impl<'a> Step<CommitComicArchive<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Internal implementation of `step`.
     async fn step(
         &self,

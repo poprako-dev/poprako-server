@@ -53,10 +53,10 @@ The application error surface is
 
 ## Observability
 
-Let an instrumented operation boundary record propagated failures. Add a
-direct tracing event only when an error is constructed, consumed, retried, or
-converted and the event adds structured diagnostic fields. Never record
-passwords, tokens, credentials, or private payloads.
+Returning an error through `?` is propagation and must not itself emit an
+error event. Trace an error only where it is constructed, consumed, retried,
+or converted. Never record passwords, tokens, credentials, or private
+payloads.
 
 ## Review
 

@@ -20,6 +20,13 @@ where
 
     let listener = TcpListener::bind(&addr)
         .await
+        .inspect_err(|error| {
+            tracing::error!(
+                operation = "bind_http_listener",
+                sdk_err = ?error,
+                "Tokio SDK listener bind error",
+            );
+        })
         .with_context(|| format!("failed to bind listener on {:?}", addr))?;
 
     tracing::info!(addr = ?addr, "listening");
@@ -32,6 +39,13 @@ where
     )
     .with_graceful_shutdown(shutdown_signal())
     .await
+    .inspect_err(|error| {
+        tracing::error!(
+            operation = "serve_http",
+            sdk_err = ?error,
+            "Axum SDK server error",
+        );
+    })
     .with_context(|| "server error")
 }
 

@@ -28,9 +28,10 @@ pub fn next_version(value: i64) -> BaseRest<u32> {
 
 /// Converts a pool build error into an unrecoverable `RegularError`.
 pub fn pool_build(source: BuildError) -> BaseError {
+    //
     tracing::error!(
         operation = "build_database_pool",
-        sdk_error = ?source,
+        sdk_err = ?source,
         "database pool SDK error",
     );
 
@@ -41,9 +42,10 @@ pub fn pool_build(source: BuildError) -> BaseError {
 
 /// Converts a pool checkout error into an unrecoverable `RegularError`.
 pub fn pool_get(source: PoolError) -> BaseError {
+    //
     tracing::error!(
         operation = "get_database_connection",
-        sdk_error = ?source,
+        sdk_err = ?source,
         "database pool SDK error",
     );
 
@@ -102,9 +104,10 @@ pub fn diesel(source: DieselError) -> BaseError {
         }
 
         err => {
+            //
             tracing::error!(
                 operation = "execute_database_operation",
-                sdk_error = ?err,
+                sdk_err = ?err,
                 "Diesel SDK error",
             );
 

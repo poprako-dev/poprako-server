@@ -41,11 +41,20 @@ impl ComicArchiveComplex {
             accept((comic_archive_entry, image_keys))
         })
         .await
-        .map_err(|error| BaseError::Unrecoverable {
-            message: format!(
-                "[ComicArchiveComplex::prepare_entry] blocking task failed: {}",
-                error
-            ),
+        .map_err(|error| {
+            //
+            tracing::error!(
+                operation = "prepare_comic_archive",
+                sdk_err = ?error,
+                "Tokio SDK blocking task error",
+            );
+
+            BaseError::Unrecoverable {
+                message: format!(
+                    "[ComicArchiveComplex::prepare_entry] blocking task failed: {}",
+                    error
+                ),
+            }
         })?
     }
 }
@@ -279,6 +288,13 @@ fn build_entry(
         id: archived_comic_id.clone(),
         team_id: comic_archive_snapshot.workset_info.team_id.clone(),
         archived_payload: serde_json::to_string(&comic_payload).map_err(|error| {
+            //
+            tracing::error!(
+                operation = "serialize_comic_archive",
+                sdk_err = ?error,
+                "JSON SDK serialization error",
+            );
+
             BaseError::Unrecoverable {
                 message: format!(
                     "[ComicArchiveComplex::build_entry] failed to serialize archive payload: {}",

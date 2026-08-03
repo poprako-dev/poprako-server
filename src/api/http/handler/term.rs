@@ -51,7 +51,7 @@ pub struct TermListQuery {
         (status = 422, description = "Invalid term, duplicate source, or missing termbase"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn create(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
@@ -74,7 +74,7 @@ pub async fn create(
         (status = 422, description = "Termbase not found"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn list_infos(
     State(harn): State<AppHarn>,
     Path(termbase_id): Path<String>,
@@ -106,7 +106,7 @@ pub async fn list_infos(
         (status = 422, description = "Term not found"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn get_info(
     State(harn): State<AppHarn>,
     Path(term_id): Path<String>,
@@ -130,7 +130,7 @@ pub async fn get_info(
         (status = 422, description = "Invalid term, duplicate source, or path mismatch"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn update_info(
     State(harn): State<AppHarn>,
     Path(term_id): Path<String>,
@@ -158,7 +158,7 @@ pub async fn update_info(
         (status = 422, description = "Term not found"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn delete(
     State(harn): State<AppHarn>,
     Path(term_id): Path<String>,

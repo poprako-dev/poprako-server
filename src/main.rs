@@ -38,9 +38,15 @@ use poprako_server::{
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     //
-    dotenvy::dotenv().context(".env file should be valid")?;
-
     poprako_server::init_log();
+
+    if let Err(err) = dotenvy::dotenv() {
+        tracing::warn!(
+            operation = "load_dotenv",
+            sdk_err = ?err,
+            ".env loading failed; continuing with process environment",
+        );
+    }
 
     let config = AppConfig::from_default_file()
         .await

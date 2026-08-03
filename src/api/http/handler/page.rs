@@ -32,7 +32,7 @@ use crate::usecase;
         (status = 403, description = "No perm to list pages in this chapter"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn list_infos(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
@@ -62,7 +62,7 @@ pub async fn list_infos(
         (status = 404, description = "Page not found"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn get_info(
     State(harn): State<AppHarn>,
     Path(page_id): Path<String>,
@@ -88,7 +88,7 @@ pub async fn get_info(
         (status = 403, description = "No perm to delete pages in this chapter"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn delete(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
@@ -119,7 +119,7 @@ pub async fn delete(
         (status = 422, description = "Invalid authoritative manifest, duplicate page identity, image metadata, or published chapter"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn reserve_chapter_pages(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
@@ -151,7 +151,7 @@ pub async fn reserve_chapter_pages(
         (status = 422, description = "Page not found, conflicting image metadata, or published chapter"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn reserve_image(
     State(harn): State<AppHarn>,
     Path(page_id): Path<String>,
@@ -181,7 +181,7 @@ pub async fn reserve_image(
         (status = 422, description = "Page, image identity, storage object, or published chapter is invalid"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn mark_image_uploaded(
     State(harn): State<AppHarn>,
     Path(page_id): Path<String>,

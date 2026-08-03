@@ -226,15 +226,23 @@ pnpm typecheck
   approved external secret manager.
   - Use `deploy/poprako-server/github-production-secrets.env.example` as the
     Environment-secret name and value-shape template.
-  - Use `.env.example` as the template for the multiline
-    `DEPLOY_RUNTIME_ENV` secret.
   - Store all server-specific values as `production` environment secrets:
     `DEPLOY_HOST`, `DEPLOY_PORT`, `DEPLOY_USER`, `DEPLOY_SSH_PRIVATE_KEY`,
     `DEPLOY_KNOWN_HOSTS`, `DEPLOY_ROOT`, `DEPLOY_PUBLIC_PORT`,
     `DEPLOY_BIND_HOST`, `DEPLOY_DOCKER_NETWORK`, and
     `DEPLOY_POSTGRES_CONTAINER`.
-  - Store the complete runtime dotenv as the `DEPLOY_RUNTIME_ENV` environment
-    secret; never commit or source it from a maintainer machine.
+  - Store every application runtime value as an independent `production`
+    environment secret: `DEPLOY_DATABASE_URL`, `DEPLOY_JWT_SECRET`,
+    `DEPLOY_JWT_EXPIRATION_HOURS`, `DEPLOY_R2_ACCOUNT_ID`,
+    `DEPLOY_R2_ACCESS_KEY_ID`, `DEPLOY_R2_SECRET_ACCESS_KEY`,
+    `DEPLOY_R2_BUCKET_NAME`, `DEPLOY_R2_REGION`,
+    `DEPLOY_R2_CUSTOM_DOMAIN`, and
+    `DEPLOY_POPRAKO_SNOWFLAKE_NODE_ID`.
+  - The deployment script validates those values, streams them to the remote
+    deployment script over SSH stdin, and passes them directly to `docker run`
+    from a fixed allowlist. It does not create or upload a runtime dotenv.
+    Never commit or source production runtime configuration from a maintainer
+    machine.
   - Do not commit production IP addresses, SSH usernames, filesystem paths,
     Docker network names, credentials, or runtime configuration.
 - [x] Define the GitHub Actions-to-runtime deployment mechanism.
@@ -243,8 +251,9 @@ pnpm typecheck
     the pre-existing Docker network.
   - The remote PostgreSQL 18 container is managed independently and must
     already be healthy; application CD never creates, replaces, or restarts it.
-  - Upload only the immutable image archive, deployment scripts, migrations,
-    and GitHub-secret-derived runtime environment.
+  - Upload only the immutable image archive, deployment scripts, and
+    migrations. Stream GitHub-secret-derived runtime values over the remote
+    deployment command's stdin without writing a runtime dotenv.
 - [x] Apply migrations as one CD-owned transaction.
   - Run it only against the independently managed, already-running PostgreSQL
     18 service; it must not manage the PostgreSQL container lifecycle.
