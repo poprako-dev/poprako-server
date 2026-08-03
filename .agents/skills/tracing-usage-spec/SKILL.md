@@ -25,8 +25,14 @@ Draw spans around observable operations, not pure data transformation.
 - Let an instrumented return record a propagated error. Emit a direct event for
   lifecycle state, retries, intentional error consumption, or error
   construction when structured context adds diagnostic value.
-- Never emit credentials, JWTs, plaintext passwords, presigned URLs, or full
-  private request bodies.
+- Before an adapter converts an external SDK, driver, or client error into an
+  application error, emit exactly one event with the original error's `Debug`
+  representation. This conversion site is the error-production leaf; callers
+  using `?` only propagate and must not log the same failure again.
+- Never emit credentials, JWTs, plaintext passwords, or presigned URLs. Keep
+  business instruction DTOs in use-case spans when they are required to
+  reconstruct the failed operation; skip authentication tokens and redact any
+  secret-bearing instruction fields explicitly.
 
 Import `tracing::instrument` explicitly and apply it by its bare attribute
 name.

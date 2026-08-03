@@ -107,6 +107,12 @@ impl TokenAuth for JwtAuth {
         let header = Header::new(Algorithm::HS256);
 
         encode(&header, &claims, &self.encoding_key).map_err(|err| {
+            tracing::error!(
+                operation = "sign_token",
+                sdk_error = ?err,
+                "JWT SDK error",
+            );
+
             BaseError::Unrecoverable {
                 message: format!(
                     "[JwtAuth::sign_token] error when encoding: {}",
@@ -127,17 +133,14 @@ impl TokenAuth for JwtAuth {
             &Validation::new(Algorithm::HS256),
         )
         .map_err(|err| {
-            //
-            // Internal state field tracing.
-            tracing::debug!("[JwtAuth::verify_token] decode failed: {}", err);
-
             let err_message = trl("error-unauthorized");
 
             tracing::warn!(
                 err_variant = ?ExpectedVariant::Auth,
                 err_message = %err_message,
-                decode_err = %err,
-                "expected error: JWT verification failed",
+                operation = "verify_token",
+                sdk_error = ?err,
+                "JWT SDK error converted to expected authentication error",
             );
 
             BaseError::Expected {

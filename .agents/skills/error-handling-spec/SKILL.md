@@ -21,6 +21,23 @@ The application error surface is
 - Use `accept(value)` for a simple successful `BaseRest<T>` return when that is
   the nearby convention.
 
+## Log external errors before conversion
+
+- An adapter boundary that receives an error from an external SDK, driver, or
+  client library is the error-production leaf. It must emit one structured
+  tracing event containing the original error before converting it into
+  `BaseError`, `NuclError`, or another application error.
+- Record the original error with its `Debug` representation so SDK error
+  variants and source-chain diagnostics are retained. Add a stable operation
+  field and safe resource identifiers when useful.
+- Never directly convert an external error with `map_err`, `From`, or a helper
+  that does not perform this tracing first.
+- A later `?` only propagates an already classified error. Propagation sites
+  must not emit another direct event for the same failure.
+- Conversion logs must still redact credentials, tokens, and presigned URLs.
+  Business instruction DTOs may remain in the enclosing use-case span when
+  they are needed to reconstruct the failed operation and contain no secrets.
+
 ## Boundaries
 
 - `Nucl::coord` converts backend and step errors through the existing
@@ -46,5 +63,7 @@ passwords, tokens, credentials, or private payloads.
 - [ ] No retired error aliases or parallel transaction mappers were added.
 - [ ] Expected and unrecoverable conditions are classified at the narrowest
   boundary that understands them.
+- [ ] Every external SDK/driver error is traced in full at its adapter boundary
+  before conversion.
 - [ ] Handlers propagate use-case errors without duplicating business mapping.
 - [ ] Logs contain structured context but no secret or duplicate error event.
