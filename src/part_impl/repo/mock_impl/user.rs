@@ -198,7 +198,7 @@ impl<'a> Run<GetUserInfo<'a>> for Mock {
     type Error = BaseError;
 
     // Resolve `GetUserInfo` against the locked mock state.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn run(&self, oper: &GetUserInfo<'a>) -> BaseRest<UserInfo> {
         //
         // Lock state immutably for read-only user info lookup.
@@ -215,7 +215,7 @@ impl<'a> Run<GetUserCredential<'a>> for Mock {
     type Error = BaseError;
 
     // Resolve credentials from mock state by qid.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn run(
         &self,
         oper: &GetUserCredential<'a>,
@@ -235,7 +235,7 @@ impl<'a> Run<FindUserInfo<'a>> for Mock {
     type Error = BaseError;
 
     // Resolve optional user info by qid in shared state.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn run(&self, oper: &FindUserInfo<'a>) -> BaseRest<Option<UserInfo>> {
         //
         // Lock state immutably for optional find-by-qid.
@@ -252,7 +252,7 @@ impl<'a> Run<UpdateUser<'a>> for Mock {
     type Error = BaseError;
 
     // Apply update user mutations under mutable lock.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn run(&self, oper: &UpdateUser<'a>) -> BaseRest<()> {
         //
         // Lock mutable state and reuse shared update helper.
@@ -267,7 +267,7 @@ impl<'a> Step<CreateUser<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     // Create user using transaction-local mutable state.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -282,7 +282,7 @@ impl<'a> Step<FindUserInfo<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     // Resolve optional user by qid from transaction context.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -301,7 +301,7 @@ impl<'a> Step<UpdateUser<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     // Apply update operation using context-scoped user state.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -316,7 +316,7 @@ impl<'a> Step<ReserveUserAvatar<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     // Reserve/reuse avatar metadata and return reservation detail.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -392,7 +392,7 @@ impl<'a> Step<GetUserInfoExcluded<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     // Load by id with context state for exclusive update preparation.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -409,7 +409,7 @@ impl<'a> Step<DeleteUser<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     // Delete user and cleanup dependent mock artifacts.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,

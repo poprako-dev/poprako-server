@@ -29,7 +29,7 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::value::comic::ComicWithOpt;
 
 /// Lists comics for a workset with optional filters and derived data.
-#[instrument(level = "info", err(Debug), skip(repo, image_pool))]
+#[instrument(level = "info", skip(repo, image_pool))]
 pub async fn list_infos<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,

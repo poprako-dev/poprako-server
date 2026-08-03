@@ -34,7 +34,7 @@ use crate::result::{BaseError, BaseRest, accept};
 mod tests;
 
 /// Creates a terminology entry inside a terminology base.
-#[instrument(level = "info", err(Debug), skip(nucl, repo))]
+#[instrument(level = "info", skip(nucl, repo))]
 pub async fn create<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
@@ -98,7 +98,7 @@ where
 }
 
 /// Fetches a terminology entry by ID.
-#[instrument(level = "info", err(Debug), skip(repo))]
+#[instrument(level = "info", skip(repo))]
 pub async fn get_info<C, R>(
     (repo,): (&R,),
     token: UserToken,
@@ -130,7 +130,7 @@ where
 }
 
 /// Lists terminology entries inside one terminology base.
-#[instrument(level = "info", err(Debug), skip(repo))]
+#[instrument(level = "info", skip(repo))]
 pub async fn list_infos<C, R>(
     (repo,): (&R,),
     token: UserToken,
@@ -173,7 +173,7 @@ where
 }
 
 /// Replaces a terminology entry's source, targets, and comment.
-#[instrument(level = "info", err(Debug), skip(nucl, repo))]
+#[instrument(level = "info", skip(nucl, repo))]
 pub async fn update_info<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
@@ -248,7 +248,7 @@ where
 }
 
 /// Deletes a terminology entry.
-#[instrument(level = "info", err(Debug), skip(nucl, repo))]
+#[instrument(level = "info", skip(nucl, repo))]
 pub async fn delete<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,

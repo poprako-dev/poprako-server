@@ -43,7 +43,7 @@ pub struct TranslationExportQuery {
         (status = 422, description = "Invalid import content for the selected format"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn import(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
@@ -78,7 +78,7 @@ pub async fn import(
         (status = 403, description = "No perm to export this chapter"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn export(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
@@ -109,7 +109,7 @@ pub async fn export(
         (status = 403, description = "No perm to export this chapter"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn export_download(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
@@ -138,7 +138,7 @@ struct TranslationExportPayload {
 
 // Loads exported chapter data from the selected usecase path and builds the
 // response payload that is later written into the HTTP body.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn export_payload(
     harn: &AppHarn,
     user_token: UserToken,
@@ -158,9 +158,10 @@ async fn export_payload(
 
             let body = serde_json::to_vec(&val).map_err(|err| {
                 //
-                tracing::warn!(
-                    err = %err,
-                    "[chapter_port::export_payload] serialization failed",
+                tracing::error!(
+                    operation = "serialize_chapter_export",
+                    sdk_err = ?err,
+                    "JSON SDK serialization error",
                 );
 
                 HttpError::internal()
@@ -201,9 +202,10 @@ fn body_response(
         .body(Body::from(payload.body))
         .map_err(|err| {
             //
-            tracing::warn!(
-                err = %err,
-                "[chapter_port::body_response] build failed",
+            tracing::error!(
+                operation = "build_inline_export_response",
+                sdk_err = ?err,
+                "HTTP SDK response build error",
             );
 
             HttpError::internal()
@@ -228,9 +230,10 @@ fn download_response(
         .body(Body::from(payload.body))
         .map_err(|err| {
             //
-            tracing::warn!(
-                err = %err,
-                "[chapter_port::download_response] build failed",
+            tracing::error!(
+                operation = "build_download_export_response",
+                sdk_err = ?err,
+                "HTTP SDK response build error",
             );
 
             HttpError::internal()

@@ -106,13 +106,13 @@ impl R2ImagePool {
 }
 
 impl ImagePool for R2ImagePool {
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Internal implementation of `gen_download_url`.
     async fn gen_download_url(&self, key: &str) -> BaseRest<Url> {
         build_public_url(&self.domain, key, "gen_download_url")
     }
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Internal implementation of `gen_thumbnail_download_url`.
     async fn gen_thumbnail_download_url(
         &self,
@@ -130,7 +130,7 @@ impl ImagePool for R2ImagePool {
         )
     }
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Internal implementation of `get_upload_url`.
     async fn get_upload_url(&self, key: &str) -> BaseRest<Url> {
         //
@@ -164,11 +164,20 @@ impl ImagePool for R2ImagePool {
         let (content_type, presigning_config) = (
             content_type,
             PresigningConfig::expires_in(PUT_SIGNED_EXPIRATION).map_err(
-                |err| BaseError::Unrecoverable {
-                    message: format!(
-                        "[R2ImagePool::get_upload_url] failed to build presigning config: {}",
-                        err
-                    ),
+                |err| {
+                    //
+                    tracing::error!(
+                        operation = "get_upload_url",
+                        sdk_err = ?err,
+                        "R2 SDK presigning configuration error",
+                    );
+
+                    BaseError::Unrecoverable {
+                        message: format!(
+                            "[R2ImagePool::get_upload_url] failed to build presigning config: {}",
+                            err
+                        ),
+                    }
                 },
             )?,
         );
@@ -181,22 +190,40 @@ impl ImagePool for R2ImagePool {
             .content_type(content_type)
             .presigned(presigning_config)
             .await
-            .map_err(|err| BaseError::Unrecoverable {
-                message: format!(
-                    "[R2ImagePool::get_upload_url] failed to generate presigned put URL: {}",
-                    err
-                ),
+            .map_err(|err| {
+                //
+                tracing::error!(
+                    operation = "get_upload_url",
+                    sdk_err = ?err,
+                    "R2 SDK presigning error",
+                );
+
+                BaseError::Unrecoverable {
+                    message: format!(
+                        "[R2ImagePool::get_upload_url] failed to generate presigned put URL: {}",
+                        err
+                    ),
+                }
             })?;
 
-        Url::parse(presigned_request.uri()).map_err(|err| BaseError::Unrecoverable {
-            message: format!(
-                "[R2ImagePool::get_upload_url] failed to parse presigned URI: {}",
-                err
-            ),
+        Url::parse(presigned_request.uri()).map_err(|err| {
+            //
+            tracing::error!(
+                operation = "get_upload_url",
+                sdk_err = ?err,
+                "URL SDK parsing error",
+            );
+
+            BaseError::Unrecoverable {
+                message: format!(
+                    "[R2ImagePool::get_upload_url] failed to parse presigned URI: {}",
+                    err
+                ),
+            }
         })
     }
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Internal implementation of `get_upload_slot`.
     async fn get_upload_slot(
         &self,
@@ -213,11 +240,20 @@ impl ImagePool for R2ImagePool {
                 }
             })?,
             PresigningConfig::expires_in(PUT_SIGNED_EXPIRATION).map_err(
-                |err| BaseError::Unrecoverable {
-                    message: format!(
-                        "[R2ImagePool::get_upload_slot] failed to build presigning config: {}",
-                        err
-                    ),
+                |err| {
+                    //
+                    tracing::error!(
+                        operation = "get_upload_slot",
+                        sdk_err = ?err,
+                        "R2 SDK presigning configuration error",
+                    );
+
+                    BaseError::Unrecoverable {
+                        message: format!(
+                            "[R2ImagePool::get_upload_slot] failed to build presigning config: {}",
+                            err
+                        ),
+                    }
                 },
             )?,
         );
@@ -231,14 +267,30 @@ impl ImagePool for R2ImagePool {
             .content_length(content_length)
             .presigned(presigning_config)
             .await
-            .map_err(|err| BaseError::Unrecoverable {
-                message: format!(
-                    "[R2ImagePool::get_upload_slot] failed to generate presigned put URL: {}",
-                    err
-                ),
+            .map_err(|err| {
+                //
+                tracing::error!(
+                    operation = "get_upload_slot",
+                    sdk_err = ?err,
+                    "R2 SDK presigning error",
+                );
+
+                BaseError::Unrecoverable {
+                    message: format!(
+                        "[R2ImagePool::get_upload_slot] failed to generate presigned put URL: {}",
+                        err
+                    ),
+                }
             })?;
 
         let url = Url::parse(presigned_request.uri()).map_err(|err| {
+            //
+            tracing::error!(
+                operation = "get_upload_slot",
+                sdk_err = ?err,
+                "URL SDK parsing error",
+            );
+
             BaseError::Unrecoverable {
                 message: format!(
                     "[R2ImagePool::get_upload_slot] failed to parse presigned URI: {}",
@@ -258,7 +310,7 @@ impl ImagePool for R2ImagePool {
 }
 
 impl ImageManager for R2ImagePool {
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Removes a previously uploaded object from the R2 bucket.
     async fn delete_object(&self, key: &str) -> BaseRest<()> {
         self.client
@@ -268,15 +320,24 @@ impl ImageManager for R2ImagePool {
             .send()
             .await
             .map(|_| ())
-            .map_err(|e| BaseError::Unrecoverable {
-                message: format!(
-                    "[R2ImagePool::delete_object] failed to delete '{}': {}",
-                    key, e
-                ),
+            .map_err(|err| {
+                //
+                tracing::error!(
+                    operation = "delete_object",
+                    sdk_err = ?err,
+                    "R2 SDK request error",
+                );
+
+                BaseError::Unrecoverable {
+                    message: format!(
+                        "[R2ImagePool::delete_object] failed to delete '{}': {}",
+                        key, err
+                    ),
+                }
             })
     }
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Performs a HEAD request to determine whether an object exists in R2.
     async fn object_exists(&self, key: &str) -> BaseRest<bool> {
         match self
@@ -295,12 +356,21 @@ impl ImageManager for R2ImagePool {
                 accept(false)
             }
 
-            Err(e) => Err(BaseError::Unrecoverable {
-                message: format!(
-                    "[R2ImagePool::object_exists] failed to check '{}': {}",
-                    key, e
-                ),
-            }),
+            Err(err) => {
+                //
+                tracing::error!(
+                    operation = "object_exists",
+                    sdk_err = ?err,
+                    "R2 SDK request error",
+                );
+
+                Err(BaseError::Unrecoverable {
+                    message: format!(
+                        "[R2ImagePool::object_exists] failed to check '{}': {}",
+                        key, err
+                    ),
+                })
+            }
         }
     }
 }
@@ -337,11 +407,20 @@ fn build_public_url(
             }
         };
 
-    Url::parse(&url_string).map_err(|err| BaseError::Unrecoverable {
-        message: format!(
-            "[R2ImagePool::{}] failed to parse URL '{}': {}",
-            operation, url_string, err
-        ),
+    Url::parse(&url_string).map_err(|err| {
+        //
+        tracing::error!(
+            operation,
+            sdk_err = ?err,
+            "URL SDK parsing error",
+        );
+
+        BaseError::Unrecoverable {
+            message: format!(
+                "[R2ImagePool::{}] failed to parse URL '{}': {}",
+                operation, url_string, err
+            ),
+        }
     })
 }
 

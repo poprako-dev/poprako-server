@@ -280,7 +280,7 @@ impl<'a, 'b> Run<GetComicInfo<'a, 'b>> for Mock {
     // Use base error type for get-by-id read operation.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Load locked state and delegate to shared helper.
     async fn run(
         &self,
@@ -297,7 +297,7 @@ impl<'a> Run<ListComicInfos<'a>> for Mock {
     // Use base error type for list operation.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Load locked state and execute listing helper.
     async fn run(
         &self,
@@ -314,7 +314,7 @@ impl<'a> Run<UpdateComic<'a>> for Mock {
     // Use base error type for full-run metadata updates.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Apply mutable field updates and touch updated_at.
     async fn run(&self, oper: &UpdateComic<'a>) -> Result<(), Self::Error> {
         //
@@ -342,7 +342,7 @@ impl<'a> Run<MarkComicCoverUploaded<'a>> for Mock {
     // Use base error type for cover upload mark operations.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Validate and apply cover upload transition under lock.
     async fn run(
         &self,
@@ -365,7 +365,7 @@ impl<'a> Step<CreateComic<'a>, MockContext> for Mock {
     // Use base errors for create step inside transaction context.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Check id collision, then insert a new comic model and return snapshot.
     async fn step(
         &self,
@@ -416,7 +416,7 @@ impl<'a, 'b> Step<GetComicInfo<'a, 'b>, MockContext> for Mock {
     // Use base errors for mocked transaction get.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Load one comic and resolve its requested includes.
     async fn step(
         &self,
@@ -431,7 +431,7 @@ impl<'a, 'b> Step<GetComicInfoExcluded<'a, 'b>, MockContext> for Mock {
     // Use base errors for excluded projection get operation.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Reuse shared read helper, applying exclusion-aware include list.
     async fn step(
         &self,
@@ -446,7 +446,7 @@ impl<'a> Step<ListComicInfosExcluded<'a>, MockContext> for Mock {
     // Use base errors for transaction list operation.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Return list built by shared helper for excluded projection.
     async fn step(
         &self,
@@ -461,7 +461,7 @@ impl<'a> Step<ListComicInfos<'a>, MockContext> for Mock {
     // Use base errors for transaction list operation.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Return list using shared filtering/sorting/page helper.
     async fn step(
         &self,
@@ -476,7 +476,7 @@ impl<'a> Step<ReserveComicCover<'a>, MockContext> for Mock {
     // Use base errors for cover reservation steps.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Reuse cover key/version state and return existing or new reservation.
     async fn step(
         &self,
@@ -550,7 +550,7 @@ impl<'a> Step<MarkComicCoverUploaded<'a>, MockContext> for Mock {
     // Use base errors for mock cover upload updates.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Apply cover upload state changes using shared helper after lock resolution.
     async fn step(
         &self,
@@ -571,7 +571,7 @@ impl<'a> Step<DeleteComic<'a>, MockContext> for Mock {
     // Use base errors for mocked deletion operations.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Remove comic and cascade related in-memory entities.
     async fn step(
         &self,
@@ -623,7 +623,7 @@ impl<'a> Step<AllocComicChapterIndex<'a>, MockContext> for Mock {
     // Use base errors for chapter index allocation in mock.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Validate existence and compute next chapter index from current count.
     async fn step(
         &self,
@@ -654,7 +654,7 @@ impl<'a> Step<UpdateComicChapterCount<'a>, MockContext> for Mock {
     // Use base errors for chapter count updates in mock.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Update chapter count with delta and refresh the timestamp.
     async fn step(
         &self,
@@ -682,7 +682,7 @@ impl<'a> Step<TouchComicLastActive<'a>, MockContext> for Mock {
     // Use base errors for updating comic heartbeat timestamps.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Refresh last-active and updated timestamps for heartbeat signals.
     async fn step(
         &self,

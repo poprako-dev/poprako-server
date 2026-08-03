@@ -24,7 +24,7 @@ use crate::result::{BaseRest, accept};
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C>` — Team storage.
 /// * `I: ImagePool` — Resolves the avatar signed URL.
-#[instrument(level = "info", err(Debug), skip(repo, image_pool))]
+#[instrument(level = "info", skip(repo, image_pool))]
 pub async fn get_info<C, R, I>(
     (repo, image_pool): (&R, &I),
     id: String,
@@ -49,7 +49,7 @@ where
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C>` — Team storage.
 /// * `I: ImagePool` — Resolves avatar signed URLs.
-#[instrument(level = "info", err(Debug), skip(repo, image_pool))]
+#[instrument(level = "info", skip(repo, image_pool))]
 pub async fn list_infos<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,

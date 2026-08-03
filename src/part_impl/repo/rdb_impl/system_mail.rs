@@ -29,7 +29,7 @@ pub mod tests;
 // ── Free functions ──────────────────────────────────────────────────────────
 
 // Insert one system mail row and return nothing when persistence succeeds.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn send(conn: &mut RdbConn, entry: &SystemMailEntry) -> BaseRest<()> {
     //
     let entry = SystemMailEntryRow::from(entry);
@@ -44,7 +44,7 @@ async fn send(conn: &mut RdbConn, entry: &SystemMailEntry) -> BaseRest<()> {
 }
 
 // Insert one or more system mail rows with a single bulk database write.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn send_batch(
     conn: &mut RdbConn,
     entries: &[SystemMailEntry],
@@ -65,7 +65,7 @@ async fn send_batch(
 }
 
 // Query mails for the receiver, applying read-state filters and pagination.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn list_infos(
     conn: &mut RdbConn,
     spec: &SystemMailListSpec,
@@ -95,7 +95,7 @@ async fn list_infos(
 }
 
 // Validate ownership, then flip `read` for a mail belonging to the receiver.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn mark_read(
     conn: &mut RdbConn,
     id: &str,
@@ -167,7 +167,7 @@ impl Run<SendSystemMail<'_>> for HybRepo {
     // Reuse base error type for send operations.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Persist one outbound system mail entry in the request-scoped transaction.
     async fn run(&self, oper: &SendSystemMail<'_>) -> BaseRest<()> {
         submit_query!(self.core, send, oper.entry)
@@ -178,7 +178,7 @@ impl Run<SendSystemMails<'_>> for HybRepo {
     // Reuse base error type for bulk send operations.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Persist multiple outbound system mails in one request scope.
     async fn run(&self, oper: &SendSystemMails<'_>) -> BaseRest<()> {
         submit_query!(self.core, send_batch, oper.entries)
@@ -189,7 +189,7 @@ impl Run<ListSystemMailInfos<'_>> for HybRepo {
     // Reuse base error type for listing operations.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Query and return a paginated view of user-targeted system mails.
     async fn run(
         &self,
@@ -203,7 +203,7 @@ impl Run<MarkSystemMailRead<'_>> for HybRepo {
     // Reuse base error type for read-mark operations.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Verify receiver ownership then set the target mail as read.
     async fn run(&self, oper: &MarkSystemMailRead<'_>) -> BaseRest<()> {
         submit_query!(self.core, mark_read, oper.id, oper.user_id)

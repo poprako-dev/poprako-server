@@ -22,7 +22,7 @@ impl Run<ListMemberInfos<'_>> for HybRepo {
     // filters or a user-only scope.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Route list variants to the corresponding read-only query in the current repo.
     async fn run(
         &self,
@@ -45,7 +45,7 @@ impl Run<GetMemberInfo<'_, '_>> for HybRepo {
     // Non-transactional query path for loading one member info by identity.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Resolve one member info by id through a submit-query read path.
     async fn run(&self, oper: &GetMemberInfo<'_, '_>) -> BaseRest<MemberInfo> {
         match oper {
@@ -60,7 +60,7 @@ impl Step<CreateMember<'_>, RdbContext> for HybRepo {
     // Create a new member row inside the active transaction context.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Invoke `create` step with raw entry payload and return created info.
     async fn step(
         &self,
@@ -77,7 +77,7 @@ impl Step<UpdateMember<'_>, RdbContext> for HybRepo {
     // Supported requests either adjust nickname or change role based on branch.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Branch to nickname/role update path and execute inside the transaction.
     async fn step(
         &self,
@@ -109,7 +109,7 @@ impl Step<ListMemberInfos<'_>, RdbContext> for HybRepo {
     // but executes through an explicit DB connection context.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Execute list query within the transaction and return full member info set.
     async fn step(
         &self,
@@ -133,7 +133,7 @@ impl Step<FindMemberInfo<'_>, RdbContext> for HybRepo {
     // Transactional lookup for a member by `(user_id, team_id)`.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Find one member-row mapping by both user and team identifiers.
     async fn step(
         &self,
@@ -157,7 +157,7 @@ impl Step<GetMemberInfo<'_, '_>, RdbContext> for HybRepo {
     // Transactional lookup for a full member info by id and requested includes.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Fetch a member info with requested include options within the transaction.
     async fn step(
         &self,
@@ -178,7 +178,7 @@ impl Step<ListMemberInfosExcluded<'_>, RdbContext> for HybRepo {
     // One branch excludes all members for a user, the other excludes a full team.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Execute exclusion-based member list variants inside the same tx context.
     async fn step(
         &self,
@@ -202,7 +202,7 @@ impl Step<DeleteMember<'_>, RdbContext> for HybRepo {
     // Transactional delete operation for a single member by id.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Delete the member row for the provided identifier from the DB transaction.
     async fn step(
         &self,

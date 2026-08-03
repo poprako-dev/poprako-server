@@ -55,7 +55,7 @@ use crate::result::{BaseError, BaseRest, accept};
 pub mod tests;
 
 /// Creates a new workset inside a team.
-#[instrument(level = "info", err(Debug), skip(nucl, repo))]
+#[instrument(level = "info", skip(nucl, repo))]
 pub async fn create<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
@@ -104,7 +104,7 @@ where
 }
 
 /// Fetches a workset by ID.
-#[instrument(level = "info", err(Debug), skip(repo))]
+#[instrument(level = "info", skip(repo))]
 pub async fn get_info<C, R>(
     (repo,): (&R,),
     token: UserToken,
@@ -130,7 +130,7 @@ where
 }
 
 /// Lists worksets for a team.
-#[instrument(level = "info", err(Debug), skip(repo))]
+#[instrument(level = "info", skip(repo))]
 pub async fn list_infos<C, R>(
     (repo,): (&R,),
     token: UserToken,
@@ -160,7 +160,7 @@ where
 }
 
 /// Updates a workset's name and description.
-#[instrument(level = "info", err(Debug), skip(repo))]
+#[instrument(level = "info", skip(repo))]
 pub async fn update_info<C, R>(
     (repo,): (&R,),
     token: UserToken,
@@ -196,7 +196,7 @@ where
 }
 
 /// Deletes a workset and its child data.
-#[instrument(level = "info", err(Debug), skip(nucl, repo, prom))]
+#[instrument(level = "info", skip(nucl, repo, prom))]
 pub async fn delete<N, C, R, P>(
     (nucl, repo, prom): (&N, &R, &P),
     token: UserToken,

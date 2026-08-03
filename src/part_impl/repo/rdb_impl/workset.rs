@@ -28,7 +28,7 @@ use crate::shared::{RdbConn, RdbContext};
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 // Remove one workset row by id.
 async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
@@ -41,7 +41,7 @@ async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     accept(())
 }
 
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 // Load one workset by id and return a rich info view.
 async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<WorksetInfo> {
     //
@@ -80,7 +80,7 @@ async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<WorksetInfo> {
     accept(row.into())
 }
 
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 // List worksets for one team with stable index ordering.
 async fn list_infos(
     conn: &mut RdbConn,
@@ -101,7 +101,7 @@ async fn list_infos(
     accept(rows.into_iter().map(Into::into).collect())
 }
 
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 // Update mutable metadata for an existing workset.
 async fn update_info(conn: &mut RdbConn, update: &WorksetRepl) -> BaseRest<()> {
     //
@@ -121,7 +121,7 @@ async fn update_info(conn: &mut RdbConn, update: &WorksetRepl) -> BaseRest<()> {
     accept(())
 }
 
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 // List worksets for team-level operations while excluding other readers.
 async fn list_infos_excluded(
     conn: &mut RdbConn,
@@ -140,7 +140,7 @@ async fn list_infos_excluded(
     accept(rows.into_iter().map(Into::into).collect())
 }
 
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 // Load one workset with row lock for mutation flows.
 async fn get_info_excluded(
     conn: &mut RdbConn,
@@ -183,7 +183,7 @@ async fn get_info_excluded(
     accept(row.into())
 }
 
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 // Insert a new workset and return its public info record.
 async fn create(
     conn: &mut RdbConn,
@@ -203,7 +203,7 @@ async fn create(
     accept(row.into())
 }
 
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 // Allocate next comic index atomically for a workset.
 async fn alloc_comic_index(conn: &mut RdbConn, id: &str) -> BaseRest<i32> {
     //
@@ -218,7 +218,7 @@ async fn alloc_comic_index(conn: &mut RdbConn, id: &str) -> BaseRest<i32> {
     accept(index)
 }
 
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 // Update comic count by a delta value.
 async fn update_comic_count(
     conn: &mut RdbConn,
@@ -241,7 +241,7 @@ impl Run<GetWorksetInfo<'_>> for HybRepo {
     type Error = BaseError;
 
     // Map `GetWorksetInfo` lookup to one repository query helper.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn run(&self, oper: &GetWorksetInfo<'_>) -> BaseRest<WorksetInfo> {
         submit_query!(self.core, get_info, oper.id)
     }
@@ -252,7 +252,7 @@ impl Run<ListWorksetInfos<'_>> for HybRepo {
     type Error = BaseError;
 
     // Map list request into paged, team-scoped query helper.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn run(
         &self,
         oper: &ListWorksetInfos<'_>,
@@ -266,7 +266,7 @@ impl Run<UpdateWorkset<'_>> for HybRepo {
     type Error = BaseError;
 
     // Route update DTO directly into update helper.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn run(&self, oper: &UpdateWorkset<'_>) -> BaseRest<()> {
         submit_query!(self.core, update_info, oper.update)
     }
@@ -277,7 +277,7 @@ impl Step<GetWorksetInfo<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Resolve one workset info inside transaction-scoped connection.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -292,7 +292,7 @@ impl Step<ListWorksetInfos<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Resolve multiple worksets for team with pagination under transaction context.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -307,7 +307,7 @@ impl Step<GetWorksetInfoExcluded<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Resolve locked workset row for mutation chains.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -322,7 +322,7 @@ impl Step<ListWorksetInfosExcluded<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // List rows locked by team id to coordinate dependent writes.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -337,7 +337,7 @@ impl Step<CreateWorkset<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Create workset row and return inserted info representation.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -352,7 +352,7 @@ impl Step<DeleteWorkset<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Delete workset row as part of the current transaction.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -367,7 +367,7 @@ impl Step<AllocWorksetComicIndex<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Allocate and return the next comic index for the workset.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -382,7 +382,7 @@ impl Step<UpdateWorksetComicCount<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Apply comic count delta to workset within transaction.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,

@@ -47,7 +47,7 @@ use crate::value::comic::{ComicInclOpt, ComicWithOpt};
         (status = 422, description = "Invalid or expired month selection"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn export_archives(
     State(harn): State<AppHarn>,
     Path(team_id): Path<String>,
@@ -107,7 +107,7 @@ pub struct ComicListQuery {
         (status = 404, description = "Workset not found"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn create(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
@@ -131,7 +131,7 @@ pub async fn create(
         (status = 422, description = "Invalid query option combination or workflow-stage filter"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn list_infos(
     State(harn): State<AppHarn>,
     Path(workset_id): Path<String>,
@@ -170,7 +170,7 @@ pub async fn list_infos(
         (status = 404, description = "Comic not found"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn get_info(
     State(harn): State<AppHarn>,
     Path(comic_id): Path<String>,
@@ -199,7 +199,7 @@ pub async fn get_info(
         (status = 404, description = "Comic not found"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn update_info(
     State(harn): State<AppHarn>,
     Path(comic_id): Path<String>,
@@ -227,7 +227,7 @@ pub async fn update_info(
         (status = 404, description = "Comic not found"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn reserve_cover(
     State(harn): State<AppHarn>,
     Path(comic_id): Path<String>,
@@ -257,7 +257,7 @@ pub async fn reserve_cover(
         (status = 404, description = "Comic not found"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn mark_cover_uploaded(
     State(harn): State<AppHarn>,
     Path(comic_id): Path<String>,
@@ -288,7 +288,7 @@ pub async fn mark_cover_uploaded(
         (status = 404, description = "Comic not found"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn archive(
     State(harn): State<AppHarn>,
     Path(comic_id): Path<String>,
@@ -315,7 +315,7 @@ pub async fn archive(
         (status = 404, description = "Comic not found"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn delete(
     State(harn): State<AppHarn>,
     Path(comic_id): Path<String>,

@@ -44,7 +44,7 @@ fn missing_resource(oper: &ResolveTeamId<'_>) -> BaseError {
 }
 
 // Resolve the owning team id for a comic or chapter in a single query.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn resolve_team_id(
     conn: &mut RdbConn,
     oper: &ResolveTeamId<'_>,
@@ -83,7 +83,7 @@ impl Run<ResolveTeamId<'_>> for HybRepo {
     type Error = BaseError;
 
     // Executes the team-resolution projection on a pooled connection.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn run(
         &self,
         oper: &ResolveTeamId<'_>,
@@ -97,7 +97,7 @@ impl Step<ResolveTeamId<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Executes the team-resolution projection inside the active transaction.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,

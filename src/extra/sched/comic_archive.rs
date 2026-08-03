@@ -85,7 +85,7 @@ struct ExpiredSlot {
     start: OffsetDateTime,
 }
 
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 // Purge all retained-expired slots for one sweep and report total deletions.
 async fn purge_once(core: &RdbCore) -> BaseRest<usize> {
     //
@@ -125,7 +125,7 @@ fn retained_cutoff(now: OffsetDateTime) -> BaseRest<OffsetDateTime> {
     accept(PrimitiveDateTime::new(date, Time::MIDNIGHT).assume_utc())
 }
 
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 // Query months already expired for retention and deduplicate by team/month.
 async fn list_expired_slots(
     conn: &mut RdbConn,
@@ -154,7 +154,7 @@ async fn list_expired_slots(
     )
 }
 
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 // Delete archived rows for one team-month slot and notify team admins.
 async fn purge_slot(conn: &mut RdbConn, slot: &ExpiredSlot) -> BaseRest<usize> {
     //
