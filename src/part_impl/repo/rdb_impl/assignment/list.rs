@@ -14,7 +14,7 @@ use crate::shared::result::diesel;
 use crate::value::role::RoleField;
 
 /// Queries assignment infos selected by the repository operation.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn list_infos(
     conn: &mut RdbConn,
     oper: &ListAssignmentInfos<'_, '_>,

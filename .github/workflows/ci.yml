@@ -111,6 +111,7 @@ jobs:
       name: production
 
     env:
+      DATABASE_URL: ${{ secrets.DEPLOY_DATABASE_URL }}
       DEPLOY_BIND_HOST: ${{ secrets.DEPLOY_BIND_HOST }}
       DEPLOY_DOCKER_NETWORK: ${{ secrets.DEPLOY_DOCKER_NETWORK }}
       DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
@@ -119,10 +120,18 @@ jobs:
       DEPLOY_POSTGRES_CONTAINER: ${{ secrets.DEPLOY_POSTGRES_CONTAINER }}
       DEPLOY_PUBLIC_PORT: ${{ secrets.DEPLOY_PUBLIC_PORT }}
       DEPLOY_ROOT: ${{ secrets.DEPLOY_ROOT }}
-      DEPLOY_RUNTIME_ENV: ${{ secrets.DEPLOY_RUNTIME_ENV }}
       DEPLOY_SHA: ${{ github.sha }}
       DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
       DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+      JWT_EXPIRATION_HOURS: ${{ secrets.DEPLOY_JWT_EXPIRATION_HOURS }}
+      JWT_SECRET: ${{ secrets.DEPLOY_JWT_SECRET }}
+      POPRAKO_SNOWFLAKE_NODE_ID: ${{ secrets.DEPLOY_POPRAKO_SNOWFLAKE_NODE_ID }}
+      R2_ACCESS_KEY_ID: ${{ secrets.DEPLOY_R2_ACCESS_KEY_ID }}
+      R2_ACCOUNT_ID: ${{ secrets.DEPLOY_R2_ACCOUNT_ID }}
+      R2_BUCKET_NAME: ${{ secrets.DEPLOY_R2_BUCKET_NAME }}
+      R2_CUSTOM_DOMAIN: ${{ secrets.DEPLOY_R2_CUSTOM_DOMAIN }}
+      R2_REGION: ${{ secrets.DEPLOY_R2_REGION }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.DEPLOY_R2_SECRET_ACCESS_KEY }}
 
     steps:
       - name: Check out deployed commit

@@ -41,7 +41,7 @@ mod list;
 // Separate module.
 
 // Delete one assignment by id in repository transaction flow.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
     diesel::delete(t_assignment.filter(f_id.eq(id)))
@@ -65,7 +65,7 @@ fn rows_into_infos(
 }
 
 // Lookup one assignment by chapter and user id for read operations.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn get_info_by_chapter_id_and_user_id(
     conn: &mut RdbConn,
     chapter_id: &str,
@@ -85,7 +85,7 @@ async fn get_info_by_chapter_id_and_user_id(
 }
 
 // Lookup one assignment for user + comic scope and apply include fields.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn find_info_by_user_id_and_comic_id(
     conn: &mut RdbConn,
     user_id: &str,
@@ -121,7 +121,7 @@ async fn find_info_by_user_id_and_comic_id(
 }
 
 // Query assignment by id and populate optional include fields.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
@@ -172,7 +172,7 @@ async fn get_info_by_id(
 }
 
 // Query chapter assignments with `FOR UPDATE` for transactional mutation windows.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn list_chapter_assignments_excluded(
     conn: &mut RdbConn,
     chapter_id: &str,
@@ -191,7 +191,7 @@ async fn list_chapter_assignments_excluded(
 }
 
 // Insert a new assignment row and return created assignment info.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn create(
     conn: &mut RdbConn,
     model_entry: &AssignmentEntry,
@@ -212,7 +212,7 @@ async fn create(
 }
 
 // Update assignment role timestamps and return latest assignment snapshot.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn put_roles(
     conn: &mut RdbConn,
     update: &AssignmentRoleRepl,
@@ -262,7 +262,7 @@ impl Run<FindAssignmentInfo<'_, '_>> for HybRepo {
     // Keep assignment lookup orchestration errors mapped to repository base errors.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Resolve assignment by chapter/user or user/comic and return optional payload.
     async fn run(
         &self,
@@ -299,7 +299,7 @@ impl Run<ListAssignmentInfos<'_, '_>> for HybRepo {
     // Keep list-assignment orchestration failures normalized for call sites.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Delegate list query composition to shared listing helper with filters.
     async fn run(
         &self,
@@ -313,7 +313,7 @@ impl Run<GetAssignmentInfo<'_, '_>> for HybRepo {
     // Normalize get-assignment errors to base repository error type.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Return one assignment info by id with requested include options.
     async fn run(
         &self,
@@ -327,7 +327,7 @@ impl Step<ListAssignmentInfos<'_, '_>, RdbContext> for HybRepo {
     // Use base error for listing assignments inside an existing transaction.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Resolve assignment list query by delegating to list module in context transaction.
     async fn step(
         &self,
@@ -342,7 +342,7 @@ impl Step<FindAssignmentInfo<'_, '_>, RdbContext> for HybRepo {
     // Keep transactional assignment lookup failures consistent with run-level errors.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Resolve one assignment by chapter/user or user/comic within the open transaction.
     async fn step(
         &self,
@@ -384,7 +384,7 @@ impl Step<ListAssignmentInfosExcluded<'_>, RdbContext> for HybRepo {
     // Normalize excluded-list behavior errors under base repository semantics.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // List assignments for a chapter while applying exclusion filters under lock.
     async fn step(
         &self,
@@ -404,7 +404,7 @@ impl Step<CreateAssignment<'_>, RdbContext> for HybRepo {
     // Translate assignment-create failures to base error within transaction.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Insert a new assignment row and return created assignment information.
     async fn step(
         &self,
@@ -419,7 +419,7 @@ impl Step<UpdateAssignmentRoles<'_>, RdbContext> for HybRepo {
     // Keep role-update failures mapped to shared repository error contract.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Apply role updates to an assignment and return the refreshed record.
     async fn step(
         &self,
@@ -431,7 +431,7 @@ impl Step<UpdateAssignmentRoles<'_>, RdbContext> for HybRepo {
 }
 
 // Delete all assignments bound to one chapter when a chapter is removed.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn delete_by_chapter_id(
     conn: &mut RdbConn,
     chapter_id: &str,
@@ -449,7 +449,7 @@ impl Step<DeleteAssignments<'_>, RdbContext> for HybRepo {
     // Map all delete-assignment branch failures to base repository errors.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Remove assignments by id or by chapter inside an active transaction.
     async fn step(
         &self,

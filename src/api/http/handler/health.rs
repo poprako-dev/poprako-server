@@ -32,7 +32,7 @@ mod tests;
         (status = 404, description = "Not found (non-loopback request)"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn check_health(
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
 ) -> Result<Json<MetricTotal>, StatusCode> {
@@ -62,7 +62,7 @@ pub async fn check_health(
         (status = 503, description = "Metrics recorder unavailable"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn detailed_metrics(
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
 ) -> Result<Response, StatusCode> {

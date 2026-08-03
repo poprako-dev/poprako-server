@@ -63,7 +63,7 @@ pub struct ChapterListQuery {
         (status = 404, description = "Comic not found"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn create(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
@@ -86,7 +86,7 @@ pub async fn create(
         (status = 403, description = "No perm to list chapters in this comic"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn list_infos(
     State(harn): State<AppHarn>,
     Path(comic_id): Path<String>,
@@ -121,7 +121,7 @@ pub async fn list_infos(
         (status = 403, description = "No perm to view this comic's pinned chapter"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn get_pinned(
     State(harn): State<AppHarn>,
     Path(comic_id): Path<String>,
@@ -144,7 +144,7 @@ pub async fn get_pinned(
         (status = 404, description = "Chapter not found"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn get_info(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
@@ -169,7 +169,7 @@ pub async fn get_info(
         (status = 404, description = "Chapter not found"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn update_info(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
@@ -202,7 +202,7 @@ pub async fn update_info(
         (status = 422, description = "Published chapters cannot be pinned"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn mark_pinned(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
@@ -233,7 +233,7 @@ pub async fn mark_pinned(
         (status = 422, description = "Illegal workflow transition"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn advance_stage(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
@@ -265,7 +265,7 @@ pub async fn advance_stage(
         (status = 404, description = "Chapter not found"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn delete(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,

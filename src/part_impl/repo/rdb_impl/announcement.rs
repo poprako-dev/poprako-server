@@ -26,7 +26,7 @@ use crate::shared::{RdbConn, RdbContext};
 pub mod tests;
 
 // Queries announcement rows filtered by team ID, ordered by creation time descending.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn list_infos(
     conn: &mut RdbConn,
     spec: &AnnouncementListSpec,
@@ -58,7 +58,7 @@ async fn list_infos(
 }
 
 // Inserts a new announcement row from the given entry and returns the created info.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn create(
     conn: &mut RdbConn,
     entry: &AnnouncementEntry,
@@ -81,7 +81,7 @@ impl Run<ListAnnouncementInfos<'_>> for HybRepo {
     type Error = BaseError;
 
     // Executes the announcement list query with the given operation spec.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn run(
         &self,
         oper: &ListAnnouncementInfos<'_>,
@@ -95,7 +95,7 @@ impl Step<CreateAnnouncement<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Runs announcement creation within an existing transaction.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,

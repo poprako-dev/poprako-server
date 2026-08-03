@@ -25,7 +25,7 @@ use crate::shared::result::diesel;
 use crate::value::chapter::{ChapterInclOpt, Stage};
 
 /// Queries a single chapter row by ID and populates its includes.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
@@ -70,7 +70,7 @@ pub async fn get_info_by_id(
 }
 
 /// Queries a single chapter row by ID under `FOR UPDATE` lock.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn get_info_excluded(
     conn: &mut RdbConn,
     id: &str,
@@ -116,7 +116,7 @@ pub async fn get_info_excluded(
 }
 
 /// Queries chapter rows for a given comic, ordered by index descending.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn list_infos(
     conn: &mut RdbConn,
     spec: &ChapterListSpec,
@@ -141,7 +141,7 @@ pub async fn list_infos(
 }
 
 /// Queries all chapter rows for a comic under `FOR UPDATE` lock.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn list_infos_excluded(
     conn: &mut RdbConn,
     comic_id: &str,
@@ -160,7 +160,7 @@ pub async fn list_infos_excluded(
 }
 
 /// Locks all chapter rows belonging to a comic.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn lock_chapters(conn: &mut RdbConn, comic_id: &str) -> BaseRest<()> {
     //
     let _ = t_chapter
@@ -175,7 +175,7 @@ pub async fn lock_chapters(conn: &mut RdbConn, comic_id: &str) -> BaseRest<()> {
 }
 
 /// Finds the pinned chapter for a given comic ID, if one exists.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn find_pinned_info_by_comic_id(
     conn: &mut RdbConn,
     comic_id: &str,
@@ -208,7 +208,7 @@ pub async fn find_pinned_info_by_comic_id(
 }
 
 /// Returns the pinned chapter infos for the given comic IDs.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn list_pinned_infos_by_comic_ids(
     conn: &mut RdbConn,
     comic_ids: &[String],
@@ -230,7 +230,7 @@ pub async fn list_pinned_infos_by_comic_ids(
 }
 
 /// Inserts a new chapter row from the given entry and returns the created info.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn create(
     conn: &mut RdbConn,
     chapter_entry: &ChapterEntry,
@@ -249,7 +249,7 @@ pub async fn create(
 }
 
 /// Updates the modifiable fields of a chapter row.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn update_info(
     conn: &mut RdbConn,
     update: &ChapterPatch,
@@ -277,7 +277,7 @@ pub async fn update_info(
 }
 
 /// Updates the stage timestamps of a chapter row.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn update_stage(
     conn: &mut RdbConn,
     update: &ChapterStageRepl,
@@ -297,7 +297,7 @@ pub async fn update_stage(
 }
 
 /// Atomically moves a pending two-step stage to active.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn start_stage(
     conn: &mut RdbConn,
     id: &str,
@@ -359,7 +359,7 @@ pub async fn start_stage(
 ///
 /// Missing and already completed chapters are resolved idempotently. A
 /// pending chapter returns `false` while at least one upload is incomplete.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn complete_raw_provide(
     conn: &mut RdbConn,
     id: &str,
@@ -387,7 +387,7 @@ pub async fn complete_raw_provide(
 }
 
 /// Clears raw-provision completion while preserving every other stage.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn reset_raw_provide(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
     let now = OffsetDateTime::now_utc();
@@ -405,7 +405,7 @@ pub async fn reset_raw_provide(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
 }
 
 /// Sets the page and unit counters on a chapter row.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn set_page_counters(
     conn: &mut RdbConn,
     id: &str,
@@ -433,7 +433,7 @@ pub async fn set_page_counters(
 }
 
 /// Adjusts a chapter's unit counters by the given delta.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn adjust_unit_counters(
     conn: &mut RdbConn,
     id: &str,
@@ -459,7 +459,7 @@ pub async fn adjust_unit_counters(
 }
 
 /// Unpins all chapters for a comic except the one with the given excluded ID.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn unpin_others(
     conn: &mut RdbConn,
     comic_id: &str,
@@ -482,7 +482,7 @@ pub async fn unpin_others(
 }
 
 /// Deletes a single chapter row by ID.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
     diesel::delete(t_chapter.filter(f_id.eq(id)))

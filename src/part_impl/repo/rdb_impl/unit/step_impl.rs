@@ -48,7 +48,7 @@ pub async fn list_infos(
     accept(unit_infos)
 }
 
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 /// Locks and lists the complete Unit chain, including tombstones.
 pub async fn list_orders_for_update(
     conn: &mut RdbConn,
@@ -81,7 +81,7 @@ pub async fn list_orders_for_update(
     accept(orders)
 }
 
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 /// Applies normalized Unit edits and returns the latest visible counters.
 pub async fn apply_edits(
     conn: &mut RdbConn,

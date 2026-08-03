@@ -25,7 +25,7 @@ use crate::shared::RdbConn;
 use crate::shared::result::{diesel, next_version};
 
 /// Load a single page info by ID.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
@@ -60,7 +60,7 @@ pub async fn get_info_by_id(
 }
 
 /// Load a page info by ID, locking the row for update.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn get_info_excluded(
     conn: &mut RdbConn,
     id: &str,
@@ -96,7 +96,7 @@ pub async fn get_info_excluded(
 }
 
 /// Queries page infos for a chapter, ordered by index.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn list_infos(
     conn: &mut RdbConn,
     chapter_id: &str,
@@ -114,7 +114,7 @@ pub async fn list_infos(
 }
 
 /// Lists page infos while retaining row locks for a manifest transaction.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn list_infos_excluded(
     conn: &mut RdbConn,
     chapter_id: &str,
@@ -133,7 +133,7 @@ pub async fn list_infos_excluded(
 }
 
 /// Places every normal page index into the temporary negative range.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn shift_indexes_temporary(
     conn: &mut RdbConn,
     chapter_id: &str,
@@ -153,7 +153,7 @@ pub async fn shift_indexes_temporary(
 }
 
 /// Persists the final index and image identity for one manifest page.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn update_manifest(
     conn: &mut RdbConn,
     update: &PageManifestRepl,
@@ -182,7 +182,7 @@ pub async fn update_manifest(
 }
 
 /// Invalidates every page image identity after chapter publication.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn clear_images_for_publish(
     conn: &mut RdbConn,
     chapter_id: &str,
@@ -236,7 +236,7 @@ pub async fn clear_images_for_publish(
 }
 
 /// Query the lowest-index page info for each requested chapter.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn list_first_infos_by_chapter_ids(
     conn: &mut RdbConn,
     chapter_ids: &[String],
@@ -255,7 +255,7 @@ pub async fn list_first_infos_by_chapter_ids(
 }
 
 /// Batch-insert pages from a slice of model_entries and return the created infos.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn create_batch(
     conn: &mut RdbConn,
     model_entries: &[PageEntry],
@@ -278,7 +278,7 @@ pub async fn create_batch(
 
 /// Reserve a new image slot for a page: bump version, generate object key,
 /// and return the reservation with previous key for cleanup.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn reserve_image(
     conn: &mut RdbConn,
     id: &str,
@@ -319,7 +319,7 @@ pub async fn reserve_image(
 }
 
 /// Mark a page's image as successfully uploaded, checking version staleness.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn mark_image_uploaded(
     conn: &mut RdbConn,
     id: &str,
@@ -382,7 +382,7 @@ pub async fn mark_image_uploaded(
 }
 
 /// Sets the verified upload flag for one current page image identity.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn set_image_uploaded(
     conn: &mut RdbConn,
     id: &str,
@@ -430,7 +430,7 @@ pub async fn set_image_uploaded(
 }
 
 /// Persist unit counters (total, translated, proofread) onto a page row.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn set_unit_counters(
     conn: &mut RdbConn,
     id: &str,
@@ -454,7 +454,7 @@ pub async fn set_unit_counters(
 }
 
 /// Delete all pages (and their child units) for a given chapter.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn delete_by_chapter_id(
     conn: &mut RdbConn,
     chapter_id: &str,
@@ -483,7 +483,7 @@ pub async fn delete_by_chapter_id(
 }
 
 /// Deletes selected pages after deleting their child units.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn delete_by_ids(conn: &mut RdbConn, ids: &[String]) -> BaseRest<()> {
     //
     if ids.is_empty() {
