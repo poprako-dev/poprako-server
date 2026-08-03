@@ -9,7 +9,7 @@ use crate::part::repo::oper::comic::{
     MarkComicCoverUploaded, ReserveComicCover, TouchComicLastActive,
     UpdateComic, UpdateComicChapterCount,
 };
-use crate::part_impl::repo::rdb_impl::RdbRepo;
+use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::comic::step_impl::{
     create, delete, get_info_by_id, get_info_excluded, incr_chapter_next_index,
     list_infos, list_infos_excluded, mark_cover_uploaded, reserve_cover,
@@ -18,7 +18,7 @@ use crate::part_impl::repo::rdb_impl::comic::step_impl::{
 use crate::result::{BaseError, BaseRest};
 use crate::shared::RdbContext;
 
-impl Run<GetComicInfo<'_, '_>> for RdbRepo {
+impl Run<GetComicInfo<'_, '_>> for HybRepo {
     // Maps the `GetComicInfo` repository operation to non-transactional execution.
     type Error = BaseError;
 
@@ -29,7 +29,7 @@ impl Run<GetComicInfo<'_, '_>> for RdbRepo {
     }
 }
 
-impl Run<ListComicInfos<'_>> for RdbRepo {
+impl Run<ListComicInfos<'_>> for HybRepo {
     // Maps the `ListComicInfos` repository operation to non-transactional execution.
     type Error = BaseError;
 
@@ -40,7 +40,7 @@ impl Run<ListComicInfos<'_>> for RdbRepo {
     }
 }
 
-impl Run<UpdateComic<'_>> for RdbRepo {
+impl Run<UpdateComic<'_>> for HybRepo {
     // Maps the `UpdateComic` repository operation to non-transactional execution.
     type Error = BaseError;
 
@@ -51,7 +51,7 @@ impl Run<UpdateComic<'_>> for RdbRepo {
     }
 }
 
-impl Run<MarkComicCoverUploaded<'_>> for RdbRepo {
+impl Run<MarkComicCoverUploaded<'_>> for HybRepo {
     // Maps the `MarkComicCoverUploaded` repository operation to non-transactional execution.
     type Error = BaseError;
 
@@ -69,7 +69,7 @@ impl Run<MarkComicCoverUploaded<'_>> for RdbRepo {
     }
 }
 
-impl Step<GetComicInfo<'_, '_>, RdbContext> for RdbRepo {
+impl Step<GetComicInfo<'_, '_>, RdbContext> for HybRepo {
     // Resolves a single comic record inside an existing DB transaction context.
     type Error = BaseError;
 
@@ -84,7 +84,7 @@ impl Step<GetComicInfo<'_, '_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<ListComicInfos<'_>, RdbContext> for RdbRepo {
+impl Step<ListComicInfos<'_>, RdbContext> for HybRepo {
     // Resolves a comic list inside an existing DB transaction context.
     type Error = BaseError;
 
@@ -99,7 +99,7 @@ impl Step<ListComicInfos<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<GetComicInfoExcluded<'_, '_>, RdbContext> for RdbRepo {
+impl Step<GetComicInfoExcluded<'_, '_>, RdbContext> for HybRepo {
     // Resolves one comic with excluded include payload inside a transaction.
     type Error = BaseError;
 
@@ -114,7 +114,7 @@ impl Step<GetComicInfoExcluded<'_, '_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<ListComicInfosExcluded<'_>, RdbContext> for RdbRepo {
+impl Step<ListComicInfosExcluded<'_>, RdbContext> for HybRepo {
     // Resolves a filtered excluded-comic list inside a transaction.
     type Error = BaseError;
 
@@ -129,7 +129,7 @@ impl Step<ListComicInfosExcluded<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<CreateComic<'_>, RdbContext> for RdbRepo {
+impl Step<CreateComic<'_>, RdbContext> for HybRepo {
     // Creates one comic inside an active transaction context.
     type Error = BaseError;
 
@@ -144,7 +144,7 @@ impl Step<CreateComic<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<ReserveComicCover<'_>, RdbContext> for RdbRepo {
+impl Step<ReserveComicCover<'_>, RdbContext> for HybRepo {
     // Reserves a comic cover upload slot inside an active transaction.
     type Error = BaseError;
 
@@ -160,7 +160,7 @@ impl Step<ReserveComicCover<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<MarkComicCoverUploaded<'_>, RdbContext> for RdbRepo {
+impl Step<MarkComicCoverUploaded<'_>, RdbContext> for HybRepo {
     // Marks cover upload state inside an active transaction.
     type Error = BaseError;
 
@@ -182,7 +182,7 @@ impl Step<MarkComicCoverUploaded<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<DeleteComic<'_>, RdbContext> for RdbRepo {
+impl Step<DeleteComic<'_>, RdbContext> for HybRepo {
     // Deletes one comic inside an active transaction context.
     type Error = BaseError;
 
@@ -197,7 +197,7 @@ impl Step<DeleteComic<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<AllocComicChapterIndex<'_>, RdbContext> for RdbRepo {
+impl Step<AllocComicChapterIndex<'_>, RdbContext> for HybRepo {
     // Allocates the next chapter index inside an active transaction context.
     type Error = BaseError;
 
@@ -212,7 +212,7 @@ impl Step<AllocComicChapterIndex<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<UpdateComicChapterCount<'_>, RdbContext> for RdbRepo {
+impl Step<UpdateComicChapterCount<'_>, RdbContext> for HybRepo {
     // Updates chapter-count totals inside an active transaction context.
     type Error = BaseError;
 
@@ -227,7 +227,7 @@ impl Step<UpdateComicChapterCount<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<TouchComicLastActive<'_>, RdbContext> for RdbRepo {
+impl Step<TouchComicLastActive<'_>, RdbContext> for HybRepo {
     // Touches last-active timestamp inside an active transaction context.
     type Error = BaseError;
 

@@ -20,7 +20,7 @@ use crate::part::repo::oper::termbase::{
     ListTermbaseInfos, ListTermbaseInfosExcluded, TouchTermbase,
     UpdateTermbase, UpdateTermbaseTermCount,
 };
-use crate::part_impl::repo::rdb_impl::RdbRepo;
+use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::entity::termbase::{
     TermbaseEntryRow, TermbaseInfoRow,
 };
@@ -311,7 +311,7 @@ async fn touch(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     accept(())
 }
 
-impl Run<GetTermbaseInfo<'_>> for RdbRepo {
+impl Run<GetTermbaseInfo<'_>> for HybRepo {
     // Use BaseError for non-transactional read failures.
     type Error = BaseError;
 
@@ -322,7 +322,7 @@ impl Run<GetTermbaseInfo<'_>> for RdbRepo {
     }
 }
 
-impl Run<ListTermbaseInfos<'_>> for RdbRepo {
+impl Run<ListTermbaseInfos<'_>> for HybRepo {
     // Use BaseError for non-transactional list failures.
     type Error = BaseError;
 
@@ -336,7 +336,7 @@ impl Run<ListTermbaseInfos<'_>> for RdbRepo {
     }
 }
 
-impl Step<CreateTermbase<'_>, RdbContext> for RdbRepo {
+impl Step<CreateTermbase<'_>, RdbContext> for HybRepo {
     // Use BaseError for transactional creation failures.
     type Error = BaseError;
 
@@ -351,7 +351,7 @@ impl Step<CreateTermbase<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<GetTermbaseInfo<'_>, RdbContext> for RdbRepo {
+impl Step<GetTermbaseInfo<'_>, RdbContext> for HybRepo {
     // Use BaseError for transactional read failures.
     type Error = BaseError;
 
@@ -366,7 +366,7 @@ impl Step<GetTermbaseInfo<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<GetTermbaseInfoExcluded<'_>, RdbContext> for RdbRepo {
+impl Step<GetTermbaseInfoExcluded<'_>, RdbContext> for HybRepo {
     // Use BaseError for transactional lock-bound reads.
     type Error = BaseError;
 
@@ -381,7 +381,7 @@ impl Step<GetTermbaseInfoExcluded<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<ListTermbaseInfosExcluded<'_>, RdbContext> for RdbRepo {
+impl Step<ListTermbaseInfosExcluded<'_>, RdbContext> for HybRepo {
     // Use BaseError for transactional collection reads.
     type Error = BaseError;
 
@@ -396,7 +396,7 @@ impl Step<ListTermbaseInfosExcluded<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<UpdateTermbase<'_>, RdbContext> for RdbRepo {
+impl Step<UpdateTermbase<'_>, RdbContext> for HybRepo {
     // Use BaseError for transactional update failures.
     type Error = BaseError;
 
@@ -411,7 +411,7 @@ impl Step<UpdateTermbase<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<UpdateTermbaseTermCount<'_>, RdbContext> for RdbRepo {
+impl Step<UpdateTermbaseTermCount<'_>, RdbContext> for HybRepo {
     // Use BaseError for transactional aggregate count updates.
     type Error = BaseError;
 
@@ -426,7 +426,7 @@ impl Step<UpdateTermbaseTermCount<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<TouchTermbase<'_>, RdbContext> for RdbRepo {
+impl Step<TouchTermbase<'_>, RdbContext> for HybRepo {
     // Use BaseError for transactional touch/update timestamp failures.
     type Error = BaseError;
 
@@ -441,7 +441,7 @@ impl Step<TouchTermbase<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<DeleteTermbase<'_>, RdbContext> for RdbRepo {
+impl Step<DeleteTermbase<'_>, RdbContext> for HybRepo {
     // Use BaseError for transactional deletion failures.
     type Error = BaseError;
 

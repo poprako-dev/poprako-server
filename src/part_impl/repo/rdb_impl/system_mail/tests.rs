@@ -7,7 +7,8 @@ use crate::model::write::system_mail::SystemMailEntry;
 use crate::part::repo::oper::system_mail::{
     ListSystemMailInfos, MarkSystemMailRead, SendSystemMail,
 };
-use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
+use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::shared::RdbCore;
 
 const PREFIX: &str = "rdb-test-system-mail-domain-";
@@ -20,7 +21,7 @@ pub async fn system_mail_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let user_fixture = test_shared::seed_user(&shared, PREFIX).await;
 
-    let repo = RdbRepo::new(shared.clone());
+    let repo = HybRepo::new(shared.clone());
 
     let system_mail_entry = SystemMailEntry {
         id: format!("{}system-mail", PREFIX),

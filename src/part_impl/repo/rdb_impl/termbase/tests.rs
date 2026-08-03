@@ -11,13 +11,14 @@ use crate::part::repo::oper::termbase::{
     CreateTermbase, GetTermbaseInfo, ListTermbaseInfos, UpdateTermbaseTermCount,
 };
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
-use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
+use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::shared::RdbCore;
 
 const PREFIX: &str = "rdb-test-termbase-domain-";
 
 async fn create_termbase(
-    repo: &RdbRepo,
+    repo: &HybRepo,
     nucl: &RdbNucl,
     termbase_entry: &TermbaseEntry,
 ) -> TermbaseInfo {
@@ -40,7 +41,7 @@ pub async fn termbase_unique_and_query_roundtrip(shared: RdbCore) {
     //
     let comic_fixture = test_shared::seed_comic(&shared, PREFIX).await;
 
-    let repo = RdbRepo::new(shared.clone());
+    let repo = HybRepo::new(shared.clone());
 
     let nucl = RdbNucl::new(shared.clone());
 
