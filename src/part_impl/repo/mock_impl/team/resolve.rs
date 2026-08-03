@@ -81,7 +81,7 @@ impl Run<ResolveTeamId<'_>> for Mock {
     type Error = BaseError;
 
     // Runs the team-resolution projection against the shared mock state.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn run(
         &self,
         oper: &ResolveTeamId<'_>,
@@ -98,7 +98,7 @@ impl Step<ResolveTeamId<'_>, MockContext> for Mock {
     type Error = BaseError;
 
     // Runs the team-resolution projection inside the transactional mock context.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,

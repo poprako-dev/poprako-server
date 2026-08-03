@@ -20,12 +20,27 @@ impl AppConfig {
         //
         let content = tokio::fs::read_to_string("application_config.json")
             .await
+            .inspect_err(|error| {
+                tracing::error!(
+                    operation = "read_application_config",
+                    sdk_err = ?error,
+                    "Tokio SDK file read error",
+                );
+            })
             .with_context(
                 || "[ApplicationConfig::from_default_file] Failed to read application_config.json",
             )?;
 
-        serde_json::from_str(&content).with_context(
-            || "[ApplicationConfig::from_default_file] Failed to parse application_config.json",
-        )
+        serde_json::from_str(&content)
+            .inspect_err(|error| {
+                tracing::error!(
+                    operation = "parse_application_config",
+                    sdk_err = ?error,
+                    "JSON SDK deserialization error",
+                );
+            })
+            .with_context(
+                || "[ApplicationConfig::from_default_file] Failed to parse application_config.json",
+            )
     }
 }

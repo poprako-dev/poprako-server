@@ -25,11 +25,20 @@ impl UserComplex {
 
         tokio::task::spawn_blocking(move || hash_password_sync(&password))
             .await
-            .map_err(|error| BaseError::Unrecoverable {
-                message: format!(
-                    "[UserComplex::hash_password] blocking task failed: {}",
-                    error
-                ),
+            .map_err(|error| {
+                //
+                tracing::error!(
+                    operation = "hash_password",
+                    sdk_err = ?error,
+                    "Tokio SDK blocking task error",
+                );
+
+                BaseError::Unrecoverable {
+                    message: format!(
+                        "[UserComplex::hash_password] blocking task failed: {}",
+                        error
+                    ),
+                }
             })?
     }
 
@@ -50,7 +59,8 @@ impl UserComplex {
             Err(error) => {
                 //
                 tracing::error!(
-                    err = %error,
+                    operation = "verify_password",
+                    sdk_err = ?error,
                     "[UserComplex::verify_password] blocking task failed",
                 );
 
@@ -83,27 +93,49 @@ fn hash_password_sync(password: &str) -> BaseRest<String> {
     Argon2::default()
         .hash_password(password.as_bytes(), &salt)
         .map(|h| h.to_string())
-        .map_err(|e| BaseError::Unrecoverable {
-            message: format!(
-                "[UserComplex::hash_password] argon2 hashing failed: {}",
-                e
-            ),
+        .map_err(|error| {
+            //
+            tracing::error!(
+                operation = "hash_password",
+                sdk_err = ?error,
+                "Argon2 SDK hashing error",
+            );
+
+            BaseError::Unrecoverable {
+                message: format!(
+                    "[UserComplex::hash_password] argon2 hashing failed: {}",
+                    error
+                ),
+            }
         })
 }
 
 // Verifies a plaintext password against an Argon2id hash on the current thread.
 fn verify_password_sync(password: &str, password_hash: &str) -> bool {
     //
-    let Ok(parsed) = PasswordHash::new(password_hash) else {
-        return false;
+    let parsed = match PasswordHash::new(password_hash) {
+        //
+        Ok(parsed) => parsed,
+
+        Err(error) => {
+            //
+            tracing::warn!(
+                operation = "verify_password",
+                sdk_err = ?error,
+                "Argon2 SDK password hash parsing error",
+            );
+
+            return false;
+        }
     };
 
     Argon2::default()
         .verify_password(password.as_bytes(), &parsed)
-        .inspect_err(|e| {
+        .inspect_err(|error| {
             tracing::warn!(
-                "[UserComplex::verify_password] failed to verify_password: {}",
-                e
+                operation = "verify_password",
+                sdk_err = ?error,
+                "Argon2 SDK password verification error",
             )
         })
         .is_ok()

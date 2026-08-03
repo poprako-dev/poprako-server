@@ -31,7 +31,7 @@ use crate::part::repo::unit::UnitRepo;
 use crate::result::{BaseError, BaseRest, accept};
 
 /// Deletes one chapter and its descendant core records.
-#[instrument(level = "info", err(Debug), skip(nucl, repo, prom))]
+#[instrument(level = "info", skip(nucl, repo, prom))]
 pub async fn delete<N, C, R, P>(
     (nucl, repo, prom): (&N, &R, &P),
     token: UserToken,

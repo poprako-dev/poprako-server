@@ -32,7 +32,7 @@ use crate::usecase;
         (status = 401, description = "Invalid invitation code"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn register(
     State(harn): State<AppHarn>,
     Json(instr): Json<RegisterAuthInstr>,
@@ -65,7 +65,7 @@ pub async fn register(
         (status = 401, description = "Invalid credentials"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn login(
     State(harn): State<AppHarn>,
     Json(instr): Json<LoginAuthInstr>,
@@ -92,7 +92,7 @@ pub async fn login(
         (status = 204, description = "Logged out successfully, auth cookie cleared"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn logout() -> HttpNoContent {
     //
     let cookie = Cookie::build((AUTH_COOKIE_NAME, ""))

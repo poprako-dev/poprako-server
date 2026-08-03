@@ -22,7 +22,7 @@ impl Run<FindMemberInfo<'_>> for HybRepo {
     type Error = BaseError;
 
     // Finds a member by user and team IDs within the given operation spec.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn run(
         &self,
         oper: &FindMemberInfo<'_>,

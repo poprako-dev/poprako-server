@@ -130,7 +130,7 @@ impl<'a> Step<Defer<'a, String, TaskPayload, ()>, RdbContext> for RdbProm {
     // Internal type alias for `Error`.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Internal implementation of `step`.
     async fn step(
         &self,
@@ -159,7 +159,7 @@ impl<'t, 'a> Step<DeferBatch<'t, 'a, String, TaskPayload, ()>, RdbContext>
     // Internal type alias for `Error`.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Internal implementation of `step`.
     async fn step(
         &self,

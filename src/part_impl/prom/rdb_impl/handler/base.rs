@@ -113,6 +113,13 @@ where
         Ok(payload) => payload,
 
         Err(error) => {
+            //
+            tracing::error!(
+                operation = "deserialize_prom_payload",
+                sdk_err = ?error,
+                "JSON SDK deserialization error",
+            );
+
             return TaskFlow::Dead(format!(
                 "failed to deserialize prom payload: {}",
                 error

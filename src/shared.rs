@@ -75,7 +75,7 @@ impl RdbCore {
         })
     }
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     /// Retrieves a pooled connection, blocking until one is available.
     pub async fn get(&self) -> BaseRest<RdbPooledConn> {
         self.pool.get().await.map_err(pool_get)

@@ -17,7 +17,7 @@ impl Run<ListUnitInfos<'_>> for HybRepo {
     type Error = BaseError;
 
     // Lists visible Units in verified linked-list order for the given page.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn run(&self, oper: &ListUnitInfos<'_>) -> BaseRest<Vec<UnitInfo>> {
         submit_query!(self.core, list_infos, oper.page_id)
     }
@@ -28,7 +28,7 @@ impl Step<ListUnitOrders<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Locks and lists the complete Unit chain, including tombstones, within a transaction.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -43,7 +43,7 @@ impl Step<ApplyUnitEdits<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Applies normalized Unit edits and returns the latest visible counters within a transaction.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,

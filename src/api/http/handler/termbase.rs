@@ -52,7 +52,7 @@ pub struct TermbaseListQuery {
         (status = 422, description = "Invalid scope, parent, or duplicate name"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn create(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
@@ -74,7 +74,7 @@ pub async fn create(
         (status = 403, description = "Team membership required"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn list_team_infos(
     State(harn): State<AppHarn>,
     Path(team_id): Path<String>,
@@ -106,7 +106,7 @@ pub async fn list_team_infos(
         (status = 422, description = "Comic not found"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn list_comic_infos(
     State(harn): State<AppHarn>,
     Path(comic_id): Path<String>,
@@ -138,7 +138,7 @@ pub async fn list_comic_infos(
         (status = 422, description = "Termbase not found"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn get_info(
     State(harn): State<AppHarn>,
     Path(termbase_id): Path<String>,
@@ -162,7 +162,7 @@ pub async fn get_info(
         (status = 422, description = "Invalid input, duplicate name, or path mismatch"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn update_info(
     State(harn): State<AppHarn>,
     Path(termbase_id): Path<String>,
@@ -194,7 +194,7 @@ pub async fn update_info(
         (status = 422, description = "Termbase not found"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn delete(
     State(harn): State<AppHarn>,
     Path(termbase_id): Path<String>,

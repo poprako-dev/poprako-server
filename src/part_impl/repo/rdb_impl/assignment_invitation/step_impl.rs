@@ -20,7 +20,7 @@ use crate::shared::RdbConn;
 use crate::shared::result::diesel;
 
 /// Queries assignment invitation rows selected by a list specification.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn list_infos(
     conn: &mut RdbConn,
     spec: &AssignmentInvitationListSpec,
@@ -50,7 +50,7 @@ pub async fn list_infos(
 }
 
 /// Queries a single assignment invitation row by ID.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
@@ -85,7 +85,7 @@ pub async fn get_info_by_id(
 }
 
 /// Queries a pending invitation by code under `FOR UPDATE` lock.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn get_info_by_code_excluded(
     conn: &mut RdbConn,
     code: &str,
@@ -123,7 +123,7 @@ pub async fn get_info_by_code_excluded(
 }
 
 /// Inserts a new assignment invitation row from the given entry.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn create(
     conn: &mut RdbConn,
     model_entry: &AssignmentInvitationEntry,
@@ -142,7 +142,7 @@ pub async fn create(
 }
 
 /// Sets the pending flag to false on an invitation, marking it as used.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn mark_pending_as_used(
     conn: &mut RdbConn,
     id: &str,
@@ -186,7 +186,7 @@ pub async fn mark_pending_as_used(
 }
 
 /// Deletes a single assignment invitation row by ID.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
     diesel::delete(t_assignment_invitation.filter(f_id.eq(id)))
@@ -198,7 +198,7 @@ pub async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
 }
 
 /// Deletes an assignment invitation only while it remains pending.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn purge_pending(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
     diesel::delete(
@@ -214,7 +214,7 @@ pub async fn purge_pending(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
 }
 
 /// Deletes all assignment invitation rows for a given chapter ID.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn delete_by_chapter_id(
     conn: &mut RdbConn,
     chapter_id: &str,

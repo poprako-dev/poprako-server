@@ -36,7 +36,7 @@ impl Run<GetTermInfo<'_>> for HybRepo {
     type Error = BaseError;
 
     // Resolve one term info by id through the submit-query entrypoint.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn run(&self, oper: &GetTermInfo<'_>) -> BaseRest<TermInfo> {
         submit_query!(self.core, get_info, oper.id)
     }
@@ -47,7 +47,7 @@ impl Run<ListTermInfos<'_>> for HybRepo {
     type Error = BaseError;
 
     // Resolve a pageable list from the supplied term list spec.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn run(&self, oper: &ListTermInfos<'_>) -> BaseRest<Vec<TermInfo>> {
         submit_query!(self.core, list_infos, oper.spec)
     }
@@ -58,7 +58,7 @@ impl Step<CreateTerm<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Convert the request payload and insert it with immediate return of inserted info.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -73,7 +73,7 @@ impl Step<GetTermInfoExcluded<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Resolve one term with `FOR UPDATE` semantics for downstream mutation.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -88,7 +88,7 @@ impl Step<LockTerm<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Lock the target term so the next mutation in the transaction is serialized.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -103,7 +103,7 @@ impl Step<UpdateTerm<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Forward update payload into DB update clause and keep updated-at fresh.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -118,7 +118,7 @@ impl Step<DeleteTerm<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Execute hard delete for the target term id.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -133,7 +133,7 @@ impl Step<DeleteTerms<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Cascade-like cleanup behavior is implemented as bulk delete filtered by termbase.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -144,7 +144,7 @@ impl Step<DeleteTerms<'_>, RdbContext> for HybRepo {
 }
 
 // Delete one term by id.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
     // Remove the single term row and return once persistence succeeds.
@@ -165,7 +165,7 @@ fn escape_ilike_pattern(input: &str) -> String {
 }
 
 // Delete all terms that belong to one termbase.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn delete_terms(conn: &mut RdbConn, termbase_id: &str) -> BaseRest<()> {
     //
     // Remove dependency rows in bulk when the parent termbase is being cleaned up.
@@ -178,7 +178,7 @@ async fn delete_terms(conn: &mut RdbConn, termbase_id: &str) -> BaseRest<()> {
 }
 
 // Insert a new term row and return the inserted row as response info.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn create(
     conn: &mut RdbConn,
     term_entry: &TermEntry,
@@ -198,7 +198,7 @@ async fn create(
 }
 
 // Load one term row by id in a lock-compatible path and convert it to response info.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn get_info_excluded(conn: &mut RdbConn, id: &str) -> BaseRest<TermInfo> {
     //
     // Use `for_update()` to prevent concurrent updates while resolving this term.
@@ -238,7 +238,7 @@ async fn get_info_excluded(conn: &mut RdbConn, id: &str) -> BaseRest<TermInfo> {
 }
 
 // Locks a term row for mutation safety.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn lock_term(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
     // Confirm existence and keep the row locked until the current transaction ends.
@@ -278,7 +278,7 @@ async fn lock_term(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
 }
 
 // Apply a partial update payload to an existing term row.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn update_info(conn: &mut RdbConn, update: &TermRepl) -> BaseRest<()> {
     //
     // Prepare nullable target entries and write all requested fields in one update.
@@ -303,7 +303,7 @@ async fn update_info(conn: &mut RdbConn, update: &TermRepl) -> BaseRest<()> {
 }
 
 // Build a filtered query for term listing and execute a paged query.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn list_infos(
     conn: &mut RdbConn,
     spec: &TermListSpec,
@@ -336,7 +336,7 @@ async fn list_infos(
 }
 
 // Load one term row by id and convert it into response info.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<TermInfo> {
     //
     // Read the row with strict id match and convert it to a rich term view.

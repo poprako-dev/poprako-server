@@ -28,7 +28,7 @@ use crate::result::{BaseError, BaseRest, accept};
 mod tests;
 
 /// Lists announcements under a team.
-#[instrument(level = "info", err(Debug), skip(repo, image_pool))]
+#[instrument(level = "info", skip(repo, image_pool))]
 pub async fn list_infos<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
@@ -69,7 +69,7 @@ where
 }
 
 /// Creates an announcement under a team.
-#[instrument(level = "info", err(Debug), skip(nucl, repo))]
+#[instrument(level = "info", skip(nucl, repo))]
 pub async fn create<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,

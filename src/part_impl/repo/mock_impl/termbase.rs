@@ -170,7 +170,7 @@ impl<'a> Run<GetTermbaseInfo<'a>> for Mock {
     // Internal type alias for `Error`.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Internal implementation of `run`.
     async fn run(&self, oper: &GetTermbaseInfo<'a>) -> BaseRest<TermbaseInfo> {
         //
@@ -186,7 +186,7 @@ impl<'a> Run<ListTermbaseInfos<'a>> for Mock {
     // Internal type alias for `Error`.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Internal implementation of `run`.
     async fn run(
         &self,
@@ -205,7 +205,7 @@ impl<'a> Step<CreateTermbase<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Internal implementation of `step`.
     async fn step(
         &self,
@@ -249,7 +249,7 @@ impl<'a> Step<GetTermbaseInfo<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Internal implementation of `step`.
     async fn step(
         &self,
@@ -264,7 +264,7 @@ impl<'a> Step<GetTermbaseInfoExcluded<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Internal implementation of `step`.
     async fn step(
         &self,
@@ -279,7 +279,7 @@ impl<'a> Step<ListTermbaseInfosExcluded<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Internal implementation of `step`.
     async fn step(
         &self,
@@ -316,7 +316,7 @@ impl<'a> Step<UpdateTermbase<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Internal implementation of `step`.
     async fn step(
         &self,
@@ -359,7 +359,7 @@ impl<'a> Step<UpdateTermbaseTermCount<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Internal implementation of `step`.
     async fn step(
         &self,
@@ -394,7 +394,7 @@ impl<'a> Step<TouchTermbase<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Internal implementation of `step`.
     async fn step(
         &self,
@@ -421,7 +421,7 @@ impl<'a> Step<DeleteTermbase<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Internal implementation of `step`.
     async fn step(
         &self,

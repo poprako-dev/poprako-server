@@ -56,7 +56,7 @@ pub struct AnnouncementListQuery {
         (status = 404, description = "Team not found"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn create(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
@@ -79,7 +79,7 @@ pub async fn create(
         (status = 403, description = "No perm to list announcements in this team"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn list_infos(
     State(harn): State<AppHarn>,
     Path(team_id): Path<String>,

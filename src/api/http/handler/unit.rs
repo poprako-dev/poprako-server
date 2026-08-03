@@ -30,7 +30,7 @@ use crate::usecase;
         (status = 404, description = "Page not found"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn list_infos(
     State(harn): State<AppHarn>,
     Path(page_id): Path<String>,
@@ -57,7 +57,7 @@ pub async fn list_infos(
         (status = 422, description = "Invalid Unit edit"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn save_infos(
     State(harn): State<AppHarn>,
     Path(page_id): Path<String>,

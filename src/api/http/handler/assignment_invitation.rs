@@ -56,7 +56,7 @@ pub struct AssignmentInvitationListQuery {
         (status = 409, description = "Invitee is already assigned"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn create(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
@@ -83,7 +83,7 @@ pub async fn create(
         (status = 403, description = "No perm to list invitations in this chapter"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn list_infos(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
@@ -119,7 +119,7 @@ pub async fn list_infos(
         (status = 404, description = "Invitation not found"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn delete(
     State(harn): State<AppHarn>,
     Path(assignment_invitation_id): Path<String>,
@@ -149,7 +149,7 @@ pub async fn delete(
         (status = 404, description = "Invitation code not found"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn join(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,

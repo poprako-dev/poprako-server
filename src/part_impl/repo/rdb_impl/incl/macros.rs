@@ -17,7 +17,7 @@ macro_rules! preload_by_ids {
                 type Row = $row;
                 type Info = $info;
 
-                #[tracing::instrument(level = "info", err(Debug), skip_all)]
+                #[tracing::instrument(level = "info", skip_all)]
                 async fn load(
                     conn: &mut RdbConn,
                     ids: Vec<&str>,
@@ -203,7 +203,7 @@ macro_rules! preloadable {
             preloadable_variant!($owner; $marker => $query { $($body)* });
         )*
 
-        #[tracing::instrument(level = "info", err(Debug), skip_all)]
+        #[tracing::instrument(level = "info", skip_all)]
         pub async fn $populate(
             conn: &mut RdbConn,
             infos: &mut [$owner],

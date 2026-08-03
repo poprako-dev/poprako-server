@@ -24,7 +24,7 @@ use crate::shared::{RdbConn, RdbContext};
 pub mod tests;
 
 // Query comment infos matching the given list spec, with optional includes.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn list_infos(
     conn: &mut RdbConn,
     spec: &CommentListSpec,
@@ -52,7 +52,7 @@ async fn list_infos(
 }
 
 // Insert a new comment from the given entry and return the created info.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn create(
     conn: &mut RdbConn,
     entry: &CommentEntry,
@@ -75,7 +75,7 @@ impl Run<ListCommentInfos<'_>> for HybRepo {
     type Error = BaseError;
 
     // Executes the comment list query with the given operation spec.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn run(
         &self,
         oper: &ListCommentInfos<'_>,
@@ -89,7 +89,7 @@ impl Step<CreateComment<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Runs comment creation within an existing transaction.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,

@@ -40,7 +40,7 @@ use crate::value::unit::UnitEditPerm;
 // Unit tests for unit creation, editing, and transition rules.
 mod tests;
 
-#[instrument(level = "info", err(Debug), skip(repo))]
+#[instrument(level = "info", skip(repo))]
 /// Lists visible Units for one Page in final linked-list order.
 pub async fn list_infos<C, R>(
     (repo,): (&R,),
@@ -84,7 +84,7 @@ where
     accept(ListPageUnitInfosVal::from_parts(unit_infos, counters))
 }
 
-#[instrument(level = "info", err(Debug), skip(nucl, repo))]
+#[instrument(level = "info", skip(nucl, repo))]
 /// Saves one authorized batch of Unit edits without returning a payload.
 pub async fn save_edits<N, C, R>(
     (nucl, repo): (&N, &R),
