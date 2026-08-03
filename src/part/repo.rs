@@ -45,6 +45,8 @@ pub mod comment;
 pub mod member;
 /// Member invitation repository port.
 pub mod member_invitation;
+/// Online-user repository port.
+pub mod online_user;
 /// Page repository port.
 pub mod page;
 /// System mail repository port.

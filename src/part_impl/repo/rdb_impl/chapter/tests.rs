@@ -1,7 +1,5 @@
 // chapter_roundtrip_uses_testcontainer(ChapterRepo)(positive): chapter repo persists, lists, and finds pinned chapter rows in an isolated PostgreSQL container.
 
-use super::*;
-
 use poprako_orchestra::{Nucl, Run as _, Step as _};
 
 use crate::model::read::spec::chapter::ChapterListSpec;
@@ -11,7 +9,8 @@ use crate::part::repo::oper::chapter::{
     UpdateChapterStage,
 };
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
-use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
+use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::result::accept;
 use crate::shared::RdbCore;
 use crate::value::chapter::{ChapterInclOpt, Stage, StageMask, StagePhase};
@@ -26,7 +25,7 @@ pub async fn chapter_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let chapter_fixture = test_shared::seed_chapter(&shared, PREFIX).await;
 
-    let repo = RdbRepo::new(shared.clone());
+    let repo = HybRepo::new(shared.clone());
 
     let nucl = RdbNucl::new(shared.clone());
 

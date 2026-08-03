@@ -17,7 +17,7 @@ use crate::part::repo::oper::user::{
     CreateUser, DeleteUser, FindUserInfo, GetUserCredential, GetUserInfo,
     GetUserInfoExcluded, ReserveUserAvatar, UpdateUser,
 };
-use crate::part_impl::repo::rdb_impl::RdbRepo;
+use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::entity::user::{
     UserAspectRow, UserCredsRow, UserEntryRow, UserInfoRow,
 };
@@ -434,7 +434,7 @@ async fn get_info_by_id(conn: &mut RdbConn, id: &str) -> BaseRest<UserInfo> {
     row.try_into()
 }
 
-impl Run<GetUserInfo<'_>> for RdbRepo {
+impl Run<GetUserInfo<'_>> for HybRepo {
     // Use `BaseError` for non-transactional repository reads.
     type Error = BaseError;
 
@@ -452,7 +452,7 @@ impl Run<GetUserInfo<'_>> for RdbRepo {
     }
 }
 
-impl Run<GetUserCredential<'_>> for RdbRepo {
+impl Run<GetUserCredential<'_>> for HybRepo {
     // Use `BaseError` for non-transactional credential reads.
     type Error = BaseError;
 
@@ -470,7 +470,7 @@ impl Run<GetUserCredential<'_>> for RdbRepo {
     }
 }
 
-impl Run<FindUserInfo<'_>> for RdbRepo {
+impl Run<FindUserInfo<'_>> for HybRepo {
     // Use `BaseError` for non-transactional optional reads.
     type Error = BaseError;
 
@@ -488,7 +488,7 @@ impl Run<FindUserInfo<'_>> for RdbRepo {
     }
 }
 
-impl Run<UpdateUser<'_>> for RdbRepo {
+impl Run<UpdateUser<'_>> for HybRepo {
     // Use `BaseError` for non-transactional user mutations.
     type Error = BaseError;
 
@@ -523,7 +523,7 @@ impl Run<UpdateUser<'_>> for RdbRepo {
     }
 }
 
-impl Step<CreateUser<'_>, RdbContext> for RdbRepo {
+impl Step<CreateUser<'_>, RdbContext> for HybRepo {
     // Keep transaction-scoped operations on one repository error type.
     type Error = BaseError;
 
@@ -538,7 +538,7 @@ impl Step<CreateUser<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<FindUserInfo<'_>, RdbContext> for RdbRepo {
+impl Step<FindUserInfo<'_>, RdbContext> for HybRepo {
     // Keep transaction-scoped reads on one repository error type.
     type Error = BaseError;
 
@@ -557,7 +557,7 @@ impl Step<FindUserInfo<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<UpdateUser<'_>, RdbContext> for RdbRepo {
+impl Step<UpdateUser<'_>, RdbContext> for HybRepo {
     // Keep transaction-scoped updates on one repository error type.
     type Error = BaseError;
 
@@ -596,7 +596,7 @@ impl Step<UpdateUser<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<ReserveUserAvatar<'_>, RdbContext> for RdbRepo {
+impl Step<ReserveUserAvatar<'_>, RdbContext> for HybRepo {
     // Keep transaction-scoped reservation on one repository error type.
     type Error = BaseError;
 
@@ -612,7 +612,7 @@ impl Step<ReserveUserAvatar<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<GetUserInfoExcluded<'_>, RdbContext> for RdbRepo {
+impl Step<GetUserInfoExcluded<'_>, RdbContext> for HybRepo {
     // Keep transaction-scoped exclusive reads on one repository error type.
     type Error = BaseError;
 
@@ -631,7 +631,7 @@ impl Step<GetUserInfoExcluded<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<DeleteUser<'_>, RdbContext> for RdbRepo {
+impl Step<DeleteUser<'_>, RdbContext> for HybRepo {
     // Keep transaction-scoped deletion on one repository error type.
     type Error = BaseError;
 

@@ -39,7 +39,7 @@ the seed-only state in its `finally` block. Every current module exports
 | it_06 | `it_06_unit_concurrency.ts` | Serialized same-Page writes, same-anchor inserts, tombstone delete/Patch commit order, and linked-list completeness. |
 | it_07 | `it_07_workflow_sysmail.ts` | Workflow transitions and deferred system mail. |
 | it_08 | `it_08_info_update_upload_mark.ts` | Resource updates, checksum-bound avatar/cover PUTs before version-only mark requests, stale upload rejection, announcements, comments, and profiles. |
-| it_09 | `it_09_cross_team_perm.ts` | Cross-team authorization isolation. |
+| it_09 | `it_09_cross_team_perm.ts` | Cross-team authorization isolation and team-scoped online-user leases. |
 | it_10 | `it_10_cascade_delete_cleanup.ts` | Cascade deletion and cleanup side effects. |
 | it_11 | `it_11_comic_archive.ts` | Immutable JSON-text comic archives, retained month export, and image-delete prom records. |
 | it_12 | `it_12_termbase_term.ts` | Termbase/term lifecycle, inherited lookup, fuzzy isolation, proofreader perms, response contracts, and termbase/comic/team cascades. |

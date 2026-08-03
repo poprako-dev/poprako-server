@@ -1,7 +1,5 @@
 // assignment_invitation_roundtrip_uses_testcontainer(CreateAssignmentInvitation, ListAssignmentInvitationInfos, MarkAssignmentInvitationUsed)(positive): assignment invitation repo creates, lists, and marks invitations used in an isolated PostgreSQL container.
 
-use super::*;
-
 use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 
 use crate::model::read::spec::assignment_invitation::AssignmentInvitationListSpec;
@@ -11,7 +9,8 @@ use crate::part::repo::oper::assignment_invitation::{
     MarkAssignmentInvitationUsed,
 };
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
-use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
+use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::result::BaseError;
 use crate::shared::RdbCore;
 use crate::value::role::{RoleField, RoleMask};
@@ -29,7 +28,7 @@ pub async fn assignment_invitation_roundtrip_uses_testcontainer(
 
     let chapter_fixture = test_shared::seed_chapter(&shared, PREFIX).await;
 
-    let repo = RdbRepo::new(shared.clone());
+    let repo = HybRepo::new(shared.clone());
 
     let nucl = RdbNucl::new(shared.clone());
 

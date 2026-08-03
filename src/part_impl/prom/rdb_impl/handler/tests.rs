@@ -12,8 +12,8 @@ use crate::part_impl::prom::rdb_impl::handler::base::dispatch_payload;
 use crate::part_impl::prom::rdb_impl::handler::task_flow::TaskFlow;
 use crate::part_impl::prom::rdb_impl::repo::RdbPromRepo;
 use crate::part_impl::prom::rdb_impl::test_shared;
+use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::mock_impl::Mock;
-use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::schema::t_local_message;
 use crate::shared::RdbCore;
 
@@ -65,7 +65,7 @@ pub async fn image_payloads_from_rdb_dispatch(shared: RdbCore) {
 
     let nucl = RdbNucl::new(shared.clone());
 
-    let rdb_prom_repo = RdbPromRepo::new(RdbRepo::new(shared.clone()));
+    let rdb_prom_repo = RdbPromRepo::new(HybRepo::new(shared.clone()));
 
     let image_pool = Mock::new();
 

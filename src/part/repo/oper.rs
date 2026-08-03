@@ -16,6 +16,8 @@ pub mod comment;
 pub mod member;
 /// Member invitation repository operations.
 pub mod member_invitation;
+/// Online-user repository operations.
+pub mod online_user;
 /// Page repository operations.
 pub mod page;
 /// System mail repository operations.

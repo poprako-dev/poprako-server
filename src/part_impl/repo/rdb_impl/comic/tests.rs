@@ -1,7 +1,5 @@
 // comic_roundtrip_uses_testcontainer(ComicRepo)(positive): comic repo persists, lists by one-based display index, and refreshes composed search after update.
 
-use super::*;
-
 use poprako_orchestra::Run as _;
 
 use crate::model::read::spec::comic::ComicListSpec;
@@ -9,7 +7,8 @@ use crate::model::write::comic::ComicRepl;
 use crate::part::repo::oper::comic::{
     GetComicInfo, ListComicInfos, UpdateComic,
 };
-use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
+use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::shared::RdbCore;
 use crate::value::comic::ComicInclOpt;
 
@@ -23,7 +22,7 @@ pub async fn comic_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let comic_fixture = test_shared::seed_comic(&shared, PREFIX).await;
 
-    let repo = RdbRepo::new(shared.clone());
+    let repo = HybRepo::new(shared.clone());
 
     let comic_list_spec = ComicListSpec {
         workset_id: comic_fixture.workset_entry.id.clone(),
