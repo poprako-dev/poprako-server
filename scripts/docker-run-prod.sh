@@ -3,8 +3,8 @@ set -eu
 
 project_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 
-image_name="${IMAGE_NAME:-poprako-sr-prod:latest}"
-container_name="${CONTAINER_NAME:-poprako-sr-prod}"
+image_name="${IMAGE_NAME:-poprako-server-prod:latest}"
+container_name="${CONTAINER_NAME:-poprako-server-prod}"
 env_file="${ENV_FILE:-$project_root/.env}"
 http_port="${HTTP_PORT:-18888}"
 
@@ -38,6 +38,5 @@ docker run \
     --log-opt max-file=5 \
     --env-file "$env_file" \
     --env "DATABASE_URL=$container_database_url" \
-    --mount "type=bind,source=$env_file,target=/app/.env,readonly" \
     --publish "$http_port:8888" \
     "$image_name"

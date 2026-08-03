@@ -69,6 +69,14 @@ pub fn new(harn: AppHarn) -> Router<AppHarn> {
             post(team::mark_avatar_uploaded),
         )
         .route(
+            "/teams/{team_id}/online-users",
+            get(team::list_online_user_ids),
+        )
+        .route(
+            "/teams/{team_id}/mark-self-online",
+            put(team::mark_self_online),
+        )
+        .route(
             "/teams/{team_id}/member-invitations",
             get(member_invitation::list_infos),
         )

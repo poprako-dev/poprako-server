@@ -12,7 +12,7 @@ use poprako_util::i18n::trl;
 
 use crate::complex::chapter::ChapterComplex;
 use crate::complex::image::ImageComplex;
-use crate::complex::page::manifest::build;
+use crate::complex::page::manifest::PageManifestComplex;
 use crate::complex::page::{PageComplex, PagePermComplex};
 use crate::data::instr::page::ReserveChapterPagesInstr;
 use crate::data::val::page::{ReserveChapterPagesVal, ReservedPageVal};
@@ -208,7 +208,7 @@ where
             .step_on(repo, context)
             .await?;
 
-            let manifest_plan = build(
+            let manifest_plan = PageManifestComplex::build(
                 &chapter_info.id,
                 &existing_page_infos,
                 &page_specs,

@@ -15,15 +15,16 @@ use crate::part::repo::oper::assignment::{
     CreateAssignment, DeleteAssignments, FindAssignmentInfo, GetAssignmentInfo,
     ListAssignmentInfos, ListAssignmentInfosExcluded, UpdateAssignmentRoles,
 };
+use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::entity::assignment::{
     AssignmentAspectRow, AssignmentEntryRow, AssignmentInfoRow,
     AssignmentRoleTimestamps,
 };
+use crate::part_impl::repo::rdb_impl::incl;
 use crate::part_impl::repo::rdb_impl::schema::t_assignment::dsl::*;
 use crate::part_impl::repo::rdb_impl::schema::t_chapter::{
     f_comic_id as chapter_comic_id, table as chapter_table,
 };
-use crate::part_impl::repo::rdb_impl::{RdbRepo, incl};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::result::diesel;
 use crate::shared::{RdbConn, RdbContext};
@@ -257,7 +258,7 @@ async fn put_roles(
     row_into_info(row)
 }
 
-impl Run<FindAssignmentInfo<'_, '_>> for RdbRepo {
+impl Run<FindAssignmentInfo<'_, '_>> for HybRepo {
     // Keep assignment lookup orchestration errors mapped to repository base errors.
     type Error = BaseError;
 
@@ -294,7 +295,7 @@ impl Run<FindAssignmentInfo<'_, '_>> for RdbRepo {
     }
 }
 
-impl Run<ListAssignmentInfos<'_, '_>> for RdbRepo {
+impl Run<ListAssignmentInfos<'_, '_>> for HybRepo {
     // Keep list-assignment orchestration failures normalized for call sites.
     type Error = BaseError;
 
@@ -308,7 +309,7 @@ impl Run<ListAssignmentInfos<'_, '_>> for RdbRepo {
     }
 }
 
-impl Run<GetAssignmentInfo<'_, '_>> for RdbRepo {
+impl Run<GetAssignmentInfo<'_, '_>> for HybRepo {
     // Normalize get-assignment errors to base repository error type.
     type Error = BaseError;
 
@@ -322,7 +323,7 @@ impl Run<GetAssignmentInfo<'_, '_>> for RdbRepo {
     }
 }
 
-impl Step<ListAssignmentInfos<'_, '_>, RdbContext> for RdbRepo {
+impl Step<ListAssignmentInfos<'_, '_>, RdbContext> for HybRepo {
     // Use base error for listing assignments inside an existing transaction.
     type Error = BaseError;
 
@@ -337,7 +338,7 @@ impl Step<ListAssignmentInfos<'_, '_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<FindAssignmentInfo<'_, '_>, RdbContext> for RdbRepo {
+impl Step<FindAssignmentInfo<'_, '_>, RdbContext> for HybRepo {
     // Keep transactional assignment lookup failures consistent with run-level errors.
     type Error = BaseError;
 
@@ -379,7 +380,7 @@ impl Step<FindAssignmentInfo<'_, '_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<ListAssignmentInfosExcluded<'_>, RdbContext> for RdbRepo {
+impl Step<ListAssignmentInfosExcluded<'_>, RdbContext> for HybRepo {
     // Normalize excluded-list behavior errors under base repository semantics.
     type Error = BaseError;
 
@@ -399,7 +400,7 @@ impl Step<ListAssignmentInfosExcluded<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<CreateAssignment<'_>, RdbContext> for RdbRepo {
+impl Step<CreateAssignment<'_>, RdbContext> for HybRepo {
     // Translate assignment-create failures to base error within transaction.
     type Error = BaseError;
 
@@ -414,7 +415,7 @@ impl Step<CreateAssignment<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<UpdateAssignmentRoles<'_>, RdbContext> for RdbRepo {
+impl Step<UpdateAssignmentRoles<'_>, RdbContext> for HybRepo {
     // Keep role-update failures mapped to shared repository error contract.
     type Error = BaseError;
 
@@ -444,7 +445,7 @@ async fn delete_by_chapter_id(
     accept(())
 }
 
-impl Step<DeleteAssignments<'_>, RdbContext> for RdbRepo {
+impl Step<DeleteAssignments<'_>, RdbContext> for HybRepo {
     // Map all delete-assignment branch failures to base repository errors.
     type Error = BaseError;
 

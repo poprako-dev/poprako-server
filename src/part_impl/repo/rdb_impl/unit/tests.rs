@@ -9,7 +9,8 @@ use crate::part::repo::oper::unit::{
     ApplyUnitEdits, ListUnitInfos, ListUnitOrders,
 };
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
-use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
+use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::result::accept;
 use crate::shared::RdbCore;
 use crate::util::Patch;
@@ -23,7 +24,7 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let page_fixture = test_shared::seed_page(&shared, PREFIX).await;
 
-    let repo = RdbRepo::new(shared.clone());
+    let repo = HybRepo::new(shared.clone());
 
     let nucl = RdbNucl::new(shared.clone());
 

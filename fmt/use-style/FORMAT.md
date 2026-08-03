@@ -23,7 +23,7 @@ chunks, including outer attributes and documentation comments, into canonical
 item order and iterates until import grouping and item ordering both converge.
 
 ```bash
-# Check imports without rewriting source. This is what `just fmt-check` runs.
+# Check imports without rewriting source. The CI check script runs this.
 uv run fmt/use-style/check.py
 
 # Canonicalize imports through the Rust AST, then run `cargo fmt --all`.

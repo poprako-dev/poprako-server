@@ -5,14 +5,14 @@ use crate::model::read::proj::unit::{UnitCounters, UnitInfo, UnitOrder};
 use crate::part::repo::oper::unit::{
     ApplyUnitEdits, ListUnitInfos, ListUnitOrders,
 };
-use crate::part_impl::repo::rdb_impl::RdbRepo;
+use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::unit::step_impl::{
     apply_edits, list_infos, list_orders_for_update,
 };
 use crate::result::{BaseError, BaseRest};
 use crate::shared::RdbContext;
 
-impl Run<ListUnitInfos<'_>> for RdbRepo {
+impl Run<ListUnitInfos<'_>> for HybRepo {
     // Error type for the Run trait impl on unit list query.
     type Error = BaseError;
 
@@ -23,7 +23,7 @@ impl Run<ListUnitInfos<'_>> for RdbRepo {
     }
 }
 
-impl Step<ListUnitOrders<'_>, RdbContext> for RdbRepo {
+impl Step<ListUnitOrders<'_>, RdbContext> for HybRepo {
     // Error type for the Step trait impl on unit order list.
     type Error = BaseError;
 
@@ -38,7 +38,7 @@ impl Step<ListUnitOrders<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<ApplyUnitEdits<'_>, RdbContext> for RdbRepo {
+impl Step<ApplyUnitEdits<'_>, RdbContext> for HybRepo {
     // Error type for the Step trait impl on unit edit application.
     type Error = BaseError;
 

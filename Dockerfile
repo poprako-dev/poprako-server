@@ -1,4 +1,4 @@
-FROM rust:1-alpine3.22 AS builder
+FROM rust:1.95.0-alpine3.22 AS builder
 
 WORKDIR /work
 
@@ -16,7 +16,6 @@ RUN apk add --no-cache \
 COPY Cargo.toml Cargo.lock ./
 COPY poprako-util ./poprako-util
 COPY poprako-swagger ./poprako-swagger
-COPY migrations ./migrations
 COPY benches ./benches
 
 RUN mkdir -p src && \
@@ -45,11 +44,22 @@ WORKDIR /app
 RUN apk add --no-cache \
     ca-certificates \
     libgcc \
-    libpq
+    libpq && \
+    addgroup -S poprako && \
+    adduser -S -G poprako -h /app poprako && \
+    touch /app/.env && \
+    chown poprako:poprako /app/.env
 
-COPY --from=builder /work/poprako-server /app/poprako-server
-COPY deploy/poprako-server/application_config.json /app/application_config.json
+COPY --from=builder --chown=poprako:poprako \
+    /work/poprako-server /app/poprako-server
+COPY --chown=poprako:poprako \
+    deploy/poprako-server/application_config.json /app/application_config.json
+
+USER poprako
 
 EXPOSE 8888
+
+HEALTHCHECK --interval=10s --timeout=3s --start-period=10s --retries=6 \
+    CMD wget -q -O /dev/null http://127.0.0.1:8888/api/health || exit 1
 
 CMD ["/app/poprako-server"]

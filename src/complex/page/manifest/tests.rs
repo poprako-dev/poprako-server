@@ -49,8 +49,12 @@ fn explicit_identity_is_reserved_before_automatic_matching() {
 
     let page_inputs = vec![input(None, 0), input(Some("page-b"), 0)];
 
-    let manifest_plan =
-        build("chapter-1", &existing_page_infos, &page_inputs).unwrap();
+    let manifest_plan = PageManifestComplex::build(
+        "chapter-1",
+        &existing_page_infos,
+        &page_inputs,
+    )
+    .unwrap();
 
     assert_eq!(manifest_plan.matches[0].existing_index, Some(0));
 
@@ -69,8 +73,12 @@ fn automatic_matching_uses_units_uploaded_index_and_id_priority() {
 
     let page_inputs = vec![input(None, 0), input(None, 0), input(None, 0)];
 
-    let manifest_plan =
-        build("chapter-1", &existing_page_infos, &page_inputs).unwrap();
+    let manifest_plan = PageManifestComplex::build(
+        "chapter-1",
+        &existing_page_infos,
+        &page_inputs,
+    )
+    .unwrap();
 
     assert_eq!(manifest_plan.matches[0].existing_index, Some(3));
 
@@ -88,8 +96,12 @@ fn explicit_identity_can_replace_the_image_hash() {
 
     let page_inputs = vec![input(Some("page-a"), 1)];
 
-    let manifest_plan =
-        build("chapter-1", &existing_page_infos, &page_inputs).unwrap();
+    let manifest_plan = PageManifestComplex::build(
+        "chapter-1",
+        &existing_page_infos,
+        &page_inputs,
+    )
+    .unwrap();
 
     assert_eq!(manifest_plan.matches[0].existing_index, Some(0));
 
@@ -105,8 +117,12 @@ fn same_hash_with_different_extension_is_a_distinct_identity() {
 
     page_input.ext = ImageExt::Jpg;
 
-    let manifest_plan =
-        build("chapter-1", &existing_page_infos, &[page_input]).unwrap();
+    let manifest_plan = PageManifestComplex::build(
+        "chapter-1",
+        &existing_page_infos,
+        &[page_input],
+    )
+    .unwrap();
 
     assert!(manifest_plan.matches[0].existing_index.is_none());
 

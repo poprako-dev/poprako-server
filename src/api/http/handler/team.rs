@@ -75,6 +75,54 @@ pub async fn list_infos(
     .accept(StatusCode::OK)
 }
 
+/// `GET /api/v1/teams/{team_id}/online-users` — list active team users.
+#[cfg_attr(feature = "swagger", utoipa::path(
+    get,
+    path = "/api/v1/teams/{team_id}/online-users",
+    tag = "teams",
+    params(("team_id" = String, Path, description = "Team ID")),
+    responses(
+        (status = 200, description = "Online user IDs listed", body = HttpBody<Vec<String>>),
+        (status = 401, description = "Authentication required"),
+        (status = 403, description = "Team membership required"),
+    ),
+))]
+#[instrument(level = "info", err(Debug), skip_all)]
+pub async fn list_online_user_ids(
+    State(harn): State<AppHarn>,
+    Path(team_id): Path<String>,
+    Extension(user_token): Extension<UserToken>,
+) -> HttpResult<Vec<String>> {
+    usecase::team::list_online_user_ids((harn.repo(),), user_token, team_id)
+        .await?
+        .accept(StatusCode::OK)
+}
+
+/// `PUT /api/v1/teams/{team_id}/mark-self-online` — refresh own lease.
+#[cfg_attr(feature = "swagger", utoipa::path(
+    put,
+    path = "/api/v1/teams/{team_id}/mark-self-online",
+    tag = "teams",
+    params(("team_id" = String, Path, description = "Team ID")),
+    responses(
+        (status = 204, description = "Online lease refreshed"),
+        (status = 401, description = "Authentication required"),
+        (status = 403, description = "Team membership required"),
+    ),
+))]
+#[instrument(level = "info", err(Debug), skip_all)]
+pub async fn mark_self_online(
+    State(harn): State<AppHarn>,
+    Path(team_id): Path<String>,
+    Extension(user_token): Extension<UserToken>,
+) -> HttpNoContent {
+    //
+    usecase::team::mark_self_online((harn.repo(),), user_token, team_id)
+        .await?;
+
+    no_content()
+}
+
 /// `GET /api/v1/teams/{team_id}` — fetch a team by id.
 #[cfg_attr(feature = "swagger", utoipa::path(
     get,

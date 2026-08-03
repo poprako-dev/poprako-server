@@ -18,7 +18,7 @@ use crate::part::repo::oper::term::{
     CreateTerm, DeleteTerm, DeleteTerms, GetTermInfo, GetTermInfoExcluded,
     ListTermInfos, LockTerm, UpdateTerm,
 };
-use crate::part_impl::repo::rdb_impl::RdbRepo;
+use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::entity::term::{
     TermEntryRow, TermInfoRow,
 };
@@ -31,7 +31,7 @@ use crate::shared::{RdbConn, RdbContext};
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;
 
-impl Run<GetTermInfo<'_>> for RdbRepo {
+impl Run<GetTermInfo<'_>> for HybRepo {
     // Map `GetTermInfo` to repository orchestration without ambient transaction.
     type Error = BaseError;
 
@@ -42,7 +42,7 @@ impl Run<GetTermInfo<'_>> for RdbRepo {
     }
 }
 
-impl Run<ListTermInfos<'_>> for RdbRepo {
+impl Run<ListTermInfos<'_>> for HybRepo {
     // Map `ListTermInfos` to repository orchestration without ambient transaction.
     type Error = BaseError;
 
@@ -53,7 +53,7 @@ impl Run<ListTermInfos<'_>> for RdbRepo {
     }
 }
 
-impl Step<CreateTerm<'_>, RdbContext> for RdbRepo {
+impl Step<CreateTerm<'_>, RdbContext> for HybRepo {
     // Create a term row inside an active transaction boundary.
     type Error = BaseError;
 
@@ -68,7 +68,7 @@ impl Step<CreateTerm<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<GetTermInfoExcluded<'_>, RdbContext> for RdbRepo {
+impl Step<GetTermInfoExcluded<'_>, RdbContext> for HybRepo {
     // Read a term for exclusive use inside an active transaction context.
     type Error = BaseError;
 
@@ -83,7 +83,7 @@ impl Step<GetTermInfoExcluded<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<LockTerm<'_>, RdbContext> for RdbRepo {
+impl Step<LockTerm<'_>, RdbContext> for HybRepo {
     // Acquire a row-level lock for a term within a transaction.
     type Error = BaseError;
 
@@ -98,7 +98,7 @@ impl Step<LockTerm<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<UpdateTerm<'_>, RdbContext> for RdbRepo {
+impl Step<UpdateTerm<'_>, RdbContext> for HybRepo {
     // Apply term info updates inside an active transaction boundary.
     type Error = BaseError;
 
@@ -113,7 +113,7 @@ impl Step<UpdateTerm<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<DeleteTerm<'_>, RdbContext> for RdbRepo {
+impl Step<DeleteTerm<'_>, RdbContext> for HybRepo {
     // Remove one term row inside an active transaction boundary.
     type Error = BaseError;
 
@@ -128,7 +128,7 @@ impl Step<DeleteTerm<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<DeleteTerms<'_>, RdbContext> for RdbRepo {
+impl Step<DeleteTerms<'_>, RdbContext> for HybRepo {
     // Remove all terms for a termbase inside an active transaction boundary.
     type Error = BaseError;
 

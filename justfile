@@ -45,13 +45,10 @@ prod-stop:
 prod-ci-build:
     scripts/ci-build-prod.sh
 
-deploy-release:
-    sh scripts/deploy-release.sh
-
 # Generate swagger.json from the annotated OpenAPI spec.
 swagger:
     cargo run -p poprako-swagger > docs/swagger.json
 
-# Run all fmt/*/check.py checkers in order, continuing on failure.
-fmt-check:
-    cargo check --all-features && cargo fmt --all && bash fmt/run-check.sh; cargo clippy --all-features
+# Optional local wrapper for the repository's CI validation entry point.
+fmt:
+    sh scripts/ci-check.sh

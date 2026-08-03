@@ -25,7 +25,7 @@ use crate::part::repo::oper::comic_archive::{
     CommitComicArchive, GetComicArchiveSnapshotExcluded,
     ListComicArchivePayloads,
 };
-use crate::part_impl::repo::rdb_impl::RdbRepo;
+use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::entity::assignment::AssignmentInfoRow;
 use crate::part_impl::repo::rdb_impl::entity::chapter::ChapterInfoRow;
 use crate::part_impl::repo::rdb_impl::entity::comic::ComicInfoRow;
@@ -534,7 +534,7 @@ async fn commit(
     accept(())
 }
 
-impl Step<GetComicArchiveSnapshotExcluded<'_>, RdbContext> for RdbRepo {
+impl Step<GetComicArchiveSnapshotExcluded<'_>, RdbContext> for HybRepo {
     // Use base errors for snapshot reads in comic archive transactions.
     type Error = BaseError;
 
@@ -549,7 +549,7 @@ impl Step<GetComicArchiveSnapshotExcluded<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Run<ListComicArchivePayloads<'_>> for RdbRepo {
+impl Run<ListComicArchivePayloads<'_>> for HybRepo {
     // Use base errors for payload-list operations.
     type Error = BaseError;
 
@@ -563,7 +563,7 @@ impl Run<ListComicArchivePayloads<'_>> for RdbRepo {
     }
 }
 
-impl Step<CommitComicArchive<'_>, RdbContext> for RdbRepo {
+impl Step<CommitComicArchive<'_>, RdbContext> for HybRepo {
     // Use base errors for commit operations.
     type Error = BaseError;
 

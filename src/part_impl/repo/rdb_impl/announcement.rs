@@ -11,11 +11,12 @@ use crate::model::write::announcement::AnnouncementEntry;
 use crate::part::repo::oper::announcement::{
     CreateAnnouncement, ListAnnouncementInfos,
 };
+use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::entity::announcement::{
     AnnouncementEntryRow, AnnouncementInfoRow,
 };
+use crate::part_impl::repo::rdb_impl::incl;
 use crate::part_impl::repo::rdb_impl::schema::t_announcement::dsl::*;
-use crate::part_impl::repo::rdb_impl::{RdbRepo, incl};
 use crate::result::{BaseError, BaseRest, accept};
 use crate::shared::result::diesel;
 use crate::shared::{RdbConn, RdbContext};
@@ -75,7 +76,7 @@ async fn create(
     accept(row.into())
 }
 
-impl Run<ListAnnouncementInfos<'_>> for RdbRepo {
+impl Run<ListAnnouncementInfos<'_>> for HybRepo {
     // Error type for the Run trait impl on announcement list query.
     type Error = BaseError;
 
@@ -89,7 +90,7 @@ impl Run<ListAnnouncementInfos<'_>> for RdbRepo {
     }
 }
 
-impl Step<CreateAnnouncement<'_>, RdbContext> for RdbRepo {
+impl Step<CreateAnnouncement<'_>, RdbContext> for HybRepo {
     // Error type for the Step trait impl on announcement creation.
     type Error = BaseError;
 

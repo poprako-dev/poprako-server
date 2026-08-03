@@ -15,7 +15,8 @@ use crate::part::repo::oper::team::CreateTeam;
 use crate::part::repo::oper::user::CreateUser;
 use crate::part::repo::oper::workset::CreateWorkset;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
-use crate::part_impl::repo::rdb_impl::{RdbRepo, schema};
+use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::rdb_impl::schema;
 use crate::result::{BaseError, BaseRest, accept};
 use crate::shared::RdbCore;
 use crate::shared::result::diesel as diesel_error;
@@ -363,7 +364,7 @@ pub async fn assert_no_leftovers(
 
 pub async fn create_user(shared: &RdbCore, user_entry: &UserEntry) {
     //
-    let repo = RdbRepo::new(shared.clone());
+    let repo = HybRepo::new(shared.clone());
 
     let nucl = RdbNucl::new(shared.clone());
 
@@ -394,7 +395,7 @@ pub async fn seed_user_and_team(shared: &RdbCore, prefix: &str) -> TeamFixture {
     //
     reset(shared, prefix).await;
 
-    let repo = RdbRepo::new(shared.clone());
+    let repo = HybRepo::new(shared.clone());
 
     let user_entry = user_entry(prefix, "owner");
 
@@ -417,7 +418,7 @@ pub async fn seed_workset(shared: &RdbCore, prefix: &str) -> WorksetFixture {
     //
     let team_fixture = seed_user_and_team(shared, prefix).await;
 
-    let repo = RdbRepo::new(shared.clone());
+    let repo = HybRepo::new(shared.clone());
 
     let nucl = RdbNucl::new(shared.clone());
 
@@ -449,7 +450,7 @@ pub async fn seed_comic(shared: &RdbCore, prefix: &str) -> ComicFixture {
     //
     reset(shared, prefix).await;
 
-    let repo = RdbRepo::new(shared.clone());
+    let repo = HybRepo::new(shared.clone());
 
     let nucl = RdbNucl::new(shared.clone());
 
@@ -504,7 +505,7 @@ pub async fn seed_chapter(shared: &RdbCore, prefix: &str) -> ChapterFixture {
     //
     let comic_fixture = seed_comic(shared, prefix).await;
 
-    let repo = RdbRepo::new(shared.clone());
+    let repo = HybRepo::new(shared.clone());
 
     let nucl = RdbNucl::new(shared.clone());
 
@@ -543,7 +544,7 @@ pub async fn seed_page(shared: &RdbCore, prefix: &str) -> PageFixture {
     //
     let chapter_fixture = seed_chapter(shared, prefix).await;
 
-    let repo = RdbRepo::new(shared.clone());
+    let repo = HybRepo::new(shared.clone());
 
     let nucl = RdbNucl::new(shared.clone());
 
