@@ -11,7 +11,7 @@ use time::Duration;
 
 use crate::part_impl::prom::rdb_impl::entity::LocalMessageEntryRow;
 use crate::part_impl::prom::rdb_impl::test_shared;
-use crate::part_impl::repo::rdb_impl::RdbRepo;
+use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::schema::t_local_message;
 use crate::shared::{RdbContext, RdbCore};
 
@@ -75,7 +75,7 @@ pub async fn poll_pending_selects_one_visible_message_per_idle_topic(
         .ok()
         .unwrap();
 
-    let repo = RdbPromRepo::new(RdbRepo::new(shared.clone()));
+    let repo = RdbPromRepo::new(HybRepo::new(shared.clone()));
 
     let mut context = RdbContext::new(shared.get().await.ok().unwrap());
 
@@ -139,7 +139,7 @@ pub async fn retry_message_allows_later_topic_message_to_advance(
         .ok()
         .unwrap();
 
-    let repo = RdbPromRepo::new(RdbRepo::new(shared.clone()));
+    let repo = RdbPromRepo::new(HybRepo::new(shared.clone()));
 
     let retry_visible_at = now + Duration::minutes(5);
 
@@ -229,7 +229,7 @@ pub async fn stale_attempt_finalization_preserves_newer_lease(shared: RdbCore) {
     .ok()
     .unwrap();
 
-    let repo = RdbPromRepo::new(RdbRepo::new(shared.clone()));
+    let repo = RdbPromRepo::new(HybRepo::new(shared.clone()));
 
     let retry_visible_at = now + Duration::minutes(5);
 
@@ -389,7 +389,7 @@ pub async fn completed_message_purge_preserves_non_completed_records(
         .ok()
         .unwrap();
 
-    let repo = RdbPromRepo::new(RdbRepo::new(shared.clone()));
+    let repo = RdbPromRepo::new(HybRepo::new(shared.clone()));
 
     let completed_before = now - Duration::days(7);
 

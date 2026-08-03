@@ -11,14 +11,14 @@ use crate::part_impl::effect::async_impl::AsyncEffectDevelop;
 use crate::part_impl::image::r2_impl::R2ImagePool;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::prom::rdb_impl::RdbProm;
-use crate::part_impl::repo::rdb_impl::RdbRepo;
+use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
 
 /// Production harness type backing the HTTP server state.
 pub type AppHarn = Harn<
     RdbContext,
     RdbNucl,
-    RdbRepo,
+    HybRepo,
     RdbProm,
     JwtAuth,
     R2ImagePool,

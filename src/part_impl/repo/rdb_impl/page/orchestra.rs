@@ -10,7 +10,7 @@ use crate::part::repo::oper::page::{
     SetPageImageUploaded, SetPageUnitCounters, ShiftPageIndexesTemporary,
     UpdatePageManifest,
 };
-use crate::part_impl::repo::rdb_impl::RdbRepo;
+use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::page::step_impl::{
     clear_images_for_publish, create_batch, delete_by_chapter_id,
     delete_by_ids, get_info_by_id, get_info_excluded,
@@ -21,7 +21,7 @@ use crate::part_impl::repo::rdb_impl::page::step_impl::{
 use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::shared::RdbContext;
 
-impl Run<GetPageInfo<'_>> for RdbRepo {
+impl Run<GetPageInfo<'_>> for HybRepo {
     // Use base error for page read orchestration through the query dispatcher.
     type Error = BaseError;
 
@@ -32,7 +32,7 @@ impl Run<GetPageInfo<'_>> for RdbRepo {
     }
 }
 
-impl Run<ListPageInfos<'_>> for RdbRepo {
+impl Run<ListPageInfos<'_>> for HybRepo {
     // Keep list query failures aligned with repository-level base error handling.
     type Error = BaseError;
 
@@ -43,7 +43,7 @@ impl Run<ListPageInfos<'_>> for RdbRepo {
     }
 }
 
-impl Run<ListFirstPageInfos<'_>> for RdbRepo {
+impl Run<ListFirstPageInfos<'_>> for HybRepo {
     // Return base error for first-page batched read path.
     type Error = BaseError;
 
@@ -61,7 +61,7 @@ impl Run<ListFirstPageInfos<'_>> for RdbRepo {
     }
 }
 
-impl Step<GetPageInfo<'_>, RdbContext> for RdbRepo {
+impl Step<GetPageInfo<'_>, RdbContext> for HybRepo {
     // Use base error for row-level page reads inside a running transaction.
     type Error = BaseError;
 
@@ -76,7 +76,7 @@ impl Step<GetPageInfo<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<ListPageInfos<'_>, RdbContext> for RdbRepo {
+impl Step<ListPageInfos<'_>, RdbContext> for HybRepo {
     // Reuse base error semantics for chapter page list operations in transactions.
     type Error = BaseError;
 
@@ -91,7 +91,7 @@ impl Step<ListPageInfos<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<ListPageInfosExcluded<'_>, RdbContext> for RdbRepo {
+impl Step<ListPageInfosExcluded<'_>, RdbContext> for HybRepo {
     // Keep excluded-list query errors on the shared base error channel.
     type Error = BaseError;
 
@@ -106,7 +106,7 @@ impl Step<ListPageInfosExcluded<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<CreatePages<'_>, RdbContext> for RdbRepo {
+impl Step<CreatePages<'_>, RdbContext> for HybRepo {
     // Preserve base error behavior for batch page creation inside transaction.
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
@@ -120,7 +120,7 @@ impl Step<CreatePages<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<GetPageInfoExcluded<'_>, RdbContext> for RdbRepo {
+impl Step<GetPageInfoExcluded<'_>, RdbContext> for HybRepo {
     // Use repository base error for filtered read path with row exclusion.
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
@@ -134,7 +134,7 @@ impl Step<GetPageInfoExcluded<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<ReservePageImage<'_>, RdbContext> for RdbRepo {
+impl Step<ReservePageImage<'_>, RdbContext> for HybRepo {
     // Map reservation failures to repository base errors.
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
@@ -148,7 +148,7 @@ impl Step<ReservePageImage<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<MarkPageImageUploaded<'_>, RdbContext> for RdbRepo {
+impl Step<MarkPageImageUploaded<'_>, RdbContext> for HybRepo {
     // Keep mark-upload status updates in base error domain.
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
@@ -168,7 +168,7 @@ impl Step<MarkPageImageUploaded<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<SetPageImageUploaded<'_>, RdbContext> for RdbRepo {
+impl Step<SetPageImageUploaded<'_>, RdbContext> for HybRepo {
     // Convert set-image state failures into base repository errors.
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
@@ -208,7 +208,7 @@ impl Step<SetPageImageUploaded<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<SetPageUnitCounters<'_>, RdbContext> for RdbRepo {
+impl Step<SetPageUnitCounters<'_>, RdbContext> for HybRepo {
     // Keep counter update failures consistent for transaction call sites.
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
@@ -222,7 +222,7 @@ impl Step<SetPageUnitCounters<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<ShiftPageIndexesTemporary<'_>, RdbContext> for RdbRepo {
+impl Step<ShiftPageIndexesTemporary<'_>, RdbContext> for HybRepo {
     // Maintain base-error parity for temporary page index reordering.
     type Error = BaseError;
 
@@ -237,7 +237,7 @@ impl Step<ShiftPageIndexesTemporary<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<UpdatePageManifest<'_>, RdbContext> for RdbRepo {
+impl Step<UpdatePageManifest<'_>, RdbContext> for HybRepo {
     // Preserve consistent error mapping while updating page manifest metadata.
     type Error = BaseError;
 
@@ -252,7 +252,7 @@ impl Step<UpdatePageManifest<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<ClearPageImagesForPublish<'_>, RdbContext> for RdbRepo {
+impl Step<ClearPageImagesForPublish<'_>, RdbContext> for HybRepo {
     // Return base errors for image clear operations executed at publish time.
     type Error = BaseError;
 
@@ -267,7 +267,7 @@ impl Step<ClearPageImagesForPublish<'_>, RdbContext> for RdbRepo {
     }
 }
 
-impl Step<DeletePages<'_>, RdbContext> for RdbRepo {
+impl Step<DeletePages<'_>, RdbContext> for HybRepo {
     // Keep delete error semantics on the shared repository error type.
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]

@@ -41,9 +41,6 @@ use crate::part::repo::oper::workset::{
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 
-// Process-local online-user leases grouped by team.
-mod online;
-
 /// Domain opers for team entities.
 pub struct TeamComplex;
 

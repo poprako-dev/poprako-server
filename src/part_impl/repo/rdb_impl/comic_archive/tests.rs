@@ -13,10 +13,11 @@ use crate::part::repo::oper::comic_archive::{
     CommitComicArchive, GetComicArchiveSnapshotExcluded,
 };
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
+use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::schema::{
     t_chapter, t_comic, t_comic_archive, t_page, t_workset,
 };
-use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
+use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::result::BaseError;
 use crate::shared::RdbCore;
 
@@ -30,7 +31,7 @@ pub async fn comic_archive_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let page_fixture = test_shared::seed_page(&shared, PREFIX).await;
 
-    let repo = RdbRepo::new(shared.clone());
+    let repo = HybRepo::new(shared.clone());
 
     let nucl = RdbNucl::new(shared.clone());
 

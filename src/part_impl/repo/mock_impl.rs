@@ -1,6 +1,8 @@
 //! In-memory repository and prom adapters for tests.
 
+use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
+use std::time::Instant;
 
 use poprako_orchestra::nucl::Error as NuclError;
 use poprako_orchestra::{Nucl, Run as _, Step as _};
@@ -54,6 +56,8 @@ pub mod comment;
 pub mod member;
 /// Mock in-memory implementations for member invitation repository operations.
 pub mod member_invitation;
+/// Mock in-memory implementations for online-user repository operations.
+pub mod online_user;
 // Mock helper for in-memory nucl-related types.
 mod nucl;
 /// Mock implementations for page repository operations.
@@ -245,6 +249,9 @@ pub struct Mock {
     pub flags: Arc<Mutex<MockFlags>>,
     /// Shared event buffer collecting emitted domain events during tests.
     pub events: Arc<Mutex<Vec<Event>>>,
+    // Team-partitioned online-user lease deadlines.
+    online_user_deadlines:
+        Arc<Mutex<HashMap<String, HashMap<String, Instant>>>>,
 }
 
 impl Mock {

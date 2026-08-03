@@ -15,6 +15,7 @@ use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::comment::CommentRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::member_invitation::MemberInvitationRepo;
+use crate::part::repo::online_user::OnlineUserRepo;
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::system_mail::SystemMailRepo;
 use crate::part::repo::team::TeamRepo;
@@ -73,6 +74,7 @@ where
         + CommentRepo<C>
         + MemberRepo<C>
         + MemberInvitationRepo<C>
+        + OnlineUserRepo
         + PageRepo<C>
         + SystemMailRepo
         + TeamRepo<C>
