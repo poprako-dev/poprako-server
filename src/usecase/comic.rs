@@ -87,7 +87,7 @@ pub mod tests;
 /// 5. Updates the comic's denormalised chapter counter and last-activity
 ///    timestamp.
 /// 6. Creates an ADMIN assignment on the new chapter for the caller.
-#[instrument(level = "info", err(Debug), skip(nucl, repo))]
+#[instrument(level = "info", skip(nucl, repo))]
 pub async fn create<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
@@ -218,7 +218,7 @@ where
 }
 
 /// Fetches a comic by ID with cover URL resolution.
-#[instrument(level = "info", err(Debug), skip(repo, image_pool))]
+#[instrument(level = "info", skip(repo, image_pool))]
 pub async fn get_info<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
@@ -272,7 +272,7 @@ where
 }
 
 /// Updates a comic's title, author, and description.
-#[instrument(level = "info", err(Debug), skip(repo))]
+#[instrument(level = "info", skip(repo))]
 pub async fn update_info<C, R>(
     (repo,): (&R,),
     token: UserToken,
@@ -309,7 +309,7 @@ where
 }
 
 /// Reserves a new comic cover upload slot.
-#[instrument(level = "info", err(Debug), skip(nucl, repo, prom, image_pool))]
+#[instrument(level = "info", skip(nucl, repo, prom, image_pool))]
 pub async fn reserve_cover<N, C, R, P, I>(
     (nucl, repo, prom, image_pool): (&N, &R, &P, &I),
     token: UserToken,
@@ -437,7 +437,7 @@ where
 }
 
 /// Marks a reserved comic cover as successfully uploaded.
-#[instrument(level = "info", err(Debug), skip(nucl, repo, image_manager))]
+#[instrument(level = "info", skip(nucl, repo, image_manager))]
 pub async fn mark_cover_uploaded<N, C, R, I>(
     (nucl, repo, image_manager): (&N, &R, &I),
     token: UserToken,
@@ -580,7 +580,7 @@ where
 }
 
 /// Deletes a comic and updates the parent workset counter.
-#[instrument(level = "info", err(Debug), skip(nucl, repo, prom))]
+#[instrument(level = "info", skip(nucl, repo, prom))]
 pub async fn delete<N, C, R, P>(
     (nucl, repo, prom): (&N, &R, &P),
     token: UserToken,

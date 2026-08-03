@@ -58,7 +58,7 @@ mod tests;
 const EXPIRY_DELAY: Duration = Duration::from_secs(3 * 24 * 60 * 60);
 
 /// Lists assignment invitations under one chapter.
-#[instrument(level = "info", err(Debug), skip(repo))]
+#[instrument(level = "info", skip(repo))]
 pub async fn list_infos<C, R>(
     (repo,): (&R,),
     token: UserToken,
@@ -91,7 +91,7 @@ where
 }
 
 /// Creates a pending assignment invitation.
-#[instrument(level = "info", err(Debug), skip(nucl, repo, prom))]
+#[instrument(level = "info", skip(nucl, repo, prom))]
 pub async fn create<N, C, R, P>(
     (nucl, repo, prom): (&N, &R, &P),
     token: UserToken,
@@ -210,7 +210,7 @@ where
 }
 
 /// Deletes an assignment invitation.
-#[instrument(level = "info", err(Debug), skip(nucl, repo))]
+#[instrument(level = "info", skip(nucl, repo))]
 pub async fn delete<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
@@ -250,7 +250,6 @@ where
 /// Joins a chapter assignment with a pending invitation code.
 #[instrument(
     level = "info",
-    err(Debug),
     skip(nucl, repo, image_pool, instr),
     fields(code = "[REDACTED]")
 )]
@@ -444,7 +443,7 @@ where
 }
 
 // Verifies that the current user is assigned as a chapter administrator.
-#[instrument(level = "info", err(Debug), skip(repo))]
+#[instrument(level = "info", skip(repo))]
 async fn ensure_user_admin<C, R>(
     repo: &R,
     current_user_id: &str,

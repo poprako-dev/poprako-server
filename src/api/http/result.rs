@@ -102,24 +102,10 @@ impl From<BaseError> for HttpError {
         match source {
             //
             BaseError::Expected { variant, message } => {
-                //
-                tracing::debug!(
-                    "[HttpError::from] expected error: {}",
-                    message
-                );
-
                 Self::expected(variant, &message)
             }
 
-            BaseError::Unrecoverable { message } => {
-                //
-                tracing::warn!(
-                    "[HttpError::from] unrecoverable error concealed: {}",
-                    message
-                );
-
-                Self::internal()
-            }
+            BaseError::Unrecoverable { .. } => Self::internal(),
         }
     }
 }

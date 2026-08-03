@@ -9,6 +9,7 @@ use time::OffsetDateTime;
 use poprako_util::i18n::trl;
 
 use self::image_task::ResourceState;
+use self::json::serialize_payload_err;
 use crate::model::read::proj::user::{UserCredential, UserInfo};
 use crate::model::write::page::PageImageRepl;
 use crate::model::write::team::TeamAvatarRepl;
@@ -34,6 +35,8 @@ mod chapter;
 mod image_task;
 // Internal organization of the `invitation` module.
 mod invitation;
+// Internal organization of the `json` module.
+mod json;
 // Internal organization of the `tests` module.
 mod tests;
 
@@ -116,15 +119,8 @@ impl<'a> Step<Defer<'a, String, TaskPayload, ()>, MockContext> for Mock {
     ) -> Result<(), Self::Error> {
         //
         // Internal implementation detail.
-        let payload_json =
-            serde_json::to_string(oper.task.payload).map_err(|error| {
-                BaseError::Unrecoverable {
-                    message: format!(
-                        "failed to serialize prom payload: {}",
-                        error
-                    ),
-                }
-            })?;
+        let payload_json = serde_json::to_string(oper.task.payload)
+            .map_err(serialize_payload_err)?;
 
         context.state.prom_records.push(MockPromRecord {
             id: oper.task.id.to_string(),

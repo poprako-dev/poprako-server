@@ -47,7 +47,7 @@ mod tests;
 const EXPIRY_DELAY: Duration = Duration::from_secs(5 * 24 * 60 * 60);
 
 /// Creates a pending invitation for a team.
-#[instrument(level = "info", err(Debug), skip(nucl, repo, prom))]
+#[instrument(level = "info", skip(nucl, repo, prom))]
 pub async fn create<N, C, R, P>(
     (nucl, repo, prom): (&N, &R, &P),
     token: UserToken,
@@ -157,7 +157,7 @@ where
 }
 
 /// Lists invitations for a team.
-#[instrument(level = "info", err(Debug), skip(repo, image_pool))]
+#[instrument(level = "info", skip(repo, image_pool))]
 pub async fn list_infos<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
@@ -207,7 +207,7 @@ where
 }
 
 /// Updates the roles of an invitation.
-#[instrument(level = "info", err(Debug), skip(nucl, repo))]
+#[instrument(level = "info", skip(nucl, repo))]
 pub async fn update_roles<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
@@ -252,7 +252,7 @@ where
 }
 
 /// Deletes an invitation.
-#[instrument(level = "info", err(Debug), skip(nucl, repo))]
+#[instrument(level = "info", skip(nucl, repo))]
 pub async fn delete<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,

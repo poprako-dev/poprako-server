@@ -76,11 +76,18 @@ impl<'a> LocalMessageEntryRow<'a> {
     ) -> BaseRest<Self> {
         //
         let f_payload =
-            serde_json::to_value(task.payload).map_err(|error| {
+            serde_json::to_value(task.payload).map_err(|err_serde| {
+                //
+                tracing::error!(
+                    operation = "serialize_prom_payload",
+                    sdk_err = ?err_serde,
+                    "JSON SDK serialization error",
+                );
+
                 BaseError::Unrecoverable {
                     message: format!(
                         "failed to serialize prom payload: {}",
-                        error
+                        err_serde
                     ),
                 }
             })?;

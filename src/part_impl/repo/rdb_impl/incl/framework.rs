@@ -93,7 +93,7 @@ pub trait Incl {
 ///
 /// This is the only include-driving function. Call it once per requested include
 /// variant. Works on slices (list) or single items (via `from_mut`).
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn populate<I>(
     conn: &mut RdbConn,
     infos: &mut [I::Owner],
@@ -159,7 +159,7 @@ where
 }
 
 // Execute a batch `SELECT … WHERE f_id IN (…)` via a [`BatchByIds`] impl.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn batch_load<B>(
     conn: &mut RdbConn,
     ids: Vec<&str>,

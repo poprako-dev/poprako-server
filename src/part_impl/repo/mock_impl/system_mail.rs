@@ -143,7 +143,7 @@ impl Run<SendSystemMail<'_>> for Mock {
     // Internal type alias for `Error`.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Internal implementation of `run`.
     async fn run(&self, oper: &SendSystemMail<'_>) -> BaseRest<()> {
         //
@@ -159,7 +159,7 @@ impl Run<SendSystemMails<'_>> for Mock {
     // Internal type alias for `Error`.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Internal implementation of `run`.
     async fn run(&self, oper: &SendSystemMails<'_>) -> BaseRest<()> {
         //
@@ -175,7 +175,7 @@ impl Run<ListSystemMailInfos<'_>> for Mock {
     // Internal type alias for `Error`.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Internal implementation of `run`.
     async fn run(
         &self,
@@ -194,7 +194,7 @@ impl Run<MarkSystemMailRead<'_>> for Mock {
     // Internal type alias for `Error`.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Internal implementation of `run`.
     async fn run(&self, oper: &MarkSystemMailRead<'_>) -> BaseRest<()> {
         //

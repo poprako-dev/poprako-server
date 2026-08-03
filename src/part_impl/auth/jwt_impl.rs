@@ -84,7 +84,7 @@ impl JwtAuth {
 
 impl TokenAuth for JwtAuth {
     // Signs a user token by encoding JWT claims with configured expiration.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     fn sign_token(&self, token: &UserToken) -> BaseRest<String> {
         //
         // Internal implementation detail.
@@ -107,6 +107,13 @@ impl TokenAuth for JwtAuth {
         let header = Header::new(Algorithm::HS256);
 
         encode(&header, &claims, &self.encoding_key).map_err(|err| {
+            //
+            tracing::error!(
+                operation = "sign_token",
+                sdk_err = ?err,
+                "JWT SDK error",
+            );
+
             BaseError::Unrecoverable {
                 message: format!(
                     "[JwtAuth::sign_token] error when encoding: {}",
@@ -117,7 +124,7 @@ impl TokenAuth for JwtAuth {
     }
 
     // Verifies a JWT token string and returns the decoded user token.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     fn verify_token(&self, raw: &str) -> BaseRest<UserToken> {
         //
         // Internal implementation detail.
@@ -128,16 +135,14 @@ impl TokenAuth for JwtAuth {
         )
         .map_err(|err| {
             //
-            // Internal state field tracing.
-            tracing::debug!("[JwtAuth::verify_token] decode failed: {}", err);
-
             let err_message = trl("error-unauthorized");
 
             tracing::warn!(
                 err_variant = ?ExpectedVariant::Auth,
                 err_message = %err_message,
-                decode_err = %err,
-                "expected error: JWT verification failed",
+                operation = "verify_token",
+                sdk_err = ?err,
+                "JWT SDK error converted to expected authentication error",
             );
 
             BaseError::Expected {

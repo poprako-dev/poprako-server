@@ -34,7 +34,7 @@ pub mod tests;
 // ── Free functions ──────────────────────────────────────────────────────────
 
 // Remove a user row from persistence.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
     // Execute hard delete and map DB errors to repository error type.
@@ -47,7 +47,7 @@ async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
 }
 
 // Load credential material for authentication operations from the same backing row.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn get_credential_by_qid(
     conn: &mut RdbConn,
     qid: &str,
@@ -89,7 +89,7 @@ async fn get_credential_by_qid(
 }
 
 // Return user info by QID, yielding `None` instead of an error when missing.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn find_info_by_qid(
     conn: &mut RdbConn,
     qid: &str,
@@ -108,7 +108,7 @@ async fn find_info_by_qid(
 }
 
 // Insert a new user row and return the persisted info payload.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn create(conn: &mut RdbConn, entry: &UserEntry) -> BaseRest<UserInfo> {
     //
     // Populate required identity and timestamp columns, then fetch created row.
@@ -135,7 +135,7 @@ async fn create(conn: &mut RdbConn, entry: &UserEntry) -> BaseRest<UserInfo> {
 }
 
 // Update mutable identity fields (`qid`, `nickname`) for an existing user.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn update_info(conn: &mut RdbConn, repl: &UserInfoRepl) -> BaseRest<()> {
     //
     // Apply one write that updates both fields and returns success when DB update succeeds.
@@ -155,7 +155,7 @@ async fn update_info(conn: &mut RdbConn, repl: &UserInfoRepl) -> BaseRest<()> {
 }
 
 // Replace a user's password hash and refresh the row-level update timestamp.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn update_password_hash(
     conn: &mut RdbConn,
     repl: &UserCredsRepl,
@@ -177,7 +177,7 @@ async fn update_password_hash(
 }
 
 // Reserve an avatar object version, reusing existing key when hash unchanged.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn reserve_avatar(
     conn: &mut RdbConn,
     id: &str,
@@ -272,7 +272,7 @@ async fn reserve_avatar(
 }
 
 // Mark upload result for an avatar with optimistic-version guarding.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn mark_avatar_uploaded(
     conn: &mut RdbConn,
     id: &str,
@@ -335,7 +335,7 @@ async fn mark_avatar_uploaded(
 }
 
 // Touch `last_active_at` for heartbeat and usage tracking.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn touch_last_active(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
     // Keep access timestamp current for activity-driven features.
@@ -353,7 +353,7 @@ async fn touch_last_active(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
 }
 
 // Load one user info row with `FOR UPDATE` lock for follow-up writes.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn get_info_by_id_excluded(
     conn: &mut RdbConn,
     id: &str,
@@ -396,7 +396,7 @@ async fn get_info_by_id_excluded(
 }
 
 // Load one user info row by primary key and map DB row into response model.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn get_info_by_id(conn: &mut RdbConn, id: &str) -> BaseRest<UserInfo> {
     //
     // Query `t_user` by `f_id`, fail with `error-user-not-found` when absent.
@@ -439,7 +439,7 @@ impl Run<GetUserInfo<'_>> for HybRepo {
     type Error = BaseError;
 
     // Route read by ID into the shared `submit_query!` orchestration.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn run(
         &self,
         oper: &GetUserInfo<'_>,
@@ -457,7 +457,7 @@ impl Run<GetUserCredential<'_>> for HybRepo {
     type Error = BaseError;
 
     // Route credential read by QID to the shared repository query path.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn run(
         &self,
         oper: &GetUserCredential<'_>,
@@ -475,7 +475,7 @@ impl Run<FindUserInfo<'_>> for HybRepo {
     type Error = BaseError;
 
     // Route optional user lookup by QID to shared query layer.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn run(
         &self,
         oper: &FindUserInfo<'_>,
@@ -493,7 +493,7 @@ impl Run<UpdateUser<'_>> for HybRepo {
     type Error = BaseError;
 
     // Map each update variant to a dedicated helper with explicit argument flow.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn run(&self, oper: &UpdateUser<'_>) -> BaseRest<()> {
         match oper {
             //
@@ -528,7 +528,7 @@ impl Step<CreateUser<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Insert new user rows inside provided transaction context.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -543,7 +543,7 @@ impl Step<FindUserInfo<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Resolve soft-miss lookup inside caller-owned transaction context.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -562,7 +562,7 @@ impl Step<UpdateUser<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Dispatch each mutable user operation to one explicit DB helper.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -601,7 +601,7 @@ impl Step<ReserveUserAvatar<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Reserve avatar key/version atomically inside the current transaction.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -617,7 +617,7 @@ impl Step<GetUserInfoExcluded<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Read user row with lock for callers that mutate next.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -636,7 +636,7 @@ impl Step<DeleteUser<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Execute user deletion as part of ongoing transaction flow.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
