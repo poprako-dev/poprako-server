@@ -40,7 +40,7 @@ use crate::value::unit::UnitEditPerm;
 #[cfg(test)]
 mod tests;
 
-#[instrument(level = "info", err(Debug), skip(nucl, repo))]
+#[instrument(level = "info", skip(nucl, repo))]
 /// Imports chapter translation content through the Unit edit pipeline.
 pub async fn import<N, C, R>(
     (nucl, repo): (&N, &R),

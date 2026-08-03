@@ -35,7 +35,7 @@ use crate::shared::{RdbConn, RdbContext};
 pub mod tests;
 
 // Escape `%` and `_` wildcard symbols so fuzzy search stays literal-safe.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 // Remove one termbase row by id.
 async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
@@ -56,7 +56,7 @@ fn escape_ilike_pattern(input: &str) -> String {
         .replace('_', "\\_")
 }
 
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 // Load one termbase row by id and map DB entity into response shape.
 async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<TermbaseInfo> {
     //
@@ -95,7 +95,7 @@ async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<TermbaseInfo> {
     accept(row.into())
 }
 
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 // Load one termbase row by id with row lock for transactional mutation.
 async fn get_info_excluded(
     conn: &mut RdbConn,
@@ -138,7 +138,7 @@ async fn get_info_excluded(
     accept(row.into())
 }
 
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 // List termbase rows with team/comic filter and optional fuzzy name.
 async fn list_infos(
     conn: &mut RdbConn,
@@ -205,7 +205,7 @@ async fn list_infos(
     accept(rows.into_iter().map(Into::into).collect())
 }
 
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 // List all termbases for team/comic with row lock for later mutation.
 async fn list_infos_excluded(
     conn: &mut RdbConn,
@@ -235,7 +235,7 @@ async fn list_infos_excluded(
     accept(rows.into_iter().map(Into::into).collect())
 }
 
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 // Insert a new termbase and return created info.
 async fn create(
     conn: &mut RdbConn,
@@ -255,7 +255,7 @@ async fn create(
     accept(row.into())
 }
 
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 // Update termbase descriptive fields.
 async fn update_info(
     conn: &mut RdbConn,
@@ -276,7 +276,7 @@ async fn update_info(
     accept(())
 }
 
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 // Adjust term count atomically by signed delta.
 async fn update_term_count(
     conn: &mut RdbConn,
@@ -297,7 +297,7 @@ async fn update_term_count(
     accept(())
 }
 
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 // Touch updated_at to indicate activity without changing business fields.
 async fn touch(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
@@ -316,7 +316,7 @@ impl Run<GetTermbaseInfo<'_>> for HybRepo {
     type Error = BaseError;
 
     // Load one termbase info by id through shared query path.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn run(&self, oper: &GetTermbaseInfo<'_>) -> BaseRest<TermbaseInfo> {
         submit_query!(self.core, get_info, oper.id)
     }
@@ -327,7 +327,7 @@ impl Run<ListTermbaseInfos<'_>> for HybRepo {
     type Error = BaseError;
 
     // Load paged termbase list by spec through shared query path.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn run(
         &self,
         oper: &ListTermbaseInfos<'_>,
@@ -341,7 +341,7 @@ impl Step<CreateTermbase<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Insert termbase row inside transaction context and return persisted info.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -356,7 +356,7 @@ impl Step<GetTermbaseInfo<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Read one locked? or unlocked termbase info in step context.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -371,7 +371,7 @@ impl Step<GetTermbaseInfoExcluded<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Read one termbase row with `FOR UPDATE` for subsequent writes.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -386,7 +386,7 @@ impl Step<ListTermbaseInfosExcluded<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Read and lock all rows for a team/comic scope.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -401,7 +401,7 @@ impl Step<UpdateTermbase<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Apply name/description changes in one update statement.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -416,7 +416,7 @@ impl Step<UpdateTermbaseTermCount<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Update term count with delta while keeping updated_at fresh.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -431,7 +431,7 @@ impl Step<TouchTermbase<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Refresh termbase updated_at in transactional flow.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -446,7 +446,7 @@ impl Step<DeleteTermbase<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Delete termbase row as part of transaction flow.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,

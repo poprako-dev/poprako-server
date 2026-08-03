@@ -316,7 +316,7 @@ where
         }
     }
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Internal implementation of `poll`.
     async fn poll(&self) -> BaseRest<Vec<LocalMessageRow>> {
         //
@@ -383,7 +383,7 @@ where
         dispatched
     }
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Internal implementation of `complete`.
     async fn complete(&self, id: &str, lease: i64) -> BaseRest<()> {
         //
@@ -397,7 +397,7 @@ where
             .await
     }
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Internal implementation of `retry`.
     async fn retry(&self, id: &str, lease: i64, message: &str) -> BaseRest<()> {
         //
@@ -413,7 +413,7 @@ where
             .await
     }
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Internal implementation of `fail`.
     async fn fail(&self, id: &str, lease: i64, message: &str) -> BaseRest<()> {
         //
@@ -427,7 +427,7 @@ where
             .await
     }
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Internal implementation of `reset_stuck`.
     async fn reset_stuck(&self) -> BaseRest<()> {
         //
@@ -443,7 +443,7 @@ where
             .await
     }
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Internal implementation of `purge_completed`.
     async fn purge_completed(&self) -> BaseRest<usize> {
         //
@@ -462,7 +462,7 @@ where
             .await
     }
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Internal implementation of `claim`.
     async fn claim(&self, id: &str, lease: i64) -> BaseRest<bool> {
         //

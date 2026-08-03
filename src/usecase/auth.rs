@@ -54,7 +54,6 @@ mod tests;
 /// * `D: EffectDevelop` — Processes the signup event.
 #[instrument(
     level = "info",
-    err(Debug),
     skip(nucl, repo, auth, develop, instr),
     fields(
         qid = %instr.qid,
@@ -179,7 +178,6 @@ where
 /// * `A: TokenAuth` — Signs the session token.
 #[instrument(
     level = "info",
-    err(Debug),
     skip(repo, auth, instr),
     fields(qid = %instr.qid, password = "[REDACTED]"),
 )]

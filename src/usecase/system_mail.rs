@@ -30,7 +30,7 @@ mod tests;
 /// * `R: SystemMailRepo` — System mail storage.
 ///
 /// [`ListSystemMailInfosInstr`]: ListSystemMailInfosInstr
-#[instrument(level = "info", err(Debug), skip(repo))]
+#[instrument(level = "info", skip(repo))]
 pub async fn list_infos<R>(
     (repo,): (&R,),
     token: UserToken,
@@ -75,7 +75,7 @@ where
 /// # Type Parameters
 ///
 /// * `R: SystemMailRepo` — System mail storage.
-#[instrument(level = "info", err(Debug), skip(repo))]
+#[instrument(level = "info", skip(repo))]
 pub async fn mark_read<R>(
     (repo,): (&R,),
     token: UserToken,

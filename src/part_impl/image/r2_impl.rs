@@ -106,13 +106,13 @@ impl R2ImagePool {
 }
 
 impl ImagePool for R2ImagePool {
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Internal implementation of `gen_download_url`.
     async fn gen_download_url(&self, key: &str) -> BaseRest<Url> {
         build_public_url(&self.domain, key, "gen_download_url")
     }
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Internal implementation of `gen_thumbnail_download_url`.
     async fn gen_thumbnail_download_url(
         &self,
@@ -130,7 +130,7 @@ impl ImagePool for R2ImagePool {
         )
     }
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Internal implementation of `get_upload_url`.
     async fn get_upload_url(&self, key: &str) -> BaseRest<Url> {
         //
@@ -165,9 +165,10 @@ impl ImagePool for R2ImagePool {
             content_type,
             PresigningConfig::expires_in(PUT_SIGNED_EXPIRATION).map_err(
                 |err| {
+                    //
                     tracing::error!(
                         operation = "get_upload_url",
-                        sdk_error = ?err,
+                        sdk_err = ?err,
                         "R2 SDK presigning configuration error",
                     );
 
@@ -190,9 +191,10 @@ impl ImagePool for R2ImagePool {
             .presigned(presigning_config)
             .await
             .map_err(|err| {
+                //
                 tracing::error!(
                     operation = "get_upload_url",
-                    sdk_error = ?err,
+                    sdk_err = ?err,
                     "R2 SDK presigning error",
                 );
 
@@ -205,9 +207,10 @@ impl ImagePool for R2ImagePool {
             })?;
 
         Url::parse(presigned_request.uri()).map_err(|err| {
+            //
             tracing::error!(
                 operation = "get_upload_url",
-                sdk_error = ?err,
+                sdk_err = ?err,
                 "URL SDK parsing error",
             );
 
@@ -220,7 +223,7 @@ impl ImagePool for R2ImagePool {
         })
     }
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Internal implementation of `get_upload_slot`.
     async fn get_upload_slot(
         &self,
@@ -238,9 +241,10 @@ impl ImagePool for R2ImagePool {
             })?,
             PresigningConfig::expires_in(PUT_SIGNED_EXPIRATION).map_err(
                 |err| {
+                    //
                     tracing::error!(
                         operation = "get_upload_slot",
-                        sdk_error = ?err,
+                        sdk_err = ?err,
                         "R2 SDK presigning configuration error",
                     );
 
@@ -264,9 +268,10 @@ impl ImagePool for R2ImagePool {
             .presigned(presigning_config)
             .await
             .map_err(|err| {
+                //
                 tracing::error!(
                     operation = "get_upload_slot",
-                    sdk_error = ?err,
+                    sdk_err = ?err,
                     "R2 SDK presigning error",
                 );
 
@@ -279,9 +284,10 @@ impl ImagePool for R2ImagePool {
             })?;
 
         let url = Url::parse(presigned_request.uri()).map_err(|err| {
+            //
             tracing::error!(
                 operation = "get_upload_slot",
-                sdk_error = ?err,
+                sdk_err = ?err,
                 "URL SDK parsing error",
             );
 
@@ -304,7 +310,7 @@ impl ImagePool for R2ImagePool {
 }
 
 impl ImageManager for R2ImagePool {
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Removes a previously uploaded object from the R2 bucket.
     async fn delete_object(&self, key: &str) -> BaseRest<()> {
         self.client
@@ -315,9 +321,10 @@ impl ImageManager for R2ImagePool {
             .await
             .map(|_| ())
             .map_err(|err| {
+                //
                 tracing::error!(
                     operation = "delete_object",
-                    sdk_error = ?err,
+                    sdk_err = ?err,
                     "R2 SDK request error",
                 );
 
@@ -330,7 +337,7 @@ impl ImageManager for R2ImagePool {
             })
     }
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Performs a HEAD request to determine whether an object exists in R2.
     async fn object_exists(&self, key: &str) -> BaseRest<bool> {
         match self
@@ -350,9 +357,10 @@ impl ImageManager for R2ImagePool {
             }
 
             Err(err) => {
+                //
                 tracing::error!(
                     operation = "object_exists",
-                    sdk_error = ?err,
+                    sdk_err = ?err,
                     "R2 SDK request error",
                 );
 
@@ -400,9 +408,10 @@ fn build_public_url(
         };
 
     Url::parse(&url_string).map_err(|err| {
+        //
         tracing::error!(
             operation,
-            sdk_error = ?err,
+            sdk_err = ?err,
             "URL SDK parsing error",
         );
 

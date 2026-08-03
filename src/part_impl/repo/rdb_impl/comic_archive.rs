@@ -150,7 +150,7 @@ fn order_unit_infos(unit_infos: Vec<UnitInfo>) -> BaseRest<Vec<UnitInfo>> {
     accept(visible_infos)
 }
 
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 // Load archive payloads by month window and return timestamped serialized blobs.
 async fn list_payloads(
     conn: &mut RdbConn,
@@ -204,7 +204,7 @@ async fn list_payloads(
 }
 
 /// Lock every active descendant needed by an archive transaction.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 // Build a full snapshot of all descendants and lock them for commit safety.
 async fn get_snapshot_excluded(
     conn: &mut RdbConn,
@@ -472,7 +472,7 @@ async fn get_snapshot_excluded(
 }
 
 // Store archive payload and hard-delete source comic descendants.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn commit(
     conn: &mut RdbConn,
     comic_archive_entry: &ComicArchiveEntry,
@@ -538,7 +538,7 @@ impl Step<GetComicArchiveSnapshotExcluded<'_>, RdbContext> for HybRepo {
     // Use base errors for snapshot reads in comic archive transactions.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Resolve the snapshot while holding transaction locks.
     async fn step(
         &self,
@@ -553,7 +553,7 @@ impl Run<ListComicArchivePayloads<'_>> for HybRepo {
     // Use base errors for payload-list operations.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Route to shared payload query with team-month filters.
     async fn run(
         &self,
@@ -567,7 +567,7 @@ impl Step<CommitComicArchive<'_>, RdbContext> for HybRepo {
     // Use base errors for commit operations.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Persist archive entry and delete source entities in a single transaction.
     async fn step(
         &self,

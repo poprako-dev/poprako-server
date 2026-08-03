@@ -91,7 +91,7 @@ mod read;
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C>` — Team storage.
 /// * `I: ImagePool` — Resolves the avatar signed URL.
-#[instrument(level = "info", err(Debug), skip(nucl, repo, image_pool))]
+#[instrument(level = "info", skip(nucl, repo, image_pool))]
 pub async fn create<N, C, R, I>(
     (nucl, repo, image_pool): (&N, &R, &I),
     token: UserToken,
@@ -158,7 +158,7 @@ where
 ///
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C>` — Team storage.
-#[instrument(level = "info", err(Debug), skip(repo))]
+#[instrument(level = "info", skip(repo))]
 pub async fn update_info<C, R>(
     (repo,): (&R,),
     token: UserToken,
@@ -205,11 +205,7 @@ where
 /// * `R: TeamRepo<C>` — Team storage.
 /// * `P: Prom<C>` — Prom enqueuer for deferred image opers.
 /// * `I: ImagePool` — Generates the signed upload URL.
-#[instrument(
-    level = "info",
-    err(Debug),
-    skip(nucl, repo, prom, image_pool, token)
-)]
+#[instrument(level = "info", skip(nucl, repo, prom, image_pool, token))]
 pub async fn reserve_avatar<N, C, R, P, I>(
     (nucl, repo, prom, image_pool): (&N, &R, &P, &I),
     token: UserToken,
@@ -347,7 +343,7 @@ where
 ///
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C>` — Team storage.
-#[instrument(level = "info", err(Debug), skip(nucl, repo, image_manager))]
+#[instrument(level = "info", skip(nucl, repo, image_manager))]
 pub async fn mark_avatar_uploaded<N, C, R, I>(
     (nucl, repo, image_manager): (&N, &R, &I),
     token: UserToken,
@@ -497,7 +493,7 @@ where
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C> + WorksetRepo<C> + ComicRepo<C>` — Team, workset, and comic storage.
 /// * `P: Prom<C>` — Prom enqueuer for deferred avatar deletion.
-#[instrument(level = "info", err(Debug), skip(nucl, repo, prom))]
+#[instrument(level = "info", skip(nucl, repo, prom))]
 pub async fn delete<N, C, R, P>(
     (nucl, repo, prom): (&N, &R, &P),
     token: UserToken,

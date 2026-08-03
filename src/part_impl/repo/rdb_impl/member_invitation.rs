@@ -36,7 +36,7 @@ pub mod tests;
 // ── Free functions ──────────────────────────────────────────────────────────
 
 // Delete a member invitation by ID.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
     // Delete the raw invitation row by primary key.
@@ -49,7 +49,7 @@ async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
 }
 
 // Query member invitations matching the given list spec, with optional includes.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn list_infos(
     conn: &mut RdbConn,
     spec: &MemberInvitationListSpec,
@@ -92,7 +92,7 @@ async fn list_infos(
 }
 
 // Load a single invitation info by ID with optional includes.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
@@ -143,7 +143,7 @@ async fn get_info_by_id(
 }
 
 // Create a new member invitation and return its info.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn create(
     conn: &mut RdbConn,
     entry: &MemberInvitationEntry,
@@ -162,7 +162,7 @@ async fn create(
 }
 
 // Look up a pending invitation by code.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn get_info_by_code(
     conn: &mut RdbConn,
     code: &str,
@@ -205,7 +205,7 @@ async fn get_info_by_code(
 }
 
 // Look up a pending invitation by code, locking the row for update.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn get_info_by_code_excluded(
     conn: &mut RdbConn,
     code: &str,
@@ -249,7 +249,7 @@ async fn get_info_by_code_excluded(
 }
 
 // Mark a pending invitation as used.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn mark_pending_as_used(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
     let now = OffsetDateTime::now_utc();
@@ -266,7 +266,7 @@ async fn mark_pending_as_used(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
 }
 
 // Update the roles on an existing invitation.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn update_info(
     conn: &mut RdbConn,
     id: &str,
@@ -288,7 +288,7 @@ async fn update_info(
 }
 
 // Deletes a member invitation only while it remains pending.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 async fn purge_pending(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
     diesel::delete(
@@ -308,7 +308,7 @@ impl Run<ListMemberInvitationInfos<'_>> for HybRepo {
     type Error = BaseError;
 
     // Execute list query through list_infos helper.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn run(
         &self,
         oper: &ListMemberInvitationInfos<'_>,
@@ -322,7 +322,7 @@ impl Run<GetMemberInvitationInfo<'_, '_>> for HybRepo {
     type Error = BaseError;
 
     // Support direct lookup via id or one-time code resolution.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn run(
         &self,
         oper: &GetMemberInvitationInfo<'_, '_>,
@@ -345,7 +345,7 @@ impl Step<CreateMemberInvitation<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Create invitation record in current transaction and return full info.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -360,7 +360,7 @@ impl Step<GetMemberInvitationInfo<'_, '_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Resolve invitation by id/code with optional include hydration when needed.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -384,7 +384,7 @@ impl Step<UpdateMemberInvitation<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Apply either metadata updates or used-state transition by variant.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -409,7 +409,7 @@ impl Step<GetMemberInvitationInfoExcluded<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Fetch invitation by code with lock, used when mutation follows.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -428,7 +428,7 @@ impl Step<DeleteMemberInvitation<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Remove invitation by id as part of current transaction.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -443,7 +443,7 @@ impl Step<PurgeExpiredMemberInvitation<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Purge only pending invitations using id filter.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -458,7 +458,7 @@ impl Run<PurgeExpiredMemberInvitation<'_>> for HybRepo {
     type Error = BaseError;
 
     // Route expired purge operation to shared query helper.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn run(
         &self,
         oper: &PurgeExpiredMemberInvitation<'_>,

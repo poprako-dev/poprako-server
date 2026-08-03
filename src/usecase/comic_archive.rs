@@ -36,7 +36,7 @@ use crate::value::comic_archive::ComicArchiveMonth;
 mod tests;
 
 /// Exports selected retained UTC month slots for one team.
-#[instrument(level = "info", err(Debug), skip(repo))]
+#[instrument(level = "info", skip(repo))]
 pub async fn export<C, R>(
     (repo,): (&R,),
     token: UserToken,
@@ -92,7 +92,7 @@ where
 }
 
 /// Archive one active comic, its descendants, and all retained image keys.
-#[instrument(level = "info", err(Debug), skip(nucl, repo, prom))]
+#[instrument(level = "info", skip(nucl, repo, prom))]
 pub async fn archive<N, C, R, P>(
     (nucl, repo, prom): (&N, &R, &P),
     token: UserToken,

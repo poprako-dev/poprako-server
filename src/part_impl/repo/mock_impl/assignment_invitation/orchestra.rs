@@ -77,7 +77,7 @@ fn list_infos(
 impl<'a> Run<ListAssignmentInvitationInfos<'a>> for Mock {
     // Internal type alias for `Error`.
     type Error = BaseError;
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Internal implementation of `run`.
     async fn run(
         &self,
@@ -94,7 +94,7 @@ impl<'a> Run<ListAssignmentInvitationInfos<'a>> for Mock {
 impl<'a> Run<GetAssignmentInvitationInfo<'a>> for Mock {
     // Internal type alias for `Error`.
     type Error = BaseError;
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Internal implementation of `run`.
     async fn run(
         &self,
@@ -111,7 +111,7 @@ impl<'a> Run<GetAssignmentInvitationInfo<'a>> for Mock {
 impl<'a> Step<CreateAssignmentInvitation<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
     type Error = BaseError;
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Internal implementation of `step`.
     async fn step(
         &self,
@@ -157,7 +157,7 @@ impl<'a> Step<CreateAssignmentInvitation<'a>, MockContext> for Mock {
 impl<'a> Step<GetAssignmentInvitationInfo<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
     type Error = BaseError;
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Internal implementation of `step`.
     async fn step(
         &self,
@@ -170,7 +170,7 @@ impl<'a> Step<GetAssignmentInvitationInfo<'a>, MockContext> for Mock {
 impl<'a> Step<GetAssignmentInvitationInfoExcluded<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
     type Error = BaseError;
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Internal implementation of `step`.
     async fn step(
         &self,
@@ -189,7 +189,7 @@ impl<'a> Step<GetAssignmentInvitationInfoExcluded<'a>, MockContext> for Mock {
 impl<'a> Step<MarkAssignmentInvitationUsed<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
     type Error = BaseError;
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Internal implementation of `step`.
     async fn step(
         &self,
@@ -216,7 +216,7 @@ impl<'a> Step<MarkAssignmentInvitationUsed<'a>, MockContext> for Mock {
 impl<'a> Step<DeleteAssignmentInvitations<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
     type Error = BaseError;
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Internal implementation of `step`.
     async fn step(
         &self,
@@ -262,7 +262,7 @@ impl<'a> Step<PurgeExpiredAssignmentInvitation<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Internal implementation of `step`.
     async fn step(
         &self,
@@ -285,7 +285,7 @@ impl<'a> Run<PurgeExpiredAssignmentInvitation<'a>> for Mock {
     // Internal type alias for `Error`.
     type Error = BaseError;
 
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     // Internal implementation of `run`.
     async fn run(
         &self,

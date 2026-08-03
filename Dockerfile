@@ -46,9 +46,7 @@ RUN apk add --no-cache \
     libgcc \
     libpq && \
     addgroup -S poprako && \
-    adduser -S -G poprako -h /app poprako && \
-    touch /app/.env && \
-    chown poprako:poprako /app/.env
+    adduser -S -G poprako -h /app poprako
 
 COPY --from=builder --chown=poprako:poprako \
     /work/poprako-server /app/poprako-server

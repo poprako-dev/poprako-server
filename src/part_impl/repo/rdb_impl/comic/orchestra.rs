@@ -23,7 +23,7 @@ impl Run<GetComicInfo<'_, '_>> for HybRepo {
     type Error = BaseError;
 
     // Fetches one comic through `submit_query!` and applies caller-defined includes.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn run(&self, oper: &GetComicInfo<'_, '_>) -> BaseRest<ComicInfo> {
         submit_query!(self.core, get_info_by_id, oper.id, oper.incls)
     }
@@ -34,7 +34,7 @@ impl Run<ListComicInfos<'_>> for HybRepo {
     type Error = BaseError;
 
     // Loads matching comics and returns the list view for the requested spec.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn run(&self, oper: &ListComicInfos<'_>) -> BaseRest<Vec<ComicInfo>> {
         submit_query!(self.core, list_infos, oper.spec)
     }
@@ -45,7 +45,7 @@ impl Run<UpdateComic<'_>> for HybRepo {
     type Error = BaseError;
 
     // Writes the provided comic updates using the step-level `update_info` flow.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn run(&self, oper: &UpdateComic<'_>) -> BaseRest<()> {
         submit_query!(self.core, update_info, oper.update)
     }
@@ -56,7 +56,7 @@ impl Run<MarkComicCoverUploaded<'_>> for HybRepo {
     type Error = BaseError;
 
     // Persists cover upload state (version/key/flag) and returns no payload.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn run(&self, oper: &MarkComicCoverUploaded<'_>) -> BaseRest<()> {
         submit_query!(
             self.core,
@@ -74,7 +74,7 @@ impl Step<GetComicInfo<'_, '_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Loads one comic with requested includes by delegating to the step helper.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -89,7 +89,7 @@ impl Step<ListComicInfos<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Applies the list spec in the transaction and returns matching comic infos.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -104,7 +104,7 @@ impl Step<GetComicInfoExcluded<'_, '_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Loads the comic while excluding non-essential relation expansion.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -119,7 +119,7 @@ impl Step<ListComicInfosExcluded<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Applies excluded-list spec within transaction scope.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -134,7 +134,7 @@ impl Step<CreateComic<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Inserts the comic entry payload and returns the persisted comic info.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -149,7 +149,7 @@ impl Step<ReserveComicCover<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Creates reservation metadata for cover upload and returns claim details.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -165,7 +165,7 @@ impl Step<MarkComicCoverUploaded<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Writes uploaded-cover state and persists metadata changes for the comic.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -187,7 +187,7 @@ impl Step<DeleteComic<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Removes the comic record identified by id and returns after completion.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -202,7 +202,7 @@ impl Step<AllocComicChapterIndex<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Increments and returns the next chapter index for the comic.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -217,7 +217,7 @@ impl Step<UpdateComicChapterCount<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Applies a chapter-count delta to keep denormalized counters synchronized.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -232,7 +232,7 @@ impl Step<TouchComicLastActive<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     // Updates comic activity marker so last-access timing stays fresh.
-    #[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,

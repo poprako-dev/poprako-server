@@ -65,7 +65,7 @@ pub struct MemberMeListQuery {
         (status = 409, description = "User is already a member"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn create(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
@@ -89,7 +89,7 @@ pub async fn create(
         (status = 403, description = "No perm to list members in this team"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn list_infos(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
@@ -115,7 +115,7 @@ pub async fn list_infos(
         (status = 401, description = "Authentication required"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn list_my_infos(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
@@ -155,7 +155,7 @@ pub async fn list_my_infos(
         (status = 404, description = "Member not found"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn update_roles(
     State(harn): State<AppHarn>,
     Path(member_id): Path<String>,
@@ -187,7 +187,7 @@ pub async fn update_roles(
         (status = 404, description = "Member not found"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn delete(
     State(harn): State<AppHarn>,
     Path(member_id): Path<String>,
@@ -212,7 +212,7 @@ pub async fn delete(
         (status = 404, description = "Invitation code not found"),
     ),
 ))]
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", skip_all)]
 pub async fn join(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,

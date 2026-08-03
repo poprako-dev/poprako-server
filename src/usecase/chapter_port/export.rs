@@ -37,7 +37,7 @@ use crate::value::chapter::Stage;
 mod tests;
 
 /// Exports one chapter as a JSON-safe translation payload.
-#[instrument(level = "info", err(Debug), skip(repo))]
+#[instrument(level = "info", skip(repo))]
 pub async fn export<C, R>(
     (repo,): (&R,),
     token: UserToken,
@@ -135,7 +135,7 @@ where
 }
 
 /// Exports one chapter as LabelPlus text.
-#[instrument(level = "info", err(Debug), skip(repo))]
+#[instrument(level = "info", skip(repo))]
 pub async fn export_label_plus<C, R>(
     (repo,): (&R,),
     token: UserToken,
