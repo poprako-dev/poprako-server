@@ -1,14 +1,16 @@
 # Contributing
 
-PopRaKo uses a two-step integration flow:
+PopRaKo uses a trunk-based integration flow:
 
-1. Open feature and fix pull requests against `dev`.
-2. Periodically merge `dev` into `main`. A push to `main` runs required CI and
-   deploys production through the protected GitHub Actions environment.
+1. Create a short-lived feature or fix branch from `main`.
+2. Open its pull request directly against `main` and merge only after all
+   required checks pass.
+3. A push to `main` reruns required CI and deploys production through the
+   protected GitHub Actions environment.
 
-Do not deploy from feature branches or `dev`. Keep pull requests focused and
-use conventional commit subjects such as `feat:`, `fix:`, `refactor:`,
-`test:`, `docs:`, and `chore:`.
+Do not maintain a separate integration branch or deploy from feature branches.
+Keep pull requests focused and use conventional commit subjects such as
+`feat:`, `fix:`, `refactor:`, `test:`, `docs:`, and `chore:`.
 
 ## Required checks
 
