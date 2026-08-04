@@ -19,10 +19,10 @@ immediately after it.
 - [x] Add the full MIT license text as root `LICENSE`.
   - Keep `license = "MIT"` in Cargo package metadata.
 - [ ] Add a repository description, website, and topics on GitHub.
-- [x] Retain `dev` as the default integration branch.
-  - Prefer a protected `main` branch for a small trunk-based team.
-  - If retaining `dev`, document the roles of `main`, `dev`, and release
-    branches in `CONTRIBUTING.md`.
+- [x] Use protected `main` as the sole long-lived integration branch.
+  - Create short-lived feature and fix branches from `main` and open their pull
+    requests directly against `main`.
+  - Do not maintain a separate development or release-integration branch.
 
 ### Acceptance
 
@@ -162,9 +162,9 @@ sh fmt/run-check.sh
 ## 6. Continuous integration
 
 - [x] Add a pull-request CI workflow under `.github/workflows/`.
-  - Run CI for pull requests targeting `dev` or `main`.
-  - Run branch CI after changes land on `main`; do not rerun it for pushes to
-    `dev` after a pull request has already passed.
+  - Run CI for pull requests targeting `main`.
+  - Run branch CI after changes land on `main` so production deployment uses
+    the exact checked and merged commit.
 - [x] Invoke `sh scripts/ci-check.sh`; do not install or require `just` in CI.
 - [x] Run `cargo test --workspace` through `sh scripts/ci-test.sh`.
   - Separate fast unit tests from Docker/PostgreSQL-backed tests if needed.
@@ -188,7 +188,8 @@ pnpm typecheck
 - [x] Regenerate `docs/swagger.json` through a checked-in `sh` script into a
   temporary file and fail CI when the checked-in specification differs.
 - [x] Add dependency security checks.
-  - [x] Enable Dependabot for Cargo, pnpm, and GitHub Actions, targeting `dev`.
+  - [x] Enable Dependabot for Cargo, pnpm, and GitHub Actions, targeting
+    `main`.
   - [x] Run pinned `cargo-audit` through `sh scripts/ci-audit.sh`; mark this
     complete only after the first successful audit.
 - [x] Pin third-party GitHub Actions to full commit SHAs.
@@ -216,7 +217,7 @@ pnpm typecheck
     publishing `latest` or relying on a maintainer-owned registry.
 - [x] Add a `main`-only GitHub Actions deployment job.
   - Trigger deployment only after changes land on `main`; never deploy from
-    `dev` or a feature branch.
+    a feature branch.
   - Run all required CI checks before building a release image.
   - Build and upload the image from GitHub Actions rather than a maintainer's
     machine.
