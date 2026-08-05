@@ -4,6 +4,7 @@
 // export(export)(positive): retained month slots should return stored JSON strings without decoding.
 
 use super::*;
+use crate::value::image::{ImageExt, ImageHash};
 
 use time::OffsetDateTime;
 
@@ -24,7 +25,6 @@ use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
 use crate::value::chapter::StageMask;
-use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
 fn seed_archive_scope(mock: &Mock, member_roles: RoleMask) {
@@ -39,10 +39,10 @@ fn seed_archive_scope(mock: &Mock, member_roles: RoleMask) {
             qid: "qid-user-1".into(),
             nickname: "archiver".into(),
             avatar_key: Some("avatars/user-1.png".into()),
-            is_avatar_uploaded: true,
-            avatar_version: 3,
-            avatar_hash: ImageHash::default(),
-            avatar_ext: ImageExt::Png,
+            is_avatar_uploaded: Some(true),
+            avatar_version: Some(3),
+            avatar_hash: Some(ImageHash::default()),
+            avatar_ext: Some(ImageExt::Png),
             is_sadmin: false,
             last_active_at: archived_at,
             created_at: archived_at,
@@ -84,10 +84,10 @@ fn seed_archive_scope(mock: &Mock, member_roles: RoleMask) {
         author: "comic author".into(),
         description: Some("comic description".into()),
         cover_key: Some("covers/reserved.png".into()),
-        is_cover_uploaded: false,
-        cover_version: 5,
-        cover_hash: ImageHash::default(),
-        cover_ext: ImageExt::Png,
+        is_cover_uploaded: Some(false),
+        cover_version: Some(5),
+        cover_hash: Some(ImageHash::default()),
+        cover_ext: Some(ImageExt::Png),
         chapter_count: 1,
         creator_id: "user-1".into(),
         workset: None,
@@ -144,10 +144,10 @@ fn seed_archive_scope(mock: &Mock, member_roles: RoleMask) {
         chapter_id: "chapter-1".into(),
         index: 0,
         image_key: Some("pages/reserved.png".into()),
-        is_image_uploaded: false,
-        image_version: 4,
-        image_hash: ImageHash::new([0u8; 32]),
-        image_ext: ImageExt::Webp,
+        is_image_uploaded: Some(false),
+        image_version: Some(4),
+        image_hash: Some(ImageHash::new([0u8; 32])),
+        image_ext: Some(ImageExt::Webp),
         total_unit_count: 1,
         translated_unit_count: 1,
         proofread_unit_count: 1,

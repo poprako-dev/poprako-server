@@ -4,11 +4,12 @@
 
 use serde::Deserialize;
 
+use crate::value::image::{ImageExt, ImageHash};
+
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
 use crate::model::write::page::PageImageSpec;
-use crate::value::image::{ImageExt, ImageHash};
 
 /// Input parameters for reserving all page images of a chapter.
 #[derive(Debug, Deserialize)]

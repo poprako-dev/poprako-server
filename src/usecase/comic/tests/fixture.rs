@@ -1,5 +1,6 @@
 use super::*;
 use crate::data::instr::comic::CreateComicInstr;
+use crate::value::image::{ImageExt, ImageHash};
 
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::chapter::ChapterInfo;
@@ -7,7 +8,6 @@ use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::proj::member::MemberInfo;
 use crate::model::read::proj::page::PageInfo;
 use crate::model::shared::user::UserToken;
-use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
 pub fn comic(id: &str, workset_id: &str, index: i32) -> ComicInfo {
@@ -22,10 +22,10 @@ pub fn comic(id: &str, workset_id: &str, index: i32) -> ComicInfo {
         author: "author".into(),
         description: None,
         cover_key: None,
-        is_cover_uploaded: false,
-        cover_version: 0,
-        cover_hash: ImageHash::default(),
-        cover_ext: ImageExt::Png,
+        is_cover_uploaded: None,
+        cover_version: None,
+        cover_hash: None,
+        cover_ext: None,
         chapter_count: 0,
         creator_id: "user-1".into(),
         workset: None,
@@ -44,10 +44,10 @@ pub fn comic_with_uploaded_cover(
 ) -> ComicInfo {
     ComicInfo {
         cover_key: Some(cover_key.into()),
-        is_cover_uploaded: true,
-        cover_version: 1,
-        cover_hash: ImageHash::default(),
-        cover_ext: ImageExt::Png,
+        is_cover_uploaded: Some(true),
+        cover_version: Some(1),
+        cover_hash: Some(ImageHash::default()),
+        cover_ext: Some(ImageExt::Png),
         ..comic(id, workset_id, 0)
     }
 }
@@ -106,10 +106,10 @@ pub fn page(
         chapter_id: chapter_id.into(),
         index,
         image_key: image_key.map(Into::into),
-        is_image_uploaded: image_uploaded,
-        image_version: 1,
-        image_hash: ImageHash::new([0u8; 32]),
-        image_ext: ImageExt::Png,
+        is_image_uploaded: Some(image_uploaded),
+        image_version: Some(1),
+        image_hash: Some(ImageHash::new([0u8; 32])),
+        image_ext: Some(ImageExt::Png),
         total_unit_count: 0,
         translated_unit_count: 0,
         proofread_unit_count: 0,

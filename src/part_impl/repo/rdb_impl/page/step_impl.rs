@@ -210,21 +210,13 @@ pub async fn clear_images_for_publish(
     let now = OffsetDateTime::now_utc();
 
     for page_info in page_infos {
-        //
-        let image_version =
-            page_info.image_version.checked_add(1).ok_or_else(|| {
-                BaseError::Unrecoverable {
-                    message:
-                        "[clear_images_for_publish] image version overflow"
-                            .into(),
-                }
-            })?;
-
         diesel::update(t_page.filter(f_id.eq(&page_info.id)))
             .set((
                 f_image_key.eq(None::<String>),
-                f_image_uploaded.eq(false),
-                f_image_version.eq(i64::from(image_version)),
+                f_image_uploaded.eq(None::<bool>),
+                f_image_version.eq(None::<i64>),
+                f_image_hash.eq(None::<Vec<u8>>),
+                f_image_extension.eq(None::<String>),
                 f_updated_at.eq(now),
             ))
             .execute(conn)
@@ -291,11 +283,11 @@ pub async fn reserve_image(
         .filter(f_id.eq(id))
         .select((f_chapter_id, f_image_key, f_image_version))
         .for_update()
-        .get_result::<(String, Option<String>, i64)>(conn)
+        .get_result::<(String, Option<String>, Option<i64>)>(conn)
         .await
         .map_err(diesel)?;
 
-    let image_version = next_version(raw_version)?;
+    let image_version = next_version(raw_version.unwrap_or(0))?;
 
     let object_key =
         PageComplex::gen_image_key(&chapter_id, id, image_version, file_ext);

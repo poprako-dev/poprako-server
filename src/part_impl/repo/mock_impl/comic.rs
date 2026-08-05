@@ -20,7 +20,6 @@ use crate::part_impl::repo::mock_impl::{
 use crate::result::{BaseError, BaseRest, accept};
 use crate::value::chapter::StageMask;
 use crate::value::comic::ComicInclOpt;
-use crate::value::image::{ImageExt, ImageHash};
 use crate::value::incl::expand_incl_opts;
 use crate::value::index::user_index_to_stored_index;
 
@@ -195,7 +194,7 @@ fn mark_comic_cover_uploaded(
         .find(|comic| comic.id == id)
         .ok_or_else(|| expected("error-comic-not-found"))?;
 
-    if comic.cover_version != cover_version
+    if comic.cover_version != Some(cover_version)
         || cover_key.is_some_and(|cover_key| {
             comic.cover_key.as_deref() != Some(cover_key)
         })
@@ -203,7 +202,7 @@ fn mark_comic_cover_uploaded(
         return Err(expected("error-stale-cover-upload"));
     }
 
-    comic.is_cover_uploaded = cover_uploaded;
+    comic.is_cover_uploaded = Some(cover_uploaded);
 
     comic.updated_at = now();
 
@@ -392,10 +391,10 @@ impl<'a> Step<CreateComic<'a>, MockContext> for Mock {
             author: oper.entry.author.clone(),
             description: oper.entry.description.clone(),
             cover_key: None,
-            is_cover_uploaded: false,
-            cover_version: 0,
-            cover_hash: ImageHash::default(),
-            cover_ext: ImageExt::Png,
+            is_cover_uploaded: None,
+            cover_version: None,
+            cover_hash: None,
+            cover_ext: None,
             chapter_count: 0,
             creator_id: oper.entry.creator_id.clone(),
             workset: None,
@@ -491,10 +490,10 @@ impl<'a> Step<ReserveComicCover<'a>, MockContext> for Mock {
             .find(|comic| comic.id == oper.id)
             .ok_or_else(|| expected("error-comic-not-found"))?;
 
-        let same_hash =
-            comic.cover_key.is_some() && comic.cover_hash == *oper.image_hash;
+        let same_hash = comic.cover_key.is_some()
+            && comic.cover_hash.as_ref() == Some(oper.image_hash);
 
-        if same_hash && comic.cover_ext != oper.image_ext {
+        if same_hash && comic.cover_ext != Some(oper.image_ext) {
             return Err(expected("error-invalid-image-extension"));
         }
 
@@ -510,12 +509,24 @@ impl<'a> Step<ReserveComicCover<'a>, MockContext> for Mock {
             return accept(ComicCoverReservation {
                 object_key,
                 prev_object_key: None,
-                cover_version: comic.cover_version,
-                is_upload_required: !comic.is_cover_uploaded,
+                cover_version: comic.cover_version.ok_or_else(|| {
+                    BaseError::Unrecoverable {
+                        message:
+                            "[Mock::ReserveComicCover] cover version is missing"
+                                .into(),
+                    }
+                })?,
+                is_upload_required: comic.is_cover_uploaded != Some(true),
             });
         }
 
-        let cover_version = comic.cover_version + 1;
+        let cover_version =
+            comic.cover_version.unwrap_or(0).checked_add(1).ok_or_else(
+                || BaseError::Unrecoverable {
+                    message: "[Mock::ReserveComicCover] cover version overflow"
+                        .into(),
+                },
+            )?;
 
         let object_key = ComicComplex::gen_cover_key(
             oper.id,
@@ -527,13 +538,13 @@ impl<'a> Step<ReserveComicCover<'a>, MockContext> for Mock {
 
         comic.cover_key = Some(object_key.clone());
 
-        comic.is_cover_uploaded = false;
+        comic.is_cover_uploaded = Some(false);
 
-        comic.cover_version = cover_version;
+        comic.cover_version = Some(cover_version);
 
-        comic.cover_hash = oper.image_hash.clone();
+        comic.cover_hash = Some(oper.image_hash.clone());
 
-        comic.cover_ext = oper.image_ext;
+        comic.cover_ext = Some(oper.image_ext);
 
         comic.updated_at = now();
 

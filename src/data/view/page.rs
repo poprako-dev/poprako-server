@@ -2,18 +2,16 @@
 
 use serde::Serialize;
 
+use crate::value::image::{ImageExt, ImageHash};
+
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
 use poprako_util::time::ToUnixMilli as _;
 
 use crate::model::read::proj::page::PageInfo;
-
 use crate::part::image::ImagePool;
-
 use crate::result::{BaseRest, accept};
-
-use crate::value::image::{ImageExt, ImageHash};
 
 /// Presentation-ready page information.
 #[derive(Debug, Serialize)]
@@ -35,10 +33,12 @@ pub struct PageInfoView {
     /// Presigned download URL for the thumbnail, if uploaded.
     pub image_thumbnail_url: Option<String>,
 
-    /// Content hash of the page image.
-    pub image_hash: ImageHash,
-    /// File format.
-    pub ext: ImageExt,
+    /// Content hash of the page image, if one exists.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub image_hash: Option<ImageHash>,
+    /// File format, if one exists.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ext: Option<ImageExt>,
 
     /// Total number of translation units on this page.
     pub total_unit_count: i32,
@@ -66,7 +66,7 @@ impl PageInfoView {
         let (image_url, image_thumbnail_url) =
             match (model.is_image_uploaded, &model.image_key) {
                 //
-                (true, Some(key)) => (
+                (Some(true), Some(key)) => (
                     image_pool.gen_download_url(key).await.ok(),
                     image_pool.gen_thumbnail_download_url(key).await.ok(),
                 ),

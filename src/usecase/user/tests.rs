@@ -31,6 +31,7 @@ use crate::data::instr::user::{
     MarkUserAvatarUploadedInstr, ReserveUserAvatarInstr, UpdateUserInfoInstr,
     UpdateUserPasswordInstr,
 };
+use crate::value::image::{ImageExt, ImageHash};
 
 use time::OffsetDateTime;
 
@@ -49,7 +50,6 @@ use crate::test_util::{
     assert_expected_message, assert_expected_variant,
     assert_one_image_check_record,
 };
-use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
 // Delete flow coverage, including avatar cleanup and related records.
@@ -66,8 +66,8 @@ fn user_with_avatar(
 ) -> UserInfo {
     UserInfo {
         avatar_key: Some(avatar_key.into()),
-        is_avatar_uploaded: avatar_uploaded,
-        avatar_version,
+        is_avatar_uploaded: Some(avatar_uploaded),
+        avatar_version: Some(avatar_version),
         ..user(id, qid, nickname)
     }
 }
@@ -384,7 +384,7 @@ async fn reserve_avatar_updates_state_enqueues_check_and_returns_put_url() {
         Some("user_avatar/user-1-1.png")
     );
 
-    assert!(!snapshot.users[0].is_avatar_uploaded);
+    assert_ne!(snapshot.users[0].is_avatar_uploaded, Some(true));
 
     assert_one_image_check_record(
         &snapshot.prom_records,
@@ -499,7 +499,7 @@ async fn mark_avatar_uploaded_marks_matching_version() {
     .await
     .unwrap();
 
-    assert!(mock.snapshot().users[0].is_avatar_uploaded);
+    assert_eq!(mock.snapshot().users[0].is_avatar_uploaded, Some(true));
 }
 
 #[tokio::test]
@@ -532,7 +532,7 @@ async fn mark_avatar_uploaded_accepts_repeated_matching_version() {
 
     assert!(second.is_ok());
 
-    assert!(mock.snapshot().users[0].is_avatar_uploaded);
+    assert_eq!(mock.snapshot().users[0].is_avatar_uploaded, Some(true));
 }
 
 #[tokio::test]
@@ -557,7 +557,7 @@ async fn mark_avatar_uploaded_rejects_non_owner() {
 
     assert_expected_variant(err, ExpectedVariant::Perm);
 
-    assert!(!mock.snapshot().users[0].is_avatar_uploaded);
+    assert_ne!(mock.snapshot().users[0].is_avatar_uploaded, Some(true));
 }
 
 #[tokio::test]
@@ -586,7 +586,7 @@ async fn mark_avatar_uploaded_rolls_back_stale_version() {
         "error-stale-avatar-upload",
     );
 
-    assert!(!mock.snapshot().users[0].is_avatar_uploaded);
+    assert_ne!(mock.snapshot().users[0].is_avatar_uploaded, Some(true));
 }
 
 #[tokio::test]
@@ -628,7 +628,7 @@ async fn mark_avatar_uploaded_rejects_old_reservation_replay() {
         "error-stale-avatar-upload",
     );
 
-    assert!(!snapshot.users[0].is_avatar_uploaded);
+    assert_ne!(snapshot.users[0].is_avatar_uploaded, Some(true));
 
-    assert_eq!(snapshot.users[0].avatar_version, 2);
+    assert_eq!(snapshot.users[0].avatar_version, Some(2));
 }

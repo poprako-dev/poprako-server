@@ -33,6 +33,7 @@ use crate::data::instr::team::{
     CreateTeamInstr, ListTeamInfosInstr, MarkTeamAvatarUploadedInstr,
     ReserveTeamAvatarInstr, UpdateTeamInfoInstr,
 };
+use crate::value::image::{ImageExt, ImageHash};
 
 use time::OffsetDateTime;
 
@@ -51,7 +52,6 @@ use crate::test_util::{
     assert_expected_message, assert_expected_variant,
     assert_one_image_check_record,
 };
-use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
 // Team avatar reservation, upload check, and cleanup behavior.
@@ -68,8 +68,8 @@ fn team_with_avatar(
 ) -> TeamInfo {
     TeamInfo {
         avatar_key: Some(avatar_key.into()),
-        is_avatar_uploaded: avatar_uploaded,
-        avatar_version,
+        is_avatar_uploaded: Some(avatar_uploaded),
+        avatar_version: Some(avatar_version),
         ..team(id, name, description)
     }
 }
@@ -105,10 +105,10 @@ fn comic_with_uploaded_cover(
         author: "author".into(),
         description: None,
         cover_key: Some(cover_key.into()),
-        is_cover_uploaded: true,
-        cover_version: 1,
-        cover_hash: ImageHash::default(),
-        cover_ext: ImageExt::Png,
+        is_cover_uploaded: Some(true),
+        cover_version: Some(1),
+        cover_hash: Some(ImageHash::default()),
+        cover_ext: Some(ImageExt::Png),
         chapter_count: 0,
         creator_id: "user-1".into(),
         workset: None,
@@ -145,10 +145,10 @@ fn user(id: &str, is_sadmin: bool) -> UserInfo {
         qid: id.into(),
         nickname: id.into(),
         avatar_key: None,
-        is_avatar_uploaded: false,
-        avatar_version: 0,
-        avatar_hash: ImageHash::default(),
-        avatar_ext: ImageExt::Png,
+        is_avatar_uploaded: None,
+        avatar_version: None,
+        avatar_hash: None,
+        avatar_ext: None,
         is_sadmin,
         last_active_at: time,
         created_at: time,

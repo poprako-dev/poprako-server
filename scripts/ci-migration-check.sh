@@ -10,10 +10,10 @@ if [ "${CI_MIGRATION_DATABASE:-}" != "1" ]; then
 fi
 
 case "${DATABASE_URL:-}" in
-    postgres://*/poprako_ci | postgresql://*/poprako_ci)
+    postgres://*/db_poprako_ci | postgresql://*/db_poprako_ci)
         ;;
     *)
-        echo "DATABASE_URL must target the dedicated poprako_ci database" >&2
+        echo "DATABASE_URL must target the dedicated db_poprako_ci database" >&2
         exit 1
         ;;
 esac

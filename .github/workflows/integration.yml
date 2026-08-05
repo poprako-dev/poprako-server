@@ -35,7 +35,7 @@ jobs:
           --health-retries 10
 
     env:
-      INTEGRATION_DATABASE_URL: postgres://poprako:poprako@127.0.0.1:5432/poprako_integration
+      INTEGRATION_DATABASE_URL: postgres://poprako:poprako@127.0.0.1:5432/db_poprako_integration
       JWT_SECRET: ${{ secrets.INTEGRATION_JWT_SECRET }}
       R2_ACCOUNT_ID: ${{ secrets.INTEGRATION_R2_ACCOUNT_ID }}
       R2_ACCESS_KEY_ID: ${{ secrets.INTEGRATION_R2_ACCESS_KEY_ID }}
