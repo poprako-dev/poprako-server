@@ -15,6 +15,7 @@ use crate::api::http::handler::{
     system_mail, team, term, termbase, unit, user, workset,
 };
 use crate::api::http::middleware::auth::authorize;
+use crate::api::http::middleware::cors::cors;
 use crate::api::http::middleware::rate_limit::rate_limit;
 use crate::api::http::middleware::record_response_metric;
 use crate::api::http::middleware::trace::{
@@ -282,7 +283,8 @@ pub fn new(harn: AppHarn) -> Router<AppHarn> {
         .layer(propagate_request_id())
         .layer(trace_request())
         .layer(set_request_id())
-        .layer(from_fn(record_response_metric));
+        .layer(from_fn(record_response_metric))
+        .layer(cors());
 
     // Swagger UI — debug builds only
     #[cfg(feature = "swagger")]
