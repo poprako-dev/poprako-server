@@ -6036,8 +6036,6 @@
               "id",
               "chapter_id",
               "index",
-              "image_hash",
-              "ext",
               "total_unit_count",
               "translated_unit_count",
               "proofread_unit_count",
@@ -6055,16 +6053,30 @@
                 "description": "Timestamp of creation, in Unix milliseconds."
               },
               "ext": {
-                "$ref": "#/components/schemas/ImageExt",
-                "description": "File format."
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ImageExt",
+                    "description": "File format, if one exists."
+                  }
+                ]
               },
               "id": {
                 "type": "string",
                 "description": "Unique page identifier."
               },
               "image_hash": {
-                "$ref": "#/components/schemas/ImageHash",
-                "description": "Content hash of the page image."
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ImageHash",
+                    "description": "Content hash of the page image, if one exists."
+                  }
+                ]
               },
               "image_thumbnail_url": {
                 "type": [
@@ -7224,8 +7236,6 @@
                 "id",
                 "chapter_id",
                 "index",
-                "image_hash",
-                "ext",
                 "total_unit_count",
                 "translated_unit_count",
                 "proofread_unit_count",
@@ -7243,16 +7253,30 @@
                   "description": "Timestamp of creation, in Unix milliseconds."
                 },
                 "ext": {
-                  "$ref": "#/components/schemas/ImageExt",
-                  "description": "File format."
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ImageExt",
+                      "description": "File format, if one exists."
+                    }
+                  ]
                 },
                 "id": {
                   "type": "string",
                   "description": "Unique page identifier."
                 },
                 "image_hash": {
-                  "$ref": "#/components/schemas/ImageHash",
-                  "description": "Content hash of the page image."
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ImageHash",
+                      "description": "Content hash of the page image, if one exists."
+                    }
+                  ]
                 },
                 "image_thumbnail_url": {
                   "type": [
@@ -8343,8 +8367,6 @@
           "id",
           "chapter_id",
           "index",
-          "image_hash",
-          "ext",
           "total_unit_count",
           "translated_unit_count",
           "proofread_unit_count",
@@ -8362,16 +8384,30 @@
             "description": "Timestamp of creation, in Unix milliseconds."
           },
           "ext": {
-            "$ref": "#/components/schemas/ImageExt",
-            "description": "File format."
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ImageExt",
+                "description": "File format, if one exists."
+              }
+            ]
           },
           "id": {
             "type": "string",
             "description": "Unique page identifier."
           },
           "image_hash": {
-            "$ref": "#/components/schemas/ImageHash",
-            "description": "Content hash of the page image."
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ImageHash",
+                "description": "Content hash of the page image, if one exists."
+              }
+            ]
           },
           "image_thumbnail_url": {
             "type": [

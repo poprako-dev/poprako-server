@@ -136,9 +136,9 @@ pub struct ArchivedUserPayload {
     /// Optional storage key for the user's avatar image.
     pub avatar_key: Option<String>,
     /// Whether the avatar has been uploaded to object storage.
-    pub avatar_uploaded: bool,
+    pub avatar_uploaded: Option<bool>,
     /// Version counter incremented each time the avatar is replaced.
-    pub avatar_version: u32,
+    pub avatar_version: Option<u32>,
     /// Whether the user has super-administrator privileges.
     pub is_sadmin: bool,
     /// Unix timestamp of the user's most recent activity.

@@ -2,7 +2,6 @@ use super::*;
 use crate::data::instr::page::{
     MarkPageImageUploadedInstr, ReservePageImageInstr,
 };
-
 use crate::value::image::{ImageExt, ImageHash};
 
 fn seed_mark_scope(mock: &Mock) {
@@ -90,7 +89,7 @@ async fn published_chapter_rejects_page_image_writes() {
 
     assert!(mark_result.is_ok());
 
-    assert_eq!(mock.snapshot().pages[0].image_version, 1);
+    assert_eq!(mock.snapshot().pages[0].image_version, Some(1));
 
     assert!(mock.snapshot().prom_records.is_empty());
 }
@@ -120,7 +119,7 @@ async fn assert_delayed_check_clears_unverified_image(
 
     let snapshot = mock.snapshot();
 
-    assert_eq!(snapshot.pages[0].is_image_uploaded, expected_uploaded);
+    assert_eq!(snapshot.pages[0].is_image_uploaded, Some(expected_uploaded));
 
     assert_eq!(
         snapshot.deleted_image_keys,
@@ -202,9 +201,9 @@ async fn mark_image_uploaded_rejects_stale_replay_then_accepts_current_version()
         "error-stale-page-image-upload",
     );
 
-    assert!(!snapshot.pages[0].is_image_uploaded);
+    assert_ne!(snapshot.pages[0].is_image_uploaded, Some(true));
 
-    assert_eq!(snapshot.pages[0].image_version, 2);
+    assert_eq!(snapshot.pages[0].image_version, Some(2));
 
     mark_image_uploaded(
         (&mock, &mock, &mock),
@@ -215,7 +214,7 @@ async fn mark_image_uploaded_rejects_stale_replay_then_accepts_current_version()
     .await
     .unwrap();
 
-    assert!(mock.snapshot().pages[0].is_image_uploaded);
+    assert_eq!(mock.snapshot().pages[0].is_image_uploaded, Some(true));
 }
 
 #[tokio::test]
@@ -247,7 +246,7 @@ async fn mark_image_uploaded_rejects_non_raw_provider() {
 
     assert_expected_variant(err, ExpectedVariant::Perm);
 
-    assert!(!snapshot.pages[0].is_image_uploaded);
+    assert_ne!(snapshot.pages[0].is_image_uploaded, Some(true));
 }
 
 #[tokio::test]

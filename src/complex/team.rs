@@ -114,7 +114,7 @@ impl TeamComplex {
         }
 
         if let Some(avatar_key) = &team_info.avatar_key
-            && team_info.is_avatar_uploaded
+            && team_info.is_avatar_uploaded == Some(true)
         {
             let (delete_id, payload) = (
                 ImageComplex::gen_delete_id(),

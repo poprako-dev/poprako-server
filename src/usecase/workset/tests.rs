@@ -15,6 +15,7 @@ use super::*;
 use crate::data::instr::workset::{
     CreateWorksetInstr, ListWorksetInfosInstr, UpdateWorksetInfoInstr,
 };
+use crate::value::image::{ImageExt, ImageHash};
 
 use poprako_orchestra::Step as _;
 use poprako_orchestra_extra::prom::oper::Defer;
@@ -32,7 +33,6 @@ use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::{ExpectedVariant, accept};
 use crate::test_util::assert_expected_variant;
 use crate::test_util::fixture::team;
-use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
 fn workset(id: &str, team_id: &str, index: i32) -> WorksetInfo {
@@ -99,10 +99,10 @@ fn comic_with_uploaded_cover(
         author: "author".into(),
         description: None,
         cover_key: Some(cover_key.into()),
-        is_cover_uploaded: true,
-        cover_version: 1,
-        cover_hash: ImageHash::default(),
-        cover_ext: ImageExt::Png,
+        is_cover_uploaded: Some(true),
+        cover_version: Some(1),
+        cover_hash: Some(ImageHash::default()),
+        cover_ext: Some(ImageExt::Png),
         chapter_count: 0,
         creator_id: "user-1".into(),
         workset: None,

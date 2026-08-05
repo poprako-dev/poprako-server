@@ -2,6 +2,7 @@ use super::*;
 use crate::data::instr::assignment::{
     ListAssignmentInfosInstr, UpdateAssignmentRolesInstr,
 };
+use crate::value::image::{ImageExt, ImageHash};
 
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::chapter::ChapterInfo;
@@ -15,7 +16,6 @@ use crate::model::shared::user::UserToken;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::test_util::now;
 use crate::value::chapter::{Stage, StageMask, StagePhase};
-use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
 // Tests for assignment deletion behavior.
@@ -58,10 +58,10 @@ fn user(id: &str, is_sadmin: bool) -> UserInfo {
         qid: id.into(),
         nickname: id.into(),
         avatar_key: None,
-        is_avatar_uploaded: false,
-        avatar_version: 0,
-        avatar_hash: ImageHash::default(),
-        avatar_ext: ImageExt::Png,
+        is_avatar_uploaded: None,
+        avatar_version: None,
+        avatar_hash: None,
+        avatar_ext: None,
         is_sadmin,
         last_active_at: time,
         created_at: time,
@@ -89,10 +89,10 @@ fn team(id: &str) -> TeamInfo {
         name: id.into(),
         description: "description".into(),
         avatar_key: None,
-        is_avatar_uploaded: false,
-        avatar_version: 0,
-        avatar_hash: ImageHash::default(),
-        avatar_ext: ImageExt::Png,
+        is_avatar_uploaded: None,
+        avatar_version: None,
+        avatar_hash: None,
+        avatar_ext: None,
         created_at: time,
         updated_at: time,
     }
@@ -130,10 +130,10 @@ fn comic(id: &str, workset_id: &str) -> ComicInfo {
         author: "author".into(),
         description: None,
         cover_key: None,
-        is_cover_uploaded: false,
-        cover_version: 0,
-        cover_hash: ImageHash::default(),
-        cover_ext: ImageExt::Png,
+        is_cover_uploaded: None,
+        cover_version: None,
+        cover_hash: None,
+        cover_ext: None,
         chapter_count: 1,
         creator_id: "creator-user".into(),
         workset: None,
@@ -218,10 +218,10 @@ fn page(id: &str, chapter_id: &str, image_key: &str) -> PageInfo {
         chapter_id: chapter_id.into(),
         index: 0,
         image_key: Some(image_key.into()),
-        is_image_uploaded: true,
-        image_version: 1,
-        image_hash: ImageHash::new([0u8; 32]),
-        image_ext: ImageExt::Png,
+        is_image_uploaded: Some(true),
+        image_version: Some(1),
+        image_hash: Some(ImageHash::new([0u8; 32])),
+        image_ext: Some(ImageExt::Png),
         total_unit_count: 0,
         translated_unit_count: 0,
         proofread_unit_count: 0,
