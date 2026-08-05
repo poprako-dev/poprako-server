@@ -8,6 +8,8 @@ pub use metric::record_response_metric;
 
 /// Authorization token middleware.
 pub mod auth;
+/// Cross-origin API access middleware.
+pub mod cors;
 // Sliding-window metrics middleware helper module.
 mod metric;
 /// Rate limiting middleware.
