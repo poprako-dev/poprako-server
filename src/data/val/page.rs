@@ -5,11 +5,10 @@
 use serde::Serialize;
 
 use crate::data::view::image::ImageUploadSlotView;
+use crate::value::image::{ImageExt, ImageHash};
 
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
-
-use crate::value::image::{ImageExt, ImageHash};
 
 #[cfg(test)]
 mod tests;

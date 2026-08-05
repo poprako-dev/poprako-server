@@ -21,7 +21,6 @@ use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::{BaseError, ExpectedVariant};
 use crate::util::Patch;
 use crate::value::chapter::StageMask;
-use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
 #[tokio::test]
@@ -381,10 +380,10 @@ fn comic() -> ComicInfo {
         author: "author".to_string(),
         description: None,
         cover_key: None,
-        is_cover_uploaded: false,
-        cover_version: 0,
-        cover_hash: ImageHash::default(),
-        cover_ext: ImageExt::Png,
+        is_cover_uploaded: None,
+        cover_version: None,
+        cover_hash: None,
+        cover_ext: None,
         chapter_count: 1,
         creator_id: "translator-1".to_string(),
         workset: None,
@@ -432,10 +431,10 @@ fn page() -> PageInfo {
         chapter_id: "chapter-1".to_string(),
         index: 0,
         image_key: None,
-        is_image_uploaded: false,
-        image_version: 0,
-        image_hash: ImageHash::default(),
-        image_ext: ImageExt::Png,
+        is_image_uploaded: None,
+        image_version: None,
+        image_hash: None,
+        image_ext: None,
         total_unit_count: 0,
         translated_unit_count: 0,
         proofread_unit_count: 0,

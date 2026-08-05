@@ -62,20 +62,20 @@ jobs:
       postgres:
         image: postgres:18-alpine
         env:
-          POSTGRES_DB: poprako_ci
+          POSTGRES_DB: db_poprako_ci
           POSTGRES_PASSWORD: poprako
           POSTGRES_USER: poprako
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U poprako -d poprako_ci"
+          --health-cmd "pg_isready -U poprako -d db_poprako_ci"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
 
     env:
       CI_MIGRATION_DATABASE: "1"
-      DATABASE_URL: postgres://poprako:poprako@127.0.0.1:5432/poprako_ci
+      DATABASE_URL: postgres://poprako:poprako@127.0.0.1:5432/db_poprako_ci
 
     steps:
       - name: Check out repository

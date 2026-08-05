@@ -122,7 +122,6 @@ mod tests {
     use crate::model::read::proj::workset::WorksetInfo;
     use crate::result::ExpectedVariant;
     use crate::value::chapter::StageMask;
-    use crate::value::image::{ImageExt, ImageHash};
 
     fn seed_scope(mock: &Mock) {
         //
@@ -147,10 +146,10 @@ mod tests {
             author: "author".into(),
             description: None,
             cover_key: None,
-            is_cover_uploaded: false,
-            cover_version: 0,
-            cover_hash: ImageHash::default(),
-            cover_ext: ImageExt::Png,
+            is_cover_uploaded: None,
+            cover_version: None,
+            cover_hash: None,
+            cover_ext: None,
             chapter_count: 1,
             creator_id: "user-1".into(),
             workset: None,

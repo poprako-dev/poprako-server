@@ -1,8 +1,7 @@
 use super::*;
 
-use time::OffsetDateTime;
-
 use crate::value::image::{ImageExt, ImageHash};
+use time::OffsetDateTime;
 
 // Build a lightweight page fixture with deterministic metadata.
 fn page(
@@ -17,10 +16,10 @@ fn page(
         chapter_id: "chapter-1".into(),
         index,
         image_key: Some(format!("{}.png", id)),
-        is_image_uploaded: image_uploaded,
-        image_version: 1,
-        image_hash: ImageHash::new([hash; 32]),
-        image_ext: ImageExt::Png,
+        is_image_uploaded: Some(image_uploaded),
+        image_version: Some(1),
+        image_hash: Some(ImageHash::new([hash; 32])),
+        image_ext: Some(ImageExt::Png),
         total_unit_count,
         translated_unit_count: 0,
         proofread_unit_count: 0,

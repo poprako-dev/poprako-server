@@ -186,8 +186,8 @@ export async function runIt03Module(ctx: RunCtx): Promise<void> {
             .sort((a, b) => a.index - b.index)
             .map((page) => ({
                 page_id: page.id,
-                image_hash: page.image_hash,
-                ext: page.ext,
+                image_hash: page.image_hash!,
+                ext: page.ext!,
             })),
     );
 

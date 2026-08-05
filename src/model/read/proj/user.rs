@@ -24,14 +24,14 @@ pub struct UserInfo {
 
     /// Object-storage key for the uploaded avatar image, absent when no avatar is set.
     pub avatar_key: Option<String>,
-    /// Whether the reserved avatar upload has been completed.
-    pub is_avatar_uploaded: bool,
+    /// Whether the reserved avatar upload has been completed, if an avatar exists.
+    pub is_avatar_uploaded: Option<bool>,
     /// Monotonically increasing version number for cache-busting the avatar URL.
-    pub avatar_version: u32,
+    pub avatar_version: Option<u32>,
     /// SHA-256 identity of the reserved avatar content.
-    pub avatar_hash: ImageHash,
+    pub avatar_hash: Option<ImageHash>,
     /// File format persisted with the avatar identity.
-    pub avatar_ext: ImageExt,
+    pub avatar_ext: Option<ImageExt>,
 
     /// Whether this user has super-administrator privileges.
     pub is_sadmin: bool,

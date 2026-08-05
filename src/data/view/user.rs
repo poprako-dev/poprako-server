@@ -69,7 +69,7 @@ impl UserInfoView {
         let (avatar_url, avatar_thumbnail_url) =
             match (model.is_avatar_uploaded, &model.avatar_key) {
                 //
-                (true, Some(key)) => (
+                (Some(true), Some(key)) => (
                     image_pool.gen_download_url(key).await.ok(),
                     image_pool.gen_thumbnail_download_url(key).await.ok(),
                 ),

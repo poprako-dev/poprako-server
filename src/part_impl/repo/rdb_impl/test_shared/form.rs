@@ -4,7 +4,7 @@ use crate::model::write::page::PageEntry;
 use crate::model::write::team::TeamEntry;
 use crate::model::write::user::UserEntry;
 use crate::model::write::workset::WorksetEntry;
-use crate::value::image::ImageExt;
+use crate::value::image::{ImageExt, ImageHash};
 
 pub fn user_entry(prefix: &str, name: &str) -> UserEntry {
     UserEntry {
@@ -69,9 +69,9 @@ pub fn page_entry(prefix: &str, chapter_entry: &ChapterEntry) -> PageEntry {
         id: format!("{}page", prefix),
         chapter_id: chapter_entry.id.clone(),
         index: 0,
-        image_key: None,
-        image_version: 0,
-        image_hash: Default::default(),
+        image_key: Some(format!("{}page.jpg", prefix)),
+        image_version: 1,
+        image_hash: ImageHash::new([1; 32]),
         image_ext: ImageExt::Jpg,
     }
 }

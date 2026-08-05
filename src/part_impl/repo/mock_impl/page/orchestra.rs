@@ -166,25 +166,33 @@ impl<'a> Step<ReservePageImage<'a>, MockContext> for Mock {
 
         let prev_object_key = page_info.image_key.take();
 
-        page_info.image_version += 1;
+        let image_version = page_info
+            .image_version
+            .unwrap_or(0)
+            .checked_add(1)
+            .ok_or_else(|| BaseError::Unrecoverable {
+                message: "[ReservePageImage] image version overflow".into(),
+            })?;
 
-        page_info.is_image_uploaded = false;
+        page_info.is_image_uploaded = Some(false);
 
         let object_key = PageComplex::gen_image_key(
             &page_info.chapter_id,
             oper.id,
-            page_info.image_version,
+            image_version,
             oper.file_ext,
         );
 
         page_info.image_key = Some(object_key.clone());
+
+        page_info.image_version = Some(image_version);
 
         page_info.updated_at = now();
 
         accept(PageImageReservation {
             object_key,
             prev_object_key,
-            image_version: page_info.image_version,
+            image_version,
         })
     }
 }
@@ -207,7 +215,7 @@ impl<'a> Step<MarkPageImageUploaded<'a>, MockContext> for Mock {
             .find(|info| info.id == oper.repl.id)
             .ok_or_else(|| expected("error-page-not-found"))?;
 
-        if page_info.image_version != oper.repl.image_version
+        if page_info.image_version != Some(oper.repl.image_version)
             || oper.repl.image_key.as_deref().is_some_and(|image_key| {
                 page_info.image_key.as_deref() != Some(image_key)
             })
@@ -215,7 +223,7 @@ impl<'a> Step<MarkPageImageUploaded<'a>, MockContext> for Mock {
             return Err(expected("error-stale-page-image-upload"));
         }
 
-        page_info.is_image_uploaded = true;
+        page_info.is_image_uploaded = Some(true);
 
         page_info.updated_at = now();
 
@@ -241,13 +249,13 @@ impl<'a> Step<SetPageImageUploaded<'a>, MockContext> for Mock {
             .find(|info| info.id == oper.repl.id)
             .ok_or_else(|| expected("error-page-not-found"))?;
 
-        if page_info.image_version != oper.repl.image_version
+        if page_info.image_version != Some(oper.repl.image_version)
             || page_info.image_key.as_deref() != oper.repl.image_key.as_deref()
         {
             return Err(expected("error-stale-page-image-upload"));
         }
 
-        page_info.is_image_uploaded = oper.repl.is_image_uploaded;
+        page_info.is_image_uploaded = Some(oper.repl.is_image_uploaded);
 
         page_info.updated_at = now();
 
@@ -336,13 +344,13 @@ impl<'a> Step<UpdatePageManifest<'a>, MockContext> for Mock {
 
         page_info.image_key = oper.update.image_key.clone();
 
-        page_info.is_image_uploaded = oper.update.is_image_uploaded;
+        page_info.is_image_uploaded = Some(oper.update.is_image_uploaded);
 
-        page_info.image_version = oper.update.image_version;
+        page_info.image_version = Some(oper.update.image_version);
 
-        page_info.image_hash = oper.update.image_hash.clone();
+        page_info.image_hash = Some(oper.update.image_hash.clone());
 
-        page_info.image_ext = oper.update.image_ext;
+        page_info.image_ext = Some(oper.update.image_ext);
 
         page_info.updated_at = now();
 
@@ -375,16 +383,13 @@ impl<'a> Step<ClearPageImagesForPublish<'a>, MockContext> for Mock {
                 object_keys.push(object_key);
             }
 
-            page_info.is_image_uploaded = false;
+            page_info.is_image_uploaded = None;
 
-            page_info.image_version = page_info
-                .image_version
-                .checked_add(1)
-                .ok_or_else(|| BaseError::Unrecoverable {
-                    message:
-                        "[ClearPageImagesForPublish] image version overflow"
-                            .into(),
-                })?;
+            page_info.image_version = None;
+
+            page_info.image_hash = None;
+
+            page_info.image_ext = None;
 
             page_info.updated_at = now();
         }

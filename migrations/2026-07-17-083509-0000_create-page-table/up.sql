@@ -5,10 +5,10 @@ CREATE TABLE IF NOT EXISTS "t_page" (
     "f_index"                      INTEGER     NOT NULL,
 
     "f_image_key"                  TEXT,
-    "f_image_uploaded"             BOOLEAN     NOT NULL DEFAULT FALSE,
-    "f_image_version"              BIGINT      NOT NULL DEFAULT 0,
-    "f_image_hash"                 BYTEA       NOT NULL,
-    "f_image_extension"            TEXT        NOT NULL,
+    "f_image_uploaded"             BOOLEAN,
+    "f_image_version"              BIGINT,
+    "f_image_hash"                 BYTEA,
+    "f_image_extension"            TEXT,
 
     "f_total_unit_count"           INTEGER     NOT NULL DEFAULT 0,
     "f_translated_unit_count"      INTEGER     NOT NULL DEFAULT 0,

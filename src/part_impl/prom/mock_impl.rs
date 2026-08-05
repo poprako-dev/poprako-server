@@ -61,7 +61,7 @@ struct CurrentImageIdentity<'a> {
     //
     // Internal state field `version`.
     // Version number of the currently persisted record.
-    version: u32,
+    version: Option<u32>,
     // Object key of the currently persisted record, or None when not yet uploaded.
     object_key: Option<&'a str>,
 }
@@ -248,7 +248,7 @@ async fn process_image_task(
                         return accept(());
                     };
 
-                    if page_info.image_version != image_identity.version {
+                    if page_info.image_version != Some(image_identity.version) {
                         return accept(());
                     }
 
@@ -362,7 +362,7 @@ async fn mark_page_image_unverified(
         })?;
 
     match (
-        page_info.image_version == image_version,
+        page_info.image_version == Some(image_version),
         page_info.image_key.as_deref() == Some(object_key),
     ) {
         //
@@ -394,7 +394,7 @@ async fn mark_page_image_unverified(
             .step_on(mock, context)
             .await?;
 
-        if locked_page_info.image_version != image_version
+        if locked_page_info.image_version != Some(image_version)
             || locked_page_info.image_key.as_deref() != Some(object_key)
         {
             return accept(());
@@ -625,7 +625,7 @@ fn classify_current_identity(
     image_identity: ImageIdentity<'_>,
 ) -> BaseRest<ResourceState> {
     match (
-        current_identity.version == image_identity.version,
+        current_identity.version == Some(image_identity.version),
         current_identity.object_key == Some(image_identity.object_key),
     ) {
         //
