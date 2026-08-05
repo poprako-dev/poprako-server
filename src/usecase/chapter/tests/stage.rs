@@ -155,13 +155,13 @@ async fn update_stage_publish_enqueues_page_image_delete() {
 
     assert_eq!(snapshot.pages[0].image_key, None);
 
-    assert!(!snapshot.pages[0].is_image_uploaded);
+    assert_eq!(snapshot.pages[0].is_image_uploaded, None);
 
-    assert_eq!(snapshot.pages[0].image_version, 2);
+    assert_eq!(snapshot.pages[0].image_version, None);
 
-    assert_eq!(snapshot.pages[0].image_hash, ImageHash::new([0; 32]));
+    assert_eq!(snapshot.pages[0].image_hash, None);
 
-    assert_eq!(snapshot.pages[0].image_ext, ImageExt::Png);
+    assert_eq!(snapshot.pages[0].image_ext, None);
 
     let events = mock.drain_events();
 

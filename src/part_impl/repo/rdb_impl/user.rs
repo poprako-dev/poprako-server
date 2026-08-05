@@ -198,14 +198,20 @@ async fn reserve_avatar(
             f_avatar_extension,
         ))
         .for_update()
-        .get_result::<(Option<String>, bool, i64, Vec<u8>, String)>(conn)
+        .get_result::<(
+            Option<String>,
+            Option<bool>,
+            Option<i64>,
+            Option<Vec<u8>>,
+            Option<String>,
+        )>(conn)
         .await
         .map_err(diesel)?;
 
-    let same_hash =
-        prev_key.is_some() && stored_hash.as_slice() == image_hash.as_bytes();
+    let same_hash = prev_key.is_some()
+        && stored_hash.as_deref() == Some(image_hash.as_bytes());
 
-    if same_hash && stored_ext != image_ext.suffix() {
+    if same_hash && stored_ext.as_deref() != Some(image_ext.suffix()) {
         //
         let message = trl("error-invalid-image-extension");
 
@@ -214,7 +220,7 @@ async fn reserve_avatar(
             err_message = %message,
             user_id = %id,
             image_version = raw_version,
-            stored_extension = %stored_ext,
+            stored_extension = ?stored_ext,
             requested_extension = %image_ext.suffix(),
             operation = "reserve user avatar",
             "expected user avatar error",
@@ -235,17 +241,20 @@ async fn reserve_avatar(
         return accept(UserAvatarReservation {
             object_key,
             prev_object_key: None,
-            avatar_version: u32::try_from(raw_version).map_err(|_| {
+            avatar_version: u32::try_from(raw_version.ok_or_else(|| {
                 BaseError::Unrecoverable {
-                    message: "[reserve_avatar] avatar version is invalid"
+                    message: "[reserve_avatar] avatar version is missing"
                         .into(),
                 }
+            })?)
+            .map_err(|_| BaseError::Unrecoverable {
+                message: "[reserve_avatar] avatar version is invalid".into(),
             })?,
-            is_upload_required: !uploaded,
+            is_upload_required: !uploaded.unwrap_or(false),
         });
     }
 
-    let version = next_version(raw_version)?;
+    let version = next_version(raw_version.unwrap_or(0))?;
 
     let object_key =
         UserComplex::gen_avatar_key(id, version, image_ext.suffix());

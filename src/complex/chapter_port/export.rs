@@ -3,6 +3,7 @@ use std::fmt::Write as _;
 
 use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::unit::UnitInfo;
+use crate::value::image::ImageExt;
 
 /// Chapter export formatting rules.
 pub struct ChapterExportComplex;
@@ -87,7 +88,11 @@ impl ChapterExportComplex {
 // Build a LabelPlus image filename from a page's stored index and image
 // file extension (defaults to `jpg` when the image key has no extension).
 fn label_plus_image_name(page_info: &PageInfo) -> String {
-    format!("{:03}.{}", page_info.index, page_info.image_ext.suffix())
+    format!(
+        "{:03}.{}",
+        page_info.index,
+        page_info.image_ext.unwrap_or(ImageExt::Jpg).suffix(),
+    )
 }
 
 // Return the proofread text if non-empty, falling back to translated text

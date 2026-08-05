@@ -367,9 +367,12 @@ pub async fn complete_raw_provide(
     //
     let now = OffsetDateTime::now_utc();
 
-    let incomplete_pages = t_page::table
-        .filter(t_page::f_chapter_id.eq(id))
-        .filter(t_page::f_image_uploaded.eq(false));
+    let incomplete_pages =
+        t_page::table.filter(t_page::f_chapter_id.eq(id)).filter(
+            t_page::f_image_uploaded
+                .is_null()
+                .or(t_page::f_image_uploaded.eq(false)),
+        );
 
     let updated_count = diesel::update(
         t_chapter

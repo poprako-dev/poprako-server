@@ -367,7 +367,7 @@ where
 
     let team_info = GetTeamInfo::Id { id: &id }.run_on(repo).await?;
 
-    if team_info.avatar_version != instr.image_version {
+    if team_info.avatar_version != Some(instr.image_version) {
         //
         let err_message = trl("error-stale-avatar-upload");
 
@@ -387,7 +387,7 @@ where
         });
     }
 
-    if team_info.is_avatar_uploaded {
+    if team_info.is_avatar_uploaded == Some(true) {
         return accept(());
     }
 
@@ -444,7 +444,7 @@ where
             .step_on(repo, context)
             .await?;
 
-        if locked_team_info.avatar_version != instr.image_version
+        if locked_team_info.avatar_version != Some(instr.image_version)
             || locked_team_info.avatar_key.as_deref() != Some(&avatar_key)
         {
             let err_message = trl("error-stale-avatar-upload");

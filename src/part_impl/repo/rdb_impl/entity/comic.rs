@@ -27,11 +27,10 @@ pub struct ComicInfoRow {
     pub f_composed_title: String,
 
     pub f_cover_key: Option<String>,
-    pub f_cover_uploaded: bool,
-    #[diesel(deserialize_as = i64)]
-    pub f_cover_version: u32,
-    pub f_cover_hash: Vec<u8>,
-    pub f_cover_extension: String,
+    pub f_cover_uploaded: Option<bool>,
+    pub f_cover_version: Option<i64>,
+    pub f_cover_hash: Option<Vec<u8>>,
+    pub f_cover_extension: Option<String>,
 
     pub f_chapter_count: i32,
     pub f_chapter_next_index: i32,
@@ -49,22 +48,68 @@ impl TryFrom<ComicInfoRow> for ComicInfo {
 
     fn try_from(v: ComicInfoRow) -> BaseRest<Self> {
         //
-        let (cover_hash_bytes, cover_ext) = (
-            v.f_cover_hash.try_into().map_err(|_| {
-                BaseError::Unrecoverable {
-                    message:
-                        "[ComicInfoRow] f_cover_hash must contain 32 bytes"
-                            .into(),
-                }
-            })?,
-            ImageExt::parse(&v.f_cover_extension).ok_or_else(|| {
-                BaseError::Unrecoverable {
-                    message:
-                        "[ComicInfoRow] f_cover_extension must be supported"
-                            .into(),
-                }
-            })?,
-        );
+        let (
+            cover_key,
+            is_cover_uploaded,
+            cover_version,
+            cover_hash,
+            cover_ext,
+        ) = match (
+            v.f_cover_key,
+            v.f_cover_uploaded,
+            v.f_cover_version,
+            v.f_cover_hash,
+            v.f_cover_extension,
+        ) {
+            //
+            (None, None, None, None, None) => (None, None, None, None, None),
+
+            (
+                Some(cover_key),
+                Some(is_cover_uploaded),
+                Some(cover_version),
+                Some(cover_hash),
+                Some(cover_ext),
+            ) => {
+                //
+                let cover_version = u32::try_from(cover_version).map_err(|_| {
+                        BaseError::Unrecoverable {
+                            message: "[ComicInfoRow] f_cover_version must be non-negative".into(),
+                        }
+                    })?;
+
+                let cover_hash = cover_hash.try_into().map_err(|_| {
+                    BaseError::Unrecoverable {
+                        message:
+                            "[ComicInfoRow] f_cover_hash must contain 32 bytes"
+                                .into(),
+                    }
+                })?;
+
+                let cover_ext =
+                    ImageExt::parse(&cover_ext).ok_or_else(|| {
+                        BaseError::Unrecoverable {
+                        message:
+                            "[ComicInfoRow] f_cover_extension must be supported"
+                                .into(),
+                    }
+                    })?;
+
+                (
+                    Some(cover_key),
+                    Some(is_cover_uploaded),
+                    Some(cover_version),
+                    Some(ImageHash::new(cover_hash)),
+                    Some(cover_ext),
+                )
+            }
+
+            _ => {
+                return Err(BaseError::Unrecoverable {
+                        message: "[ComicInfoRow] cover fields must be all null or all present".into(),
+                    });
+            }
+        };
 
         accept(ComicInfo {
             id: v.f_id,
@@ -73,10 +118,10 @@ impl TryFrom<ComicInfoRow> for ComicInfo {
             title: v.f_title,
             author: v.f_author,
             description: v.f_description,
-            cover_key: v.f_cover_key,
-            is_cover_uploaded: v.f_cover_uploaded,
-            cover_version: v.f_cover_version,
-            cover_hash: ImageHash::new(cover_hash_bytes),
+            cover_key,
+            is_cover_uploaded,
+            cover_version,
+            cover_hash,
             cover_ext,
             chapter_count: v.f_chapter_count,
             creator_id: v.f_creator_id,

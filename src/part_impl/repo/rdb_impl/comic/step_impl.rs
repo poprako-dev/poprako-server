@@ -418,14 +418,20 @@ pub async fn reserve_cover(
             f_cover_extension,
         ))
         .for_update()
-        .get_result::<(Option<String>, bool, i64, Vec<u8>, String)>(conn)
+        .get_result::<(
+            Option<String>,
+            Option<bool>,
+            Option<i64>,
+            Option<Vec<u8>>,
+            Option<String>,
+        )>(conn)
         .await
         .map_err(diesel)?;
 
-    let same_hash =
-        prev_key.is_some() && stored_hash.as_slice() == image_hash.as_bytes();
+    let same_hash = prev_key.is_some()
+        && stored_hash.as_deref() == Some(image_hash.as_bytes());
 
-    if same_hash && stored_ext != image_ext.suffix() {
+    if same_hash && stored_ext.as_deref() != Some(image_ext.suffix()) {
         //
         let err_message = trl("error-invalid-image-extension");
 
@@ -435,7 +441,7 @@ pub async fn reserve_cover(
             comic_id = %id,
             image_version = raw_version,
             cover_key_present = prev_key.is_some(),
-            stored_extension = %stored_ext,
+            stored_extension = ?stored_ext,
             requested_extension = %image_ext.suffix(),
             stage = "reserve_cover",
             "expected error: invalid image extension",
@@ -456,16 +462,19 @@ pub async fn reserve_cover(
         return accept(ComicCoverReservation {
             object_key,
             prev_object_key: None,
-            cover_version: u32::try_from(raw_version).map_err(|_| {
+            cover_version: u32::try_from(raw_version.ok_or_else(|| {
                 BaseError::Unrecoverable {
-                    message: "[reserve_cover] cover version is invalid".into(),
+                    message: "[reserve_cover] cover version is missing".into(),
                 }
+            })?)
+            .map_err(|_| BaseError::Unrecoverable {
+                message: "[reserve_cover] cover version is invalid".into(),
             })?,
-            is_upload_required: !uploaded,
+            is_upload_required: !uploaded.unwrap_or(false),
         });
     }
 
-    let cover_version = next_version(raw_version)?;
+    let cover_version = next_version(raw_version.unwrap_or(0))?;
 
     let object_key =
         ComicComplex::gen_cover_key(id, cover_version, image_ext.suffix());
