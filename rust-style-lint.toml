@@ -1,0 +1,85 @@
+# PopRaKo's selection and configuration for the shared rust-style-lint
+# checker suite. The A/B-tier checkers run via `rust-style-lint` (see
+# fmt/run-check.sh); this file selects which linters run and carries the
+# project-specific rule parameters.
+
+[linters]
+no-inline-tests = true
+spacing-style = true
+use-style = true
+generic-where = true
+no-type-hint = true
+item-layout = true
+doc-comment-coverage = true
+forbidden-identifiers = true
+module-dependency = true
+visibility-style = true
+trait-use-anonymous = true
+
+# --- per-checker overrides ------------------------------------------------
+
+# Diesel generates schema.rs; it is not hand-authored Rust.
+[generic-where]
+exclude_files = ["src/part_impl/repo/rdb_impl/schema.rs"]
+
+[item-layout]
+exclude_files = ["src/part_impl/repo/rdb_impl/schema.rs"]
+
+[module-dependency]
+exclude_files = ["src/part_impl/repo/rdb_impl/schema.rs"]
+
+[visibility-style]
+# Modules whose public struct fields are part of the data contract.
+allow_public_fields = [
+    "model",
+    "data",
+    "config",
+    "value",
+    "api::http::handler",
+    "api::http::shared::metric",
+    "complex::page::manifest",
+    "part::image",
+    "part::repo::oper",
+    "part::effect::event",
+    "part::prom::payload::chapter",
+    "part_impl::repo::rdb_impl::entity",
+    "part_impl::prom::rdb_impl::entity",
+    "part_impl::prom::rdb_impl::handler",
+]
+exclude_files = ["src/part_impl/repo/rdb_impl/schema.rs"]
+
+[forbidden-identifiers]
+# Repository port/adapter layers follow their own naming conventions.
+skip_module_paths = ["part/repo", "part_impl/repo"]
+# Term and termbase modules are temporarily excluded from forbidden-identifier
+# checks.
+ignore_files = [
+    "src/api/http/handler/term.rs",
+    "src/api/http/handler/termbase.rs",
+    "src/complex/term.rs",
+    "src/complex/termbase.rs",
+    "src/data/instr/term.rs",
+    "src/data/instr/termbase.rs",
+    "src/data/val/term.rs",
+    "src/data/val/termbase.rs",
+    "src/data/view/term.rs",
+    "src/data/view/termbase.rs",
+    "src/model/read/proj/term.rs",
+    "src/model/read/proj/termbase.rs",
+    "src/model/read/spec/term.rs",
+    "src/model/read/spec/termbase.rs",
+    "src/model/write/term.rs",
+    "src/model/write/termbase.rs",
+    "src/usecase/term.rs",
+    "src/usecase/termbase.rs",
+]
+
+[trait-use-anonymous]
+# Additional external trait paths governed by the import style.
+external_traits = ["poprako_util::time::ToUnixMilli"]
+# Traits consumed only through framework macro expansion.
+macro_traits = [
+    "crate::part_impl::repo::rdb_impl::incl::framework::BatchByIds",
+    "crate::part_impl::repo::rdb_impl::incl::framework::Incl",
+]
+macro_markers = ["preloadable!"]
