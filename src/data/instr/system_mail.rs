@@ -12,7 +12,6 @@ use utoipa::{IntoParams, ToSchema};
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ListSystemMailInfosInstr {
-    //
     /// Filter by read status. Absent returns all.
     pub is_read: Option<bool>,
 

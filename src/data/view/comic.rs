@@ -37,7 +37,6 @@ mod tests;
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ComicInfoView {
-    //
     /// Unique comic identifier.
     pub id: String,
 

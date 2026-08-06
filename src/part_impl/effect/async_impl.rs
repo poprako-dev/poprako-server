@@ -35,7 +35,6 @@ mod user;
 /// [`close`](AsyncEffectDevelop::close) before dropping to drain pending
 /// events gracefully.
 pub struct AsyncEffectDevelop {
-    //
     // Internal state field `send`.
     /// Bounded channel sender for enqueueing events.
     send: Sender<Event>,

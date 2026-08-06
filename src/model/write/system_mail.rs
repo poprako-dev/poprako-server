@@ -3,7 +3,6 @@
 /// The data needed to insert a new system mail row.
 #[cfg_attr(test, derive(Clone))]
 pub struct SystemMailEntry {
-    //
     /// The unique identifier for the new system mail record.
     pub id: String,
 

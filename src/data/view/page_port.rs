@@ -13,7 +13,6 @@ use utoipa::ToSchema;
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct PageTranslationExportView {
-    //
     /// Page identifier.
     pub page_id: String,
     /// Zero-based page index within its chapter.

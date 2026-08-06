@@ -4,7 +4,6 @@ use crate::model::read::proj::comic_archive::ComicArchiveRecord;
 
 /// Archive rows and the source IDs that must be deleted atomically.
 pub struct ComicArchiveEntry {
-    //
     /// The archive record to insert.
     pub record: ComicArchiveRecord,
     /// The archived comic's original ID — this record will be deleted after archiving.

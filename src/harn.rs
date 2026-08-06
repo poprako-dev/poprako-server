@@ -47,7 +47,6 @@ impl<C, N, R, P, A, I, D> Clone for Harn<C, N, R, P, A, I, D> {
 
 // Inner, non-cloneable state shared across all `Harn` clones via `Arc`.
 struct HarnInner<C, N, R, P, A, I, D> {
-    //
     // Transaction coordinator (Nucl).
     nucl: N,
     // Repository bundle implementing all domain step traits.

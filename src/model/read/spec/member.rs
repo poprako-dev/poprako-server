@@ -8,7 +8,6 @@ pub enum MemberListSpec {
     //
     /// List teams/memberships owned by a specific user.
     User {
-        //
         /// ID of the user whose memberships to list.
         owner_id: String,
         /// Optional include flags for related data.
@@ -21,7 +20,6 @@ pub enum MemberListSpec {
 
     /// List members of a specific team, optionally narrowed by role or nickname.
     Team {
-        //
         /// ID of the team whose members to list.
         team_id: String,
         /// Fuzzy filter by member nickname.

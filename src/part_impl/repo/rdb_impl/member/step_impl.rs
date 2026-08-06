@@ -354,7 +354,6 @@ fn escape_ilike_pattern(input: &str) -> String {
 
 // Track per-role assignment timestamps captured from a role mask.
 struct RoleTimestamps {
-    //
     // Timestamp of raw provider assignment; absent means role not enabled.
     raw_provider: Option<OffsetDateTime>,
 

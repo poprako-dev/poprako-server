@@ -3,7 +3,6 @@
 /// The data needed to create a new team.
 #[cfg_attr(test, derive(Clone))]
 pub struct TeamEntry {
-    //
     /// The unique identifier for the new team.
     pub id: String,
 
@@ -15,7 +14,6 @@ pub struct TeamEntry {
 
 /// Mutable team profile fields replaced together.
 pub struct TeamRepl {
-    //
     /// The team identifier.
     pub id: String,
 
@@ -27,7 +25,6 @@ pub struct TeamRepl {
 
 /// A team's avatar upload state replaced together.
 pub struct TeamAvatarRepl {
-    //
     /// The team identifier.
     pub id: String,
 
@@ -48,7 +45,6 @@ pub struct TeamAvatarRepl {
 /// [`UserAvatarReservation`]: crate::model::write::user::UserAvatarReservation
 #[cfg_attr(test, derive(Clone))]
 pub struct TeamAvatarReservation {
-    //
     /// Newly generated object-storage key for the avatar upload slot.
     pub object_key: String,
     /// Previous avatar key that should be cleaned up from storage, if any.

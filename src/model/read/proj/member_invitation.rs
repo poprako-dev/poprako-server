@@ -10,7 +10,6 @@ use crate::value::role::RoleMask;
 /// and the [`RoleMask`] that will be assigned upon acceptance.
 #[cfg_attr(test, derive(Clone))]
 pub struct MemberInvitationInfo {
-    //
     /// Unique identifier for the invitation record.
     pub id: String,
 

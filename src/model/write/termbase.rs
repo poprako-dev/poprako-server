@@ -3,7 +3,6 @@
 /// The data needed to create a terminology base.
 #[cfg_attr(test, derive(Clone))]
 pub struct TermbaseEntry {
-    //
     /// The unique identifier for the new terminology base.
     pub id: String,
 
@@ -24,7 +23,6 @@ pub struct TermbaseEntry {
 /// Mutable terminology-base profile fields.
 #[cfg_attr(test, derive(Clone))]
 pub struct TermbaseRepl {
-    //
     /// The unique identifier of the termbase to update.
     pub id: String,
 

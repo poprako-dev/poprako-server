@@ -4,7 +4,6 @@ use crate::value::role::RoleMask;
 
 /// The data needed to insert an assignment invitation row.
 pub struct AssignmentInvitationEntry {
-    //
     /// Unique identifier to insert for the new invitation row.
     pub id: String,
 

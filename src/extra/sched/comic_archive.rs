@@ -79,7 +79,6 @@ const PURGE_INTERVAL: Duration = Duration::from_secs(7 * 24 * 60 * 60);
 
 // Cached team/month slot to purge archive rows safely in batches.
 struct ExpiredSlot {
-    //
     // Team being iterated for archive retention.
     team_id: String,
 

@@ -24,7 +24,6 @@ pub enum BaseError {
     //
     /// An expected application condition — the error can be communicated to the client.
     Expected {
-        //
         /// Classification of the expected error variant.
         variant: ExpectedVariant,
         /// Human-readable detail about the error condition.

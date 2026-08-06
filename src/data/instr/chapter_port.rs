@@ -13,7 +13,6 @@ use crate::value::chapter_port::TranslationFormat;
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ImportChapterTranslationInstr {
-    //
     /// The translation format (e.g., JSON, SRT).
     pub format: TranslationFormat,
     /// Raw translation content string.

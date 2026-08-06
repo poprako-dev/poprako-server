@@ -42,7 +42,6 @@ pub enum ResourceState {
 // Current image identity read from a persisted resource record.
 // Holds the latest DB version and object key for mismatch checks.
 struct CurrentImageIdentity<'a> {
-    //
     // Internal state field `version`.
     // Version number of the resource in the database, used to detect stale writes.
     version: u32,

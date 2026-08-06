@@ -23,7 +23,6 @@ use crate::value::image::{ImageExt, ImageHash};
 /// [`MarkComicCoverUploaded`]: crate::part::repo::oper::comic::MarkComicCoverUploaded
 #[derive(Clone)]
 pub struct ComicInfo {
-    //
     /// Unique identifier for the comic record.
     pub id: String,
 

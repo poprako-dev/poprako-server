@@ -65,7 +65,6 @@ pub fn parse_poprako() -> bool {
 
 /// Benchmarks LabelPlus rendering for a large page-and-unit collection.
 pub struct LabelPlusExportInput {
-    //
     /// Pages of the exported chapter used in the benchmark.
     pages: Vec<PageInfo>,
     /// Translation units keyed by their parent page ID.
