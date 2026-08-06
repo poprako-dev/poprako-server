@@ -30,7 +30,6 @@ pub enum GetMemberInvitationInfo<'a, 'b> {
     //
     /// Retrieves by invitation ID.
     Id {
-        //
         /// The invitation ID.
         id: &'a str,
         /// Which relations to include in the response.

@@ -12,7 +12,6 @@ pub struct UserActiveEvent {
 ///
 /// [`UserSignedUp`]: crate::part::effect::event::Event::UserSignedUp
 pub struct UserSignedUpEvent {
-    //
     /// Identifier of the team the new user was invited to.
     pub team_id: String,
     /// Identifier of the user who sent the invitation.

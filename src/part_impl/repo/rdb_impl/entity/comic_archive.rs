@@ -10,7 +10,6 @@ use crate::part_impl::repo::rdb_impl::schema::t_comic_archive;
 #[derive(Insertable)]
 #[diesel(table_name = t_comic_archive)]
 pub struct ComicArchiveEntryRow<'a> {
-    //
     pub f_id: &'a str,
     pub f_team_id: &'a str,
     pub f_archived_payload: &'a str,

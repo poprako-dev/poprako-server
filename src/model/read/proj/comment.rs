@@ -7,7 +7,6 @@ use crate::model::read::proj::user::UserInfo;
 /// A team board comment as stored in the database, with optional included user data.
 #[cfg_attr(test, derive(Clone))]
 pub struct CommentInfo {
-    //
     /// Unique identifier for the comment.
     pub id: String,
 

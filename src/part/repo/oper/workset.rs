@@ -23,7 +23,6 @@ pub struct GetWorksetInfo<'a> {
 #[derive(Oper)]
 #[oper(output = Vec<WorksetInfo>)]
 pub struct ListWorksetInfos<'a> {
-    //
     /// The team id.
     pub team_id: &'a str,
 
@@ -78,7 +77,6 @@ pub struct AllocWorksetComicIndex<'a> {
 #[derive(Oper)]
 #[oper(output = ())]
 pub struct UpdateWorksetComicCount<'a> {
-    //
     /// The workset id.
     pub id: &'a str,
 

@@ -18,7 +18,6 @@ use crate::result::ExpectedVariant;
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct Pagination {
-    //
     /// Zero-based offset for paginated results.
     pub offset: u32,
     /// Maximum number of items to return.

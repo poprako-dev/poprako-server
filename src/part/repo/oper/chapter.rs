@@ -20,7 +20,6 @@ pub struct CreateChapter<'a> {
 #[derive(Oper)]
 #[oper(output = ChapterInfo)]
 pub struct GetChapterInfo<'a, 'b> {
-    //
     /// Chapter identifier.
     pub id: &'a str,
     /// Chapter inclusion options.
@@ -31,7 +30,6 @@ pub struct GetChapterInfo<'a, 'b> {
 #[derive(Oper)]
 #[oper(output = ChapterInfo)]
 pub struct GetChapterInfoExcluded<'a, 'b> {
-    //
     /// Chapter identifier.
     pub id: &'a str,
     /// Chapter inclusion options.
@@ -66,7 +64,6 @@ pub struct LockChapters<'a> {
 #[derive(Oper)]
 #[oper(output = Option<ChapterInfo>)]
 pub struct FindPinnedChapterInfo<'a, 'b> {
-    //
     /// Comic identifier.
     pub comic_id: &'a str,
     /// Chapter inclusion options.
@@ -101,7 +98,6 @@ pub struct UpdateChapterStage<'a> {
 #[derive(Oper)]
 #[oper(output = bool)]
 pub struct StartChapterStage<'a> {
-    //
     /// Chapter identifier.
     pub id: &'a str,
     /// Target stage to start.
@@ -130,7 +126,6 @@ pub struct ResetChapterRawProvide<'a> {
 #[derive(Oper)]
 #[oper(output = ())]
 pub struct SetChapterPageCounters<'a> {
-    //
     /// Chapter identifier.
     pub id: &'a str,
     /// Number of pages.
@@ -147,7 +142,6 @@ pub struct SetChapterPageCounters<'a> {
 #[derive(Oper)]
 #[oper(output = ())]
 pub struct AdjustChapterUnitCounters<'a> {
-    //
     /// Chapter identifier.
     pub id: &'a str,
     /// Counter delta values.
@@ -158,7 +152,6 @@ pub struct AdjustChapterUnitCounters<'a> {
 #[derive(Oper)]
 #[oper(output = ())]
 pub struct UnpinOtherChapters<'a> {
-    //
     /// Comic identifier.
     pub comic_id: &'a str,
     /// Chapter identifier to exclude from unpinning.

@@ -13,7 +13,6 @@ use crate::value::image::{ImageExt, ImageHash};
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_page)]
 pub struct PageInfoRow {
-    //
     pub f_id: String,
 
     pub f_chapter_id: String,
@@ -79,7 +78,6 @@ impl TryFrom<PageInfoRow> for PageInfo {
 #[derive(Insertable)]
 #[diesel(table_name = t_page)]
 pub struct PageEntryRow<'a> {
-    //
     pub f_id: &'a str,
 
     pub f_chapter_id: &'a str,
@@ -119,7 +117,6 @@ impl<'a> TryFrom<&'a PageEntry> for PageEntryRow<'a> {
 #[derive(AsChangeset)]
 #[diesel(table_name = t_page)]
 pub struct PageAspectRow<'a> {
-    //
     pub f_index: Option<i32>,
     pub f_image_key: Option<Option<&'a str>>,
     pub f_image_uploaded: Option<bool>,

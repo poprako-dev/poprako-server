@@ -14,7 +14,6 @@ use crate::value::role::RoleMask;
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateChapterInstr {
-    //
     /// Identifier of the parent comic to create the chapter in.
     pub comic_id: String,
 
@@ -39,7 +38,6 @@ pub struct CreateChapterInstr {
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ListChapterInfosInstr {
-    //
     /// Parent comic whose chapters to list.
     pub comic_id: String,
 
@@ -60,7 +58,6 @@ pub struct ListChapterInfosInstr {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateChapterInfoInstr {
-    //
     /// Chapter identifier to update.
     pub id: String,
 
@@ -76,7 +73,6 @@ pub struct UpdateChapterInfoInstr {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateChapterStageInstr {
-    //
     /// Chapter identifier to update.
     pub id: String,
 

@@ -33,7 +33,6 @@ pub struct ListPageUnitInfosInstr {
 /// Input parameters for saving a batch of Unit edits.
 #[derive(Debug, Deserialize)]
 pub struct SavePageUnitEditsInstr {
-    //
     /// Page whose Units are being edited.
     pub page_id: String,
 
@@ -49,7 +48,6 @@ pub enum UnitEditInstr {
     //
     /// Creates one Unit with a request-local ID.
     Create {
-        //
         /// Request-local ID used for references within this batch.
         local_id: String,
 
@@ -72,7 +70,6 @@ pub enum UnitEditInstr {
 
     /// Patches or restores one permanent Unit.
     Patch {
-        //
         /// Permanent target Unit ID.
         id: String,
 
@@ -119,7 +116,6 @@ pub enum UnitEditInstr {
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(deny_unknown_fields)]
 pub struct UnitCoordInstr {
-    //
     /// Horizontal page-relative coordinate.
     pub x_coord: f64,
     /// Vertical page-relative coordinate.
@@ -151,7 +147,6 @@ pub struct UnitTranslationInstr {
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(deny_unknown_fields)]
 pub struct UnitRevisionInstr {
-    //
     /// Replacement approval state.
     pub is_proofread: bool,
 

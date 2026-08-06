@@ -57,7 +57,6 @@ pub enum ListMemberInfos<'a> {
 pub enum FindMemberInfo<'a> {
     /// Finds by user ID and team ID.
     UserTeam {
-        //
         /// The user ID.
         user_id: &'a str,
         /// The team ID.
@@ -71,7 +70,6 @@ pub enum FindMemberInfo<'a> {
 pub enum GetMemberInfo<'a, 'b> {
     /// Retrieves by member ID.
     Id {
-        //
         /// The member ID.
         id: &'a str,
         /// Which relations to include in the response.
