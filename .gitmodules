@@ -1,0 +1,3 @@
+[submodule "linters"]
+	path = linters
+	url = https://github.com/ATOMLubover/rust-style-lint.git
