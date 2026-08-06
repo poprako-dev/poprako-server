@@ -158,7 +158,7 @@ async fn list_payloads(
     team_id: &str,
     months: &[ComicArchiveMonth],
 ) -> BaseRest<Vec<(OffsetDateTime, String)>> {
-    //
+    // Queryable projection row for one archive slot.
     #[derive(Queryable)]
     struct ArchivePayloadRow {
         // UTC timestamp when the archive slot was created.

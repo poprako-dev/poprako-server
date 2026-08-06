@@ -277,7 +277,7 @@ fn archive_snapshot() -> Option<ComicArchiveSnapshot> {
 
 // Returns cached benchmark LabelPlus text for parse benchmarks.
 fn label_plus_content() -> &'static str {
-    //
+    // Cached benchmark LabelPlus text.
     static CONTENT: OnceLock<String> = OnceLock::new();
 
     CONTENT
@@ -289,7 +289,7 @@ fn label_plus_content() -> &'static str {
 
 // Loads benchmark Poprako payload text used by import benchmarks.
 fn poprako_content() -> &'static str {
-    //
+    // Cached benchmark Poprako payload text.
     static CONTENT: OnceLock<String> = OnceLock::new();
 
     CONTENT
