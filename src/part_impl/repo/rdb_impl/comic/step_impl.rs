@@ -306,7 +306,7 @@ pub async fn list_infos_excluded(
     conn: &mut RdbConn,
     spec: &ComicListSpec,
 ) -> BaseRest<Vec<ComicInfo>> {
-    //
+    // Builds the paginated, locked row query for the list spec.
     macro_rules! load_rows {
         ($query:expr) => {
             $query
