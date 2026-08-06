@@ -3,7 +3,6 @@
 use serde::Serialize;
 
 use crate::data::view::chapter::ChapterInfoView;
-
 use crate::data::view::user::UserInfoView;
 
 #[cfg(feature = "swagger")]
@@ -14,11 +13,8 @@ use futures::future::OptionFuture;
 use poprako_util::time::ToUnixMilli as _;
 
 use crate::model::read::proj::assignment::AssignmentInfo;
-
 use crate::part::image::ImagePool;
-
 use crate::result::{BaseRest, accept};
-
 use crate::value::role::RoleMask;
 
 /// Presentation-ready chapter assignment information.

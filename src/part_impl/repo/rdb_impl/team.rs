@@ -28,12 +28,12 @@ use crate::shared::result::{diesel, next_version};
 use crate::shared::{RdbConn, RdbContext};
 use crate::value::image::{ImageExt, ImageHash};
 
+// RDB team-ownership projections.
+mod resolve;
+
 /// Team RDB integration tests.
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;
-
-// RDB team-ownership projections.
-mod resolve;
 
 // ── Free functions ──────────────────────────────────────────────────────────
 

@@ -30,12 +30,12 @@ use crate::shared::result::diesel;
 use crate::shared::{RdbConn, RdbContext};
 use crate::value::assignment::AssignmentInclOpt;
 
+// Shared list query builder for assignment read paths.
+mod list;
+
 /// Assignment RDB integration tests.
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;
-
-// Shared list query builder for assignment read paths.
-mod list;
 
 // Build list query helper functions for assignment read paths.
 // Separate module.

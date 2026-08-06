@@ -10,11 +10,8 @@ use utoipa::ToSchema;
 use futures::future::OptionFuture;
 
 use crate::model::read::proj::member_invitation::MemberInvitationInfo;
-
 use crate::part::image::ImagePool;
-
 use crate::result::{BaseRest, accept};
-
 use crate::value::role::RoleMask;
 
 /// Presentation-ready member invitation information.

@@ -8,9 +8,7 @@ use poprako_util::time::ToUnixMilli as _;
 use utoipa::ToSchema;
 
 use crate::model::read::proj::user::UserInfo;
-
 use crate::part::image::ImagePool;
-
 use crate::result::{BaseRest, accept};
 
 /// Presentation-ready user profile information.

@@ -11,6 +11,10 @@ use crate::part::repo::oper::online_user::{ListOnlineUserIds, MarkOnlineUser};
 use crate::part_impl::repo::HybRepo;
 use crate::result::{BaseError, BaseRest, accept};
 
+#[cfg(test)]
+// Online-user adapter tests use explicit instants without sleeping.
+mod tests;
+
 // One successful mark keeps a user online for ten minutes.
 const ONLINE_USER_TTL: Duration = Duration::from_secs(10 * 60);
 
@@ -63,10 +67,6 @@ fn list_online_user_ids_at(
 
     online_user_ids
 }
-
-#[cfg(test)]
-// Online-user adapter tests use explicit instants without sleeping.
-mod tests;
 
 impl Run<MarkOnlineUser<'_>> for HybRepo {
     // Keep memory adapter failures on the shared repository error channel.
