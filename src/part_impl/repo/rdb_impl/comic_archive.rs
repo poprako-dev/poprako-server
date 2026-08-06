@@ -72,6 +72,7 @@ pub mod tests;
 
 // Standardize chain-corruption failures for unit graph validation.
 fn corrupt_unit_chain_err() -> BaseError {
+    //
     BaseError::Unrecoverable {
         message: "persisted Unit chain is corrupt".to_string(),
     }
@@ -194,6 +195,7 @@ async fn list_payloads(
     accept(
         rows.into_iter()
             .filter(|row| {
+                //
                 months.iter().any(|month| {
                     row.created_at >= month.start && row.created_at < month.end
                 })
@@ -417,6 +419,7 @@ async fn get_snapshot_excluded(
     let mut unit_infos_by_page = HashMap::new();
 
     for unit_info in unit_infos {
+        //
         unit_infos_by_page
             .entry(unit_info.page_id.clone())
             .or_insert_with(Vec::new)

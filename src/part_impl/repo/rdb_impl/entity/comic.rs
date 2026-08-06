@@ -51,6 +51,7 @@ impl TryFrom<ComicInfoRow> for ComicInfo {
         //
         let (cover_hash_bytes, cover_ext) = (
             v.f_cover_hash.try_into().map_err(|_| {
+                //
                 BaseError::Unrecoverable {
                     message:
                         "[ComicInfoRow] f_cover_hash must contain 32 bytes"
@@ -58,6 +59,7 @@ impl TryFrom<ComicInfoRow> for ComicInfo {
                 }
             })?,
             ImageExt::parse(&v.f_cover_extension).ok_or_else(|| {
+                //
                 BaseError::Unrecoverable {
                     message:
                         "[ComicInfoRow] f_cover_extension must be supported"
@@ -116,6 +118,7 @@ pub struct ComicEntryRow<'a> {
 
 impl<'a> From<&'a ComicEntry> for ComicEntryRow<'a> {
     fn from(comic_entry: &'a ComicEntry) -> Self {
+        //
         Self {
             f_id: &comic_entry.id,
             f_workset_id: &comic_entry.workset_id,
@@ -164,6 +167,7 @@ pub struct ComicAspectRow<'a> {
 
 impl<'a> ComicAspectRow<'a> {
     pub fn new(updated_at: OffsetDateTime) -> Self {
+        //
         Self {
             f_title: None,
             f_author: None,

@@ -30,6 +30,7 @@ pub struct TermbaseInfoRow {
 
 impl From<TermbaseInfoRow> for TermbaseInfo {
     fn from(row: TermbaseInfoRow) -> Self {
+        //
         Self {
             id: row.f_id,
             team_id: row.f_team_id,

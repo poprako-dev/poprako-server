@@ -59,6 +59,7 @@ where
         Vec::with_capacity(announcement_infos.len());
 
     for announcement_info in announcement_infos {
+        //
         announcement_info_vals.push(
             AnnouncementInfoView::from_model(image_pool, announcement_info)
                 .await?,

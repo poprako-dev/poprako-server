@@ -27,6 +27,7 @@ pub struct SystemMailInfoRow {
 
 impl From<SystemMailInfoRow> for SystemMailInfo {
     fn from(v: SystemMailInfoRow) -> Self {
+        //
         SystemMailInfo {
             id: v.f_id,
             receiver_id: v.f_receiver_id,
@@ -56,6 +57,7 @@ pub struct SystemMailEntryRow<'a> {
 
 impl<'a> From<&'a SystemMailEntry> for SystemMailEntryRow<'a> {
     fn from(entry: &'a SystemMailEntry) -> Self {
+        //
         Self {
             f_id: &entry.id,
             f_receiver_id: &entry.receiver_id,

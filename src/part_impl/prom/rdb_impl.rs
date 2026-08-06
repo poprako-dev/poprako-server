@@ -111,6 +111,7 @@ impl RdbProm {
         let mut done = self.done.clone();
 
         if let Err(error) = done.wait_for(|done| *done).await {
+            //
             tracing::error!(
                 err = %error,
                 "[RdbProm::close] background task ended without completion",

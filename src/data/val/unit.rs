@@ -36,6 +36,7 @@ impl ListPageUnitInfosVal {
         unit_infos: Vec<UnitInfo>,
         counters: UnitCounters,
     ) -> Self {
+        //
         Self {
             unit_infos: unit_infos
                 .into_iter()

@@ -102,6 +102,7 @@ pub fn apply_chapter_incls(
     chapter_info.creator = None;
 
     for incl_opt in expand_incl_opts(incl_opt) {
+        //
         match incl_opt {
             //
             // Attach base comic fields.
@@ -243,6 +244,7 @@ fn find_workset(state: &MockState, id: &str) -> Option<WorksetInfo> {
 
 // Resolve team by workset id.
 fn find_team(state: &MockState, workset: &WorksetInfo) -> Option<TeamInfo> {
+    //
     state
         .teams
         .iter()
@@ -252,6 +254,7 @@ fn find_team(state: &MockState, workset: &WorksetInfo) -> Option<TeamInfo> {
 
 // Resolve user and chapter creator relations first.
 fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
+    //
     state
         .users
         .iter()

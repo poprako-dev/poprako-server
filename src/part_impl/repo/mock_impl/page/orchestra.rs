@@ -115,6 +115,7 @@ impl<'a> Step<CreatePages<'a>, MockContext> for Mock {
         //
         // Internal implementation detail.
         if oper.entries.iter().any(|page_entry| {
+            //
             context
                 .state
                 .pages
@@ -402,6 +403,7 @@ impl<'a> Step<DeletePages<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &DeletePages<'a>,
     ) -> BaseRest<()> {
+        //
         match oper {
             //
             // Internal implementation detail.

@@ -38,6 +38,7 @@ impl JwtAuth {
         //
         // Internal implementation detail.
         if expiration_hours <= 0 {
+            //
             return Err(BaseError::Unrecoverable {
                 message: "[JwtAuth::new] JWT_EXPIRATION_HOURS must be positive"
                     .to_string(),
@@ -74,6 +75,7 @@ impl JwtAuth {
             )?;
 
         Self::new(&secret, expiration_hours).map_err(|err| match err {
+            //
             BaseError::Expected { message, .. }
             | BaseError::Unrecoverable { message } => {
                 anyhow::anyhow!("{}", message)

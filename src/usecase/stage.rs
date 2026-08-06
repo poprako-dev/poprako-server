@@ -15,6 +15,7 @@ where
     // NOTE: Stage starts are intentionally best-effort. A task may be dropped
     // or fail because the same stage can be advanced manually when needed.
     tokio::spawn(async move {
+        //
         for stage in stages {
             //
             let outcome = StartChapterStage {
@@ -25,6 +26,7 @@ where
             .await;
 
             if let Err(error) = outcome {
+                //
                 tracing::warn!(
                     err = ?error,
                     chapter_id = %chapter_id,

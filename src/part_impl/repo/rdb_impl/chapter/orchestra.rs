@@ -60,6 +60,7 @@ impl Run<FindPinnedChapterInfo<'_, '_>> for HybRepo {
         &self,
         oper: &FindPinnedChapterInfo<'_, '_>,
     ) -> BaseRest<Option<ChapterInfo>> {
+        //
         submit_query!(
             self.core,
             find_pinned_info_by_comic_id,
@@ -209,6 +210,7 @@ impl Step<FindPinnedChapterInfo<'_, '_>, RdbContext> for HybRepo {
         context: &mut RdbContext,
         oper: &FindPinnedChapterInfo<'_, '_>,
     ) -> BaseRest<Option<ChapterInfo>> {
+        //
         find_pinned_info_by_comic_id(context.conn(), oper.comic_id, oper.incls)
             .await
     }
@@ -270,6 +272,7 @@ impl Step<SetChapterPageCounters<'_>, RdbContext> for HybRepo {
         context: &mut RdbContext,
         oper: &SetChapterPageCounters<'_>,
     ) -> BaseRest<()> {
+        //
         set_page_counters(
             context.conn(),
             oper.id,

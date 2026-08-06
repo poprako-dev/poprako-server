@@ -184,6 +184,7 @@ pub async fn mark_cover_uploaded(
     let affected = match cover_key {
         //
         Some(cover_key) => {
+            //
             diesel::update(
                 t_comic
                     .filter(f_id.eq(id))
@@ -196,6 +197,7 @@ pub async fn mark_cover_uploaded(
         }
 
         None => {
+            //
             diesel::update(
                 t_comic
                     .filter(f_id.eq(id))
@@ -457,6 +459,7 @@ pub async fn reserve_cover(
             object_key,
             prev_object_key: None,
             cover_version: u32::try_from(raw_version).map_err(|_| {
+                //
                 BaseError::Unrecoverable {
                     message: "[reserve_cover] cover version is invalid".into(),
                 }
@@ -656,6 +659,7 @@ async fn list_matching_stage_comic_ids(
 
 // Parses a fuzzy title value as an integer and converts to a stored index.
 fn stored_index_from_numeric_fuzzy(fuzzy_title_value: &str) -> Option<i32> {
+    //
     match fuzzy_title_value.trim().parse() {
         //
         Ok(index) => user_index_to_stored_index(index),

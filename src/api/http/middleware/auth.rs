@@ -50,6 +50,7 @@ pub fn extract_token(request: &Request) -> String {
         && let Ok(cookie_str) = cookie.to_str()
     {
         for part in cookie_str.split(';') {
+            //
             if let Some((name, value)) = part.trim().split_once('=')
                 && name.trim() == AUTH_COOKIE_NAME
             {

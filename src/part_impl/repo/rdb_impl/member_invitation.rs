@@ -327,6 +327,7 @@ impl Run<GetMemberInvitationInfo<'_, '_>> for HybRepo {
         &self,
         oper: &GetMemberInvitationInfo<'_, '_>,
     ) -> BaseRest<MemberInvitationInfo> {
+        //
         match oper {
             //
             GetMemberInvitationInfo::Id { id, incls } => {
@@ -366,6 +367,7 @@ impl Step<GetMemberInvitationInfo<'_, '_>, RdbContext> for HybRepo {
         context: &mut RdbContext,
         oper: &GetMemberInvitationInfo<'_, '_>,
     ) -> BaseRest<MemberInvitationInfo> {
+        //
         match oper {
             //
             GetMemberInvitationInfo::Id { id, incls } => {
@@ -390,9 +392,11 @@ impl Step<UpdateMemberInvitation<'_>, RdbContext> for HybRepo {
         context: &mut RdbContext,
         oper: &UpdateMemberInvitation<'_>,
     ) -> BaseRest<()> {
+        //
         match oper {
             //
             UpdateMemberInvitation::Info { update } => {
+                //
                 update_info(context.conn(), update.id.as_str(), update.roles)
                     .await
             }
@@ -415,7 +419,9 @@ impl Step<GetMemberInvitationInfoExcluded<'_>, RdbContext> for HybRepo {
         context: &mut RdbContext,
         oper: &GetMemberInvitationInfoExcluded<'_>,
     ) -> BaseRest<MemberInvitationInfo> {
+        //
         match oper {
+            //
             GetMemberInvitationInfoExcluded::Code { code } => {
                 get_info_by_code_excluded(context.conn(), code).await
             }

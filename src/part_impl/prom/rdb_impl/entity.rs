@@ -30,6 +30,7 @@ pub enum LocalMessageStatus {
 
 impl LocalMessageStatus {
     pub fn as_str(self) -> &'static str {
+        //
         match self {
             //
             Self::Pending => "local_message_status:pending",

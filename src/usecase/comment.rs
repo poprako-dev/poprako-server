@@ -52,6 +52,7 @@ where
     let mut comment_info_vals = Vec::with_capacity(comment_infos.len());
 
     for comment_info in comment_infos {
+        //
         comment_info_vals
             .push(CommentInfoView::from_model(image_pool, comment_info).await?);
     }

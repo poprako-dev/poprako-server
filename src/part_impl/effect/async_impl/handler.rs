@@ -51,6 +51,7 @@ impl<R> EffectHandler<R> {
             + Sync,
     {
         loop {
+            //
             tokio::select! {
                 event = self.recv.recv() => {
                     match event {

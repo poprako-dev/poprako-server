@@ -68,6 +68,7 @@ pub async fn get_info(
     Path(page_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<PageInfoView> {
+    //
     usecase::page::get_info(
         (harn.repo(), harn.image_pool()),
         user_token,
@@ -158,6 +159,7 @@ pub async fn reserve_image(
     Extension(user_token): Extension<UserToken>,
     Json(instr): Json<ReservePageImageInstr>,
 ) -> HttpResult<ReservedPageVal> {
+    //
     usecase::page::reserve_image(
         (harn.nucl(), harn.repo(), harn.prom(), harn.image_pool()),
         user_token,

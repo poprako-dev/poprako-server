@@ -41,6 +41,7 @@ async fn main() -> anyhow::Result<()> {
     poprako_server::init_log();
 
     if let Err(err) = dotenvy::dotenv() {
+        //
         tracing::warn!(
             operation = "load_dotenv",
             sdk_err = ?err,

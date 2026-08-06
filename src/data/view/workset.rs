@@ -44,6 +44,7 @@ pub struct WorksetInfoView {
 impl From<WorksetInfo> for WorksetInfoView {
     // Flatten workset persistence model into API response form.
     fn from(model: WorksetInfo) -> Self {
+        //
         Self {
             id: model.id,
             team_id: model.team_id,

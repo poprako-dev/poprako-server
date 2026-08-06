@@ -49,6 +49,7 @@ impl ChapterComplex {
     /// Returns the user-supplied subtitle if present and non-empty, or a
     /// generated default in the format "Ch. N" (1-based).
     pub fn subtitle_or_default(subtitle: Option<String>, index: i32) -> String {
+        //
         subtitle
             .filter(|value| !value.trim().is_empty())
             .unwrap_or_else(|| default_subtitle(index))
@@ -265,6 +266,7 @@ fn required_roles_for_transition(
     stage: Stage,
     oper: StageOper,
 ) -> &'static [RoleField] {
+    //
     match (stage, oper) {
         //
         (Stage::RawProvide, StageOper::Advance) => &[RoleField::RAW_PROVIDER],

@@ -69,6 +69,7 @@ where
 
     // Dispatch an activity event when the user reads their own profile.
     if token.user_id == id {
+        //
         Event::UserActive(UserActiveEvent {
             user_id: token.user_id,
         })
@@ -293,6 +294,7 @@ where
                 (Vec::new(), Vec::new(), Vec::new());
 
             if !avatar_reservation.is_upload_required {
+                //
                 return accept((
                     avatar_reservation.object_key,
                     avatar_reservation.avatar_version,
@@ -588,6 +590,7 @@ where
             .await?;
 
         for member_info in &member_infos {
+            //
             DeleteMember {
                 id: &member_info.id,
             }

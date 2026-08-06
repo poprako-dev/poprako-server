@@ -19,7 +19,9 @@ fn benchmark_password_operations(criterion: &mut Criterion) {
     let mut hash_group = criterion.benchmark_group("password_hash");
 
     hash_group.bench_function("argon2id", |bencher| {
+        //
         bencher.iter(|| {
+            //
             runtime
                 .block_on(UserComplex::hash_password(black_box(password)))
                 .expect("password hashing must succeed");
@@ -31,7 +33,9 @@ fn benchmark_password_operations(criterion: &mut Criterion) {
     let mut verify_group = criterion.benchmark_group("password_verify");
 
     verify_group.bench_function("argon2id", |bencher| {
+        //
         bencher.iter(|| {
+            //
             assert!(runtime.block_on(UserComplex::verify_password(
                 black_box(password),
                 black_box(&password_hash),
@@ -49,9 +53,11 @@ fn benchmark_aggregation_operations(criterion: &mut Criterion) {
     let mut archive_group = criterion.benchmark_group("archive");
 
     archive_group.bench_function("prepare_write_8x8x48", |bencher| {
+        //
         bencher.iter_batched(
             || benchmark::archive_input().expect("archive input must build"),
             |archive_input| {
+                //
                 assert!(
                     runtime.block_on(benchmark::prepare_archive(archive_input))
                 );
@@ -79,6 +85,7 @@ fn benchmark_aggregation_operations(criterion: &mut Criterion) {
     let label_plus_export_input = benchmark::label_plus_export_input();
 
     export_group.bench_function("label_plus_64x48", |bencher| {
+        //
         bencher.iter(|| {
             assert!(benchmark::make_label_plus(&label_plus_export_input));
         });
@@ -89,6 +96,7 @@ fn benchmark_aggregation_operations(criterion: &mut Criterion) {
     let mut unit_group = criterion.benchmark_group("unit");
 
     unit_group.bench_function("order_visible_ids_100", |bencher| {
+        //
         bencher.iter_batched(
             benchmark::unit_order_input,
             |unit_order_input| {

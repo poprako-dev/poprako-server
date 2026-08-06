@@ -27,8 +27,11 @@ impl Run<FindMemberInfo<'_>> for HybRepo {
         &self,
         oper: &FindMemberInfo<'_>,
     ) -> BaseRest<Option<MemberInfo>> {
+        //
         match oper {
+            //
             FindMemberInfo::UserTeam { user_id, team_id } => {
+                //
                 submit_query!(
                     self.core,
                     find_info_by_user_id_and_team_id,

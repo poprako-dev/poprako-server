@@ -354,8 +354,10 @@ where
                             (true, _) | (false, None) => None,
 
                             (false, Some(new_byte_len)) => {
+                                //
                                 Some(PageUploadReservation {
                                     object_key: image_key.ok_or_else(|| {
+                                        //
                                         BaseError::Unrecoverable {
                                             message: "[reserve_chapter_pages] pending page image key is missing"
                                                 .into(),

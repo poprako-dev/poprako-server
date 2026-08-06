@@ -84,11 +84,13 @@ fn list_pinned_chapter_infos(
     state: &MockState,
     comic_ids: &[String],
 ) -> Vec<ChapterInfo> {
+    //
     // Internal implementation detail.
     // Internal implementation detail.
     comic_ids
         .iter()
         .filter_map(|comic_id| {
+            //
             state
                 .chapters
                 .iter()
@@ -437,6 +439,7 @@ impl<'a, 'b> Step<FindPinnedChapterInfo<'a, 'b>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &FindPinnedChapterInfo<'a, 'b>,
     ) -> BaseRest<Option<ChapterInfo>> {
+        //
         accept(find_pinned_chapter_info(
             &context.state,
             oper.comic_id,
@@ -607,6 +610,7 @@ impl<'a> Step<UnpinOtherChapters<'a>, MockContext> for Mock {
         // Internal implementation detail.
         // Internal implementation detail.
         for chapter_info in &mut context.state.chapters {
+            //
             if chapter_info.comic_id == oper.comic_id
                 && chapter_info.id != oper.excluded_id
             {

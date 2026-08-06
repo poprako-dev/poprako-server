@@ -11,7 +11,9 @@ use crate::value::chapter::Stage;
 
 /// Process a [`ChapterPayload`] task.
 pub async fn process(mock: &Mock, task: &ChapterPayload) -> BaseRest<()> {
+    //
     match task {
+        //
         ChapterPayload::TryAdvanceRawProvideStage { chapter_id } => {
             process_raw_provide(mock, chapter_id).await
         }
@@ -27,6 +29,7 @@ async fn process_raw_provide(mock: &Mock, chapter_id: &str) -> BaseRest<()> {
         .await?;
 
     if advanced {
+        //
         Event::ChapterWorkflowCompleted(ChapterWorkflowCompletedEvent {
             chapter_id: chapter_id.to_string(),
             completed_stage: Stage::RawProvide,

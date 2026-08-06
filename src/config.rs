@@ -21,6 +21,7 @@ impl AppConfig {
         let content = tokio::fs::read_to_string("application_config.json")
             .await
             .inspect_err(|error| {
+                //
                 tracing::error!(
                     operation = "read_application_config",
                     sdk_err = ?error,
@@ -33,6 +34,7 @@ impl AppConfig {
 
         serde_json::from_str(&content)
             .inspect_err(|error| {
+                //
                 tracing::error!(
                     operation = "parse_application_config",
                     sdk_err = ?error,

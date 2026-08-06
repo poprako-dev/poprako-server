@@ -89,6 +89,7 @@ impl AsyncEffectDevelop {
         let mut done = self.done.clone();
 
         if let Err(error) = done.wait_for(|done| *done).await {
+            //
             tracing::error!(
                 err = %error,
                 "[AsyncEffectDevelop::close] background task ended without completion",
@@ -100,6 +101,7 @@ impl AsyncEffectDevelop {
 impl Clone for AsyncEffectDevelop {
     // Internal implementation of `clone`.
     fn clone(&self) -> Self {
+        //
         Self {
             send: self.send.clone(),
             token: self.token.clone(),
@@ -120,7 +122,9 @@ impl Develop for AsyncEffectDevelop {
         }
 
         for event in iter.into_iter() {
+            //
             if let Err(e) = self.send.try_send(event) {
+                //
                 match e {
                     //
                     // Internal implementation detail.
@@ -130,6 +134,7 @@ impl Develop for AsyncEffectDevelop {
 
                     // Internal implementation detail.
                     TrySendError::Full(event) => {
+                        //
                         tracing::warn!(
                             event = event_name(&event),
                             "[AsyncEffectDevelop::develop] event queue is full, dropping event",
@@ -166,6 +171,7 @@ impl Drop for AsyncEffectDevelop {
 /// Returns a human-readable label for a domain event variant.
 // Used by queue diagnostics when logging full/closed queue drop events.
 fn event_name(event: &Event) -> &'static str {
+    //
     match event {
         //
         // Internal state field Event.

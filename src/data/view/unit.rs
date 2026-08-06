@@ -58,6 +58,7 @@ pub struct UnitInfoView {
 impl From<UnitInfo> for UnitInfoView {
     // Map persisted unit info model into API value shape.
     fn from(model: UnitInfo) -> Self {
+        //
         Self {
             id: model.id,
             page_id: model.page_id,

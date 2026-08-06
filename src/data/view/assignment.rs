@@ -72,6 +72,7 @@ impl AssignmentInfoView {
             .await
             .transpose()?,
             chapter: OptionFuture::from(model.chapter.map(|chapter_info| {
+                //
                 ChapterInfoView::from_model(
                     image_pool,
                     chapter_info,
@@ -90,6 +91,7 @@ impl AssignmentInfoView {
 impl From<AssignmentInfo> for AssignmentInfoView {
     // Convert one persisted assignment into API value shape.
     fn from(model: AssignmentInfo) -> Self {
+        //
         Self {
             id: model.id,
             chapter_id: model.chapter_id,

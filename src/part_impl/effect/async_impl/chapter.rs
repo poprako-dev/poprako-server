@@ -90,6 +90,7 @@ pub async fn notify_reviewers_on_publish<C, R>(
 // Returns the next-phase role and workflow label for a completed stage.
 // `Publish` does not generate a next-phase notification.
 fn next_phase_config(stage: Stage) -> Option<(RoleField, String)> {
+    //
     match stage {
         //
         // Internal implementation detail.
@@ -234,6 +235,7 @@ async fn send_batch<R>(
 // Returns the reviewer workflow label for a completed stage, skipping typesetting.
 // Returns `None` when reviewers are not expected.
 fn reviewer_progress_label(stage: Stage) -> Option<String> {
+    //
     match stage {
         //
         // Internal implementation detail.

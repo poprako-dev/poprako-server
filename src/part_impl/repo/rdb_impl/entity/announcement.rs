@@ -41,6 +41,7 @@ pub struct AnnouncementEntryRow<'a> {
 
 impl<'a> From<&'a AnnouncementEntry> for AnnouncementEntryRow<'a> {
     fn from(entry: &'a AnnouncementEntry) -> Self {
+        //
         Self {
             f_id: &entry.id,
             f_team_id: &entry.team_id,
@@ -54,6 +55,7 @@ impl<'a> From<&'a AnnouncementEntry> for AnnouncementEntryRow<'a> {
 
 impl From<AnnouncementInfoRow> for AnnouncementInfo {
     fn from(row: AnnouncementInfoRow) -> Self {
+        //
         Self {
             id: row.f_id,
             team_id: row.f_team_id,

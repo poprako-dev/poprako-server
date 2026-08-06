@@ -28,6 +28,7 @@ pub struct HybRepo {
 impl HybRepo {
     /// Builds a new hybrid repository from an [`RdbCore`] connection pool.
     pub fn new(core: RdbCore) -> Self {
+        //
         Self {
             core,
             online_user_deadlines: Arc::new(DashMap::new()),

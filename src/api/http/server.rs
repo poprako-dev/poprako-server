@@ -21,6 +21,7 @@ where
     let listener = TcpListener::bind(&addr)
         .await
         .inspect_err(|error| {
+            //
             tracing::error!(
                 operation = "bind_http_listener",
                 sdk_err = ?error,
@@ -40,6 +41,7 @@ where
     .with_graceful_shutdown(shutdown_signal())
     .await
     .inspect_err(|error| {
+        //
         tracing::error!(
             operation = "serve_http",
             sdk_err = ?error,
@@ -53,6 +55,7 @@ where
 async fn shutdown_signal() {
     //
     let ctrl_c = async {
+        //
         signal::ctrl_c()
             .await
             .expect("failed to install Ctrl+C handler");
@@ -61,6 +64,7 @@ async fn shutdown_signal() {
     #[cfg(unix)]
     {
         let terminate = async {
+            //
             signal::unix::signal(signal::unix::SignalKind::terminate())
                 .expect("failed to install SIGTERM handler")
                 .recv()

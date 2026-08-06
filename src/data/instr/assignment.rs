@@ -90,6 +90,7 @@ impl TryInto<AssignmentListSpec> for ListAssignmentInfosInstr {
         }
 
         if let Some(chapter_id) = chapter_id {
+            //
             return accept(AssignmentListSpec::Chapter {
                 chapter_id,
                 role,

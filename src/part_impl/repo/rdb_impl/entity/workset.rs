@@ -30,6 +30,7 @@ pub struct WorksetInfoRow {
 
 impl From<WorksetInfoRow> for WorksetInfo {
     fn from(v: WorksetInfoRow) -> Self {
+        //
         WorksetInfo {
             id: v.f_id,
             team_id: v.f_team_id,
@@ -63,6 +64,7 @@ pub struct WorksetEntryRow<'a> {
 
 impl<'a> From<&'a WorksetEntry> for WorksetEntryRow<'a> {
     fn from(workset_entry: &'a WorksetEntry) -> Self {
+        //
         Self {
             f_id: &workset_entry.id,
             f_team_id: &workset_entry.team_id,
@@ -93,6 +95,7 @@ pub struct WorksetAspectRow<'a> {
 
 impl<'a> WorksetAspectRow<'a> {
     pub fn new(updated_at: OffsetDateTime) -> Self {
+        //
         Self {
             f_name: None,
             f_description: None,

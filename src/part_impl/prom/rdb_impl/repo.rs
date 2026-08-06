@@ -119,6 +119,7 @@ pub struct FailMessage<'a> {
 impl<'a> FailMessage<'a> {
     /// Builds an operation that permanently fails the message identified by `id`.
     pub fn new(id: &'a str, lease: i64, err_msg: &'a str) -> Self {
+        //
         Self {
             id,
             lease,
@@ -151,6 +152,7 @@ impl<'a> RetryMessage<'a> {
         err_msg: &'a str,
         visible_at: &'a OffsetDateTime,
     ) -> Self {
+        //
         Self {
             id,
             lease,
@@ -193,6 +195,7 @@ impl<'a> PurgeCompleted<'a> {
         completed_before: &'a OffsetDateTime,
         dead_before: &'a OffsetDateTime,
     ) -> Self {
+        //
         Self {
             completed_before,
             dead_before,

@@ -33,6 +33,7 @@ impl PageComplex {
         image_version: u32,
         file_ext: &str,
     ) -> String {
+        //
         format!(
             "page/chapter_{}/{}-{}.{}",
             chapter_id, page_id, image_version, file_ext

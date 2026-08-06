@@ -36,6 +36,7 @@ pub struct ListAnnouncementInfosInstr {
 impl From<ListAnnouncementInfosInstr> for AnnouncementListSpec {
     // Map listing parameters directly to the repository spec.
     fn from(instr: ListAnnouncementInfosInstr) -> Self {
+        //
         Self {
             team_id: instr.team_id,
             incl_opt: instr.incl_opt,

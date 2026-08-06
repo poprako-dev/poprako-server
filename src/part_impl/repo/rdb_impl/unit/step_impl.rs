@@ -93,6 +93,7 @@ pub async fn apply_edits(
     let ordered_ids = apply_order_edits(orders, edits)?;
 
     for edit in edits {
+        //
         match edit {
             //
             UnitEdit::Create { id, .. } => {
@@ -256,6 +257,7 @@ where
     }
 
     for index in 0..units.len() {
+        //
         if units[index + 1..]
             .iter()
             .any(|unit| id_of(unit) == id_of(&units[index]))
@@ -269,6 +271,7 @@ where
     for candidate in 0..units.len() {
         //
         let has_predecessor = units.iter().any(|unit| {
+            //
             next_id_of(unit)
                 .is_some_and(|next_id| next_id == id_of(&units[candidate]))
         });
@@ -292,6 +295,7 @@ where
         //
         let next_pos = units[index + 1..].iter().enumerate().find_map(
             |(pos, candidate)| {
+                //
                 next_id_of(&units[index])
                     .is_some_and(|next_id| next_id == id_of(candidate))
                     .then_some(pos)
@@ -361,6 +365,7 @@ fn apply_order_edits<'a>(
     }
 
     for edit in edits {
+        //
         match edit {
             //
             UnitEdit::Create { id, next_id, .. } => {
@@ -421,6 +426,7 @@ fn apply_order_edits<'a>(
 
 // Computes visible Unit counters from the ordered unit info list.
 fn count_infos(unit_infos: &[UnitInfo]) -> UnitCounters {
+    //
     unit_infos
         .iter()
         .filter(|unit_info| unit_info.hidden_at.is_none())
@@ -442,6 +448,7 @@ fn count_infos(unit_infos: &[UnitInfo]) -> UnitCounters {
 
 // Returns an unrecoverable error for a corrupt Unit chain.
 fn corrupt_unit_chain_err() -> BaseError {
+    //
     BaseError::Unrecoverable {
         message: "persisted Unit chain is corrupt".to_string(),
     }
@@ -449,6 +456,7 @@ fn corrupt_unit_chain_err() -> BaseError {
 
 // Finds the position of an id in the ordered list.
 fn find_order_pos(ordered_ids: &[&str], id: &str) -> Option<usize> {
+    //
     ordered_ids
         .iter()
         .enumerate()
@@ -488,6 +496,7 @@ fn move_order<'a>(
     let pos = match next_id {
         //
         Some(next_id) => {
+            //
             find_order_pos(ordered_ids, next_id).ok_or_else(|| {
                 //
                 let err_message = trl("error-invalid-unit-oper");

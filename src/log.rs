@@ -5,6 +5,7 @@
 /// directive is set.  Colours are enabled in debug builds only so the
 /// release output is plain text suitable for log aggregation.
 pub fn init_log() {
+    //
     tracing_subscriber::fmt()
         .with_env_filter(
             tracing_subscriber::EnvFilter::builder()
