@@ -79,6 +79,7 @@ pub fn label_plus_export_input() -> LabelPlusExportInput {
 
 /// Renders LabelPlus output for a pre-built page-and-unit collection.
 pub fn make_label_plus(label_plus_export_input: &LabelPlusExportInput) -> bool {
+    //
     !ChapterExportComplex::make_label_plus(
         &label_plus_export_input.pages,
         &label_plus_export_input.units_by_page_id,
@@ -91,6 +92,7 @@ pub struct UnitOrderInput(Vec<UnitOrder>);
 
 /// Builds an unordered maximum-size Unit chain.
 pub fn unit_order_input() -> UnitOrderInput {
+    //
     UnitOrderInput(
         (0..100)
             .map(|index| UnitOrder {
@@ -182,6 +184,7 @@ fn archive_snapshot() -> Option<ComicArchiveSnapshot> {
             let mut unit_infos = Vec::with_capacity(UNIT_COUNT);
 
             for unit_index in 0..UNIT_COUNT {
+                //
                 unit_infos.push(unit_info(
                     &page_id,
                     chapter_index,
@@ -295,6 +298,7 @@ fn poprako_content() -> &'static str {
             //
             let unit_strings = (1..=2_000)
                 .map(|index| {
+                    //
                     format!(
                         "{{\"id\":\"unit-{}\",\"x\":1.0,\"y\":2.0,\"index_in_page\":{},\"is_inbox\":true,\"translated_text\":\"translated\",\"prooved_text\":\"proofread\",\"is_prooved\":true}}",
                         index,
@@ -359,6 +363,7 @@ fn export_input() -> LabelPlusExportInput {
 
 // Builds a deterministic user profile used in generated archive fixtures.
 fn user_info(archived_at: OffsetDateTime) -> UserInfo {
+    //
     UserInfo {
         id: "user-1".into(),
         qid: "benchmark-qid".into(),
@@ -383,6 +388,7 @@ fn unit_info(
     unit_index: usize,
     archived_at: OffsetDateTime,
 ) -> UnitInfo {
+    //
     UnitInfo {
         id: format!("unit-{}-{}-{}", chapter_index, page_index, unit_index),
         page_id: page_id.into(),

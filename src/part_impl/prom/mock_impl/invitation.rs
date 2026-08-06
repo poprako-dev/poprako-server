@@ -8,15 +8,18 @@ use crate::result::BaseRest;
 
 /// Process a [`InvitationPayload`] event by dispatching to the matching repo run.
 pub async fn process(mock: &Mock, event: &InvitationPayload) -> BaseRest<()> {
+    //
     match event {
         //
         InvitationPayload::Assignment { invitation_id } => {
+            //
             PurgeExpiredAssignmentInvitation { id: invitation_id }
                 .run_on(mock)
                 .await
         }
 
         InvitationPayload::Member { invitation_id } => {
+            //
             PurgeExpiredMemberInvitation { id: invitation_id }
                 .run_on(mock)
                 .await

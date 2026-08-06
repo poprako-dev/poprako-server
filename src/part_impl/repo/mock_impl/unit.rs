@@ -19,6 +19,7 @@ mod tests;
 
 // Locate a unit id inside ordered id list, used by move/create/save operations.
 fn find_order_pos(ordered_ids: &[&str], id: &str) -> Option<usize> {
+    //
     ordered_ids
         .iter()
         .enumerate()
@@ -70,6 +71,7 @@ where
     }
 
     for index in 0..units.len() {
+        //
         if units[index + 1..]
             .iter()
             .any(|unit| id_of(unit) == id_of(&units[index]))
@@ -84,6 +86,7 @@ where
         //
         // Detect whether this unit has any predecessor.
         let has_predecessor = units.iter().any(|unit| {
+            //
             next_id_of(unit)
                 .is_some_and(|next_id| next_id == id_of(&units[candidate]))
         });
@@ -108,6 +111,7 @@ where
         // Find the explicit successor and move it directly after current unit.
         let next_pos = units[index + 1..].iter().enumerate().find_map(
             |(pos, candidate)| {
+                //
                 next_id_of(&units[index])
                     .is_some_and(|next_id| next_id == id_of(candidate))
                     .then_some(pos)
@@ -147,6 +151,7 @@ fn apply_order_edits<'a>(
         .collect::<HashSet<_>>();
 
     for edit in edits {
+        //
         match edit {
             //
             // Create may append a brand-new id and optionally re-anchor.
@@ -263,6 +268,7 @@ fn find_unit_mut<'a>(
     page_id: &str,
     id: &str,
 ) -> BaseRest<&'a mut UnitInfo> {
+    //
     state
         .units
         .iter_mut()
@@ -365,6 +371,7 @@ fn list_infos(state: &MockState, page_id: &str) -> BaseRest<Vec<UnitInfo>> {
 
 // Count translated/proofread units among visible units only.
 fn count_infos(unit_infos: &[UnitInfo]) -> UnitCounters {
+    //
     // Produce summary fields for response after edits are applied.
     unit_infos
         .iter()
@@ -421,6 +428,7 @@ fn apply_edits(
     let ordered_ids = apply_order_edits(orders, edits)?;
 
     for edit in edits {
+        //
         match edit {
             //
             // Insert new unit or change existing unit state.

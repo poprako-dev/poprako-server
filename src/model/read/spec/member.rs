@@ -40,6 +40,7 @@ pub enum MemberListSpec {
 impl MemberListSpec {
     /// Returns the include options regardless of which variant the spec is.
     pub fn incl_opt(&self) -> &[MemberInclOpt] {
+        //
         match self {
             //
             MemberListSpec::User { incl_opt, .. } => incl_opt,

@@ -106,6 +106,7 @@ fn normalize_targets(targets: Vec<String>) -> BaseRest<Vec<String>> {
 
 // Normalize an optional comment value; empty content becomes `None`.
 fn normalize_comment(comment: Option<String>) -> Option<String> {
+    //
     comment.and_then(|comment| {
         //
         let comment = comment.trim().to_string();

@@ -111,6 +111,7 @@ fn list_infos(
     };
 
     assignment_infos.retain(|assignment_info| {
+        //
         role.map(|role| assignment_info.roles.has_any_role(&[role]))
             .unwrap_or(true)
     });
@@ -120,6 +121,7 @@ fn list_infos(
     }
 
     assignment_infos.sort_by(|left, right| {
+        //
         right
             .created_at
             .cmp(&left.created_at)
@@ -155,6 +157,7 @@ fn list_infos_excluded(
     state: &MockState,
     chapter_id: &str,
 ) -> Vec<AssignmentInfo> {
+    //
     list_infos(
         state,
         &ListAssignmentInfos::Chapter {
@@ -200,7 +203,9 @@ fn find_assignment_by_user_and_comic(
         .iter()
         .filter(|assignment_info| assignment_info.user_id == user_id)
         .filter(|assignment_info| {
+            //
             state.chapters.iter().any(|chapter_info| {
+                //
                 chapter_info.id == assignment_info.chapter_id
                     && chapter_info.comic_id == comic_id
             })
@@ -209,6 +214,7 @@ fn find_assignment_by_user_and_comic(
         .collect::<Vec<_>>();
 
     assignment_infos.sort_by(|left, right| {
+        //
         right
             .created_at
             .cmp(&left.created_at)
@@ -228,10 +234,12 @@ fn find_assignment(
     chapter_id: &str,
     user_id: &str,
 ) -> Option<AssignmentInfo> {
+    //
     state
         .assignments
         .iter()
         .find(|assignment_info| {
+            //
             assignment_info.chapter_id == chapter_id
                 && assignment_info.user_id == user_id
         })
@@ -255,6 +263,7 @@ fn create_assignment(
     }
 
     if state.assignments.iter().any(|assignment_info| {
+        //
         assignment_info.chapter_id == entry.chapter_id
             && assignment_info.user_id == entry.user_id
     }) {
@@ -435,7 +444,9 @@ impl Step<ListAssignmentInfosExcluded<'_>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &ListAssignmentInfosExcluded<'_>,
     ) -> Result<Vec<AssignmentInfo>, Self::Error> {
+        //
         match oper {
+            //
             ListAssignmentInfosExcluded::Chapter { chapter_id } => {
                 accept(list_infos_excluded(&context.state, chapter_id))
             }
@@ -518,6 +529,7 @@ impl Step<DeleteAssignments<'_>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &DeleteAssignments<'_>,
     ) -> Result<(), Self::Error> {
+        //
         match oper {
             //
             // Internal implementation detail.

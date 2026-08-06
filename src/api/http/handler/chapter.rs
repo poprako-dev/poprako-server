@@ -69,6 +69,7 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(instr): Json<CreateChapterInstr>,
 ) -> HttpResult<CreateChapterVal> {
+    //
     usecase::chapter::create((harn.nucl(), harn.repo()), user_token, instr)
         .await?
         .accept(StatusCode::CREATED)
@@ -127,6 +128,7 @@ pub async fn get_pinned(
     Path(comic_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<Option<ChapterInfoView>> {
+    //
     usecase::chapter::get_pinned((harn.repo(),), user_token, comic_id)
         .await?
         .accept(StatusCode::OK)
@@ -150,6 +152,7 @@ pub async fn get_info(
     Path(chapter_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<ChapterInfoView> {
+    //
     usecase::chapter::get_info((harn.repo(),), user_token, chapter_id)
         .await?
         .accept(StatusCode::OK)

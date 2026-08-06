@@ -550,6 +550,7 @@ where
         .await?;
 
     if let Some(chapter_id) = workflow_completed_chapter_id {
+        //
         Event::ChapterWorkflowCompleted(ChapterWorkflowCompletedEvent {
             chapter_id,
             completed_stage: instr.stage,
@@ -559,6 +560,7 @@ where
     }
 
     if let Some(chapter_id) = published_chapter_id {
+        //
         Event::ChapterPublished(ChapterPublishedEvent { chapter_id })
             .develop_on(develop)
             .await;

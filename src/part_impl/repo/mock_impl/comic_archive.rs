@@ -118,7 +118,9 @@ impl Run<ListComicArchivePayloads<'_>> for Mock {
             .iter()
             .filter(|record| record.team_id == oper.team_id)
             .filter(|record| {
+                //
                 oper.months.iter().any(|month| {
+                    //
                     record.created_at >= month.start
                         && record.created_at < month.end
                 })
@@ -247,6 +249,7 @@ fn commit(
     // Internal implementation detail.
     // Internal implementation detail.
     if context.archive_commit_failure {
+        //
         return Err(unrecoverable(
             "[MockComicArchive::commit] injected archive commit failure",
         ));
@@ -261,30 +264,35 @@ fn commit(
         .state
         .assignment_invitations
         .retain(|assignment_invitation_info| {
+            //
             !comic_archive_entry
                 .source_chapter_ids
                 .contains(&assignment_invitation_info.chapter_id)
         });
 
     context.state.assignments.retain(|assignment_info| {
+        //
         !comic_archive_entry
             .source_chapter_ids
             .contains(&assignment_info.chapter_id)
     });
 
     context.state.units.retain(|unit_info| {
+        //
         !comic_archive_entry
             .source_page_ids
             .contains(&unit_info.page_id)
     });
 
     context.state.pages.retain(|page_info| {
+        //
         !comic_archive_entry
             .source_chapter_ids
             .contains(&page_info.chapter_id)
     });
 
     context.state.chapters.retain(|chapter_info| {
+        //
         !comic_archive_entry
             .source_chapter_ids
             .contains(&chapter_info.id)

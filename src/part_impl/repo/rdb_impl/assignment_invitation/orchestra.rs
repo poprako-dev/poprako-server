@@ -38,7 +38,9 @@ impl Run<GetAssignmentInvitationInfo<'_>> for HybRepo {
         &self,
         oper: &GetAssignmentInvitationInfo<'_>,
     ) -> BaseRest<AssignmentInvitationInfo> {
+        //
         match oper {
+            //
             GetAssignmentInvitationInfo::Id { id } => {
                 submit_query!(self.core, get_info_by_id, id)
             }
@@ -68,7 +70,9 @@ impl Step<GetAssignmentInvitationInfo<'_>, RdbContext> for HybRepo {
         context: &mut RdbContext,
         oper: &GetAssignmentInvitationInfo<'_>,
     ) -> BaseRest<AssignmentInvitationInfo> {
+        //
         match oper {
+            //
             GetAssignmentInvitationInfo::Id { id } => {
                 get_info_by_id(context.conn(), id).await
             }
@@ -143,6 +147,7 @@ impl Step<DeleteAssignmentInvitations<'_>, RdbContext> for HybRepo {
         context: &mut RdbContext,
         oper: &DeleteAssignmentInvitations<'_>,
     ) -> BaseRest<()> {
+        //
         match oper {
             //
             DeleteAssignmentInvitations::Id { id } => {

@@ -41,6 +41,7 @@ impl AssignmentComplex {
         assignment_info: &AssignmentInfo,
         roles: RoleMask,
     ) -> AssignmentRoleRepl {
+        //
         AssignmentRoleRepl {
             id: assignment_info.id.clone(),
             roles: assignment_info.roles.union(roles),
@@ -53,6 +54,7 @@ impl AssignmentComplex {
         assignment_info: &AssignmentInfo,
         roles: RoleMask,
     ) -> bool {
+        //
         current_user_id == assignment_info.user_id
             && assignment_info.roles.has_any_role(&[RoleField::ADMIN])
             && !roles.has_any_role(&[RoleField::ADMIN])
@@ -64,7 +66,9 @@ impl AssignmentComplex {
         user_id: &str,
         roles: RoleMask,
     ) -> bool {
+        //
         assignment_infos.iter().any(|assignment_info| {
+            //
             match assignment_info.user_id == user_id {
                 //
                 true => roles.has_any_role(&[RoleField::ADMIN]),
@@ -121,6 +125,7 @@ impl AssignmentPermComplex {
         let admin_check = check_admin(proxy, current_user_id, chapter_id).await;
 
         if admin_check.is_err() {
+            //
             check_self_reduce(
                 proxy,
                 current_user_id,

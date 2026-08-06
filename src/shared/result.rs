@@ -9,6 +9,7 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant};
 
 /// Converts a persisted signed version into the application's unsigned type.
 pub fn version(value: i64) -> BaseRest<u32> {
+    //
     u32::try_from(value).map_err(|err| BaseError::Unrecoverable {
         message: format!("invalid persisted version {}: {}", value, err),
     })
@@ -58,6 +59,7 @@ pub fn pool_get(source: PoolError) -> BaseError {
 ///
 /// Unique violations and `NotFound` map to `Expected`; all others are `Unrecoverable`.
 pub fn diesel(source: DieselError) -> BaseError {
+    //
     match source {
         //
         DieselError::DatabaseError(

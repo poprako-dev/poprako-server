@@ -132,6 +132,7 @@ fn verify_password_sync(password: &str, password_hash: &str) -> bool {
     Argon2::default()
         .verify_password(password.as_bytes(), &parsed)
         .inspect_err(|error| {
+            //
             tracing::warn!(
                 operation = "verify_password",
                 sdk_err = ?error,

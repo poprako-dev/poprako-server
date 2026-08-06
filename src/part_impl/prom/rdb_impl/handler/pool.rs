@@ -64,6 +64,7 @@ pub fn enforce_retry_limit(
     task_flow: TaskFlow,
     retried_count: i64,
 ) -> TaskFlow {
+    //
     match (task_flow, retried_count >= 3) {
         //
         // Internal implementation detail.
@@ -95,7 +96,9 @@ where
         drop(worker_senders);
 
         for worker_handle in worker_handles {
+            //
             if let Err(error) = worker_handle.await {
+                //
                 tracing::error!(
                     err = ?error,
                     "[RdbPromHandler::run] worker task failed",
@@ -236,6 +239,7 @@ where
             //
             // Internal implementation detail.
             TaskFlow::Complete => {
+                //
                 if let Err(error) = self.complete(&row.f_id, row.f_lease).await
                 {
                     tracing::error!(
@@ -247,6 +251,7 @@ where
             }
 
             TaskFlow::Retry(error) => {
+                //
                 if let Err(mark_error) =
                     self.retry(&row.f_id, row.f_lease, &error).await
                 {
@@ -285,7 +290,9 @@ where
 
     // Internal implementation of `log_reset_stuck`.
     async fn log_reset_stuck(&self) {
+        //
         if let Err(error) = self.reset_stuck().await {
+            //
             tracing::error!(
                 err = ?error,
                 "[RdbPromHandler::run] reset stuck failed",
@@ -295,11 +302,14 @@ where
 
     // Internal implementation of `log_purge_completed`.
     async fn log_purge_completed(&self) {
+        //
         match self.purge_completed().await {
             //
             // Internal implementation detail.
             Ok(purged_count) => {
+                //
                 if purged_count > 0 {
+                    //
                     tracing::info!(
                         purged_count,
                         "[RdbPromHandler::run] purged expired completed messages",
@@ -308,6 +318,7 @@ where
             }
 
             Err(error) => {
+                //
                 tracing::error!(
                     err = ?error,
                     "[RdbPromHandler::run] purge completed failed",
@@ -371,6 +382,7 @@ where
                 Ok(()) => dispatched = true,
 
                 Err(error) => {
+                    //
                     tracing::error!(
                         id = %error.0.f_id,
                         worker_index,

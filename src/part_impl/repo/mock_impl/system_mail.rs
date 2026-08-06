@@ -15,6 +15,7 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
 // Internal implementation of `insert_mail`.
 fn insert_mail(state: &mut MockState, entry: &SystemMailEntry) {
+    //
     state.system_mails.push(SystemMailInfo {
         id: entry.id.clone(),
         receiver_id: entry.receiver_id.clone(),
@@ -92,6 +93,7 @@ fn list_system_mail_infos(
         .system_mails
         .iter()
         .filter(|system_mail_info| {
+            //
             system_mail_info.receiver_id == oper.spec.receiver_id
                 && oper
                     .spec
@@ -128,6 +130,7 @@ fn mark_system_mail_read(
         .ok_or_else(|| expected("error-system-mail-not-found"))?;
 
     if system_mail_info.receiver_id != user_id {
+        //
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
             message: "error-forbidden".into(),

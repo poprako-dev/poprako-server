@@ -236,6 +236,7 @@ async fn reserve_avatar(
             object_key,
             prev_object_key: None,
             avatar_version: u32::try_from(raw_version).map_err(|_| {
+                //
                 BaseError::Unrecoverable {
                     message: "[reserve_avatar] avatar version is invalid"
                         .into(),
@@ -287,6 +288,7 @@ async fn mark_avatar_uploaded(
     let affected = match avatar_key {
         //
         Some(avatar_key) => {
+            //
             diesel::update(
                 t_user
                     .filter(f_id.eq(id))
@@ -299,6 +301,7 @@ async fn mark_avatar_uploaded(
         }
 
         None => {
+            //
             diesel::update(
                 t_user
                     .filter(f_id.eq(id))
@@ -444,7 +447,9 @@ impl Run<GetUserInfo<'_>> for HybRepo {
         &self,
         oper: &GetUserInfo<'_>,
     ) -> Result<UserInfo, Self::Error> {
+        //
         match oper {
+            //
             GetUserInfo::Id { id } => {
                 submit_query!(self.core, get_info_by_id, id)
             }
@@ -462,7 +467,9 @@ impl Run<GetUserCredential<'_>> for HybRepo {
         &self,
         oper: &GetUserCredential<'_>,
     ) -> Result<UserCredential, Self::Error> {
+        //
         match oper {
+            //
             GetUserCredential::Qid { qid } => {
                 submit_query!(self.core, get_credential_by_qid, qid)
             }
@@ -480,7 +487,9 @@ impl Run<FindUserInfo<'_>> for HybRepo {
         &self,
         oper: &FindUserInfo<'_>,
     ) -> Result<Option<UserInfo>, Self::Error> {
+        //
         match oper {
+            //
             FindUserInfo::Qid { qid } => {
                 submit_query!(self.core, find_info_by_qid, qid)
             }
@@ -495,6 +504,7 @@ impl Run<UpdateUser<'_>> for HybRepo {
     // Map each update variant to a dedicated helper with explicit argument flow.
     #[instrument(level = "info", skip_all)]
     async fn run(&self, oper: &UpdateUser<'_>) -> BaseRest<()> {
+        //
         match oper {
             //
             UpdateUser::TouchLastActive { id } => {
@@ -506,6 +516,7 @@ impl Run<UpdateUser<'_>> for HybRepo {
             }
 
             UpdateUser::MarkAvatarUploaded { repl } => {
+                //
                 submit_query!(
                     self.core,
                     mark_avatar_uploaded,
@@ -549,7 +560,9 @@ impl Step<FindUserInfo<'_>, RdbContext> for HybRepo {
         context: &mut RdbContext,
         oper: &FindUserInfo<'_>,
     ) -> BaseRest<Option<UserInfo>> {
+        //
         match oper {
+            //
             FindUserInfo::Qid { qid } => {
                 find_info_by_qid(context.conn(), qid).await
             }
@@ -568,6 +581,7 @@ impl Step<UpdateUser<'_>, RdbContext> for HybRepo {
         context: &mut RdbContext,
         oper: &UpdateUser<'_>,
     ) -> BaseRest<()> {
+        //
         match oper {
             //
             UpdateUser::Info { repl } => {
@@ -575,6 +589,7 @@ impl Step<UpdateUser<'_>, RdbContext> for HybRepo {
             }
 
             UpdateUser::MarkAvatarUploaded { repl } => {
+                //
                 mark_avatar_uploaded(
                     context.conn(),
                     &repl.id,
@@ -607,6 +622,7 @@ impl Step<ReserveUserAvatar<'_>, RdbContext> for HybRepo {
         context: &mut RdbContext,
         oper: &ReserveUserAvatar<'_>,
     ) -> BaseRest<UserAvatarReservation> {
+        //
         reserve_avatar(context.conn(), oper.id, oper.image_hash, oper.image_ext)
             .await
     }
@@ -623,7 +639,9 @@ impl Step<GetUserInfoExcluded<'_>, RdbContext> for HybRepo {
         context: &mut RdbContext,
         oper: &GetUserInfoExcluded<'_>,
     ) -> BaseRest<UserInfo> {
+        //
         match oper {
+            //
             GetUserInfoExcluded::Id { id } => {
                 get_info_by_id_excluded(context.conn(), id).await
             }

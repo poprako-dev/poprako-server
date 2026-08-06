@@ -20,6 +20,7 @@ use crate::value::announcement::AnnouncementInclOpt;
 
 // Internal implementation of `find_user`.
 fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
+    //
     state
         .users
         .iter()

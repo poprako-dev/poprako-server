@@ -129,6 +129,7 @@ pub struct UnitCoordInstr {
 impl From<UnitCoordInstr> for UnitCoord {
     // Convert API coordinate value into domain coordinate.
     fn from(value: UnitCoordInstr) -> Self {
+        //
         Self {
             x_coord: value.x_coord,
             y_coord: value.y_coord,
@@ -166,6 +167,7 @@ impl UnitEditInstr {
         user_id: &str,
         local_id_map: &HashMap<String, String>,
     ) -> BaseRest<UnitEdit> {
+        //
         match self {
             //
             Self::Create {
@@ -334,6 +336,7 @@ fn resolve_patch_id(
     value: Patch<String>,
     local_id_map: &HashMap<String, String>,
 ) -> BaseRest<Patch<String>> {
+    //
     match value {
         //
         Patch::Clear => accept(Patch::Clear),

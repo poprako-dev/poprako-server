@@ -78,6 +78,7 @@ pub struct UnitCounters {
 impl UnitCounters {
     /// Calculates the counter delta from this snapshot to the next snapshot.
     pub fn calc_delta(self, next: Self) -> UnitCounterDelta {
+        //
         UnitCounterDelta {
             total_unit_count: next.total_unit_count - self.total_unit_count,
             translated_unit_count: next.translated_unit_count

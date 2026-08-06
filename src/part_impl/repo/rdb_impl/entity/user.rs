@@ -87,6 +87,7 @@ pub struct UserAspectRow<'a> {
 
 impl<'a> UserAspectRow<'a> {
     pub fn new(updated_at: OffsetDateTime) -> Self {
+        //
         Self {
             f_nickname: None,
             f_qid: None,
@@ -166,6 +167,7 @@ impl TryFrom<UserInfoRow> for UserInfo {
         //
         let (avatar_hash_bytes, avatar_ext) = (
             v.f_avatar_hash.try_into().map_err(|_| {
+                //
                 BaseError::Unrecoverable {
                     message:
                         "[UserInfoRow] f_avatar_hash must contain 32 bytes"
@@ -173,6 +175,7 @@ impl TryFrom<UserInfoRow> for UserInfo {
                 }
             })?,
             ImageExt::parse(&v.f_avatar_extension).ok_or_else(|| {
+                //
                 BaseError::Unrecoverable {
                     message:
                         "[UserInfoRow] f_avatar_extension must be supported"
@@ -200,6 +203,7 @@ impl TryFrom<UserInfoRow> for UserInfo {
 
 impl From<UserCredsRow> for UserCredential {
     fn from(v: UserCredsRow) -> Self {
+        //
         UserCredential {
             user_id: v.f_id,
             password_hash: v.f_password_hash,

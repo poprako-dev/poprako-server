@@ -53,6 +53,7 @@ fn create_team(state: &mut MockState, entry: &TeamEntry) -> BaseRest<TeamInfo> {
 
 // Internal implementation of `get_team_info`.
 fn get_team_info(state: &MockState, id: &str) -> BaseRest<TeamInfo> {
+    //
     state
         .teams
         .iter()
@@ -75,7 +76,9 @@ fn list_team_infos(
             .teams
             .iter()
             .filter(|team_info| {
+                //
                 state.members.iter().any(|member_info| {
+                    //
                     member_info.user_id == user_id
                         && member_info.team_id == team_info.id
                 })
@@ -187,6 +190,7 @@ fn reserve_team_avatar(
         // Internal implementation detail.
         // Internal implementation detail.
         let object_key = team_info.avatar_key.clone().ok_or_else(|| {
+            //
             BaseError::Unrecoverable {
                 message: "[reserve_team_avatar] avatar key is missing".into(),
             }
@@ -430,6 +434,7 @@ impl<'a> Step<GetTeamInfoExcluded<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &GetTeamInfoExcluded<'a>,
     ) -> BaseRest<TeamInfo> {
+        //
         match oper {
             GetTeamInfoExcluded::Id { id } => get_team_info(&context.state, id),
         }

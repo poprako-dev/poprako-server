@@ -91,6 +91,7 @@ impl ChapterInfoView {
             id: model.id,
             comic_id: model.comic_id,
             comic: OptionFuture::from(model.comic.map(|comic_info| {
+                //
                 ComicInfoView::from_model(
                     image_pool,
                     comic_info,
@@ -122,6 +123,7 @@ impl ChapterInfoView {
 impl From<ChapterInfo> for ChapterInfoView {
     // Copy persisted chapter fields into the API value shape.
     fn from(model: ChapterInfo) -> Self {
+        //
         Self {
             id: model.id,
             comic_id: model.comic_id,

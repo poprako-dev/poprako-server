@@ -38,6 +38,7 @@ type HttpTraceLayer = TraceLayer<
 
 /// Builds the HTTP tracing layer with request correlation fields.
 pub fn trace_request() -> HttpTraceLayer {
+    //
     TraceLayer::new_for_http()
         .make_span_with(make_request_span as _)
         .on_request(record_request_started as _)
@@ -82,6 +83,7 @@ fn make_request_span(request: &Request) -> Span {
 
 // Records a received HTTP request.
 fn record_request_started(request: &Request, _span: &Span) {
+    //
     metrics::counter!(
         "http_requests_started",
         "method" => request.method().to_string(),

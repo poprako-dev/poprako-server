@@ -23,12 +23,14 @@ where
     let outcome = match event {
         //
         InvitationPayload::Assignment { invitation_id } => {
+            //
             PurgeExpiredAssignmentInvitation { id: invitation_id }
                 .run_on(repo)
                 .await
         }
 
         InvitationPayload::Member { invitation_id } => {
+            //
             PurgeExpiredMemberInvitation { id: invitation_id }
                 .run_on(repo)
                 .await

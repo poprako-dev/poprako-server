@@ -28,6 +28,7 @@ pub struct TermInfoRow {
 
 impl From<TermInfoRow> for TermInfo {
     fn from(row: TermInfoRow) -> Self {
+        //
         Self {
             id: row.f_id,
             termbase_id: row.f_termbase_id,

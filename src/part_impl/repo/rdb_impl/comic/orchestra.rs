@@ -58,6 +58,7 @@ impl Run<MarkComicCoverUploaded<'_>> for HybRepo {
     // Persists cover upload state (version/key/flag) and returns no payload.
     #[instrument(level = "info", skip_all)]
     async fn run(&self, oper: &MarkComicCoverUploaded<'_>) -> BaseRest<()> {
+        //
         submit_query!(
             self.core,
             mark_cover_uploaded,
@@ -155,6 +156,7 @@ impl Step<ReserveComicCover<'_>, RdbContext> for HybRepo {
         context: &mut RdbContext,
         oper: &ReserveComicCover<'_>,
     ) -> BaseRest<ComicCoverReservation> {
+        //
         reserve_cover(context.conn(), oper.id, oper.image_hash, oper.image_ext)
             .await
     }
@@ -171,6 +173,7 @@ impl Step<MarkComicCoverUploaded<'_>, RdbContext> for HybRepo {
         context: &mut RdbContext,
         oper: &MarkComicCoverUploaded<'_>,
     ) -> BaseRest<()> {
+        //
         mark_cover_uploaded(
             context.conn(),
             oper.id,

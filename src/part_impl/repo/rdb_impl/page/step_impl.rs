@@ -213,6 +213,7 @@ pub async fn clear_images_for_publish(
         //
         let image_version =
             page_info.image_version.checked_add(1).ok_or_else(|| {
+                //
                 BaseError::Unrecoverable {
                     message:
                         "[clear_images_for_publish] image version overflow"
@@ -332,6 +333,7 @@ pub async fn mark_image_uploaded(
     let affected = match image_key {
         //
         Some(image_key) => {
+            //
             diesel::update(
                 t_page
                     .filter(f_id.eq(id))
@@ -344,6 +346,7 @@ pub async fn mark_image_uploaded(
         }
 
         None => {
+            //
             diesel::update(
                 t_page
                     .filter(f_id.eq(id))
@@ -468,6 +471,7 @@ pub async fn delete_by_chapter_id(
         .map_err(diesel)?;
 
     if !page_ids.is_empty() {
+        //
         diesel::delete(t_unit.filter(unit_f_page_id.eq_any(&page_ids)))
             .execute(conn)
             .await

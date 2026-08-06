@@ -34,6 +34,7 @@ impl ChapterExportComplex {
 
             // FIXME: why ignore? and similar ones.
             write!(output, "\n\n>>>>>>>>[{}]<<<<<<<<\n", image_name).unwrap_or_else(|error| {
+                //
                 tracing::error!(
                     err = %error,
                     "[ChapterExportComplex::make_label_plus] failed to write page header",
@@ -63,6 +64,7 @@ impl ChapterExportComplex {
                     group
                 )
                 .unwrap_or_else(|error| {
+                    //
                     tracing::error!(
                         err = %error,
                         "[ChapterExportComplex::make_label_plus] failed to write unit line",
@@ -93,11 +95,13 @@ fn label_plus_image_name(page_info: &PageInfo) -> String {
 // Return the proofread text if non-empty, falling back to translated text
 // if no proofread content is available.
 fn select_main_text(unit_info: &UnitInfo) -> Option<&str> {
+    //
     unit_info
         .proofread_text
         .as_deref()
         .filter(|text| !text.is_empty())
         .or_else(|| {
+            //
             unit_info
                 .translated_text
                 .as_deref()

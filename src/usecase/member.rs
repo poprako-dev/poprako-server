@@ -243,6 +243,7 @@ where
     let member_list_spec = instr.try_into()?;
 
     if let MemberListSpec::Team { team_id, .. } = &member_list_spec {
+        //
         MemberPermComplex::ensure_user_can_list_infos(
             &mut run_proxy! {
                 repo => for<'a> FindMemberInfo<'a>;
@@ -262,6 +263,7 @@ where
     let mut member_info_vals = Vec::with_capacity(member_infos.len());
 
     for member_info in member_infos {
+        //
         member_info_vals
             .push(MemberInfoView::from_model(image_pool, member_info).await?);
     }

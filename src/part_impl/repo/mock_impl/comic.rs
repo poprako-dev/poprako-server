@@ -26,6 +26,7 @@ use crate::value::index::user_index_to_stored_index;
 
 // Find and clone a workset from mock storage by id.
 fn find_workset(state: &MockState, workset_id: &str) -> Option<WorksetInfo> {
+    //
     state
         .worksets
         .iter()
@@ -38,6 +39,7 @@ fn find_team_for_workset(
     state: &MockState,
     workset: &WorksetInfo,
 ) -> Option<TeamInfo> {
+    //
     state
         .teams
         .iter()
@@ -47,6 +49,7 @@ fn find_team_for_workset(
 
 // Resolve a user from mock state for creator relation enrichment.
 fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
+    //
     state
         .users
         .iter()
@@ -116,6 +119,7 @@ fn apply_comic_incls(
     comic_info.creator = None;
 
     for incl_opt in expand_incl_opts(incl_opt) {
+        //
         match incl_opt {
             //
             ComicInclOpt::Workset => {
@@ -165,6 +169,7 @@ fn comic_matches_stages(
     comic_info: &ComicInfo,
     stages: Option<StageMask>,
 ) -> bool {
+    //
     match stages {
         //
         Some(stage_mask) => state
@@ -237,6 +242,7 @@ fn list_comic_infos(state: &MockState, spec: &ComicListSpec) -> Vec<ComicInfo> {
         .iter()
         .filter(|comic_info| comic_info.workset_id == spec.workset_id)
         .filter(|comic_info| {
+            //
             spec.fuzzy_title
                 .as_ref()
                 .map(|keyword| comic_matches_fuzzy(comic_info, keyword))
@@ -249,6 +255,7 @@ fn list_comic_infos(state: &MockState, spec: &ComicListSpec) -> Vec<ComicInfo> {
         .collect::<Vec<_>>();
 
     comic_infos.sort_by(|left, right| {
+        //
         right
             .last_active_at
             .cmp(&left.last_active_at)
@@ -501,6 +508,7 @@ impl<'a> Step<ReserveComicCover<'a>, MockContext> for Mock {
         if same_hash {
             //
             let object_key = comic.cover_key.clone().ok_or_else(|| {
+                //
                 BaseError::Unrecoverable {
                     message: "[Mock::ReserveComicCover] cover key is missing"
                         .into(),
@@ -557,6 +565,7 @@ impl<'a> Step<MarkComicCoverUploaded<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &MarkComicCoverUploaded<'a>,
     ) -> Result<(), Self::Error> {
+        //
         mark_comic_cover_uploaded(
             &mut context.state,
             oper.id,
@@ -604,12 +613,14 @@ impl<'a> Step<DeleteComic<'a>, MockContext> for Mock {
             .retain(|chapter_info| chapter_info.comic_id != deleted_comic_id);
 
         context.state.pages.retain(|page_info| {
+            //
             !deleted_chapter_ids
                 .iter()
                 .any(|chapter_id| chapter_id == &page_info.chapter_id)
         });
 
         context.state.assignments.retain(|assignment_info| {
+            //
             !deleted_chapter_ids
                 .iter()
                 .any(|chapter_id| chapter_id == &assignment_info.chapter_id)

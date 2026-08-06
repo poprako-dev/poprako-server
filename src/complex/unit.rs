@@ -114,6 +114,7 @@ impl UnitComplex {
             last -= 1;
 
             let id = match &edits[last] {
+                //
                 UnitEdit::Create { id, .. }
                 | UnitEdit::Save { id, .. }
                 | UnitEdit::Delete { id } => id.clone(),
@@ -344,6 +345,7 @@ where
     let mut tail = 0;
 
     for current in 0..slice.len() {
+        //
         if pred(&slice[current]) {
             //
             slice[tail..=current].rotate_right(1);
@@ -357,6 +359,7 @@ where
 
 // Copy the older optional value only when the newer optional is empty.
 fn inherit_option<T>(earlier: &mut Option<T>, later: &mut Option<T>) {
+    //
     if later.is_none() {
         *later = earlier.take();
     }
@@ -364,6 +367,7 @@ fn inherit_option<T>(earlier: &mut Option<T>, later: &mut Option<T>) {
 
 // Replace skipped newer patch values with previous values while keeping skips in place.
 fn inherit_patch<T>(earlier: &mut Patch<T>, later: &mut Patch<T>) {
+    //
     if matches!(later, Patch::Skip) {
         *later = std::mem::replace(earlier, Patch::Skip);
     }

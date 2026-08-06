@@ -41,6 +41,7 @@ pub struct PageImageInstr {
 impl From<PageImageInstr> for PageImageSpec {
     // Map page image parameters directly to the domain spec.
     fn from(instr: PageImageInstr) -> Self {
+        //
         Self {
             page_id: instr.page_id,
             image_hash: instr.image_hash,

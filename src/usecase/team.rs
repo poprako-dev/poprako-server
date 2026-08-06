@@ -248,6 +248,7 @@ where
             .await?;
 
             if !avatar_reservation.is_upload_required {
+                //
                 return accept((
                     avatar_reservation.object_key,
                     avatar_reservation.avatar_version,

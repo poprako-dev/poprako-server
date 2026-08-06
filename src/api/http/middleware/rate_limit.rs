@@ -31,6 +31,7 @@ fn limiter() -> &'static DefaultDirectRateLimiter {
     static LIMITER: OnceLock<DefaultDirectRateLimiter> = OnceLock::new();
 
     LIMITER.get_or_init(|| {
+        //
         RateLimiter::direct(
             Quota::per_second(NonZeroU32::new(20).unwrap())
                 .allow_burst(NonZeroU32::new(80).unwrap()),

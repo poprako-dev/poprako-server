@@ -50,6 +50,7 @@ pub struct MetricTotal {
 impl MetricTotal {
     // Builds an empty aggregation snapshot for accumulation.
     fn new() -> Self {
+        //
         Self {
             total: 0,
             average_latency_ms: 0.0,
@@ -135,6 +136,7 @@ struct MetricWindow {
 impl MetricWindow {
     // Creates an initialized window with zeroed buckets.
     fn new() -> Self {
+        //
         Self {
             buckets: std::array::from_fn(|_| {
                 Mutex::new(MetricBucket::default())
@@ -275,6 +277,7 @@ fn curr_minute() -> u64 {
 
 // Locks and returns the metric bucket mutex, handling poisoned states.
 fn lock_bucket(bucket: &Mutex<MetricBucket>) -> MutexGuard<'_, MetricBucket> {
+    //
     match bucket.lock() {
         //
         Ok(bucket) => bucket,
@@ -285,6 +288,7 @@ fn lock_bucket(bucket: &Mutex<MetricBucket>) -> MutexGuard<'_, MetricBucket> {
 
 // Converts total latency microseconds into a millisecond average.
 fn average_latency_ms(total_latency_micros: u64, total: u64) -> f64 {
+    //
     match total {
         //
         0 => 0.0,

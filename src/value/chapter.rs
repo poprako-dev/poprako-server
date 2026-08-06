@@ -62,6 +62,7 @@ pub enum Stage {
 /// instantaneous stages). `Translate`, `Proofread`, and `TypesetRedraw`
 /// accept any phase.
 pub fn is_valid_stage_phase(stage: Stage, phase: StagePhase) -> bool {
+    //
     match stage {
         //
         Stage::RawProvide | Stage::Review | Stage::Publish => {
@@ -225,6 +226,7 @@ impl StagePhaseField {
     // Returns `None` for wildcard (`IGNORE`) so callers can explicitly decide
     // whether wildcard matching is allowed in this context.
     fn as_phase(self) -> Option<StagePhase> {
+        //
         match self {
             //
             Self::PENDING => Some(StagePhase::Pending),
@@ -244,6 +246,7 @@ impl StagePhaseField {
 impl From<StagePhase> for StagePhaseField {
     // Map domain phase into corresponding compact field representation.
     fn from(phase: StagePhase) -> Self {
+        //
         match phase {
             //
             StagePhase::Pending => Self::PENDING,
@@ -349,6 +352,7 @@ impl StageMask {
 
     /// Extract the [`StagePhase`] for a specific stage.
     pub fn get_phase(&self, stage: Stage) -> StagePhase {
+        //
         self.field_for_stage(stage)
             .as_phase()
             .expect("regular workflow masks never contain ignore fields")
@@ -395,7 +399,9 @@ impl StageMask {
 
     /// Check if this regular mask satisfies a filter mask.
     pub fn matches_filter(&self, filter: StageMask) -> bool {
+        //
         Self::STAGES.iter().all(|stage| {
+            //
             filter.ignores_stage(*stage)
                 || self.field_for_stage(*stage)
                     == filter.field_for_stage(*stage)
@@ -409,6 +415,7 @@ impl StageMask {
 
     /// Check if any of the given stages has a non-`Pending` phase.
     pub fn has_any_stage(&self, stages: &[Stage]) -> bool {
+        //
         stages
             .iter()
             .any(|s| self.get_phase(*s) != StagePhase::Pending)
@@ -416,6 +423,7 @@ impl StageMask {
 
     /// Check if all of the given stages have a non-`Pending` phase.
     pub fn has_every_stage(&self, stages: &[Stage]) -> bool {
+        //
         stages
             .iter()
             .all(|s| self.get_phase(*s) != StagePhase::Pending)
@@ -473,6 +481,7 @@ impl StageMask {
 
     // Return the bit offset (in two-bit slots) for the given stage.
     fn stage_shift(stage: Stage) -> u32 {
+        //
         match stage {
             //
             Stage::RawProvide => 0,
@@ -494,6 +503,7 @@ impl StageMask {
         value: u32,
         stage: Stage,
     ) -> BaseRest<StagePhaseField> {
+        //
         StagePhaseField::try_from(
             ((value >> Self::stage_shift(stage)) & 0b11) as u8,
         )
@@ -639,6 +649,7 @@ pub enum ChapterInclOpt {
 impl InclOpt for ChapterInclOpt {
     // Return all include paths implied by the selected chapter inclusion option.
     fn path(self) -> &'static [Self] {
+        //
         match self {
             //
             Self::Comic => &[Self::Comic],

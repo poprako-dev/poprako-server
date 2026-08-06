@@ -28,6 +28,7 @@ impl Run<ListMemberInfos<'_>> for HybRepo {
         &self,
         oper: &ListMemberInfos<'_>,
     ) -> BaseRest<Vec<MemberInfo>> {
+        //
         match oper {
             //
             ListMemberInfos::Spec { spec } => {
@@ -48,7 +49,9 @@ impl Run<GetMemberInfo<'_, '_>> for HybRepo {
     #[instrument(level = "info", skip_all)]
     // Resolve one member info by id through a submit-query read path.
     async fn run(&self, oper: &GetMemberInfo<'_, '_>) -> BaseRest<MemberInfo> {
+        //
         match oper {
+            //
             GetMemberInfo::Id { id, incls } => {
                 submit_query!(self.core, get_info_by_id, id, incls)
             }
@@ -84,9 +87,11 @@ impl Step<UpdateMember<'_>, RdbContext> for HybRepo {
         context: &mut RdbContext,
         oper: &UpdateMember<'_>,
     ) -> BaseRest<()> {
+        //
         match oper {
             //
             UpdateMember::UserNickname { repl } => {
+                //
                 update_user_nickname(
                     context.conn(),
                     &repl.user_id,
@@ -116,6 +121,7 @@ impl Step<ListMemberInfos<'_>, RdbContext> for HybRepo {
         context: &mut RdbContext,
         oper: &ListMemberInfos<'_>,
     ) -> BaseRest<Vec<MemberInfo>> {
+        //
         match oper {
             //
             ListMemberInfos::Spec { spec } => {
@@ -140,8 +146,11 @@ impl Step<FindMemberInfo<'_>, RdbContext> for HybRepo {
         context: &mut RdbContext,
         oper: &FindMemberInfo<'_>,
     ) -> BaseRest<Option<MemberInfo>> {
+        //
         match oper {
+            //
             FindMemberInfo::UserTeam { user_id, team_id } => {
+                //
                 find_info_by_user_id_and_team_id(
                     context.conn(),
                     user_id,
@@ -164,7 +173,9 @@ impl Step<GetMemberInfo<'_, '_>, RdbContext> for HybRepo {
         context: &mut RdbContext,
         oper: &GetMemberInfo<'_, '_>,
     ) -> BaseRest<MemberInfo> {
+        //
         match oper {
+            //
             GetMemberInfo::Id { id, incls } => {
                 get_info_by_id(context.conn(), id, incls).await
             }
@@ -185,6 +196,7 @@ impl Step<ListMemberInfosExcluded<'_>, RdbContext> for HybRepo {
         context: &mut RdbContext,
         oper: &ListMemberInfosExcluded<'_>,
     ) -> BaseRest<Vec<MemberInfo>> {
+        //
         match oper {
             //
             ListMemberInfosExcluded::User { user_id } => {

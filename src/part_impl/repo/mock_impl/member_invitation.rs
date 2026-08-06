@@ -20,6 +20,7 @@ use crate::value::member_invitation::MemberInvitationInclOpt;
 
 // Internal implementation of `find_user`.
 fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
+    //
     state
         .users
         .iter()
@@ -39,6 +40,7 @@ fn apply_invitor_incl(
     member_invitation_info.invitor = None;
 
     if include_invitor {
+        //
         member_invitation_info.invitor =
             find_user(state, &member_invitation_info.invitor_id);
     }
@@ -56,6 +58,7 @@ fn list_member_invitation_infos(
         .member_invitations
         .iter()
         .filter(|member_invitation_info| {
+            //
             member_invitation_info.team_id == spec.team_id
                 && spec
                     .is_pending
@@ -103,6 +106,7 @@ fn get_member_invitation_info(
     state: &MockState,
     oper: &GetMemberInvitationInfo<'_, '_>,
 ) -> BaseRest<MemberInvitationInfo> {
+    //
     match oper {
         //
         // Internal state field `GetMemberInvitationInfo`.
@@ -134,6 +138,7 @@ fn get_member_invitation_info(
             .member_invitations
             .iter()
             .find(|member_invitation_info| {
+                //
                 member_invitation_info.code == *code
                     && member_invitation_info.is_pending
             })
@@ -162,6 +167,7 @@ fn create_member_invitation(
         .member_invitations
         .iter()
         .any(|member_invitation_info| {
+            //
             member_invitation_info.team_id == entry.team_id
                 && member_invitation_info.invitee_qid == entry.invitee_qid
                 && member_invitation_info.is_pending
@@ -223,6 +229,7 @@ fn update_member_invitation(
                 .member_invitations
                 .iter_mut()
                 .find(|member_invitation_info| {
+                    //
                     member_invitation_info.id == *id
                         && member_invitation_info.is_pending
                 })
@@ -329,8 +336,11 @@ impl<'a> Step<GetMemberInvitationInfoExcluded<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &GetMemberInvitationInfoExcluded<'a>,
     ) -> BaseRest<MemberInvitationInfo> {
+        //
         match oper {
+            //
             GetMemberInvitationInfoExcluded::Code { code } => {
+                //
                 get_member_invitation_info(
                     &context.state,
                     &GetMemberInvitationInfo::Code { code },
@@ -387,6 +397,7 @@ impl<'a> Step<PurgeExpiredMemberInvitation<'a>, MockContext> for Mock {
             .state
             .member_invitations
             .retain(|member_invitation_info| {
+                //
                 member_invitation_info.id != oper.id
                     || !member_invitation_info.is_pending
             });
@@ -411,6 +422,7 @@ impl<'a> Run<PurgeExpiredMemberInvitation<'a>> for Mock {
         let mut state = self.state.lock().unwrap();
 
         state.member_invitations.retain(|member_invitation_info| {
+            //
             member_invitation_info.id != oper.id
                 || !member_invitation_info.is_pending
         });

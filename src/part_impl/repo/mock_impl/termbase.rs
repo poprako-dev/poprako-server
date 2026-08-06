@@ -23,6 +23,7 @@ fn same_owner(
     team_id: Option<&str>,
     comic_id: Option<&str>,
 ) -> bool {
+    //
     termbase_info.team_id.as_deref() == team_id
         && termbase_info.comic_id.as_deref() == comic_id
 }
@@ -53,7 +54,9 @@ fn name_conflicts(
     comic_id: Option<&str>,
     name: &str,
 ) -> bool {
+    //
     state.termbases.iter().any(|termbase_info| {
+        //
         termbase_info.id != id.unwrap_or_default()
             && same_owner(termbase_info, team_id, comic_id)
             && termbase_info.name.to_lowercase() == name.to_lowercase()
@@ -128,6 +131,7 @@ fn list_infos(
                     .termbases
                     .iter()
                     .filter(|termbase_info| {
+                        //
                         owning_team_id.is_some_and(|team_id| {
                             termbase_info.team_id.as_deref() == Some(team_id)
                         }) || termbase_info.comic_id.as_deref()
@@ -158,6 +162,7 @@ fn list_infos(
 
 // Resolve one termbase by id and return it with expected-args missing error.
 fn get_info(state: &MockState, id: &str) -> BaseRest<TermbaseInfo> {
+    //
     state
         .termbases
         .iter()

@@ -41,12 +41,14 @@ impl TryFrom<PageInfoRow> for PageInfo {
         //
         let (image_hash_bytes, image_extension) = (
             row.f_image_hash.try_into().map_err(|_| {
+                //
                 BaseError::Unrecoverable {
                     message: "[PageInfoRow] f_image_hash must contain 32 bytes"
                         .into(),
                 }
             })?,
             ImageExt::parse(&row.f_image_extension).ok_or_else(|| {
+                //
                 BaseError::Unrecoverable {
                     message:
                         "[PageInfoRow] f_image_extension must be supported"
@@ -134,6 +136,7 @@ pub struct PageAspectRow<'a> {
 
 impl<'a> PageAspectRow<'a> {
     pub fn new(updated_at: OffsetDateTime) -> Self {
+        //
         Self {
             f_index: None,
             f_image_key: None,

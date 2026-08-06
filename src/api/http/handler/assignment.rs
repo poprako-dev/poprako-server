@@ -39,6 +39,7 @@ pub async fn list_infos(
     Extension(user_token): Extension<UserToken>,
     Query(instr): Query<ListAssignmentInfosInstr>,
 ) -> HttpResult<Vec<AssignmentInfoView>> {
+    //
     usecase::assignment::list_infos(
         (harn.repo(), harn.image_pool()),
         user_token,
@@ -134,6 +135,7 @@ pub async fn join(
     Extension(user_token): Extension<UserToken>,
     Json(instr): Json<JoinChapterAssignmentInstr>,
 ) -> HttpResult<AssignmentInfoView> {
+    //
     usecase::assignment::join((harn.nucl(), harn.repo()), user_token, instr)
         .await?
         .accept(StatusCode::CREATED)

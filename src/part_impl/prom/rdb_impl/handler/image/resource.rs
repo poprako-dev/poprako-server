@@ -111,6 +111,7 @@ where
         //
         // Internal implementation detail.
         ResourceKind::UserAvatar => {
+            //
             match (GetUserInfoExcluded::Id {
                 id: image_identity.resource_id,
             })
@@ -138,6 +139,7 @@ where
         }
 
         ResourceKind::TeamAvatar => {
+            //
             match (GetTeamInfoExcluded::Id {
                 id: image_identity.resource_id,
             })
@@ -165,6 +167,7 @@ where
         }
 
         ResourceKind::ComicCover => {
+            //
             match (GetComicInfoExcluded {
                 id: image_identity.resource_id,
                 incls: &[],
@@ -193,6 +196,7 @@ where
         }
 
         ResourceKind::PageImage => {
+            //
             match (GetPageInfoExcluded {
                 id: image_identity.resource_id,
             })
@@ -268,6 +272,7 @@ where
         }
 
         ResourceKind::ComicCover => {
+            //
             MarkComicCoverUploaded {
                 id: image_identity.resource_id,
                 cover_version: image_identity.version,
@@ -299,6 +304,7 @@ fn classify_current_identity(
     current_identity: CurrentImageIdentity<'_>,
     image_identity: ImageIdentity<'_>,
 ) -> BaseRest<ResourceState> {
+    //
     match (
         current_identity.version == image_identity.version,
         current_identity.object_key == Some(image_identity.object_key),

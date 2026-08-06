@@ -77,6 +77,7 @@ pub async fn list_infos(
                 }
 
                 if let Some(role) = role {
+                    //
                     query =
                         match *role {
                             //
@@ -335,6 +336,7 @@ fn escape_ilike_pattern(input: &str) -> String {
     let mut escaped = String::with_capacity(input.len());
 
     for ch in input.chars() {
+        //
         match ch {
             //
             '\\' => escaped.push_str("\\\\"),

@@ -62,6 +62,7 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(instr): Json<CreateAnnouncementInstr>,
 ) -> HttpResult<CreateAnnouncementVal> {
+    //
     usecase::announcement::create((harn.nucl(), harn.repo()), user_token, instr)
         .await?
         .accept(StatusCode::CREATED)

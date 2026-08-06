@@ -50,6 +50,7 @@ impl PageManifestComplex {
             let existing_index = existing_page_infos
                 .iter()
                 .position(|page_info| {
+                    //
                     page_info.id == *page_id
                         && page_info.chapter_id == chapter_id
                 })
@@ -88,6 +89,7 @@ impl PageManifestComplex {
                 .iter()
                 .enumerate()
                 .filter(|(existing_index, page_info)| {
+                    //
                     !consumed_existing_indexes.contains(existing_index)
                         && page_info.image_hash == page_spec.image_hash
                         && page_info.image_ext == page_spec.ext
@@ -124,6 +126,7 @@ impl PageManifestComplex {
 
 // Compare two candidates by translated state, upload time, and index for stable matching.
 fn candidate_order(left: &PageInfo, right: &PageInfo) -> Ordering {
+    //
     right
         .total_unit_count
         .gt(&0)

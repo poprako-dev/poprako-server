@@ -134,6 +134,7 @@ pub struct ChapterAspectRow<'a> {
 
 impl<'a> ChapterAspectRow<'a> {
     pub fn new(updated_at: OffsetDateTime) -> Self {
+        //
         Self {
             f_is_pinned: None,
             f_subtitle: None,
@@ -227,6 +228,7 @@ impl<'a> ChapterAspectRow<'a> {
 /// Convert an optional one-shot timestamp to a `StagePhase`:
 /// `Some` maps to `Completed`, `None` maps to `Pending`.
 fn phase_from_one_shot(timestamp: Option<OffsetDateTime>) -> StagePhase {
+    //
     match timestamp {
         //
         Some(_) => StagePhase::Completed,
@@ -242,6 +244,7 @@ fn phase_from_two_step(
     started_at: Option<OffsetDateTime>,
     completed_at: Option<OffsetDateTime>,
 ) -> StagePhase {
+    //
     match (started_at, completed_at) {
         //
         (_, Some(_)) => StagePhase::Completed,
@@ -259,6 +262,7 @@ fn one_shot_timestamp(
     stage: Stage,
     updated_at: OffsetDateTime,
 ) -> Option<OffsetDateTime> {
+    //
     match stages.get_phase(stage) {
         //
         StagePhase::Pending => None,
@@ -281,6 +285,7 @@ fn two_step_timestamps(
     Option<Option<OffsetDateTime>>,
     Option<Option<OffsetDateTime>>,
 ) {
+    //
     match stages.get_phase(stage) {
         //
         StagePhase::Pending => (Some(None), Some(None)),

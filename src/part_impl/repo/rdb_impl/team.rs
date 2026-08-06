@@ -181,6 +181,7 @@ async fn mark_avatar_uploaded(
     let affected = match avatar_key {
         //
         Some(avatar_key) => {
+            //
             diesel::update(
                 t_team
                     .filter(f_id.eq(id))
@@ -193,6 +194,7 @@ async fn mark_avatar_uploaded(
         }
 
         None => {
+            //
             diesel::update(
                 t_team
                     .filter(f_id.eq(id))
@@ -287,6 +289,7 @@ async fn reserve_avatar(
             object_key,
             prev_object_key: None,
             avatar_version: u32::try_from(raw_version).map_err(|_| {
+                //
                 BaseError::Unrecoverable {
                     message: "[reserve_avatar] avatar version is invalid"
                         .into(),
@@ -441,7 +444,9 @@ impl Run<GetTeamInfo<'_>> for HybRepo {
         &self,
         oper: &GetTeamInfo<'_>,
     ) -> Result<TeamInfo, Self::Error> {
+        //
         match oper {
+            //
             GetTeamInfo::Id { id } => {
                 submit_query!(self.core, get_info_by_id, id)
             }
@@ -470,6 +475,7 @@ impl Run<UpdateTeam<'_>> for HybRepo {
     #[instrument(level = "info", skip_all)]
     // Route team mutation variants into the corresponding SQL update handlers.
     async fn run(&self, oper: &UpdateTeam<'_>) -> BaseRest<()> {
+        //
         match oper {
             //
             UpdateTeam::Info { repl } => {
@@ -477,6 +483,7 @@ impl Run<UpdateTeam<'_>> for HybRepo {
             }
 
             UpdateTeam::MarkAvatarUploaded { repl } => {
+                //
                 submit_query!(
                     self.core,
                     mark_avatar_uploaded,
@@ -516,6 +523,7 @@ impl Step<UpdateTeam<'_>, RdbContext> for HybRepo {
         context: &mut RdbContext,
         oper: &UpdateTeam<'_>,
     ) -> BaseRest<()> {
+        //
         match oper {
             //
             UpdateTeam::Info { repl } => {
@@ -523,6 +531,7 @@ impl Step<UpdateTeam<'_>, RdbContext> for HybRepo {
             }
 
             UpdateTeam::MarkAvatarUploaded { repl } => {
+                //
                 mark_avatar_uploaded(
                     context.conn(),
                     &repl.id,
@@ -547,6 +556,7 @@ impl Step<ReserveTeamAvatar<'_>, RdbContext> for HybRepo {
         context: &mut RdbContext,
         oper: &ReserveTeamAvatar<'_>,
     ) -> BaseRest<TeamAvatarReservation> {
+        //
         reserve_avatar(context.conn(), oper.id, oper.image_hash, oper.image_ext)
             .await
     }
@@ -563,7 +573,9 @@ impl Step<GetTeamInfoExcluded<'_>, RdbContext> for HybRepo {
         context: &mut RdbContext,
         oper: &GetTeamInfoExcluded<'_>,
     ) -> BaseRest<TeamInfo> {
+        //
         match oper {
+            //
             GetTeamInfoExcluded::Id { id } => {
                 get_info_excluded(context.conn(), id).await
             }

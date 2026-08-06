@@ -20,6 +20,7 @@ pub struct ComicArchiveEntryRow<'a> {
 
 impl<'a> From<&'a ComicArchiveRecord> for ComicArchiveEntryRow<'a> {
     fn from(comic_archive_record: &'a ComicArchiveRecord) -> Self {
+        //
         Self {
             f_id: &comic_archive_record.id,
             f_team_id: &comic_archive_record.team_id,

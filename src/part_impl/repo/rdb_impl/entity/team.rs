@@ -70,6 +70,7 @@ pub struct TeamAspectRow<'a> {
 
 impl<'a> TeamAspectRow<'a> {
     pub fn new(updated_at: OffsetDateTime) -> Self {
+        //
         Self {
             f_name: None,
             f_description: None,
@@ -141,6 +142,7 @@ impl TryFrom<TeamInfoRow> for TeamInfo {
         //
         let (avatar_hash_bytes, avatar_ext) = (
             v.f_avatar_hash.try_into().map_err(|_| {
+                //
                 BaseError::Unrecoverable {
                     message:
                         "[TeamInfoRow] f_avatar_hash must contain 32 bytes"
@@ -148,6 +150,7 @@ impl TryFrom<TeamInfoRow> for TeamInfo {
                 }
             })?,
             ImageExt::parse(&v.f_avatar_extension).ok_or_else(|| {
+                //
                 BaseError::Unrecoverable {
                     message:
                         "[TeamInfoRow] f_avatar_extension must be supported"

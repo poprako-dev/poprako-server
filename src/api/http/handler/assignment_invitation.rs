@@ -62,6 +62,7 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(instr): Json<CreateAssignmentInvitationInstr>,
 ) -> HttpResult<CreateAssignmentInvitationVal> {
+    //
     usecase::assignment_invitation::create(
         (harn.nucl(), harn.repo(), harn.prom()),
         user_token,
@@ -155,6 +156,7 @@ pub async fn join(
     Extension(user_token): Extension<UserToken>,
     Json(instr): Json<JoinAssignmentInvitationInstr>,
 ) -> HttpResult<AssignmentInfoView> {
+    //
     usecase::assignment_invitation::join(
         (harn.nucl(), harn.repo(), harn.image_pool()),
         user_token,

@@ -662,6 +662,7 @@ where
     let mut found_separator = false;
 
     for line in lines.by_ref() {
+        //
         if line == "-" {
             //
             found_separator = true;

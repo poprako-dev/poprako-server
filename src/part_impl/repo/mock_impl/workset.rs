@@ -17,6 +17,7 @@ use crate::result::{BaseError, BaseRest, accept};
 
 // Internal implementation of `get_workset_info`.
 fn get_workset_info(state: &MockState, id: &str) -> BaseRest<WorksetInfo> {
+    //
     state
         .worksets
         .iter()
@@ -190,6 +191,7 @@ impl<'a> Step<ListWorksetInfosExcluded<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &ListWorksetInfosExcluded<'a>,
     ) -> BaseRest<Vec<WorksetInfo>> {
+        //
         accept(
             context
                 .state

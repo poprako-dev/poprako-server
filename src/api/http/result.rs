@@ -67,6 +67,7 @@ impl HttpError {
 
     /// `422 Unprocessable Entity` used for path/body id mismatch.
     pub fn unprocessable(message: &str) -> Self {
+        //
         Self {
             status: StatusCode::UNPROCESSABLE_ENTITY,
             code: NonZeroU16::new(7).expect("non-zero error code"),
@@ -76,6 +77,7 @@ impl HttpError {
 
     /// `500 Internal Server Error` concealing unrecoverable details.
     pub fn internal() -> Self {
+        //
         Self {
             status: StatusCode::INTERNAL_SERVER_ERROR,
             code: NonZeroU16::new(1).expect("non-zero error code"),
@@ -87,6 +89,7 @@ impl HttpError {
 impl std::fmt::Display for HttpError {
     // Formats one failure as `HttpError(code=..., message=...)` for logs.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        //
         write!(
             f,
             "HttpError(code={}, message={})",
@@ -99,6 +102,7 @@ impl std::fmt::Display for HttpError {
 impl From<BaseError> for HttpError {
     // Maps the shared result error to HTTP boundary error payload.
     fn from(source: BaseError) -> Self {
+        //
         match source {
             //
             BaseError::Expected { variant, message } => {
@@ -147,6 +151,7 @@ pub struct HttpBody<T> {
 impl<T> HttpBody<T> {
     /// Creates a valued success body with the given status.
     pub fn new(status: StatusCode, data: T) -> Self {
+        //
         Self {
             status,
             headers: HeaderMap::new(),
@@ -197,6 +202,7 @@ pub struct NoContent {
 impl NoContent {
     /// Creates an empty `204 No Content` response with no extra headers.
     pub fn new() -> Self {
+        //
         Self {
             headers: HeaderMap::new(),
         }

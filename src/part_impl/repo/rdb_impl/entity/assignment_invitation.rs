@@ -105,6 +105,7 @@ pub struct AssignmentInvitationAspectRow {
 
 impl AssignmentInvitationAspectRow {
     pub fn new(updated_at: OffsetDateTime) -> Self {
+        //
         Self {
             f_pending: None,
             f_updated_at: updated_at,

@@ -107,6 +107,7 @@ pub async fn logout() -> HttpNoContent {
 
 // Builds the `authorization-token` HttpOnly cookie used by auth responses.
 fn auth_cookie(token: &str) -> Cookie<'static> {
+    //
     Cookie::build((AUTH_COOKIE_NAME, format!("Bearer {}", token)))
         .path("/")
         .http_only(true)

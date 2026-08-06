@@ -112,6 +112,7 @@ where
                 //
                 true => (
                     locked_page_info.image_key.clone().ok_or_else(|| {
+                        //
                         BaseError::Unrecoverable {
                             message: "[reserve_image] pending page image key is missing"
                                 .into(),
@@ -249,6 +250,7 @@ where
     accept(ReservedPageVal {
         page_id: page_info.id,
         index: u32::try_from(page_info.index).map_err(|_| {
+            //
             BaseError::Unrecoverable {
                 message: "[reserve_image] page index must be non-negative"
                     .into(),
@@ -525,6 +527,7 @@ where
         let (mut delete_ids, mut delete_payloads) = (Vec::new(), Vec::new());
 
         for page_info in page_infos {
+            //
             if let Some(object_key) = page_info.image_key {
                 //
                 delete_ids.push(ImageComplex::gen_delete_id());

@@ -160,12 +160,14 @@ impl RoleMask {
 
     /// Check if the mask contains any of the given role bits.
     pub fn has_any_role(&self, bits: &[RoleField]) -> bool {
+        //
         bits.iter()
             .any(|role| u32::from(*self) & u32::from(*role) != 0)
     }
 
     /// Check if the mask contains all of the given role bits.
     pub fn has_every_role(&self, bits: &[RoleField]) -> bool {
+        //
         bits.iter()
             .all(|role| u32::from(*self) & u32::from(*role) != 0)
     }

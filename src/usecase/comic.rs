@@ -354,6 +354,7 @@ where
             .await?;
 
             if !cover_reservation.is_upload_required {
+                //
                 return accept((
                     cover_reservation.object_key,
                     cover_reservation.cover_version,

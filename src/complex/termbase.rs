@@ -45,6 +45,7 @@ fn normalize_name(name: String) -> BaseRest<String> {
 
 // Normalize an optional string by trimming whitespace; empty strings become `None`.
 fn normalize_optional(value: Option<String>) -> Option<String> {
+    //
     value.and_then(|value| {
         //
         let value = value.trim().to_string();
@@ -259,6 +260,7 @@ impl TermbasePermComplex {
             (Some(team_id), None) => team_id.clone(),
 
             (None, Some(comic_id)) => {
+                //
                 ResolveTeamId::Comic { id: comic_id }
                     .proxy_on(proxy)
                     .await?
@@ -302,6 +304,7 @@ impl TermbasePermComplex {
             (Some(team_id), None) => team_id.clone(),
 
             (None, Some(comic_id)) => {
+                //
                 ResolveTeamId::Comic { id: comic_id }
                     .proxy_on(proxy)
                     .await?
