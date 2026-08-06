@@ -49,10 +49,14 @@ allow_public_fields = [
 exclude_files = ["src/part_impl/repo/rdb_impl/schema.rs"]
 
 [forbidden-identifiers]
+# The words table replaces the packaged defaults entirely.
+exclude_filenames = ["schema.rs"]
+
 # Repository port/adapter layers follow their own naming conventions.
 skip_module_paths = ["part/repo", "part_impl/repo"]
 # Term and termbase modules are temporarily excluded from forbidden-identifier
-# checks.
+# checks. NOTE: keep these keys before the [[words]] array — in TOML, keys
+# after an array-of-tables entry belong to the last array element.
 ignore_files = [
     "src/api/http/handler/term.rs",
     "src/api/http/handler/termbase.rs",
@@ -74,9 +78,70 @@ ignore_files = [
     "src/usecase/termbase.rs",
 ]
 
+[[forbidden-identifiers.words]]
+word = "result"
+code = "FBD001"
+message = "'result' is forbidden — name what the value represents"
+
+[[forbidden-identifiers.words]]
+word = "res"
+code = "FBD002"
+message = "'res' is a forbidden abbreviation of 'result'"
+
+[[forbidden-identifiers.words]]
+word = "error"
+code = "FBD003"
+message = "'error' is forbidden — use 'err' instead"
+
+[[forbidden-identifiers.words]]
+word = "closure"
+code = "FBD005"
+message = "'closure' is a forbidden word"
+
+[[forbidden-identifiers.words]]
+word = "connection"
+code = "FBD006"
+message = "'connection' is forbidden — use 'conn'"
+
+[[forbidden-identifiers.words]]
+word = "txn"
+code = "FBD007"
+message = "'txn' is a forbidden abbreviation of 'transaction'"
+
+[[forbidden-identifiers.words]]
+word = "tx"
+code = "FBD008"
+message = "'tx' is a forbidden abbreviation of 'transaction'"
+
+[[forbidden-identifiers.words]]
+word = "extension"
+code = "FBD010"
+message = "'extension' is forbidden — use 'ext' instead"
+
+[[forbidden-identifiers.words]]
+word = "previous"
+code = "FBD011"
+message = "'previous' is forbidden — use 'prev' instead"
+
 [trait-use-anonymous]
-# Additional external trait paths governed by the import style.
-external_traits = ["poprako_util::time::ToUnixMilli"]
+# The trait lists replace the packaged defaults entirely.
+external_traits = [
+    "anyhow::Context",
+    "futures::FutureExt",
+    "futures::StreamExt",
+    "itertools::Itertools",
+    "poprako_util::time::ToUnixMilli",
+    "serde::Deserialize",
+    "serde::Serialize",
+    "std::convert::TryFrom",
+    "std::convert::TryInto",
+    "std::io::BufRead",
+    "std::io::Read",
+    "std::io::Write",
+    "std::iter::Iterator",
+    "tokio_stream::StreamExt",
+    "tracing::Instrument",
+]
 # Traits consumed only through framework macro expansion.
 macro_traits = [
     "crate::part_impl::repo::rdb_impl::incl::framework::BatchByIds",
