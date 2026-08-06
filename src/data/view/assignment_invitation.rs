@@ -8,7 +8,6 @@ use utoipa::ToSchema;
 use poprako_util::time::ToUnixMilli as _;
 
 use crate::model::read::proj::assignment_invitation::AssignmentInvitationInfo;
-
 use crate::value::role::RoleMask;
 
 /// Presentation-ready assignment invitation information.

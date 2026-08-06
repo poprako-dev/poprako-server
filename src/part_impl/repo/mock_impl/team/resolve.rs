@@ -9,6 +9,9 @@ use crate::part_impl::repo::mock_impl::{
 };
 use crate::result::{BaseError, BaseRest, accept};
 
+#[cfg(test)]
+mod tests;
+
 // Resolve the owning team for a comic from in-memory state.
 fn resolve_comic_team_id(state: &MockState, id: &str) -> BaseRest<String> {
     //
@@ -111,6 +114,3 @@ impl Step<ResolveTeamId<'_>, MockContext> for Mock {
         resolve_team_id(&context.state, oper)
     }
 }
-
-#[cfg(test)]
-mod tests;

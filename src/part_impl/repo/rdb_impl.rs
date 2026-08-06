@@ -40,11 +40,12 @@ pub mod termbase;
 /// Shared RDB integration-test fixtures.
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod test_shared;
-#[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
-mod tests;
 /// Unit repository operations.
 pub mod unit;
 /// User repository operations.
 pub mod user;
 /// Workset repository operations.
 pub mod workset;
+
+#[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
+mod tests;

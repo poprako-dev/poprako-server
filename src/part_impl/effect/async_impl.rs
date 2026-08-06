@@ -22,11 +22,12 @@ mod chapter;
 mod dispatch;
 // Background event handler runner.
 mod handler;
+// User event handlers.
+mod user;
+
 #[cfg(test)]
 // Mock and integration tests for async dispatcher behavior.
 mod tests;
-// User event handlers.
-mod user;
 
 /// Async side-effect dispatcher backed by a bounded channel.
 ///

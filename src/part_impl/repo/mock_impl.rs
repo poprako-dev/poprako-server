@@ -70,15 +70,16 @@ pub mod team;
 pub mod term;
 /// Mock in-memory implementations for termbase repository operations.
 pub mod termbase;
-// Mock-only tests and fixtures for repository adapter scenarios.
-#[cfg(test)]
-mod tests;
 /// Mock implementations for unit repository operations.
 pub mod unit;
 /// Mock implementations for user repository operations.
 pub mod user;
 /// Mock implementations for workset repository operations.
 pub mod workset;
+
+// Mock-only tests and fixtures for repository adapter scenarios.
+#[cfg(test)]
+mod tests;
 
 /// In-memory state holding all mock repository records.
 #[cfg_attr(test, derive(Clone, Default))]

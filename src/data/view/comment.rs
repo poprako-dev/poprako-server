@@ -12,9 +12,7 @@ use futures::future::OptionFuture;
 use poprako_util::time::ToUnixMilli as _;
 
 use crate::model::read::proj::comment::CommentInfo;
-
 use crate::part::image::ImagePool;
-
 use crate::result::{BaseRest, accept};
 
 /// Presentation-ready team board comment information.

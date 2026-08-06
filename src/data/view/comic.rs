@@ -1,24 +1,19 @@
 //! View DTOs for the comic domain.
 
 use futures::future::OptionFuture;
-
 use serde::Serialize;
 
 use poprako_util::time::ToUnixMilli as _;
 
 use crate::data::view::team::TeamInfoView;
-
 use crate::data::view::user::UserInfoView;
-
 use crate::data::view::workset::WorksetInfoView;
 
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
 use crate::model::read::proj::comic::ComicInfo;
-
 use crate::part::image::ImagePool;
-
 use crate::result::{BaseRest, accept};
 
 #[cfg(test)]
