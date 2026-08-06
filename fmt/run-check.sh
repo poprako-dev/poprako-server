@@ -18,6 +18,23 @@ fi
 
 FAILED=false
 
+echo "━━━ rust-style-lint: shared checkers ━━━"
+RUST_STYLE_LINT_DIR="${RUST_STYLE_LINT_DIR:-../rust-style-lint}"
+
+if [ -d "$RUST_STYLE_LINT_DIR/rust_style_lint" ]; then
+    if PYTHONPATH="$RUST_STYLE_LINT_DIR" \
+        uv run --python fmt/.venv/bin/python python3 -m rust_style_lint --root .; then
+        echo "✓ rust-style-lint passed"
+    else
+        echo "✗ rust-style-lint failed"
+        FAILED=true
+    fi
+else
+    echo "✗ rust-style-lint not found at $RUST_STYLE_LINT_DIR" >&2
+    FAILED=true
+fi
+echo
+
 for f in fmt/*/check.py; do
     [ -f "$f" ] || continue
     name=$(basename "$(dirname "$f")")
