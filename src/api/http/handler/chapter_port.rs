@@ -16,7 +16,6 @@ use crate::data::instr::chapter_port::ImportChapterTranslationInstr;
 use crate::data::val::chapter_port::{
     ExportChapterTranslationVal, ImportChapterTranslationVal,
 };
-#[allow(unused_imports)]
 use crate::model::shared::user::UserToken;
 use crate::usecase;
 use crate::value::chapter_port::TranslationFormat;

@@ -48,6 +48,7 @@ pub use reserve::reserve_chapter_pages;
 
 // Page reservation workflow and related orchestration.
 mod reserve;
+
 #[cfg(test)]
 // Unit tests for page metadata and upload reservation flows.
 mod tests;

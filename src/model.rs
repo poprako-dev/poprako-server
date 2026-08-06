@@ -8,13 +8,11 @@
 pub mod chapter_port;
 /// Page port persisted entity model.
 pub mod page_port;
-/// Unit port persisted entity model.
-pub mod unit_port;
-
-/// Value groups shared by read and write models.
-pub mod shared;
-
 /// Repository read models.
 pub mod read;
+/// Value groups shared by read and write models.
+pub mod shared;
+/// Unit port persisted entity model.
+pub mod unit_port;
 /// Repository write models.
 pub mod write;

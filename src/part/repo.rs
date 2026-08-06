@@ -24,9 +24,6 @@
 //! [`Run`]: poprako_orchestra::Run
 //! [`Step`]: poprako_orchestra::Step
 
-/// Repository operation descriptors.
-pub mod oper;
-
 /// Announcement repository port.
 pub mod announcement;
 /// Assignment repository port.
@@ -47,6 +44,8 @@ pub mod member;
 pub mod member_invitation;
 /// Online-user repository port.
 pub mod online_user;
+/// Repository operation descriptors.
+pub mod oper;
 /// Page repository port.
 pub mod page;
 /// System mail repository port.

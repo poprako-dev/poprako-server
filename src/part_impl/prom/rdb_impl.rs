@@ -37,6 +37,7 @@ mod repo;
 #[cfg(all(test, feature = "rdb", feature = "prom_impl"))]
 // Internal organization of the `test_shared` module.
 mod test_shared;
+
 #[cfg(all(test, feature = "rdb", feature = "prom_impl"))]
 // Internal organization of the `tests` module.
 mod tests;
