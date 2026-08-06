@@ -2,6 +2,14 @@
 pub mod announcement;
 /// Assignment value types.
 pub mod assignment;
+/// Chapter value types (stage, stage phase, stage oper).
+pub mod chapter;
+/// Chapter port value types.
+pub mod chapter_port;
+/// Comic value types.
+pub mod comic;
+/// Comic archive month-slot values.
+pub mod comic_archive;
 /// Comment value types.
 pub mod comment;
 /// Image content identity value types.
@@ -10,22 +18,11 @@ pub mod image;
 pub mod incl;
 /// Index computation helpers.
 pub mod index;
-/// Role and perm value types.
-pub mod role;
-
-/// Chapter value types (stage, stage phase, stage oper).
-pub mod chapter;
-/// Comic value types.
-pub mod comic;
-/// Comic archive month-slot values.
-pub mod comic_archive;
 /// Member value types.
 pub mod member;
 /// Member invitation value types.
 pub mod member_invitation;
-
-/// Chapter port value types.
-pub mod chapter_port;
-
+/// Role and perm value types.
+pub mod role;
 /// Unit-specific values.
 pub mod unit;

@@ -3,8 +3,6 @@
 #[macro_use]
 mod macros;
 // Generic batch-include framework with per-table loaders.
-mod framework;
-
 /// Include logic for announcements.
 pub mod announcement;
 /// Include logic for assignments.
@@ -15,6 +13,8 @@ pub mod chapter;
 pub mod comic;
 /// Include logic for comments.
 pub mod comment;
+// Framework include helper traits.
+mod framework;
 /// Include logic for members.
 pub mod member;
 /// Include logic for member invitations.

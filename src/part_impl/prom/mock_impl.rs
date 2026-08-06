@@ -37,6 +37,7 @@ mod image_task;
 mod invitation;
 // Internal organization of the `json` module.
 mod json;
+
 // Internal organization of the `tests` module.
 mod tests;
 

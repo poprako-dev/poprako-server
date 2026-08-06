@@ -72,6 +72,7 @@ pub use list::list_infos;
 
 // Comic listing use cases (internal).
 mod list;
+
 /// Comic use-case test helpers.
 #[cfg(test)]
 pub mod tests;

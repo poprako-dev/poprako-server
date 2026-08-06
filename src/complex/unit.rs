@@ -13,6 +13,7 @@ pub use perm::UnitPermComplex;
 
 // perm gates for Unit reads and edit fields.
 mod perm;
+
 #[cfg(test)]
 mod tests;
 

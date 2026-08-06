@@ -10,6 +10,7 @@ pub mod chapter;
 pub mod image;
 /// Deferred invitation payloads.
 pub mod invitation;
+
 /// Shared payload tests.
 #[cfg(test)]
 pub mod tests;
