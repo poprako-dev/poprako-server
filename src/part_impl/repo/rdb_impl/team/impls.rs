@@ -1,0 +1,177 @@
+use poprako_orchestra::{Run, Step};
+use tracing::instrument;
+
+use crate::model::read::proj::team::TeamInfo;
+use crate::model::write::team::TeamAvatarReservation;
+use crate::part::repo::oper::team::{
+    AllocTeamWorksetIndex, CreateTeam, DeleteTeam, GetTeamInfoExcluded,
+    LockTeam, ReserveTeamAvatar, UpdateTeam,
+};
+use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::rdb_impl::team::helpers::{
+    create, delete, get_info_by_id, get_info_excluded,
+    increment_workset_next_index, list_infos, lock_team, mark_avatar_uploaded,
+    reserve_avatar, update_info,
+};
+use crate::result::{BaseError, BaseRest, accept};
+use crate::shared::{RdbConn, RdbContext};
+
+impl Run<UpdateTeam<'_>> for HybRepo {
+    // Keep update orchestration failures compatible with other team operations.
+    type Error = BaseError;
+
+    #[instrument(level = "info", skip_all)]
+    // Route team mutation variants into the corresponding SQL update handlers.
+    async fn run(&self, oper: &UpdateTeam<'_>) -> BaseRest<()> {
+        //
+        match oper {
+            //
+            UpdateTeam::Info { repl } => {
+                submit_query!(self.core, update_info, repl)
+            }
+
+            UpdateTeam::MarkAvatarUploaded { repl } => {
+                //
+                submit_query!(
+                    self.core,
+                    mark_avatar_uploaded,
+                    &repl.id,
+                    repl.avatar_version,
+                    repl.avatar_key.as_deref(),
+                    repl.is_avatar_uploaded
+                )
+            }
+        }
+    }
+}
+
+impl Step<CreateTeam<'_>, RdbContext> for HybRepo {
+    // Convert repository step failures to base error during transaction execution.
+    type Error = BaseError;
+
+    #[instrument(level = "info", skip_all)]
+    // Persist a new team row within an open transaction and return persisted info.
+    async fn step(
+        &self,
+        context: &mut RdbContext,
+        oper: &CreateTeam<'_>,
+    ) -> BaseRest<TeamInfo> {
+        create(context.conn(), oper.entry).await
+    }
+}
+
+impl Step<UpdateTeam<'_>, RdbContext> for HybRepo {
+    // Keep transactional team updates on the same base error contract.
+    type Error = BaseError;
+
+    #[instrument(level = "info", skip_all)]
+    // Apply either profile updates or avatar flag updates in current transaction.
+    async fn step(
+        &self,
+        context: &mut RdbContext,
+        oper: &UpdateTeam<'_>,
+    ) -> BaseRest<()> {
+        //
+        match oper {
+            //
+            UpdateTeam::Info { repl } => {
+                update_info(context.conn(), repl).await
+            }
+
+            UpdateTeam::MarkAvatarUploaded { repl } => {
+                //
+                mark_avatar_uploaded(
+                    context.conn(),
+                    &repl.id,
+                    repl.avatar_version,
+                    repl.avatar_key.as_deref(),
+                    repl.is_avatar_uploaded,
+                )
+                .await
+            }
+        }
+    }
+}
+
+impl Step<ReserveTeamAvatar<'_>, RdbContext> for HybRepo {
+    // Report avatar-reservation validation and mutation errors through base error.
+    type Error = BaseError;
+
+    #[instrument(level = "info", skip_all)]
+    // Reserve the next avatar slot and return upload reservation metadata.
+    async fn step(
+        &self,
+        context: &mut RdbContext,
+        oper: &ReserveTeamAvatar<'_>,
+    ) -> BaseRest<TeamAvatarReservation> {
+        //
+        reserve_avatar(context.conn(), oper.id, oper.image_hash, oper.image_ext)
+            .await
+    }
+}
+
+impl Step<GetTeamInfoExcluded<'_>, RdbContext> for HybRepo {
+    // Preserve consistent error typing for locked team detail fetches.
+    type Error = BaseError;
+
+    #[instrument(level = "info", skip_all)]
+    // Load team info with row lock and exclusion rules for transactional safety.
+    async fn step(
+        &self,
+        context: &mut RdbContext,
+        oper: &GetTeamInfoExcluded<'_>,
+    ) -> BaseRest<TeamInfo> {
+        //
+        match oper {
+            //
+            GetTeamInfoExcluded::Id { id } => {
+                get_info_excluded(context.conn(), id).await
+            }
+        }
+    }
+}
+
+impl Step<LockTeam<'_>, RdbContext> for HybRepo {
+    // Keep lock contention errors on the shared repository error type.
+    type Error = BaseError;
+
+    #[instrument(level = "info", skip_all)]
+    // Acquire row lock for update sequencing before sensitive team writes.
+    async fn step(
+        &self,
+        context: &mut RdbContext,
+        oper: &LockTeam<'_>,
+    ) -> BaseRest<()> {
+        lock_team(context.conn(), oper.id).await
+    }
+}
+
+impl Step<DeleteTeam<'_>, RdbContext> for HybRepo {
+    // Use the common base error for hard delete operations in transactions.
+    type Error = BaseError;
+
+    #[instrument(level = "info", skip_all)]
+    // Remove a team row after the caller has coordinated any dependent effects.
+    async fn step(
+        &self,
+        context: &mut RdbContext,
+        oper: &DeleteTeam<'_>,
+    ) -> BaseRest<()> {
+        delete(context.conn(), oper.id).await
+    }
+}
+
+impl Step<AllocTeamWorksetIndex<'_>, RdbContext> for HybRepo {
+    // Keep index allocation failures mapped to repository base errors.
+    type Error = BaseError;
+
+    #[instrument(level = "info", skip_all)]
+    // Atomically increment and return previous index for next workset reservation.
+    async fn step(
+        &self,
+        context: &mut RdbContext,
+        oper: &AllocTeamWorksetIndex<'_>,
+    ) -> BaseRest<i32> {
+        increment_workset_next_index(context.conn(), oper.id).await
+    }
+}

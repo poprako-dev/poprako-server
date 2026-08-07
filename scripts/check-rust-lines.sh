@@ -8,10 +8,8 @@ for rust_file in $(find src poprako-util/src poprako-swagger/src -type f -name '
     max_lines=600
 
     case "$rust_file" in
-        src/complex/chapter.rs) max_lines=671 ;;
         src/complex/chapter_port/import.rs) max_lines=770 ;;
         src/part_impl/prom/mock_impl.rs) max_lines=643 ;;
-        src/part_impl/repo/mock_impl/chapter/orchestra.rs) max_lines=670 ;;
         src/part_impl/repo/mock_impl/comic.rs) max_lines=718 ;;
         src/part_impl/repo/rdb_impl/comic/step_impl.rs) max_lines=674 ;;
         src/part_impl/repo/rdb_impl/team.rs) max_lines=626 ;;
