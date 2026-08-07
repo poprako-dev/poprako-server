@@ -2,11 +2,9 @@ use std::collections::HashMap;
 
 use poprako_util::i18n::trl;
 
-use crate::model::chapter_port::ChapterPoprakoProjectImport;
 use crate::model::page_port::{PageTranslationImport, PoprakoPageImport};
-use crate::model::shared::unit::{UnitCoord, UnitRevision, UnitTranslation};
+use crate::model::shared::unit::{UnitRevision, UnitTranslation};
 use crate::model::unit_port::UnitTranslationImport;
-use crate::model::write::unit::UnitEdit;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
 /// Internal representation of a parsed LabelPlus unit header containing

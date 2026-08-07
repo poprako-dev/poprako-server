@@ -9,12 +9,11 @@ use crate::part::repo::oper::team::{
 };
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::team::helpers::{
-    create, delete, get_info_by_id, get_info_excluded,
-    increment_workset_next_index, list_infos, lock_team, mark_avatar_uploaded,
-    reserve_avatar, update_info,
+    create, delete, get_info_excluded, increment_workset_next_index, lock_team,
+    mark_avatar_uploaded, reserve_avatar, update_info,
 };
-use crate::result::{BaseError, BaseRest, accept};
-use crate::shared::{RdbConn, RdbContext};
+use crate::result::{BaseError, BaseRest};
+use crate::shared::RdbContext;
 
 impl Run<UpdateTeam<'_>> for HybRepo {
     // Keep update orchestration failures compatible with other team operations.

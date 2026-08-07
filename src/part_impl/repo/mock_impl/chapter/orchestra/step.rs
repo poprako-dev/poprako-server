@@ -11,11 +11,11 @@ use crate::part::repo::oper::chapter::{
 };
 use crate::part_impl::repo::mock_impl::chapter::orchestra::find_pinned_chapter_info;
 use crate::part_impl::repo::mock_impl::chapter::{
-    apply_chapter_incls, create_chapter, get_chapter_by_id, list_infos,
+    create_chapter, get_chapter_by_id, list_infos,
 };
 use crate::part_impl::repo::mock_impl::{Mock, MockContext, expected, now};
 use crate::result::{BaseError, BaseRest, accept};
-use crate::value::chapter::{ChapterInclOpt, Stage, StagePhase};
+use crate::value::chapter::{Stage, StagePhase};
 
 impl<'a> Step<CompleteChapterRawProvide<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.

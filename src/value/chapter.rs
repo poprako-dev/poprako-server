@@ -7,10 +7,9 @@ use crate::value::incl::InclOpt;
 use utoipa::ToSchema;
 
 pub use mask::StageMask;
-pub use stage::{
-    Stage, StageOper, StagePhase, StagePhaseField, is_valid_stage_phase,
-    try_modify_stage,
-};
+pub use stage::{Stage, StageOper, StagePhase, try_modify_stage};
+#[allow(unused_imports)]
+pub use stage::{StagePhaseField, is_valid_stage_phase};
 
 // Stage-phase bitmask helpers.
 mod mask;
@@ -20,20 +19,6 @@ mod stage;
 // Keep chapter-specific tests colocated with the value-level invariants they verify.
 #[cfg(test)]
 mod tests;
-
-/// A composite bitmask storing the phase of all 6 workflow stages.
-///
-/// Each stage occupies 2 bits (4 possible states matching
-/// [`StagePhaseField`]), ordered from low bits:
-///
-/// | Stage | Bits | Field |
-/// |:---:|:---:|:---:|
-/// | RawProvide | 0–1 | `StagePhaseField` |
-/// | Translate | 2–3 | `StagePhaseField` |
-/// | Proofread | 4–5 | `StagePhaseField` |
-/// | TypesetRedraw | 6–7 | `StagePhaseField` |
-/// | Review | 8–9 | `StagePhaseField` |
-/// | Publish | 10–11 | `StagePhaseField` |
 
 /// Incl opts for chapter info queries.
 ///

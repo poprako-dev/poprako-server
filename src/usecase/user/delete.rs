@@ -1,4 +1,4 @@
-use poprako_orchestra::{Nucl, OperProxy as _, OperStep as _};
+use poprako_orchestra::{Nucl, OperStep as _};
 use poprako_orchestra_extra::prom::oper::Defer;
 use poprako_orchestra_extra::prom::task::Task;
 use tracing::instrument;

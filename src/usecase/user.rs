@@ -3,7 +3,7 @@
 use std::time::Duration;
 
 use poprako_orchestra::{Nucl, OperRun as _, OperStep as _};
-use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
+use poprako_orchestra_extra::prom::oper::DeferBatch;
 use poprako_orchestra_extra::prom::task::Task;
 use tracing::instrument;
 
@@ -28,12 +28,10 @@ use crate::part::image::{ImageManager, ImagePool, ImageUploadSpec};
 use crate::part::prom::Prom;
 use crate::part::prom::payload::{TaskPayload, image};
 use crate::part::repo::member::MemberRepo;
-use crate::part::repo::oper::member::{
-    DeleteMember, ListMemberInfosExcluded, UpdateMember,
-};
+use crate::part::repo::oper::member::UpdateMember;
 use crate::part::repo::oper::user::{
-    DeleteUser, GetUserCredential, GetUserInfo, GetUserInfoExcluded,
-    ReserveUserAvatar, UpdateUser,
+    GetUserCredential, GetUserInfo, GetUserInfoExcluded, ReserveUserAvatar,
+    UpdateUser,
 };
 use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};

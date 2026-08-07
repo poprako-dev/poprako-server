@@ -5,7 +5,7 @@ use crate::model::read::proj::user::UserInfo;
 use crate::model::read::proj::workset::WorksetInfo;
 use crate::model::read::spec::comic::ComicListSpec;
 use crate::part_impl::repo::mock_impl::{MockState, expected, now};
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseRest, accept};
 use crate::value::chapter::StageMask;
 use crate::value::comic::ComicInclOpt;
 use crate::value::incl::expand_incl_opts;

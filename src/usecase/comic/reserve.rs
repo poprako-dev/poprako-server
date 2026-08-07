@@ -1,11 +1,9 @@
 use std::time::Duration;
 
-use poprako_orchestra::{Nucl, OperProxy as _, OperStep as _, run_proxy};
+use poprako_orchestra::{Nucl, OperStep as _, run_proxy};
 use poprako_orchestra_extra::prom::oper::DeferBatch;
 use poprako_orchestra_extra::prom::task::Task;
 use tracing::instrument;
-
-use poprako_util::i18n::trl;
 
 use crate::complex::comic::ComicPermComplex;
 use crate::complex::image::ImageComplex;
@@ -22,7 +20,7 @@ use crate::part::repo::oper::comic::ReserveComicCover;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::team::ResolveTeamId;
 use crate::part::repo::team::TeamRepo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, accept};
 
 /// Reserves a new comic cover upload slot.
 #[instrument(level = "info", skip(nucl, repo, prom, image_pool))]
