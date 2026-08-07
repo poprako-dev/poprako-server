@@ -6,7 +6,7 @@ use poprako_util::i18n::trl;
 use utoipa::ToSchema;
 
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::value::chapter::{
+use crate::value::chapter::stage::{
     Stage, StagePhase, StagePhaseField, is_valid_stage_phase,
 };
 
