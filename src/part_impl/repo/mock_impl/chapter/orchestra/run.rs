@@ -6,6 +6,7 @@ use crate::part::repo::oper::chapter::{
     CompleteChapterRawProvide, FindPinnedChapterInfo, GetChapterInfo,
     ListChapterInfos, ListPinnedChapterInfos, StartChapterStage,
 };
+use crate::part_impl::repo::mock_impl::chapter::get_chapter_by_id;
 use crate::part_impl::repo::mock_impl::chapter::orchestra::{
     find_pinned_chapter_info, list_chapter_infos, list_pinned_chapter_infos,
 };

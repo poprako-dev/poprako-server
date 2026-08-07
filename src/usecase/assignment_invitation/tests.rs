@@ -1,19 +1,9 @@
-// list_infos(list_infos)(positive): reviewer should list chapter invitations.
-// list_infos(list_infos)(negative): non-reviewer should be rejected.
-// create(create)(positive): reviewer should create a pending assignment invitation.
-// create(create)(negative): invitee with existing assignment should be rejected.
-// delete(delete)(positive): reviewer should delete an invitation.
-// delete(delete)(negative): non-reviewer should be rejected without deleting invitation.
-// join(join)(positive): invited user should create assignment and consume invitation.
-// join(join)(positive): invited user should merge roles into existing assignment.
-// join(join)(negative): mismatched user qid should be rejected without consuming invitation.
-
 use super::*;
+
 use crate::data::instr::assignment_invitation::{
     CreateAssignmentInvitationInstr, JoinAssignmentInvitationInstr,
     ListAssignmentInvitationInfosInstr,
 };
-
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::assignment_invitation::AssignmentInvitationInfo;
 use crate::model::read::proj::chapter::ChapterInfo;
@@ -30,6 +20,18 @@ use crate::result::ExpectedVariant;
 use crate::test_util::{assert_expected_variant, now};
 use crate::value::chapter::{Stage, StageMask, StagePhase};
 use crate::value::role::{RoleField, RoleMask};
+
+// list_infos(list_infos)(positive): reviewer should list chapter invitations.
+// list_infos(list_infos)(negative): non-reviewer should be rejected.
+// create(create)(positive): reviewer should create a pending assignment invitation.
+// create(create)(negative): invitee with existing assignment should be rejected.
+// delete(delete)(positive): reviewer should delete an invitation.
+// delete(delete)(negative): non-reviewer should be rejected without deleting invitation.
+// join(join)(positive): invited user should create assignment and consume invitation.
+// join(join)(positive): invited user should merge roles into existing assignment.
+// join(join)(negative): mismatched user qid should be rejected without consuming invitation.
+
+mod extra;
 
 // Build a token fixture for invitation test requests.
 fn token(user_id: &str) -> UserToken {
@@ -567,38 +569,4 @@ async fn join_existing_assignment_merges_roles() {
     );
 
     assert!(!snapshot.assignment_invitations[0].is_pending);
-}
-
-#[tokio::test]
-async fn join_mismatched_qid_is_rejected() {
-    //
-    let mock = Mock::new();
-
-    seed_scope(&mock);
-
-    mock.seed_user(
-        user("target-user", "target-qid", "Target"),
-        credential("target-user"),
-    );
-
-    mock.seed_member(member("target-user", role(RoleField::TRANSLATOR)));
-
-    mock.seed_assignment_invitation(invitation(
-        "invitation-1",
-        "other-qid",
-        role(RoleField::TRANSLATOR),
-    ));
-
-    let err = join((&mock, &mock, &mock), token("target-user"), join_data())
-        .await
-        .err()
-        .unwrap();
-
-    assert_expected_variant(err, ExpectedVariant::Args);
-
-    let snapshot = mock.snapshot();
-
-    assert!(snapshot.assignments.is_empty());
-
-    assert!(snapshot.assignment_invitations[0].is_pending);
 }

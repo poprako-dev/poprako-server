@@ -9,6 +9,7 @@ use crate::part::repo::oper::chapter::{
     ResetChapterRawProvide, SetChapterPageCounters, UnpinOtherChapters,
     UpdateChapter, UpdateChapterStage,
 };
+use crate::part_impl::repo::mock_impl::chapter::orchestra::find_pinned_chapter_info;
 use crate::part_impl::repo::mock_impl::chapter::{
     apply_chapter_incls, create_chapter, get_chapter_by_id, list_infos,
 };
