@@ -2,6 +2,7 @@
 //! handlers, router, OpenAPI, and server entry point.
 
 mod shared;
+
 // FIXME: why all pub?
 
 /// Authentication utilities for the HTTP API.

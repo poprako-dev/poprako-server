@@ -38,6 +38,9 @@ use crate::part_impl::prom::mock_impl::MockPromRecord;
 use crate::result::{BaseError, ExpectedVariant};
 use crate::value::role::{RoleField, RoleMask};
 
+// Mock helper for in-memory nucl-related types.
+mod nucl;
+
 /// Mock in-memory implementations for announcement repository operations.
 pub mod announcement;
 /// Mock in-memory implementations for assignment repository operations.
@@ -58,8 +61,6 @@ pub mod member;
 pub mod member_invitation;
 /// Mock in-memory implementations for online-user repository operations.
 pub mod online_user;
-// Mock helper for in-memory nucl-related types.
-mod nucl;
 /// Mock implementations for page repository operations.
 pub mod page;
 /// Mock implementations for system mail repository operations.
