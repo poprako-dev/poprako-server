@@ -10,7 +10,19 @@ use crate::value::chapter::stage::{
     Stage, StagePhase, StagePhaseField, is_valid_stage_phase,
 };
 
-/// Bitmask of workflow stage phases.
+/// A composite bitmask storing the phase of all 6 workflow stages.
+///
+/// Each stage occupies 2 bits (4 possible states matching
+/// [`StagePhaseField`]), ordered from low bits:
+///
+/// | Stage | Bits | Field |
+/// |:---:|:---:|:---:|
+/// | RawProvide | 0–1 | `StagePhaseField` |
+/// | Translate | 2–3 | `StagePhaseField` |
+/// | Proofread | 4–5 | `StagePhaseField` |
+/// | TypesetRedraw | 6–7 | `StagePhaseField` |
+/// | Review | 8–9 | `StagePhaseField` |
+/// | Publish | 10–11 | `StagePhaseField` |
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct StageMask(u32);
