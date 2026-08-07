@@ -90,8 +90,9 @@ impl PageManifestComplex {
                 .filter(|(existing_index, page_info)| {
                     //
                     !consumed_existing_indexes.contains(existing_index)
-                        && page_info.image_hash == page_spec.image_hash
-                        && page_info.image_ext == page_spec.ext
+                        && page_info.image_hash.as_ref()
+                            == Some(&page_spec.image_hash)
+                        && page_info.image_ext == Some(page_spec.ext)
                 })
                 .min_by(|(_, left), (_, right)| candidate_order(left, right))
                 .map(|(existing_index, _)| existing_index);

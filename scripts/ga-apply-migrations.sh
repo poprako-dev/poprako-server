@@ -30,6 +30,14 @@ postgres_running=$(docker container inspect \
     exit 1
 }
 
+postgres_database_name=$(docker exec "$postgres_container" sh -eu -c \
+    'printf %s "${POSTGRES_DB:-${POSTGRES_USER:?}}"')
+
+[ "$postgres_database_name" = "db_poprako_server_prod" ] || {
+    echo "PostgreSQL container must use db_poprako_server_prod" >&2
+    exit 1
+}
+
 migration_batch=$(mktemp)
 
 cleanup() {

@@ -103,7 +103,7 @@ impl ComicComplex {
                 continue;
             };
 
-            let (true, Some(image_key)) =
+            let (Some(true), Some(image_key)) =
                 (page_info.is_image_uploaded, &page_info.image_key)
             else {
                 continue;
@@ -165,7 +165,7 @@ impl ComicComplex {
         }
 
         if let Some(cover_key) = &comic_info.cover_key
-            && comic_info.is_cover_uploaded
+            && comic_info.is_cover_uploaded == Some(true)
         {
             let (delete_id, payload) = (
                 ImageComplex::gen_delete_id(),

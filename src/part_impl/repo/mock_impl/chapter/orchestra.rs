@@ -26,8 +26,6 @@ fn list_chapter_infos(
     spec: &ChapterListSpec,
 ) -> Vec<ChapterInfo> {
     //
-    // Internal implementation detail.
-    // Internal implementation detail.
     let mut chapter_infos = list_infos(state, &spec.comic_id);
 
     for chapter_info in &mut chapter_infos {
@@ -260,7 +258,9 @@ impl<'a> Run<CompleteChapterRawProvide<'a>> for Mock {
 
         let all_pages_uploaded = page_count > 0
             && state.pages.iter().all(|page_info| {
-                page_info.chapter_id != oper.id || page_info.is_image_uploaded
+                //
+                page_info.chapter_id != oper.id
+                    || page_info.is_image_uploaded.unwrap_or(false)
             });
 
         if !all_pages_uploaded {
@@ -318,7 +318,9 @@ impl<'a> Step<CompleteChapterRawProvide<'a>, MockContext> for Mock {
 
         let all_pages_uploaded = page_count > 0
             && context.state.pages.iter().all(|page_info| {
-                page_info.chapter_id != oper.id || page_info.is_image_uploaded
+                //
+                page_info.chapter_id != oper.id
+                    || page_info.is_image_uploaded.unwrap_or(false)
             });
 
         if !all_pages_uploaded {

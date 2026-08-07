@@ -175,7 +175,7 @@ where
     };
 
     match (
-        page_info.image_version == image_identity.version,
+        page_info.image_version == Some(image_identity.version),
         page_info.image_key.as_deref() == Some(image_identity.object_key),
     ) {
         //
@@ -212,7 +212,7 @@ where
             .await?;
 
             let image_version_matches =
-                locked_page_info.image_version == image_identity.version;
+                locked_page_info.image_version == Some(image_identity.version);
 
             let image_key_matches = locked_page_info.image_key.as_deref()
                 == Some(image_identity.object_key);
@@ -334,7 +334,7 @@ where
     };
 
     match (
-        page_info.image_version == image_identity.version,
+        page_info.image_version == Some(image_identity.version),
         page_info.image_key.as_deref() == Some(image_identity.object_key),
     ) {
         //
@@ -371,7 +371,7 @@ where
             .await?;
 
             let image_version_matches =
-                locked_page_info.image_version == image_identity.version;
+                locked_page_info.image_version == Some(image_identity.version);
 
             let image_key_matches = locked_page_info.image_key.as_deref()
                 == Some(image_identity.object_key);

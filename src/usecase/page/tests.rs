@@ -19,6 +19,7 @@ use crate::data::instr::page::{
     ListPageInfosInstr, MarkPageImageUploadedInstr, PageImageInstr,
     ReserveChapterPagesInstr, ReservePageImageInstr,
 };
+use crate::value::image::{ImageExt, ImageHash};
 
 use time::{Duration as TimeDuration, OffsetDateTime};
 
@@ -40,7 +41,6 @@ use crate::test_util::{
     assert_one_image_check_record,
 };
 use crate::value::chapter::{Stage, StageMask, StagePhase};
-use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
 // Reservation tests for chapter page creation and lifecycle.
@@ -84,10 +84,10 @@ fn comic(id: &str, workset_id: &str) -> ComicInfo {
         author: "author".into(),
         description: None,
         cover_key: None,
-        is_cover_uploaded: false,
-        cover_version: 0,
-        cover_hash: ImageHash::default(),
-        cover_ext: ImageExt::Png,
+        is_cover_uploaded: None,
+        cover_version: None,
+        cover_hash: None,
+        cover_ext: None,
         chapter_count: 1,
         creator_id: "user-1".into(),
         workset: None,
@@ -170,10 +170,10 @@ fn page(
         chapter_id: "chapter-1".into(),
         index,
         image_key: image_key.map(Into::into),
-        is_image_uploaded: image_uploaded,
-        image_version,
-        image_hash: ImageHash::new([0u8; 32]),
-        image_ext: ImageExt::Png,
+        is_image_uploaded: Some(image_uploaded),
+        image_version: Some(image_version),
+        image_hash: Some(ImageHash::new([0u8; 32])),
+        image_ext: Some(ImageExt::Png),
         total_unit_count: 0,
         translated_unit_count: 0,
         proofread_unit_count: 0,
@@ -238,9 +238,9 @@ async fn reserve_image_replaces_key_and_enqueues_prom() {
         Some("page/chapter_chapter-1/page-1-2.jpg".into())
     );
 
-    assert!(!snapshot.pages[0].is_image_uploaded);
+    assert_ne!(snapshot.pages[0].is_image_uploaded, Some(true));
 
-    assert_eq!(snapshot.pages[0].image_version, 2);
+    assert_eq!(snapshot.pages[0].image_version, Some(2));
 
     assert_eq!(snapshot.prom_records.len(), 3);
 
@@ -288,7 +288,7 @@ async fn reserve_image_reuses_same_uploaded_identity_without_version_bump() {
 
     assert!(reserved.slot.is_none());
 
-    assert_eq!(mock.snapshot().pages[0].image_version, 4);
+    assert_eq!(mock.snapshot().pages[0].image_version, Some(4));
 
     assert!(mock.snapshot().prom_records.is_empty());
 }
@@ -332,7 +332,7 @@ async fn reserve_image_resigns_same_pending_identity() {
             .ends_with("/same.png")
     );
 
-    assert_eq!(mock.snapshot().pages[0].image_version, 4);
+    assert_eq!(mock.snapshot().pages[0].image_version, Some(4));
 
     assert_one_image_check_record(
         &mock.snapshot().prom_records,
@@ -375,9 +375,9 @@ async fn reserve_image_replaces_same_hash_with_different_extension() {
 
     assert_eq!(reserved.slot.as_ref().unwrap().image_version, 5);
 
-    assert_eq!(snapshot.pages[0].image_version, 5);
+    assert_eq!(snapshot.pages[0].image_version, Some(5));
 
-    assert_eq!(snapshot.pages[0].image_ext, ImageExt::Webp);
+    assert_eq!(snapshot.pages[0].image_ext, Some(ImageExt::Webp));
 
     assert!(snapshot.prom_records.iter().any(|record| {
         matches!(
@@ -566,5 +566,5 @@ async fn mark_image_uploaded_marks_once_and_idempotent() {
 
     let snapshot = mock.snapshot();
 
-    assert!(snapshot.pages[0].is_image_uploaded);
+    assert_eq!(snapshot.pages[0].is_image_uploaded, Some(true));
 }

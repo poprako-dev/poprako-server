@@ -33,7 +33,6 @@ use crate::model::shared::user::UserToken;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::{self, assert_expected_variant};
-use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
 // Member join flows and invitation conversion behavior.
@@ -66,10 +65,10 @@ fn user(id: &str, nickname: &str) -> UserInfo {
         qid: id.into(),
         nickname: nickname.into(),
         avatar_key: None,
-        is_avatar_uploaded: false,
-        avatar_version: 0,
-        avatar_hash: ImageHash::default(),
-        avatar_ext: ImageExt::Png,
+        is_avatar_uploaded: None,
+        avatar_version: None,
+        avatar_hash: None,
+        avatar_ext: None,
         is_sadmin: false,
         last_active_at: time,
         created_at: time,
@@ -87,10 +86,10 @@ fn team(id: &str) -> TeamInfo {
         name: id.into(),
         description: "description".into(),
         avatar_key: None,
-        is_avatar_uploaded: false,
-        avatar_version: 0,
-        avatar_hash: ImageHash::default(),
-        avatar_ext: ImageExt::Png,
+        is_avatar_uploaded: None,
+        avatar_version: None,
+        avatar_hash: None,
+        avatar_ext: None,
         created_at: time,
         updated_at: time,
     }

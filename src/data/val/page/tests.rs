@@ -1,9 +1,8 @@
 use super::*;
 use crate::data::view::image::ImageUploadSlotView;
+use crate::value::image::{ImageExt, ImageHash};
 
 use std::collections::BTreeMap;
-
-use crate::value::image::{ImageExt, ImageHash};
 
 #[test]
 fn reserved_page_serializes_absent_slot_as_null() {

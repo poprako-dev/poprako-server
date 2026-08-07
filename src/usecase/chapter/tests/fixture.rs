@@ -1,5 +1,6 @@
 use super::*;
 
+use crate::value::image::{ImageExt, ImageHash};
 use time::OffsetDateTime;
 
 use crate::model::read::proj::assignment::AssignmentInfo;
@@ -10,7 +11,6 @@ use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::workset::WorksetInfo;
 use crate::model::shared::user::UserToken;
 use crate::value::chapter::StageMask;
-use crate::value::image::{ImageExt, ImageHash};
 
 pub fn token(user_id: &str) -> UserToken {
     UserToken {
@@ -46,10 +46,10 @@ pub fn comic(id: &str, workset_id: &str) -> ComicInfo {
         author: "author".into(),
         description: None,
         cover_key: None,
-        is_cover_uploaded: false,
-        cover_version: 0,
-        cover_hash: ImageHash::default(),
-        cover_ext: ImageExt::Png,
+        is_cover_uploaded: None,
+        cover_version: None,
+        cover_hash: None,
+        cover_ext: None,
         chapter_count: 2,
         creator_id: "user-1".into(),
         workset: None,
@@ -131,10 +131,10 @@ pub fn page(id: &str, chapter_id: &str, image_key: Option<&str>) -> PageInfo {
         chapter_id: chapter_id.into(),
         index: 0,
         image_key: image_key.map(Into::into),
-        is_image_uploaded: image_key.is_some(),
-        image_version: 1,
-        image_hash: ImageHash::new([0u8; 32]),
-        image_ext: ImageExt::Png,
+        is_image_uploaded: Some(image_key.is_some()),
+        image_version: Some(1),
+        image_hash: Some(ImageHash::new([0u8; 32])),
+        image_ext: Some(ImageExt::Png),
         total_unit_count: 0,
         translated_unit_count: 0,
         proofread_unit_count: 0,

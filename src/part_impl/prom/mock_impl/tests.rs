@@ -2,6 +2,7 @@ use super::*;
 
 use crate::model::read::proj::assignment_invitation::AssignmentInvitationInfo;
 use crate::model::read::proj::member_invitation::MemberInvitationInfo;
+use crate::model::read::proj::page::PageInfo;
 use crate::part::prom::payload::invitation::InvitationPayload;
 use crate::test_util::now;
 use crate::value::image::{ImageExt, ImageHash};
@@ -28,10 +29,10 @@ fn user_info(id: &str, avatar_key: &str, avatar_version: u32) -> UserInfo {
         qid: format!("qid-{}", id),
         nickname: format!("nick-{}", id),
         avatar_key: Some(avatar_key.to_string()),
-        is_avatar_uploaded: false,
-        avatar_version,
-        avatar_hash: ImageHash::default(),
-        avatar_ext: ImageExt::Png,
+        is_avatar_uploaded: Some(false),
+        avatar_version: Some(avatar_version),
+        avatar_hash: Some(ImageHash::default()),
+        avatar_ext: Some(ImageExt::Png),
         is_sadmin: false,
         last_active_at: now,
         created_at: now,
@@ -44,6 +45,26 @@ fn user_credential(id: &str) -> UserCredential {
     UserCredential {
         user_id: id.to_string(),
         password_hash: format!("hash-{}", id),
+    }
+}
+
+fn cleared_page_info(id: &str) -> PageInfo {
+    let created_at = now();
+
+    PageInfo {
+        id: id.to_string(),
+        chapter_id: "chapter-1".to_string(),
+        index: 0,
+        image_key: None,
+        is_image_uploaded: None,
+        image_version: None,
+        image_hash: None,
+        image_ext: None,
+        total_unit_count: 0,
+        translated_unit_count: 0,
+        proofread_unit_count: 0,
+        created_at,
+        updated_at: created_at,
     }
 }
 
@@ -174,7 +195,7 @@ async fn process_pending_marks_uploaded_image() {
 
     process_pending(&mock).await.ok().unwrap();
 
-    assert!(mock.snapshot().users[0].is_avatar_uploaded);
+    assert_eq!(mock.snapshot().users[0].is_avatar_uploaded, Some(true));
 }
 
 #[tokio::test]
@@ -216,9 +237,51 @@ async fn process_pending_ignores_stale_image_check() {
 
     let snapshot = mock.snapshot();
 
-    assert!(!snapshot.users[0].is_avatar_uploaded);
+    assert_ne!(snapshot.users[0].is_avatar_uploaded, Some(true));
 
     assert!(snapshot.deleted_image_keys.is_empty());
+}
+
+#[tokio::test]
+async fn process_pending_does_not_revive_cleared_page_image() {
+    let mock = Mock::new();
+
+    mock.seed_page(cleared_page_info("page-1"));
+
+    let prom = mock.clone();
+
+    mock.coord(async move |context| {
+        defer_payload(
+            &prom,
+            context,
+            "prom-1",
+            TaskPayload::Image(image::ImagePayload::CheckUpload {
+                resource_kind: image::ResourceKind::PageImage,
+                resource_id: "page-1".to_string(),
+                object_key: "page-1.png".to_string(),
+                version: 1,
+            }),
+        )
+        .await?;
+
+        Ok::<(), BaseError>(())
+    })
+    .await
+    .unwrap();
+
+    process_pending(&mock).await.unwrap();
+
+    let page_info = &mock.snapshot().pages[0];
+
+    assert_eq!(page_info.image_key, None);
+
+    assert_eq!(page_info.is_image_uploaded, None);
+
+    assert_eq!(page_info.image_version, None);
+
+    assert_eq!(page_info.image_hash, None);
+
+    assert_eq!(page_info.image_ext, None);
 }
 
 #[tokio::test]
@@ -258,7 +321,7 @@ async fn process_pending_rejects_mismatched_image_key() {
 
     assert!(process_pending(&mock).await.is_err());
 
-    assert!(!mock.snapshot().users[0].is_avatar_uploaded);
+    assert_ne!(mock.snapshot().users[0].is_avatar_uploaded, Some(true));
 }
 
 #[tokio::test]

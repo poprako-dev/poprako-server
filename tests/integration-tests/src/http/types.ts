@@ -103,10 +103,10 @@ export interface PageInfoView {
     id: string;
     chapter_id: string;
     index: number;
-    image_url: string | null;
-    image_thumbnail_url: string | null;
-    image_hash: string;
-    ext: ImageExtension;
+    image_url?: string;
+    image_thumbnail_url?: string;
+    image_hash?: string;
+    ext?: ImageExtension;
     total_unit_count: number;
     translated_unit_count: number;
     proofread_unit_count: number;
