@@ -98,6 +98,18 @@ validate_runtime_value "$r2_secret_access_key" R2_SECRET_ACCESS_KEY
 validate_port "$jwt_expiration_hours" JWT_EXPIRATION_HOURS
 validate_port "$snowflake_node_id" POPRAKO_SNOWFLAKE_NODE_ID
 
+database_name=${database_url##*/}
+database_name=${database_name%%\?*}
+
+case "$database_name" in
+    db_poprako_server_prod)
+        ;;
+    *)
+        echo "DATABASE_URL must target db_poprako_server_prod" >&2
+        exit 1
+        ;;
+esac
+
 case "$r2_account_id" in
     *[!0-9A-Fa-f]*)
         echo "R2_ACCOUNT_ID must contain only hexadecimal characters" >&2

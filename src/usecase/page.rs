@@ -102,10 +102,10 @@ where
             let locked_page_info = GetPageInfoExcluded { id: &id }.step_on(repo, context).await?;
 
             let same_identity =
-                locked_page_info.image_hash == instr.image_hash
-                    && locked_page_info.image_ext == instr.ext;
+                locked_page_info.image_hash.as_ref() == Some(&instr.image_hash)
+                    && locked_page_info.image_ext == Some(instr.ext);
 
-            if same_identity && locked_page_info.is_image_uploaded {
+            if same_identity && locked_page_info.is_image_uploaded == Some(true) {
                 return accept((locked_page_info, None));
             }
 
@@ -119,7 +119,12 @@ where
                                 .into(),
                         }
                     })?,
-                    locked_page_info.image_version,
+                    locked_page_info.image_version.ok_or_else(|| {
+                        //
+                        BaseError::Unrecoverable {
+                            message: "[reserve_image] pending page image version is missing".into(),
+                        }
+                    })?,
                     None,
                 ),
 
@@ -127,6 +132,7 @@ where
                     //
                     let image_version = locked_page_info
                         .image_version
+                        .unwrap_or(0)
                         .checked_add(1)
                         .ok_or_else(|| BaseError::Unrecoverable {
                             message: "[reserve_image] image version overflow".into(),
@@ -230,9 +236,25 @@ where
         //
         Some(object_key) => {
             //
+            let image_ext = page_info.image_ext.ok_or_else(|| {
+                //
+                BaseError::Unrecoverable {
+                    message: "[reserve_image] reserved page image extension is missing".into(),
+                }
+            })?;
+
+            let image_version = page_info.image_version.ok_or_else(|| {
+                //
+                BaseError::Unrecoverable {
+                    message:
+                        "[reserve_image] reserved page image version is missing"
+                            .into(),
+                }
+            })?;
+
             let upload_spec = ImageUploadSpec {
                 object_key: &object_key,
-                content_type: page_info.image_ext.content_type(),
+                content_type: image_ext.content_type(),
                 content_length: instr.new_byte_len,
             };
 
@@ -240,7 +262,7 @@ where
 
             Some(ImageUploadSlotView {
                 put_url: upload_target.url.to_string(),
-                image_version: page_info.image_version,
+                image_version,
                 headers: upload_target.headers,
             })
         }
@@ -257,8 +279,20 @@ where
                     .into(),
             }
         })?,
-        image_hash: page_info.image_hash,
-        ext: page_info.image_ext,
+        image_hash: page_info.image_hash.ok_or_else(|| {
+            //
+            BaseError::Unrecoverable {
+                message: "[reserve_image] reserved page image hash is missing"
+                    .into(),
+            }
+        })?,
+        ext: page_info
+            .image_ext
+            .ok_or_else(|| BaseError::Unrecoverable {
+                message:
+                    "[reserve_image] reserved page image extension is missing"
+                        .into(),
+            })?,
         slot,
     })
 }
@@ -355,7 +389,7 @@ where
     )
     .await?;
 
-    if page_info.image_version != instr.image_version {
+    if page_info.image_version != Some(instr.image_version) {
         //
         let err_message = trl("error-stale-page-image-upload");
 
@@ -376,7 +410,7 @@ where
         });
     }
 
-    if page_info.is_image_uploaded {
+    if page_info.is_image_uploaded == Some(true) {
         return accept(());
     }
 
@@ -446,7 +480,7 @@ where
             .step_on(repo, context)
             .await?;
 
-        if locked_page_info.image_version != instr.image_version
+        if locked_page_info.image_version != Some(instr.image_version)
             || locked_page_info.image_key.as_deref() != Some(&image_key)
         {
             let err_message = trl("error-stale-page-image-upload");

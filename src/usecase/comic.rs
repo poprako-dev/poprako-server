@@ -470,7 +470,7 @@ where
     .run_on(repo)
     .await?;
 
-    if comic_info.cover_version != instr.image_version {
+    if comic_info.cover_version != Some(instr.image_version) {
         //
         let err_message = trl("error-stale-cover-upload");
 
@@ -490,7 +490,7 @@ where
         });
     }
 
-    if comic_info.is_cover_uploaded {
+    if comic_info.is_cover_uploaded == Some(true) {
         return accept(());
     }
 
@@ -543,7 +543,7 @@ where
         .step_on(repo, context)
         .await?;
 
-        if locked_comic_info.cover_version != instr.image_version
+        if locked_comic_info.cover_version != Some(instr.image_version)
             || locked_comic_info.cover_key.as_deref() != Some(&cover_key)
         {
             let err_message = trl("error-stale-cover-upload");

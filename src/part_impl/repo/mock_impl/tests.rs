@@ -1,7 +1,5 @@
 use super::*;
 
-use crate::value::image::{ImageExt, ImageHash};
-
 // run_reads_seeded_user(GetUserInfo)(positive): a seeded user should be readable outside a transaction.
 // nucl_coord_commits_repo_and_prom(CreateMember, Defer)(positive): successful coordination should commit repo and prom state together.
 // nucl_coord_rolls_back_repo_and_prom(CreateMember, Defer)(negative): failed coordination should discard repo and prom state together.
@@ -17,10 +15,10 @@ fn user(id: &str) -> UserInfo {
         qid: "qid".into(),
         nickname: "nick".into(),
         avatar_key: None,
-        is_avatar_uploaded: false,
-        avatar_version: 0,
-        avatar_hash: ImageHash::default(),
-        avatar_ext: ImageExt::Png,
+        is_avatar_uploaded: None,
+        avatar_version: None,
+        avatar_hash: None,
+        avatar_ext: None,
         is_sadmin: false,
         last_active_at: time,
         created_at: time,

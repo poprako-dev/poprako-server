@@ -19,11 +19,10 @@ pub struct PageInfoRow {
     pub f_index: i32,
 
     pub f_image_key: Option<String>,
-    pub f_image_uploaded: bool,
-    #[diesel(deserialize_as = i64)]
-    pub f_image_version: u32,
-    pub f_image_hash: Vec<u8>,
-    pub f_image_extension: String,
+    pub f_image_uploaded: Option<bool>,
+    pub f_image_version: Option<i64>,
+    pub f_image_hash: Option<Vec<u8>>,
+    pub f_image_extension: Option<String>,
 
     pub f_total_unit_count: i32,
     pub f_translated_unit_count: i32,
@@ -38,33 +37,85 @@ impl TryFrom<PageInfoRow> for PageInfo {
 
     fn try_from(row: PageInfoRow) -> Result<Self, Self::Error> {
         //
-        let (image_hash_bytes, image_extension) = (
-            row.f_image_hash.try_into().map_err(|_| {
+        let (
+            image_key,
+            is_image_uploaded,
+            image_version,
+            image_hash,
+            image_ext,
+        ) = match (
+            row.f_image_key,
+            row.f_image_uploaded,
+            row.f_image_version,
+            row.f_image_hash,
+            row.f_image_extension,
+        ) {
+            //
+            (None, None, None, None, None) => (None, None, None, None, None),
+
+            (
+                Some(image_key),
+                Some(is_image_uploaded),
+                Some(image_version),
+                Some(image_hash),
+                Some(image_ext),
+            ) => {
                 //
-                BaseError::Unrecoverable {
-                    message: "[PageInfoRow] f_image_hash must contain 32 bytes"
-                        .into(),
-                }
-            })?,
-            ImageExt::parse(&row.f_image_extension).ok_or_else(|| {
+                let image_version =
+                    u32::try_from(image_version).map_err(|_| {
+                        //
+                        BaseError::Unrecoverable {
+                        message:
+                            "[PageInfoRow] f_image_version must be non-negative"
+                                .into(),
+                    }
+                    })?;
+
+                let image_hash = image_hash.try_into().map_err(|_| {
+                    //
+                    BaseError::Unrecoverable {
+                        message:
+                            "[PageInfoRow] f_image_hash must contain 32 bytes"
+                                .into(),
+                    }
+                })?;
+
+                let image_ext =
+                    ImageExt::parse(&image_ext).ok_or_else(|| {
+                        //
+                        BaseError::Unrecoverable {
+                        message:
+                            "[PageInfoRow] f_image_extension must be supported"
+                                .into(),
+                    }
+                    })?;
+
+                (
+                    Some(image_key),
+                    Some(is_image_uploaded),
+                    Some(image_version),
+                    Some(ImageHash::new(image_hash)),
+                    Some(image_ext),
+                )
+            }
+
+            _ => {
                 //
-                BaseError::Unrecoverable {
-                    message:
-                        "[PageInfoRow] f_image_extension must be supported"
-                            .into(),
-                }
-            })?,
-        );
+                return Err(BaseError::Unrecoverable {
+                        message: "[PageInfoRow] image fields must be all null or all present".into(),
+                    });
+            }
+        };
 
         Ok(Self {
             id: row.f_id,
             chapter_id: row.f_chapter_id,
             index: row.f_index,
-            image_key: row.f_image_key,
-            is_image_uploaded: row.f_image_uploaded,
-            image_version: row.f_image_version,
-            image_hash: ImageHash::new(image_hash_bytes),
-            image_ext: image_extension,
+            image_key,
+            is_image_uploaded,
+            image_version,
+            image_hash,
+            image_ext,
             total_unit_count: row.f_total_unit_count,
             translated_unit_count: row.f_translated_unit_count,
             proofread_unit_count: row.f_proofread_unit_count,
@@ -84,6 +135,7 @@ pub struct PageEntryRow<'a> {
     pub f_index: i32,
 
     pub f_image_key: Option<&'a str>,
+    pub f_image_uploaded: Option<bool>,
     pub f_image_version: i64,
     pub f_image_hash: Vec<u8>,
     pub f_image_extension: &'a str,
@@ -99,11 +151,21 @@ impl<'a> TryFrom<&'a PageEntry> for PageEntryRow<'a> {
         //
         let now = OffsetDateTime::now_utc();
 
+        let image_key = entry.image_key.as_deref().ok_or_else(|| {
+            //
+            BaseError::Unrecoverable {
+                message:
+                    "[PageEntryRow] image key is required for page creation"
+                        .into(),
+            }
+        })?;
+
         Ok(Self {
             f_id: &entry.id,
             f_chapter_id: &entry.chapter_id,
             f_index: entry.index,
-            f_image_key: entry.image_key.as_deref(),
+            f_image_key: Some(image_key),
+            f_image_uploaded: Some(false),
             f_image_version: i64::from(entry.image_version),
             f_image_hash: entry.image_hash.bytes().to_vec(),
             f_image_extension: entry.image_ext.suffix(),

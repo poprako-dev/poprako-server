@@ -27,7 +27,7 @@ The headers bind the PUT to both the SHA-256 checksum and content length.
 Single-owner reserve responses contain `slot: Option<UploadSlotVal>`. Page
 batch responses retain one optional slot per page.
 
-For an existing owner:
+For an existing image identity:
 
 - A matching, uploaded identity returns no slot and changes no state or task.
 - A matching, pending identity keeps its key and version, issues a new PUT
@@ -36,8 +36,13 @@ For an existing owner:
   `uploaded` to false, and atomically creates a dedicated Delete task for the
   previous key.
 
-The owner tables persist non-null hash and extension fields. A page does not
-persist `new_byte_len`.
+An owner without an image persists every image field as `NULL`: key, uploaded,
+version, hash, and extension. An existing image persists that whole tuple; a
+partially populated tuple is unrecoverable persisted data. User, team, and
+comic begin in the all-`NULL` state, and their first reservation uses version
+1. Page creation is different: each new page must contain a real image
+identity and begins as explicitly pending (`uploaded = false`). A page does
+not persist `new_byte_len`.
 
 Chapter manifest entries may omit `new_byte_len` only when they retain an
 existing page without requesting an upload slot. A pending page with
@@ -75,7 +80,9 @@ The mark request contains only `image_version`.
 5. Lock the aggregate, re-check the complete identity, and perform an exact
    false-to-true compare-and-set.
 
-A missing object, mismatched hash, or stale identity is an argument error.
+A missing object or mismatched hash is an argument error. A cleared or stale
+identity is handled as stale and cannot recreate a key, hash, extension, or
+version.
 Object-storage failures and missing checksum metadata are internal errors.
 Every failure leaves persisted state unchanged. Mark never advances or rolls
 back RawProvide and never deletes an unexpected object.
@@ -92,7 +99,7 @@ The handler performs HEAD outside the accounting transaction.
   not uploaded.
 - A wrong-hash object for the current identity is deleted by this task after
   the PUT URL has expired.
-- A stale version or deleted owner completes without deleting the payload key.
+- A stale, cleared, or deleted owner completes without deleting the payload key.
   Cleanup of stale keys belongs exclusively to dedicated Delete tasks.
 - The same version with a different key is an internal invariant violation and
   makes the task Dead. The handler does not guess which key is safe to delete.
@@ -109,7 +116,8 @@ that creates an upload slot also creates one.
 AdvanceRawProvide is the only automatic RawProvide transition. In one
 transaction it locks the chapter, observes all pages, and:
 
-- changes RawProvide from Pending to Completed when every page is uploaded;
+- changes RawProvide from Pending to Completed when every page explicitly has
+  `uploaded = true`;
 - otherwise completes the task as a logical negative result without retrying.
 
 Only infrastructure failures retry, at five-minute intervals, at most three
@@ -120,6 +128,14 @@ remains available.
 
 Successful verification followed by later external object loss is outside this
 one-shot upload protocol.
+
+## Publishing pages
+
+Publishing collects the current page object keys for deletion and then clears
+each page's entire image tuple in the same transaction. Published pages retain
+no synthetic zero hash, default extension, or version zero. Read APIs omit the
+image URL, thumbnail URL, hash, and extension in this state. Any later upload
+or check task for the former tuple is stale and must not resurrect it.
 
 ## Prom claim fencing
 

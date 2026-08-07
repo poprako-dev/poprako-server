@@ -58,7 +58,7 @@ project requirement and is not used as the CI/CD interface.
 The HTTP integration suite requires a dedicated disposable database:
 
 ```sh
-INTEGRATION_DATABASE_URL=postgres://USER:PASSWORD@localhost:5432/poprako_integration \
+INTEGRATION_DATABASE_URL=postgres://USER:PASSWORD@localhost:5432/db_poprako_integration \
   scripts/api-integration-test.sh
 ```
 

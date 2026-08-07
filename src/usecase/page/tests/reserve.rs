@@ -52,9 +52,9 @@ async fn reserve_chapter_pages_creates_pages_and_urls() {
 
     assert_eq!(snapshot.pages[1].index, 1);
 
-    assert_eq!(snapshot.pages[0].image_version, 1);
+    assert_eq!(snapshot.pages[0].image_version, Some(1));
 
-    assert_eq!(snapshot.pages[1].image_version, 1);
+    assert_eq!(snapshot.pages[1].image_version, Some(1));
 
     assert_eq!(reserved.pages[0].slot.as_ref().unwrap().image_version, 1);
 
@@ -117,7 +117,7 @@ async fn reserve_chapter_pages_creates_pages_and_urls() {
         processed
             .pages
             .iter()
-            .all(|page_info| page_info.is_image_uploaded)
+            .all(|page_info| page_info.is_image_uploaded == Some(true))
     );
 
     assert!(
@@ -231,9 +231,9 @@ async fn reserve_chapter_pages_preserves_pending_page_without_new_byte_len() {
 
     assert!(reserved.pages[0].slot.is_none());
 
-    assert_eq!(snapshot.pages[0].image_version, 2);
+    assert_eq!(snapshot.pages[0].image_version, Some(2));
 
-    assert!(!snapshot.pages[0].is_image_uploaded);
+    assert_ne!(snapshot.pages[0].is_image_uploaded, Some(true));
 
     assert!(
         snapshot
@@ -284,9 +284,9 @@ async fn reserve_chapter_pages_resigns_pending_page_with_new_byte_len() {
 
     assert_eq!(reserved.pages[0].slot.as_ref().unwrap().image_version, 2);
 
-    assert_eq!(snapshot.pages[0].image_version, 2);
+    assert_eq!(snapshot.pages[0].image_version, Some(2));
 
-    assert!(!snapshot.pages[0].is_image_uploaded);
+    assert_ne!(snapshot.pages[0].is_image_uploaded, Some(true));
 
     assert!(snapshot.prom_records.iter().any(|record| {
         matches!(
@@ -384,11 +384,11 @@ async fn reserve_chapter_pages_rejects_replacement_without_new_byte_len() {
 
     assert_expected_variant(err, ExpectedVariant::Args);
 
-    assert_eq!(snapshot.pages[0].image_hash, ImageHash::new([0; 32]));
+    assert_eq!(snapshot.pages[0].image_hash, Some(ImageHash::new([0; 32])));
 
-    assert_eq!(snapshot.pages[0].image_version, 2);
+    assert_eq!(snapshot.pages[0].image_version, Some(2));
 
-    assert!(snapshot.pages[0].is_image_uploaded);
+    assert_eq!(snapshot.pages[0].is_image_uploaded, Some(true));
 
     assert!(snapshot.prom_records.is_empty());
 }
@@ -432,7 +432,7 @@ async fn reserve_chapter_pages_replaces_explicit_image_and_deletes_old_key() {
 
     assert_eq!(snapshot.pages[0].id, "page-1");
 
-    assert_eq!(snapshot.pages[0].image_version, 8);
+    assert_eq!(snapshot.pages[0].image_version, Some(8));
 
     assert_eq!(snapshot.pages[0].total_unit_count, 4);
 
@@ -495,7 +495,7 @@ async fn reserve_chapter_pages_keeps_raw_pending_when_uploads_are_missing() {
         snapshot
             .pages
             .iter()
-            .all(|page_info| !page_info.is_image_uploaded)
+            .all(|page_info| page_info.is_image_uploaded != Some(true))
     );
 
     assert!(

@@ -11,6 +11,8 @@ mod metric;
 
 /// Authorization token middleware.
 pub mod auth;
+/// Cross-origin API access middleware.
+pub mod cors;
 /// Rate limiting middleware.
 pub mod rate_limit;
 /// Request ID and tracing middleware.

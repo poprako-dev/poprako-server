@@ -100,7 +100,7 @@ impl ComicInfoView {
     {
         let cover_key = match (model.is_cover_uploaded, &model.cover_key) {
             //
-            (true, Some(key)) => Some(key.as_str()),
+            (Some(true), Some(key)) => Some(key.as_str()),
 
             _ => fallback_cover_key,
         };

@@ -418,7 +418,7 @@ where
 
     let user_info = GetUserInfo::Id { id: &id }.run_on(repo).await?;
 
-    if user_info.avatar_version != instr.image_version {
+    if user_info.avatar_version != Some(instr.image_version) {
         //
         let err_message = trl("error-stale-avatar-upload");
 
@@ -438,7 +438,7 @@ where
         });
     }
 
-    if user_info.is_avatar_uploaded {
+    if user_info.is_avatar_uploaded == Some(true) {
         return accept(());
     }
 
@@ -495,7 +495,7 @@ where
             .step_on(repo, context)
             .await?;
 
-        if locked_user_info.avatar_version != instr.image_version
+        if locked_user_info.avatar_version != Some(instr.image_version)
             || locked_user_info.avatar_key.as_deref() != Some(&avatar_key)
         {
             let err_message = trl("error-stale-avatar-upload");
@@ -602,7 +602,7 @@ where
 
         // Enqueue avatar object deletion if one was uploaded.
         if let Some(avatar_key) = &user_info.avatar_key
-            && user_info.is_avatar_uploaded
+            && user_info.is_avatar_uploaded == Some(true)
         {
             let (delete_id, payload) = (
                 ImageComplex::gen_delete_id(),

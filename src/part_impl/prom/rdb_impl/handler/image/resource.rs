@@ -44,7 +44,7 @@ pub enum ResourceState {
 struct CurrentImageIdentity<'a> {
     // Internal state field `version`.
     // Version number of the resource in the database, used to detect stale writes.
-    version: u32,
+    version: Option<u32>,
     // Object key associated with the current database record.
     object_key: Option<&'a str>,
 }
@@ -305,7 +305,7 @@ fn classify_current_identity(
 ) -> BaseRest<ResourceState> {
     //
     match (
-        current_identity.version == image_identity.version,
+        current_identity.version == Some(image_identity.version),
         current_identity.object_key == Some(image_identity.object_key),
     ) {
         //

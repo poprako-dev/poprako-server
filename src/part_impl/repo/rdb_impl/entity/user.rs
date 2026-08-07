@@ -21,11 +21,10 @@ pub struct UserInfoRow {
     pub f_is_sadmin: bool,
 
     pub f_avatar_key: Option<String>,
-    pub f_avatar_uploaded: bool,
-    #[diesel(deserialize_as = i64)]
-    pub f_avatar_version: u32,
-    pub f_avatar_hash: Vec<u8>,
-    pub f_avatar_extension: String,
+    pub f_avatar_uploaded: Option<bool>,
+    pub f_avatar_version: Option<i64>,
+    pub f_avatar_hash: Option<Vec<u8>>,
+    pub f_avatar_extension: Option<String>,
 
     pub f_last_active_at: OffsetDateTime,
 
@@ -161,33 +160,81 @@ impl TryFrom<UserInfoRow> for UserInfo {
 
     fn try_from(v: UserInfoRow) -> BaseRest<Self> {
         //
-        let (avatar_hash_bytes, avatar_ext) = (
-            v.f_avatar_hash.try_into().map_err(|_| {
+        let (
+            avatar_key,
+            is_avatar_uploaded,
+            avatar_version,
+            avatar_hash,
+            avatar_ext,
+        ) = match (
+            v.f_avatar_key,
+            v.f_avatar_uploaded,
+            v.f_avatar_version,
+            v.f_avatar_hash,
+            v.f_avatar_extension,
+        ) {
+            //
+            (None, None, None, None, None) => (None, None, None, None, None),
+
+            (
+                Some(avatar_key),
+                Some(is_avatar_uploaded),
+                Some(avatar_version),
+                Some(avatar_hash),
+                Some(avatar_ext),
+            ) => {
                 //
-                BaseError::Unrecoverable {
-                    message:
-                        "[UserInfoRow] f_avatar_hash must contain 32 bytes"
-                            .into(),
-                }
-            })?,
-            ImageExt::parse(&v.f_avatar_extension).ok_or_else(|| {
+                let avatar_version = u32::try_from(avatar_version).map_err(|_| {
+                        //
+                        BaseError::Unrecoverable {
+                            message: "[UserInfoRow] f_avatar_version must be non-negative".into(),
+                        }
+                    })?;
+
+                let avatar_hash = avatar_hash.try_into().map_err(|_| {
+                    //
+                    BaseError::Unrecoverable {
+                        message:
+                            "[UserInfoRow] f_avatar_hash must contain 32 bytes"
+                                .into(),
+                    }
+                })?;
+
+                let avatar_ext =
+                    ImageExt::parse(&avatar_ext).ok_or_else(|| {
+                        //
+                        BaseError::Unrecoverable {
+                        message:
+                            "[UserInfoRow] f_avatar_extension must be supported"
+                                .into(),
+                    }
+                    })?;
+
+                (
+                    Some(avatar_key),
+                    Some(is_avatar_uploaded),
+                    Some(avatar_version),
+                    Some(ImageHash::new(avatar_hash)),
+                    Some(avatar_ext),
+                )
+            }
+
+            _ => {
                 //
-                BaseError::Unrecoverable {
-                    message:
-                        "[UserInfoRow] f_avatar_extension must be supported"
-                            .into(),
-                }
-            })?,
-        );
+                return Err(BaseError::Unrecoverable {
+                        message: "[UserInfoRow] avatar fields must be all null or all present".into(),
+                    });
+            }
+        };
 
         accept(UserInfo {
             id: v.f_id,
             qid: v.f_qid,
             nickname: v.f_nickname,
-            avatar_key: v.f_avatar_key,
-            is_avatar_uploaded: v.f_avatar_uploaded,
-            avatar_version: v.f_avatar_version,
-            avatar_hash: ImageHash::new(avatar_hash_bytes),
+            avatar_key,
+            is_avatar_uploaded,
+            avatar_version,
+            avatar_hash,
             avatar_ext,
             is_sadmin: v.f_is_sadmin,
             last_active_at: v.f_last_active_at,

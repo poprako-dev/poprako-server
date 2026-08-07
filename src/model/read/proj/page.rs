@@ -35,14 +35,14 @@ pub struct PageInfo {
 
     /// Object-storage key reserved for the page image, `None` before reservation.
     pub image_key: Option<String>,
-    /// Whether the client has confirmed the image upload for this page.
-    pub is_image_uploaded: bool,
+    /// Whether the client has confirmed the image upload for this page, if one exists.
+    pub is_image_uploaded: Option<bool>,
     /// Monotonically increasing version counter, bumped on each image reservation.
-    pub image_version: u32,
+    pub image_version: Option<u32>,
     /// Content-addressable hash of the uploaded image file.
-    pub image_hash: ImageHash,
+    pub image_hash: Option<ImageHash>,
     /// File format.
-    pub image_ext: ImageExt,
+    pub image_ext: Option<ImageExt>,
 
     /// Number of translation units (text blocks) on this page.
     pub total_unit_count: i32,

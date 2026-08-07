@@ -17,7 +17,6 @@ use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
 use crate::result::{BaseError, BaseRest, accept};
-use crate::value::image::{ImageExt, ImageHash};
 
 // In-memory team-ownership projections.
 mod resolve;
@@ -38,10 +37,10 @@ fn create_team(state: &mut MockState, entry: &TeamEntry) -> BaseRest<TeamInfo> {
         name: entry.name.clone(),
         description: entry.description.clone(),
         avatar_key: None,
-        is_avatar_uploaded: false,
-        avatar_version: 0,
-        avatar_hash: ImageHash::default(),
-        avatar_ext: ImageExt::Png,
+        is_avatar_uploaded: None,
+        avatar_version: None,
+        avatar_hash: None,
+        avatar_ext: None,
         created_at: time,
         updated_at: time,
     };
@@ -147,7 +146,7 @@ fn update_team(state: &mut MockState, oper: &UpdateTeam<'_>) -> BaseRest<()> {
             //
             // Internal implementation detail.
             // Internal implementation detail.
-            if team_info.avatar_version != repl.avatar_version
+            if team_info.avatar_version != Some(repl.avatar_version)
                 || repl.avatar_key.as_deref().is_some_and(|avatar_key| {
                     team_info.avatar_key.as_deref() != Some(avatar_key)
                 })
@@ -155,7 +154,7 @@ fn update_team(state: &mut MockState, oper: &UpdateTeam<'_>) -> BaseRest<()> {
                 return Err(expected("error-stale-avatar-upload"));
             }
 
-            team_info.is_avatar_uploaded = repl.is_avatar_uploaded;
+            team_info.is_avatar_uploaded = Some(repl.is_avatar_uploaded);
         }
     }
 
@@ -179,9 +178,9 @@ fn reserve_team_avatar(
         .ok_or_else(|| expected("error-team-not-found"))?;
 
     let same_hash = team_info.avatar_key.is_some()
-        && team_info.avatar_hash == *oper.image_hash;
+        && team_info.avatar_hash.as_ref() == Some(oper.image_hash);
 
-    if same_hash && team_info.avatar_ext != oper.image_ext {
+    if same_hash && team_info.avatar_ext != Some(oper.image_ext) {
         return Err(expected("error-invalid-image-extension"));
     }
 
@@ -199,12 +198,24 @@ fn reserve_team_avatar(
         return accept(TeamAvatarReservation {
             object_key,
             prev_object_key: None,
-            avatar_version: team_info.avatar_version,
-            is_upload_required: !team_info.is_avatar_uploaded,
+            avatar_version: team_info.avatar_version.ok_or_else(|| {
+                //
+                BaseError::Unrecoverable {
+                    message: "[reserve_team_avatar] avatar version is missing"
+                        .into(),
+                }
+            })?,
+            is_upload_required: team_info.is_avatar_uploaded != Some(true),
         });
     }
 
-    let avatar_version = team_info.avatar_version + 1;
+    let avatar_version = team_info
+        .avatar_version
+        .unwrap_or(0)
+        .checked_add(1)
+        .ok_or_else(|| BaseError::Unrecoverable {
+        message: "[reserve_team_avatar] avatar version overflow".into(),
+    })?;
 
     let object_key = TeamComplex::gen_avatar_key(
         oper.id,
@@ -216,13 +227,13 @@ fn reserve_team_avatar(
 
     team_info.avatar_key = Some(object_key.clone());
 
-    team_info.is_avatar_uploaded = false;
+    team_info.is_avatar_uploaded = Some(false);
 
-    team_info.avatar_version = avatar_version;
+    team_info.avatar_version = Some(avatar_version);
 
-    team_info.avatar_hash = oper.image_hash.clone();
+    team_info.avatar_hash = Some(oper.image_hash.clone());
 
-    team_info.avatar_ext = oper.image_ext;
+    team_info.avatar_ext = Some(oper.image_ext);
 
     team_info.updated_at = now();
 

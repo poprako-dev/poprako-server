@@ -14,7 +14,6 @@ use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
 use crate::result::{BaseError, BaseRest, accept};
-use crate::value::image::{ImageExt, ImageHash};
 
 // Insert a new user entry into mock state and mirror it into credentials.
 fn create_user(state: &mut MockState, entry: &UserEntry) -> BaseRest<UserInfo> {
@@ -33,10 +32,10 @@ fn create_user(state: &mut MockState, entry: &UserEntry) -> BaseRest<UserInfo> {
         qid: entry.qid.clone(),
         nickname: entry.nickname.clone(),
         avatar_key: None,
-        is_avatar_uploaded: false,
-        avatar_version: 0,
-        avatar_hash: ImageHash::default(),
-        avatar_ext: ImageExt::Png,
+        is_avatar_uploaded: None,
+        avatar_version: None,
+        avatar_hash: None,
+        avatar_ext: None,
         is_sadmin: false,
         last_active_at: time,
         created_at: time,
@@ -147,7 +146,7 @@ fn update_user(state: &mut MockState, oper: &UpdateUser<'_>) -> BaseRest<()> {
         Some((_, _, Some(avatar_version))) => {
             //
             // Validate optimistic avatar token before toggling upload state.
-            if user_info.avatar_version != avatar_version
+            if user_info.avatar_version != Some(avatar_version)
                 || matches!(
                     oper,
                     UpdateUser::MarkAvatarUploaded { repl }
@@ -163,7 +162,7 @@ fn update_user(state: &mut MockState, oper: &UpdateUser<'_>) -> BaseRest<()> {
                 unreachable!();
             };
 
-            user_info.is_avatar_uploaded = repl.is_avatar_uploaded;
+            user_info.is_avatar_uploaded = Some(repl.is_avatar_uploaded);
         }
 
         None => user_info.last_active_at = now(),
@@ -336,9 +335,9 @@ impl<'a> Step<ReserveUserAvatar<'a>, MockContext> for Mock {
             .ok_or_else(|| expected("error-user-not-found"))?;
 
         let same_hash = user_info.avatar_key.is_some()
-            && user_info.avatar_hash == *oper.image_hash;
+            && user_info.avatar_hash.as_ref() == Some(oper.image_hash);
 
-        if same_hash && user_info.avatar_ext != oper.image_ext {
+        if same_hash && user_info.avatar_ext != Some(oper.image_ext) {
             return Err(expected("error-invalid-image-extension"));
         }
 
@@ -356,12 +355,24 @@ impl<'a> Step<ReserveUserAvatar<'a>, MockContext> for Mock {
             return accept(UserAvatarReservation {
                 object_key,
                 prev_object_key: None,
-                avatar_version: user_info.avatar_version,
-                is_upload_required: !user_info.is_avatar_uploaded,
+                avatar_version: user_info.avatar_version.ok_or_else(|| {
+                    //
+                    BaseError::Unrecoverable {
+                        message: "[Mock::ReserveUserAvatar] avatar version is missing".into(),
+                    }
+                })?,
+                is_upload_required: user_info.is_avatar_uploaded != Some(true),
             });
         }
 
-        let avatar_version = user_info.avatar_version + 1;
+        let avatar_version = user_info
+            .avatar_version
+            .unwrap_or(0)
+            .checked_add(1)
+            .ok_or_else(|| BaseError::Unrecoverable {
+                message: "[Mock::ReserveUserAvatar] avatar version overflow"
+                    .into(),
+            })?;
 
         let object_key = UserComplex::gen_avatar_key(
             oper.id,
@@ -373,13 +384,13 @@ impl<'a> Step<ReserveUserAvatar<'a>, MockContext> for Mock {
 
         user_info.avatar_key = Some(object_key.clone());
 
-        user_info.is_avatar_uploaded = false;
+        user_info.is_avatar_uploaded = Some(false);
 
-        user_info.avatar_version = avatar_version;
+        user_info.avatar_version = Some(avatar_version);
 
-        user_info.avatar_hash = oper.image_hash.clone();
+        user_info.avatar_hash = Some(oper.image_hash.clone());
 
-        user_info.avatar_ext = oper.image_ext;
+        user_info.avatar_ext = Some(oper.image_ext);
 
         user_info.updated_at = now();
 

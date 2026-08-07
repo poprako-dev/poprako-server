@@ -264,8 +264,9 @@ where
                     proofread_unit_count += existing_page_info.proofread_unit_count;
 
                     let identity_changed =
-                        existing_page_info.image_hash != page_spec.image_hash
-                            || existing_page_info.image_ext != page_spec.ext;
+                        existing_page_info.image_hash.as_ref()
+                            != Some(&page_spec.image_hash)
+                            || existing_page_info.image_ext != Some(page_spec.ext);
 
                     if identity_changed && page_spec.new_byte_len.is_none() {
                         //
@@ -292,13 +293,19 @@ where
                         //
                         true => existing_page_info
                             .image_version
+                            .unwrap_or(0)
                             .checked_add(1)
                             .ok_or_else(|| BaseError::Unrecoverable {
                                 message: "[reserve_chapter_pages] image version overflow"
                                     .into(),
                             })?,
 
-                        false => existing_page_info.image_version,
+                        false => existing_page_info.image_version.ok_or_else(|| {
+                            //
+                            BaseError::Unrecoverable {
+                                message: "[reserve_chapter_pages] retained page image version is missing".into(),
+                            }
+                        })?,
                     };
 
                     let image_key = match identity_changed {
@@ -317,7 +324,12 @@ where
                         //
                         true => false,
 
-                        false => existing_page_info.is_image_uploaded,
+                        false => existing_page_info.is_image_uploaded.ok_or_else(|| {
+                            //
+                            BaseError::Unrecoverable {
+                                message: "[reserve_chapter_pages] retained page image upload state is missing".into(),
+                            }
+                        })?,
                     };
 
                     if identity_changed
