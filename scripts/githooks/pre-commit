@@ -9,10 +9,17 @@ cd "$project_root"
 
 echo "━━━ pre-commit: running scripts/ci-check.sh ━━━"
 
-if sh scripts/ci-check.sh; then
-    echo "✓ pre-commit: ci-check passed"
-    exit 0
+if ! sh scripts/ci-check.sh; then
+    echo "✗ pre-commit: ci-check failed; commit rejected" >&2
+    exit 1
 fi
 
-echo "✗ pre-commit: ci-check failed; commit rejected" >&2
-exit 1
+echo "━━━ pre-commit: running scripts/ci-openapi-check.sh ━━━"
+
+if ! sh scripts/ci-openapi-check.sh; then
+    echo "✗ pre-commit: openapi check failed; commit rejected" >&2
+    exit 1
+fi
+
+echo "✓ pre-commit: ci-check and openapi check passed"
+exit 0
