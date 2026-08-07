@@ -1,9 +1,7 @@
 // team_roundtrip_uses_testcontainer(ListTeamInfos, UpdateTeam, GetTeamInfo)(positive): team repo persists, lists, and updates a team in an isolated PostgreSQL container.
 // resolve_team_id_uses_testcontainer(ResolveTeamId)(positive/negative): comic and chapter ownership resolves in and out of transactions while missing roots retain resource-specific errors.
 
-use super::*;
-
-use poprako_orchestra::Nucl as _;
+use poprako_orchestra::{Nucl as _, Run, Step};
 
 use poprako_util::i18n::trl;
 

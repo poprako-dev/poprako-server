@@ -1,0 +1,18 @@
+#!/usr/bin/env sh
+set -eu
+
+# Pre-commit gate: the full CI check chain must pass before any commit.
+# Installed via `git config core.hooksPath scripts/githooks`.
+
+project_root=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
+cd "$project_root"
+
+echo "━━━ pre-commit: running scripts/ci-check.sh ━━━"
+
+if sh scripts/ci-check.sh; then
+    echo "✓ pre-commit: ci-check passed"
+    exit 0
+fi
+
+echo "✗ pre-commit: ci-check failed; commit rejected" >&2
+exit 1

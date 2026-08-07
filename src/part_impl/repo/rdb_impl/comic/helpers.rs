@@ -1,7 +1,6 @@
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 
-use crate::model::read::proj::comic::ComicInfo;
 use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::{
     f_comic_id as chapter_comic_id, f_is_pinned as chapter_is_pinned,
     f_proofread_at as chapter_proofread_at,

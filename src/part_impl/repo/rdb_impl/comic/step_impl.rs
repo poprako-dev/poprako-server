@@ -19,10 +19,8 @@ use crate::part_impl::repo::rdb_impl::schema::t_comic::dsl::*;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::RdbConn;
 use crate::shared::result::{diesel, next_version};
-use crate::value::chapter::{Stage, StageMask, StagePhase};
 use crate::value::comic::ComicInclOpt;
 use crate::value::image::{ImageExt, ImageHash};
-use crate::value::index::user_index_to_stored_index;
 // Resolves comic IDs whose pinned chapter matches every requested workflow phase.
 
 use crate::part_impl::repo::rdb_impl::comic::helpers::{

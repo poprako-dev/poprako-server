@@ -12,7 +12,7 @@ use crate::part_impl::repo::mock_impl::chapter::orchestra::{
 };
 use crate::part_impl::repo::mock_impl::{Mock, now};
 use crate::result::{BaseError, BaseRest, accept};
-use crate::value::chapter::{ChapterInclOpt, Stage, StagePhase};
+use crate::value::chapter::{Stage, StagePhase};
 
 impl<'a> Run<ListChapterInfos<'a>> for Mock {
     // Internal type alias for `Error`.

@@ -1,12 +1,9 @@
 //! Comic use cases — create, read, update, cover management, and deletion.
 
-use std::time::Duration;
-
 use poprako_orchestra::{
     Nucl, OperRun as _, OperStep as _, run_proxy, step_proxy,
 };
 use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
-use poprako_orchestra_extra::prom::task::Task;
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
@@ -14,21 +11,18 @@ use poprako_util::i18n::trl;
 use crate::complex::assignment::AssignmentComplex;
 use crate::complex::chapter::ChapterComplex;
 use crate::complex::comic::{ComicComplex, ComicPermComplex};
-use crate::complex::image::ImageComplex;
 use crate::data::instr::comic::{
-    CreateComicInstr, MarkComicCoverUploadedInstr, ReserveComicCoverInstr,
-    UpdateComicInfoInstr,
+    CreateComicInstr, MarkComicCoverUploadedInstr, UpdateComicInfoInstr,
 };
-use crate::data::val::comic::{CreateComicVal, ReserveComicCoverVal};
+use crate::data::val::comic::CreateComicVal;
 use crate::data::view::comic::ComicInfoView;
-use crate::data::view::image::ImageUploadSlotView;
 use crate::model::shared::user::UserToken;
 use crate::model::write::assignment::AssignmentEntry;
 use crate::model::write::chapter::ChapterEntry;
 use crate::model::write::comic::{ComicEntry, ComicRepl};
-use crate::part::image::{ImageManager, ImagePool, ImageUploadSpec};
+use crate::part::image::{ImageManager, ImagePool};
 use crate::part::prom::Prom;
-use crate::part::prom::payload::{TaskPayload, image};
+use crate::part::prom::payload::TaskPayload;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::chapter::ChapterRepo;
@@ -45,8 +39,8 @@ use crate::part::repo::oper::chapter::{
 };
 use crate::part::repo::oper::comic::{
     AllocComicChapterIndex, CreateComic, DeleteComic, GetComicInfo,
-    GetComicInfoExcluded, MarkComicCoverUploaded, ReserveComicCover,
-    TouchComicLastActive, UpdateComic, UpdateComicChapterCount,
+    GetComicInfoExcluded, MarkComicCoverUploaded, TouchComicLastActive,
+    UpdateComic, UpdateComicChapterCount,
 };
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::page::{

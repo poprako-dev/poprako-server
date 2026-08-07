@@ -25,19 +25,17 @@
 
 use super::*;
 use crate::data::instr::chapter::{
-    CreateChapterInstr, ListChapterInfosInstr, UpdateChapterInfoInstr,
-    UpdateChapterStageInstr,
+    CreateChapterInstr, UpdateChapterInfoInstr, UpdateChapterStageInstr,
 };
 
 use self::fixture::*;
-use crate::complex::chapter::ChapterComplex;
 use crate::part::effect::event::Event;
 use crate::part::prom::payload::TaskPayload;
 use crate::part::prom::payload::image::ImagePayload;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
-use crate::value::chapter::{ChapterInclOpt, Stage};
+use crate::value::chapter::Stage;
 use crate::value::role::{RoleField, RoleMask};
 
 // Shared fixture setup helpers for chapter test suites.

@@ -9,7 +9,6 @@ use time::OffsetDateTime;
 use poprako_util::i18n::trl;
 
 use self::image_task::ResourceState;
-use self::json::serialize_payload_err;
 use crate::model::read::proj::user::{UserCredential, UserInfo};
 use crate::model::write::page::PageImageRepl;
 use crate::model::write::team::TeamAvatarRepl;

@@ -14,7 +14,7 @@ use crate::part_impl::repo::mock_impl::comic::{
     get_comic_info, list_comic_infos, mark_comic_cover_uploaded,
 };
 use crate::part_impl::repo::mock_impl::{Mock, MockContext, expected, now};
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, accept};
 
 impl<'a> Step<CreateComic<'a>, MockContext> for Mock {
     // Use base errors for create step inside transaction context.

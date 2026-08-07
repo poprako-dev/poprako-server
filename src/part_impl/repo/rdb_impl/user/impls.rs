@@ -2,9 +2,7 @@ use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
 use crate::model::read::proj::user::{UserCredential, UserInfo};
-use crate::model::write::user::{
-    UserAvatarReservation, UserEntry, UserInfoRepl,
-};
+use crate::model::write::user::UserAvatarReservation;
 use crate::part::repo::oper::user::{
     CreateUser, DeleteUser, FindUserInfo, GetUserCredential, GetUserInfo,
     GetUserInfoExcluded, ReserveUserAvatar, UpdateUser,
@@ -15,8 +13,8 @@ use crate::part_impl::repo::rdb_impl::user::helpers::{
     get_info_by_id_excluded, mark_avatar_uploaded, reserve_avatar,
     touch_last_active, update_info, update_password_hash,
 };
-use crate::result::{BaseError, BaseRest, accept};
-use crate::shared::{RdbConn, RdbContext};
+use crate::result::{BaseError, BaseRest};
+use crate::shared::RdbContext;
 
 impl Run<GetUserInfo<'_>> for HybRepo {
     // Use `BaseError` for non-transactional repository reads.

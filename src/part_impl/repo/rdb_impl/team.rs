@@ -1,35 +1,15 @@
 //! RDB-backed team repository — free query functions and thin trait impls.
 
-use diesel::prelude::*;
-use diesel_async::RunQueryDsl;
-use poprako_orchestra::{Run, Step};
-use time::OffsetDateTime;
+use poprako_orchestra::Run;
 use tracing::instrument;
 
-use poprako_util::i18n::trl;
-
-use crate::complex::team::TeamComplex;
 use crate::model::read::proj::team::TeamInfo;
-use crate::model::read::spec::team::TeamListSpec;
-use crate::model::write::team::{TeamAvatarReservation, TeamEntry, TeamRepl};
-use crate::part::repo::oper::team::{
-    AllocTeamWorksetIndex, CreateTeam, DeleteTeam, GetTeamInfo,
-    GetTeamInfoExcluded, ListTeamInfos, LockTeam, ReserveTeamAvatar,
-    UpdateTeam,
-};
+use crate::part::repo::oper::team::{CreateTeam, GetTeamInfo, ListTeamInfos};
 use crate::part_impl::repo::HybRepo;
-use crate::part_impl::repo::rdb_impl::entity::team::{
-    TeamAspectRow, TeamEntryRow, TeamInfoRow,
-};
-use crate::part_impl::repo::rdb_impl::schema::t_member;
-use crate::part_impl::repo::rdb_impl::schema::t_team::dsl::*;
 use crate::part_impl::repo::rdb_impl::team::helpers::{
     create, get_info_by_id, list_infos,
 };
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::shared::result::{diesel, next_version};
-use crate::shared::{RdbConn, RdbContext};
-use crate::value::image::{ImageExt, ImageHash};
+use crate::result::BaseError;
 
 // RDB team-ownership projections.
 mod resolve;
