@@ -1,5 +1,6 @@
 // Shared utility helpers for complex-layer operations.
 mod util;
+
 // TODO: Separate pure domain rules from proxy-driven perm checks and
 // cascade workflows without changing the current transaction ownership.
 

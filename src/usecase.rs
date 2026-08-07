@@ -33,6 +33,9 @@
 //! [`Run`]: poprako_orchestra::Run
 //! [`Step`]: poprako_orchestra::Step
 
+// Stage-processing use cases (internal).
+mod stage;
+
 /// Announcement use cases.
 pub mod announcement;
 /// Assignment management use cases.
@@ -57,8 +60,6 @@ pub mod member;
 pub mod member_invitation;
 /// Page management use cases.
 pub mod page;
-// Stage-processing use cases (internal).
-mod stage;
 /// System mail use cases.
 pub mod system_mail;
 /// Team management use cases.

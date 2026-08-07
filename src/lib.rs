@@ -24,10 +24,6 @@ pub use shared::RdbCore;
 
 // HTTP API layer (handlers, middleware, server, router, OpenAPI).
 mod api;
-/// Benchmark entry points.
-#[cfg(feature = "benchmark")]
-#[doc(hidden)]
-pub mod benchmark;
 // Core business-logic helpers that coordinate domain rules across models.
 mod complex;
 // Application configuration parsing and access.
@@ -61,3 +57,8 @@ mod util;
 // Domain value types, enums, and small typed concepts shared by models and use
 // cases.
 mod value;
+
+/// Benchmark entry points.
+#[cfg(feature = "benchmark")]
+#[doc(hidden)]
+pub mod benchmark;

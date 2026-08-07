@@ -6,10 +6,11 @@
 /// Sliding-window HTTP response metrics.
 pub use metric::record_response_metric;
 
-/// Authorization token middleware.
-pub mod auth;
 // Sliding-window metrics middleware helper module.
 mod metric;
+
+/// Authorization token middleware.
+pub mod auth;
 /// Rate limiting middleware.
 pub mod rate_limit;
 /// Request ID and tracing middleware.
