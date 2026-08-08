@@ -49,27 +49,22 @@ pub async fn get_credential_by_qid(
         .optional()
         .map_err(diesel)?;
 
-    let row = match row {
+    let Some(row) = row else {
         //
-        Some(row) => row,
+        let message = trl("error-user-not-found");
 
-        None => {
-            //
-            let message = trl("error-user-not-found");
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            err_message = %message,
+            user_qid = %qid,
+            operation = "get user credential",
+            "expected user error",
+        );
 
-            tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
-                err_message = %message,
-                user_qid = %qid,
-                operation = "get user credential",
-                "expected user error",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message,
-            });
-        }
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message,
+        });
     };
 
     accept(row.into())
@@ -382,27 +377,22 @@ pub async fn get_info_by_id_excluded(
         .optional()
         .map_err(diesel)?;
 
-    let row = match row {
+    let Some(row) = row else {
         //
-        Some(row) => row,
+        let message = trl("error-user-not-found");
 
-        None => {
-            //
-            let message = trl("error-user-not-found");
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            err_message = %message,
+            user_id = %id,
+            operation = "lock user info",
+            "expected user error",
+        );
 
-            tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
-                err_message = %message,
-                user_id = %id,
-                operation = "lock user info",
-                "expected user error",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message,
-            });
-        }
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message,
+        });
     };
 
     row.try_into()
@@ -425,27 +415,22 @@ pub async fn get_info_by_id(
         .optional()
         .map_err(diesel)?;
 
-    let row = match row {
+    let Some(row) = row else {
         //
-        Some(row) => row,
+        let message = trl("error-user-not-found");
 
-        None => {
-            //
-            let message = trl("error-user-not-found");
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            err_message = %message,
+            user_id = %id,
+            operation = "get user info",
+            "expected user error",
+        );
 
-            tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
-                err_message = %message,
-                user_id = %id,
-                operation = "get user info",
-                "expected user error",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message,
-            });
-        }
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message,
+        });
     };
 
     row.try_into()

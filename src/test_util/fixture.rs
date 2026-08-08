@@ -31,11 +31,9 @@ pub fn user(id: &str, qid: &str, nickname: &str) -> UserInfo {
 /// Builds a [`UserCredential`] with a properly hashed password.
 pub fn credential(user_id: &str, password: &str) -> UserCredential {
     //
-    let password_hash = match UserComplex::hash_password_for_test(password) {
-        //
-        Ok(password_hash) => password_hash,
-
-        Err(_) => panic!("failed to hash password"),
+    let Ok(password_hash) = UserComplex::hash_password_for_test(password)
+    else {
+        panic!("failed to hash password")
     };
 
     UserCredential {

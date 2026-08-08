@@ -15,6 +15,7 @@ forbidden-identifiers = true
 module-dependency = true
 visibility-style = true
 trait-use-anonymous = true
+prefer-if-let-guard = true
 
 # --- per-checker overrides ------------------------------------------------
 

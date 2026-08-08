@@ -136,27 +136,22 @@ async fn get_info_by_id(
         .optional()
         .map_err(diesel)?;
 
-    let row = match row {
+    let Some(row) = row else {
         //
-        Some(row) => row,
+        let message = trl("error-assignment-not-found");
 
-        None => {
-            //
-            let message = trl("error-assignment-not-found");
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            err_message = %message,
+            assignment_id = %id,
+            operation = "get assignment info",
+            "expected assignment error",
+        );
 
-            tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
-                err_message = %message,
-                assignment_id = %id,
-                operation = "get assignment info",
-                "expected assignment error",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message,
-            });
-        }
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message,
+        });
     };
 
     let mut info = row_into_info(row)?;
@@ -232,27 +227,22 @@ async fn put_roles(
         .optional()
         .map_err(diesel)?;
 
-    let row = match row {
+    let Some(row) = row else {
         //
-        Some(row) => row,
+        let message = trl("error-assignment-not-found");
 
-        None => {
-            //
-            let message = trl("error-assignment-not-found");
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            err_message = %message,
+            assignment_id = %update.id,
+            operation = "update assignment roles",
+            "expected assignment error",
+        );
 
-            tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
-                err_message = %message,
-                assignment_id = %update.id,
-                operation = "update assignment roles",
-                "expected assignment error",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message,
-            });
-        }
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message,
+        });
     };
 
     row_into_info(row)

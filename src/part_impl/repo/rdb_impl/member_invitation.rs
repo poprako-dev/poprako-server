@@ -107,27 +107,22 @@ async fn get_info_by_id(
         .optional()
         .map_err(diesel)?;
 
-    let row = match row {
+    let Some(row) = row else {
         //
-        Some(row) => row,
+        let message = trl("error-invitation-not-found");
 
-        None => {
-            //
-            let message = trl("error-invitation-not-found");
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            err_message = %message,
+            invitation_id = %id,
+            operation = "get member invitation info",
+            "expected member invitation error",
+        );
 
-            tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
-                err_message = %message,
-                invitation_id = %id,
-                operation = "get member invitation info",
-                "expected member invitation error",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message,
-            });
-        }
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message,
+        });
     };
 
     let mut info = row.try_into()?;
@@ -177,28 +172,23 @@ async fn get_info_by_code(
         .optional()
         .map_err(diesel)?;
 
-    let row = match row {
+    let Some(row) = row else {
         //
-        Some(row) => row,
+        let message = trl("error-invitation-not-found");
 
-        None => {
-            //
-            let message = trl("error-invitation-not-found");
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            err_message = %message,
+            invitation_code = %code,
+            pending = true,
+            operation = "get pending member invitation by code",
+            "expected member invitation error",
+        );
 
-            tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
-                err_message = %message,
-                invitation_code = %code,
-                pending = true,
-                operation = "get pending member invitation by code",
-                "expected member invitation error",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message,
-            });
-        }
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message,
+        });
     };
 
     row.try_into()
@@ -221,28 +211,23 @@ async fn get_info_by_code_excluded(
         .optional()
         .map_err(diesel)?;
 
-    let row = match row {
+    let Some(row) = row else {
         //
-        Some(row) => row,
+        let message = trl("error-invitation-not-found");
 
-        None => {
-            //
-            let message = trl("error-invitation-not-found");
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            err_message = %message,
+            invitation_code = %code,
+            pending = true,
+            operation = "lock pending member invitation by code",
+            "expected member invitation error",
+        );
 
-            tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
-                err_message = %message,
-                invitation_code = %code,
-                pending = true,
-                operation = "lock pending member invitation by code",
-                "expected member invitation error",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message,
-            });
-        }
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message,
+        });
     };
 
     row.try_into()
