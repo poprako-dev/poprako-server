@@ -54,27 +54,22 @@ async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<WorksetInfo> {
         .optional()
         .map_err(diesel)?;
 
-    let row = match row {
+    let Some(row) = row else {
         //
-        Some(row) => row,
+        let message = trl("error-workset-not-found");
 
-        None => {
-            //
-            let message = trl("error-workset-not-found");
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            err_message = %message,
+            workset_id = %id,
+            operation = "get workset info",
+            "expected workset error",
+        );
 
-            tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
-                err_message = %message,
-                workset_id = %id,
-                operation = "get workset info",
-                "expected workset error",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message,
-            });
-        }
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message,
+        });
     };
 
     accept(row.into())
@@ -157,27 +152,22 @@ async fn get_info_excluded(
         .optional()
         .map_err(diesel)?;
 
-    let row = match row {
+    let Some(row) = row else {
         //
-        Some(row) => row,
+        let message = trl("error-workset-not-found");
 
-        None => {
-            //
-            let message = trl("error-workset-not-found");
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            err_message = %message,
+            workset_id = %id,
+            operation = "lock workset info",
+            "expected workset error",
+        );
 
-            tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
-                err_message = %message,
-                workset_id = %id,
-                operation = "lock workset info",
-                "expected workset error",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message,
-            });
-        }
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message,
+        });
     };
 
     accept(row.into())

@@ -75,27 +75,22 @@ pub async fn get_info_by_id(
         .optional()
         .map_err(diesel)?;
 
-    let row = match row {
+    let Some(row) = row else {
         //
-        Some(row) => row,
+        let message = trl("error-team-not-found");
 
-        None => {
-            //
-            let message = trl("error-team-not-found");
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            err_message = %message,
+            team_id = %id,
+            operation = "get team info",
+            "expected team error",
+        );
 
-            tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
-                err_message = %message,
-                team_id = %id,
-                operation = "get team info",
-                "expected team error",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message,
-            });
-        }
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message,
+        });
     };
 
     row.try_into()
@@ -344,27 +339,22 @@ pub async fn get_info_excluded(
         .optional()
         .map_err(diesel)?;
 
-    let row = match row {
+    let Some(row) = row else {
         //
-        Some(row) => row,
+        let message = trl("error-team-not-found");
 
-        None => {
-            //
-            let message = trl("error-team-not-found");
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            err_message = %message,
+            team_id = %id,
+            operation = "lock team info",
+            "expected team error",
+        );
 
-            tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
-                err_message = %message,
-                team_id = %id,
-                operation = "lock team info",
-                "expected team error",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message,
-            });
-        }
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message,
+        });
     };
 
     row.try_into()
@@ -384,27 +374,22 @@ pub async fn lock_team(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
         .optional()
         .map_err(diesel)?;
 
-    let _ = match row {
+    let Some(_) = row else {
         //
-        Some(row) => row,
+        let message = trl("error-team-not-found");
 
-        None => {
-            //
-            let message = trl("error-team-not-found");
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            err_message = %message,
+            team_id = %id,
+            operation = "lock team row",
+            "expected team error",
+        );
 
-            tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
-                err_message = %message,
-                team_id = %id,
-                operation = "lock team row",
-                "expected team error",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message,
-            });
-        }
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message,
+        });
     };
 
     accept(())

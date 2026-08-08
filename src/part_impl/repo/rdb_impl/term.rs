@@ -212,27 +212,22 @@ async fn get_info_excluded(conn: &mut RdbConn, id: &str) -> BaseRest<TermInfo> {
         .optional()
         .map_err(diesel)?;
 
-    let row = match row {
+    let Some(row) = row else {
         //
-        Some(row) => row,
+        let message = trl("error-term-not-found");
 
-        None => {
-            //
-            let message = trl("error-term-not-found");
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            err_message = %message,
+            term_id = %id,
+            operation = "get locked term info",
+            "expected term error",
+        );
 
-            tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
-                err_message = %message,
-                term_id = %id,
-                operation = "get locked term info",
-                "expected term error",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message,
-            });
-        }
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message,
+        });
     };
 
     accept(row.into())
@@ -252,27 +247,22 @@ async fn lock_term(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
         .optional()
         .map_err(diesel)?;
 
-    let _ = match row {
+    let Some(_) = row else {
         //
-        Some(row) => row,
+        let message = trl("error-term-not-found");
 
-        None => {
-            //
-            let message = trl("error-term-not-found");
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            err_message = %message,
+            term_id = %id,
+            operation = "lock term row",
+            "expected term error",
+        );
 
-            tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
-                err_message = %message,
-                term_id = %id,
-                operation = "lock term row",
-                "expected term error",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message,
-            });
-        }
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message,
+        });
     };
 
     accept(())
@@ -349,27 +339,22 @@ async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<TermInfo> {
         .optional()
         .map_err(diesel)?;
 
-    let row = match row {
+    let Some(row) = row else {
         //
-        Some(row) => row,
+        let message = trl("error-term-not-found");
 
-        None => {
-            //
-            let message = trl("error-term-not-found");
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            err_message = %message,
+            term_id = %id,
+            operation = "get term info",
+            "expected term error",
+        );
 
-            tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
-                err_message = %message,
-                term_id = %id,
-                operation = "get term info",
-                "expected term error",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message,
-            });
-        }
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message,
+        });
     };
 
     accept(row.into())
