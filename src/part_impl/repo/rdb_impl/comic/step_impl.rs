@@ -19,7 +19,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_comic::dsl::*;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::RdbConn;
 use crate::shared::result::{diesel, next_version};
-use crate::value::comic::ComicInclOpt;
+use crate::value::comic::{ComicInclOpt, ComicStatus};
 use crate::value::image::{ImageExt, ImageHash};
 // Resolves comic IDs whose pinned chapter matches every requested workflow phase.
 
@@ -92,6 +92,19 @@ pub async fn list_infos(
         .filter(f_workset_id.eq(spec.workset_id.as_str()))
         .select(ComicInfoRow::as_select())
         .into_boxed();
+
+    match spec.status {
+        //
+        Some(ComicStatus::Active) => {
+            query = query.filter(f_archived_at.is_null());
+        }
+
+        Some(ComicStatus::Archived) => {
+            query = query.filter(f_archived_at.is_not_null());
+        }
+
+        None => {}
+    }
 
     if let Some(fuzzy_title) = &spec.fuzzy_title {
         //

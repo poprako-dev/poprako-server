@@ -40,7 +40,8 @@ use crate::part::repo::oper::chapter::{
     LockChapters, UnpinOtherChapters, UpdateChapter, UpdateChapterStage,
 };
 use crate::part::repo::oper::comic::{
-    AllocComicChapterIndex, TouchComicLastActive, UpdateComicChapterCount,
+    AllocComicChapterIndex, GetComicInfoExcluded, TouchComicLastActive,
+    UpdateComicChapterCount,
 };
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::page::{
@@ -225,6 +226,15 @@ where
     let chapter_id = nucl
         .coord(async move |context| {
             //
+            let comic_info = GetComicInfoExcluded {
+                id: &instr.comic_id,
+                incls: &[],
+            }
+            .step_on(repo, context)
+            .await?;
+
+            ComicComplex::ensure_comic_writable(&comic_info)?;
+
             LockChapters {
                 comic_id: &instr.comic_id,
             }

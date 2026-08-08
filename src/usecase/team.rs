@@ -31,6 +31,7 @@ use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
+use crate::part::repo::comic_archive::ComicArchiveRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::DeleteAssignments;
 use crate::part::repo::oper::assignment_invitation::DeleteAssignmentInvitations;
@@ -42,6 +43,7 @@ use crate::part::repo::oper::comic::{
     DeleteComic, GetComicInfoExcluded, ListComicInfosExcluded,
     TouchComicLastActive, UpdateComicChapterCount,
 };
+use crate::part::repo::oper::comic_archive::DeleteComicArchives;
 use crate::part::repo::oper::member::{
     CreateMember, DeleteMember, FindMemberInfo, ListMemberInfosExcluded,
 };
@@ -505,6 +507,7 @@ where
     R: TeamRepo<C>
         + WorksetRepo<C>
         + ComicRepo<C>
+        + ComicArchiveRepo<C>
         + MemberRepo<C>
         + ChapterRepo<C>
         + PageRepo<C>
@@ -541,6 +544,7 @@ where
                     for<'a, 'b> GetComicInfoExcluded<'a, 'b>,
                     for<'a> ListChapterInfosExcluded<'a>,
                     for<'a> DeleteComic<'a>,
+                    for<'a> DeleteComicArchives<'a>,
                     for<'a> UpdateWorksetComicCount<'a>,
                     for<'a, 'b> GetChapterInfoExcluded<'a, 'b>,
                     for<'a> ListPageInfos<'a>,

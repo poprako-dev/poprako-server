@@ -84,7 +84,8 @@ error-chapter-published-frozen = 已发布章节不可修改
 error-invalid-comic-archive-month-count = 请选择 1 至 12 个归档月份
 error-invalid-comic-archive-month = 归档月份必须使用 YYYY-MM 格式
 error-duplicate-comic-archive-month = 归档月份不可重复
-error-comic-archive-month-not-retained = 归档月份不在保留期限内
+error-comic-archive-incomplete = 归档前所有章节必须已发布
+error-comic-archived = 已归档漫画不可修改
 
 chapter-default-subtitle = 第{ $number }话
 

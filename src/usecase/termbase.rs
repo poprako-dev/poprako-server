@@ -5,6 +5,7 @@ use poprako_orchestra::{
 };
 use tracing::instrument;
 
+use crate::complex::comic::ComicComplex;
 use crate::complex::termbase::{TermbaseComplex, TermbasePermComplex};
 use crate::data::instr::termbase::{
     CreateTermbaseInstr, ListComicTermbaseInfosInstr,
@@ -83,6 +84,8 @@ where
                         }
                         .step_on(repo, context)
                         .await?;
+
+                        ComicComplex::ensure_comic_writable(&comic_info)?;
 
                         let workset_info = GetWorksetInfo {
                             id: &comic_info.workset_id,

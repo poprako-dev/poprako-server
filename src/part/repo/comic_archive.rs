@@ -3,7 +3,7 @@
 use poprako_orchestra::drive;
 
 use crate::part::repo::oper::comic_archive::{
-    CommitComicArchive, GetComicArchiveSnapshotExcluded,
+    CommitComicArchive, DeleteComicArchives, GetComicArchiveSnapshotExcluded,
     ListComicArchivePayloads,
 };
 use crate::result::BaseError;
@@ -18,6 +18,7 @@ use crate::result::BaseError;
     step(
         for<'a> GetComicArchiveSnapshotExcluded<'a>,
         for<'a> CommitComicArchive<'a>,
+        for<'a> DeleteComicArchives<'a>,
     ),
 )]
 pub trait ComicArchiveRepo<C> {}

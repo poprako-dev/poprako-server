@@ -37,6 +37,7 @@ pub struct ComicInfoRow {
     pub f_creator_id: String,
 
     pub f_last_active_at: OffsetDateTime,
+    pub f_archived_at: Option<OffsetDateTime>,
 
     pub f_created_at: OffsetDateTime,
     pub f_updated_at: OffsetDateTime,
@@ -132,6 +133,7 @@ impl TryFrom<ComicInfoRow> for ComicInfo {
             team: None,
             creator: None,
             last_active_at: v.f_last_active_at,
+            archived_at: v.f_archived_at,
             created_at: v.f_created_at,
             updated_at: v.f_updated_at,
         })

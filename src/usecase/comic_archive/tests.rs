@@ -1,4 +1,4 @@
-// archive(archive)(positive): archive should retain immutable payloads, queue every image key, and remove active descendants.
+// archive(archive)(positive): archive should retain the comic marker, queue every image key, and remove active descendants.
 // archive(archive)(negative): non-admin callers should not create archive rows or delete active data.
 // archive(archive)(negative): archive persistence failure should roll back payload, outbox, and active-data changes.
 // export(export)(positive): retained month slots should return stored JSON strings without decoding.
@@ -24,14 +24,17 @@ use crate::part::prom::payload::image::ImagePayload;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
-use crate::value::chapter::StageMask;
+use crate::value::chapter::{Stage, StageMask, StagePhase};
 use crate::value::role::{RoleField, RoleMask};
 
 fn seed_archive_scope(mock: &Mock, member_roles: RoleMask) {
     //
     let archived_at = OffsetDateTime::now_utc();
 
-    let stage_mask = StageMask::try_from(0).unwrap();
+    let stage_mask = StageMask::try_from(0)
+        .unwrap()
+        .try_set_phase(Stage::Publish, StagePhase::Completed)
+        .unwrap();
 
     mock.seed_user(
         UserInfo {
@@ -94,6 +97,7 @@ fn seed_archive_scope(mock: &Mock, member_roles: RoleMask) {
         team: None,
         creator: None,
         last_active_at: archived_at,
+        archived_at: None,
         created_at: archived_at,
         updated_at: archived_at,
     });
@@ -182,7 +186,7 @@ fn token() -> UserToken {
 }
 
 #[tokio::test]
-async fn archive_retains_payloads_queues_images_and_deletes_active_data() {
+async fn archive_retains_comic_marker_queues_images_and_deletes_children() {
     //
     let mock = Mock::new();
 
@@ -195,9 +199,17 @@ async fn archive_retains_payloads_queues_images_and_deletes_active_data() {
 
     let snapshot = mock.snapshot();
 
-    assert_ne!(archive_comic_val.archived_comic_id, "comic-1");
+    assert_ne!(archive_comic_val.archived_id, "comic-1");
 
-    assert!(snapshot.comics.is_empty());
+    assert_eq!(snapshot.comics.len(), 1);
+
+    assert_eq!(snapshot.comics[0].id, "comic-1");
+
+    assert!(snapshot.comics[0].archived_at.is_some());
+
+    assert_eq!(snapshot.comics[0].cover_key, None);
+
+    assert_eq!(snapshot.comics[0].is_cover_uploaded, None);
 
     assert!(snapshot.chapters.is_empty());
 
@@ -214,6 +226,8 @@ async fn archive_retains_payloads_queues_images_and_deletes_active_data() {
     assert_eq!(snapshot.comic_archives.len(), 1);
 
     assert_eq!(snapshot.comic_archives[0].team_id, "team-1");
+
+    assert_eq!(snapshot.comic_archives[0].source_comic_id, "comic-1");
 
     assert_eq!(snapshot.comic_archives[0].archiver_id, "user-1");
 

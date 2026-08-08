@@ -64,6 +64,8 @@ pub struct ComicInfo {
 
     /// Timestamp of the most recent activity on any chapter under this comic.
     pub last_active_at: OffsetDateTime,
+    /// Timestamp when this comic was archived, if it is no longer writable.
+    pub archived_at: Option<OffsetDateTime>,
 
     /// When this comic record was first inserted.
     pub created_at: OffsetDateTime,
