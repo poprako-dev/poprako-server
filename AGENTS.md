@@ -13,6 +13,13 @@ checked-in CI checks instead. Do not run destructive migration verification
 (`migration revert`, reset, or equivalent) unless the user explicitly approves
 it and the target is confirmed to be a disposable database.
 
+Never bypass a commit hook with `git commit --no-verify`. A commit intended for
+review, merge, release, or deployment must complete the repository pre-commit
+CI chain successfully. `db_poprako_ci` and its `poprako-ci-pg` container are
+explicitly disposable CI resources: migration validation must run its full
+apply → revert-all → apply cycle there, and production/beta data-protection
+rules do not apply to that CI database.
+
 `just` is an optional local convenience only. CI/CD and release automation
 MUST invoke checked-in POSIX `sh` scripts directly and MUST NOT require `just`.
 
