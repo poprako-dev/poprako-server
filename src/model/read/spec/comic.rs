@@ -10,7 +10,6 @@ use crate::value::comic::ComicInclOpt;
 
 /// Filtering and pagination parameters for listing comics within a workset.
 pub struct ComicListSpec {
-    //
     /// The workset whose comics should be listed.
     pub workset_id: String,
 

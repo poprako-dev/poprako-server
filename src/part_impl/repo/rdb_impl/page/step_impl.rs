@@ -210,6 +210,7 @@ pub async fn clear_images_for_publish(
     let now = OffsetDateTime::now_utc();
 
     for page_info in page_infos {
+        //
         diesel::update(t_page.filter(f_id.eq(&page_info.id)))
             .set((
                 f_image_key.eq(None::<String>),
@@ -324,6 +325,7 @@ pub async fn mark_image_uploaded(
     let affected = match image_key {
         //
         Some(image_key) => {
+            //
             diesel::update(
                 t_page
                     .filter(f_id.eq(id))
@@ -336,6 +338,7 @@ pub async fn mark_image_uploaded(
         }
 
         None => {
+            //
             diesel::update(
                 t_page
                     .filter(f_id.eq(id))
@@ -460,6 +463,7 @@ pub async fn delete_by_chapter_id(
         .map_err(diesel)?;
 
     if !page_ids.is_empty() {
+        //
         diesel::delete(t_unit.filter(unit_f_page_id.eq_any(&page_ids)))
             .execute(conn)
             .await

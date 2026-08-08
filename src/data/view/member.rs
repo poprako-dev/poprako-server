@@ -3,7 +3,6 @@
 use serde::Serialize;
 
 use crate::data::view::team::TeamInfoView;
-
 use crate::data::view::user::UserInfoView;
 
 #[cfg(feature = "swagger")]
@@ -14,18 +13,14 @@ use futures::future::OptionFuture;
 use poprako_util::time::ToUnixMilli as _;
 
 use crate::model::read::proj::member::MemberInfo;
-
 use crate::part::image::ImagePool;
-
 use crate::result::{BaseRest, accept};
-
 use crate::value::role::RoleMask;
 
 /// Presentation-ready membership information.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct MemberInfoView {
-    //
     /// Unique member identifier.
     pub id: String,
 
@@ -84,6 +79,7 @@ impl MemberInfoView {
 impl From<MemberInfo> for MemberInfoView {
     // Convert persisted membership model into response DTO without include expansion.
     fn from(value: MemberInfo) -> Self {
+        //
         Self {
             id: value.id,
             user_id: value.user_id,

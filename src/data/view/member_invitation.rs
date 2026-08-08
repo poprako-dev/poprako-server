@@ -10,11 +10,8 @@ use utoipa::ToSchema;
 use futures::future::OptionFuture;
 
 use crate::model::read::proj::member_invitation::MemberInvitationInfo;
-
 use crate::part::image::ImagePool;
-
 use crate::result::{BaseRest, accept};
-
 use crate::value::role::RoleMask;
 
 /// Presentation-ready member invitation information.
@@ -26,7 +23,6 @@ use crate::value::role::RoleMask;
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct MemberInvitationInfoView {
-    //
     /// Unique identifier.
     pub id: String,
 
@@ -81,6 +77,7 @@ impl MemberInvitationInfoView {
 impl From<MemberInvitationInfo> for MemberInvitationInfoView {
     // Convert invitation model into response value without preloaded invitor payload.
     fn from(value: MemberInvitationInfo) -> Self {
+        //
         Self {
             id: value.id,
             team_id: value.team_id,

@@ -1,6 +1,6 @@
 // user_roundtrip_uses_testcontainer(GetUserInfo, GetUserCredential, FindUserInfo)(positive): user repo persists and reloads a user from an isolated PostgreSQL container.
 
-use super::*;
+use poprako_orchestra::Run;
 
 use crate::part::repo::oper::user::{
     FindUserInfo, GetUserCredential, GetUserInfo,

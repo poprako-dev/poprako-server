@@ -7,7 +7,6 @@ pub enum UnitEdit {
     //
     /// Creates one Unit with complete structural fields.
     Create {
-        //
         /// Permanent Unit ID.
         id: String,
         /// Unit before which this Unit is inserted, or the tail.
@@ -26,7 +25,6 @@ pub enum UnitEdit {
 
     /// Restores or patches one persisted Unit.
     Save {
-        //
         /// Permanent target Unit ID.
         id: String,
         /// Three-state successor pointer patch.

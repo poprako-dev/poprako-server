@@ -3,7 +3,6 @@ use crate::part::prom::payload::image::ResourceKind;
 /// Identity carried by an image-verification task.
 #[derive(Clone, Copy)]
 pub struct ImageIdentity<'a> {
-    //
     /// The kind of resource represented by the image.
     pub kind: ResourceKind,
 

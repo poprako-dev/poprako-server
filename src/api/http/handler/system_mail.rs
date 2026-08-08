@@ -35,6 +35,7 @@ pub async fn list_infos(
     Extension(user_token): Extension<UserToken>,
     Query(instr): Query<ListSystemMailInfosInstr>,
 ) -> HttpResult<Vec<SystemMailInfoView>> {
+    //
     usecase::system_mail::list_infos((harn.repo(),), user_token, instr)
         .await?
         .accept(StatusCode::OK)

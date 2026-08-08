@@ -229,10 +229,12 @@ fn build_page_edits(
     edit_perm: UnitEditPerm,
     label_plus: bool,
 ) -> Vec<UnitEdit> {
+    //
     // Build minimal page edits used by import scenario coverage.
     imported_units
         .iter()
         .map(|imported_unit| {
+            //
             ChapterImportComplex::build_unit_create(
                 imported_unit,
                 UnitComplex::gen_id(),
@@ -247,6 +249,7 @@ fn build_page_edits(
 
 // Computes unit counters from page info for consistency checks.
 fn page_counters(page_info: &PageInfo) -> UnitCounters {
+    //
     // Count page-level totals for consistency checks after import.
     UnitCounters {
         total_unit_count: page_info.total_unit_count,

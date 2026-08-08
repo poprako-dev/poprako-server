@@ -82,7 +82,6 @@ pub struct ClearPageImagesForPublish<'a> {
 #[derive(Oper)]
 #[oper(output = PageImageReservation)]
 pub struct ReservePageImage<'a> {
-    //
     /// The page ID.
     pub id: &'a str,
     /// The file extension for the image.
@@ -109,7 +108,6 @@ pub struct SetPageImageUploaded<'a> {
 #[derive(Oper)]
 #[oper(output = ())]
 pub struct SetPageUnitCounters<'a> {
-    //
     /// The page ID.
     pub id: &'a str,
     /// The unit counters to set.

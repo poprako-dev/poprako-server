@@ -22,6 +22,7 @@ pub fn apply_assignment_incls(
     assignment.chapter = None;
 
     for incl in expand_incl_opts(incls) {
+        //
         match incl {
             //
             // Populate user from top-level relation.
@@ -31,6 +32,7 @@ pub fn apply_assignment_incls(
 
             // Populate chapter without nested fields set.
             AssignmentInclOpt::Chapter => {
+                //
                 assignment.chapter =
                     find_chapter(state, &assignment.chapter_id);
             }
@@ -146,6 +148,7 @@ fn find_workset(state: &MockState, id: &str) -> Option<WorksetInfo> {
 
 // Find team from a loaded workset.
 fn find_team(state: &MockState, workset: &WorksetInfo) -> Option<TeamInfo> {
+    //
     state
         .teams
         .iter()

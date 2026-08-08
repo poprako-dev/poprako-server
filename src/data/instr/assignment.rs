@@ -28,7 +28,6 @@ use crate::value::role::{RoleField, RoleMask};
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ListAssignmentInfosInstr {
-    //
     /// Chapter mode: list assignments on this chapter. Mutually exclusive with
     /// `owner_id`.
     pub chapter_id: Option<String>,
@@ -90,6 +89,7 @@ impl TryInto<AssignmentListSpec> for ListAssignmentInfosInstr {
         }
 
         if let Some(chapter_id) = chapter_id {
+            //
             return accept(AssignmentListSpec::Chapter {
                 chapter_id,
                 role,
@@ -132,7 +132,6 @@ impl TryInto<AssignmentListSpec> for ListAssignmentInfosInstr {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateAssignmentRolesInstr {
-    //
     /// Target chapter identifier.
     pub chapter_id: String,
     /// Target user identifier.
@@ -150,7 +149,6 @@ pub struct UpdateAssignmentRolesInstr {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct JoinChapterAssignmentInstr {
-    //
     /// Chapter to join as an assignee.
     pub chapter_id: String,
 

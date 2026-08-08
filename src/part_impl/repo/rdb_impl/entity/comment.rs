@@ -11,7 +11,6 @@ use crate::part_impl::repo::rdb_impl::schema::t_comment;
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_comment)]
 pub struct CommentInfoRow {
-    //
     pub f_id: String,
 
     pub f_team_id: String,
@@ -24,6 +23,7 @@ pub struct CommentInfoRow {
 
 impl From<CommentInfoRow> for CommentInfo {
     fn from(row: CommentInfoRow) -> Self {
+        //
         Self {
             id: row.f_id,
             team_id: row.f_team_id,
@@ -39,7 +39,6 @@ impl From<CommentInfoRow> for CommentInfo {
 #[derive(Insertable)]
 #[diesel(table_name = t_comment)]
 pub struct CommentEntryRow<'a> {
-    //
     pub f_id: &'a str,
 
     pub f_team_id: &'a str,
@@ -52,6 +51,7 @@ pub struct CommentEntryRow<'a> {
 
 impl<'a> From<&'a CommentEntry> for CommentEntryRow<'a> {
     fn from(entry: &'a CommentEntry) -> Self {
+        //
         Self {
             f_id: &entry.id,
             f_team_id: &entry.team_id,

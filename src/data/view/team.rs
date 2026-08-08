@@ -8,9 +8,7 @@ use poprako_util::time::ToUnixMilli as _;
 use utoipa::ToSchema;
 
 use crate::model::read::proj::team::TeamInfo;
-
 use crate::part::image::ImagePool;
-
 use crate::result::{BaseRest, accept};
 
 /// Presentation-ready team profile information.
@@ -21,7 +19,6 @@ use crate::result::{BaseRest, accept};
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct TeamInfoView {
-    //
     /// Unique team identifier.
     pub id: String,
 

@@ -38,6 +38,9 @@ use crate::part_impl::prom::mock_impl::MockPromRecord;
 use crate::result::{BaseError, ExpectedVariant};
 use crate::value::role::{RoleField, RoleMask};
 
+// Mock helper for in-memory nucl-related types.
+mod nucl;
+
 /// Mock in-memory implementations for announcement repository operations.
 pub mod announcement;
 /// Mock in-memory implementations for assignment repository operations.
@@ -58,8 +61,6 @@ pub mod member;
 pub mod member_invitation;
 /// Mock in-memory implementations for online-user repository operations.
 pub mod online_user;
-// Mock helper for in-memory nucl-related types.
-mod nucl;
 /// Mock implementations for page repository operations.
 pub mod page;
 /// Mock implementations for system mail repository operations.
@@ -70,15 +71,16 @@ pub mod team;
 pub mod term;
 /// Mock in-memory implementations for termbase repository operations.
 pub mod termbase;
-// Mock-only tests and fixtures for repository adapter scenarios.
-#[cfg(test)]
-mod tests;
 /// Mock implementations for unit repository operations.
 pub mod unit;
 /// Mock implementations for user repository operations.
 pub mod user;
 /// Mock implementations for workset repository operations.
 pub mod workset;
+
+// Mock-only tests and fixtures for repository adapter scenarios.
+#[cfg(test)]
+mod tests;
 
 /// In-memory state holding all mock repository records.
 #[cfg_attr(test, derive(Clone, Default))]

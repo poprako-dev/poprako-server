@@ -22,6 +22,7 @@ pub enum CommentInclOpt {
 impl InclOpt for CommentInclOpt {
     // Expand include option to concrete dependency expansion.
     fn path(self) -> &'static [Self] {
+        //
         match self {
             Self::User => &[Self::User],
         }

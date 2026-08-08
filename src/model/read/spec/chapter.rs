@@ -12,7 +12,6 @@ use crate::value::chapter::ChapterInclOpt;
 
 /// Filtering, pagination, and include parameters for listing chapters.
 pub struct ChapterListSpec {
-    //
     /// Foreign key scoping the chapter listing to a single comic.
     pub comic_id: String,
     /// Flags controlling which optional associations (such as comic or creator

@@ -25,7 +25,6 @@ use crate::value::image::{ImageExt, ImageHash};
 /// [`ChapterInfo`]: crate::model::read::proj::chapter::ChapterInfo
 #[cfg_attr(test, derive(Clone))]
 pub struct PageInfo {
-    //
     /// The unique identifier for this page record.
     pub id: String,
 

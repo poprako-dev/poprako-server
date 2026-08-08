@@ -10,7 +10,6 @@ use crate::part_impl::repo::rdb_impl::schema::t_comic_archive;
 #[derive(Insertable)]
 #[diesel(table_name = t_comic_archive)]
 pub struct ComicArchiveEntryRow<'a> {
-    //
     pub f_id: &'a str,
     pub f_team_id: &'a str,
     pub f_archived_payload: &'a str,
@@ -20,6 +19,7 @@ pub struct ComicArchiveEntryRow<'a> {
 
 impl<'a> From<&'a ComicArchiveRecord> for ComicArchiveEntryRow<'a> {
     fn from(comic_archive_record: &'a ComicArchiveRecord) -> Self {
+        //
         Self {
             f_id: &comic_archive_record.id,
             f_team_id: &comic_archive_record.team_id,

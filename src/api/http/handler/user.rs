@@ -67,6 +67,7 @@ pub async fn get_info(
     Path(user_id): Path<String>,
     Extension(token): Extension<UserToken>,
 ) -> HttpResult<UserInfoView> {
+    //
     usecase::user::get_info(
         (harn.repo(), harn.image_pool(), harn.develop()),
         token,

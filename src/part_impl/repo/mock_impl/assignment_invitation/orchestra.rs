@@ -18,6 +18,7 @@ fn get_info(
     state: &MockState,
     oper: &GetAssignmentInvitationInfo<'_>,
 ) -> BaseRest<AssignmentInvitationInfo> {
+    //
     state
         .assignment_invitations
         .iter()
@@ -26,6 +27,7 @@ fn get_info(
         })
         .cloned()
         .ok_or_else(|| match oper {
+            //
             GetAssignmentInvitationInfo::Id { .. } => {
                 expected("error-invitation-not-found")
             }
@@ -43,6 +45,7 @@ fn list_infos(
         .assignment_invitations
         .iter()
         .filter(|info| {
+            //
             info.chapter_id == oper.spec.chapter_id
                 && oper
                     .spec
@@ -54,6 +57,7 @@ fn list_infos(
         .collect::<Vec<_>>();
 
     infos.sort_by(|left, right| {
+        //
         right
             .created_at
             .cmp(&left.created_at)
@@ -118,7 +122,9 @@ impl<'a> Step<CreateAssignmentInvitation<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &CreateAssignmentInvitation<'a>,
     ) -> BaseRest<AssignmentInvitationInfo> {
+        //
         match context.state.assignment_invitations.iter().any(|info| {
+            //
             info.id == oper.entry.id
                 || (info.chapter_id == oper.entry.chapter_id
                     && info.invitee_qid == oper.entry.invitee_qid
@@ -177,6 +183,7 @@ impl<'a> Step<GetAssignmentInvitationInfoExcluded<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &GetAssignmentInvitationInfoExcluded<'a>,
     ) -> BaseRest<AssignmentInvitationInfo> {
+        //
         context
             .state
             .assignment_invitations
@@ -223,6 +230,7 @@ impl<'a> Step<DeleteAssignmentInvitations<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &DeleteAssignmentInvitations<'a>,
     ) -> BaseRest<()> {
+        //
         match oper {
             //
             // Internal implementation detail.

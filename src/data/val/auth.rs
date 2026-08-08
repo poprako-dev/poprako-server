@@ -11,7 +11,6 @@ use utoipa::ToSchema;
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct RegisterAuthVal {
-    //
     /// Unique user identifier.
     pub user_id: String,
     /// Authentication token.
@@ -22,7 +21,6 @@ pub struct RegisterAuthVal {
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct LoginAuthVal {
-    //
     /// Unique user identifier.
     pub user_id: String,
     /// Authentication token.

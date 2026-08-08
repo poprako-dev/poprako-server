@@ -3,7 +3,6 @@
 use serde::Serialize;
 
 use crate::data::view::chapter::ChapterInfoView;
-
 use crate::data::view::user::UserInfoView;
 
 #[cfg(feature = "swagger")]
@@ -14,18 +13,14 @@ use futures::future::OptionFuture;
 use poprako_util::time::ToUnixMilli as _;
 
 use crate::model::read::proj::assignment::AssignmentInfo;
-
 use crate::part::image::ImagePool;
-
 use crate::result::{BaseRest, accept};
-
 use crate::value::role::RoleMask;
 
 /// Presentation-ready chapter assignment information.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct AssignmentInfoView {
-    //
     /// Unique identifier of the assignment.
     pub id: String,
 
@@ -72,6 +67,7 @@ impl AssignmentInfoView {
             .await
             .transpose()?,
             chapter: OptionFuture::from(model.chapter.map(|chapter_info| {
+                //
                 ChapterInfoView::from_model(
                     image_pool,
                     chapter_info,
@@ -90,6 +86,7 @@ impl AssignmentInfoView {
 impl From<AssignmentInfo> for AssignmentInfoView {
     // Convert one persisted assignment into API value shape.
     fn from(model: AssignmentInfo) -> Self {
+        //
         Self {
             id: model.id,
             chapter_id: model.chapter_id,

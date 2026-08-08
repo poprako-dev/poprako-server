@@ -121,6 +121,7 @@ where
             //
             // Internal implementation detail.
             if image_identity.kind == ResourceKind::PageImage {
+                //
                 return process_existing_page_image(nucl, repo, image_identity)
                     .await;
             }
@@ -182,6 +183,7 @@ where
         (false, _) => return TaskFlow::Complete,
 
         (true, false) => {
+            //
             return TaskFlow::Dead(
                 "prom page image version matches but object key differs".into(),
             );
@@ -340,6 +342,7 @@ where
         (false, _) => return TaskFlow::Complete,
 
         (true, false) => {
+            //
             return TaskFlow::Dead(
                 "prom page image version matches but object key differs".into(),
             );

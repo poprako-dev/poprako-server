@@ -13,7 +13,6 @@ pub enum FindAssignmentInfo<'a, 'b> {
     //
     /// Finds by chapter and user.
     ChapterUser {
-        //
         /// Chapter identifier.
         chapter_id: &'a str,
         /// User identifier.
@@ -22,7 +21,6 @@ pub enum FindAssignmentInfo<'a, 'b> {
 
     /// Finds by user and comic.
     UserComic {
-        //
         /// User identifier.
         user_id: &'a str,
         /// Comic identifier.
@@ -36,7 +34,6 @@ pub enum FindAssignmentInfo<'a, 'b> {
 #[derive(Oper)]
 #[oper(output = AssignmentInfo)]
 pub struct GetAssignmentInfo<'a, 'b> {
-    //
     /// Assignment identifier.
     pub id: &'a str,
     /// Assignment inclusion options.
@@ -56,7 +53,6 @@ pub enum ListAssignmentInfos<'a, 'b> {
 
     /// Lists by a single chapter.
     Chapter {
-        //
         /// Chapter identifier.
         chapter_id: &'a str,
         /// Optional role filter.
@@ -67,7 +63,6 @@ pub enum ListAssignmentInfos<'a, 'b> {
 
     /// Lists by a set of chapters.
     Chapters {
-        //
         /// Chapter identifiers.
         chapter_ids: &'a [String],
         /// Assignment inclusion options.

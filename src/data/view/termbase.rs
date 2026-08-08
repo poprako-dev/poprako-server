@@ -13,7 +13,6 @@ use crate::model::read::proj::termbase::TermbaseInfo;
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct TermbaseInfoView {
-    //
     /// Unique terminology-base identifier.
     pub id: String,
 
@@ -45,6 +44,7 @@ pub struct TermbaseInfoView {
 impl From<TermbaseInfo> for TermbaseInfoView {
     // Convert terminology base model into response payload.
     fn from(model: TermbaseInfo) -> Self {
+        //
         Self {
             id: model.id,
             team_id: model.team_id,

@@ -7,7 +7,6 @@ use crate::model::page_port::PoprakoPageImport;
 /// PopRaKo JSON import root.
 #[derive(Deserialize)]
 pub struct ChapterPoprakoProjectImport {
-    //
     /// Imported author name from the source project metadata.
     pub author: String,
     /// Imported comic title from the source project metadata.

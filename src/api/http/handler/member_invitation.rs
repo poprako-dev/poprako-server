@@ -36,7 +36,6 @@ use crate::value::member_invitation::MemberInvitationInclOpt;
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct MemberInvitationListQuery {
-    //
     /// When `Some(true)`, returns only unconsumed invitations;
     /// `Some(false)` returns only consumed ones; `None` returns all.
     pub is_pending: Option<bool>,
@@ -70,6 +69,7 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(instr): Json<CreateMemberInvitationInstr>,
 ) -> HttpResult<CreateMemberInvitationVal> {
+    //
     usecase::member_invitation::create(
         (harn.nucl(), harn.repo(), harn.prom()),
         user_token,

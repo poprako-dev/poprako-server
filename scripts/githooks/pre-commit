@@ -1,0 +1,19 @@
+#!/usr/bin/env sh
+set -eu
+
+# Pre-commit gate: the full CI chain (scripts/ci-local.sh) must pass before
+# any commit. A disposable postgres container is started automatically.
+# Installed via `git config core.hooksPath scripts/githooks`.
+
+project_root=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
+cd "$project_root"
+
+echo "━━━ pre-commit: running scripts/ci-local.sh ━━━"
+
+if sh scripts/ci-local.sh; then
+    echo "✓ pre-commit: full CI chain passed"
+    exit 0
+fi
+
+echo "✗ pre-commit: full CI chain failed; commit rejected" >&2
+exit 1

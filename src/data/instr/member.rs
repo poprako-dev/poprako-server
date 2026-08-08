@@ -18,7 +18,6 @@ use crate::value::role::{RoleField, RoleMask};
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateMemberInstr {
-    //
     /// User identifier for the new membership.
     pub user_id: String,
     /// Team identifier for the new membership.
@@ -51,7 +50,6 @@ pub struct JoinTeamInstr {
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ListMemberInfosInstr {
-    //
     /// Owner-user mode: list teams/memberships owned by this user. Mutually
     /// exclusive with `team_id`; when set, `role` and `fuzzy_nickname` must be
     /// omitted.
@@ -136,6 +134,7 @@ impl TryInto<MemberListSpec> for ListMemberInfosInstr {
         }
 
         if let Some(owner_id) = owner_id {
+            //
             return accept(MemberListSpec::User {
                 owner_id,
                 incl_opt,
@@ -179,7 +178,6 @@ impl TryInto<MemberListSpec> for ListMemberInfosInstr {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateMemberRolesInstr {
-    //
     /// Member identifier to update.
     pub id: String,
     /// New role bitmask to assign.

@@ -38,6 +38,7 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(instr): Json<CreateTeamInstr>,
 ) -> HttpResult<TeamInfoView> {
+    //
     usecase::team::create(
         (harn.nucl(), harn.repo(), harn.image_pool()),
         user_token,
@@ -66,6 +67,7 @@ pub async fn list_infos(
     Extension(user_token): Extension<UserToken>,
     Query(instr): Query<ListTeamInfosInstr>,
 ) -> HttpResult<Vec<TeamInfoView>> {
+    //
     usecase::team::list_infos(
         (harn.repo(), harn.image_pool()),
         user_token,
@@ -93,6 +95,7 @@ pub async fn list_online_user_ids(
     Path(team_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<Vec<String>> {
+    //
     usecase::team::list_online_user_ids((harn.repo(),), user_token, team_id)
         .await?
         .accept(StatusCode::OK)
@@ -140,6 +143,7 @@ pub async fn get_info(
     State(harn): State<AppHarn>,
     Path(team_id): Path<String>,
 ) -> HttpResult<TeamInfoView> {
+    //
     usecase::team::get_info((harn.repo(), harn.image_pool()), team_id)
         .await?
         .accept(StatusCode::OK)
@@ -194,6 +198,7 @@ pub async fn reserve_avatar(
     Extension(user_token): Extension<UserToken>,
     Json(instr): Json<ReserveTeamAvatarInstr>,
 ) -> HttpResult<ReserveTeamAvatarVal> {
+    //
     usecase::team::reserve_avatar(
         (harn.nucl(), harn.repo(), harn.prom(), harn.image_pool()),
         user_token,

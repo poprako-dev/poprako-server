@@ -154,7 +154,6 @@ where
 
     // Holds one requested upload target within a page reservation.
     struct PageUploadReservation {
-        //
         // Upload destination in object storage.
         object_key: String,
         // Expected size (in bytes) for capacity pre-allocation and verification.
@@ -163,7 +162,6 @@ where
 
     // Holds the identity and optional upload request for one reserved page.
     struct PageReservation {
-        //
         // Page identifier for this reservation.
         page_id: String,
         // Ordering index used to keep reservation payload deterministic.
@@ -303,6 +301,7 @@ where
                             })?,
 
                         false => existing_page_info.image_version.ok_or_else(|| {
+                            //
                             BaseError::Unrecoverable {
                                 message: "[reserve_chapter_pages] retained page image version is missing".into(),
                             }
@@ -326,6 +325,7 @@ where
                         true => false,
 
                         false => existing_page_info.is_image_uploaded.ok_or_else(|| {
+                            //
                             BaseError::Unrecoverable {
                                 message: "[reserve_chapter_pages] retained page image upload state is missing".into(),
                             }
@@ -364,8 +364,10 @@ where
                             (true, _) | (false, None) => None,
 
                             (false, Some(new_byte_len)) => {
+                                //
                                 Some(PageUploadReservation {
                                     object_key: image_key.ok_or_else(|| {
+                                        //
                                         BaseError::Unrecoverable {
                                             message: "[reserve_chapter_pages] pending page image key is missing"
                                                 .into(),

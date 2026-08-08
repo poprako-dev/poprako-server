@@ -2,9 +2,10 @@
 
 #[macro_use]
 mod macros;
-// Generic batch-include framework with per-table loaders.
+// Framework include helper traits.
 mod framework;
 
+// Generic batch-include framework with per-table loaders.
 /// Include logic for announcements.
 pub mod announcement;
 /// Include logic for assignments.

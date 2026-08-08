@@ -8,14 +8,12 @@ use utoipa::ToSchema;
 use poprako_util::time::ToUnixMilli as _;
 
 use crate::model::read::proj::assignment_invitation::AssignmentInvitationInfo;
-
 use crate::value::role::RoleMask;
 
 /// Presentation-ready assignment invitation information.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct AssignmentInvitationInfoView {
-    //
     /// Unique identifier of the invitation.
     pub id: String,
 
@@ -45,6 +43,7 @@ pub struct AssignmentInvitationInfoView {
 impl From<AssignmentInvitationInfo> for AssignmentInvitationInfoView {
     // Map assignment invitation model fields directly to API-facing values.
     fn from(value: AssignmentInvitationInfo) -> Self {
+        //
         Self {
             id: value.id,
             chapter_id: value.chapter_id,

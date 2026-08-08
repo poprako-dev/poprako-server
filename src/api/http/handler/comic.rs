@@ -54,6 +54,7 @@ pub async fn export_archives(
     Extension(user_token): Extension<UserToken>,
     Query(instr): Query<ExportComicArchivesInstr>,
 ) -> HttpResult<ExportComicArchivesVal> {
+    //
     usecase::comic_archive::export((harn.repo(),), user_token, team_id, instr)
         .await?
         .accept(StatusCode::OK)
@@ -70,7 +71,6 @@ pub async fn export_archives(
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ComicListQuery {
-    //
     /// Fuzzy title substring filter (case-insensitive).
     pub fuzzy_title: Option<String>,
 
@@ -113,6 +113,7 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(instr): Json<CreateComicInstr>,
 ) -> HttpResult<CreateComicVal> {
+    //
     usecase::comic::create((harn.nucl(), harn.repo()), user_token, instr)
         .await?
         .accept(StatusCode::CREATED)
@@ -176,6 +177,7 @@ pub async fn get_info(
     Path(comic_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<ComicInfoView> {
+    //
     usecase::comic::get_info(
         (harn.repo(), harn.image_pool()),
         user_token,
@@ -234,6 +236,7 @@ pub async fn reserve_cover(
     Extension(user_token): Extension<UserToken>,
     Json(instr): Json<ReserveComicCoverInstr>,
 ) -> HttpResult<ReserveComicCoverVal> {
+    //
     usecase::comic::reserve_cover(
         (harn.nucl(), harn.repo(), harn.prom(), harn.image_pool()),
         user_token,
@@ -294,6 +297,7 @@ pub async fn archive(
     Path(comic_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<ArchiveComicVal> {
+    //
     usecase::comic_archive::archive(
         (harn.nucl(), harn.repo(), harn.prom()),
         user_token,

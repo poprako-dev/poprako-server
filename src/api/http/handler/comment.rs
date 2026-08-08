@@ -30,7 +30,6 @@ use crate::value::comment::CommentInclOpt;
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct CommentListQuery {
-    //
     /// Related rows to embed. Repeatable. Values: `user`.
     #[serde(default, rename = "incl")]
     pub incl_opt: Vec<CommentInclOpt>,
@@ -60,6 +59,7 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(instr): Json<CreateCommentInstr>,
 ) -> HttpResult<CreateCommentVal> {
+    //
     usecase::comment::create((harn.nucl(), harn.repo()), user_token, instr)
         .await?
         .accept(StatusCode::CREATED)

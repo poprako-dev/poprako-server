@@ -17,7 +17,6 @@ use crate::model::read::proj::workset::WorksetInfo;
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct WorksetInfoView {
-    //
     /// Unique workset identifier.
     pub id: String,
     /// Owning team identifier.
@@ -44,6 +43,7 @@ pub struct WorksetInfoView {
 impl From<WorksetInfo> for WorksetInfoView {
     // Flatten workset persistence model into API response form.
     fn from(model: WorksetInfo) -> Self {
+        //
         Self {
             id: model.id,
             team_id: model.team_id,

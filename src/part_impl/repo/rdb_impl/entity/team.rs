@@ -14,7 +14,6 @@ use crate::value::image::{ImageExt, ImageHash};
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_team)]
 pub struct TeamInfoRow {
-    //
     pub f_id: String,
     pub f_name: String,
     pub f_description: Option<String>,
@@ -37,7 +36,6 @@ pub struct TeamInfoRow {
 #[derive(Insertable)]
 #[diesel(table_name = t_team)]
 pub struct TeamEntryRow<'a> {
-    //
     pub f_id: &'a str,
     pub f_name: &'a str,
     pub f_description: &'a str,
@@ -54,7 +52,6 @@ pub struct TeamEntryRow<'a> {
 #[derive(AsChangeset)]
 #[diesel(table_name = t_team)]
 pub struct TeamAspectRow<'a> {
-    //
     pub f_name: Option<&'a str>,
     pub f_description: Option<&'a str>,
 
@@ -69,6 +66,7 @@ pub struct TeamAspectRow<'a> {
 
 impl<'a> TeamAspectRow<'a> {
     pub fn new(updated_at: OffsetDateTime) -> Self {
+        //
         Self {
             f_name: None,
             f_description: None,
@@ -163,12 +161,14 @@ impl TryFrom<TeamInfoRow> for TeamInfo {
             ) => {
                 //
                 let avatar_version = u32::try_from(avatar_version).map_err(|_| {
+                        //
                         BaseError::Unrecoverable {
                             message: "[TeamInfoRow] f_avatar_version must be non-negative".into(),
                         }
                     })?;
 
                 let avatar_hash = avatar_hash.try_into().map_err(|_| {
+                    //
                     BaseError::Unrecoverable {
                         message:
                             "[TeamInfoRow] f_avatar_hash must contain 32 bytes"
@@ -178,6 +178,7 @@ impl TryFrom<TeamInfoRow> for TeamInfo {
 
                 let avatar_ext =
                     ImageExt::parse(&avatar_ext).ok_or_else(|| {
+                        //
                         BaseError::Unrecoverable {
                         message:
                             "[TeamInfoRow] f_avatar_extension must be supported"
@@ -195,6 +196,7 @@ impl TryFrom<TeamInfoRow> for TeamInfo {
             }
 
             _ => {
+                //
                 return Err(BaseError::Unrecoverable {
                         message: "[TeamInfoRow] avatar fields must be all null or all present".into(),
                     });

@@ -19,7 +19,6 @@ use crate::value::role::RoleMask;
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateMemberInvitationInstr {
-    //
     /// Owning team identifier.
     pub team_id: String,
 
@@ -41,7 +40,6 @@ pub struct CreateMemberInvitationInstr {
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ListMemberInvitationInfosInstr {
-    //
     /// Parent team whose invitations to list.
     pub team_id: String,
 
@@ -63,7 +61,6 @@ pub struct ListMemberInvitationInfosInstr {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateMemberInvitationRolesInstr {
-    //
     /// Invitation identifier.
     pub id: String,
     /// New role mask for the invitation.

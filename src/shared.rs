@@ -54,6 +54,7 @@ impl RdbCore {
             .with_context(|| "[RdbCore::from_env] DATABASE_URL is not set")?;
 
         Self::from_database_url(&database_url).map_err(|err| match err {
+            //
             BaseError::Expected { message, .. }
             | BaseError::Unrecoverable { message } => {
                 anyhow::anyhow!("{}", message)

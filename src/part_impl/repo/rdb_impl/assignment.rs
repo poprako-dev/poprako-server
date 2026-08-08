@@ -30,12 +30,12 @@ use crate::shared::result::diesel;
 use crate::shared::{RdbConn, RdbContext};
 use crate::value::assignment::AssignmentInclOpt;
 
+// Shared list query builder for assignment read paths.
+mod list;
+
 /// Assignment RDB integration tests.
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;
-
-// Shared list query builder for assignment read paths.
-mod list;
 
 // Build list query helper functions for assignment read paths.
 // Separate module.
@@ -268,6 +268,7 @@ impl Run<FindAssignmentInfo<'_, '_>> for HybRepo {
         &self,
         oper: &FindAssignmentInfo<'_, '_>,
     ) -> BaseRest<Option<AssignmentInfo>> {
+        //
         match oper {
             //
             FindAssignmentInfo::ChapterUser {
@@ -349,12 +350,14 @@ impl Step<FindAssignmentInfo<'_, '_>, RdbContext> for HybRepo {
         context: &mut RdbContext,
         oper: &FindAssignmentInfo<'_, '_>,
     ) -> BaseRest<Option<AssignmentInfo>> {
+        //
         match oper {
             //
             FindAssignmentInfo::ChapterUser {
                 chapter_id,
                 user_id,
             } => {
+                //
                 get_info_by_chapter_id_and_user_id(
                     context.conn(),
                     chapter_id,
@@ -368,6 +371,7 @@ impl Step<FindAssignmentInfo<'_, '_>, RdbContext> for HybRepo {
                 comic_id,
                 incls,
             } => {
+                //
                 find_info_by_user_id_and_comic_id(
                     context.conn(),
                     user_id,
@@ -391,8 +395,11 @@ impl Step<ListAssignmentInfosExcluded<'_>, RdbContext> for HybRepo {
         context: &mut RdbContext,
         oper: &ListAssignmentInfosExcluded<'_>,
     ) -> BaseRest<Vec<AssignmentInfo>> {
+        //
         match oper {
+            //
             ListAssignmentInfosExcluded::Chapter { chapter_id } => {
+                //
                 list_chapter_assignments_excluded(context.conn(), chapter_id)
                     .await
             }
@@ -456,6 +463,7 @@ impl Step<DeleteAssignments<'_>, RdbContext> for HybRepo {
         context: &mut RdbContext,
         oper: &DeleteAssignments<'_>,
     ) -> BaseRest<()> {
+        //
         match oper {
             //
             DeleteAssignments::Id { id } => delete(context.conn(), id).await,

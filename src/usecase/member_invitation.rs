@@ -194,6 +194,7 @@ where
         Vec::with_capacity(member_invitation_infos.len());
 
     for member_invitation_info in member_invitation_infos {
+        //
         member_invitation_info_vals.push(
             MemberInvitationInfoView::from_model(
                 image_pool,

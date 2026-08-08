@@ -3,7 +3,6 @@
 /// The data needed to create a terminology entry.
 #[cfg_attr(test, derive(Clone))]
 pub struct TermEntry {
-    //
     /// The unique identifier for the new terminology entry.
     pub id: String,
 
@@ -24,7 +23,6 @@ pub struct TermEntry {
 /// Mutable terminology-entry fields.
 #[cfg_attr(test, derive(Clone))]
 pub struct TermRepl {
-    //
     /// The unique identifier of the term to update.
     pub id: String,
 

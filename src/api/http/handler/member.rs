@@ -40,7 +40,6 @@ mod tests;
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct MemberMeListQuery {
-    //
     /// Related rows to embed. Repeatable. Values: `user`, `team`.
     #[serde(default, rename = "incl")]
     pub incl_opt: Vec<MemberInclOpt>,
@@ -71,6 +70,7 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(instr): Json<CreateMemberInstr>,
 ) -> HttpResult<CreateMemberVal> {
+    //
     usecase::member::create((harn.nucl(), harn.repo()), user_token, instr)
         .await?
         .accept(StatusCode::CREATED)
@@ -95,6 +95,7 @@ pub async fn list_infos(
     Extension(user_token): Extension<UserToken>,
     Query(instr): Query<ListMemberInfosInstr>,
 ) -> HttpResult<Vec<MemberInfoView>> {
+    //
     usecase::member::list_infos(
         (harn.repo(), harn.image_pool()),
         user_token,
@@ -218,6 +219,7 @@ pub async fn join(
     Extension(user_token): Extension<UserToken>,
     Json(instr): Json<JoinTeamInstr>,
 ) -> HttpResult<MemberInfoView> {
+    //
     usecase::member::join_team(
         (harn.nucl(), harn.repo(), harn.image_pool()),
         user_token,

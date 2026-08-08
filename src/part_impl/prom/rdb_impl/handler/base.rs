@@ -30,7 +30,6 @@ use crate::shared::{RdbContext, RdbCore};
 /// Background worker that polls the `t_local_message` table, dispatches by topic,
 /// and completes or fails each record.
 pub struct RdbPromHandler<N, R, I, D> {
-    //
     /// Database connection pool for handler-internal queries.
     pub core: RdbCore,
     /// Transaction coordinator used for handler-level database operations.
@@ -73,6 +72,7 @@ where
         develop: D,
         token: CancellationToken,
     ) -> Self {
+        //
         Self {
             core,
             nucl,
@@ -128,6 +128,7 @@ where
     };
 
     if payload.topic() != topic {
+        //
         return TaskFlow::Dead(format!(
             "prom topic {} does not match payload topic {}",
             topic,

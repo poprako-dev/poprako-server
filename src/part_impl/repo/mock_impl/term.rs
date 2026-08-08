@@ -18,6 +18,7 @@ use crate::result::{BaseError, BaseRest, accept};
 
 // Internal implementation of `get_info`.
 fn get_info(state: &MockState, id: &str) -> BaseRest<TermInfo> {
+    //
     state
         .terms
         .iter()
@@ -33,7 +34,9 @@ fn source_conflicts(
     termbase_id: &str,
     source: &str,
 ) -> bool {
+    //
     state.terms.iter().any(|term_info| {
+        //
         term_info.id != id.unwrap_or_default()
             && term_info.termbase_id == termbase_id
             && term_info.source.to_lowercase() == source.to_lowercase()

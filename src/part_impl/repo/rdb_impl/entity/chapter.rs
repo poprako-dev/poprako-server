@@ -13,7 +13,6 @@ use crate::value::chapter::{Stage, StageMask, StagePhase};
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_chapter)]
 pub struct ChapterInfoRow {
-    //
     pub f_id: String,
 
     pub f_comic_id: String,
@@ -74,7 +73,6 @@ impl TryFrom<ChapterInfoRow> for ChapterInfo {
 #[derive(Insertable)]
 #[diesel(table_name = t_chapter)]
 pub struct ChapterEntryRow<'a> {
-    //
     pub f_id: &'a str,
 
     pub f_comic_id: &'a str,
@@ -111,7 +109,6 @@ impl<'a> From<&'a ChapterEntry> for ChapterEntryRow<'a> {
 #[derive(AsChangeset)]
 #[diesel(table_name = t_chapter)]
 pub struct ChapterAspectRow<'a> {
-    //
     pub f_is_pinned: Option<bool>,
     pub f_subtitle: Option<&'a str>,
     pub f_uploaded_at: Option<Option<OffsetDateTime>>,
@@ -134,6 +131,7 @@ pub struct ChapterAspectRow<'a> {
 
 impl<'a> ChapterAspectRow<'a> {
     pub fn new(updated_at: OffsetDateTime) -> Self {
+        //
         Self {
             f_is_pinned: None,
             f_subtitle: None,
@@ -227,6 +225,7 @@ impl<'a> ChapterAspectRow<'a> {
 /// Convert an optional one-shot timestamp to a `StagePhase`:
 /// `Some` maps to `Completed`, `None` maps to `Pending`.
 fn phase_from_one_shot(timestamp: Option<OffsetDateTime>) -> StagePhase {
+    //
     match timestamp {
         //
         Some(_) => StagePhase::Completed,
@@ -242,6 +241,7 @@ fn phase_from_two_step(
     started_at: Option<OffsetDateTime>,
     completed_at: Option<OffsetDateTime>,
 ) -> StagePhase {
+    //
     match (started_at, completed_at) {
         //
         (_, Some(_)) => StagePhase::Completed,
@@ -259,6 +259,7 @@ fn one_shot_timestamp(
     stage: Stage,
     updated_at: OffsetDateTime,
 ) -> Option<OffsetDateTime> {
+    //
     match stages.get_phase(stage) {
         //
         StagePhase::Pending => None,
@@ -281,6 +282,7 @@ fn two_step_timestamps(
     Option<Option<OffsetDateTime>>,
     Option<Option<OffsetDateTime>>,
 ) {
+    //
     match stages.get_phase(stage) {
         //
         StagePhase::Pending => (Some(None), Some(None)),

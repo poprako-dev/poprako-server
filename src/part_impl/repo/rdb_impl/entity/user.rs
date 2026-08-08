@@ -14,7 +14,6 @@ use crate::value::image::{ImageExt, ImageHash};
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_user)]
 pub struct UserInfoRow {
-    //
     pub f_id: String,
     pub f_nickname: String,
     pub f_qid: String,
@@ -38,7 +37,6 @@ pub struct UserInfoRow {
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_user)]
 pub struct UserCredsRow {
-    //
     pub f_id: String,
 
     pub f_password_hash: String,
@@ -50,7 +48,6 @@ pub struct UserCredsRow {
 #[derive(Insertable)]
 #[diesel(table_name = t_user)]
 pub struct UserEntryRow<'a> {
-    //
     pub f_id: &'a str,
     pub f_nickname: &'a str,
     pub f_qid: &'a str,
@@ -69,7 +66,6 @@ pub struct UserEntryRow<'a> {
 #[derive(AsChangeset)]
 #[diesel(table_name = t_user)]
 pub struct UserAspectRow<'a> {
-    //
     pub f_nickname: Option<&'a str>,
     pub f_qid: Option<&'a str>,
 
@@ -86,6 +82,7 @@ pub struct UserAspectRow<'a> {
 
 impl<'a> UserAspectRow<'a> {
     pub fn new(updated_at: OffsetDateTime) -> Self {
+        //
         Self {
             f_nickname: None,
             f_qid: None,
@@ -188,12 +185,14 @@ impl TryFrom<UserInfoRow> for UserInfo {
             ) => {
                 //
                 let avatar_version = u32::try_from(avatar_version).map_err(|_| {
+                        //
                         BaseError::Unrecoverable {
                             message: "[UserInfoRow] f_avatar_version must be non-negative".into(),
                         }
                     })?;
 
                 let avatar_hash = avatar_hash.try_into().map_err(|_| {
+                    //
                     BaseError::Unrecoverable {
                         message:
                             "[UserInfoRow] f_avatar_hash must contain 32 bytes"
@@ -203,6 +202,7 @@ impl TryFrom<UserInfoRow> for UserInfo {
 
                 let avatar_ext =
                     ImageExt::parse(&avatar_ext).ok_or_else(|| {
+                        //
                         BaseError::Unrecoverable {
                         message:
                             "[UserInfoRow] f_avatar_extension must be supported"
@@ -220,6 +220,7 @@ impl TryFrom<UserInfoRow> for UserInfo {
             }
 
             _ => {
+                //
                 return Err(BaseError::Unrecoverable {
                         message: "[UserInfoRow] avatar fields must be all null or all present".into(),
                     });
@@ -245,6 +246,7 @@ impl TryFrom<UserInfoRow> for UserInfo {
 
 impl From<UserCredsRow> for UserCredential {
     fn from(v: UserCredsRow) -> Self {
+        //
         UserCredential {
             user_id: v.f_id,
             password_hash: v.f_password_hash,

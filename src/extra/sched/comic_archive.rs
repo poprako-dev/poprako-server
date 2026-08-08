@@ -44,6 +44,7 @@ pub fn spawn(core: RdbCore, token: CancellationToken) -> watch::Receiver<bool> {
             match purge_once(&core).await {
                 //
                 Ok(deleted_count) if deleted_count > 0 => {
+                    //
                     tracing::info!(
                         deleted_count,
                         "[ComicArchiveRetention::run] purged expired archives",
@@ -53,6 +54,7 @@ pub fn spawn(core: RdbCore, token: CancellationToken) -> watch::Receiver<bool> {
                 Ok(_) => {}
 
                 Err(error) => {
+                    //
                     tracing::error!(
                         err = ?error,
                         "[ComicArchiveRetention::run] retention job failed",
@@ -77,7 +79,6 @@ const PURGE_INTERVAL: Duration = Duration::from_secs(7 * 24 * 60 * 60);
 
 // Cached team/month slot to purge archive rows safely in batches.
 struct ExpiredSlot {
-    //
     // Team being iterated for archive retention.
     team_id: String,
 
@@ -255,6 +256,7 @@ fn next_month(start: OffsetDateTime) -> BaseRest<OffsetDateTime> {
         month => (
             start.year(),
             Month::try_from(u8::from(month) + 1).map_err(|error| {
+                //
                 BaseError::Unrecoverable {
                     message: format!(
                         "[ComicArchiveRetention::next_month] failed to build month: {}",
@@ -267,6 +269,7 @@ fn next_month(start: OffsetDateTime) -> BaseRest<OffsetDateTime> {
 
     let date =
         Date::from_calendar_date(next.0, next.1, 1).map_err(|error| {
+            //
             BaseError::Unrecoverable {
                 message: format!(
                     "[ComicArchiveRetention::next_month] failed to build month start: {}",

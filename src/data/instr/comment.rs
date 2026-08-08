@@ -19,7 +19,6 @@ use crate::value::comment::CommentInclOpt;
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ListCommentInfosInstr {
-    //
     /// Parent team whose comments to list.
     pub team_id: String,
 
@@ -36,6 +35,7 @@ pub struct ListCommentInfosInstr {
 impl From<ListCommentInfosInstr> for CommentListSpec {
     // Map comment listing parameters directly to the repository spec.
     fn from(instr: ListCommentInfosInstr) -> Self {
+        //
         Self {
             team_id: instr.team_id,
             incl_opt: instr.incl_opt,
@@ -49,7 +49,6 @@ impl From<ListCommentInfosInstr> for CommentListSpec {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateCommentInstr {
-    //
     /// Target team identifier.
     pub team_id: String,
     /// Comment body text.

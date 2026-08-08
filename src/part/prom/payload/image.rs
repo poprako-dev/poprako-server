@@ -23,7 +23,6 @@ pub enum ImagePayload {
     //
     /// Verify that an uploaded image object exists and confirm the current DB ownership.
     CheckUpload {
-        //
         /// Discriminator for the resource type that owns this image.
         resource_kind: ResourceKind,
         /// ID of the resource that owns this image.

@@ -54,6 +54,7 @@ fn create_user(state: &mut MockState, entry: &UserEntry) -> BaseRest<UserInfo> {
 
 // Load one user info from mock state by id.
 fn get_user_info(state: &MockState, id: &str) -> BaseRest<UserInfo> {
+    //
     state
         .users
         .iter()
@@ -64,6 +65,7 @@ fn get_user_info(state: &MockState, id: &str) -> BaseRest<UserInfo> {
 
 // Find one user info by qid and return an optional result.
 fn find_user_info(state: &MockState, qid: &str) -> Option<UserInfo> {
+    //
     state
         .users
         .iter()
@@ -287,7 +289,9 @@ impl<'a> Step<FindUserInfo<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &FindUserInfo<'a>,
     ) -> BaseRest<Option<UserInfo>> {
+        //
         match oper {
+            //
             FindUserInfo::Qid { qid } => {
                 accept(find_user_info(&context.state, qid))
             }
@@ -341,6 +345,7 @@ impl<'a> Step<ReserveUserAvatar<'a>, MockContext> for Mock {
             //
             // Keep existing key when hash matches and extension is unchanged.
             let object_key = user_info.avatar_key.clone().ok_or_else(|| {
+                //
                 BaseError::Unrecoverable {
                     message: "[Mock::ReserveUserAvatar] avatar key is missing"
                         .into(),
@@ -351,6 +356,7 @@ impl<'a> Step<ReserveUserAvatar<'a>, MockContext> for Mock {
                 object_key,
                 prev_object_key: None,
                 avatar_version: user_info.avatar_version.ok_or_else(|| {
+                    //
                     BaseError::Unrecoverable {
                         message: "[Mock::ReserveUserAvatar] avatar version is missing".into(),
                     }
@@ -408,6 +414,7 @@ impl<'a> Step<GetUserInfoExcluded<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &GetUserInfoExcluded<'a>,
     ) -> BaseRest<UserInfo> {
+        //
         match oper {
             GetUserInfoExcluded::Id { id } => get_user_info(&context.state, id),
         }

@@ -37,6 +37,7 @@ mod repo;
 #[cfg(all(test, feature = "rdb", feature = "prom_impl"))]
 // Internal organization of the `test_shared` module.
 mod test_shared;
+
 #[cfg(all(test, feature = "rdb", feature = "prom_impl"))]
 // Internal organization of the `tests` module.
 mod tests;
@@ -52,7 +53,6 @@ mod tests;
 /// Call [`close`](RdbProm::close) before dropping to finish in-flight work
 /// gracefully. Pending records remain durable for the next worker start.
 pub struct RdbProm {
-    //
     // Internal state field `token`.
     /// Cancellation token to signal graceful shutdown of the prom processor.
     token: CancellationToken,
@@ -111,6 +111,7 @@ impl RdbProm {
         let mut done = self.done.clone();
 
         if let Err(error) = done.wait_for(|done| *done).await {
+            //
             tracing::error!(
                 err = %error,
                 "[RdbProm::close] background task ended without completion",

@@ -79,6 +79,7 @@ impl<'de> Deserialize<'de> for ImageHash {
         let encoded = String::deserialize(deserializer)?;
 
         Self::parse_rfc4648(&encoded).ok_or_else(|| {
+            //
             D::Error::custom(
                 "image hash must be canonical padded RFC 4648 Base64 for 32 bytes",
             )
@@ -126,6 +127,7 @@ pub enum ImageExt {
 impl ImageExt {
     /// Parses a supported lowercase object-key suffix.
     pub fn parse(value: &str) -> Option<Self> {
+        //
         match value {
             //
             "jpg" => Some(Self::Jpg),
@@ -154,6 +156,7 @@ impl ImageExt {
 
     /// Returns the lowercase object-key suffix.
     pub fn suffix(self) -> &'static str {
+        //
         match self {
             //
             Self::Jpg => "jpg",
@@ -180,6 +183,7 @@ impl ImageExt {
 
     /// Returns the media type bound into an upload signature.
     pub fn content_type(self) -> &'static str {
+        //
         match self {
             //
             Self::Jpg | Self::Jpeg => "image/jpeg",

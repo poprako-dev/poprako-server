@@ -9,7 +9,6 @@ use time::OffsetDateTime;
 use poprako_util::i18n::trl;
 
 use self::image_task::ResourceState;
-use self::json::serialize_payload_err;
 use crate::model::read::proj::user::{UserCredential, UserInfo};
 use crate::model::write::page::PageImageRepl;
 use crate::model::write::team::TeamAvatarRepl;
@@ -37,6 +36,9 @@ mod image_task;
 mod invitation;
 // Internal organization of the `json` module.
 mod json;
+// Deferred-record step impls for the mock prom.
+mod defer;
+
 // Internal organization of the `tests` module.
 mod tests;
 
@@ -105,63 +107,6 @@ impl MockPromRecord {
 
 /// Mock prom implementation used by coordinated tests.
 impl Prom<MockContext> for Mock {}
-
-/// Defers one record in the coordinated mock state.
-impl<'a> Step<Defer<'a, String, TaskPayload, ()>, MockContext> for Mock {
-    // Internal type alias for `Error`.
-    type Error = BaseError;
-
-    // Internal implementation of `step`.
-    async fn step(
-        &self,
-        context: &mut MockContext,
-        oper: &Defer<'a, String, TaskPayload, ()>,
-    ) -> Result<(), Self::Error> {
-        //
-        // Internal implementation detail.
-        let payload_json = serde_json::to_string(oper.task.payload)
-            .map_err(serialize_payload_err)?;
-
-        context.state.prom_records.push(MockPromRecord {
-            id: oper.task.id.to_string(),
-            payload_json,
-            visible_at: OffsetDateTime::now_utc()
-                + oper.task.delay.unwrap_or_default(),
-        });
-
-        accept(())
-    }
-}
-
-impl<'t, 'a> Step<DeferBatch<'t, 'a, String, TaskPayload, ()>, MockContext>
-    for Mock
-{
-    // Internal type alias for `Error`.
-    type Error = BaseError;
-
-    // Internal implementation of `step`.
-    async fn step(
-        &self,
-        context: &mut MockContext,
-        oper: &DeferBatch<'t, 'a, String, TaskPayload, ()>,
-    ) -> Result<(), Self::Error> {
-        //
-        // Internal implementation detail.
-        for task in oper.tasks {
-            Defer::new(Task {
-                id: task.id,
-                payload: task.payload,
-                delay: task.delay,
-            })
-            .step_on(self, context)
-            .await?;
-        }
-
-        accept(())
-    }
-}
-
-// ── On-demand prom processor for integration tests ─────────────────────────
 
 // ── On-demand prom processor for integration tests ─────────────────────────
 

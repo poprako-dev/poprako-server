@@ -1,0 +1,97 @@
+use poprako_orchestra::Run;
+use tracing::instrument;
+
+use crate::model::read::proj::comic::ComicInfo;
+use crate::part::repo::oper::comic::{
+    GetComicInfo, ListComicInfos, MarkComicCoverUploaded, UpdateComic,
+};
+use crate::part_impl::repo::mock_impl::comic::{
+    get_comic_info, list_comic_infos, mark_comic_cover_uploaded,
+};
+use crate::part_impl::repo::mock_impl::{Mock, expected, now};
+use crate::result::{BaseError, accept};
+
+impl<'a, 'b> Run<GetComicInfo<'a, 'b>> for Mock {
+    // Use base error type for get-by-id read operation.
+    type Error = BaseError;
+
+    #[instrument(level = "info", skip_all)]
+    // Load locked state and delegate to shared helper.
+    async fn run(
+        &self,
+        oper: &GetComicInfo<'a, 'b>,
+    ) -> Result<ComicInfo, Self::Error> {
+        //
+        let state = self.state.lock().unwrap();
+
+        get_comic_info(&state, oper.id, oper.incls)
+    }
+}
+
+impl<'a> Run<ListComicInfos<'a>> for Mock {
+    // Use base error type for list operation.
+    type Error = BaseError;
+
+    #[instrument(level = "info", skip_all)]
+    // Load locked state and execute listing helper.
+    async fn run(
+        &self,
+        oper: &ListComicInfos<'a>,
+    ) -> Result<Vec<ComicInfo>, Self::Error> {
+        //
+        let state = self.state.lock().unwrap();
+
+        accept(list_comic_infos(&state, oper.spec))
+    }
+}
+
+impl<'a> Run<UpdateComic<'a>> for Mock {
+    // Use base error type for full-run metadata updates.
+    type Error = BaseError;
+
+    #[instrument(level = "info", skip_all)]
+    // Apply mutable field updates and touch updated_at.
+    async fn run(&self, oper: &UpdateComic<'a>) -> Result<(), Self::Error> {
+        //
+        let mut state = self.state.lock().unwrap();
+
+        let comic = state
+            .comics
+            .iter_mut()
+            .find(|comic| comic.id == oper.update.id)
+            .ok_or_else(|| expected("error-comic-not-found"))?;
+
+        comic.title = oper.update.title.clone();
+
+        comic.author = oper.update.author.clone();
+
+        comic.description = oper.update.description.clone();
+
+        comic.updated_at = now();
+
+        accept(())
+    }
+}
+
+impl<'a> Run<MarkComicCoverUploaded<'a>> for Mock {
+    // Use base error type for cover upload mark operations.
+    type Error = BaseError;
+
+    #[instrument(level = "info", skip_all)]
+    // Validate and apply cover upload transition under lock.
+    async fn run(
+        &self,
+        oper: &MarkComicCoverUploaded<'a>,
+    ) -> Result<(), Self::Error> {
+        //
+        let mut state = self.state.lock().unwrap();
+
+        mark_comic_cover_uploaded(
+            &mut state,
+            oper.id,
+            oper.cover_version,
+            oper.cover_key,
+            oper.cover_uploaded,
+        )
+    }
+}

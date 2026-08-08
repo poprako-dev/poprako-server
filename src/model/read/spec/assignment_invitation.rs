@@ -2,7 +2,6 @@
 
 /// Filtering and pagination parameters for listing assignment invitations.
 pub struct AssignmentInvitationListSpec {
-    //
     /// Foreign key scoping the listing to invitations for this chapter.
     pub chapter_id: String,
     /// Optional pending-state filter.

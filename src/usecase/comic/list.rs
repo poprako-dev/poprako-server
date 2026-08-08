@@ -138,6 +138,7 @@ where
                 let mut assignment_infos_by_chapter = HashMap::new();
 
                 for assignment_info in assignment_infos {
+                    //
                     assignment_infos_by_chapter
                         .entry(assignment_info.chapter_id.clone())
                         .or_insert_with(Vec::new)

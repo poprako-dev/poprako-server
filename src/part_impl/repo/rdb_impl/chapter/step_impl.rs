@@ -345,6 +345,7 @@ pub async fn start_stage(
         .map_err(diesel)?,
 
         Stage::RawProvide | Stage::Review | Stage::Publish => {
+            //
             return Err(BaseError::Unrecoverable {
                 message: "only two-step chapter stages can be started"
                     .to_string(),

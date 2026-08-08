@@ -82,6 +82,7 @@ pub async fn list_infos(
 
     // Apply a role filter only when the caller explicitly requests one.
     if let Some(role) = role {
+        //
         query = match role {
             //
             RoleField::RAW_PROVIDER => {
@@ -126,6 +127,7 @@ pub async fn list_infos(
     let rows = match page {
         //
         Some((offset, limit)) => {
+            //
             query
                 .offset(offset as i64)
                 .limit(limit as i64)

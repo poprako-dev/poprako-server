@@ -30,7 +30,6 @@ use crate::usecase;
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct TermbaseListQuery {
-    //
     /// Optional case-insensitive name substring.
     pub fuzzy_name: Option<String>,
 
@@ -58,6 +57,7 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(instr): Json<CreateTermbaseInstr>,
 ) -> HttpResult<CreateTermbaseVal> {
+    //
     usecase::termbase::create((harn.nucl(), harn.repo()), user_token, instr)
         .await?
         .accept(StatusCode::CREATED)
@@ -144,6 +144,7 @@ pub async fn get_info(
     Path(termbase_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<TermbaseInfoView> {
+    //
     usecase::termbase::get_info((harn.repo(),), user_token, termbase_id)
         .await?
         .accept(StatusCode::OK)

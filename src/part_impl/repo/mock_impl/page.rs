@@ -28,6 +28,7 @@ fn list_infos(state: &MockState, chapter_id: &str) -> Vec<PageInfo> {
 
 // Read detailed info by page primary key.
 fn get_page_by_id(state: &MockState, id: &str) -> BaseRest<PageInfo> {
+    //
     state
         .pages
         .iter()
@@ -41,6 +42,7 @@ fn list_first_pages(
     state: &MockState,
     chapter_ids: &[String],
 ) -> Vec<PageInfo> {
+    //
     chapter_ids
         .iter()
         .filter_map(|chapter_id| {

@@ -20,7 +20,6 @@ pub struct ManifestMatch {
 
 /// Stable matching result for an authoritative page manifest.
 pub struct ManifestPlan {
-    //
     /// Ordered match results aligning each input page to an existing page or a new slot.
     pub matches: Vec<ManifestMatch>,
     /// Indexes of existing pages that were not matched and should be removed.
@@ -50,6 +49,7 @@ impl PageManifestComplex {
             let existing_index = existing_page_infos
                 .iter()
                 .position(|page_info| {
+                    //
                     page_info.id == *page_id
                         && page_info.chapter_id == chapter_id
                 })
@@ -88,6 +88,7 @@ impl PageManifestComplex {
                 .iter()
                 .enumerate()
                 .filter(|(existing_index, page_info)| {
+                    //
                     !consumed_existing_indexes.contains(existing_index)
                         && page_info.image_hash.as_ref()
                             == Some(&page_spec.image_hash)
@@ -125,6 +126,7 @@ impl PageManifestComplex {
 
 // Compare two candidates by translated state, upload time, and index for stable matching.
 fn candidate_order(left: &PageInfo, right: &PageInfo) -> Ordering {
+    //
     right
         .total_unit_count
         .gt(&0)

@@ -24,7 +24,6 @@ pub enum BaseError {
     //
     /// An expected application condition — the error can be communicated to the client.
     Expected {
-        //
         /// Classification of the expected error variant.
         variant: ExpectedVariant,
         /// Human-readable detail about the error condition.
@@ -53,6 +52,7 @@ where
 {
     // Converts a Nucl error into an application-level Error, unwrapping the backend or step inner error.
     fn from(value: NuclError<BE, E>) -> Self {
+        //
         match value {
             //
             NuclError::Backend(error) => error.into(),

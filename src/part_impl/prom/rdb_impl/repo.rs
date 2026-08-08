@@ -68,7 +68,6 @@ pub struct PollPending;
 #[derive(Oper)]
 #[oper(output = bool)]
 pub struct ClaimPending<'a> {
-    //
     // Internal state field `id`.
     /// ID of the local-message row to claim.
     id: &'a str,
@@ -87,7 +86,6 @@ impl<'a> ClaimPending<'a> {
 #[derive(Oper)]
 #[oper(output = ())]
 pub struct CompleteMessage<'a> {
-    //
     // Internal state field `id`.
     /// ID of the local-message row to mark complete.
     id: &'a str,
@@ -106,7 +104,6 @@ impl<'a> CompleteMessage<'a> {
 #[derive(Oper)]
 #[oper(output = ())]
 pub struct FailMessage<'a> {
-    //
     // Internal state field `id`.
     /// ID of the local-message row to mark as failed.
     id: &'a str,
@@ -119,6 +116,7 @@ pub struct FailMessage<'a> {
 impl<'a> FailMessage<'a> {
     /// Builds an operation that permanently fails the message identified by `id`.
     pub fn new(id: &'a str, lease: i64, err_msg: &'a str) -> Self {
+        //
         Self {
             id,
             lease,
@@ -131,7 +129,6 @@ impl<'a> FailMessage<'a> {
 #[derive(Oper)]
 #[oper(output = ())]
 pub struct RetryMessage<'a> {
-    //
     // Internal state field `id`.
     /// ID of the local-message row to retry.
     id: &'a str,
@@ -151,6 +148,7 @@ impl<'a> RetryMessage<'a> {
         err_msg: &'a str,
         visible_at: &'a OffsetDateTime,
     ) -> Self {
+        //
         Self {
             id,
             lease,
@@ -179,7 +177,6 @@ impl<'a> ResetStuck<'a> {
 #[derive(Oper)]
 #[oper(output = usize)]
 pub struct PurgeCompleted<'a> {
-    //
     // Internal state field `completed_before`.
     /// Cutoff timestamp for completed records to purge.
     completed_before: &'a OffsetDateTime,
@@ -193,6 +190,7 @@ impl<'a> PurgeCompleted<'a> {
         completed_before: &'a OffsetDateTime,
         dead_before: &'a OffsetDateTime,
     ) -> Self {
+        //
         Self {
             completed_before,
             dead_before,

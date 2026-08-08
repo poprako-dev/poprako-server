@@ -13,7 +13,6 @@ use crate::part_impl::repo::rdb_impl::schema::t_workset;
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_workset)]
 pub struct WorksetInfoRow {
-    //
     pub f_id: String,
     pub f_team_id: String,
     pub f_index: i32,
@@ -30,6 +29,7 @@ pub struct WorksetInfoRow {
 
 impl From<WorksetInfoRow> for WorksetInfo {
     fn from(v: WorksetInfoRow) -> Self {
+        //
         WorksetInfo {
             id: v.f_id,
             team_id: v.f_team_id,
@@ -49,7 +49,6 @@ impl From<WorksetInfoRow> for WorksetInfo {
 #[derive(Insertable)]
 #[diesel(table_name = t_workset)]
 pub struct WorksetEntryRow<'a> {
-    //
     pub f_id: &'a str,
     pub f_team_id: &'a str,
     pub f_index: i32,
@@ -63,6 +62,7 @@ pub struct WorksetEntryRow<'a> {
 
 impl<'a> From<&'a WorksetEntry> for WorksetEntryRow<'a> {
     fn from(workset_entry: &'a WorksetEntry) -> Self {
+        //
         Self {
             f_id: &workset_entry.id,
             f_team_id: &workset_entry.team_id,
@@ -81,7 +81,6 @@ impl<'a> From<&'a WorksetEntry> for WorksetEntryRow<'a> {
 #[derive(AsChangeset)]
 #[diesel(table_name = t_workset)]
 pub struct WorksetAspectRow<'a> {
-    //
     pub f_name: Option<&'a str>,
     pub f_description: Option<Option<&'a str>>,
 
@@ -93,6 +92,7 @@ pub struct WorksetAspectRow<'a> {
 
 impl<'a> WorksetAspectRow<'a> {
     pub fn new(updated_at: OffsetDateTime) -> Self {
+        //
         Self {
             f_name: None,
             f_description: None,

@@ -29,7 +29,6 @@ static METRIC_WINDOW: LazyLock<MetricWindow> = LazyLock::new(MetricWindow::new);
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct MetricTotal {
-    //
     /// Total request count in the current sliding window.
     pub total: u64,
     /// Mean latency across all requests in the window, in milliseconds.
@@ -50,6 +49,7 @@ pub struct MetricTotal {
 impl MetricTotal {
     // Builds an empty aggregation snapshot for accumulation.
     fn new() -> Self {
+        //
         Self {
             total: 0,
             average_latency_ms: 0.0,
@@ -65,7 +65,6 @@ impl MetricTotal {
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct MetricMinute {
-    //
     /// Unix timestamp truncated to minute granularity.
     pub minute: u64,
     /// Request count recorded in this minute.
@@ -97,7 +96,6 @@ impl MetricMinute {
 #[derive(Default)]
 // One sliding bucket that stores request counters and latency for one minute.
 struct MetricBucket {
-    //
     // Bucket minute key, used for modulo rotation.
     minute: u64,
     // Total request count in this bucket.
@@ -135,6 +133,7 @@ struct MetricWindow {
 impl MetricWindow {
     // Creates an initialized window with zeroed buckets.
     fn new() -> Self {
+        //
         Self {
             buckets: std::array::from_fn(|_| {
                 Mutex::new(MetricBucket::default())
@@ -275,6 +274,7 @@ fn curr_minute() -> u64 {
 
 // Locks and returns the metric bucket mutex, handling poisoned states.
 fn lock_bucket(bucket: &Mutex<MetricBucket>) -> MutexGuard<'_, MetricBucket> {
+    //
     match bucket.lock() {
         //
         Ok(bucket) => bucket,
@@ -285,6 +285,7 @@ fn lock_bucket(bucket: &Mutex<MetricBucket>) -> MutexGuard<'_, MetricBucket> {
 
 // Converts total latency microseconds into a millisecond average.
 fn average_latency_ms(total_latency_micros: u64, total: u64) -> f64 {
+    //
     match total {
         //
         0 => 0.0,

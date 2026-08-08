@@ -12,7 +12,6 @@ use crate::value::role::RoleMask;
 /// only the identifiers and a cached nickname for display purposes.
 #[cfg_attr(test, derive(Clone))]
 pub struct MemberInfo {
-    //
     /// Unique identifier for the membership record.
     pub id: String,
 

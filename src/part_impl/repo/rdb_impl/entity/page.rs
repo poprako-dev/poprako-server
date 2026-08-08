@@ -13,7 +13,6 @@ use crate::value::image::{ImageExt, ImageHash};
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_page)]
 pub struct PageInfoRow {
-    //
     pub f_id: String,
 
     pub f_chapter_id: String,
@@ -64,6 +63,7 @@ impl TryFrom<PageInfoRow> for PageInfo {
                 //
                 let image_version =
                     u32::try_from(image_version).map_err(|_| {
+                        //
                         BaseError::Unrecoverable {
                         message:
                             "[PageInfoRow] f_image_version must be non-negative"
@@ -72,6 +72,7 @@ impl TryFrom<PageInfoRow> for PageInfo {
                     })?;
 
                 let image_hash = image_hash.try_into().map_err(|_| {
+                    //
                     BaseError::Unrecoverable {
                         message:
                             "[PageInfoRow] f_image_hash must contain 32 bytes"
@@ -81,6 +82,7 @@ impl TryFrom<PageInfoRow> for PageInfo {
 
                 let image_ext =
                     ImageExt::parse(&image_ext).ok_or_else(|| {
+                        //
                         BaseError::Unrecoverable {
                         message:
                             "[PageInfoRow] f_image_extension must be supported"
@@ -98,6 +100,7 @@ impl TryFrom<PageInfoRow> for PageInfo {
             }
 
             _ => {
+                //
                 return Err(BaseError::Unrecoverable {
                         message: "[PageInfoRow] image fields must be all null or all present".into(),
                     });
@@ -126,7 +129,6 @@ impl TryFrom<PageInfoRow> for PageInfo {
 #[derive(Insertable)]
 #[diesel(table_name = t_page)]
 pub struct PageEntryRow<'a> {
-    //
     pub f_id: &'a str,
 
     pub f_chapter_id: &'a str,
@@ -150,6 +152,7 @@ impl<'a> TryFrom<&'a PageEntry> for PageEntryRow<'a> {
         let now = OffsetDateTime::now_utc();
 
         let image_key = entry.image_key.as_deref().ok_or_else(|| {
+            //
             BaseError::Unrecoverable {
                 message:
                     "[PageEntryRow] image key is required for page creation"
@@ -176,7 +179,6 @@ impl<'a> TryFrom<&'a PageEntry> for PageEntryRow<'a> {
 #[derive(AsChangeset)]
 #[diesel(table_name = t_page)]
 pub struct PageAspectRow<'a> {
-    //
     pub f_index: Option<i32>,
     pub f_image_key: Option<Option<&'a str>>,
     pub f_image_uploaded: Option<bool>,
@@ -193,6 +195,7 @@ pub struct PageAspectRow<'a> {
 
 impl<'a> PageAspectRow<'a> {
     pub fn new(updated_at: OffsetDateTime) -> Self {
+        //
         Self {
             f_index: None,
             f_image_key: None,

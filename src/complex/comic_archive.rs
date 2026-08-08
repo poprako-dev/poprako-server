@@ -31,6 +31,7 @@ impl ComicArchiveComplex {
         archiver_id: String,
         archived_at: OffsetDateTime,
     ) -> BaseRest<(ComicArchiveEntry, Vec<String>)> {
+        //
         tokio::task::spawn_blocking(move || {
             //
             let image_keys = collect_image_keys(&comic_archive_snapshot);
@@ -97,6 +98,7 @@ impl ComicArchivePermComplex {
 fn build_page_payloads(
     chapter_snapshot: &ComicArchiveChapterSnapshot,
 ) -> Vec<ArchivedPagePayload> {
+    //
     chapter_snapshot
         .page_snapshots
         .iter()
@@ -189,6 +191,7 @@ fn build_assignment_payload(
 ) -> BaseRest<ArchivedAssignmentPayload> {
     //
     let user_info = assignment_info.user.as_ref().ok_or_else(|| {
+        //
         BaseError::Unrecoverable {
             message: "[ComicArchiveComplex::build_assignment_payload] assignment user was not loaded".into(),
         }
@@ -258,7 +261,9 @@ fn collect_image_keys(
     }
 
     for chapter_snapshot in &comic_archive_snapshot.chapter_snapshots {
+        //
         for page_snapshot in &chapter_snapshot.page_snapshots {
+            //
             if let Some(image_key) = &page_snapshot.page_info.image_key {
                 image_keys.push(image_key.clone());
             }

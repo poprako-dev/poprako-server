@@ -34,7 +34,6 @@ const THUMBNAIL_TRANSFORM: &str =
 /// Cloudflare R2-backed image pool.
 #[derive(Clone)]
 pub struct R2ImagePool {
-    //
     // Internal state field `client`.
     /// HTTP client configured for Cloudflare R2 API requests.
     client: Client,
@@ -47,6 +46,7 @@ pub struct R2ImagePool {
 impl R2ImagePool {
     /// Creates an image pool from an already configured S3-compatible client.
     pub fn new(client: Client, bucket: String, domain: String) -> Self {
+        //
         Self {
             client,
             bucket,
@@ -233,6 +233,7 @@ impl ImagePool for R2ImagePool {
         // Internal implementation detail.
         let (content_length, presigning_config) = (
             i64::try_from(spec.content_length).map_err(|_| {
+                //
                 BaseError::Unrecoverable {
                     message:
                         "[R2ImagePool::get_upload_slot] content length exceeds i64"
@@ -313,6 +314,7 @@ impl ImageManager for R2ImagePool {
     #[instrument(level = "info", skip_all)]
     // Removes a previously uploaded object from the R2 bucket.
     async fn delete_object(&self, key: &str) -> BaseRest<()> {
+        //
         self.client
             .delete_object()
             .bucket(&self.bucket)
@@ -340,6 +342,7 @@ impl ImageManager for R2ImagePool {
     #[instrument(level = "info", skip_all)]
     // Performs a HEAD request to determine whether an object exists in R2.
     async fn object_exists(&self, key: &str) -> BaseRest<bool> {
+        //
         match self
             .client
             .head_object()
@@ -384,6 +387,7 @@ fn build_public_url(
     //
     // Internal implementation detail.
     if domain.is_empty() {
+        //
         return Err(BaseError::Unrecoverable {
             message: format!(
                 "[R2ImagePool::{}] custom domain is not configured",

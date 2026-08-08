@@ -50,6 +50,7 @@ async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
 
 // Escape wildcard and escape characters before constructing ILIKE patterns.
 fn escape_ilike_pattern(input: &str) -> String {
+    //
     input
         .replace('\\', "\\\\")
         .replace('%', "\\%")

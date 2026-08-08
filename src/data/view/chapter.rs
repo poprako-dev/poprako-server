@@ -3,7 +3,6 @@
 use serde::Serialize;
 
 use crate::data::view::comic::ComicInfoView;
-
 use crate::data::view::user::UserInfoView;
 
 #[cfg(feature = "swagger")]
@@ -14,11 +13,8 @@ use futures::future::OptionFuture;
 use poprako_util::time::ToUnixMilli as _;
 
 use crate::model::read::proj::chapter::ChapterInfo;
-
 use crate::part::image::ImagePool;
-
 use crate::result::{BaseRest, accept};
-
 use crate::value::chapter::StageMask;
 
 /// Presentation-ready chapter information.
@@ -32,7 +28,6 @@ use crate::value::chapter::StageMask;
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ChapterInfoView {
-    //
     /// Unique chapter identifier.
     pub id: String,
     /// Owning comic identifier.
@@ -91,6 +86,7 @@ impl ChapterInfoView {
             id: model.id,
             comic_id: model.comic_id,
             comic: OptionFuture::from(model.comic.map(|comic_info| {
+                //
                 ComicInfoView::from_model(
                     image_pool,
                     comic_info,
@@ -122,6 +118,7 @@ impl ChapterInfoView {
 impl From<ChapterInfo> for ChapterInfoView {
     // Copy persisted chapter fields into the API value shape.
     fn from(model: ChapterInfo) -> Self {
+        //
         Self {
             id: model.id,
             comic_id: model.comic_id,

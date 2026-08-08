@@ -32,7 +32,6 @@ use crate::usecase;
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct AssignmentInvitationListQuery {
-    //
     /// When `Some(true)`, returns only unconsumed invitations;
     /// `Some(false)` returns only consumed ones; `None` returns all.
     pub is_pending: Option<bool>,
@@ -62,6 +61,7 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(instr): Json<CreateAssignmentInvitationInstr>,
 ) -> HttpResult<CreateAssignmentInvitationVal> {
+    //
     usecase::assignment_invitation::create(
         (harn.nucl(), harn.repo(), harn.prom()),
         user_token,
@@ -155,6 +155,7 @@ pub async fn join(
     Extension(user_token): Extension<UserToken>,
     Json(instr): Json<JoinAssignmentInvitationInstr>,
 ) -> HttpResult<AssignmentInfoView> {
+    //
     usecase::assignment_invitation::join(
         (harn.nucl(), harn.repo(), harn.image_pool()),
         user_token,

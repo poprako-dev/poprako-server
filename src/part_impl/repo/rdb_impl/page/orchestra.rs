@@ -53,6 +53,7 @@ impl Run<ListFirstPageInfos<'_>> for HybRepo {
         &self,
         oper: &ListFirstPageInfos<'_>,
     ) -> BaseRest<Vec<PageInfo>> {
+        //
         submit_query!(
             self.core,
             list_first_infos_by_chapter_ids,
@@ -158,6 +159,7 @@ impl Step<MarkPageImageUploaded<'_>, RdbContext> for HybRepo {
         context: &mut RdbContext,
         oper: &MarkPageImageUploaded<'_>,
     ) -> BaseRest<()> {
+        //
         mark_image_uploaded(
             context.conn(),
             &oper.repl.id,
@@ -178,6 +180,7 @@ impl Step<SetPageImageUploaded<'_>, RdbContext> for HybRepo {
         context: &mut RdbContext,
         oper: &SetPageImageUploaded<'_>,
     ) -> BaseRest<()> {
+        //
         set_image_uploaded(
             context.conn(),
             &oper.repl.id,
@@ -277,6 +280,7 @@ impl Step<DeletePages<'_>, RdbContext> for HybRepo {
         context: &mut RdbContext,
         oper: &DeletePages<'_>,
     ) -> BaseRest<()> {
+        //
         match oper {
             //
             DeletePages::Chapter { chapter_id } => {

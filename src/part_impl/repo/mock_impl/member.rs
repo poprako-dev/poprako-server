@@ -20,6 +20,7 @@ use crate::value::member::MemberInclOpt;
 
 // Internal implementation of `find_user`.
 fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
+    //
     state
         .users
         .iter()
@@ -29,6 +30,7 @@ fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
 
 // Internal implementation of `find_team`.
 fn find_team(state: &MockState, team_id: &str) -> Option<TeamInfo> {
+    //
     state
         .teams
         .iter()
@@ -38,6 +40,7 @@ fn find_team(state: &MockState, team_id: &str) -> Option<TeamInfo> {
 
 // Resolve one member by primary key and return expected error when missing.
 fn get_member_by_id(state: &MockState, id: &str) -> BaseRest<MemberInfo> {
+    //
     state
         .members
         .iter()
@@ -118,6 +121,7 @@ fn find_member_by_user_id_and_team_id(
     user_id: &str,
     team_id: &str,
 ) -> Option<MemberInfo> {
+    //
     state
         .members
         .iter()
@@ -141,6 +145,7 @@ impl<'a> Run<FindMemberInfo<'a>> for Mock {
         let state = self.state.lock().unwrap();
 
         match oper {
+            //
             FindMemberInfo::UserTeam { user_id, team_id } => accept(
                 find_member_by_user_id_and_team_id(&state, user_id, team_id),
             ),
@@ -215,6 +220,7 @@ fn list_member_infos(
                 .iter()
                 .filter(|member_info| member_info.team_id == *team_id)
                 .filter(|member_info| {
+                    //
                     fuzzy_nickname
                         .as_ref()
                         .map(|keyword| {
@@ -223,6 +229,7 @@ fn list_member_infos(
                         .unwrap_or(true)
                 })
                 .filter(|member_info| {
+                    //
                     role.map(|role| member_info.roles.has_any_role(&[role]))
                         .unwrap_or(true)
                 })
@@ -272,6 +279,7 @@ fn list_member_infos_by_user(
     state: &MockState,
     user_id: &str,
 ) -> Vec<MemberInfo> {
+    //
     state
         .members
         .iter()
@@ -323,6 +331,7 @@ impl<'a, 'b> Run<GetMemberInfo<'a, 'b>> for Mock {
         let state = self.state.lock().unwrap();
 
         match oper {
+            //
             GetMemberInfo::Id { id, incls } => {
                 get_member_info(&state, id, incls)
             }
@@ -356,6 +365,7 @@ impl<'a> Step<UpdateMember<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &UpdateMember<'a>,
     ) -> BaseRest<()> {
+        //
         match oper {
             //
             // Internal implementation detail.
@@ -406,6 +416,7 @@ impl<'a> Step<ListMemberInfos<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &ListMemberInfos<'a>,
     ) -> BaseRest<Vec<MemberInfo>> {
+        //
         match oper {
             //
             // Internal implementation detail.
@@ -432,8 +443,11 @@ impl<'a> Step<FindMemberInfo<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &FindMemberInfo<'a>,
     ) -> BaseRest<Option<MemberInfo>> {
+        //
         match oper {
+            //
             FindMemberInfo::UserTeam { user_id, team_id } => {
+                //
                 accept(find_member_by_user_id_and_team_id(
                     &context.state,
                     user_id,
@@ -455,7 +469,9 @@ impl<'a, 'b> Step<GetMemberInfo<'a, 'b>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &GetMemberInfo<'a, 'b>,
     ) -> BaseRest<MemberInfo> {
+        //
         match oper {
+            //
             GetMemberInfo::Id { id, incls } => {
                 get_member_info(&context.state, id, incls)
             }
@@ -474,6 +490,7 @@ impl<'a> Step<ListMemberInfosExcluded<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &ListMemberInfosExcluded<'a>,
     ) -> BaseRest<Vec<MemberInfo>> {
+        //
         match oper {
             //
             // Internal implementation detail.

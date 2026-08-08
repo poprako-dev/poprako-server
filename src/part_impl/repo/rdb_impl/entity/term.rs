@@ -11,7 +11,6 @@ use crate::part_impl::repo::rdb_impl::schema::t_term;
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_term)]
 pub struct TermInfoRow {
-    //
     pub f_id: String,
 
     pub f_termbase_id: String,
@@ -28,6 +27,7 @@ pub struct TermInfoRow {
 
 impl From<TermInfoRow> for TermInfo {
     fn from(row: TermInfoRow) -> Self {
+        //
         Self {
             id: row.f_id,
             termbase_id: row.f_termbase_id,
@@ -45,7 +45,6 @@ impl From<TermInfoRow> for TermInfo {
 #[derive(Insertable)]
 #[diesel(table_name = t_term)]
 pub struct TermEntryRow<'a> {
-    //
     pub f_id: &'a str,
 
     pub f_termbase_id: &'a str,

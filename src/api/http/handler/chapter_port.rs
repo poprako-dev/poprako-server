@@ -9,16 +9,13 @@ use axum::response::Response;
 use serde::Deserialize;
 use tracing::instrument;
 
+use crate::api::http::result::{Accept as _, HttpBody, HttpError, HttpResult};
+use crate::api::http::state::AppHarn;
 use crate::data::instr::chapter_port::ImportChapterTranslationInstr;
 #[allow(unused_imports)]
 use crate::data::val::chapter_port::{
     ExportChapterTranslationVal, ImportChapterTranslationVal,
 };
-
-#[allow(unused_imports)]
-use crate::api::http::result::{Accept as _, HttpBody, HttpError, HttpResult};
-use crate::api::http::state::AppHarn;
-#[allow(unused_imports)]
 use crate::model::shared::user::UserToken;
 use crate::usecase;
 use crate::value::chapter_port::TranslationFormat;
@@ -50,6 +47,7 @@ pub async fn import(
     Extension(user_token): Extension<UserToken>,
     Json(instr): Json<ImportChapterTranslationInstr>,
 ) -> HttpResult<ImportChapterTranslationVal> {
+    //
     usecase::chapter_port::import(
         (harn.nucl(), harn.repo()),
         user_token,
@@ -127,7 +125,6 @@ pub async fn export_download(
 
 // Internal payload carrying the serialised export content and response metadata.
 struct TranslationExportPayload {
-    //
     // MIME type of the HTTP response body.
     content_type: &'static str,
     // File extension for the downloaded filename suffix.
@@ -145,6 +142,7 @@ async fn export_payload(
     chapter_id: String,
     format: TranslationFormat,
 ) -> Result<TranslationExportPayload, HttpError> {
+    //
     match format {
         //
         TranslationFormat::PopRaKo => {
@@ -196,6 +194,7 @@ async fn export_payload(
 fn body_response(
     payload: TranslationExportPayload,
 ) -> Result<Response, HttpError> {
+    //
     Response::builder()
         .status(StatusCode::OK)
         .header(CONTENT_TYPE, payload.content_type)

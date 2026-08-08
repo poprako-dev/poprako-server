@@ -65,6 +65,7 @@ where
         Some(user_id) if user_id != token.user_id => todo!(),
 
         None => {
+            //
             TeamPermComplex::ensure_user_can_list_infos(
                 &mut run_proxy! {
                     repo => for<'a> GetUserInfo<'a>;

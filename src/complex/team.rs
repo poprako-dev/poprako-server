@@ -139,6 +139,7 @@ impl TeamComplex {
         .await?;
 
         for member_info in member_infos {
+            //
             DeleteMember {
                 id: &member_info.id,
             }

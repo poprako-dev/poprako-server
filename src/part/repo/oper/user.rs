@@ -82,7 +82,6 @@ pub enum UpdateUser<'a> {
 #[derive(Oper)]
 #[oper(output = UserAvatarReservation)]
 pub struct ReserveUserAvatar<'a> {
-    //
     /// The user id.
     pub id: &'a str,
 

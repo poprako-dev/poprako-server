@@ -16,7 +16,6 @@ use crate::value::image::{ImageExt, ImageHash};
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_comic)]
 pub struct ComicInfoRow {
-    //
     pub f_id: String,
     pub f_workset_id: String,
     pub f_index: i32,
@@ -73,12 +72,14 @@ impl TryFrom<ComicInfoRow> for ComicInfo {
             ) => {
                 //
                 let cover_version = u32::try_from(cover_version).map_err(|_| {
+                        //
                         BaseError::Unrecoverable {
                             message: "[ComicInfoRow] f_cover_version must be non-negative".into(),
                         }
                     })?;
 
                 let cover_hash = cover_hash.try_into().map_err(|_| {
+                    //
                     BaseError::Unrecoverable {
                         message:
                             "[ComicInfoRow] f_cover_hash must contain 32 bytes"
@@ -88,6 +89,7 @@ impl TryFrom<ComicInfoRow> for ComicInfo {
 
                 let cover_ext =
                     ImageExt::parse(&cover_ext).ok_or_else(|| {
+                        //
                         BaseError::Unrecoverable {
                         message:
                             "[ComicInfoRow] f_cover_extension must be supported"
@@ -105,6 +107,7 @@ impl TryFrom<ComicInfoRow> for ComicInfo {
             }
 
             _ => {
+                //
                 return Err(BaseError::Unrecoverable {
                         message: "[ComicInfoRow] cover fields must be all null or all present".into(),
                     });
@@ -141,7 +144,6 @@ impl TryFrom<ComicInfoRow> for ComicInfo {
 #[derive(Insertable)]
 #[diesel(table_name = t_comic)]
 pub struct ComicEntryRow<'a> {
-    //
     pub f_id: &'a str,
     pub f_workset_id: &'a str,
     pub f_index: i32,
@@ -161,6 +163,7 @@ pub struct ComicEntryRow<'a> {
 
 impl<'a> From<&'a ComicEntry> for ComicEntryRow<'a> {
     fn from(comic_entry: &'a ComicEntry) -> Self {
+        //
         Self {
             f_id: &comic_entry.id,
             f_workset_id: &comic_entry.workset_id,
@@ -187,7 +190,6 @@ impl<'a> From<&'a ComicEntry> for ComicEntryRow<'a> {
 #[derive(AsChangeset)]
 #[diesel(table_name = t_comic)]
 pub struct ComicAspectRow<'a> {
-    //
     pub f_title: Option<&'a str>,
     pub f_author: Option<&'a str>,
     pub f_description: Option<Option<&'a str>>,
@@ -209,6 +211,7 @@ pub struct ComicAspectRow<'a> {
 
 impl<'a> ComicAspectRow<'a> {
     pub fn new(updated_at: OffsetDateTime) -> Self {
+        //
         Self {
             f_title: None,
             f_author: None,

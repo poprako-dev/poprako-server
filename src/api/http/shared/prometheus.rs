@@ -15,6 +15,7 @@ pub fn init_prometheus() -> anyhow::Result<()> {
         .with_recommended_naming(true)
         .install_recorder()
         .inspect_err(|error| {
+            //
             tracing::error!(
                 operation = "install_prometheus_recorder",
                 sdk_err = ?error,

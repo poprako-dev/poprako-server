@@ -27,10 +27,11 @@ pub async fn rate_limit(request: Request, next: Next) -> Response {
 
 // Returns the global singleton rate limiter, created lazily at first call.
 fn limiter() -> &'static DefaultDirectRateLimiter {
-    //
+    // Lazily initialized rate-limiter singleton.
     static LIMITER: OnceLock<DefaultDirectRateLimiter> = OnceLock::new();
 
     LIMITER.get_or_init(|| {
+        //
         RateLimiter::direct(
             Quota::per_second(NonZeroU32::new(20).unwrap())
                 .allow_burst(NonZeroU32::new(80).unwrap()),

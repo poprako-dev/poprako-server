@@ -9,6 +9,7 @@ mod tests;
 
 /// Builds the CORS layer for requests from the PopRaKo web client.
 pub fn cors() -> CorsLayer {
+    //
     CorsLayer::new()
         .allow_origin(HeaderValue::from_static("https://poprako.com"))
         .allow_methods([

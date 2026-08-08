@@ -19,7 +19,6 @@ mod tests;
 
 /// JWT issuer for user session tokens.
 pub struct JwtAuth {
-    //
     // Internal state field `expiration_seconds`.
     /// Token lifetime in seconds from issuance.
     expiration_seconds: i64,
@@ -38,6 +37,7 @@ impl JwtAuth {
         //
         // Internal implementation detail.
         if expiration_hours <= 0 {
+            //
             return Err(BaseError::Unrecoverable {
                 message: "[JwtAuth::new] JWT_EXPIRATION_HOURS must be positive"
                     .to_string(),
@@ -74,6 +74,7 @@ impl JwtAuth {
             )?;
 
         Self::new(&secret, expiration_hours).map_err(|err| match err {
+            //
             BaseError::Expected { message, .. }
             | BaseError::Unrecoverable { message } => {
                 anyhow::anyhow!("{}", message)
@@ -161,7 +162,6 @@ impl TokenAuth for JwtAuth {
 #[derive(Debug, Serialize)]
 // Holds JWT standard + app-specific claim fields emitted by the signer.
 struct SignClaims<'a> {
-    //
     // Internal state field `sub`.
     // JWT standard subject claim carrying the user primary key.
     sub: &'a str,
