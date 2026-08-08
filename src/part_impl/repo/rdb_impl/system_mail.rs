@@ -110,28 +110,23 @@ async fn mark_read(
         .optional()
         .map_err(diesel)?;
 
-    let mail = match row {
+    let Some(mail) = row else {
         //
-        Some(mail) => mail,
+        let message = trl("error-system-mail-not-found");
 
-        None => {
-            //
-            let message = trl("error-system-mail-not-found");
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            err_message = %message,
+            system_mail_id = %id,
+            receiver_user_id = %user_id,
+            operation = "mark system mail read",
+            "expected system mail error",
+        );
 
-            tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
-                err_message = %message,
-                system_mail_id = %id,
-                receiver_user_id = %user_id,
-                operation = "mark system mail read",
-                "expected system mail error",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message,
-            });
-        }
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message,
+        });
     };
 
     if mail.f_receiver_id != user_id {

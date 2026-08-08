@@ -41,11 +41,8 @@ fn ensure_snowflake_init() {
 // Load the snowflake node ID from the `POPRAKO_SNOWFLAKE_NODE_ID` env var.
 fn load_snowflake_node_id() -> u16 {
     //
-    let value = match std::env::var("POPRAKO_SNOWFLAKE_NODE_ID") {
-        //
-        Ok(value) => value,
-
-        Err(_) => return 0,
+    let Ok(value) = std::env::var("POPRAKO_SNOWFLAKE_NODE_ID") else {
+        return 0;
     };
 
     match value.parse() {

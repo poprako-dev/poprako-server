@@ -170,25 +170,18 @@ fn update_user(state: &mut MockState, oper: &UpdateUser<'_>) -> BaseRest<()> {
 
     user_info.updated_at = now();
 
-    match oper {
+    // Internal state field `UpdateUser`.
+    // Internal implementation detail.
+    if let UpdateUser::PasswordHash { repl } = oper {
         //
-        // Internal state field `UpdateUser`.
-        // Internal implementation detail.
-        UpdateUser::PasswordHash { repl } => {
-            //
-            // Mutate matching credential hash for the same user id.
-            let credential = state
-                .credentials
-                .iter_mut()
-                .find(|credential| credential.user_id == repl.id)
-                .ok_or_else(|| expected("error-user-not-found"))?;
+        // Mutate matching credential hash for the same user id.
+        let credential = state
+            .credentials
+            .iter_mut()
+            .find(|credential| credential.user_id == repl.id)
+            .ok_or_else(|| expected("error-user-not-found"))?;
 
-            credential.password_hash = repl.password_hash.clone();
-        }
-
-        UpdateUser::Info { .. }
-        | UpdateUser::MarkAvatarUploaded { .. }
-        | UpdateUser::TouchLastActive { .. } => {}
+        credential.password_hash = repl.password_hash.clone();
     }
 
     accept(())

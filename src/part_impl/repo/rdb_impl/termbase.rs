@@ -70,27 +70,22 @@ async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<TermbaseInfo> {
         .optional()
         .map_err(diesel)?;
 
-    let row = match row {
+    let Some(row) = row else {
         //
-        Some(row) => row,
+        let message = trl("error-termbase-not-found");
 
-        None => {
-            //
-            let message = trl("error-termbase-not-found");
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            err_message = %message,
+            termbase_id = %id,
+            operation = "get termbase info",
+            "expected termbase error",
+        );
 
-            tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
-                err_message = %message,
-                termbase_id = %id,
-                operation = "get termbase info",
-                "expected termbase error",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message,
-            });
-        }
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message,
+        });
     };
 
     accept(row.into())
@@ -113,27 +108,22 @@ async fn get_info_excluded(
         .optional()
         .map_err(diesel)?;
 
-    let row = match row {
+    let Some(row) = row else {
         //
-        Some(row) => row,
+        let message = trl("error-termbase-not-found");
 
-        None => {
-            //
-            let message = trl("error-termbase-not-found");
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            err_message = %message,
+            termbase_id = %id,
+            operation = "lock termbase info",
+            "expected termbase error",
+        );
 
-            tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
-                err_message = %message,
-                termbase_id = %id,
-                operation = "lock termbase info",
-                "expected termbase error",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message,
-            });
-        }
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message,
+        });
     };
 
     accept(row.into())
