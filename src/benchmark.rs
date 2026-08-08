@@ -258,6 +258,7 @@ fn archive_snapshot() -> Option<ComicArchiveSnapshot> {
             team: None,
             creator: None,
             last_active_at: archived_at,
+            archived_at: None,
             created_at: archived_at,
             updated_at: archived_at,
         },

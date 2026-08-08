@@ -94,6 +94,7 @@ fn comic(id: &str, workset_id: &str) -> ComicInfo {
         team: None,
         creator: None,
         last_active_at: time,
+        archived_at: None,
         created_at: time,
         updated_at: time,
     }

@@ -82,7 +82,8 @@ error-chapter-published-frozen = Published chapters cannot be modified
 error-invalid-comic-archive-month-count = Select between 1 and 12 archive months
 error-invalid-comic-archive-month = Archive month must use YYYY-MM format
 error-duplicate-comic-archive-month = Archive months must be distinct
-error-comic-archive-month-not-retained = Archive month is outside the retention window
+error-comic-archive-incomplete = Every chapter must be published before archiving
+error-comic-archived = Archived comics cannot be modified
 
 chapter-default-subtitle = Ch. { $number }
 

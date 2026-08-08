@@ -20,6 +20,8 @@ fn comic_info_view_omits_none_fields() {
         team: None,
         creator: None,
         last_active_at: 0,
+        is_archived: false,
+        archived_at: None,
         created_at: 0,
         updated_at: 0,
     };

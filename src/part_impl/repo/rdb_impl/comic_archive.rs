@@ -20,16 +20,14 @@ use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::unit::UnitInfo;
 use crate::model::read::proj::user::UserInfo;
 use crate::model::read::proj::workset::WorksetInfo;
-use crate::model::write::comic_archive::ComicArchiveEntry;
 use crate::part::repo::oper::comic_archive::{
-    CommitComicArchive, GetComicArchiveSnapshotExcluded,
+    CommitComicArchive, DeleteComicArchives, GetComicArchiveSnapshotExcluded,
     ListComicArchivePayloads,
 };
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::entity::assignment::AssignmentInfoRow;
 use crate::part_impl::repo::rdb_impl::entity::chapter::ChapterInfoRow;
 use crate::part_impl::repo::rdb_impl::entity::comic::ComicInfoRow;
-use crate::part_impl::repo::rdb_impl::entity::comic_archive::ComicArchiveEntryRow;
 use crate::part_impl::repo::rdb_impl::entity::page::PageInfoRow;
 use crate::part_impl::repo::rdb_impl::entity::unit::UnitInfoRow;
 use crate::part_impl::repo::rdb_impl::entity::user::UserInfoRow;
@@ -47,7 +45,6 @@ use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::{
 use crate::part_impl::repo::rdb_impl::schema::t_comic::dsl::{
     f_id as comic_id, t_comic,
 };
-use crate::part_impl::repo::rdb_impl::schema::t_comic_archive;
 use crate::part_impl::repo::rdb_impl::schema::t_page::dsl::{
     f_chapter_id as page_chapter_id, f_id as page_id, f_index as page_index,
     t_page,
@@ -64,7 +61,11 @@ use crate::part_impl::repo::rdb_impl::schema::t_workset::dsl::{
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::result::diesel;
 use crate::shared::{RdbConn, RdbContext};
-use crate::value::comic_archive::ComicArchiveMonth;
+
+// Persistent archive commit operation.
+mod commit;
+// Permanent archive payload query.
+mod payload;
 
 /// Comic archive RDB integration tests.
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
@@ -151,60 +152,6 @@ fn order_unit_infos(unit_infos: Vec<UnitInfo>) -> BaseRest<Vec<UnitInfo>> {
     accept(visible_infos)
 }
 
-#[instrument(level = "info", skip_all)]
-// Load archive payloads by month window and return timestamped serialized blobs.
-async fn list_payloads(
-    conn: &mut RdbConn,
-    team_id: &str,
-    months: &[ComicArchiveMonth],
-) -> BaseRest<Vec<(OffsetDateTime, String)>> {
-    // Queryable projection row for one archive slot.
-    #[derive(Queryable)]
-    struct ArchivePayloadRow {
-        // UTC timestamp when the archive slot was created.
-        created_at: OffsetDateTime,
-        // Serialized payload snapshot JSON for a retention slot.
-        payload: String,
-    }
-
-    use crate::part_impl::repo::rdb_impl::schema::t_comic_archive::dsl::{
-        f_archived_payload, f_created_at, f_team_id, t_comic_archive,
-    };
-
-    let Some(first_month) = months.first() else {
-        return accept(Vec::new());
-    };
-
-    let Some(last_month) = months.last() else {
-        return accept(Vec::new());
-    };
-
-    let query = t_comic_archive
-        .filter(f_team_id.eq(team_id))
-        .filter(f_created_at.ge(first_month.start))
-        .filter(f_created_at.lt(last_month.end))
-        .select((f_created_at, f_archived_payload))
-        .into_boxed();
-
-    let rows = query
-        .order_by(f_created_at.asc())
-        .load::<ArchivePayloadRow>(conn)
-        .await
-        .map_err(diesel)?;
-
-    accept(
-        rows.into_iter()
-            .filter(|row| {
-                //
-                months.iter().any(|month| {
-                    row.created_at >= month.start && row.created_at < month.end
-                })
-            })
-            .map(|row| (row.created_at, row.payload))
-            .collect(),
-    )
-}
-
 /// Lock every active descendant needed by an archive transaction.
 #[instrument(level = "info", skip_all)]
 // Build a full snapshot of all descendants and lock them for commit safety.
@@ -222,27 +169,22 @@ async fn get_snapshot_excluded(
         .optional()
         .map_err(diesel)?;
 
-    let comic_row = match comic_row {
+    let Some(comic_row) = comic_row else {
         //
-        Some(comic_row) => comic_row,
+        let message = trl("error-comic-not-found");
 
-        None => {
-            //
-            let message = trl("error-comic-not-found");
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            err_message = %message,
+            comic_id = %source_comic_id,
+            operation = "get comic archive snapshot",
+            "expected comic archive error",
+        );
 
-            tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
-                err_message = %message,
-                comic_id = %source_comic_id,
-                operation = "get comic archive snapshot",
-                "expected comic archive error",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message,
-            });
-        }
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message,
+        });
     };
 
     let comic_info = TryInto::<ComicInfo>::try_into(comic_row)?;
@@ -256,28 +198,23 @@ async fn get_snapshot_excluded(
         .optional()
         .map_err(diesel)?;
 
-    let workset_row = match workset_row {
+    let Some(workset_row) = workset_row else {
         //
-        Some(workset_row) => workset_row,
+        let message = trl("error-workset-not-found");
 
-        None => {
-            //
-            let message = trl("error-workset-not-found");
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            err_message = %message,
+            comic_id = %source_comic_id,
+            workset_id = %comic_info.workset_id,
+            operation = "get comic archive snapshot",
+            "expected comic archive error",
+        );
 
-            tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
-                err_message = %message,
-                comic_id = %source_comic_id,
-                workset_id = %comic_info.workset_id,
-                operation = "get comic archive snapshot",
-                "expected comic archive error",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message,
-            });
-        }
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message,
+        });
     };
 
     let workset_info = Into::<WorksetInfo>::into(workset_row);
@@ -383,32 +320,28 @@ async fn get_snapshot_excluded(
 
     for mut assignment_info in assignment_infos {
         //
-        assignment_info.user =
-            Some(match user_infos.get(&assignment_info.user_id) {
-                //
-                Some(user_info) => user_info.clone(),
+        let Some(user_info) = user_infos.get(&assignment_info.user_id) else {
+            //
+            let message = trl("error-user-not-found");
 
-                None => {
-                    //
-                    let message = trl("error-user-not-found");
+            tracing::warn!(
+                error_variant = ?ExpectedVariant::Args,
+                err_message = %message,
+                comic_id = %source_comic_id,
+                chapter_id = %assignment_info.chapter_id,
+                assignment_id = %assignment_info.id,
+                user_id = %assignment_info.user_id,
+                operation = "assemble comic archive snapshot",
+                "expected comic archive error",
+            );
 
-                    tracing::warn!(
-                        error_variant = ?ExpectedVariant::Args,
-                        err_message = %message,
-                        comic_id = %source_comic_id,
-                        chapter_id = %assignment_info.chapter_id,
-                        assignment_id = %assignment_info.id,
-                        user_id = %assignment_info.user_id,
-                        operation = "assemble comic archive snapshot",
-                        "expected comic archive error",
-                    );
-
-                    return Err(BaseError::Expected {
-                        variant: ExpectedVariant::Args,
-                        message,
-                    });
-                }
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message,
             });
+        };
+
+        assignment_info.user = Some(user_info.clone());
 
         assignment_infos_by_chapter
             .entry(assignment_info.chapter_id.clone())
@@ -474,69 +407,6 @@ async fn get_snapshot_excluded(
     })
 }
 
-// Store archive payload and hard-delete source comic descendants.
-#[instrument(level = "info", skip_all)]
-async fn commit(
-    conn: &mut RdbConn,
-    comic_archive_entry: &ComicArchiveEntry,
-) -> BaseRest<()> {
-    //
-    let comic_archive_row =
-        ComicArchiveEntryRow::from(&comic_archive_entry.record);
-
-    diesel::insert_into(t_comic_archive::table)
-        .values(&comic_archive_row)
-        .execute(conn)
-        .await
-        .map_err(diesel)?;
-
-    diesel::delete(t_assignment_invitation.filter(
-        invitation_chapter_id.eq_any(&comic_archive_entry.source_chapter_ids),
-    ))
-    .execute(conn)
-    .await
-    .map_err(diesel)?;
-
-    diesel::delete(t_assignment.filter(
-        assignment_chapter_id.eq_any(&comic_archive_entry.source_chapter_ids),
-    ))
-    .execute(conn)
-    .await
-    .map_err(diesel)?;
-
-    diesel::delete(
-        t_unit
-            .filter(unit_page_id.eq_any(&comic_archive_entry.source_page_ids)),
-    )
-    .execute(conn)
-    .await
-    .map_err(diesel)?;
-
-    diesel::delete(t_page.filter(
-        page_chapter_id.eq_any(&comic_archive_entry.source_chapter_ids),
-    ))
-    .execute(conn)
-    .await
-    .map_err(diesel)?;
-
-    diesel::delete(
-        t_chapter
-            .filter(chapter_id.eq_any(&comic_archive_entry.source_chapter_ids)),
-    )
-    .execute(conn)
-    .await
-    .map_err(diesel)?;
-
-    diesel::delete(
-        t_comic.filter(comic_id.eq(&comic_archive_entry.source_comic_id)),
-    )
-    .execute(conn)
-    .await
-    .map_err(diesel)?;
-
-    accept(())
-}
-
 impl Step<GetComicArchiveSnapshotExcluded<'_>, RdbContext> for HybRepo {
     // Use base errors for snapshot reads in comic archive transactions.
     type Error = BaseError;
@@ -562,7 +432,13 @@ impl Run<ListComicArchivePayloads<'_>> for HybRepo {
         &self,
         oper: &ListComicArchivePayloads<'_>,
     ) -> BaseRest<Vec<(OffsetDateTime, String)>> {
-        submit_query!(self.core, list_payloads, oper.team_id, oper.months)
+        //
+        submit_query!(
+            self.core,
+            payload::list_payloads,
+            oper.team_id,
+            oper.months
+        )
     }
 }
 
@@ -571,12 +447,39 @@ impl Step<CommitComicArchive<'_>, RdbContext> for HybRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Persist archive entry and delete source entities in a single transaction.
+    // Persist archive entry, clear sources, and retain the source comic.
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &CommitComicArchive<'_>,
     ) -> BaseRest<()> {
-        commit(context.conn(), oper.entry).await
+        commit::commit(context.conn(), oper.entry).await
+    }
+}
+
+impl Step<DeleteComicArchives<'_>, RdbContext> for HybRepo {
+    // Use base errors for comic-archive cleanup during hard deletion.
+    type Error = BaseError;
+
+    #[instrument(level = "info", skip_all)]
+    // Delete every archive record associated with a source comic.
+    async fn step(
+        &self,
+        context: &mut RdbContext,
+        oper: &DeleteComicArchives<'_>,
+    ) -> BaseRest<()> {
+        //
+        use crate::part_impl::repo::rdb_impl::schema::t_comic_archive::dsl::{
+            f_source_comic_id, t_comic_archive,
+        };
+
+        diesel::delete(
+            t_comic_archive.filter(f_source_comic_id.eq(oper.source_comic_id)),
+        )
+        .execute(context.conn())
+        .await
+        .map_err(diesel)?;
+
+        accept(())
     }
 }

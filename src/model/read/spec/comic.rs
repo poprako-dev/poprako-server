@@ -6,7 +6,7 @@
 //! [`ComicInfoView`]: crate::data::view::comic::ComicInfoView
 
 use crate::value::chapter::StageMask;
-use crate::value::comic::ComicInclOpt;
+use crate::value::comic::{ComicInclOpt, ComicStatus};
 
 /// Filtering and pagination parameters for listing comics within a workset.
 pub struct ComicListSpec {
@@ -17,6 +17,8 @@ pub struct ComicListSpec {
     pub fuzzy_title: Option<String>,
     /// Optional workflow-stage mask filter.
     pub stages: Option<StageMask>,
+    /// Optional lifecycle state filter.
+    pub status: Option<ComicStatus>,
 
     /// Additional data to include in each result, such as the workset or creator.
     pub incl_opt: Vec<ComicInclOpt>,

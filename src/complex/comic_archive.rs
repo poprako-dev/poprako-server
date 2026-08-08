@@ -3,6 +3,7 @@
 use poprako_orchestra::{OperProxy as _, Proxy};
 use time::OffsetDateTime;
 
+use poprako_util::i18n::trl;
 use poprako_util::time::ToUnixMilli as _;
 
 use crate::complex::util::check_user_is_team_admin;
@@ -13,8 +14,9 @@ use crate::model::read::proj::comic_archive::{
 use crate::model::write::comic_archive::ComicArchiveEntry;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::team::ResolveTeamId;
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
+use crate::value::chapter::{Stage, StagePhase};
 use crate::value::comic_archive::{
     ArchivedAssignmentPayload, ArchivedChapterPayload, ArchivedComicPayload,
     ArchivedPagePayload, ArchivedUnitPayload, ArchivedUserPayload,
@@ -25,6 +27,57 @@ use crate::value::comic_archive::{
 pub struct ComicArchiveComplex;
 
 impl ComicArchiveComplex {
+    /// Rejects archive attempts until every retained chapter has published.
+    pub fn ensure_snapshot_archivable(
+        comic_archive_snapshot: &ComicArchiveSnapshot,
+    ) -> BaseRest<()> {
+        //
+        if comic_archive_snapshot.comic_info.archived_at.is_some() {
+            //
+            let message = trl("error-comic-archived");
+
+            tracing::warn!(
+                err_variant = ?ExpectedVariant::Args,
+                err_message = %message,
+                "expected comic archive error",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message,
+            });
+        }
+
+        let is_archivable =
+            !comic_archive_snapshot.chapter_snapshots.is_empty()
+                && comic_archive_snapshot.chapter_snapshots.iter().all(
+                    |chapter_snapshot| {
+                        //
+                        chapter_snapshot
+                            .chapter_info
+                            .stages
+                            .has_phase(Stage::Publish, StagePhase::Completed)
+                    },
+                );
+
+        if is_archivable {
+            return accept(());
+        }
+
+        let message = trl("error-comic-archive-incomplete");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Args,
+            err_message = %message,
+            "expected comic archive error",
+        );
+
+        Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message,
+        })
+    }
+
     /// Builds one compressed archive row and deduplicated image keys on Tokio's blocking pool.
     pub async fn prepare_entry(
         comic_archive_snapshot: ComicArchiveSnapshot,
@@ -292,6 +345,7 @@ fn build_entry(
     let record = ComicArchiveRecord {
         id: archived_comic_id.clone(),
         team_id: comic_archive_snapshot.workset_info.team_id.clone(),
+        source_comic_id: comic_archive_snapshot.comic_info.id.clone(),
         archived_payload: serde_json::to_string(&comic_payload).map_err(|error| {
             //
             tracing::error!(

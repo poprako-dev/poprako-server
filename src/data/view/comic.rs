@@ -76,6 +76,12 @@ pub struct ComicInfoView {
     /// Timestamp of the most recent activity on the comic, in milliseconds since Unix epoch.
     pub last_active_at: i64,
 
+    /// Whether this comic has been archived and is no longer writable.
+    pub is_archived: bool,
+    /// Timestamp when the comic was archived, when applicable.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub archived_at: Option<i64>,
+
     /// Timestamp of comic creation, in milliseconds since Unix epoch.
     pub created_at: i64,
     /// Timestamp of the last comic update, in milliseconds since Unix epoch.
@@ -140,6 +146,10 @@ impl ComicInfoView {
             .await
             .transpose()?,
             last_active_at: model.last_active_at.to_unix_milli(),
+            is_archived: model.archived_at.is_some(),
+            archived_at: model
+                .archived_at
+                .map(|archived_at| archived_at.to_unix_milli()),
             created_at: model.created_at.to_unix_milli(),
             updated_at: model.updated_at.to_unix_milli(),
         })

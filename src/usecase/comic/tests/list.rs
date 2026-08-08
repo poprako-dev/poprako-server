@@ -4,6 +4,69 @@
 
 use super::*;
 
+use crate::test_util::now;
+use crate::value::comic::ComicStatus;
+
+#[tokio::test]
+async fn list_infos_filters_by_lifecycle_status() {
+    //
+    let mock = Mock::new();
+
+    mock.seed_workset(workset("workset-1", "team-1"));
+
+    mock.seed_member(admin_member("user-1", "team-1"));
+
+    mock.seed_comic(comic("comic-active", "workset-1", 0));
+
+    let mut archived_comic_info = comic("comic-archived", "workset-1", 1);
+
+    archived_comic_info.archived_at = Some(now());
+
+    mock.seed_comic(archived_comic_info);
+
+    let active_list = list_infos(
+        (&mock, &mock),
+        token("user-1"),
+        ListComicInfosInstr {
+            incl_opt: Vec::new(),
+            with_opt: Vec::new(),
+            workset_id: "workset-1".into(),
+            fuzzy_title: None,
+            stages: None,
+            status: Some(ComicStatus::Active),
+            offset: 0,
+            limit: 10,
+        },
+    )
+    .await
+    .unwrap();
+
+    assert_eq!(active_list.comics.len(), 1);
+
+    assert_eq!(active_list.comics[0].id, "comic-active");
+
+    let archived_list = list_infos(
+        (&mock, &mock),
+        token("user-1"),
+        ListComicInfosInstr {
+            incl_opt: Vec::new(),
+            with_opt: Vec::new(),
+            workset_id: "workset-1".into(),
+            fuzzy_title: None,
+            stages: None,
+            status: Some(ComicStatus::Archived),
+            offset: 0,
+            limit: 10,
+        },
+    )
+    .await
+    .unwrap();
+
+    assert_eq!(archived_list.comics.len(), 1);
+
+    assert_eq!(archived_list.comics[0].id, "comic-archived");
+}
+
 #[tokio::test]
 async fn list_infos_returns_pinned_chapter_assignments_in_comic_order() {
     //
@@ -47,6 +110,7 @@ async fn list_infos_returns_pinned_chapter_assignments_in_comic_order() {
             workset_id: "workset-1".into(),
             fuzzy_title: None,
             stages: None,
+            status: None,
             offset: 0,
             limit: 10,
         },
@@ -91,6 +155,7 @@ async fn list_infos_rejects_assignments_without_pinned_chapters() {
             workset_id: "workset-1".into(),
             fuzzy_title: None,
             stages: None,
+            status: None,
             offset: 0,
             limit: 10,
         },
@@ -138,6 +203,7 @@ async fn list_infos_filters_by_fuzzy_title() {
             workset_id: "workset-1".into(),
             fuzzy_title: Some("Beta".into()),
             stages: None,
+            status: None,
             offset: 0,
             limit: 10,
         },
@@ -159,6 +225,7 @@ async fn list_infos_filters_by_fuzzy_title() {
             workset_id: "workset-1".into(),
             fuzzy_title: Some("Carol".into()),
             stages: None,
+            status: None,
             offset: 0,
             limit: 10,
         },
@@ -180,6 +247,7 @@ async fn list_infos_filters_by_fuzzy_title() {
             workset_id: "workset-1".into(),
             fuzzy_title: Some("1".into()),
             stages: None,
+            status: None,
             offset: 0,
             limit: 10,
         },

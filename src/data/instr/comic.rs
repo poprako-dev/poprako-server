@@ -13,7 +13,7 @@ use serde::Deserialize;
 use crate::model::read::spec::comic::ComicListSpec;
 use crate::result::{BaseError, BaseRest, accept};
 use crate::value::chapter::StageMask;
-use crate::value::comic::{ComicInclOpt, ComicWithOpt};
+use crate::value::comic::{ComicInclOpt, ComicStatus, ComicWithOpt};
 use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::RoleMask;
 #[cfg(feature = "swagger")]
@@ -97,6 +97,8 @@ pub struct ListComicInfosInstr {
     pub fuzzy_title: Option<String>,
     /// Optional stage mask filter.
     pub stages: Option<u32>,
+    /// Optional lifecycle state filter.
+    pub status: Option<ComicStatus>,
 
     /// Optional related data to include in results.
     #[serde(default, rename = "incl")]
@@ -126,6 +128,7 @@ impl TryFrom<ListComicInfosInstr> for ComicListSpec {
             workset_id: instr.workset_id,
             fuzzy_title: instr.fuzzy_title,
             stages,
+            status: instr.status,
             incl_opt: instr.incl_opt,
             offset: instr.offset,
             limit: instr.limit,

@@ -5,9 +5,6 @@ use tokio_util::sync::CancellationToken;
 
 use crate::shared::RdbCore;
 
-// Comic archive retention periodic job.
-mod comic_archive;
-
 /// Owns the lifecycle of the fixed production periodic-job composition.
 pub struct Sched {
     /// Shared cancellation signal for every explicitly composed job.
@@ -19,11 +16,11 @@ pub struct Sched {
 
 impl Sched {
     /// Starts the explicitly composed periodic jobs.
-    pub fn new(core: RdbCore) -> Self {
+    pub fn new(_core: RdbCore) -> Self {
         //
         let token = CancellationToken::new();
 
-        let done_recvs = vec![comic_archive::spawn(core, token.clone())];
+        let done_recvs = Vec::new();
 
         Self { token, done_recvs }
     }

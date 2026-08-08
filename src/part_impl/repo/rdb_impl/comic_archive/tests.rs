@@ -1,4 +1,4 @@
-// comic_archive_roundtrip_uses_testcontainer(GetComicArchiveSnapshotExcluded, CommitComicArchive)(positive): archive rows persist as decodable bytes while active data is removed without changing workset counts.
+// comic_archive_roundtrip_uses_testcontainer(GetComicArchiveSnapshotExcluded, CommitComicArchive)(positive): archive rows persist as decodable bytes while the archived comic marker remains and active descendants are removed without changing workset counts.
 
 use super::*;
 
@@ -91,6 +91,7 @@ pub async fn comic_archive_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let (
         archive_team_id,
+        archive_source_comic_id,
         comic_archived_payload,
         comic_archiver_id,
         comic_created_at,
@@ -98,11 +99,12 @@ pub async fn comic_archive_roundtrip_uses_testcontainer(shared: RdbCore) {
         .filter(t_comic_archive::f_id.eq(&comic_archive_entry.record.id))
         .select((
             t_comic_archive::f_team_id,
+            t_comic_archive::f_source_comic_id,
             t_comic_archive::f_archived_payload,
             t_comic_archive::f_archiver_id,
             t_comic_archive::f_created_at,
         ))
-        .first::<(String, String, String, OffsetDateTime)>(&mut conn)
+        .first::<(String, String, String, String, OffsetDateTime)>(&mut conn)
         .await
         .unwrap();
 
@@ -117,6 +119,8 @@ pub async fn comic_archive_roundtrip_uses_testcontainer(shared: RdbCore) {
         serde_json::from_str(&comic_archived_payload).unwrap();
 
     assert_eq!(archive_team_id, page_fixture.team_entry.id);
+
+    assert_eq!(archive_source_comic_id, source_comic_id.as_str());
 
     assert_eq!(comic_archiver_id, archiver_id);
 
@@ -149,7 +153,7 @@ pub async fn comic_archive_roundtrip_uses_testcontainer(shared: RdbCore) {
             .get_result::<i64>(&mut conn)
             .await
             .unwrap(),
-        0
+        1
     );
 
     assert_eq!(
