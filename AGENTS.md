@@ -6,6 +6,13 @@ MUST run through GitHub Actions. Production SSH is allowed only from the
 protected GitHub Actions environment through the dedicated deployment account;
 maintainer machines must not run production deployment scripts.
 
+Deployment preparation on a maintainer machine is CI-only by default. Do not
+run local Docker/image/release builds, local release helpers, or any deployment
+script unless the user explicitly requests that exact operation. Run the
+checked-in CI checks instead. Do not run destructive migration verification
+(`migration revert`, reset, or equivalent) unless the user explicitly approves
+it and the target is confirmed to be a disposable database.
+
 `just` is an optional local convenience only. CI/CD and release automation
 MUST invoke checked-in POSIX `sh` scripts directly and MUST NOT require `just`.
 

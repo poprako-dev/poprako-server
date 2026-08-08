@@ -390,7 +390,6 @@ impl<'a> Step<DeleteComicArchives<'a>, MockContext> for Mock {
     ) -> BaseRest<()> {
         //
         context.state.comic_archives.retain(|comic_archive_record| {
-            //
             comic_archive_record.source_comic_id != oper.source_comic_id
         });
 
