@@ -32,7 +32,7 @@ use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::result::{BaseError, BaseRest, accept};
-use crate::usecase::stage::spawn_starts;
+use crate::usecase::stage::advance_stages;
 use crate::value::role::RoleField;
 use crate::value::unit::UnitEditPerm;
 
@@ -108,7 +108,7 @@ where
 
     let edits = into_unit_edits(edits, &token.user_id, UnitComplex::gen_id)?;
 
-    let stages = UnitComplex::submitted_stage_starts(&edits);
+    let stages = UnitComplex::submitted_stage_advances(&edits);
 
     let page_scope = GetPageInfo { id: &page_id }.run_on(repo).await?;
 
@@ -199,7 +199,7 @@ where
         })
         .await?;
 
-    spawn_starts(((*repo).clone(),), chapter_id, stages);
+    advance_stages(((*repo).clone(),), chapter_id, stages);
 
     accept(())
 }

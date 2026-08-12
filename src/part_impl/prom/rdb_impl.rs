@@ -61,7 +61,7 @@ pub struct RdbProm {
 }
 
 impl RdbProm {
-    /// Creates the prom adapter and starts its background consumer task.
+    /// Creates the prom adapter and launches its background consumer task.
     ///
     /// The supervisor polls `t_local_message` and routes each topic to one of four
     /// serial worker tasks. Different topics can run concurrently, while messages

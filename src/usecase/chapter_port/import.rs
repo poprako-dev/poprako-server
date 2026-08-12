@@ -30,7 +30,7 @@ use crate::part::repo::oper::unit::{ApplyUnitEdits, ListUnitOrders};
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::usecase::stage::spawn_starts;
+use crate::usecase::stage::advance_stages;
 use crate::value::chapter::Stage;
 use crate::value::chapter_port::TranslationFormat;
 use crate::value::role::RoleField;
@@ -217,7 +217,7 @@ where
 
     let stages = import_stages(edit_perm);
 
-    spawn_starts(((*repo).clone(),), stage_chapter_id, stages);
+    advance_stages(((*repo).clone(),), stage_chapter_id, stages);
 
     accept(val)
 }

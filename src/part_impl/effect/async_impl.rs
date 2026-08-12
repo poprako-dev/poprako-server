@@ -46,7 +46,7 @@ pub struct AsyncEffectDevelop {
 }
 
 impl AsyncEffectDevelop {
-    /// Creates a dispatcher and starts its background task.
+    /// Creates a dispatcher and launches its background task.
     pub fn new<C, R>(repo: Arc<R>, buffer_size: usize) -> Self
     where
         C: Send + 'static,

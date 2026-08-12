@@ -29,7 +29,7 @@ use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::result::{BaseRest, accept};
-use crate::usecase::stage::spawn_starts;
+use crate::usecase::stage::advance_stages;
 use crate::value::chapter::Stage;
 
 // Test coverage for chapter export payload shape and ordering.
@@ -125,7 +125,7 @@ where
         pages: page_views,
     };
 
-    spawn_starts(
+    advance_stages(
         ((*repo).clone(),),
         val.chapter_id.clone(),
         vec![Stage::TypesetRedraw],
@@ -202,7 +202,7 @@ where
     let content =
         ChapterExportComplex::make_label_plus(&page_infos, &units_by_page_id);
 
-    spawn_starts(((*repo).clone(),), chapter_id, vec![Stage::TypesetRedraw]);
+    advance_stages(((*repo).clone(),), chapter_id, vec![Stage::TypesetRedraw]);
 
     accept(content)
 }

@@ -33,8 +33,8 @@ use poprako_server::{
 ///
 /// Parses CLI flags, loads configuration, initializes runtime dependencies
 /// (database pool, authentication, image pool, effect dispatcher), wires them
-/// into an application harness, and starts the HTTP server. Pass `--swagger`
-/// to print the `OpenAPI` spec to stdout instead of starting the server.
+/// into an application harness, and launches the HTTP server. Pass `--swagger`
+/// to print the `OpenAPI` spec to stdout instead of launching the server.
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     //

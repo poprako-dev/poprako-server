@@ -15,6 +15,21 @@ fn save(id: &str, next_id: Patch<String>) -> UnitEdit {
     }
 }
 
+// Build a mocked create edit for a brand-new unit.
+fn create(id: &str, next_id: Option<String>) -> UnitEdit {
+    UnitEdit::Create {
+        id: id.to_string(),
+        next_id,
+        is_bubble: false,
+        coord: UnitCoord {
+            x_coord: 1.0,
+            y_coord: 2.0,
+        },
+        translation: None,
+        revision: None,
+    }
+}
+
 #[test]
 fn normalize_compresses_delete_and_field_patches_into_one_save() {
     //
@@ -69,6 +84,26 @@ fn normalize_rejects_invalid_anchors_and_unknown_targets() {
     );
 
     assert_args(unknown.unwrap_err());
+}
+
+#[test]
+fn normalize_orders_create_prior_to_save_for_the_same_unit() {
+    //
+    let edits = UnitComplex::normalize_edits(
+        &[],
+        vec![save("a", Patch::Clear), create("a", None)],
+    )
+    .unwrap();
+
+    assert!(matches!(
+        &edits[0],
+        UnitEdit::Create { id, .. } if id == "a"
+    ));
+
+    assert!(matches!(
+        &edits[1],
+        UnitEdit::Save { id, .. } if id == "a"
+    ));
 }
 
 // Assert that an error is an argument validation error.
