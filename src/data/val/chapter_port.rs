@@ -3,11 +3,10 @@
 //! Data transfer objects for chapter import/export port use cases.
 
 use serde::Serialize;
-
-use crate::data::view::page_port::PageTranslationExportView;
-
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
+
+use crate::data::view::page_port::PageTranslationExportView;
 
 /// JSON-safe export object for one translated chapter.
 #[derive(Debug, Serialize)]

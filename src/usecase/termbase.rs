@@ -1,5 +1,9 @@
 //! Terminology-base use cases.
 
+#[cfg(test)]
+// Unit tests for terminology base definitions and search access.
+mod tests;
+
 use poprako_orchestra::{
     Nucl, OperRun as _, OperStep as _, run_proxy, step_proxy,
 };
@@ -31,10 +35,6 @@ use crate::part::repo::term::TermRepo;
 use crate::part::repo::termbase::TermbaseRepo;
 use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseError, BaseRest, accept};
-
-#[cfg(test)]
-// Unit tests for terminology base definitions and search access.
-mod tests;
 
 /// Creates a terminology base scoped to a team or comic.
 #[instrument(level = "info", skip(nucl, repo))]

@@ -2,6 +2,7 @@ use super::{
     Mock, assert_expected_variant, credential, invitation, join, join_data,
     member, role, seed_scope, token, user,
 };
+
 use crate::result::ExpectedVariant;
 use crate::value::role::RoleField;
 

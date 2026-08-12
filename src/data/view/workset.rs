@@ -1,7 +1,6 @@
 //! View DTOs for the workset domain.
 
 use serde::Serialize;
-
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 

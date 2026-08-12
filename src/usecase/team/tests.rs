@@ -6,6 +6,9 @@
 //!
 //! [`Mock`]: crate::part_impl::repo::mock_impl::Mock
 
+// Team avatar reservation, upload check, and cleanup behavior.
+mod avatar;
+
 // create(create)(positive): creating a team should persist it and return team info.
 // create(create)(positive): creating a team should make creator an admin member.
 // create(create)(negative): create repo failure should propagate.
@@ -29,14 +32,13 @@
 // delete(delete)(negative): missing team should rollback state.
 
 use super::*;
+
+use time::OffsetDateTime;
+
 use crate::data::instr::team::{
     CreateTeamInstr, ListTeamInfosInstr, MarkTeamAvatarUploadedInstr,
     ReserveTeamAvatarInstr, UpdateTeamInfoInstr,
 };
-use crate::value::image::{ImageExt, ImageHash};
-
-use time::OffsetDateTime;
-
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::proj::member::MemberInfo;
 use crate::model::read::proj::team::TeamInfo;
@@ -52,10 +54,8 @@ use crate::test_util::{
     assert_expected_message, assert_expected_variant,
     assert_one_image_check_record,
 };
+use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
-
-// Team avatar reservation, upload check, and cleanup behavior.
-mod avatar;
 
 // Build a team fixture with explicit avatar metadata for avatar-related assertions.
 fn team_with_avatar(

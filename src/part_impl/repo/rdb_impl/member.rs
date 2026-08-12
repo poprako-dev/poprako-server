@@ -1,14 +1,5 @@
 //! RDB-backed member repository — free query functions and thin trait impls.
 
-use poprako_orchestra::Run;
-use step_impl::*;
-use tracing::instrument;
-
-use crate::model::read::proj::member::MemberInfo;
-use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part_impl::repo::HybRepo;
-use crate::result::{BaseError, BaseRest};
-
 // Orchestration logic for member repository operations.
 mod orchestra;
 // Member step implementation helpers.
@@ -17,6 +8,15 @@ mod step_impl;
 /// Member RDB integration tests.
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;
+
+use poprako_orchestra::Run;
+use step_impl::*;
+use tracing::instrument;
+
+use crate::model::read::proj::member::MemberInfo;
+use crate::part::repo::oper::member::FindMemberInfo;
+use crate::part_impl::repo::HybRepo;
+use crate::result::{BaseError, BaseRest};
 
 impl Run<FindMemberInfo<'_>> for HybRepo {
     // Error type for the Run trait impl on member lookup.

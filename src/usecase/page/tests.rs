@@ -1,3 +1,10 @@
+// Reservation tests for chapter page creation and lifecycle.
+mod reserve;
+// Upload and deletion behavior with raw-image upload flow.
+mod upload_delete;
+// Validation guard tests for page operations.
+mod validation;
+
 // reserve_chapter_pages(reserve_chapter_pages)(positive): raw provider reserves indexed pages, chapter counters, prom checks, and PUT URLs.
 // reserve_chapter_pages(process_pending)(positive): delayed completion advances raw provision after every page upload succeeds.
 // reserve_chapter_pages(process_pending)(negative): delayed completion leaves raw provision pending while any upload is missing.
@@ -15,14 +22,13 @@
 // delete(delete)(negative): non-admin delete rolls back.
 
 use super::*;
+
+use time::{Duration as TimeDuration, OffsetDateTime};
+
 use crate::data::instr::page::{
     ListPageInfosInstr, MarkPageImageUploadedInstr, PageImageInstr,
     ReserveChapterPagesInstr, ReservePageImageInstr,
 };
-use crate::value::image::{ImageExt, ImageHash};
-
-use time::{Duration as TimeDuration, OffsetDateTime};
-
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::comic::ComicInfo;
@@ -41,14 +47,8 @@ use crate::test_util::{
     assert_one_image_check_record,
 };
 use crate::value::chapter::{Stage, StageMask, StagePhase};
+use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
-
-// Reservation tests for chapter page creation and lifecycle.
-mod reserve;
-// Upload and deletion behavior with raw-image upload flow.
-mod upload_delete;
-// Validation guard tests for page operations.
-mod validation;
 
 fn token(user_id: &str) -> UserToken {
     UserToken {

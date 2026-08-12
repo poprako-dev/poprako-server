@@ -3,10 +3,10 @@
 //! Data transfer objects for user profile use cases.
 
 use serde::Deserialize;
-
-use crate::value::image::{ImageExt, ImageHash};
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
+
+use crate::value::image::{ImageExt, ImageHash};
 
 /// Request to reserve a user avatar upload.
 #[derive(Debug, Deserialize)]

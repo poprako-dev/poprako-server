@@ -1,5 +1,14 @@
 //! Team use cases — create, read, update, avatar management, and deletion.
 
+// Process-local online-user lease use cases.
+mod online;
+// Non-transactional team read use cases.
+mod read;
+
+#[cfg(test)]
+// Unit and integration tests for team management policies.
+mod tests;
+
 use std::time::Duration;
 
 use poprako_orchestra::{
@@ -71,15 +80,6 @@ use crate::value::role::{RoleField, RoleMask};
 
 pub use self::online::{list_online_user_ids, mark_self_online};
 pub use self::read::{get_info, list_infos};
-
-// Process-local online-user lease use cases.
-mod online;
-// Non-transactional team read use cases.
-mod read;
-
-#[cfg(test)]
-// Unit and integration tests for team management policies.
-mod tests;
 
 /// Creates a new team.
 ///

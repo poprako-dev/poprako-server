@@ -1,9 +1,8 @@
 use serde::{Serialize, Serializer};
-
-use poprako_util::i18n::trl;
-
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
+
+use poprako_util::i18n::trl;
 
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::value::chapter::stage::{

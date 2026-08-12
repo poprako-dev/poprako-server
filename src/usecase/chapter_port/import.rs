@@ -1,3 +1,7 @@
+// Test suite for chapter import mapping and perm checks.
+#[cfg(test)]
+mod tests;
+
 use poprako_orchestra::{Nucl, OperRun as _, OperStep as _, run_proxy};
 use tracing::instrument;
 
@@ -35,10 +39,6 @@ use crate::value::chapter::Stage;
 use crate::value::chapter_port::TranslationFormat;
 use crate::value::role::RoleField;
 use crate::value::unit::UnitEditPerm;
-
-// Test suite for chapter import mapping and perm checks.
-#[cfg(test)]
-mod tests;
 
 #[instrument(level = "info", skip(nucl, repo))]
 /// Imports chapter translation content through the Unit edit pipeline.

@@ -8,6 +8,13 @@
 //! team admin. Workflow transitions additionally validate that the caller holds a
 //! role consistent with the target stage and event.
 
+// Domain-specific cascade helpers: delete-page cleanup and pinned chapter re-link.
+mod cascade;
+// Permission gates for chapter entity operations.
+mod perm;
+// Workflow role validation for chapter stage transitions.
+mod role;
+
 use std::borrow::Cow;
 use std::collections::HashMap;
 
@@ -23,13 +30,6 @@ use crate::value::chapter::{Stage, StageOper, StagePhase, try_modify_stage};
 use crate::value::index::stored_index_to_user_index;
 
 pub use perm::ChapterPermComplex;
-
-// Domain-specific cascade helpers: delete-page cleanup and pinned chapter re-link.
-mod cascade;
-// Permission gates for chapter entity operations.
-mod perm;
-// Workflow role validation for chapter stage transitions.
-mod role;
 
 /// Domain opers for chapter entities: ID generation, workflow-stage
 /// transition computation, and small pure helpers.

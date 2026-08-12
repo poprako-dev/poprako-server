@@ -1,19 +1,15 @@
 //! Member handlers: create, join, list, role update, and deletion.
 
+#[cfg(test)]
+// Member handler tests validate request parameter shape and response mapping.
+mod tests;
+
 use axum::Json;
 use axum::extract::{Extension, Path, State};
 use axum::http::StatusCode;
 use axum_extra::extract::Query;
 use serde::Deserialize;
 use tracing::instrument;
-
-use crate::data::instr::member::{
-    CreateMemberInstr, JoinTeamInstr, ListMemberInfosInstr,
-    UpdateMemberRolesInstr,
-};
-use crate::data::val::member::CreateMemberVal;
-use crate::data::view::member::MemberInfoView;
-
 #[cfg(feature = "swagger")]
 use utoipa::IntoParams;
 
@@ -23,13 +19,15 @@ use crate::api::http::result::{
     Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
+use crate::data::instr::member::{
+    CreateMemberInstr, JoinTeamInstr, ListMemberInfosInstr,
+    UpdateMemberRolesInstr,
+};
+use crate::data::val::member::CreateMemberVal;
+use crate::data::view::member::MemberInfoView;
 use crate::model::shared::user::UserToken;
 use crate::usecase;
 use crate::value::member::MemberInclOpt;
-
-#[cfg(test)]
-// Member handler tests validate request parameter shape and response mapping.
-mod tests;
 
 /// Query for the current-user memberships list endpoint (`/members/me`).
 ///

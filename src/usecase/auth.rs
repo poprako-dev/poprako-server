@@ -1,5 +1,8 @@
 //! Authentication use cases — registration and login.
 
+#[cfg(test)]
+mod tests;
+
 use poprako_orchestra::{Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
@@ -25,9 +28,6 @@ use crate::part::repo::oper::member_invitation::{
 use crate::part::repo::oper::user::{CreateUser, GetUserCredential};
 use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-
-#[cfg(test)]
-mod tests;
 
 /// Registers a new user using an invitation code.
 ///

@@ -1,7 +1,8 @@
 use super::*;
 
-use crate::value::image::{ImageExt, ImageHash};
 use time::OffsetDateTime;
+
+use crate::value::image::{ImageExt, ImageHash};
 
 // Build a lightweight page fixture with deterministic metadata.
 fn page(

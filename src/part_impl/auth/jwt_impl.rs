@@ -1,5 +1,8 @@
 //! JWT-backed authentication token signer.
 
+#[cfg(test)]
+mod tests;
+
 use anyhow::Context as _;
 use jsonwebtoken::{
     Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode,
@@ -13,9 +16,6 @@ use poprako_util::i18n::trl;
 use crate::model::shared::user::UserToken;
 use crate::part::auth::TokenAuth;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-
-#[cfg(test)]
-mod tests;
 
 /// JWT issuer for user session tokens.
 pub struct JwtAuth {

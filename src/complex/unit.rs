@@ -1,5 +1,11 @@
 //! Domain rules and perm checks for page Units.
 
+// perm gates for Unit reads and edit fields.
+mod perm;
+
+#[cfg(test)]
+mod tests;
+
 use std::collections::HashSet;
 
 use poprako_util::i18n::trl;
@@ -10,12 +16,6 @@ use crate::util::{Patch, next_snowflake_id};
 use crate::value::chapter::Stage;
 
 pub use perm::UnitPermComplex;
-
-// perm gates for Unit reads and edit fields.
-mod perm;
-
-#[cfg(test)]
-mod tests;
 
 /// Pure Unit mutation and linked-list rules.
 pub struct UnitComplex;

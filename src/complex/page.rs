@@ -1,5 +1,8 @@
 //! Complex-domain opers for page entities.
 
+/// Pure chapter-page manifest matching.
+pub mod manifest;
+
 use poprako_orchestra::{OperProxy as _, Proxy};
 
 use poprako_util::i18n::trl;
@@ -13,9 +16,6 @@ use crate::part::repo::oper::team::ResolveTeamId;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 use crate::value::role::RoleField;
-
-/// Pure chapter-page manifest matching.
-pub mod manifest;
 
 /// Domain opers for page entities.
 pub struct PageComplex;

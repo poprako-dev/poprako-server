@@ -3,8 +3,8 @@
 // join(join)(negative): user cannot join with roles outside team membership.
 
 use super::*;
-use crate::data::instr::assignment::JoinChapterAssignmentInstr;
 
+use crate::data::instr::assignment::JoinChapterAssignmentInstr;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
 

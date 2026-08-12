@@ -1,5 +1,9 @@
 //! Workset use cases — create, read, update, list, and deletion.
 
+/// Workset use-case test helpers.
+#[cfg(test)]
+pub mod tests;
+
 use poprako_orchestra::{
     Nucl, OperRun as _, OperStep as _, run_proxy, step_proxy,
 };
@@ -49,10 +53,6 @@ use crate::part::repo::termbase::TermbaseRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseError, BaseRest, accept};
-
-/// Workset use-case test helpers.
-#[cfg(test)]
-pub mod tests;
 
 /// Creates a new workset inside a team.
 #[instrument(level = "info", skip(nucl, repo))]

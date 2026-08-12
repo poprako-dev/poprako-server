@@ -5,16 +5,15 @@ use axum::extract::{Extension, Query, State};
 use axum::http::StatusCode;
 use tracing::instrument;
 
-use crate::data::instr::system_mail::{
-    ListSystemMailInfosInstr, MarkSystemMailReadInstr,
-};
-use crate::data::view::system_mail::SystemMailInfoView;
-
 #[allow(unused_imports)]
 use crate::api::http::result::{
     Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
+use crate::data::instr::system_mail::{
+    ListSystemMailInfosInstr, MarkSystemMailReadInstr,
+};
+use crate::data::view::system_mail::SystemMailInfoView;
 use crate::model::shared::user::UserToken;
 use crate::usecase;
 

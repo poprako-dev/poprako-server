@@ -1,16 +1,13 @@
 //! View DTOs for the announcement domain.
 
+use futures::future::OptionFuture;
 use serde::Serialize;
-
-use crate::data::view::user::UserInfoView;
-
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
-use futures::future::OptionFuture;
-
 use poprako_util::time::ToUnixMilli as _;
 
+use crate::data::view::user::UserInfoView;
 use crate::model::read::proj::announcement::AnnouncementInfo;
 use crate::part::image::ImagePool;
 use crate::result::{BaseRest, accept};

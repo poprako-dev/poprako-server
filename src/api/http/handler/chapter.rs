@@ -6,14 +6,6 @@ use axum::http::StatusCode;
 use axum_extra::extract::Query;
 use serde::Deserialize;
 use tracing::instrument;
-
-use crate::data::instr::chapter::{
-    CreateChapterInstr, ListChapterInfosInstr, UpdateChapterInfoInstr,
-    UpdateChapterStageInstr,
-};
-use crate::data::val::chapter::CreateChapterVal;
-use crate::data::view::chapter::ChapterInfoView;
-
 #[cfg(feature = "swagger")]
 use utoipa::IntoParams;
 
@@ -23,6 +15,12 @@ use crate::api::http::result::{
     Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
+use crate::data::instr::chapter::{
+    CreateChapterInstr, ListChapterInfosInstr, UpdateChapterInfoInstr,
+    UpdateChapterStageInstr,
+};
+use crate::data::val::chapter::CreateChapterVal;
+use crate::data::view::chapter::ChapterInfoView;
 use crate::model::shared::user::UserToken;
 use crate::usecase;
 use crate::value::chapter::ChapterInclOpt;

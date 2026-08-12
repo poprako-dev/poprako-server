@@ -5,13 +5,6 @@ use axum::extract::{Extension, Path, Query, State};
 use axum::http::StatusCode;
 use serde::Deserialize;
 use tracing::instrument;
-
-use crate::data::instr::term::{
-    CreateTermInstr, ListTermInfosInstr, UpdateTermInfoInstr,
-};
-use crate::data::val::term::CreateTermVal;
-use crate::data::view::term::TermInfoView;
-
 #[cfg(feature = "swagger")]
 use utoipa::IntoParams;
 
@@ -21,6 +14,11 @@ use crate::api::http::result::{
     Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
+use crate::data::instr::term::{
+    CreateTermInstr, ListTermInfosInstr, UpdateTermInfoInstr,
+};
+use crate::data::val::term::CreateTermVal;
+use crate::data::view::term::TermInfoView;
 use crate::model::shared::user::UserToken;
 use crate::usecase;
 

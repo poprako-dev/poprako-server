@@ -1,5 +1,9 @@
 //! Diesel-backed workset repository operations.
 
+/// Workset RDB integration tests.
+#[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
+pub mod tests;
+
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use poprako_orchestra::{Run, Step};
@@ -23,10 +27,6 @@ use crate::part_impl::repo::rdb_impl::schema::t_workset::dsl::*;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::result::diesel;
 use crate::shared::{RdbConn, RdbContext};
-
-/// Workset RDB integration tests.
-#[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
-pub mod tests;
 
 #[instrument(level = "info", skip_all)]
 // Remove one workset row by id.

@@ -1,5 +1,9 @@
 //! Unit use cases for listing and saving one Page sequence.
 
+#[cfg(test)]
+// Unit tests for unit creation, editing, and transition rules.
+mod tests;
+
 use poprako_orchestra::{Nucl, OperRun as _, OperStep as _, run_proxy};
 use tracing::instrument;
 
@@ -35,10 +39,6 @@ use crate::result::{BaseError, BaseRest, accept};
 use crate::usecase::stage::advance_stages;
 use crate::value::role::RoleField;
 use crate::value::unit::UnitEditPerm;
-
-#[cfg(test)]
-// Unit tests for unit creation, editing, and transition rules.
-mod tests;
 
 #[instrument(level = "info", skip(repo))]
 /// Lists visible Units for one Page in final linked-list order.

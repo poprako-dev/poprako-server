@@ -6,6 +6,10 @@
 //!
 //! [`Mock`]: crate::part_impl::repo::mock_impl::Mock
 
+mod extra;
+// Delete flow coverage, including avatar cleanup and related records.
+mod delete;
+
 // get_info(get_info)(positive): a user reading itself should receive info and emit UserActive.
 // get_info(get_info)(positive): reading another user should not emit UserActive.
 // get_info(get_info)(negative): missing user should propagate an argument error.
@@ -27,15 +31,14 @@
 // delete(delete)(negative): missing user should rollback state.
 
 use super::*;
-use crate::data::instr::user::{
-    MarkUserAvatarUploadedInstr, ReserveUserAvatarInstr, UpdateUserInfoInstr,
-    UpdateUserPasswordInstr,
-};
-use crate::value::image::{ImageExt, ImageHash};
 
 use time::OffsetDateTime;
 
 use crate::complex::user::UserComplex;
+use crate::data::instr::user::{
+    MarkUserAvatarUploadedInstr, ReserveUserAvatarInstr, UpdateUserInfoInstr,
+    UpdateUserPasswordInstr,
+};
 use crate::model::read::proj::member::MemberInfo;
 use crate::model::read::proj::user::UserInfo;
 use crate::model::shared::user::UserToken;
@@ -50,11 +53,8 @@ use crate::test_util::{
     assert_expected_message, assert_expected_variant,
     assert_one_image_check_record,
 };
+use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
-
-mod extra;
-// Delete flow coverage, including avatar cleanup and related records.
-mod delete;
 
 /// Builds a [`UserInfo`] fixture with avatar fields set.
 fn user_with_avatar(

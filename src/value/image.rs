@@ -1,5 +1,8 @@
 //! Image identity value types shared by page persistence and uploads.
 
+#[cfg(test)]
+mod tests;
+
 use std::str::FromStr;
 
 use base64::Engine as _;
@@ -8,9 +11,6 @@ use serde::de::Error as _;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
-
-#[cfg(test)]
-mod tests;
 
 /// SHA-256 content hash encoded as canonical padded RFC 4648 Base64.
 #[derive(Debug, Clone, Default, Eq, PartialEq, Hash)]

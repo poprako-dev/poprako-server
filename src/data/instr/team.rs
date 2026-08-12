@@ -3,10 +3,10 @@
 //! Data transfer objects for team profile use cases.
 
 use serde::Deserialize;
-
-use crate::value::image::{ImageExt, ImageHash};
 #[cfg(feature = "swagger")]
 use utoipa::{IntoParams, ToSchema};
+
+use crate::value::image::{ImageExt, ImageHash};
 
 /// Request to reserve a team avatar upload.
 #[derive(Debug, Deserialize)]

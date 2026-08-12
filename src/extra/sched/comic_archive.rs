@@ -1,5 +1,9 @@
 //! Periodic retention job for expired comic archives.
 
+#[cfg(test)]
+// Test module for retention schedule coverage scenarios.
+mod tests;
+
 use std::collections::BTreeSet;
 use std::time::Duration;
 
@@ -27,10 +31,6 @@ use crate::result::{BaseError, BaseRest, accept};
 use crate::shared::result::diesel;
 use crate::shared::{RdbConn, RdbCore};
 use crate::util::next_snowflake_id;
-
-#[cfg(test)]
-// Test module for retention schedule coverage scenarios.
-mod tests;
 
 /// Spawns the comic archiver background task.
 pub fn spawn(core: RdbCore, token: CancellationToken) -> watch::Receiver<bool> {

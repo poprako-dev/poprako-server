@@ -7,6 +7,20 @@
 //!
 //! [`AsyncEffectDevelop`]: crate::part_impl::effect::async_impl::AsyncEffectDevelop
 
+// Internal organization of the `entity` module.
+mod entity;
+// Internal organization of the `handler` module.
+mod handler;
+// Internal organization of the `repo` module.
+mod repo;
+#[cfg(all(test, feature = "rdb", feature = "prom_impl"))]
+// Internal organization of the `test_shared` module.
+mod test_shared;
+
+#[cfg(all(test, feature = "rdb", feature = "prom_impl"))]
+// Internal organization of the `tests` module.
+mod tests;
+
 use diesel_async::RunQueryDsl;
 use poprako_orchestra::Step;
 use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
@@ -27,20 +41,6 @@ use crate::part_impl::repo::rdb_impl::schema::t_local_message;
 use crate::result::{BaseError, BaseRest, accept};
 use crate::shared::result::diesel;
 use crate::shared::{RdbContext, RdbCore};
-
-// Internal organization of the `entity` module.
-mod entity;
-// Internal organization of the `handler` module.
-mod handler;
-// Internal organization of the `repo` module.
-mod repo;
-#[cfg(all(test, feature = "rdb", feature = "prom_impl"))]
-// Internal organization of the `test_shared` module.
-mod test_shared;
-
-#[cfg(all(test, feature = "rdb", feature = "prom_impl"))]
-// Internal organization of the `tests` module.
-mod tests;
 
 // ── Handle type ────────────────────────────────────────────────────────────
 

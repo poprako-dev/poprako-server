@@ -6,22 +6,21 @@
 //! represented and how persisted Unit rows are projected back into API-facing
 //! response types.
 
+#[cfg(test)]
+mod tests;
+
 use std::collections::HashMap;
 
 use serde::Deserialize;
-
-use poprako_util::i18n::trl;
-
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
+
+use poprako_util::i18n::trl;
 
 use crate::model::shared::unit::{UnitCoord, UnitRevision, UnitTranslation};
 use crate::model::write::unit::UnitEdit;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::Patch;
-
-#[cfg(test)]
-mod tests;
 
 /// Input parameters for listing visible Units under one Page.
 #[derive(Debug, Deserialize)]

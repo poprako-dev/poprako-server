@@ -1,5 +1,14 @@
 //! Comic use cases — create, read, update, cover management, and deletion.
 
+// Comic listing use cases (internal).
+mod list;
+// Cover reservation use case.
+mod reserve;
+
+/// Comic use-case test helpers.
+#[cfg(test)]
+pub mod tests;
+
 use poprako_orchestra::{
     Nucl, OperRun as _, OperStep as _, run_proxy, step_proxy,
 };
@@ -64,15 +73,6 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
 pub use list::list_infos;
 pub use reserve::reserve_cover;
-
-// Comic listing use cases (internal).
-mod list;
-// Cover reservation use case.
-mod reserve;
-
-/// Comic use-case test helpers.
-#[cfg(test)]
-pub mod tests;
 
 /// Creates a new comic inside a workset together with its first
 /// chapter and a creator admin assignment.

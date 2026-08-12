@@ -1,3 +1,8 @@
+// Run orchestration for chapter opers.
+mod run;
+// Step orchestration for chapter opers.
+mod step;
+
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::spec::chapter::ChapterListSpec;
 use crate::part_impl::repo::mock_impl::MockState;
@@ -5,11 +10,6 @@ use crate::part_impl::repo::mock_impl::chapter::{
     apply_chapter_incls, list_infos,
 };
 use crate::value::chapter::ChapterInclOpt;
-
-// Run orchestration for chapter opers.
-mod run;
-// Step orchestration for chapter opers.
-mod step;
 
 // Internal implementation of `list_chapter_infos`.
 fn list_chapter_infos(

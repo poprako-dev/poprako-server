@@ -1,5 +1,9 @@
 //! Diesel-backed terminology-base repository operations.
 
+/// Termbase RDB integration tests.
+#[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
+pub mod tests;
+
 use diesel::{
     BoolExpressionMethods as _, ExpressionMethods as _,
     NullableExpressionMethods as _, OptionalExtension as _,
@@ -29,10 +33,6 @@ use crate::part_impl::repo::rdb_impl::schema::{t_comic, t_workset};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::result::diesel;
 use crate::shared::{RdbConn, RdbContext};
-
-/// Termbase RDB integration tests.
-#[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
-pub mod tests;
 
 // Escape `%` and `_` wildcard symbols so fuzzy search stays literal-safe.
 #[instrument(level = "info", skip_all)]

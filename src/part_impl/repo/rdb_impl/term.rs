@@ -1,5 +1,9 @@
 //! Diesel-backed terminology-entry repository operations.
 
+/// Term RDB integration tests.
+#[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
+pub mod tests;
+
 use diesel::{
     ExpressionMethods as _, OptionalExtension as _,
     PgTextExpressionMethods as _, QueryDsl as _, SelectableHelper as _,
@@ -26,10 +30,6 @@ use crate::part_impl::repo::rdb_impl::schema::t_term::dsl::*;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::result::diesel;
 use crate::shared::{RdbConn, RdbContext};
-
-/// Term RDB integration tests.
-#[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
-pub mod tests;
 
 impl Run<GetTermInfo<'_>> for HybRepo {
     // Map `GetTermInfo` to repository orchestration without ambient transaction.

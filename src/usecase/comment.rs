@@ -1,5 +1,9 @@
 //! Comment use cases — list and create team board comments.
 
+#[cfg(test)]
+// Unit tests that validate comment lifecycle and visibility constraints.
+mod tests;
+
 use poprako_orchestra::{Nucl, OperRun as _, OperStep as _, run_proxy};
 use tracing::instrument;
 
@@ -16,10 +20,6 @@ use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::comment::{CreateComment, ListCommentInfos};
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::result::{BaseError, BaseRest, accept};
-
-#[cfg(test)]
-// Unit tests that validate comment lifecycle and visibility constraints.
-mod tests;
 
 /// Lists comments under a team.
 #[instrument(level = "info", skip(repo, image_pool))]

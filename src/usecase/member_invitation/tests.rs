@@ -9,11 +9,11 @@
 // delete(delete)(negative): non-admin should be rejected.
 
 use super::*;
+
 use crate::data::instr::member_invitation::{
     CreateMemberInvitationInstr, ListMemberInvitationInfosInstr,
     UpdateMemberInvitationRolesInstr,
 };
-
 use crate::model::read::proj::member::MemberInfo;
 use crate::model::read::proj::member_invitation::MemberInvitationInfo;
 use crate::model::read::proj::user::{UserCredential, UserInfo};

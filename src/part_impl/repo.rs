@@ -1,11 +1,3 @@
-use std::collections::HashMap;
-use std::sync::Arc;
-use std::time::Instant;
-
-use dashmap::DashMap;
-
-use crate::shared::RdbCore;
-
 /// In-memory repository operations used by the hybrid production adapter.
 pub mod mem_impl;
 /// In-memory repository adapter used by tests.
@@ -13,6 +5,14 @@ pub mod mem_impl;
 pub mod mock_impl;
 /// RDBMS-based repository implementation using Diesel and async connections.
 pub mod rdb_impl;
+
+use std::collections::HashMap;
+use std::sync::Arc;
+use std::time::Instant;
+
+use dashmap::DashMap;
+
+use crate::shared::RdbCore;
 
 /// Hybrid repository handle backed by PostgreSQL and process-local memory.
 #[derive(Clone)]

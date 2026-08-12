@@ -2,7 +2,6 @@
 // export_label_plus(export_label_plus)(positive): assignee exports ordered pages and units as LabelPlus text, then asynchronously triggers typeset/redraw.
 
 use super::*;
-use crate::value::image::{ImageExt, ImageHash};
 
 use time::OffsetDateTime;
 
@@ -16,6 +15,7 @@ use crate::model::shared::unit::UnitCoord;
 use crate::model::shared::user::UserToken;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::value::chapter::{Stage, StageMask, StagePhase};
+use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
 fn token(user_id: &str) -> UserToken {

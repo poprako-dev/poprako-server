@@ -1,3 +1,10 @@
+// Chapter import parsing helpers.
+mod helpers;
+
+#[cfg(test)]
+// Test cases for chapter-import parsing, translation assembly, and validation.
+mod tests;
+
 use poprako_util::i18n::trl;
 
 use crate::complex::chapter_port::import::helpers::LabelPlusUnit;
@@ -13,13 +20,6 @@ pub use crate::complex::chapter_port::import::helpers::{
     is_label_plus_page_header, parse_label_plus_unit_header,
     parse_poprako_page, validate_label_plus_header,
 };
-
-// Chapter import parsing helpers.
-mod helpers;
-
-#[cfg(test)]
-// Test cases for chapter-import parsing, translation assembly, and validation.
-mod tests;
 
 /// Chapter import parsing and payload merge rules.
 pub struct ChapterImportComplex;

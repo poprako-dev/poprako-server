@@ -1,43 +1,5 @@
 //! In-memory repository and prom adapters for tests.
 
-use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
-use std::time::Instant;
-
-use poprako_orchestra::nucl::Error as NuclError;
-use poprako_orchestra::{Nucl, Run as _, Step as _};
-use poprako_orchestra_extra::prom::oper::Defer;
-use poprako_orchestra_extra::prom::task::Task;
-use time::OffsetDateTime;
-
-use poprako_util::i18n::trl;
-
-use crate::model::read::proj::announcement::AnnouncementInfo;
-use crate::model::read::proj::assignment::AssignmentInfo;
-use crate::model::read::proj::assignment_invitation::AssignmentInvitationInfo;
-use crate::model::read::proj::chapter::ChapterInfo;
-use crate::model::read::proj::comic::ComicInfo;
-use crate::model::read::proj::comic_archive::ComicArchiveRecord;
-use crate::model::read::proj::comment::CommentInfo;
-use crate::model::read::proj::member::MemberInfo;
-use crate::model::read::proj::member_invitation::MemberInvitationInfo;
-use crate::model::read::proj::page::PageInfo;
-use crate::model::read::proj::system_mail::SystemMailInfo;
-use crate::model::read::proj::team::TeamInfo;
-use crate::model::read::proj::term::TermInfo;
-use crate::model::read::proj::termbase::TermbaseInfo;
-use crate::model::read::proj::unit::UnitInfo;
-use crate::model::read::proj::user::{UserCredential, UserInfo};
-use crate::model::read::proj::workset::WorksetInfo;
-use crate::model::write::member::MemberEntry;
-use crate::part::effect::event::Event;
-use crate::part::prom::payload::{TaskPayload, image};
-use crate::part::repo::oper::member::CreateMember;
-use crate::part::repo::oper::user::GetUserInfo;
-use crate::part_impl::prom::mock_impl::MockPromRecord;
-use crate::result::{BaseError, ExpectedVariant};
-use crate::value::role::{RoleField, RoleMask};
-
 // Mock helper for in-memory nucl-related types.
 mod nucl;
 
@@ -81,6 +43,44 @@ pub mod workset;
 // Mock-only tests and fixtures for repository adapter scenarios.
 #[cfg(test)]
 mod tests;
+
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
+use std::time::Instant;
+
+use poprako_orchestra::nucl::Error as NuclError;
+use poprako_orchestra::{Nucl, Run as _, Step as _};
+use poprako_orchestra_extra::prom::oper::Defer;
+use poprako_orchestra_extra::prom::task::Task;
+use time::OffsetDateTime;
+
+use poprako_util::i18n::trl;
+
+use crate::model::read::proj::announcement::AnnouncementInfo;
+use crate::model::read::proj::assignment::AssignmentInfo;
+use crate::model::read::proj::assignment_invitation::AssignmentInvitationInfo;
+use crate::model::read::proj::chapter::ChapterInfo;
+use crate::model::read::proj::comic::ComicInfo;
+use crate::model::read::proj::comic_archive::ComicArchiveRecord;
+use crate::model::read::proj::comment::CommentInfo;
+use crate::model::read::proj::member::MemberInfo;
+use crate::model::read::proj::member_invitation::MemberInvitationInfo;
+use crate::model::read::proj::page::PageInfo;
+use crate::model::read::proj::system_mail::SystemMailInfo;
+use crate::model::read::proj::team::TeamInfo;
+use crate::model::read::proj::term::TermInfo;
+use crate::model::read::proj::termbase::TermbaseInfo;
+use crate::model::read::proj::unit::UnitInfo;
+use crate::model::read::proj::user::{UserCredential, UserInfo};
+use crate::model::read::proj::workset::WorksetInfo;
+use crate::model::write::member::MemberEntry;
+use crate::part::effect::event::Event;
+use crate::part::prom::payload::{TaskPayload, image};
+use crate::part::repo::oper::member::CreateMember;
+use crate::part::repo::oper::user::GetUserInfo;
+use crate::part_impl::prom::mock_impl::MockPromRecord;
+use crate::result::{BaseError, ExpectedVariant};
+use crate::value::role::{RoleField, RoleMask};
 
 /// In-memory state holding all mock repository records.
 #[cfg_attr(test, derive(Clone, Default))]

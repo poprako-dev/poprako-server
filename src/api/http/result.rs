@@ -6,6 +6,10 @@
 //! [`NoContent`] to emit a `204 No Content` with no body. Errors are propagated
 //! as [`HttpError`].
 
+#[cfg(test)]
+// HTTP result test fixtures are compiled only for tests.
+mod tests;
+
 use std::num::NonZeroU16;
 
 use axum::Json;
@@ -14,16 +18,12 @@ use axum::http::header::{HeaderMap, HeaderValue, SET_COOKIE};
 use axum::response::{IntoResponse, Response};
 use cookie::Cookie;
 use serde::Serialize;
-
-use poprako_util::i18n::trl;
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
-use crate::result::{BaseError, ExpectedVariant};
+use poprako_util::i18n::trl;
 
-#[cfg(test)]
-// HTTP result test fixtures are compiled only for tests.
-mod tests;
+use crate::result::{BaseError, ExpectedVariant};
 
 /// Business-level error envelope returned by all failing endpoints.
 #[derive(Debug, Serialize)]

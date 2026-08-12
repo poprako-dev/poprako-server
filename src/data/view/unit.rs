@@ -7,11 +7,10 @@
 //! response types.
 
 use serde::Serialize;
-
-use poprako_util::time::ToUnixMilli as _;
-
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
+
+use poprako_util::time::ToUnixMilli as _;
 
 use crate::model::read::proj::unit::UnitInfo;
 

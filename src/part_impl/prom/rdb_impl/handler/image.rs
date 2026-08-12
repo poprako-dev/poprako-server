@@ -2,6 +2,11 @@
 //!
 //! Dispatches image [`ImagePayload`] variants to their concrete implementations.
 
+// Internal organization of the `identity` module.
+mod identity;
+// Internal organization of the `resource` module.
+mod resource;
+
 use poprako_orchestra::{Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
@@ -23,11 +28,6 @@ use crate::part_impl::prom::rdb_impl::handler::image::resource::ResourceState;
 use crate::part_impl::prom::rdb_impl::handler::task_flow::TaskFlow;
 use crate::result::{BaseError, ExpectedVariant, accept};
 use crate::shared::RdbContext;
-
-// Internal organization of the `identity` module.
-mod identity;
-// Internal organization of the `resource` module.
-mod resource;
 
 /// Dispatch an image [`ImagePayload`] to its concrete handler.
 #[instrument(level = "info", skip_all)]

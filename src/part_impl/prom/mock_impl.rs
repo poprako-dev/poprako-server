@@ -1,6 +1,20 @@
 //! Mock implementations of [`Prom`] for testing deferred action recording,
 //! plus an on-demand prom-record processor for integration tests.
 
+// Internal organization of the `chapter` module.
+mod chapter;
+// Internal organization of the `image_task` module.
+mod image_task;
+// Internal organization of the `invitation` module.
+mod invitation;
+// Internal organization of the `json` module.
+mod json;
+// Deferred-record step impls for the mock prom.
+mod defer;
+
+// Internal organization of the `tests` module.
+mod tests;
+
 use poprako_orchestra::{Nucl as _, OperStep as _, Step};
 use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 use poprako_orchestra_extra::prom::task::Task;
@@ -27,20 +41,6 @@ use crate::part::repo::oper::team::{GetTeamInfoExcluded, UpdateTeam};
 use crate::part::repo::oper::user::{GetUserInfoExcluded, UpdateUser};
 use crate::part_impl::repo::mock_impl::{Mock, MockContext};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-
-// Internal organization of the `chapter` module.
-mod chapter;
-// Internal organization of the `image_task` module.
-mod image_task;
-// Internal organization of the `invitation` module.
-mod invitation;
-// Internal organization of the `json` module.
-mod json;
-// Deferred-record step impls for the mock prom.
-mod defer;
-
-// Internal organization of the `tests` module.
-mod tests;
 
 #[derive(Clone, Copy)]
 // Fields and state semantics for the `ImageIdentity` struct.

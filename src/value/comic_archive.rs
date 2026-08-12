@@ -1,5 +1,8 @@
 //! Calendar-month values used by comic archive export and retention.
 
+#[cfg(test)]
+mod tests;
+
 use std::collections::HashSet;
 
 use serde::Serialize;
@@ -8,9 +11,6 @@ use time::{Date, Month, OffsetDateTime, PrimitiveDateTime, Time};
 use poprako_util::i18n::trl;
 
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-
-#[cfg(test)]
-mod tests;
 
 /// Maximum number of month slots accepted by one export request.
 pub const MAX_EXPORT_MONTHS: usize = 12;

@@ -1,9 +1,17 @@
+// Tests for assignment deletion behavior.
+mod delete;
+// Tests for assignment joining behavior.
+mod join;
+// Tests for assignment listing behavior.
+mod list_infos;
+// Tests for assignment role mutation behavior.
+mod update_roles;
+
 use super::*;
+
 use crate::data::instr::assignment::{
     ListAssignmentInfosInstr, UpdateAssignmentRolesInstr,
 };
-use crate::value::image::{ImageExt, ImageHash};
-
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::comic::ComicInfo;
@@ -16,16 +24,8 @@ use crate::model::shared::user::UserToken;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::test_util::now;
 use crate::value::chapter::{Stage, StageMask, StagePhase};
+use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
-
-// Tests for assignment deletion behavior.
-mod delete;
-// Tests for assignment joining behavior.
-mod join;
-// Tests for assignment listing behavior.
-mod list_infos;
-// Tests for assignment role mutation behavior.
-mod update_roles;
 
 // Build a token fixture for authenticated user_id.
 fn token(user_id: &str) -> UserToken {

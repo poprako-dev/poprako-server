@@ -1,5 +1,8 @@
 //! In-memory team ownership projections.
 
+#[cfg(test)]
+mod tests;
+
 use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
@@ -8,9 +11,6 @@ use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, unrecoverable,
 };
 use crate::result::{BaseError, BaseRest, accept};
-
-#[cfg(test)]
-mod tests;
 
 // Resolve the owning team for a comic from in-memory state.
 fn resolve_comic_team_id(state: &MockState, id: &str) -> BaseRest<String> {

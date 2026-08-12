@@ -1,5 +1,9 @@
 //! Newtype wrappers for role-based perm bitmasks.
 
+// Test fixtures for role conversion, perm, and serde behavior.
+#[cfg(test)]
+mod tests;
+
 use std::result::Result;
 
 use serde::de::Error as _;
@@ -10,10 +14,6 @@ use utoipa::ToSchema;
 use poprako_util::i18n::trl;
 
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-
-// Test fixtures for role conversion, perm, and serde behavior.
-#[cfg(test)]
-mod tests;
 
 /// A singular role perm flag represented as a bit position.
 ///

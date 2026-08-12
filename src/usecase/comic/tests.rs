@@ -1,3 +1,8 @@
+mod cover;
+mod fixture;
+mod list;
+mod preset_assignment;
+
 // create(create)(positive): creating a comic should allocate workset-scoped index and update comic count.
 // create(create)(positive): first-chapter creator preset roles are merged with chapter admin.
 // create(create)(negative): missing workset should rollback without creating a comic.
@@ -24,11 +29,11 @@
 // delete(delete)(negative): missing comic should rollback state.
 
 use super::*;
-use crate::data::instr::comic::{ListComicInfosInstr, UpdateComicInfoInstr};
 
 use fixture::*;
 use time::OffsetDateTime;
 
+use crate::data::instr::comic::{ListComicInfosInstr, UpdateComicInfoInstr};
 use crate::model::read::proj::comic::ComicInfo;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
@@ -37,11 +42,6 @@ use crate::test_util::fixture::workset;
 use crate::value::chapter::{Stage, StageMask, StagePhase};
 use crate::value::comic::ComicWithOpt;
 use crate::value::role::{RoleField, RoleMask};
-
-mod cover;
-mod fixture;
-mod list;
-mod preset_assignment;
 
 #[tokio::test]
 async fn create_allocates_index_and_updates_count() {

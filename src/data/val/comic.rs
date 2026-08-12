@@ -9,11 +9,10 @@
 //! [`ImagePool`]: crate::part::image::ImagePool
 
 use serde::Serialize;
-
-use crate::data::view::image::ImageUploadSlotView;
-
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
+
+use crate::data::view::image::ImageUploadSlotView;
 
 /// Comic cover upload reservation response.
 #[derive(Debug, Serialize)]

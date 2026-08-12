@@ -1,11 +1,11 @@
 //! Cross-origin browser access for the production web client.
 
+#[cfg(test)]
+mod tests;
+
 use axum::http::header::{AUTHORIZATION, CONTENT_TYPE};
 use axum::http::{HeaderValue, Method};
 use tower_http::cors::CorsLayer;
-
-#[cfg(test)]
-mod tests;
 
 /// Builds the CORS layer for requests from the PopRaKo web client.
 pub fn cors() -> CorsLayer {

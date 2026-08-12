@@ -1,3 +1,7 @@
+// Test coverage for chapter export payload shape and ordering.
+#[cfg(test)]
+mod tests;
+
 // FIXME: specific models and values are necessary.
 
 use std::collections::HashMap;
@@ -31,10 +35,6 @@ use crate::part::repo::unit::UnitRepo;
 use crate::result::{BaseRest, accept};
 use crate::usecase::stage::advance_stages;
 use crate::value::chapter::Stage;
-
-// Test coverage for chapter export payload shape and ordering.
-#[cfg(test)]
-mod tests;
 
 /// Exports one chapter as a JSON-safe translation payload.
 #[instrument(level = "info", skip(repo))]

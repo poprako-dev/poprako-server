@@ -1,5 +1,12 @@
 //! In-memory implementation of Unit repository operations.
 
+// Internal organization of the `orchestra` module.
+mod orchestra;
+
+#[cfg(test)]
+// Internal organization of the `tests` module.
+mod tests;
+
 use std::collections::HashSet;
 
 use crate::model::read::proj::unit::{UnitCounters, UnitInfo, UnitOrder};
@@ -9,13 +16,6 @@ use crate::part_impl::repo::mock_impl::{
 };
 use crate::result::{BaseRest, accept};
 use crate::util::Patch;
-
-// Internal organization of the `orchestra` module.
-mod orchestra;
-
-#[cfg(test)]
-// Internal organization of the `tests` module.
-mod tests;
 
 // Locate a unit id inside ordered id list, used by move/create/save operations.
 fn find_order_pos(ordered_ids: &[&str], id: &str) -> Option<usize> {

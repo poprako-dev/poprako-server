@@ -1,7 +1,6 @@
 //! Value types for comment aggregates.
 
 use serde::Deserialize;
-
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 

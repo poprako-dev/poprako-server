@@ -6,18 +6,17 @@ use axum::http::StatusCode;
 use tracing::instrument;
 
 use crate::api::http::handler::util::ensure_path_matches_body_id;
+#[allow(unused_imports)]
+use crate::api::http::result::{
+    Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
+};
+use crate::api::http::state::AppHarn;
 use crate::data::instr::page::{
     ListPageInfosInstr, MarkPageImageUploadedInstr, ReserveChapterPagesInstr,
     ReservePageImageInstr,
 };
 use crate::data::val::page::{ReserveChapterPagesVal, ReservedPageVal};
 use crate::data::view::page::PageInfoView;
-
-#[allow(unused_imports)]
-use crate::api::http::result::{
-    Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
-};
-use crate::api::http::state::AppHarn;
 use crate::model::shared::user::UserToken;
 use crate::usecase;
 

@@ -3,8 +3,8 @@
 // join_team(join_team)(negative): duplicate membership should be rejected without consuming invitation.
 
 use super::*;
-use crate::data::instr::member::JoinTeamInstr;
 
+use crate::data::instr::member::JoinTeamInstr;
 use crate::model::read::proj::member_invitation::MemberInvitationInfo;
 
 fn invitation(id: &str, invitee_qid: &str) -> MemberInvitationInfo {

@@ -1,5 +1,9 @@
 //! RDB-backed announcement repository.
 
+/// Announcement RDB integration tests.
+#[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
+pub mod tests;
+
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use poprako_orchestra::{Run, Step};
@@ -20,10 +24,6 @@ use crate::part_impl::repo::rdb_impl::schema::t_announcement::dsl::*;
 use crate::result::{BaseError, BaseRest, accept};
 use crate::shared::result::diesel;
 use crate::shared::{RdbConn, RdbContext};
-
-/// Announcement RDB integration tests.
-#[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
-pub mod tests;
 
 // Queries announcement rows filtered by team ID, ordered by creation time descending.
 #[instrument(level = "info", skip_all)]

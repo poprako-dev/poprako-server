@@ -1,5 +1,9 @@
 //! Assignment use cases — list, join, role update, and deletion.
 
+#[cfg(test)]
+// Unit tests that cover assignment orchestration invariants.
+mod tests;
+
 use poprako_orchestra::{Nucl, OperRun as _, OperStep as _, run_proxy};
 use tracing::instrument;
 
@@ -34,10 +38,6 @@ use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-
-#[cfg(test)]
-// Unit tests that cover assignment orchestration invariants.
-mod tests;
 
 /// Lists assignments by chapter or owner user.
 #[instrument(level = "info", skip(repo, image_pool))]

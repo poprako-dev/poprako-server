@@ -3,12 +3,12 @@
 //! This module currently hosts common value-object helpers that are used by
 //! many layers (model conversion, storage identifiers, and partial updates).
 
+#[cfg(test)]
+mod tests;
+
 use std::sync::OnceLock;
 
 use serde::{Deserialize, Deserializer};
-
-#[cfg(test)]
-mod tests;
 
 /// Generate a unique time-ordered identifier in base62 format.
 ///

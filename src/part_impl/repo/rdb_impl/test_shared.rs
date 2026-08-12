@@ -1,3 +1,5 @@
+mod form;
+
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use poprako_orchestra::{Nucl as _, Run as _, Step as _};
@@ -25,8 +27,6 @@ pub use self::form::{
     chapter_entry, comic_entry, page_entry, team_entry, user_entry,
     workset_entry,
 };
-
-mod form;
 
 pub struct UserFixture {
     pub user_entry: UserEntry,

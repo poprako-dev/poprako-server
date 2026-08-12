@@ -8,11 +8,10 @@
 // delete(delete)(negative): missing comic should rollback state.
 
 use super::*;
+
 use crate::data::instr::comic::{
     MarkComicCoverUploadedInstr, ReserveComicCoverInstr,
 };
-use crate::value::image::{ImageExt, ImageHash};
-
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::proj::workset::WorksetInfo;
 use crate::part::prom::payload::TaskPayload;
@@ -20,6 +19,7 @@ use crate::part::prom::payload::image::{ImagePayload, ResourceKind};
 use crate::test_util::{
     assert_expected_message, assert_one_image_check_record,
 };
+use crate::value::image::{ImageExt, ImageHash};
 
 fn reserve_instr(ext: ImageExt, hash_byte: u8) -> ReserveComicCoverInstr {
     ReserveComicCoverInstr {

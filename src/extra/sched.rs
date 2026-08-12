@@ -1,12 +1,12 @@
 //! Fixed production composition for periodic background jobs.
 
+// Comic archive retention periodic job.
+mod comic_archive;
+
 use tokio::sync::watch;
 use tokio_util::sync::CancellationToken;
 
 use crate::shared::RdbCore;
-
-// Comic archive retention periodic job.
-mod comic_archive;
 
 /// Owns the lifecycle of the fixed production periodic-job composition.
 pub struct Sched {

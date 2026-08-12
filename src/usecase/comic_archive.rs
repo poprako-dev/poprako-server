@@ -1,5 +1,8 @@
 //! Use cases for immutable comic archives.
 
+#[cfg(test)]
+mod tests;
+
 use std::collections::BTreeMap;
 
 use poprako_orchestra::{Nucl, OperRun as _, OperStep as _, run_proxy};
@@ -31,9 +34,6 @@ use crate::part::repo::team::TeamRepo;
 use crate::result::{BaseError, BaseRest, accept};
 use crate::util::next_snowflake_id;
 use crate::value::comic_archive::ComicArchiveMonth;
-
-#[cfg(test)]
-mod tests;
 
 /// Exports selected retained UTC month slots for one team.
 #[instrument(level = "info", skip(repo))]
