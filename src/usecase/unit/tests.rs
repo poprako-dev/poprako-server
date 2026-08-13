@@ -390,6 +390,7 @@ fn comic() -> ComicInfo {
         team: None,
         creator: None,
         last_active_at: current_time,
+        archived_at: None,
         created_at: current_time,
         updated_at: current_time,
     }

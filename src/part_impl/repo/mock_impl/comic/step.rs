@@ -57,6 +57,7 @@ impl<'a> Step<CreateComic<'a>, MockContext> for Mock {
             team: None,
             creator: None,
             last_active_at: time,
+            archived_at: None,
             created_at: time,
             updated_at: time,
         };

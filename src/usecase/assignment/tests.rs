@@ -140,6 +140,7 @@ fn comic(id: &str, workset_id: &str) -> ComicInfo {
         team: None,
         creator: None,
         last_active_at: time,
+        archived_at: None,
         created_at: time,
         updated_at: time,
     }
@@ -277,6 +278,25 @@ fn seed_scope(mock: &Mock) {
     mock.seed_comic(comic("comic-1", "workset-1"));
 
     mock.seed_chapter(chapter("chapter-1", "comic-1"));
+}
+
+// Seed a chapter that is frozen because publishing has completed.
+fn seed_published_scope(mock: &Mock) {
+    //
+    mock.seed_team(team("team-1"));
+
+    mock.seed_workset(workset("workset-1", "team-1"));
+
+    mock.seed_comic(comic("comic-1", "workset-1"));
+
+    let mut chapter_info = chapter("chapter-1", "comic-1");
+
+    chapter_info.stages = chapter_info
+        .stages
+        .try_set_phase(Stage::Publish, StagePhase::Completed)
+        .unwrap();
+
+    mock.seed_chapter(chapter_info);
 }
 
 // Seed a user and credential for repeatable test preparation.

@@ -29,9 +29,9 @@ use crate::data::val::comic_list::ListComicInfosVal;
 use crate::data::view::comic::ComicInfoView;
 use crate::model::shared::user::UserToken;
 use crate::usecase;
-use crate::value::comic::{ComicInclOpt, ComicWithOpt};
+use crate::value::comic::{ComicInclOpt, ComicStatus, ComicWithOpt};
 
-/// `GET /api/v1/teams/{team_id}/comic-archives/export` — export retained archive month slots.
+/// `GET /api/v1/teams/{team_id}/comic-archives/export` — export archive month slots.
 #[cfg_attr(feature = "swagger", utoipa::path(
     get,
     path = "/api/v1/teams/{team_id}/comic-archives/export",
@@ -43,7 +43,7 @@ use crate::value::comic::{ComicInclOpt, ComicWithOpt};
     responses(
         (status = 200, description = "Archive JSON strings grouped by UTC month", body = HttpBody<ExportComicArchivesVal>),
         (status = 403, description = "No perm to export this team's archives"),
-        (status = 422, description = "Invalid or expired month selection"),
+        (status = 422, description = "Invalid month selection"),
     ),
 ))]
 #[instrument(level = "info", skip_all)]
@@ -75,6 +75,9 @@ pub struct ComicListQuery {
 
     /// Workflow stage bitmask filter for pinned chapters.
     pub stages: Option<u32>,
+
+    /// Lifecycle state filter. Omit to list both active and archived comics.
+    pub status: Option<ComicStatus>,
 
     /// Related rows to embed. Repeatable. Values: `workset`, `workset.team`,
     /// `creator`. Dotted values imply their parent segments.
@@ -123,7 +126,7 @@ pub async fn create(
     get,
     path = "/api/v1/worksets/{workset_id}/comics",
     tag = "comics",
-    description = "Lists active comics in a workset with optional title and workflow-stage filters. `incl` embeds related rows and `with` populates parallel derived rows.",
+    description = "Lists active and archived comics in a workset with optional title, lifecycle, and workflow-stage filters. `incl` embeds related rows and `with` populates parallel derived rows.",
     params(("workset_id" = String, Path, description = "Workset ID"), ComicListQuery),
     responses(
         (status = 200, description = "Comics listed", body = HttpBody<ListComicInfosVal>),
@@ -143,6 +146,7 @@ pub async fn list_infos(
         workset_id,
         fuzzy_title: query.fuzzy_title,
         stages: query.stages,
+        status: query.status,
         incl_opt: query.incl_opt,
         with_opt: query.with_opt,
         offset: query.offset,
@@ -278,7 +282,7 @@ pub async fn mark_cover_uploaded(
     no_content()
 }
 
-/// `POST /api/v1/comics/{comic_id}/archive` — archive and remove one active comic.
+/// `POST /api/v1/comics/{comic_id}/archive` — archive one comic and clear its active data.
 #[cfg_attr(feature = "swagger", utoipa::path(
     post,
     path = "/api/v1/comics/{comic_id}/archive",

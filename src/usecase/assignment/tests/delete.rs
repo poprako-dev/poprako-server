@@ -93,3 +93,30 @@ async fn delete_non_reviewer_does_not_delete_another_user_assignment() {
 
     assert_eq!(mock.snapshot().assignments.len(), 2);
 }
+
+#[tokio::test]
+async fn delete_rejects_published_chapter() {
+    //
+    let mock = Mock::new();
+
+    seed_published_scope(&mock);
+
+    mock.seed_assignment(assignment(
+        "chapter-1",
+        "worker-user",
+        role(RoleField::TRANSLATOR),
+    ));
+
+    let err = delete(
+        (&mock, &mock),
+        token("worker-user"),
+        "assignment-chapter-1-worker-user".into(),
+    )
+    .await
+    .err()
+    .unwrap();
+
+    assert_expected_variant(err, ExpectedVariant::Args);
+
+    assert_eq!(mock.snapshot().assignments.len(), 1);
+}

@@ -87,6 +87,7 @@ diesel::table! {
         f_chapter_next_index -> Int4,
         f_creator_id -> Text,
         f_last_active_at -> Timestamptz,
+        f_archived_at -> Nullable<Timestamptz>,
         f_created_at -> Timestamptz,
         f_updated_at -> Timestamptz,
     }
@@ -96,6 +97,7 @@ diesel::table! {
     t_comic_archive (f_id) {
         f_id -> Text,
         f_team_id -> Text,
+        f_source_comic_id -> Text,
         f_archived_payload -> Text,
         f_archiver_id -> Text,
         f_created_at -> Timestamptz,

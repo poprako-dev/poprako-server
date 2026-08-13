@@ -128,6 +128,10 @@ where
             .step_on(repo, context)
             .await?;
 
+            ComicArchiveComplex::ensure_snapshot_archivable(
+                &comic_archive_snapshot,
+            )?;
+
             let archived_at = OffsetDateTime::now_utc();
 
             let (comic_archive_entry, image_keys) =
@@ -138,7 +142,7 @@ where
                 )
                 .await?;
 
-            let archived_comic_id = comic_archive_entry.record.id.clone();
+            let archived_id = comic_archive_entry.record.id.clone();
 
             let (mut delete_ids, mut delete_payloads) =
                 (Vec::new(), Vec::new());
@@ -174,7 +178,7 @@ where
             .step_on(repo, context)
             .await?;
 
-            accept(ArchiveComicVal { archived_comic_id })
+            accept(ArchiveComicVal { archived_id })
         })
         .await?;
 

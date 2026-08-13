@@ -6,11 +6,11 @@
 //
 // Postconditions:
 //   - An independent archive workset remains active for final cleanup.
-//   - The archived comic subtree is absent from active tables and represented
-//     by one immutable JSON-text archive row.
+//   - The archived comic remains as a read-only management header while its
+//     active subtree is replaced by one immutable JSON-text archive row.
 //
 // Covers archive creation, perm rejection (non-admin member),
-// repeated-archive failure, retained month export, child-resource
+// repeated-archive failure, month export, child-resource
 // inaccessibility, audit fields, outbox delete records, active-data cleanup,
 // and stable workset comic counts.
 
@@ -41,6 +41,7 @@ interface ActiveImageKeys {
 
 interface ArchiveAuditRow {
     f_archiver_id: string;
+    f_source_comic_id: string;
     f_created_at: Date;
 }
 
@@ -106,13 +107,23 @@ export async function runIt11Module(ctx: RunCtx): Promise<void> {
     assert.ok(active_image_keys.cover_key, "archive fixture must retain a reserved cover key");
     assert.ok(active_image_keys.page_key, "archive fixture must retain a reserved page key");
 
+    // Archive requires every chapter to have completed publish. Set the
+    // completed state directly so this scenario can retain image keys and
+    // verify archive-side cleanup of the remaining sources.
+    await withDatabaseClient(async (client) => {
+        await client.query(
+            `UPDATE "t_chapter" SET "f_published_at" = NOW() WHERE "f_id" = ANY($1)`,
+            [[comic.chapter_id, chapter2.id]],
+        );
+    });
+
     // ---------- archive the comic ----------
 
     const archive_comic_val = await archiveComic(ctx.sadmin, comic.id);
 
-    assert.notEqual(archive_comic_val.archived_comic_id, comic.id);
+    assert.notEqual(archive_comic_val.archived_id, comic.id);
 
-    // ---------- export selected retained month ----------
+    // ---------- export selected archive month ----------
 
     const archive_month = new Date().toISOString().slice(0, 7);
     const export_response = await ctx.sadmin.get<
@@ -129,18 +140,27 @@ export async function runIt11Module(ctx: RunCtx): Promise<void> {
     assert.equal(exported_comics.length, 1);
     assert.equal(JSON.parse(exported_comics[0]!).source_comic_id, comic.id);
 
-    // ---------- active-comic and its chapters are inaccessible ----------
+    // ---------- archived comic header remains available; children are removed ----------
 
-    expectError(await ctx.sadmin.get<ErrorBody>(`/api/v1/comics/${comic.id}`), 422, 2);
+    const archived_comic = await ctx.sadmin.get<SuccessBody<{ is_archived: boolean }>>(
+        `/api/v1/comics/${comic.id}`,
+    );
+
+    assert.equal(expectSuccessData(archived_comic, 200).is_archived, true);
+
     expectError(await ctx.sadmin.get<ErrorBody>(`/api/v1/chapters/${comic.chapter_id}`), 422, 2);
     expectError(await ctx.sadmin.get<ErrorBody>(`/api/v1/chapters/${chapter2.id}`), 422, 2);
 
     // ---------- child resources are inaccessible ----------
 
-    expectError(
-        await ctx.sadmin.get<ErrorBody>(`/api/v1/comics/${comic.id}/chapters?offset=0&limit=20`),
-        422,
-        2,
+    assert.deepEqual(
+        expectSuccessData(
+            await ctx.sadmin.get<SuccessBody<unknown[]>>(
+                `/api/v1/comics/${comic.id}/chapters?offset=0&limit=20`,
+            ),
+            200,
+        ),
+        [],
     );
     expectError(
         await ctx.sadmin.get<ErrorBody>(`/api/v1/chapters/${comic.chapter_id}/pages?offset=0&limit=20`),
@@ -164,9 +184,11 @@ export async function runIt11Module(ctx: RunCtx): Promise<void> {
     // ---------- workset comic count unchanged (archive does not decrement) ----------
 
     const archived_workset = await getWorkset(ctx.sadmin, workset.id);
-    const active_comics = await listWorksetComics(ctx.sadmin, workset.id);
+    const default_comics = await listWorksetComics(ctx.sadmin, workset.id);
+    const active_comics = await listWorksetComics(ctx.sadmin, workset.id, "&status=active");
 
     assert.equal(archived_workset.comic_count, workset_before_archive.comic_count);
+    assert.ok(default_comics.some((comic_info) => comic_info.id === comic.id));
     assert.ok(!active_comics.some((active_comic) => active_comic.id === comic.id));
 
     // ---------- archive audit rows and outbox ----------
@@ -174,8 +196,8 @@ export async function runIt11Module(ctx: RunCtx): Promise<void> {
     const archive_rows = await withDatabaseClient(async (client) => {
         const [comic_rows, delete_rows] = await Promise.all([
             client.query<ArchiveAuditRow>(
-                `SELECT "f_archiver_id", "f_created_at" FROM "t_comic_archive" WHERE "f_id" = $1`,
-                [archive_comic_val.archived_comic_id],
+                `SELECT "f_archiver_id", "f_source_comic_id", "f_created_at" FROM "t_comic_archive" WHERE "f_id" = $1`,
+                [archive_comic_val.archived_id],
             ),
             client.query<{ object_key: string }>(
                 `
@@ -193,6 +215,7 @@ export async function runIt11Module(ctx: RunCtx): Promise<void> {
 
     assert.equal(archive_rows.comic_rows.rows.length, 1);
     assert.equal(archive_rows.comic_rows.rows[0]!.f_archiver_id, ctx.ids.defaultUserId);
+    assert.equal(archive_rows.comic_rows.rows[0]!.f_source_comic_id, comic.id);
     assert.ok(Number.isFinite(archive_rows.comic_rows.rows[0]!.f_created_at.getTime()));
 
     // Image delete keys in outbox cover both the reserved cover and all page images.

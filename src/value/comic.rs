@@ -6,6 +6,18 @@ use utoipa::ToSchema;
 
 use crate::value::incl::InclOpt;
 
+/// Lifecycle state used to filter comics in management lists.
+#[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[serde(rename_all = "snake_case")]
+pub enum ComicStatus {
+    /// A comic with active child resources.
+    Active,
+
+    /// A comic retained only as an immutable archive header.
+    Archived,
+}
+
 /// Incl opts for comic info queries.
 ///
 /// Each opt embeds additional related data into the returned

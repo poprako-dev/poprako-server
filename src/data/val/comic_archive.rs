@@ -8,12 +8,12 @@ use serde::Serialize;
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
-/// Value returned after an active comic has been archived atomically.
+/// Value returned after a comic has been archived atomically.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ArchiveComicVal {
     /// Identifier of the archived comic.
-    pub archived_comic_id: String,
+    pub archived_id: String,
 }
 
 /// JSON archive payloads grouped by their UTC `YYYY-MM` month slot.

@@ -1,4 +1,4 @@
-//! Calendar-month values used by comic archive export and retention.
+//! Calendar-month values used by comic archive export.
 
 #[cfg(test)]
 mod tests;
@@ -208,10 +208,10 @@ pub struct ComicArchiveMonth {
 // Keep archive month parsing and bounds calculation centralized in this model.
 
 impl ComicArchiveMonth {
-    /// Parses distinct retained month labels and resolves their UTC bounds.
+    /// Parses distinct archive month labels and resolves their UTC bounds.
     pub fn parse_retained(
         labels: Vec<String>,
-        now: OffsetDateTime,
+        _now: OffsetDateTime,
     ) -> BaseRest<Vec<Self>> {
         //
         if labels.is_empty() || labels.len() > MAX_EXPORT_MONTHS {
@@ -230,10 +230,6 @@ impl ComicArchiveMonth {
                 message: err_message,
             });
         }
-
-        let current = (now.year(), u8::from(now.month()));
-
-        let earliest = (now.year() - 1, u8::from(now.month()));
 
         let mut unique_labels = HashSet::with_capacity(labels.len());
 
@@ -259,29 +255,6 @@ impl ComicArchiveMonth {
             }
 
             let (year, month) = parse_label(&label)?;
-
-            if (year, month) < earliest || (year, month) > current {
-                //
-                let err_message = trl("error-comic-archive-month-not-retained");
-
-                tracing::warn!(
-                    err_variant = ?ExpectedVariant::Args,
-                    err_message = %err_message,
-                    label = %label,
-                    year,
-                    month,
-                    earliest_year = earliest.0,
-                    earliest_month = earliest.1,
-                    current_year = current.0,
-                    current_month = current.1,
-                    "expected error: comic archive month is not retained",
-                );
-
-                return Err(BaseError::Expected {
-                    variant: ExpectedVariant::Args,
-                    message: err_message,
-                });
-            }
 
             months.push(Self::new(label, year, month)?);
         }

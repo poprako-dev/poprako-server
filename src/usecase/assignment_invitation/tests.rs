@@ -8,7 +8,10 @@
 // join(join)(positive): invited user should merge roles into existing assignment.
 // join(join)(negative): mismatched user qid should be rejected without consuming invitation.
 
+mod create;
 mod extra;
+mod list;
+mod readonly;
 
 use super::*;
 
@@ -134,6 +137,7 @@ fn comic(id: &str, workset_id: &str) -> ComicInfo {
         team: None,
         creator: None,
         last_active_at: time,
+        archived_at: None,
         created_at: time,
         updated_at: time,
     }
@@ -268,6 +272,25 @@ fn seed_scope(mock: &Mock) {
     mock.seed_chapter(chapter("chapter-1", "comic-1"));
 }
 
+// Seed a chapter that is frozen because publishing has completed.
+fn seed_published_scope(mock: &Mock) {
+    //
+    mock.seed_team(team("team-1"));
+
+    mock.seed_workset(workset("workset-1", "team-1"));
+
+    mock.seed_comic(comic("comic-1", "workset-1"));
+
+    let mut chapter_info = chapter("chapter-1", "comic-1");
+
+    chapter_info.stages = chapter_info
+        .stages
+        .try_set_phase(Stage::Publish, StagePhase::Completed)
+        .unwrap();
+
+    mock.seed_chapter(chapter_info);
+}
+
 // Seed an admin assignment baseline used by invite/reject checks.
 fn seed_admin(mock: &Mock) {
     mock.seed_assignment(assignment(
@@ -299,111 +322,6 @@ async fn list_infos_reviewer_lists_chapter_invitations() {
     assert_eq!(val.len(), 1);
 
     assert_eq!(val[0].id, "invitation-1");
-}
-
-#[tokio::test]
-async fn list_infos_non_reviewer_is_rejected() {
-    //
-    let mock = Mock::new();
-
-    seed_scope(&mock);
-
-    mock.seed_assignment_invitation(invitation(
-        "invitation-1",
-        "target-qid",
-        role(RoleField::TRANSLATOR),
-    ));
-
-    let err = list_infos((&mock,), token("normal-user"), list_data())
-        .await
-        .err()
-        .unwrap();
-
-    assert_expected_variant(err, ExpectedVariant::Perm);
-}
-
-#[tokio::test]
-async fn create_reviewer_creates_pending_invitation() {
-    //
-    let mock = Mock::new();
-
-    seed_scope(&mock);
-
-    seed_admin(&mock);
-
-    mock.seed_user(
-        user("target-user", "target-qid", "Target"),
-        credential("target-user"),
-    );
-
-    let before = now();
-
-    let val = create(
-        (&mock, &mock, &mock),
-        token("admin-user"),
-        create_data("target-qid"),
-    )
-    .await
-    .unwrap();
-
-    let snapshot = mock.snapshot();
-
-    assert_eq!(snapshot.assignment_invitations.len(), 1);
-
-    assert_eq!(snapshot.assignment_invitations[0].id, val.id);
-
-    assert_eq!(snapshot.assignment_invitations[0].code, val.code);
-
-    assert_eq!(snapshot.assignment_invitations[0].chapter_id, "chapter-1");
-
-    assert_eq!(snapshot.assignment_invitations[0].inviter_id, "admin-user");
-
-    assert_eq!(snapshot.assignment_invitations[0].invitee_qid, "target-qid");
-
-    assert!(snapshot.assignment_invitations[0].is_pending);
-
-    assert_eq!(snapshot.prom_records.len(), 1);
-
-    assert_eq!(
-        snapshot.prom_records[0].payload(),
-        TaskPayload::Invitation(InvitationPayload::Assignment {
-            invitation_id: val.id,
-        })
-    );
-
-    assert!(snapshot.prom_records[0].visible_at() >= before + EXPIRY_DELAY);
-
-    assert!(snapshot.prom_records[0].visible_at() <= now() + EXPIRY_DELAY);
-}
-
-#[tokio::test]
-async fn create_rejects_published_chapter() {
-    //
-    let mock = Mock::new();
-
-    seed_scope(&mock);
-
-    seed_admin(&mock);
-
-    {
-        let mut state = mock.state.lock().unwrap();
-
-        state.chapters[0].stages = state.chapters[0]
-            .stages
-            .try_set_phase(Stage::Publish, StagePhase::Completed)
-            .unwrap();
-    }
-
-    let result = create(
-        (&mock, &mock, &mock),
-        token("admin-user"),
-        create_data("target-qid"),
-    )
-    .await;
-
-    assert!(matches!(result, Err(BaseError::Expected { .. })));
-
-    assert!(mock.snapshot().assignment_invitations.is_empty());
 }
 
 #[tokio::test]

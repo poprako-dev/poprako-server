@@ -36,6 +36,7 @@ use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
+use crate::part::repo::comic_archive::ComicArchiveRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::{
     CreateAssignment, DeleteAssignments,
@@ -51,6 +52,7 @@ use crate::part::repo::oper::comic::{
     GetComicInfoExcluded, MarkComicCoverUploaded, TouchComicLastActive,
     UpdateComic, UpdateComicChapterCount,
 };
+use crate::part::repo::oper::comic_archive::DeleteComicArchives;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::page::{
     DeletePages, ListFirstPageInfos, ListPageInfos,
@@ -290,6 +292,15 @@ where
     )
     .await?;
 
+    let comic_info = GetComicInfo {
+        id: &instr.id,
+        incls: &[],
+    }
+    .run_on(repo)
+    .await?;
+
+    ComicComplex::ensure_comic_writable(&comic_info)?;
+
     let comic_info_update = ComicRepl {
         id: instr.id,
         title: instr.title,
@@ -337,6 +348,8 @@ where
     }
     .run_on(repo)
     .await?;
+
+    ComicComplex::ensure_comic_writable(&comic_info)?;
 
     if comic_info.cover_version != Some(instr.image_version) {
         //
@@ -411,6 +424,8 @@ where
         .step_on(repo, context)
         .await?;
 
+        ComicComplex::ensure_comic_writable(&locked_comic_info)?;
+
         if locked_comic_info.cover_version != Some(instr.image_version)
             || locked_comic_info.cover_key.as_deref() != Some(&cover_key)
         {
@@ -460,6 +475,7 @@ where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     R: ComicRepo<C>
+        + ComicArchiveRepo<C>
         + WorksetRepo<C>
         + MemberRepo<C>
         + TeamRepo<C>
@@ -494,6 +510,7 @@ where
                     for<'a, 'b> GetComicInfoExcluded<'a, 'b>,
                     for<'a> ListChapterInfosExcluded<'a>,
                     for<'a> DeleteComic<'a>,
+                    for<'a> DeleteComicArchives<'a>,
                     for<'a> UpdateWorksetComicCount<'a>,
                     for<'a, 'b> GetChapterInfoExcluded<'a, 'b>,
                     for<'a> ListPageInfos<'a>,

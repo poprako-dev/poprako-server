@@ -12,7 +12,7 @@ use crate::model::read::spec::comic::ComicListSpec;
 use crate::part_impl::repo::mock_impl::{MockState, expected, now};
 use crate::result::{BaseRest, accept};
 use crate::value::chapter::StageMask;
-use crate::value::comic::ComicInclOpt;
+use crate::value::comic::{ComicInclOpt, ComicStatus};
 use crate::value::incl::expand_incl_opts;
 use crate::value::index::user_index_to_stored_index;
 
@@ -177,6 +177,22 @@ fn comic_matches_stages(
     }
 }
 
+// Check whether a comic matches its requested lifecycle status.
+fn comic_matches_status(
+    comic_info: &ComicInfo,
+    status: Option<ComicStatus>,
+) -> bool {
+    //
+    match status {
+        //
+        Some(ComicStatus::Active) => comic_info.archived_at.is_none(),
+
+        Some(ComicStatus::Archived) => comic_info.archived_at.is_some(),
+
+        None => true,
+    }
+}
+
 // Validate optimistic fields and toggle comic cover uploaded flag.
 fn mark_comic_cover_uploaded(
     state: &mut MockState,
@@ -243,6 +259,7 @@ fn list_comic_infos(state: &MockState, spec: &ComicListSpec) -> Vec<ComicInfo> {
         .filter(|comic_info| {
             comic_matches_stages(state, comic_info, spec.stages)
         })
+        .filter(|comic_info| comic_matches_status(comic_info, spec.status))
         .cloned()
         .collect::<Vec<_>>();
 

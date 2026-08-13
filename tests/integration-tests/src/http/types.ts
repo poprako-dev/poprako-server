@@ -48,6 +48,8 @@ export interface ComicInfoView {
     team: TeamInfoView | null;
     creator: UserInfoView | null;
     last_active_at: number;
+    is_archived: boolean;
+    archived_at?: number;
     created_at: number;
     updated_at: number;
 }
@@ -213,7 +215,7 @@ export interface CreateComicVal extends IdVal {
 }
 
 export interface ArchiveComicVal {
-    archived_comic_id: string;
+    archived_id: string;
 }
 
 export type ImageExtension = "jpg" | "jpeg" | "png" | "gif" | "webp" | "svg" | "avif" | "bmp" | "tif" | "tiff";

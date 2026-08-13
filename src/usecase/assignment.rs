@@ -415,7 +415,7 @@ pub async fn delete<N, C, R>(
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
-    R: AssignmentRepo<C> + Send + Sync,
+    R: AssignmentRepo<C> + ChapterRepo<C> + Send + Sync,
 {
     let assignment_info = GetAssignmentInfo {
         id: &id,
@@ -435,6 +435,14 @@ where
 
     nucl.coord(async move |context| {
         //
+        let chapter_info = GetChapterInfoExcluded {
+            id: &assignment_info.chapter_id,
+            incls: &[],
+        }
+        .step_on(repo, context)
+        .await?;
+
+        ChapterComplex::ensure_chapter_writable(&chapter_info)?;
 
         DeleteAssignments::Id { id: &id }
             .step_on(repo, context)

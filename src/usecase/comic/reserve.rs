@@ -5,7 +5,7 @@ use poprako_orchestra_extra::prom::oper::DeferBatch;
 use poprako_orchestra_extra::prom::task::Task;
 use tracing::instrument;
 
-use crate::complex::comic::ComicPermComplex;
+use crate::complex::comic::{ComicComplex, ComicPermComplex};
 use crate::complex::image::ImageComplex;
 use crate::data::instr::comic::ReserveComicCoverInstr;
 use crate::data::val::comic::ReserveComicCoverVal;
@@ -16,7 +16,7 @@ use crate::part::prom::Prom;
 use crate::part::prom::payload::{TaskPayload, image};
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
-use crate::part::repo::oper::comic::ReserveComicCover;
+use crate::part::repo::oper::comic::{GetComicInfoExcluded, ReserveComicCover};
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::team::ResolveTeamId;
 use crate::part::repo::team::TeamRepo;
@@ -59,6 +59,15 @@ where
     let (object_key, cover_version, upload_required) = nucl
         .coord(async move |context| {
             //
+            let comic_info = GetComicInfoExcluded {
+                id: &id,
+                incls: &[],
+            }
+            .step_on(repo, context)
+            .await?;
+
+            ComicComplex::ensure_comic_writable(&comic_info)?;
+
             let cover_reservation = ReserveComicCover {
                 id: &id,
                 image_hash: &transaction_image_hash,

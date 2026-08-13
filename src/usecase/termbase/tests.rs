@@ -9,8 +9,6 @@
 
 use super::*;
 
-use crate::part::repo::oper::termbase::ListTermbaseInfosExcluded;
-
 use time::OffsetDateTime;
 
 use crate::model::read::proj::comic::ComicInfo;
@@ -18,6 +16,7 @@ use crate::model::read::proj::member::MemberInfo;
 use crate::model::read::proj::term::TermInfo;
 use crate::model::read::proj::termbase::TermbaseInfo;
 use crate::model::read::proj::workset::WorksetInfo;
+use crate::part::repo::oper::termbase::ListTermbaseInfosExcluded;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
@@ -85,6 +84,7 @@ fn comic(id: &str, workset_id: &str) -> ComicInfo {
         team: None,
         creator: None,
         last_active_at: time,
+        archived_at: None,
         created_at: time,
         updated_at: time,
     }

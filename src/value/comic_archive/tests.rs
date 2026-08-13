@@ -19,11 +19,12 @@ fn parse_retained_accepts_distinct_selected_slots() {
 }
 
 #[test]
-fn parse_retained_rejects_expired_slots() {
+fn parse_retained_accepts_historical_slots() {
     //
     let now = OffsetDateTime::from_unix_timestamp(1_784_678_400).unwrap();
 
-    let result = ComicArchiveMonth::parse_retained(vec!["2025-06".into()], now);
+    let months =
+        ComicArchiveMonth::parse_retained(vec!["2025-06".into()], now).unwrap();
 
-    assert!(matches!(result, Err(BaseError::Expected { .. })));
+    assert_eq!(months[0].label, "2025-06");
 }
