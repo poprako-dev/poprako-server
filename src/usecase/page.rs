@@ -1,5 +1,14 @@
 //! Page use cases — image reservation, listing, upload confirmation, and deletion.
 
+// Page reservation workflow and related orchestration.
+mod reserve;
+// Page deletion use case.
+mod delete;
+
+#[cfg(test)]
+// Unit tests for page metadata and upload reservation flows.
+mod tests;
+
 use std::time::Duration;
 
 use poprako_orchestra::{Nucl, OperRun as _, OperStep as _, run_proxy};
@@ -42,15 +51,6 @@ use crate::util::next_snowflake_id;
 
 pub use delete::delete;
 pub use reserve::reserve_chapter_pages;
-
-// Page reservation workflow and related orchestration.
-mod reserve;
-// Page deletion use case.
-mod delete;
-
-#[cfg(test)]
-// Unit tests for page metadata and upload reservation flows.
-mod tests;
 
 /// Reserves a replacement image upload slot for one page.
 #[instrument(level = "info", skip(nucl, repo, prom, image_pool))]

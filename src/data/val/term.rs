@@ -3,7 +3,6 @@
 //! Request and response DTOs for terminology-entry use cases.
 
 use serde::Serialize;
-
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 

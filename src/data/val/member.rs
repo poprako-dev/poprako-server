@@ -3,7 +3,6 @@
 //! Data transfer objects for member use cases.
 
 use serde::Serialize;
-
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 

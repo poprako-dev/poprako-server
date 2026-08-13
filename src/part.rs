@@ -11,6 +11,7 @@
 //! |--------|------|
 //! | [`effect`] | Side-effect dispatch (events emitted by use cases) |
 //! | [`image`]  | Object-storage signed URL resolution |
+//! | [`nucl`]   | Transaction-coordinator boundary error conversion |
 //! | [`prom`]   | Deferred actions executed after transaction commit |
 //! | [`repo`]   | Persistent storage with transactional support |
 //! | [`auth`]   | Authentication token signing |
@@ -23,6 +24,8 @@ pub mod auth;
 pub mod effect;
 /// Object-storage image port — signed URL generation.
 pub mod image;
+/// Transaction-coordinator boundary error conversion.
+pub mod nucl;
 /// Deferred-action port — actions executed after transaction commit.
 pub mod prom;
 /// Repository port — persistent storage abstractions with transactional support.

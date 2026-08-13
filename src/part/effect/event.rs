@@ -1,14 +1,14 @@
 //! Domain event types emitted during use case execution.
 
-use crate::part::effect::event::chapter::{
-    ChapterPublishedEvent, ChapterWorkflowCompletedEvent,
-};
-use crate::part::effect::event::user::{UserActiveEvent, UserSignedUpEvent};
-
 /// Chapter-related event payload types.
 pub mod chapter;
 /// User-related event payload types.
 pub mod user;
+
+use crate::part::effect::event::chapter::{
+    ChapterPublishedEvent, ChapterWorkflowCompletedEvent,
+};
+use crate::part::effect::event::user::{UserActiveEvent, UserSignedUpEvent};
 
 /// Domain events produced by use cases and dispatched through [`EffectDevelop`].
 ///

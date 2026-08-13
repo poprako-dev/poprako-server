@@ -94,7 +94,7 @@ pub struct UpdateChapterStage<'a> {
     pub update: &'a ChapterStageRepl,
 }
 
-/// Atomically starts a two-step chapter stage when it is still pending.
+/// Atomically advances a two-step chapter stage when it is still pending.
 #[derive(Oper)]
 #[oper(output = bool)]
 pub struct StartChapterStage<'a> {

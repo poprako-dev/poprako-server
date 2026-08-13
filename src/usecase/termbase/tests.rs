@@ -16,6 +16,7 @@ use crate::model::read::proj::member::MemberInfo;
 use crate::model::read::proj::term::TermInfo;
 use crate::model::read::proj::termbase::TermbaseInfo;
 use crate::model::read::proj::workset::WorksetInfo;
+use crate::part::repo::oper::termbase::ListTermbaseInfosExcluded;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;

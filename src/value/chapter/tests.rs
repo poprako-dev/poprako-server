@@ -15,6 +15,8 @@
 
 use super::*;
 
+use crate::value::chapter::stage::is_valid_stage_phase;
+
 #[test]
 fn validates_one_shot_phases() {
     //

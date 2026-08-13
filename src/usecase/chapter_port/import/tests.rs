@@ -2,11 +2,10 @@
 // import(import)(negative): page-count mismatch rejects import and leaves units and counters unchanged.
 
 use super::*;
-use crate::data::instr::chapter_port::ImportChapterTranslationInstr;
-use crate::value::image::{ImageExt, ImageHash};
 
 use time::OffsetDateTime;
 
+use crate::data::instr::chapter_port::ImportChapterTranslationInstr;
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::comic::ComicInfo;
@@ -20,6 +19,7 @@ use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
 use crate::value::chapter::StageMask;
 use crate::value::chapter_port::TranslationFormat;
+use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
 // LabelPlus fixture content used for chapter import integration tests.

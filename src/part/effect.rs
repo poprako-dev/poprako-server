@@ -11,14 +11,14 @@
 //! 2. **[`EffectDevelop`]** — the port implementation that receives and
 //!    processes the event iterator.
 
+/// Domain event types.
+pub mod event;
+
 use std::future::Future;
 use std::iter::Once;
 use std::vec::IntoIter;
 
 use crate::part::effect::event::Event;
-
-/// Domain event types.
-pub mod event;
 
 /// Trait for values that can be dispatched through [`EffectDevelop`].
 ///

@@ -1,5 +1,9 @@
 //! Terminology-entry use cases.
 
+#[cfg(test)]
+// Unit tests for term lifecycle, ownership, and conflict guards.
+mod tests;
+
 use poprako_orchestra::{
     Nucl, OperRun as _, OperStep as _, run_proxy, step_proxy,
 };
@@ -28,10 +32,6 @@ use crate::part::repo::team::TeamRepo;
 use crate::part::repo::term::TermRepo;
 use crate::part::repo::termbase::TermbaseRepo;
 use crate::result::{BaseError, BaseRest, accept};
-
-#[cfg(test)]
-// Unit tests for term lifecycle, ownership, and conflict guards.
-mod tests;
 
 /// Creates a terminology entry inside a terminology base.
 #[instrument(level = "info", skip(nucl, repo))]

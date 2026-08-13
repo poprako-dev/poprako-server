@@ -1,5 +1,9 @@
 //! Cloudflare R2-backed image URL signer.
 
+#[cfg(test)]
+// Executes lightweight unit tests for URL generation and upload content handling.
+mod tests;
+
 use std::collections::BTreeMap;
 use std::time::Duration;
 
@@ -19,10 +23,6 @@ use crate::part::image::{
     ImageManager, ImagePool, ImageUploadSlot, ImageUploadSpec,
 };
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-
-#[cfg(test)]
-// Executes lightweight unit tests for URL generation and upload content handling.
-mod tests;
 
 // Expiration duration for presigned upload URLs (10 minutes).
 const PUT_SIGNED_EXPIRATION: Duration = Duration::from_secs(600);

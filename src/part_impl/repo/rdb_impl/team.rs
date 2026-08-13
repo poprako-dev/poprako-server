@@ -1,16 +1,5 @@
 //! RDB-backed team repository — free query functions and thin trait impls.
 
-use poprako_orchestra::Run;
-use tracing::instrument;
-
-use crate::model::read::proj::team::TeamInfo;
-use crate::part::repo::oper::team::{CreateTeam, GetTeamInfo, ListTeamInfos};
-use crate::part_impl::repo::HybRepo;
-use crate::part_impl::repo::rdb_impl::team::helpers::{
-    create, get_info_by_id, list_infos,
-};
-use crate::result::BaseError;
-
 // RDB team-ownership projections.
 mod resolve;
 // Team free-function helpers.
@@ -21,6 +10,17 @@ mod impls;
 /// Team RDB integration tests.
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;
+
+use poprako_orchestra::Run;
+use tracing::instrument;
+
+use crate::model::read::proj::team::TeamInfo;
+use crate::part::repo::oper::team::{CreateTeam, GetTeamInfo, ListTeamInfos};
+use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::rdb_impl::team::helpers::{
+    create, get_info_by_id, list_infos,
+};
+use crate::result::BaseError;
 
 impl<'a> Run<CreateTeam<'a>> for HybRepo {
     // Map team creation orchestration failures to the shared base error type.

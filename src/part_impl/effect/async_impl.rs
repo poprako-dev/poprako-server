@@ -1,5 +1,18 @@
 //! Async background dispatcher for side-effect events.
 
+// Chapter event handlers.
+mod chapter;
+// Event dispatch logic.
+mod dispatch;
+// Background event handler runner.
+mod handler;
+// User event handlers.
+mod user;
+
+#[cfg(test)]
+// Mock and integration tests for async dispatcher behavior.
+mod tests;
+
 use std::sync::Arc;
 
 use tokio::sync::mpsc::Sender;
@@ -15,19 +28,6 @@ use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::system_mail::SystemMailRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
-
-// Chapter event handlers.
-mod chapter;
-// Event dispatch logic.
-mod dispatch;
-// Background event handler runner.
-mod handler;
-// User event handlers.
-mod user;
-
-#[cfg(test)]
-// Mock and integration tests for async dispatcher behavior.
-mod tests;
 
 /// Async side-effect dispatcher backed by a bounded channel.
 ///
@@ -46,7 +46,7 @@ pub struct AsyncEffectDevelop {
 }
 
 impl AsyncEffectDevelop {
-    /// Creates a dispatcher and starts its background task.
+    /// Creates a dispatcher and launches its background task.
     pub fn new<C, R>(repo: Arc<R>, buffer_size: usize) -> Self
     where
         C: Send + 'static,

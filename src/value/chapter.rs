@@ -1,16 +1,5 @@
 //! Chapter workflow stages, phases, and transition rules.
 
-use serde::Deserialize;
-
-use crate::value::incl::InclOpt;
-#[cfg(feature = "swagger")]
-use utoipa::ToSchema;
-
-pub use mask::StageMask;
-pub use stage::{Stage, StageOper, StagePhase, try_modify_stage};
-#[allow(unused_imports)]
-pub use stage::{StagePhaseField, is_valid_stage_phase};
-
 // Stage-phase bitmask helpers.
 mod mask;
 // Workflow stage, phase, and transition rules.
@@ -19,6 +8,15 @@ mod stage;
 // Keep chapter-specific tests colocated with the value-level invariants they verify.
 #[cfg(test)]
 mod tests;
+
+use serde::Deserialize;
+#[cfg(feature = "swagger")]
+use utoipa::ToSchema;
+
+use crate::value::incl::InclOpt;
+
+pub use mask::StageMask;
+pub use stage::{Stage, StageOper, StagePhase, try_modify_stage};
 
 /// Incl opts for chapter info queries.
 ///

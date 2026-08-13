@@ -1,5 +1,9 @@
 //! RDB-backed comment repository.
 
+/// Comment RDB integration tests.
+#[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
+pub mod tests;
+
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use poprako_orchestra::{Run, Step};
@@ -18,10 +22,6 @@ use crate::part_impl::repo::rdb_impl::schema::t_comment::dsl::*;
 use crate::result::{BaseError, BaseRest, accept};
 use crate::shared::result::diesel;
 use crate::shared::{RdbConn, RdbContext};
-
-/// Comment RDB integration tests.
-#[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
-pub mod tests;
 
 // Query comment infos matching the given list spec, with optional includes.
 #[instrument(level = "info", skip_all)]

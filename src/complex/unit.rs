@@ -1,5 +1,11 @@
 //! Domain rules and perm checks for page Units.
 
+// perm gates for Unit reads and edit fields.
+mod perm;
+
+#[cfg(test)]
+mod tests;
+
 use std::collections::HashSet;
 
 use poprako_util::i18n::trl;
@@ -11,12 +17,6 @@ use crate::value::chapter::Stage;
 
 pub use perm::UnitPermComplex;
 
-// perm gates for Unit reads and edit fields.
-mod perm;
-
-#[cfg(test)]
-mod tests;
-
 /// Pure Unit mutation and linked-list rules.
 pub struct UnitComplex;
 
@@ -26,8 +26,8 @@ impl UnitComplex {
         next_snowflake_id()
     }
 
-    /// Returns workflow stages started by submitted Unit content.
-    pub fn submitted_stage_starts(edits: &[UnitEdit]) -> Vec<Stage> {
+    /// Returns workflow stages triggered by submitted Unit content.
+    pub fn submitted_stage_advances(edits: &[UnitEdit]) -> Vec<Stage> {
         //
         let translated = edits.iter().any(|edit| match edit {
             //
@@ -94,8 +94,16 @@ impl UnitComplex {
             });
         }
 
-        stable_prior(&mut edits, |edit| {
+        // Reorder edits so Delete precedes Create and Create precedes Save.
+        // This keeps every new unit ahead of its Saves: compression never
+        // merges into an earlier Create, and applying the batch never targets
+        // a unit before it is created.
+        let delete_count = stable_prior(&mut edits, |edit| {
             matches!(edit, UnitEdit::Delete { .. })
+        });
+
+        stable_prior(&mut edits[delete_count..], |edit| {
+            matches!(edit, UnitEdit::Create { .. })
         });
 
         Self::compress_edits(&mut edits);

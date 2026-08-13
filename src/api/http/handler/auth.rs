@@ -8,9 +8,10 @@ use cookie::{Cookie, SameSite};
 use tracing::instrument;
 
 use crate::api::http::auth::AUTH_COOKIE_NAME;
-#[allow(unused_imports)]
+#[cfg(feature = "swagger")]
+use crate::api::http::result::HttpBody;
 use crate::api::http::result::{
-    Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
+    Accept as _, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
 use crate::data::instr::auth::{LoginAuthInstr, RegisterAuthInstr};

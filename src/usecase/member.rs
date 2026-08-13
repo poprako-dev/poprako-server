@@ -1,5 +1,9 @@
 //! Member use cases: create, join, list, role update, and deletion.
 
+#[cfg(test)]
+// Unit tests for team membership and invitation boundary conditions.
+mod tests;
+
 use poprako_orchestra::{Nucl, OperRun as _, OperStep as _, run_proxy};
 use tracing::instrument;
 
@@ -30,10 +34,6 @@ use crate::part::repo::oper::user::GetUserInfoExcluded;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-
-#[cfg(test)]
-// Unit tests for team membership and invitation boundary conditions.
-mod tests;
 
 /// Creates one member under a team.
 ///

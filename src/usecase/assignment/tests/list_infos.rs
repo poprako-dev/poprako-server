@@ -7,8 +7,8 @@
 // list_infos(list_infos)(negative): invalid owner combination should be rejected.
 
 use super::*;
-use crate::data::instr::assignment::ListAssignmentInfosInstr;
 
+use crate::data::instr::assignment::ListAssignmentInfosInstr;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
 use crate::value::assignment::AssignmentInclOpt;

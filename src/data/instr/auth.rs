@@ -3,7 +3,6 @@
 //! Data transfer objects for authentication use cases.
 
 use serde::Deserialize;
-
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 

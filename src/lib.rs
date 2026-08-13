@@ -3,25 +3,6 @@
 //! Crate root: explicit public re-exports and internal module organization for
 //! the PopRaKo application core.
 
-#[cfg(feature = "swagger")]
-pub use api::http::openapi::ApiDoc;
-pub use api::http::server::serve;
-pub use api::http::state::AppHarn;
-#[cfg(feature = "benchmark")]
-#[doc(hidden)]
-pub use complex::user::UserComplex;
-pub use config::AppConfig;
-pub use extra::sched::Sched;
-pub use harn::Harn;
-pub use log::init_log;
-pub use part_impl::auth::jwt_impl::JwtAuth;
-pub use part_impl::effect::async_impl::AsyncEffectDevelop;
-pub use part_impl::image::r2_impl::R2ImagePool;
-pub use part_impl::nucl::rdb_impl::RdbNucl;
-pub use part_impl::prom::rdb_impl::RdbProm;
-pub use part_impl::repo::HybRepo;
-pub use shared::RdbCore;
-
 // HTTP API layer (handlers, middleware, server, router, OpenAPI).
 mod api;
 // Core business-logic helpers that coordinate domain rules across models.
@@ -62,3 +43,22 @@ mod value;
 #[cfg(feature = "benchmark")]
 #[doc(hidden)]
 pub mod benchmark;
+
+#[cfg(feature = "swagger")]
+pub use api::http::openapi::ApiDoc;
+pub use api::http::server::serve;
+pub use api::http::state::AppHarn;
+#[cfg(feature = "benchmark")]
+#[doc(hidden)]
+pub use complex::user::UserComplex;
+pub use config::AppConfig;
+pub use extra::sched::Sched;
+pub use harn::Harn;
+pub use log::init_log;
+pub use part_impl::auth::jwt_impl::JwtAuth;
+pub use part_impl::effect::async_impl::AsyncEffectDevelop;
+pub use part_impl::image::r2_impl::R2ImagePool;
+pub use part_impl::nucl::rdb_impl::RdbNucl;
+pub use part_impl::prom::rdb_impl::RdbProm;
+pub use part_impl::repo::HybRepo;
+pub use shared::RdbCore;

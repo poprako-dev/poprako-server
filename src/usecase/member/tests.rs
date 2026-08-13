@@ -1,3 +1,8 @@
+// Member join flows and invitation conversion behavior.
+mod join_team;
+// Member role updates and deletion scenarios.
+mod mutate;
+
 // create(create)(positive): team admin should create a member with target user nickname.
 // create(create)(negative): non-admin should be rejected without creating a member.
 // create(create)(negative): duplicate user and team membership should be rejected.
@@ -19,12 +24,12 @@
 // join_team(join_team)(negative): duplicate membership should be rejected without consuming invitation.
 
 use super::*;
-use crate::data::instr::member::{
-    CreateMemberInstr, ListMemberInfosInstr, UpdateMemberRolesInstr,
-};
 
 use poprako_util::time::ToUnixMilli as _;
 
+use crate::data::instr::member::{
+    CreateMemberInstr, ListMemberInfosInstr, UpdateMemberRolesInstr,
+};
 use crate::model::read::proj::member::MemberInfo;
 use crate::model::read::proj::team::TeamInfo;
 use crate::model::read::proj::user::{UserCredential, UserInfo};
@@ -34,11 +39,6 @@ use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::{self, assert_expected_variant};
 use crate::value::role::{RoleField, RoleMask};
-
-// Member join flows and invitation conversion behavior.
-mod join_team;
-// Member role updates and deletion scenarios.
-mod mutate;
 
 // Build user-token fixture for member scenario authorization.
 fn token(user_id: &str) -> UserToken {

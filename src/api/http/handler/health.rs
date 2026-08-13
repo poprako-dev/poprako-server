@@ -1,5 +1,9 @@
 //! Health-check handler.
 
+#[cfg(test)]
+// Health-check test fixtures stay isolated to this module.
+mod tests;
+
 use std::net::SocketAddr;
 
 use axum::Json;
@@ -10,10 +14,6 @@ use tracing::instrument;
 
 use crate::api::http::shared::prometheus::render_detailed_metrics;
 use crate::api::http::shared::{MetricTotal, read_total};
-
-#[cfg(test)]
-// Health-check test fixtures stay isolated to this module.
-mod tests;
 
 /// `GET /api/health` — returns recent HTTP metrics to loopback callers.
 ///

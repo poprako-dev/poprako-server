@@ -1,7 +1,6 @@
 //! Value types for announcement aggregates.
 
 use serde::Deserialize;
-
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 

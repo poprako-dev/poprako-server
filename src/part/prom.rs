@@ -1,13 +1,13 @@
 //! Deferred-action producer port.
 
+/// Deferred-action payloads.
+pub mod payload;
+
 use poprako_orchestra::Step;
 use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 
 use crate::part::prom::payload::TaskPayload;
 use crate::result::BaseError;
-
-/// Deferred-action payloads.
-pub mod payload;
 
 /// Prom operations within a caller-coordinated transaction.
 ///

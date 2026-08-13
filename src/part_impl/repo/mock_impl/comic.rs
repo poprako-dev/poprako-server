@@ -1,3 +1,8 @@
+// Run orchestration for comic opers.
+mod run;
+// Step orchestration for comic opers.
+mod step;
+
 use crate::complex::comic::ComicComplex;
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::proj::team::TeamInfo;
@@ -10,11 +15,6 @@ use crate::value::chapter::StageMask;
 use crate::value::comic::{ComicInclOpt, ComicStatus};
 use crate::value::incl::expand_incl_opts;
 use crate::value::index::user_index_to_stored_index;
-
-// Run orchestration for comic opers.
-mod run;
-// Step orchestration for comic opers.
-mod step;
 
 // Find and clone a workset from mock storage by id.
 fn find_workset(state: &MockState, workset_id: &str) -> Option<WorksetInfo> {

@@ -40,8 +40,8 @@ The application error surface is
 
 ## Boundaries
 
-- `Nucl::coord` converts backend and step errors through the existing
-  `From<NuclError<...>> for BaseError` implementation in `src/result.rs`.
+- `Nucl::coord` converts backend and step errors through the
+  `From<NuclError<...>> for BaseError` implementation in `src/part/nucl.rs`.
 - Diesel and pool failures use `crate::shared::result` helpers. Query code
   should use `.optional()` when absence has local business meaning, then map
   `None` to the appropriate translated expected error.

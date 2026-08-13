@@ -1,5 +1,8 @@
 //! RDB-backed Unit operations.
 
+#[cfg(test)]
+mod tests;
+
 use std::collections::HashSet;
 
 use diesel::prelude::*;
@@ -19,9 +22,6 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::RdbConn;
 use crate::shared::result::diesel;
 use crate::util::Patch;
-
-#[cfg(test)]
-mod tests;
 
 /// Lists visible Units in verified linked-list order.
 pub async fn list_infos(

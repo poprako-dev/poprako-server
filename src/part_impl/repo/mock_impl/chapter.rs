@@ -1,5 +1,8 @@
 //! In-memory chapter repository helpers.
 
+// Internal organization of the `orchestra` module.
+mod orchestra;
+
 use std::cmp::Reverse;
 
 use crate::model::read::proj::chapter::ChapterInfo;
@@ -12,9 +15,6 @@ use crate::part_impl::repo::mock_impl::{MockState, expected, now};
 use crate::result::{BaseRest, accept};
 use crate::value::chapter::{ChapterInclOpt, StageMask};
 use crate::value::incl::expand_incl_opts;
-
-// Internal organization of the `orchestra` module.
-mod orchestra;
 
 /// Looks up a chapter by id from the mock state, applying include options to
 /// resolve relations.

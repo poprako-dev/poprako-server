@@ -1,14 +1,11 @@
 //! View DTOs for the member-invitation domain.
 
+use futures::future::OptionFuture;
 use serde::Serialize;
-
-use crate::data::view::user::UserInfoView;
-
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
-use futures::future::OptionFuture;
-
+use crate::data::view::user::UserInfoView;
 use crate::model::read::proj::member_invitation::MemberInvitationInfo;
 use crate::part::image::ImagePool;
 use crate::result::{BaseRest, accept};

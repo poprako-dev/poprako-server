@@ -4,7 +4,6 @@
 //! and presentation-ready invitation values.
 
 use serde::Deserialize;
-
 #[cfg(feature = "swagger")]
 use utoipa::{IntoParams, ToSchema};
 

@@ -1,9 +1,6 @@
 //! View DTOs for the page domain.
 
 use serde::Serialize;
-
-use crate::value::image::{ImageExt, ImageHash};
-
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
@@ -12,6 +9,7 @@ use poprako_util::time::ToUnixMilli as _;
 use crate::model::read::proj::page::PageInfo;
 use crate::part::image::ImagePool;
 use crate::result::{BaseRest, accept};
+use crate::value::image::{ImageExt, ImageHash};
 
 /// Presentation-ready page information.
 #[derive(Debug, Serialize)]

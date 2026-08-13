@@ -3,13 +3,12 @@
 //! Comic-list-specific DTOs — payload for the comic listing endpoint.
 
 use serde::Serialize;
+#[cfg(feature = "swagger")]
+use utoipa::ToSchema;
 
 use crate::data::view::assignment::AssignmentInfoView;
 use crate::data::view::chapter::ChapterInfoView;
 use crate::data::view::comic::ComicInfoView;
-
-#[cfg(feature = "swagger")]
-use utoipa::ToSchema;
 
 /// Presentation-ready comic list and optional pinned chapters.
 ///

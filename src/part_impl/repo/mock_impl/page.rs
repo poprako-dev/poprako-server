@@ -1,12 +1,12 @@
 //! Mock implementation of `PageRepo`.
 
+// Internal organization of the `orchestra` module.
+mod orchestra;
+
 use crate::model::read::proj::page::PageInfo;
 use crate::model::write::page::PageEntry;
 use crate::part_impl::repo::mock_impl::{MockState, expected, now};
 use crate::result::BaseRest;
-
-// Internal organization of the `orchestra` module.
-mod orchestra;
 
 // Internal implementation of `list_infos`.
 // Look up page info by primary key; returns a business error on miss.

@@ -1,5 +1,9 @@
 //! Announcement use cases — list and create team announcements.
 
+#[cfg(test)]
+// Unit tests for announcement usecase behavior.
+mod tests;
+
 use poprako_orchestra::{Nucl, OperRun as _, OperStep as _, run_proxy};
 use tracing::instrument;
 
@@ -22,10 +26,6 @@ use crate::part::repo::oper::announcement::{
 };
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::result::{BaseError, BaseRest, accept};
-
-#[cfg(test)]
-// Unit tests for announcement usecase behavior.
-mod tests;
 
 /// Lists announcements under a team.
 #[instrument(level = "info", skip(repo, image_pool))]

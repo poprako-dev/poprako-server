@@ -1,5 +1,9 @@
 //! Team-scoped online-user lease use cases.
 
+#[cfg(test)]
+// Online-user use-case tests cover membership gates and team isolation.
+mod tests;
+
 use poprako_orchestra::{OperRun as _, run_proxy};
 use tracing::instrument;
 
@@ -10,10 +14,6 @@ use crate::part::repo::online_user::OnlineUserRepo;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::online_user::{ListOnlineUserIds, MarkOnlineUser};
 use crate::result::{BaseRest, accept};
-
-#[cfg(test)]
-// Online-user use-case tests cover membership gates and team isolation.
-mod tests;
 
 /// Marks the authenticated user online in one team for ten minutes.
 #[instrument(level = "info", skip(repo))]

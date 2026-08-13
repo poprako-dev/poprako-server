@@ -7,6 +7,20 @@
 //!
 //! [`AsyncEffectDevelop`]: crate::part_impl::effect::async_impl::AsyncEffectDevelop
 
+// Internal organization of the `entity` module.
+mod entity;
+// Internal organization of the `handler` module.
+mod handler;
+// Internal organization of the `repo` module.
+mod repo;
+#[cfg(all(test, feature = "rdb", feature = "prom_impl"))]
+// Internal organization of the `test_shared` module.
+mod test_shared;
+
+#[cfg(all(test, feature = "rdb", feature = "prom_impl"))]
+// Internal organization of the `tests` module.
+mod tests;
+
 use diesel_async::RunQueryDsl;
 use poprako_orchestra::Step;
 use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
@@ -28,20 +42,6 @@ use crate::result::{BaseError, BaseRest, accept};
 use crate::shared::result::diesel;
 use crate::shared::{RdbContext, RdbCore};
 
-// Internal organization of the `entity` module.
-mod entity;
-// Internal organization of the `handler` module.
-mod handler;
-// Internal organization of the `repo` module.
-mod repo;
-#[cfg(all(test, feature = "rdb", feature = "prom_impl"))]
-// Internal organization of the `test_shared` module.
-mod test_shared;
-
-#[cfg(all(test, feature = "rdb", feature = "prom_impl"))]
-// Internal organization of the `tests` module.
-mod tests;
-
 // ── Handle type ────────────────────────────────────────────────────────────
 
 /// RDBMS-backed prom adapter for enqueuing and consuming deferred actions.
@@ -61,7 +61,7 @@ pub struct RdbProm {
 }
 
 impl RdbProm {
-    /// Creates the prom adapter and starts its background consumer task.
+    /// Creates the prom adapter and launches its background consumer task.
     ///
     /// The supervisor polls `t_local_message` and routes each topic to one of four
     /// serial worker tasks. Different topics can run concurrently, while messages

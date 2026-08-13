@@ -17,8 +17,8 @@
 // login(login)(negative): token signing failure should return an auth error.
 
 use super::*;
-use crate::data::instr::auth::{LoginAuthInstr, RegisterAuthInstr};
 
+use crate::data::instr::auth::{LoginAuthInstr, RegisterAuthInstr};
 use crate::model::read::proj::member_invitation::MemberInvitationInfo;
 use crate::part::effect::event::Event;
 use crate::part_impl::repo::mock_impl::Mock;

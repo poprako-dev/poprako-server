@@ -9,6 +9,8 @@
 //! [`ImagePool`]: crate::part::image::ImagePool
 
 use serde::Deserialize;
+#[cfg(feature = "swagger")]
+use utoipa::{IntoParams, ToSchema};
 
 use crate::model::read::spec::comic::ComicListSpec;
 use crate::result::{BaseError, BaseRest, accept};
@@ -16,8 +18,6 @@ use crate::value::chapter::StageMask;
 use crate::value::comic::{ComicInclOpt, ComicStatus, ComicWithOpt};
 use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::RoleMask;
-#[cfg(feature = "swagger")]
-use utoipa::{IntoParams, ToSchema};
 
 /// Request to reserve a comic cover upload.
 #[derive(Debug, Deserialize)]

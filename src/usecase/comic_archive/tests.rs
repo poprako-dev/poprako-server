@@ -4,7 +4,6 @@
 // export(export)(positive): retained month slots should return stored JSON strings without decoding.
 
 use super::*;
-use crate::value::image::{ImageExt, ImageHash};
 
 use time::OffsetDateTime;
 
@@ -25,6 +24,7 @@ use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
 use crate::value::chapter::{Stage, StageMask, StagePhase};
+use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
 fn seed_archive_scope(mock: &Mock, member_roles: RoleMask) {

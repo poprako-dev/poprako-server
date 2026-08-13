@@ -1,5 +1,11 @@
 //! Chapter use cases — list, read, create, update, and deletion.
 
+// Chapter deletion use cases (internal).
+mod delete;
+
+#[cfg(test)]
+mod tests;
+
 use poprako_orchestra::{
     Nucl, OperRun as _, OperStep as _, run_proxy, step_proxy,
 };
@@ -54,12 +60,6 @@ use crate::result::{BaseError, BaseRest, accept};
 use crate::value::chapter::{Stage, StageOper, StagePhase};
 
 pub use delete::delete;
-
-// Chapter deletion use cases (internal).
-mod delete;
-
-#[cfg(test)]
-mod tests;
 
 /// Lists chapters under one comic.
 #[instrument(level = "info", skip(repo, image_pool))]

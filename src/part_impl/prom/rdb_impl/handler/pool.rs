@@ -1,5 +1,9 @@
 //! Fixed-size worker pool for persisted prom tasks.
 
+#[cfg(all(test, feature = "rdb", feature = "prom_impl"))]
+// Internal organization of the `tests` module.
+mod tests;
+
 use std::sync::Arc;
 use std::time::Duration as StdDuration;
 
@@ -25,10 +29,6 @@ use crate::part_impl::prom::rdb_impl::repo::{
 use crate::part_impl::repo::HybRepo;
 use crate::result::BaseRest;
 use crate::shared::RdbContext;
-
-#[cfg(all(test, feature = "rdb", feature = "prom_impl"))]
-// Internal organization of the `tests` module.
-mod tests;
 
 // Constant definition for `WORKER_COUNT`.
 const WORKER_COUNT: usize = 4;

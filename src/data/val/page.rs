@@ -2,16 +2,15 @@
 
 //! Data transfer objects for page use cases.
 
+#[cfg(test)]
+mod tests;
+
 use serde::Serialize;
-
-use crate::data::view::image::ImageUploadSlotView;
-use crate::value::image::{ImageExt, ImageHash};
-
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
-#[cfg(test)]
-mod tests;
+use crate::data::view::image::ImageUploadSlotView;
+use crate::value::image::{ImageExt, ImageHash};
 
 /// Return value from successful chapter page reservations.
 #[derive(Debug, Serialize)]

@@ -1,5 +1,9 @@
 //! Assignment invitation use cases.
 
+#[cfg(test)]
+// Unit tests for assignment invitation acceptance rules.
+mod tests;
+
 use std::time::Duration;
 
 use poprako_orchestra::{Nucl, OperRun as _, OperStep as _};
@@ -49,10 +53,6 @@ use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 use crate::value::role::{RoleField, RoleMask};
-
-#[cfg(test)]
-// Unit tests for assignment invitation acceptance rules.
-mod tests;
 
 // Assignment invitation code expiration window.
 const EXPIRY_DELAY: Duration = Duration::from_secs(3 * 24 * 60 * 60);

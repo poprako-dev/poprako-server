@@ -1,5 +1,9 @@
 //! RDB-backed member-invitation repository — free query functions and thin trait impls.
 
+/// Member invitation RDB integration tests.
+#[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
+pub mod tests;
+
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use poprako_orchestra::{Run, Step};
@@ -28,10 +32,6 @@ use crate::shared::result::diesel;
 use crate::shared::{RdbConn, RdbContext};
 use crate::value::member_invitation::MemberInvitationInclOpt;
 use crate::value::role::RoleMask;
-
-/// Member invitation RDB integration tests.
-#[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
-pub mod tests;
 
 // ── Free functions ──────────────────────────────────────────────────────────
 

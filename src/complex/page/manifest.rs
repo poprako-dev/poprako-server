@@ -1,5 +1,8 @@
 //! Pure matching for authoritative chapter page manifests.
 
+#[cfg(test)]
+mod tests;
+
 use std::cmp::Ordering;
 use std::collections::HashSet;
 
@@ -8,9 +11,6 @@ use poprako_util::i18n::trl;
 use crate::model::read::proj::page::PageInfo;
 use crate::model::write::page::PageImageSpec;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-
-#[cfg(test)]
-mod tests;
 
 /// One manifest position and the old page assigned to it, when any.
 pub struct ManifestMatch {

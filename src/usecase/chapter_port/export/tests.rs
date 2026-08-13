@@ -1,8 +1,7 @@
-// export(export)(positive): assignee exports chapter metadata and ordered text units, then asynchronously starts typeset/redraw.
-// export_label_plus(export_label_plus)(positive): assignee exports ordered pages and units as LabelPlus text, then asynchronously starts typeset/redraw.
+// export(export)(positive): assignee exports chapter metadata and ordered text units, then asynchronously triggers typeset/redraw.
+// export_label_plus(export_label_plus)(positive): assignee exports ordered pages and units as LabelPlus text, then asynchronously triggers typeset/redraw.
 
 use super::*;
-use crate::value::image::{ImageExt, ImageHash};
 
 use time::OffsetDateTime;
 
@@ -16,6 +15,7 @@ use crate::model::shared::unit::UnitCoord;
 use crate::model::shared::user::UserToken;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::value::chapter::{Stage, StageMask, StagePhase};
+use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
 fn token(user_id: &str) -> UserToken {
@@ -188,7 +188,7 @@ fn seed_scope(mock: &Mock) {
 
 async fn wait_for_typeset_redraw(mock: &Mock) {
     //
-    // Poll until the detached typeset-redraw stage starts, then continue test assertions.
+    // Poll until the detached typeset-redraw stage advances, then continue test assertions.
     for _ in 0..100 {
         //
         // Keep polling the snapshot; background advancement is eventual and asynchronous.

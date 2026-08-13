@@ -4,15 +4,15 @@ use crate::part::repo::oper::chapter::StartChapterStage;
 use crate::result::BaseError;
 use crate::value::chapter::Stage;
 
-/// Starts requested chapter stages in a detached best-effort task.
-pub fn spawn_starts<R>((repo,): (R,), chapter_id: String, stages: Vec<Stage>)
+/// Advances chapter stages in detached best-effort tasks.
+pub fn advance_stages<R>((repo,): (R,), chapter_id: String, stages: Vec<Stage>)
 where
     R: for<'a> Run<StartChapterStage<'a>, Error = BaseError>
         + Send
         + Sync
         + 'static,
 {
-    // NOTE: Stage starts are intentionally best-effort. A task may be dropped
+    // NOTE: Advancements are intentionally best-effort. A task may be dropped
     // or fail because the same stage can be advanced manually when needed.
     tokio::spawn(async move {
         //

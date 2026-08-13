@@ -1,5 +1,9 @@
 //! Process-local online-user lease repository operations.
 
+#[cfg(test)]
+// Online-user adapter tests use explicit instants without sleeping.
+mod tests;
+
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
@@ -10,10 +14,6 @@ use poprako_orchestra::Run;
 use crate::part::repo::oper::online_user::{ListOnlineUserIds, MarkOnlineUser};
 use crate::part_impl::repo::HybRepo;
 use crate::result::{BaseError, BaseRest, accept};
-
-#[cfg(test)]
-// Online-user adapter tests use explicit instants without sleeping.
-mod tests;
 
 // One successful mark keeps a user online for ten minutes.
 const ONLINE_USER_TTL: Duration = Duration::from_secs(10 * 60);

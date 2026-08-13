@@ -3,11 +3,10 @@
 //! Data transfer objects for user profile use cases.
 
 use serde::Serialize;
-
-use crate::data::view::image::ImageUploadSlotView;
-
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
+
+use crate::data::view::image::ImageUploadSlotView;
 
 /// User avatar upload reservation response.
 #[derive(Debug, Serialize)]

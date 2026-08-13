@@ -1,9 +1,3 @@
-use serde::{Deserialize, Serialize};
-
-use crate::part::prom::payload::chapter::ChapterPayload;
-use crate::part::prom::payload::image::ImagePayload;
-use crate::part::prom::payload::invitation::InvitationPayload;
-
 /// Deferred chapter payloads.
 pub mod chapter;
 /// Deferred image payloads.
@@ -14,6 +8,12 @@ pub mod invitation;
 /// Shared payload tests.
 #[cfg(test)]
 pub mod tests;
+
+use serde::{Deserialize, Serialize};
+
+use crate::part::prom::payload::chapter::ChapterPayload;
+use crate::part::prom::payload::image::ImagePayload;
+use crate::part::prom::payload::invitation::InvitationPayload;
 
 /// One deferred task, grouped by its domain.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

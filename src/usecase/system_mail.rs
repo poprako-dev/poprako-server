@@ -1,5 +1,8 @@
 //! System mail use cases — list unread and mark as read for the current user.
 
+#[cfg(test)]
+mod tests;
+
 use poprako_orchestra::OperRun as _;
 use tracing::instrument;
 
@@ -14,9 +17,6 @@ use crate::part::repo::oper::system_mail::{
 };
 use crate::part::repo::system_mail::SystemMailRepo;
 use crate::result::{BaseRest, accept};
-
-#[cfg(test)]
-mod tests;
 
 /// Lists system mails for the current user.
 ///

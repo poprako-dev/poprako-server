@@ -1,5 +1,12 @@
 //! User use cases — profile, avatar management, activity tracking, and deletion.
 
+// User deletion use case.
+mod delete;
+
+#[cfg(test)]
+// Unit tests for account, role, and membership operations.
+mod tests;
+
 use std::time::Duration;
 
 use poprako_orchestra::{Nucl, OperRun as _, OperStep as _};
@@ -37,13 +44,6 @@ use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
 pub use delete::delete;
-
-// User deletion use case.
-mod delete;
-
-#[cfg(test)]
-// Unit tests for account, role, and membership operations.
-mod tests;
 
 /// Fetches a user's profile with avatar URL resolution.
 ///

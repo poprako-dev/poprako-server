@@ -1,5 +1,7 @@
 //! Test helpers for assertions and time fixtures.
 
+pub mod fixture;
+
 use time::OffsetDateTime;
 
 use poprako_util::i18n::trl;
@@ -8,8 +10,6 @@ use crate::part::prom::payload::TaskPayload;
 use crate::part::prom::payload::image::{ImagePayload, ResourceKind};
 use crate::part_impl::prom::mock_impl::MockPromRecord;
 use crate::result::{BaseError, ExpectedVariant};
-
-pub mod fixture;
 
 /// Asserts that `err` is a [`RootError::Expected`] whose variant matches `expected`.
 /// Panics with a descriptive message on mismatch.

@@ -1,5 +1,9 @@
 //! Terminology-base use cases.
 
+#[cfg(test)]
+// Unit tests for terminology base definitions and search access.
+mod tests;
+
 use poprako_orchestra::{
     Nucl, OperRun as _, OperStep as _, run_proxy, step_proxy,
 };
@@ -21,10 +25,9 @@ use crate::part::repo::oper::comic::GetComicInfoExcluded;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::team::{LockTeam, ResolveTeamId};
 use crate::part::repo::oper::term::DeleteTerms;
-#[allow(unused_imports)]
 use crate::part::repo::oper::termbase::{
     CreateTermbase, DeleteTermbase, GetTermbaseInfo, GetTermbaseInfoExcluded,
-    ListTermbaseInfos, ListTermbaseInfosExcluded, UpdateTermbase,
+    ListTermbaseInfos, UpdateTermbase,
 };
 use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::team::TeamRepo;
@@ -32,10 +35,6 @@ use crate::part::repo::term::TermRepo;
 use crate::part::repo::termbase::TermbaseRepo;
 use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseError, BaseRest, accept};
-
-#[cfg(test)]
-// Unit tests for terminology base definitions and search access.
-mod tests;
 
 /// Creates a terminology base scoped to a team or comic.
 #[instrument(level = "info", skip(nucl, repo))]

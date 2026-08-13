@@ -1,3 +1,11 @@
+// Shared fixture setup helpers for chapter test suites.
+mod fixture;
+// Preset-assignment scenarios and perm transitions.
+mod preset_assignment;
+// Workflow-stage transition assertions for chapter usecases.
+mod extra;
+mod stage;
+
 // list_infos(list_infos)(positive): team member can list chapters sorted by newest index with pagination.
 // list_infos(list_infos)(negative): non-member cannot list chapters.
 // get_info(get_info)(positive): team member can read a chapter.
@@ -24,11 +32,11 @@
 // delete(delete)(negative): non-admin delete rolls back.
 
 use super::*;
+
+use self::fixture::*;
 use crate::data::instr::chapter::{
     CreateChapterInstr, UpdateChapterInfoInstr, UpdateChapterStageInstr,
 };
-
-use self::fixture::*;
 use crate::part::effect::event::Event;
 use crate::part::prom::payload::TaskPayload;
 use crate::part::prom::payload::image::ImagePayload;
@@ -37,11 +45,3 @@ use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
 use crate::value::chapter::Stage;
 use crate::value::role::{RoleField, RoleMask};
-
-// Shared fixture setup helpers for chapter test suites.
-mod fixture;
-// Preset-assignment scenarios and perm transitions.
-mod preset_assignment;
-// Workflow-stage transition assertions for chapter usecases.
-mod extra;
-mod stage;

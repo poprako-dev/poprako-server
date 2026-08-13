@@ -1,5 +1,14 @@
 //! RDB-backed atomic comic archive repository.
 
+// Persistent archive commit operation.
+mod commit;
+// Permanent archive payload query.
+mod payload;
+
+/// Comic archive RDB integration tests.
+#[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
+pub mod tests;
+
 use std::collections::HashMap;
 
 use diesel::prelude::*;
@@ -61,15 +70,6 @@ use crate::part_impl::repo::rdb_impl::schema::t_workset::dsl::{
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::result::diesel;
 use crate::shared::{RdbConn, RdbContext};
-
-// Persistent archive commit operation.
-mod commit;
-// Permanent archive payload query.
-mod payload;
-
-/// Comic archive RDB integration tests.
-#[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
-pub mod tests;
 
 // Standardize chain-corruption failures for unit graph validation.
 fn corrupt_unit_chain_err() -> BaseError {

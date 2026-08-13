@@ -1,5 +1,15 @@
 //! Shared RDB infrastructure for production adapters and extras.
 
+/// Result helpers for Diesel-backed shared internals.
+pub mod result;
+/// RDB test-container helpers.
+#[cfg(all(
+    test,
+    feature = "rdb",
+    any(feature = "prom_impl", feature = "repo_impl")
+))]
+pub mod test_rdb;
+
 use std::sync::Arc;
 
 use anyhow::Context as _;
@@ -10,16 +20,6 @@ use tracing::instrument;
 
 use self::result::{pool_build, pool_get};
 use crate::result::{BaseError, BaseRest, accept};
-
-/// Result helpers for Diesel-backed shared internals.
-pub mod result;
-/// RDB test-container helpers.
-#[cfg(all(
-    test,
-    feature = "rdb",
-    any(feature = "prom_impl", feature = "repo_impl")
-))]
-pub mod test_rdb;
 
 // Internal type alias for the Diesel async connection pool.
 type RdbPool = Pool<AsyncPgConnection>;

@@ -1,5 +1,8 @@
 //! Mock team repository operations.
 
+// In-memory team-ownership projections.
+mod resolve;
+
 use std::cmp::Reverse;
 
 use poprako_orchestra::{Run, Step};
@@ -17,9 +20,6 @@ use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
 use crate::result::{BaseError, BaseRest, accept};
-
-// In-memory team-ownership projections.
-mod resolve;
 
 // Internal implementation of `create_team`.
 fn create_team(state: &mut MockState, entry: &TeamEntry) -> BaseRest<TeamInfo> {

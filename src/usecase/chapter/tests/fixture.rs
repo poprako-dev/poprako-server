@@ -1,6 +1,5 @@
 use super::*;
 
-use crate::value::image::{ImageExt, ImageHash};
 use time::OffsetDateTime;
 
 use crate::model::read::proj::assignment::AssignmentInfo;
@@ -11,6 +10,7 @@ use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::workset::WorksetInfo;
 use crate::model::shared::user::UserToken;
 use crate::value::chapter::StageMask;
+use crate::value::image::{ImageExt, ImageHash};
 
 pub fn token(user_id: &str) -> UserToken {
     UserToken {

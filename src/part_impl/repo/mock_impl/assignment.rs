@@ -1,5 +1,8 @@
 //! Mock implementation of assignment repository operations.
 
+// Internal organization of the `incl` module.
+mod incl;
+
 use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
@@ -16,9 +19,6 @@ use crate::part_impl::repo::mock_impl::{
 };
 use crate::result::{BaseError, BaseRest, accept};
 use crate::value::assignment::AssignmentInclOpt;
-
-// Internal organization of the `incl` module.
-mod incl;
 
 // Internal implementation of `list_infos`.
 fn list_infos(

@@ -1,5 +1,9 @@
 //! HTTP response metric middleware.
 
+#[cfg(test)]
+// Metrics middleware test fixtures stay with the middleware module.
+mod tests;
+
 use std::time::Instant;
 
 use axum::extract::{MatchedPath, Request};
@@ -7,10 +11,6 @@ use axum::middleware::Next;
 use axum::response::Response;
 
 use crate::api::http::shared::record_response;
-
-#[cfg(test)]
-// Metrics middleware test fixtures stay with the middleware module.
-mod tests;
 
 /// Records the response status and matched route template.
 pub async fn record_response_metric(request: Request, next: Next) -> Response {

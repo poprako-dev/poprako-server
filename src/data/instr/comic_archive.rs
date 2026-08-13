@@ -3,7 +3,6 @@
 //! Request and response values for immutable comic archive operations.
 
 use serde::Deserialize;
-
 #[cfg(feature = "swagger")]
 use utoipa::IntoParams;
 

@@ -1,3 +1,7 @@
+#[cfg(test)]
+// Shared metric tests stay behind module-private helpers.
+mod tests;
+
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::sync::{LazyLock, Mutex, MutexGuard};
@@ -8,10 +12,6 @@ use axum::response::Response;
 use serde::Serialize;
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
-
-#[cfg(test)]
-// Shared metric tests stay behind module-private helpers.
-mod tests;
 
 // One hour of one-minute buckets gives a full recent-hour window.
 const BUCKET_COUNT: usize = 60;
