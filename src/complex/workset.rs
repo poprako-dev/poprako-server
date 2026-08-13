@@ -20,6 +20,7 @@ use crate::part::repo::oper::comic::{
     DeleteComic, GetComicInfoExcluded, ListComicInfosExcluded,
     TouchComicLastActive, UpdateComicChapterCount,
 };
+use crate::part::repo::oper::comic_archive::DeleteComicArchives;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::page::{DeletePages, ListPageInfos};
 use crate::part::repo::oper::term::DeleteTerms;
@@ -51,6 +52,7 @@ impl WorksetComplex {
             + for<'a, 'b> Proxy<GetComicInfoExcluded<'a, 'b>, Error = BaseError>
             + for<'a> Proxy<ListChapterInfosExcluded<'a>, Error = BaseError>
             + for<'a> Proxy<DeleteComic<'a>, Error = BaseError>
+            + for<'a> Proxy<DeleteComicArchives<'a>, Error = BaseError>
             + for<'a> Proxy<UpdateWorksetComicCount<'a>, Error = BaseError>
             + for<'a, 'b> Proxy<GetChapterInfoExcluded<'a, 'b>, Error = BaseError>
             + for<'a> Proxy<ListPageInfos<'a>, Error = BaseError>
@@ -89,6 +91,7 @@ impl WorksetComplex {
                 workset_id: workset_info.id.clone(),
                 fuzzy_title: None,
                 stages: None,
+                status: None,
                 incl_opt: Vec::new(),
                 offset: 0,
                 limit: PAGE_SIZE,

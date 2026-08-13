@@ -1182,7 +1182,7 @@
         "tags": [
           "comics"
         ],
-        "summary": "`POST /api/v1/comics/{comic_id}/archive` — archive and remove one active comic.",
+        "summary": "`POST /api/v1/comics/{comic_id}/archive` — archive one comic and clear its active data.",
         "operationId": "archive",
         "parameters": [
           {
@@ -2599,7 +2599,7 @@
         "tags": [
           "comics"
         ],
-        "summary": "`GET /api/v1/teams/{team_id}/comic-archives/export` — export retained archive month slots.",
+        "summary": "`GET /api/v1/teams/{team_id}/comic-archives/export` — export archive month slots.",
         "operationId": "export_archives",
         "parameters": [
           {
@@ -2614,7 +2614,7 @@
           {
             "name": "month",
             "in": "query",
-            "description": "UTC month slots in `YYYY-MM` format to filter retained archives by.",
+            "description": "UTC month slots in `YYYY-MM` format to filter archives by.",
             "required": false,
             "schema": {
               "type": "array",
@@ -2639,7 +2639,7 @@
             "description": "No perm to export this team's archives"
           },
           "422": {
-            "description": "Invalid or expired month selection"
+            "description": "Invalid month selection"
           }
         }
       }
@@ -3758,7 +3758,7 @@
           "comics"
         ],
         "summary": "`GET /api/v1/worksets/{workset_id}/comics` — list comics in a workset.",
-        "description": "Lists active comics in a workset with optional title and workflow-stage filters. `incl` embeds related rows and `with` populates parallel derived rows.",
+        "description": "Lists active and archived comics in a workset with optional title, lifecycle, and workflow-stage filters. `incl` embeds related rows and `with` populates parallel derived rows.",
         "operationId": "list_infos",
         "parameters": [
           {
@@ -3788,6 +3788,15 @@
               "type": "integer",
               "format": "int32",
               "minimum": 0
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Lifecycle state filter. Omit to list both active and archived comics.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ComicStatus"
             }
           },
           {
@@ -3919,12 +3928,12 @@
       },
       "ArchiveComicVal": {
         "type": "object",
-        "description": "Value returned after an active comic has been archived atomically.",
+        "description": "Value returned after a comic has been archived atomically.",
         "required": [
-          "archived_comic_id"
+          "archived_id"
         ],
         "properties": {
-          "archived_comic_id": {
+          "archived_id": {
             "type": "string",
             "description": "Identifier of the archived comic."
           }
@@ -4194,10 +4203,19 @@
           "chapter_count",
           "creator_id",
           "last_active_at",
+          "is_archived",
           "created_at",
           "updated_at"
         ],
         "properties": {
+          "archived_at": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Timestamp when the comic was archived, when applicable."
+          },
           "author": {
             "type": "string",
             "description": "Comic author name."
@@ -4256,6 +4274,10 @@
             "type": "integer",
             "format": "int32",
             "description": "Ordinal position of the comic within its workset."
+          },
+          "is_archived": {
+            "type": "boolean",
+            "description": "Whether this comic has been archived and is no longer writable."
           },
           "last_active_at": {
             "type": "integer",
@@ -4877,12 +4899,12 @@
           },
           "data": {
             "type": "object",
-            "description": "Value returned after an active comic has been archived atomically.",
+            "description": "Value returned after a comic has been archived atomically.",
             "required": [
-              "archived_comic_id"
+              "archived_id"
             ],
             "properties": {
-              "archived_comic_id": {
+              "archived_id": {
                 "type": "string",
                 "description": "Identifier of the archived comic."
               }
@@ -5115,10 +5137,19 @@
               "chapter_count",
               "creator_id",
               "last_active_at",
+              "is_archived",
               "created_at",
               "updated_at"
             ],
             "properties": {
+              "archived_at": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "int64",
+                "description": "Timestamp when the comic was archived, when applicable."
+              },
               "author": {
                 "type": "string",
                 "description": "Comic author name."
@@ -5177,6 +5208,10 @@
                 "type": "integer",
                 "format": "int32",
                 "description": "Ordinal position of the comic within its workset."
+              },
+              "is_archived": {
+                "type": "boolean",
+                "description": "Whether this comic has been archived and is no longer writable."
               },
               "last_active_at": {
                 "type": "integer",

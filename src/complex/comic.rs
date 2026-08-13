@@ -7,6 +7,8 @@ use poprako_orchestra::{OperProxy as _, Proxy};
 use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 use poprako_orchestra_extra::prom::task::Task;
 
+use poprako_util::i18n::trl;
+
 use crate::complex::chapter::ChapterComplex;
 use crate::complex::image::ImageComplex;
 use crate::complex::termbase::TermbaseComplex;
@@ -14,6 +16,7 @@ use crate::complex::util::{
     check_user_is_team_admin, check_user_is_team_admin_with_roles,
     check_user_is_team_member,
 };
+use crate::model::read::proj::comic::ComicInfo;
 use crate::part::prom::payload::{TaskPayload, image};
 use crate::part::repo::oper::assignment::DeleteAssignments;
 use crate::part::repo::oper::assignment_invitation::DeleteAssignmentInvitations;
@@ -25,6 +28,7 @@ use crate::part::repo::oper::comic::{
     DeleteComic, GetComicInfoExcluded, TouchComicLastActive,
     UpdateComicChapterCount,
 };
+use crate::part::repo::oper::comic_archive::DeleteComicArchives;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::page::{
     DeletePages, ListFirstPageInfos, ListPageInfos,
@@ -37,7 +41,7 @@ use crate::part::repo::oper::termbase::{
 use crate::part::repo::oper::workset::{
     GetWorksetInfo, UpdateWorksetComicCount,
 };
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 use crate::value::index::stored_index_to_user_index;
 use crate::value::role::RoleMask;
@@ -47,6 +51,28 @@ use crate::value::role::RoleMask;
 pub struct ComicComplex;
 
 impl ComicComplex {
+    /// Rejects ordinary mutations after a comic has been archived.
+    pub fn ensure_comic_writable(comic_info: &ComicInfo) -> BaseRest<()> {
+        //
+        if comic_info.archived_at.is_none() {
+            return accept(());
+        }
+
+        let err_message = trl("error-comic-archived");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Args,
+            err_message = %err_message,
+            comic_id = %comic_info.id,
+            "expected error: archived comic is frozen",
+        );
+
+        Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: err_message,
+        })
+    }
+
     /// Generate a unique, time-ordered comic identifier backed by a snowflake value.
     pub fn gen_id() -> String {
         next_snowflake_id()
@@ -122,6 +148,7 @@ impl ComicComplex {
         P: for<'a, 'b> Proxy<GetComicInfoExcluded<'a, 'b>, Error = BaseError>
             + for<'a> Proxy<ListChapterInfosExcluded<'a>, Error = BaseError>
             + for<'a> Proxy<DeleteComic<'a>, Error = BaseError>
+            + for<'a> Proxy<DeleteComicArchives<'a>, Error = BaseError>
             + for<'a> Proxy<UpdateWorksetComicCount<'a>, Error = BaseError>
             + for<'a, 'b> Proxy<GetChapterInfoExcluded<'a, 'b>, Error = BaseError>
             + for<'a> Proxy<ListPageInfos<'a>, Error = BaseError>
@@ -182,6 +209,12 @@ impl ComicComplex {
 
             Defer::new(task).proxy_on(proxy).await?;
         }
+
+        DeleteComicArchives {
+            source_comic_id: &comic_info.id,
+        }
+        .proxy_on(proxy)
+        .await?;
 
         DeleteComic { id: &comic_info.id }.proxy_on(proxy).await?;
 

@@ -8,6 +8,7 @@
 // list_infos(list_infos)(positive): empty workset contents should return an empty list after membership.
 // list_infos(list_infos)(positive): fuzzy title should narrow results by display index, title, or author substring.
 // list_infos(list_infos)(positive): stages filter should narrow by pinned chapter workflow state.
+// list_infos(list_infos)(positive): lifecycle filter should distinguish active and archived comics.
 // list_infos(list_infos)(positive): pinned chapter assignments should be returned in comic order.
 // list_infos(list_infos)(positive): pagination should be applied after filtering and sorting.
 // list_infos(list_infos)(negative): invalid stages filter should return an argument error.
@@ -252,6 +253,7 @@ async fn list_infos_omits_fallback_without_usable_first_pinned_page() {
             workset_id: "workset-1".into(),
             fuzzy_title: None,
             stages: None,
+            status: None,
             incl_opt: Vec::new(),
             with_opt: Vec::new(),
             offset: 0,
@@ -320,6 +322,7 @@ async fn list_infos_filters_and_sorts_by_last_activity() {
             workset_id: "workset-1".into(),
             fuzzy_title: None,
             stages: None,
+            status: None,
             offset: 0,
             limit: 10,
         },
@@ -367,6 +370,7 @@ async fn list_infos_returns_empty_for_workset_contents() {
             workset_id: "workset-1".into(),
             fuzzy_title: None,
             stages: None,
+            status: None,
             offset: 0,
             limit: 10,
         },
@@ -426,6 +430,7 @@ async fn list_infos_filters_by_pinned_chapter_stages() {
             workset_id: "workset-1".into(),
             fuzzy_title: None,
             stages: Some(filter_mask.into()),
+            status: None,
             offset: 0,
             limit: 10,
         },
@@ -459,6 +464,7 @@ async fn list_infos_rejects_invalid_stages_filter() {
             workset_id: "workset-1".into(),
             fuzzy_title: None,
             stages: Some(0b01 << 8),
+            status: None,
             offset: 0,
             limit: 10,
         },
@@ -508,6 +514,7 @@ async fn list_infos_applies_pagination() {
             workset_id: "workset-1".into(),
             fuzzy_title: None,
             stages: None,
+            status: None,
             offset: 1,
             limit: 1,
         },

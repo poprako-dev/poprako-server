@@ -45,6 +45,8 @@ pub struct ComicArchiveRecord {
 
     /// The team that owns the archived comic.
     pub team_id: String,
+    /// Original comic identifier retained for archive lookup and cleanup.
+    pub source_comic_id: String,
     /// Serialised JSON snapshot of the comic, its chapters, pages, and units.
     pub archived_payload: String,
     /// The user who triggered the archiving operation.

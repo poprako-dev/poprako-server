@@ -5,14 +5,14 @@ use crate::model::read::proj::comic_archive::ComicArchiveSnapshot;
 use crate::model::write::comic_archive::ComicArchiveEntry;
 use crate::value::comic_archive::ComicArchiveMonth;
 
-/// Lists archive JSON strings for selected retained month slots.
+/// Lists archive JSON strings for selected month slots.
 #[derive(Oper)]
 #[oper(output = Vec<(OffsetDateTime, String)>)]
 pub struct ListComicArchivePayloads<'a> {
     /// The team ID.
     pub team_id: &'a str,
 
-    /// The retained month slots to list.
+    /// The month slots to list.
     pub months: &'a [ComicArchiveMonth],
 }
 
@@ -30,4 +30,12 @@ pub struct GetComicArchiveSnapshotExcluded<'a> {
 pub struct CommitComicArchive<'a> {
     /// The archive entry to insert.
     pub entry: &'a ComicArchiveEntry,
+}
+
+/// Deletes immutable archive records associated with one source comic.
+#[derive(Oper)]
+#[oper(output = ())]
+pub struct DeleteComicArchives<'a> {
+    /// The source comic ID whose archive records must be removed.
+    pub source_comic_id: &'a str,
 }
