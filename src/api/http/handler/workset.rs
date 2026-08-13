@@ -8,9 +8,10 @@ use tracing::instrument;
 use crate::api::http::handler::util::{
     Pagination, ensure_path_matches_body_id,
 };
-#[allow(unused_imports)]
+#[cfg(feature = "swagger")]
+use crate::api::http::result::HttpBody;
 use crate::api::http::result::{
-    Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
+    Accept as _, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
 use crate::data::instr::workset::{

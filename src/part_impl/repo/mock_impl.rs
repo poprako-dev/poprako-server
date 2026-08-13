@@ -390,29 +390,10 @@ impl Mock {
         self
     }
 
-    /// Enable head-object failures for subsequent opers.
-    #[allow(dead_code)]
-    pub fn with_image_head_failure(self) -> Self {
-        //
-        self.flags.lock().unwrap().image_head_failure = true;
-
-        self
-    }
-
     /// Report objects as absent for subsequent head-object opers.
-    #[allow(dead_code)]
     pub fn with_image_head_absent(self) -> Self {
         //
         self.flags.lock().unwrap().image_head_absent = true;
-
-        self
-    }
-
-    /// Enable delete-object failures for subsequent opers.
-    #[allow(dead_code)]
-    pub fn with_image_delete_failure(self) -> Self {
-        //
-        self.flags.lock().unwrap().image_delete_failure = true;
 
         self
     }

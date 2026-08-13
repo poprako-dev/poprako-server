@@ -9,6 +9,8 @@
 
 use super::*;
 
+use crate::part::repo::oper::termbase::ListTermbaseInfosExcluded;
+
 use time::OffsetDateTime;
 
 use crate::model::read::proj::comic::ComicInfo;

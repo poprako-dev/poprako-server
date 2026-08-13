@@ -17,8 +17,6 @@ use crate::value::incl::InclOpt;
 
 pub use mask::StageMask;
 pub use stage::{Stage, StageOper, StagePhase, try_modify_stage};
-#[allow(unused_imports)]
-pub use stage::{StagePhaseField, is_valid_stage_phase};
 
 /// Incl opts for chapter info queries.
 ///

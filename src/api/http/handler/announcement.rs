@@ -9,8 +9,9 @@ use tracing::instrument;
 #[cfg(feature = "swagger")]
 use utoipa::IntoParams;
 
-#[allow(unused_imports)]
-use crate::api::http::result::{Accept as _, HttpBody, HttpResult};
+#[cfg(feature = "swagger")]
+use crate::api::http::result::HttpBody;
+use crate::api::http::result::{Accept as _, HttpResult};
 use crate::api::http::state::AppHarn;
 use crate::data::instr::announcement::{
     CreateAnnouncementInstr, ListAnnouncementInfosInstr,

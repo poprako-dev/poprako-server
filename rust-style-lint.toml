@@ -4,6 +4,7 @@
 # project-specific rule parameters.
 
 [linters]
+no-allow = true
 no-inline-tests = true
 spacing-style = true
 use-style = true

@@ -24,10 +24,9 @@ use crate::part::repo::oper::comic::GetComicInfoExcluded;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::team::{LockTeam, ResolveTeamId};
 use crate::part::repo::oper::term::DeleteTerms;
-#[allow(unused_imports)]
 use crate::part::repo::oper::termbase::{
     CreateTermbase, DeleteTermbase, GetTermbaseInfo, GetTermbaseInfoExcluded,
-    ListTermbaseInfos, ListTermbaseInfosExcluded, UpdateTermbase,
+    ListTermbaseInfos, UpdateTermbase,
 };
 use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::team::TeamRepo;
