@@ -75,7 +75,7 @@ pub async fn save_infos(
     let instr = SavePageUnitEditsInstr { page_id, edits };
 
     usecase::unit::save_edits::<_, RdbContext<RepeatableRead>, HybRepo>(
-        (harn.nucl_repeatable_read(), harn.repo()),
+        (harn.nucl().repeatable_read(), harn.repo()),
         user_token,
         instr,
     )

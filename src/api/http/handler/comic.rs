@@ -126,7 +126,7 @@ pub async fn create(
 ) -> HttpResult<CreateComicVal> {
     //
     usecase::comic::create::<_, RdbContext<RepeatableRead>, HybRepo>(
-        (harn.nucl_repeatable_read(), harn.repo()),
+        (harn.nucl().repeatable_read(), harn.repo()),
         user_token,
         instr,
     )
@@ -266,7 +266,7 @@ pub async fn reserve_cover(
         _,
     >(
         (
-            harn.nucl_repeatable_read(),
+            harn.nucl().repeatable_read(),
             harn.repo(),
             harn.prom(),
             harn.image_pool(),
@@ -306,7 +306,11 @@ pub async fn mark_cover_uploaded(
         HybRepo,
         _,
     >(
-        (harn.nucl_repeatable_read(), harn.repo(), harn.image_pool()),
+        (
+            harn.nucl().repeatable_read(),
+            harn.repo(),
+            harn.image_pool(),
+        ),
         user_token,
         comic_id,
         instr,
@@ -341,7 +345,7 @@ pub async fn archive(
         HybRepo,
         RdbProm,
     >(
-        (harn.nucl_serializable(), harn.repo(), harn.prom()),
+        (harn.nucl().serializable(), harn.repo(), harn.prom()),
         user_token,
         comic_id,
     )
@@ -369,7 +373,7 @@ pub async fn delete(
 ) -> HttpNoContent {
     //
     usecase::comic::delete::<_, RdbContext<Serializable>, HybRepo, RdbProm>(
-        (harn.nucl_serializable(), harn.repo(), harn.prom()),
+        (harn.nucl().serializable(), harn.repo(), harn.prom()),
         user_token,
         comic_id,
     )

@@ -65,7 +65,7 @@ pub async fn create(
 ) -> HttpResult<CreateAnnouncementVal> {
     //
     usecase::announcement::create::<_, RdbContext<RepeatableRead>, HybRepo>(
-        (harn.nucl_repeatable_read(), harn.repo()),
+        (harn.nucl().repeatable_read(), harn.repo()),
         user_token,
         instr,
     )

@@ -71,7 +71,7 @@ pub async fn create(
         HybRepo,
         RdbProm,
     >(
-        (harn.nucl_repeatable_read(), harn.repo(), harn.prom()),
+        (harn.nucl().repeatable_read(), harn.repo(), harn.prom()),
         user_token,
         instr,
     )
@@ -138,7 +138,7 @@ pub async fn delete(
         RdbContext<RepeatableRead>,
         HybRepo,
     >(
-        (harn.nucl_repeatable_read(), harn.repo()),
+        (harn.nucl().repeatable_read(), harn.repo()),
         user_token,
         assignment_invitation_id,
     )
@@ -173,7 +173,11 @@ pub async fn join(
         HybRepo,
         _,
     >(
-        (harn.nucl_repeatable_read(), harn.repo(), harn.image_pool()),
+        (
+            harn.nucl().repeatable_read(),
+            harn.repo(),
+            harn.image_pool(),
+        ),
         user_token,
         instr,
     )

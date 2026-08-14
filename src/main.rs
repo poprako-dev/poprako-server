@@ -25,8 +25,9 @@ use std::sync::Arc;
 use anyhow::Context as _;
 
 use poprako_server::{
-    AppConfig, AsyncEffectDevelop, Harn, HybRepo, JwtAuth, R2ImagePool,
-    RdbContext, RdbCore, RdbNucl, RdbProm, RepeatableRead, Sched, Serializable,
+    AppConfig, AsyncEffectDevelop, Harn, HybRepo, JwtAuth, NuclProxy,
+    R2ImagePool, RdbContext, RdbCore, RdbNucl, RdbProm, RepeatableRead, Sched,
+    Serializable,
 };
 
 /// Application entry point.
@@ -55,11 +56,12 @@ async fn main() -> anyhow::Result<()> {
 
     let core = RdbCore::from_env()?;
 
-    let (nucl_repeatable_read, nucl_serializable, repo) = (
+    let nucl = NuclProxy::new(
         RdbNucl::<RepeatableRead>::new(core.clone()),
         RdbNucl::<Serializable>::new(core.clone()),
-        HybRepo::new(core.clone()),
     );
+
+    let repo = HybRepo::new(core.clone());
 
     let (auth, image_pool) = (JwtAuth::from_env()?, R2ImagePool::from_env()?);
 
@@ -73,15 +75,7 @@ async fn main() -> anyhow::Result<()> {
         Sched::new(core.clone()),
     );
 
-    let harn = Harn::new(
-        nucl_repeatable_read,
-        nucl_serializable,
-        repo,
-        prom,
-        auth,
-        image_pool,
-        develop,
-    );
+    let harn = Harn::new(nucl, repo, prom, auth, image_pool, develop);
 
     let http_addr = ToSocketAddrs::to_socket_addrs(&format!(
         "{}:{}",

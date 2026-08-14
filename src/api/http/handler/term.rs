@@ -60,7 +60,7 @@ pub async fn create(
 ) -> HttpResult<CreateTermVal> {
     //
     usecase::term::create::<_, RdbContext<RepeatableRead>, HybRepo>(
-        (harn.nucl_repeatable_read(), harn.repo()),
+        (harn.nucl().repeatable_read(), harn.repo()),
         user_token,
         instr,
     )
@@ -156,7 +156,7 @@ pub async fn update_info(
     ensure_path_matches_body_id(&term_id, &instr.id)?;
 
     usecase::term::update_info::<_, RdbContext<RepeatableRead>, HybRepo>(
-        (harn.nucl_repeatable_read(), harn.repo()),
+        (harn.nucl().repeatable_read(), harn.repo()),
         user_token,
         instr,
     )
@@ -185,7 +185,7 @@ pub async fn delete(
 ) -> HttpNoContent {
     //
     usecase::term::delete::<_, RdbContext<RepeatableRead>, HybRepo>(
-        (harn.nucl_repeatable_read(), harn.repo()),
+        (harn.nucl().repeatable_read(), harn.repo()),
         user_token,
         term_id,
     )

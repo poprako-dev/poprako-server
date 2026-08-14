@@ -50,7 +50,7 @@ pub async fn register(
         _,
     >(
         (
-            harn.nucl_repeatable_read(),
+            harn.nucl().repeatable_read(),
             harn.repo(),
             harn.auth(),
             harn.develop(),

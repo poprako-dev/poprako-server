@@ -1,12 +1,32 @@
 use std::sync::Arc;
 
-/// Central application harness that wires together all port implementations.
-pub struct Harn<NR, NS, R, P, A, I, D> {
-    /// Shared harness storage.
-    inner: Arc<HarnInner<NR, NS, R, P, A, I, D>>,
+/// Selects one of the transaction coordinators owned by the application.
+pub struct NuclProxy<NR, NS>(NR, NS);
+
+impl<NR, NS> NuclProxy<NR, NS> {
+    /// Combines the repeatable-read and serializable coordinators.
+    pub fn new(repeatable_read: NR, serializable: NS) -> Self {
+        Self(repeatable_read, serializable)
+    }
+
+    /// Returns the repeatable-read transaction coordinator.
+    pub fn repeatable_read(&self) -> &NR {
+        &self.0
+    }
+
+    /// Returns the serializable transaction coordinator.
+    pub fn serializable(&self) -> &NS {
+        &self.1
+    }
 }
 
-impl<NR, NS, R, P, A, I, D> Clone for Harn<NR, NS, R, P, A, I, D> {
+/// Central application harness that wires together all port implementations.
+pub struct Harn<N, R, P, A, I, D> {
+    /// Shared harness storage.
+    inner: Arc<HarnInner<N, R, P, A, I, D>>,
+}
+
+impl<N, R, P, A, I, D> Clone for Harn<N, R, P, A, I, D> {
     // Clones the shared harness handle.
     fn clone(&self) -> Self {
         //
@@ -17,11 +37,9 @@ impl<NR, NS, R, P, A, I, D> Clone for Harn<NR, NS, R, P, A, I, D> {
 }
 
 // Stores the concrete application ports.
-struct HarnInner<NR, NS, R, P, A, I, D> {
-    // Repeatable-read transaction coordinator.
-    nucl_repeatable_read: NR,
-    // Serializable transaction coordinator.
-    nucl_serializable: NS,
+struct HarnInner<N, R, P, A, I, D> {
+    // Transaction coordinator selector.
+    nucl: N,
     // Repository adapter bundle.
     repo: R,
     // Deferred-task producer.
@@ -34,11 +52,10 @@ struct HarnInner<NR, NS, R, P, A, I, D> {
     develop: D,
 }
 
-impl<NR, NS, R, P, A, I, D> Harn<NR, NS, R, P, A, I, D> {
-    /// Builds a harness with both supported transaction coordinators.
+impl<N, R, P, A, I, D> Harn<N, R, P, A, I, D> {
+    /// Builds a harness from its application ports.
     pub fn new(
-        nucl_repeatable_read: NR,
-        nucl_serializable: NS,
+        nucl: N,
         repo: R,
         prom: P,
         auth: A,
@@ -48,8 +65,7 @@ impl<NR, NS, R, P, A, I, D> Harn<NR, NS, R, P, A, I, D> {
         //
         Self {
             inner: Arc::new(HarnInner {
-                nucl_repeatable_read,
-                nucl_serializable,
+                nucl,
                 repo,
                 prom,
                 auth,
@@ -59,14 +75,9 @@ impl<NR, NS, R, P, A, I, D> Harn<NR, NS, R, P, A, I, D> {
         }
     }
 
-    /// Returns the repeatable-read transaction coordinator.
-    pub fn nucl_repeatable_read(&self) -> &NR {
-        &self.inner.nucl_repeatable_read
-    }
-
-    /// Returns the serializable transaction coordinator.
-    pub fn nucl_serializable(&self) -> &NS {
-        &self.inner.nucl_serializable
+    /// Returns the transaction coordinator selector.
+    pub fn nucl(&self) -> &N {
+        &self.inner.nucl
     }
 
     /// Returns the repository bundle.

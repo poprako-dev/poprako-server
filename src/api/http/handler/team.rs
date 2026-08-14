@@ -45,7 +45,11 @@ pub async fn create(
 ) -> HttpResult<TeamInfoView> {
     //
     usecase::team::create::<_, RdbContext<RepeatableRead>, HybRepo, _>(
-        (harn.nucl_repeatable_read(), harn.repo(), harn.image_pool()),
+        (
+            harn.nucl().repeatable_read(),
+            harn.repo(),
+            harn.image_pool(),
+        ),
         user_token,
         instr,
     )
@@ -228,7 +232,7 @@ pub async fn reserve_avatar(
         _,
     >(
         (
-            harn.nucl_repeatable_read(),
+            harn.nucl().repeatable_read(),
             harn.repo(),
             harn.prom(),
             harn.image_pool(),
@@ -268,7 +272,11 @@ pub async fn mark_avatar_uploaded(
         HybRepo,
         _,
     >(
-        (harn.nucl_repeatable_read(), harn.repo(), harn.image_pool()),
+        (
+            harn.nucl().repeatable_read(),
+            harn.repo(),
+            harn.image_pool(),
+        ),
         user_token,
         team_id,
         instr,
@@ -298,7 +306,7 @@ pub async fn delete(
 ) -> HttpNoContent {
     //
     usecase::team::delete::<_, RdbContext<Serializable>, HybRepo, RdbProm>(
-        (harn.nucl_serializable(), harn.repo(), harn.prom()),
+        (harn.nucl().serializable(), harn.repo(), harn.prom()),
         user_token,
         team_id,
     )

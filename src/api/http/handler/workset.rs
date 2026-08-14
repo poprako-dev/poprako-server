@@ -47,7 +47,7 @@ pub async fn create(
 ) -> HttpResult<CreateWorksetVal> {
     //
     usecase::workset::create::<_, RdbContext<RepeatableRead>, HybRepo>(
-        (harn.nucl_repeatable_read(), harn.repo()),
+        (harn.nucl().repeatable_read(), harn.repo()),
         user_token,
         instr,
     )
@@ -173,7 +173,7 @@ pub async fn delete(
 ) -> HttpNoContent {
     //
     usecase::workset::delete::<_, RdbContext<Serializable>, HybRepo, RdbProm>(
-        (harn.nucl_serializable(), harn.repo(), harn.prom()),
+        (harn.nucl().serializable(), harn.repo(), harn.prom()),
         user_token,
         workset_id,
     )

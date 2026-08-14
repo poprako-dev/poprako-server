@@ -73,7 +73,7 @@ pub async fn create(
 ) -> HttpResult<CreateChapterVal> {
     //
     usecase::chapter::create::<_, RdbContext<RepeatableRead>, HybRepo>(
-        (harn.nucl_repeatable_read(), harn.repo()),
+        (harn.nucl().repeatable_read(), harn.repo()),
         user_token,
         instr,
     )
@@ -197,7 +197,7 @@ pub async fn update_info(
     ensure_path_matches_body_id(&chapter_id, &instr.id)?;
 
     usecase::chapter::update_info::<_, RdbContext<RepeatableRead>, HybRepo>(
-        (harn.nucl_repeatable_read(), harn.repo()),
+        (harn.nucl().repeatable_read(), harn.repo()),
         user_token,
         instr,
     )
@@ -227,7 +227,7 @@ pub async fn mark_pinned(
 ) -> HttpNoContent {
     //
     usecase::chapter::mark_pinned::<_, RdbContext<RepeatableRead>, HybRepo>(
-        (harn.nucl_repeatable_read(), harn.repo()),
+        (harn.nucl().repeatable_read(), harn.repo()),
         user_token,
         chapter_id,
     )
@@ -268,7 +268,7 @@ pub async fn advance_stage(
         _,
     >(
         (
-            harn.nucl_repeatable_read(),
+            harn.nucl().repeatable_read(),
             harn.repo(),
             harn.prom(),
             harn.develop(),
@@ -301,7 +301,7 @@ pub async fn delete(
 ) -> HttpNoContent {
     //
     usecase::chapter::delete::<_, RdbContext<Serializable>, HybRepo, RdbProm>(
-        (harn.nucl_serializable(), harn.repo(), harn.prom()),
+        (harn.nucl().serializable(), harn.repo(), harn.prom()),
         user_token,
         chapter_id,
     )

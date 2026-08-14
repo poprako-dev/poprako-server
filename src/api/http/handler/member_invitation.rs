@@ -79,7 +79,7 @@ pub async fn create(
         HybRepo,
         RdbProm,
     >(
-        (harn.nucl_repeatable_read(), harn.repo(), harn.prom()),
+        (harn.nucl().repeatable_read(), harn.repo(), harn.prom()),
         user_token,
         instr,
     )
@@ -153,7 +153,7 @@ pub async fn update_roles(
         RdbContext<RepeatableRead>,
         HybRepo,
     >(
-        (harn.nucl_repeatable_read(), harn.repo()),
+        (harn.nucl().repeatable_read(), harn.repo()),
         user_token,
         instr,
     )
@@ -182,7 +182,7 @@ pub async fn delete(
 ) -> HttpNoContent {
     //
     usecase::member_invitation::delete::<_, RdbContext<RepeatableRead>, HybRepo>(
-        (harn.nucl_repeatable_read(), harn.repo()),
+        (harn.nucl().repeatable_read(), harn.repo()),
         user_token,
         member_invitation_id,
     )

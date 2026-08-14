@@ -101,7 +101,7 @@ pub async fn delete(
 ) -> HttpNoContent {
     //
     usecase::page::delete::<_, RdbContext<RepeatableRead>, HybRepo, RdbProm>(
-        (harn.nucl_repeatable_read(), harn.repo(), harn.prom()),
+        (harn.nucl().repeatable_read(), harn.repo(), harn.prom()),
         user_token,
         chapter_id,
     )
@@ -142,7 +142,7 @@ pub async fn reserve_chapter_pages(
         _,
     >(
         (
-            harn.nucl_repeatable_read(),
+            harn.nucl().repeatable_read(),
             harn.repo(),
             harn.prom(),
             harn.image_pool(),
@@ -183,7 +183,7 @@ pub async fn reserve_image(
         _,
     >(
         (
-            harn.nucl_repeatable_read(),
+            harn.nucl().repeatable_read(),
             harn.repo(),
             harn.prom(),
             harn.image_pool(),
@@ -223,7 +223,11 @@ pub async fn mark_image_uploaded(
         HybRepo,
         _,
     >(
-        (harn.nucl_repeatable_read(), harn.repo(), harn.image_pool()),
+        (
+            harn.nucl().repeatable_read(),
+            harn.repo(),
+            harn.image_pool(),
+        ),
         user_token,
         page_id,
         instr,

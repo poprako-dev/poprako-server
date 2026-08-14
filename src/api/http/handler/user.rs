@@ -107,7 +107,7 @@ pub async fn update_info(
     ensure_path_matches_body_id(&user_id, &instr.id)?;
 
     usecase::user::update_info::<_, RdbContext<RepeatableRead>, HybRepo>(
-        (harn.nucl_repeatable_read(), harn.repo()),
+        (harn.nucl().repeatable_read(), harn.repo()),
         user_token,
         instr,
     )
@@ -138,7 +138,7 @@ pub async fn update_password(
 ) -> HttpNoContent {
     //
     usecase::user::update_password::<_, RdbContext<RepeatableRead>, HybRepo>(
-        (harn.nucl_repeatable_read(), harn.repo()),
+        (harn.nucl().repeatable_read(), harn.repo()),
         user_token,
         user_id,
         instr,
@@ -168,7 +168,7 @@ pub async fn delete(
 ) -> HttpNoContent {
     //
     usecase::user::delete::<_, RdbContext<RepeatableRead>, HybRepo, RdbProm>(
-        (harn.nucl_repeatable_read(), harn.repo(), harn.prom()),
+        (harn.nucl().repeatable_read(), harn.repo(), harn.prom()),
         user_token,
         user_id,
     )
@@ -207,7 +207,7 @@ pub async fn reserve_avatar(
         _,
     >(
         (
-            harn.nucl_repeatable_read(),
+            harn.nucl().repeatable_read(),
             harn.repo(),
             harn.prom(),
             harn.image_pool(),
@@ -245,7 +245,11 @@ pub async fn mark_avatar_uploaded(
         HybRepo,
         _,
     >(
-        (harn.nucl_repeatable_read(), harn.repo(), harn.image_pool()),
+        (
+            harn.nucl().repeatable_read(),
+            harn.repo(),
+            harn.image_pool(),
+        ),
         user_token,
         user_id,
         instr,

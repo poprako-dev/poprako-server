@@ -53,7 +53,7 @@ pub use api::http::state::AppHarn;
 pub use complex::user::UserComplex;
 pub use config::AppConfig;
 pub use extra::sched::Sched;
-pub use harn::Harn;
+pub use harn::{Harn, NuclProxy};
 pub use log::init_log;
 pub use part::nucl::{RepeatableRead, Serializable};
 pub use part_impl::auth::jwt_impl::JwtAuth;

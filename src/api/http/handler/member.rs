@@ -74,7 +74,7 @@ pub async fn create(
 ) -> HttpResult<CreateMemberVal> {
     //
     usecase::member::create::<_, RdbContext<RepeatableRead>, HybRepo>(
-        (harn.nucl_repeatable_read(), harn.repo()),
+        (harn.nucl().repeatable_read(), harn.repo()),
         user_token,
         instr,
     )
@@ -173,7 +173,7 @@ pub async fn update_roles(
     ensure_path_matches_body_id(&member_id, &instr.id)?;
 
     usecase::member::update_roles::<_, RdbContext<RepeatableRead>, HybRepo>(
-        (harn.nucl_repeatable_read(), harn.repo()),
+        (harn.nucl().repeatable_read(), harn.repo()),
         user_token,
         instr,
     )
@@ -202,7 +202,7 @@ pub async fn delete(
 ) -> HttpNoContent {
     //
     usecase::member::delete::<_, RdbContext<RepeatableRead>, HybRepo>(
-        (harn.nucl_repeatable_read(), harn.repo()),
+        (harn.nucl().repeatable_read(), harn.repo()),
         user_token,
         member_id,
     )
@@ -231,7 +231,11 @@ pub async fn join(
 ) -> HttpResult<MemberInfoView> {
     //
     usecase::member::join_team::<_, RdbContext<RepeatableRead>, HybRepo, _>(
-        (harn.nucl_repeatable_read(), harn.repo(), harn.image_pool()),
+        (
+            harn.nucl().repeatable_read(),
+            harn.repo(),
+            harn.image_pool(),
+        ),
         user_token,
         instr,
     )

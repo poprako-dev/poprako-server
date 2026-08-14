@@ -83,7 +83,7 @@ pub async fn update_roles(
     ensure_path_matches_body_id(&user_id, &instr.user_id)?;
 
     usecase::assignment::update_roles::<_, RdbContext<RepeatableRead>, HybRepo>(
-        (harn.nucl_repeatable_read(), harn.repo()),
+        (harn.nucl().repeatable_read(), harn.repo()),
         user_token,
         instr,
     )
@@ -112,7 +112,7 @@ pub async fn delete(
 ) -> HttpNoContent {
     //
     usecase::assignment::delete::<_, RdbContext<RepeatableRead>, HybRepo>(
-        (harn.nucl_repeatable_read(), harn.repo()),
+        (harn.nucl().repeatable_read(), harn.repo()),
         user_token,
         assignment_id,
     )
@@ -141,7 +141,7 @@ pub async fn join(
 ) -> HttpResult<AssignmentInfoView> {
     //
     usecase::assignment::join::<_, RdbContext<RepeatableRead>, HybRepo>(
-        (harn.nucl_repeatable_read(), harn.repo()),
+        (harn.nucl().repeatable_read(), harn.repo()),
         user_token,
         instr,
     )
