@@ -2,7 +2,9 @@
 #[cfg(test)]
 mod tests;
 
-use poprako_orchestra::{Nucl, OperRun as _, OperStep as _, run_proxy};
+use poprako_orchestra::{
+    AtLeast, Nucl, OperRun as _, OperStep as _, run_proxy,
+};
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
@@ -19,6 +21,7 @@ use crate::model::read::proj::unit::UnitCounters;
 use crate::model::shared::user::UserToken;
 use crate::model::unit_port::UnitTranslationImport;
 use crate::model::write::unit::UnitEdit;
+use crate::part::nucl::RepeatableRead;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
@@ -49,8 +52,10 @@ pub async fn import<N, C, R>(
     chapter_id: String,
 ) -> BaseRest<ImportChapterTranslationVal>
 where
+    C: poprako_orchestra::Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
+    C::Level: AtLeast<RepeatableRead>,
     R: AssignmentRepo<C>
         + ChapterRepo<C>
         + ComicRepo<C>

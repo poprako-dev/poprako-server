@@ -57,20 +57,6 @@ impl ImagePool for Mock {
         )
     }
 
-    // Internal implementation of `get_upload_url`.
-    async fn get_upload_url(&self, key: &str) -> BaseRest<Url> {
-        //
-        // Internal implementation detail.
-        if self.flags.lock().unwrap().image_put_failure {
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message: trl("error-image-put-failed"),
-            });
-        }
-
-        accept(Url::parse(&format!("https://test.local/put/{}", key)).unwrap())
-    }
-
     // Internal implementation of `get_upload_slot`.
     async fn get_upload_slot(
         &self,
@@ -142,24 +128,7 @@ impl ImageManager for Mock {
 }
 
 // gen_download_url_returns_stable_url(ImagePool::gen_download_url)(positive): download URLs should be deterministic for assertions.
-// get_upload_url_returns_stable_url(ImagePool::get_upload_url)(positive): upload URLs should be deterministic for assertions.
 // gen_download_url_failure_returns_expected_err(ImagePool::gen_download_url)(negative): configured get failures should return an expected error.
-
-/// Mock helper that returns a stable deterministic upload URL.
-#[tokio::test]
-async fn get_upload_url_returns_stable_url() {
-    //
-    // Internal implementation detail.
-    let mock = Mock::new();
-
-    let url = ImagePool::get_upload_url(&mock, "avatar.png").await;
-
-    assert!(url.is_ok());
-
-    let url = url.ok().unwrap();
-
-    assert_eq!(url.as_str(), "https://test.local/put/avatar.png");
-}
 
 /// Mock helper that returns an expected error when download failure is configured.
 #[tokio::test]

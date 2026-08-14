@@ -23,6 +23,10 @@ use crate::data::instr::member_invitation::{
 use crate::data::val::member_invitation::CreateMemberInvitationVal;
 use crate::data::view::member_invitation::MemberInvitationInfoView;
 use crate::model::shared::user::UserToken;
+use crate::part::nucl::RepeatableRead;
+use crate::part_impl::prom::rdb_impl::RdbProm;
+use crate::part_impl::repo::HybRepo;
+use crate::shared::RdbContext;
 use crate::usecase;
 use crate::value::member_invitation::MemberInvitationInclOpt;
 
@@ -69,8 +73,13 @@ pub async fn create(
     Json(instr): Json<CreateMemberInvitationInstr>,
 ) -> HttpResult<CreateMemberInvitationVal> {
     //
-    usecase::member_invitation::create(
-        (harn.nucl(), harn.repo(), harn.prom()),
+    usecase::member_invitation::create::<
+        _,
+        RdbContext<RepeatableRead>,
+        HybRepo,
+        RdbProm,
+    >(
+        (harn.nucl_repeatable_read(), harn.repo(), harn.prom()),
         user_token,
         instr,
     )
@@ -106,11 +115,11 @@ pub async fn list_infos(
         limit: query.limit,
     };
 
-    usecase::member_invitation::list_infos(
-        (harn.repo(), harn.image_pool()),
-        user_token,
-        instr,
-    )
+    usecase::member_invitation::list_infos::<
+        RdbContext<RepeatableRead>,
+        HybRepo,
+        _,
+    >((harn.repo(), harn.image_pool()), user_token, instr)
     .await?
     .accept(StatusCode::OK)
 }
@@ -139,8 +148,12 @@ pub async fn update_roles(
     //
     ensure_path_matches_body_id(&member_invitation_id, &instr.id)?;
 
-    usecase::member_invitation::update_roles(
-        (harn.nucl(), harn.repo()),
+    usecase::member_invitation::update_roles::<
+        _,
+        RdbContext<RepeatableRead>,
+        HybRepo,
+    >(
+        (harn.nucl_repeatable_read(), harn.repo()),
         user_token,
         instr,
     )
@@ -168,8 +181,8 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::member_invitation::delete(
-        (harn.nucl(), harn.repo()),
+    usecase::member_invitation::delete::<_, RdbContext<RepeatableRead>, HybRepo>(
+        (harn.nucl_repeatable_read(), harn.repo()),
         user_token,
         member_invitation_id,
     )

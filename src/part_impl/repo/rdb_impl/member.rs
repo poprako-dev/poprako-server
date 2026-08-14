@@ -20,6 +20,7 @@ use crate::result::{BaseError, BaseRest};
 
 impl Run<FindMemberInfo<'_>> for HybRepo {
     // Error type for the Run trait impl on member lookup.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Finds a member by user and team IDs within the given operation spec.

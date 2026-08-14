@@ -2,8 +2,6 @@
 //! generation, and perm checks.
 
 use poprako_orchestra::{OperProxy as _, Proxy};
-use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
-use poprako_orchestra_extra::prom::task::Task;
 
 use poprako_util::i18n::trl;
 
@@ -13,7 +11,9 @@ use crate::complex::util::{
     check_user_is_team_admin, check_user_is_team_member,
 };
 use crate::complex::workset::WorksetComplex;
+use crate::part::prom::oper::{Defer, DeferBatch};
 use crate::part::prom::payload::{TaskPayload, image};
+use crate::part::prom::task::Task;
 use crate::part::repo::oper::assignment::DeleteAssignments;
 use crate::part::repo::oper::assignment_invitation::DeleteAssignmentInvitations;
 use crate::part::repo::oper::chapter::{

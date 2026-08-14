@@ -1,22 +1,7 @@
-// detect_content_type(detect_content_type)(positive): supported image extensions should map to MIME types.
-// detect_content_type_rejects_unknown_extension(detect_content_type)(negative): unsupported extensions should be rejected.
 // gen_download_url_uses_custom_domain(ImagePool::gen_download_url)(positive): download URLs should be built from the configured public domain.
 // gen_thumbnail_download_url_uses_cloudflare_image_resizing(ImagePool::gen_thumbnail_download_url)(positive): thumbnail URLs should apply the configured Cloudflare Image Resizing options.
 
 use super::*;
-
-#[test]
-fn detect_content_type_maps_supported_extensions() {
-    //
-    assert_eq!(detect_content_type("avatar.PNG"), Some("image/png"));
-
-    assert_eq!(detect_content_type("avatar.webp"), Some("image/webp"));
-}
-
-#[test]
-fn detect_content_type_rejects_unknown_extension() {
-    assert_eq!(detect_content_type("avatar.txt"), None);
-}
 
 #[test]
 fn gen_download_url_uses_custom_domain() {

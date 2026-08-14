@@ -122,6 +122,7 @@ fn create_announcement(
 
 impl Run<ListAnnouncementInfos<'_>> for Mock {
     // Internal type alias for `Error`.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -141,6 +142,9 @@ impl Run<ListAnnouncementInfos<'_>> for Mock {
 
 impl Step<CreateAnnouncement<'_>, MockContext> for Mock {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]

@@ -118,6 +118,7 @@ fn create_comment(
 
 impl Run<ListCommentInfos<'_>> for Mock {
     // Internal type alias for `Error`.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -137,6 +138,9 @@ impl Run<ListCommentInfos<'_>> for Mock {
 
 impl Step<CreateComment<'_>, MockContext> for Mock {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]

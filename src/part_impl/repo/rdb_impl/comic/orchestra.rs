@@ -20,6 +20,7 @@ use crate::shared::RdbContext;
 
 impl Run<GetComicInfo<'_, '_>> for HybRepo {
     // Maps the `GetComicInfo` repository operation to non-transactional execution.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Fetches one comic through `submit_query!` and applies caller-defined includes.
@@ -31,6 +32,7 @@ impl Run<GetComicInfo<'_, '_>> for HybRepo {
 
 impl Run<ListComicInfos<'_>> for HybRepo {
     // Maps the `ListComicInfos` repository operation to non-transactional execution.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Loads matching comics and returns the list view for the requested spec.
@@ -42,6 +44,7 @@ impl Run<ListComicInfos<'_>> for HybRepo {
 
 impl Run<UpdateComic<'_>> for HybRepo {
     // Maps the `UpdateComic` repository operation to non-transactional execution.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Writes the provided comic updates using the step-level `update_info` flow.
@@ -53,6 +56,7 @@ impl Run<UpdateComic<'_>> for HybRepo {
 
 impl Run<MarkComicCoverUploaded<'_>> for HybRepo {
     // Maps the `MarkComicCoverUploaded` repository operation to non-transactional execution.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Persists cover upload state (version/key/flag) and returns no payload.
@@ -70,90 +74,132 @@ impl Run<MarkComicCoverUploaded<'_>> for HybRepo {
     }
 }
 
-impl Step<GetComicInfo<'_, '_>, RdbContext> for HybRepo {
+impl<L> Step<GetComicInfo<'_, '_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Resolves a single comic record inside an existing DB transaction context.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Loads one comic with requested includes by delegating to the step helper.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &GetComicInfo<'_, '_>,
     ) -> BaseRest<ComicInfo> {
         get_info_by_id(context.conn(), oper.id, oper.incls).await
     }
 }
 
-impl Step<ListComicInfos<'_>, RdbContext> for HybRepo {
+impl<L> Step<ListComicInfos<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Resolves a comic list inside an existing DB transaction context.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Applies the list spec in the transaction and returns matching comic infos.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &ListComicInfos<'_>,
     ) -> BaseRest<Vec<ComicInfo>> {
         list_infos(context.conn(), oper.spec).await
     }
 }
 
-impl Step<GetComicInfoExcluded<'_, '_>, RdbContext> for HybRepo {
+impl<L> Step<GetComicInfoExcluded<'_, '_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Resolves one comic with excluded include payload inside a transaction.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Loads the comic while excluding non-essential relation expansion.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &GetComicInfoExcluded<'_, '_>,
     ) -> BaseRest<ComicInfo> {
         get_info_excluded(context.conn(), oper.id, oper.incls).await
     }
 }
 
-impl Step<ListComicInfosExcluded<'_>, RdbContext> for HybRepo {
+impl<L> Step<ListComicInfosExcluded<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Resolves a filtered excluded-comic list inside a transaction.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Applies excluded-list spec within transaction scope.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &ListComicInfosExcluded<'_>,
     ) -> BaseRest<Vec<ComicInfo>> {
         list_infos_excluded(context.conn(), oper.spec).await
     }
 }
 
-impl Step<CreateComic<'_>, RdbContext> for HybRepo {
+impl<L> Step<CreateComic<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Creates one comic inside an active transaction context.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Inserts the comic entry payload and returns the persisted comic info.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &CreateComic<'_>,
     ) -> BaseRest<ComicInfo> {
         create(context.conn(), oper.entry).await
     }
 }
 
-impl Step<ReserveComicCover<'_>, RdbContext> for HybRepo {
+impl<L> Step<ReserveComicCover<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Reserves a comic cover upload slot inside an active transaction.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Creates reservation metadata for cover upload and returns claim details.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &ReserveComicCover<'_>,
     ) -> BaseRest<ComicCoverReservation> {
         //
@@ -162,15 +208,22 @@ impl Step<ReserveComicCover<'_>, RdbContext> for HybRepo {
     }
 }
 
-impl Step<MarkComicCoverUploaded<'_>, RdbContext> for HybRepo {
+impl<L> Step<MarkComicCoverUploaded<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Marks cover upload state inside an active transaction.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Writes uploaded-cover state and persists metadata changes for the comic.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &MarkComicCoverUploaded<'_>,
     ) -> BaseRest<()> {
         //
@@ -185,60 +238,88 @@ impl Step<MarkComicCoverUploaded<'_>, RdbContext> for HybRepo {
     }
 }
 
-impl Step<DeleteComic<'_>, RdbContext> for HybRepo {
+impl<L> Step<DeleteComic<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Deletes one comic inside an active transaction context.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Removes the comic record identified by id and returns after completion.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &DeleteComic<'_>,
     ) -> BaseRest<()> {
         delete(context.conn(), oper.id).await
     }
 }
 
-impl Step<AllocComicChapterIndex<'_>, RdbContext> for HybRepo {
+impl<L> Step<AllocComicChapterIndex<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Allocates the next chapter index inside an active transaction context.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Increments and returns the next chapter index for the comic.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &AllocComicChapterIndex<'_>,
     ) -> BaseRest<i32> {
         incr_chapter_next_index(context.conn(), oper.id).await
     }
 }
 
-impl Step<UpdateComicChapterCount<'_>, RdbContext> for HybRepo {
+impl<L> Step<UpdateComicChapterCount<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Updates chapter-count totals inside an active transaction context.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Applies a chapter-count delta to keep denormalized counters synchronized.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &UpdateComicChapterCount<'_>,
     ) -> BaseRest<()> {
         update_chapter_count(context.conn(), oper.id, oper.delta).await
     }
 }
 
-impl Step<TouchComicLastActive<'_>, RdbContext> for HybRepo {
+impl<L> Step<TouchComicLastActive<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Touches last-active timestamp inside an active transaction context.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Updates comic activity marker so last-access timing stays fresh.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &TouchComicLastActive<'_>,
     ) -> BaseRest<()> {
         touch_last_active(context.conn(), oper.id).await

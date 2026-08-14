@@ -80,6 +80,7 @@ async fn resolve_team_id(
 
 impl Run<ResolveTeamId<'_>> for HybRepo {
     // BaseError for the standalone team-resolution projection.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Executes the team-resolution projection on a pooled connection.
@@ -92,15 +93,22 @@ impl Run<ResolveTeamId<'_>> for HybRepo {
     }
 }
 
-impl Step<ResolveTeamId<'_>, RdbContext> for HybRepo {
+impl<L> Step<ResolveTeamId<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // BaseError for the transactional team-resolution projection.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Executes the team-resolution projection inside the active transaction.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &ResolveTeamId<'_>,
     ) -> Result<String, Self::Error> {
         resolve_team_id(context.conn(), oper).await

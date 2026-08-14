@@ -18,6 +18,7 @@ use crate::shared::RdbContext;
 
 impl Run<ListAssignmentInvitationInfos<'_>> for HybRepo {
     // Non-transactional path that lists invitation infos for a list spec.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
     #[instrument(level = "info", skip_all)]
     // Delegate to `submit_query!` to run the list query outside transaction
@@ -29,8 +30,10 @@ impl Run<ListAssignmentInvitationInfos<'_>> for HybRepo {
         submit_query!(self.core, list_infos, oper.spec)
     }
 }
+
 impl Run<GetAssignmentInvitationInfo<'_>> for HybRepo {
     // Non-transactional path for loading one invitation info by id.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
     #[instrument(level = "info", skip_all)]
     // Dispatch a single-id fetch through submit-query macro and return full info.
@@ -47,27 +50,43 @@ impl Run<GetAssignmentInvitationInfo<'_>> for HybRepo {
         }
     }
 }
-impl Step<CreateAssignmentInvitation<'_>, RdbContext> for HybRepo {
+
+impl<L> Step<CreateAssignmentInvitation<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Create invitation rows and return resulting invitation info in tx scope.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
     #[instrument(level = "info", skip_all)]
     // Execute creation in the provided DB context and return created info payload.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &CreateAssignmentInvitation<'_>,
     ) -> BaseRest<AssignmentInvitationInfo> {
         create(context.conn(), oper.entry).await
     }
 }
-impl Step<GetAssignmentInvitationInfo<'_>, RdbContext> for HybRepo {
+
+impl<L> Step<GetAssignmentInvitationInfo<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Transactional fetch for one invitation info by id.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
     #[instrument(level = "info", skip_all)]
     // Route a non-code lookup to `step_impl` and load exactly one record.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &GetAssignmentInvitationInfo<'_>,
     ) -> BaseRest<AssignmentInvitationInfo> {
         //
@@ -79,42 +98,65 @@ impl Step<GetAssignmentInvitationInfo<'_>, RdbContext> for HybRepo {
         }
     }
 }
-impl Step<GetAssignmentInvitationInfoExcluded<'_>, RdbContext> for HybRepo {
+
+impl<L> Step<GetAssignmentInvitationInfoExcluded<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Transactional lookup for invitation by code while skipping soft-excluded rows.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
     #[instrument(level = "info", skip_all)]
     // Fetch by raw code and keep exclusion semantics required by this branch.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &GetAssignmentInvitationInfoExcluded<'_>,
     ) -> BaseRest<AssignmentInvitationInfo> {
         get_info_by_code_excluded(context.conn(), oper.code).await
     }
 }
-impl Step<MarkAssignmentInvitationUsed<'_>, RdbContext> for HybRepo {
+
+impl<L> Step<MarkAssignmentInvitationUsed<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Transactional state transition that marks a pending invitation as used.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
     #[instrument(level = "info", skip_all)]
     // Perform state update for the given invitation id within the current tx.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &MarkAssignmentInvitationUsed<'_>,
     ) -> BaseRest<()> {
         mark_pending_as_used(context.conn(), oper.id).await
     }
 }
 
-impl Step<PurgeExpiredAssignmentInvitation<'_>, RdbContext> for HybRepo {
+impl<L> Step<PurgeExpiredAssignmentInvitation<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Transactional delete/update behavior for purging expired invitations.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Purge expired invitation entries identified by invitation id.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &PurgeExpiredAssignmentInvitation<'_>,
     ) -> BaseRest<()> {
         purge_pending(context.conn(), oper.id).await
@@ -123,6 +165,7 @@ impl Step<PurgeExpiredAssignmentInvitation<'_>, RdbContext> for HybRepo {
 
 impl Run<PurgeExpiredAssignmentInvitation<'_>> for HybRepo {
     // Non-transactional interface for purging expired invitations.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -135,16 +178,23 @@ impl Run<PurgeExpiredAssignmentInvitation<'_>> for HybRepo {
     }
 }
 
-impl Step<DeleteAssignmentInvitations<'_>, RdbContext> for HybRepo {
+impl<L> Step<DeleteAssignmentInvitations<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Transactional delete for invitation records.
     //
     // Deletes by invitation id or all invitations under a chapter.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
     #[instrument(level = "info", skip_all)]
     // Branch on request variant and execute the matching deletion statement.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &DeleteAssignmentInvitations<'_>,
     ) -> BaseRest<()> {
         //

@@ -16,6 +16,9 @@ use crate::data::instr::unit::{
 };
 use crate::data::val::unit::ListPageUnitInfosVal;
 use crate::model::shared::user::UserToken;
+use crate::part::nucl::RepeatableRead;
+use crate::part_impl::repo::HybRepo;
+use crate::shared::RdbContext;
 use crate::usecase;
 
 /// `GET /api/v1/pages/{page_id}/units` — list units under a page.
@@ -39,9 +42,13 @@ pub async fn list_infos(
     //
     let instr = ListPageUnitInfosInstr { page_id };
 
-    usecase::unit::list_infos((harn.repo(),), user_token, instr)
-        .await?
-        .accept(StatusCode::OK)
+    usecase::unit::list_infos::<RdbContext<RepeatableRead>, HybRepo>(
+        (harn.repo(),),
+        user_token,
+        instr,
+    )
+    .await?
+    .accept(StatusCode::OK)
 }
 
 /// `POST /api/v1/pages/{page_id}/units/save` — save Unit edits.
@@ -67,8 +74,12 @@ pub async fn save_infos(
     //
     let instr = SavePageUnitEditsInstr { page_id, edits };
 
-    usecase::unit::save_edits((harn.nucl(), harn.repo()), user_token, instr)
-        .await?;
+    usecase::unit::save_edits::<_, RdbContext<RepeatableRead>, HybRepo>(
+        (harn.nucl_repeatable_read(), harn.repo()),
+        user_token,
+        instr,
+    )
+    .await?;
 
     no_content()
 }

@@ -114,4 +114,5 @@ criterion_group!(
     benchmark_password_operations,
     benchmark_aggregation_operations,
 );
+
 criterion_main!(benches);

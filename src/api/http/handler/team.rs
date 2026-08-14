@@ -19,6 +19,10 @@ use crate::data::instr::team::{
 use crate::data::val::team::ReserveTeamAvatarVal;
 use crate::data::view::team::TeamInfoView;
 use crate::model::shared::user::UserToken;
+use crate::part::nucl::{RepeatableRead, Serializable};
+use crate::part_impl::prom::rdb_impl::RdbProm;
+use crate::part_impl::repo::HybRepo;
+use crate::shared::RdbContext;
 use crate::usecase;
 
 /// `POST /api/v1/teams` — create a new team.
@@ -40,8 +44,8 @@ pub async fn create(
     Json(instr): Json<CreateTeamInstr>,
 ) -> HttpResult<TeamInfoView> {
     //
-    usecase::team::create(
-        (harn.nucl(), harn.repo(), harn.image_pool()),
+    usecase::team::create::<_, RdbContext<RepeatableRead>, HybRepo, _>(
+        (harn.nucl_repeatable_read(), harn.repo(), harn.image_pool()),
         user_token,
         instr,
     )
@@ -69,7 +73,7 @@ pub async fn list_infos(
     Query(instr): Query<ListTeamInfosInstr>,
 ) -> HttpResult<Vec<TeamInfoView>> {
     //
-    usecase::team::list_infos(
+    usecase::team::list_infos::<RdbContext<RepeatableRead>, HybRepo, _>(
         (harn.repo(), harn.image_pool()),
         user_token,
         instr,
@@ -97,9 +101,13 @@ pub async fn list_online_user_ids(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<Vec<String>> {
     //
-    usecase::team::list_online_user_ids((harn.repo(),), user_token, team_id)
-        .await?
-        .accept(StatusCode::OK)
+    usecase::team::list_online_user_ids::<RdbContext<RepeatableRead>, HybRepo>(
+        (harn.repo(),),
+        user_token,
+        team_id,
+    )
+    .await?
+    .accept(StatusCode::OK)
 }
 
 /// `PUT /api/v1/teams/{team_id}/mark-self-online` — refresh own lease.
@@ -121,8 +129,12 @@ pub async fn mark_self_online(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::team::mark_self_online((harn.repo(),), user_token, team_id)
-        .await?;
+    usecase::team::mark_self_online::<RdbContext<RepeatableRead>, HybRepo>(
+        (harn.repo(),),
+        user_token,
+        team_id,
+    )
+    .await?;
 
     no_content()
 }
@@ -145,9 +157,12 @@ pub async fn get_info(
     Path(team_id): Path<String>,
 ) -> HttpResult<TeamInfoView> {
     //
-    usecase::team::get_info((harn.repo(), harn.image_pool()), team_id)
-        .await?
-        .accept(StatusCode::OK)
+    usecase::team::get_info::<RdbContext<RepeatableRead>, HybRepo, _>(
+        (harn.repo(), harn.image_pool()),
+        team_id,
+    )
+    .await?
+    .accept(StatusCode::OK)
 }
 
 /// `PUT /api/v1/teams/{team_id}` — update a team's profile.
@@ -174,7 +189,12 @@ pub async fn update_info(
     //
     ensure_path_matches_body_id(&team_id, &instr.id)?;
 
-    usecase::team::update_info((harn.repo(),), user_token, instr).await?;
+    usecase::team::update_info::<RdbContext<RepeatableRead>, HybRepo>(
+        (harn.repo(),),
+        user_token,
+        instr,
+    )
+    .await?;
 
     no_content()
 }
@@ -200,8 +220,19 @@ pub async fn reserve_avatar(
     Json(instr): Json<ReserveTeamAvatarInstr>,
 ) -> HttpResult<ReserveTeamAvatarVal> {
     //
-    usecase::team::reserve_avatar(
-        (harn.nucl(), harn.repo(), harn.prom(), harn.image_pool()),
+    usecase::team::reserve_avatar::<
+        _,
+        RdbContext<RepeatableRead>,
+        HybRepo,
+        RdbProm,
+        _,
+    >(
+        (
+            harn.nucl_repeatable_read(),
+            harn.repo(),
+            harn.prom(),
+            harn.image_pool(),
+        ),
         user_token,
         team_id,
         instr,
@@ -231,8 +262,13 @@ pub async fn mark_avatar_uploaded(
     Json(instr): Json<MarkTeamAvatarUploadedInstr>,
 ) -> HttpNoContent {
     //
-    usecase::team::mark_avatar_uploaded(
-        (harn.nucl(), harn.repo(), harn.image_pool()),
+    usecase::team::mark_avatar_uploaded::<
+        _,
+        RdbContext<RepeatableRead>,
+        HybRepo,
+        _,
+    >(
+        (harn.nucl_repeatable_read(), harn.repo(), harn.image_pool()),
         user_token,
         team_id,
         instr,
@@ -261,8 +297,8 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::team::delete(
-        (harn.nucl(), harn.repo(), harn.prom()),
+    usecase::team::delete::<_, RdbContext<Serializable>, HybRepo, RdbProm>(
+        (harn.nucl_serializable(), harn.repo(), harn.prom()),
         user_token,
         team_id,
     )

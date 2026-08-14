@@ -19,6 +19,10 @@ use crate::data::instr::page::{
 use crate::data::val::page::{ReserveChapterPagesVal, ReservedPageVal};
 use crate::data::view::page::PageInfoView;
 use crate::model::shared::user::UserToken;
+use crate::part::nucl::RepeatableRead;
+use crate::part_impl::prom::rdb_impl::RdbProm;
+use crate::part_impl::repo::HybRepo;
+use crate::shared::RdbContext;
 use crate::usecase;
 
 /// `GET /api/v1/chapters/{chapter_id}/pages` — list pages in a chapter.
@@ -41,7 +45,7 @@ pub async fn list_infos(
     //
     let instr = ListPageInfosInstr { chapter_id };
 
-    usecase::page::list_infos(
+    usecase::page::list_infos::<RdbContext<RepeatableRead>, HybRepo, _>(
         (harn.repo(), harn.image_pool()),
         user_token,
         instr,
@@ -69,7 +73,7 @@ pub async fn get_info(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<PageInfoView> {
     //
-    usecase::page::get_info(
+    usecase::page::get_info::<RdbContext<RepeatableRead>, HybRepo, _>(
         (harn.repo(), harn.image_pool()),
         user_token,
         page_id,
@@ -96,8 +100,8 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::page::delete(
-        (harn.nucl(), harn.repo(), harn.prom()),
+    usecase::page::delete::<_, RdbContext<RepeatableRead>, HybRepo, RdbProm>(
+        (harn.nucl_repeatable_read(), harn.repo(), harn.prom()),
         user_token,
         chapter_id,
     )
@@ -130,8 +134,19 @@ pub async fn reserve_chapter_pages(
     //
     ensure_path_matches_body_id(&chapter_id, &instr.chapter_id)?;
 
-    usecase::page::reserve_chapter_pages(
-        (harn.nucl(), harn.repo(), harn.prom(), harn.image_pool()),
+    usecase::page::reserve_chapter_pages::<
+        _,
+        RdbContext<RepeatableRead>,
+        HybRepo,
+        RdbProm,
+        _,
+    >(
+        (
+            harn.nucl_repeatable_read(),
+            harn.repo(),
+            harn.prom(),
+            harn.image_pool(),
+        ),
         user_token,
         instr,
     )
@@ -160,8 +175,19 @@ pub async fn reserve_image(
     Json(instr): Json<ReservePageImageInstr>,
 ) -> HttpResult<ReservedPageVal> {
     //
-    usecase::page::reserve_image(
-        (harn.nucl(), harn.repo(), harn.prom(), harn.image_pool()),
+    usecase::page::reserve_image::<
+        _,
+        RdbContext<RepeatableRead>,
+        HybRepo,
+        RdbProm,
+        _,
+    >(
+        (
+            harn.nucl_repeatable_read(),
+            harn.repo(),
+            harn.prom(),
+            harn.image_pool(),
+        ),
         user_token,
         page_id,
         instr,
@@ -191,8 +217,13 @@ pub async fn mark_image_uploaded(
     Json(instr): Json<MarkPageImageUploadedInstr>,
 ) -> HttpNoContent {
     //
-    usecase::page::mark_image_uploaded(
-        (harn.nucl(), harn.repo(), harn.image_pool()),
+    usecase::page::mark_image_uploaded::<
+        _,
+        RdbContext<RepeatableRead>,
+        HybRepo,
+        _,
+    >(
+        (harn.nucl_repeatable_read(), harn.repo(), harn.image_pool()),
         user_token,
         page_id,
         instr,

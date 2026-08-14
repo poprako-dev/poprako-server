@@ -7,6 +7,7 @@ use std::future::Future;
 use url::Url;
 
 use crate::result::BaseRest;
+
 /// Constraints bound into a presigned image upload request.
 pub struct ImageUploadSpec<'a> {
     /// Storage key identifying the target object path.
@@ -40,12 +41,6 @@ pub trait ImagePool {
     fn gen_thumbnail_download_url(
         &self,
         original_key: &str,
-    ) -> impl Future<Output = BaseRest<Url>> + Send;
-
-    /// Returns a signed upload URL for writing an object at `key`.
-    fn get_upload_url(
-        &self,
-        key: &str,
     ) -> impl Future<Output = BaseRest<Url>> + Send;
 
     /// Returns an upload target whose signature binds content identity.

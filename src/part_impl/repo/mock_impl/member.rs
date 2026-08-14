@@ -131,6 +131,7 @@ fn find_member_by_user_id_and_team_id(
 
 impl<'a> Run<FindMemberInfo<'a>> for Mock {
     // Internal type alias for `Error`.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -290,6 +291,7 @@ fn list_member_infos_by_user(
 
 impl<'a> Run<ListMemberInfos<'a>> for Mock {
     // Internal type alias for `Error`.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -320,6 +322,7 @@ impl<'a> Run<ListMemberInfos<'a>> for Mock {
 
 impl<'a, 'b> Run<GetMemberInfo<'a, 'b>> for Mock {
     // Internal type alias for `Error`.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -341,6 +344,9 @@ impl<'a, 'b> Run<GetMemberInfo<'a, 'b>> for Mock {
 
 impl<'a> Step<CreateMember<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -356,6 +362,9 @@ impl<'a> Step<CreateMember<'a>, MockContext> for Mock {
 
 impl<'a> Step<UpdateMember<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -407,6 +416,9 @@ impl<'a> Step<UpdateMember<'a>, MockContext> for Mock {
 
 impl<'a> Step<ListMemberInfos<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -434,6 +446,9 @@ impl<'a> Step<ListMemberInfos<'a>, MockContext> for Mock {
 
 impl<'a> Step<FindMemberInfo<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -460,6 +475,9 @@ impl<'a> Step<FindMemberInfo<'a>, MockContext> for Mock {
 
 impl<'a, 'b> Step<GetMemberInfo<'a, 'b>, MockContext> for Mock {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -481,6 +499,9 @@ impl<'a, 'b> Step<GetMemberInfo<'a, 'b>, MockContext> for Mock {
 
 impl<'a> Step<ListMemberInfosExcluded<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -514,6 +535,9 @@ impl<'a> Step<ListMemberInfosExcluded<'a>, MockContext> for Mock {
 
 impl<'a> Step<DeleteMember<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]

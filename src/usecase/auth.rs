@@ -3,7 +3,7 @@
 #[cfg(test)]
 mod tests;
 
-use poprako_orchestra::{Nucl, OperRun as _, OperStep as _};
+use poprako_orchestra::{AtLeast, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
@@ -19,6 +19,7 @@ use crate::part::auth::TokenAuth;
 use crate::part::effect::event::Event;
 use crate::part::effect::event::user::UserSignedUpEvent;
 use crate::part::effect::{Develop, EffectEvent as _};
+use crate::part::nucl::RepeatableRead;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::member_invitation::MemberInvitationRepo;
 use crate::part::repo::oper::member::CreateMember;
@@ -67,8 +68,10 @@ pub async fn register<N, C, R, A, D>(
     instr: RegisterAuthInstr,
 ) -> BaseRest<RegisterAuthVal>
 where
+    C: poprako_orchestra::Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
+    C::Level: AtLeast<RepeatableRead>,
     R: UserRepo<C> + MemberRepo<C> + MemberInvitationRepo<C> + Send + Sync,
     A: TokenAuth,
     D: Develop + Send + Sync,
@@ -186,6 +189,7 @@ pub async fn login<C, R, A>(
     instr: LoginAuthInstr,
 ) -> BaseRest<LoginAuthVal>
 where
+    C: poprako_orchestra::Context,
     R: UserRepo<C>,
     A: TokenAuth,
 {

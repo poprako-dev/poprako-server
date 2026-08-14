@@ -108,6 +108,12 @@ impl From<BaseError> for HttpError {
                 Self::expected(variant, &message)
             }
 
+            BaseError::Retryable { message } => Self {
+                status: StatusCode::CONFLICT,
+                code: NonZeroU16::new(8).expect("non-zero error code"),
+                message: Some(message),
+            },
+
             BaseError::Unrecoverable { .. } => Self::internal(),
         }
     }

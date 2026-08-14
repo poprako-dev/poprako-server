@@ -25,13 +25,11 @@ use crate::part_impl::prom::rdb_impl::handler::task_flow::TaskFlow;
 use crate::part_impl::prom::rdb_impl::handler::{chapter, image, invitation};
 use crate::part_impl::prom::rdb_impl::repo::RdbPromRepo;
 use crate::result::BaseError;
-use crate::shared::{RdbContext, RdbCore};
+use crate::shared::RdbContext;
 
 /// Background worker that polls the `t_local_message` table, dispatches by topic,
 /// and completes or fails each record.
 pub struct RdbPromHandler<N, R, I, D> {
-    /// Database connection pool for handler-internal queries.
-    pub core: RdbCore,
     /// Transaction coordinator used for handler-level database operations.
     pub nucl: N,
 
@@ -65,7 +63,6 @@ where
 {
     /// Builds a new prom background handler from its core, nucl, repo, and lifecycle channels.
     pub fn new(
-        core: RdbCore,
         nucl: N,
         repo: RdbPromRepo<R>,
         image_pool: I,
@@ -74,7 +71,6 @@ where
     ) -> Self {
         //
         Self {
-            core,
             nucl,
             repo,
             image_pool,

@@ -250,6 +250,7 @@ async fn put_roles(
 
 impl Run<FindAssignmentInfo<'_, '_>> for HybRepo {
     // Keep assignment lookup orchestration errors mapped to repository base errors.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -288,6 +289,7 @@ impl Run<FindAssignmentInfo<'_, '_>> for HybRepo {
 
 impl Run<ListAssignmentInfos<'_, '_>> for HybRepo {
     // Keep list-assignment orchestration failures normalized for call sites.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -302,6 +304,7 @@ impl Run<ListAssignmentInfos<'_, '_>> for HybRepo {
 
 impl Run<GetAssignmentInfo<'_, '_>> for HybRepo {
     // Normalize get-assignment errors to base repository error type.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -314,30 +317,44 @@ impl Run<GetAssignmentInfo<'_, '_>> for HybRepo {
     }
 }
 
-impl Step<ListAssignmentInfos<'_, '_>, RdbContext> for HybRepo {
+impl<L> Step<ListAssignmentInfos<'_, '_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Use base error for listing assignments inside an existing transaction.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Resolve assignment list query by delegating to list module in context transaction.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &ListAssignmentInfos<'_, '_>,
     ) -> BaseRest<Vec<AssignmentInfo>> {
         list_infos(context.conn(), oper).await
     }
 }
 
-impl Step<FindAssignmentInfo<'_, '_>, RdbContext> for HybRepo {
+impl<L> Step<FindAssignmentInfo<'_, '_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Keep transactional assignment lookup failures consistent with run-level errors.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Resolve one assignment by chapter/user or user/comic within the open transaction.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &FindAssignmentInfo<'_, '_>,
     ) -> BaseRest<Option<AssignmentInfo>> {
         //
@@ -374,15 +391,22 @@ impl Step<FindAssignmentInfo<'_, '_>, RdbContext> for HybRepo {
     }
 }
 
-impl Step<ListAssignmentInfosExcluded<'_>, RdbContext> for HybRepo {
+impl<L> Step<ListAssignmentInfosExcluded<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Normalize excluded-list behavior errors under base repository semantics.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // List assignments for a chapter while applying exclusion filters under lock.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &ListAssignmentInfosExcluded<'_>,
     ) -> BaseRest<Vec<AssignmentInfo>> {
         //
@@ -397,30 +421,44 @@ impl Step<ListAssignmentInfosExcluded<'_>, RdbContext> for HybRepo {
     }
 }
 
-impl Step<CreateAssignment<'_>, RdbContext> for HybRepo {
+impl<L> Step<CreateAssignment<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Translate assignment-create failures to base error within transaction.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Insert a new assignment row and return created assignment information.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &CreateAssignment<'_>,
     ) -> BaseRest<AssignmentInfo> {
         create(context.conn(), oper.entry).await
     }
 }
 
-impl Step<UpdateAssignmentRoles<'_>, RdbContext> for HybRepo {
+impl<L> Step<UpdateAssignmentRoles<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Keep role-update failures mapped to shared repository error contract.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Apply role updates to an assignment and return the refreshed record.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &UpdateAssignmentRoles<'_>,
     ) -> BaseRest<AssignmentInfo> {
         put_roles(context.conn(), oper.update).await
@@ -442,15 +480,22 @@ async fn delete_by_chapter_id(
     accept(())
 }
 
-impl Step<DeleteAssignments<'_>, RdbContext> for HybRepo {
+impl<L> Step<DeleteAssignments<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Map all delete-assignment branch failures to base repository errors.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Remove assignments by id or by chapter inside an active transaction.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &DeleteAssignments<'_>,
     ) -> BaseRest<()> {
         //

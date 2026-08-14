@@ -1,12 +1,13 @@
 //! Chapter deletion use case.
 
-use poprako_orchestra::{Nucl, run_proxy, step_proxy};
-use poprako_orchestra_extra::prom::oper::DeferBatch;
+use poprako_orchestra::{AtLeast, Nucl, run_proxy, step_proxy};
 use tracing::instrument;
 
 use crate::complex::chapter::{ChapterComplex, ChapterPermComplex};
 use crate::model::shared::user::UserToken;
+use crate::part::nucl::Serializable;
 use crate::part::prom::Prom;
+use crate::part::prom::oper::DeferBatch;
 use crate::part::prom::payload::TaskPayload;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
@@ -38,8 +39,10 @@ pub async fn delete<N, C, R, P>(
     id: String,
 ) -> BaseRest<()>
 where
+    C: poprako_orchestra::Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
+    C::Level: AtLeast<Serializable>,
     R: ChapterRepo<C>
         + ComicRepo<C>
         + MemberRepo<C>
@@ -65,10 +68,14 @@ where
 
     nucl.coord(async move |context| {
         //
+        let guarded_repo = &crate::part::nucl::GuardedStep::new(repo);
+
+        let guarded_prom = &crate::part::nucl::GuardedStep::new(prom);
+
         ChapterComplex::delete_cascade(
             &mut step_proxy! {
                 context;
-                repo =>
+                guarded_repo =>
                     for<'a, 'b> GetChapterInfoExcluded<'a, 'b>,
                     for<'a> ListPageInfos<'a>,
                     for<'a> DeleteAssignmentInvitations<'a>,
@@ -80,7 +87,7 @@ where
                     for<'a> UnpinOtherChapters<'a>,
                     for<'a> UpdateComicChapterCount<'a>,
                     for<'a> TouchComicLastActive<'a>;
-                prom => for<'t, 'a> DeferBatch<'t, 'a, String, TaskPayload, ()>;
+                guarded_prom => for<'t, 'a> DeferBatch<'t, 'a, String, TaskPayload, ()>;
             },
             &id,
         )

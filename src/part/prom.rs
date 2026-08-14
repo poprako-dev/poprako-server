@@ -1,11 +1,15 @@
 //! Deferred-action producer port.
 
+/// Deferred-action operation descriptors.
+pub mod oper;
 /// Deferred-action payloads.
 pub mod payload;
+/// Deferred-action task data.
+pub mod task;
 
-use poprako_orchestra::Step;
-use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
+use poprako_orchestra::drive;
 
+use crate::part::prom::oper::{Defer, DeferBatch};
 use crate::part::prom::payload::TaskPayload;
 use crate::result::BaseError;
 
@@ -23,12 +27,12 @@ use crate::result::BaseError;
 /// example, compares the resource id, monotonically increasing version, and
 /// object key before marking an upload complete. Generated object keys must not
 /// be reused by later resource versions.
-pub trait Prom<C>:
-    for<'a> Step<Defer<'a, String, TaskPayload, ()>, C, Error = BaseError>
-    + for<'t, 'a> Step<
-        DeferBatch<'t, 'a, String, TaskPayload, ()>,
-        C,
-        Error = BaseError,
-    >
-{
-}
+#[drive(
+    context = C,
+    error = BaseError,
+    step(
+        for<'a> Defer<'a, String, TaskPayload, ()>,
+        for<'t, 'a> DeferBatch<'t, 'a, String, TaskPayload, ()>,
+    ),
+)]
+pub trait Prom<C> {}

@@ -1,5 +1,8 @@
 //! Error conversion helpers for the Diesel-backed repository.
 
+#[cfg(test)]
+mod tests;
+
 use diesel::result::{DatabaseErrorKind, Error as DieselError};
 use diesel_async::pooled_connection::deadpool::{BuildError, PoolError};
 
@@ -86,6 +89,27 @@ pub fn diesel(source: DieselError) -> BaseError {
                 variant: ExpectedVariant::Args,
                 message,
             }
+        }
+
+        DieselError::DatabaseError(
+            DatabaseErrorKind::SerializationFailure,
+            information,
+        ) => {
+            //
+            let message = trl("error-concurrent-conflict");
+
+            tracing::warn!(
+                database_err = "serialization failure",
+                database_message = information.message(),
+                database_details = ?information.details(),
+                database_hint = ?information.hint(),
+                constraint = ?information.constraint_name(),
+                table = ?information.table_name(),
+                column = ?information.column_name(),
+                "retryable error constructed from Diesel database error",
+            );
+
+            BaseError::Retryable { message }
         }
 
         DieselError::NotFound => {

@@ -19,6 +19,9 @@ use crate::data::instr::announcement::{
 use crate::data::val::announcement::CreateAnnouncementVal;
 use crate::data::view::announcement::AnnouncementInfoView;
 use crate::model::shared::user::UserToken;
+use crate::part::nucl::RepeatableRead;
+use crate::part_impl::repo::HybRepo;
+use crate::shared::RdbContext;
 use crate::usecase;
 use crate::value::announcement::AnnouncementInclOpt;
 
@@ -61,9 +64,13 @@ pub async fn create(
     Json(instr): Json<CreateAnnouncementInstr>,
 ) -> HttpResult<CreateAnnouncementVal> {
     //
-    usecase::announcement::create((harn.nucl(), harn.repo()), user_token, instr)
-        .await?
-        .accept(StatusCode::CREATED)
+    usecase::announcement::create::<_, RdbContext<RepeatableRead>, HybRepo>(
+        (harn.nucl_repeatable_read(), harn.repo()),
+        user_token,
+        instr,
+    )
+    .await?
+    .accept(StatusCode::CREATED)
 }
 
 /// `GET /api/v1/teams/{team_id}/announcements` — list a team's announcements.
@@ -93,7 +100,7 @@ pub async fn list_infos(
         limit: query.limit,
     };
 
-    usecase::announcement::list_infos(
+    usecase::announcement::list_infos::<RdbContext<RepeatableRead>, HybRepo, _>(
         (harn.repo(), harn.image_pool()),
         user_token,
         instr,

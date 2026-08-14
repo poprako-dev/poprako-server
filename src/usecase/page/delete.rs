@@ -1,13 +1,14 @@
-use poprako_orchestra::{Nucl, OperStep as _, run_proxy};
-use poprako_orchestra_extra::prom::oper::DeferBatch;
-use poprako_orchestra_extra::prom::task::Task;
+use poprako_orchestra::{AtLeast, Nucl, OperStep as _, run_proxy};
 use tracing::instrument;
 
 use crate::complex::image::ImageComplex;
 use crate::complex::page::PagePermComplex;
 use crate::model::shared::user::UserToken;
+use crate::part::nucl::RepeatableRead;
 use crate::part::prom::Prom;
+use crate::part::prom::oper::DeferBatch;
 use crate::part::prom::payload::{TaskPayload, image};
+use crate::part::prom::task::Task;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
@@ -30,8 +31,10 @@ pub async fn delete<N, C, R, P>(
     chapter_id: String,
 ) -> BaseRest<()>
 where
+    C: poprako_orchestra::Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
+    C::Level: AtLeast<RepeatableRead>,
     R: PageRepo<C>
         + ChapterRepo<C>
         + ComicRepo<C>

@@ -24,6 +24,7 @@ use crate::result::BaseError;
 
 impl<'a> Run<CreateTeam<'a>> for HybRepo {
     // Map team creation orchestration failures to the shared base error type.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -38,6 +39,7 @@ impl<'a> Run<CreateTeam<'a>> for HybRepo {
 
 impl Run<GetTeamInfo<'_>> for HybRepo {
     // Use the common base error for team info reads.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -58,6 +60,7 @@ impl Run<GetTeamInfo<'_>> for HybRepo {
 
 impl Run<ListTeamInfos<'_>> for HybRepo {
     // Keep list query failures on a single repository-level error channel.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]

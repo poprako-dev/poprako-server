@@ -17,12 +17,10 @@ use aws_sdk_s3::{Client, Config};
 use tracing::instrument;
 use url::Url;
 
-use poprako_util::i18n::trl;
-
 use crate::part::image::{
     ImageManager, ImagePool, ImageUploadSlot, ImageUploadSpec,
 };
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, accept};
 
 // Expiration duration for presigned upload URLs (10 minutes).
 const PUT_SIGNED_EXPIRATION: Duration = Duration::from_secs(600);
@@ -128,94 +126,6 @@ impl ImagePool for R2ImagePool {
             &thumbnail_path,
             "gen_thumbnail_download_url",
         )
-    }
-
-    #[instrument(level = "info", skip_all)]
-    // Internal implementation of `get_upload_url`.
-    async fn get_upload_url(&self, key: &str) -> BaseRest<Url> {
-        //
-        // Internal implementation detail.
-        let Some(content_type) = detect_content_type(key) else {
-            //
-            let err_message = trl("error-unsupported-file-type");
-
-            let file_ext = key.rsplit('.').next().unwrap_or("(none)");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_message = %err_message,
-                object_key = %key,
-                file_ext = %file_ext,
-                operation = "get_upload_url",
-                "expected error: unsupported image file type",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message: err_message,
-            });
-        };
-
-        let (content_type, presigning_config) = (
-            content_type,
-            PresigningConfig::expires_in(PUT_SIGNED_EXPIRATION).map_err(
-                |err| {
-                    //
-                    tracing::error!(
-                        operation = "get_upload_url",
-                        sdk_err = ?err,
-                        "R2 SDK presigning configuration error",
-                    );
-
-                    BaseError::Unrecoverable {
-                        message: format!(
-                            "[R2ImagePool::get_upload_url] failed to build presigning config: {}",
-                            err
-                        ),
-                    }
-                },
-            )?,
-        );
-
-        let presigned_request = self
-            .client
-            .put_object()
-            .bucket(&self.bucket)
-            .key(key)
-            .content_type(content_type)
-            .presigned(presigning_config)
-            .await
-            .map_err(|err| {
-                //
-                tracing::error!(
-                    operation = "get_upload_url",
-                    sdk_err = ?err,
-                    "R2 SDK presigning error",
-                );
-
-                BaseError::Unrecoverable {
-                    message: format!(
-                        "[R2ImagePool::get_upload_url] failed to generate presigned put URL: {}",
-                        err
-                    ),
-                }
-            })?;
-
-        Url::parse(presigned_request.uri()).map_err(|err| {
-            //
-            tracing::error!(
-                operation = "get_upload_url",
-                sdk_err = ?err,
-                "URL SDK parsing error",
-            );
-
-            BaseError::Unrecoverable {
-                message: format!(
-                    "[R2ImagePool::get_upload_url] failed to parse presigned URI: {}",
-                    err
-                ),
-            }
-        })
     }
 
     #[instrument(level = "info", skip_all)]
@@ -421,33 +331,4 @@ fn build_public_url(
             ),
         }
     })
-}
-
-// Maps a file extension to its MIME content type for upload requests.
-fn detect_content_type(key: &str) -> Option<&'static str> {
-    //
-    // Internal implementation detail.
-    let ext = key.rsplit('.').next()?.to_lowercase();
-
-    match ext.as_str() {
-        //
-        // Internal implementation detail.
-        "jpg" | "jpeg" => Some("image/jpeg"),
-
-        "png" => Some("image/png"),
-
-        "gif" => Some("image/gif"),
-
-        "webp" => Some("image/webp"),
-
-        "svg" => Some("image/svg+xml"),
-
-        "avif" => Some("image/avif"),
-
-        "bmp" => Some("image/bmp"),
-
-        "tif" | "tiff" => Some("image/tiff"),
-
-        _ => None,
-    }
 }

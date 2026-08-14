@@ -13,6 +13,7 @@ const ONLINE_USER_TTL: Duration = Duration::from_secs(10 * 60);
 
 impl Run<MarkOnlineUser<'_>> for Mock {
     // Keep mock failures on the shared repository error channel.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Refresh one user's online lease in the mock repository.
@@ -34,6 +35,7 @@ impl Run<MarkOnlineUser<'_>> for Mock {
 
 impl Run<ListOnlineUserIds<'_>> for Mock {
     // Keep mock failures on the shared repository error channel.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Remove expired mock leases and return sorted active user ids.

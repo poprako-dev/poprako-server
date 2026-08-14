@@ -129,7 +129,8 @@ pub async fn resolve_team_id_uses_testcontainer(shared: RdbCore) {
 
     assert_expected(missing_comic_error, "error-comic-not-found");
 
-    let nucl = RdbNucl::new(shared.clone());
+    let nucl =
+        RdbNucl::<crate::part::nucl::RepeatableRead>::new(shared.clone());
 
     nucl.coord(async |context| {
         //

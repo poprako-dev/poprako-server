@@ -29,7 +29,8 @@ pub async fn member_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let repo = HybRepo::new(shared.clone());
 
-    let nucl = RdbNucl::new(shared.clone());
+    let nucl =
+        RdbNucl::<crate::part::nucl::RepeatableRead>::new(shared.clone());
 
     let admin_role = RoleMask::from(RoleField::ADMIN);
 

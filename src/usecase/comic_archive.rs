@@ -5,9 +5,9 @@ mod tests;
 
 use std::collections::BTreeMap;
 
-use poprako_orchestra::{Nucl, OperRun as _, OperStep as _, run_proxy};
-use poprako_orchestra_extra::prom::oper::DeferBatch;
-use poprako_orchestra_extra::prom::task::Task;
+use poprako_orchestra::{
+    AtLeast, Nucl, OperRun as _, OperStep as _, run_proxy,
+};
 use time::OffsetDateTime;
 use tracing::instrument;
 
@@ -19,8 +19,11 @@ use crate::data::val::comic_archive::{
     ArchiveComicVal, ExportComicArchivesVal,
 };
 use crate::model::shared::user::UserToken;
+use crate::part::nucl::Serializable;
 use crate::part::prom::Prom;
+use crate::part::prom::oper::DeferBatch;
 use crate::part::prom::payload::{TaskPayload, image};
+use crate::part::prom::task::Task;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::comic_archive::ComicArchiveRepo;
 use crate::part::repo::member::MemberRepo;
@@ -44,6 +47,7 @@ pub async fn export<C, R>(
     instr: ExportComicArchivesInstr,
 ) -> BaseRest<ExportComicArchivesVal>
 where
+    C: poprako_orchestra::Context,
     R: ComicArchiveRepo<C> + MemberRepo<C> + Sync,
 {
     ComicArchivePermComplex::ensure_user_can_export(
@@ -99,7 +103,10 @@ pub async fn archive<N, C, R, P>(
     comic_id: String,
 ) -> BaseRest<ArchiveComicVal>
 where
+    C: poprako_orchestra::Context,
     N: Nucl<Context = C, Error = BaseError>,
+    C: Send,
+    C::Level: AtLeast<Serializable>,
     R: ComicRepo<C>
         + ComicArchiveRepo<C>
         + MemberRepo<C>

@@ -200,18 +200,23 @@ impl<'a> PurgeCompleted<'a> {
 
 // ── Step impls ──────────────────────────────────────────────────────────────
 
-impl<R> Step<PollPending, RdbContext> for RdbPromRepo<R>
+impl<R, L> Step<PollPending, RdbContext<L>> for RdbPromRepo<R>
 where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
     R: Sync,
 {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Internal implementation of `step`.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         _oper: &PollPending,
     ) -> BaseRest<Vec<LocalMessageRow>> {
         //
@@ -263,18 +268,23 @@ where
     }
 }
 
-impl<'a, R> Step<ClaimPending<'a>, RdbContext> for RdbPromRepo<R>
+impl<'a, R, L> Step<ClaimPending<'a>, RdbContext<L>> for RdbPromRepo<R>
 where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
     R: Sync,
 {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Internal implementation of `step`.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &ClaimPending<'a>,
     ) -> BaseRest<bool> {
         //
@@ -305,18 +315,23 @@ where
     }
 }
 
-impl<'a, R> Step<CompleteMessage<'a>, RdbContext> for RdbPromRepo<R>
+impl<'a, R, L> Step<CompleteMessage<'a>, RdbContext<L>> for RdbPromRepo<R>
 where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
     R: Sync,
 {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Internal implementation of `step`.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &CompleteMessage<'a>,
     ) -> BaseRest<()> {
         //
@@ -347,18 +362,23 @@ where
     }
 }
 
-impl<'a, R> Step<FailMessage<'a>, RdbContext> for RdbPromRepo<R>
+impl<'a, R, L> Step<FailMessage<'a>, RdbContext<L>> for RdbPromRepo<R>
 where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
     R: Sync,
 {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Internal implementation of `step`.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &FailMessage<'a>,
     ) -> BaseRest<()> {
         //
@@ -389,18 +409,23 @@ where
     }
 }
 
-impl<'a, R> Step<RetryMessage<'a>, RdbContext> for RdbPromRepo<R>
+impl<'a, R, L> Step<RetryMessage<'a>, RdbContext<L>> for RdbPromRepo<R>
 where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
     R: Sync,
 {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Internal implementation of `step`.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &RetryMessage<'a>,
     ) -> BaseRest<()> {
         //
@@ -434,18 +459,23 @@ where
     }
 }
 
-impl<'a, R> Step<ResetStuck<'a>, RdbContext> for RdbPromRepo<R>
+impl<'a, R, L> Step<ResetStuck<'a>, RdbContext<L>> for RdbPromRepo<R>
 where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
     R: Sync,
 {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Internal implementation of `step`.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &ResetStuck<'a>,
     ) -> BaseRest<()> {
         //
@@ -496,18 +526,23 @@ where
     }
 }
 
-impl<'a, R> Step<PurgeCompleted<'a>, RdbContext> for RdbPromRepo<R>
+impl<'a, R, L> Step<PurgeCompleted<'a>, RdbContext<L>> for RdbPromRepo<R>
 where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
     R: Sync,
 {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Internal implementation of `step`.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &PurgeCompleted<'a>,
     ) -> BaseRest<usize> {
         //

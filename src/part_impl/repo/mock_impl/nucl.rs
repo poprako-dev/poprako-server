@@ -5,7 +5,11 @@ use crate::part_impl::repo::mock_impl::{Mock, MockContext};
 use crate::result::BaseError;
 
 impl Nucl for Mock {
+    // Uses the strongest mock isolation marker for every transaction test.
+    type Level = crate::part::nucl::Serializable;
+
     // Internal type alias for `Error`.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Internal type alias for `Context`.

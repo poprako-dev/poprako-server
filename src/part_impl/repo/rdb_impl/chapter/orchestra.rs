@@ -23,6 +23,7 @@ use crate::shared::RdbContext;
 
 impl Run<GetChapterInfo<'_, '_>> for HybRepo {
     // Map failed query execution for chapter lookup into repository-level base error.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -38,6 +39,7 @@ impl Run<GetChapterInfo<'_, '_>> for HybRepo {
 
 impl Run<ListChapterInfos<'_>> for HybRepo {
     // Map list query failures to the common base error for callers.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -52,6 +54,7 @@ impl Run<ListChapterInfos<'_>> for HybRepo {
 
 impl Run<FindPinnedChapterInfo<'_, '_>> for HybRepo {
     // Keep error handling consistent with other chapter lookup orchestrations.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -72,6 +75,7 @@ impl Run<FindPinnedChapterInfo<'_, '_>> for HybRepo {
 
 impl Run<ListPinnedChapterInfos<'_>> for HybRepo {
     // Normalize all error paths for pinned-chapter batch reads.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -86,6 +90,7 @@ impl Run<ListPinnedChapterInfos<'_>> for HybRepo {
 
 impl Run<StartChapterStage<'_>> for HybRepo {
     // Ensure start-stage transition failures keep the same base error surface.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -97,6 +102,7 @@ impl Run<StartChapterStage<'_>> for HybRepo {
 
 impl Run<CompleteChapterRawProvide<'_>> for HybRepo {
     // Keep completed-raw-provide orchestration errors as shared base errors.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -109,105 +115,154 @@ impl Run<CompleteChapterRawProvide<'_>> for HybRepo {
     }
 }
 
-impl Step<CompleteChapterRawProvide<'_>, RdbContext> for HybRepo {
+impl<L> Step<CompleteChapterRawProvide<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Keep internal step errors aligned with repository-level error semantics.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Execute the same raw-provide completion query inside the open transaction.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &CompleteChapterRawProvide<'_>,
     ) -> BaseRest<bool> {
         complete_raw_provide(context.conn(), oper.id).await
     }
 }
 
-impl Step<ResetChapterRawProvide<'_>, RdbContext> for HybRepo {
+impl<L> Step<ResetChapterRawProvide<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Preserve unified error typing for resetting raw-provide state in transaction scope.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Reset chapter raw provide flags when downstream callers need a clean retry state.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &ResetChapterRawProvide<'_>,
     ) -> BaseRest<()> {
         reset_raw_provide(context.conn(), oper.id).await
     }
 }
 
-impl Step<GetChapterInfo<'_, '_>, RdbContext> for HybRepo {
+impl<L> Step<GetChapterInfo<'_, '_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Keep transaction-level branch consistent with orchestrator-level error behavior.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Read chapter detail in transaction and return hydrated model data.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &GetChapterInfo<'_, '_>,
     ) -> BaseRest<ChapterInfo> {
         get_info_by_id(context.conn(), oper.id, oper.incls).await
     }
 }
 
-impl Step<GetChapterInfoExcluded<'_, '_>, RdbContext> for HybRepo {
+impl<L> Step<GetChapterInfoExcluded<'_, '_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Align error type for read queries that intentionally exclude soft-deleted rows.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Fetch chapter info with exclusion rules applied on top of includes.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &GetChapterInfoExcluded<'_, '_>,
     ) -> BaseRest<ChapterInfo> {
         get_info_excluded(context.conn(), oper.id, oper.incls).await
     }
 }
 
-impl Step<ListChapterInfosExcluded<'_>, RdbContext> for HybRepo {
+impl<L> Step<ListChapterInfosExcluded<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Keep error surface stable for transactional filtered list queries.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Return all chapter infos under exclusion mode for one comic context.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &ListChapterInfosExcluded<'_>,
     ) -> BaseRest<Vec<ChapterInfo>> {
         list_infos_excluded(context.conn(), oper.comic_id).await
     }
 }
 
-impl Step<LockChapters<'_>, RdbContext> for HybRepo {
+impl<L> Step<LockChapters<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Use the same shared error model for lock orchestration failures.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Lock all chapters under a comic for a transactional edit window.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &LockChapters<'_>,
     ) -> BaseRest<()> {
         lock_chapters(context.conn(), oper.comic_id).await
     }
 }
 
-impl Step<FindPinnedChapterInfo<'_, '_>, RdbContext> for HybRepo {
+impl<L> Step<FindPinnedChapterInfo<'_, '_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Keep transactional lookup failures equivalent to non-transactional ones.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Resolve pinned chapter for a comic inside context and preserve include filters.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &FindPinnedChapterInfo<'_, '_>,
     ) -> BaseRest<Option<ChapterInfo>> {
         //
@@ -216,60 +271,88 @@ impl Step<FindPinnedChapterInfo<'_, '_>, RdbContext> for HybRepo {
     }
 }
 
-impl Step<CreateChapter<'_>, RdbContext> for HybRepo {
+impl<L> Step<CreateChapter<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Use a consistent error type for chapter creation inside transaction.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Insert a new chapter record and return persisted chapter payload.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &CreateChapter<'_>,
     ) -> BaseRest<ChapterInfo> {
         create(context.conn(), oper.entry).await
     }
 }
 
-impl Step<UpdateChapter<'_>, RdbContext> for HybRepo {
+impl<L> Step<UpdateChapter<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Normalize update errors to base repository errors under transaction.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Apply mutable chapter fields and return only success/failure.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &UpdateChapter<'_>,
     ) -> BaseRest<()> {
         update_info(context.conn(), oper.update).await
     }
 }
 
-impl Step<UpdateChapterStage<'_>, RdbContext> for HybRepo {
+impl<L> Step<UpdateChapterStage<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Keep stage-update failures in the same error vocabulary as other step operations.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Move chapter lifecycle state atomically inside the open transaction.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &UpdateChapterStage<'_>,
     ) -> BaseRest<()> {
         update_stage(context.conn(), oper.update).await
     }
 }
 
-impl Step<SetChapterPageCounters<'_>, RdbContext> for HybRepo {
+impl<L> Step<SetChapterPageCounters<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Normalize counter-write failures for transactional chapter metrics updates.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Persist page and unit counters used by progress and rendering logic.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &SetChapterPageCounters<'_>,
     ) -> BaseRest<()> {
         //
@@ -285,45 +368,66 @@ impl Step<SetChapterPageCounters<'_>, RdbContext> for HybRepo {
     }
 }
 
-impl Step<AdjustChapterUnitCounters<'_>, RdbContext> for HybRepo {
+impl<L> Step<AdjustChapterUnitCounters<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Keep delta-based unit-counter adjustments mapped to base errors.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Apply signed unit counter drift to a chapter while preserving previous totals.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &AdjustChapterUnitCounters<'_>,
     ) -> BaseRest<()> {
         adjust_unit_counters(context.conn(), oper.id, &oper.delta).await
     }
 }
 
-impl Step<UnpinOtherChapters<'_>, RdbContext> for HybRepo {
+impl<L> Step<UnpinOtherChapters<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Keep unpinning failures aligned with other transaction-level chapter operations.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Clear previous pinned chapters for the comic, excluding current target.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &UnpinOtherChapters<'_>,
     ) -> BaseRest<()> {
         unpin_others(context.conn(), oper.comic_id, oper.excluded_id).await
     }
 }
 
-impl Step<DeleteChapter<'_>, RdbContext> for HybRepo {
+impl<L> Step<DeleteChapter<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Preserve consistent error reporting for chapter deletion operations.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Remove chapter row and rely on transaction caller to coordinate dependent effects.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &DeleteChapter<'_>,
     ) -> BaseRest<()> {
         delete(context.conn(), oper.id).await

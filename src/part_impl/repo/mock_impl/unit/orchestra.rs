@@ -13,6 +13,7 @@ use crate::result::{BaseError, BaseRest};
 
 impl Run<ListUnitInfos<'_>> for Mock {
     // Internal type alias for `Error`.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -29,6 +30,9 @@ impl Run<ListUnitInfos<'_>> for Mock {
 
 impl Step<ListUnitOrders<'_>, MockContext> for Mock {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -44,6 +48,9 @@ impl Step<ListUnitOrders<'_>, MockContext> for Mock {
 
 impl Step<ApplyUnitEdits<'_>, MockContext> for Mock {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]

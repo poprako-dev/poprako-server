@@ -2,10 +2,10 @@ use super::pool::enforce_retry_limit;
 
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
-use poprako_orchestra_extra::prom::task::Task;
 use time::OffsetDateTime;
 
 use crate::part::prom::payload::{TaskPayload, image};
+use crate::part::prom::task::Task;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::prom::rdb_impl::entity::LocalMessageEntryRow;
 use crate::part_impl::prom::rdb_impl::handler::base::dispatch_payload;
@@ -63,7 +63,8 @@ pub async fn image_payloads_from_rdb_dispatch(shared: RdbCore) {
         .ok()
         .unwrap();
 
-    let nucl = RdbNucl::new(shared.clone());
+    let nucl =
+        RdbNucl::<crate::part::nucl::RepeatableRead>::new(shared.clone());
 
     let rdb_prom_repo = RdbPromRepo::new(HybRepo::new(shared.clone()));
 

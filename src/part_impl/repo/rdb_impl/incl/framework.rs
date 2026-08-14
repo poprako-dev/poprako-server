@@ -185,30 +185,35 @@ where
 // ── Reusable BatchByIds impls (one per table) ───────────────────────────────
 
 preload_by_ids! {
+    //
     UserByIds {
         row: UserInfoRow,
         info: UserInfo,
         table: t_user,
         convert: TryFrom,
     }
+
     TeamByIds {
         row: TeamInfoRow,
         info: TeamInfo,
         table: t_team,
         convert: TryFrom,
     }
+
     WorksetByIds {
         row: WorksetInfoRow,
         info: WorksetInfo,
         table: t_workset,
         convert: From,
     }
+
     ComicByIds {
         row: ComicInfoRow,
         info: ComicInfo,
         table: t_comic,
         convert: TryFrom,
     }
+
     ChapterByIds {
         row: ChapterInfoRow,
         info: ChapterInfo,

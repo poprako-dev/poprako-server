@@ -18,6 +18,7 @@ use crate::shared::RdbContext;
 
 impl Run<GetUserInfo<'_>> for HybRepo {
     // Use `BaseError` for non-transactional repository reads.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Route read by ID into the shared `submit_query!` orchestration.
@@ -38,6 +39,7 @@ impl Run<GetUserInfo<'_>> for HybRepo {
 
 impl Run<GetUserCredential<'_>> for HybRepo {
     // Use `BaseError` for non-transactional credential reads.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Route credential read by QID to the shared repository query path.
@@ -58,6 +60,7 @@ impl Run<GetUserCredential<'_>> for HybRepo {
 
 impl Run<FindUserInfo<'_>> for HybRepo {
     // Use `BaseError` for non-transactional optional reads.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Route optional user lookup by QID to shared query layer.
@@ -78,6 +81,7 @@ impl Run<FindUserInfo<'_>> for HybRepo {
 
 impl Run<UpdateUser<'_>> for HybRepo {
     // Use `BaseError` for non-transactional user mutations.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Map each update variant to a dedicated helper with explicit argument flow.
@@ -113,30 +117,44 @@ impl Run<UpdateUser<'_>> for HybRepo {
     }
 }
 
-impl Step<CreateUser<'_>, RdbContext> for HybRepo {
+impl<L> Step<CreateUser<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Keep transaction-scoped operations on one repository error type.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Insert new user rows inside provided transaction context.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &CreateUser<'_>,
     ) -> BaseRest<UserInfo> {
         create(context.conn(), oper.entry).await
     }
 }
 
-impl Step<FindUserInfo<'_>, RdbContext> for HybRepo {
+impl<L> Step<FindUserInfo<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Keep transaction-scoped reads on one repository error type.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Resolve soft-miss lookup inside caller-owned transaction context.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &FindUserInfo<'_>,
     ) -> BaseRest<Option<UserInfo>> {
         //
@@ -149,15 +167,22 @@ impl Step<FindUserInfo<'_>, RdbContext> for HybRepo {
     }
 }
 
-impl Step<UpdateUser<'_>, RdbContext> for HybRepo {
+impl<L> Step<UpdateUser<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Keep transaction-scoped updates on one repository error type.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Dispatch each mutable user operation to one explicit DB helper.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &UpdateUser<'_>,
     ) -> BaseRest<()> {
         //
@@ -190,15 +215,22 @@ impl Step<UpdateUser<'_>, RdbContext> for HybRepo {
     }
 }
 
-impl Step<ReserveUserAvatar<'_>, RdbContext> for HybRepo {
+impl<L> Step<ReserveUserAvatar<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Keep transaction-scoped reservation on one repository error type.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Reserve avatar key/version atomically inside the current transaction.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &ReserveUserAvatar<'_>,
     ) -> BaseRest<UserAvatarReservation> {
         //
@@ -207,15 +239,22 @@ impl Step<ReserveUserAvatar<'_>, RdbContext> for HybRepo {
     }
 }
 
-impl Step<GetUserInfoExcluded<'_>, RdbContext> for HybRepo {
+impl<L> Step<GetUserInfoExcluded<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Keep transaction-scoped exclusive reads on one repository error type.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Read user row with lock for callers that mutate next.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &GetUserInfoExcluded<'_>,
     ) -> BaseRest<UserInfo> {
         //
@@ -228,15 +267,22 @@ impl Step<GetUserInfoExcluded<'_>, RdbContext> for HybRepo {
     }
 }
 
-impl Step<DeleteUser<'_>, RdbContext> for HybRepo {
+impl<L> Step<DeleteUser<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Keep transaction-scoped deletion on one repository error type.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Execute user deletion as part of ongoing transaction flow.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &DeleteUser<'_>,
     ) -> BaseRest<()> {
         delete(context.conn(), oper.id).await

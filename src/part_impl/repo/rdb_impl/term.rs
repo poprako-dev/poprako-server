@@ -33,6 +33,7 @@ use crate::shared::{RdbConn, RdbContext};
 
 impl Run<GetTermInfo<'_>> for HybRepo {
     // Map `GetTermInfo` to repository orchestration without ambient transaction.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Resolve one term info by id through the submit-query entrypoint.
@@ -44,6 +45,7 @@ impl Run<GetTermInfo<'_>> for HybRepo {
 
 impl Run<ListTermInfos<'_>> for HybRepo {
     // Map `ListTermInfos` to repository orchestration without ambient transaction.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Resolve a pageable list from the supplied term list spec.
@@ -53,90 +55,132 @@ impl Run<ListTermInfos<'_>> for HybRepo {
     }
 }
 
-impl Step<CreateTerm<'_>, RdbContext> for HybRepo {
+impl<L> Step<CreateTerm<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Create a term row inside an active transaction boundary.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Convert the request payload and insert it with immediate return of inserted info.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &CreateTerm<'_>,
     ) -> BaseRest<TermInfo> {
         create(context.conn(), oper.entry).await
     }
 }
 
-impl Step<GetTermInfoExcluded<'_>, RdbContext> for HybRepo {
+impl<L> Step<GetTermInfoExcluded<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Read a term for exclusive use inside an active transaction context.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Resolve one term with `FOR UPDATE` semantics for downstream mutation.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &GetTermInfoExcluded<'_>,
     ) -> BaseRest<TermInfo> {
         get_info_excluded(context.conn(), oper.id).await
     }
 }
 
-impl Step<LockTerm<'_>, RdbContext> for HybRepo {
+impl<L> Step<LockTerm<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Acquire a row-level lock for a term within a transaction.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Lock the target term so the next mutation in the transaction is serialized.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &LockTerm<'_>,
     ) -> BaseRest<()> {
         lock_term(context.conn(), oper.id).await
     }
 }
 
-impl Step<UpdateTerm<'_>, RdbContext> for HybRepo {
+impl<L> Step<UpdateTerm<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Apply term info updates inside an active transaction boundary.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Forward update payload into DB update clause and keep updated-at fresh.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &UpdateTerm<'_>,
     ) -> BaseRest<()> {
         update_info(context.conn(), oper.update).await
     }
 }
 
-impl Step<DeleteTerm<'_>, RdbContext> for HybRepo {
+impl<L> Step<DeleteTerm<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Remove one term row inside an active transaction boundary.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Execute hard delete for the target term id.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &DeleteTerm<'_>,
     ) -> BaseRest<()> {
         delete(context.conn(), oper.id).await
     }
 }
 
-impl Step<DeleteTerms<'_>, RdbContext> for HybRepo {
+impl<L> Step<DeleteTerms<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Remove all terms for a termbase inside an active transaction boundary.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Cascade-like cleanup behavior is implemented as bulk delete filtered by termbase.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &DeleteTerms<'_>,
     ) -> BaseRest<()> {
         delete_terms(context.conn(), oper.termbase_id).await

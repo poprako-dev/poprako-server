@@ -13,6 +13,7 @@ use crate::result::{BaseError, accept};
 
 impl<'a, 'b> Run<GetComicInfo<'a, 'b>> for Mock {
     // Use base error type for get-by-id read operation.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -30,6 +31,7 @@ impl<'a, 'b> Run<GetComicInfo<'a, 'b>> for Mock {
 
 impl<'a> Run<ListComicInfos<'a>> for Mock {
     // Use base error type for list operation.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -47,6 +49,7 @@ impl<'a> Run<ListComicInfos<'a>> for Mock {
 
 impl<'a> Run<UpdateComic<'a>> for Mock {
     // Use base error type for full-run metadata updates.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -75,6 +78,7 @@ impl<'a> Run<UpdateComic<'a>> for Mock {
 
 impl<'a> Run<MarkComicCoverUploaded<'a>> for Mock {
     // Use base error type for cover upload mark operations.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]

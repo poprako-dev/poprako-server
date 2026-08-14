@@ -4,7 +4,9 @@
 // Unit tests for unit creation, editing, and transition rules.
 mod tests;
 
-use poprako_orchestra::{Nucl, OperRun as _, OperStep as _, run_proxy};
+use poprako_orchestra::{
+    AtLeast, Nucl, OperRun as _, OperStep as _, run_proxy,
+};
 use tracing::instrument;
 
 use crate::complex::chapter::ChapterComplex;
@@ -15,6 +17,7 @@ use crate::data::instr::unit::{
 use crate::data::val::unit::ListPageUnitInfosVal;
 use crate::model::read::proj::unit::UnitCounters;
 use crate::model::shared::user::UserToken;
+use crate::part::nucl::RepeatableRead;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
@@ -48,6 +51,7 @@ pub async fn list_infos<C, R>(
     instr: ListPageUnitInfosInstr,
 ) -> BaseRest<ListPageUnitInfosVal>
 where
+    C: poprako_orchestra::Context,
     R: PageRepo<C>
         + UnitRepo<C>
         + TeamRepo<C>
@@ -92,8 +96,10 @@ pub async fn save_edits<N, C, R>(
     instr: SavePageUnitEditsInstr,
 ) -> BaseRest<()>
 where
+    C: poprako_orchestra::Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
+    C::Level: AtLeast<RepeatableRead>,
     R: PageRepo<C>
         + UnitRepo<C>
         + ChapterRepo<C>

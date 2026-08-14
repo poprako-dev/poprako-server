@@ -26,7 +26,7 @@ use anyhow::Context as _;
 
 use poprako_server::{
     AppConfig, AsyncEffectDevelop, Harn, HybRepo, JwtAuth, R2ImagePool,
-    RdbCore, RdbNucl, RdbProm, Sched,
+    RdbContext, RdbCore, RdbNucl, RdbProm, RepeatableRead, Sched, Serializable,
 };
 
 /// Application entry point.
@@ -55,19 +55,33 @@ async fn main() -> anyhow::Result<()> {
 
     let core = RdbCore::from_env()?;
 
-    let (nucl, repo) = (RdbNucl::new(core.clone()), HybRepo::new(core.clone()));
+    let (nucl_repeatable_read, nucl_serializable, repo) = (
+        RdbNucl::<RepeatableRead>::new(core.clone()),
+        RdbNucl::<Serializable>::new(core.clone()),
+        HybRepo::new(core.clone()),
+    );
 
     let (auth, image_pool) = (JwtAuth::from_env()?, R2ImagePool::from_env()?);
 
-    let develop =
-        AsyncEffectDevelop::new(Arc::new(HybRepo::new(core.clone())), 1024);
+    let develop = AsyncEffectDevelop::new::<RdbContext<RepeatableRead>, _>(
+        Arc::new(HybRepo::new(core.clone())),
+        1024,
+    );
 
     let (prom, sched) = (
         RdbProm::new(core.clone(), image_pool.clone(), develop.clone()),
         Sched::new(core.clone()),
     );
 
-    let harn = Harn::new(nucl, repo, prom, auth, image_pool, develop);
+    let harn = Harn::new(
+        nucl_repeatable_read,
+        nucl_serializable,
+        repo,
+        prom,
+        auth,
+        image_pool,
+        develop,
+    );
 
     let http_addr = ToSocketAddrs::to_socket_addrs(&format!(
         "{}:{}",

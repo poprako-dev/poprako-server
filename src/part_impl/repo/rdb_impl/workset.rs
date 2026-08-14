@@ -228,6 +228,7 @@ async fn update_comic_count(
 
 impl Run<GetWorksetInfo<'_>> for HybRepo {
     // Use BaseError to keep run-level errors consistent.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Map `GetWorksetInfo` lookup to one repository query helper.
@@ -239,6 +240,7 @@ impl Run<GetWorksetInfo<'_>> for HybRepo {
 
 impl Run<ListWorksetInfos<'_>> for HybRepo {
     // Use BaseError to keep run-level errors consistent.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Map list request into paged, team-scoped query helper.
@@ -253,6 +255,7 @@ impl Run<ListWorksetInfos<'_>> for HybRepo {
 
 impl Run<UpdateWorkset<'_>> for HybRepo {
     // Use BaseError to keep run-level errors consistent.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Route update DTO directly into update helper.
@@ -262,120 +265,176 @@ impl Run<UpdateWorkset<'_>> for HybRepo {
     }
 }
 
-impl Step<GetWorksetInfo<'_>, RdbContext> for HybRepo {
+impl<L> Step<GetWorksetInfo<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Use BaseError for transactional context operations.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Resolve one workset info inside transaction-scoped connection.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &GetWorksetInfo<'_>,
     ) -> BaseRest<WorksetInfo> {
         get_info(context.conn(), oper.id).await
     }
 }
 
-impl Step<ListWorksetInfos<'_>, RdbContext> for HybRepo {
+impl<L> Step<ListWorksetInfos<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Use BaseError for transactional context operations.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Resolve multiple worksets for team with pagination under transaction context.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &ListWorksetInfos<'_>,
     ) -> BaseRest<Vec<WorksetInfo>> {
         list_infos(context.conn(), oper).await
     }
 }
 
-impl Step<GetWorksetInfoExcluded<'_>, RdbContext> for HybRepo {
+impl<L> Step<GetWorksetInfoExcluded<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Use BaseError for transactional context operations.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Resolve locked workset row for mutation chains.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &GetWorksetInfoExcluded<'_>,
     ) -> BaseRest<WorksetInfo> {
         get_info_excluded(context.conn(), oper.id).await
     }
 }
 
-impl Step<ListWorksetInfosExcluded<'_>, RdbContext> for HybRepo {
+impl<L> Step<ListWorksetInfosExcluded<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Use BaseError for transactional context operations.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // List rows locked by team id to coordinate dependent writes.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &ListWorksetInfosExcluded<'_>,
     ) -> BaseRest<Vec<WorksetInfo>> {
         list_infos_excluded(context.conn(), oper.team_id).await
     }
 }
 
-impl Step<CreateWorkset<'_>, RdbContext> for HybRepo {
+impl<L> Step<CreateWorkset<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Use BaseError for transactional context operations.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Create workset row and return inserted info representation.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &CreateWorkset<'_>,
     ) -> BaseRest<WorksetInfo> {
         create(context.conn(), oper.entry).await
     }
 }
 
-impl Step<DeleteWorkset<'_>, RdbContext> for HybRepo {
+impl<L> Step<DeleteWorkset<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Use BaseError for transactional context operations.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Delete workset row as part of the current transaction.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &DeleteWorkset<'_>,
     ) -> BaseRest<()> {
         delete(context.conn(), oper.id).await
     }
 }
 
-impl Step<AllocWorksetComicIndex<'_>, RdbContext> for HybRepo {
+impl<L> Step<AllocWorksetComicIndex<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Use BaseError for transactional context operations.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Allocate and return the next comic index for the workset.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &AllocWorksetComicIndex<'_>,
     ) -> BaseRest<i32> {
         alloc_comic_index(context.conn(), oper.id).await
     }
 }
 
-impl Step<UpdateWorksetComicCount<'_>, RdbContext> for HybRepo {
+impl<L> Step<UpdateWorksetComicCount<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Use BaseError for transactional context operations.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Apply comic count delta to workset within transaction.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &UpdateWorksetComicCount<'_>,
     ) -> BaseRest<()> {
         update_comic_count(context.conn(), oper.id, oper.delta).await

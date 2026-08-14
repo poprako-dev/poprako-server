@@ -23,6 +23,10 @@ use crate::data::instr::chapter::{
 use crate::data::val::chapter::CreateChapterVal;
 use crate::data::view::chapter::ChapterInfoView;
 use crate::model::shared::user::UserToken;
+use crate::part::nucl::{RepeatableRead, Serializable};
+use crate::part_impl::prom::rdb_impl::RdbProm;
+use crate::part_impl::repo::HybRepo;
+use crate::shared::RdbContext;
 use crate::usecase;
 use crate::value::chapter::ChapterInclOpt;
 
@@ -68,9 +72,13 @@ pub async fn create(
     Json(instr): Json<CreateChapterInstr>,
 ) -> HttpResult<CreateChapterVal> {
     //
-    usecase::chapter::create((harn.nucl(), harn.repo()), user_token, instr)
-        .await?
-        .accept(StatusCode::CREATED)
+    usecase::chapter::create::<_, RdbContext<RepeatableRead>, HybRepo>(
+        (harn.nucl_repeatable_read(), harn.repo()),
+        user_token,
+        instr,
+    )
+    .await?
+    .accept(StatusCode::CREATED)
 }
 
 /// `GET /api/v1/comics/{comic_id}/chapters` — list chapters in a comic.
@@ -100,7 +108,7 @@ pub async fn list_infos(
         limit: query.limit,
     };
 
-    usecase::chapter::list_infos(
+    usecase::chapter::list_infos::<RdbContext<RepeatableRead>, HybRepo, _>(
         (harn.repo(), harn.image_pool()),
         user_token,
         instr,
@@ -127,9 +135,13 @@ pub async fn get_pinned(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<Option<ChapterInfoView>> {
     //
-    usecase::chapter::get_pinned((harn.repo(),), user_token, comic_id)
-        .await?
-        .accept(StatusCode::OK)
+    usecase::chapter::get_pinned::<RdbContext<RepeatableRead>, HybRepo>(
+        (harn.repo(),),
+        user_token,
+        comic_id,
+    )
+    .await?
+    .accept(StatusCode::OK)
 }
 
 /// `GET /api/v1/chapters/{chapter_id}` — fetch a chapter by id.
@@ -151,9 +163,13 @@ pub async fn get_info(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<ChapterInfoView> {
     //
-    usecase::chapter::get_info((harn.repo(),), user_token, chapter_id)
-        .await?
-        .accept(StatusCode::OK)
+    usecase::chapter::get_info::<RdbContext<RepeatableRead>, HybRepo>(
+        (harn.repo(),),
+        user_token,
+        chapter_id,
+    )
+    .await?
+    .accept(StatusCode::OK)
 }
 
 /// `PATCH /api/v1/chapters/{chapter_id}` — partially update a chapter's profile.
@@ -180,8 +196,8 @@ pub async fn update_info(
     //
     ensure_path_matches_body_id(&chapter_id, &instr.id)?;
 
-    usecase::chapter::update_info(
-        (harn.nucl(), harn.repo()),
+    usecase::chapter::update_info::<_, RdbContext<RepeatableRead>, HybRepo>(
+        (harn.nucl_repeatable_read(), harn.repo()),
         user_token,
         instr,
     )
@@ -210,8 +226,8 @@ pub async fn mark_pinned(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::chapter::mark_pinned(
-        (harn.nucl(), harn.repo()),
+    usecase::chapter::mark_pinned::<_, RdbContext<RepeatableRead>, HybRepo>(
+        (harn.nucl_repeatable_read(), harn.repo()),
         user_token,
         chapter_id,
     )
@@ -244,8 +260,19 @@ pub async fn advance_stage(
     //
     ensure_path_matches_body_id(&chapter_id, &instr.id)?;
 
-    usecase::chapter::update_stage(
-        (harn.nucl(), harn.repo(), harn.prom(), harn.develop()),
+    usecase::chapter::update_stage::<
+        _,
+        RdbContext<RepeatableRead>,
+        HybRepo,
+        RdbProm,
+        _,
+    >(
+        (
+            harn.nucl_repeatable_read(),
+            harn.repo(),
+            harn.prom(),
+            harn.develop(),
+        ),
         user_token,
         instr,
     )
@@ -273,8 +300,8 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::chapter::delete(
-        (harn.nucl(), harn.repo(), harn.prom()),
+    usecase::chapter::delete::<_, RdbContext<Serializable>, HybRepo, RdbProm>(
+        (harn.nucl_serializable(), harn.repo(), harn.prom()),
         user_token,
         chapter_id,
     )

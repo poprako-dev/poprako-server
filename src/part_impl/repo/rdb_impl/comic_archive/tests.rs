@@ -33,7 +33,8 @@ pub async fn comic_archive_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let repo = HybRepo::new(shared.clone());
 
-    let nucl = RdbNucl::new(shared.clone());
+    let nucl =
+        RdbNucl::<crate::part::nucl::RepeatableRead>::new(shared.clone());
 
     let source_comic_id = page_fixture.chapter_entry.comic_id.clone();
 

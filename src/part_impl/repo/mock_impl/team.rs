@@ -318,6 +318,7 @@ fn delete_team(state: &mut MockState, id: &str) -> BaseRest<()> {
 
 impl<'a> Run<CreateTeam<'a>> for Mock {
     // Internal type alias for `Error`.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -334,6 +335,7 @@ impl<'a> Run<CreateTeam<'a>> for Mock {
 
 impl<'a> Run<GetTeamInfo<'a>> for Mock {
     // Internal type alias for `Error`.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -352,6 +354,7 @@ impl<'a> Run<GetTeamInfo<'a>> for Mock {
 
 impl<'a> Run<ListTeamInfos<'a>> for Mock {
     // Internal type alias for `Error`.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -368,6 +371,7 @@ impl<'a> Run<ListTeamInfos<'a>> for Mock {
 
 impl<'a> Run<UpdateTeam<'a>> for Mock {
     // Internal type alias for `Error`.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -384,6 +388,9 @@ impl<'a> Run<UpdateTeam<'a>> for Mock {
 
 impl<'a> Step<CreateTeam<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -406,6 +413,9 @@ impl<'a> Step<CreateTeam<'a>, MockContext> for Mock {
 
 impl<'a> Step<UpdateTeam<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -421,6 +431,9 @@ impl<'a> Step<UpdateTeam<'a>, MockContext> for Mock {
 
 impl<'a> Step<ReserveTeamAvatar<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -436,6 +449,9 @@ impl<'a> Step<ReserveTeamAvatar<'a>, MockContext> for Mock {
 
 impl<'a> Step<GetTeamInfoExcluded<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -454,6 +470,9 @@ impl<'a> Step<GetTeamInfoExcluded<'a>, MockContext> for Mock {
 
 impl<'a> Step<LockTeam<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -474,6 +493,9 @@ impl<'a> Step<LockTeam<'a>, MockContext> for Mock {
 
 impl<'a> Step<DeleteTeam<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -489,6 +511,9 @@ impl<'a> Step<DeleteTeam<'a>, MockContext> for Mock {
 
 impl<'a> Step<AllocTeamWorksetIndex<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]

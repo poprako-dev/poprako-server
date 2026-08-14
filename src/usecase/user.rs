@@ -9,9 +9,7 @@ mod tests;
 
 use std::time::Duration;
 
-use poprako_orchestra::{Nucl, OperRun as _, OperStep as _};
-use poprako_orchestra_extra::prom::oper::DeferBatch;
-use poprako_orchestra_extra::prom::task::Task;
+use poprako_orchestra::{AtLeast, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
@@ -32,8 +30,11 @@ use crate::part::effect::event::Event;
 use crate::part::effect::event::user::UserActiveEvent;
 use crate::part::effect::{Develop, EffectEvent as _};
 use crate::part::image::{ImageManager, ImagePool, ImageUploadSpec};
+use crate::part::nucl::RepeatableRead;
 use crate::part::prom::Prom;
+use crate::part::prom::oper::DeferBatch;
 use crate::part::prom::payload::{TaskPayload, image};
+use crate::part::prom::task::Task;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::member::UpdateMember;
 use crate::part::repo::oper::user::{
@@ -64,6 +65,7 @@ pub async fn get_info<C, R, I, D>(
     id: String,
 ) -> BaseRest<UserInfoView>
 where
+    C: poprako_orchestra::Context,
     R: UserRepo<C>,
     I: ImagePool,
     D: Develop + Send + Sync,
@@ -105,8 +107,10 @@ pub async fn update_info<N, C, R>(
     instr: UpdateUserInfoInstr,
 ) -> BaseRest<()>
 where
+    C: poprako_orchestra::Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
+    C::Level: AtLeast<RepeatableRead>,
     R: UserRepo<C> + MemberRepo<C> + Send + Sync,
 {
     // Only the user themselves can update their own profile.
@@ -169,8 +173,10 @@ pub async fn update_password<N, C, R>(
     instr: UpdateUserPasswordInstr,
 ) -> BaseRest<()>
 where
+    C: poprako_orchestra::Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
+    C::Level: AtLeast<RepeatableRead>,
     R: UserRepo<C> + Send + Sync,
 {
     if token.user_id != user_id {
@@ -268,8 +274,10 @@ pub async fn reserve_avatar<N, C, R, P, I>(
     instr: ReserveUserAvatarInstr,
 ) -> BaseRest<ReserveUserAvatarVal>
 where
+    C: poprako_orchestra::Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
+    C::Level: AtLeast<RepeatableRead>,
     R: UserRepo<C> + Send + Sync,
     P: Prom<C> + Send + Sync,
     I: ImagePool,
@@ -396,8 +404,10 @@ pub async fn mark_avatar_uploaded<N, C, R, I>(
     instr: MarkUserAvatarUploadedInstr,
 ) -> BaseRest<()>
 where
+    C: poprako_orchestra::Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
+    C::Level: AtLeast<RepeatableRead>,
     R: UserRepo<C> + Send + Sync,
     I: ImageManager,
 {

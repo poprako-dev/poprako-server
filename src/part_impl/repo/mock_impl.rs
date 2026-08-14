@@ -50,8 +50,6 @@ use std::time::Instant;
 
 use poprako_orchestra::nucl::Error as NuclError;
 use poprako_orchestra::{Nucl, Run as _, Step as _};
-use poprako_orchestra_extra::prom::oper::Defer;
-use poprako_orchestra_extra::prom::task::Task;
 use time::OffsetDateTime;
 
 use poprako_util::i18n::trl;
@@ -75,7 +73,9 @@ use crate::model::read::proj::user::{UserCredential, UserInfo};
 use crate::model::read::proj::workset::WorksetInfo;
 use crate::model::write::member::MemberEntry;
 use crate::part::effect::event::Event;
+use crate::part::prom::oper::Defer;
 use crate::part::prom::payload::{TaskPayload, image};
+use crate::part::prom::task::Task;
 use crate::part::repo::oper::member::CreateMember;
 use crate::part::repo::oper::user::GetUserInfo;
 use crate::part_impl::prom::mock_impl::MockPromRecord;
@@ -213,6 +213,10 @@ pub struct MockContext {
     pub archive_commit_failure: bool,
     /// When true, team creation will fail before transaction commit.
     pub create_team_failure: bool,
+}
+
+impl poprako_orchestra::Context for MockContext {
+    type Level = crate::part::nucl::Serializable;
 }
 
 #[cfg_attr(test, derive(Clone, Default))]

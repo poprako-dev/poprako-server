@@ -70,6 +70,7 @@ fn list_online_user_ids_at(
 
 impl Run<MarkOnlineUser<'_>> for HybRepo {
     // Keep memory adapter failures on the shared repository error channel.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Refresh one user's online lease in the target team.
@@ -88,6 +89,7 @@ impl Run<MarkOnlineUser<'_>> for HybRepo {
 
 impl Run<ListOnlineUserIds<'_>> for HybRepo {
     // Keep memory adapter failures on the shared repository error channel.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Remove expired leases and return the target team's active user ids.

@@ -1,9 +1,9 @@
 use poprako_orchestra::{OperStep as _, Step};
-use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
-use poprako_orchestra_extra::prom::task::Task;
 use time::OffsetDateTime;
 
+use crate::part::prom::oper::{Defer, DeferBatch};
 use crate::part::prom::payload::TaskPayload;
+use crate::part::prom::task::Task;
 use crate::part_impl::prom::mock_impl::json::serialize_payload_err;
 use crate::part_impl::prom::mock_impl::{Mock, MockContext, MockPromRecord};
 use crate::result::{BaseError, accept};
@@ -11,6 +11,9 @@ use crate::result::{BaseError, accept};
 /// Defers one record in the coordinated mock state.
 impl<'a> Step<Defer<'a, String, TaskPayload, ()>, MockContext> for Mock {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Internal implementation of `step`.
@@ -39,6 +42,9 @@ impl<'t, 'a> Step<DeferBatch<'t, 'a, String, TaskPayload, ()>, MockContext>
     for Mock
 {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Internal implementation of `step`.

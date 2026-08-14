@@ -173,6 +173,7 @@ fn get_info(state: &MockState, id: &str) -> BaseRest<TermbaseInfo> {
 
 impl<'a> Run<GetTermbaseInfo<'a>> for Mock {
     // Internal type alias for `Error`.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -189,6 +190,7 @@ impl<'a> Run<GetTermbaseInfo<'a>> for Mock {
 
 impl<'a> Run<ListTermbaseInfos<'a>> for Mock {
     // Internal type alias for `Error`.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -208,6 +210,9 @@ impl<'a> Run<ListTermbaseInfos<'a>> for Mock {
 
 impl<'a> Step<CreateTermbase<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -252,6 +257,9 @@ impl<'a> Step<CreateTermbase<'a>, MockContext> for Mock {
 
 impl<'a> Step<GetTermbaseInfo<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -267,6 +275,9 @@ impl<'a> Step<GetTermbaseInfo<'a>, MockContext> for Mock {
 
 impl<'a> Step<GetTermbaseInfoExcluded<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -282,6 +293,9 @@ impl<'a> Step<GetTermbaseInfoExcluded<'a>, MockContext> for Mock {
 
 impl<'a> Step<ListTermbaseInfosExcluded<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -319,6 +333,9 @@ impl<'a> Step<ListTermbaseInfosExcluded<'a>, MockContext> for Mock {
 
 impl<'a> Step<UpdateTermbase<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -362,6 +379,9 @@ impl<'a> Step<UpdateTermbase<'a>, MockContext> for Mock {
 
 impl<'a> Step<UpdateTermbaseTermCount<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -397,6 +417,9 @@ impl<'a> Step<UpdateTermbaseTermCount<'a>, MockContext> for Mock {
 
 impl<'a> Step<TouchTermbase<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -424,6 +447,9 @@ impl<'a> Step<TouchTermbase<'a>, MockContext> for Mock {
 
 impl<'a> Step<DeleteTermbase<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]

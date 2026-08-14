@@ -16,6 +16,7 @@ use crate::value::chapter::{Stage, StagePhase};
 
 impl<'a> Run<ListChapterInfos<'a>> for Mock {
     // Internal type alias for `Error`.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -35,6 +36,7 @@ impl<'a> Run<ListChapterInfos<'a>> for Mock {
 
 impl<'a, 'b> Run<GetChapterInfo<'a, 'b>> for Mock {
     // Internal type alias for `Error`.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -54,6 +56,7 @@ impl<'a, 'b> Run<GetChapterInfo<'a, 'b>> for Mock {
 
 impl<'a, 'b> Run<FindPinnedChapterInfo<'a, 'b>> for Mock {
     // Internal type alias for `Error`.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -73,6 +76,7 @@ impl<'a, 'b> Run<FindPinnedChapterInfo<'a, 'b>> for Mock {
 
 impl<'a> Run<ListPinnedChapterInfos<'a>> for Mock {
     // Internal type alias for `Error`.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -92,6 +96,7 @@ impl<'a> Run<ListPinnedChapterInfos<'a>> for Mock {
 
 impl<'a> Run<StartChapterStage<'a>> for Mock {
     // Internal type alias for `Error`.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -136,6 +141,7 @@ impl<'a> Run<StartChapterStage<'a>> for Mock {
 
 impl<'a> Run<CompleteChapterRawProvide<'a>> for Mock {
     // Internal type alias for `Error`.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]

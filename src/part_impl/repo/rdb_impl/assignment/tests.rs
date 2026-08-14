@@ -30,7 +30,8 @@ pub async fn assignment_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let repo = HybRepo::new(shared.clone());
 
-    let nucl = RdbNucl::new(shared.clone());
+    let nucl =
+        RdbNucl::<crate::part::nucl::RepeatableRead>::new(shared.clone());
 
     let assignee_form = test_shared::user_entry(PREFIX, "assignee");
 

@@ -76,6 +76,7 @@ impl JwtAuth {
         Self::new(&secret, expiration_hours).map_err(|err| match err {
             //
             BaseError::Expected { message, .. }
+            | BaseError::Retryable { message }
             | BaseError::Unrecoverable { message } => {
                 anyhow::anyhow!("{}", message)
             }

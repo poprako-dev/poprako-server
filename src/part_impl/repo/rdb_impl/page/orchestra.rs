@@ -23,6 +23,7 @@ use crate::shared::RdbContext;
 
 impl Run<GetPageInfo<'_>> for HybRepo {
     // Use base error for page read orchestration through the query dispatcher.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -34,6 +35,7 @@ impl Run<GetPageInfo<'_>> for HybRepo {
 
 impl Run<ListPageInfos<'_>> for HybRepo {
     // Keep list query failures aligned with repository-level base error handling.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -45,6 +47,7 @@ impl Run<ListPageInfos<'_>> for HybRepo {
 
 impl Run<ListFirstPageInfos<'_>> for HybRepo {
     // Return base error for first-page batched read path.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -62,101 +65,150 @@ impl Run<ListFirstPageInfos<'_>> for HybRepo {
     }
 }
 
-impl Step<GetPageInfo<'_>, RdbContext> for HybRepo {
+impl<L> Step<GetPageInfo<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Use base error for row-level page reads inside a running transaction.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Read one page record in context and convert DB row into `PageInfo`.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &GetPageInfo<'_>,
     ) -> BaseRest<PageInfo> {
         get_info_by_id(context.conn(), oper.id).await
     }
 }
 
-impl Step<ListPageInfos<'_>, RdbContext> for HybRepo {
+impl<L> Step<ListPageInfos<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Reuse base error semantics for chapter page list operations in transactions.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Load all pages under a chapter id directly from the transactional connection.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &ListPageInfos<'_>,
     ) -> BaseRest<Vec<PageInfo>> {
         list_infos(context.conn(), oper.chapter_id).await
     }
 }
 
-impl Step<ListPageInfosExcluded<'_>, RdbContext> for HybRepo {
+impl<L> Step<ListPageInfosExcluded<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Keep excluded-list query errors on the shared base error channel.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Read pages for a chapter while applying exclusion rules for deleted rows.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &ListPageInfosExcluded<'_>,
     ) -> BaseRest<Vec<PageInfo>> {
         list_infos_excluded(context.conn(), oper.chapter_id).await
     }
 }
 
-impl Step<CreatePages<'_>, RdbContext> for HybRepo {
+impl<L> Step<CreatePages<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Preserve base error behavior for batch page creation inside transaction.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
     #[instrument(level = "info", skip_all)]
     // Insert multiple new page entries and return their canonicalized infos.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &CreatePages<'_>,
     ) -> BaseRest<Vec<PageInfo>> {
         create_batch(context.conn(), oper.entries).await
     }
 }
 
-impl Step<GetPageInfoExcluded<'_>, RdbContext> for HybRepo {
+impl<L> Step<GetPageInfoExcluded<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Use repository base error for filtered read path with row exclusion.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
     #[instrument(level = "info", skip_all)]
     // Load page detail under excluded-read options and return mapped `PageInfo`.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &GetPageInfoExcluded<'_>,
     ) -> BaseRest<PageInfo> {
         get_info_excluded(context.conn(), oper.id).await
     }
 }
 
-impl Step<ReservePageImage<'_>, RdbContext> for HybRepo {
+impl<L> Step<ReservePageImage<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Map reservation failures to repository base errors.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
     #[instrument(level = "info", skip_all)]
     // Reserve upload metadata for a page image and return upload reservation info.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &ReservePageImage<'_>,
     ) -> BaseRest<PageImageReservation> {
         reserve_image(context.conn(), oper.id, oper.file_ext).await
     }
 }
 
-impl Step<MarkPageImageUploaded<'_>, RdbContext> for HybRepo {
+impl<L> Step<MarkPageImageUploaded<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Keep mark-upload status updates in base error domain.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
     #[instrument(level = "info", skip_all)]
     // Mark image as uploaded with version guard checks to avoid stale updates.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &MarkPageImageUploaded<'_>,
     ) -> BaseRest<()> {
         //
@@ -170,14 +222,21 @@ impl Step<MarkPageImageUploaded<'_>, RdbContext> for HybRepo {
     }
 }
 
-impl Step<SetPageImageUploaded<'_>, RdbContext> for HybRepo {
+impl<L> Step<SetPageImageUploaded<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Convert set-image state failures into base repository errors.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
     #[instrument(level = "info", skip_all)]
     // Set uploaded flag and persisted key/version for a page image.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &SetPageImageUploaded<'_>,
     ) -> BaseRest<()> {
         //
@@ -211,73 +270,108 @@ impl Step<SetPageImageUploaded<'_>, RdbContext> for HybRepo {
     }
 }
 
-impl Step<SetPageUnitCounters<'_>, RdbContext> for HybRepo {
+impl<L> Step<SetPageUnitCounters<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Keep counter update failures consistent for transaction call sites.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
     #[instrument(level = "info", skip_all)]
     // Apply counter synchronization payload to page-level aggregates.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &SetPageUnitCounters<'_>,
     ) -> BaseRest<()> {
         set_unit_counters(context.conn(), oper.id, oper.counters).await
     }
 }
 
-impl Step<ShiftPageIndexesTemporary<'_>, RdbContext> for HybRepo {
+impl<L> Step<ShiftPageIndexesTemporary<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Maintain base-error parity for temporary page index reordering.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Perform temporary page index shifts for chapter-level reindex workflows.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &ShiftPageIndexesTemporary<'_>,
     ) -> BaseRest<()> {
         shift_indexes_temporary(context.conn(), oper.chapter_id).await
     }
 }
 
-impl Step<UpdatePageManifest<'_>, RdbContext> for HybRepo {
+impl<L> Step<UpdatePageManifest<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Preserve consistent error mapping while updating page manifest metadata.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Update manifest content and return refreshed page info in transaction.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &UpdatePageManifest<'_>,
     ) -> BaseRest<PageInfo> {
         update_manifest(context.conn(), oper.update).await
     }
 }
 
-impl Step<ClearPageImagesForPublish<'_>, RdbContext> for HybRepo {
+impl<L> Step<ClearPageImagesForPublish<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Return base errors for image clear operations executed at publish time.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Clear publish-related image fields for a chapter and return affected page ids.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &ClearPageImagesForPublish<'_>,
     ) -> BaseRest<Vec<String>> {
         clear_images_for_publish(context.conn(), oper.chapter_id).await
     }
 }
 
-impl Step<DeletePages<'_>, RdbContext> for HybRepo {
+impl<L> Step<DeletePages<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Keep delete error semantics on the shared repository error type.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
     #[instrument(level = "info", skip_all)]
     // Delete pages by chapter or explicit IDs within the active transaction.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &DeletePages<'_>,
     ) -> BaseRest<()> {
         //

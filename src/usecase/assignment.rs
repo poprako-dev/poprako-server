@@ -4,7 +4,9 @@
 // Unit tests that cover assignment orchestration invariants.
 mod tests;
 
-use poprako_orchestra::{Nucl, OperRun as _, OperStep as _, run_proxy};
+use poprako_orchestra::{
+    AtLeast, Nucl, OperRun as _, OperStep as _, run_proxy,
+};
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
@@ -20,6 +22,7 @@ use crate::data::view::assignment::AssignmentInfoView;
 use crate::model::shared::user::UserToken;
 use crate::model::write::assignment::{AssignmentEntry, AssignmentRoleRepl};
 use crate::part::image::ImagePool;
+use crate::part::nucl::RepeatableRead;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::member::MemberRepo;
@@ -47,6 +50,7 @@ pub async fn list_infos<C, R, I>(
     instr: ListAssignmentInfosInstr,
 ) -> BaseRest<Vec<AssignmentInfoView>>
 where
+    C: poprako_orchestra::Context,
     R: AssignmentRepo<C>
         + ChapterRepo<C>
         + MemberRepo<C>
@@ -126,8 +130,10 @@ pub async fn join<N, C, R>(
     instr: JoinChapterAssignmentInstr,
 ) -> BaseRest<AssignmentInfoView>
 where
+    C: poprako_orchestra::Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
+    C::Level: AtLeast<RepeatableRead>,
     R: ChapterRepo<C>
         + MemberRepo<C>
         + TeamRepo<C>
@@ -231,8 +237,10 @@ pub async fn update_roles<N, C, R>(
     instr: UpdateAssignmentRolesInstr,
 ) -> BaseRest<()>
 where
+    C: poprako_orchestra::Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
+    C::Level: AtLeast<RepeatableRead>,
     R: AssignmentRepo<C>
         + ChapterRepo<C>
         + MemberRepo<C>
@@ -413,8 +421,10 @@ pub async fn delete<N, C, R>(
     id: String,
 ) -> BaseRest<()>
 where
+    C: poprako_orchestra::Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
+    C::Level: AtLeast<RepeatableRead>,
     R: AssignmentRepo<C> + ChapterRepo<C> + Send + Sync,
 {
     let assignment_info = GetAssignmentInfo {

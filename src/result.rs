@@ -28,6 +28,12 @@ pub enum BaseError {
         message: String,
     },
 
+    /// A transient concurrency conflict that the caller may retry.
+    Retryable {
+        /// Human-readable detail describing the retryable condition.
+        message: String,
+    },
+
     /// An unexpected system-level failure — cannot be recovered mid-request.
     Unrecoverable {
         /// Description of the system failure.

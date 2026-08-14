@@ -19,6 +19,7 @@ use crate::result::{BaseError, BaseRest, accept};
 
 impl<'a> Run<GetPageInfo<'a>> for Mock {
     // Internal type alias for `Error`.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
     #[instrument(level = "info", skip_all)]
     // Internal implementation of `run`.
@@ -30,8 +31,10 @@ impl<'a> Run<GetPageInfo<'a>> for Mock {
         get_page_by_id(&state, oper.id)
     }
 }
+
 impl<'a> Run<ListPageInfos<'a>> for Mock {
     // Internal type alias for `Error`.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
     #[instrument(level = "info", skip_all)]
     // Internal implementation of `run`.
@@ -46,6 +49,7 @@ impl<'a> Run<ListPageInfos<'a>> for Mock {
 
 impl<'a> Run<ListFirstPageInfos<'a>> for Mock {
     // Internal type alias for `Error`.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -61,8 +65,12 @@ impl<'a> Run<ListFirstPageInfos<'a>> for Mock {
         accept(list_first_pages(&state, oper.chapter_ids))
     }
 }
+
 impl<'a> Step<GetPageInfo<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
     #[instrument(level = "info", skip_all)]
     // Internal implementation of `step`.
@@ -74,8 +82,12 @@ impl<'a> Step<GetPageInfo<'a>, MockContext> for Mock {
         get_page_by_id(&context.state, oper.id)
     }
 }
+
 impl<'a> Step<ListPageInfos<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
     #[instrument(level = "info", skip_all)]
     // Internal implementation of `step`.
@@ -90,6 +102,9 @@ impl<'a> Step<ListPageInfos<'a>, MockContext> for Mock {
 
 impl<'a> Step<ListPageInfosExcluded<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -102,8 +117,12 @@ impl<'a> Step<ListPageInfosExcluded<'a>, MockContext> for Mock {
         accept(list_infos(&context.state, oper.chapter_id))
     }
 }
+
 impl<'a> Step<CreatePages<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
     #[instrument(level = "info", skip_all)]
     // Internal implementation of `step`.
@@ -133,8 +152,12 @@ impl<'a> Step<CreatePages<'a>, MockContext> for Mock {
         accept(infos)
     }
 }
+
 impl<'a> Step<GetPageInfoExcluded<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
     #[instrument(level = "info", skip_all)]
     // Internal implementation of `step`.
@@ -146,8 +169,12 @@ impl<'a> Step<GetPageInfoExcluded<'a>, MockContext> for Mock {
         get_page_by_id(&context.state, oper.id)
     }
 }
+
 impl<'a> Step<ReservePageImage<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
     #[instrument(level = "info", skip_all)]
     // Internal implementation of `step`.
@@ -197,8 +224,12 @@ impl<'a> Step<ReservePageImage<'a>, MockContext> for Mock {
         })
     }
 }
+
 impl<'a> Step<MarkPageImageUploaded<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
     #[instrument(level = "info", skip_all)]
     // Internal implementation of `step`.
@@ -231,8 +262,12 @@ impl<'a> Step<MarkPageImageUploaded<'a>, MockContext> for Mock {
         accept(())
     }
 }
+
 impl<'a> Step<SetPageImageUploaded<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
     #[instrument(level = "info", skip_all)]
     // Internal implementation of `step`.
@@ -263,8 +298,12 @@ impl<'a> Step<SetPageImageUploaded<'a>, MockContext> for Mock {
         accept(())
     }
 }
+
 impl<'a> Step<SetPageUnitCounters<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
     #[instrument(level = "info", skip_all)]
     // Internal implementation of `step`.
@@ -296,6 +335,9 @@ impl<'a> Step<SetPageUnitCounters<'a>, MockContext> for Mock {
 
 impl<'a> Step<ShiftPageIndexesTemporary<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -323,6 +365,9 @@ impl<'a> Step<ShiftPageIndexesTemporary<'a>, MockContext> for Mock {
 
 impl<'a> Step<UpdatePageManifest<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -361,6 +406,9 @@ impl<'a> Step<UpdatePageManifest<'a>, MockContext> for Mock {
 
 impl<'a> Step<ClearPageImagesForPublish<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -398,8 +446,12 @@ impl<'a> Step<ClearPageImagesForPublish<'a>, MockContext> for Mock {
         accept(object_keys)
     }
 }
+
 impl<'a> Step<DeletePages<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
     #[instrument(level = "info", skip_all)]
     // Internal implementation of `step`.
