@@ -144,6 +144,7 @@ fn mark_system_mail_read(
 
 impl Run<SendSystemMail<'_>> for Mock {
     // Internal type alias for `Error`.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -160,6 +161,7 @@ impl Run<SendSystemMail<'_>> for Mock {
 
 impl Run<SendSystemMails<'_>> for Mock {
     // Internal type alias for `Error`.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -176,6 +178,7 @@ impl Run<SendSystemMails<'_>> for Mock {
 
 impl Run<ListSystemMailInfos<'_>> for Mock {
     // Internal type alias for `Error`.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -195,6 +198,7 @@ impl Run<ListSystemMailInfos<'_>> for Mock {
 
 impl Run<MarkSystemMailRead<'_>> for Mock {
     // Internal type alias for `Error`.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]

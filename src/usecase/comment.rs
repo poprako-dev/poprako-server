@@ -4,7 +4,9 @@
 // Unit tests that validate comment lifecycle and visibility constraints.
 mod tests;
 
-use poprako_orchestra::{Nucl, OperRun as _, OperStep as _, run_proxy};
+use poprako_orchestra::{
+    AtLeast, Nucl, OperRun as _, OperStep as _, run_proxy,
+};
 use tracing::instrument;
 
 use crate::complex::comment::{CommentComplex, CommentPermComplex};
@@ -15,6 +17,7 @@ use crate::model::read::spec::comment::CommentListSpec;
 use crate::model::shared::user::UserToken;
 use crate::model::write::comment::CommentEntry;
 use crate::part::image::ImagePool;
+use crate::part::nucl::RepeatableRead;
 use crate::part::repo::comment::CommentRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::comment::{CreateComment, ListCommentInfos};
@@ -29,6 +32,7 @@ pub async fn list_infos<C, R, I>(
     instr: ListCommentInfosInstr,
 ) -> BaseRest<Vec<CommentInfoView>>
 where
+    C: poprako_orchestra::Context,
     R: CommentRepo<C> + MemberRepo<C> + Sync,
     I: ImagePool,
 {
@@ -68,8 +72,10 @@ pub async fn create<N, C, R>(
     instr: CreateCommentInstr,
 ) -> BaseRest<CreateCommentVal>
 where
+    C: poprako_orchestra::Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
+    C::Level: AtLeast<RepeatableRead>,
     R: CommentRepo<C> + MemberRepo<C> + Send + Sync,
 {
     CommentPermComplex::ensure_user_can_create(

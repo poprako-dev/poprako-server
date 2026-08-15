@@ -407,15 +407,22 @@ async fn get_snapshot_excluded(
     })
 }
 
-impl Step<GetComicArchiveSnapshotExcluded<'_>, RdbContext> for HybRepo {
+impl<L> Step<GetComicArchiveSnapshotExcluded<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Use base errors for snapshot reads in comic archive transactions.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Resolve the snapshot while holding transaction locks.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &GetComicArchiveSnapshotExcluded<'_>,
     ) -> BaseRest<ComicArchiveSnapshot> {
         get_snapshot_excluded(context.conn(), oper.comic_id).await
@@ -424,6 +431,7 @@ impl Step<GetComicArchiveSnapshotExcluded<'_>, RdbContext> for HybRepo {
 
 impl Run<ListComicArchivePayloads<'_>> for HybRepo {
     // Use base errors for payload-list operations.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -442,30 +450,44 @@ impl Run<ListComicArchivePayloads<'_>> for HybRepo {
     }
 }
 
-impl Step<CommitComicArchive<'_>, RdbContext> for HybRepo {
+impl<L> Step<CommitComicArchive<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Use base errors for commit operations.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Persist archive entry, clear sources, and retain the source comic.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &CommitComicArchive<'_>,
     ) -> BaseRest<()> {
         commit::commit(context.conn(), oper.entry).await
     }
 }
 
-impl Step<DeleteComicArchives<'_>, RdbContext> for HybRepo {
+impl<L> Step<DeleteComicArchives<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Use base errors for comic-archive cleanup during hard deletion.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Delete every archive record associated with a source comic.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &DeleteComicArchives<'_>,
     ) -> BaseRest<()> {
         //

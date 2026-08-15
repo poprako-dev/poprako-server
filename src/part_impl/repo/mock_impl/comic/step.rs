@@ -18,6 +18,9 @@ use crate::result::{BaseError, accept};
 
 impl<'a> Step<CreateComic<'a>, MockContext> for Mock {
     // Use base errors for create step inside transaction context.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -70,6 +73,9 @@ impl<'a> Step<CreateComic<'a>, MockContext> for Mock {
 
 impl<'a, 'b> Step<GetComicInfo<'a, 'b>, MockContext> for Mock {
     // Use base errors for mocked transaction get.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -85,6 +91,9 @@ impl<'a, 'b> Step<GetComicInfo<'a, 'b>, MockContext> for Mock {
 
 impl<'a, 'b> Step<GetComicInfoExcluded<'a, 'b>, MockContext> for Mock {
     // Use base errors for excluded projection get operation.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -100,6 +109,9 @@ impl<'a, 'b> Step<GetComicInfoExcluded<'a, 'b>, MockContext> for Mock {
 
 impl<'a> Step<ListComicInfosExcluded<'a>, MockContext> for Mock {
     // Use base errors for transaction list operation.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -115,6 +127,9 @@ impl<'a> Step<ListComicInfosExcluded<'a>, MockContext> for Mock {
 
 impl<'a> Step<ListComicInfos<'a>, MockContext> for Mock {
     // Use base errors for transaction list operation.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -130,6 +145,9 @@ impl<'a> Step<ListComicInfos<'a>, MockContext> for Mock {
 
 impl<'a> Step<ReserveComicCover<'a>, MockContext> for Mock {
     // Use base errors for cover reservation steps.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -218,6 +236,9 @@ impl<'a> Step<ReserveComicCover<'a>, MockContext> for Mock {
 
 impl<'a> Step<MarkComicCoverUploaded<'a>, MockContext> for Mock {
     // Use base errors for mock cover upload updates.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -240,6 +261,9 @@ impl<'a> Step<MarkComicCoverUploaded<'a>, MockContext> for Mock {
 
 impl<'a> Step<DeleteComic<'a>, MockContext> for Mock {
     // Use base errors for mocked deletion operations.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -294,6 +318,9 @@ impl<'a> Step<DeleteComic<'a>, MockContext> for Mock {
 
 impl<'a> Step<AllocComicChapterIndex<'a>, MockContext> for Mock {
     // Use base errors for chapter index allocation in mock.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -325,6 +352,9 @@ impl<'a> Step<AllocComicChapterIndex<'a>, MockContext> for Mock {
 
 impl<'a> Step<UpdateComicChapterCount<'a>, MockContext> for Mock {
     // Use base errors for chapter count updates in mock.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -353,6 +383,9 @@ impl<'a> Step<UpdateComicChapterCount<'a>, MockContext> for Mock {
 
 impl<'a> Step<TouchComicLastActive<'a>, MockContext> for Mock {
     // Use base errors for updating comic heartbeat timestamps.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]

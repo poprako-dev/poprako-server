@@ -17,6 +17,7 @@ use crate::shared::RdbContext;
 
 impl Run<UpdateTeam<'_>> for HybRepo {
     // Keep update orchestration failures compatible with other team operations.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -44,30 +45,44 @@ impl Run<UpdateTeam<'_>> for HybRepo {
     }
 }
 
-impl Step<CreateTeam<'_>, RdbContext> for HybRepo {
+impl<L> Step<CreateTeam<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Convert repository step failures to base error during transaction execution.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Persist a new team row within an open transaction and return persisted info.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &CreateTeam<'_>,
     ) -> BaseRest<TeamInfo> {
         create(context.conn(), oper.entry).await
     }
 }
 
-impl Step<UpdateTeam<'_>, RdbContext> for HybRepo {
+impl<L> Step<UpdateTeam<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Keep transactional team updates on the same base error contract.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Apply either profile updates or avatar flag updates in current transaction.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &UpdateTeam<'_>,
     ) -> BaseRest<()> {
         //
@@ -92,15 +107,22 @@ impl Step<UpdateTeam<'_>, RdbContext> for HybRepo {
     }
 }
 
-impl Step<ReserveTeamAvatar<'_>, RdbContext> for HybRepo {
+impl<L> Step<ReserveTeamAvatar<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Report avatar-reservation validation and mutation errors through base error.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Reserve the next avatar slot and return upload reservation metadata.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &ReserveTeamAvatar<'_>,
     ) -> BaseRest<TeamAvatarReservation> {
         //
@@ -109,15 +131,22 @@ impl Step<ReserveTeamAvatar<'_>, RdbContext> for HybRepo {
     }
 }
 
-impl Step<GetTeamInfoExcluded<'_>, RdbContext> for HybRepo {
+impl<L> Step<GetTeamInfoExcluded<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Preserve consistent error typing for locked team detail fetches.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Load team info with row lock and exclusion rules for transactional safety.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &GetTeamInfoExcluded<'_>,
     ) -> BaseRest<TeamInfo> {
         //
@@ -130,45 +159,66 @@ impl Step<GetTeamInfoExcluded<'_>, RdbContext> for HybRepo {
     }
 }
 
-impl Step<LockTeam<'_>, RdbContext> for HybRepo {
+impl<L> Step<LockTeam<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Keep lock contention errors on the shared repository error type.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Acquire row lock for update sequencing before sensitive team writes.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &LockTeam<'_>,
     ) -> BaseRest<()> {
         lock_team(context.conn(), oper.id).await
     }
 }
 
-impl Step<DeleteTeam<'_>, RdbContext> for HybRepo {
+impl<L> Step<DeleteTeam<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Use the common base error for hard delete operations in transactions.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Remove a team row after the caller has coordinated any dependent effects.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &DeleteTeam<'_>,
     ) -> BaseRest<()> {
         delete(context.conn(), oper.id).await
     }
 }
 
-impl Step<AllocTeamWorksetIndex<'_>, RdbContext> for HybRepo {
+impl<L> Step<AllocTeamWorksetIndex<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Keep index allocation failures mapped to repository base errors.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Atomically increment and return previous index for next workset reservation.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &AllocTeamWorksetIndex<'_>,
     ) -> BaseRest<i32> {
         increment_workset_next_index(context.conn(), oper.id).await

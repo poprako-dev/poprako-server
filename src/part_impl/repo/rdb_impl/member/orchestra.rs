@@ -20,6 +20,7 @@ impl Run<ListMemberInfos<'_>> for HybRepo {
     //
     // It picks the right query variant based on whether the caller provided
     // filters or a user-only scope.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -44,6 +45,7 @@ impl Run<ListMemberInfos<'_>> for HybRepo {
 
 impl Run<GetMemberInfo<'_, '_>> for HybRepo {
     // Non-transactional query path for loading one member info by identity.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -59,32 +61,46 @@ impl Run<GetMemberInfo<'_, '_>> for HybRepo {
     }
 }
 
-impl Step<CreateMember<'_>, RdbContext> for HybRepo {
+impl<L> Step<CreateMember<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Create a new member row inside the active transaction context.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Invoke `create` step with raw entry payload and return created info.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &CreateMember<'_>,
     ) -> BaseRest<MemberInfo> {
         create(context.conn(), oper.entry).await
     }
 }
 
-impl Step<UpdateMember<'_>, RdbContext> for HybRepo {
+impl<L> Step<UpdateMember<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Apply an in-transaction member update request.
     //
     // Supported requests either adjust nickname or change role based on branch.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Branch to nickname/role update path and execute inside the transaction.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &UpdateMember<'_>,
     ) -> BaseRest<()> {
         //
@@ -107,18 +123,25 @@ impl Step<UpdateMember<'_>, RdbContext> for HybRepo {
     }
 }
 
-impl Step<ListMemberInfos<'_>, RdbContext> for HybRepo {
+impl<L> Step<ListMemberInfos<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Transactional list path for member info queries.
     //
     // Reuses the same selection modes as non-transactional `run` execution,
     // but executes through an explicit DB connection context.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Execute list query within the transaction and return full member info set.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &ListMemberInfos<'_>,
     ) -> BaseRest<Vec<MemberInfo>> {
         //
@@ -135,15 +158,22 @@ impl Step<ListMemberInfos<'_>, RdbContext> for HybRepo {
     }
 }
 
-impl Step<FindMemberInfo<'_>, RdbContext> for HybRepo {
+impl<L> Step<FindMemberInfo<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Transactional lookup for a member by `(user_id, team_id)`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Find one member-row mapping by both user and team identifiers.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &FindMemberInfo<'_>,
     ) -> BaseRest<Option<MemberInfo>> {
         //
@@ -162,15 +192,22 @@ impl Step<FindMemberInfo<'_>, RdbContext> for HybRepo {
     }
 }
 
-impl Step<GetMemberInfo<'_, '_>, RdbContext> for HybRepo {
+impl<L> Step<GetMemberInfo<'_, '_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Transactional lookup for a full member info by id and requested includes.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Fetch a member info with requested include options within the transaction.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &GetMemberInfo<'_, '_>,
     ) -> BaseRest<MemberInfo> {
         //
@@ -183,17 +220,24 @@ impl Step<GetMemberInfo<'_, '_>, RdbContext> for HybRepo {
     }
 }
 
-impl Step<ListMemberInfosExcluded<'_>, RdbContext> for HybRepo {
+impl<L> Step<ListMemberInfosExcluded<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Transactional list for member infos excluding one side of relation.
     //
     // One branch excludes all members for a user, the other excludes a full team.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Execute exclusion-based member list variants inside the same tx context.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &ListMemberInfosExcluded<'_>,
     ) -> BaseRest<Vec<MemberInfo>> {
         //
@@ -210,15 +254,22 @@ impl Step<ListMemberInfosExcluded<'_>, RdbContext> for HybRepo {
     }
 }
 
-impl Step<DeleteMember<'_>, RdbContext> for HybRepo {
+impl<L> Step<DeleteMember<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Transactional delete operation for a single member by id.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Delete the member row for the provided identifier from the DB transaction.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &DeleteMember<'_>,
     ) -> BaseRest<()> {
         delete(context.conn(), oper.id).await

@@ -85,6 +85,7 @@ fn resolve_team_id(
 
 impl Run<ResolveTeamId<'_>> for Mock {
     // BaseError for the standalone mock team-resolution projection.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Runs the team-resolution projection against the shared mock state.
@@ -102,6 +103,9 @@ impl Run<ResolveTeamId<'_>> for Mock {
 
 impl Step<ResolveTeamId<'_>, MockContext> for Mock {
     // BaseError for the transactional mock team-resolution projection.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Runs the team-resolution projection inside the transactional mock context.

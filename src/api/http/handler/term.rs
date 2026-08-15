@@ -21,6 +21,9 @@ use crate::data::instr::term::{
 use crate::data::val::term::CreateTermVal;
 use crate::data::view::term::TermInfoView;
 use crate::model::shared::user::UserToken;
+use crate::part::nucl::RepeatableRead;
+use crate::part_impl::repo::HybRepo;
+use crate::shared::RdbContext;
 use crate::usecase;
 
 /// Query parameters for terms inside one terminology base.
@@ -56,9 +59,13 @@ pub async fn create(
     Json(instr): Json<CreateTermInstr>,
 ) -> HttpResult<CreateTermVal> {
     //
-    usecase::term::create((harn.nucl(), harn.repo()), user_token, instr)
-        .await?
-        .accept(StatusCode::CREATED)
+    usecase::term::create::<_, RdbContext<RepeatableRead>, HybRepo>(
+        (harn.nucl().repeatable_read(), harn.repo()),
+        user_token,
+        instr,
+    )
+    .await?
+    .accept(StatusCode::CREATED)
 }
 
 /// `GET /api/v1/termbases/{termbase_id}/terms` — list terms in one base.
@@ -88,9 +95,13 @@ pub async fn list_infos(
         limit: query.limit,
     };
 
-    usecase::term::list_infos((harn.repo(),), user_token, instr)
-        .await?
-        .accept(StatusCode::OK)
+    usecase::term::list_infos::<RdbContext<RepeatableRead>, HybRepo>(
+        (harn.repo(),),
+        user_token,
+        instr,
+    )
+    .await?
+    .accept(StatusCode::OK)
 }
 
 /// `GET /api/v1/terms/{term_id}` — fetch a terminology entry.
@@ -112,9 +123,13 @@ pub async fn get_info(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<TermInfoView> {
     //
-    usecase::term::get_info((harn.repo(),), user_token, term_id)
-        .await?
-        .accept(StatusCode::OK)
+    usecase::term::get_info::<RdbContext<RepeatableRead>, HybRepo>(
+        (harn.repo(),),
+        user_token,
+        term_id,
+    )
+    .await?
+    .accept(StatusCode::OK)
 }
 
 /// `PUT /api/v1/terms/{term_id}` — replace terminology-entry fields.
@@ -140,8 +155,12 @@ pub async fn update_info(
     //
     ensure_path_matches_body_id(&term_id, &instr.id)?;
 
-    usecase::term::update_info((harn.nucl(), harn.repo()), user_token, instr)
-        .await?;
+    usecase::term::update_info::<_, RdbContext<RepeatableRead>, HybRepo>(
+        (harn.nucl().repeatable_read(), harn.repo()),
+        user_token,
+        instr,
+    )
+    .await?;
 
     no_content()
 }
@@ -165,8 +184,12 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::term::delete((harn.nucl(), harn.repo()), user_token, term_id)
-        .await?;
+    usecase::term::delete::<_, RdbContext<RepeatableRead>, HybRepo>(
+        (harn.nucl().repeatable_read(), harn.repo()),
+        user_token,
+        term_id,
+    )
+    .await?;
 
     no_content()
 }

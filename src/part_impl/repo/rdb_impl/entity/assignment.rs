@@ -31,6 +31,7 @@ pub struct AssignmentInfoRow {
 }
 
 impl TryFrom<AssignmentInfoRow> for AssignmentInfo {
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     fn try_from(row: AssignmentInfoRow) -> Result<Self, Self::Error> {

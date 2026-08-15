@@ -40,6 +40,7 @@ impl<R> EffectHandler<R> {
     /// Runs the event consumer loop, dispatching events until a shutdown signal is received.
     pub async fn run<C>(mut self)
     where
+        C: poprako_orchestra::Context,
         C: Send,
         R: AssignmentRepo<C>
             + ChapterRepo<C>
@@ -52,14 +53,19 @@ impl<R> EffectHandler<R> {
         loop {
             //
             tokio::select! {
+                //
                 event = self.recv.recv() => {
+                    //
                     match event {
+                        //
                         Some(event) => {
                             dispatch::<C, R>(&self.repo, event).await
                         }
+
                         None => break,
                     }
                 }
+
                 () = self.token.cancelled() => break,
             }
         }

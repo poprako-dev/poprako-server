@@ -189,6 +189,7 @@ fn update_user(state: &mut MockState, oper: &UpdateUser<'_>) -> BaseRest<()> {
 
 impl<'a> Run<GetUserInfo<'a>> for Mock {
     // Keep run layer errors as `BaseError` in tests.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Resolve `GetUserInfo` against the locked mock state.
@@ -206,6 +207,7 @@ impl<'a> Run<GetUserInfo<'a>> for Mock {
 
 impl<'a> Run<GetUserCredential<'a>> for Mock {
     // Keep run layer errors as `BaseError` in tests.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Resolve credentials from mock state by qid.
@@ -226,6 +228,7 @@ impl<'a> Run<GetUserCredential<'a>> for Mock {
 
 impl<'a> Run<FindUserInfo<'a>> for Mock {
     // Keep run layer errors as `BaseError` in tests.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Resolve optional user info by qid in shared state.
@@ -243,6 +246,7 @@ impl<'a> Run<FindUserInfo<'a>> for Mock {
 
 impl<'a> Run<UpdateUser<'a>> for Mock {
     // Keep run layer errors as `BaseError` in tests.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Apply update user mutations under mutable lock.
@@ -258,6 +262,9 @@ impl<'a> Run<UpdateUser<'a>> for Mock {
 
 impl<'a> Step<CreateUser<'a>, MockContext> for Mock {
     // Keep step errors as `BaseError` in mocked transactions.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Create user using transaction-local mutable state.
@@ -273,6 +280,9 @@ impl<'a> Step<CreateUser<'a>, MockContext> for Mock {
 
 impl<'a> Step<FindUserInfo<'a>, MockContext> for Mock {
     // Keep step errors as `BaseError` in mocked transactions.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Resolve optional user by qid from transaction context.
@@ -294,6 +304,9 @@ impl<'a> Step<FindUserInfo<'a>, MockContext> for Mock {
 
 impl<'a> Step<UpdateUser<'a>, MockContext> for Mock {
     // Keep step errors as `BaseError` in mocked transactions.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Apply update operation using context-scoped user state.
@@ -309,6 +322,9 @@ impl<'a> Step<UpdateUser<'a>, MockContext> for Mock {
 
 impl<'a> Step<ReserveUserAvatar<'a>, MockContext> for Mock {
     // Keep step errors as `BaseError` in mocked transactions.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Reserve/reuse avatar metadata and return reservation detail.
@@ -398,6 +414,9 @@ impl<'a> Step<ReserveUserAvatar<'a>, MockContext> for Mock {
 
 impl<'a> Step<GetUserInfoExcluded<'a>, MockContext> for Mock {
     // Keep step errors as `BaseError` in mocked transactions.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Load by id with context state for exclusive update preparation.
@@ -416,6 +435,9 @@ impl<'a> Step<GetUserInfoExcluded<'a>, MockContext> for Mock {
 
 impl<'a> Step<DeleteUser<'a>, MockContext> for Mock {
     // Keep step errors as `BaseError` in mocked transactions.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Delete user and cleanup dependent mock artifacts.

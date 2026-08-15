@@ -132,6 +132,7 @@ impl<'a> TeamAspectRow<'a> {
 // ── Conversions ────────────────────────────────────────────────────────────
 
 impl TryFrom<TeamInfoRow> for TeamInfo {
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     fn try_from(v: TeamInfoRow) -> BaseRest<Self> {

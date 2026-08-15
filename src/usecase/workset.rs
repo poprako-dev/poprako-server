@@ -5,9 +5,8 @@
 pub mod tests;
 
 use poprako_orchestra::{
-    Nucl, OperRun as _, OperStep as _, run_proxy, step_proxy,
+    AtLeast, Nucl, OperRun as _, OperStep as _, run_proxy, step_proxy,
 };
-use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 use tracing::instrument;
 
 use crate::complex::workset::{WorksetComplex, WorksetPermComplex};
@@ -18,7 +17,9 @@ use crate::data::val::workset::CreateWorksetVal;
 use crate::data::view::workset::WorksetInfoView;
 use crate::model::shared::user::UserToken;
 use crate::model::write::workset::{WorksetEntry, WorksetRepl};
+use crate::part::nucl::{RepeatableRead, Serializable};
 use crate::part::prom::Prom;
+use crate::part::prom::oper::{Defer, DeferBatch};
 use crate::part::prom::payload::TaskPayload;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
@@ -64,8 +65,10 @@ pub async fn create<N, C, R>(
     instr: CreateWorksetInstr,
 ) -> BaseRest<CreateWorksetVal>
 where
+    C: poprako_orchestra::Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
+    C::Level: AtLeast<RepeatableRead>,
     R: TeamRepo<C> + WorksetRepo<C> + MemberRepo<C> + Send + Sync,
 {
     WorksetPermComplex::ensure_user_can_create(
@@ -113,6 +116,7 @@ pub async fn get_info<C, R>(
     id: String,
 ) -> BaseRest<WorksetInfoView>
 where
+    C: poprako_orchestra::Context,
     R: WorksetRepo<C> + MemberRepo<C> + Sync,
 {
     WorksetPermComplex::ensure_user_can_get_info(
@@ -139,6 +143,7 @@ pub async fn list_infos<C, R>(
     instr: ListWorksetInfosInstr,
 ) -> BaseRest<Vec<WorksetInfoView>>
 where
+    C: poprako_orchestra::Context,
     R: WorksetRepo<C> + MemberRepo<C> + Sync,
 {
     WorksetPermComplex::ensure_user_can_list_infos(
@@ -169,6 +174,7 @@ pub async fn update_info<C, R>(
     instr: UpdateWorksetInfoInstr,
 ) -> BaseRest<()>
 where
+    C: poprako_orchestra::Context,
     R: WorksetRepo<C> + MemberRepo<C> + Sync,
 {
     WorksetPermComplex::ensure_user_can_update_info(
@@ -205,8 +211,10 @@ pub async fn delete<N, C, R, P>(
     id: String,
 ) -> BaseRest<()>
 where
+    C: poprako_orchestra::Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
+    C::Level: AtLeast<Serializable>,
     R: WorksetRepo<C>
         + ComicRepo<C>
         + ComicArchiveRepo<C>
@@ -235,10 +243,14 @@ where
 
     nucl.coord(async move |context| {
         //
+        let guarded_repo = &crate::part::nucl::GuardedStep::new(repo);
+
+        let guarded_prom = &crate::part::nucl::GuardedStep::new(prom);
+
         WorksetComplex::delete_cascade(
             &mut step_proxy! {
                 context;
-                repo =>
+                guarded_repo =>
                     for<'a> GetWorksetInfoExcluded<'a>,
                     for<'a> ListComicInfosExcluded<'a>,
                     for<'a> DeleteWorkset<'a>,
@@ -261,7 +273,7 @@ where
                     for<'a> GetTermbaseInfoExcluded<'a>,
                     for<'a> DeleteTerms<'a>,
                     for<'a> DeleteTermbase<'a>;
-                prom =>
+                guarded_prom =>
                     for<'a> Defer<'a, String, TaskPayload, ()>,
                     for<'t, 'a> DeferBatch<'t, 'a, String, TaskPayload, ()>;
             },

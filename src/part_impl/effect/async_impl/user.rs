@@ -23,6 +23,7 @@ use crate::part::repo::user::UserRepo;
 #[instrument(level = "info", skip_all)]
 pub async fn touch_last_active<C, R>(repo: &R, event: UserActiveEvent)
 where
+    C: poprako_orchestra::Context,
     R: UserRepo<C>,
 {
     if (UpdateUser::TouchLastActive { id: &event.user_id })
@@ -41,6 +42,7 @@ where
 #[instrument(level = "info", skip_all)]
 pub async fn notify_invitor<C, R>(repo: &R, event: UserSignedUpEvent)
 where
+    C: poprako_orchestra::Context,
     R: TeamRepo<C> + SystemMailRepo,
 {
     let team_info = GetTeamInfo::Id { id: &event.team_id }.run_on(repo).await;

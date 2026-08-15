@@ -2,7 +2,6 @@
 
 /// Result helpers for Diesel-backed shared internals.
 pub mod result;
-/// RDB test-container helpers.
 #[cfg(all(
     test,
     feature = "rdb",
@@ -10,15 +9,18 @@ pub mod result;
 ))]
 pub mod test_rdb;
 
+use std::marker::PhantomData;
 use std::sync::Arc;
 
 use anyhow::Context as _;
 use diesel_async::AsyncPgConnection;
 use diesel_async::pooled_connection::AsyncDieselConnectionManager;
 use diesel_async::pooled_connection::deadpool::{Object, Pool};
+use poprako_orchestra::{Context, Level};
 use tracing::instrument;
 
 use self::result::{pool_build, pool_get};
+use crate::part::nucl::RepeatableRead;
 use crate::result::{BaseError, BaseRest, accept};
 
 // Internal type alias for the Diesel async connection pool.
@@ -56,6 +58,7 @@ impl RdbCore {
         Self::from_database_url(&database_url).map_err(|err| match err {
             //
             BaseError::Expected { message, .. }
+            | BaseError::Retryable { message }
             | BaseError::Unrecoverable { message } => {
                 anyhow::anyhow!("{}", message)
             }
@@ -83,20 +86,34 @@ impl RdbCore {
     }
 }
 
-/// Transactional context holding a single pooled connection for the duration of a transaction.
-pub struct RdbContext {
-    /// Diesel pooled connection used within a single transaction scope.
+/// Transactional context holding a pooled PostgreSQL connection.
+pub struct RdbContext<L = RepeatableRead> {
+    /// Pooled PostgreSQL connection owned by this transaction context.
     conn: RdbPooledConn,
+    /// Isolation-level marker carried by the context.
+    level: PhantomData<L>,
 }
 
-impl RdbContext {
-    /// Builds a new context from a pooled connection.
+impl<L> RdbContext<L> {
+    /// Builds a context from a pooled connection.
     pub fn new(conn: RdbPooledConn) -> Self {
-        Self { conn }
+        //
+        Self {
+            conn,
+            level: PhantomData,
+        }
     }
 
     /// Returns a mutable reference to the underlying pooled connection.
     pub fn conn(&mut self) -> &mut AsyncPgConnection {
         &mut self.conn
     }
+}
+
+impl<L> Context for RdbContext<L>
+where
+    L: Level,
+{
+    // Exposes the transaction context's isolation level.
+    type Level = L;
 }

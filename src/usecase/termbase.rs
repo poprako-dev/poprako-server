@@ -5,7 +5,7 @@
 mod tests;
 
 use poprako_orchestra::{
-    Nucl, OperRun as _, OperStep as _, run_proxy, step_proxy,
+    AtLeast, Nucl, OperRun as _, OperStep as _, run_proxy, step_proxy,
 };
 use tracing::instrument;
 
@@ -19,6 +19,7 @@ use crate::data::val::termbase::CreateTermbaseVal;
 use crate::data::view::termbase::TermbaseInfoView;
 use crate::model::read::spec::termbase::TermbaseListSpec;
 use crate::model::shared::user::UserToken;
+use crate::part::nucl::RepeatableRead;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::comic::GetComicInfoExcluded;
@@ -44,8 +45,10 @@ pub async fn create<N, C, R>(
     instr: CreateTermbaseInstr,
 ) -> BaseRest<CreateTermbaseVal>
 where
+    C: poprako_orchestra::Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
+    C::Level: AtLeast<RepeatableRead>,
     R: TeamRepo<C>
         + ComicRepo<C>
         + WorksetRepo<C>
@@ -98,10 +101,12 @@ where
                     _ => unreachable!(),
                 };
 
+            let guarded_repo = &crate::part::nucl::GuardedStep::new(repo);
+
             TermbasePermComplex::ensure_user_can_write_team(
                 &mut step_proxy! {
                     context;
-                    repo => for<'a> FindMemberInfo<'a>;
+                    guarded_repo => for<'a> FindMemberInfo<'a>;
                 },
                 &token.user_id,
                 &team_id,
@@ -129,6 +134,7 @@ pub async fn get_info<C, R>(
     id: String,
 ) -> BaseRest<TermbaseInfoView>
 where
+    C: poprako_orchestra::Context,
     R: TermbaseRepo<C> + TeamRepo<C> + MemberRepo<C> + Sync,
 {
     let termbase_info = GetTermbaseInfo { id: &id }.run_on(repo).await?;
@@ -155,6 +161,7 @@ pub async fn list_team_infos<C, R>(
     instr: ListTeamTermbaseInfosInstr,
 ) -> BaseRest<Vec<TermbaseInfoView>>
 where
+    C: poprako_orchestra::Context,
     R: TermbaseRepo<C> + MemberRepo<C> + Sync,
 {
     TermbasePermComplex::ensure_user_can_read_team(
@@ -190,6 +197,7 @@ pub async fn list_comic_infos<C, R>(
     instr: ListComicTermbaseInfosInstr,
 ) -> BaseRest<Vec<TermbaseInfoView>>
 where
+    C: poprako_orchestra::Context,
     R: TermbaseRepo<C> + TeamRepo<C> + MemberRepo<C> + Sync,
 {
     TermbasePermComplex::ensure_user_can_read_comic(
@@ -227,8 +235,10 @@ pub async fn update_info<N, C, R>(
     instr: UpdateTermbaseInfoInstr,
 ) -> BaseRest<()>
 where
+    C: poprako_orchestra::Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
+    C::Level: AtLeast<RepeatableRead>,
     R: TermbaseRepo<C> + TeamRepo<C> + MemberRepo<C> + Send + Sync,
 {
     let termbase_info_update =
@@ -242,10 +252,12 @@ where
         .step_on(repo, context)
         .await?;
 
+        let guarded_repo = &crate::part::nucl::GuardedStep::new(repo);
+
         TermbasePermComplex::ensure_user_can_write(
             &mut step_proxy! {
                 context;
-                repo =>
+                guarded_repo =>
                     for<'a> ResolveTeamId<'a>,
                     for<'a> FindMemberInfo<'a>;
             },
@@ -275,8 +287,10 @@ pub async fn delete<N, C, R>(
     id: String,
 ) -> BaseRest<()>
 where
+    C: poprako_orchestra::Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
+    C::Level: AtLeast<RepeatableRead>,
     R: TermbaseRepo<C>
         + TermRepo<C>
         + TeamRepo<C>
@@ -290,10 +304,12 @@ where
             .step_on(repo, context)
             .await?;
 
+        let guarded_repo = &crate::part::nucl::GuardedStep::new(repo);
+
         TermbasePermComplex::ensure_user_can_write(
             &mut step_proxy! {
                 context;
-                repo =>
+                guarded_repo =>
                     for<'a> ResolveTeamId<'a>,
                     for<'a> FindMemberInfo<'a>;
             },
@@ -305,7 +321,7 @@ where
         TermbaseComplex::delete_cascade(
             &mut step_proxy! {
                 context;
-                repo =>
+                guarded_repo =>
                     for<'a> GetTermbaseInfoExcluded<'a>,
                     for<'a> DeleteTerms<'a>,
                     for<'a> DeleteTermbase<'a>;

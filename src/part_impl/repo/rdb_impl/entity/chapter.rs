@@ -43,6 +43,7 @@ pub struct ChapterInfoRow {
 }
 
 impl TryFrom<ChapterInfoRow> for ChapterInfo {
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     fn try_from(row: ChapterInfoRow) -> Result<Self, Self::Error> {

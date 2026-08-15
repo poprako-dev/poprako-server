@@ -16,8 +16,6 @@ mod defer;
 mod tests;
 
 use poprako_orchestra::{Nucl as _, OperStep as _, Step};
-use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
-use poprako_orchestra_extra::prom::task::Task;
 use time::OffsetDateTime;
 
 use poprako_util::i18n::trl;
@@ -28,8 +26,9 @@ use crate::model::write::page::PageImageRepl;
 use crate::model::write::team::TeamAvatarRepl;
 use crate::model::write::user::UserAvatarRepl;
 use crate::part::image::ImageManager;
-use crate::part::prom::Prom;
+use crate::part::prom::oper::{Defer, DeferBatch};
 use crate::part::prom::payload::{TaskPayload, image};
+use crate::part::prom::task::Task;
 use crate::part::repo::oper::chapter::GetChapterInfoExcluded;
 use crate::part::repo::oper::comic::{
     GetComicInfoExcluded, MarkComicCoverUploaded,
@@ -104,9 +103,6 @@ impl MockPromRecord {
             .expect("stored prom payload should deserialize successfully")
     }
 }
-
-/// Mock prom implementation used by coordinated tests.
-impl Prom<MockContext> for Mock {}
 
 // ── On-demand prom processor for integration tests ─────────────────────────
 

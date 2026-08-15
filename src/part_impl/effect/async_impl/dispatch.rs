@@ -14,6 +14,7 @@ use crate::part_impl::effect::async_impl::{chapter, user};
 #[instrument(level = "info", skip_all)]
 pub async fn dispatch<C, R>(repo: &R, event: Event)
 where
+    C: poprako_orchestra::Context,
     R: AssignmentRepo<C>
         + ChapterRepo<C>
         + TeamRepo<C>

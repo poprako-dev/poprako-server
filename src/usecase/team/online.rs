@@ -23,6 +23,7 @@ pub async fn mark_self_online<C, R>(
     team_id: String,
 ) -> BaseRest<()>
 where
+    C: poprako_orchestra::Context,
     R: MemberRepo<C> + OnlineUserRepo + Sync,
 {
     TeamPermComplex::ensure_user_can_mark_self_online(
@@ -52,6 +53,7 @@ pub async fn list_online_user_ids<C, R>(
     team_id: String,
 ) -> BaseRest<Vec<String>>
 where
+    C: poprako_orchestra::Context,
     R: MemberRepo<C> + OnlineUserRepo + Sync,
 {
     TeamPermComplex::ensure_user_can_list_online_user_ids(

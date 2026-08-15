@@ -2757,27 +2757,18 @@ checksum = "5dcdc93847ad24990939cce6e1804361e903efcb5f99daa5abd87943a9d6d7ba"
 
 [[package]]
 name = "poprako-orchestra"
-version = "0.2.3"
+version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c878f018124de6d9dac10bb9cb9dd77549d9f06e220c81de0b9f533867d6d4bc"
+checksum = "c371e7c7ac2e957921c8090f2962d75cd1c857cf76eb108b87bd3a27acb3c74f"
 dependencies = [
  "poprako-orchestra-macro",
 ]
 
 [[package]]
-name = "poprako-orchestra-extra"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f031600914245ff0579cc33b587acd87e8f68071581f6fe4be12a06d1a6e6636"
-dependencies = [
- "poprako-orchestra",
-]
-
-[[package]]
 name = "poprako-orchestra-macro"
-version = "0.1.0"
+version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d8d9361a3d4db704e9796d4017042872671702d8168fa7db2f67fd0fc8c0f442"
+checksum = "bf8801512a146a41cb38e8c25d36bcf909e88e462abed03e5960f3d9dc4ef6b2"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -2814,7 +2805,6 @@ dependencies = [
  "metrics",
  "metrics-exporter-prometheus",
  "poprako-orchestra",
- "poprako-orchestra-extra",
  "poprako-util",
  "serde",
  "serde_json",
@@ -2963,7 +2953,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b570b25f7617e43d59005d0990ccb79e950a423952cea19671b7a876da390adf"
 dependencies = [
  "anyhow",
- "itertools 0.13.0",
+ "itertools 0.14.0",
  "proc-macro2",
  "quote",
  "syn 2.0.118",

@@ -5,6 +5,7 @@
 
 [linters]
 no-allow = true
+no-inline-format = true
 no-inline-tests = true
 spacing-style = true
 use-style = true
@@ -41,6 +42,7 @@ allow_public_fields = [
     "api::http::shared::metric",
     "complex::page::manifest",
     "part::image",
+    "part::prom",
     "part::repo::oper",
     "part::effect::event",
     "part::prom::payload::chapter",

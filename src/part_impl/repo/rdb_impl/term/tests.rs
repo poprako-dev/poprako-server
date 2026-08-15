@@ -24,7 +24,8 @@ pub async fn term_array_unique_and_fuzzy_roundtrip(shared: RdbCore) {
 
     let repo = HybRepo::new(shared.clone());
 
-    let nucl = RdbNucl::new(shared.clone());
+    let nucl =
+        RdbNucl::<crate::part::nucl::RepeatableRead>::new(shared.clone());
 
     let termbase_entry = TermbaseEntry {
         id: format!("{}base", PREFIX),

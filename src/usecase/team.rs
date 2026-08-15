@@ -12,10 +12,8 @@ mod tests;
 use std::time::Duration;
 
 use poprako_orchestra::{
-    Nucl, OperRun as _, OperStep as _, run_proxy, step_proxy,
+    AtLeast, Nucl, OperRun as _, OperStep as _, run_proxy, step_proxy,
 };
-use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
-use poprako_orchestra_extra::prom::task::Task;
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
@@ -34,8 +32,11 @@ use crate::model::shared::user::UserToken;
 use crate::model::write::member::MemberEntry;
 use crate::model::write::team::{TeamAvatarRepl, TeamEntry, TeamRepl};
 use crate::part::image::{ImageManager, ImagePool, ImageUploadSpec};
+use crate::part::nucl::{RepeatableRead, Serializable};
 use crate::part::prom::Prom;
+use crate::part::prom::oper::{Defer, DeferBatch};
 use crate::part::prom::payload::{TaskPayload, image};
+use crate::part::prom::task::Task;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::chapter::ChapterRepo;
@@ -99,8 +100,10 @@ pub async fn create<N, C, R, I>(
     instr: CreateTeamInstr,
 ) -> BaseRest<TeamInfoView>
 where
+    C: poprako_orchestra::Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
+    C::Level: AtLeast<RepeatableRead>,
     R: TeamRepo<C> + UserRepo<C> + MemberRepo<C> + Send + Sync,
     I: ImagePool,
 {
@@ -166,6 +169,7 @@ pub async fn update_info<C, R>(
     instr: UpdateTeamInfoInstr,
 ) -> BaseRest<()>
 where
+    C: poprako_orchestra::Context,
     R: TeamRepo<C> + MemberRepo<C> + Sync,
 {
     TeamPermComplex::ensure_user_can_update_info(
@@ -214,8 +218,10 @@ pub async fn reserve_avatar<N, C, R, P, I>(
     instr: ReserveTeamAvatarInstr,
 ) -> BaseRest<ReserveTeamAvatarVal>
 where
+    C: poprako_orchestra::Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
+    C::Level: AtLeast<RepeatableRead>,
     R: TeamRepo<C> + MemberRepo<C> + Send + Sync,
     P: Prom<C> + Send + Sync,
     I: ImagePool,
@@ -353,8 +359,10 @@ pub async fn mark_avatar_uploaded<N, C, R, I>(
     instr: MarkTeamAvatarUploadedInstr,
 ) -> BaseRest<()>
 where
+    C: poprako_orchestra::Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
+    C::Level: AtLeast<RepeatableRead>,
     R: TeamRepo<C> + MemberRepo<C> + Send + Sync,
     I: ImageManager,
 {
@@ -502,8 +510,10 @@ pub async fn delete<N, C, R, P>(
     id: String,
 ) -> BaseRest<()>
 where
+    C: poprako_orchestra::Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
+    C::Level: AtLeast<Serializable>,
     R: TeamRepo<C>
         + WorksetRepo<C>
         + ComicRepo<C>
@@ -531,10 +541,14 @@ where
 
     nucl.coord(async move |context| {
         //
+        let guarded_repo = &crate::part::nucl::GuardedStep::new(repo);
+
+        let guarded_prom = &crate::part::nucl::GuardedStep::new(prom);
+
         TeamComplex::delete_cascade(
             &mut step_proxy! {
                 context;
-                repo =>
+                guarded_repo =>
                     for<'a> GetTeamInfoExcluded<'a>,
                     for<'a> ListWorksetInfosExcluded<'a>,
                     for<'a> DeleteTeam<'a>,
@@ -562,7 +576,7 @@ where
                     for<'a> DeleteTermbase<'a>,
                     for<'a> ListMemberInfosExcluded<'a>,
                     for<'a> DeleteMember<'a>;
-                prom =>
+                guarded_prom =>
                     for<'a> Defer<'a, String, TaskPayload, ()>,
                     for<'t, 'a> DeferBatch<'t, 'a, String, TaskPayload, ()>;
             },

@@ -26,8 +26,10 @@ use crate::value::role::{RoleField, RoleMask};
 
 // Number of chapters generated in the synthetic benchmark archive payload.
 const CHAPTER_COUNT: usize = 8;
+
 // Number of pages included in each benchmark chapter snapshot.
 const PAGE_COUNT: usize = 8;
+
 // Number of units included on each benchmark page.
 const UNIT_COUNT: usize = 48;
 

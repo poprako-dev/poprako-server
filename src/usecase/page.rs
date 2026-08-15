@@ -11,9 +11,9 @@ mod tests;
 
 use std::time::Duration;
 
-use poprako_orchestra::{Nucl, OperRun as _, OperStep as _, run_proxy};
-use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
-use poprako_orchestra_extra::prom::task::Task;
+use poprako_orchestra::{
+    AtLeast, Nucl, OperRun as _, OperStep as _, run_proxy,
+};
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
@@ -30,9 +30,12 @@ use crate::data::view::page::PageInfoView;
 use crate::model::shared::user::UserToken;
 use crate::model::write::page::{PageImageRepl, PageManifestRepl};
 use crate::part::image::{ImageManager, ImagePool, ImageUploadSpec};
+use crate::part::nucl::RepeatableRead;
 use crate::part::prom::Prom;
+use crate::part::prom::oper::{Defer, DeferBatch};
 use crate::part::prom::payload::chapter::ChapterPayload;
 use crate::part::prom::payload::{TaskPayload, image};
+use crate::part::prom::task::Task;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::member::MemberRepo;
@@ -61,8 +64,10 @@ pub async fn reserve_image<N, C, R, P, I>(
     instr: ReservePageImageInstr,
 ) -> BaseRest<ReservedPageVal>
 where
+    C: poprako_orchestra::Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
+    C::Level: AtLeast<RepeatableRead>,
     R: ChapterRepo<C> + PageRepo<C> + AssignmentRepo<C> + Send + Sync,
     P: Prom<C> + Send + Sync,
     I: ImagePool,
@@ -304,6 +309,7 @@ pub async fn list_infos<C, R, I>(
     instr: ListPageInfosInstr,
 ) -> BaseRest<Vec<PageInfoView>>
 where
+    C: poprako_orchestra::Context,
     R: PageRepo<C> + TeamRepo<C> + MemberRepo<C> + AssignmentRepo<C> + Sync,
     I: ImagePool,
 {
@@ -343,6 +349,7 @@ pub async fn get_info<C, R, I>(
     id: String,
 ) -> BaseRest<PageInfoView>
 where
+    C: poprako_orchestra::Context,
     R: PageRepo<C> + TeamRepo<C> + MemberRepo<C> + AssignmentRepo<C> + Sync,
     I: ImagePool,
 {
@@ -372,8 +379,10 @@ pub async fn mark_image_uploaded<N, C, R, I>(
     instr: MarkPageImageUploadedInstr,
 ) -> BaseRest<()>
 where
+    C: poprako_orchestra::Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
+    C::Level: AtLeast<RepeatableRead>,
     R: ChapterRepo<C> + PageRepo<C> + AssignmentRepo<C> + Send + Sync,
     I: ImageManager,
 {

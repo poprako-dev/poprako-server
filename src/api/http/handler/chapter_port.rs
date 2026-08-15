@@ -18,6 +18,9 @@ use crate::data::instr::chapter_port::ImportChapterTranslationInstr;
 use crate::data::val::chapter_port::ExportChapterTranslationVal;
 use crate::data::val::chapter_port::ImportChapterTranslationVal;
 use crate::model::shared::user::UserToken;
+use crate::part::nucl::RepeatableRead;
+use crate::part_impl::repo::HybRepo;
+use crate::shared::RdbContext;
 use crate::usecase;
 use crate::value::chapter_port::TranslationFormat;
 
@@ -49,8 +52,8 @@ pub async fn import(
     Json(instr): Json<ImportChapterTranslationInstr>,
 ) -> HttpResult<ImportChapterTranslationVal> {
     //
-    usecase::chapter_port::import(
-        (harn.nucl(), harn.repo()),
+    usecase::chapter_port::import::<_, RdbContext<RepeatableRead>, HybRepo>(
+        (harn.nucl().repeatable_read(), harn.repo()),
         user_token,
         instr,
         chapter_id,
@@ -148,11 +151,10 @@ async fn export_payload(
         //
         TranslationFormat::PopRaKo => {
             //
-            let val = usecase::chapter_port::export(
-                (harn.repo(),),
-                user_token,
-                chapter_id,
-            )
+            let val = usecase::chapter_port::export::<
+                RdbContext<RepeatableRead>,
+                HybRepo,
+            >((harn.repo(),), user_token, chapter_id)
             .await?;
 
             let body = serde_json::to_vec(&val).map_err(|err| {
@@ -175,11 +177,10 @@ async fn export_payload(
 
         TranslationFormat::LabelPlus => {
             //
-            let content = usecase::chapter_port::export_label_plus(
-                (harn.repo(),),
-                user_token,
-                chapter_id,
-            )
+            let content = usecase::chapter_port::export_label_plus::<
+                RdbContext<RepeatableRead>,
+                HybRepo,
+            >((harn.repo(),), user_token, chapter_id)
             .await?;
 
             Ok(TranslationExportPayload {

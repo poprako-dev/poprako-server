@@ -97,11 +97,13 @@ impl ChapterComplex {
         accept(())
     }
 }
+
 // Extract the current [`StagePhase`] for a given [`Stage`] from a
 // [`ChapterInfo`] record.
 fn get_phase(chapter_info: &ChapterInfo, stage: Stage) -> StagePhase {
     chapter_info.stages.get_phase(stage)
 }
+
 // Generate a human-readable default subtitle for a chapter, e.g. `"Ch. 1"`.
 fn default_subtitle(index: i32) -> String {
     //

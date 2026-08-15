@@ -20,6 +20,10 @@ use crate::data::instr::workset::{
 use crate::data::val::workset::CreateWorksetVal;
 use crate::data::view::workset::WorksetInfoView;
 use crate::model::shared::user::UserToken;
+use crate::part::nucl::{RepeatableRead, Serializable};
+use crate::part_impl::prom::rdb_impl::RdbProm;
+use crate::part_impl::repo::HybRepo;
+use crate::shared::RdbContext;
 use crate::usecase;
 
 /// `POST /api/v1/worksets` — create a workset inside a team.
@@ -42,9 +46,13 @@ pub async fn create(
     Json(instr): Json<CreateWorksetInstr>,
 ) -> HttpResult<CreateWorksetVal> {
     //
-    usecase::workset::create((harn.nucl(), harn.repo()), user_token, instr)
-        .await?
-        .accept(StatusCode::CREATED)
+    usecase::workset::create::<_, RdbContext<RepeatableRead>, HybRepo>(
+        (harn.nucl().repeatable_read(), harn.repo()),
+        user_token,
+        instr,
+    )
+    .await?
+    .accept(StatusCode::CREATED)
 }
 
 /// `GET /api/v1/teams/{team_id}/worksets` — list worksets in a team.
@@ -73,9 +81,13 @@ pub async fn list_infos(
         limit: pagination.limit,
     };
 
-    usecase::workset::list_infos((harn.repo(),), user_token, instr)
-        .await?
-        .accept(StatusCode::OK)
+    usecase::workset::list_infos::<RdbContext<RepeatableRead>, HybRepo>(
+        (harn.repo(),),
+        user_token,
+        instr,
+    )
+    .await?
+    .accept(StatusCode::OK)
 }
 
 /// `GET /api/v1/worksets/{workset_id}` — fetch a workset by id.
@@ -98,9 +110,13 @@ pub async fn get_info(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<WorksetInfoView> {
     //
-    usecase::workset::get_info((harn.repo(),), user_token, workset_id)
-        .await?
-        .accept(StatusCode::OK)
+    usecase::workset::get_info::<RdbContext<RepeatableRead>, HybRepo>(
+        (harn.repo(),),
+        user_token,
+        workset_id,
+    )
+    .await?
+    .accept(StatusCode::OK)
 }
 
 /// `PUT /api/v1/worksets/{workset_id}` — update a workset's profile.
@@ -127,7 +143,12 @@ pub async fn update_info(
     //
     ensure_path_matches_body_id(&workset_id, &instr.id)?;
 
-    usecase::workset::update_info((harn.repo(),), user_token, instr).await?;
+    usecase::workset::update_info::<RdbContext<RepeatableRead>, HybRepo>(
+        (harn.repo(),),
+        user_token,
+        instr,
+    )
+    .await?;
 
     no_content()
 }
@@ -151,8 +172,8 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::workset::delete(
-        (harn.nucl(), harn.repo(), harn.prom()),
+    usecase::workset::delete::<_, RdbContext<Serializable>, HybRepo, RdbProm>(
+        (harn.nucl().serializable(), harn.repo(), harn.prom()),
         user_token,
         workset_id,
     )

@@ -30,7 +30,8 @@ pub async fn assignment_invitation_roundtrip_uses_testcontainer(
 
     let repo = HybRepo::new(shared.clone());
 
-    let nucl = RdbNucl::new(shared.clone());
+    let nucl =
+        RdbNucl::<crate::part::nucl::RepeatableRead>::new(shared.clone());
 
     let assignment_invitation_entry = AssignmentInvitationEntry {
         id: format!("{}assignment-invitation", PREFIX),

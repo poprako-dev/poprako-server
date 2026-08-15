@@ -290,6 +290,7 @@ async fn purge_pending(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
 
 impl Run<ListMemberInvitationInfos<'_>> for HybRepo {
     // Map list filters into shared query layer for member invitation collections.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Execute list query through list_infos helper.
@@ -304,6 +305,7 @@ impl Run<ListMemberInvitationInfos<'_>> for HybRepo {
 
 impl Run<GetMemberInvitationInfo<'_, '_>> for HybRepo {
     // Resolve invite info by id/code in non-transactional context.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Support direct lookup via id or one-time code resolution.
@@ -326,30 +328,44 @@ impl Run<GetMemberInvitationInfo<'_, '_>> for HybRepo {
     }
 }
 
-impl Step<CreateMemberInvitation<'_>, RdbContext> for HybRepo {
+impl<L> Step<CreateMemberInvitation<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Keep transactional create failures in base error type.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Create invitation record in current transaction and return full info.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &CreateMemberInvitation<'_>,
     ) -> BaseRest<MemberInvitationInfo> {
         create(context.conn(), oper.entry).await
     }
 }
 
-impl Step<GetMemberInvitationInfo<'_, '_>, RdbContext> for HybRepo {
+impl<L> Step<GetMemberInvitationInfo<'_, '_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Keep transactional read failures in base error type.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Resolve invitation by id/code with optional include hydration when needed.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &GetMemberInvitationInfo<'_, '_>,
     ) -> BaseRest<MemberInvitationInfo> {
         //
@@ -366,15 +382,22 @@ impl Step<GetMemberInvitationInfo<'_, '_>, RdbContext> for HybRepo {
     }
 }
 
-impl Step<UpdateMemberInvitation<'_>, RdbContext> for HybRepo {
+impl<L> Step<UpdateMemberInvitation<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Keep transactional update failures in base error type.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Apply either metadata updates or used-state transition by variant.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &UpdateMemberInvitation<'_>,
     ) -> BaseRest<()> {
         //
@@ -393,15 +416,22 @@ impl Step<UpdateMemberInvitation<'_>, RdbContext> for HybRepo {
     }
 }
 
-impl Step<GetMemberInvitationInfoExcluded<'_>, RdbContext> for HybRepo {
+impl<L> Step<GetMemberInvitationInfoExcluded<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Keep transactional exclusive-read failures in base error type.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Fetch invitation by code with lock, used when mutation follows.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &GetMemberInvitationInfoExcluded<'_>,
     ) -> BaseRest<MemberInvitationInfo> {
         //
@@ -414,30 +444,44 @@ impl Step<GetMemberInvitationInfoExcluded<'_>, RdbContext> for HybRepo {
     }
 }
 
-impl Step<DeleteMemberInvitation<'_>, RdbContext> for HybRepo {
+impl<L> Step<DeleteMemberInvitation<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Keep transactional delete failures in base error type.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Remove invitation by id as part of current transaction.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &DeleteMemberInvitation<'_>,
     ) -> BaseRest<()> {
         delete(context.conn(), oper.id).await
     }
 }
 
-impl Step<PurgeExpiredMemberInvitation<'_>, RdbContext> for HybRepo {
+impl<L> Step<PurgeExpiredMemberInvitation<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Keep transactional purge failures in base error type.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Purge only pending invitations using id filter.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &PurgeExpiredMemberInvitation<'_>,
     ) -> BaseRest<()> {
         purge_pending(context.conn(), oper.id).await
@@ -446,6 +490,7 @@ impl Step<PurgeExpiredMemberInvitation<'_>, RdbContext> for HybRepo {
 
 impl Run<PurgeExpiredMemberInvitation<'_>> for HybRepo {
     // Keep non-transactional purge failures in base error type.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Route expired purge operation to shared query helper.

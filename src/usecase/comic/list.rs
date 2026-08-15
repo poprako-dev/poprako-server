@@ -36,6 +36,7 @@ pub async fn list_infos<C, R, I>(
     instr: ListComicInfosInstr,
 ) -> BaseRest<ListComicInfosVal>
 where
+    C: poprako_orchestra::Context,
     R: ComicRepo<C>
         + WorksetRepo<C>
         + MemberRepo<C>

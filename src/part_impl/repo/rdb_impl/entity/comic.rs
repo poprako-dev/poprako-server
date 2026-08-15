@@ -44,6 +44,7 @@ pub struct ComicInfoRow {
 }
 
 impl TryFrom<ComicInfoRow> for ComicInfo {
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     fn try_from(v: ComicInfoRow) -> BaseRest<Self> {

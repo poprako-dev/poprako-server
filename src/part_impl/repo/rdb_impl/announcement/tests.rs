@@ -28,7 +28,8 @@ pub async fn announcement_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let repo = HybRepo::new(shared.clone());
 
-    let nucl = RdbNucl::new(shared.clone());
+    let nucl =
+        RdbNucl::<crate::part::nucl::RepeatableRead>::new(shared.clone());
 
     let announcement_entry = AnnouncementEntry {
         id: format!("{}announcement", PREFIX),

@@ -6,9 +6,9 @@ mod tests;
 
 use std::time::Duration;
 
-use poprako_orchestra::{Nucl, OperRun as _, OperStep as _, run_proxy};
-use poprako_orchestra_extra::prom::oper::Defer;
-use poprako_orchestra_extra::prom::task::Task;
+use poprako_orchestra::{
+    AtLeast, Nucl, OperRun as _, OperStep as _, run_proxy,
+};
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
@@ -28,9 +28,12 @@ use crate::model::write::member_invitation::{
     MemberInvitationEntry, MemberInvitationRoleRepl,
 };
 use crate::part::image::ImagePool;
+use crate::part::nucl::RepeatableRead;
 use crate::part::prom::Prom;
+use crate::part::prom::oper::Defer;
 use crate::part::prom::payload::TaskPayload;
 use crate::part::prom::payload::invitation::InvitationPayload;
+use crate::part::prom::task::Task;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::member_invitation::MemberInvitationRepo;
 use crate::part::repo::oper::member::FindMemberInfo;
@@ -54,8 +57,10 @@ pub async fn create<N, C, R, P>(
     instr: CreateMemberInvitationInstr,
 ) -> BaseRest<CreateMemberInvitationVal>
 where
+    C: poprako_orchestra::Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
+    C::Level: AtLeast<RepeatableRead>,
     R: MemberInvitationRepo<C> + MemberRepo<C> + UserRepo<C> + Send + Sync,
     P: Prom<C> + Send + Sync,
 {
@@ -164,6 +169,7 @@ pub async fn list_infos<C, R, I>(
     instr: ListMemberInvitationInfosInstr,
 ) -> BaseRest<Vec<MemberInvitationInfoView>>
 where
+    C: poprako_orchestra::Context,
     R: MemberInvitationRepo<C> + MemberRepo<C> + Sync,
     I: ImagePool,
 {
@@ -215,8 +221,10 @@ pub async fn update_roles<N, C, R>(
     instr: UpdateMemberInvitationRolesInstr,
 ) -> BaseRest<()>
 where
+    C: poprako_orchestra::Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
+    C::Level: AtLeast<RepeatableRead>,
     R: MemberInvitationRepo<C> + MemberRepo<C> + Send + Sync,
 {
     MemberInvitationPermComplex::ensure_user_can_update_info(
@@ -260,8 +268,10 @@ pub async fn delete<N, C, R>(
     id: String,
 ) -> BaseRest<()>
 where
+    C: poprako_orchestra::Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
+    C::Level: AtLeast<RepeatableRead>,
     R: MemberInvitationRepo<C> + MemberRepo<C> + Send + Sync,
 {
     MemberInvitationPermComplex::ensure_user_can_delete(

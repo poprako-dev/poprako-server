@@ -23,7 +23,6 @@ mod tests;
 
 use diesel_async::RunQueryDsl;
 use poprako_orchestra::Step;
-use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 use time::OffsetDateTime;
 use tokio::sync::watch;
 use tokio_util::sync::CancellationToken;
@@ -31,7 +30,7 @@ use tracing::instrument;
 
 use crate::part::effect::Develop;
 use crate::part::image::ImageManager;
-use crate::part::prom::Prom;
+use crate::part::prom::oper::{Defer, DeferBatch};
 use crate::part::prom::payload::TaskPayload;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::prom::rdb_impl::entity::LocalMessageEntryRow;
@@ -81,7 +80,6 @@ impl RdbProm {
         );
 
         let handler = handler::RdbPromHandler::new(
-            core,
             nucl,
             repo,
             image_pool,
@@ -127,15 +125,22 @@ impl Drop for RdbProm {
     }
 }
 
-impl<'a> Step<Defer<'a, String, TaskPayload, ()>, RdbContext> for RdbProm {
+impl<'a, L> Step<Defer<'a, String, TaskPayload, ()>, RdbContext<L>> for RdbProm
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Internal implementation of `step`.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &Defer<'a, String, TaskPayload, ()>,
     ) -> BaseRest<()> {
         //
@@ -154,17 +159,23 @@ impl<'a> Step<Defer<'a, String, TaskPayload, ()>, RdbContext> for RdbProm {
     }
 }
 
-impl<'t, 'a> Step<DeferBatch<'t, 'a, String, TaskPayload, ()>, RdbContext>
+impl<'t, 'a, L> Step<DeferBatch<'t, 'a, String, TaskPayload, ()>, RdbContext<L>>
     for RdbProm
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Internal implementation of `step`.
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &DeferBatch<'t, 'a, String, TaskPayload, ()>,
     ) -> BaseRest<()> {
         //
@@ -190,5 +201,3 @@ impl<'t, 'a> Step<DeferBatch<'t, 'a, String, TaskPayload, ()>, RdbContext>
         accept(())
     }
 }
-
-impl Prom<RdbContext> for RdbProm {}

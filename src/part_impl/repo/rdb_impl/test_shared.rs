@@ -366,7 +366,8 @@ pub async fn create_user(shared: &RdbCore, user_entry: &UserEntry) {
     //
     let repo = HybRepo::new(shared.clone());
 
-    let nucl = RdbNucl::new(shared.clone());
+    let nucl =
+        RdbNucl::<crate::part::nucl::RepeatableRead>::new(shared.clone());
 
     nucl.coord(async |context| {
         //
@@ -420,7 +421,8 @@ pub async fn seed_workset(shared: &RdbCore, prefix: &str) -> WorksetFixture {
 
     let repo = HybRepo::new(shared.clone());
 
-    let nucl = RdbNucl::new(shared.clone());
+    let nucl =
+        RdbNucl::<crate::part::nucl::RepeatableRead>::new(shared.clone());
 
     let workset_entry = workset_entry(prefix, &team_fixture.team_entry);
 
@@ -452,7 +454,8 @@ pub async fn seed_comic(shared: &RdbCore, prefix: &str) -> ComicFixture {
 
     let repo = HybRepo::new(shared.clone());
 
-    let nucl = RdbNucl::new(shared.clone());
+    let nucl =
+        RdbNucl::<crate::part::nucl::RepeatableRead>::new(shared.clone());
 
     let creator_form = user_entry(prefix, "creator");
 
@@ -507,7 +510,8 @@ pub async fn seed_chapter(shared: &RdbCore, prefix: &str) -> ChapterFixture {
 
     let repo = HybRepo::new(shared.clone());
 
-    let nucl = RdbNucl::new(shared.clone());
+    let nucl =
+        RdbNucl::<crate::part::nucl::RepeatableRead>::new(shared.clone());
 
     let chapter_entry = chapter_entry(
         prefix,
@@ -546,7 +550,8 @@ pub async fn seed_page(shared: &RdbCore, prefix: &str) -> PageFixture {
 
     let repo = HybRepo::new(shared.clone());
 
-    let nucl = RdbNucl::new(shared.clone());
+    let nucl =
+        RdbNucl::<crate::part::nucl::RepeatableRead>::new(shared.clone());
 
     let page_entry = page_entry(prefix, &chapter_fixture.chapter_entry);
 

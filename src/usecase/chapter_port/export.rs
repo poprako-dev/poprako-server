@@ -44,6 +44,7 @@ pub async fn export<C, R>(
     chapter_id: String,
 ) -> BaseRest<ExportChapterTranslationVal>
 where
+    C: poprako_orchestra::Context,
     R: ChapterRepo<C>
         + ComicRepo<C>
         + TeamRepo<C>
@@ -142,6 +143,7 @@ pub async fn export_label_plus<C, R>(
     chapter_id: String,
 ) -> BaseRest<String>
 where
+    C: poprako_orchestra::Context,
     R: ChapterRepo<C>
         + ComicRepo<C>
         + TeamRepo<C>

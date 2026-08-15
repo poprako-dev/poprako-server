@@ -1,6 +1,7 @@
 error-internal = Internal server error
 
 error-already-exists = Resource already exists
+error-concurrent-conflict = The resource changed concurrently; retry the request
 
 error-assignment-already-exists = Assignment already exists
 

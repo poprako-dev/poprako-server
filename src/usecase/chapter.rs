@@ -7,9 +7,8 @@ mod delete;
 mod tests;
 
 use poprako_orchestra::{
-    Nucl, OperRun as _, OperStep as _, run_proxy, step_proxy,
+    AtLeast, Nucl, OperRun as _, OperStep as _, run_proxy, step_proxy,
 };
-use poprako_orchestra_extra::prom::oper::DeferBatch;
 use tracing::instrument;
 
 use crate::complex::assignment::AssignmentComplex;
@@ -31,7 +30,9 @@ use crate::part::effect::event::chapter::{
 };
 use crate::part::effect::{Develop, EffectEvent as _};
 use crate::part::image::ImagePool;
+use crate::part::nucl::RepeatableRead;
 use crate::part::prom::Prom;
+use crate::part::prom::oper::DeferBatch;
 use crate::part::prom::payload::TaskPayload;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
@@ -69,6 +70,7 @@ pub async fn list_infos<C, R, I>(
     instr: ListChapterInfosInstr,
 ) -> BaseRest<Vec<ChapterInfoView>>
 where
+    C: poprako_orchestra::Context,
     R: ChapterRepo<C> + MemberRepo<C> + TeamRepo<C> + PageRepo<C> + Sync,
     I: ImagePool,
 {
@@ -139,6 +141,7 @@ pub async fn get_info<C, R>(
     id: String,
 ) -> BaseRest<ChapterInfoView>
 where
+    C: poprako_orchestra::Context,
     R: ChapterRepo<C> + MemberRepo<C> + TeamRepo<C> + Sync,
 {
     ChapterPermComplex::ensure_user_can_get_info(
@@ -170,6 +173,7 @@ pub async fn get_pinned<C, R>(
     comic_id: String,
 ) -> BaseRest<Option<ChapterInfoView>>
 where
+    C: poprako_orchestra::Context,
     R: ChapterRepo<C> + MemberRepo<C> + TeamRepo<C> + Sync,
 {
     ChapterPermComplex::ensure_user_can_get_pinned(
@@ -201,8 +205,10 @@ pub async fn create<N, C, R>(
     instr: CreateChapterInstr,
 ) -> BaseRest<CreateChapterVal>
 where
+    C: poprako_orchestra::Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
+    C::Level: AtLeast<RepeatableRead>,
     R: ChapterRepo<C>
         + ComicRepo<C>
         + MemberRepo<C>
@@ -317,8 +323,10 @@ pub async fn update_info<N, C, R>(
     instr: UpdateChapterInfoInstr,
 ) -> BaseRest<()>
 where
+    C: poprako_orchestra::Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
+    C::Level: AtLeast<RepeatableRead>,
     R: ChapterRepo<C> + ComicRepo<C> + AssignmentRepo<C> + Send + Sync,
 {
     ChapterPermComplex::ensure_user_can_update_info(
@@ -377,8 +385,10 @@ pub async fn mark_pinned<N, C, R>(
     id: String,
 ) -> BaseRest<()>
 where
+    C: poprako_orchestra::Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
+    C::Level: AtLeast<RepeatableRead>,
     R: ChapterRepo<C> + ComicRepo<C> + AssignmentRepo<C> + Send + Sync,
 {
     ChapterPermComplex::ensure_user_can_mark_pinned(
@@ -457,8 +467,10 @@ pub async fn update_stage<N, C, R, P, D>(
     instr: UpdateChapterStageInstr,
 ) -> BaseRest<()>
 where
+    C: poprako_orchestra::Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
+    C::Level: AtLeast<RepeatableRead>,
     R: ChapterRepo<C>
         + ComicRepo<C>
         + AssignmentRepo<C>
@@ -533,11 +545,15 @@ where
             {
                 // TODO: archive this chapter and relevant assignments.
 
+                let guarded_repo = &crate::part::nucl::GuardedStep::new(repo);
+
+                let guarded_prom = &crate::part::nucl::GuardedStep::new(prom);
+
                 ChapterComplex::clean_uploaded_images(
                     &mut step_proxy! {
                         context;
-                        repo => for<'a> ClearPageImagesForPublish<'a>;
-                        prom => for<'t, 'a> DeferBatch<'t, 'a, String, TaskPayload, ()>;
+                        guarded_repo => for<'a> ClearPageImagesForPublish<'a>;
+                        guarded_prom => for<'t, 'a> DeferBatch<'t, 'a, String, TaskPayload, ()>;
                     },
                     &chapter_info.id,
                 )

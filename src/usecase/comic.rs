@@ -10,9 +10,8 @@ mod reserve;
 pub mod tests;
 
 use poprako_orchestra::{
-    Nucl, OperRun as _, OperStep as _, run_proxy, step_proxy,
+    AtLeast, Nucl, OperRun as _, OperStep as _, run_proxy, step_proxy,
 };
-use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
@@ -30,7 +29,9 @@ use crate::model::write::assignment::AssignmentEntry;
 use crate::model::write::chapter::ChapterEntry;
 use crate::model::write::comic::{ComicEntry, ComicRepl};
 use crate::part::image::{ImageManager, ImagePool};
+use crate::part::nucl::{RepeatableRead, Serializable};
 use crate::part::prom::Prom;
+use crate::part::prom::oper::{Defer, DeferBatch};
 use crate::part::prom::payload::TaskPayload;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
@@ -94,8 +95,10 @@ pub async fn create<N, C, R>(
     instr: CreateComicInstr,
 ) -> BaseRest<CreateComicVal>
 where
+    C: poprako_orchestra::Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
+    C::Level: AtLeast<RepeatableRead>,
     R: ComicRepo<C>
         + WorksetRepo<C>
         + MemberRepo<C>
@@ -225,6 +228,7 @@ pub async fn get_info<C, R, I>(
     id: String,
 ) -> BaseRest<ComicInfoView>
 where
+    C: poprako_orchestra::Context,
     R: ComicRepo<C>
         + MemberRepo<C>
         + TeamRepo<C>
@@ -279,6 +283,7 @@ pub async fn update_info<C, R>(
     instr: UpdateComicInfoInstr,
 ) -> BaseRest<()>
 where
+    C: poprako_orchestra::Context,
     R: ComicRepo<C> + TeamRepo<C> + MemberRepo<C> + Sync,
 {
     ComicPermComplex::ensure_user_can_update_info(
@@ -326,8 +331,10 @@ pub async fn mark_cover_uploaded<N, C, R, I>(
     instr: MarkComicCoverUploadedInstr,
 ) -> BaseRest<()>
 where
+    C: poprako_orchestra::Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
+    C::Level: AtLeast<RepeatableRead>,
     R: ComicRepo<C> + TeamRepo<C> + MemberRepo<C> + Send + Sync,
     I: ImageManager,
 {
@@ -472,8 +479,10 @@ pub async fn delete<N, C, R, P>(
     id: String,
 ) -> BaseRest<()>
 where
+    C: poprako_orchestra::Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
+    C::Level: AtLeast<Serializable>,
     R: ComicRepo<C>
         + ComicArchiveRepo<C>
         + WorksetRepo<C>
@@ -503,10 +512,14 @@ where
 
     nucl.coord(async move |context| {
         //
+        let guarded_repo = &crate::part::nucl::GuardedStep::new(repo);
+
+        let guarded_prom = &crate::part::nucl::GuardedStep::new(prom);
+
         ComicComplex::delete_cascade(
             &mut step_proxy! {
                 context;
-                repo =>
+                guarded_repo =>
                     for<'a, 'b> GetComicInfoExcluded<'a, 'b>,
                     for<'a> ListChapterInfosExcluded<'a>,
                     for<'a> DeleteComic<'a>,
@@ -526,7 +539,7 @@ where
                     for<'a> GetTermbaseInfoExcluded<'a>,
                     for<'a> DeleteTerms<'a>,
                     for<'a> DeleteTermbase<'a>;
-                prom =>
+                guarded_prom =>
                     for<'a> Defer<'a, String, TaskPayload, ()>,
                     for<'t, 'a> DeferBatch<'t, 'a, String, TaskPayload, ()>;
             },

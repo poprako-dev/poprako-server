@@ -69,7 +69,12 @@ def check_file(path: Path, root: Path) -> list[str]:
     for declaration in descendants(tree.root_node, "use_declaration"):
         imported = "".join(text(source, declaration).split())
 
-        if "crate::part::repo::oper" in imported or "crate::part::prom::payload" in imported:
+        if (
+            "crate::part::repo::oper" in imported
+            or "crate::part::prom::payload" in imported
+            or "crate::part::prom::oper" in imported
+            or "crate::part::prom::task" in imported
+        ):
             continue
 
         if "crate::part::repo" in imported or "crate::part::prom" in imported:

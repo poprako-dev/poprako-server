@@ -319,6 +319,7 @@ fn delete_assignments_by_chapter_id(
 
 impl Run<FindAssignmentInfo<'_, '_>> for Mock {
     // Internal type alias for `Error`.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -356,6 +357,7 @@ impl Run<FindAssignmentInfo<'_, '_>> for Mock {
 
 impl Run<ListAssignmentInfos<'_, '_>> for Mock {
     // Internal type alias for `Error`.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -377,6 +379,7 @@ impl Run<ListAssignmentInfos<'_, '_>> for Mock {
 
 impl Run<GetAssignmentInfo<'_, '_>> for Mock {
     // Internal type alias for `Error`.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -396,6 +399,9 @@ impl Run<GetAssignmentInfo<'_, '_>> for Mock {
 
 impl Step<FindAssignmentInfo<'_, '_>, MockContext> for Mock {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -435,6 +441,9 @@ impl Step<FindAssignmentInfo<'_, '_>, MockContext> for Mock {
 
 impl Step<ListAssignmentInfosExcluded<'_>, MockContext> for Mock {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -456,6 +465,9 @@ impl Step<ListAssignmentInfosExcluded<'_>, MockContext> for Mock {
 
 impl Step<ListAssignmentInfos<'_, '_>, MockContext> for Mock {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -476,6 +488,9 @@ impl Step<ListAssignmentInfos<'_, '_>, MockContext> for Mock {
 
 impl Step<CreateAssignment<'_>, MockContext> for Mock {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -491,6 +506,9 @@ impl Step<CreateAssignment<'_>, MockContext> for Mock {
 
 impl Step<UpdateAssignmentRoles<'_>, MockContext> for Mock {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -520,6 +538,9 @@ impl Step<UpdateAssignmentRoles<'_>, MockContext> for Mock {
 
 impl Step<DeleteAssignments<'_>, MockContext> for Mock {
     // Internal type alias for `Error`.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]

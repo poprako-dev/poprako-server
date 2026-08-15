@@ -1,14 +1,15 @@
-use poprako_orchestra::{Nucl, OperStep as _};
-use poprako_orchestra_extra::prom::oper::Defer;
-use poprako_orchestra_extra::prom::task::Task;
+use poprako_orchestra::{AtLeast, Nucl, OperStep as _};
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
 
 use crate::complex::image::ImageComplex;
 use crate::model::shared::user::UserToken;
+use crate::part::nucl::RepeatableRead;
 use crate::part::prom::Prom;
+use crate::part::prom::oper::Defer;
 use crate::part::prom::payload::{TaskPayload, image};
+use crate::part::prom::task::Task;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::member::{DeleteMember, ListMemberInfosExcluded};
 use crate::part::repo::oper::user::{DeleteUser, GetUserInfoExcluded};
@@ -35,8 +36,10 @@ pub async fn delete<N, C, R, P>(
     id: String,
 ) -> BaseRest<()>
 where
+    C: poprako_orchestra::Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
+    C::Level: AtLeast<RepeatableRead>,
     R: UserRepo<C> + MemberRepo<C> + Send + Sync,
     P: Prom<C> + Send + Sync,
 {

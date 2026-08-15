@@ -4,7 +4,9 @@
 // Unit tests for team membership and invitation boundary conditions.
 mod tests;
 
-use poprako_orchestra::{Nucl, OperRun as _, OperStep as _, run_proxy};
+use poprako_orchestra::{
+    AtLeast, Nucl, OperRun as _, OperStep as _, run_proxy,
+};
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
@@ -20,6 +22,7 @@ use crate::model::read::spec::member::MemberListSpec;
 use crate::model::shared::user::UserToken;
 use crate::model::write::member::{MemberEntry, MemberRoleRepl};
 use crate::part::image::ImagePool;
+use crate::part::nucl::RepeatableRead;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::member_invitation::MemberInvitationRepo;
 use crate::part::repo::oper::member::{
@@ -46,8 +49,10 @@ pub async fn create<N, C, R>(
     instr: CreateMemberInstr,
 ) -> BaseRest<CreateMemberVal>
 where
+    C: poprako_orchestra::Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
+    C::Level: AtLeast<RepeatableRead>,
     R: MemberRepo<C> + TeamRepo<C> + UserRepo<C> + Send + Sync,
 {
     let roles = instr.roles;
@@ -133,8 +138,10 @@ pub async fn join_team<N, C, R, I>(
     instr: JoinTeamInstr,
 ) -> BaseRest<MemberInfoView>
 where
+    C: poprako_orchestra::Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
+    C::Level: AtLeast<RepeatableRead>,
     R: MemberRepo<C> + MemberInvitationRepo<C> + UserRepo<C> + Send + Sync,
     I: ImagePool,
 {
@@ -237,6 +244,7 @@ pub async fn list_infos<C, R, I>(
     instr: ListMemberInfosInstr,
 ) -> BaseRest<Vec<MemberInfoView>>
 where
+    C: poprako_orchestra::Context,
     R: MemberRepo<C> + Sync,
     I: ImagePool,
 {
@@ -281,8 +289,10 @@ pub async fn update_roles<N, C, R>(
     instr: UpdateMemberRolesInstr,
 ) -> BaseRest<()>
 where
+    C: poprako_orchestra::Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
+    C::Level: AtLeast<RepeatableRead>,
     R: MemberRepo<C> + Send + Sync,
 {
     let member_info = GetMemberInfo::Id {
@@ -333,8 +343,10 @@ pub async fn delete<N, C, R>(
     id: String,
 ) -> BaseRest<()>
 where
+    C: poprako_orchestra::Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
+    C::Level: AtLeast<RepeatableRead>,
     R: MemberRepo<C> + Send + Sync,
 {
     let member_info = GetMemberInfo::Id {

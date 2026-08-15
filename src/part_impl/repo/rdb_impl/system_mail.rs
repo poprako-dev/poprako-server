@@ -160,6 +160,7 @@ async fn mark_read(
 
 impl Run<SendSystemMail<'_>> for HybRepo {
     // Reuse base error type for send operations.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -171,6 +172,7 @@ impl Run<SendSystemMail<'_>> for HybRepo {
 
 impl Run<SendSystemMails<'_>> for HybRepo {
     // Reuse base error type for bulk send operations.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -182,6 +184,7 @@ impl Run<SendSystemMails<'_>> for HybRepo {
 
 impl Run<ListSystemMailInfos<'_>> for HybRepo {
     // Reuse base error type for listing operations.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
@@ -196,6 +199,7 @@ impl Run<ListSystemMailInfos<'_>> for HybRepo {
 
 impl Run<MarkSystemMailRead<'_>> for HybRepo {
     // Reuse base error type for read-mark operations.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]

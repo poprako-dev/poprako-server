@@ -17,6 +17,9 @@ use crate::data::instr::comment::{CreateCommentInstr, ListCommentInfosInstr};
 use crate::data::val::comment::CreateCommentVal;
 use crate::data::view::comment::CommentInfoView;
 use crate::model::shared::user::UserToken;
+use crate::part::nucl::RepeatableRead;
+use crate::part_impl::repo::HybRepo;
+use crate::shared::RdbContext;
 use crate::usecase;
 use crate::value::comment::CommentInclOpt;
 
@@ -59,9 +62,13 @@ pub async fn create(
     Json(instr): Json<CreateCommentInstr>,
 ) -> HttpResult<CreateCommentVal> {
     //
-    usecase::comment::create((harn.nucl(), harn.repo()), user_token, instr)
-        .await?
-        .accept(StatusCode::CREATED)
+    usecase::comment::create::<_, RdbContext<RepeatableRead>, HybRepo>(
+        (harn.nucl().repeatable_read(), harn.repo()),
+        user_token,
+        instr,
+    )
+    .await?
+    .accept(StatusCode::CREATED)
 }
 
 /// `GET /api/v1/teams/{team_id}/comments` — list a team's comments.
@@ -91,7 +98,7 @@ pub async fn list_infos(
         limit: query.limit,
     };
 
-    usecase::comment::list_infos(
+    usecase::comment::list_infos::<RdbContext<RepeatableRead>, HybRepo, _>(
         (harn.repo(), harn.image_pool()),
         user_token,
         instr,

@@ -16,6 +16,9 @@ use crate::api::http::result::{
 use crate::api::http::state::AppHarn;
 use crate::data::instr::auth::{LoginAuthInstr, RegisterAuthInstr};
 use crate::data::val::auth::{LoginAuthVal, RegisterAuthVal};
+use crate::part::nucl::RepeatableRead;
+use crate::part_impl::repo::HybRepo;
+use crate::shared::RdbContext;
 use crate::usecase;
 
 /// `POST /api/v1/auth/register` — registers a user via invitation code.
@@ -39,8 +42,19 @@ pub async fn register(
     Json(instr): Json<RegisterAuthInstr>,
 ) -> HttpResult<RegisterAuthVal> {
     //
-    let reply = usecase::auth::register(
-        (harn.nucl(), harn.repo(), harn.auth(), harn.develop()),
+    let reply = usecase::auth::register::<
+        _,
+        RdbContext<RepeatableRead>,
+        HybRepo,
+        _,
+        _,
+    >(
+        (
+            harn.nucl().repeatable_read(),
+            harn.repo(),
+            harn.auth(),
+            harn.develop(),
+        ),
         instr,
     )
     .await?;
@@ -72,7 +86,11 @@ pub async fn login(
     Json(instr): Json<LoginAuthInstr>,
 ) -> HttpResult<LoginAuthVal> {
     //
-    let reply = usecase::auth::login((harn.repo(), harn.auth()), instr).await?;
+    let reply = usecase::auth::login::<RdbContext<RepeatableRead>, HybRepo, _>(
+        (harn.repo(), harn.auth()),
+        instr,
+    )
+    .await?;
 
     let cookie = auth_cookie(&reply.token);
 

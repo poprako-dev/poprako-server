@@ -5,7 +5,7 @@
 mod tests;
 
 use poprako_orchestra::{
-    Nucl, OperRun as _, OperStep as _, run_proxy, step_proxy,
+    AtLeast, Nucl, OperRun as _, OperStep as _, run_proxy, step_proxy,
 };
 use tracing::instrument;
 
@@ -18,6 +18,7 @@ use crate::data::val::term::CreateTermVal;
 use crate::data::view::term::TermInfoView;
 use crate::model::read::spec::term::TermListSpec;
 use crate::model::shared::user::UserToken;
+use crate::part::nucl::RepeatableRead;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::team::ResolveTeamId;
@@ -41,8 +42,10 @@ pub async fn create<N, C, R>(
     instr: CreateTermInstr,
 ) -> BaseRest<CreateTermVal>
 where
+    C: poprako_orchestra::Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
+    C::Level: AtLeast<RepeatableRead>,
     R: TermbaseRepo<C>
         + TermRepo<C>
         + TeamRepo<C>
@@ -67,10 +70,12 @@ where
             .step_on(repo, context)
             .await?;
 
+            let guarded_repo = &crate::part::nucl::GuardedStep::new(repo);
+
             TermbasePermComplex::ensure_user_can_write(
                 &mut step_proxy! {
                     context;
-                    repo =>
+                    guarded_repo =>
                         for<'a> ResolveTeamId<'a>,
                         for<'a> FindMemberInfo<'a>;
                 },
@@ -105,6 +110,7 @@ pub async fn get_info<C, R>(
     id: String,
 ) -> BaseRest<TermInfoView>
 where
+    C: poprako_orchestra::Context,
     R: TermbaseRepo<C> + TermRepo<C> + TeamRepo<C> + MemberRepo<C> + Sync,
 {
     let term_info = GetTermInfo { id: &id }.run_on(repo).await?;
@@ -137,6 +143,7 @@ pub async fn list_infos<C, R>(
     instr: ListTermInfosInstr,
 ) -> BaseRest<Vec<TermInfoView>>
 where
+    C: poprako_orchestra::Context,
     R: TermbaseRepo<C> + TermRepo<C> + TeamRepo<C> + MemberRepo<C> + Sync,
 {
     let termbase_info = GetTermbaseInfo {
@@ -180,8 +187,10 @@ pub async fn update_info<N, C, R>(
     instr: UpdateTermInfoInstr,
 ) -> BaseRest<()>
 where
+    C: poprako_orchestra::Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
+    C::Level: AtLeast<RepeatableRead>,
     R: TermbaseRepo<C>
         + TermRepo<C>
         + TeamRepo<C>
@@ -210,10 +219,12 @@ where
         .step_on(repo, context)
         .await?;
 
+        let guarded_repo = &crate::part::nucl::GuardedStep::new(repo);
+
         TermbasePermComplex::ensure_user_can_write(
             &mut step_proxy! {
                 context;
-                repo =>
+                guarded_repo =>
                     for<'a> ResolveTeamId<'a>,
                     for<'a> FindMemberInfo<'a>;
             },
@@ -255,8 +266,10 @@ pub async fn delete<N, C, R>(
     id: String,
 ) -> BaseRest<()>
 where
+    C: poprako_orchestra::Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
+    C::Level: AtLeast<RepeatableRead>,
     R: TermbaseRepo<C>
         + TermRepo<C>
         + TeamRepo<C>
@@ -274,10 +287,12 @@ where
         .step_on(repo, context)
         .await?;
 
+        let guarded_repo = &crate::part::nucl::GuardedStep::new(repo);
+
         TermbasePermComplex::ensure_user_can_write(
             &mut step_proxy! {
                 context;
-                repo =>
+                guarded_repo =>
                     for<'a> ResolveTeamId<'a>,
                     for<'a> FindMemberInfo<'a>;
             },

@@ -78,6 +78,7 @@ async fn create(
 
 impl Run<ListAnnouncementInfos<'_>> for HybRepo {
     // Error type for the Run trait impl on announcement list query.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Executes the announcement list query with the given operation spec.
@@ -90,15 +91,22 @@ impl Run<ListAnnouncementInfos<'_>> for HybRepo {
     }
 }
 
-impl Step<CreateAnnouncement<'_>, RdbContext> for HybRepo {
+impl<L> Step<CreateAnnouncement<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Error type for the Step trait impl on announcement creation.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Runs announcement creation within an existing transaction.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &CreateAnnouncement<'_>,
     ) -> BaseRest<AnnouncementInfo> {
         create(context.conn(), oper.entry).await

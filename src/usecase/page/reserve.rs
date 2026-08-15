@@ -3,9 +3,7 @@
 use std::collections::HashSet;
 use std::time::Duration;
 
-use poprako_orchestra::{Nucl, OperStep as _, run_proxy};
-use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
-use poprako_orchestra_extra::prom::task::Task;
+use poprako_orchestra::{AtLeast, Nucl, OperStep as _, run_proxy};
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
@@ -20,9 +18,12 @@ use crate::data::view::image::ImageUploadSlotView;
 use crate::model::shared::user::UserToken;
 use crate::model::write::page::{PageEntry, PageImageSpec, PageManifestRepl};
 use crate::part::image::{ImagePool, ImageUploadSpec};
+use crate::part::nucl::RepeatableRead;
 use crate::part::prom::Prom;
+use crate::part::prom::oper::{Defer, DeferBatch};
 use crate::part::prom::payload::chapter::ChapterPayload;
 use crate::part::prom::payload::{TaskPayload, image};
+use crate::part::prom::task::Task;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
@@ -41,7 +42,6 @@ use crate::util::next_snowflake_id;
 use crate::value::image::{ImageExt, ImageHash};
 
 /// Validates that the page count is in the valid range.
-///
 /// The maximum is 200 because page reservation for a single chapter can never
 /// exceed this number — the manifest-based flow sets a hard cap for practical
 /// upload and review capacity.
@@ -75,8 +75,10 @@ pub async fn reserve_chapter_pages<N, C, R, P, I>(
     instr: ReserveChapterPagesInstr,
 ) -> BaseRest<ReserveChapterPagesVal>
 where
+    C: poprako_orchestra::Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
+    C::Level: AtLeast<RepeatableRead>,
     R: ChapterRepo<C>
         + ComicRepo<C>
         + AssignmentRepo<C>

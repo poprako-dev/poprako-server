@@ -30,6 +30,7 @@ pub async fn get_info<C, R, I>(
     id: String,
 ) -> BaseRest<TeamInfoView>
 where
+    C: poprako_orchestra::Context,
     R: TeamRepo<C>,
     I: ImagePool,
 {
@@ -57,6 +58,7 @@ pub async fn list_infos<C, R, I>(
     instr: ListTeamInfosInstr,
 ) -> BaseRest<Vec<TeamInfoView>>
 where
+    C: poprako_orchestra::Context,
     R: TeamRepo<C> + UserRepo<C> + Sync,
     I: ImagePool,
 {

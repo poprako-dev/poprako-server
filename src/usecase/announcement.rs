@@ -4,7 +4,9 @@
 // Unit tests for announcement usecase behavior.
 mod tests;
 
-use poprako_orchestra::{Nucl, OperRun as _, OperStep as _, run_proxy};
+use poprako_orchestra::{
+    AtLeast, Nucl, OperRun as _, OperStep as _, run_proxy,
+};
 use tracing::instrument;
 
 use crate::complex::announcement::{
@@ -19,6 +21,7 @@ use crate::model::read::spec::announcement::AnnouncementListSpec;
 use crate::model::shared::user::UserToken;
 use crate::model::write::announcement::AnnouncementEntry;
 use crate::part::image::ImagePool;
+use crate::part::nucl::RepeatableRead;
 use crate::part::repo::announcement::AnnouncementRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::announcement::{
@@ -35,6 +38,7 @@ pub async fn list_infos<C, R, I>(
     instr: ListAnnouncementInfosInstr,
 ) -> BaseRest<Vec<AnnouncementInfoView>>
 where
+    C: poprako_orchestra::Context,
     R: AnnouncementRepo<C> + MemberRepo<C> + Sync,
     I: ImagePool,
 {
@@ -77,8 +81,10 @@ pub async fn create<N, C, R>(
     instr: CreateAnnouncementInstr,
 ) -> BaseRest<CreateAnnouncementVal>
 where
+    C: poprako_orchestra::Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
+    C::Level: AtLeast<RepeatableRead>,
     R: AnnouncementRepo<C> + MemberRepo<C> + Send + Sync,
 {
     AnnouncementPermComplex::ensure_user_can_create(

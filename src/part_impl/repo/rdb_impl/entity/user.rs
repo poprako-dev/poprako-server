@@ -156,6 +156,7 @@ impl<'a> UserAspectRow<'a> {
 // ── Conversions ────────────────────────────────────────────────────────────
 
 impl TryFrom<UserInfoRow> for UserInfo {
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     fn try_from(v: UserInfoRow) -> BaseRest<Self> {

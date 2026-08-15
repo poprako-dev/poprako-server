@@ -43,7 +43,8 @@ pub async fn termbase_unique_and_query_roundtrip(shared: RdbCore) {
 
     let repo = HybRepo::new(shared.clone());
 
-    let nucl = RdbNucl::new(shared.clone());
+    let nucl =
+        RdbNucl::<crate::part::nucl::RepeatableRead>::new(shared.clone());
 
     let termbase_entry = TermbaseEntry {
         id: format!("{}main", PREFIX),

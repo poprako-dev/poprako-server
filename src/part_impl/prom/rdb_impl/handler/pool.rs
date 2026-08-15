@@ -7,7 +7,7 @@ mod tests;
 use std::sync::Arc;
 use std::time::Duration as StdDuration;
 
-use poprako_orchestra::OperStep as _;
+use poprako_orchestra::{Nucl as _, OperStep as _};
 use time::{Duration, OffsetDateTime};
 use tokio::sync::{Notify, mpsc};
 use tokio::task::JoinHandle;
@@ -28,27 +28,34 @@ use crate::part_impl::prom::rdb_impl::repo::{
 };
 use crate::part_impl::repo::HybRepo;
 use crate::result::BaseRest;
-use crate::shared::RdbContext;
 
 // Constant definition for `WORKER_COUNT`.
 const WORKER_COUNT: usize = 4;
+
 // Constant definition for `POLL_INTERVAL`.
 const POLL_INTERVAL: StdDuration = StdDuration::from_secs(60);
+
 // Constant definition for `STUCK_RESET_INTERVAL`.
 const STUCK_RESET_INTERVAL: Duration = Duration::minutes(1);
+
 // Constant definition for `RETRY_DELAY`.
 const RETRY_DELAY: Duration = Duration::minutes(5);
+
 // Constant definition for `PROCESSING_TIMEOUT`.
 const PROCESSING_TIMEOUT: Duration = Duration::minutes(15);
+
 // Constant definition for `COMPLETED_RETENTION`.
 const COMPLETED_RETENTION: Duration = Duration::days(7);
+
 // Constant definition for `DEAD_RETENTION`.
 const DEAD_RETENTION: Duration = Duration::days(30);
+
 // Constant definition for `COMPLETED_PURGE_INTERVAL`.
 const COMPLETED_PURGE_INTERVAL: Duration = Duration::hours(1);
 
 // Constant definition for `FNV_OFFSET_BASIS`.
 const FNV_OFFSET_BASIS: u64 = 14_695_981_039_346_656_037;
+
 // Constant definition for `FNV_PRIME`.
 const FNV_PRIME: u64 = 1_099_511_628_211;
 
@@ -210,9 +217,13 @@ where
             }
 
             tokio::select! {
+                //
                 biased;
+
                 () = self.token.cancelled() => break,
+
                 () = completed.notified() => {}
+
                 _ = sleep(POLL_INTERVAL) => {}
             }
         }
@@ -331,12 +342,14 @@ where
     // Internal implementation of `poll`.
     async fn poll(&self) -> BaseRest<Vec<LocalMessageRow>> {
         //
-        // Internal implementation detail.
-        let conn = self.core.get().await?;
+        let rows = self
+            .nucl
+            .coord(async |context| {
+                PollPending.step_on(&self.repo, context).await
+            })
+            .await?;
 
-        let mut context = RdbContext::new(conn);
-
-        PollPending.step_on(&self.repo, &mut context).await
+        Ok(rows)
     }
 
     // Internal implementation of `dispatch_rows`.
@@ -399,93 +412,104 @@ where
     // Internal implementation of `complete`.
     async fn complete(&self, id: &str, lease: i64) -> BaseRest<()> {
         //
-        // Internal implementation detail.
-        let conn = self.core.get().await?;
+        self.nucl
+            .coord(async |context| {
+                //
+                CompleteMessage::new(id, lease)
+                    .step_on(&self.repo, context)
+                    .await
+            })
+            .await?;
 
-        let mut context = RdbContext::new(conn);
-
-        CompleteMessage::new(id, lease)
-            .step_on(&self.repo, &mut context)
-            .await
+        Ok(())
     }
 
     #[instrument(level = "info", skip_all)]
     // Internal implementation of `retry`.
     async fn retry(&self, id: &str, lease: i64, message: &str) -> BaseRest<()> {
         //
-        // Internal implementation detail.
-        let conn = self.core.get().await?;
-
-        let mut context = RdbContext::new(conn);
-
         let visible_at = OffsetDateTime::now_utc() + RETRY_DELAY;
 
-        RetryMessage::new(id, lease, message, &visible_at)
-            .step_on(&self.repo, &mut context)
-            .await
+        self.nucl
+            .coord(async |context| {
+                //
+                RetryMessage::new(id, lease, message, &visible_at)
+                    .step_on(&self.repo, context)
+                    .await
+            })
+            .await?;
+
+        Ok(())
     }
 
     #[instrument(level = "info", skip_all)]
     // Internal implementation of `fail`.
     async fn fail(&self, id: &str, lease: i64, message: &str) -> BaseRest<()> {
         //
-        // Internal implementation detail.
-        let conn = self.core.get().await?;
+        self.nucl
+            .coord(async |context| {
+                //
+                FailMessage::new(id, lease, message)
+                    .step_on(&self.repo, context)
+                    .await
+            })
+            .await?;
 
-        let mut context = RdbContext::new(conn);
-
-        FailMessage::new(id, lease, message)
-            .step_on(&self.repo, &mut context)
-            .await
+        Ok(())
     }
 
     #[instrument(level = "info", skip_all)]
     // Internal implementation of `reset_stuck`.
     async fn reset_stuck(&self) -> BaseRest<()> {
         //
-        // Internal implementation detail.
-        let conn = self.core.get().await?;
-
-        let mut context = RdbContext::new(conn);
-
         let before = OffsetDateTime::now_utc() - PROCESSING_TIMEOUT;
 
-        ResetStuck::new(&before)
-            .step_on(&self.repo, &mut context)
-            .await
+        self.nucl
+            .coord(async |context| {
+                ResetStuck::new(&before).step_on(&self.repo, context).await
+            })
+            .await?;
+
+        Ok(())
     }
 
     #[instrument(level = "info", skip_all)]
     // Internal implementation of `purge_completed`.
     async fn purge_completed(&self) -> BaseRest<usize> {
         //
-        // Internal implementation detail.
-        let conn = self.core.get().await?;
-
-        let mut context = RdbContext::new(conn);
-
         let (completed_before, dead_before) = (
             OffsetDateTime::now_utc() - COMPLETED_RETENTION,
             OffsetDateTime::now_utc() - DEAD_RETENTION,
         );
 
-        PurgeCompleted::new(&completed_before, &dead_before)
-            .step_on(&self.repo, &mut context)
-            .await
+        let purged_count = self
+            .nucl
+            .coord(async |context| {
+                //
+                PurgeCompleted::new(&completed_before, &dead_before)
+                    .step_on(&self.repo, context)
+                    .await
+            })
+            .await?;
+
+        Ok(purged_count)
     }
 
     #[instrument(level = "info", skip_all)]
     // Internal implementation of `claim`.
     async fn claim(&self, id: &str, lease: i64) -> BaseRest<bool> {
         //
-        // Internal implementation detail.
-        let conn = self.core.get().await?;
+        let claimed = self
+            .nucl
+            .coord(async |context| {
+                //
+                ClaimPending::new(id, lease)
+                    .step_on(&self.repo, context)
+                    .await
+            })
+            .await?;
 
-        let mut context = RdbContext::new(conn);
-
-        ClaimPending::new(id, lease)
-            .step_on(&self.repo, &mut context)
-            .await
+        Ok(claimed)
     }
 }
 

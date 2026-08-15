@@ -33,6 +33,7 @@ pub struct PageInfoRow {
 }
 
 impl TryFrom<PageInfoRow> for PageInfo {
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     fn try_from(row: PageInfoRow) -> Result<Self, Self::Error> {
@@ -145,6 +146,7 @@ pub struct PageEntryRow<'a> {
 }
 
 impl<'a> TryFrom<&'a PageEntry> for PageEntryRow<'a> {
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     fn try_from(entry: &'a PageEntry) -> Result<Self, Self::Error> {

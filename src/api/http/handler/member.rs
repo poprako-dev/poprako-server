@@ -27,6 +27,9 @@ use crate::data::instr::member::{
 use crate::data::val::member::CreateMemberVal;
 use crate::data::view::member::MemberInfoView;
 use crate::model::shared::user::UserToken;
+use crate::part::nucl::RepeatableRead;
+use crate::part_impl::repo::HybRepo;
+use crate::shared::RdbContext;
 use crate::usecase;
 use crate::value::member::MemberInclOpt;
 
@@ -70,9 +73,13 @@ pub async fn create(
     Json(instr): Json<CreateMemberInstr>,
 ) -> HttpResult<CreateMemberVal> {
     //
-    usecase::member::create((harn.nucl(), harn.repo()), user_token, instr)
-        .await?
-        .accept(StatusCode::CREATED)
+    usecase::member::create::<_, RdbContext<RepeatableRead>, HybRepo>(
+        (harn.nucl().repeatable_read(), harn.repo()),
+        user_token,
+        instr,
+    )
+    .await?
+    .accept(StatusCode::CREATED)
 }
 
 /// `GET /api/v1/members` — list members by team or owner.
@@ -95,7 +102,7 @@ pub async fn list_infos(
     Query(instr): Query<ListMemberInfosInstr>,
 ) -> HttpResult<Vec<MemberInfoView>> {
     //
-    usecase::member::list_infos(
+    usecase::member::list_infos::<RdbContext<RepeatableRead>, HybRepo, _>(
         (harn.repo(), harn.image_pool()),
         user_token,
         instr,
@@ -132,7 +139,7 @@ pub async fn list_my_infos(
         limit: query.limit,
     };
 
-    usecase::member::list_infos(
+    usecase::member::list_infos::<RdbContext<RepeatableRead>, HybRepo, _>(
         (harn.repo(), harn.image_pool()),
         user_token,
         instr,
@@ -165,8 +172,8 @@ pub async fn update_roles(
     //
     ensure_path_matches_body_id(&member_id, &instr.id)?;
 
-    usecase::member::update_roles(
-        (harn.nucl(), harn.repo()),
+    usecase::member::update_roles::<_, RdbContext<RepeatableRead>, HybRepo>(
+        (harn.nucl().repeatable_read(), harn.repo()),
         user_token,
         instr,
     )
@@ -194,8 +201,12 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::member::delete((harn.nucl(), harn.repo()), user_token, member_id)
-        .await?;
+    usecase::member::delete::<_, RdbContext<RepeatableRead>, HybRepo>(
+        (harn.nucl().repeatable_read(), harn.repo()),
+        user_token,
+        member_id,
+    )
+    .await?;
 
     no_content()
 }
@@ -219,8 +230,12 @@ pub async fn join(
     Json(instr): Json<JoinTeamInstr>,
 ) -> HttpResult<MemberInfoView> {
     //
-    usecase::member::join_team(
-        (harn.nucl(), harn.repo(), harn.image_pool()),
+    usecase::member::join_team::<_, RdbContext<RepeatableRead>, HybRepo, _>(
+        (
+            harn.nucl().repeatable_read(),
+            harn.repo(),
+            harn.image_pool(),
+        ),
         user_token,
         instr,
     )

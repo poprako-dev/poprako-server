@@ -304,6 +304,7 @@ async fn touch(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
 
 impl Run<GetTermbaseInfo<'_>> for HybRepo {
     // Use BaseError for non-transactional read failures.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Load one termbase info by id through shared query path.
@@ -315,6 +316,7 @@ impl Run<GetTermbaseInfo<'_>> for HybRepo {
 
 impl Run<ListTermbaseInfos<'_>> for HybRepo {
     // Use BaseError for non-transactional list failures.
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Load paged termbase list by spec through shared query path.
@@ -327,120 +329,176 @@ impl Run<ListTermbaseInfos<'_>> for HybRepo {
     }
 }
 
-impl Step<CreateTermbase<'_>, RdbContext> for HybRepo {
+impl<L> Step<CreateTermbase<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Use BaseError for transactional creation failures.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Insert termbase row inside transaction context and return persisted info.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &CreateTermbase<'_>,
     ) -> BaseRest<TermbaseInfo> {
         create(context.conn(), oper.entry).await
     }
 }
 
-impl Step<GetTermbaseInfo<'_>, RdbContext> for HybRepo {
+impl<L> Step<GetTermbaseInfo<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Use BaseError for transactional read failures.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Read one locked? or unlocked termbase info in step context.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &GetTermbaseInfo<'_>,
     ) -> BaseRest<TermbaseInfo> {
         get_info(context.conn(), oper.id).await
     }
 }
 
-impl Step<GetTermbaseInfoExcluded<'_>, RdbContext> for HybRepo {
+impl<L> Step<GetTermbaseInfoExcluded<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Use BaseError for transactional lock-bound reads.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Read one termbase row with `FOR UPDATE` for subsequent writes.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &GetTermbaseInfoExcluded<'_>,
     ) -> BaseRest<TermbaseInfo> {
         get_info_excluded(context.conn(), oper.id).await
     }
 }
 
-impl Step<ListTermbaseInfosExcluded<'_>, RdbContext> for HybRepo {
+impl<L> Step<ListTermbaseInfosExcluded<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Use BaseError for transactional collection reads.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Read and lock all rows for a team/comic scope.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &ListTermbaseInfosExcluded<'_>,
     ) -> BaseRest<Vec<TermbaseInfo>> {
         list_infos_excluded(context.conn(), oper).await
     }
 }
 
-impl Step<UpdateTermbase<'_>, RdbContext> for HybRepo {
+impl<L> Step<UpdateTermbase<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Use BaseError for transactional update failures.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Apply name/description changes in one update statement.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &UpdateTermbase<'_>,
     ) -> BaseRest<()> {
         update_info(context.conn(), oper.update).await
     }
 }
 
-impl Step<UpdateTermbaseTermCount<'_>, RdbContext> for HybRepo {
+impl<L> Step<UpdateTermbaseTermCount<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Use BaseError for transactional aggregate count updates.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Update term count with delta while keeping updated_at fresh.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &UpdateTermbaseTermCount<'_>,
     ) -> BaseRest<()> {
         update_term_count(context.conn(), oper.id, oper.delta).await
     }
 }
 
-impl Step<TouchTermbase<'_>, RdbContext> for HybRepo {
+impl<L> Step<TouchTermbase<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Use BaseError for transactional touch/update timestamp failures.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Refresh termbase updated_at in transactional flow.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &TouchTermbase<'_>,
     ) -> BaseRest<()> {
         touch(context.conn(), oper.id).await
     }
 }
 
-impl Step<DeleteTermbase<'_>, RdbContext> for HybRepo {
+impl<L> Step<DeleteTermbase<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
     // Use BaseError for transactional deletion failures.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     // Delete termbase row as part of transaction flow.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
-        context: &mut RdbContext,
+        context: &mut RdbContext<L>,
         oper: &DeleteTermbase<'_>,
     ) -> BaseRest<()> {
         delete(context.conn(), oper.id).await
