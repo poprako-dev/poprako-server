@@ -9,7 +9,7 @@ mod tests;
 
 use std::time::Duration;
 
-use poprako_orchestra::{AtLeast, Nucl, OperRun as _, OperStep as _};
+use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
@@ -65,7 +65,7 @@ pub async fn get_info<C, R, I, D>(
     id: String,
 ) -> BaseRest<UserInfoView>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: UserRepo<C>,
     I: ImagePool,
     D: Develop + Send + Sync,
@@ -107,7 +107,7 @@ pub async fn update_info<N, C, R>(
     instr: UpdateUserInfoInstr,
 ) -> BaseRest<()>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
@@ -173,7 +173,7 @@ pub async fn update_password<N, C, R>(
     instr: UpdateUserPasswordInstr,
 ) -> BaseRest<()>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
@@ -274,7 +274,7 @@ pub async fn reserve_avatar<N, C, R, P, I>(
     instr: ReserveUserAvatarInstr,
 ) -> BaseRest<ReserveUserAvatarVal>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
@@ -404,7 +404,7 @@ pub async fn mark_avatar_uploaded<N, C, R, I>(
     instr: MarkUserAvatarUploadedInstr,
 ) -> BaseRest<()>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,

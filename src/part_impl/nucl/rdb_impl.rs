@@ -8,8 +8,8 @@ use diesel::query_builder::QueryBuilder as _;
 use diesel_async::{
     AnsiTransactionManager, AsyncPgConnection, TransactionManager as _,
 };
-use poprako_orchestra::Nucl;
 use poprako_orchestra::nucl::Error as NuclError;
+use poprako_orchestra::{Level, Nucl};
 use tracing::instrument;
 
 use crate::part::nucl::{RepeatableRead, Serializable};
@@ -18,7 +18,7 @@ use crate::shared::result::diesel;
 use crate::shared::{RdbContext, RdbCore};
 
 // Selects the typed Diesel transaction isolation builder.
-trait RdbLevel: poprako_orchestra::Level + Sized {
+trait RdbLevel: Level + Sized {
     /// Begins a transaction at this marker's isolation level.
     fn begin(
         conn: &mut AsyncPgConnection,

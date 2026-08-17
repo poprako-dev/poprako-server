@@ -191,10 +191,11 @@ export async function runIt07Module(ctx: RunCtx): Promise<void> {
     assert.equal(latestWorkflowRecord.chapter_id, mainChapterId);
     assert.equal(latestWorkflowRecord.kind, "stage-transitioned");
     assert.equal(latestWorkflowRecord.actor_user_id, raw01.userId);
-    assert.equal(latestWorkflowRecord.payload.stage, "raw-provide");
-    assert.equal(latestWorkflowRecord.payload.previous_phase, "pending");
-    assert.equal(latestWorkflowRecord.payload.next_phase, "completed");
-    assert.equal(latestWorkflowRecord.payload.origin, "manual");
+    assert.equal(
+        Object.hasOwn(latestWorkflowRecord, "payload"),
+        false,
+        "workflow record API must not expose repository payload JSON",
+    );
     assert.ok(latestWorkflowRecord.text.length > 0, "workflow record has localized text");
     assert.ok(Number.isInteger(latestWorkflowRecord.created_at), "workflow record timestamp is integer ms");
 
@@ -227,7 +228,7 @@ export async function runIt07Module(ctx: RunCtx): Promise<void> {
     const newTrans01Mails = trans01MailsAfterRaw.slice(trans01MailsBefore);
 
     for (const mail of newTrans01Mails) {
-        assert.equal(mail.read, false, "new mail must be unread");
+        assert.equal(mail.is_read, false, "new mail must be unread");
         assert.ok(typeof mail.created_at === "number" && Number.isInteger(mail.created_at));
     }
 
@@ -386,18 +387,18 @@ export async function runIt07Module(ctx: RunCtx): Promise<void> {
     }
 
     // mark-read trans_01's unread mails
-    const trans01UnreadIds = trans01AllMails.filter((m) => !m.read).map((m) => m.id);
+    const trans01UnreadIds = trans01AllMails.filter((m) => !m.is_read).map((m) => m.id);
 
     if (trans01UnreadIds.length > 0) {
         await markSystemMailsRead(trans01.api, trans01UnreadIds);
 
-        const afterMark = await listSystemMails(trans01.api, "&read=false");
+        const afterMark = await listSystemMails(trans01.api, "&is_read=false");
 
         for (const m of afterMark) {
             assert.ok(!trans01UnreadIds.includes(m.id), "marked mail must not appear in unread list");
         }
 
-        const readList = await listSystemMails(trans01.api, "&read=true");
+        const readList = await listSystemMails(trans01.api, "&is_read=true");
 
         for (const id of trans01UnreadIds) {
             assert.ok(readList.find((m) => m.id === id), "marked mail must appear in read list");

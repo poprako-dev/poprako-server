@@ -6,7 +6,7 @@ pub mod tests;
 
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
-use poprako_orchestra::{Run, Step};
+use poprako_orchestra::{AtLeast, Level, Run, Step};
 use tracing::instrument;
 
 use crate::model::read::proj::chapter_workflow_record::ChapterWorkflowRecordInfo;
@@ -114,8 +114,8 @@ impl Run<ListChapterWorkflowRecordInfos<'_>> for HybRepo {
 
 impl<L> Step<CreateChapterWorkflowRecords<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Declares the transaction isolation level required for inserts.
     type Level = crate::part::nucl::RepeatableRead;
@@ -137,8 +137,8 @@ where
 impl<L> Step<ListChapterWorkflowRecordInfosExcluded<'_>, RdbContext<L>>
     for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Declares the transaction isolation level required for locked reads.
     type Level = crate::part::nucl::RepeatableRead;
@@ -159,8 +159,8 @@ where
 
 impl<L> Step<DeleteChapterWorkflowRecords<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Declares the transaction isolation level required for deletion.
     type Level = crate::part::nucl::RepeatableRead;

@@ -38,7 +38,7 @@ import type { RunCtx } from "./state/runCtx.js";
 // Order:
 //   it_00 bootstrap + auth + default-seed discovery
 //   it_01 member invitation / register / roles / member list
-//   it_02 workset / comic / chapter index + pin/unpin + info update
+//   it_02 workset / comic / chapter index + pinning + info update
 //   it_03 page reserve / image mark / page delete+rebuild
 //   it_04 assignment join / assignment invitation / role update+delete
 //   it_05 unit save order / next_id / counts / export / import

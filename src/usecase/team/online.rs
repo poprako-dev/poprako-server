@@ -4,7 +4,7 @@
 // Online-user use-case tests cover membership gates and team isolation.
 mod tests;
 
-use poprako_orchestra::{OperRun as _, run_proxy};
+use poprako_orchestra::{Context, OperRun as _, run_proxy};
 use tracing::instrument;
 
 use crate::complex::team::TeamPermComplex;
@@ -23,7 +23,7 @@ pub async fn mark_self_online<C, R>(
     team_id: String,
 ) -> BaseRest<()>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: MemberRepo<C> + OnlineUserRepo + Sync,
 {
     TeamPermComplex::ensure_user_can_mark_self_online(
@@ -53,7 +53,7 @@ pub async fn list_online_user_ids<C, R>(
     team_id: String,
 ) -> BaseRest<Vec<String>>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: MemberRepo<C> + OnlineUserRepo + Sync,
 {
     TeamPermComplex::ensure_user_can_list_online_user_ids(

@@ -1,4 +1,4 @@
-use poprako_orchestra::{Run, Step};
+use poprako_orchestra::{AtLeast, Level, Run, Step};
 use tracing::instrument;
 
 use crate::model::read::proj::unit::{UnitCounters, UnitInfo, UnitOrder};
@@ -26,8 +26,8 @@ impl Run<ListUnitInfos<'_>> for HybRepo {
 
 impl<L> Step<ListUnitOrders<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Error type for the Step trait impl on unit order list.
     type Level = crate::part::nucl::RepeatableRead;
@@ -48,8 +48,8 @@ where
 
 impl<L> Step<ApplyUnitEdits<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Error type for the Step trait impl on unit edit application.
     type Level = crate::part::nucl::RepeatableRead;

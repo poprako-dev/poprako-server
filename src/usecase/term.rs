@@ -5,7 +5,7 @@
 mod tests;
 
 use poprako_orchestra::{
-    AtLeast, Nucl, OperRun as _, OperStep as _, run_proxy, step_proxy,
+    AtLeast, Context, Nucl, OperRun as _, OperStep as _, run_proxy, step_proxy,
 };
 use tracing::instrument;
 
@@ -42,7 +42,7 @@ pub async fn create<N, C, R>(
     instr: CreateTermInstr,
 ) -> BaseRest<CreateTermVal>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
@@ -110,7 +110,7 @@ pub async fn get_info<C, R>(
     id: String,
 ) -> BaseRest<TermInfoView>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: TermbaseRepo<C> + TermRepo<C> + TeamRepo<C> + MemberRepo<C> + Sync,
 {
     let term_info = GetTermInfo { id: &id }.run_on(repo).await?;
@@ -143,7 +143,7 @@ pub async fn list_infos<C, R>(
     instr: ListTermInfosInstr,
 ) -> BaseRest<Vec<TermInfoView>>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: TermbaseRepo<C> + TermRepo<C> + TeamRepo<C> + MemberRepo<C> + Sync,
 {
     let termbase_info = GetTermbaseInfo {
@@ -187,7 +187,7 @@ pub async fn update_info<N, C, R>(
     instr: UpdateTermInfoInstr,
 ) -> BaseRest<()>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
@@ -266,7 +266,7 @@ pub async fn delete<N, C, R>(
     id: String,
 ) -> BaseRest<()>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,

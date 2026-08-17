@@ -7,7 +7,7 @@ mod tests;
 use std::time::Duration;
 
 use poprako_orchestra::{
-    AtLeast, Nucl, OperRun as _, OperStep as _, run_proxy,
+    AtLeast, Context, Nucl, OperRun as _, OperStep as _, run_proxy,
 };
 use tracing::instrument;
 
@@ -57,7 +57,7 @@ pub async fn create<N, C, R, P>(
     instr: CreateMemberInvitationInstr,
 ) -> BaseRest<CreateMemberInvitationVal>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
@@ -169,7 +169,7 @@ pub async fn list_infos<C, R, I>(
     instr: ListMemberInvitationInfosInstr,
 ) -> BaseRest<Vec<MemberInvitationInfoView>>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: MemberInvitationRepo<C> + MemberRepo<C> + Sync,
     I: ImagePool,
 {
@@ -221,7 +221,7 @@ pub async fn update_roles<N, C, R>(
     instr: UpdateMemberInvitationRolesInstr,
 ) -> BaseRest<()>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
@@ -268,7 +268,7 @@ pub async fn delete<N, C, R>(
     id: String,
 ) -> BaseRest<()>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,

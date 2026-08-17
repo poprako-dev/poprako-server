@@ -1,10 +1,6 @@
 //! Immutable chapter workflow record kinds, payloads, and origins.
 
-#[cfg(test)]
-mod tests;
-
 use serde::{Deserialize, Serialize};
-use serde_json::{Value, json};
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
@@ -99,10 +95,6 @@ pub enum ChapterWorkflowRecordOrigin {
 }
 
 /// Typed, immutable details attached to a workflow record.
-///
-/// The enum's tagged representation is used for in-memory serde round trips.
-/// Repository storage deliberately uses [`Self::to_storage_json`] so `f_kind`
-/// remains separate and `f_payload` is always a JSON object.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(tag = "type", rename_all = "kebab-case", deny_unknown_fields)]
@@ -219,156 +211,5 @@ impl ChapterWorkflowRecordPayload {
                 ChapterWorkflowRecordKind::StageTransitioned
             }
         }
-    }
-
-    /// Serializes this payload as the object stored in the `f_payload` column.
-    pub fn to_storage_json(&self) -> Value {
-        //
-        match self {
-            //
-            Self::ChapterCreated
-            | Self::ChapterPinned
-            | Self::ChapterUnpinned => {
-                json!({})
-            }
-
-            Self::ChapterSubtitleUpdated {
-                previous_subtitle,
-                next_subtitle,
-            } => {
-                //
-                json!({
-                    "previous_subtitle": previous_subtitle,
-                    "next_subtitle": next_subtitle,
-                })
-            }
-
-            Self::AssignmentCreated {
-                subject_user_id,
-                roles,
-            } => {
-                json!({ "subject_user_id": subject_user_id, "roles": roles })
-            }
-
-            Self::AssignmentRolesUpdated {
-                subject_user_id,
-                previous_roles,
-                next_roles,
-            } => {
-                //
-                json!({
-                    "subject_user_id": subject_user_id,
-                    "previous_roles": previous_roles,
-                    "next_roles": next_roles,
-                })
-            }
-
-            Self::AssignmentDeleted {
-                subject_user_id,
-                previous_roles,
-            } => {
-                //
-                json!({
-                    "subject_user_id": subject_user_id,
-                    "previous_roles": previous_roles,
-                })
-            }
-
-            Self::TranslationImported {
-                format,
-                imported_page_count,
-                imported_unit_count,
-            } => {
-                //
-                json!({
-                    "format": format,
-                    "imported_page_count": imported_page_count,
-                    "imported_unit_count": imported_unit_count,
-                })
-            }
-
-            Self::TranslationExported { format } => {
-                json!({ "format": format })
-            }
-
-            Self::StageTransitioned {
-                stage,
-                previous_phase,
-                next_phase,
-                origin,
-            } => {
-                //
-                json!({
-                    "stage": stage,
-                    "previous_phase": previous_phase,
-                    "next_phase": next_phase,
-                    "origin": origin,
-                })
-            }
-        }
-    }
-
-    /// Decodes one persisted JSON object using its separate record kind.
-    pub fn from_storage_json(
-        kind: ChapterWorkflowRecordKind,
-        payload: Value,
-    ) -> Result<Self, serde_json::Error> {
-        // Reconstitute the in-memory tag from the separately persisted kind.
-        let mut payload_fields = match payload {
-            //
-            Value::Object(payload_fields) => payload_fields,
-
-            payload => return serde_json::from_value(payload),
-        };
-
-        let expected_fields = match kind {
-            //
-            ChapterWorkflowRecordKind::ChapterCreated
-            | ChapterWorkflowRecordKind::ChapterPinned
-            | ChapterWorkflowRecordKind::ChapterUnpinned => &[][..],
-
-            ChapterWorkflowRecordKind::ChapterSubtitleUpdated => {
-                &["previous_subtitle", "next_subtitle"][..]
-            }
-
-            ChapterWorkflowRecordKind::AssignmentCreated => {
-                &["subject_user_id", "roles"][..]
-            }
-
-            ChapterWorkflowRecordKind::AssignmentRolesUpdated => {
-                &["subject_user_id", "previous_roles", "next_roles"][..]
-            }
-
-            ChapterWorkflowRecordKind::AssignmentDeleted => {
-                &["subject_user_id", "previous_roles"][..]
-            }
-
-            ChapterWorkflowRecordKind::TranslationImported => {
-                &["format", "imported_page_count", "imported_unit_count"][..]
-            }
-
-            ChapterWorkflowRecordKind::TranslationExported => &["format"][..],
-
-            ChapterWorkflowRecordKind::StageTransitioned => {
-                &["stage", "previous_phase", "next_phase", "origin"][..]
-            }
-        };
-
-        let has_expected_fields = payload_fields.len() == expected_fields.len()
-            && expected_fields
-                .iter()
-                .all(|field_name| payload_fields.contains_key(*field_name));
-
-        if !has_expected_fields {
-            //
-            return Err(serde_json::Error::io(std::io::Error::other(
-                "persisted workflow record payload has invalid fields",
-            )));
-        }
-
-        payload_fields
-            .insert("type".into(), Value::String(kind.as_str().into()));
-
-        serde_json::from_value(Value::Object(payload_fields))
     }
 }

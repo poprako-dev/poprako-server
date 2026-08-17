@@ -8,7 +8,6 @@ use std::collections::HashMap;
 
 use fluent_templates::fluent_bundle::FluentValue;
 use serde::Serialize;
-use serde_json::Value;
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
@@ -18,8 +17,6 @@ use poprako_util::time::ToUnixMilli as _;
 use crate::model::read::proj::chapter_workflow_record::ChapterWorkflowRecordInfo;
 use crate::value::chapter::{Stage, StagePhase};
 use crate::value::chapter_port::TranslationFormat;
-#[cfg(any(feature = "swagger", test))]
-use crate::value::chapter_workflow_record::ChapterWorkflowRecordOrigin;
 use crate::value::chapter_workflow_record::{
     ChapterWorkflowRecordKind, ChapterWorkflowRecordPayload,
 };
@@ -37,12 +34,6 @@ pub struct ChapterWorkflowRecordInfoView {
     pub actor_user_id: Option<String>,
     /// Stable event kind for client-side branching.
     pub kind: ChapterWorkflowRecordKind,
-    /// Structured, language-neutral event parameters.
-    #[cfg_attr(
-        feature = "swagger",
-        schema(value_type = ChapterWorkflowRecordPayloadView)
-    )]
-    pub payload: Value,
     /// Localized server-rendered event text without an actor name.
     pub text: String,
     /// Record creation time in Unix milliseconds.
@@ -60,124 +51,10 @@ impl From<ChapterWorkflowRecordInfo> for ChapterWorkflowRecordInfoView {
             chapter_id: model.chapter_id,
             actor_user_id: model.actor_user_id,
             kind: model.kind,
-            payload: model.payload.to_storage_json(),
             text,
             created_at: model.created_at.to_unix_milli(),
         }
     }
-}
-
-/// OpenAPI union for the language-neutral workflow record payload object.
-#[cfg(feature = "swagger")]
-#[derive(ToSchema)]
-#[serde(untagged)]
-pub enum ChapterWorkflowRecordPayloadView {
-    /// No additional fields for chapter creation, pinning, or unpinning.
-    Empty(ChapterWorkflowRecordEmptyPayloadView),
-
-    /// Previous and next subtitle values.
-    SubtitleUpdated(ChapterWorkflowRecordSubtitleUpdatedPayloadView),
-
-    /// Initial assignment roles.
-    AssignmentCreated(ChapterWorkflowRecordAssignmentCreatedPayloadView),
-
-    /// Assignment role-mask transition.
-    AssignmentRolesUpdated(
-        ChapterWorkflowRecordAssignmentRolesUpdatedPayloadView,
-    ),
-
-    /// Assignment roles retained before deletion.
-    AssignmentDeleted(ChapterWorkflowRecordAssignmentDeletedPayloadView),
-
-    /// Translation import summary.
-    TranslationImported(ChapterWorkflowRecordTranslationImportedPayloadView),
-
-    /// Translation export format.
-    TranslationExported(ChapterWorkflowRecordTranslationExportedPayloadView),
-
-    /// Workflow-stage phase transition.
-    StageTransitioned(ChapterWorkflowRecordStageTransitionedPayloadView),
-}
-
-/// OpenAPI empty object schema for payloads without parameters.
-#[cfg(feature = "swagger")]
-#[derive(ToSchema)]
-pub struct ChapterWorkflowRecordEmptyPayloadView {}
-
-/// OpenAPI schema for a chapter subtitle change payload.
-#[cfg(feature = "swagger")]
-#[derive(ToSchema)]
-pub struct ChapterWorkflowRecordSubtitleUpdatedPayloadView {
-    /// Subtitle before the update.
-    pub previous_subtitle: String,
-    /// Subtitle after the update.
-    pub next_subtitle: String,
-}
-
-/// OpenAPI schema for a newly created assignment payload.
-#[cfg(feature = "swagger")]
-#[derive(ToSchema)]
-pub struct ChapterWorkflowRecordAssignmentCreatedPayloadView {
-    /// User receiving the assignment.
-    pub subject_user_id: String,
-    /// Initial assignment roles.
-    pub roles: RoleMask,
-}
-
-/// OpenAPI schema for a changed assignment role mask payload.
-#[cfg(feature = "swagger")]
-#[derive(ToSchema)]
-pub struct ChapterWorkflowRecordAssignmentRolesUpdatedPayloadView {
-    /// User whose roles changed.
-    pub subject_user_id: String,
-    /// Roles before the update.
-    pub previous_roles: RoleMask,
-    /// Roles after the update.
-    pub next_roles: RoleMask,
-}
-
-/// OpenAPI schema for a deleted assignment payload.
-#[cfg(feature = "swagger")]
-#[derive(ToSchema)]
-pub struct ChapterWorkflowRecordAssignmentDeletedPayloadView {
-    /// User whose assignment was removed.
-    pub subject_user_id: String,
-    /// Roles before deletion.
-    pub previous_roles: RoleMask,
-}
-
-/// OpenAPI schema for a translation import summary payload.
-#[cfg(feature = "swagger")]
-#[derive(ToSchema)]
-pub struct ChapterWorkflowRecordTranslationImportedPayloadView {
-    /// Imported content format.
-    pub format: TranslationFormat,
-    /// Number of imported pages.
-    pub imported_page_count: i32,
-    /// Number of imported units.
-    pub imported_unit_count: i32,
-}
-
-/// OpenAPI schema for a translation export payload.
-#[cfg(feature = "swagger")]
-#[derive(ToSchema)]
-pub struct ChapterWorkflowRecordTranslationExportedPayloadView {
-    /// Generated content format.
-    pub format: TranslationFormat,
-}
-
-/// OpenAPI schema for a workflow-stage transition payload.
-#[cfg(feature = "swagger")]
-#[derive(ToSchema)]
-pub struct ChapterWorkflowRecordStageTransitionedPayloadView {
-    /// Changed workflow stage.
-    pub stage: Stage,
-    /// Phase before the transition.
-    pub previous_phase: StagePhase,
-    /// Phase after the transition.
-    pub next_phase: StagePhase,
-    /// Action that originated the transition.
-    pub origin: ChapterWorkflowRecordOrigin,
 }
 
 // Builds Fluent replacement arguments from already rendered values.

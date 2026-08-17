@@ -1,6 +1,6 @@
 //! Transactional automatic chapter-stage advancement helpers.
 
-use poprako_orchestra::OperStep as _;
+use poprako_orchestra::{Context, OperStep as _};
 
 use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::part::repo::chapter::ChapterRepo;
@@ -23,7 +23,7 @@ pub async fn start_pending_stages<C, R>(
     stages: &[Stage],
 ) -> BaseRest<()>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: ChapterRepo<C> + ChapterWorkflowRecordRepo<C>,
 {
     let mut entries = Vec::with_capacity(stages.len());

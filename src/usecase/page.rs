@@ -12,7 +12,7 @@ mod tests;
 use std::time::Duration;
 
 use poprako_orchestra::{
-    AtLeast, Nucl, OperRun as _, OperStep as _, run_proxy,
+    AtLeast, Context, Nucl, OperRun as _, OperStep as _, run_proxy,
 };
 use tracing::instrument;
 
@@ -64,7 +64,7 @@ pub async fn reserve_image<N, C, R, P, I>(
     instr: ReservePageImageInstr,
 ) -> BaseRest<ReservedPageVal>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
@@ -310,7 +310,7 @@ pub async fn list_infos<C, R, I>(
     instr: ListPageInfosInstr,
 ) -> BaseRest<Vec<PageInfoView>>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: PageRepo<C> + TeamRepo<C> + MemberRepo<C> + AssignmentRepo<C> + Sync,
     I: ImagePool,
 {
@@ -350,7 +350,7 @@ pub async fn get_info<C, R, I>(
     id: String,
 ) -> BaseRest<PageInfoView>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: PageRepo<C> + TeamRepo<C> + MemberRepo<C> + AssignmentRepo<C> + Sync,
     I: ImagePool,
 {
@@ -380,7 +380,7 @@ pub async fn mark_image_uploaded<N, C, R, I>(
     instr: MarkPageImageUploadedInstr,
 ) -> BaseRest<()>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,

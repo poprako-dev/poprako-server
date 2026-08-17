@@ -11,7 +11,7 @@ mod workflow_record;
 mod tests;
 
 use poprako_orchestra::{
-    AtLeast, Nucl, OperRun as _, OperStep as _, run_proxy,
+    AtLeast, Context, Nucl, OperRun as _, OperStep as _, run_proxy,
 };
 use tracing::instrument;
 
@@ -68,7 +68,7 @@ pub async fn list_infos<C, R, I>(
     instr: ListChapterInfosInstr,
 ) -> BaseRest<Vec<ChapterInfoView>>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: ChapterRepo<C> + MemberRepo<C> + TeamRepo<C> + PageRepo<C> + Sync,
     I: ImagePool,
 {
@@ -139,7 +139,7 @@ pub async fn get_info<C, R>(
     id: String,
 ) -> BaseRest<ChapterInfoView>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: ChapterRepo<C> + MemberRepo<C> + TeamRepo<C> + Sync,
 {
     ChapterPermComplex::ensure_user_can_get_info(
@@ -171,7 +171,7 @@ pub async fn get_pinned<C, R>(
     comic_id: String,
 ) -> BaseRest<Option<ChapterInfoView>>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: ChapterRepo<C> + MemberRepo<C> + TeamRepo<C> + Sync,
 {
     ChapterPermComplex::ensure_user_can_get_pinned(
@@ -203,7 +203,7 @@ pub async fn create<N, C, R>(
     instr: CreateChapterInstr,
 ) -> BaseRest<CreateChapterVal>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
@@ -352,7 +352,7 @@ pub async fn update_info<N, C, R>(
     instr: UpdateChapterInfoInstr,
 ) -> BaseRest<()>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
@@ -439,7 +439,7 @@ pub async fn mark_pinned<N, C, R>(
     id: String,
 ) -> BaseRest<()>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,

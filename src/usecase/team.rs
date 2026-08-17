@@ -12,7 +12,7 @@ mod tests;
 use std::time::Duration;
 
 use poprako_orchestra::{
-    AtLeast, Nucl, OperRun as _, OperStep as _, run_proxy, step_proxy,
+    AtLeast, Context, Nucl, OperRun as _, OperStep as _, run_proxy, step_proxy,
 };
 use tracing::instrument;
 
@@ -102,7 +102,7 @@ pub async fn create<N, C, R, I>(
     instr: CreateTeamInstr,
 ) -> BaseRest<TeamInfoView>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
@@ -171,7 +171,7 @@ pub async fn update_info<C, R>(
     instr: UpdateTeamInfoInstr,
 ) -> BaseRest<()>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: TeamRepo<C> + MemberRepo<C> + Sync,
 {
     TeamPermComplex::ensure_user_can_update_info(
@@ -220,7 +220,7 @@ pub async fn reserve_avatar<N, C, R, P, I>(
     instr: ReserveTeamAvatarInstr,
 ) -> BaseRest<ReserveTeamAvatarVal>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
@@ -361,7 +361,7 @@ pub async fn mark_avatar_uploaded<N, C, R, I>(
     instr: MarkTeamAvatarUploadedInstr,
 ) -> BaseRest<()>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
@@ -512,7 +512,7 @@ pub async fn delete<N, C, R, P>(
     id: String,
 ) -> BaseRest<()>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<Serializable>,

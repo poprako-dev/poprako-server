@@ -6,7 +6,7 @@ pub mod tests;
 
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
-use poprako_orchestra::{Run, Step};
+use poprako_orchestra::{AtLeast, Level, Run, Step};
 use time::OffsetDateTime;
 use tracing::instrument;
 
@@ -330,8 +330,8 @@ impl Run<GetMemberInvitationInfo<'_, '_>> for HybRepo {
 
 impl<L> Step<CreateMemberInvitation<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Keep transactional create failures in base error type.
     type Level = crate::part::nucl::RepeatableRead;
@@ -352,8 +352,8 @@ where
 
 impl<L> Step<GetMemberInvitationInfo<'_, '_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Keep transactional read failures in base error type.
     type Level = crate::part::nucl::RepeatableRead;
@@ -384,8 +384,8 @@ where
 
 impl<L> Step<UpdateMemberInvitation<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Keep transactional update failures in base error type.
     type Level = crate::part::nucl::RepeatableRead;
@@ -418,8 +418,8 @@ where
 
 impl<L> Step<GetMemberInvitationInfoExcluded<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Keep transactional exclusive-read failures in base error type.
     type Level = crate::part::nucl::RepeatableRead;
@@ -446,8 +446,8 @@ where
 
 impl<L> Step<DeleteMemberInvitation<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Keep transactional delete failures in base error type.
     type Level = crate::part::nucl::RepeatableRead;
@@ -468,8 +468,8 @@ where
 
 impl<L> Step<PurgeExpiredMemberInvitation<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Keep transactional purge failures in base error type.
     type Level = crate::part::nucl::RepeatableRead;

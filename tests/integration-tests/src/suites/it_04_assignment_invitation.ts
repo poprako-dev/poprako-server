@@ -245,7 +245,7 @@ export async function runIt04Module(ctx: RunCtx): Promise<void> {
     assert.ok(foundTrans03, "pending list must include trans_03 invitation");
     assert.equal(foundTrans03?.invitee_qid, trans03.qid);
     assert.equal(foundTrans03?.roles, ROLE.TRANSLATOR);
-    assert.equal(foundTrans03?.pending, true);
+    assert.equal(foundTrans03?.is_pending, true);
 
     // E2.3: trans_03 consumes -> 201, assignment roles == TRANSLATOR.
     const trans03Assignment = await joinAssignmentInvitation(trans03.api, trans03Inv.code);

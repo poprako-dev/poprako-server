@@ -5,7 +5,7 @@
 pub mod tests;
 
 use poprako_orchestra::{
-    AtLeast, Nucl, OperRun as _, OperStep as _, run_proxy, step_proxy,
+    AtLeast, Context, Nucl, OperRun as _, OperStep as _, run_proxy, step_proxy,
 };
 use tracing::instrument;
 
@@ -67,7 +67,7 @@ pub async fn create<N, C, R>(
     instr: CreateWorksetInstr,
 ) -> BaseRest<CreateWorksetVal>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
@@ -118,7 +118,7 @@ pub async fn get_info<C, R>(
     id: String,
 ) -> BaseRest<WorksetInfoView>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: WorksetRepo<C> + MemberRepo<C> + Sync,
 {
     WorksetPermComplex::ensure_user_can_get_info(
@@ -145,7 +145,7 @@ pub async fn list_infos<C, R>(
     instr: ListWorksetInfosInstr,
 ) -> BaseRest<Vec<WorksetInfoView>>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: WorksetRepo<C> + MemberRepo<C> + Sync,
 {
     WorksetPermComplex::ensure_user_can_list_infos(
@@ -176,7 +176,7 @@ pub async fn update_info<C, R>(
     instr: UpdateWorksetInfoInstr,
 ) -> BaseRest<()>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: WorksetRepo<C> + MemberRepo<C> + Sync,
 {
     WorksetPermComplex::ensure_user_can_update_info(
@@ -213,7 +213,7 @@ pub async fn delete<N, C, R, P>(
     id: String,
 ) -> BaseRest<()>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<Serializable>,

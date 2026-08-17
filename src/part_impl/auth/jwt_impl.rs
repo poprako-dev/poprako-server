@@ -3,10 +3,10 @@
 #[cfg(test)]
 mod tests;
 
+use std::env::var;
+
 use anyhow::Context as _;
-use jsonwebtoken::{
-    Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode,
-};
+use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use tracing::instrument;
@@ -63,10 +63,10 @@ impl JwtAuth {
     pub fn from_env() -> anyhow::Result<Self> {
         //
         // Internal implementation detail.
-        let secret = std::env::var("JWT_SECRET")
+        let secret = var("JWT_SECRET")
             .with_context(|| "[JwtAuth::from_env] JWT_SECRET is not set")?;
 
-        let expiration_hours = std::env::var("JWT_EXPIRATION_HOURS")
+        let expiration_hours = var("JWT_EXPIRATION_HOURS")
             .with_context(|| "[JwtAuth::from_env] JWT_EXPIRATION_HOURS is not set")?
             .parse()
             .with_context(
@@ -108,21 +108,23 @@ impl TokenAuth for JwtAuth {
 
         let header = Header::new(Algorithm::HS256);
 
-        encode(&header, &claims, &self.encoding_key).map_err(|err| {
-            //
-            tracing::error!(
-                operation = "sign_token",
-                sdk_err = ?err,
-                "JWT SDK error",
-            );
+        jsonwebtoken::encode(&header, &claims, &self.encoding_key).map_err(
+            |err| {
+                //
+                tracing::error!(
+                    operation = "sign_token",
+                    sdk_err = ?err,
+                    "JWT SDK error",
+                );
 
-            BaseError::Unrecoverable {
-                message: format!(
-                    "[JwtAuth::sign_token] error when encoding: {}",
-                    err
-                ),
-            }
-        })
+                BaseError::Unrecoverable {
+                    message: format!(
+                        "[JwtAuth::sign_token] error when encoding: {}",
+                        err
+                    ),
+                }
+            },
+        )
     }
 
     // Verifies a JWT token string and returns the decoded user token.
@@ -130,7 +132,7 @@ impl TokenAuth for JwtAuth {
     fn verify_token(&self, raw: &str) -> BaseRest<UserToken> {
         //
         // Internal implementation detail.
-        let token_data = decode::<TokenClaims>(
+        let token_data = jsonwebtoken::decode::<TokenClaims>(
             raw,
             &self.decoding_key,
             &Validation::new(Algorithm::HS256),

@@ -3,6 +3,7 @@
 
 use std::sync::Arc;
 
+use poprako_orchestra::Context;
 use tokio::sync::mpsc::Receiver;
 use tokio_util::sync::CancellationToken;
 use tracing::instrument;
@@ -40,7 +41,7 @@ impl<R> EffectHandler<R> {
     /// Runs the event consumer loop, dispatching events until a shutdown signal is received.
     pub async fn run<C>(mut self)
     where
-        C: poprako_orchestra::Context,
+        C: Context,
         C: Send,
         R: AssignmentRepo<C>
             + ChapterRepo<C>

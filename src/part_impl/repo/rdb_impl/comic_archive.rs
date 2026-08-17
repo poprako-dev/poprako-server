@@ -13,7 +13,7 @@ use std::collections::HashMap;
 
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
-use poprako_orchestra::{Run, Step};
+use poprako_orchestra::{AtLeast, Level, Run, Step};
 use time::OffsetDateTime;
 use tracing::instrument;
 
@@ -421,8 +421,8 @@ async fn get_snapshot_excluded(
 
 impl<L> Step<GetComicArchiveSnapshotExcluded<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Use base errors for snapshot reads in comic archive transactions.
     type Level = crate::part::nucl::RepeatableRead;
@@ -464,8 +464,8 @@ impl Run<ListComicArchivePayloads<'_>> for HybRepo {
 
 impl<L> Step<CommitComicArchive<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Use base errors for commit operations.
     type Level = crate::part::nucl::RepeatableRead;
@@ -486,8 +486,8 @@ where
 
 impl<L> Step<DeleteComicArchives<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Use base errors for comic-archive cleanup during hard deletion.
     type Level = crate::part::nucl::RepeatableRead;

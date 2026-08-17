@@ -333,22 +333,22 @@ export async function assertMailInvariant(api: ApiClient): Promise<void> {
         mailIds.add(mail.id);
 
         assert.ok(typeof mail.created_at === "number" && Number.isInteger(mail.created_at));
-        assert.ok(typeof mail.read === "boolean");
+        assert.ok(typeof mail.is_read === "boolean");
     }
 }
 
 // Variant of J6 that asserts the unread/read filter is consistent with the
-// `read` flag on each returned mail.
+// `is_read` flag on each returned mail.
 export async function assertMailReadFilterInvariant(api: ApiClient): Promise<void> {
-    const unread = await listSystemMails(api, "&read=false");
-    const read = await listSystemMails(api, "&read=true");
+    const unread = await listSystemMails(api, "&is_read=false");
+    const read = await listSystemMails(api, "&is_read=true");
 
     for (const mail of unread) {
-        assert.equal(mail.read, false, `read=false list returned mail with read=true: ${mail.id}`);
+        assert.equal(mail.is_read, false, `is_read=false list returned read mail: ${mail.id}`);
     }
 
     for (const mail of read) {
-        assert.equal(mail.read, true, `read=true list returned mail with read=false: ${mail.id}`);
+        assert.equal(mail.is_read, true, `is_read=true list returned unread mail: ${mail.id}`);
     }
 }
 

@@ -3,7 +3,7 @@
 #[cfg(test)]
 mod tests;
 
-use poprako_orchestra::{AtLeast, Nucl, OperRun as _, OperStep as _};
+use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
@@ -68,7 +68,7 @@ pub async fn register<N, C, R, A, D>(
     instr: RegisterAuthInstr,
 ) -> BaseRest<RegisterAuthVal>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
@@ -189,7 +189,7 @@ pub async fn login<C, R, A>(
     instr: LoginAuthInstr,
 ) -> BaseRest<LoginAuthVal>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: UserRepo<C>,
     A: TokenAuth,
 {

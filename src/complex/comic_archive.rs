@@ -19,9 +19,9 @@ use crate::util::next_snowflake_id;
 use crate::value::chapter::{Stage, StagePhase};
 use crate::value::comic_archive::{
     ArchivedAssignmentPayload, ArchivedChapterPayload,
-    ArchivedChapterWorkflowRecordPayload, ArchivedComicPayload,
-    ArchivedPagePayload, ArchivedUnitPayload, ArchivedUserPayload,
-    ArchivedWorksetPayload,
+    ArchivedChapterWorkflowRecordDetail, ArchivedChapterWorkflowRecordPayload,
+    ArchivedComicPayload, ArchivedPagePayload, ArchivedUnitPayload,
+    ArchivedUserPayload, ArchivedWorksetPayload,
 };
 
 /// Constructs one immutable comic archive record from a fully locked snapshot.
@@ -305,8 +305,10 @@ fn build_chapter_payload(
             .map(|record_info| ArchivedChapterWorkflowRecordPayload {
                 id: record_info.id.clone(),
                 actor_user_id: record_info.actor_user_id.clone(),
-                kind: record_info.kind.as_str().to_string(),
-                payload: record_info.payload.to_storage_json(),
+                kind: record_info.kind,
+                payload: ArchivedChapterWorkflowRecordDetail::from(
+                    &record_info.payload,
+                ),
                 created_at: record_info.created_at.to_unix_milli(),
             })
             .collect(),

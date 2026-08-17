@@ -5,7 +5,7 @@
 mod tests;
 
 use poprako_orchestra::{
-    AtLeast, Nucl, OperRun as _, OperStep as _, run_proxy,
+    AtLeast, Context, Nucl, OperRun as _, OperStep as _, run_proxy,
 };
 use tracing::instrument;
 
@@ -38,7 +38,7 @@ pub async fn list_infos<C, R, I>(
     instr: ListAnnouncementInfosInstr,
 ) -> BaseRest<Vec<AnnouncementInfoView>>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: AnnouncementRepo<C> + MemberRepo<C> + Sync,
     I: ImagePool,
 {
@@ -81,7 +81,7 @@ pub async fn create<N, C, R>(
     instr: CreateAnnouncementInstr,
 ) -> BaseRest<CreateAnnouncementVal>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,

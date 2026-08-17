@@ -3,12 +3,13 @@ import { createHash } from "node:crypto";
 
 import { testEnv } from "../config/env.js";
 import {
+    expectError,
     expectNoContent,
     expectSuccessData,
     expectSuccessList,
 } from "./assertions.js";
 import { ApiClient, clientFor } from "./apiClient.js";
-import type { SuccessBody } from "./apiClient.js";
+import type { ErrorBody, SuccessBody } from "./apiClient.js";
 import type {
     AnnouncementInfoView,
     ArchiveComicVal,
@@ -315,9 +316,9 @@ export async function createMemberInvitation(
 export async function listMemberInvitations(
     api: ApiClient,
     teamId: string,
-    pending: boolean,
+    isPending: boolean,
 ): Promise<MemberInvitationInfoView[]> {
-    const query = `?pending=${pending}&offset=0&limit=100`;
+    const query = `?is_pending=${isPending}&offset=0&limit=100`;
 
     return expectSuccessList(
         await api.get<SuccessBody<MemberInvitationInfoView[]>>(
@@ -551,7 +552,7 @@ export async function getPinnedChapter(
 export async function patchChapter(
     api: ApiClient,
     chapterId: string,
-    patch: { subtitle?: string; pin?: boolean },
+    patch: { subtitle?: string },
 ): Promise<void> {
     const body: Record<string, unknown> = { id: chapterId };
 
@@ -559,11 +560,13 @@ export async function patchChapter(
         body.subtitle = patch.subtitle;
     }
 
-    if (patch.pin !== undefined) {
-        body.pin = patch.pin;
-    }
-
     expectNoContent(await api.patch<null>(`/api/v1/chapters/${chapterId}`, body));
+}
+
+export async function markChapterPinned(api: ApiClient, chapterId: string): Promise<void> {
+    expectNoContent(
+        await api.post<null>(`/api/v1/chapters/${chapterId}/mark-pinned`),
+    );
 }
 
 export async function advanceStage(
@@ -714,6 +717,10 @@ export interface UnitRevisionInput {
     proofread_text?: string | null;
 }
 
+export type PatchInput<T> =
+    | { type: "assign"; value: T }
+    | { type: "clear" };
+
 export interface UnitCreateEdit {
     edit: "create";
     local_id: string;
@@ -727,11 +734,11 @@ export interface UnitCreateEdit {
 export interface UnitPatchEdit {
     edit: "patch";
     id: string;
-    next_id?: string | null;
+    next_id?: PatchInput<string>;
     is_bubble?: boolean | null;
     coord?: UnitCoordInput | null;
-    translation?: UnitTranslationInput | null;
-    revision?: UnitRevisionInput | null;
+    translation?: PatchInput<UnitTranslationInput>;
+    revision?: PatchInput<UnitRevisionInput>;
 }
 
 export interface UnitDeleteEdit {
@@ -776,7 +783,9 @@ export function updateUnit(unitId: string, patch: UnitPatchFixture): UnitPatchEd
     };
 
     if ("next_id" in patch) {
-        edit.next_id = patch.next_id ?? null;
+        edit.next_id = patch.next_id == null
+            ? { type: "clear" }
+            : { type: "assign", value: patch.next_id };
     }
 
     if ("is_bubble" in patch) {
@@ -793,14 +802,20 @@ export function updateUnit(unitId: string, patch: UnitPatchFixture): UnitPatchEd
     if ("translated_text" in patch) {
         edit.translation =
             patch.translated_text == null
-                ? null
-                : { translated_text: patch.translated_text };
+                ? { type: "clear" }
+                : {
+                    type: "assign",
+                    value: { translated_text: patch.translated_text },
+                };
     }
 
     if ("proofread_text" in patch || patch.is_proofread === true) {
         edit.revision = {
-            is_proofread: patch.is_proofread ?? false,
-            proofread_text: patch.proofread_text ?? null,
+            type: "assign",
+            value: {
+                is_proofread: patch.is_proofread ?? false,
+                proofread_text: patch.proofread_text ?? null,
+            },
         };
     }
 
@@ -816,14 +831,26 @@ export async function savePageUnits(
     pageId: string,
     edits: UnitEdit[],
 ): Promise<ListPageUnitInfosVal> {
-    expectNoContent(
-        await api.post<null>(
+    const maxConflictRetries = 5;
+
+    for (let attempt = 0; attempt <= maxConflictRetries; attempt++) {
+        const response = await api.post<ErrorBody>(
             `/api/v1/pages/${pageId}/units/save`,
             edits,
-        ),
-    );
+        );
 
-    return listPageUnits(api, pageId);
+        if (response.status === 409) {
+            expectError(response, 409, 8);
+
+            continue;
+        }
+
+        expectNoContent(response);
+
+        return listPageUnits(api, pageId);
+    }
+
+    throw new Error(`unit save still conflicts after ${maxConflictRetries} client retries`);
 }
 
 export async function listPageUnits(api: ApiClient, pageId: string): Promise<ListPageUnitInfosVal> {
@@ -915,9 +942,9 @@ export async function createAssignmentInvitation(
 export async function listChapterAssignmentInvitations(
     api: ApiClient,
     chapterId: string,
-    pending: boolean,
+    isPending: boolean,
 ): Promise<AssignmentInvitationInfoView[]> {
-    const query = `?pending=${pending}&offset=0&limit=100`;
+    const query = `?is_pending=${isPending}&offset=0&limit=100`;
 
     return expectSuccessList(
         await api.get<SuccessBody<AssignmentInvitationInfoView[]>>(

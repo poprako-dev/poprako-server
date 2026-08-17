@@ -1,6 +1,6 @@
 //! Use case for listing immutable chapter workflow records.
 
-use poprako_orchestra::{OperRun as _, run_proxy};
+use poprako_orchestra::{Context, OperRun as _, run_proxy};
 use tracing::instrument;
 
 use crate::complex::chapter::ChapterPermComplex;
@@ -24,7 +24,7 @@ pub async fn list_workflow_record_infos<C, R>(
     instr: ListChapterWorkflowRecordInfosInstr,
 ) -> BaseRest<Vec<ChapterWorkflowRecordInfoView>>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: ChapterWorkflowRecordRepo<C> + MemberRepo<C> + TeamRepo<C> + Sync,
 {
     ChapterPermComplex::ensure_user_can_get_info(

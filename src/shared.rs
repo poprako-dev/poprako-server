@@ -9,6 +9,8 @@ pub mod result;
 ))]
 pub mod test_rdb;
 
+use std::env::var;
+
 use std::marker::PhantomData;
 use std::sync::Arc;
 
@@ -52,7 +54,7 @@ impl RdbCore {
     /// Returns an error if `DATABASE_URL` is not set or the pool cannot be built.
     pub fn from_env() -> anyhow::Result<Self> {
         //
-        let database_url = std::env::var("DATABASE_URL")
+        let database_url = var("DATABASE_URL")
             .with_context(|| "[RdbCore::from_env] DATABASE_URL is not set")?;
 
         Self::from_database_url(&database_url).map_err(|err| match err {

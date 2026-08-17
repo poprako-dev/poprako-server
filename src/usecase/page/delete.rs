@@ -1,4 +1,4 @@
-use poprako_orchestra::{AtLeast, Nucl, OperStep as _, run_proxy};
+use poprako_orchestra::{AtLeast, Context, Nucl, OperStep as _, run_proxy};
 use tracing::instrument;
 
 use crate::complex::image::ImageComplex;
@@ -31,7 +31,7 @@ pub async fn delete<N, C, R, P>(
     chapter_id: String,
 ) -> BaseRest<()>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,

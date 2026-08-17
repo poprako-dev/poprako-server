@@ -1,17 +1,21 @@
 //! Calendar-month values used by comic archive export.
 
+mod workflow_record;
+
 #[cfg(test)]
 mod tests;
 
 use std::collections::HashSet;
 
 use serde::Serialize;
-use serde_json::Value;
 use time::{Date, Month, OffsetDateTime, PrimitiveDateTime, Time};
 
 use poprako_util::i18n::trl;
 
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::value::chapter_workflow_record::ChapterWorkflowRecordKind;
+
+pub use workflow_record::ArchivedChapterWorkflowRecordDetail;
 
 /// Maximum number of month slots accepted by one export request.
 pub const MAX_EXPORT_MONTHS: usize = 12;
@@ -113,9 +117,9 @@ pub struct ArchivedChapterWorkflowRecordPayload {
     /// User that caused the record, absent for system work.
     pub actor_user_id: Option<String>,
     /// Stable event kind.
-    pub kind: String,
+    pub kind: ChapterWorkflowRecordKind,
     /// Structured, language-neutral details.
-    pub payload: Value,
+    pub payload: ArchivedChapterWorkflowRecordDetail,
     /// Unix timestamp of record creation.
     pub created_at: i64,
 }

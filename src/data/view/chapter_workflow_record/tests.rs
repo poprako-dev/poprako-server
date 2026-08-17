@@ -2,6 +2,7 @@ use super::*;
 
 use time::OffsetDateTime;
 
+use crate::value::chapter_workflow_record::ChapterWorkflowRecordOrigin;
 use crate::value::role::RoleField;
 
 // workflow_record_view_renders_each_payload_without_actor_data(ChapterWorkflowRecordInfoView)(positive): every structured payload has localized text without user-profile resolution.
@@ -63,8 +64,8 @@ fn workflow_record_view_renders_each_payload_without_actor_data() {
 
         assert!(!workflow_record_view.text.contains("subject-user"));
 
-        assert!(workflow_record_view.payload.is_object());
+        let serialized = serde_json::to_value(&workflow_record_view).unwrap();
 
-        assert!(workflow_record_view.payload.get("type").is_none());
+        assert!(serialized.get("payload").is_none());
     }
 }

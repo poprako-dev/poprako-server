@@ -106,7 +106,6 @@ export interface ChapterWorkflowRecordInfoView {
     chapter_id: string;
     actor_user_id: string | null;
     kind: string;
-    payload: Record<string, unknown>;
     text: string;
     created_at: number;
 }
@@ -159,7 +158,7 @@ export interface MemberInvitationInfoView {
     invitor: UserInfoView | null;
     invitee_qid: string;
     code: string;
-    pending: boolean;
+    is_pending: boolean;
     roles: number;
 }
 
@@ -175,11 +174,13 @@ export interface AssignmentInfoView {
 export interface AssignmentInvitationInfoView {
     id: string;
     chapter_id: string;
-    invitor_id: string;
+    inviter_id: string;
     invitee_qid: string;
     code: string;
-    pending: boolean;
+    is_pending: boolean;
     roles: number;
+    created_at: number;
+    updated_at: number;
 }
 
 export interface AnnouncementInfoView {
@@ -203,10 +204,9 @@ export interface CommentInfoView {
 
 export interface SystemMailInfoView {
     id: string;
-    user_id: string;
     title: string;
     content: string;
-    read: boolean;
+    is_read: boolean;
     created_at: number;
 }
 

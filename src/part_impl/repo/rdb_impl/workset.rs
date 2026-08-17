@@ -6,7 +6,7 @@ pub mod tests;
 
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
-use poprako_orchestra::{Run, Step};
+use poprako_orchestra::{AtLeast, Level, Run, Step};
 use time::OffsetDateTime;
 use tracing::instrument;
 
@@ -267,8 +267,8 @@ impl Run<UpdateWorkset<'_>> for HybRepo {
 
 impl<L> Step<GetWorksetInfo<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Use BaseError for transactional context operations.
     type Level = crate::part::nucl::RepeatableRead;
@@ -289,8 +289,8 @@ where
 
 impl<L> Step<ListWorksetInfos<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Use BaseError for transactional context operations.
     type Level = crate::part::nucl::RepeatableRead;
@@ -311,8 +311,8 @@ where
 
 impl<L> Step<GetWorksetInfoExcluded<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Use BaseError for transactional context operations.
     type Level = crate::part::nucl::RepeatableRead;
@@ -333,8 +333,8 @@ where
 
 impl<L> Step<ListWorksetInfosExcluded<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Use BaseError for transactional context operations.
     type Level = crate::part::nucl::RepeatableRead;
@@ -355,8 +355,8 @@ where
 
 impl<L> Step<CreateWorkset<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Use BaseError for transactional context operations.
     type Level = crate::part::nucl::RepeatableRead;
@@ -377,8 +377,8 @@ where
 
 impl<L> Step<DeleteWorkset<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Use BaseError for transactional context operations.
     type Level = crate::part::nucl::RepeatableRead;
@@ -399,8 +399,8 @@ where
 
 impl<L> Step<AllocWorksetComicIndex<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Use BaseError for transactional context operations.
     type Level = crate::part::nucl::RepeatableRead;
@@ -421,8 +421,8 @@ where
 
 impl<L> Step<UpdateWorksetComicCount<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Use BaseError for transactional context operations.
     type Level = crate::part::nucl::RepeatableRead;

@@ -1,4 +1,4 @@
-use poprako_orchestra::{Run, Step};
+use poprako_orchestra::{AtLeast, Level, Run, Step};
 use tracing::instrument;
 
 use crate::model::read::proj::member::MemberInfo;
@@ -63,8 +63,8 @@ impl Run<GetMemberInfo<'_, '_>> for HybRepo {
 
 impl<L> Step<CreateMember<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Create a new member row inside the active transaction context.
     type Level = crate::part::nucl::RepeatableRead;
@@ -85,8 +85,8 @@ where
 
 impl<L> Step<UpdateMember<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Apply an in-transaction member update request.
     //
@@ -125,8 +125,8 @@ where
 
 impl<L> Step<ListMemberInfos<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Transactional list path for member info queries.
     //
@@ -160,8 +160,8 @@ where
 
 impl<L> Step<FindMemberInfo<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Transactional lookup for a member by `(user_id, team_id)`.
     type Level = crate::part::nucl::RepeatableRead;
@@ -194,8 +194,8 @@ where
 
 impl<L> Step<GetMemberInfo<'_, '_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Transactional lookup for a full member info by id and requested includes.
     type Level = crate::part::nucl::RepeatableRead;
@@ -222,8 +222,8 @@ where
 
 impl<L> Step<ListMemberInfosExcluded<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Transactional list for member infos excluding one side of relation.
     //
@@ -256,8 +256,8 @@ where
 
 impl<L> Step<DeleteMember<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Transactional delete operation for a single member by id.
     type Level = crate::part::nucl::RepeatableRead;

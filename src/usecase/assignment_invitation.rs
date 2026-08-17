@@ -9,7 +9,7 @@ mod tests;
 
 use std::time::Duration;
 
-use poprako_orchestra::{AtLeast, Nucl, OperRun as _, OperStep as _};
+use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
@@ -74,7 +74,7 @@ pub async fn list_infos<C, R>(
     instr: ListAssignmentInvitationInfosInstr,
 ) -> BaseRest<Vec<AssignmentInvitationInfoView>>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: AssignmentInvitationRepo<C> + AssignmentRepo<C> + Sync,
 {
     ensure_user_admin(repo, &token.user_id, &instr.chapter_id).await?;
@@ -108,7 +108,7 @@ pub async fn create<N, C, R, P>(
     instr: CreateAssignmentInvitationInstr,
 ) -> BaseRest<CreateAssignmentInvitationVal>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
@@ -229,7 +229,7 @@ pub async fn delete<N, C, R>(
     id: String,
 ) -> BaseRest<()>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
@@ -285,7 +285,7 @@ pub async fn join<N, C, R, I>(
     instr: JoinAssignmentInvitationInstr,
 ) -> BaseRest<AssignmentInfoView>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
@@ -515,7 +515,7 @@ async fn ensure_user_admin<C, R>(
     chapter_id: &str,
 ) -> BaseRest<()>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: AssignmentRepo<C>,
 {
     let assignment_info = FindAssignmentInfo::ChapterUser {

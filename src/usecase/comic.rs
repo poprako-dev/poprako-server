@@ -10,7 +10,7 @@ mod reserve;
 pub mod tests;
 
 use poprako_orchestra::{
-    AtLeast, Nucl, OperRun as _, OperStep as _, run_proxy, step_proxy,
+    AtLeast, Context, Nucl, OperRun as _, OperStep as _, run_proxy, step_proxy,
 };
 use tracing::instrument;
 
@@ -101,7 +101,7 @@ pub async fn create<N, C, R>(
     instr: CreateComicInstr,
 ) -> BaseRest<CreateComicVal>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
@@ -247,7 +247,7 @@ pub async fn get_info<C, R, I>(
     id: String,
 ) -> BaseRest<ComicInfoView>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: ComicRepo<C>
         + MemberRepo<C>
         + TeamRepo<C>
@@ -302,7 +302,7 @@ pub async fn update_info<C, R>(
     instr: UpdateComicInfoInstr,
 ) -> BaseRest<()>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: ComicRepo<C> + TeamRepo<C> + MemberRepo<C> + Sync,
 {
     ComicPermComplex::ensure_user_can_update_info(
@@ -350,7 +350,7 @@ pub async fn mark_cover_uploaded<N, C, R, I>(
     instr: MarkComicCoverUploadedInstr,
 ) -> BaseRest<()>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
@@ -498,7 +498,7 @@ pub async fn delete<N, C, R, P>(
     id: String,
 ) -> BaseRest<()>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<Serializable>,

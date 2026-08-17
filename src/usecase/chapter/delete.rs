@@ -1,6 +1,6 @@
 //! Chapter deletion use case.
 
-use poprako_orchestra::{AtLeast, Nucl, run_proxy, step_proxy};
+use poprako_orchestra::{AtLeast, Context, Nucl, run_proxy, step_proxy};
 use tracing::instrument;
 
 use crate::complex::chapter::{ChapterComplex, ChapterPermComplex};
@@ -41,7 +41,7 @@ pub async fn delete<N, C, R, P>(
     id: String,
 ) -> BaseRest<()>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<Serializable>,

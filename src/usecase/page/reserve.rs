@@ -3,7 +3,7 @@
 use std::collections::HashSet;
 use std::time::Duration;
 
-use poprako_orchestra::{AtLeast, Nucl, OperStep as _, run_proxy};
+use poprako_orchestra::{AtLeast, Context, Nucl, OperStep as _, run_proxy};
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
@@ -72,7 +72,7 @@ pub async fn reserve_chapter_pages<N, C, R, P, I>(
     instr: ReserveChapterPagesInstr,
 ) -> BaseRest<ReserveChapterPagesVal>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,

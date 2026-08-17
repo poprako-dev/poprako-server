@@ -1,4 +1,4 @@
-use poprako_orchestra::{Run, Step};
+use poprako_orchestra::{AtLeast, Level, Run, Step};
 use tracing::instrument;
 
 use crate::model::read::proj::team::TeamInfo;
@@ -47,8 +47,8 @@ impl Run<UpdateTeam<'_>> for HybRepo {
 
 impl<L> Step<CreateTeam<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Convert repository step failures to base error during transaction execution.
     type Level = crate::part::nucl::RepeatableRead;
@@ -69,8 +69,8 @@ where
 
 impl<L> Step<UpdateTeam<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Keep transactional team updates on the same base error contract.
     type Level = crate::part::nucl::RepeatableRead;
@@ -109,8 +109,8 @@ where
 
 impl<L> Step<ReserveTeamAvatar<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Report avatar-reservation validation and mutation errors through base error.
     type Level = crate::part::nucl::RepeatableRead;
@@ -133,8 +133,8 @@ where
 
 impl<L> Step<GetTeamInfoExcluded<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Preserve consistent error typing for locked team detail fetches.
     type Level = crate::part::nucl::RepeatableRead;
@@ -161,8 +161,8 @@ where
 
 impl<L> Step<LockTeam<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Keep lock contention errors on the shared repository error type.
     type Level = crate::part::nucl::RepeatableRead;
@@ -183,8 +183,8 @@ where
 
 impl<L> Step<DeleteTeam<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Use the common base error for hard delete operations in transactions.
     type Level = crate::part::nucl::RepeatableRead;
@@ -205,8 +205,8 @@ where
 
 impl<L> Step<AllocTeamWorksetIndex<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Keep index allocation failures mapped to repository base errors.
     type Level = crate::part::nucl::RepeatableRead;

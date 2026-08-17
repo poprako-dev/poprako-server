@@ -1,10 +1,13 @@
 use super::*;
 
-use crate::value::role::RoleField;
+use crate::value::chapter::{Stage, StagePhase};
+use crate::value::chapter_port::TranslationFormat;
+use crate::value::chapter_workflow_record::ChapterWorkflowRecordOrigin;
+use crate::value::role::{RoleField, RoleMask};
 
-// payloads_round_trip_through_tagged_and_storage_forms(ChapterWorkflowRecordPayload)(positive): every typed payload decodes from its separate kind and JSON-object storage fields.
+// payloads_round_trip_through_rdb_storage_forms(ChapterWorkflowRecordPayload)(positive): every typed payload decodes from its separate kind and exact JSONB object fields.
 #[test]
-fn payloads_round_trip_through_tagged_and_storage_forms() {
+fn payloads_round_trip_through_rdb_storage_forms() {
     let translator_role = RoleMask::from(RoleField::TRANSLATOR);
 
     let payloads = vec![
@@ -45,42 +48,30 @@ fn payloads_round_trip_through_tagged_and_storage_forms() {
     ];
 
     for payload in payloads {
-        let tagged_json = serde_json::to_value(&payload).unwrap();
-
-        let tagged_round_trip =
-            serde_json::from_value::<ChapterWorkflowRecordPayload>(tagged_json)
-                .unwrap();
-
-        assert_eq!(tagged_round_trip, payload);
-
-        let storage_json = payload.to_storage_json();
+        let storage_json = encode_payload(&payload);
 
         assert!(storage_json.is_object());
 
         assert!(storage_json.get("type").is_none());
 
         let storage_round_trip =
-            ChapterWorkflowRecordPayload::from_storage_json(
-                payload.kind(),
-                storage_json,
-            )
-            .unwrap();
+            decode_payload(payload.kind(), storage_json).unwrap();
 
         assert_eq!(storage_round_trip, payload);
     }
 }
 
-// storage_payload_rejects_kind_mismatch_and_extra_fields(ChapterWorkflowRecordPayload)(negative): persisted payloads must exactly match their separate kind.
+// storage_payload_rejects_kind_mismatch_and_extra_fields(ChapterWorkflowRecordPayload)(negative): persisted JSONB payloads must exactly match their separate kind.
 #[test]
 fn storage_payload_rejects_kind_mismatch_and_extra_fields() {
-    let mismatch = ChapterWorkflowRecordPayload::from_storage_json(
+    let mismatch = decode_payload(
         ChapterWorkflowRecordKind::ChapterCreated,
         serde_json::json!({ "unexpected": true }),
     );
 
     assert!(mismatch.is_err());
 
-    let missing_field = ChapterWorkflowRecordPayload::from_storage_json(
+    let missing_field = decode_payload(
         ChapterWorkflowRecordKind::StageTransitioned,
         serde_json::json!({ "stage": "translate" }),
     );

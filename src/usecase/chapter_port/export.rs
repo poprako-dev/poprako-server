@@ -7,7 +7,7 @@ mod tests;
 use std::collections::HashMap;
 
 use poprako_orchestra::{
-    AtLeast, Nucl, OperRun as _, OperStep as _, run_proxy,
+    AtLeast, Context, Nucl, OperRun as _, OperStep as _, run_proxy,
 };
 use tracing::instrument;
 
@@ -56,7 +56,7 @@ pub async fn export<N, C, R>(
     chapter_id: String,
 ) -> BaseRest<ExportChapterTranslationVal>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
@@ -159,7 +159,7 @@ pub async fn export_label_plus<N, C, R>(
     chapter_id: String,
 ) -> BaseRest<String>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
@@ -276,7 +276,7 @@ async fn persist_export_record<N, C, R>(
     format: TranslationFormat,
 ) -> BaseRest<()>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,

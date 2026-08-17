@@ -52,9 +52,6 @@ pub use api::http::state::AppHarn;
 #[doc(hidden)]
 pub use complex::user::UserComplex;
 pub use config::AppConfig;
-#[cfg(feature = "swagger")]
-#[doc(hidden)]
-pub use data::view::chapter_workflow_record::ChapterWorkflowRecordPayloadView;
 pub use extra::sched::Sched;
 pub use harn::{Harn, NuclProxy};
 pub use log::init_log;

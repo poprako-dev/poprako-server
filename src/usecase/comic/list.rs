@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use poprako_orchestra::{OperRun as _, run_proxy};
+use poprako_orchestra::{Context, OperRun as _, run_proxy};
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
@@ -36,7 +36,7 @@ pub async fn list_infos<C, R, I>(
     instr: ListComicInfosInstr,
 ) -> BaseRest<ListComicInfosVal>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: ComicRepo<C>
         + WorksetRepo<C>
         + MemberRepo<C>

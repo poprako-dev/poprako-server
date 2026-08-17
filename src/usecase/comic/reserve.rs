@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use poprako_orchestra::{AtLeast, Nucl, OperStep as _, run_proxy};
+use poprako_orchestra::{AtLeast, Context, Nucl, OperStep as _, run_proxy};
 use tracing::instrument;
 
 use crate::complex::comic::{ComicComplex, ComicPermComplex};
@@ -32,7 +32,7 @@ pub async fn reserve_cover<N, C, R, P, I>(
     instr: ReserveComicCoverInstr,
 ) -> BaseRest<ReserveComicCoverVal>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,

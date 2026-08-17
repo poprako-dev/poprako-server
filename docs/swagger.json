@@ -2200,6 +2200,9 @@
           "403": {
             "description": "No perm to save units in this page"
           },
+          "409": {
+            "description": "Serializable conflict; retry the complete request"
+          },
           "422": {
             "description": "Invalid Unit edit"
           }
@@ -4242,69 +4245,6 @@
           }
         }
       },
-      "ChapterWorkflowRecordAssignmentCreatedPayloadView": {
-        "type": "object",
-        "description": "OpenAPI schema for a newly created assignment payload.",
-        "required": [
-          "subject_user_id",
-          "roles"
-        ],
-        "properties": {
-          "roles": {
-            "$ref": "#/components/schemas/RoleMask",
-            "description": "Initial assignment roles."
-          },
-          "subject_user_id": {
-            "type": "string",
-            "description": "User receiving the assignment."
-          }
-        }
-      },
-      "ChapterWorkflowRecordAssignmentDeletedPayloadView": {
-        "type": "object",
-        "description": "OpenAPI schema for a deleted assignment payload.",
-        "required": [
-          "subject_user_id",
-          "previous_roles"
-        ],
-        "properties": {
-          "previous_roles": {
-            "$ref": "#/components/schemas/RoleMask",
-            "description": "Roles before deletion."
-          },
-          "subject_user_id": {
-            "type": "string",
-            "description": "User whose assignment was removed."
-          }
-        }
-      },
-      "ChapterWorkflowRecordAssignmentRolesUpdatedPayloadView": {
-        "type": "object",
-        "description": "OpenAPI schema for a changed assignment role mask payload.",
-        "required": [
-          "subject_user_id",
-          "previous_roles",
-          "next_roles"
-        ],
-        "properties": {
-          "next_roles": {
-            "$ref": "#/components/schemas/RoleMask",
-            "description": "Roles after the update."
-          },
-          "previous_roles": {
-            "$ref": "#/components/schemas/RoleMask",
-            "description": "Roles before the update."
-          },
-          "subject_user_id": {
-            "type": "string",
-            "description": "User whose roles changed."
-          }
-        }
-      },
-      "ChapterWorkflowRecordEmptyPayloadView": {
-        "type": "object",
-        "description": "OpenAPI empty object schema for payloads without parameters."
-      },
       "ChapterWorkflowRecordInfoView": {
         "type": "object",
         "description": "API representation of one immutable chapter workflow record.",
@@ -4312,7 +4252,6 @@
           "id",
           "chapter_id",
           "kind",
-          "payload",
           "text",
           "created_at"
         ],
@@ -4340,10 +4279,6 @@
           "kind": {
             "$ref": "#/components/schemas/ChapterWorkflowRecordKind",
             "description": "Stable event kind for client-side branching."
-          },
-          "payload": {
-            "$ref": "#/components/schemas/ChapterWorkflowRecordPayloadView",
-            "description": "Structured, language-neutral event parameters."
           },
           "text": {
             "type": "string",
@@ -4377,127 +4312,6 @@
           "translation-export",
           "raw-provide-check"
         ]
-      },
-      "ChapterWorkflowRecordPayloadView": {
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/ChapterWorkflowRecordEmptyPayloadView",
-            "description": "No additional fields for chapter creation, pinning, or unpinning."
-          },
-          {
-            "$ref": "#/components/schemas/ChapterWorkflowRecordSubtitleUpdatedPayloadView",
-            "description": "Previous and next subtitle values."
-          },
-          {
-            "$ref": "#/components/schemas/ChapterWorkflowRecordAssignmentCreatedPayloadView",
-            "description": "Initial assignment roles."
-          },
-          {
-            "$ref": "#/components/schemas/ChapterWorkflowRecordAssignmentRolesUpdatedPayloadView",
-            "description": "Assignment role-mask transition."
-          },
-          {
-            "$ref": "#/components/schemas/ChapterWorkflowRecordAssignmentDeletedPayloadView",
-            "description": "Assignment roles retained before deletion."
-          },
-          {
-            "$ref": "#/components/schemas/ChapterWorkflowRecordTranslationImportedPayloadView",
-            "description": "Translation import summary."
-          },
-          {
-            "$ref": "#/components/schemas/ChapterWorkflowRecordTranslationExportedPayloadView",
-            "description": "Translation export format."
-          },
-          {
-            "$ref": "#/components/schemas/ChapterWorkflowRecordStageTransitionedPayloadView",
-            "description": "Workflow-stage phase transition."
-          }
-        ],
-        "description": "OpenAPI union for the language-neutral workflow record payload object."
-      },
-      "ChapterWorkflowRecordStageTransitionedPayloadView": {
-        "type": "object",
-        "description": "OpenAPI schema for a workflow-stage transition payload.",
-        "required": [
-          "stage",
-          "previous_phase",
-          "next_phase",
-          "origin"
-        ],
-        "properties": {
-          "next_phase": {
-            "$ref": "#/components/schemas/StagePhase",
-            "description": "Phase after the transition."
-          },
-          "origin": {
-            "$ref": "#/components/schemas/ChapterWorkflowRecordOrigin",
-            "description": "Action that originated the transition."
-          },
-          "previous_phase": {
-            "$ref": "#/components/schemas/StagePhase",
-            "description": "Phase before the transition."
-          },
-          "stage": {
-            "$ref": "#/components/schemas/Stage",
-            "description": "Changed workflow stage."
-          }
-        }
-      },
-      "ChapterWorkflowRecordSubtitleUpdatedPayloadView": {
-        "type": "object",
-        "description": "OpenAPI schema for a chapter subtitle change payload.",
-        "required": [
-          "previous_subtitle",
-          "next_subtitle"
-        ],
-        "properties": {
-          "next_subtitle": {
-            "type": "string",
-            "description": "Subtitle after the update."
-          },
-          "previous_subtitle": {
-            "type": "string",
-            "description": "Subtitle before the update."
-          }
-        }
-      },
-      "ChapterWorkflowRecordTranslationExportedPayloadView": {
-        "type": "object",
-        "description": "OpenAPI schema for a translation export payload.",
-        "required": [
-          "format"
-        ],
-        "properties": {
-          "format": {
-            "$ref": "#/components/schemas/TranslationFormat",
-            "description": "Generated content format."
-          }
-        }
-      },
-      "ChapterWorkflowRecordTranslationImportedPayloadView": {
-        "type": "object",
-        "description": "OpenAPI schema for a translation import summary payload.",
-        "required": [
-          "format",
-          "imported_page_count",
-          "imported_unit_count"
-        ],
-        "properties": {
-          "format": {
-            "$ref": "#/components/schemas/TranslationFormat",
-            "description": "Imported content format."
-          },
-          "imported_page_count": {
-            "type": "integer",
-            "format": "int32",
-            "description": "Number of imported pages."
-          },
-          "imported_unit_count": {
-            "type": "integer",
-            "format": "int32",
-            "description": "Number of imported units."
-          }
-        }
       },
       "ComicInclOpt": {
         "type": "string",
@@ -7368,7 +7182,6 @@
                 "id",
                 "chapter_id",
                 "kind",
-                "payload",
                 "text",
                 "created_at"
               ],
@@ -7396,10 +7209,6 @@
                 "kind": {
                   "$ref": "#/components/schemas/ChapterWorkflowRecordKind",
                   "description": "Stable event kind for client-side branching."
-                },
-                "payload": {
-                  "$ref": "#/components/schemas/ChapterWorkflowRecordPayloadView",
-                  "description": "Structured, language-neutral event parameters."
                 },
                 "text": {
                   "type": "string",
@@ -9208,15 +9017,6 @@
         "enum": [
           "advance",
           "revert"
-        ]
-      },
-      "StagePhase": {
-        "type": "string",
-        "description": "Phase a workflow stage can be in.",
-        "enum": [
-          "pending",
-          "active",
-          "completed"
         ]
       },
       "SystemMailInfoView": {

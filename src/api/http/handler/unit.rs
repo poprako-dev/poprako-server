@@ -16,7 +16,7 @@ use crate::data::instr::unit::{
 };
 use crate::data::val::unit::ListPageUnitInfosVal;
 use crate::model::shared::user::UserToken;
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::{RepeatableRead, Serializable};
 use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
 use crate::usecase;
@@ -60,6 +60,7 @@ pub async fn list_infos(
     request_body = Vec<UnitEditInstr>,
     responses(
         (status = 204, description = "Unit edits saved"),
+        (status = 409, description = "Serializable conflict; retry the complete request"),
         (status = 403, description = "No perm to save units in this page"),
         (status = 422, description = "Invalid Unit edit"),
     ),
@@ -74,8 +75,8 @@ pub async fn save_infos(
     //
     let instr = SavePageUnitEditsInstr { page_id, edits };
 
-    usecase::unit::save_edits::<_, RdbContext<RepeatableRead>, HybRepo>(
-        (harn.nucl().repeatable_read(), harn.repo()),
+    usecase::unit::save_edits::<_, RdbContext<Serializable>, HybRepo>(
+        (harn.nucl().serializable(), harn.repo()),
         user_token,
         instr,
     )

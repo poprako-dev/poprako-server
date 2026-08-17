@@ -1,5 +1,7 @@
 //! Event dispatcher for async side-effect handlers.
 
+use poprako_orchestra::Context;
+
 use tracing::instrument;
 
 use crate::part::effect::event::Event;
@@ -14,7 +16,7 @@ use crate::part_impl::effect::async_impl::{chapter, user};
 #[instrument(level = "info", skip_all)]
 pub async fn dispatch<C, R>(repo: &R, event: Event)
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: AssignmentRepo<C>
         + ChapterRepo<C>
         + TeamRepo<C>

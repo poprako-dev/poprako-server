@@ -1,4 +1,4 @@
-use poprako_orchestra::{Run, Step};
+use poprako_orchestra::{AtLeast, Level, Run, Step};
 use tracing::instrument;
 
 use crate::model::read::proj::assignment_invitation::AssignmentInvitationInfo;
@@ -53,8 +53,8 @@ impl Run<GetAssignmentInvitationInfo<'_>> for HybRepo {
 
 impl<L> Step<CreateAssignmentInvitation<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Create invitation rows and return resulting invitation info in tx scope.
     type Level = crate::part::nucl::RepeatableRead;
@@ -74,8 +74,8 @@ where
 
 impl<L> Step<GetAssignmentInvitationInfo<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Transactional fetch for one invitation info by id.
     type Level = crate::part::nucl::RepeatableRead;
@@ -101,8 +101,8 @@ where
 
 impl<L> Step<GetAssignmentInvitationInfoExcluded<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Transactional lookup for invitation by code while skipping soft-excluded rows.
     type Level = crate::part::nucl::RepeatableRead;
@@ -122,8 +122,8 @@ where
 
 impl<L> Step<MarkAssignmentInvitationUsed<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Transactional state transition that marks a pending invitation as used.
     type Level = crate::part::nucl::RepeatableRead;
@@ -143,8 +143,8 @@ where
 
 impl<L> Step<PurgeExpiredAssignmentInvitation<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Transactional delete/update behavior for purging expired invitations.
     type Level = crate::part::nucl::RepeatableRead;
@@ -180,8 +180,8 @@ impl Run<PurgeExpiredAssignmentInvitation<'_>> for HybRepo {
 
 impl<L> Step<DeleteAssignmentInvitations<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Transactional delete for invitation records.
     //

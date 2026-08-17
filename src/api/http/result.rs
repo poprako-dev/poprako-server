@@ -10,6 +10,8 @@
 // HTTP result test fixtures are compiled only for tests.
 mod tests;
 
+use std::result::Result;
+
 use std::num::NonZeroU16;
 
 use axum::Json;
@@ -243,10 +245,10 @@ impl IntoResponse for NoContent {
 }
 
 /// Result of a valued success response.
-pub type HttpResult<T> = std::result::Result<HttpBody<T>, HttpError>;
+pub type HttpResult<T> = Result<HttpBody<T>, HttpError>;
 
 /// Result of an empty success response (`204 No Content`).
-pub type HttpNoContent = std::result::Result<NoContent, HttpError>;
+pub type HttpNoContent = Result<NoContent, HttpError>;
 
 /// Converts a usecase value into a valued [`HttpResult`] with the given status.
 pub fn accept<T>(data: T, status_code: StatusCode) -> HttpResult<T>
@@ -279,6 +281,6 @@ where
 }
 
 /// Returns a `204 No Content` result with an empty body.
-pub fn no_content() -> std::result::Result<NoContent, HttpError> {
+pub fn no_content() -> Result<NoContent, HttpError> {
     Ok(NoContent::new())
 }

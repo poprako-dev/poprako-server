@@ -1,5 +1,7 @@
 //! Application-level error and result types used throughout the domain layer.
 
+use std::result::Result;
+
 /// Categorizes an expected application error by its origin domain.
 #[derive(Debug)]
 pub enum ExpectedVariant {
@@ -42,7 +44,7 @@ pub enum BaseError {
 }
 
 /// Alias for [`Result`] used at module boundary layers.
-pub type BaseRest<T> = std::result::Result<T, BaseError>;
+pub type BaseRest<T> = Result<T, BaseError>;
 
 /// Wraps a value in `Ok(...)` — the simplest use-case return.
 pub fn accept<T>(v: T) -> BaseRest<T> {

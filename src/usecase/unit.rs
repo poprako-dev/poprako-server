@@ -5,7 +5,7 @@
 mod tests;
 
 use poprako_orchestra::{
-    AtLeast, Nucl, OperRun as _, OperStep as _, run_proxy,
+    AtLeast, Context, Nucl, OperRun as _, OperStep as _, run_proxy,
 };
 use tracing::instrument;
 
@@ -17,7 +17,7 @@ use crate::data::instr::unit::{
 use crate::data::val::unit::ListPageUnitInfosVal;
 use crate::model::read::proj::unit::UnitCounters;
 use crate::model::shared::user::UserToken;
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::Serializable;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
@@ -53,7 +53,7 @@ pub async fn list_infos<C, R>(
     instr: ListPageUnitInfosInstr,
 ) -> BaseRest<ListPageUnitInfosVal>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: PageRepo<C>
         + UnitRepo<C>
         + TeamRepo<C>
@@ -98,10 +98,10 @@ pub async fn save_edits<N, C, R>(
     instr: SavePageUnitEditsInstr,
 ) -> BaseRest<()>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
-    C::Level: AtLeast<RepeatableRead>,
+    C::Level: AtLeast<Serializable>,
     R: PageRepo<C>
         + UnitRepo<C>
         + ChapterRepo<C>

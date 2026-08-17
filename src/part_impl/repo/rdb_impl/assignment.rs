@@ -9,7 +9,7 @@ pub mod tests;
 
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
-use poprako_orchestra::{Run, Step};
+use poprako_orchestra::{AtLeast, Level, Run, Step};
 use time::OffsetDateTime;
 use tracing::instrument;
 
@@ -319,8 +319,8 @@ impl Run<GetAssignmentInfo<'_, '_>> for HybRepo {
 
 impl<L> Step<ListAssignmentInfos<'_, '_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Use base error for listing assignments inside an existing transaction.
     type Level = crate::part::nucl::RepeatableRead;
@@ -341,8 +341,8 @@ where
 
 impl<L> Step<FindAssignmentInfo<'_, '_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Keep transactional assignment lookup failures consistent with run-level errors.
     type Level = crate::part::nucl::RepeatableRead;
@@ -393,8 +393,8 @@ where
 
 impl<L> Step<ListAssignmentInfosExcluded<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Normalize excluded-list behavior errors under base repository semantics.
     type Level = crate::part::nucl::RepeatableRead;
@@ -423,8 +423,8 @@ where
 
 impl<L> Step<CreateAssignment<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Translate assignment-create failures to base error within transaction.
     type Level = crate::part::nucl::RepeatableRead;
@@ -445,8 +445,8 @@ where
 
 impl<L> Step<UpdateAssignmentRoles<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Keep role-update failures mapped to shared repository error contract.
     type Level = crate::part::nucl::RepeatableRead;
@@ -482,8 +482,8 @@ async fn delete_by_chapter_id(
 
 impl<L> Step<DeleteAssignments<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Map all delete-assignment branch failures to base repository errors.
     type Level = crate::part::nucl::RepeatableRead;

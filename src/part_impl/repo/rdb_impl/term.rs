@@ -9,7 +9,7 @@ use diesel::{
     PgTextExpressionMethods as _, QueryDsl as _, SelectableHelper as _,
 };
 use diesel_async::RunQueryDsl as _;
-use poprako_orchestra::{Run, Step};
+use poprako_orchestra::{AtLeast, Level, Run, Step};
 use time::OffsetDateTime;
 use tracing::instrument;
 
@@ -57,8 +57,8 @@ impl Run<ListTermInfos<'_>> for HybRepo {
 
 impl<L> Step<CreateTerm<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Create a term row inside an active transaction boundary.
     type Level = crate::part::nucl::RepeatableRead;
@@ -79,8 +79,8 @@ where
 
 impl<L> Step<GetTermInfoExcluded<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Read a term for exclusive use inside an active transaction context.
     type Level = crate::part::nucl::RepeatableRead;
@@ -101,8 +101,8 @@ where
 
 impl<L> Step<LockTerm<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Acquire a row-level lock for a term within a transaction.
     type Level = crate::part::nucl::RepeatableRead;
@@ -123,8 +123,8 @@ where
 
 impl<L> Step<UpdateTerm<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Apply term info updates inside an active transaction boundary.
     type Level = crate::part::nucl::RepeatableRead;
@@ -145,8 +145,8 @@ where
 
 impl<L> Step<DeleteTerm<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Remove one term row inside an active transaction boundary.
     type Level = crate::part::nucl::RepeatableRead;
@@ -167,8 +167,8 @@ where
 
 impl<L> Step<DeleteTerms<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<crate::part::nucl::RepeatableRead>,
 {
     // Remove all terms for a termbase inside an active transaction boundary.
     type Level = crate::part::nucl::RepeatableRead;

@@ -5,7 +5,7 @@
 mod tests;
 
 use poprako_orchestra::{
-    AtLeast, Nucl, OperRun as _, OperStep as _, run_proxy,
+    AtLeast, Context, Nucl, OperRun as _, OperStep as _, run_proxy,
 };
 use tracing::instrument;
 
@@ -49,7 +49,7 @@ pub async fn create<N, C, R>(
     instr: CreateMemberInstr,
 ) -> BaseRest<CreateMemberVal>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
@@ -138,7 +138,7 @@ pub async fn join_team<N, C, R, I>(
     instr: JoinTeamInstr,
 ) -> BaseRest<MemberInfoView>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
@@ -244,7 +244,7 @@ pub async fn list_infos<C, R, I>(
     instr: ListMemberInfosInstr,
 ) -> BaseRest<Vec<MemberInfoView>>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: MemberRepo<C> + Sync,
     I: ImagePool,
 {
@@ -289,7 +289,7 @@ pub async fn update_roles<N, C, R>(
     instr: UpdateMemberRolesInstr,
 ) -> BaseRest<()>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
@@ -343,7 +343,7 @@ pub async fn delete<N, C, R>(
     id: String,
 ) -> BaseRest<()>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
