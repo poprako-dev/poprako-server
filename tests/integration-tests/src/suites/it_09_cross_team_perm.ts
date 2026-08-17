@@ -151,6 +151,12 @@ export async function runIt09Module(ctx: RunCtx): Promise<void> {
                     403,
                     4,
                 );
+
+                expectError(
+                    await outsiderApi.get<ErrorBody>(`/api/v1/chapters/${ctx.main.chapterId}/workflow-records?offset=0&limit=20`),
+                    403,
+                    4,
+                );
             }
         }
     }

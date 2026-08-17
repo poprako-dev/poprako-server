@@ -101,6 +101,16 @@ export interface ChapterInfoView {
     updated_at: number;
 }
 
+export interface ChapterWorkflowRecordInfoView {
+    id: string;
+    chapter_id: string;
+    actor_user_id: string | null;
+    kind: string;
+    payload: Record<string, unknown>;
+    text: string;
+    created_at: number;
+}
+
 export interface PageInfoView {
     id: string;
     chapter_id: string;

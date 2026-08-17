@@ -153,6 +153,10 @@ pub fn new(harn: AppHarn) -> Router<AppHarn> {
                 .delete(chapter::delete),
         )
         .route(
+            "/chapters/{chapter_id}/workflow-records",
+            get(chapter::list_workflow_record_infos),
+        )
+        .route(
             "/chapters/{chapter_id}/stage/advance",
             post(chapter::advance_stage),
         )

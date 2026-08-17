@@ -6,6 +6,8 @@ pub mod assignment;
 pub mod assignment_invitation;
 /// Chapter mutation models.
 pub mod chapter;
+/// Immutable chapter workflow record mutation models.
+pub mod chapter_workflow_record;
 /// Comic mutation models.
 pub mod comic;
 /// Comic archive mutation models.

@@ -17,11 +17,13 @@ use crate::api::http::result::{
 };
 use crate::api::http::state::AppHarn;
 use crate::data::instr::chapter::{
-    CreateChapterInstr, ListChapterInfosInstr, UpdateChapterInfoInstr,
+    CreateChapterInstr, ListChapterInfosInstr,
+    ListChapterWorkflowRecordInfosInstr, UpdateChapterInfoInstr,
     UpdateChapterStageInstr,
 };
 use crate::data::val::chapter::CreateChapterVal;
 use crate::data::view::chapter::ChapterInfoView;
+use crate::data::view::chapter_workflow_record::ChapterWorkflowRecordInfoView;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::{RepeatableRead, Serializable};
 use crate::part_impl::prom::rdb_impl::RdbProm;
@@ -49,6 +51,17 @@ pub struct ChapterListQuery {
     /// Pagination offset (0-based).
     pub offset: u32,
 
+    /// Maximum number of items to return.
+    pub limit: u32,
+}
+
+/// Query for listing immutable chapter workflow records.
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger", derive(IntoParams))]
+#[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
+pub struct ChapterWorkflowRecordListQuery {
+    /// Pagination offset (0-based).
+    pub offset: u32,
     /// Maximum number of items to return.
     pub limit: u32,
 }
@@ -168,6 +181,40 @@ pub async fn get_info(
         user_token,
         chapter_id,
     )
+    .await?
+    .accept(StatusCode::OK)
+}
+
+/// `GET /api/v1/chapters/{chapter_id}/workflow-records` — list activity records.
+#[cfg_attr(feature = "swagger", utoipa::path(
+    get,
+    path = "/api/v1/chapters/{chapter_id}/workflow-records",
+    tag = "chapters",
+    params(("chapter_id" = String, Path, description = "Chapter ID"), ChapterWorkflowRecordListQuery),
+    responses(
+        (status = 200, description = "Chapter workflow records listed", body = HttpBody<Vec<ChapterWorkflowRecordInfoView>>),
+        (status = 403, description = "No perm to view this chapter"),
+        (status = 404, description = "Chapter not found"),
+    ),
+))]
+#[instrument(level = "info", skip_all)]
+pub async fn list_workflow_record_infos(
+    State(harn): State<AppHarn>,
+    Path(chapter_id): Path<String>,
+    Extension(user_token): Extension<UserToken>,
+    Query(query): Query<ChapterWorkflowRecordListQuery>,
+) -> HttpResult<Vec<ChapterWorkflowRecordInfoView>> {
+    //
+    let instr = ListChapterWorkflowRecordInfosInstr {
+        chapter_id,
+        offset: query.offset,
+        limit: query.limit,
+    };
+
+    usecase::chapter::list_workflow_record_infos::<
+        RdbContext<RepeatableRead>,
+        HybRepo,
+    >((harn.repo(),), user_token, instr)
     .await?
     .accept(StatusCode::OK)
 }

@@ -21,10 +21,12 @@ use crate::data::instr::assignment::{
 use crate::data::view::assignment::AssignmentInfoView;
 use crate::model::shared::user::UserToken;
 use crate::model::write::assignment::{AssignmentEntry, AssignmentRoleRepl};
+use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::part::image::ImagePool;
 use crate::part::nucl::RepeatableRead;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
+use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::{
     CreateAssignment, DeleteAssignments, FindAssignmentInfo, GetAssignmentInfo,
@@ -33,6 +35,7 @@ use crate::part::repo::oper::assignment::{
 use crate::part::repo::oper::chapter::{
     GetChapterInfo, GetChapterInfoExcluded, ListPinnedChapterInfos,
 };
+use crate::part::repo::oper::chapter_workflow_record::CreateChapterWorkflowRecords;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::page::ListFirstPageInfos;
 use crate::part::repo::oper::team::ResolveTeamId;
@@ -41,6 +44,7 @@ use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 
 /// Lists assignments by chapter or owner user.
 #[instrument(level = "info", skip(repo, image_pool))]
@@ -135,6 +139,7 @@ where
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: ChapterRepo<C>
+        + ChapterWorkflowRecordRepo<C>
         + MemberRepo<C>
         + TeamRepo<C>
         + AssignmentRepo<C>
@@ -191,7 +196,7 @@ where
             .step_on(repo, context)
             .await?;
 
-            match existing_assignment_info {
+            let (assignment_info, workflow_record_payload) = match existing_assignment_info {
                 //
                 Some(existing_assignment_info) => {
                     //
@@ -200,11 +205,27 @@ where
                         instr.roles,
                     );
 
-                    UpdateAssignmentRoles {
-                        update: &assignment_role_update,
+                    match assignment_role_update.roles == existing_assignment_info.roles {
+                        //
+                        true => (existing_assignment_info, None),
+
+                        false => {
+                            //
+                            let assignment_info = UpdateAssignmentRoles {
+                                update: &assignment_role_update,
+                            }
+                            .step_on(repo, context)
+                            .await?;
+
+                            let payload = ChapterWorkflowRecordPayload::AssignmentRolesUpdated {
+                                subject_user_id: assignment_info.user_id.clone(),
+                                previous_roles: existing_assignment_info.roles,
+                                next_roles: assignment_role_update.roles,
+                            };
+
+                            (assignment_info, Some(payload))
+                        }
                     }
-                    .step_on(repo, context)
-                    .await
                 }
 
                 None => {
@@ -212,17 +233,41 @@ where
                     let assignment_entry = AssignmentEntry {
                         id: AssignmentComplex::gen_id(),
                         chapter_id: instr.chapter_id,
-                        user_id: token.user_id,
+                        user_id: token.user_id.clone(),
                         roles: instr.roles,
                     };
 
-                    CreateAssignment {
+                    let assignment_info = CreateAssignment {
                         entry: &assignment_entry,
                     }
                     .step_on(repo, context)
-                    .await
+                    .await?;
+
+                    let payload = ChapterWorkflowRecordPayload::AssignmentCreated {
+                        subject_user_id: assignment_info.user_id.clone(),
+                        roles: assignment_info.roles,
+                    };
+
+                    (assignment_info, Some(payload))
                 }
+            };
+
+            if let Some(payload) = workflow_record_payload {
+                //
+                let workflow_record_entry = ChapterWorkflowRecordEntry::new(
+                    chapter_info.id,
+                    Some(token.user_id),
+                    payload,
+                );
+
+                CreateChapterWorkflowRecords {
+                    entries: std::slice::from_ref(&workflow_record_entry),
+                }
+                .step_on(repo, context)
+                .await?;
             }
+
+            accept(assignment_info)
         })
         .await?;
 
@@ -242,6 +287,7 @@ where
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: AssignmentRepo<C>
+        + ChapterWorkflowRecordRepo<C>
         + ChapterRepo<C>
         + MemberRepo<C>
         + TeamRepo<C>
@@ -350,16 +396,35 @@ where
                     });
                 }
 
-                let assignment_role_update = AssignmentRoleRepl {
-                    id: assignment_info.id.clone(),
-                    roles: instr.roles,
-                };
+                if assignment_info.roles != instr.roles {
+                    //
+                    let assignment_role_update = AssignmentRoleRepl {
+                        id: assignment_info.id.clone(),
+                        roles: instr.roles,
+                    };
 
-                UpdateAssignmentRoles {
-                    update: &assignment_role_update,
+                    UpdateAssignmentRoles {
+                        update: &assignment_role_update,
+                    }
+                    .step_on(repo, context)
+                    .await?;
+
+                    let workflow_record_entry = ChapterWorkflowRecordEntry::new(
+                        chapter_info.id.clone(),
+                        Some(token.user_id.clone()),
+                        ChapterWorkflowRecordPayload::AssignmentRolesUpdated {
+                            subject_user_id: assignment_info.user_id.clone(),
+                            previous_roles: assignment_info.roles,
+                            next_roles: instr.roles,
+                        },
+                    );
+
+                    CreateChapterWorkflowRecords {
+                        entries: std::slice::from_ref(&workflow_record_entry),
+                    }
+                    .step_on(repo, context)
+                    .await?;
                 }
-                .step_on(repo, context)
-                .await?;
             }
 
             None => {
@@ -392,12 +457,27 @@ where
                 let assignment_entry = AssignmentEntry {
                     id: AssignmentComplex::gen_id(),
                     chapter_id: instr.chapter_id,
-                    user_id: instr.user_id,
+                    user_id: instr.user_id.clone(),
                     roles: instr.roles,
                 };
 
                 CreateAssignment {
                     entry: &assignment_entry,
+                }
+                .step_on(repo, context)
+                .await?;
+
+                let workflow_record_entry = ChapterWorkflowRecordEntry::new(
+                    chapter_info.id.clone(),
+                    Some(token.user_id.clone()),
+                    ChapterWorkflowRecordPayload::AssignmentCreated {
+                        subject_user_id: instr.user_id,
+                        roles: instr.roles,
+                    },
+                );
+
+                CreateChapterWorkflowRecords {
+                    entries: std::slice::from_ref(&workflow_record_entry),
                 }
                 .step_on(repo, context)
                 .await?;
@@ -425,7 +505,11 @@ where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
-    R: AssignmentRepo<C> + ChapterRepo<C> + Send + Sync,
+    R: AssignmentRepo<C>
+        + ChapterRepo<C>
+        + ChapterWorkflowRecordRepo<C>
+        + Send
+        + Sync,
 {
     let assignment_info = GetAssignmentInfo {
         id: &id,
@@ -457,6 +541,21 @@ where
         DeleteAssignments::Id { id: &id }
             .step_on(repo, context)
             .await?;
+
+        let workflow_record_entry = ChapterWorkflowRecordEntry::new(
+            chapter_info.id,
+            Some(token.user_id),
+            ChapterWorkflowRecordPayload::AssignmentDeleted {
+                subject_user_id: assignment_info.user_id,
+                previous_roles: assignment_info.roles,
+            },
+        );
+
+        CreateChapterWorkflowRecords {
+            entries: std::slice::from_ref(&workflow_record_entry),
+        }
+        .step_on(repo, context)
+        .await?;
 
         accept(())
     })

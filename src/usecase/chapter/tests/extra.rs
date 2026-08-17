@@ -1,8 +1,9 @@
 use super::{
-    Mock, RoleMask, Stage, StageOper, StagePhase, UpdateChapterStageInstr,
-    assignment, chapter, seed_scope, token, update_stage,
+    Mock, RoleMask, Stage, UpdateChapterStageInstr, assignment, chapter,
+    seed_scope, token, update_stage,
 };
 
+use crate::value::chapter::{StageOper, StagePhase};
 use crate::value::role::RoleField;
 
 #[tokio::test]

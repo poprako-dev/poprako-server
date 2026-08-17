@@ -1,5 +1,8 @@
 //! Assignment invitation use cases.
 
+// Assignment invitation identifier and code generation helpers.
+mod code;
+
 #[cfg(test)]
 // Unit tests for assignment invitation acceptance rules.
 mod tests;
@@ -11,6 +14,7 @@ use tracing::instrument;
 
 use poprako_util::i18n::trl;
 
+use self::code::{gen_assignment_invitation_id, gen_code};
 use crate::complex::assignment::AssignmentComplex;
 use crate::complex::chapter::ChapterComplex;
 use crate::data::instr::assignment_invitation::{
@@ -24,6 +28,7 @@ use crate::model::read::spec::assignment_invitation::AssignmentInvitationListSpe
 use crate::model::shared::user::UserToken;
 use crate::model::write::assignment::AssignmentEntry;
 use crate::model::write::assignment_invitation::AssignmentInvitationEntry;
+use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::part::image::ImagePool;
 use crate::part::nucl::RepeatableRead;
 use crate::part::prom::Prom;
@@ -34,6 +39,7 @@ use crate::part::prom::task::Task;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::chapter::ChapterRepo;
+use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::{
@@ -45,6 +51,7 @@ use crate::part::repo::oper::assignment_invitation::{
     ListAssignmentInvitationInfos, MarkAssignmentInvitationUsed,
 };
 use crate::part::repo::oper::chapter::GetChapterInfoExcluded;
+use crate::part::repo::oper::chapter_workflow_record::CreateChapterWorkflowRecords;
 use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::user::{FindUserInfo, GetUserInfoExcluded};
@@ -53,6 +60,7 @@ use crate::part::repo::user::UserRepo;
 use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
+use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 use crate::value::role::{RoleField, RoleMask};
 
 // Assignment invitation code expiration window.
@@ -283,6 +291,7 @@ where
     C::Level: AtLeast<RepeatableRead>,
     R: AssignmentInvitationRepo<C>
         + AssignmentRepo<C>
+        + ChapterWorkflowRecordRepo<C>
         + UserRepo<C>
         + MemberRepo<C>
         + ChapterRepo<C>
@@ -414,7 +423,7 @@ where
             .step_on(repo, context)
             .await?;
 
-            let assignment_info = match existing_assignment_info {
+            let (assignment_info, workflow_record_payload) = match existing_assignment_info {
                 //
                 Some(existing_assignment_info) => {
                     //
@@ -423,29 +432,50 @@ where
                         assignment_invitation_info.roles,
                     );
 
-                    UpdateAssignmentRoles {
-                        update: &assignment_role_update,
+                    match assignment_role_update.roles == existing_assignment_info.roles {
+                        //
+                        true => (existing_assignment_info, None),
+
+                        false => {
+                            //
+                            let assignment_info = UpdateAssignmentRoles {
+                                update: &assignment_role_update,
+                            }
+                            .step_on(repo, context)
+                            .await?;
+
+                            let payload = ChapterWorkflowRecordPayload::AssignmentRolesUpdated {
+                                subject_user_id: assignment_info.user_id.clone(),
+                                previous_roles: existing_assignment_info.roles,
+                                next_roles: assignment_role_update.roles,
+                            };
+
+                            (assignment_info, Some(payload))
+                        }
                     }
-                    .step_on(repo, context)
-                    .await?
                 }
 
                 None => {
                     //
                     let assignment_entry = AssignmentEntry {
                         id: AssignmentComplex::gen_id(),
-                        chapter_id: assignment_invitation_info
-                            .chapter_id
-                            .clone(),
-                        user_id: current_user_id,
+                        chapter_id: assignment_invitation_info.chapter_id.clone(),
+                        user_id: current_user_id.clone(),
                         roles: assignment_invitation_info.roles,
                     };
 
-                    CreateAssignment {
+                    let assignment_info = CreateAssignment {
                         entry: &assignment_entry,
                     }
                     .step_on(repo, context)
-                    .await?
+                    .await?;
+
+                    let payload = ChapterWorkflowRecordPayload::AssignmentCreated {
+                        subject_user_id: assignment_info.user_id.clone(),
+                        roles: assignment_info.roles,
+                    };
+
+                    (assignment_info, Some(payload))
                 }
             };
 
@@ -454,6 +484,21 @@ where
             }
             .step_on(repo, context)
             .await?;
+
+            if let Some(payload) = workflow_record_payload {
+                //
+                let workflow_record_entry = ChapterWorkflowRecordEntry::new(
+                    chapter_info.id,
+                    Some(current_user_id),
+                    payload,
+                );
+
+                CreateChapterWorkflowRecords {
+                    entries: std::slice::from_ref(&workflow_record_entry),
+                }
+                .step_on(repo, context)
+                .await?;
+            }
 
             accept(assignment_info)
         })
@@ -547,23 +592,4 @@ fn validate_roles(
     }
 
     accept(())
-}
-
-// Generates a snowflake ID for a new invitation.
-fn gen_assignment_invitation_id() -> String {
-    next_snowflake_id()
-}
-
-// Generates a short numeric code from a snowflake ID.
-fn gen_code() -> String {
-    //
-    let id = next_snowflake_id();
-
-    let len = id.len();
-
-    if len <= 6 {
-        return id;
-    }
-
-    id[len - 6..].to_string()
 }

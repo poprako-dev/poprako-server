@@ -127,6 +127,13 @@ pub async fn cleanup(shared: &RdbCore, prefix: &str) -> BaseRest<()> {
     .await
     .map_err(diesel_error)?;
 
+    diesel::delete(schema::t_chapter_workflow_record::table.filter(
+        schema::t_chapter_workflow_record::f_chapter_id.like(&id_pattern),
+    ))
+    .execute(&mut conn)
+    .await
+    .map_err(diesel_error)?;
+
     diesel::delete(
         schema::t_chapter::table
             .filter(schema::t_chapter::f_id.like(&id_pattern)),
@@ -252,6 +259,17 @@ pub async fn assert_no_leftovers(
         .await
         .map_err(diesel_error)?;
 
+    let chapter_workflow_record_count: i64 =
+        schema::t_chapter_workflow_record::table
+            .filter(
+                schema::t_chapter_workflow_record::f_chapter_id
+                    .like(&id_pattern),
+            )
+            .count()
+            .get_result(&mut conn)
+            .await
+            .map_err(diesel_error)?;
+
     let comic_count: i64 = schema::t_comic::table
         .filter(schema::t_comic::f_id.like(&id_pattern))
         .count()
@@ -336,6 +354,8 @@ pub async fn assert_no_leftovers(
     assert_eq!(assignment_invitation_count, 0);
 
     assert_eq!(chapter_count, 0);
+
+    assert_eq!(chapter_workflow_record_count, 0);
 
     assert_eq!(comic_count, 0);
 

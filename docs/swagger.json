@@ -1031,6 +1031,66 @@
         }
       }
     },
+    "/api/v1/chapters/{chapter_id}/workflow-records": {
+      "get": {
+        "tags": [
+          "chapters"
+        ],
+        "summary": "`GET /api/v1/chapters/{chapter_id}/workflow-records` — list activity records.",
+        "operationId": "list_workflow_record_infos",
+        "parameters": [
+          {
+            "name": "chapter_id",
+            "in": "path",
+            "description": "Chapter ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Pagination offset (0-based).",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of items to return.",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chapter workflow records listed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpBody_Vec_ChapterWorkflowRecordInfoView"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No perm to view this chapter"
+          },
+          "404": {
+            "description": "Chapter not found"
+          }
+        }
+      }
+    },
     "/api/v1/comics": {
       "post": {
         "tags": [
@@ -4182,6 +4242,263 @@
           }
         }
       },
+      "ChapterWorkflowRecordAssignmentCreatedPayloadView": {
+        "type": "object",
+        "description": "OpenAPI schema for a newly created assignment payload.",
+        "required": [
+          "subject_user_id",
+          "roles"
+        ],
+        "properties": {
+          "roles": {
+            "$ref": "#/components/schemas/RoleMask",
+            "description": "Initial assignment roles."
+          },
+          "subject_user_id": {
+            "type": "string",
+            "description": "User receiving the assignment."
+          }
+        }
+      },
+      "ChapterWorkflowRecordAssignmentDeletedPayloadView": {
+        "type": "object",
+        "description": "OpenAPI schema for a deleted assignment payload.",
+        "required": [
+          "subject_user_id",
+          "previous_roles"
+        ],
+        "properties": {
+          "previous_roles": {
+            "$ref": "#/components/schemas/RoleMask",
+            "description": "Roles before deletion."
+          },
+          "subject_user_id": {
+            "type": "string",
+            "description": "User whose assignment was removed."
+          }
+        }
+      },
+      "ChapterWorkflowRecordAssignmentRolesUpdatedPayloadView": {
+        "type": "object",
+        "description": "OpenAPI schema for a changed assignment role mask payload.",
+        "required": [
+          "subject_user_id",
+          "previous_roles",
+          "next_roles"
+        ],
+        "properties": {
+          "next_roles": {
+            "$ref": "#/components/schemas/RoleMask",
+            "description": "Roles after the update."
+          },
+          "previous_roles": {
+            "$ref": "#/components/schemas/RoleMask",
+            "description": "Roles before the update."
+          },
+          "subject_user_id": {
+            "type": "string",
+            "description": "User whose roles changed."
+          }
+        }
+      },
+      "ChapterWorkflowRecordEmptyPayloadView": {
+        "type": "object",
+        "description": "OpenAPI empty object schema for payloads without parameters."
+      },
+      "ChapterWorkflowRecordInfoView": {
+        "type": "object",
+        "description": "API representation of one immutable chapter workflow record.",
+        "required": [
+          "id",
+          "chapter_id",
+          "kind",
+          "payload",
+          "text",
+          "created_at"
+        ],
+        "properties": {
+          "actor_user_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "User that caused the record, absent for system work."
+          },
+          "chapter_id": {
+            "type": "string",
+            "description": "Chapter that owns this record."
+          },
+          "created_at": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Record creation time in Unix milliseconds."
+          },
+          "id": {
+            "type": "string",
+            "description": "Unique workflow record identifier."
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ChapterWorkflowRecordKind",
+            "description": "Stable event kind for client-side branching."
+          },
+          "payload": {
+            "$ref": "#/components/schemas/ChapterWorkflowRecordPayloadView",
+            "description": "Structured, language-neutral event parameters."
+          },
+          "text": {
+            "type": "string",
+            "description": "Localized server-rendered event text without an actor name."
+          }
+        }
+      },
+      "ChapterWorkflowRecordKind": {
+        "type": "string",
+        "description": "Stable kind of an immutable chapter workflow record.",
+        "enum": [
+          "chapter-created",
+          "chapter-subtitle-updated",
+          "chapter-pinned",
+          "chapter-unpinned",
+          "assignment-created",
+          "assignment-roles-updated",
+          "assignment-deleted",
+          "translation-imported",
+          "translation-exported",
+          "stage-transitioned"
+        ]
+      },
+      "ChapterWorkflowRecordOrigin": {
+        "type": "string",
+        "description": "Source operation that caused an automatic workflow-stage transition.",
+        "enum": [
+          "manual",
+          "unit-edit",
+          "translation-import",
+          "translation-export",
+          "raw-provide-check"
+        ]
+      },
+      "ChapterWorkflowRecordPayloadView": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ChapterWorkflowRecordEmptyPayloadView",
+            "description": "No additional fields for chapter creation, pinning, or unpinning."
+          },
+          {
+            "$ref": "#/components/schemas/ChapterWorkflowRecordSubtitleUpdatedPayloadView",
+            "description": "Previous and next subtitle values."
+          },
+          {
+            "$ref": "#/components/schemas/ChapterWorkflowRecordAssignmentCreatedPayloadView",
+            "description": "Initial assignment roles."
+          },
+          {
+            "$ref": "#/components/schemas/ChapterWorkflowRecordAssignmentRolesUpdatedPayloadView",
+            "description": "Assignment role-mask transition."
+          },
+          {
+            "$ref": "#/components/schemas/ChapterWorkflowRecordAssignmentDeletedPayloadView",
+            "description": "Assignment roles retained before deletion."
+          },
+          {
+            "$ref": "#/components/schemas/ChapterWorkflowRecordTranslationImportedPayloadView",
+            "description": "Translation import summary."
+          },
+          {
+            "$ref": "#/components/schemas/ChapterWorkflowRecordTranslationExportedPayloadView",
+            "description": "Translation export format."
+          },
+          {
+            "$ref": "#/components/schemas/ChapterWorkflowRecordStageTransitionedPayloadView",
+            "description": "Workflow-stage phase transition."
+          }
+        ],
+        "description": "OpenAPI union for the language-neutral workflow record payload object."
+      },
+      "ChapterWorkflowRecordStageTransitionedPayloadView": {
+        "type": "object",
+        "description": "OpenAPI schema for a workflow-stage transition payload.",
+        "required": [
+          "stage",
+          "previous_phase",
+          "next_phase",
+          "origin"
+        ],
+        "properties": {
+          "next_phase": {
+            "$ref": "#/components/schemas/StagePhase",
+            "description": "Phase after the transition."
+          },
+          "origin": {
+            "$ref": "#/components/schemas/ChapterWorkflowRecordOrigin",
+            "description": "Action that originated the transition."
+          },
+          "previous_phase": {
+            "$ref": "#/components/schemas/StagePhase",
+            "description": "Phase before the transition."
+          },
+          "stage": {
+            "$ref": "#/components/schemas/Stage",
+            "description": "Changed workflow stage."
+          }
+        }
+      },
+      "ChapterWorkflowRecordSubtitleUpdatedPayloadView": {
+        "type": "object",
+        "description": "OpenAPI schema for a chapter subtitle change payload.",
+        "required": [
+          "previous_subtitle",
+          "next_subtitle"
+        ],
+        "properties": {
+          "next_subtitle": {
+            "type": "string",
+            "description": "Subtitle after the update."
+          },
+          "previous_subtitle": {
+            "type": "string",
+            "description": "Subtitle before the update."
+          }
+        }
+      },
+      "ChapterWorkflowRecordTranslationExportedPayloadView": {
+        "type": "object",
+        "description": "OpenAPI schema for a translation export payload.",
+        "required": [
+          "format"
+        ],
+        "properties": {
+          "format": {
+            "$ref": "#/components/schemas/TranslationFormat",
+            "description": "Generated content format."
+          }
+        }
+      },
+      "ChapterWorkflowRecordTranslationImportedPayloadView": {
+        "type": "object",
+        "description": "OpenAPI schema for a translation import summary payload.",
+        "required": [
+          "format",
+          "imported_page_count",
+          "imported_unit_count"
+        ],
+        "properties": {
+          "format": {
+            "$ref": "#/components/schemas/TranslationFormat",
+            "description": "Imported content format."
+          },
+          "imported_page_count": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Number of imported pages."
+          },
+          "imported_unit_count": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Number of imported units."
+          }
+        }
+      },
       "ComicInclOpt": {
         "type": "string",
         "description": "Incl opts for comic info queries.\n\nEach opt embeds additional related data into the returned\n[`ComicInfoView`]. Dotted opts implicitly pull in the segments before the\ndot (e.g. `workset.team` also embeds `workset`).",
@@ -7027,6 +7344,72 @@
           }
         }
       },
+      "HttpBody_Vec_ChapterWorkflowRecordInfoView": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Application-level success code, 0 for normal success.",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "API representation of one immutable chapter workflow record.",
+              "required": [
+                "id",
+                "chapter_id",
+                "kind",
+                "payload",
+                "text",
+                "created_at"
+              ],
+              "properties": {
+                "actor_user_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "User that caused the record, absent for system work."
+                },
+                "chapter_id": {
+                  "type": "string",
+                  "description": "Chapter that owns this record."
+                },
+                "created_at": {
+                  "type": "integer",
+                  "format": "int64",
+                  "description": "Record creation time in Unix milliseconds."
+                },
+                "id": {
+                  "type": "string",
+                  "description": "Unique workflow record identifier."
+                },
+                "kind": {
+                  "$ref": "#/components/schemas/ChapterWorkflowRecordKind",
+                  "description": "Stable event kind for client-side branching."
+                },
+                "payload": {
+                  "$ref": "#/components/schemas/ChapterWorkflowRecordPayloadView",
+                  "description": "Structured, language-neutral event parameters."
+                },
+                "text": {
+                  "type": "string",
+                  "description": "Localized server-rendered event text without an actor name."
+                }
+              }
+            }
+          }
+        }
+      },
       "HttpBody_Vec_CommentInfoView": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
@@ -8825,6 +9208,15 @@
         "enum": [
           "advance",
           "revert"
+        ]
+      },
+      "StagePhase": {
+        "type": "string",
+        "description": "Phase a workflow stage can be in.",
+        "enum": [
+          "pending",
+          "active",
+          "completed"
         ]
       },
       "SystemMailInfoView": {

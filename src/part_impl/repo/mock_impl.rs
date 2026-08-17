@@ -11,6 +11,8 @@ pub mod assignment;
 pub mod assignment_invitation;
 /// Mock in-memory implementations for chapter repository operations.
 pub mod chapter;
+/// Mock immutable chapter workflow record repository operations.
+pub mod chapter_workflow_record;
 /// Mock in-memory implementations for comic repository operations.
 pub mod comic;
 /// Mock in-memory implementations for immutable comic archive repository operations.
@@ -58,6 +60,7 @@ use crate::model::read::proj::announcement::AnnouncementInfo;
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::assignment_invitation::AssignmentInvitationInfo;
 use crate::model::read::proj::chapter::ChapterInfo;
+use crate::model::read::proj::chapter_workflow_record::ChapterWorkflowRecordInfo;
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::proj::comic_archive::ComicArchiveRecord;
 use crate::model::read::proj::comment::CommentInfo;
@@ -110,6 +113,8 @@ pub struct MockState {
     pub terms: Vec<TermInfo>,
     /// Mock storage for chapter records.
     pub chapters: Vec<ChapterInfo>,
+    /// Mock storage for immutable chapter workflow records.
+    pub chapter_workflow_records: Vec<ChapterWorkflowRecordInfo>,
     /// Mock storage for assignment records.
     pub assignments: Vec<AssignmentInfo>,
     /// Mock storage for assignment invitation records.
@@ -156,6 +161,8 @@ pub struct MockSnapshot {
     pub terms: Vec<TermInfo>,
     /// Snapshot of chapter records at the capture time.
     pub chapters: Vec<ChapterInfo>,
+    /// Snapshot of immutable chapter workflow records at the capture time.
+    pub chapter_workflow_records: Vec<ChapterWorkflowRecordInfo>,
     /// Snapshot of assignment records at the capture time.
     pub assignments: Vec<AssignmentInfo>,
     /// Snapshot of assignment invitation records at the capture time.
@@ -191,6 +198,7 @@ impl From<MockState> for MockSnapshot {
             termbases: state.termbases,
             terms: state.terms,
             chapters: state.chapters,
+            chapter_workflow_records: state.chapter_workflow_records,
             assignments: state.assignments,
             assignment_invitations: state.assignment_invitations,
             pages: state.pages,

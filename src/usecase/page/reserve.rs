@@ -41,10 +41,7 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 use crate::value::image::{ImageExt, ImageHash};
 
-/// Validates that the page count is in the valid range.
-/// The maximum is 200 because page reservation for a single chapter can never
-/// exceed this number — the manifest-based flow sets a hard cap for practical
-/// upload and review capacity.
+/// Validates the 200-page manifest cap, which bounds practical upload and review capacity.
 pub fn validate_page_count(page_count: i32) -> BaseRest<()> {
     //
     if !(1..=200).contains(&page_count) {
@@ -536,6 +533,7 @@ where
                 next_snowflake_id(),
                 TaskPayload::Chapter(ChapterPayload::TryAdvanceRawProvideStage {
                     chapter_id: chapter_info.id.clone(),
+                    actor_user_id: Some(token.user_id.clone()),
                 }),
             );
 

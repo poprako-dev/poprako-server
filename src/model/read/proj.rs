@@ -6,6 +6,8 @@ pub mod assignment;
 pub mod assignment_invitation;
 /// Chapter read projection.
 pub mod chapter;
+/// Immutable chapter workflow record read projection.
+pub mod chapter_workflow_record;
 /// Comic read projection.
 pub mod comic;
 /// Comic archive read projection.

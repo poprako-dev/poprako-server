@@ -205,6 +205,7 @@ where
                 next_snowflake_id(),
                 TaskPayload::Chapter(ChapterPayload::TryAdvanceRawProvideStage {
                     chapter_id: locked_page_info.chapter_id.clone(),
+                    actor_user_id: Some(token.user_id.clone()),
                 }),
             );
 

@@ -34,6 +34,7 @@ use crate::result::BaseError;
         for<'a> CreateChapter<'a>,
         for<'a> UpdateChapter<'a>,
         for<'a> UpdateChapterStage<'a>,
+        for<'a> StartChapterStage<'a>,
         for<'a> CompleteChapterRawProvide<'a>,
         for<'a> ResetChapterRawProvide<'a>,
         for<'a> SetChapterPageCounters<'a>,

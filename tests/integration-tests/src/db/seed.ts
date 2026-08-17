@@ -174,7 +174,7 @@ export interface LeftoverIds {
 /// Removes suite-created rows that have no HTTP delete endpoint (comments and
 /// announcements), and clears the `t_local_message` outbox populated by prom
 /// for every image reservation. Business entities reachable via the API
-/// (workset -> comic -> chapter -> page -> unit -> assignment) are deleted
+/// (workset -> comic -> chapter -> page -> unit -> assignment -> workflow record) are deleted
 /// through `DELETE /api/v1/worksets/{id}` by the caller, which cascades by FK.
 export async function cleanupLeftoverRows(ids: LeftoverIds): Promise<void> {
   await withDatabaseClient(async (client) => {
@@ -233,9 +233,10 @@ export async function cleanupToSeed(): Promise<void> {
       await client.query(`DELETE FROM "t_assignment_invitation"`);
       await client.query(`DELETE FROM "t_assignment"`);
 
-      // 3. Units, pages, chapters, terminology, comics, worksets (leaf -> root).
+      // 3. Units, pages, workflow records, chapters, terminology, comics, worksets (leaf -> root).
       await client.query(`DELETE FROM "t_unit"`);
       await client.query(`DELETE FROM "t_page"`);
+      await client.query(`DELETE FROM "t_chapter_workflow_record"`);
       await client.query(`DELETE FROM "t_chapter"`);
       await client.query(`DELETE FROM "t_term"`);
       await client.query(`DELETE FROM "t_termbase"`);

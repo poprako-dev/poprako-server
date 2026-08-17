@@ -115,6 +115,28 @@ impl Run<CompleteChapterRawProvide<'_>> for HybRepo {
     }
 }
 
+impl<L> Step<StartChapterStage<'_>, RdbContext<L>> for HybRepo
+where
+    L: poprako_orchestra::Level + Send,
+    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+{
+    // Declares the transaction isolation level required for this mutation.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
+    type Error = BaseError;
+
+    #[instrument(level = "info", skip_all)]
+    // Starts the requested pending stage inside the caller-owned transaction.
+    async fn step(
+        &self,
+        context: &mut RdbContext<L>,
+        oper: &StartChapterStage<'_>,
+    ) -> BaseRest<bool> {
+        start_stage(context.conn(), oper.id, oper.stage).await
+    }
+}
+
 impl<L> Step<CompleteChapterRawProvide<'_>, RdbContext<L>> for HybRepo
 where
     L: poprako_orchestra::Level + Send,

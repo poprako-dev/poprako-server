@@ -226,9 +226,25 @@ fn get_snapshot_excluded(
                 })
                 .collect::<BaseRest<Vec<_>>>()?;
 
+            let mut workflow_record_infos = context
+                .state
+                .chapter_workflow_records
+                .iter()
+                .filter(|record_info| record_info.chapter_id == chapter_info.id)
+                .cloned()
+                .collect::<Vec<_>>();
+
+            workflow_record_infos.sort_by(|left, right| {
+                //
+                left.created_at
+                    .cmp(&right.created_at)
+                    .then_with(|| left.id.cmp(&right.id))
+            });
+
             accept(ComicArchiveChapterSnapshot {
                 chapter_info,
                 assignment_infos,
+                workflow_record_infos,
                 page_snapshots,
             })
         })
@@ -277,6 +293,16 @@ fn commit(
             .source_chapter_ids
             .contains(&assignment_info.chapter_id)
     });
+
+    context
+        .state
+        .chapter_workflow_records
+        .retain(|record_info| {
+            //
+            !comic_archive_entry
+                .source_chapter_ids
+                .contains(&record_info.chapter_id)
+        });
 
     let termbase_ids = context
         .state

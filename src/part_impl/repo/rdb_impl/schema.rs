@@ -70,6 +70,17 @@ diesel::table! {
 }
 
 diesel::table! {
+    t_chapter_workflow_record (f_id) {
+        f_id -> Text,
+        f_chapter_id -> Text,
+        f_actor_user_id -> Nullable<Text>,
+        f_kind -> Text,
+        f_payload -> Jsonb,
+        f_created_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     t_comic (f_id) {
         f_id -> Text,
         f_workset_id -> Text,
@@ -304,6 +315,8 @@ diesel::joinable!(t_chapter -> t_comic (f_comic_id));
 
 diesel::joinable!(t_chapter -> t_user (f_creator_id));
 
+diesel::joinable!(t_chapter_workflow_record -> t_chapter (f_chapter_id));
+
 diesel::joinable!(t_comic -> t_user (f_creator_id));
 
 diesel::joinable!(t_comic -> t_workset (f_workset_id));
@@ -345,6 +358,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     t_assignment,
     t_assignment_invitation,
     t_chapter,
+    t_chapter_workflow_record,
     t_comic,
     t_comic_archive,
     t_comment,

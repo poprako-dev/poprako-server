@@ -1,5 +1,5 @@
-// export(export)(positive): assignee exports chapter metadata and ordered text units, then asynchronously triggers typeset/redraw.
-// export_label_plus(export_label_plus)(positive): assignee exports ordered pages and units as LabelPlus text, then asynchronously triggers typeset/redraw.
+// export(export)(positive): assignee exports chapter metadata and ordered text units, then transactionally records the export and triggers typeset/redraw.
+// export_label_plus(export_label_plus)(positive): assignee exports ordered pages and units as LabelPlus text, then transactionally records the export and triggers typeset/redraw.
 
 use super::*;
 
@@ -15,6 +15,7 @@ use crate::model::shared::unit::UnitCoord;
 use crate::model::shared::user::UserToken;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::value::chapter::{Stage, StageMask, StagePhase};
+use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
@@ -186,25 +187,6 @@ fn seed_scope(mock: &Mock) {
     ));
 }
 
-async fn wait_for_typeset_redraw(mock: &Mock) {
-    //
-    // Poll until the detached typeset-redraw stage advances, then continue test assertions.
-    for _ in 0..100 {
-        //
-        // Keep polling the snapshot; background advancement is eventual and asynchronous.
-        if mock.snapshot().chapters[0]
-            .stages
-            .has_phase(Stage::TypesetRedraw, StagePhase::Active)
-        {
-            return;
-        }
-
-        tokio::task::yield_now().await;
-    }
-
-    panic!("detached stage advancement did not finish");
-}
-
 #[tokio::test]
 async fn export_returns_chapter_pages_and_units() {
     //
@@ -222,7 +204,8 @@ async fn export_returns_chapter_pages_and_units() {
         Some("alpha proof"),
     ));
 
-    let exported = export((&mock,), token("user-1"), "chapter-1".into()).await;
+    let exported =
+        export((&mock, &mock), token("user-1"), "chapter-1".into()).await;
 
     let exported = match exported {
         //
@@ -230,8 +213,6 @@ async fn export_returns_chapter_pages_and_units() {
 
         Err(_) => panic!("expected export success"),
     };
-
-    wait_for_typeset_redraw(&mock).await;
 
     assert_eq!(exported.chapter_id, "chapter-1");
 
@@ -257,6 +238,16 @@ async fn export_returns_chapter_pages_and_units() {
             .stages
             .has_phase(Stage::TypesetRedraw, StagePhase::Active,)
     );
+
+    let snapshot = mock.snapshot();
+
+    assert!(snapshot.chapter_workflow_records.iter().any(|record| {
+        record.actor_user_id.as_deref() == Some("user-1")
+            && matches!(
+                &record.payload,
+                ChapterWorkflowRecordPayload::TranslationExported { .. },
+            )
+    }));
 }
 
 #[tokio::test]
@@ -275,7 +266,8 @@ async fn export_label_plus_returns_text_payload() {
     ));
 
     let exported =
-        export_label_plus((&mock,), token("user-1"), "chapter-1".into()).await;
+        export_label_plus((&mock, &mock), token("user-1"), "chapter-1".into())
+            .await;
 
     let exported = match exported {
         //
@@ -283,8 +275,6 @@ async fn export_label_plus_returns_text_payload() {
 
         Err(_) => panic!("expected LabelPlus export success"),
     };
-
-    wait_for_typeset_redraw(&mock).await;
 
     assert!(exported.contains("Exported by PopRaKo Web"));
 

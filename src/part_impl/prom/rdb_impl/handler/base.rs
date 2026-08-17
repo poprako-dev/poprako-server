@@ -16,6 +16,7 @@ use crate::part::image::ImageManager;
 use crate::part::prom::payload::TaskPayload;
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::chapter::ChapterRepo;
+use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member_invitation::MemberInvitationRepo;
 use crate::part::repo::page::PageRepo;
@@ -50,6 +51,7 @@ where
     N: Nucl<Context = RdbContext, Error = BaseError>,
     R: AssignmentInvitationRepo<RdbContext>
         + ChapterRepo<RdbContext>
+        + ChapterWorkflowRecordRepo<RdbContext>
         + ComicRepo<RdbContext>
         + MemberInvitationRepo<RdbContext>
         + PageRepo<RdbContext>
@@ -94,6 +96,7 @@ where
     N: Nucl<Context = RdbContext, Error = BaseError>,
     R: AssignmentInvitationRepo<RdbContext>
         + ChapterRepo<RdbContext>
+        + ChapterWorkflowRecordRepo<RdbContext>
         + ComicRepo<RdbContext>
         + MemberInvitationRepo<RdbContext>
         + PageRepo<RdbContext>

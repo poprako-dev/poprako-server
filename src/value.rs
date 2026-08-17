@@ -6,6 +6,8 @@ pub mod assignment;
 pub mod chapter;
 /// Chapter port value types.
 pub mod chapter_port;
+/// Immutable chapter workflow record value types.
+pub mod chapter_workflow_record;
 /// Comic value types.
 pub mod comic;
 /// Comic archive month-slot values.

@@ -27,6 +27,7 @@ use crate::data::view::comic::ComicInfoView;
 use crate::model::shared::user::UserToken;
 use crate::model::write::assignment::AssignmentEntry;
 use crate::model::write::chapter::ChapterEntry;
+use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::model::write::comic::{ComicEntry, ComicRepl};
 use crate::part::image::{ImageManager, ImagePool};
 use crate::part::nucl::{RepeatableRead, Serializable};
@@ -36,6 +37,7 @@ use crate::part::prom::payload::TaskPayload;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::chapter::ChapterRepo;
+use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::comic_archive::ComicArchiveRepo;
 use crate::part::repo::member::MemberRepo;
@@ -47,6 +49,9 @@ use crate::part::repo::oper::chapter::{
     CreateChapter, DeleteChapter, GetChapterInfoExcluded,
     ListChapterInfosExcluded, ListPinnedChapterInfos, UnpinOtherChapters,
     UpdateChapter,
+};
+use crate::part::repo::oper::chapter_workflow_record::{
+    CreateChapterWorkflowRecords, DeleteChapterWorkflowRecords,
 };
 use crate::part::repo::oper::comic::{
     AllocComicChapterIndex, CreateComic, DeleteComic, GetComicInfo,
@@ -73,6 +78,7 @@ use crate::part::repo::termbase::TermbaseRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 
 pub use list::list_infos;
 pub use reserve::reserve_cover;
@@ -103,6 +109,7 @@ where
         + WorksetRepo<C>
         + MemberRepo<C>
         + ChapterRepo<C>
+        + ChapterWorkflowRecordRepo<C>
         + AssignmentRepo<C>
         + Send
         + Sync,
@@ -198,7 +205,7 @@ where
             let assignment_entry = AssignmentEntry {
                 id: AssignmentComplex::gen_id(),
                 chapter_id: chapter_info.id.clone(),
-                user_id: token.user_id,
+                user_id: token.user_id.clone(),
                 roles: AssignmentComplex::creator_roles(
                     instr.preset_assignment_roles,
                 ),
@@ -206,6 +213,18 @@ where
 
             CreateAssignment {
                 entry: &assignment_entry,
+            }
+            .step_on(repo, context)
+            .await?;
+
+            let workflow_record_entry = ChapterWorkflowRecordEntry::new(
+                chapter_info.id.clone(),
+                Some(token.user_id.clone()),
+                ChapterWorkflowRecordPayload::ChapterCreated,
+            );
+
+            CreateChapterWorkflowRecords {
+                entries: std::slice::from_ref(&workflow_record_entry),
             }
             .step_on(repo, context)
             .await?;
@@ -489,6 +508,7 @@ where
         + MemberRepo<C>
         + TeamRepo<C>
         + ChapterRepo<C>
+        + ChapterWorkflowRecordRepo<C>
         + PageRepo<C>
         + AssignmentInvitationRepo<C>
         + AssignmentRepo<C>
@@ -529,6 +549,7 @@ where
                     for<'a> ListPageInfos<'a>,
                     for<'a> DeleteAssignmentInvitations<'a>,
                     for<'a> DeleteAssignments<'a>,
+                    for<'a> DeleteChapterWorkflowRecords<'a>,
                     for<'a> DeletePages<'a>,
                     for<'a> DeleteChapter<'a>,
                     for<'a> UpdateChapter<'a>,

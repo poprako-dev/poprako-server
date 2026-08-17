@@ -1,5 +1,10 @@
 use super::*;
 
+use crate::value::chapter::{StageOper, StagePhase};
+use crate::value::chapter_workflow_record::{
+    ChapterWorkflowRecordOrigin, ChapterWorkflowRecordPayload,
+};
+
 #[tokio::test]
 async fn update_stage_admin_advances_any_stage() {
     //
@@ -39,6 +44,59 @@ async fn update_stage_admin_advances_any_stage() {
     let stages = &snapshot.chapters[0].stages;
 
     assert_eq!(stages.get_phase(Stage::Publish), StagePhase::Completed);
+
+    assert_eq!(snapshot.chapter_workflow_records.len(), 1);
+
+    let workflow_record = &snapshot.chapter_workflow_records[0];
+
+    assert_eq!(workflow_record.actor_user_id.as_deref(), Some("user-1"));
+
+    assert!(matches!(
+        &workflow_record.payload,
+        ChapterWorkflowRecordPayload::StageTransitioned {
+            stage: Stage::Publish,
+            previous_phase: StagePhase::Pending,
+            next_phase: StagePhase::Completed,
+            origin: ChapterWorkflowRecordOrigin::Manual,
+        }
+    ));
+}
+
+#[tokio::test]
+async fn update_stage_noop_does_not_create_workflow_record() {
+    let mock = Mock::new();
+
+    seed_scope(&mock, "user-1", RoleMask::from(RoleField::ADMIN));
+
+    mock.seed_chapter(chapter("chapter-1", "comic-1", 1, false));
+
+    mock.seed_assignment(assignment(
+        "chapter-1",
+        "user-1",
+        RoleMask::from(RoleField::ADMIN),
+    ));
+
+    update_stage(
+        (&mock, &mock, &mock, &mock),
+        token("user-1"),
+        UpdateChapterStageInstr {
+            id: "chapter-1".into(),
+            stage: Stage::Translate,
+            oper: StageOper::Revert,
+        },
+    )
+    .await
+    .ok()
+    .unwrap();
+
+    let snapshot = mock.snapshot();
+
+    assert_eq!(snapshot.chapter_workflow_records.len(), 0);
+
+    assert_eq!(
+        snapshot.chapters[0].stages.get_phase(Stage::Translate),
+        StagePhase::Pending,
+    );
 }
 
 #[tokio::test]

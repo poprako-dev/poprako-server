@@ -53,6 +53,19 @@ pub struct ListChapterInfosInstr {
     pub limit: u32,
 }
 
+/// Input parameters for listing immutable workflow records under one chapter.
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger", derive(IntoParams))]
+#[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
+pub struct ListChapterWorkflowRecordInfosInstr {
+    /// Chapter whose activity records are listed.
+    pub chapter_id: String,
+    /// Pagination offset: number of records to skip before beginning the result set.
+    pub offset: u32,
+    /// Maximum number of records to return.
+    pub limit: u32,
+}
+
 /// Input parameters for partially updating a chapter's profile.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]

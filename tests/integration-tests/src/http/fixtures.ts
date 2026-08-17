@@ -15,6 +15,7 @@ import type {
     AssignmentInfoView,
     AssignmentInvitationInfoView,
     ChapterInfoView,
+    ChapterWorkflowRecordInfoView,
     CodeVal,
     ComicInfoView,
     ListComicInfosVal,
@@ -506,6 +507,20 @@ export async function createChapter(
 
 export async function getChapter(api: ApiClient, chapterId: string): Promise<ChapterInfoView> {
     return expectSuccessData(await api.get(`/api/v1/chapters/${chapterId}`), 200);
+}
+
+export async function listChapterWorkflowRecords(
+    api: ApiClient,
+    chapterId: string,
+    offset = 0,
+    limit = 100,
+): Promise<ChapterWorkflowRecordInfoView[]> {
+    return expectSuccessList(
+        await api.get<SuccessBody<ChapterWorkflowRecordInfoView[]>>(
+            `/api/v1/chapters/${chapterId}/workflow-records?offset=${offset}&limit=${limit}`,
+        ),
+        200,
+    );
 }
 
 export async function listComicChapters(

@@ -6,8 +6,8 @@ use crate::part::repo::oper::chapter::{
     AdjustChapterUnitCounters, CompleteChapterRawProvide, CreateChapter,
     DeleteChapter, FindPinnedChapterInfo, GetChapterInfo,
     GetChapterInfoExcluded, ListChapterInfosExcluded, LockChapters,
-    ResetChapterRawProvide, SetChapterPageCounters, UnpinOtherChapters,
-    UpdateChapter, UpdateChapterStage,
+    ResetChapterRawProvide, SetChapterPageCounters, StartChapterStage,
+    UnpinOtherChapters, UpdateChapter, UpdateChapterStage,
 };
 use crate::part_impl::repo::mock_impl::chapter::orchestra::find_pinned_chapter_info;
 use crate::part_impl::repo::mock_impl::chapter::{
@@ -73,6 +73,54 @@ impl<'a> Step<CompleteChapterRawProvide<'a>, MockContext> for Mock {
         chapter_info.stages = chapter_info
             .stages
             .try_set_phase(Stage::RawProvide, StagePhase::Completed)?;
+
+        chapter_info.updated_at = now();
+
+        accept(true)
+    }
+}
+
+impl<'a> Step<StartChapterStage<'a>, MockContext> for Mock {
+    // Declares the transaction isolation level required for this mutation.
+    type Level = crate::part::nucl::RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
+    type Error = BaseError;
+
+    #[instrument(level = "info", skip_all)]
+    // Starts the requested pending stage in the transaction-local state.
+    async fn step(
+        &self,
+        context: &mut MockContext,
+        oper: &StartChapterStage<'a>,
+    ) -> BaseRest<bool> {
+        //
+        let Some(chapter_info) = context
+            .state
+            .chapters
+            .iter_mut()
+            .find(|chapter_info| chapter_info.id == oper.id)
+        else {
+            return accept(false);
+        };
+
+        if chapter_info
+            .stages
+            .has_phase(Stage::Publish, StagePhase::Completed)
+        {
+            return accept(false);
+        }
+
+        if !chapter_info
+            .stages
+            .has_phase(oper.stage, StagePhase::Pending)
+        {
+            return accept(false);
+        }
+
+        chapter_info.stages = chapter_info
+            .stages
+            .try_set_phase(oper.stage, StagePhase::Active)?;
 
         chapter_info.updated_at = now();
 

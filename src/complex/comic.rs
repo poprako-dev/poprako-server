@@ -24,6 +24,7 @@ use crate::part::repo::oper::chapter::{
     DeleteChapter, GetChapterInfoExcluded, ListChapterInfosExcluded,
     ListPinnedChapterInfos, UnpinOtherChapters, UpdateChapter,
 };
+use crate::part::repo::oper::chapter_workflow_record::DeleteChapterWorkflowRecords;
 use crate::part::repo::oper::comic::{
     DeleteComic, GetComicInfoExcluded, TouchComicLastActive,
     UpdateComicChapterCount,
@@ -154,6 +155,7 @@ impl ComicComplex {
             + for<'a> Proxy<ListPageInfos<'a>, Error = BaseError>
             + for<'a> Proxy<DeleteAssignmentInvitations<'a>, Error = BaseError>
             + for<'a> Proxy<DeleteAssignments<'a>, Error = BaseError>
+            + for<'a> Proxy<DeleteChapterWorkflowRecords<'a>, Error = BaseError>
             + for<'a> Proxy<DeletePages<'a>, Error = BaseError>
             + for<'a> Proxy<DeleteChapter<'a>, Error = BaseError>
             + for<'a> Proxy<UpdateChapter<'a>, Error = BaseError>

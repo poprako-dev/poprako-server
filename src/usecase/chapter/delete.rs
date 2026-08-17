@@ -12,6 +12,7 @@ use crate::part::prom::payload::TaskPayload;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::chapter::ChapterRepo;
+use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::DeleteAssignments;
@@ -20,6 +21,7 @@ use crate::part::repo::oper::chapter::{
     DeleteChapter, GetChapterInfoExcluded, ListChapterInfosExcluded,
     UnpinOtherChapters, UpdateChapter,
 };
+use crate::part::repo::oper::chapter_workflow_record::DeleteChapterWorkflowRecords;
 use crate::part::repo::oper::comic::{
     TouchComicLastActive, UpdateComicChapterCount,
 };
@@ -44,6 +46,7 @@ where
     C: Send,
     C::Level: AtLeast<Serializable>,
     R: ChapterRepo<C>
+        + ChapterWorkflowRecordRepo<C>
         + ComicRepo<C>
         + MemberRepo<C>
         + TeamRepo<C>
@@ -80,6 +83,7 @@ where
                     for<'a> ListPageInfos<'a>,
                     for<'a> DeleteAssignmentInvitations<'a>,
                     for<'a> DeleteAssignments<'a>,
+                    for<'a> DeleteChapterWorkflowRecords<'a>,
                     for<'a> DeletePages<'a>,
                     for<'a> DeleteChapter<'a>,
                     for<'a> ListChapterInfosExcluded<'a>,

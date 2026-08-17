@@ -6,6 +6,7 @@ mod tests;
 use std::collections::HashSet;
 
 use serde::Serialize;
+use serde_json::Value;
 use time::{Date, Month, OffsetDateTime, PrimitiveDateTime, Time};
 
 use poprako_util::i18n::trl;
@@ -98,8 +99,25 @@ pub struct ArchivedChapterPayload {
     pub updated_at: i64,
     /// Archived payloads for all assignments on this chapter.
     pub assignments: Vec<ArchivedAssignmentPayload>,
+    /// Immutable workflow records without language-specific rendered text.
+    pub workflow_records: Vec<ArchivedChapterWorkflowRecordPayload>,
     /// Archived payloads for all pages in this chapter.
     pub pages: Vec<ArchivedPagePayload>,
+}
+
+/// Immutable workflow record payload retained inside an archived chapter.
+#[derive(Serialize)]
+pub struct ArchivedChapterWorkflowRecordPayload {
+    /// Original workflow record identifier.
+    pub id: String,
+    /// User that caused the record, absent for system work.
+    pub actor_user_id: Option<String>,
+    /// Stable event kind.
+    pub kind: String,
+    /// Structured, language-neutral details.
+    pub payload: Value,
+    /// Unix timestamp of record creation.
+    pub created_at: i64,
 }
 
 /// Immutable assignment payload serialized into an archive entry.

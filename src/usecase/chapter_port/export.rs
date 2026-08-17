@@ -6,7 +6,9 @@ mod tests;
 
 use std::collections::HashMap;
 
-use poprako_orchestra::{OperRun as _, run_proxy};
+use poprako_orchestra::{
+    AtLeast, Nucl, OperRun as _, OperStep as _, run_proxy,
+};
 use tracing::instrument;
 
 use crate::complex::chapter_port::{
@@ -18,12 +20,18 @@ use crate::data::view::unit_port::UnitTranslationExportView;
 use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::unit::UnitInfo;
 use crate::model::shared::user::UserToken;
+use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
+use crate::part::nucl::RepeatableRead;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
+use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
-use crate::part::repo::oper::chapter::GetChapterInfo;
+use crate::part::repo::oper::chapter::{
+    GetChapterInfo, GetChapterInfoExcluded,
+};
+use crate::part::repo::oper::chapter_workflow_record::CreateChapterWorkflowRecords;
 use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::page::ListPageInfos;
@@ -32,30 +40,36 @@ use crate::part::repo::oper::unit::ListUnitInfos;
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::unit::UnitRepo;
-use crate::result::{BaseRest, accept};
-use crate::usecase::stage::advance_stages;
+use crate::result::{BaseError, BaseRest, accept};
+use crate::usecase::stage::start_pending_stages;
 use crate::value::chapter::Stage;
+use crate::value::chapter_port::TranslationFormat;
+use crate::value::chapter_workflow_record::{
+    ChapterWorkflowRecordOrigin, ChapterWorkflowRecordPayload,
+};
 
 /// Exports one chapter as a JSON-safe translation payload.
-#[instrument(level = "info", skip(repo))]
-pub async fn export<C, R>(
-    (repo,): (&R,),
+#[instrument(level = "info", skip(nucl, repo))]
+pub async fn export<N, C, R>(
+    (nucl, repo): (&N, &R),
     token: UserToken,
     chapter_id: String,
 ) -> BaseRest<ExportChapterTranslationVal>
 where
     C: poprako_orchestra::Context,
+    N: Nucl<Context = C, Error = BaseError>,
+    C: Send,
+    C::Level: AtLeast<RepeatableRead>,
     R: ChapterRepo<C>
+        + ChapterWorkflowRecordRepo<C>
         + ComicRepo<C>
         + TeamRepo<C>
         + MemberRepo<C>
         + AssignmentRepo<C>
         + PageRepo<C>
         + UnitRepo<C>
-        + Clone
         + Send
-        + Sync
-        + 'static,
+        + Sync,
 {
     ChapterPortPermComplex::ensure_user_can_export(
         &mut run_proxy! {
@@ -126,35 +140,39 @@ where
         pages: page_views,
     };
 
-    advance_stages(
-        ((*repo).clone(),),
+    persist_export_record(
+        (nucl, repo),
         val.chapter_id.clone(),
-        vec![Stage::TypesetRedraw],
-    );
+        token.user_id,
+        TranslationFormat::PopRaKo,
+    )
+    .await?;
 
     accept(val)
 }
 
 /// Exports one chapter as LabelPlus text.
-#[instrument(level = "info", skip(repo))]
-pub async fn export_label_plus<C, R>(
-    (repo,): (&R,),
+#[instrument(level = "info", skip(nucl, repo))]
+pub async fn export_label_plus<N, C, R>(
+    (nucl, repo): (&N, &R),
     token: UserToken,
     chapter_id: String,
 ) -> BaseRest<String>
 where
     C: poprako_orchestra::Context,
+    N: Nucl<Context = C, Error = BaseError>,
+    C: Send,
+    C::Level: AtLeast<RepeatableRead>,
     R: ChapterRepo<C>
+        + ChapterWorkflowRecordRepo<C>
         + ComicRepo<C>
         + TeamRepo<C>
         + MemberRepo<C>
         + AssignmentRepo<C>
         + PageRepo<C>
         + UnitRepo<C>
-        + Clone
         + Send
-        + Sync
-        + 'static,
+        + Sync,
 {
     ChapterPortPermComplex::ensure_user_can_export(
         &mut run_proxy! {
@@ -204,7 +222,13 @@ where
     let content =
         ChapterExportComplex::make_label_plus(&page_infos, &units_by_page_id);
 
-    advance_stages(((*repo).clone(),), chapter_id, vec![Stage::TypesetRedraw]);
+    persist_export_record(
+        (nucl, repo),
+        chapter_id,
+        token.user_id,
+        TranslationFormat::LabelPlus,
+    )
+    .await?;
 
     accept(content)
 }
@@ -242,4 +266,57 @@ fn non_empty(text: String) -> Option<String> {
     }
 
     Some(text)
+}
+
+// Persists a completed export and starts typesetting/redraw in one transaction.
+async fn persist_export_record<N, C, R>(
+    (nucl, repo): (&N, &R),
+    chapter_id: String,
+    actor_user_id: String,
+    format: TranslationFormat,
+) -> BaseRest<()>
+where
+    C: poprako_orchestra::Context,
+    N: Nucl<Context = C, Error = BaseError>,
+    C: Send,
+    C::Level: AtLeast<RepeatableRead>,
+    R: ChapterRepo<C> + ChapterWorkflowRecordRepo<C> + Send + Sync,
+{
+    let () = nucl
+        .coord(async move |context| {
+            //
+            let chapter_info = GetChapterInfoExcluded {
+                id: &chapter_id,
+                incls: &[],
+            }
+            .step_on(repo, context)
+            .await?;
+
+            let workflow_record_entry = ChapterWorkflowRecordEntry::new(
+                chapter_info.id.clone(),
+                Some(actor_user_id.clone()),
+                ChapterWorkflowRecordPayload::TranslationExported { format },
+            );
+
+            CreateChapterWorkflowRecords {
+                entries: std::slice::from_ref(&workflow_record_entry),
+            }
+            .step_on(repo, context)
+            .await?;
+
+            start_pending_stages(
+                repo,
+                context,
+                &chapter_info.id,
+                Some(actor_user_id),
+                ChapterWorkflowRecordOrigin::TranslationExport,
+                &[Stage::TypesetRedraw],
+            )
+            .await?;
+
+            accept(())
+        })
+        .await?;
+
+    accept(())
 }

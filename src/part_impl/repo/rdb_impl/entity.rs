@@ -8,6 +8,8 @@ pub mod assignment;
 pub mod assignment_invitation;
 /// Chapter Diesel entity types.
 pub mod chapter;
+/// Immutable chapter workflow record Diesel entity types.
+pub mod chapter_workflow_record;
 /// Comic Diesel entity types.
 pub mod comic;
 /// Immutable comic archive Diesel entity types.

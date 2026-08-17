@@ -12,6 +12,7 @@ use crate::part::repo::oper::chapter::{
     DeleteChapter, GetChapterInfoExcluded, ListChapterInfosExcluded,
     UnpinOtherChapters, UpdateChapter,
 };
+use crate::part::repo::oper::chapter_workflow_record::DeleteChapterWorkflowRecords;
 use crate::part::repo::oper::comic::{
     TouchComicLastActive, UpdateComicChapterCount,
 };
@@ -47,6 +48,7 @@ impl ChapterComplex {
             + for<'a> Proxy<ListPageInfos<'a>, Error = BaseError>
             + for<'a> Proxy<DeleteAssignmentInvitations<'a>, Error = BaseError>
             + for<'a> Proxy<DeleteAssignments<'a>, Error = BaseError>
+            + for<'a> Proxy<DeleteChapterWorkflowRecords<'a>, Error = BaseError>
             + for<'a> Proxy<DeletePages<'a>, Error = BaseError>
             + for<'a> Proxy<DeleteChapter<'a>, Error = BaseError>
             + for<'a> Proxy<ListChapterInfosExcluded<'a>, Error = BaseError>
@@ -79,6 +81,12 @@ impl ChapterComplex {
         .await?;
 
         DeleteAssignments::Chapter {
+            chapter_id: &chapter_info.id,
+        }
+        .proxy_on(proxy)
+        .await?;
+
+        DeleteChapterWorkflowRecords {
             chapter_id: &chapter_info.id,
         }
         .proxy_on(proxy)

@@ -71,7 +71,8 @@ async fn reserve_chapter_pages_creates_pages_and_urls() {
             matches!(
                 record.payload(),
                 TaskPayload::Chapter(ChapterPayload::TryAdvanceRawProvideStage {
-                    chapter_id
+                    chapter_id,
+                    ..
                 }) if chapter_id == "chapter-1"
             )
         })

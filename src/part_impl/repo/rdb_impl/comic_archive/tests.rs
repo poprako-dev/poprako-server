@@ -8,7 +8,9 @@ use poprako_orchestra::Nucl as _;
 use time::OffsetDateTime;
 
 use crate::complex::comic_archive::ComicArchiveComplex;
+use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::model::write::comic_archive::ComicArchiveEntry;
+use crate::part::repo::oper::chapter_workflow_record::CreateChapterWorkflowRecords;
 use crate::part::repo::oper::comic_archive::{
     CommitComicArchive, GetComicArchiveSnapshotExcluded,
 };
@@ -20,6 +22,7 @@ use crate::part_impl::repo::rdb_impl::schema::{
 use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::result::BaseError;
 use crate::shared::RdbCore;
+use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 
 const PREFIX: &str = "rdb-test-comic-archive-domain-";
 
@@ -39,6 +42,32 @@ pub async fn comic_archive_roundtrip_uses_testcontainer(shared: RdbCore) {
     let source_comic_id = page_fixture.chapter_entry.comic_id.clone();
 
     let archiver_id = page_fixture.chapter_entry.creator_id.clone();
+
+    let workflow_record_entry = ChapterWorkflowRecordEntry {
+        id: format!("{}workflow-record", PREFIX),
+        chapter_id: page_fixture.chapter_entry.id.clone(),
+        actor_user_id: Some(archiver_id.clone()),
+        payload: ChapterWorkflowRecordPayload::ChapterSubtitleUpdated {
+            previous_subtitle: "before archive".into(),
+            next_subtitle: "after archive".into(),
+        },
+        created_at: OffsetDateTime::UNIX_EPOCH,
+    };
+
+    nucl.coord(async |context| {
+        repo.step(
+            context,
+            &CreateChapterWorkflowRecords {
+                entries: std::slice::from_ref(&workflow_record_entry),
+            },
+        )
+        .await?;
+
+        Ok::<(), BaseError>(())
+    })
+    .await
+    .ok()
+    .unwrap();
 
     let (archive_workset_id, workset_comic_count_before) = {
         //
@@ -132,6 +161,22 @@ pub async fn comic_archive_roundtrip_uses_testcontainer(shared: RdbCore) {
     assert_eq!(
         archived_comic_payload["chapters"][0]["source_chapter_id"],
         page_fixture.chapter_entry.id
+    );
+
+    assert_eq!(
+        archived_comic_payload["chapters"][0]["workflow_records"][0]["id"],
+        workflow_record_entry.id
+    );
+
+    assert_eq!(
+        archived_comic_payload["chapters"][0]["workflow_records"][0]["kind"],
+        "chapter-subtitle-updated"
+    );
+
+    assert_eq!(
+        archived_comic_payload["chapters"][0]["workflow_records"][0]["payload"]
+            ["previous_subtitle"],
+        "before archive"
     );
 
     assert_eq!(

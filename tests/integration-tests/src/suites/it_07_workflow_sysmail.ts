@@ -40,6 +40,7 @@ import {
 import {
     advanceStage,
     getChapter,
+    listChapterWorkflowRecords,
     listSystemMails,
     markSystemMailsRead,
     revertStage,
@@ -180,6 +181,27 @@ export async function runIt07Module(ctx: RunCtx): Promise<void> {
     const afterRaw = await getChapter(sadmin, mainChapterId);
 
     assert.equal(stagePhase(afterRaw.stages, "raw-provide"), PHASE.COMPLETED, "raw-provide completed");
+
+    const latestWorkflowRecords = await listChapterWorkflowRecords(sadmin, mainChapterId, 0, 1);
+
+    assert.equal(latestWorkflowRecords.length, 1, "workflow record list returns the requested page");
+
+    const latestWorkflowRecord = latestWorkflowRecords[0]!;
+
+    assert.equal(latestWorkflowRecord.chapter_id, mainChapterId);
+    assert.equal(latestWorkflowRecord.kind, "stage-transitioned");
+    assert.equal(latestWorkflowRecord.actor_user_id, raw01.userId);
+    assert.equal(latestWorkflowRecord.payload.stage, "raw-provide");
+    assert.equal(latestWorkflowRecord.payload.previous_phase, "pending");
+    assert.equal(latestWorkflowRecord.payload.next_phase, "completed");
+    assert.equal(latestWorkflowRecord.payload.origin, "manual");
+    assert.ok(latestWorkflowRecord.text.length > 0, "workflow record has localized text");
+    assert.ok(Number.isInteger(latestWorkflowRecord.created_at), "workflow record timestamp is integer ms");
+
+    const nextWorkflowRecords = await listChapterWorkflowRecords(sadmin, mainChapterId, 1, 1);
+
+    assert.equal(nextWorkflowRecords.length, 1, "workflow record pagination can read the next item");
+    assert.notEqual(nextWorkflowRecords[0]!.id, latestWorkflowRecord.id, "workflow pages must not overlap");
 
     // advancing a completed stage -> 422/2
     expectError(

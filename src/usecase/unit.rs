@@ -20,6 +20,7 @@ use crate::model::shared::user::UserToken;
 use crate::part::nucl::RepeatableRead;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
+use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
@@ -39,7 +40,8 @@ use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::result::{BaseError, BaseRest, accept};
-use crate::usecase::stage::advance_stages;
+use crate::usecase::stage::start_pending_stages;
+use crate::value::chapter_workflow_record::ChapterWorkflowRecordOrigin;
 use crate::value::role::RoleField;
 use crate::value::unit::UnitEditPerm;
 
@@ -103,12 +105,11 @@ where
     R: PageRepo<C>
         + UnitRepo<C>
         + ChapterRepo<C>
+        + ChapterWorkflowRecordRepo<C>
         + ComicRepo<C>
         + AssignmentRepo<C>
-        + Clone
         + Send
-        + Sync
-        + 'static,
+        + Sync,
 {
     let SavePageUnitEditsInstr { page_id, edits } = instr;
 
@@ -118,7 +119,7 @@ where
 
     let page_scope = GetPageInfo { id: &page_id }.run_on(repo).await?;
 
-    let chapter_id = nucl
+    let () = nucl
         .coord(async move |context| {
             //
             let chapter_info = GetChapterInfoExcluded {
@@ -201,11 +202,19 @@ where
             .step_on(repo, context)
             .await?;
 
-            accept(page_info.chapter_id)
+            start_pending_stages(
+                repo,
+                context,
+                &page_info.chapter_id,
+                Some(token.user_id.clone()),
+                ChapterWorkflowRecordOrigin::UnitEdit,
+                &stages,
+            )
+            .await?;
+
+            accept(())
         })
         .await?;
-
-    advance_stages(((*repo).clone(),), chapter_id, stages);
 
     accept(())
 }

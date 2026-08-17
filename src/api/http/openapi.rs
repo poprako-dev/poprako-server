@@ -76,6 +76,7 @@ use crate::data::view::announcement::AnnouncementInfoView;
 use crate::data::view::assignment::AssignmentInfoView;
 use crate::data::view::assignment_invitation::AssignmentInvitationInfoView;
 use crate::data::view::chapter::ChapterInfoView;
+use crate::data::view::chapter_workflow_record::ChapterWorkflowRecordInfoView;
 use crate::data::view::comic::ComicInfoView;
 use crate::data::view::comment::CommentInfoView;
 use crate::data::view::image::ImageUploadSlotView;
@@ -92,6 +93,9 @@ use crate::data::view::workset::WorksetInfoView;
 use crate::value::announcement::AnnouncementInclOpt;
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::chapter::ChapterInclOpt;
+use crate::value::chapter_workflow_record::{
+    ChapterWorkflowRecordKind, ChapterWorkflowRecordOrigin,
+};
 use crate::value::comic::{ComicInclOpt, ComicWithOpt};
 use crate::value::comment::CommentInclOpt;
 use crate::value::member::MemberInclOpt;
@@ -141,6 +145,7 @@ use crate::value::role::RoleField;
         handler::chapter::list_infos,
         handler::chapter::get_pinned,
         handler::chapter::get_info,
+        handler::chapter::list_workflow_record_infos,
         handler::chapter::update_info,
         handler::chapter::mark_pinned,
         handler::chapter::advance_stage,
@@ -224,6 +229,9 @@ use crate::value::role::RoleField;
         MarkComicCoverUploadedInstr,
         ArchiveComicVal,
         ChapterInfoView,
+        ChapterWorkflowRecordInfoView,
+        ChapterWorkflowRecordKind,
+        ChapterWorkflowRecordOrigin,
         CreateChapterInstr,
         CreateChapterVal,
         UpdateChapterInfoInstr,

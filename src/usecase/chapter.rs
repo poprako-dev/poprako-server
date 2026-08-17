@@ -2,12 +2,16 @@
 
 // Chapter deletion use cases (internal).
 mod delete;
+// Chapter workflow stage mutation use case.
+mod stage;
+// Immutable workflow record listing use case.
+mod workflow_record;
 
 #[cfg(test)]
 mod tests;
 
 use poprako_orchestra::{
-    AtLeast, Nucl, OperRun as _, OperStep as _, run_proxy, step_proxy,
+    AtLeast, Nucl, OperRun as _, OperStep as _, run_proxy,
 };
 use tracing::instrument;
 
@@ -16,7 +20,6 @@ use crate::complex::chapter::{ChapterComplex, ChapterPermComplex};
 use crate::complex::comic::ComicComplex;
 use crate::data::instr::chapter::{
     CreateChapterInstr, ListChapterInfosInstr, UpdateChapterInfoInstr,
-    UpdateChapterStageInstr,
 };
 use crate::data::val::chapter::CreateChapterVal;
 use crate::data::view::chapter::ChapterInfoView;
@@ -24,43 +27,38 @@ use crate::model::read::spec::chapter::ChapterListSpec;
 use crate::model::shared::user::UserToken;
 use crate::model::write::assignment::AssignmentEntry;
 use crate::model::write::chapter::{ChapterEntry, ChapterPatch};
-use crate::part::effect::event::Event;
-use crate::part::effect::event::chapter::{
-    ChapterPublishedEvent, ChapterWorkflowCompletedEvent,
-};
-use crate::part::effect::{Develop, EffectEvent as _};
+use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::part::image::ImagePool;
 use crate::part::nucl::RepeatableRead;
-use crate::part::prom::Prom;
-use crate::part::prom::oper::DeferBatch;
-use crate::part::prom::payload::TaskPayload;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
+use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::{
-    CreateAssignment, FindAssignmentInfo, ListAssignmentInfos,
+    CreateAssignment, FindAssignmentInfo,
 };
 use crate::part::repo::oper::chapter::{
     CreateChapter, FindPinnedChapterInfo, GetChapterInfo,
     GetChapterInfoExcluded, ListChapterInfos, ListPinnedChapterInfos,
-    LockChapters, UnpinOtherChapters, UpdateChapter, UpdateChapterStage,
+    LockChapters, UnpinOtherChapters, UpdateChapter,
 };
+use crate::part::repo::oper::chapter_workflow_record::CreateChapterWorkflowRecords;
 use crate::part::repo::oper::comic::{
     AllocComicChapterIndex, GetComicInfoExcluded, TouchComicLastActive,
     UpdateComicChapterCount,
 };
 use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part::repo::oper::page::{
-    ClearPageImagesForPublish, ListFirstPageInfos,
-};
+use crate::part::repo::oper::page::ListFirstPageInfos;
 use crate::part::repo::oper::team::ResolveTeamId;
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::result::{BaseError, BaseRest, accept};
-use crate::value::chapter::{Stage, StageOper, StagePhase};
+use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 
 pub use delete::delete;
+pub use stage::update_stage;
+pub use workflow_record::list_workflow_record_infos;
 
 /// Lists chapters under one comic.
 #[instrument(level = "info", skip(repo, image_pool))]
@@ -210,6 +208,7 @@ where
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: ChapterRepo<C>
+        + ChapterWorkflowRecordRepo<C>
         + ComicRepo<C>
         + MemberRepo<C>
         + TeamRepo<C>
@@ -243,6 +242,13 @@ where
 
             LockChapters {
                 comic_id: &instr.comic_id,
+            }
+            .step_on(repo, context)
+            .await?;
+
+            let prev_pinned_chapter = FindPinnedChapterInfo {
+                comic_id: &instr.comic_id,
+                incls: &[],
             }
             .step_on(repo, context)
             .await?;
@@ -296,7 +302,7 @@ where
             let assignment_entry = AssignmentEntry {
                 id: AssignmentComplex::gen_id(),
                 chapter_id: chapter_info.id.clone(),
-                user_id: token.user_id,
+                user_id: token.user_id.clone(),
                 roles: AssignmentComplex::creator_roles(
                     instr.preset_assignment_roles,
                 ),
@@ -304,6 +310,29 @@ where
 
             CreateAssignment {
                 entry: &assignment_entry,
+            }
+            .step_on(repo, context)
+            .await?;
+
+            let mut workflow_record_entries = Vec::with_capacity(2);
+
+            if let Some(prev_pinned_chapter) = prev_pinned_chapter {
+                //
+                workflow_record_entries.push(ChapterWorkflowRecordEntry::new(
+                    prev_pinned_chapter.id,
+                    Some(token.user_id.clone()),
+                    ChapterWorkflowRecordPayload::ChapterUnpinned,
+                ));
+            }
+
+            workflow_record_entries.push(ChapterWorkflowRecordEntry::new(
+                chapter_info.id.clone(),
+                Some(token.user_id.clone()),
+                ChapterWorkflowRecordPayload::ChapterCreated,
+            ));
+
+            CreateChapterWorkflowRecords {
+                entries: &workflow_record_entries,
             }
             .step_on(repo, context)
             .await?;
@@ -327,7 +356,12 @@ where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
-    R: ChapterRepo<C> + ComicRepo<C> + AssignmentRepo<C> + Send + Sync,
+    R: ChapterRepo<C>
+        + ChapterWorkflowRecordRepo<C>
+        + ComicRepo<C>
+        + AssignmentRepo<C>
+        + Send
+        + Sync,
 {
     ChapterPermComplex::ensure_user_can_update_info(
         &mut run_proxy! {
@@ -349,19 +383,39 @@ where
 
         ChapterComplex::ensure_chapter_writable(&chapter_info)?;
 
-        if instr.subtitle.is_some() {
+        match instr.subtitle {
             //
-            let chapter_info_update = ChapterPatch {
-                id: instr.id.clone(),
-                subtitle: instr.subtitle,
-                pin: None,
-            };
+            Some(next_subtitle) if next_subtitle != chapter_info.subtitle => {
+                //
+                let chapter_info_update = ChapterPatch {
+                    id: instr.id.clone(),
+                    subtitle: Some(next_subtitle.clone()),
+                    pin: None,
+                };
 
-            UpdateChapter {
-                update: &chapter_info_update,
+                UpdateChapter {
+                    update: &chapter_info_update,
+                }
+                .step_on(repo, context)
+                .await?;
+
+                let workflow_record_entry = ChapterWorkflowRecordEntry::new(
+                    chapter_info.id.clone(),
+                    Some(token.user_id.clone()),
+                    ChapterWorkflowRecordPayload::ChapterSubtitleUpdated {
+                        previous_subtitle: chapter_info.subtitle,
+                        next_subtitle,
+                    },
+                );
+
+                CreateChapterWorkflowRecords {
+                    entries: std::slice::from_ref(&workflow_record_entry),
+                }
+                .step_on(repo, context)
+                .await?;
             }
-            .step_on(repo, context)
-            .await?;
+
+            Some(_) | None => {}
         }
 
         TouchComicLastActive {
@@ -389,7 +443,12 @@ where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
-    R: ChapterRepo<C> + ComicRepo<C> + AssignmentRepo<C> + Send + Sync,
+    R: ChapterRepo<C>
+        + ChapterWorkflowRecordRepo<C>
+        + ComicRepo<C>
+        + AssignmentRepo<C>
+        + Send
+        + Sync,
 {
     ChapterPermComplex::ensure_user_can_mark_pinned(
         &mut run_proxy! {
@@ -427,6 +486,13 @@ where
 
             ChapterComplex::ensure_chapter_writable(&chapter_info)?;
 
+            let prev_pinned_chapter = FindPinnedChapterInfo {
+                comic_id: &chapter_info.comic_id,
+                incls: &[],
+            }
+            .step_on(repo, context)
+            .await?;
+
             UnpinOtherChapters {
                 comic_id: &chapter_info.comic_id,
                 excluded_id: &chapter_info.id,
@@ -446,6 +512,34 @@ where
             .step_on(repo, context)
             .await?;
 
+            let mut workflow_record_entries = Vec::with_capacity(2);
+
+            if let Some(prev_pinned_chapter) = prev_pinned_chapter
+                && prev_pinned_chapter.id != chapter_info.id
+            {
+                //
+                workflow_record_entries.push(ChapterWorkflowRecordEntry::new(
+                    prev_pinned_chapter.id,
+                    Some(token.user_id.clone()),
+                    ChapterWorkflowRecordPayload::ChapterUnpinned,
+                ));
+            }
+
+            if !chapter_info.is_pinned {
+                //
+                workflow_record_entries.push(ChapterWorkflowRecordEntry::new(
+                    chapter_info.id.clone(),
+                    Some(token.user_id.clone()),
+                    ChapterWorkflowRecordPayload::ChapterPinned,
+                ));
+            }
+
+            CreateChapterWorkflowRecords {
+                entries: &workflow_record_entries,
+            }
+            .step_on(repo, context)
+            .await?;
+
             TouchComicLastActive {
                 id: &chapter_info.comic_id,
             }
@@ -455,142 +549,6 @@ where
             accept(())
         })
         .await?;
-
-    accept(())
-}
-
-/// Updates chapter workflow state.
-#[instrument(level = "info", skip(nucl, repo, prom, develop))]
-pub async fn update_stage<N, C, R, P, D>(
-    (nucl, repo, prom, develop): (&N, &R, &P, &D),
-    token: UserToken,
-    instr: UpdateChapterStageInstr,
-) -> BaseRest<()>
-where
-    C: poprako_orchestra::Context,
-    N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
-    C::Level: AtLeast<RepeatableRead>,
-    R: ChapterRepo<C>
-        + ComicRepo<C>
-        + AssignmentRepo<C>
-        + PageRepo<C>
-        + Send
-        + Sync,
-    P: Prom<C> + Send + Sync,
-    D: Develop + Send + Sync,
-{
-    ChapterPermComplex::ensure_user_can_update_stage(
-        &mut run_proxy! {
-            repo =>
-                for<'a, 'b> FindAssignmentInfo<'a, 'b>,
-                for<'a, 'b> ListAssignmentInfos<'a, 'b>;
-        },
-        &token.user_id,
-        &instr.id,
-        instr.stage,
-        instr.oper,
-    )
-    .await?;
-
-    let (workflow_completed_chapter_id, published_chapter_id) = nucl
-        .coord(async move |context| {
-            //
-            let chapter_info = GetChapterInfoExcluded {
-                id: &instr.id,
-                incls: &[],
-            }
-            .step_on(repo, context)
-            .await?;
-
-            ChapterComplex::ensure_chapter_writable(&chapter_info)?;
-
-            let was_published = chapter_info.stages.get_phase(Stage::Publish)
-                == StagePhase::Completed;
-
-            let prev_phase = chapter_info.stages.get_phase(instr.stage);
-
-            let chapter_stage_update = ChapterComplex::build_stage_update(
-                &chapter_info,
-                instr.stage,
-                instr.oper,
-            )?;
-
-            let next_phase =
-                chapter_stage_update.stages.get_phase(instr.stage);
-
-            UpdateChapterStage {
-                update: &chapter_stage_update,
-            }
-            .step_on(repo, context)
-            .await?;
-
-            let mut workflow_completed_chapter_id = None;
-
-            let mut published_chapter_id = None;
-
-            if instr.oper == StageOper::Advance
-                && prev_phase != StagePhase::Completed
-                && next_phase == StagePhase::Completed
-            {
-                workflow_completed_chapter_id = Some(chapter_info.id.clone());
-            }
-
-            if instr.stage == Stage::Publish
-                && instr.oper == StageOper::Advance
-                && !was_published
-                && chapter_stage_update
-                    .stages
-                    .has_phase(Stage::Publish, StagePhase::Completed)
-            {
-                // TODO: archive this chapter and relevant assignments.
-
-                let guarded_repo = &crate::part::nucl::GuardedStep::new(repo);
-
-                let guarded_prom = &crate::part::nucl::GuardedStep::new(prom);
-
-                ChapterComplex::clean_uploaded_images(
-                    &mut step_proxy! {
-                        context;
-                        guarded_repo => for<'a> ClearPageImagesForPublish<'a>;
-                        guarded_prom => for<'t, 'a> DeferBatch<'t, 'a, String, TaskPayload, ()>;
-                    },
-                    &chapter_info.id,
-                )
-                .await?;
-
-                published_chapter_id = Some(chapter_info.id.clone());
-            }
-
-            TouchComicLastActive {
-                id: &chapter_info.comic_id,
-            }
-            .step_on(repo, context)
-            .await?;
-
-            accept((
-                workflow_completed_chapter_id,
-                published_chapter_id,
-            ))
-        })
-        .await?;
-
-    if let Some(chapter_id) = workflow_completed_chapter_id {
-        //
-        Event::ChapterWorkflowCompleted(ChapterWorkflowCompletedEvent {
-            chapter_id,
-            completed_stage: instr.stage,
-        })
-        .develop_on(develop)
-        .await;
-    }
-
-    if let Some(chapter_id) = published_chapter_id {
-        //
-        Event::ChapterPublished(ChapterPublishedEvent { chapter_id })
-            .develop_on(develop)
-            .await;
-    }
 
     accept(())
 }
