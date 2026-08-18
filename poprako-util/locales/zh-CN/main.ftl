@@ -90,43 +90,6 @@ error-comic-archived = 已归档漫画不可修改
 
 chapter-default-subtitle = 第{ $number }话
 
-chapter-workflow-record-created = 创建了本章节
-chapter-workflow-record-subtitle-updated = 将章节标题从“{ $previous_subtitle }”修改为“{ $next_subtitle }”
-chapter-workflow-record-pinned = 置顶了本章节
-chapter-workflow-record-unpinned = 取消置顶了本章节
-chapter-workflow-record-assignment-created = 新增分工，角色：{ $roles }
-chapter-workflow-record-assignment-roles-updated = 将分工角色从 { $previous_roles } 修改为 { $next_roles }
-chapter-workflow-record-assignment-deleted = 删除分工，原角色：{ $previous_roles }
-chapter-workflow-record-translation-imported = 从 { $format } 导入了 { $page_count } 页、{ $unit_count } 个 unit
-chapter-workflow-record-translation-exported = 已导出 { $format } 格式的翻译内容
-chapter-workflow-record-stage-transitioned = 将{ $stage }阶段从{ $previous_phase }推进到{ $next_phase }
-
-chapter-workflow-stage-raw-provide = 图源提供
-chapter-workflow-stage-translate = 翻译
-chapter-workflow-stage-proofread = 校对
-chapter-workflow-stage-typeset-redraw = 嵌字与修图
-chapter-workflow-stage-review = 监修
-chapter-workflow-stage-publish = 发布
-chapter-workflow-phase-pending = 待处理
-chapter-workflow-phase-active = 进行中
-chapter-workflow-phase-completed = 已完成
-chapter-workflow-format-label-plus = LabelPlus
-chapter-workflow-format-poprako = PopRaKo
-chapter-workflow-role-raw-provider = 图源
-chapter-workflow-role-translator = 翻译
-chapter-workflow-role-proofreader = 校对
-chapter-workflow-role-typesetter = 嵌字
-chapter-workflow-role-redrawer = 修图
-chapter-workflow-role-reviewer = 监修
-chapter-workflow-role-publisher = 发布
-chapter-workflow-role-admin = 管理
-chapter-workflow-role-bot = 机器人
-chapter-workflow-origin-manual = 手动操作
-chapter-workflow-origin-unit-edit = unit 编辑
-chapter-workflow-origin-translation-import = 翻译导入
-chapter-workflow-origin-translation-export = 翻译导出
-chapter-workflow-origin-raw-provide-check = 图源检查
-
 mail-invitation-used-title = 你的邀请码已被使用
 mail-invitation-used-body = 你的邀请码已被使用，「{$invitee_qid}」已加入汉化组「{$team_name}」
 

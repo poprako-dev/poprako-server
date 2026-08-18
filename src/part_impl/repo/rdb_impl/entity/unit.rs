@@ -226,7 +226,7 @@ impl<'a> UnitAspectRow<'a> {
                 self.f_last_translator_id = Some(None);
             }
 
-            Patch::Assign(translation) => {
+            Patch::Assign { value: translation } => {
                 //
                 self.f_translated_text =
                     Some(Some(translation.translated_text.as_str()));
@@ -249,7 +249,7 @@ impl<'a> UnitAspectRow<'a> {
                 self.f_last_proofreader_id = Some(None);
             }
 
-            Patch::Assign(revision) => {
+            Patch::Assign { value: revision } => {
                 //
                 self.f_is_proofread = Some(revision.is_proofread);
 

@@ -281,7 +281,9 @@ async fn delete_by_chapter_deletes_pages_and_clears_counters() {
 
     assert!(matches!(
         snapshot.prom_records[0].payload(),
-        TaskPayload::Image(ImagePayload::Delete { object_key }) if object_key == "one.png"
+        TaskPayload::Image {
+            payload: ImagePayload::Delete { object_key },
+        } if object_key == "one.png"
     ));
 }
 

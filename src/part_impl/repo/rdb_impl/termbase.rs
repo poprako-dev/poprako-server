@@ -19,6 +19,7 @@ use poprako_util::i18n::trl;
 use crate::model::read::proj::termbase::TermbaseInfo;
 use crate::model::read::spec::termbase::TermbaseListSpec;
 use crate::model::write::termbase::{TermbaseEntry, TermbaseRepl};
+use crate::part::nucl::RepeatableRead;
 use crate::part::repo::oper::termbase::{
     CreateTermbase, DeleteTermbase, GetTermbaseInfo, GetTermbaseInfoExcluded,
     ListTermbaseInfos, ListTermbaseInfosExcluded, TouchTermbase,
@@ -332,10 +333,10 @@ impl Run<ListTermbaseInfos<'_>> for HybRepo {
 impl<L> Step<CreateTermbase<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send,
-    L: AtLeast<crate::part::nucl::RepeatableRead>,
+    L: AtLeast<RepeatableRead>,
 {
     // Use BaseError for transactional creation failures.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -354,10 +355,10 @@ where
 impl<L> Step<GetTermbaseInfo<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send,
-    L: AtLeast<crate::part::nucl::RepeatableRead>,
+    L: AtLeast<RepeatableRead>,
 {
     // Use BaseError for transactional read failures.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -376,10 +377,10 @@ where
 impl<L> Step<GetTermbaseInfoExcluded<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send,
-    L: AtLeast<crate::part::nucl::RepeatableRead>,
+    L: AtLeast<RepeatableRead>,
 {
     // Use BaseError for transactional lock-bound reads.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -398,10 +399,10 @@ where
 impl<L> Step<ListTermbaseInfosExcluded<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send,
-    L: AtLeast<crate::part::nucl::RepeatableRead>,
+    L: AtLeast<RepeatableRead>,
 {
     // Use BaseError for transactional collection reads.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -420,10 +421,10 @@ where
 impl<L> Step<UpdateTermbase<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send,
-    L: AtLeast<crate::part::nucl::RepeatableRead>,
+    L: AtLeast<RepeatableRead>,
 {
     // Use BaseError for transactional update failures.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -442,10 +443,10 @@ where
 impl<L> Step<UpdateTermbaseTermCount<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send,
-    L: AtLeast<crate::part::nucl::RepeatableRead>,
+    L: AtLeast<RepeatableRead>,
 {
     // Use BaseError for transactional aggregate count updates.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -464,10 +465,10 @@ where
 impl<L> Step<TouchTermbase<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send,
-    L: AtLeast<crate::part::nucl::RepeatableRead>,
+    L: AtLeast<RepeatableRead>,
 {
     // Use BaseError for transactional touch/update timestamp failures.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -486,10 +487,10 @@ where
 impl<L> Step<DeleteTermbase<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send,
-    L: AtLeast<crate::part::nucl::RepeatableRead>,
+    L: AtLeast<RepeatableRead>,
 {
     // Use BaseError for transactional deletion failures.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;

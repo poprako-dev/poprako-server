@@ -232,7 +232,7 @@ async fn import_label_plus_material_updates_units_and_counters() {
         (&mock, &mock),
         token("user-1"),
         ImportChapterTranslationInstr {
-            format: TranslationFormat::LabelPlus,
+            format: TranslationFormat::LabelPlus.into(),
             content: LABEL_PLUS_MATERIAL.into(),
         },
         "chapter-1".into(),
@@ -305,7 +305,7 @@ async fn import_rejects_page_count_mismatch_without_mutation() {
         (&mock, &mock),
         token("user-1"),
         ImportChapterTranslationInstr {
-            format: TranslationFormat::LabelPlus,
+            format: TranslationFormat::LabelPlus.into(),
             content: LABEL_PLUS_MATERIAL.into(),
         },
         "chapter-1".into(),

@@ -137,9 +137,11 @@ async fn defer_records_payload() {
                 &prom,
                 context,
                 "prom-1",
-                TaskPayload::Image(image::ImagePayload::Delete {
-                    object_key: "key".to_string(),
-                }),
+                TaskPayload::Image {
+                    payload: image::ImagePayload::Delete {
+                        object_key: "key".to_string(),
+                    },
+                },
             )
             .await?;
 
@@ -178,12 +180,14 @@ async fn process_pending_marks_uploaded_image() {
             &prom,
             context,
             "prom-1",
-            TaskPayload::Image(image::ImagePayload::CheckUpload {
-                resource_kind: image::ResourceKind::UserAvatar,
-                resource_id: "user-1".to_string(),
-                object_key: "avatar.png".to_string(),
-                version: 1,
-            }),
+            TaskPayload::Image {
+                payload: image::ImagePayload::CheckUpload {
+                    resource_kind: image::ResourceKind::UserAvatar,
+                    resource_id: "user-1".to_string(),
+                    object_key: "avatar.png".to_string(),
+                    version: 1,
+                },
+            },
         )
         .await?;
 
@@ -218,12 +222,14 @@ async fn process_pending_ignores_stale_image_check() {
             &prom,
             context,
             "prom-1",
-            TaskPayload::Image(image::ImagePayload::CheckUpload {
-                resource_kind: image::ResourceKind::UserAvatar,
-                resource_id: "user-1".to_string(),
-                object_key: "avatar-v1.png".to_string(),
-                version: 1,
-            }),
+            TaskPayload::Image {
+                payload: image::ImagePayload::CheckUpload {
+                    resource_kind: image::ResourceKind::UserAvatar,
+                    resource_id: "user-1".to_string(),
+                    object_key: "avatar-v1.png".to_string(),
+                    version: 1,
+                },
+            },
         )
         .await?;
 
@@ -255,12 +261,14 @@ async fn process_pending_does_not_revive_cleared_page_image() {
             &prom,
             context,
             "prom-1",
-            TaskPayload::Image(image::ImagePayload::CheckUpload {
-                resource_kind: image::ResourceKind::PageImage,
-                resource_id: "page-1".to_string(),
-                object_key: "page-1.png".to_string(),
-                version: 1,
-            }),
+            TaskPayload::Image {
+                payload: image::ImagePayload::CheckUpload {
+                    resource_kind: image::ResourceKind::PageImage,
+                    resource_id: "page-1".to_string(),
+                    object_key: "page-1.png".to_string(),
+                    version: 1,
+                },
+            },
         )
         .await?;
 
@@ -304,12 +312,14 @@ async fn process_pending_rejects_mismatched_image_key() {
             &prom,
             context,
             "prom-1",
-            TaskPayload::Image(image::ImagePayload::CheckUpload {
-                resource_kind: image::ResourceKind::UserAvatar,
-                resource_id: "user-1".to_string(),
-                object_key: "avatar-other.png".to_string(),
-                version: 1,
-            }),
+            TaskPayload::Image {
+                payload: image::ImagePayload::CheckUpload {
+                    resource_kind: image::ResourceKind::UserAvatar,
+                    resource_id: "user-1".to_string(),
+                    object_key: "avatar-other.png".to_string(),
+                    version: 1,
+                },
+            },
         )
         .await?;
 
@@ -339,12 +349,14 @@ async fn process_pending_keeps_missing_resource_image() {
             &prom,
             context,
             "prom-1",
-            TaskPayload::Image(image::ImagePayload::CheckUpload {
-                resource_kind: image::ResourceKind::UserAvatar,
-                resource_id: "missing-user".to_string(),
-                object_key: "orphan-avatar.png".to_string(),
-                version: 1,
-            }),
+            TaskPayload::Image {
+                payload: image::ImagePayload::CheckUpload {
+                    resource_kind: image::ResourceKind::UserAvatar,
+                    resource_id: "missing-user".to_string(),
+                    object_key: "orphan-avatar.png".to_string(),
+                    version: 1,
+                },
+            },
         )
         .await?;
 
@@ -372,12 +384,16 @@ async fn defer_batch_records_payloads() {
             let ids = ["prom-1".to_string(), "prom-2".to_string()];
 
             let payloads = [
-                TaskPayload::Image(image::ImagePayload::Delete {
-                    object_key: "one.png".to_string(),
-                }),
-                TaskPayload::Image(image::ImagePayload::Delete {
-                    object_key: "two.png".to_string(),
-                }),
+                TaskPayload::Image {
+                    payload: image::ImagePayload::Delete {
+                        object_key: "one.png".to_string(),
+                    },
+                },
+                TaskPayload::Image {
+                    payload: image::ImagePayload::Delete {
+                        object_key: "two.png".to_string(),
+                    },
+                },
             ];
 
             let tasks = [
@@ -443,18 +459,26 @@ async fn purge_expired_invitations() {
         ];
 
         let payloads = [
-            TaskPayload::Invitation(InvitationPayload::Assignment {
-                invitation_id: "assignment-pending".to_string(),
-            }),
-            TaskPayload::Invitation(InvitationPayload::Assignment {
-                invitation_id: "assignment-accepted".to_string(),
-            }),
-            TaskPayload::Invitation(InvitationPayload::Member {
-                invitation_id: "member-pending".to_string(),
-            }),
-            TaskPayload::Invitation(InvitationPayload::Member {
-                invitation_id: "member-accepted".to_string(),
-            }),
+            TaskPayload::Invitation {
+                payload: InvitationPayload::Assignment {
+                    invitation_id: "assignment-pending".to_string(),
+                },
+            },
+            TaskPayload::Invitation {
+                payload: InvitationPayload::Assignment {
+                    invitation_id: "assignment-accepted".to_string(),
+                },
+            },
+            TaskPayload::Invitation {
+                payload: InvitationPayload::Member {
+                    invitation_id: "member-pending".to_string(),
+                },
+            },
+            TaskPayload::Invitation {
+                payload: InvitationPayload::Member {
+                    invitation_id: "member-accepted".to_string(),
+                },
+            },
         ];
 
         let tasks = [

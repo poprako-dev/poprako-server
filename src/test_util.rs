@@ -68,13 +68,15 @@ pub fn count_image_check_records(
         .filter(|record| {
             matches!(
                 record.payload(),
-                TaskPayload::Image(ImagePayload::CheckUpload {
-                    resource_kind: actual_resource_kind,
-                    resource_id: actual_resource_id,
-                    object_key: actual_object_key,
-                    version: actual_version,
-                    ..
-                }) if actual_resource_kind == resource_kind
+                TaskPayload::Image {
+                    payload: ImagePayload::CheckUpload {
+                        resource_kind: actual_resource_kind,
+                        resource_id: actual_resource_id,
+                        object_key: actual_object_key,
+                        version: actual_version,
+                        ..
+                    },
+                } if actual_resource_kind == resource_kind
                     && actual_resource_id == resource_id
                     && actual_object_key == object_key
                     && actual_version == image_version

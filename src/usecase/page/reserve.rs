@@ -1,9 +1,12 @@
 //! Complete chapter page-manifest reservation.
 
+/// Chapter page-count validation.
+pub mod validation;
+
 use std::collections::HashSet;
 use std::time::Duration;
 
-use poprako_orchestra::{AtLeast, Context, Nucl, OperStep as _, run_proxy};
+use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
@@ -38,31 +41,9 @@ use crate::part::repo::oper::page::{
 };
 use crate::part::repo::page::PageRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::usecase::page::reserve::validation::validate_page_count;
 use crate::util::next_snowflake_id;
 use crate::value::image::{ImageExt, ImageHash};
-
-/// Validates the 200-page manifest cap, which bounds practical upload and review capacity.
-pub fn validate_page_count(page_count: i32) -> BaseRest<()> {
-    //
-    if !(1..=200).contains(&page_count) {
-        //
-        let err_message = trl("error-invalid-page-count");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Args,
-            err_message = %err_message,
-            page_count,
-            "expected error: invalid page count",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message: err_message,
-        });
-    }
-
-    accept(())
-}
 
 /// Reserves upload slots for all pages in an empty chapter.
 #[instrument(level = "info", skip(nucl, repo, prom, image_pool))]
@@ -176,14 +157,32 @@ where
         ext: ImageExt,
     }
 
-    PagePermComplex::ensure_user_can_reserve(
-        &mut run_proxy! {
-            repo => for<'a, 'b> FindAssignmentInfo<'a, 'b>;
-        },
-        &token.user_id,
-        &chapter_id,
-    )
+    let assignment_info = FindAssignmentInfo::ChapterUser {
+        chapter_id: &chapter_id,
+        user_id: &token.user_id,
+    }
+    .run_on(repo)
     .await?;
+
+    let Some(assignment_info) = assignment_info else {
+        //
+        let err_message = trl("error-page-reserve-role-required");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Perm,
+            err_message = %err_message,
+            chapter_id = %chapter_id,
+            user_id = %token.user_id,
+            "expected error: page reservation assignment missing",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: err_message,
+        });
+    };
+
+    PagePermComplex::ensure_user_can_reserve(&assignment_info)?;
 
     let reservations = nucl
         .coord(async move |context| {
@@ -477,9 +476,9 @@ where
                 //
                 task_ids.push(ImageComplex::gen_delete_id());
 
-                task_payloads.push(TaskPayload::Image(image::ImagePayload::Delete {
+                task_payloads.push(TaskPayload::Image { payload: image::ImagePayload::Delete {
                     object_key: object_key.clone(),
-                }));
+                } });
 
                 task_delays.push(None);
             }
@@ -492,14 +491,15 @@ where
 
                 task_ids.push(ImageComplex::gen_check_id());
 
-                task_payloads.push(TaskPayload::Image(
+                task_payloads.push(TaskPayload::Image {
+                    payload:
                     image::ImagePayload::CheckUpload {
                         resource_kind: image::ResourceKind::PageImage,
                         resource_id: reservation.page_id.clone(),
                         object_key: upload.object_key.clone(),
                         version: reservation.image_version,
                     },
-                ));
+                 });
 
                 task_delays.push(Some(Duration::from_secs(15 * 60)));
             }
@@ -531,10 +531,10 @@ where
 
             let (advance_id, advance_payload) = (
                 next_snowflake_id(),
-                TaskPayload::Chapter(ChapterPayload::TryAdvanceRawProvideStage {
+                TaskPayload::Chapter { payload: ChapterPayload::TryAdvanceRawProvideStage {
                     chapter_id: chapter_info.id.clone(),
                     actor_user_id: Some(token.user_id.clone()),
-                }),
+                } },
             );
 
             let advance_task = Task {

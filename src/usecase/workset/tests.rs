@@ -121,7 +121,9 @@ fn count_delete_records(records: &[MockPromRecord], object_key: &str) -> usize {
         .filter(|record| {
             matches!(
                 record.payload(),
-                TaskPayload::Image(image::ImagePayload::Delete { object_key: key })
+                TaskPayload::Image {
+                    payload: image::ImagePayload::Delete { object_key: key },
+                }
                     if key == object_key
             )
         })
@@ -420,9 +422,11 @@ async fn delete_does_not_create_prom_records_when_called_directly() {
         //
         let id = "prom-1".to_string();
 
-        let payload = TaskPayload::Image(image::ImagePayload::Delete {
-            object_key: "existing.png".to_string(),
-        });
+        let payload = TaskPayload::Image {
+            payload: image::ImagePayload::Delete {
+                object_key: "existing.png".to_string(),
+            },
+        };
 
         let task = Task {
             id: &id,

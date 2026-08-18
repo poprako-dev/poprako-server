@@ -6,7 +6,7 @@
 # ]
 # ///
 
-"""Restrict complex port access to Proxy operations."""
+"""Keep complex modules free from ports and Orchestra dispatch."""
 
 from __future__ import annotations
 
@@ -24,18 +24,16 @@ from production_source import production_source
 
 ROOT = Path(__file__).parents[2]
 PARSER = tree_sitter.Parser(tree_sitter.Language(tree_sitter_rust.language()))
+PROM_FORBIDDEN_PATHS = {"oper", "task", "Prom", "*"}
 
 
-def descendants(node: tree_sitter.Node, kind: str) -> list[tree_sitter.Node]:
+def descendants(node: tree_sitter.Node) -> list[tree_sitter.Node]:
     found: list[tree_sitter.Node] = []
     pending = [node]
 
     while pending:
         current = pending.pop()
-
-        if current.type == kind:
-            found.append(current)
-
+        found.append(current)
         pending.extend(reversed(current.named_children))
 
     return found
@@ -45,19 +43,74 @@ def text(source: bytes, node: tree_sitter.Node) -> str:
     return source[node.start_byte : node.end_byte].decode()
 
 
-def belongs_to(node: tree_sitter.Node, kind: str) -> bool:
-    current = node.parent
+def path_parts(source: bytes, node: tree_sitter.Node) -> tuple[str, ...]:
+    if node.type in {"crate", "self", "super", "identifier"}:
+        return (text(source, node),)
 
-    while current is not None:
-        if current.type == kind:
-            return True
+    if node.type in {"scoped_identifier", "scoped_type_identifier"}:
+        path = node.child_by_field_name("path")
+        name = node.child_by_field_name("name")
 
-        current = current.parent
+        if path is not None and name is not None:
+            return path_parts(source, path) + (text(source, name),)
 
-    return False
+    return tuple(text(source, node).split("::"))
 
 
-def diagnostic(path: Path, root: Path, node: tree_sitter.Node, code: str, message: str) -> str:
+def imported_paths(
+    node: tree_sitter.Node,
+    source: bytes,
+    prefix: tuple[str, ...] = (),
+) -> list[tuple[tuple[str, ...], tree_sitter.Node]]:
+    if node.type == "use_declaration":
+        return [
+            imported_path
+            for child in node.named_children
+            if child.type != "visibility_modifier"
+            for imported_path in imported_paths(child, source)
+        ]
+
+    if node.type == "scoped_use_list":
+        base = node.child_by_field_name("path")
+        use_list = node.child_by_field_name("list")
+
+        if base is None or use_list is None:
+            return []
+
+        base_path = prefix + path_parts(source, base)
+        return [(base_path, base)] + imported_paths(use_list, source, base_path)
+
+    if node.type == "use_list":
+        return [
+            imported_path
+            for child in node.named_children
+            for imported_path in imported_paths(child, source, prefix)
+        ]
+
+    if node.type == "use_as_clause":
+        path_node = node.child_by_field_name("path")
+
+        if path_node is not None:
+            return [(prefix + path_parts(source, path_node), path_node)]
+
+        return []
+
+    if node.type in {"scoped_identifier", "scoped_type_identifier", "identifier"}:
+        return [(prefix + path_parts(source, node), node)]
+
+    if node.type == "use_wildcard":
+        return [(prefix + ("*",), node)]
+
+    return []
+
+
+def diagnostic(
+    path: Path,
+    root: Path,
+    node: tree_sitter.Node,
+    code: str,
+    message: str,
+) -> str:
     return f"{path.relative_to(root)}:{node.start_point.row + 1}:{node.start_point.column + 1}: {code}: {message}"
 
 
@@ -66,46 +119,73 @@ def check_file(path: Path, root: Path) -> list[str]:
     tree = PARSER.parse(source)
     diagnostics: list[str] = []
 
-    for declaration in descendants(tree.root_node, "use_declaration"):
-        imported = "".join(text(source, declaration).split())
-
-        if (
-            "crate::part::repo::oper" in imported
-            or "crate::part::prom::payload" in imported
-            or "crate::part::prom::oper" in imported
-            or "crate::part::prom::task" in imported
-        ):
+    for declaration in descendants(tree.root_node):
+        if declaration.type != "use_declaration":
             continue
 
-        if "crate::part::repo" in imported or "crate::part::prom" in imported:
+        imported = imported_paths(declaration, source)
+        orchestra_path = next(
+            (node for path_parts_value, node in imported if path_parts_value[0] == "poprako_orchestra"),
+            None,
+        )
+        repository_path = next(
+            (
+                node
+                for path_parts_value, node in imported
+                if path_parts_value[:3] == ("crate", "part", "repo")
+            ),
+            None,
+        )
+        prom_path = next(
+            (
+                node
+                for path_parts_value, node in imported
+                if path_parts_value[:3] == ("crate", "part", "prom")
+                and (
+                    len(path_parts_value) == 3
+                    or path_parts_value[3] in PROM_FORBIDDEN_PATHS
+                )
+            ),
+            None,
+        )
+
+        if orchestra_path is not None:
             diagnostics.append(
                 diagnostic(
                     path,
                     root,
-                    declaration,
+                    orchestra_path,
                     "CPO001",
-                    "complex may import only operation descriptors and deferred-operation payloads; access ports through Proxy<Oper>",
+                    "complex must not import Orchestra",
                 )
             )
 
-    for identifier in descendants(tree.root_node, "type_identifier"):
-        if belongs_to(identifier, "use_declaration"):
-            continue
-
-        name = text(source, identifier)
-
-        if name == "Prom" or name.endswith("Repo"):
+        if repository_path is not None:
             diagnostics.append(
                 diagnostic(
                     path,
                     root,
-                    identifier,
+                    repository_path,
                     "CPO002",
-                    "complex must not name direct port traits; use Proxy<Oper>",
+                    "complex must not import repository ports or operations",
                 )
             )
 
-    for call in descendants(tree.root_node, "call_expression"):
+        if prom_path is not None:
+            diagnostics.append(
+                diagnostic(
+                    path,
+                    root,
+                    prom_path,
+                    "CPO003",
+                    "complex must not import Prom ports, operations, or tasks",
+                )
+            )
+
+    for call in descendants(tree.root_node):
+        if call.type != "call_expression":
+            continue
+
         function = call.child_by_field_name("function")
 
         if function is None or function.type != "field_expression":
@@ -113,7 +193,7 @@ def check_file(path: Path, root: Path) -> list[str]:
 
         field = function.child_by_field_name("field")
 
-        if field is None or text(source, field) not in {"run", "step"}:
+        if field is None or text(source, field) not in {"run_on", "step_on", "proxy_on"}:
             continue
 
         diagnostics.append(
@@ -121,8 +201,8 @@ def check_file(path: Path, root: Path) -> list[str]:
                 path,
                 root,
                 call,
-                "CPO003",
-                "complex must dispatch operations with Proxy::exec, not direct run/step",
+                "CPO004",
+                "complex must not dispatch operations",
             )
         )
 
@@ -143,32 +223,33 @@ def self_test() -> int:
         complex_dir = root / "src" / "complex"
         complex_dir.mkdir(parents=True)
         fixture = complex_dir / "fixture.rs"
-
         fixture.write_text(
-            "use poprako_orchestra::Proxy;\n"
-            "use crate::part::repo::oper::comic::GetComicInfo;\n"
-            "fn valid<P: Proxy<GetComicInfo<'_>>>(proxy: &mut P) {\n"
-            "    let _ = proxy.exec(&GetComicInfo { id: \"id\", incls: &[] });\n"
+            "//! `.run_on(` and crate::part::repo are documented here.\n"
+            "// poprako_orchestra and crate::part::prom::oper are comments.\n"
+            "const MESSAGE: &str = \".step_on( crate::part::repo poprako_orchestra\";\n"
+            "#[cfg(test)]\n"
+            "mod tests {\n"
+            "    use poprako_orchestra::Proxy;\n"
+            "    fn ignored() { Op.run_on(repo); }\n"
             "}\n"
+            "fn valid() {}\n"
         )
 
         if check_root(root):
-            print("self-test: valid Proxy<Oper> fixture was rejected", file=sys.stderr)
+            print("self-test: comments, strings, or test-only code was rejected", file=sys.stderr)
             return 1
 
         fixture.write_text(
-            "use crate::part::prom::Prom;\n"
+            "use poprako_orchestra::OperRun as _;\n"
             "use crate::part::repo::comic::ComicRepo;\n"
-            "fn invalid<R: ComicRepo<()>, P: Prom<()>>(repo: &R, prom: &P) {\n"
-            "    let _ = repo.run(todo!());\n"
-            "    let _ = prom.step(todo!(), todo!());\n"
-            "}\n"
+            "use crate::part::prom::oper::Defer;\n"
+            "async fn invalid(repo: &impl ComicRepo<()>) { let _ = Op.run_on(repo).await; }\n"
         )
 
         diagnostics = check_root(root)
 
-        if len(diagnostics) != 6:
-            print("self-test: direct port access was not fully rejected", file=sys.stderr)
+        if len(diagnostics) != 4:
+            print("self-test: complex boundary violations were not fully rejected", file=sys.stderr)
             print("\n".join(diagnostics), file=sys.stderr)
             return 1
 

@@ -181,7 +181,7 @@ fn apply_order_edits<'a>(
                         move_order(&mut ordered_ids, id, None)?;
                     }
 
-                    Patch::Assign(next_id) => {
+                    Patch::Assign { value: next_id } => {
                         move_order(&mut ordered_ids, id, Some(next_id))?;
                     }
                 }
@@ -310,7 +310,7 @@ fn write_edit(unit_info: &mut UnitInfo, edit: &UnitEdit) {
             unit_info.last_translator_id = None;
         }
 
-        Patch::Assign(translation) => {
+        Patch::Assign { value: translation } => {
             //
             unit_info.translated_text =
                 Some(translation.translated_text.clone());
@@ -333,7 +333,7 @@ fn write_edit(unit_info: &mut UnitInfo, edit: &UnitEdit) {
             unit_info.last_proofreader_id = None;
         }
 
-        Patch::Assign(revision) => {
+        Patch::Assign { value: revision } => {
             //
             unit_info.is_proofread = revision.is_proofread;
 

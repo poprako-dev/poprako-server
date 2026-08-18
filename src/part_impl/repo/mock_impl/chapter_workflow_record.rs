@@ -4,6 +4,7 @@ use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
 use crate::model::read::proj::chapter_workflow_record::ChapterWorkflowRecordInfo;
+use crate::part::nucl::RepeatableRead;
 use crate::part::repo::oper::chapter_workflow_record::{
     CreateChapterWorkflowRecords, DeleteChapterWorkflowRecords,
     ListChapterWorkflowRecordInfos, ListChapterWorkflowRecordInfosExcluded,
@@ -74,7 +75,7 @@ impl<'a> Run<ListChapterWorkflowRecordInfos<'a>> for Mock {
 
 impl<'a> Step<CreateChapterWorkflowRecords<'a>, MockContext> for Mock {
     // Declares the transaction isolation level required for inserts.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -110,7 +111,7 @@ impl<'a> Step<ListChapterWorkflowRecordInfosExcluded<'a>, MockContext>
     for Mock
 {
     // Declares the transaction isolation level required for locked reads.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -144,7 +145,7 @@ impl<'a> Step<ListChapterWorkflowRecordInfosExcluded<'a>, MockContext>
 
 impl<'a> Step<DeleteChapterWorkflowRecords<'a>, MockContext> for Mock {
     // Declares the transaction isolation level required for deletion.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;

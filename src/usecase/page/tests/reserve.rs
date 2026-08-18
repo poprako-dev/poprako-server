@@ -70,10 +70,12 @@ async fn reserve_chapter_pages_creates_pages_and_urls() {
         .find(|record| {
             matches!(
                 record.payload(),
-                TaskPayload::Chapter(ChapterPayload::TryAdvanceRawProvideStage {
-                    chapter_id,
-                    ..
-                }) if chapter_id == "chapter-1"
+                TaskPayload::Chapter {
+                    payload: ChapterPayload::TryAdvanceRawProvideStage {
+                        chapter_id,
+                        ..
+                    },
+                } if chapter_id == "chapter-1"
             )
         })
         .unwrap();
@@ -237,10 +239,10 @@ async fn reserve_chapter_pages_preserves_pending_page_without_new_byte_len() {
     assert_ne!(snapshot.pages[0].is_image_uploaded, Some(true));
 
     assert!(
-        snapshot
-            .prom_records
-            .iter()
-            .all(|record| !matches!(record.payload(), TaskPayload::Image(_)))
+        snapshot.prom_records.iter().all(|record| !matches!(
+            record.payload(),
+            TaskPayload::Image { .. }
+        ))
     );
 }
 
@@ -292,12 +294,14 @@ async fn reserve_chapter_pages_resigns_pending_page_with_new_byte_len() {
     assert!(snapshot.prom_records.iter().any(|record| {
         matches!(
             record.payload(),
-            TaskPayload::Image(ImagePayload::CheckUpload {
-                resource_id,
-                object_key,
-                version,
-                ..
-            }) if resource_id == "page-1"
+            TaskPayload::Image {
+                payload: ImagePayload::CheckUpload {
+                    resource_id,
+                    object_key,
+                    version,
+                    ..
+                },
+            } if resource_id == "page-1"
                 && object_key == "page/chapter_chapter-1/page-1-2.png"
                 && version == 2
         )
@@ -444,7 +448,9 @@ async fn reserve_chapter_pages_replaces_explicit_image_and_deletes_old_key() {
     assert!(snapshot.prom_records.iter().any(|record| {
         matches!(
             record.payload(),
-            TaskPayload::Image(ImagePayload::Delete { object_key })
+            TaskPayload::Image {
+                payload: ImagePayload::Delete { object_key },
+            }
                 if object_key == "old.png"
         )
     }));

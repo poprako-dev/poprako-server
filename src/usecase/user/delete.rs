@@ -90,9 +90,11 @@ where
         {
             let (delete_id, payload) = (
                 ImageComplex::gen_delete_id(),
-                TaskPayload::Image(image::ImagePayload::Delete {
-                    object_key: avatar_key.clone(),
-                }),
+                TaskPayload::Image {
+                    payload: image::ImagePayload::Delete {
+                        object_key: avatar_key.clone(),
+                    },
+                },
             );
 
             let task = Task {

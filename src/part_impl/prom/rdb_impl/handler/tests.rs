@@ -4,6 +4,7 @@ use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 
+use crate::part::nucl::RepeatableRead;
 use crate::part::prom::payload::{TaskPayload, image};
 use crate::part::prom::task::Task;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
@@ -29,9 +30,11 @@ pub async fn image_payloads_from_rdb_dispatch(shared: RdbCore) {
 
     let delete_id = "rdb-test-prom-handler-delete".to_string();
 
-    let delete_payload = TaskPayload::Image(image::ImagePayload::Delete {
-        object_key: "old-avatar.png".to_string(),
-    });
+    let delete_payload = TaskPayload::Image {
+        payload: image::ImagePayload::Delete {
+            object_key: "old-avatar.png".to_string(),
+        },
+    };
 
     let delete_task = Task {
         id: &delete_id,
@@ -63,8 +66,7 @@ pub async fn image_payloads_from_rdb_dispatch(shared: RdbCore) {
         .ok()
         .unwrap();
 
-    let nucl =
-        RdbNucl::<crate::part::nucl::RepeatableRead>::new(shared.clone());
+    let nucl = RdbNucl::<RepeatableRead>::new(shared.clone());
 
     let rdb_prom_repo = RdbPromRepo::new(HybRepo::new(shared.clone()));
 
@@ -89,12 +91,14 @@ pub async fn image_payloads_from_rdb_dispatch(shared: RdbCore) {
 
     let check_id = "rdb-test-prom-handler-check-uploaded".to_string();
 
-    let check_payload = TaskPayload::Image(image::ImagePayload::CheckUpload {
-        resource_kind: image::ResourceKind::UserAvatar,
-        resource_id: "missing-user".to_string(),
-        object_key: "new-avatar.png".to_string(),
-        version: 1,
-    });
+    let check_payload = TaskPayload::Image {
+        payload: image::ImagePayload::CheckUpload {
+            resource_kind: image::ResourceKind::UserAvatar,
+            resource_id: "missing-user".to_string(),
+            object_key: "new-avatar.png".to_string(),
+            version: 1,
+        },
+    };
 
     let check_task = Task {
         id: &check_id,
@@ -150,9 +154,14 @@ pub async fn image_payloads_from_rdb_dispatch(shared: RdbCore) {
 fn fourth_failure_becomes_dead() {
     //
     // Internal implementation detail.
-    let task_flow = enforce_retry_limit(TaskFlow::Retry("failed".into()), 3);
+    let task_flow = enforce_retry_limit(
+        TaskFlow::Retry {
+            err_message: "failed".into(),
+        },
+        3,
+    );
 
-    assert!(matches!(task_flow, TaskFlow::Dead(_)));
+    assert!(matches!(task_flow, TaskFlow::Dead { .. }));
 }
 
 #[test]
@@ -161,10 +170,12 @@ fn first_three_failures_remain_retryable() {
         //
         // Internal implementation detail.
         let task_flow = enforce_retry_limit(
-            TaskFlow::Retry("failed".into()),
+            TaskFlow::Retry {
+                err_message: "failed".into(),
+            },
             retried_count,
         );
 
-        assert!(matches!(task_flow, TaskFlow::Retry(_)));
+        assert!(matches!(task_flow, TaskFlow::Retry { .. }));
     }
 }

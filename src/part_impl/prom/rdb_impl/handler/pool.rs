@@ -75,7 +75,9 @@ pub fn enforce_retry_limit(
     match (task_flow, retried_count >= 3) {
         //
         // Internal implementation detail.
-        (TaskFlow::Retry(error), true) => TaskFlow::Dead(error),
+        (TaskFlow::Retry { err_message: error }, true) => {
+            TaskFlow::Dead { err_message: error }
+        }
 
         (task_flow, _) => task_flow,
     }
@@ -261,7 +263,7 @@ where
                 }
             }
 
-            TaskFlow::Retry(error) => {
+            TaskFlow::Retry { err_message: error } => {
                 //
                 if let Err(mark_error) =
                     self.retry(&row.f_id, row.f_lease, &error).await
@@ -275,7 +277,7 @@ where
                 }
             }
 
-            TaskFlow::Dead(error) => {
+            TaskFlow::Dead { err_message: error } => {
                 //
                 // Internal implementation detail.
                 tracing::error!(

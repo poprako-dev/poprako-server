@@ -4,8 +4,10 @@
 // Online-user use-case tests cover membership gates and team isolation.
 mod tests;
 
-use poprako_orchestra::{Context, OperRun as _, run_proxy};
+use poprako_orchestra::{Context, OperRun as _};
 use tracing::instrument;
+
+use poprako_util::i18n::trl;
 
 use crate::complex::team::TeamPermComplex;
 use crate::model::shared::user::UserToken;
@@ -13,7 +15,7 @@ use crate::part::repo::member::MemberRepo;
 use crate::part::repo::online_user::OnlineUserRepo;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::online_user::{ListOnlineUserIds, MarkOnlineUser};
-use crate::result::{BaseRest, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
 /// Marks the authenticated user online in one team for ten minutes.
 #[instrument(level = "info", skip(repo))]
@@ -26,14 +28,22 @@ where
     C: Context,
     R: MemberRepo<C> + OnlineUserRepo + Sync,
 {
-    TeamPermComplex::ensure_user_can_mark_self_online(
-        &mut run_proxy! {
-            repo => for<'a> FindMemberInfo<'a>;
-        },
-        &token.user_id,
-        &team_id,
-    )
+    let member_info = FindMemberInfo::UserTeam {
+        user_id: &token.user_id,
+        team_id: &team_id,
+    }
+    .run_on(repo)
     .await?;
+
+    let Some(member_info) = member_info else {
+        //
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: trl("error-team-member-required"),
+        });
+    };
+
+    TeamPermComplex::ensure_user_can_mark_self_online(&member_info)?;
 
     MarkOnlineUser {
         team_id: &team_id,
@@ -56,14 +66,22 @@ where
     C: Context,
     R: MemberRepo<C> + OnlineUserRepo + Sync,
 {
-    TeamPermComplex::ensure_user_can_list_online_user_ids(
-        &mut run_proxy! {
-            repo => for<'a> FindMemberInfo<'a>;
-        },
-        &token.user_id,
-        &team_id,
-    )
+    let member_info = FindMemberInfo::UserTeam {
+        user_id: &token.user_id,
+        team_id: &team_id,
+    }
+    .run_on(repo)
     .await?;
+
+    let Some(member_info) = member_info else {
+        //
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: trl("error-team-member-required"),
+        });
+    };
+
+    TeamPermComplex::ensure_user_can_list_online_user_ids(&member_info)?;
 
     let online_user_ids =
         ListOnlineUserIds { team_id: &team_id }.run_on(repo).await?;

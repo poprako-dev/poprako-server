@@ -113,6 +113,16 @@ export async function runIt07Module(ctx: RunCtx): Promise<void> {
         422,
     );
 
+    // JSON body enum values are snake_case; kebab-case is query-only.
+    expectStatus(
+        await sadmin.post<ErrorBody>(`/api/v1/chapters/${mainChapterId}/stage/advance`, {
+            id: mainChapterId,
+            oper: "advance",
+            stage: "raw-provide",
+        }),
+        422,
+    );
+
     // path/body id mismatch -> 422 code 7
     expectError(
         await sadmin.post<ErrorBody>(`/api/v1/chapters/${mainChapterId}/stage/advance`, {
@@ -129,7 +139,7 @@ export async function runIt07Module(ctx: RunCtx): Promise<void> {
         await review02.api.post<ErrorBody>(`/api/v1/chapters/${mainChapterId}/stage/advance`, {
             id: mainChapterId,
             oper: "advance",
-            stage: "raw-provide",
+            stage: "raw_provide",
         }),
         403,
         4,
@@ -189,14 +199,24 @@ export async function runIt07Module(ctx: RunCtx): Promise<void> {
     const latestWorkflowRecord = latestWorkflowRecords[0]!;
 
     assert.equal(latestWorkflowRecord.chapter_id, mainChapterId);
-    assert.equal(latestWorkflowRecord.kind, "stage-transitioned");
     assert.equal(latestWorkflowRecord.actor_user_id, raw01.userId);
+    assert.deepEqual(latestWorkflowRecord.event, {
+        kind: "stage_transitioned",
+        stage: "raw_provide",
+        previous_phase: "pending",
+        next_phase: "completed",
+        origin: "manual",
+    });
     assert.equal(
         Object.hasOwn(latestWorkflowRecord, "payload"),
         false,
-        "workflow record API must not expose repository payload JSON",
+        "workflow record API must not expose repository storage JSON",
     );
-    assert.ok(latestWorkflowRecord.text.length > 0, "workflow record has localized text");
+    assert.equal(
+        Object.hasOwn(latestWorkflowRecord, "text"),
+        false,
+        "workflow record API must not replace structured event data with rendered text",
+    );
     assert.ok(Number.isInteger(latestWorkflowRecord.created_at), "workflow record timestamp is integer ms");
 
     const nextWorkflowRecords = await listChapterWorkflowRecords(sadmin, mainChapterId, 1, 1);
@@ -209,7 +229,7 @@ export async function runIt07Module(ctx: RunCtx): Promise<void> {
         await raw01.api.post<ErrorBody>(`/api/v1/chapters/${mainChapterId}/stage/advance`, {
             id: mainChapterId,
             oper: "advance",
-            stage: "raw-provide",
+            stage: "raw_provide",
         }),
         422,
         2,

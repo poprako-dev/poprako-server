@@ -31,8 +31,8 @@ async fn update_stage_admin_advances_any_stage() {
         token("user-1"),
         UpdateChapterStageInstr {
             id: "chapter-1".into(),
-            stage: Stage::Publish,
-            oper: StageOper::Advance,
+            stage: Stage::Publish.into(),
+            oper: StageOper::Advance.into(),
         },
     )
     .await
@@ -81,8 +81,8 @@ async fn update_stage_noop_does_not_create_workflow_record() {
         token("user-1"),
         UpdateChapterStageInstr {
             id: "chapter-1".into(),
-            stage: Stage::Translate,
-            oper: StageOper::Revert,
+            stage: Stage::Translate.into(),
+            oper: StageOper::Revert.into(),
         },
     )
     .await
@@ -119,8 +119,8 @@ async fn update_stage_rejects_reviewer_outside_review_stage() {
         token("user-1"),
         UpdateChapterStageInstr {
             id: "chapter-1".into(),
-            stage: Stage::Translate,
-            oper: StageOper::Advance,
+            stage: Stage::Translate.into(),
+            oper: StageOper::Advance.into(),
         },
     )
     .await
@@ -158,8 +158,8 @@ async fn update_stage_rejects_invalid_transition() {
         token("user-1"),
         UpdateChapterStageInstr {
             id: "chapter-1".into(),
-            stage: Stage::Publish,
-            oper: StageOper::Advance,
+            stage: Stage::Publish.into(),
+            oper: StageOper::Advance.into(),
         },
     )
     .await
@@ -191,8 +191,8 @@ async fn update_stage_publish_enqueues_page_image_delete() {
         token("user-1"),
         UpdateChapterStageInstr {
             id: "chapter-1".into(),
-            stage: Stage::Publish,
-            oper: StageOper::Advance,
+            stage: Stage::Publish.into(),
+            oper: StageOper::Advance.into(),
         },
     )
     .await
@@ -203,8 +203,9 @@ async fn update_stage_publish_enqueues_page_image_delete() {
 
     assert_eq!(snapshot.prom_records.len(), 1);
 
-    let TaskPayload::Image(ImagePayload::Delete { object_key }) =
-        snapshot.prom_records[0].payload()
+    let TaskPayload::Image {
+        payload: ImagePayload::Delete { object_key },
+    } = snapshot.prom_records[0].payload()
     else {
         panic!("expected image delete payload");
     };
@@ -225,9 +226,9 @@ async fn update_stage_publish_enqueues_page_image_delete() {
 
     assert_eq!(events.len(), 2);
 
-    assert!(matches!(events[0], Event::ChapterWorkflowCompleted(_)));
+    assert!(matches!(events[0], Event::ChapterWorkflowCompleted { .. }));
 
-    assert!(matches!(events[1], Event::ChapterPublished(_)));
+    assert!(matches!(events[1], Event::ChapterPublished { .. }));
 }
 
 #[tokio::test]
@@ -269,8 +270,8 @@ async fn published_chapter_rejects_metadata_and_stage_updates() {
         token("user-1"),
         UpdateChapterStageInstr {
             id: "chapter-1".into(),
-            stage: Stage::Translate,
-            oper: StageOper::Advance,
+            stage: Stage::Translate.into(),
+            oper: StageOper::Advance.into(),
         },
     )
     .await;

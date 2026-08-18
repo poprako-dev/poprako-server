@@ -6,14 +6,15 @@ mod incl;
 use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
-use self::incl::apply_assignment_incls;
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::spec::assignment::AssignmentListSpec;
 use crate::model::write::assignment::AssignmentEntry;
+use crate::part::nucl::RepeatableRead;
 use crate::part::repo::oper::assignment::{
     CreateAssignment, DeleteAssignments, FindAssignmentInfo, GetAssignmentInfo,
     ListAssignmentInfos, ListAssignmentInfosExcluded, UpdateAssignmentRoles,
 };
+use crate::part_impl::repo::mock_impl::assignment::incl::apply_assignment_incls;
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
@@ -399,7 +400,7 @@ impl Run<GetAssignmentInfo<'_, '_>> for Mock {
 
 impl Step<FindAssignmentInfo<'_, '_>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -441,7 +442,7 @@ impl Step<FindAssignmentInfo<'_, '_>, MockContext> for Mock {
 
 impl Step<ListAssignmentInfosExcluded<'_>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -465,7 +466,7 @@ impl Step<ListAssignmentInfosExcluded<'_>, MockContext> for Mock {
 
 impl Step<ListAssignmentInfos<'_, '_>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -488,7 +489,7 @@ impl Step<ListAssignmentInfos<'_, '_>, MockContext> for Mock {
 
 impl Step<CreateAssignment<'_>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -506,7 +507,7 @@ impl Step<CreateAssignment<'_>, MockContext> for Mock {
 
 impl Step<UpdateAssignmentRoles<'_>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -538,7 +539,7 @@ impl Step<UpdateAssignmentRoles<'_>, MockContext> for Mock {
 
 impl Step<DeleteAssignments<'_>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;

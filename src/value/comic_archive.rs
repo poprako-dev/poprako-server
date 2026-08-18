@@ -15,7 +15,7 @@ use poprako_util::i18n::trl;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordKind;
 
-pub use workflow_record::ArchivedChapterWorkflowRecordDetail;
+pub use crate::value::comic_archive::workflow_record::ArchivedChapterWorkflowRecordDetail;
 
 /// Maximum number of month slots accepted by one export request.
 pub const MAX_EXPORT_MONTHS: usize = 12;

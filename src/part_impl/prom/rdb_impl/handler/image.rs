@@ -101,7 +101,12 @@ where
             // Internal implementation detail.
             Ok(object_info) => object_info,
 
-            Err(error) => return TaskFlow::Retry(format!("{:?}", error)),
+            Err(error) => {
+                //
+                return TaskFlow::Retry {
+                    err_message: format!("{:?}", error),
+                };
+            }
         };
 
     match object_exists {
@@ -144,7 +149,9 @@ where
         // Internal implementation detail.
         Ok(()) => TaskFlow::Complete,
 
-        Err(error) => TaskFlow::Retry(format!("{:?}", error)),
+        Err(error) => TaskFlow::Retry {
+            err_message: format!("{:?}", error),
+        },
     }
 }
 
@@ -171,7 +178,12 @@ where
 
         Err(BaseError::Expected { .. }) => return TaskFlow::Complete,
 
-        Err(error) => return TaskFlow::Retry(format!("{:?}", error)),
+        Err(error) => {
+            //
+            return TaskFlow::Retry {
+                err_message: format!("{:?}", error),
+            };
+        }
     };
 
     match (
@@ -184,9 +196,11 @@ where
 
         (true, false) => {
             //
-            return TaskFlow::Dead(
-                "prom page image version matches but object key differs".into(),
-            );
+            return TaskFlow::Dead {
+                err_message:
+                    "prom page image version matches but object key differs"
+                        .into(),
+            };
         }
 
         (true, true) => {}
@@ -267,7 +281,9 @@ where
         // Internal implementation detail.
         Ok(()) | Err(BaseError::Expected { .. }) => TaskFlow::Complete,
 
-        Err(error) => TaskFlow::Retry(format!("{:?}", error)),
+        Err(error) => TaskFlow::Retry {
+            err_message: format!("{:?}", error),
+        },
     }
 }
 
@@ -297,11 +313,14 @@ where
             | ResourceState::Missing,
         ) => TaskFlow::Complete,
 
-        Ok(ResourceState::Mismatched) => TaskFlow::Dead(
-            "prom image identity does not match current resource".into(),
-        ),
+        Ok(ResourceState::Mismatched) => TaskFlow::Dead {
+            err_message: "prom image identity does not match current resource"
+                .into(),
+        },
 
-        Err(error) => TaskFlow::Retry(format!("{:?}", error)),
+        Err(error) => TaskFlow::Retry {
+            err_message: format!("{:?}", error),
+        },
     }
 }
 
@@ -330,7 +349,12 @@ where
             return TaskFlow::Complete;
         }
 
-        Err(error) => return TaskFlow::Retry(format!("{:?}", error)),
+        Err(error) => {
+            //
+            return TaskFlow::Retry {
+                err_message: format!("{:?}", error),
+            };
+        }
     };
 
     match (
@@ -343,9 +367,11 @@ where
 
         (true, false) => {
             //
-            return TaskFlow::Dead(
-                "prom page image version matches but object key differs".into(),
-            );
+            return TaskFlow::Dead {
+                err_message:
+                    "prom page image version matches but object key differs"
+                        .into(),
+            };
         }
 
         (true, true) => {}
@@ -428,7 +454,9 @@ where
 
         Err(BaseError::Expected { .. }) => TaskFlow::Complete,
 
-        Err(error) => TaskFlow::Retry(format!("{:?}", error)),
+        Err(error) => TaskFlow::Retry {
+            err_message: format!("{:?}", error),
+        },
     }
 }
 
@@ -464,10 +492,13 @@ where
         // dedicated Delete tasks.
         Ok(ResourceState::Missing) => TaskFlow::Complete,
 
-        Ok(ResourceState::Mismatched) => TaskFlow::Dead(
-            "prom image identity does not match current resource".into(),
-        ),
+        Ok(ResourceState::Mismatched) => TaskFlow::Dead {
+            err_message: "prom image identity does not match current resource"
+                .into(),
+        },
 
-        Err(error) => TaskFlow::Retry(format!("{:?}", error)),
+        Err(error) => TaskFlow::Retry {
+            err_message: format!("{:?}", error),
+        },
     }
 }

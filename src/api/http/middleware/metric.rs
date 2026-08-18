@@ -10,7 +10,7 @@ use axum::extract::{MatchedPath, Request};
 use axum::middleware::Next;
 use axum::response::Response;
 
-use crate::api::http::shared::record_response;
+use crate::api::http::shared::metric::record_response;
 
 /// Records the response status and matched route template.
 pub async fn record_response_metric(request: Request, next: Next) -> Response {

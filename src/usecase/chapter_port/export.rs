@@ -6,13 +6,13 @@ mod tests;
 
 use std::collections::HashMap;
 
-use poprako_orchestra::{
-    AtLeast, Context, Nucl, OperRun as _, OperStep as _, run_proxy,
-};
+use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
+use poprako_util::i18n::trl;
+
 use crate::complex::chapter_port::{
-    ChapterExportComplex, ChapterPortPermComplex,
+    ChapterExportAccess, ChapterExportComplex, ChapterPortPermComplex,
 };
 use crate::data::val::chapter_port::ExportChapterTranslationVal;
 use crate::data::view::page_port::PageTranslationExportView;
@@ -40,7 +40,7 @@ use crate::part::repo::oper::unit::ListUnitInfos;
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::unit::UnitRepo;
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::stage::start_pending_stages;
 use crate::value::chapter::Stage;
 use crate::value::chapter_port::TranslationFormat;
@@ -71,17 +71,7 @@ where
         + Send
         + Sync,
 {
-    ChapterPortPermComplex::ensure_user_can_export(
-        &mut run_proxy! {
-            repo =>
-                for<'a> ResolveTeamId<'a>,
-                for<'a> FindMemberInfo<'a>,
-                for<'a, 'b> FindAssignmentInfo<'a, 'b>;
-        },
-        &token.user_id,
-        &chapter_id,
-    )
-    .await?;
+    ensure_user_can_export::<C, R>(repo, &token, &chapter_id).await?;
 
     let chapter_info = GetChapterInfo {
         id: &chapter_id,
@@ -142,7 +132,7 @@ where
 
     persist_export_record(
         (nucl, repo),
-        val.chapter_id.clone(),
+        &val.chapter_id,
         token.user_id,
         TranslationFormat::PopRaKo,
     )
@@ -174,17 +164,7 @@ where
         + Send
         + Sync,
 {
-    ChapterPortPermComplex::ensure_user_can_export(
-        &mut run_proxy! {
-            repo =>
-                for<'a> ResolveTeamId<'a>,
-                for<'a> FindMemberInfo<'a>,
-                for<'a, 'b> FindAssignmentInfo<'a, 'b>;
-        },
-        &token.user_id,
-        &chapter_id,
-    )
-    .await?;
+    ensure_user_can_export::<C, R>(repo, &token, &chapter_id).await?;
 
     GetChapterInfo {
         id: &chapter_id,
@@ -224,7 +204,7 @@ where
 
     persist_export_record(
         (nucl, repo),
-        chapter_id,
+        &chapter_id,
         token.user_id,
         TranslationFormat::LabelPlus,
     )
@@ -271,7 +251,7 @@ fn non_empty(text: String) -> Option<String> {
 // Persists a completed export and starts typesetting/redraw in one transaction.
 async fn persist_export_record<N, C, R>(
     (nucl, repo): (&N, &R),
-    chapter_id: String,
+    chapter_id: &str,
     actor_user_id: String,
     format: TranslationFormat,
 ) -> BaseRest<()>
@@ -286,7 +266,7 @@ where
         .coord(async move |context| {
             //
             let chapter_info = GetChapterInfoExcluded {
-                id: &chapter_id,
+                id: chapter_id,
                 incls: &[],
             }
             .step_on(repo, context)
@@ -319,4 +299,67 @@ where
         .await?;
 
     accept(())
+}
+
+// Load concrete membership or assignment evidence for chapter export.
+async fn ensure_user_can_export<C, R>(
+    repo: &R,
+    token: &UserToken,
+    chapter_id: &str,
+) -> BaseRest<()>
+where
+    C: Context,
+    R: TeamRepo<C> + MemberRepo<C> + AssignmentRepo<C> + Sync,
+{
+    let team_id = ResolveTeamId::Chapter { id: chapter_id }
+        .run_on(repo)
+        .await?;
+
+    let member_info = FindMemberInfo::UserTeam {
+        user_id: &token.user_id,
+        team_id: &team_id,
+    }
+    .run_on(repo)
+    .await?;
+
+    if let Some(member_info) = member_info {
+        //
+        return ChapterPortPermComplex::ensure_user_can_export(
+            ChapterExportAccess::Member {
+                member_info: &member_info,
+            },
+        );
+    }
+
+    let assignment_info = FindAssignmentInfo::ChapterUser {
+        chapter_id,
+        user_id: &token.user_id,
+    }
+    .run_on(repo)
+    .await?;
+
+    let Some(assignment_info) = assignment_info else {
+        //
+        let err_message = trl("error-chapter-port-export-perm-required");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Perm,
+            err_message = %err_message,
+            chapter_id = %chapter_id,
+            user_id = %token.user_id,
+            operation = "export",
+            "expected error: chapter port export permission denied",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: err_message,
+        });
+    };
+
+    ChapterPortPermComplex::ensure_user_can_export(
+        ChapterExportAccess::Assignee {
+            assignment_info: &assignment_info,
+        },
+    )
 }

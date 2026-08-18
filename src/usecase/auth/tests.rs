@@ -108,7 +108,7 @@ async fn register_creates_user_member_consumes_invitation_and_emits_signup() {
 
     assert_eq!(events.len(), 1);
 
-    let Event::UserSignedUp(payload) = &events[0] else {
+    let Event::UserSignedUp { payload } = &events[0] else {
         panic!("expected UserSignedUp event");
     };
 

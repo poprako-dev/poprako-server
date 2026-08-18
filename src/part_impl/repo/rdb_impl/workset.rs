@@ -14,6 +14,7 @@ use poprako_util::i18n::trl;
 
 use crate::model::read::proj::workset::WorksetInfo;
 use crate::model::write::workset::{WorksetEntry, WorksetRepl};
+use crate::part::nucl::RepeatableRead;
 use crate::part::repo::oper::workset::{
     AllocWorksetComicIndex, CreateWorkset, DeleteWorkset, GetWorksetInfo,
     GetWorksetInfoExcluded, ListWorksetInfos, ListWorksetInfosExcluded,
@@ -268,10 +269,10 @@ impl Run<UpdateWorkset<'_>> for HybRepo {
 impl<L> Step<GetWorksetInfo<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send,
-    L: AtLeast<crate::part::nucl::RepeatableRead>,
+    L: AtLeast<RepeatableRead>,
 {
     // Use BaseError for transactional context operations.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -290,10 +291,10 @@ where
 impl<L> Step<ListWorksetInfos<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send,
-    L: AtLeast<crate::part::nucl::RepeatableRead>,
+    L: AtLeast<RepeatableRead>,
 {
     // Use BaseError for transactional context operations.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -312,10 +313,10 @@ where
 impl<L> Step<GetWorksetInfoExcluded<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send,
-    L: AtLeast<crate::part::nucl::RepeatableRead>,
+    L: AtLeast<RepeatableRead>,
 {
     // Use BaseError for transactional context operations.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -334,10 +335,10 @@ where
 impl<L> Step<ListWorksetInfosExcluded<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send,
-    L: AtLeast<crate::part::nucl::RepeatableRead>,
+    L: AtLeast<RepeatableRead>,
 {
     // Use BaseError for transactional context operations.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -356,10 +357,10 @@ where
 impl<L> Step<CreateWorkset<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send,
-    L: AtLeast<crate::part::nucl::RepeatableRead>,
+    L: AtLeast<RepeatableRead>,
 {
     // Use BaseError for transactional context operations.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -378,10 +379,10 @@ where
 impl<L> Step<DeleteWorkset<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send,
-    L: AtLeast<crate::part::nucl::RepeatableRead>,
+    L: AtLeast<RepeatableRead>,
 {
     // Use BaseError for transactional context operations.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -400,10 +401,10 @@ where
 impl<L> Step<AllocWorksetComicIndex<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send,
-    L: AtLeast<crate::part::nucl::RepeatableRead>,
+    L: AtLeast<RepeatableRead>,
 {
     // Use BaseError for transactional context operations.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -422,10 +423,10 @@ where
 impl<L> Step<UpdateWorksetComicCount<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send,
-    L: AtLeast<crate::part::nucl::RepeatableRead>,
+    L: AtLeast<RepeatableRead>,
 {
     // Use BaseError for transactional context operations.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;

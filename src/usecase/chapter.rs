@@ -1,19 +1,19 @@
 //! Chapter use cases — list, read, create, update, and deletion.
 
-// Chapter deletion use cases (internal).
-mod delete;
-// Chapter workflow stage mutation use case.
-mod stage;
-// Immutable workflow record listing use case.
-mod workflow_record;
+/// Chapter deletion use cases.
+pub mod delete;
+/// Chapter workflow stage mutation use case.
+pub mod stage;
+/// Immutable workflow record listing use case.
+pub mod workflow_record;
 
 #[cfg(test)]
 mod tests;
 
-use poprako_orchestra::{
-    AtLeast, Context, Nucl, OperRun as _, OperStep as _, run_proxy,
-};
+use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
+
+use poprako_util::i18n::trl;
 
 use crate::complex::assignment::AssignmentComplex;
 use crate::complex::chapter::{ChapterComplex, ChapterPermComplex};
@@ -40,25 +40,21 @@ use crate::part::repo::oper::assignment::{
 };
 use crate::part::repo::oper::chapter::{
     CreateChapter, FindPinnedChapterInfo, GetChapterInfo,
-    GetChapterInfoExcluded, ListChapterInfos, ListPinnedChapterInfos,
-    LockChapters, UnpinOtherChapters, UpdateChapter,
+    GetChapterInfoExcluded, ListChapterInfos, LockChapters, UnpinOtherChapters,
+    UpdateChapter,
 };
 use crate::part::repo::oper::chapter_workflow_record::CreateChapterWorkflowRecords;
 use crate::part::repo::oper::comic::{
     AllocComicChapterIndex, GetComicInfoExcluded, TouchComicLastActive,
     UpdateComicChapterCount,
 };
-use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part::repo::oper::page::ListFirstPageInfos;
-use crate::part::repo::oper::team::ResolveTeamId;
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::usecase::internal::member::MemberLoader;
+use crate::usecase::internal::page::PageLoader;
+use crate::usecase::internal::util::LoadMode;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
-
-pub use delete::delete;
-pub use stage::update_stage;
-pub use workflow_record::list_workflow_record_infos;
 
 /// Lists chapters under one comic.
 #[instrument(level = "info", skip(repo, image_pool))]
@@ -72,16 +68,15 @@ where
     R: ChapterRepo<C> + MemberRepo<C> + TeamRepo<C> + PageRepo<C> + Sync,
     I: ImagePool,
 {
-    ChapterPermComplex::ensure_user_can_list_infos(
-        &mut run_proxy! {
-            repo =>
-                for<'a> ResolveTeamId<'a>,
-                for<'a> FindMemberInfo<'a>;
-        },
+    let member_info = MemberLoader::load_info_from_comic(
+        repo,
+        LoadMode::Run,
         &token.user_id,
         &instr.comic_id,
     )
     .await?;
+
+    ChapterPermComplex::ensure_user_can_list_infos(&member_info)?;
 
     let spec = ChapterListSpec {
         comic_id: instr.comic_id,
@@ -98,15 +93,11 @@ where
         .map(|comic_info| comic_info.id.clone())
         .collect::<Vec<_>>();
 
-    let fallback_cover_keys = ComicComplex::resolve_fallback_cover_keys(
-        &mut run_proxy! {
-            repo =>
-                for<'a> ListPinnedChapterInfos<'a>,
-                for<'a> ListFirstPageInfos<'a>;
-        },
-        &comic_ids,
-    )
-    .await?;
+    let first_page_infos =
+        PageLoader::load_infos_from_comics(repo, &comic_ids).await?;
+
+    let fallback_cover_keys =
+        ComicComplex::resolve_fallback_cover_keys(first_page_infos);
 
     let mut chapter_info_vals = Vec::with_capacity(chapter_infos.len());
 
@@ -142,16 +133,15 @@ where
     C: Context,
     R: ChapterRepo<C> + MemberRepo<C> + TeamRepo<C> + Sync,
 {
-    ChapterPermComplex::ensure_user_can_get_info(
-        &mut run_proxy! {
-            repo =>
-                for<'a> ResolveTeamId<'a>,
-                for<'a> FindMemberInfo<'a>;
-        },
+    let member_info = MemberLoader::load_info_from_chapter(
+        repo,
+        LoadMode::Run,
         &token.user_id,
         &id,
     )
     .await?;
+
+    ChapterPermComplex::ensure_user_can_get_info(&member_info)?;
 
     let chapter_info = GetChapterInfo {
         id: &id,
@@ -174,16 +164,15 @@ where
     C: Context,
     R: ChapterRepo<C> + MemberRepo<C> + TeamRepo<C> + Sync,
 {
-    ChapterPermComplex::ensure_user_can_get_pinned(
-        &mut run_proxy! {
-            repo =>
-                for<'a> ResolveTeamId<'a>,
-                for<'a> FindMemberInfo<'a>;
-        },
+    let member_info = MemberLoader::load_info_from_comic(
+        repo,
+        LoadMode::Run,
         &token.user_id,
         &comic_id,
     )
     .await?;
+
+    ChapterPermComplex::ensure_user_can_get_pinned(&member_info)?;
 
     let chapter_info = FindPinnedChapterInfo {
         comic_id: &comic_id,
@@ -216,17 +205,18 @@ where
         + Send
         + Sync,
 {
-    ChapterPermComplex::ensure_user_can_create(
-        &mut run_proxy! {
-            repo =>
-                for<'a> ResolveTeamId<'a>,
-                for<'a> FindMemberInfo<'a>;
-        },
+    let member_info = MemberLoader::load_info_from_comic(
+        repo,
+        LoadMode::Run,
         &token.user_id,
         &instr.comic_id,
-        instr.preset_assignment_roles,
     )
     .await?;
+
+    ChapterPermComplex::ensure_user_can_create(
+        &member_info,
+        instr.preset_assignment_roles,
+    )?;
 
     let chapter_id = nucl
         .coord(async move |context| {
@@ -327,7 +317,7 @@ where
 
             workflow_record_entries.push(ChapterWorkflowRecordEntry::new(
                 chapter_info.id.clone(),
-                Some(token.user_id.clone()),
+                Some(token.user_id),
                 ChapterWorkflowRecordPayload::ChapterCreated,
             ));
 
@@ -363,14 +353,22 @@ where
         + Send
         + Sync,
 {
-    ChapterPermComplex::ensure_user_can_update_info(
-        &mut run_proxy! {
-            repo => for<'a, 'b> FindAssignmentInfo<'a, 'b>;
-        },
-        &token.user_id,
-        &instr.id,
-    )
+    let assignment_info = FindAssignmentInfo::ChapterUser {
+        chapter_id: &instr.id,
+        user_id: &token.user_id,
+    }
+    .run_on(repo)
     .await?;
+
+    let Some(assignment_info) = assignment_info else {
+        //
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: trl("error-chapter-admin-required"),
+        });
+    };
+
+    ChapterPermComplex::ensure_user_can_update_info(&assignment_info)?;
 
     nucl.coord(async move |context| {
         //
@@ -388,7 +386,7 @@ where
             Some(next_subtitle) if next_subtitle != chapter_info.subtitle => {
                 //
                 let chapter_info_update = ChapterPatch {
-                    id: instr.id.clone(),
+                    id: instr.id,
                     subtitle: Some(next_subtitle.clone()),
                     pin: None,
                 };
@@ -450,14 +448,22 @@ where
         + Send
         + Sync,
 {
-    ChapterPermComplex::ensure_user_can_mark_pinned(
-        &mut run_proxy! {
-            repo => for<'a, 'b> FindAssignmentInfo<'a, 'b>;
-        },
-        &token.user_id,
-        &id,
-    )
+    let assignment_info = FindAssignmentInfo::ChapterUser {
+        chapter_id: &id,
+        user_id: &token.user_id,
+    }
+    .run_on(repo)
     .await?;
+
+    let Some(assignment_info) = assignment_info else {
+        //
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: trl("error-chapter-admin-required"),
+        });
+    };
+
+    ChapterPermComplex::ensure_user_can_mark_pinned(&assignment_info)?;
 
     let chapter_info = GetChapterInfo {
         id: &id,

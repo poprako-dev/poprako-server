@@ -5,8 +5,14 @@ pub enum TaskFlow {
     Complete,
 
     /// Task encountered a transient error; schedule for retry.
-    Retry(String),
+    Retry {
+        /// Diagnostic message retained for the next attempt.
+        err_message: String,
+    },
 
     /// Task encountered a fatal error; move record to Dead status.
-    Dead(String),
+    Dead {
+        /// Diagnostic message retained with the failed task.
+        err_message: String,
+    },
 }

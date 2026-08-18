@@ -184,7 +184,7 @@ impl TryFrom<ChapterWorkflowRecordInfoRow> for ChapterWorkflowRecordInfo {
     ) -> Result<Self, Self::Error> {
         //
         let kind = serde_json::from_value::<ChapterWorkflowRecordKind>(
-            serde_json::Value::String(row.f_kind.clone()),
+            serde_json::Value::String(row.f_kind),
         )
         .map_err(|error| {
             //

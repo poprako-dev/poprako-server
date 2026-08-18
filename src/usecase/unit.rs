@@ -4,13 +4,13 @@
 // Unit tests for unit creation, editing, and transition rules.
 mod tests;
 
-use poprako_orchestra::{
-    AtLeast, Context, Nucl, OperRun as _, OperStep as _, run_proxy,
-};
+use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
+use poprako_util::i18n::trl;
+
 use crate::complex::chapter::ChapterComplex;
-use crate::complex::unit::{UnitComplex, UnitPermComplex};
+use crate::complex::unit::{UnitComplex, UnitListAccess, UnitPermComplex};
 use crate::data::instr::unit::{
     ListPageUnitInfosInstr, SavePageUnitEditsInstr, into_unit_edits,
 };
@@ -39,7 +39,7 @@ use crate::part::repo::oper::unit::{
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::unit::UnitRepo;
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::stage::start_pending_stages;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordOrigin;
 use crate::value::role::RoleField;
@@ -63,17 +63,61 @@ where
 {
     let page_info = GetPageInfo { id: &instr.page_id }.run_on(repo).await?;
 
-    UnitPermComplex::ensure_user_can_list_infos(
-        &mut run_proxy! {
-            repo =>
-                for<'a> ResolveTeamId<'a>,
-                for<'a> FindMemberInfo<'a>,
-                for<'a, 'b> FindAssignmentInfo<'a, 'b>;
-        },
-        &token.user_id,
-        &page_info.chapter_id,
-    )
+    let team_id = ResolveTeamId::Chapter {
+        id: &page_info.chapter_id,
+    }
+    .run_on(repo)
     .await?;
+
+    let member_info = FindMemberInfo::UserTeam {
+        user_id: &token.user_id,
+        team_id: &team_id,
+    }
+    .run_on(repo)
+    .await?;
+
+    match member_info {
+        //
+        Some(member_info) => UnitPermComplex::ensure_user_can_list_infos(
+            UnitListAccess::Member {
+                member_info: &member_info,
+            },
+        )?,
+
+        None => {
+            //
+            let assignment_info = FindAssignmentInfo::ChapterUser {
+                chapter_id: &page_info.chapter_id,
+                user_id: &token.user_id,
+            }
+            .run_on(repo)
+            .await?;
+
+            let Some(assignment_info) = assignment_info else {
+                //
+                let err_message = trl("error-unit-list-perm-required");
+
+                tracing::warn!(
+                    err_variant = ?ExpectedVariant::Perm,
+                    err_message = %err_message,
+                    chapter_id = %page_info.chapter_id,
+                    user_id = %token.user_id,
+                    "expected error: unit list permission denied",
+                );
+
+                return Err(BaseError::Expected {
+                    variant: ExpectedVariant::Perm,
+                    message: err_message,
+                });
+            };
+
+            UnitPermComplex::ensure_user_can_list_infos(
+                UnitListAccess::Assignee {
+                    assignment_info: &assignment_info,
+                },
+            )?;
+        }
+    }
 
     let unit_infos = ListUnitInfos {
         page_id: &page_info.id,

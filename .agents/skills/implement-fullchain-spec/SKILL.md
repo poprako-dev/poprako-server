@@ -21,9 +21,9 @@ consistent from persistence to HTTP.
 - Put shared small concepts under `value`.
 - Put persisted projections and list specs under `model::read`; put entries,
   modifications, replacements, and reservations under `model::write`.
-- Put pure rules and permission helpers under `complex`. A complex function may
-  use an Orchestra `Proxy<Oper>`, but it must not name a concrete repository,
-  drive a `Nucl` transaction, or call concrete `run`/`step` ports.
+- Put pure rules and permission helpers under `complex`. They receive loaded
+  concrete model evidence and must not import Orchestra, repository traits or
+  operations, Prom operations/tasks, or drive transactions.
 - Put request DTOs under `data::instr`, direct response values under
   `data::val`, and model projections under `data::view`. Convert timestamps to
   Unix milliseconds at the response boundary.
@@ -47,8 +47,15 @@ consistent from persistence to HTTP.
 - Implement public generic orchestration functions under `usecase`.
 - Use `.run_on(repo)` for independent operations and `.step_on(repo, context)`
   inside `Nucl::coord`. Construct operation descriptors inline.
-- Use inline `run_proxy!` or `step_proxy!` when a pure complex helper needs a
-  restricted operation surface.
+- Use private `usecase::internal::*Loader` associated methods only for reusable
+  chains containing at least two repository reads. Model-returning method names
+  include the model suffix (`load_info_from_*`, `load_infos_from_*`, and so on).
+- Pass repositories independently from `LoadMode`; use `LoadMode::Run` only
+  when every operation in the chain supports `Run`, and `LoadMode::Step` with
+  the caller-owned context when every operation supports `Step`.
+- Do not create loaders for one-operation ID lookups. Do not pass IDs already
+  carried by an input model, and return missing required models from the loader
+  before invoking pure `complex` rules.
 - Persist deferred `Prom` work through `Defer` or `DeferBatch` in the owning
   transaction. Respect its at-least-once delivery contract and make handlers
   idempotent.

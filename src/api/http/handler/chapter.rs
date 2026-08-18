@@ -211,7 +211,7 @@ pub async fn list_workflow_record_infos(
         limit: query.limit,
     };
 
-    usecase::chapter::list_workflow_record_infos::<
+    usecase::chapter::workflow_record::list_workflow_record_infos::<
         RdbContext<RepeatableRead>,
         HybRepo,
     >((harn.repo(),), user_token, instr)
@@ -307,7 +307,7 @@ pub async fn advance_stage(
     //
     ensure_path_matches_body_id(&chapter_id, &instr.id)?;
 
-    usecase::chapter::update_stage::<
+    usecase::chapter::stage::update_stage::<
         _,
         RdbContext<RepeatableRead>,
         HybRepo,
@@ -347,7 +347,12 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::chapter::delete::<_, RdbContext<Serializable>, HybRepo, RdbProm>(
+    usecase::chapter::delete::delete::<
+        _,
+        RdbContext<Serializable>,
+        HybRepo,
+        RdbProm,
+    >(
         (harn.nucl().serializable(), harn.repo(), harn.prom()),
         user_token,
         chapter_id,

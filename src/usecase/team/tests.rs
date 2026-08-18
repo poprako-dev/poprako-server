@@ -54,6 +54,8 @@ use crate::test_util::{
     assert_expected_message, assert_expected_variant,
     assert_one_image_check_record,
 };
+use crate::usecase::team::delete::delete;
+use crate::usecase::team::read::{get_info, list_infos};
 use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
@@ -204,7 +206,9 @@ fn count_delete_records(records: &[MockPromRecord], object_key: &str) -> usize {
         .filter(|record| {
             matches!(
                 record.payload(),
-                TaskPayload::Image(ImagePayload::Delete { object_key: key })
+                TaskPayload::Image {
+                    payload: ImagePayload::Delete { object_key: key },
+                }
                     if key == object_key
             )
         })

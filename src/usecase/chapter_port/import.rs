@@ -2,9 +2,7 @@
 #[cfg(test)]
 mod tests;
 
-use poprako_orchestra::{
-    AtLeast, Context, Nucl, OperRun as _, OperStep as _, run_proxy,
-};
+use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
@@ -71,15 +69,6 @@ where
         + Send
         + Sync,
 {
-    ChapterPortPermComplex::ensure_user_can_import(
-        &mut run_proxy! {
-            repo => for<'a, 'b> FindAssignmentInfo<'a, 'b>;
-        },
-        &token.user_id,
-        &chapter_id,
-    )
-    .await?;
-
     let assignment_info = FindAssignmentInfo::ChapterUser {
         chapter_id: &chapter_id,
         user_id: &token.user_id,
@@ -88,7 +77,7 @@ where
     .await?
     .ok_or_else(|| {
         //
-        let err_message = trl("error-unit-edit-perm-required");
+        let err_message = trl("error-chapter-port-import-perm-required");
 
         tracing::warn!(
             err_variant = ?ExpectedVariant::Perm,
@@ -96,7 +85,7 @@ where
             chapter_id = %chapter_id,
             user_id = %token.user_id,
             operation = "import chapter translation",
-            "expected error: unit edit perm required",
+            "expected error: chapter import assignment required",
         );
 
         BaseError::Expected {
@@ -104,6 +93,8 @@ where
             message: err_message,
         }
     })?;
+
+    ChapterPortPermComplex::ensure_user_can_import(&assignment_info)?;
 
     let edit_perm = UnitEditPerm {
         can_translate: assignment_info
@@ -114,7 +105,7 @@ where
             .has_any_role(&[RoleField::PROOFREADER]),
     };
 
-    let format = instr.format;
+    let format = TranslationFormat::from(instr.format);
 
     let label_plus = matches!(format, TranslationFormat::LabelPlus);
 

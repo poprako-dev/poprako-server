@@ -129,10 +129,12 @@ async fn translator_revision_edit_is_rejected_without_mutation() {
             is_bubble: None,
             coord: None,
             translation: Patch::Skip,
-            revision: Patch::Assign(UnitRevisionInstr {
-                is_proofread: true,
-                proofread_text: Some("proofread".to_string()),
-            }),
+            revision: Patch::Assign {
+                value: UnitRevisionInstr {
+                    is_proofread: true,
+                    proofread_text: Some("proofread".to_string()),
+                },
+            },
         }]),
     )
     .await

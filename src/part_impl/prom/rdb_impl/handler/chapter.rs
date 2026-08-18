@@ -121,10 +121,12 @@ where
         Ok(true) => {
             //
             // Internal implementation detail.
-            Event::ChapterWorkflowCompleted(ChapterWorkflowCompletedEvent {
-                chapter_id: chapter_id.to_string(),
-                completed_stage: Stage::RawProvide,
-            })
+            Event::ChapterWorkflowCompleted {
+                payload: ChapterWorkflowCompletedEvent {
+                    chapter_id: chapter_id.to_string(),
+                    completed_stage: Stage::RawProvide,
+                },
+            }
             .develop_on(develop)
             .await;
 
@@ -133,6 +135,8 @@ where
 
         Ok(false) | Err(BaseError::Expected { .. }) => TaskFlow::Complete,
 
-        Err(error) => TaskFlow::Retry(format!("{:?}", error)),
+        Err(error) => TaskFlow::Retry {
+            err_message: format!("{:?}", error),
+        },
     }
 }

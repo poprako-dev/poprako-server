@@ -12,8 +12,9 @@ use axum::http::{HeaderValue, StatusCode, header};
 use axum::response::{IntoResponse as _, Response};
 use tracing::instrument;
 
+use crate::api::http::shared::MetricTotal;
+use crate::api::http::shared::metric::read_total;
 use crate::api::http::shared::prometheus::render_detailed_metrics;
-use crate::api::http::shared::{MetricTotal, read_total};
 
 /// `GET /api/health` — returns recent HTTP metrics to loopback callers.
 ///

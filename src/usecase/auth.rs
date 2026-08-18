@@ -109,8 +109,8 @@ where
 
             let user_entry = UserEntry {
                 id: UserComplex::gen_id(),
-                qid: instr.qid.clone(),
-                nickname: instr.nickname.clone(),
+                qid: instr.qid,
+                nickname: instr.nickname,
                 password_hash,
             };
 
@@ -148,11 +148,13 @@ where
         .await?;
 
     // Dispatch after successful commit so side effects do not run inside the transaction.
-    Event::UserSignedUp(UserSignedUpEvent {
-        team_id: team_id.clone(),
-        invitor_id,
-        invitee_qid,
-    })
+    Event::UserSignedUp {
+        payload: UserSignedUpEvent {
+            team_id,
+            invitor_id,
+            invitee_qid,
+        },
+    }
     .develop_on(develop)
     .await;
 

@@ -9,6 +9,7 @@ use diesel_async::RunQueryDsl;
 use poprako_orchestra::{AtLeast, Level, Run, Step};
 use tracing::instrument;
 
+use crate::part::nucl::RepeatableRead;
 use crate::model::read::proj::chapter_workflow_record::ChapterWorkflowRecordInfo;
 use crate::model::read::spec::chapter_workflow_record::ChapterWorkflowRecordListSpec;
 use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
@@ -115,10 +116,10 @@ impl Run<ListChapterWorkflowRecordInfos<'_>> for HybRepo {
 impl<L> Step<CreateChapterWorkflowRecords<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send,
-    L: AtLeast<crate::part::nucl::RepeatableRead>,
+    L: AtLeast<RepeatableRead>,
 {
     // Declares the transaction isolation level required for inserts.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -138,10 +139,10 @@ impl<L> Step<ListChapterWorkflowRecordInfosExcluded<'_>, RdbContext<L>>
     for HybRepo
 where
     L: Level + Send,
-    L: AtLeast<crate::part::nucl::RepeatableRead>,
+    L: AtLeast<RepeatableRead>,
 {
     // Declares the transaction isolation level required for locked reads.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -160,10 +161,10 @@ where
 impl<L> Step<DeleteChapterWorkflowRecords<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send,
-    L: AtLeast<crate::part::nucl::RepeatableRead>,
+    L: AtLeast<RepeatableRead>,
 {
     // Declares the transaction isolation level required for deletion.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;

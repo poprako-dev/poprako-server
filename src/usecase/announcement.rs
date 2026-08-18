@@ -4,10 +4,10 @@
 // Unit tests for announcement usecase behavior.
 mod tests;
 
-use poprako_orchestra::{
-    AtLeast, Context, Nucl, OperRun as _, OperStep as _, run_proxy,
-};
+use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
+
+use poprako_util::i18n::trl;
 
 use crate::complex::announcement::{
     AnnouncementComplex, AnnouncementPermComplex,
@@ -28,7 +28,7 @@ use crate::part::repo::oper::announcement::{
     CreateAnnouncement, ListAnnouncementInfos,
 };
 use crate::part::repo::oper::member::FindMemberInfo;
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
 /// Lists announcements under a team.
 #[instrument(level = "info", skip(repo, image_pool))]
@@ -44,14 +44,22 @@ where
 {
     let announcement_list_spec = Into::<AnnouncementListSpec>::into(instr);
 
-    AnnouncementPermComplex::ensure_user_can_list_infos(
-        &mut run_proxy! {
-            repo => for<'a> FindMemberInfo<'a>;
-        },
-        &token.user_id,
-        &announcement_list_spec.team_id,
-    )
+    let member_info = FindMemberInfo::UserTeam {
+        user_id: &token.user_id,
+        team_id: &announcement_list_spec.team_id,
+    }
+    .run_on(repo)
     .await?;
+
+    let Some(member_info) = member_info else {
+        //
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: trl("error-team-member-required"),
+        });
+    };
+
+    AnnouncementPermComplex::ensure_user_can_list_infos(&member_info)?;
 
     let announcement_infos = ListAnnouncementInfos {
         spec: &announcement_list_spec,
@@ -87,14 +95,22 @@ where
     C::Level: AtLeast<RepeatableRead>,
     R: AnnouncementRepo<C> + MemberRepo<C> + Send + Sync,
 {
-    AnnouncementPermComplex::ensure_user_can_create(
-        &mut run_proxy! {
-            repo => for<'a> FindMemberInfo<'a>;
-        },
-        &token.user_id,
-        &instr.team_id,
-    )
+    let member_info = FindMemberInfo::UserTeam {
+        user_id: &token.user_id,
+        team_id: &instr.team_id,
+    }
+    .run_on(repo)
     .await?;
+
+    let Some(member_info) = member_info else {
+        //
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: trl("error-team-admin-required"),
+        });
+    };
+
+    AnnouncementPermComplex::ensure_user_can_create(&member_info)?;
 
     let announcement_info = nucl
         .coord(async move |context| {

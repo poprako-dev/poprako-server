@@ -53,6 +53,7 @@ use crate::test_util::{
     assert_expected_message, assert_expected_variant,
     assert_one_image_check_record,
 };
+use crate::usecase::user::delete::delete;
 use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
@@ -140,7 +141,9 @@ fn count_delete_records(records: &[MockPromRecord], object_key: &str) -> usize {
         .filter(|record| {
             matches!(
                 record.payload(),
-                TaskPayload::Image(ImagePayload::Delete { object_key: key })
+                TaskPayload::Image {
+                    payload: ImagePayload::Delete { object_key: key },
+                }
                     if key == object_key
             )
         })
@@ -169,7 +172,7 @@ async fn get_info_emits_active_for_self() {
 
     assert_eq!(events.len(), 1);
 
-    let Event::UserActive(payload) = &events[0] else {
+    let Event::UserActive { payload } = &events[0] else {
         panic!("expected UserActive event");
     };
 

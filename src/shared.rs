@@ -10,7 +10,6 @@ pub mod result;
 pub mod test_rdb;
 
 use std::env::var;
-
 use std::marker::PhantomData;
 use std::sync::Arc;
 
@@ -21,9 +20,9 @@ use diesel_async::pooled_connection::deadpool::{Object, Pool};
 use poprako_orchestra::{Context, Level};
 use tracing::instrument;
 
-use self::result::{pool_build, pool_get};
 use crate::part::nucl::RepeatableRead;
 use crate::result::{BaseError, BaseRest, accept};
+use crate::shared::result::{pool_build, pool_get};
 
 // Internal type alias for the Diesel async connection pool.
 type RdbPool = Pool<AsyncPgConnection>;

@@ -20,4 +20,4 @@ mod task_flow;
 #[cfg(all(test, feature = "rdb", feature = "prom_impl"))]
 pub mod tests;
 
-pub use base::RdbPromHandler;
+pub use crate::part_impl::prom::rdb_impl::handler::base::RdbPromHandler;

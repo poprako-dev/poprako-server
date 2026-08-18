@@ -119,33 +119,37 @@ where
                 "JSON SDK deserialization error",
             );
 
-            return TaskFlow::Dead(format!(
-                "failed to deserialize prom payload: {}",
-                error
-            ));
+            return TaskFlow::Dead {
+                err_message: format!(
+                    "failed to deserialize prom payload: {}",
+                    error
+                ),
+            };
         }
     };
 
     if payload.topic() != topic {
         //
-        return TaskFlow::Dead(format!(
-            "prom topic {} does not match payload topic {}",
-            topic,
-            payload.topic()
-        ));
+        return TaskFlow::Dead {
+            err_message: format!(
+                "prom topic {} does not match payload topic {}",
+                topic,
+                payload.topic()
+            ),
+        };
     }
 
     match payload {
         //
-        TaskPayload::Chapter(task) => {
+        TaskPayload::Chapter { payload: task } => {
             chapter::handle(nucl, repo, develop, &task).await
         }
 
-        TaskPayload::Image(task) => {
+        TaskPayload::Image { payload: task } => {
             image::handle(nucl, repo, image_pool, &task).await
         }
 
-        TaskPayload::Invitation(event) => {
+        TaskPayload::Invitation { payload: event } => {
             invitation::handle(repo, &event).await
         }
     }

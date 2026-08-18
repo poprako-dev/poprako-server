@@ -1,6 +1,6 @@
 //! Non-transactional team read use cases.
 
-use poprako_orchestra::{Context, OperRun as _, run_proxy};
+use poprako_orchestra::{Context, OperRun as _};
 use tracing::instrument;
 
 use crate::complex::team::TeamPermComplex;
@@ -68,13 +68,10 @@ where
 
         None => {
             //
-            TeamPermComplex::ensure_user_can_list_infos(
-                &mut run_proxy! {
-                    repo => for<'a> GetUserInfo<'a>;
-                },
-                &token.user_id,
-            )
-            .await?;
+            let user_info =
+                GetUserInfo::Id { id: &token.user_id }.run_on(repo).await?;
+
+            TeamPermComplex::ensure_user_can_list_infos(&user_info)?;
         }
 
         Some(_) => {}

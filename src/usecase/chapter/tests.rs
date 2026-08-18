@@ -33,7 +33,8 @@ mod stage;
 
 use super::*;
 
-use self::fixture::*;
+use fixture::*;
+
 use crate::data::instr::chapter::{
     CreateChapterInstr, UpdateChapterInfoInstr, UpdateChapterStageInstr,
 };
@@ -43,5 +44,6 @@ use crate::part::prom::payload::image::ImagePayload;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
+use crate::usecase::chapter::stage::update_stage;
 use crate::value::chapter::Stage;
 use crate::value::role::{RoleField, RoleMask};

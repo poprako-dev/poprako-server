@@ -40,6 +40,7 @@ import type {
     UserInfoView,
     WorksetInfoView,
 } from "./types.js";
+import { chapterStageInstr } from "../state/stages.js";
 import type { StageName, StageOper } from "../state/stages.js";
 
 // ---------- timestamp / invariant helpers ----------
@@ -578,7 +579,7 @@ export async function advanceStage(
         await api.post<null>(`/api/v1/chapters/${chapterId}/stage/advance`, {
             id: chapterId,
             oper: "advance" as StageOper,
-            stage,
+            stage: chapterStageInstr(stage),
         }),
     );
 }
@@ -592,7 +593,7 @@ export async function revertStage(
         await api.post<null>(`/api/v1/chapters/${chapterId}/stage/advance`, {
             id: chapterId,
             oper: "revert" as StageOper,
-            stage,
+            stage: chapterStageInstr(stage),
         }),
     );
 }
@@ -1144,12 +1145,12 @@ export function buildPoprakoImportContent(
     return JSON.stringify(project);
 }
 
-// Import translations into a chapter. `format` is "poprako" or "label-plus".
+// Import translations into a chapter. `format` is "poprako" or "label_plus".
 // Returns `{ imported_page_count, imported_unit_count }`.
 export async function importTranslations(
     api: ApiClient,
     chapterId: string,
-    format: "poprako" | "label-plus",
+    format: "poprako" | "label_plus",
     content: string,
 ): Promise<{ imported_page_count: number; imported_unit_count: number }> {
     return expectSuccessData(

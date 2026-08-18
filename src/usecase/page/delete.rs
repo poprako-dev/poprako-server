@@ -1,4 +1,4 @@
-use poprako_orchestra::{AtLeast, Context, Nucl, OperStep as _, run_proxy};
+use poprako_orchestra::{AtLeast, Context, Nucl, OperStep as _};
 use tracing::instrument;
 
 use crate::complex::image::ImageComplex;
@@ -16,12 +16,12 @@ use crate::part::repo::oper::chapter::{
     GetChapterInfoExcluded, SetChapterPageCounters,
 };
 use crate::part::repo::oper::comic::TouchComicLastActive;
-use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::page::{DeletePages, ListPageInfos};
-use crate::part::repo::oper::team::ResolveTeamId;
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::result::{BaseError, BaseRest, accept};
+use crate::usecase::internal::member::MemberLoader;
+use crate::usecase::internal::util::LoadMode;
 
 /// Deletes all pages under one chapter.
 #[instrument(level = "info", skip(nucl, repo, prom))]
@@ -44,16 +44,15 @@ where
         + Sync,
     P: Prom<C> + Send + Sync,
 {
-    PagePermComplex::ensure_user_can_delete(
-        &mut run_proxy! {
-            repo =>
-                for<'a> ResolveTeamId<'a>,
-                for<'a> FindMemberInfo<'a>;
-        },
+    let member_info = MemberLoader::load_info_from_chapter(
+        repo,
+        LoadMode::<C>::Run,
         &token.user_id,
         &chapter_id,
     )
     .await?;
+
+    PagePermComplex::ensure_user_can_delete(&member_info)?;
 
     nucl.coord(async move |context| {
         //
@@ -78,9 +77,9 @@ where
                 //
                 delete_ids.push(ImageComplex::gen_delete_id());
 
-                delete_payloads.push(TaskPayload::Image(
-                    image::ImagePayload::Delete { object_key },
-                ));
+                delete_payloads.push(TaskPayload::Image {
+                    payload: image::ImagePayload::Delete { object_key },
+                });
             }
         }
 

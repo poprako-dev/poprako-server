@@ -3,6 +3,7 @@ use tracing::instrument;
 
 use crate::model::read::proj::team::TeamInfo;
 use crate::model::write::team::TeamAvatarReservation;
+use crate::part::nucl::RepeatableRead;
 use crate::part::repo::oper::team::{
     AllocTeamWorksetIndex, CreateTeam, DeleteTeam, GetTeamInfoExcluded,
     LockTeam, ReserveTeamAvatar, UpdateTeam,
@@ -48,10 +49,10 @@ impl Run<UpdateTeam<'_>> for HybRepo {
 impl<L> Step<CreateTeam<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send,
-    L: AtLeast<crate::part::nucl::RepeatableRead>,
+    L: AtLeast<RepeatableRead>,
 {
     // Convert repository step failures to base error during transaction execution.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -70,10 +71,10 @@ where
 impl<L> Step<UpdateTeam<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send,
-    L: AtLeast<crate::part::nucl::RepeatableRead>,
+    L: AtLeast<RepeatableRead>,
 {
     // Keep transactional team updates on the same base error contract.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -110,10 +111,10 @@ where
 impl<L> Step<ReserveTeamAvatar<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send,
-    L: AtLeast<crate::part::nucl::RepeatableRead>,
+    L: AtLeast<RepeatableRead>,
 {
     // Report avatar-reservation validation and mutation errors through base error.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -134,10 +135,10 @@ where
 impl<L> Step<GetTeamInfoExcluded<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send,
-    L: AtLeast<crate::part::nucl::RepeatableRead>,
+    L: AtLeast<RepeatableRead>,
 {
     // Preserve consistent error typing for locked team detail fetches.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -162,10 +163,10 @@ where
 impl<L> Step<LockTeam<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send,
-    L: AtLeast<crate::part::nucl::RepeatableRead>,
+    L: AtLeast<RepeatableRead>,
 {
     // Keep lock contention errors on the shared repository error type.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -184,10 +185,10 @@ where
 impl<L> Step<DeleteTeam<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send,
-    L: AtLeast<crate::part::nucl::RepeatableRead>,
+    L: AtLeast<RepeatableRead>,
 {
     // Use the common base error for hard delete operations in transactions.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -206,10 +207,10 @@ where
 impl<L> Step<AllocTeamWorksetIndex<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send,
-    L: AtLeast<crate::part::nucl::RepeatableRead>,
+    L: AtLeast<RepeatableRead>,
 {
     // Keep index allocation failures mapped to repository base errors.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;

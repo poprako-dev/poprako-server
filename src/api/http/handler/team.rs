@@ -77,7 +77,7 @@ pub async fn list_infos(
     Query(instr): Query<ListTeamInfosInstr>,
 ) -> HttpResult<Vec<TeamInfoView>> {
     //
-    usecase::team::list_infos::<RdbContext<RepeatableRead>, HybRepo, _>(
+    usecase::team::read::list_infos::<RdbContext<RepeatableRead>, HybRepo, _>(
         (harn.repo(), harn.image_pool()),
         user_token,
         instr,
@@ -105,11 +105,10 @@ pub async fn list_online_user_ids(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<Vec<String>> {
     //
-    usecase::team::list_online_user_ids::<RdbContext<RepeatableRead>, HybRepo>(
-        (harn.repo(),),
-        user_token,
-        team_id,
-    )
+    usecase::team::online::list_online_user_ids::<
+        RdbContext<RepeatableRead>,
+        HybRepo,
+    >((harn.repo(),), user_token, team_id)
     .await?
     .accept(StatusCode::OK)
 }
@@ -133,11 +132,10 @@ pub async fn mark_self_online(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::team::mark_self_online::<RdbContext<RepeatableRead>, HybRepo>(
-        (harn.repo(),),
-        user_token,
-        team_id,
-    )
+    usecase::team::online::mark_self_online::<
+        RdbContext<RepeatableRead>,
+        HybRepo,
+    >((harn.repo(),), user_token, team_id)
     .await?;
 
     no_content()
@@ -161,7 +159,7 @@ pub async fn get_info(
     Path(team_id): Path<String>,
 ) -> HttpResult<TeamInfoView> {
     //
-    usecase::team::get_info::<RdbContext<RepeatableRead>, HybRepo, _>(
+    usecase::team::read::get_info::<RdbContext<RepeatableRead>, HybRepo, _>(
         (harn.repo(), harn.image_pool()),
         team_id,
     )
@@ -305,7 +303,12 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::team::delete::<_, RdbContext<Serializable>, HybRepo, RdbProm>(
+    usecase::team::delete::delete::<
+        _,
+        RdbContext<Serializable>,
+        HybRepo,
+        RdbProm,
+    >(
         (harn.nucl().serializable(), harn.repo(), harn.prom()),
         user_token,
         team_id,

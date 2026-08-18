@@ -10,9 +10,8 @@
 // HTTP result test fixtures are compiled only for tests.
 mod tests;
 
-use std::result::Result;
-
 use std::num::NonZeroU16;
+use std::result::Result;
 
 use axum::Json;
 use axum::http::StatusCode;
@@ -184,11 +183,21 @@ where
     // Converts a success body into JSON response and merges any recorded headers.
     fn into_response(self) -> Response {
         //
-        let status = self.status;
+        let Self {
+            status,
+            headers,
+            code,
+            data,
+        } = self;
 
-        let headers = self.headers.clone();
+        let body = Self {
+            status,
+            headers: HeaderMap::new(),
+            code,
+            data,
+        };
 
-        let mut response = (status, Json(self)).into_response();
+        let mut response = (status, Json(body)).into_response();
 
         response.headers_mut().extend(headers);
 

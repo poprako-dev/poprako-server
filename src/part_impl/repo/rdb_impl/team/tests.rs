@@ -7,6 +7,7 @@ use poprako_util::i18n::trl;
 
 use crate::model::read::spec::team::TeamListSpec;
 use crate::model::write::team::TeamRepl;
+use crate::part::nucl::RepeatableRead;
 use crate::part::repo::oper::team::{
     GetTeamInfo, ListTeamInfos, ResolveTeamId, UpdateTeam,
 };
@@ -129,8 +130,7 @@ pub async fn resolve_team_id_uses_testcontainer(shared: RdbCore) {
 
     assert_expected(missing_comic_error, "error-comic-not-found");
 
-    let nucl =
-        RdbNucl::<crate::part::nucl::RepeatableRead>::new(shared.clone());
+    let nucl = RdbNucl::<RepeatableRead>::new(shared.clone());
 
     nucl.coord(async |context| {
         //

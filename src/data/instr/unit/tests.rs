@@ -76,18 +76,18 @@ fn patch_fields_distinguish_missing_null_and_value() {
 
     assert!(matches!(
         next_id,
-        Patch::Assign(id) if id == "unit-2"
+        Patch::Assign { value: id } if id == "unit-2"
     ));
 
     assert!(matches!(
         translation,
-        Patch::Assign(value)
+        Patch::Assign { value }
             if value.last_translator_id == "editor-1"
     ));
 
     assert!(matches!(
         revision,
-        Patch::Assign(value)
+        Patch::Assign { value }
             if value.last_proofreader_id == "editor-1"
     ));
 }

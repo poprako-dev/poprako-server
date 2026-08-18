@@ -46,9 +46,11 @@ async fn create_reviewer_creates_pending_invitation() {
 
     assert_eq!(
         snapshot.prom_records[0].payload(),
-        TaskPayload::Invitation(InvitationPayload::Assignment {
-            invitation_id: val.id,
-        })
+        TaskPayload::Invitation {
+            payload: InvitationPayload::Assignment {
+                invitation_id: val.id,
+            },
+        }
     );
 
     assert!(snapshot.prom_records[0].visible_at() >= before + EXPIRY_DELAY);

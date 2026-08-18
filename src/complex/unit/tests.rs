@@ -71,7 +71,12 @@ fn normalize_rejects_invalid_anchors_and_unknown_targets() {
     //
     let self_anchor = UnitComplex::normalize_edits(
         &["a"],
-        vec![save("a", Patch::Assign("a".to_string()))],
+        vec![save(
+            "a",
+            Patch::Assign {
+                value: "a".to_string(),
+            },
+        )],
     );
 
     assert_args(self_anchor.unwrap_err());

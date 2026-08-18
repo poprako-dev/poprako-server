@@ -18,6 +18,7 @@ use poprako_util::i18n::trl;
 use crate::model::read::proj::term::TermInfo;
 use crate::model::read::spec::term::TermListSpec;
 use crate::model::write::term::{TermEntry, TermRepl};
+use crate::part::nucl::RepeatableRead;
 use crate::part::repo::oper::term::{
     CreateTerm, DeleteTerm, DeleteTerms, GetTermInfo, GetTermInfoExcluded,
     ListTermInfos, LockTerm, UpdateTerm,
@@ -58,10 +59,10 @@ impl Run<ListTermInfos<'_>> for HybRepo {
 impl<L> Step<CreateTerm<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send,
-    L: AtLeast<crate::part::nucl::RepeatableRead>,
+    L: AtLeast<RepeatableRead>,
 {
     // Create a term row inside an active transaction boundary.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -80,10 +81,10 @@ where
 impl<L> Step<GetTermInfoExcluded<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send,
-    L: AtLeast<crate::part::nucl::RepeatableRead>,
+    L: AtLeast<RepeatableRead>,
 {
     // Read a term for exclusive use inside an active transaction context.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -102,10 +103,10 @@ where
 impl<L> Step<LockTerm<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send,
-    L: AtLeast<crate::part::nucl::RepeatableRead>,
+    L: AtLeast<RepeatableRead>,
 {
     // Acquire a row-level lock for a term within a transaction.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -124,10 +125,10 @@ where
 impl<L> Step<UpdateTerm<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send,
-    L: AtLeast<crate::part::nucl::RepeatableRead>,
+    L: AtLeast<RepeatableRead>,
 {
     // Apply term info updates inside an active transaction boundary.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -146,10 +147,10 @@ where
 impl<L> Step<DeleteTerm<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send,
-    L: AtLeast<crate::part::nucl::RepeatableRead>,
+    L: AtLeast<RepeatableRead>,
 {
     // Remove one term row inside an active transaction boundary.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -168,10 +169,10 @@ where
 impl<L> Step<DeleteTerms<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send,
-    L: AtLeast<crate::part::nucl::RepeatableRead>,
+    L: AtLeast<RepeatableRead>,
 {
     // Remove all terms for a termbase inside an active transaction boundary.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;

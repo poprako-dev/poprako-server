@@ -18,14 +18,26 @@ use crate::part::effect::event::user::{UserActiveEvent, UserSignedUpEvent};
 pub enum Event {
     //
     /// Emitted when a user shows activity (e.g., views their own profile).
-    UserActive(UserActiveEvent),
+    UserActive {
+        /// Activity event details.
+        payload: UserActiveEvent,
+    },
 
     /// Emitted when a new user signs up via an invitation.
-    UserSignedUp(UserSignedUpEvent),
+    UserSignedUp {
+        /// Signup event details.
+        payload: UserSignedUpEvent,
+    },
 
     /// Emitted when a chapter reaches publish completion.
-    ChapterPublished(ChapterPublishedEvent),
+    ChapterPublished {
+        /// Chapter publication event details.
+        payload: ChapterPublishedEvent,
+    },
 
     /// Emitted when one chapter workflow stage reaches completion.
-    ChapterWorkflowCompleted(ChapterWorkflowCompletedEvent),
+    ChapterWorkflowCompleted {
+        /// Workflow completion event details.
+        payload: ChapterWorkflowCompletedEvent,
+    },
 }

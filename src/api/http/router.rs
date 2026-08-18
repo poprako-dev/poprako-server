@@ -16,8 +16,8 @@ use crate::api::http::handler::{
 };
 use crate::api::http::middleware::auth::authorize;
 use crate::api::http::middleware::cors::cors;
+use crate::api::http::middleware::metric::record_response_metric;
 use crate::api::http::middleware::rate_limit::rate_limit;
-use crate::api::http::middleware::record_response_metric;
 use crate::api::http::middleware::trace::{
     propagate_request_id, set_request_id, trace_request,
 };

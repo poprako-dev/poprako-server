@@ -66,10 +66,12 @@ async fn process_raw_provide(
 
     if advanced {
         //
-        Event::ChapterWorkflowCompleted(ChapterWorkflowCompletedEvent {
-            chapter_id: chapter_id.to_string(),
-            completed_stage: Stage::RawProvide,
-        })
+        Event::ChapterWorkflowCompleted {
+            payload: ChapterWorkflowCompletedEvent {
+                chapter_id: chapter_id.to_string(),
+                completed_stage: Stage::RawProvide,
+            },
+        }
         .develop_on(mock)
         .await;
     }

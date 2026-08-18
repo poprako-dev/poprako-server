@@ -45,7 +45,7 @@ pub async fn list_infos(
     //
     let instr = ListPageInfosInstr { chapter_id };
 
-    usecase::page::list_infos::<RdbContext<RepeatableRead>, HybRepo, _>(
+    usecase::page::list::list_infos::<RdbContext<RepeatableRead>, HybRepo, _>(
         (harn.repo(), harn.image_pool()),
         user_token,
         instr,
@@ -73,7 +73,7 @@ pub async fn get_info(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<PageInfoView> {
     //
-    usecase::page::get_info::<RdbContext<RepeatableRead>, HybRepo, _>(
+    usecase::page::list::get_info::<RdbContext<RepeatableRead>, HybRepo, _>(
         (harn.repo(), harn.image_pool()),
         user_token,
         page_id,
@@ -100,7 +100,12 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::page::delete::<_, RdbContext<RepeatableRead>, HybRepo, RdbProm>(
+    usecase::page::delete::delete::<
+        _,
+        RdbContext<RepeatableRead>,
+        HybRepo,
+        RdbProm,
+    >(
         (harn.nucl().repeatable_read(), harn.repo(), harn.prom()),
         user_token,
         chapter_id,
@@ -134,7 +139,7 @@ pub async fn reserve_chapter_pages(
     //
     ensure_path_matches_body_id(&chapter_id, &instr.chapter_id)?;
 
-    usecase::page::reserve_chapter_pages::<
+    usecase::page::reserve::reserve_chapter_pages::<
         _,
         RdbContext<RepeatableRead>,
         HybRepo,

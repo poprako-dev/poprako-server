@@ -5,6 +5,8 @@ mod import;
 // Chapter port perm checks.
 mod perm;
 
-pub use export::ChapterExportComplex;
-pub use import::ChapterImportComplex;
-pub use perm::ChapterPortPermComplex;
+pub use crate::complex::chapter_port::export::ChapterExportComplex;
+pub use crate::complex::chapter_port::import::ChapterImportComplex;
+pub use crate::complex::chapter_port::perm::{
+    ChapterExportAccess, ChapterPortPermComplex,
+};

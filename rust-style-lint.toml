@@ -18,6 +18,7 @@ module-dependency = true
 visibility-style = true
 trait-use-anonymous = true
 prefer-if-let-guard = true
+no-unnamed-fields = true
 
 [qualified-call-site]
 enforced_std_paths = [
@@ -37,6 +38,18 @@ enforced_third_party_paths = [
 # --- per-checker overrides ------------------------------------------------
 
 # Diesel generates schema.rs; it is not hand-authored Rust.
+[spacing-style]
+ignore_dirs = [
+    ".git",
+    ".hg",
+    ".svn",
+    ".idea",
+    ".vscode",
+    "target",
+    "node_modules",
+    "schema.rs",
+]
+
 [generic-where]
 exclude_files = ["src/part_impl/repo/rdb_impl/schema.rs"]
 

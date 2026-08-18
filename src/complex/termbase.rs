@@ -1,20 +1,13 @@
 //! Terminology-base validation, perms, and cascade operations.
 
-use poprako_orchestra::{OperProxy as _, Proxy};
-
 use poprako_util::i18n::trl;
 
 use crate::complex::util::{
     check_user_is_team_member, check_user_is_team_proofreader,
 };
+use crate::model::read::proj::member::MemberInfo;
 use crate::model::read::proj::termbase::TermbaseInfo;
 use crate::model::write::termbase::{TermbaseEntry, TermbaseRepl};
-use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part::repo::oper::team::ResolveTeamId;
-use crate::part::repo::oper::term::DeleteTerms;
-use crate::part::repo::oper::termbase::{
-    DeleteTermbase, GetTermbaseInfoExcluded, ListTermbaseInfosExcluded,
-};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 
@@ -129,75 +122,6 @@ impl TermbaseComplex {
             description,
         })
     }
-
-    /// Delete one terminology base and all of its child terms.
-    pub async fn delete_cascade<P>(proxy: &mut P, id: &str) -> BaseRest<()>
-    where
-        P: for<'a> Proxy<GetTermbaseInfoExcluded<'a>, Error = BaseError>
-            + for<'a> Proxy<DeleteTerms<'a>, Error = BaseError>
-            + for<'a> Proxy<DeleteTermbase<'a>, Error = BaseError>,
-    {
-        let termbase_info =
-            GetTermbaseInfoExcluded { id }.proxy_on(proxy).await?;
-
-        DeleteTerms {
-            termbase_id: &termbase_info.id,
-        }
-        .proxy_on(proxy)
-        .await?;
-
-        DeleteTermbase {
-            id: &termbase_info.id,
-        }
-        .proxy_on(proxy)
-        .await?;
-
-        accept(())
-    }
-
-    /// Delete all terminology bases directly owned by a team.
-    pub async fn delete_team_cascade<P>(
-        proxy: &mut P,
-        team_id: &str,
-    ) -> BaseRest<()>
-    where
-        P: for<'a> Proxy<ListTermbaseInfosExcluded<'a>, Error = BaseError>
-            + for<'a> Proxy<GetTermbaseInfoExcluded<'a>, Error = BaseError>
-            + for<'a> Proxy<DeleteTerms<'a>, Error = BaseError>
-            + for<'a> Proxy<DeleteTermbase<'a>, Error = BaseError>,
-    {
-        let termbase_infos = ListTermbaseInfosExcluded::Team { team_id }
-            .proxy_on(proxy)
-            .await?;
-
-        for termbase_info in termbase_infos {
-            Self::delete_cascade(proxy, &termbase_info.id).await?;
-        }
-
-        accept(())
-    }
-
-    /// Delete all terminology bases directly owned by a comic.
-    pub async fn delete_comic_cascade<P>(
-        proxy: &mut P,
-        comic_id: &str,
-    ) -> BaseRest<()>
-    where
-        P: for<'a> Proxy<ListTermbaseInfosExcluded<'a>, Error = BaseError>
-            + for<'a> Proxy<GetTermbaseInfoExcluded<'a>, Error = BaseError>
-            + for<'a> Proxy<DeleteTerms<'a>, Error = BaseError>
-            + for<'a> Proxy<DeleteTermbase<'a>, Error = BaseError>,
-    {
-        let termbase_infos = ListTermbaseInfosExcluded::Comic { comic_id }
-            .proxy_on(proxy)
-            .await?;
-
-        for termbase_info in termbase_infos {
-            Self::delete_cascade(proxy, &termbase_info.id).await?;
-        }
-
-        accept(())
-    }
 }
 
 /// perm checks for terminology-base and terminology-entry resources.
@@ -205,66 +129,33 @@ pub struct TermbasePermComplex;
 
 impl TermbasePermComplex {
     /// Verify team membership for a terminology-base read.
-    pub async fn ensure_user_can_read_team<P>(
-        proxy: &mut P,
-        user_id: &str,
-        team_id: &str,
-    ) -> BaseRest<()>
-    where
-        P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
-    {
-        check_user_is_team_member(proxy, user_id, team_id).await
+    pub fn ensure_user_can_read_team(member_info: &MemberInfo) -> BaseRest<()> {
+        check_user_is_team_member(member_info)
     }
 
     /// Verify team membership for terminology bases visible from a comic.
-    pub async fn ensure_user_can_read_comic<P>(
-        proxy: &mut P,
-        user_id: &str,
-        comic_id: &str,
-    ) -> BaseRest<()>
-    where
-        P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
-            + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
-    {
-        let team_id = ResolveTeamId::Comic { id: comic_id }
-            .proxy_on(proxy)
-            .await?;
-
-        check_user_is_team_member(proxy, user_id, &team_id).await
+    pub fn ensure_user_can_read_comic(
+        member_info: &MemberInfo,
+    ) -> BaseRest<()> {
+        check_user_is_team_member(member_info)
     }
 
     /// Verify proofreader membership for a terminology-base write.
-    pub async fn ensure_user_can_write_team<P>(
-        proxy: &mut P,
-        user_id: &str,
-        team_id: &str,
-    ) -> BaseRest<()>
-    where
-        P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
-    {
-        check_user_is_team_proofreader(proxy, user_id, team_id).await
+    pub fn ensure_user_can_write_team(
+        member_info: &MemberInfo,
+    ) -> BaseRest<()> {
+        check_user_is_team_proofreader(member_info)
     }
 
     /// Verify team membership for a terminology-base read.
-    pub async fn ensure_user_can_read<P>(
-        proxy: &mut P,
-        user_id: &str,
+    pub fn ensure_user_can_read(
+        member_info: &MemberInfo,
         termbase_info: &TermbaseInfo,
-    ) -> BaseRest<()>
-    where
-        P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
-            + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
-    {
-        let team_id = match (&termbase_info.team_id, &termbase_info.comic_id) {
+    ) -> BaseRest<()> {
+        //
+        match (&termbase_info.team_id, &termbase_info.comic_id) {
             //
-            (Some(team_id), None) => team_id.clone(),
-
-            (None, Some(comic_id)) => {
-                //
-                ResolveTeamId::Comic { id: comic_id }
-                    .proxy_on(proxy)
-                    .await?
-            }
+            (Some(_), None) | (None, Some(_)) => {}
 
             _ => {
                 //
@@ -284,31 +175,20 @@ impl TermbasePermComplex {
                     message: err_message,
                 });
             }
-        };
+        }
 
-        check_user_is_team_member(proxy, user_id, &team_id).await
+        check_user_is_team_member(member_info)
     }
 
     /// Verify proofreader membership for a terminology-base write.
-    pub async fn ensure_user_can_write<P>(
-        proxy: &mut P,
-        user_id: &str,
+    pub fn ensure_user_can_write(
+        member_info: &MemberInfo,
         termbase_info: &TermbaseInfo,
-    ) -> BaseRest<()>
-    where
-        P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
-            + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
-    {
-        let team_id = match (&termbase_info.team_id, &termbase_info.comic_id) {
+    ) -> BaseRest<()> {
+        //
+        match (&termbase_info.team_id, &termbase_info.comic_id) {
             //
-            (Some(team_id), None) => team_id.clone(),
-
-            (None, Some(comic_id)) => {
-                //
-                ResolveTeamId::Comic { id: comic_id }
-                    .proxy_on(proxy)
-                    .await?
-            }
+            (Some(_), None) | (None, Some(_)) => {}
 
             _ => {
                 //
@@ -328,8 +208,8 @@ impl TermbasePermComplex {
                     message: err_message,
                 });
             }
-        };
+        }
 
-        check_user_is_team_proofreader(proxy, user_id, &team_id).await
+        check_user_is_team_proofreader(member_info)
     }
 }

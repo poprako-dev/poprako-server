@@ -76,6 +76,7 @@ use crate::model::read::proj::user::{UserCredential, UserInfo};
 use crate::model::read::proj::workset::WorksetInfo;
 use crate::model::write::member::MemberEntry;
 use crate::part::effect::event::Event;
+use crate::part::nucl::Serializable;
 use crate::part::prom::oper::Defer;
 use crate::part::prom::payload::{TaskPayload, image};
 use crate::part::prom::task::Task;
@@ -224,7 +225,7 @@ pub struct MockContext {
 }
 
 impl poprako_orchestra::Context for MockContext {
-    type Level = crate::part::nucl::Serializable;
+    type Level = Serializable;
 }
 
 #[cfg_attr(test, derive(Clone, Default))]

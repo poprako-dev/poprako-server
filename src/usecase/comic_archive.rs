@@ -5,11 +5,11 @@ mod tests;
 
 use std::collections::BTreeMap;
 
-use poprako_orchestra::{
-    AtLeast, Context, Nucl, OperRun as _, OperStep as _, run_proxy,
-};
+use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use time::OffsetDateTime;
 use tracing::instrument;
+
+use poprako_util::i18n::trl;
 
 use crate::complex::comic_archive::{
     ComicArchiveComplex, ComicArchivePermComplex,
@@ -32,9 +32,10 @@ use crate::part::repo::oper::comic_archive::{
     ListComicArchivePayloads,
 };
 use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part::repo::oper::team::ResolveTeamId;
 use crate::part::repo::team::TeamRepo;
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::usecase::internal::member::MemberLoader;
+use crate::usecase::internal::util::LoadMode;
 use crate::util::next_snowflake_id;
 use crate::value::comic_archive::ComicArchiveMonth;
 
@@ -50,14 +51,32 @@ where
     C: Context,
     R: ComicArchiveRepo<C> + MemberRepo<C> + Sync,
 {
-    ComicArchivePermComplex::ensure_user_can_export(
-        &mut run_proxy! {
-            repo => for<'a> FindMemberInfo<'a>;
-        },
-        &token.user_id,
-        &team_id,
-    )
+    let member_info = FindMemberInfo::UserTeam {
+        user_id: &token.user_id,
+        team_id: &team_id,
+    }
+    .run_on(repo)
     .await?;
+
+    let Some(member_info) = member_info else {
+        //
+        let err_message = trl("error-team-admin-required");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Perm,
+            err_message = %err_message,
+            team_id = %team_id,
+            user_id = %token.user_id,
+            "expected error: comic archive export membership missing",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: err_message,
+        });
+    };
+
+    ComicArchivePermComplex::ensure_user_can_export(&member_info)?;
 
     let months = ComicArchiveMonth::parse_retained(
         instr.months,
@@ -115,16 +134,15 @@ where
         + Sync,
     P: Prom<C> + Send + Sync,
 {
-    ComicArchivePermComplex::ensure_user_can_archive(
-        &mut run_proxy! {
-            repo =>
-                for<'a> ResolveTeamId<'a>,
-                for<'a> FindMemberInfo<'a>;
-        },
+    let member_info = MemberLoader::load_info_from_comic(
+        repo,
+        LoadMode::<C>::Run,
         &token.user_id,
         &comic_id,
     )
     .await?;
+
+    ComicArchivePermComplex::ensure_user_can_archive(&member_info)?;
 
     let archive_comic_val = nucl
         .coord(async move |context| {
@@ -149,8 +167,6 @@ where
                 )
                 .await?;
 
-            let archived_id = comic_archive_entry.record.id.clone();
-
             let (mut delete_ids, mut delete_payloads) =
                 (Vec::new(), Vec::new());
 
@@ -158,11 +174,11 @@ where
                 //
                 delete_ids.push(next_snowflake_id());
 
-                delete_payloads.push(TaskPayload::Image(
-                    image::ImagePayload::Delete {
+                delete_payloads.push(TaskPayload::Image {
+                    payload: image::ImagePayload::Delete {
                         object_key: image_key,
                     },
-                ));
+                });
             }
 
             let delete_tasks = delete_ids
@@ -185,7 +201,11 @@ where
             .step_on(repo, context)
             .await?;
 
-            accept(ArchiveComicVal { archived_id })
+            let record = comic_archive_entry.record;
+
+            accept(ArchiveComicVal {
+                archived_id: record.id,
+            })
         })
         .await?;
 

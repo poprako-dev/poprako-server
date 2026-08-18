@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use poprako_orchestra::{AtLeast, Context, Nucl, OperStep as _, run_proxy};
+use poprako_orchestra::{AtLeast, Context, Nucl, OperStep as _};
 use tracing::instrument;
 
 use crate::complex::comic::{ComicComplex, ComicPermComplex};
@@ -18,10 +18,10 @@ use crate::part::prom::task::Task;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::comic::{GetComicInfoExcluded, ReserveComicCover};
-use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part::repo::oper::team::ResolveTeamId;
 use crate::part::repo::team::TeamRepo;
 use crate::result::{BaseError, BaseRest, accept};
+use crate::usecase::internal::member::MemberLoader;
+use crate::usecase::internal::util::LoadMode;
 
 /// Reserves a new comic cover upload slot.
 #[instrument(level = "info", skip(nucl, repo, prom, image_pool))]
@@ -46,18 +46,17 @@ where
     )?;
 
     let (transaction_image_hash, image_ext, new_byte_len) =
-        (instr.image_hash.clone(), instr.ext, instr.new_byte_len);
+        (instr.image_hash, instr.ext, instr.new_byte_len);
 
-    ComicPermComplex::ensure_user_can_reserve_cover(
-        &mut run_proxy! {
-            repo =>
-                for<'a> ResolveTeamId<'a>,
-                for<'a> FindMemberInfo<'a>;
-        },
+    let member_info = MemberLoader::load_info_from_comic(
+        repo,
+        LoadMode::Run,
         &token.user_id,
         &id,
     )
     .await?;
+
+    ComicPermComplex::ensure_user_can_reserve_cover(&member_info)?;
 
     let (object_key, cover_version, upload_required) = nucl
         .coord(async move |context| {
@@ -95,25 +94,25 @@ where
                 //
                 batch_ids.push(ImageComplex::gen_delete_id());
 
-                batch_payloads.push(TaskPayload::Image(
-                    image::ImagePayload::Delete {
+                batch_payloads.push(TaskPayload::Image {
+                    payload: image::ImagePayload::Delete {
                         object_key: prev_object_key.clone(),
                     },
-                ));
+                });
 
                 batch_delays.push(None);
             }
 
             batch_ids.push(ImageComplex::gen_check_id());
 
-            batch_payloads.push(TaskPayload::Image(
-                image::ImagePayload::CheckUpload {
+            batch_payloads.push(TaskPayload::Image {
+                payload: image::ImagePayload::CheckUpload {
                     resource_kind: image::ResourceKind::ComicCover,
                     resource_id: id.clone(),
                     object_key: cover_reservation.object_key.clone(),
                     version: cover_reservation.cover_version,
                 },
-            ));
+            });
 
             batch_delays.push(Some(Duration::from_secs(15 * 60)));
 

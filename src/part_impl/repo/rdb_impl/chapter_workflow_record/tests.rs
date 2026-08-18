@@ -5,6 +5,7 @@ use time::{Duration, OffsetDateTime};
 
 use crate::model::read::spec::chapter_workflow_record::ChapterWorkflowRecordListSpec;
 use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
+use crate::part::nucl::RepeatableRead;
 use crate::part::repo::oper::chapter_workflow_record::{
     CreateChapterWorkflowRecords, DeleteChapterWorkflowRecords,
     ListChapterWorkflowRecordInfos,
@@ -31,8 +32,7 @@ pub async fn chapter_workflow_record_roundtrip_uses_testcontainer(
 
     let repo = HybRepo::new(shared.clone());
 
-    let nucl =
-        RdbNucl::<crate::part::nucl::RepeatableRead>::new(shared.clone());
+    let nucl = RdbNucl::<RepeatableRead>::new(shared.clone());
 
     let created_at = OffsetDateTime::UNIX_EPOCH + Duration::seconds(1);
 

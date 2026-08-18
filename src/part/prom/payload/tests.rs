@@ -4,11 +4,12 @@ use super::*;
 #[test]
 fn preserves_persisted_tags() {
     //
-    let chapter_task =
-        TaskPayload::Chapter(ChapterPayload::TryAdvanceRawProvideStage {
+    let chapter_task = TaskPayload::Chapter {
+        payload: ChapterPayload::TryAdvanceRawProvideStage {
             chapter_id: "chapter-1".to_string(),
             actor_user_id: None,
-        });
+        },
+    };
 
     let chapter_json = serde_json::to_value(&chapter_task).unwrap();
 
@@ -17,9 +18,11 @@ fn preserves_persisted_tags() {
         serde_json::json!({ "AdvanceRawProvide": { "chapter_id": "chapter-1" } }),
     );
 
-    let invitation_task = TaskPayload::Invitation(InvitationPayload::Member {
-        invitation_id: "invitation-1".to_string(),
-    });
+    let invitation_task = TaskPayload::Invitation {
+        payload: InvitationPayload::Member {
+            invitation_id: "invitation-1".to_string(),
+        },
+    };
 
     let invitation_json = serde_json::to_value(&invitation_task).unwrap();
 

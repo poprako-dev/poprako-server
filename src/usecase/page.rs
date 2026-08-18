@@ -1,9 +1,11 @@
 //! Page use cases — image reservation, listing, upload confirmation, and deletion.
 
-// Page reservation workflow and related orchestration.
-mod reserve;
-// Page deletion use case.
-mod delete;
+/// Page deletion use case.
+pub mod delete;
+/// Page read orchestration.
+pub mod list;
+/// Page reservation workflow and related orchestration.
+pub mod reserve;
 
 #[cfg(test)]
 // Unit tests for page metadata and upload reservation flows.
@@ -11,9 +13,7 @@ mod tests;
 
 use std::time::Duration;
 
-use poprako_orchestra::{
-    AtLeast, Context, Nucl, OperRun as _, OperStep as _, run_proxy,
-};
+use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
@@ -22,11 +22,10 @@ use crate::complex::chapter::ChapterComplex;
 use crate::complex::image::ImageComplex;
 use crate::complex::page::{PageComplex, PagePermComplex};
 use crate::data::instr::page::{
-    ListPageInfosInstr, MarkPageImageUploadedInstr, ReservePageImageInstr,
+    MarkPageImageUploadedInstr, ReservePageImageInstr,
 };
 use crate::data::val::page::ReservedPageVal;
 use crate::data::view::image::ImageUploadSlotView;
-use crate::data::view::page::PageInfoView;
 use crate::model::shared::user::UserToken;
 use crate::model::write::page::{PageImageRepl, PageManifestRepl};
 use crate::part::image::{ImageManager, ImagePool, ImageUploadSpec};
@@ -38,22 +37,14 @@ use crate::part::prom::payload::{TaskPayload, image};
 use crate::part::prom::task::Task;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
-use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
 use crate::part::repo::oper::chapter::GetChapterInfoExcluded;
-use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::page::{
-    GetPageInfo, GetPageInfoExcluded, ListPageInfos, MarkPageImageUploaded,
-    UpdatePageManifest,
+    GetPageInfo, GetPageInfoExcluded, MarkPageImageUploaded, UpdatePageManifest,
 };
-use crate::part::repo::oper::team::ResolveTeamId;
 use crate::part::repo::page::PageRepo;
-use crate::part::repo::team::TeamRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
-
-pub use delete::delete;
-pub use reserve::reserve_chapter_pages;
 
 /// Reserves a replacement image upload slot for one page.
 #[instrument(level = "info", skip(nucl, repo, prom, image_pool))]
@@ -72,21 +63,45 @@ where
     P: Prom<C> + Send + Sync,
     I: ImagePool,
 {
+    let ReservePageImageInstr {
+        image_hash,
+        new_byte_len,
+        ext,
+    } = instr;
+
     ImageComplex::ensure_byte_length(
-        instr.new_byte_len,
+        new_byte_len,
         image::ResourceKind::PageImage,
     )?;
 
     let page_info = GetPageInfo { id: &id }.run_on(repo).await?;
 
-    PagePermComplex::ensure_user_can_reserve(
-        &mut run_proxy! {
-            repo => for<'a, 'b> FindAssignmentInfo<'a, 'b>;
-        },
-        &token.user_id,
-        &page_info.chapter_id,
-    )
+    let assignment_info = FindAssignmentInfo::ChapterUser {
+        chapter_id: &page_info.chapter_id,
+        user_id: &token.user_id,
+    }
+    .run_on(repo)
     .await?;
+
+    let Some(assignment_info) = assignment_info else {
+        //
+        let err_message = trl("error-page-reserve-role-required");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Perm,
+            err_message = %err_message,
+            chapter_id = %page_info.chapter_id,
+            user_id = %token.user_id,
+            "expected error: page reservation assignment missing",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: err_message,
+        });
+    };
+
+    PagePermComplex::ensure_user_can_reserve(&assignment_info)?;
 
     let reservation = nucl
         .coord(async move |context| {
@@ -106,8 +121,8 @@ where
             let locked_page_info = GetPageInfoExcluded { id: &id }.step_on(repo, context).await?;
 
             let same_identity =
-                locked_page_info.image_hash.as_ref() == Some(&instr.image_hash)
-                    && locked_page_info.image_ext == Some(instr.ext);
+                locked_page_info.image_hash.as_ref() == Some(&image_hash)
+                    && locked_page_info.image_ext == Some(ext);
 
             if same_identity && locked_page_info.is_image_uploaded == Some(true) {
                 return accept((locked_page_info, None));
@@ -146,7 +161,7 @@ where
                         &locked_page_info.chapter_id,
                         &locked_page_info.id,
                         image_version,
-                        instr.ext.suffix(),
+                        ext.suffix(),
                     );
 
                     (
@@ -163,8 +178,8 @@ where
                 image_key: Some(image_key.clone()),
                 is_image_uploaded: false,
                 image_version,
-                image_hash: instr.image_hash.clone(),
-                image_ext: instr.ext,
+                image_hash,
+                image_ext: ext,
             };
 
             let updated_page_info = UpdatePageManifest {
@@ -183,30 +198,30 @@ where
                 //
                 task_ids.push(ImageComplex::gen_delete_id());
 
-                task_payloads.push(TaskPayload::Image(image::ImagePayload::Delete {
+                task_payloads.push(TaskPayload::Image { payload: image::ImagePayload::Delete {
                     object_key: prev_image_key,
-                }));
+                } });
 
                 task_delays.push(None);
             }
 
             task_ids.push(ImageComplex::gen_check_id());
 
-            task_payloads.push(TaskPayload::Image(image::ImagePayload::CheckUpload {
+            task_payloads.push(TaskPayload::Image { payload: image::ImagePayload::CheckUpload {
                 resource_kind: image::ResourceKind::PageImage,
                 resource_id: locked_page_info.id.clone(),
                 object_key: image_key.clone(),
                 version: image_version,
-            }));
+            } });
 
             task_delays.push(Some(Duration::from_secs(15 * 60)));
 
             let (advance_id, advance_payload) = (
                 next_snowflake_id(),
-                TaskPayload::Chapter(ChapterPayload::TryAdvanceRawProvideStage {
+                TaskPayload::Chapter { payload: ChapterPayload::TryAdvanceRawProvideStage {
                     chapter_id: locked_page_info.chapter_id.clone(),
                     actor_user_id: Some(token.user_id.clone()),
-                }),
+                } },
             );
 
             let advance_task = Task {
@@ -260,7 +275,7 @@ where
             let upload_spec = ImageUploadSpec {
                 object_key: &object_key,
                 content_type: image_ext.content_type(),
-                content_length: instr.new_byte_len,
+                content_length: new_byte_len,
             };
 
             let upload_target = image_pool.get_upload_slot(upload_spec).await?;
@@ -302,75 +317,6 @@ where
     })
 }
 
-/// Lists pages under one chapter.
-#[instrument(level = "info", skip(repo, image_pool))]
-pub async fn list_infos<C, R, I>(
-    (repo, image_pool): (&R, &I),
-    token: UserToken,
-    instr: ListPageInfosInstr,
-) -> BaseRest<Vec<PageInfoView>>
-where
-    C: Context,
-    R: PageRepo<C> + TeamRepo<C> + MemberRepo<C> + AssignmentRepo<C> + Sync,
-    I: ImagePool,
-{
-    PagePermComplex::ensure_user_can_list_infos(
-        &mut run_proxy! {
-            repo =>
-                for<'a> ResolveTeamId<'a>,
-                for<'a> FindMemberInfo<'a>,
-                for<'a, 'b> FindAssignmentInfo<'a, 'b>;
-        },
-        &token.user_id,
-        &instr.chapter_id,
-    )
-    .await?;
-
-    let page_infos = ListPageInfos {
-        chapter_id: &instr.chapter_id,
-    }
-    .run_on(repo)
-    .await?;
-
-    futures_util::future::join_all(
-        page_infos
-            .into_iter()
-            .map(|page_info| PageInfoView::from_model(image_pool, page_info)),
-    )
-    .await
-    .into_iter()
-    .collect()
-}
-
-/// Fetches one page by ID.
-#[instrument(level = "info", skip(repo, image_pool))]
-pub async fn get_info<C, R, I>(
-    (repo, image_pool): (&R, &I),
-    token: UserToken,
-    id: String,
-) -> BaseRest<PageInfoView>
-where
-    C: Context,
-    R: PageRepo<C> + TeamRepo<C> + MemberRepo<C> + AssignmentRepo<C> + Sync,
-    I: ImagePool,
-{
-    let page_info = GetPageInfo { id: &id }.run_on(repo).await?;
-
-    PagePermComplex::ensure_user_can_list_infos(
-        &mut run_proxy! {
-            repo =>
-                for<'a> ResolveTeamId<'a>,
-                for<'a> FindMemberInfo<'a>,
-                for<'a, 'b> FindAssignmentInfo<'a, 'b>;
-        },
-        &token.user_id,
-        &page_info.chapter_id,
-    )
-    .await?;
-
-    PageInfoView::from_model(image_pool, page_info).await
-}
-
 /// Marks one page image as uploaded.
 #[instrument(level = "info", skip(nucl, repo, image_manager))]
 pub async fn mark_image_uploaded<N, C, R, I>(
@@ -389,14 +335,32 @@ where
 {
     let page_info = GetPageInfo { id: &id }.run_on(repo).await?;
 
-    PagePermComplex::ensure_user_can_mark_image_uploaded(
-        &mut run_proxy! {
-            repo => for<'a, 'b> FindAssignmentInfo<'a, 'b>;
-        },
-        &token.user_id,
-        &page_info.chapter_id,
-    )
+    let assignment_info = FindAssignmentInfo::ChapterUser {
+        chapter_id: &page_info.chapter_id,
+        user_id: &token.user_id,
+    }
+    .run_on(repo)
     .await?;
+
+    let Some(assignment_info) = assignment_info else {
+        //
+        let err_message = trl("error-page-upload-role-required");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Perm,
+            err_message = %err_message,
+            chapter_id = %page_info.chapter_id,
+            user_id = %token.user_id,
+            "expected error: page upload assignment missing",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: err_message,
+        });
+    };
+
+    PagePermComplex::ensure_user_can_mark_image_uploaded(&assignment_info)?;
 
     if page_info.image_version != Some(instr.image_version) {
         //
@@ -466,9 +430,9 @@ where
     }
 
     let repl = PageImageRepl {
-        id: id.clone(),
+        id,
         image_version: instr.image_version,
-        image_key: Some(image_key.clone()),
+        image_key: Some(image_key),
         is_image_uploaded: true,
     };
 
@@ -485,24 +449,25 @@ where
 
         ChapterComplex::ensure_chapter_writable(&chapter_info)?;
 
-        let locked_page_info = GetPageInfoExcluded { id: &id }
+        let locked_page_info = GetPageInfoExcluded { id: &repl.id }
             .step_on(repo, context)
             .await?;
 
         if locked_page_info.image_version != Some(instr.image_version)
-            || locked_page_info.image_key.as_deref() != Some(&image_key)
+            || locked_page_info.image_key.as_deref()
+                != repl.image_key.as_deref()
         {
             let err_message = trl("error-stale-page-image-upload");
 
             tracing::warn!(
                 err_variant = ?ExpectedVariant::Args,
                 err_message = %err_message,
-                page_id = %id,
+                page_id = %repl.id,
                 chapter_id = %page_info.chapter_id,
                 user_id = %token.user_id,
                 image_version = instr.image_version,
                 locked_image_version = locked_page_info.image_version,
-                image_key = %image_key,
+                image_key = ?repl.image_key,
                 "expected error: stale page image upload",
             );
 

@@ -4,6 +4,7 @@ use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 
 use crate::model::read::proj::unit::UnitCounters;
 use crate::model::write::page::PageEntry;
+use crate::part::nucl::RepeatableRead;
 use crate::part::repo::oper::page::{
     CreatePages, GetPageInfo, ListFirstPageInfos, ListPageInfos,
     ReservePageImage, SetPageUnitCounters,
@@ -27,8 +28,7 @@ pub async fn page_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let repo = HybRepo::new(shared.clone());
 
-    let nucl =
-        RdbNucl::<crate::part::nucl::RepeatableRead>::new(shared.clone());
+    let nucl = RdbNucl::<RepeatableRead>::new(shared.clone());
 
     let unit_counters = UnitCounters {
         total_unit_count: 2,

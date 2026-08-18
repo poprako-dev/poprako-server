@@ -14,7 +14,6 @@ use tracing::instrument;
 
 use poprako_util::i18n::trl;
 
-use self::code::{gen_assignment_invitation_id, gen_code};
 use crate::complex::assignment::AssignmentComplex;
 use crate::complex::chapter::ChapterComplex;
 use crate::data::instr::assignment_invitation::{
@@ -59,6 +58,9 @@ use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::user::UserRepo;
 use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::usecase::assignment_invitation::code::{
+    gen_assignment_invitation_id, gen_code,
+};
 use crate::util::next_snowflake_id;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 use crate::value::role::{RoleField, RoleMask};
@@ -198,7 +200,7 @@ where
             };
 
             let (purge_payload, purge_task_id) =
-                (TaskPayload::Invitation(purge_event), next_snowflake_id());
+                (TaskPayload::Invitation { payload: purge_event }, next_snowflake_id());
 
             let purge_task = Task {
                 id: &purge_task_id,

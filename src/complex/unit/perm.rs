@@ -1,43 +1,52 @@
 //! perm gates for Unit reads and edit fields.
 
-use poprako_orchestra::Proxy;
-
 use poprako_util::i18n::trl;
 
 use crate::complex::util::{
-    check_user_is_chapter_assignee, check_user_is_team_member_by_chapter,
+    check_user_is_chapter_assignee, check_user_is_team_member,
 };
+use crate::model::read::proj::assignment::AssignmentInfo;
+use crate::model::read::proj::member::MemberInfo;
 use crate::model::write::unit::UnitEdit;
-use crate::part::repo::oper::assignment::FindAssignmentInfo;
-use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part::repo::oper::team::ResolveTeamId;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::value::unit::UnitEditPerm;
+
+/// Concrete evidence that grants Unit list access.
+pub enum UnitListAccess<'a> {
+    /// Access through team membership.
+    Member {
+        /// Team membership used to establish access.
+        member_info: &'a MemberInfo,
+    },
+
+    /// Access through a chapter assignment.
+    Assignee {
+        /// Chapter assignment used to establish access.
+        assignment_info: &'a AssignmentInfo,
+    },
+}
 
 /// perm gates for Unit reads and edits.
 pub struct UnitPermComplex;
 
 impl UnitPermComplex {
     /// Verifies that the caller may list Units on a Chapter Page.
-    pub async fn ensure_user_can_list_infos<P>(
-        proxy: &mut P,
-        user_id: &str,
-        chapter_id: &str,
-    ) -> BaseRest<()>
-    where
-        P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
-            + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>
-            + for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
-    {
-        let member_check =
-            check_user_is_team_member_by_chapter(proxy, user_id, chapter_id)
-                .await;
+    pub fn ensure_user_can_list_infos(
+        access: UnitListAccess<'_>,
+    ) -> BaseRest<()> {
+        //
+        let access_check = match access {
+            //
+            UnitListAccess::Member { member_info } => {
+                check_user_is_team_member(member_info)
+            }
 
-        if member_check.is_ok() {
-            return accept(());
-        }
+            UnitListAccess::Assignee { assignment_info } => {
+                check_user_is_chapter_assignee(assignment_info)
+            }
+        };
 
-        match check_user_is_chapter_assignee(proxy, user_id, chapter_id).await {
+        match access_check {
             //
             Ok(()) => accept(()),
 
@@ -51,8 +60,6 @@ impl UnitPermComplex {
                 tracing::warn!(
                     err_variant = ?ExpectedVariant::Perm,
                     err_message = %err_message,
-                    user_id = %user_id,
-                    chapter_id = %chapter_id,
                     "expected error: unit list perm required",
                 );
 

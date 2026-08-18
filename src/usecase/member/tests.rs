@@ -37,7 +37,8 @@ use crate::model::read::spec::member::MemberListSpec;
 use crate::model::shared::user::UserToken;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
-use crate::test_util::{self, assert_expected_variant};
+use crate::test_util;
+use crate::test_util::assert_expected_variant;
 use crate::value::role::{RoleField, RoleMask};
 
 // Build user-token fixture for member scenario authorization.

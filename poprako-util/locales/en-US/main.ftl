@@ -88,43 +88,6 @@ error-comic-archived = Archived comics cannot be modified
 
 chapter-default-subtitle = Ch. { $number }
 
-chapter-workflow-record-created = Created this chapter
-chapter-workflow-record-subtitle-updated = Changed the chapter subtitle from "{ $previous_subtitle }" to "{ $next_subtitle }"
-chapter-workflow-record-pinned = Pinned this chapter
-chapter-workflow-record-unpinned = Unpinned this chapter
-chapter-workflow-record-assignment-created = Added an assignment with roles: { $roles }
-chapter-workflow-record-assignment-roles-updated = Changed assignment roles from { $previous_roles } to { $next_roles }
-chapter-workflow-record-assignment-deleted = Removed an assignment with roles: { $previous_roles }
-chapter-workflow-record-translation-imported = Imported { $page_count } pages and { $unit_count } units from { $format }
-chapter-workflow-record-translation-exported = Exported translation content as { $format }
-chapter-workflow-record-stage-transitioned = Moved { $stage } from { $previous_phase } to { $next_phase }
-
-chapter-workflow-stage-raw-provide = raw provision
-chapter-workflow-stage-translate = translation
-chapter-workflow-stage-proofread = proofreading
-chapter-workflow-stage-typeset-redraw = typesetting and redraw
-chapter-workflow-stage-review = review
-chapter-workflow-stage-publish = publishing
-chapter-workflow-phase-pending = pending
-chapter-workflow-phase-active = active
-chapter-workflow-phase-completed = completed
-chapter-workflow-format-label-plus = LabelPlus
-chapter-workflow-format-poprako = PopRaKo
-chapter-workflow-role-raw-provider = raw provider
-chapter-workflow-role-translator = translator
-chapter-workflow-role-proofreader = proofreader
-chapter-workflow-role-typesetter = typesetter
-chapter-workflow-role-redrawer = redrawer
-chapter-workflow-role-reviewer = reviewer
-chapter-workflow-role-publisher = publisher
-chapter-workflow-role-admin = administrator
-chapter-workflow-role-bot = bot
-chapter-workflow-origin-manual = manual
-chapter-workflow-origin-unit-edit = unit edit
-chapter-workflow-origin-translation-import = translation import
-chapter-workflow-origin-translation-export = translation export
-chapter-workflow-origin-raw-provide-check = raw-provide check
-
 mail-invitation-used-title = Your Invitation Code Has Been Used
 mail-invitation-used-body = Your invitation code has been used. "{$invitee_qid}" has joined the team "{$team_name}"
 

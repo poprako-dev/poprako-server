@@ -177,12 +177,14 @@ fn event_name(event: &Event) -> &'static str {
     match event {
         //
         // Internal state field Event.
-        Event::UserActive(_) => "user_active",
+        Event::UserActive { payload: _ } => "user_active",
 
-        Event::UserSignedUp(_) => "user_signed_up",
+        Event::UserSignedUp { payload: _ } => "user_signed_up",
 
-        Event::ChapterPublished(_) => "chapter_published",
+        Event::ChapterPublished { payload: _ } => "chapter_published",
 
-        Event::ChapterWorkflowCompleted(_) => "chapter_workflow_completed",
+        Event::ChapterWorkflowCompleted { payload: _ } => {
+            "chapter_workflow_completed"
+        }
     }
 }

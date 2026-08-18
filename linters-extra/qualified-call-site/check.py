@@ -6,11 +6,12 @@
 # ]
 # ///
 
-"""Enforce qualified-path policy at Rust call sites."""
+"""Enforce qualified-path policy outside Rust use declarations."""
 
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 import tempfile
 import tomllib
@@ -88,6 +89,33 @@ def imported_paths(
     return []
 
 
+def external_crate_roots(root: Path) -> set[str]:
+    roots = {
+        "alloc",
+        "core",
+        "std",
+    }
+
+    for cargo_path in [root / "Cargo.toml", *root.glob("*/Cargo.toml")]:
+        if not cargo_path.is_file():
+            continue
+
+        with cargo_path.open("rb") as cargo_file:
+            manifest = tomllib.load(cargo_file)
+
+        for section_name in (
+            "dependencies",
+            "dev-dependencies",
+            "build-dependencies",
+        ):
+            roots.update(
+                dependency.replace("-", "_")
+                for dependency in manifest.get(section_name, {})
+            )
+
+    return roots
+
+
 def inside(node: tree_sitter.Node, kind: str) -> bool:
     current = node.parent
 
@@ -157,6 +185,110 @@ def third_party_imports(tree: tree_sitter.Tree, source: bytes) -> dict[str, str]
     return imports
 
 
+def local_crate_path_diagnostics(
+    path: Path,
+    root: Path,
+    source: bytes,
+) -> list[str]:
+    tree = PARSER.parse(source)
+
+    return [
+        diagnostic(
+            path,
+            root,
+            node,
+            "QCS004",
+            f"local crate path `{text(source, node)}` is allowed only in use declarations",
+        )
+        for node in descendants(tree.root_node)
+        if node.type in PATH_NODES
+        and not nested_path(node)
+        and not inside(node, "use_declaration")
+        and path_root(node, source) == "crate"
+    ]
+
+
+def import_policy_diagnostics(
+    path: Path,
+    root: Path,
+    tree: tree_sitter.Tree,
+    source: bytes,
+    external_roots: set[str],
+) -> list[str]:
+    diagnostics: list[str] = []
+
+    for declaration in descendants(tree.root_node):
+        if declaration.type != "use_declaration":
+            continue
+
+        declaration_text = text(source, declaration)
+
+        if re.search(r"\bself\b", declaration_text):
+            diagnostics.append(
+                diagnostic(
+                    path,
+                    root,
+                    declaration,
+                    "QCS005",
+                    "`self` is forbidden in use declarations; import through a direct path",
+                ),
+            )
+
+        local_paths = [
+            imported_path
+            for imported_path, _, _ in imported_paths(declaration, source)
+            if imported_path[0] not in external_roots
+            and imported_path[0] not in {"crate", "self", "super"}
+        ]
+
+        diagnostics.extend(
+            diagnostic(
+                path,
+                root,
+                declaration,
+                "QCS007",
+                f"local crate import `{'::'.join(imported_path)}` must start with `crate::`",
+            )
+            for imported_path in local_paths
+        )
+
+        if path.name == "lib.rs" or not declaration_text.lstrip().startswith("pub use"):
+            continue
+
+        imported = imported_paths(declaration, source)
+        has_wildcard = "*" in declaration_text
+        function_paths = [
+            (path_node, imported_path)
+            for imported_path, _, path_node in imported
+            if imported_path[-1][:1].islower()
+        ]
+
+        if has_wildcard:
+            diagnostics.append(
+                diagnostic(
+                    path,
+                    root,
+                    declaration,
+                    "QCS006",
+                    "function re-exports are forbidden outside lib.rs",
+                ),
+            )
+            continue
+
+        diagnostics.extend(
+            diagnostic(
+                path,
+                root,
+                path_node,
+                "QCS006",
+                f"function re-export `{'::'.join(imported_path)}` is forbidden outside lib.rs",
+            )
+            for path_node, imported_path in function_paths
+        )
+
+    return diagnostics
+
+
 def check_file(
     path: Path,
     root: Path,
@@ -164,9 +296,20 @@ def check_file(
     exempt_poprako_paths: set[str],
     enforced_third_party_paths: set[str],
 ) -> list[str]:
+    raw_source = path.read_bytes()
     source = production_source(path, root)
     tree = PARSER.parse(source)
-    diagnostics: list[str] = []
+    raw_tree = PARSER.parse(raw_source)
+    diagnostics = local_crate_path_diagnostics(path, root, raw_source)
+    diagnostics.extend(
+        import_policy_diagnostics(
+            path,
+            root,
+            raw_tree,
+            raw_source,
+            external_crate_roots(root),
+        ),
+    )
     imported_third_party = third_party_imports(tree, source)
     reported: set[tuple[int, int, str]] = set()
 
@@ -313,6 +456,16 @@ def self_test() -> int:
             "exempt_poprako_paths = [\"poprako_server::serve\", \"poprako_server::init_log\"]\n"
             "enforced_third_party_paths = [\"jsonwebtoken::encode\", \"jsonwebtoken::decode\", \"serde_json::Value\"]\n",
         )
+        (root / "Cargo.toml").write_text(
+            "[dependencies]\n"
+            "axum = \"0\"\n"
+            "jsonwebtoken = \"0\"\n"
+            "poprako-orchestra = \"0\"\n"
+            "serde = \"0\"\n"
+            "serde_json = \"0\"\n"
+            "time = \"0\"\n"
+            "tracing = \"0\"\n",
+        )
         fixture = source_dir / "lib.rs"
 
         fixture.write_text(
@@ -322,6 +475,8 @@ def self_test() -> int:
             "use serde::Deserialize;\n"
             "use axum::Json;\n"
             "use time::OffsetDateTime;\n"
+            "use crate::module::local_call;\n"
+            "use crate::part::nucl::RepeatableRead;\n"
             "#[derive(serde::Deserialize)]\n"
             "#[tracing::instrument]\n"
             "struct Item;\n"
@@ -330,6 +485,8 @@ def self_test() -> int:
             "    let _ = serde_json::json!({\"value\": value});\n"
             "    let _: Json<serde_json::Value> = todo!();\n"
             "    let _: OffsetDateTime = todo!();\n"
+            "    local_call();\n"
+            "    let _: RepeatableRead = todo!();\n"
             "}\n",
         )
 
@@ -341,14 +498,30 @@ def self_test() -> int:
             "use serde_json::Value;\n"
             "fn invalid<C: poprako_orchestra::Context>(value: std::result::Result<(), ()>) {\n"
             "    let _ = std::env::var(\"VALUE\");\n"
+            "    crate::module::local_call();\n"
+            "    let _: crate::part::nucl::RepeatableRead = todo!();\n"
+            "    crate::module::local_macro!();\n"
             "    let _ = value;\n"
             "    let _: Value = value;\n"
+            "}\n"
+            "#[cfg(test)]\n"
+            "mod tests {\n"
+            "    fn invalid_test() {\n"
+            "        crate::module::local_call();\n"
+            "    }\n"
             "}\n",
+        )
+
+        (source_dir / "module.rs").write_text(
+            "use self::module::Thing;\n"
+            "use local_module::Thing;\n"
+            "pub use crate::module::local_call;\n"
+            "pub use crate::module::{LocalType, another_call};\n",
         )
 
         diagnostics = check_root(root)
 
-        if len(diagnostics) != 4 or not any("QCS001" in item for item in diagnostics) or not any("QCS002" in item for item in diagnostics) or not any("QCS003" in item for item in diagnostics):
+        if len(diagnostics) != 12 or not any("QCS001" in item for item in diagnostics) or not any("QCS002" in item for item in diagnostics) or not any("QCS003" in item for item in diagnostics) or len([item for item in diagnostics if "QCS004" in item]) != 4 or len([item for item in diagnostics if "QCS005" in item]) != 1 or len([item for item in diagnostics if "QCS006" in item]) != 2 or len([item for item in diagnostics if "QCS007" in item]) != 1:
             print("self-test: forbidden qualified call-site paths were not fully rejected", file=sys.stderr)
             print("\n".join(diagnostics), file=sys.stderr)
             return 1

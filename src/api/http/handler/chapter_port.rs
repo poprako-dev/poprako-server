@@ -52,7 +52,11 @@ pub async fn import(
     Json(instr): Json<ImportChapterTranslationInstr>,
 ) -> HttpResult<ImportChapterTranslationVal> {
     //
-    usecase::chapter_port::import::<_, RdbContext<RepeatableRead>, HybRepo>(
+    usecase::chapter_port::import::import::<
+        _,
+        RdbContext<RepeatableRead>,
+        HybRepo,
+    >(
         (harn.nucl().repeatable_read(), harn.repo()),
         user_token,
         instr,
@@ -151,7 +155,7 @@ async fn export_payload(
         //
         TranslationFormat::PopRaKo => {
             //
-            let val = usecase::chapter_port::export::<
+            let val = usecase::chapter_port::export::export::<
                 _,
                 RdbContext<RepeatableRead>,
                 HybRepo,
@@ -182,7 +186,7 @@ async fn export_payload(
 
         TranslationFormat::LabelPlus => {
             //
-            let content = usecase::chapter_port::export_label_plus::<
+            let content = usecase::chapter_port::export::export_label_plus::<
                 _,
                 RdbContext<RepeatableRead>,
                 HybRepo,

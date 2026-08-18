@@ -78,13 +78,14 @@ async fn nucl_coord_commits_repo_and_prom() {
 
             let prom_id = "prom-1".to_string();
 
-            let payload =
-                TaskPayload::Image(image::ImagePayload::CheckUpload {
+            let payload = TaskPayload::Image {
+                payload: image::ImagePayload::CheckUpload {
                     resource_kind: image::ResourceKind::UserAvatar,
                     resource_id: "user-1".to_string(),
                     object_key: "key".to_string(),
                     version: 1,
-                });
+                },
+            };
 
             let task = Task {
                 id: &prom_id,
@@ -139,9 +140,11 @@ async fn nucl_coord_rolls_back_repo_and_prom() {
 
             let prom_id = "prom-1".to_string();
 
-            let payload = TaskPayload::Image(image::ImagePayload::Delete {
-                object_key: "key".to_string(),
-            });
+            let payload = TaskPayload::Image {
+                payload: image::ImagePayload::Delete {
+                    object_key: "key".to_string(),
+                },
+            };
 
             let task = Task {
                 id: &prom_id,

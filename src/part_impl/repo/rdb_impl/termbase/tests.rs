@@ -6,6 +6,7 @@ use poprako_orchestra::Nucl as _;
 
 use crate::model::read::spec::termbase::TermbaseListSpec;
 use crate::model::write::termbase::TermbaseEntry;
+use crate::part::nucl::RepeatableRead;
 use crate::part::repo::oper::comic::CreateComic;
 use crate::part::repo::oper::termbase::{
     CreateTermbase, GetTermbaseInfo, ListTermbaseInfos, UpdateTermbaseTermCount,
@@ -43,8 +44,7 @@ pub async fn termbase_unique_and_query_roundtrip(shared: RdbCore) {
 
     let repo = HybRepo::new(shared.clone());
 
-    let nucl =
-        RdbNucl::<crate::part::nucl::RepeatableRead>::new(shared.clone());
+    let nucl = RdbNucl::<RepeatableRead>::new(shared.clone());
 
     let termbase_entry = TermbaseEntry {
         id: format!("{}main", PREFIX),
@@ -70,7 +70,7 @@ pub async fn termbase_unique_and_query_roundtrip(shared: RdbCore) {
 
     create_termbase(&repo, &nucl, &comic_termbase_entry).await;
 
-    let mut sibling_comic_entry = test_shared::comic_entry(
+    let mut sibling_comic_entry = test_shared::form::comic_entry(
         &format!("{}sibling-", PREFIX),
         &comic_fixture.workset_entry,
         &comic_fixture.creator_form,

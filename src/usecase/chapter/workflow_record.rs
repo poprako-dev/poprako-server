@@ -1,6 +1,6 @@
 //! Use case for listing immutable chapter workflow records.
 
-use poprako_orchestra::{Context, OperRun as _, run_proxy};
+use poprako_orchestra::{Context, OperRun as _};
 use tracing::instrument;
 
 use crate::complex::chapter::ChapterPermComplex;
@@ -11,10 +11,10 @@ use crate::model::shared::user::UserToken;
 use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::chapter_workflow_record::ListChapterWorkflowRecordInfos;
-use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part::repo::oper::team::ResolveTeamId;
 use crate::part::repo::team::TeamRepo;
 use crate::result::{BaseRest, accept};
+use crate::usecase::internal::member::MemberLoader;
+use crate::usecase::internal::util::LoadMode;
 
 /// Lists a chapter's immutable activity records in reverse chronological order.
 #[instrument(level = "info", skip(repo))]
@@ -27,16 +27,15 @@ where
     C: Context,
     R: ChapterWorkflowRecordRepo<C> + MemberRepo<C> + TeamRepo<C> + Sync,
 {
-    ChapterPermComplex::ensure_user_can_get_info(
-        &mut run_proxy! {
-            repo =>
-                for<'a> ResolveTeamId<'a>,
-                for<'a> FindMemberInfo<'a>;
-        },
+    let member_info = MemberLoader::load_info_from_chapter(
+        repo,
+        LoadMode::<C>::Run,
         &token.user_id,
         &instr.chapter_id,
     )
     .await?;
+
+    ChapterPermComplex::ensure_user_can_get_info(&member_info)?;
 
     let spec = ChapterWorkflowRecordListSpec {
         chapter_id: instr.chapter_id,

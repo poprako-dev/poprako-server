@@ -65,11 +65,13 @@ fn apply_edits_soft_deletes_and_restores_a_unit() {
         is_bubble: None,
         coord: None,
         translation: Patch::Skip,
-        revision: Patch::Assign(UnitRevision {
-            is_proofread: true,
-            proofread_text: Some("proofread".to_string()),
-            last_proofreader_id: "proofreader-1".to_string(),
-        }),
+        revision: Patch::Assign {
+            value: UnitRevision {
+                is_proofread: true,
+                proofread_text: Some("proofread".to_string()),
+                last_proofreader_id: "proofreader-1".to_string(),
+            },
+        },
     };
 
     let hidden_order = [UnitOrder {

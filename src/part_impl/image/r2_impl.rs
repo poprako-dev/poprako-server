@@ -4,9 +4,8 @@
 // Executes lightweight unit tests for URL generation and upload content handling.
 mod tests;
 
-use std::env::var;
-
 use std::collections::BTreeMap;
+use std::env::var;
 use std::time::Duration;
 
 use anyhow::Context as _;

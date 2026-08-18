@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use poprako_orchestra::{Context, OperRun as _, run_proxy};
+use poprako_orchestra::{Context, OperRun as _};
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
@@ -20,12 +20,12 @@ use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::ListAssignmentInfos;
 use crate::part::repo::oper::chapter::ListPinnedChapterInfos;
 use crate::part::repo::oper::comic::ListComicInfos;
-use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part::repo::oper::page::ListFirstPageInfos;
-use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::usecase::internal::member::MemberLoader;
+use crate::usecase::internal::page::PageLoader;
+use crate::usecase::internal::util::LoadMode;
 use crate::value::comic::ComicWithOpt;
 
 /// Lists comics for a workset with optional filters and derived data.
@@ -73,16 +73,15 @@ where
         });
     }
 
-    ComicPermComplex::ensure_user_can_list_infos(
-        &mut run_proxy! {
-            repo =>
-                for<'a> GetWorksetInfo<'a>,
-                for<'a> FindMemberInfo<'a>;
-        },
+    let member_info = MemberLoader::load_info_from_workset(
+        repo,
+        LoadMode::Run,
         &token.user_id,
         &instr.workset_id,
     )
     .await?;
+
+    ComicPermComplex::ensure_user_can_list_infos(&member_info)?;
 
     let spec = instr.try_into()?;
 
@@ -93,15 +92,11 @@ where
         .map(|comic_info| comic_info.id.clone())
         .collect::<Vec<_>>();
 
-    let fallback_cover_keys = ComicComplex::resolve_fallback_cover_keys(
-        &mut run_proxy! {
-            repo =>
-                for<'a> ListPinnedChapterInfos<'a>,
-                for<'a> ListFirstPageInfos<'a>;
-        },
-        &comic_ids,
-    )
-    .await?;
+    let first_page_infos =
+        PageLoader::load_infos_from_comics(repo, &comic_ids).await?;
+
+    let fallback_cover_keys =
+        ComicComplex::resolve_fallback_cover_keys(first_page_infos);
 
     // NOTE: `with` cannot be executed elegantly by repo layer,
     // so we have to handle it in usecase layer.

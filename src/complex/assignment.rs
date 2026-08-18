@@ -1,22 +1,19 @@
-//! Complex-domain opers for chapter assignments.
-
-use poprako_orchestra::{OperProxy as _, Proxy};
+//! Pure rules for chapter assignments.
 
 use poprako_util::i18n::trl;
 
-use crate::complex::util::check_user_is_team_member;
+use crate::complex::util::{
+    check_user_is_chapter_assignee, check_user_is_team_member,
+};
 use crate::model::read::proj::assignment::AssignmentInfo;
-use crate::model::read::spec::assignment::AssignmentListSpec;
+use crate::model::read::proj::member::MemberInfo;
+use crate::model::read::proj::user::UserInfo;
 use crate::model::write::assignment::AssignmentRoleRepl;
-use crate::part::repo::oper::assignment::FindAssignmentInfo;
-use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part::repo::oper::team::ResolveTeamId;
-use crate::part::repo::oper::user::GetUserInfo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 use crate::value::role::{RoleField, RoleMask};
 
-/// Domain opers for chapter assignments: ID generation and role-merge logic.
+/// Pure domain operations for chapter assignments.
 pub struct AssignmentComplex;
 
 impl AssignmentComplex {
@@ -35,8 +32,7 @@ impl AssignmentComplex {
             .unwrap_or(admin_roles)
     }
 
-    /// Merge new roles into an existing assignment, preserving existing roles
-    /// and writing new ones.
+    /// Merge new roles into an existing assignment.
     pub fn merge_roles(
         assignment_info: &AssignmentInfo,
         roles: RoleMask,
@@ -60,7 +56,7 @@ impl AssignmentComplex {
             && !roles.has_any_role(&[RoleField::ADMIN])
     }
 
-    /// Checks whether a chapter still has at least one admin after a role update.
+    /// Checks whether a chapter still has an admin after a role update.
     pub fn chapter_has_admin_after_role_update(
         assignment_infos: &[AssignmentInfo],
         user_id: &str,
@@ -81,409 +77,225 @@ impl AssignmentComplex {
     }
 }
 
-/// perm-gate opers for chapter assignments.
+/// Evidence that grants access to a chapter assignment list.
+pub enum AssignmentListAccess<'a> {
+    /// Access through team membership.
+    Member {
+        /// Team membership used to establish access.
+        member_info: &'a MemberInfo,
+    },
+
+    /// Access through an assignment on the chapter.
+    Assignee {
+        /// Chapter assignment used to establish access.
+        assignment_info: &'a AssignmentInfo,
+    },
+}
+
+/// Evidence that grants access to a user assignment list.
+pub enum UserAssignmentListAccess<'a> {
+    /// The caller owns the requested list.
+    Owner,
+
+    /// The caller is a super-admin.
+    SuperAdmin {
+        /// User projection used to verify super-admin status.
+        user_info: &'a UserInfo,
+    },
+}
+
+/// Evidence that grants an assignment-role update.
+pub enum AssignmentRoleUpdateAccess<'a> {
+    /// The caller is a chapter admin.
+    Admin {
+        /// Chapter assignment used to verify admin status.
+        assignment_info: &'a AssignmentInfo,
+    },
+
+    /// The caller is reducing their own existing roles.
+    SelfReduce {
+        /// Existing assignment used to constrain the self-update.
+        assignment_info: &'a AssignmentInfo,
+    },
+}
+
+/// Evidence that grants assignment deletion.
+pub enum AssignmentDeleteAccess<'a> {
+    /// The caller owns the assignment.
+    Owner,
+
+    /// The caller is a chapter admin.
+    Admin {
+        /// Chapter assignment used to verify admin status.
+        assignment_info: &'a AssignmentInfo,
+    },
+}
+
+/// Pure permission rules for chapter assignments.
 pub struct AssignmentPermComplex;
 
 impl AssignmentPermComplex {
-    /// Verify the caller may list assignments selected by the list spec.
-    pub async fn ensure_user_can_list_infos<P>(
-        proxy: &mut P,
-        user_id: &str,
-        assignment_list_spec: &AssignmentListSpec,
-    ) -> BaseRest<()>
-    where
-        P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
-            + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>
-            + for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>
-            + for<'a> Proxy<GetUserInfo<'a>, Error = BaseError>,
-    {
-        match assignment_list_spec {
+    /// Verify chapter assignment lists using membership or assignment evidence.
+    pub fn ensure_user_can_list_chapter_infos(
+        access: AssignmentListAccess<'_>,
+    ) -> BaseRest<()> {
+        //
+        match access {
             //
-            AssignmentListSpec::Chapter { chapter_id, .. } => {
-                check_list_by_chapter(proxy, user_id, chapter_id).await
+            AssignmentListAccess::Member { member_info } => {
+                check_user_is_team_member(member_info)
             }
 
-            AssignmentListSpec::User { owner_id, .. } => {
-                check_list_by_user(proxy, user_id, owner_id).await
+            AssignmentListAccess::Assignee { assignment_info } => {
+                check_user_is_chapter_assignee(assignment_info)
             }
         }
     }
 
-    /// Verify the caller may mutate assignment roles with the supplied data.
-    pub async fn ensure_user_can_update_roles<P>(
-        proxy: &mut P,
-        current_user_id: &str,
-        subject_user_id: &str,
-        chapter_id: &str,
-        roles: RoleMask,
-    ) -> BaseRest<()>
-    where
-        P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
-            + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>
-            + for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
-    {
-        let admin_check = check_admin(proxy, current_user_id, chapter_id).await;
-
-        if admin_check.is_err() {
+    /// Verify user assignment lists using ownership or super-admin evidence.
+    pub fn ensure_user_can_list_user_infos(
+        access: UserAssignmentListAccess<'_>,
+    ) -> BaseRest<()> {
+        //
+        match access {
             //
-            check_self_reduce(
-                proxy,
-                current_user_id,
-                subject_user_id,
-                chapter_id,
-                roles,
-            )
-            .await?;
+            UserAssignmentListAccess::Owner => accept(()),
+
+            UserAssignmentListAccess::SuperAdmin { user_info }
+                if user_info.is_sadmin =>
+            {
+                accept(())
+            }
+
+            UserAssignmentListAccess::SuperAdmin { .. } => reject(
+                ExpectedVariant::Perm,
+                "error-forbidden",
+                "assignment_list_permission_denied",
+            ),
+        }
+    }
+
+    /// Verify the caller may mutate assignment roles.
+    pub fn ensure_user_can_update_roles(
+        access: AssignmentRoleUpdateAccess<'_>,
+        subject_member_info: &MemberInfo,
+        roles: RoleMask,
+    ) -> BaseRest<()> {
+        //
+        match access {
+            //
+            AssignmentRoleUpdateAccess::Admin { assignment_info } => {
+                check_admin(assignment_info)?;
+            }
+
+            AssignmentRoleUpdateAccess::SelfReduce { assignment_info } => {
+                //
+                if assignment_info.user_id != subject_member_info.user_id {
+                    //
+                    return reject(
+                        ExpectedVariant::Perm,
+                        "error-forbidden",
+                        "assignment_self_reduce_target_mismatch",
+                    );
+                }
+
+                if !assignment_info.roles.contains_mask(roles) {
+                    //
+                    return reject(
+                        ExpectedVariant::Perm,
+                        "error-forbidden",
+                        "assignment_self_reduce_roles_not_held",
+                    );
+                }
+            }
         }
 
-        check_target_roles(proxy, subject_user_id, chapter_id, roles).await
+        check_target_roles(subject_member_info, roles)
     }
 
     /// Verify the caller may delete the target assignment.
-    pub async fn ensure_user_can_delete<P>(
-        proxy: &mut P,
-        current_user_id: &str,
-        assignment_info: &AssignmentInfo,
-    ) -> BaseRest<()>
-    where
-        P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
-    {
-        if current_user_id == assignment_info.user_id {
-            return accept(());
+    pub fn ensure_user_can_delete(
+        access: AssignmentDeleteAccess<'_>,
+    ) -> BaseRest<()> {
+        //
+        match access {
+            //
+            AssignmentDeleteAccess::Owner => accept(()),
+
+            AssignmentDeleteAccess::Admin { assignment_info } => {
+                check_admin(assignment_info)
+            }
         }
-
-        check_admin(proxy, current_user_id, &assignment_info.chapter_id).await
     }
 
-    /// Verify the target user may take the requested chapter assignment roles.
-    pub async fn ensure_user_can_take_roles<P>(
-        proxy: &mut P,
-        user_id: &str,
-        chapter_id: &str,
+    /// Verify the target user may take the requested roles.
+    pub fn ensure_user_can_take_roles(
+        member_info: &MemberInfo,
         roles: RoleMask,
-    ) -> BaseRest<()>
-    where
-        P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
-            + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
-    {
-        check_target_roles(proxy, user_id, chapter_id, roles).await
+    ) -> BaseRest<()> {
+        check_target_roles(member_info, roles)
     }
 }
 
-// Verify the caller may list assignments for a chapter as a team
-// member of the owning team, or as a chapter assignee.
-async fn check_list_by_chapter<P>(
-    proxy: &mut P,
-    user_id: &str,
-    chapter_id: &str,
-) -> BaseRest<()>
-where
-    P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
-        + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>
-        + for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
-{
-    let team_id = ResolveTeamId::Chapter { id: chapter_id }
-        .proxy_on(proxy)
-        .await?;
+// Build and log one expected assignment permission error.
+fn reject(
+    variant: ExpectedVariant,
+    message_key: &str,
+    event: &'static str,
+) -> BaseRest<()> {
+    //
+    let err_message = trl(message_key);
 
-    let member_check =
-        check_user_is_team_member(proxy, user_id, &team_id).await;
+    tracing::warn!(
+        err_variant = ?variant,
+        err_message = %err_message,
+        event,
+        "expected assignment permission error",
+    );
 
-    if member_check.is_ok() {
-        return accept(());
-    }
-
-    let assignment_info = FindAssignmentInfo::ChapterUser {
-        chapter_id,
-        user_id,
-    }
-    .proxy_on(proxy)
-    .await?;
-
-    if assignment_info.is_none() {
-        //
-        let err_message = trl("error-forbidden");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Perm,
-            err_message = %err_message,
-            user_id = %user_id,
-            chapter_id = %chapter_id,
-            team_id = %team_id,
-            "expected error: assignment list perm denied",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            message: err_message,
-        });
-    }
-
-    accept(())
+    Err(BaseError::Expected {
+        variant,
+        message: err_message,
+    })
 }
 
-// Verify the caller may list assignments for a user as the owner
-// or as a super-admin.
-async fn check_list_by_user<P>(
-    proxy: &mut P,
-    current_user_id: &str,
-    owner_id: &str,
-) -> BaseRest<()>
-where
-    P: for<'a> Proxy<GetUserInfo<'a>, Error = BaseError>,
-{
-    if current_user_id == owner_id {
-        return accept(());
-    }
-
-    let user_info = GetUserInfo::Id {
-        id: current_user_id,
-    }
-    .proxy_on(proxy)
-    .await?;
-
-    if !user_info.is_sadmin {
-        //
-        let err_message = trl("error-forbidden");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Perm,
-            err_message = %err_message,
-            current_user_id = %current_user_id,
-            owner_id = %owner_id,
-            "expected error: assignment list perm denied",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            message: err_message,
-        });
-    }
-
-    accept(())
-}
-
-// Verify the caller is assigned as a chapter admin on this chapter.
-async fn check_admin<P>(
-    proxy: &mut P,
-    user_id: &str,
-    chapter_id: &str,
-) -> BaseRest<()>
-where
-    P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
-{
-    let assignment_info = FindAssignmentInfo::ChapterUser {
-        chapter_id,
-        user_id,
-    }
-    .proxy_on(proxy)
-    .await?;
-
-    let Some(assignment_info) = assignment_info else {
-        //
-        let err_message = trl("error-chapter-admin-required");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Perm,
-            err_message = %err_message,
-            user_id = %user_id,
-            chapter_id = %chapter_id,
-            "expected error: chapter admin assignment missing",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            message: err_message,
-        });
-    };
-
+// Verify that assignment evidence contains the chapter-admin role.
+fn check_admin(assignment_info: &AssignmentInfo) -> BaseRest<()> {
+    //
     if !assignment_info.roles.has_any_role(&[RoleField::ADMIN]) {
         //
-        let err_message = trl("error-chapter-admin-required");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Perm,
-            err_message = %err_message,
-            user_id = %user_id,
-            chapter_id = %chapter_id,
-            assignment_roles = ?assignment_info.roles,
-            "expected error: chapter admin role missing",
+        return reject(
+            ExpectedVariant::Perm,
+            "error-chapter-admin-required",
+            "chapter_admin_role_missing",
         );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            message: err_message,
-        });
     }
 
     accept(())
 }
 
-// Verify the caller is reducing their own admin role assignment.
-// The caller must be the target user and currently hold the roles they
-// are removing.
-async fn check_self_reduce<P>(
-    proxy: &mut P,
-    current_user_id: &str,
-    subject_user_id: &str,
-    chapter_id: &str,
+// Verify that membership evidence permits all requested assignment roles.
+fn check_target_roles(
+    member_info: &MemberInfo,
     roles: RoleMask,
-) -> BaseRest<()>
-where
-    P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
-{
-    if current_user_id != subject_user_id {
-        //
-        let err_message = trl("error-forbidden");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Perm,
-            err_message = %err_message,
-            current_user_id = %current_user_id,
-            subject_user_id = %subject_user_id,
-            chapter_id = %chapter_id,
-            roles = ?roles,
-            "expected error: assignment self-reduce denied",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            message: err_message,
-        });
-    }
-
-    let assignment_info = FindAssignmentInfo::ChapterUser {
-        chapter_id,
-        user_id: subject_user_id,
-    }
-    .proxy_on(proxy)
-    .await?;
-
-    let Some(assignment_info) = assignment_info else {
-        //
-        let err_message = trl("error-forbidden");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Perm,
-            err_message = %err_message,
-            current_user_id = %current_user_id,
-            subject_user_id = %subject_user_id,
-            chapter_id = %chapter_id,
-            roles = ?roles,
-            "expected error: assignment self-reduce target missing",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            message: err_message,
-        });
-    };
-
-    if !assignment_info.roles.contains_mask(roles) {
-        //
-        let err_message = trl("error-forbidden");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Perm,
-            err_message = %err_message,
-            current_user_id = %current_user_id,
-            subject_user_id = %subject_user_id,
-            chapter_id = %chapter_id,
-            roles = ?roles,
-            assignment_roles = ?assignment_info.roles,
-            "expected error: assignment self-reduce roles not held",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            message: err_message,
-        });
-    }
-
-    accept(())
-}
-
-// Verify the target user's team membership permits the requested roles.
-// Also reject `ADMIN` roles because they are not assignable through this flow.
-async fn check_target_roles<P>(
-    proxy: &mut P,
-    user_id: &str,
-    chapter_id: &str,
-    roles: RoleMask,
-) -> BaseRest<()>
-where
-    P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
-        + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
-{
+) -> BaseRest<()> {
+    //
     if roles.has_any_role(&[RoleField::ADMIN]) {
         //
-        let err_message = trl("error-chapter-role-not-assignable");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Args,
-            err_message = %err_message,
-            user_id = %user_id,
-            chapter_id = %chapter_id,
-            roles = ?roles,
-            "expected error: admin role is not assignable",
+        return reject(
+            ExpectedVariant::Args,
+            "error-chapter-role-not-assignable",
+            "chapter_admin_role_not_assignable",
         );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message: err_message,
-        });
     }
-
-    let team_id = ResolveTeamId::Chapter { id: chapter_id }
-        .proxy_on(proxy)
-        .await?;
-
-    let member_info = FindMemberInfo::UserTeam {
-        user_id,
-        team_id: &team_id,
-    }
-    .proxy_on(proxy)
-    .await?;
-
-    let Some(member_info) = member_info else {
-        //
-        let err_message = trl("error-chapter-role-not-assignable");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Perm,
-            err_message = %err_message,
-            user_id = %user_id,
-            chapter_id = %chapter_id,
-            team_id = %team_id,
-            roles = ?roles,
-            "expected error: target member is missing",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            message: err_message,
-        });
-    };
 
     if !member_info.roles.contains_mask(roles) {
         //
-        let err_message = trl("error-chapter-role-not-assignable");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Perm,
-            err_message = %err_message,
-            user_id = %user_id,
-            chapter_id = %chapter_id,
-            team_id = %team_id,
-            roles = ?roles,
-            member_roles = ?member_info.roles,
-            "expected error: target member lacks requested roles",
+        return reject(
+            ExpectedVariant::Perm,
+            "error-chapter-role-not-assignable",
+            "chapter_target_roles_missing",
         );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            message: err_message,
-        });
     }
 
     accept(())
