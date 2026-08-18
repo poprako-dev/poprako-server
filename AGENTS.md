@@ -76,6 +76,7 @@ src/
 - Bind transaction output before returning from a use case. For unit output,
   await the transaction, then return `Ok(())`.
 - Preserve user-authored working-tree changes. Do not overwrite unrelated edits.
+- Never edit linters unless user demand you to do so.
 
 ## Active Development Slice
 

@@ -100,7 +100,7 @@ use crate::data::view::workset::WorksetInfoView;
 use crate::value::announcement::AnnouncementInclOpt;
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::chapter::ChapterInclOpt;
-use crate::value::comic::{ComicInclOpt, ComicWithOpt};
+use crate::value::comic::{ComicInclOpt, ComicStatus, ComicWithOpt};
 use crate::value::comment::CommentInclOpt;
 use crate::value::member::MemberInclOpt;
 use crate::value::member_invitation::MemberInvitationInclOpt;
@@ -224,6 +224,7 @@ use crate::value::role::RoleField;
         CreateWorksetVal,
         UpdateWorksetInfoInstr,
         ComicInfoView,
+        ComicStatus,
         ListComicInfosVal,
         CreateComicInstr,
         CreateComicVal,

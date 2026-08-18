@@ -11,7 +11,7 @@ use utoipa::ToSchema;
 
 use crate::value::chapter_port::TranslationFormat;
 
-/// Translation format accepted by the import JSON body.
+/// Translation format used by chapter translation HTTP inputs.
 #[derive(Debug, Clone, Copy, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(rename_all = "snake_case")]

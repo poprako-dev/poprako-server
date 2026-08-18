@@ -907,7 +907,7 @@
           "chapter-port"
         ],
         "summary": "`GET /api/v1/chapters/{chapter_id}/translations/export` — export response body.",
-        "description": "`format=poprako` returns a JSON document (`application/json`); `format=label-plus`\nreturns a LabelPlus text document (`text/plain`).",
+        "description": "`format=poprako` returns a JSON document (`application/json`); `format=label_plus`\nreturns a LabelPlus text document (`text/plain`).",
         "operationId": "export",
         "parameters": [
           {
@@ -922,10 +922,10 @@
           {
             "name": "format",
             "in": "query",
-            "description": "Export format: poprako or label-plus",
+            "description": "Export format: poprako or label_plus",
             "required": true,
             "schema": {
-              "$ref": "#/components/schemas/TranslationFormat"
+              "$ref": "#/components/schemas/ChapterTranslationFormatInstr"
             }
           }
         ],
@@ -948,7 +948,7 @@
           "chapter-port"
         ],
         "summary": "`GET /api/v1/chapters/{chapter_id}/translations/export/download` — export as file download.",
-        "description": "`format=poprako` downloads a JSON document (`application/json`);\n`format=label-plus` downloads a LabelPlus text document (`text/plain`).",
+        "description": "`format=poprako` downloads a JSON document (`application/json`);\n`format=label_plus` downloads a LabelPlus text document (`text/plain`).",
         "operationId": "export_download",
         "parameters": [
           {
@@ -963,10 +963,10 @@
           {
             "name": "format",
             "in": "query",
-            "description": "Export format: poprako or label-plus",
+            "description": "Export format: poprako or label_plus",
             "required": true,
             "schema": {
-              "$ref": "#/components/schemas/TranslationFormat"
+              "$ref": "#/components/schemas/ChapterTranslationFormatInstr"
             }
           }
         ],
@@ -4267,7 +4267,7 @@
       },
       "ChapterTranslationFormatInstr": {
         "type": "string",
-        "description": "Translation format accepted by the import JSON body.",
+        "description": "Translation format used by chapter translation HTTP inputs.",
         "enum": [
           "label_plus",
           "poprako"
@@ -4792,6 +4792,14 @@
             "description": "Parent workset identifier this comic belongs to."
           }
         }
+      },
+      "ComicStatus": {
+        "type": "string",
+        "description": "Lifecycle state used to filter comics in management lists.",
+        "enum": [
+          "active",
+          "archived"
+        ]
       },
       "ComicWithOpt": {
         "type": "string",

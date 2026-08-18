@@ -119,7 +119,7 @@ export async function runIt05Module(ctx: RunCtx): Promise<void> {
 
     assert.equal(f10Reserve.pages.length, mainExport.pages.length);
 
-    // JSON body enum values are snake_case; kebab-case is query-only.
+    // JSON body and query enum values use snake_case.
     expectStatus(
         await ctx.sadmin.post<ErrorBody>(`/api/v1/chapters/${f10Chapter.id}/translations/import`, {
             content: "garbage-content",

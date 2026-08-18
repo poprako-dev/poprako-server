@@ -1106,7 +1106,7 @@ export async function exportPoprako(api: ApiClient, chapterId: string): Promise<
 // Label-plus text export/download (raw text body).
 export async function exportLabelPlus(api: ApiClient, chapterId: string): Promise<string> {
     const response = await api.get<string>(
-        `/api/v1/chapters/${chapterId}/translations/export/download?format=label-plus`,
+        `/api/v1/chapters/${chapterId}/translations/export/download?format=label_plus`,
     );
 
     if (response.status !== 200) {
