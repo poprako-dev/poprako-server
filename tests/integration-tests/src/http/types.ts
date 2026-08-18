@@ -105,54 +105,68 @@ export type ChapterWorkflowRecordEventView =
     | { kind: "chapter_created" }
     | {
           kind: "chapter_subtitle_updated";
-          previous_subtitle: string;
-          next_subtitle: string;
+          data: {
+              previous_subtitle: string;
+              next_subtitle: string;
+          };
       }
     | { kind: "chapter_pinned" }
     | { kind: "chapter_unpinned" }
     | {
           kind: "assignment_created";
-          subject_user_id: string;
-          roles: number;
+          data: {
+              subject_user_id: string;
+              roles: number;
+          };
       }
     | {
           kind: "assignment_roles_updated";
-          subject_user_id: string;
-          previous_roles: number;
-          next_roles: number;
+          data: {
+              subject_user_id: string;
+              previous_roles: number;
+              next_roles: number;
+          };
       }
     | {
           kind: "assignment_deleted";
-          subject_user_id: string;
-          previous_roles: number;
+          data: {
+              subject_user_id: string;
+              previous_roles: number;
+          };
       }
     | {
           kind: "translation_imported";
-          format: "label_plus" | "poprako";
-          imported_page_count: number;
-          imported_unit_count: number;
+          data: {
+              format: "label_plus" | "poprako";
+              imported_page_count: number;
+              imported_unit_count: number;
+          };
       }
     | {
           kind: "translation_exported";
-          format: "label_plus" | "poprako";
+          data: {
+              format: "label_plus" | "poprako";
+          };
       }
     | {
           kind: "stage_transitioned";
-          stage:
-              | "raw_provide"
-              | "translate"
-              | "proofread"
-              | "typeset_redraw"
-              | "review"
-              | "publish";
-          previous_phase: "pending" | "active" | "completed";
-          next_phase: "pending" | "active" | "completed";
-          origin:
-              | "manual"
-              | "unit_edit"
-              | "translation_import"
-              | "translation_export"
-              | "raw_provide_check";
+          data: {
+              stage:
+                  | "raw_provide"
+                  | "translate"
+                  | "proofread"
+                  | "typeset_redraw"
+                  | "review"
+                  | "publish";
+              previous_phase: "pending" | "active" | "completed";
+              next_phase: "pending" | "active" | "completed";
+              origin:
+                  | "manual"
+                  | "unit_edit"
+                  | "translation_import"
+                  | "translation_export"
+                  | "raw_provide_check";
+          };
       };
 
 export interface ChapterWorkflowRecordInfoView {

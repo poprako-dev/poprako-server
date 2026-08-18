@@ -4294,24 +4294,33 @@
             "type": "object",
             "description": "A chapter subtitle changed.",
             "required": [
-              "previous_subtitle",
-              "next_subtitle",
+              "data",
               "kind"
             ],
             "properties": {
+              "data": {
+                "type": "object",
+                "description": "A chapter subtitle changed.",
+                "required": [
+                  "previous_subtitle",
+                  "next_subtitle"
+                ],
+                "properties": {
+                  "next_subtitle": {
+                    "type": "string",
+                    "description": "Subtitle after the update."
+                  },
+                  "previous_subtitle": {
+                    "type": "string",
+                    "description": "Subtitle before the update."
+                  }
+                }
+              },
               "kind": {
                 "type": "string",
                 "enum": [
                   "chapter_subtitle_updated"
                 ]
-              },
-              "next_subtitle": {
-                "type": "string",
-                "description": "Subtitle after the update."
-              },
-              "previous_subtitle": {
-                "type": "string",
-                "description": "Subtitle before the update."
               }
             }
           },
@@ -4349,24 +4358,33 @@
             "type": "object",
             "description": "A user received a chapter assignment.",
             "required": [
-              "subject_user_id",
-              "roles",
+              "data",
               "kind"
             ],
             "properties": {
+              "data": {
+                "type": "object",
+                "description": "A user received a chapter assignment.",
+                "required": [
+                  "subject_user_id",
+                  "roles"
+                ],
+                "properties": {
+                  "roles": {
+                    "$ref": "#/components/schemas/RoleMask",
+                    "description": "Initial assignment roles."
+                  },
+                  "subject_user_id": {
+                    "type": "string",
+                    "description": "User receiving the assignment."
+                  }
+                }
+              },
               "kind": {
                 "type": "string",
                 "enum": [
                   "assignment_created"
                 ]
-              },
-              "roles": {
-                "$ref": "#/components/schemas/RoleMask",
-                "description": "Initial assignment roles."
-              },
-              "subject_user_id": {
-                "type": "string",
-                "description": "User receiving the assignment."
               }
             }
           },
@@ -4374,29 +4392,38 @@
             "type": "object",
             "description": "An existing chapter assignment changed roles.",
             "required": [
-              "subject_user_id",
-              "previous_roles",
-              "next_roles",
+              "data",
               "kind"
             ],
             "properties": {
+              "data": {
+                "type": "object",
+                "description": "An existing chapter assignment changed roles.",
+                "required": [
+                  "subject_user_id",
+                  "previous_roles",
+                  "next_roles"
+                ],
+                "properties": {
+                  "next_roles": {
+                    "$ref": "#/components/schemas/RoleMask",
+                    "description": "Roles after the update."
+                  },
+                  "previous_roles": {
+                    "$ref": "#/components/schemas/RoleMask",
+                    "description": "Roles before the update."
+                  },
+                  "subject_user_id": {
+                    "type": "string",
+                    "description": "User whose roles changed."
+                  }
+                }
+              },
               "kind": {
                 "type": "string",
                 "enum": [
                   "assignment_roles_updated"
                 ]
-              },
-              "next_roles": {
-                "$ref": "#/components/schemas/RoleMask",
-                "description": "Roles after the update."
-              },
-              "previous_roles": {
-                "$ref": "#/components/schemas/RoleMask",
-                "description": "Roles before the update."
-              },
-              "subject_user_id": {
-                "type": "string",
-                "description": "User whose roles changed."
               }
             }
           },
@@ -4404,24 +4431,33 @@
             "type": "object",
             "description": "A chapter assignment was deleted.",
             "required": [
-              "subject_user_id",
-              "previous_roles",
+              "data",
               "kind"
             ],
             "properties": {
+              "data": {
+                "type": "object",
+                "description": "A chapter assignment was deleted.",
+                "required": [
+                  "subject_user_id",
+                  "previous_roles"
+                ],
+                "properties": {
+                  "previous_roles": {
+                    "$ref": "#/components/schemas/RoleMask",
+                    "description": "Roles before deletion."
+                  },
+                  "subject_user_id": {
+                    "type": "string",
+                    "description": "User whose assignment was removed."
+                  }
+                }
+              },
               "kind": {
                 "type": "string",
                 "enum": [
                   "assignment_deleted"
                 ]
-              },
-              "previous_roles": {
-                "$ref": "#/components/schemas/RoleMask",
-                "description": "Roles before deletion."
-              },
-              "subject_user_id": {
-                "type": "string",
-                "description": "User whose assignment was removed."
               }
             }
           },
@@ -4429,25 +4465,34 @@
             "type": "object",
             "description": "Translation content was imported into a chapter.",
             "required": [
-              "format",
-              "imported_page_count",
-              "imported_unit_count",
+              "data",
               "kind"
             ],
             "properties": {
-              "format": {
-                "$ref": "#/components/schemas/ChapterWorkflowRecordTranslationFormatView",
-                "description": "Imported content format."
-              },
-              "imported_page_count": {
-                "type": "integer",
-                "format": "int32",
-                "description": "Number of imported pages."
-              },
-              "imported_unit_count": {
-                "type": "integer",
-                "format": "int32",
-                "description": "Number of imported units."
+              "data": {
+                "type": "object",
+                "description": "Translation content was imported into a chapter.",
+                "required": [
+                  "format",
+                  "imported_page_count",
+                  "imported_unit_count"
+                ],
+                "properties": {
+                  "format": {
+                    "$ref": "#/components/schemas/ChapterWorkflowRecordTranslationFormatView",
+                    "description": "Imported content format."
+                  },
+                  "imported_page_count": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "Number of imported pages."
+                  },
+                  "imported_unit_count": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "Number of imported units."
+                  }
+                }
               },
               "kind": {
                 "type": "string",
@@ -4461,13 +4506,22 @@
             "type": "object",
             "description": "Translation content was successfully exported from a chapter.",
             "required": [
-              "format",
+              "data",
               "kind"
             ],
             "properties": {
-              "format": {
-                "$ref": "#/components/schemas/ChapterWorkflowRecordTranslationFormatView",
-                "description": "Generated content format."
+              "data": {
+                "type": "object",
+                "description": "Translation content was successfully exported from a chapter.",
+                "required": [
+                  "format"
+                ],
+                "properties": {
+                  "format": {
+                    "$ref": "#/components/schemas/ChapterWorkflowRecordTranslationFormatView",
+                    "description": "Generated content format."
+                  }
+                }
               },
               "kind": {
                 "type": "string",
@@ -4481,34 +4535,43 @@
             "type": "object",
             "description": "A chapter workflow stage changed phase.",
             "required": [
-              "stage",
-              "previous_phase",
-              "next_phase",
-              "origin",
+              "data",
               "kind"
             ],
             "properties": {
+              "data": {
+                "type": "object",
+                "description": "A chapter workflow stage changed phase.",
+                "required": [
+                  "stage",
+                  "previous_phase",
+                  "next_phase",
+                  "origin"
+                ],
+                "properties": {
+                  "next_phase": {
+                    "$ref": "#/components/schemas/ChapterWorkflowRecordStagePhaseView",
+                    "description": "Phase after the transition."
+                  },
+                  "origin": {
+                    "$ref": "#/components/schemas/ChapterWorkflowRecordOriginView",
+                    "description": "Action that originated the transition."
+                  },
+                  "previous_phase": {
+                    "$ref": "#/components/schemas/ChapterWorkflowRecordStagePhaseView",
+                    "description": "Phase before the transition."
+                  },
+                  "stage": {
+                    "$ref": "#/components/schemas/ChapterWorkflowRecordStageView",
+                    "description": "Changed workflow stage."
+                  }
+                }
+              },
               "kind": {
                 "type": "string",
                 "enum": [
                   "stage_transitioned"
                 ]
-              },
-              "next_phase": {
-                "$ref": "#/components/schemas/ChapterWorkflowRecordStagePhaseView",
-                "description": "Phase after the transition."
-              },
-              "origin": {
-                "$ref": "#/components/schemas/ChapterWorkflowRecordOriginView",
-                "description": "Action that originated the transition."
-              },
-              "previous_phase": {
-                "$ref": "#/components/schemas/ChapterWorkflowRecordStagePhaseView",
-                "description": "Phase before the transition."
-              },
-              "stage": {
-                "$ref": "#/components/schemas/ChapterWorkflowRecordStageView",
-                "description": "Changed workflow stage."
               }
             }
           }

@@ -21,8 +21,10 @@ fn workflow_record_view_preserves_each_typed_event() {
             },
             json!({
                 "kind": "chapter_subtitle_updated",
-                "previous_subtitle": "before",
-                "next_subtitle": "after",
+                "data": {
+                    "previous_subtitle": "before",
+                    "next_subtitle": "after",
+                },
             }),
         ),
         (
@@ -40,8 +42,10 @@ fn workflow_record_view_preserves_each_typed_event() {
             },
             json!({
                 "kind": "assignment_created",
-                "subject_user_id": "subject-user",
-                "roles": 2,
+                "data": {
+                    "subject_user_id": "subject-user",
+                    "roles": 2,
+                },
             }),
         ),
         (
@@ -52,9 +56,11 @@ fn workflow_record_view_preserves_each_typed_event() {
             },
             json!({
                 "kind": "assignment_roles_updated",
-                "subject_user_id": "subject-user",
-                "previous_roles": 2,
-                "next_roles": 4,
+                "data": {
+                    "subject_user_id": "subject-user",
+                    "previous_roles": 2,
+                    "next_roles": 4,
+                },
             }),
         ),
         (
@@ -64,8 +70,10 @@ fn workflow_record_view_preserves_each_typed_event() {
             },
             json!({
                 "kind": "assignment_deleted",
-                "subject_user_id": "subject-user",
-                "previous_roles": 2,
+                "data": {
+                    "subject_user_id": "subject-user",
+                    "previous_roles": 2,
+                },
             }),
         ),
         (
@@ -76,9 +84,11 @@ fn workflow_record_view_preserves_each_typed_event() {
             },
             json!({
                 "kind": "translation_imported",
-                "format": "poprako",
-                "imported_page_count": 2,
-                "imported_unit_count": 4,
+                "data": {
+                    "format": "poprako",
+                    "imported_page_count": 2,
+                    "imported_unit_count": 4,
+                },
             }),
         ),
         (
@@ -87,7 +97,9 @@ fn workflow_record_view_preserves_each_typed_event() {
             },
             json!({
                 "kind": "translation_exported",
-                "format": "label_plus",
+                "data": {
+                    "format": "label_plus",
+                },
             }),
         ),
         (
@@ -99,10 +111,12 @@ fn workflow_record_view_preserves_each_typed_event() {
             },
             json!({
                 "kind": "stage_transitioned",
-                "stage": "translate",
-                "previous_phase": "pending",
-                "next_phase": "active",
-                "origin": "manual",
+                "data": {
+                    "stage": "translate",
+                    "previous_phase": "pending",
+                    "next_phase": "active",
+                    "origin": "manual",
+                },
             }),
         ),
     ];

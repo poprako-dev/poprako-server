@@ -50,7 +50,7 @@ impl From<ChapterWorkflowRecordInfo> for ChapterWorkflowRecordInfoView {
 /// Strongly typed workflow event exposed to clients as a discriminated union.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
-#[serde(tag = "kind", rename_all = "snake_case")]
+#[serde(tag = "kind", content = "data", rename_all = "snake_case")]
 pub enum ChapterWorkflowRecordEventView {
     /// A chapter and its initial creator assignment were created.
     ChapterCreated,

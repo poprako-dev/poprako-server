@@ -202,10 +202,12 @@ export async function runIt07Module(ctx: RunCtx): Promise<void> {
     assert.equal(latestWorkflowRecord.actor_user_id, raw01.userId);
     assert.deepEqual(latestWorkflowRecord.event, {
         kind: "stage_transitioned",
-        stage: "raw_provide",
-        previous_phase: "pending",
-        next_phase: "completed",
-        origin: "manual",
+        data: {
+            stage: "raw_provide",
+            previous_phase: "pending",
+            next_phase: "completed",
+            origin: "manual",
+        },
     });
     assert.equal(
         Object.hasOwn(latestWorkflowRecord, "payload"),
