@@ -1,8 +1,7 @@
 //! Internal normalized unit payloads for chapter translation import.
 
-use serde::Deserialize;
-
 /// One parsed import unit.
+#[derive(Debug)]
 pub struct UnitTranslationImport {
     /// Import ordering index within the page.
     pub index: i32,
@@ -23,27 +22,4 @@ pub struct UnitTranslationImport {
     pub proofread_text: Option<String>,
     /// Whether the proofread text has been reviewed and accepted.
     pub is_proofread: bool,
-}
-
-/// PopRaKo JSON import unit.
-#[derive(Deserialize)]
-pub struct PoprakoUnitImport {
-    /// Server-assigned identifier for the imported unit.
-    pub id: String,
-
-    /// Horizontal coordinate of this unit on the page image.
-    pub x: f64,
-    /// Vertical coordinate of this unit on the page image.
-    pub y: f64,
-    /// Zero-based display ordering index within the page.
-    pub index_in_page: i32,
-    /// Whether this unit occupies an inbox-style text box.
-    pub is_inbox: bool,
-
-    /// Translated text content, absent when not yet translated.
-    pub translated_text: Option<String>,
-    /// Proofread (reviewed) text content, absent when not yet proofread.
-    pub prooved_text: Option<String>,
-    /// Whether the proofread text has been reviewed and accepted.
-    pub is_prooved: bool,
 }

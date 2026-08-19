@@ -4273,6 +4273,50 @@
           "poprako"
         ]
       },
+      "ChapterTranslationPortView": {
+        "type": "object",
+        "description": "JSON document exchanged by the PopRaKo translation port.",
+        "required": [
+          "chapter_id",
+          "chapter_index",
+          "comic_id",
+          "comic_title",
+          "pages"
+        ],
+        "properties": {
+          "chapter_id": {
+            "type": "string",
+            "description": "Chapter identifier from the exporting chapter."
+          },
+          "chapter_index": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Ordinal index of the chapter within its comic."
+          },
+          "chapter_subtitle": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional subtitle from the exporting chapter."
+          },
+          "comic_id": {
+            "type": "string",
+            "description": "Comic identifier from the exporting comic."
+          },
+          "comic_title": {
+            "type": "string",
+            "description": "Comic title from the exporting comic."
+          },
+          "pages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PageTranslationPortView"
+            },
+            "description": "Pages and their translation units."
+          }
+        }
+      },
       "ChapterWorkflowRecordEventView": {
         "oneOf": [
           {
@@ -5305,50 +5349,6 @@
           }
         }
       },
-      "ExportChapterTranslationVal": {
-        "type": "object",
-        "description": "JSON-safe export object for one translated chapter.",
-        "required": [
-          "chapter_id",
-          "chapter_index",
-          "comic_id",
-          "comic_title",
-          "pages"
-        ],
-        "properties": {
-          "chapter_id": {
-            "type": "string",
-            "description": "Chapter identifier."
-          },
-          "chapter_index": {
-            "type": "integer",
-            "format": "int32",
-            "description": "Ordinal index of the chapter within its comic."
-          },
-          "chapter_subtitle": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Optional subtitle for the chapter; absent when not set."
-          },
-          "comic_id": {
-            "type": "string",
-            "description": "Identifier of the comic this chapter belongs to."
-          },
-          "comic_title": {
-            "type": "string",
-            "description": "Title of the comic this chapter belongs to."
-          },
-          "pages": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PageTranslationExportView"
-            },
-            "description": "Translated pages contained in this chapter."
-          }
-        }
-      },
       "ExportComicArchivesVal": {
         "type": "object",
         "description": "JSON archive payloads grouped by their UTC `YYYY-MM` month slot.",
@@ -5585,6 +5585,67 @@
                 "type": "integer",
                 "format": "int64",
                 "description": "Timestamp of last update, in Unix milliseconds."
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_ChapterTranslationPortView": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Application-level success code, 0 for normal success.",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "JSON document exchanged by the PopRaKo translation port.",
+            "required": [
+              "chapter_id",
+              "chapter_index",
+              "comic_id",
+              "comic_title",
+              "pages"
+            ],
+            "properties": {
+              "chapter_id": {
+                "type": "string",
+                "description": "Chapter identifier from the exporting chapter."
+              },
+              "chapter_index": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Ordinal index of the chapter within its comic."
+              },
+              "chapter_subtitle": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Optional subtitle from the exporting chapter."
+              },
+              "comic_id": {
+                "type": "string",
+                "description": "Comic identifier from the exporting comic."
+              },
+              "comic_title": {
+                "type": "string",
+                "description": "Comic title from the exporting comic."
+              },
+              "pages": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/PageTranslationPortView"
+                },
+                "description": "Pages and their translation units."
               }
             }
           }
@@ -6047,67 +6108,6 @@
               "id": {
                 "type": "string",
                 "description": "Identifier of the newly created workset."
-              }
-            }
-          }
-        }
-      },
-      "HttpBody_ExportChapterTranslationVal": {
-        "type": "object",
-        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
-        "required": [
-          "code",
-          "data"
-        ],
-        "properties": {
-          "code": {
-            "type": "integer",
-            "format": "int32",
-            "description": "Application-level success code, 0 for normal success.",
-            "example": 0,
-            "minimum": 0
-          },
-          "data": {
-            "type": "object",
-            "description": "JSON-safe export object for one translated chapter.",
-            "required": [
-              "chapter_id",
-              "chapter_index",
-              "comic_id",
-              "comic_title",
-              "pages"
-            ],
-            "properties": {
-              "chapter_id": {
-                "type": "string",
-                "description": "Chapter identifier."
-              },
-              "chapter_index": {
-                "type": "integer",
-                "format": "int32",
-                "description": "Ordinal index of the chapter within its comic."
-              },
-              "chapter_subtitle": {
-                "type": [
-                  "string",
-                  "null"
-                ],
-                "description": "Optional subtitle for the chapter; absent when not set."
-              },
-              "comic_id": {
-                "type": "string",
-                "description": "Identifier of the comic this chapter belongs to."
-              },
-              "comic_title": {
-                "type": "string",
-                "description": "Title of the comic this chapter belongs to."
-              },
-              "pages": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/PageTranslationExportView"
-                },
-                "description": "Translated pages contained in this chapter."
               }
             }
           }
@@ -9021,9 +9021,9 @@
           }
         }
       },
-      "PageTranslationExportView": {
+      "PageTranslationPortView": {
         "type": "object",
-        "description": "JSON-safe export object for one page.",
+        "description": "Page object exchanged by the PopRaKo translation port.",
         "required": [
           "page_id",
           "page_index",
@@ -9032,7 +9032,7 @@
         "properties": {
           "page_id": {
             "type": "string",
-            "description": "Page identifier."
+            "description": "Page identifier from the exporting chapter."
           },
           "page_index": {
             "type": "integer",
@@ -9042,9 +9042,9 @@
           "units": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/UnitTranslationExportView"
+              "$ref": "#/components/schemas/UnitTranslationPortView"
             },
-            "description": "Translation units belonging to this page."
+            "description": "Units belonging to this page."
           }
         }
       },
@@ -9816,9 +9816,23 @@
         },
         "additionalProperties": false
       },
-      "UnitTranslationExportView": {
+      "UnitTranslationInstr": {
         "type": "object",
-        "description": "JSON-safe export object for one page unit.",
+        "description": "Translation assignment accepted from the client.",
+        "required": [
+          "translated_text"
+        ],
+        "properties": {
+          "translated_text": {
+            "type": "string",
+            "description": "Replacement translated text."
+          }
+        },
+        "additionalProperties": false
+      },
+      "UnitTranslationPortView": {
+        "type": "object",
+        "description": "Unit object exchanged by the PopRaKo translation port.",
         "required": [
           "unit_id",
           "unit_index",
@@ -9840,7 +9854,7 @@
           },
           "page_id": {
             "type": "string",
-            "description": "Parent page identifier the unit belongs to."
+            "description": "Parent page identifier from the exporting chapter."
           },
           "page_index": {
             "type": "integer",
@@ -9859,7 +9873,7 @@
               "string",
               "null"
             ],
-            "description": "Identifier of the proofreader user, or [`None`]."
+            "description": "Identifier of the proofreader user, or [`None`]. This is export metadata."
           },
           "translated_text": {
             "type": [
@@ -9873,11 +9887,11 @@
               "string",
               "null"
             ],
-            "description": "Identifier of the translator user, or [`None`]."
+            "description": "Identifier of the translator user, or [`None`]. This is export metadata."
           },
           "unit_id": {
             "type": "string",
-            "description": "Unique unit identifier for the exported unit."
+            "description": "Unit identifier from the exporting chapter."
           },
           "unit_index": {
             "type": "integer",
@@ -9895,20 +9909,6 @@
             "description": "Vertical coordinate of the unit bounding box on the page."
           }
         }
-      },
-      "UnitTranslationInstr": {
-        "type": "object",
-        "description": "Translation assignment accepted from the client.",
-        "required": [
-          "translated_text"
-        ],
-        "properties": {
-          "translated_text": {
-            "type": "string",
-            "description": "Replacement translated text."
-          }
-        },
-        "additionalProperties": false
       },
       "UpdateAssignmentRolesInstr": {
         "type": "object",

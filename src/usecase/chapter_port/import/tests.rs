@@ -26,6 +26,20 @@ use crate::value::role::{RoleField, RoleMask};
 const LABEL_PLUS_MATERIAL: &str =
     include_str!("../../../../tests/materials/translations.lp.txt");
 
+// Small LabelPlus fixture containing one populated page and one empty page.
+const LABEL_PLUS_WITH_EMPTY_PAGE: &str = concat!(
+    "1,0\n",
+    "-\n",
+    "框内\n",
+    "框外\n",
+    "-\n",
+    "note\n",
+    ">>>>>>>>[000.jpg]<<<<<<<<\n",
+    "----------------[1]----------------[0.1,0.2,1]\n",
+    "new text\n",
+    ">>>>>>>>[001.jpg]<<<<<<<<\n",
+);
+
 // Build a token fixture for chapter import authorization.
 fn token(user_id: &str) -> UserToken {
     UserToken {
@@ -285,6 +299,36 @@ async fn import_label_plus_material_updates_units_and_counters() {
     assert_eq!(chapter_info.total_unit_count, 65);
 
     assert_eq!(chapter_info.proofread_unit_count, 65);
+
+    let imported_again = import(
+        (&mock, &mock),
+        token("user-1"),
+        ImportChapterTranslationInstr {
+            format: TranslationFormat::LabelPlus.into(),
+            content: LABEL_PLUS_MATERIAL.into(),
+        },
+        "chapter-1".into(),
+    )
+    .await
+    .expect("repeated import should replace visible units");
+
+    let repeated_snapshot = mock.snapshot();
+    let visible_unit_count = repeated_snapshot
+        .units
+        .iter()
+        .filter(|unit_info| unit_info.hidden_at.is_none())
+        .count();
+
+    assert_eq!(imported_again.imported_unit_count, 65);
+    assert_eq!(visible_unit_count, 65);
+    assert_eq!(repeated_snapshot.units.len(), 130);
+    assert!(
+        repeated_snapshot
+            .units
+            .iter()
+            .filter(|unit_info| unit_info.hidden_at.is_some())
+            .all(|unit_info| unit_info.last_proofreader_id.is_some())
+    );
 }
 
 #[tokio::test]
@@ -323,4 +367,50 @@ async fn import_rejects_page_count_mismatch_without_mutation() {
     assert_eq!(snapshot.units[0].translated_text, Some("old".into()));
 
     assert_eq!(snapshot.chapters[0].total_unit_count, 1);
+}
+
+#[tokio::test]
+async fn import_replaces_units_and_clears_empty_pages() {
+    let mock = Mock::new();
+
+    seed_base(&mock, 2, 2, 0);
+    mock.seed_page(page("page-1", 0, 1, 0));
+    mock.seed_page(page("page-2", 1, 1, 0));
+    mock.seed_unit(unit("unit-a", "page-1", 0, "old page one"));
+    mock.seed_unit(unit("unit-b", "page-2", 0, "old page two"));
+
+    let imported = import(
+        (&mock, &mock),
+        token("user-1"),
+        ImportChapterTranslationInstr {
+            format: TranslationFormat::LabelPlus.into(),
+            content: LABEL_PLUS_WITH_EMPTY_PAGE.into(),
+        },
+        "chapter-1".into(),
+    )
+    .await
+    .expect("import with an empty page should succeed");
+
+    let snapshot = mock.snapshot();
+    let visible_page_one = snapshot
+        .units
+        .iter()
+        .filter(|unit_info| {
+            unit_info.page_id == "page-1" && unit_info.hidden_at.is_none()
+        })
+        .collect::<Vec<_>>();
+    let visible_page_two = snapshot
+        .units
+        .iter()
+        .filter(|unit_info| {
+            unit_info.page_id == "page-2" && unit_info.hidden_at.is_none()
+        })
+        .count();
+
+    assert_eq!(imported.imported_unit_count, 1);
+    assert_eq!(visible_page_one.len(), 1);
+    assert_eq!(visible_page_one[0].proofread_text, Some("new text".into()));
+    assert_eq!(visible_page_two, 0);
+    assert_eq!(snapshot.chapters[0].total_unit_count, 1);
+    assert_eq!(snapshot.chapters[0].proofread_unit_count, 1);
 }

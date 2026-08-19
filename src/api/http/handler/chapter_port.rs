@@ -19,9 +19,9 @@ use crate::api::http::state::AppHarn;
 use crate::data::instr::chapter_port::{
     ChapterTranslationFormatInstr, ImportChapterTranslationInstr,
 };
-#[cfg(feature = "swagger")]
-use crate::data::val::chapter_port::ExportChapterTranslationVal;
 use crate::data::val::chapter_port::ImportChapterTranslationVal;
+#[cfg(feature = "swagger")]
+use crate::data::view::chapter_port::ChapterTranslationPortView;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::RepeatableRead;
 use crate::part_impl::repo::HybRepo;
@@ -84,7 +84,7 @@ pub async fn import(
         ("format" = ChapterTranslationFormatInstr, Query, description = "Export format: poprako or label_plus"),
     ),
     responses(
-        (status = 200, description = "PopRaKo translation export", body = HttpBody<ExportChapterTranslationVal>, content_type = "application/json"),
+        (status = 200, description = "PopRaKo translation export", body = HttpBody<ChapterTranslationPortView>, content_type = "application/json"),
         (status = 200, description = "LabelPlus translation export", content_type = "text/plain"),
         (status = 403, description = "No perm to export this chapter"),
     ),

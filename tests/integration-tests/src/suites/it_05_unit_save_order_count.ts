@@ -16,6 +16,7 @@ import {
     exportLabelPlus,
     exportPoprako,
     getChapter,
+    importTranslations,
     newBubbleUnit,
     newPageManifest,
     reserveChapterPages,
@@ -138,11 +139,56 @@ export async function runIt05Module(ctx: RunCtx): Promise<void> {
         2,
     );
 
-    // Poprako import is NOT tested because the export shape
-    // (ChapterTranslationExportVal) differs from the import shape
-    // (ChapterPoprakoProjectImport) and the server rejects the mismatched JSON.
-    // The import endpoint's HTTP contract is verified via the invalid-format
-    // negative above.
+    const imported = await importTranslations(
+        ctx.sadmin,
+        f10Chapter.id,
+        "poprako",
+        JSON.stringify(mainExport),
+    );
+
+    assert.equal(imported.imported_page_count, mainExport.pages.length);
+    assert.equal(
+        imported.imported_unit_count,
+        mainExport.pages.reduce((count, page) => count + page.units.length, 0),
+    );
+
+    const importedExport = await exportPoprako(ctx.sadmin, f10Chapter.id);
+
+    assert.equal(importedExport.pages.length, mainExport.pages.length);
+
+    mainExport.pages.forEach((sourcePage, pageIndex) => {
+        const targetPage = importedExport.pages[pageIndex]!;
+        const sourceUnits = [...sourcePage.units].sort((a, b) => a.unit_index - b.unit_index);
+        const targetUnits = [...targetPage.units].sort((a, b) => a.unit_index - b.unit_index);
+
+        assert.equal(targetUnits.length, sourceUnits.length);
+
+        sourceUnits.forEach((sourceUnit, unitIndex) => {
+            const targetUnit = targetUnits[unitIndex]!;
+
+            assert.equal(targetUnit.unit_index, sourceUnit.unit_index);
+            assert.equal(targetUnit.x_coord, sourceUnit.x_coord);
+            assert.equal(targetUnit.y_coord, sourceUnit.y_coord);
+            assert.equal(targetUnit.is_bubble, sourceUnit.is_bubble);
+            assert.equal(targetUnit.translated_text, sourceUnit.translated_text);
+            assert.equal(targetUnit.is_proofread, sourceUnit.is_proofread);
+            assert.equal(targetUnit.proofread_text, sourceUnit.proofread_text);
+            assert.notEqual(targetUnit.unit_id, sourceUnit.unit_id);
+        });
+    });
+
+    await importTranslations(
+        ctx.sadmin,
+        f10Chapter.id,
+        "poprako",
+        JSON.stringify(mainExport),
+    );
+
+    const repeatedExport = await exportPoprako(ctx.sadmin, f10Chapter.id);
+    assert.deepEqual(
+        repeatedExport.pages.map((page) => page.units.length),
+        importedExport.pages.map((page) => page.units.length),
+    );
 
     // cleanup F10 aux chapter
     expectStatus(await ctx.sadmin.delete<null>(`/api/v1/chapters/${f10Chapter.id}`), 204);

@@ -30,7 +30,7 @@ import type {
     ImageExtension,
     PageInfoView,
     PageImageInput,
-    PoprakoExportVal,
+    ChapterTranslationPortView,
     ReserveChapterPagesVal,
     ReservedPageVal,
     ReserveImageVal,
@@ -1089,8 +1089,8 @@ export async function listTeamComments(api: ApiClient, teamId: string): Promise<
 // ---------- translation port (import / export) ----------
 
 // Poprako JSON export (unenveloped). Returns parsed JSON.
-export async function exportPoprako(api: ApiClient, chapterId: string): Promise<PoprakoExportVal> {
-    const response = await api.get<PoprakoExportVal>(
+export async function exportPoprako(api: ApiClient, chapterId: string): Promise<ChapterTranslationPortView> {
+    const response = await api.get<ChapterTranslationPortView>(
         `/api/v1/chapters/${chapterId}/translations/export?format=poprako`,
     );
 
@@ -1098,7 +1098,7 @@ export async function exportPoprako(api: ApiClient, chapterId: string): Promise<
         throw new Error(`poprako export failed: ${response.status} ${response.rawText}`);
     }
 
-    const parsed = JSON.parse(response.rawText) as PoprakoExportVal;
+    const parsed = JSON.parse(response.rawText) as ChapterTranslationPortView;
 
     return parsed;
 }
@@ -1114,35 +1114,6 @@ export async function exportLabelPlus(api: ApiClient, chapterId: string): Promis
     }
 
     return response.rawText;
-}
-
-// Poprako JSON import content built from a poprako export. The export and
-// import shapes DIFFER (export is `ChapterTranslationExportVal`, import is
-// `ChapterPoprakoProjectImport` with `image_filename`/`x`/`y`/`index_in_page`/
-// `is_inbox`/`prooved_text`/`is_prooved`), so convert here.
-export function buildPoprakoImportContent(
-    exportVal: PoprakoExportVal,
-    author: string,
-): string {
-    const project = {
-        author,
-        title: exportVal.comic_title,
-        pages: exportVal.pages.map((page) => ({
-            image_filename: page.page_id,
-            units: page.units.map((unit) => ({
-                id: unit.unit_id,
-                x: unit.x_coord,
-                y: unit.y_coord,
-                index_in_page: unit.unit_index,
-                is_inbox: unit.is_bubble,
-                translated_text: unit.translated_text,
-                prooved_text: unit.proofread_text,
-                is_prooved: unit.is_proofread,
-            })),
-        })),
-    };
-
-    return JSON.stringify(project);
 }
 
 // Import translations into a chapter. `format` is "poprako" or "label_plus".

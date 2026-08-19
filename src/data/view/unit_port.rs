@@ -1,21 +1,19 @@
-//! View DTOs for the unit port domain.
+//! View DTOs for unit translation port import and export.
 
-//! Data transfer objects for unit import/export port use cases.
-
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
-/// JSON-safe export object for one page unit.
-#[derive(Debug, Serialize)]
+/// Unit object exchanged by the PopRaKo translation port.
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
-pub struct UnitTranslationExportView {
-    /// Unique unit identifier for the exported unit.
+pub struct UnitTranslationPortView {
+    /// Unit identifier from the exporting chapter.
     pub unit_id: String,
     /// Ordinal index of the unit within its page.
     pub unit_index: i32,
 
-    /// Parent page identifier the unit belongs to.
+    /// Parent page identifier from the exporting chapter.
     pub page_id: String,
     /// Ordinal index of the page within its chapter.
     pub page_index: i32,
@@ -31,7 +29,7 @@ pub struct UnitTranslationExportView {
     /// Translated text content, or [`None`] if not translated.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub translated_text: Option<String>,
-    /// Identifier of the translator user, or [`None`].
+    /// Identifier of the translator user, or [`None`]. This is export metadata.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub translator_id: Option<String>,
 
@@ -40,7 +38,7 @@ pub struct UnitTranslationExportView {
     /// Proofread text content, or [`None`] if not proofread.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub proofread_text: Option<String>,
-    /// Identifier of the proofreader user, or [`None`].
+    /// Identifier of the proofreader user, or [`None`]. This is export metadata.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub proofreader_id: Option<String>,
 }

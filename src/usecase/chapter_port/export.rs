@@ -14,9 +14,9 @@ use poprako_util::i18n::trl;
 use crate::complex::chapter_port::{
     ChapterExportAccess, ChapterExportComplex, ChapterPortPermComplex,
 };
-use crate::data::val::chapter_port::ExportChapterTranslationVal;
-use crate::data::view::page_port::PageTranslationExportView;
-use crate::data::view::unit_port::UnitTranslationExportView;
+use crate::data::view::chapter_port::ChapterTranslationPortView;
+use crate::data::view::page_port::PageTranslationPortView;
+use crate::data::view::unit_port::UnitTranslationPortView;
 use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::unit::UnitInfo;
 use crate::model::shared::user::UserToken;
@@ -54,7 +54,7 @@ pub async fn export<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
     chapter_id: String,
-) -> BaseRest<ExportChapterTranslationVal>
+) -> BaseRest<ChapterTranslationPortView>
 where
     C: Context,
     N: Nucl<Context = C, Error = BaseError>,
@@ -114,14 +114,14 @@ where
             })
             .collect();
 
-        page_views.push(PageTranslationExportView {
+        page_views.push(PageTranslationPortView {
             page_id: page_info.id,
             page_index: page_info.index,
             units: unit_views,
         });
     }
 
-    let val = ExportChapterTranslationVal {
+    let val = ChapterTranslationPortView {
         chapter_id: chapter_info.id,
         chapter_index: chapter_info.index,
         chapter_subtitle: non_empty(chapter_info.subtitle),
@@ -213,15 +213,15 @@ where
     accept(content)
 }
 
-// Builds a [`UnitTranslationExportView`] from page and unit info.
+// Builds a [`UnitTranslationPortView`] from page and unit info.
 fn make_unit_export(
     page_info: &PageInfo,
     index: usize,
     unit_info: UnitInfo,
-) -> UnitTranslationExportView {
+) -> UnitTranslationPortView {
     //
     // Convert one unit into export view fields used by downstream translators.
-    UnitTranslationExportView {
+    UnitTranslationPortView {
         unit_id: unit_info.id,
         unit_index: index as i32,
         page_id: page_info.id.clone(),

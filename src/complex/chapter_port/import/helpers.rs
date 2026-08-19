@@ -1,30 +1,26 @@
-use std::collections::HashMap;
+use std::collections::HashSet;
 
 use poprako_util::i18n::trl;
 
-use crate::model::page_port::{PageTranslationImport, PoprakoPageImport};
+use crate::data::view::chapter_port::ChapterTranslationPortView;
+use crate::model::page_port::PageTranslationImport;
 use crate::model::shared::unit::{UnitRevision, UnitTranslation};
 use crate::model::unit_port::UnitTranslationImport;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
-/// Internal representation of a parsed LabelPlus unit header containing
-/// the unit's page-relative index, coordinates, and bubble flag.
+/// Internal representation of a LabelPlus unit header.
 pub struct LabelPlusUnit {
-    /// 0-based index of unit inside the current page.
+    /// 0-based index of the unit inside its page.
     index: i32,
-
-    /// X-axis coordinate resolved from the unit header text.
+    /// X-axis coordinate from the header.
     x_coord: f64,
-
-    /// Y-axis coordinate resolved from the unit header text.
+    /// Y-axis coordinate from the header.
     y_coord: f64,
-
-    /// Bubble flag from the header (`true` for bubble, `false` for narration).
+    /// Whether the unit is a speech bubble.
     is_bubble: bool,
 }
 
-/// Normalize a string, returning `None` when the trimmed result is empty
-/// or whitespace-only.
+/// Normalize a string while preserving all non-empty whitespace and line breaks.
 pub fn normalize_string(text: String) -> Option<String> {
     //
     if text.trim().is_empty() {
@@ -34,132 +30,60 @@ pub fn normalize_string(text: String) -> Option<String> {
     Some(text)
 }
 
-/// Check whether a text line matches the LabelPlus page header format
-/// (`>>>>>>>>[...]<<<<<<<<`).
+/// Check whether a line is a complete LabelPlus page header.
 pub fn is_label_plus_page_header(line: &str) -> bool {
-    line.starts_with(">>>>>>>>[") && line.ends_with("]<<<<<<<<")
+    //
+    let line = structural_line(line);
+
+    line.strip_prefix(">>>>>>>>[")
+        .and_then(|line| line.strip_suffix("]<<<<<<<<"))
+        .is_some_and(|filename| !filename.is_empty())
 }
 
-/// Parse a LabelPlus unit header line into its index, coordinates, and
-/// bubble flag (`1` = bubble, `2` = non-bubble).
+/// Parse a LabelPlus unit header, including its strict index and flag checks.
 pub fn parse_label_plus_unit_header(
     line: &str,
 ) -> BaseRest<Option<LabelPlusUnit>> {
     //
+    let line = structural_line(line);
+
     let Some(rest) = line.strip_prefix("----------------[") else {
         return accept(None);
     };
 
     let Some((index_text, rest)) = rest.split_once("]----------------[") else {
-        //
-        let err_message = trl("error-invalid-chapter-import-content");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Args,
-            err_message = %err_message,
-            line = %line,
-            "expected error: chapter import unit header separator is invalid",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message: err_message,
-        });
+        return Err(invalid_content("invalid LabelPlus unit separator"));
     };
 
     let Some(coord_text) = rest.strip_suffix(']') else {
-        //
-        let err_message = trl("error-invalid-chapter-import-content");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Args,
-            err_message = %err_message,
-            line = %line,
-            "expected error: chapter import coordinate suffix is missing",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message: err_message,
-        });
+        return Err(invalid_content("missing LabelPlus coordinate suffix"));
     };
 
     let parts = coord_text.split(',').collect::<Vec<_>>();
 
     if parts.len() != 3 {
-        //
-        let err_message = trl("error-invalid-chapter-import-content");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Args,
-            err_message = %err_message,
-            line = %line,
-            part_count = parts.len(),
-            "expected error: chapter import coordinate count is invalid",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message: err_message,
-        });
+        return Err(invalid_content("invalid LabelPlus coordinate count"));
     }
 
-    let index = index_text.parse::<i32>().map_err(|error| {
-        //
-        let err_message = trl("error-invalid-chapter-import-content");
+    let index = index_text
+        .parse::<i32>()
+        .map_err(|_| invalid_content("invalid LabelPlus unit index"))?;
 
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Args,
-            err_message = %err_message,
-            line = %line,
-            raw_index = %index_text,
-            parse_err = ?error,
-            "expected error: chapter import unit index is invalid",
-        );
+    if index < 1 {
+        return Err(invalid_content("LabelPlus unit index is not positive"));
+    }
 
-        BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message: err_message,
-        }
-    })?;
+    let x_coord = parts[0]
+        .parse::<f64>()
+        .map_err(|_| invalid_content("invalid LabelPlus x coordinate"))?;
 
-    let x_coord = parts[0].parse::<f64>().map_err(|error| {
-        //
-        let err_message = trl("error-invalid-chapter-import-content");
+    let y_coord = parts[1]
+        .parse::<f64>()
+        .map_err(|_| invalid_content("invalid LabelPlus y coordinate"))?;
 
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Args,
-            err_message = %err_message,
-            line = %line,
-            raw_x_coord = %parts[0],
-            parse_err = ?error,
-            "expected error: chapter import x coordinate is invalid",
-        );
-
-        BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message: err_message,
-        }
-    })?;
-
-    let y_coord = parts[1].parse::<f64>().map_err(|error| {
-        //
-        let err_message = trl("error-invalid-chapter-import-content");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Args,
-            err_message = %err_message,
-            line = %line,
-            raw_y_coord = %parts[1],
-            parse_err = ?error,
-            "expected error: chapter import y coordinate is invalid",
-        );
-
-        BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message: err_message,
-        }
-    })?;
+    if !x_coord.is_finite() || !y_coord.is_finite() {
+        return Err(invalid_content("LabelPlus coordinate is not finite"));
+    }
 
     let is_bubble = match parts[2] {
         //
@@ -167,23 +91,7 @@ pub fn parse_label_plus_unit_header(
 
         "2" => false,
 
-        _ => {
-            //
-            let err_message = trl("error-invalid-chapter-import-content");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_message = %err_message,
-                line = %line,
-                raw_bubble_flag = %parts[2],
-                "expected error: chapter import bubble flag is invalid",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message: err_message,
-            });
-        }
+        _ => return Err(invalid_content("invalid LabelPlus bubble flag")),
     };
 
     accept(Some(LabelPlusUnit {
@@ -194,9 +102,7 @@ pub fn parse_label_plus_unit_header(
     }))
 }
 
-/// Flush the buffered LabelPlus unit into the current page's unit list,
-/// building a [`UnitTranslationImport`] from the parsed header and
-/// accumulated main text lines.
+/// Flush the buffered LabelPlus unit into the current page.
 pub fn flush_label_plus_unit(
     current_page: &mut Option<Vec<UnitTranslationImport>>,
     current_unit: &mut Option<LabelPlusUnit>,
@@ -208,31 +114,26 @@ pub fn flush_label_plus_unit(
     };
 
     let Some(page_units) = current_page.as_mut() else {
-        //
-        let err_message = trl("error-invalid-chapter-import-content");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Args,
-            err_message = %err_message,
-            unit_index = label_plus_unit.index,
-            main_text_line_count = main_text_lines.len(),
-            "expected error: chapter import unit has no current page",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message: err_message,
-        });
+        return Err(invalid_content("LabelPlus unit has no page"));
     };
 
-    let main_text = normalize_string(main_text_lines.join("\n"));
+    if page_units.len() >= 100 {
+        return Err(invalid_content("LabelPlus page has too many units"));
+    }
+
+    if page_units
+        .iter()
+        .any(|unit| unit.index == label_plus_unit.index)
+    {
+        return Err(invalid_content("duplicate LabelPlus unit index"));
+    }
 
     page_units.push(UnitTranslationImport {
         index: label_plus_unit.index,
         x_coord: label_plus_unit.x_coord,
         y_coord: label_plus_unit.y_coord,
         is_bubble: label_plus_unit.is_bubble,
-        main_text,
+        main_text: normalize_string(main_text_lines.join("\n")),
         translated_text: None,
         proofread_text: None,
         is_proofread: false,
@@ -243,243 +144,144 @@ pub fn flush_label_plus_unit(
     accept(())
 }
 
-/// Parse a single PopRaKo JSON page import into a [`PageTranslationImport`],
-/// validating required fields, unique indexes, and finite coordinates.
-pub fn parse_poprako_page(
-    page: PoprakoPageImport,
-) -> BaseRest<PageTranslationImport> {
+/// Validate and order one parsed LabelPlus page.
+pub fn finalize_label_plus_page(
+    page: &mut [UnitTranslationImport],
+) -> BaseRest<()> {
     //
-    if page.image_filename.trim().is_empty() {
-        //
-        let err_message = trl("error-invalid-chapter-import-content");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Args,
-            err_message = %err_message,
-            image_filename = %page.image_filename,
-            unit_count = page.units.len(),
-            "expected error: chapter import image filename is empty",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message: err_message,
-        });
+    if page.len() > 100 {
+        return Err(invalid_content("LabelPlus page has too many units"));
     }
 
-    let (mut seen_indexes, mut units) =
-        (HashMap::new(), Vec::with_capacity(page.units.len()));
+    let mut indexes = HashSet::with_capacity(page.len());
 
-    for unit in page.units {
+    for unit in page.iter() {
         //
-        if unit.id.trim().is_empty() {
-            //
-            let err_message = trl("error-invalid-chapter-import-content");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_message = %err_message,
-                unit_id = %unit.id,
-                unit_index = unit.index_in_page,
-                "expected error: chapter import unit id is empty",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message: err_message,
-            });
+        if unit.index < 0 || !indexes.insert(unit.index) {
+            return Err(invalid_content("invalid LabelPlus unit index"));
         }
-
-        if unit.index_in_page < 1 {
-            //
-            let err_message = trl("error-invalid-chapter-import-content");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_message = %err_message,
-                unit_id = %unit.id,
-                unit_index = unit.index_in_page,
-                "expected error: chapter import unit index is invalid",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message: err_message,
-            });
-        }
-
-        if !unit.x.is_finite() || !unit.y.is_finite() {
-            //
-            let err_message = trl("error-invalid-chapter-import-content");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_message = %err_message,
-                unit_id = %unit.id,
-                unit_index = unit.index_in_page,
-                x_coord = unit.x,
-                y_coord = unit.y,
-                "expected error: chapter import unit coordinate is not finite",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message: err_message,
-            });
-        }
-
-        if seen_indexes.insert(unit.index_in_page, ()).is_some() {
-            //
-            let err_message = trl("error-invalid-chapter-import-content");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_message = %err_message,
-                unit_id = %unit.id,
-                unit_index = unit.index_in_page,
-                "expected error: duplicate chapter import unit index",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message: err_message,
-            });
-        }
-
-        units.push(UnitTranslationImport {
-            index: unit.index_in_page - 1,
-            x_coord: unit.x,
-            y_coord: unit.y,
-            is_bubble: unit.is_inbox,
-            main_text: None,
-            translated_text: normalize_option(unit.translated_text),
-            proofread_text: normalize_option(unit.prooved_text),
-            is_proofread: unit.is_prooved,
-        });
     }
 
-    units.sort_by_key(|left| left.index);
+    page.sort_by_key(|unit| unit.index);
 
-    accept(PageTranslationImport { units })
+    accept(())
 }
 
-/// Validate the LabelPlus header: version line starting with a digit,
-/// a `-` separator line, content lines ending with a `-` separator,
-/// and at least one trailing line.
+/// Validate the fixed LabelPlus preamble and its separator layout.
 pub fn validate_label_plus_header<'a, I>(lines: &mut I) -> BaseRest<()>
 where
     I: Iterator<Item = &'a str>,
 {
+    //
     let Some(version_line) = lines.next() else {
-        //
-        let err_message = trl("error-invalid-chapter-import-content");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Args,
-            err_message = %err_message,
-            operation = "validate_label_plus_header",
-            condition = "missing_version_line",
-            "expected error: chapter import version line is missing",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message: err_message,
-        });
+        return Err(invalid_content("LabelPlus version line is missing"));
     };
 
     if !version_line
         .chars()
         .next()
-        .map(|value| value.is_ascii_digit())
-        .unwrap_or(false)
+        .is_some_and(|character| character.is_ascii_digit())
     {
-        let err_message = trl("error-invalid-chapter-import-content");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Args,
-            err_message = %err_message,
-            version_line = %version_line,
-            "expected error: chapter import version line is invalid",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message: err_message,
-        });
+        return Err(invalid_content("LabelPlus version line is invalid"));
     }
 
-    if lines.next() != Some("-") {
-        //
-        let err_message = trl("error-invalid-chapter-import-content");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Args,
-            err_message = %err_message,
-            version_line = %version_line,
-            condition = "missing_initial_separator",
-            "expected error: chapter import initial separator is missing",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message: err_message,
-        });
+    if lines.next().map(structural_line) != Some("-") {
+        return Err(invalid_content("LabelPlus initial separator is missing"));
     }
 
-    let mut found_separator = false;
+    let has_content_separator =
+        lines.by_ref().map(structural_line).any(|line| line == "-");
 
-    for line in lines.by_ref() {
-        //
-        if line == "-" {
-            //
-            found_separator = true;
-
-            break;
-        }
-    }
-
-    if !found_separator {
-        //
-        let err_message = trl("error-invalid-chapter-import-content");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Args,
-            err_message = %err_message,
-            version_line = %version_line,
-            condition = "missing_content_separator",
-            "expected error: chapter import content separator is missing",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message: err_message,
-        });
+    if !has_content_separator {
+        return Err(invalid_content("LabelPlus content separator is missing"));
     }
 
     if lines.next().is_none() {
-        //
-        let err_message = trl("error-invalid-chapter-import-content");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Args,
-            err_message = %err_message,
-            version_line = %version_line,
-            condition = "missing_content",
-            "expected error: chapter import content is missing",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message: err_message,
-        });
+        return Err(invalid_content("LabelPlus content is missing"));
     }
 
     accept(())
 }
 
-/// Build translated text for a parsed unit when translation is allowed.
-/// For LabelPlus imports, source text is reused as translation text.
+/// Convert the shared PopRaKo document into normalized import pages.
+pub fn parse_poprako_document(
+    project: ChapterTranslationPortView,
+) -> BaseRest<Vec<PageTranslationImport>> {
+    //
+    if project.pages.len() > 200 {
+        return Err(invalid_content("PopRaKo document has too many pages"));
+    }
+
+    let page_count = project.pages.len() as i32;
+
+    let mut page_indexes = HashSet::with_capacity(project.pages.len());
+
+    let mut pages = Vec::with_capacity(project.pages.len());
+
+    for page in project.pages {
+        //
+        if page.page_index < 0
+            || page.page_index >= page_count
+            || !page_indexes.insert(page.page_index)
+        {
+            return Err(invalid_content("invalid PopRaKo page index"));
+        }
+
+        if page.units.len() > 100 {
+            return Err(invalid_content("PopRaKo page has too many units"));
+        }
+
+        let mut unit_indexes = HashSet::with_capacity(page.units.len());
+
+        let mut units = Vec::with_capacity(page.units.len());
+
+        for unit in page.units {
+            //
+            if unit.unit_index < 0 || !unit_indexes.insert(unit.unit_index) {
+                return Err(invalid_content("invalid PopRaKo unit index"));
+            }
+
+            if !unit.x_coord.is_finite() || !unit.y_coord.is_finite() {
+                //
+                return Err(invalid_content(
+                    "PopRaKo coordinate is not finite",
+                ));
+            }
+
+            units.push(UnitTranslationImport {
+                index: unit.unit_index,
+                x_coord: unit.x_coord,
+                y_coord: unit.y_coord,
+                is_bubble: unit.is_bubble,
+                main_text: None,
+                translated_text: normalize_option(unit.translated_text),
+                proofread_text: normalize_option(unit.proofread_text),
+                is_proofread: unit.is_proofread,
+            });
+        }
+
+        units.sort_by_key(|unit| unit.index);
+
+        pages.push(PageTranslationImport {
+            page_index: page.page_index,
+            units,
+        });
+    }
+
+    pages.sort_by_key(|page| page.page_index);
+
+    if pages
+        .iter()
+        .enumerate()
+        .any(|(index, page)| page.page_index != index as i32)
+    {
+        return Err(invalid_content("PopRaKo page indexes are incomplete"));
+    }
+
+    accept(pages)
+}
+
+/// Build translated text when the current user has translator permission.
 pub fn build_translation(
     parsed_unit: &UnitTranslationImport,
     user_id: &str,
@@ -504,8 +306,7 @@ pub fn build_translation(
     })
 }
 
-/// Build revision payload for a parsed unit when proofread is allowed.
-/// For LabelPlus imports, source text is also used as proofread text.
+/// Build proofread text when the current user has proofreader permission.
 pub fn build_revision(
     parsed_unit: &UnitTranslationImport,
     user_id: &str,
@@ -538,8 +339,30 @@ pub fn build_revision(
     })
 }
 
-// Normalize an optional string, returning `None` for empty/whitespace-only
-// values.
+// Remove only spaces and tabs that follow LabelPlus structure lines.
+fn structural_line(line: &str) -> &str {
+    line.trim_end_matches([' ', '\t'])
+}
+
+// Construct the stable client-visible invalid-content error.
+fn invalid_content(condition: &str) -> BaseError {
+    //
+    let err_message = trl("error-invalid-chapter-import-content");
+
+    tracing::warn!(
+        err_variant = ?ExpectedVariant::Args,
+        err_message = %err_message,
+        condition,
+        "expected error: chapter import content is invalid",
+    );
+
+    BaseError::Expected {
+        variant: ExpectedVariant::Args,
+        message: err_message,
+    }
+}
+
+// Normalize an optional text field without changing non-empty content.
 fn normalize_option(text: Option<String>) -> Option<String> {
     text.and_then(normalize_string)
 }
