@@ -132,6 +132,8 @@ fn update_user(state: &mut MockState, oper: &UpdateUser<'_>) -> BaseRest<()> {
         .find(|user_info| user_info.id == id)
         .ok_or_else(|| expected("error-user-not-found"))?;
 
+    let updated_at = now();
+
     match update {
         //
         // Internal implementation detail.
@@ -166,10 +168,14 @@ fn update_user(state: &mut MockState, oper: &UpdateUser<'_>) -> BaseRest<()> {
             user_info.is_avatar_uploaded = Some(repl.is_avatar_uploaded);
         }
 
-        None => user_info.last_active_at = now(),
+        None => {}
     }
 
-    user_info.updated_at = now();
+    if matches!(oper, UpdateUser::TouchLastActive { .. }) {
+        user_info.last_active_at = updated_at;
+    }
+
+    user_info.updated_at = updated_at;
 
     // Internal state field `UpdateUser`.
     // Internal implementation detail.
@@ -183,6 +189,17 @@ fn update_user(state: &mut MockState, oper: &UpdateUser<'_>) -> BaseRest<()> {
             .ok_or_else(|| expected("error-user-not-found"))?;
 
         credential.password_hash = repl.password_hash.clone();
+    }
+
+    if matches!(oper, UpdateUser::TouchLastActive { .. }) {
+        //
+        for member_info in state
+            .members
+            .iter_mut()
+            .filter(|member_info| member_info.user_id == id)
+        {
+            member_info.user_last_active_at = updated_at;
+        }
     }
 
     accept(())

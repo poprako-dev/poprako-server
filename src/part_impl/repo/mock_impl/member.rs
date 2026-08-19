@@ -253,7 +253,13 @@ fn list_member_infos(
         apply_team_incl(state, member_info, include_team);
     }
 
-    member_infos.sort_by(|left, right| left.id.cmp(&right.id));
+    member_infos.sort_by(|left, right| {
+        //
+        right
+            .user_last_active_at
+            .cmp(&left.user_last_active_at)
+            .then_with(|| left.id.cmp(&right.id))
+    });
 
     let offset = offset as usize;
 

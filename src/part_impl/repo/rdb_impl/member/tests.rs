@@ -10,6 +10,7 @@ use crate::part::nucl::RepeatableRead;
 use crate::part::repo::oper::member::{
     CreateMember, GetMemberInfo, ListMemberInfos, UpdateMember,
 };
+use crate::part::repo::oper::user::{GetUserInfo, UpdateUser};
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::test_shared;
@@ -59,6 +60,35 @@ pub async fn member_roundtrip_uses_testcontainer(shared: RdbCore) {
     .await
     .ok()
     .unwrap();
+
+    repo.run(&UpdateUser::TouchLastActive {
+        id: &team_fixture.user_entry.id,
+    })
+    .await
+    .ok()
+    .unwrap();
+
+    let touched_user_info = repo
+        .run(&GetUserInfo::Id {
+            id: &team_fixture.user_entry.id,
+        })
+        .await
+        .ok()
+        .unwrap();
+
+    let touched_member_info = repo
+        .run(&GetMemberInfo::Id {
+            id: &member_entry.id,
+            incls: &[],
+        })
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        touched_member_info.user_last_active_at,
+        touched_user_info.last_active_at
+    );
 
     let member_list_spec = MemberListSpec::Team {
         team_id: team_fixture.team_entry.id.clone(),
