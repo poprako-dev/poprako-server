@@ -1,22 +1,20 @@
-//! View DTOs for the page port domain.
+//! View DTOs for page translation port import and export.
 
-//! Data transfer objects for page import/export port use cases.
-
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
-use crate::data::view::unit_port::UnitTranslationExportView;
+use crate::data::view::unit_port::UnitTranslationPortView;
 
-/// JSON-safe export object for one page.
-#[derive(Debug, Serialize)]
+/// Page object exchanged by the PopRaKo translation port.
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
-pub struct PageTranslationExportView {
-    /// Page identifier.
+pub struct PageTranslationPortView {
+    /// Page identifier from the exporting chapter.
     pub page_id: String,
     /// Zero-based page index within its chapter.
     pub page_index: i32,
 
-    /// Translation units belonging to this page.
-    pub units: Vec<UnitTranslationExportView>,
+    /// Units belonging to this page.
+    pub units: Vec<UnitTranslationPortView>,
 }

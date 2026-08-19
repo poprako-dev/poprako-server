@@ -8,6 +8,8 @@ pub mod assignment;
 pub mod assignment_invitation;
 /// Chapter response views.
 pub mod chapter;
+/// Chapter translation-port response views.
+pub mod chapter_port;
 /// Immutable chapter workflow record response views.
 pub mod chapter_workflow_record;
 /// Comic response views.

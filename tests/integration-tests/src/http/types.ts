@@ -338,11 +338,10 @@ export interface LoginVal {
     token: string;
 }
 
-// Poprako JSON export shape (unenveloped). Field names mirror
-// `ChapterTranslationExportVal` / `PageTranslationExportVal` /
-// `UnitTranslationExportVal` in `src/data/chapter_port.rs` +
-// `src/data/page_port.rs` + `src/data/unit_port.rs`.
-export interface PoprakoExportUnit {
+// PopRaKo JSON export/import shape (unenveloped). Field names mirror
+// `ChapterTranslationPortView`, `PageTranslationPortView`, and
+// `UnitTranslationPortView` in the Rust data view modules.
+export interface UnitTranslationPortView {
     unit_id: string;
     unit_index: number;
 
@@ -363,14 +362,14 @@ export interface PoprakoExportUnit {
     proofreader_id: string | null;
 }
 
-export interface PoprakoExportPage {
+export interface PageTranslationPortView {
     page_id: string;
     page_index: number;
 
-    units: PoprakoExportUnit[];
+    units: UnitTranslationPortView[];
 }
 
-export interface PoprakoExportVal {
+export interface ChapterTranslationPortView {
     chapter_id: string;
     chapter_index: number;
     chapter_subtitle: string | null;
@@ -378,5 +377,5 @@ export interface PoprakoExportVal {
     comic_id: string;
     comic_title: string;
 
-    pages: PoprakoExportPage[];
+    pages: PageTranslationPortView[];
 }

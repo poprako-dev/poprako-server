@@ -113,7 +113,7 @@ export async function runIt07Module(ctx: RunCtx): Promise<void> {
         422,
     );
 
-    // JSON body enum values are snake_case; kebab-case is query-only.
+    // JSON body enum values use snake_case.
     expectStatus(
         await sadmin.post<ErrorBody>(`/api/v1/chapters/${mainChapterId}/stage/advance`, {
             id: mainChapterId,

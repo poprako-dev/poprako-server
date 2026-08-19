@@ -1,5 +1,8 @@
 //! Chapter translation port handlers: import, body export, and download export.
 
+#[cfg(test)]
+mod tests;
+
 use axum::Json;
 use axum::body::{Body, Bytes};
 use axum::extract::{Extension, Path, Query, State};
@@ -13,10 +16,12 @@ use tracing::instrument;
 use crate::api::http::result::HttpBody;
 use crate::api::http::result::{Accept as _, HttpError, HttpResult};
 use crate::api::http::state::AppHarn;
-use crate::data::instr::chapter_port::ImportChapterTranslationInstr;
-#[cfg(feature = "swagger")]
-use crate::data::val::chapter_port::ExportChapterTranslationVal;
+use crate::data::instr::chapter_port::{
+    ChapterTranslationFormatInstr, ImportChapterTranslationInstr,
+};
 use crate::data::val::chapter_port::ImportChapterTranslationVal;
+#[cfg(feature = "swagger")]
+use crate::data::view::chapter_port::ChapterTranslationPortView;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::RepeatableRead;
 use crate::part_impl::repo::HybRepo;
@@ -27,8 +32,8 @@ use crate::value::chapter_port::TranslationFormat;
 /// Query selecting the export format.
 #[derive(Debug, Deserialize)]
 pub struct TranslationExportQuery {
-    /// Export format: `poprako` or `label-plus`.
-    pub format: TranslationFormat,
+    /// Export format: `poprako` or `label_plus`.
+    pub format: ChapterTranslationFormatInstr,
 }
 
 /// `POST /api/v1/chapters/{chapter_id}/translations/import` — import translations.
@@ -68,7 +73,7 @@ pub async fn import(
 
 /// `GET /api/v1/chapters/{chapter_id}/translations/export` — export response body.
 ///
-/// `format=poprako` returns a JSON document (`application/json`); `format=label-plus`
+/// `format=poprako` returns a JSON document (`application/json`); `format=label_plus`
 /// returns a LabelPlus text document (`text/plain`).
 #[cfg_attr(feature = "swagger", utoipa::path(
     get,
@@ -76,10 +81,10 @@ pub async fn import(
     tag = "chapter-port",
     params(
         ("chapter_id" = String, Path, description = "Chapter ID"),
-        ("format" = TranslationFormat, Query, description = "Export format: poprako or label-plus"),
+        ("format" = ChapterTranslationFormatInstr, Query, description = "Export format: poprako or label_plus"),
     ),
     responses(
-        (status = 200, description = "PopRaKo translation export", body = HttpBody<ExportChapterTranslationVal>, content_type = "application/json"),
+        (status = 200, description = "PopRaKo translation export", body = HttpBody<ChapterTranslationPortView>, content_type = "application/json"),
         (status = 200, description = "LabelPlus translation export", content_type = "text/plain"),
         (status = 403, description = "No perm to export this chapter"),
     ),
@@ -93,7 +98,8 @@ pub async fn export(
 ) -> Result<Response, HttpError> {
     //
     let payload =
-        export_payload(&harn, user_token, chapter_id, query.format).await?;
+        export_payload(&harn, user_token, chapter_id, query.format.into())
+            .await?;
 
     body_response(payload)
 }
@@ -101,14 +107,14 @@ pub async fn export(
 /// `GET /api/v1/chapters/{chapter_id}/translations/export/download` — export as file download.
 ///
 /// `format=poprako` downloads a JSON document (`application/json`);
-/// `format=label-plus` downloads a LabelPlus text document (`text/plain`).
+/// `format=label_plus` downloads a LabelPlus text document (`text/plain`).
 #[cfg_attr(feature = "swagger", utoipa::path(
     get,
     path = "/api/v1/chapters/{chapter_id}/translations/export/download",
     tag = "chapter-port",
     params(
         ("chapter_id" = String, Path, description = "Chapter ID"),
-        ("format" = TranslationFormat, Query, description = "Export format: poprako or label-plus"),
+        ("format" = ChapterTranslationFormatInstr, Query, description = "Export format: poprako or label_plus"),
     ),
     responses(
         (status = 200, description = "Translation file download", content_type = "application/json"),
@@ -126,7 +132,8 @@ pub async fn export_download(
     let filename = format!("chapter_{}", chapter_id);
 
     let payload =
-        export_payload(&harn, user_token, chapter_id, query.format).await?;
+        export_payload(&harn, user_token, chapter_id, query.format.into())
+            .await?;
 
     download_response(&filename, payload)
 }

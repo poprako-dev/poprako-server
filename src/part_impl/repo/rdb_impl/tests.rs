@@ -1,3 +1,5 @@
+mod schema;
+
 use super::*;
 
 use crate::shared::test_rdb::start;
@@ -9,6 +11,11 @@ async fn repo_rdb_impls_use_testcontainer() {
     let test_rdb = start().await;
 
     let shared = test_rdb.core();
+
+    schema::all_application_table_columns_match_generated_schema(
+        shared.clone(),
+    )
+    .await;
 
     announcement::tests::announcement_roundtrip_uses_testcontainer(
         shared.clone(),

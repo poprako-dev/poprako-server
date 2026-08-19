@@ -4,8 +4,6 @@
 //! opaque keys, and version numbers. They are converted to presentation-friendly
 //! types in the [`data`](super::data) layer before reaching external consumers.
 
-/// Chapter port persisted entity model.
-pub mod chapter_port;
 /// Page port persisted entity model.
 pub mod page_port;
 /// Repository read models.

@@ -8,11 +8,12 @@ mod tests;
 use poprako_util::i18n::trl;
 
 use crate::complex::chapter_port::import::helpers::{
-    LabelPlusUnit, build_revision, build_translation, flush_label_plus_unit,
-    is_label_plus_page_header, parse_label_plus_unit_header,
-    parse_poprako_page, validate_label_plus_header,
+    LabelPlusUnit, build_revision, build_translation, finalize_label_plus_page,
+    flush_label_plus_unit, is_label_plus_page_header,
+    parse_label_plus_unit_header, parse_poprako_document,
+    validate_label_plus_header,
 };
-use crate::model::chapter_port::ChapterPoprakoProjectImport;
+use crate::data::view::chapter_port::ChapterTranslationPortView;
 use crate::model::page_port::PageTranslationImport;
 use crate::model::shared::unit::UnitCoord;
 use crate::model::unit_port::UnitTranslationImport;
@@ -28,7 +29,11 @@ impl ChapterImportComplex {
         content: &str,
     ) -> BaseRest<Vec<PageTranslationImport>> {
         //
-        let mut lines = content.lines();
+        let content = content.strip_prefix('\u{feff}').unwrap_or(content);
+
+        let mut lines = content
+            .split('\n')
+            .map(|line| line.strip_suffix('\r').unwrap_or(line));
 
         validate_label_plus_header(&mut lines)?;
 
@@ -54,13 +59,37 @@ impl ChapterImportComplex {
                     &mut main_text_lines,
                 )?;
 
-                if let Some(units) = current_page.take() {
-                    pages.push(PageTranslationImport { units });
+                if let Some(mut units) = current_page.take() {
+                    //
+                    finalize_label_plus_page(&mut units)?;
+
+                    pages.push(PageTranslationImport {
+                        page_index: pages.len() as i32,
+                        units,
+                    });
                 }
 
                 current_page = Some(Vec::new());
 
                 continue;
+            }
+
+            let structural_line = line.trim_end_matches([' ', '\t']);
+
+            if structural_line.starts_with(">>>>>>>>") {
+                //
+                let err_message = trl("error-invalid-chapter-import-content");
+
+                tracing::warn!(
+                    err_variant = ?ExpectedVariant::Args,
+                    err_message = %err_message,
+                    "expected error: LabelPlus structure line is malformed",
+                );
+
+                return Err(BaseError::Expected {
+                    variant: ExpectedVariant::Args,
+                    message: err_message,
+                });
             }
 
             if let Some(unit) = parse_label_plus_unit_header(line)? {
@@ -105,8 +134,31 @@ impl ChapterImportComplex {
             &mut main_text_lines,
         )?;
 
-        if let Some(units) = current_page.take() {
-            pages.push(PageTranslationImport { units });
+        if let Some(mut units) = current_page.take() {
+            //
+            finalize_label_plus_page(&mut units)?;
+
+            pages.push(PageTranslationImport {
+                page_index: pages.len() as i32,
+                units,
+            });
+        }
+
+        if pages.len() > 200 {
+            //
+            let err_message = trl("error-invalid-chapter-import-content");
+
+            tracing::warn!(
+                err_variant = ?ExpectedVariant::Args,
+                err_message = %err_message,
+                page_count = pages.len(),
+                "expected error: LabelPlus document has too many pages",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: err_message,
+            });
         }
 
         accept(pages)
@@ -117,8 +169,10 @@ impl ChapterImportComplex {
         content: &str,
     ) -> BaseRest<Vec<PageTranslationImport>> {
         //
+        let content = content.strip_prefix('\u{feff}').unwrap_or(content);
+
         let project =
-            serde_json::from_str::<ChapterPoprakoProjectImport>(content)
+            serde_json::from_str::<ChapterTranslationPortView>(content)
                 .map_err(|error| {
                     //
                     let err_message =
@@ -139,49 +193,7 @@ impl ChapterImportComplex {
                     }
                 })?;
 
-        if project.author.trim().is_empty() {
-            //
-            let err_message = trl("error-invalid-chapter-import-content");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_message = %err_message,
-                field = "author",
-                input_length = content.len(),
-                "expected error: chapter import author is empty",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message: err_message,
-            });
-        }
-
-        if project.title.trim().is_empty() {
-            //
-            let err_message = trl("error-invalid-chapter-import-content");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_message = %err_message,
-                field = "title",
-                input_length = content.len(),
-                "expected error: chapter import title is empty",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message: err_message,
-            });
-        }
-
-        let pages = project
-            .pages
-            .into_iter()
-            .map(parse_poprako_page)
-            .collect::<BaseRest<Vec<_>>>()?;
-
-        accept(pages)
+        parse_poprako_document(project)
     }
 
     /// Returns an error when imported pages do not match existing pages.

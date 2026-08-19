@@ -59,9 +59,7 @@ use crate::data::val::announcement::CreateAnnouncementVal;
 use crate::data::val::assignment_invitation::CreateAssignmentInvitationVal;
 use crate::data::val::auth::{LoginAuthVal, RegisterAuthVal};
 use crate::data::val::chapter::CreateChapterVal;
-use crate::data::val::chapter_port::{
-    ExportChapterTranslationVal, ImportChapterTranslationVal,
-};
+use crate::data::val::chapter_port::ImportChapterTranslationVal;
 use crate::data::val::comic::{CreateComicVal, ReserveComicCoverVal};
 use crate::data::val::comic_archive::ArchiveComicVal;
 use crate::data::val::comic_list::ListComicInfosVal;
@@ -79,6 +77,7 @@ use crate::data::view::announcement::AnnouncementInfoView;
 use crate::data::view::assignment::AssignmentInfoView;
 use crate::data::view::assignment_invitation::AssignmentInvitationInfoView;
 use crate::data::view::chapter::ChapterInfoView;
+use crate::data::view::chapter_port::ChapterTranslationPortView;
 use crate::data::view::chapter_workflow_record::{
     ChapterWorkflowRecordEventView, ChapterWorkflowRecordInfoView,
     ChapterWorkflowRecordOriginView, ChapterWorkflowRecordStagePhaseView,
@@ -90,17 +89,19 @@ use crate::data::view::image::ImageUploadSlotView;
 use crate::data::view::member::MemberInfoView;
 use crate::data::view::member_invitation::MemberInvitationInfoView;
 use crate::data::view::page::PageInfoView;
+use crate::data::view::page_port::PageTranslationPortView;
 use crate::data::view::system_mail::SystemMailInfoView;
 use crate::data::view::team::TeamInfoView;
 use crate::data::view::term::TermInfoView;
 use crate::data::view::termbase::TermbaseInfoView;
 use crate::data::view::unit::UnitInfoView;
+use crate::data::view::unit_port::UnitTranslationPortView;
 use crate::data::view::user::UserInfoView;
 use crate::data::view::workset::WorksetInfoView;
 use crate::value::announcement::AnnouncementInclOpt;
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::chapter::ChapterInclOpt;
-use crate::value::comic::{ComicInclOpt, ComicWithOpt};
+use crate::value::comic::{ComicInclOpt, ComicStatus, ComicWithOpt};
 use crate::value::comment::CommentInclOpt;
 use crate::value::member::MemberInclOpt;
 use crate::value::member_invitation::MemberInvitationInclOpt;
@@ -224,6 +225,7 @@ use crate::value::role::RoleField;
         CreateWorksetVal,
         UpdateWorksetInfoInstr,
         ComicInfoView,
+        ComicStatus,
         ListComicInfosVal,
         CreateComicInstr,
         CreateComicVal,
@@ -245,7 +247,9 @@ use crate::value::role::RoleField;
         ChapterStageInstr,
         ChapterStageOperInstr,
         UpdateChapterStageInstr,
-        ExportChapterTranslationVal,
+        ChapterTranslationPortView,
+        PageTranslationPortView,
+        UnitTranslationPortView,
         ChapterTranslationFormatInstr,
         ImportChapterTranslationInstr,
         ImportChapterTranslationVal,
