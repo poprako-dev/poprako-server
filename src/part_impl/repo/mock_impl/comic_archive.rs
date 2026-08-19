@@ -11,6 +11,7 @@ use crate::model::read::proj::comic_archive::{
 };
 use crate::model::read::proj::unit::UnitInfo;
 use crate::model::write::comic_archive::ComicArchiveEntry;
+use crate::part::nucl::RepeatableRead;
 use crate::part::repo::oper::comic_archive::{
     CommitComicArchive, DeleteComicArchives, GetComicArchiveSnapshotExcluded,
     ListComicArchivePayloads,
@@ -226,9 +227,25 @@ fn get_snapshot_excluded(
                 })
                 .collect::<BaseRest<Vec<_>>>()?;
 
+            let mut workflow_record_infos = context
+                .state
+                .chapter_workflow_records
+                .iter()
+                .filter(|record_info| record_info.chapter_id == chapter_info.id)
+                .cloned()
+                .collect::<Vec<_>>();
+
+            workflow_record_infos.sort_by(|left, right| {
+                //
+                left.created_at
+                    .cmp(&right.created_at)
+                    .then_with(|| left.id.cmp(&right.id))
+            });
+
             accept(ComicArchiveChapterSnapshot {
                 chapter_info,
                 assignment_infos,
+                workflow_record_infos,
                 page_snapshots,
             })
         })
@@ -277,6 +294,16 @@ fn commit(
             .source_chapter_ids
             .contains(&assignment_info.chapter_id)
     });
+
+    context
+        .state
+        .chapter_workflow_records
+        .retain(|record_info| {
+            //
+            !comic_archive_entry
+                .source_chapter_ids
+                .contains(&record_info.chapter_id)
+        });
 
     let termbase_ids = context
         .state
@@ -350,7 +377,7 @@ fn commit(
 
 impl<'a> Step<GetComicArchiveSnapshotExcluded<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -368,7 +395,7 @@ impl<'a> Step<GetComicArchiveSnapshotExcluded<'a>, MockContext> for Mock {
 
 impl<'a> Step<CommitComicArchive<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -386,7 +413,7 @@ impl<'a> Step<CommitComicArchive<'a>, MockContext> for Mock {
 
 impl<'a> Step<DeleteComicArchives<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;

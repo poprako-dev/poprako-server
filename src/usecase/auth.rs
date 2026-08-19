@@ -3,7 +3,7 @@
 #[cfg(test)]
 mod tests;
 
-use poprako_orchestra::{AtLeast, Nucl, OperRun as _, OperStep as _};
+use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
@@ -68,7 +68,7 @@ pub async fn register<N, C, R, A, D>(
     instr: RegisterAuthInstr,
 ) -> BaseRest<RegisterAuthVal>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
@@ -109,8 +109,8 @@ where
 
             let user_entry = UserEntry {
                 id: UserComplex::gen_id(),
-                qid: instr.qid.clone(),
-                nickname: instr.nickname.clone(),
+                qid: instr.qid,
+                nickname: instr.nickname,
                 password_hash,
             };
 
@@ -148,11 +148,13 @@ where
         .await?;
 
     // Dispatch after successful commit so side effects do not run inside the transaction.
-    Event::UserSignedUp(UserSignedUpEvent {
-        team_id: team_id.clone(),
-        invitor_id,
-        invitee_qid,
-    })
+    Event::UserSignedUp {
+        payload: UserSignedUpEvent {
+            team_id,
+            invitor_id,
+            invitee_qid,
+        },
+    }
     .develop_on(develop)
     .await;
 
@@ -189,7 +191,7 @@ pub async fn login<C, R, A>(
     instr: LoginAuthInstr,
 ) -> BaseRest<LoginAuthVal>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: UserRepo<C>,
     A: TokenAuth,
 {

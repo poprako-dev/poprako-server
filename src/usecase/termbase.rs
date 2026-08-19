@@ -4,10 +4,10 @@
 // Unit tests for terminology base definitions and search access.
 mod tests;
 
-use poprako_orchestra::{
-    AtLeast, Nucl, OperRun as _, OperStep as _, run_proxy, step_proxy,
-};
+use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
+
+use poprako_util::i18n::trl;
 
 use crate::complex::comic::ComicComplex;
 use crate::complex::termbase::{TermbaseComplex, TermbasePermComplex};
@@ -24,18 +24,20 @@ use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::comic::GetComicInfoExcluded;
 use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part::repo::oper::team::{LockTeam, ResolveTeamId};
+use crate::part::repo::oper::team::LockTeam;
 use crate::part::repo::oper::term::DeleteTerms;
 use crate::part::repo::oper::termbase::{
     CreateTermbase, DeleteTermbase, GetTermbaseInfo, GetTermbaseInfoExcluded,
-    ListTermbaseInfos, UpdateTermbase,
+    ListTermbaseInfos, ListTermbaseInfosExcluded, UpdateTermbase,
 };
 use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::term::TermRepo;
 use crate::part::repo::termbase::TermbaseRepo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::usecase::internal::member::MemberLoader;
+use crate::usecase::internal::util::LoadMode;
 
 /// Creates a terminology base scoped to a team or comic.
 #[instrument(level = "info", skip(nucl, repo))]
@@ -45,7 +47,7 @@ pub async fn create<N, C, R>(
     instr: CreateTermbaseInstr,
 ) -> BaseRest<CreateTermbaseVal>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
@@ -101,17 +103,32 @@ where
                     _ => unreachable!(),
                 };
 
-            let guarded_repo = &crate::part::nucl::GuardedStep::new(repo);
-
-            TermbasePermComplex::ensure_user_can_write_team(
-                &mut step_proxy! {
-                    context;
-                    guarded_repo => for<'a> FindMemberInfo<'a>;
-                },
-                &token.user_id,
-                &team_id,
-            )
+            let member_info = FindMemberInfo::UserTeam {
+                user_id: &token.user_id,
+                team_id: &team_id,
+            }
+            .step_on(repo, context)
             .await?;
+
+            let Some(member_info) = member_info else {
+                //
+                let err_message = trl("error-team-proofreader-required");
+
+                tracing::warn!(
+                    err_variant = ?ExpectedVariant::Perm,
+                    err_message = %err_message,
+                    team_id = %team_id,
+                    user_id = %token.user_id,
+                    "expected error: termbase creator membership missing",
+                );
+
+                return Err(BaseError::Expected {
+                    variant: ExpectedVariant::Perm,
+                    message: err_message,
+                });
+            };
+
+            TermbasePermComplex::ensure_user_can_write_team(&member_info)?;
 
             let termbase_info = CreateTermbase {
                 entry: &termbase_entry,
@@ -134,21 +151,20 @@ pub async fn get_info<C, R>(
     id: String,
 ) -> BaseRest<TermbaseInfoView>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: TermbaseRepo<C> + TeamRepo<C> + MemberRepo<C> + Sync,
 {
     let termbase_info = GetTermbaseInfo { id: &id }.run_on(repo).await?;
 
-    TermbasePermComplex::ensure_user_can_read(
-        &mut run_proxy! {
-            repo =>
-                for<'a> ResolveTeamId<'a>,
-                for<'a> FindMemberInfo<'a>;
-        },
+    let member_info = MemberLoader::load_info_from_termbase(
+        repo,
+        LoadMode::<C>::Run,
         &token.user_id,
         &termbase_info,
     )
     .await?;
+
+    TermbasePermComplex::ensure_user_can_read(&member_info, &termbase_info)?;
 
     accept(termbase_info.into())
 }
@@ -161,17 +177,35 @@ pub async fn list_team_infos<C, R>(
     instr: ListTeamTermbaseInfosInstr,
 ) -> BaseRest<Vec<TermbaseInfoView>>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: TermbaseRepo<C> + MemberRepo<C> + Sync,
 {
-    TermbasePermComplex::ensure_user_can_read_team(
-        &mut run_proxy! {
-            repo => for<'a> FindMemberInfo<'a>;
-        },
-        &token.user_id,
-        &instr.team_id,
-    )
+    let member_info = FindMemberInfo::UserTeam {
+        user_id: &token.user_id,
+        team_id: &instr.team_id,
+    }
+    .run_on(repo)
     .await?;
+
+    let Some(member_info) = member_info else {
+        //
+        let err_message = trl("error-team-member-required");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Perm,
+            err_message = %err_message,
+            team_id = %instr.team_id,
+            user_id = %token.user_id,
+            "expected error: termbase list membership missing",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: err_message,
+        });
+    };
+
+    TermbasePermComplex::ensure_user_can_read_team(&member_info)?;
 
     let termbase_info_list_spec = TermbaseListSpec::Team {
         team_id: instr.team_id,
@@ -197,19 +231,18 @@ pub async fn list_comic_infos<C, R>(
     instr: ListComicTermbaseInfosInstr,
 ) -> BaseRest<Vec<TermbaseInfoView>>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: TermbaseRepo<C> + TeamRepo<C> + MemberRepo<C> + Sync,
 {
-    TermbasePermComplex::ensure_user_can_read_comic(
-        &mut run_proxy! {
-            repo =>
-                for<'a> ResolveTeamId<'a>,
-                for<'a> FindMemberInfo<'a>;
-        },
+    let member_info = MemberLoader::load_info_from_comic(
+        repo,
+        LoadMode::<C>::Run,
         &token.user_id,
         &instr.comic_id,
     )
     .await?;
+
+    TermbasePermComplex::ensure_user_can_read_comic(&member_info)?;
 
     let termbase_info_list_spec = TermbaseListSpec::Comic {
         comic_id: instr.comic_id,
@@ -235,7 +268,7 @@ pub async fn update_info<N, C, R>(
     instr: UpdateTermbaseInfoInstr,
 ) -> BaseRest<()>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
@@ -252,19 +285,18 @@ where
         .step_on(repo, context)
         .await?;
 
-        let guarded_repo = &crate::part::nucl::GuardedStep::new(repo);
-
-        TermbasePermComplex::ensure_user_can_write(
-            &mut step_proxy! {
-                context;
-                guarded_repo =>
-                    for<'a> ResolveTeamId<'a>,
-                    for<'a> FindMemberInfo<'a>;
-            },
+        let member_info = MemberLoader::load_info_from_termbase(
+            repo,
+            LoadMode::Step { context },
             &token.user_id,
             &termbase_info,
         )
         .await?;
+
+        TermbasePermComplex::ensure_user_can_write(
+            &member_info,
+            &termbase_info,
+        )?;
 
         UpdateTermbase {
             update: &termbase_info_update,
@@ -287,7 +319,7 @@ pub async fn delete<N, C, R>(
     id: String,
 ) -> BaseRest<()>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
@@ -304,35 +336,95 @@ where
             .step_on(repo, context)
             .await?;
 
-        let guarded_repo = &crate::part::nucl::GuardedStep::new(repo);
-
-        TermbasePermComplex::ensure_user_can_write(
-            &mut step_proxy! {
-                context;
-                guarded_repo =>
-                    for<'a> ResolveTeamId<'a>,
-                    for<'a> FindMemberInfo<'a>;
-            },
+        let member_info = MemberLoader::load_info_from_termbase(
+            repo,
+            LoadMode::Step { context },
             &token.user_id,
             &termbase_info,
         )
         .await?;
 
-        TermbaseComplex::delete_cascade(
-            &mut step_proxy! {
-                context;
-                guarded_repo =>
-                    for<'a> GetTermbaseInfoExcluded<'a>,
-                    for<'a> DeleteTerms<'a>,
-                    for<'a> DeleteTermbase<'a>;
-            },
-            &termbase_info.id,
-        )
-        .await?;
+        TermbasePermComplex::ensure_user_can_write(
+            &member_info,
+            &termbase_info,
+        )?;
+
+        delete_cascade(repo, context, &termbase_info.id).await?;
 
         accept(())
     })
     .await?;
+
+    accept(())
+}
+
+/// Deletes one terminology base and all child terms in a transaction.
+pub async fn delete_cascade<C, R>(
+    repo: &R,
+    context: &mut C,
+    id: &str,
+) -> BaseRest<()>
+where
+    C: Context,
+    R: TermbaseRepo<C> + TermRepo<C> + Sync,
+{
+    let termbase_info = GetTermbaseInfoExcluded { id }
+        .step_on(repo, context)
+        .await?;
+
+    DeleteTerms {
+        termbase_id: &termbase_info.id,
+    }
+    .step_on(repo, context)
+    .await?;
+
+    DeleteTermbase {
+        id: &termbase_info.id,
+    }
+    .step_on(repo, context)
+    .await?;
+
+    accept(())
+}
+
+/// Deletes all terminology bases directly owned by a team.
+pub async fn delete_team_cascade<C, R>(
+    repo: &R,
+    context: &mut C,
+    team_id: &str,
+) -> BaseRest<()>
+where
+    C: Context,
+    R: TermbaseRepo<C> + TermRepo<C> + Sync,
+{
+    let termbase_infos = ListTermbaseInfosExcluded::Team { team_id }
+        .step_on(repo, context)
+        .await?;
+
+    for termbase_info in termbase_infos {
+        delete_cascade(repo, context, &termbase_info.id).await?;
+    }
+
+    accept(())
+}
+
+/// Deletes all terminology bases directly owned by a comic.
+pub async fn delete_comic_cascade<C, R>(
+    repo: &R,
+    context: &mut C,
+    comic_id: &str,
+) -> BaseRest<()>
+where
+    C: Context,
+    R: TermbaseRepo<C> + TermRepo<C> + Sync,
+{
+    let termbase_infos = ListTermbaseInfosExcluded::Comic { comic_id }
+        .step_on(repo, context)
+        .await?;
+
+    for termbase_info in termbase_infos {
+        delete_cascade(repo, context, &termbase_info.id).await?;
+    }
 
     accept(())
 }

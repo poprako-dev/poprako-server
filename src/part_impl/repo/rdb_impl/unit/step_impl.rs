@@ -384,7 +384,7 @@ fn apply_order_edits<'a>(
                         move_order(&mut ordered_ids, id, None)?;
                     }
 
-                    Patch::Assign(next_id) => {
+                    Patch::Assign { value: next_id } => {
                         move_order(&mut ordered_ids, id, Some(next_id))?;
                     }
                 }

@@ -1,7 +1,7 @@
 //! User use cases — profile, avatar management, activity tracking, and deletion.
 
-// User deletion use case.
-mod delete;
+/// User deletion use case.
+pub mod delete;
 
 #[cfg(test)]
 // Unit tests for account, role, and membership operations.
@@ -9,7 +9,7 @@ mod tests;
 
 use std::time::Duration;
 
-use poprako_orchestra::{AtLeast, Nucl, OperRun as _, OperStep as _};
+use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
@@ -44,8 +44,6 @@ use crate::part::repo::oper::user::{
 use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
-pub use delete::delete;
-
 /// Fetches a user's profile with avatar URL resolution.
 ///
 /// Non-transactional read. When the requesting user (identified by `token`)
@@ -65,7 +63,7 @@ pub async fn get_info<C, R, I, D>(
     id: String,
 ) -> BaseRest<UserInfoView>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: UserRepo<C>,
     I: ImagePool,
     D: Develop + Send + Sync,
@@ -75,9 +73,11 @@ where
     // Dispatch an activity event when the user reads their own profile.
     if token.user_id == id {
         //
-        Event::UserActive(UserActiveEvent {
-            user_id: token.user_id,
-        })
+        Event::UserActive {
+            payload: UserActiveEvent {
+                user_id: token.user_id,
+            },
+        }
         .develop_on(develop)
         .await;
     }
@@ -107,7 +107,7 @@ pub async fn update_info<N, C, R>(
     instr: UpdateUserInfoInstr,
 ) -> BaseRest<()>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
@@ -133,13 +133,13 @@ where
     }
 
     let user_repl = UserInfoRepl {
-        id: token.user_id.clone(),
+        id: token.user_id,
         qid: instr.qid,
         nickname: instr.nickname,
     };
 
     let member_repl = MemberNicknameRepl {
-        user_id: token.user_id.clone(),
+        user_id: user_repl.id.clone(),
         user_nickname: user_repl.nickname.clone(),
     };
 
@@ -173,7 +173,7 @@ pub async fn update_password<N, C, R>(
     instr: UpdateUserPasswordInstr,
 ) -> BaseRest<()>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
@@ -230,7 +230,7 @@ where
     let password_hash = UserComplex::hash_password(&instr.new_password).await?;
 
     let repl = UserCredsRepl {
-        id: user_id.clone(),
+        id: user_id,
         password_hash,
     };
 
@@ -274,7 +274,7 @@ pub async fn reserve_avatar<N, C, R, P, I>(
     instr: ReserveUserAvatarInstr,
 ) -> BaseRest<ReserveUserAvatarVal>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
@@ -288,7 +288,7 @@ where
     )?;
 
     let (transaction_image_hash, image_ext, new_byte_len) =
-        (instr.image_hash.clone(), instr.ext, instr.new_byte_len);
+        (instr.image_hash, instr.ext, instr.new_byte_len);
 
     let (object_key, avatar_version, upload_required) = nucl
         .coord(async move |context| {
@@ -317,25 +317,25 @@ where
                 //
                 batch_ids.push(ImageComplex::gen_delete_id());
 
-                batch_payloads.push(TaskPayload::Image(
-                    image::ImagePayload::Delete {
+                batch_payloads.push(TaskPayload::Image {
+                    payload: image::ImagePayload::Delete {
                         object_key: prev_key.clone(),
                     },
-                ));
+                });
 
                 batch_delays.push(None);
             }
 
             batch_ids.push(ImageComplex::gen_check_id());
 
-            batch_payloads.push(TaskPayload::Image(
-                image::ImagePayload::CheckUpload {
+            batch_payloads.push(TaskPayload::Image {
+                payload: image::ImagePayload::CheckUpload {
                     resource_kind: image::ResourceKind::UserAvatar,
                     resource_id: token.user_id.clone(),
                     object_key: avatar_reservation.object_key.clone(),
                     version: avatar_reservation.avatar_version,
                 },
-            ));
+            });
 
             batch_delays.push(Some(Duration::from_secs(15 * 60)));
 
@@ -404,7 +404,7 @@ pub async fn mark_avatar_uploaded<N, C, R, I>(
     instr: MarkUserAvatarUploadedInstr,
 ) -> BaseRest<()>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
@@ -496,20 +496,21 @@ where
     }
 
     let repl = UserAvatarRepl {
-        id: id.clone(),
+        id,
         avatar_version: instr.image_version,
-        avatar_key: Some(avatar_key.clone()),
+        avatar_key: Some(avatar_key),
         is_avatar_uploaded: true,
     };
 
     nucl.coord(async move |context| {
         //
-        let locked_user_info = GetUserInfoExcluded::Id { id: &id }
+        let locked_user_info = GetUserInfoExcluded::Id { id: &repl.id }
             .step_on(repo, context)
             .await?;
 
         if locked_user_info.avatar_version != Some(instr.image_version)
-            || locked_user_info.avatar_key.as_deref() != Some(&avatar_key)
+            || locked_user_info.avatar_key.as_deref()
+                != repl.avatar_key.as_deref()
         {
             let err_message = trl("error-stale-avatar-upload");
 
@@ -517,10 +518,10 @@ where
                 err_variant = ?ExpectedVariant::Args,
                 err_message = %err_message,
                 user_id = %token.user_id,
-                affected_user_id = %id,
+                affected_user_id = %repl.id,
                 image_version = instr.image_version,
                 locked_image_version = locked_user_info.avatar_version,
-                avatar_key = %avatar_key,
+                avatar_key = ?repl.avatar_key,
                 "expected error: stale user avatar upload",
             );
 

@@ -11,6 +11,8 @@ pub mod assignment;
 pub mod assignment_invitation;
 /// Mock in-memory implementations for chapter repository operations.
 pub mod chapter;
+/// Mock immutable chapter workflow record repository operations.
+pub mod chapter_workflow_record;
 /// Mock in-memory implementations for comic repository operations.
 pub mod comic;
 /// Mock in-memory implementations for immutable comic archive repository operations.
@@ -58,6 +60,7 @@ use crate::model::read::proj::announcement::AnnouncementInfo;
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::assignment_invitation::AssignmentInvitationInfo;
 use crate::model::read::proj::chapter::ChapterInfo;
+use crate::model::read::proj::chapter_workflow_record::ChapterWorkflowRecordInfo;
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::proj::comic_archive::ComicArchiveRecord;
 use crate::model::read::proj::comment::CommentInfo;
@@ -73,6 +76,7 @@ use crate::model::read::proj::user::{UserCredential, UserInfo};
 use crate::model::read::proj::workset::WorksetInfo;
 use crate::model::write::member::MemberEntry;
 use crate::part::effect::event::Event;
+use crate::part::nucl::Serializable;
 use crate::part::prom::oper::Defer;
 use crate::part::prom::payload::{TaskPayload, image};
 use crate::part::prom::task::Task;
@@ -110,6 +114,8 @@ pub struct MockState {
     pub terms: Vec<TermInfo>,
     /// Mock storage for chapter records.
     pub chapters: Vec<ChapterInfo>,
+    /// Mock storage for immutable chapter workflow records.
+    pub chapter_workflow_records: Vec<ChapterWorkflowRecordInfo>,
     /// Mock storage for assignment records.
     pub assignments: Vec<AssignmentInfo>,
     /// Mock storage for assignment invitation records.
@@ -156,6 +162,8 @@ pub struct MockSnapshot {
     pub terms: Vec<TermInfo>,
     /// Snapshot of chapter records at the capture time.
     pub chapters: Vec<ChapterInfo>,
+    /// Snapshot of immutable chapter workflow records at the capture time.
+    pub chapter_workflow_records: Vec<ChapterWorkflowRecordInfo>,
     /// Snapshot of assignment records at the capture time.
     pub assignments: Vec<AssignmentInfo>,
     /// Snapshot of assignment invitation records at the capture time.
@@ -191,6 +199,7 @@ impl From<MockState> for MockSnapshot {
             termbases: state.termbases,
             terms: state.terms,
             chapters: state.chapters,
+            chapter_workflow_records: state.chapter_workflow_records,
             assignments: state.assignments,
             assignment_invitations: state.assignment_invitations,
             pages: state.pages,
@@ -216,7 +225,7 @@ pub struct MockContext {
 }
 
 impl poprako_orchestra::Context for MockContext {
-    type Level = crate::part::nucl::Serializable;
+    type Level = Serializable;
 }
 
 #[cfg_attr(test, derive(Clone, Default))]

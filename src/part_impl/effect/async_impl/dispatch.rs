@@ -1,5 +1,6 @@
 //! Event dispatcher for async side-effect handlers.
 
+use poprako_orchestra::Context;
 use tracing::instrument;
 
 use crate::part::effect::event::Event;
@@ -14,7 +15,7 @@ use crate::part_impl::effect::async_impl::{chapter, user};
 #[instrument(level = "info", skip_all)]
 pub async fn dispatch<C, R>(repo: &R, event: Event)
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: AssignmentRepo<C>
         + ChapterRepo<C>
         + TeamRepo<C>
@@ -23,19 +24,19 @@ where
 {
     match event {
         //
-        Event::UserActive(payload) => {
+        Event::UserActive { payload } => {
             user::touch_last_active(repo, payload).await
         }
 
-        Event::UserSignedUp(payload) => {
+        Event::UserSignedUp { payload } => {
             user::notify_invitor(repo, payload).await
         }
 
-        Event::ChapterPublished(payload) => {
+        Event::ChapterPublished { payload } => {
             chapter::notify_reviewers_on_publish(repo, payload).await
         }
 
-        Event::ChapterWorkflowCompleted(payload) => {
+        Event::ChapterWorkflowCompleted { payload } => {
             //
             chapter::notify_next_phase(repo, &payload).await;
 

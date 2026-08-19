@@ -4,9 +4,7 @@
 // Unit tests for team membership and invitation boundary conditions.
 mod tests;
 
-use poprako_orchestra::{
-    AtLeast, Nucl, OperRun as _, OperStep as _, run_proxy,
-};
+use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
@@ -49,7 +47,7 @@ pub async fn create<N, C, R>(
     instr: CreateMemberInstr,
 ) -> BaseRest<CreateMemberVal>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
@@ -57,14 +55,22 @@ where
 {
     let roles = instr.roles;
 
-    MemberPermComplex::ensure_user_can_create(
-        &mut run_proxy! {
-            repo => for<'a> FindMemberInfo<'a>;
-        },
-        &token.user_id,
-        &instr.team_id,
-    )
+    let member_info = FindMemberInfo::UserTeam {
+        user_id: &token.user_id,
+        team_id: &instr.team_id,
+    }
+    .run_on(repo)
     .await?;
+
+    let Some(member_info) = member_info else {
+        //
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: trl("error-team-admin-required"),
+        });
+    };
+
+    MemberPermComplex::ensure_user_can_create(&member_info)?;
 
     let member_id = nucl
         .coord(async move |context| {
@@ -138,7 +144,7 @@ pub async fn join_team<N, C, R, I>(
     instr: JoinTeamInstr,
 ) -> BaseRest<MemberInfoView>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
@@ -244,7 +250,7 @@ pub async fn list_infos<C, R, I>(
     instr: ListMemberInfosInstr,
 ) -> BaseRest<Vec<MemberInfoView>>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: MemberRepo<C> + Sync,
     I: ImagePool,
 {
@@ -252,14 +258,22 @@ where
 
     if let MemberListSpec::Team { team_id, .. } = &member_list_spec {
         //
-        MemberPermComplex::ensure_user_can_list_infos(
-            &mut run_proxy! {
-                repo => for<'a> FindMemberInfo<'a>;
-            },
-            &token.user_id,
+        let member_info = FindMemberInfo::UserTeam {
+            user_id: &token.user_id,
             team_id,
-        )
+        }
+        .run_on(repo)
         .await?;
+
+        let Some(member_info) = member_info else {
+            //
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Perm,
+                message: trl("error-team-member-required"),
+            });
+        };
+
+        MemberPermComplex::ensure_user_can_list_infos(&member_info)?;
     }
 
     let member_infos = ListMemberInfos::Spec {
@@ -289,7 +303,7 @@ pub async fn update_roles<N, C, R>(
     instr: UpdateMemberRolesInstr,
 ) -> BaseRest<()>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
@@ -302,14 +316,22 @@ where
     .run_on(repo)
     .await?;
 
-    MemberPermComplex::ensure_user_can_update_info(
-        &mut run_proxy! {
-            repo => for<'a> FindMemberInfo<'a>;
-        },
-        &token.user_id,
-        &member_info.team_id,
-    )
+    let caller_member_info = FindMemberInfo::UserTeam {
+        user_id: &token.user_id,
+        team_id: &member_info.team_id,
+    }
+    .run_on(repo)
     .await?;
+
+    let Some(caller_member_info) = caller_member_info else {
+        //
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: trl("error-team-admin-required"),
+        });
+    };
+
+    MemberPermComplex::ensure_user_can_update_info(&caller_member_info)?;
 
     nucl.coord(async move |context| {
         //
@@ -343,7 +365,7 @@ pub async fn delete<N, C, R>(
     id: String,
 ) -> BaseRest<()>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
@@ -356,14 +378,22 @@ where
     .run_on(repo)
     .await?;
 
-    MemberPermComplex::ensure_user_can_delete(
-        &mut run_proxy! {
-            repo => for<'a> FindMemberInfo<'a>;
-        },
-        &token.user_id,
-        &member_info.team_id,
-    )
+    let caller_member_info = FindMemberInfo::UserTeam {
+        user_id: &token.user_id,
+        team_id: &member_info.team_id,
+    }
+    .run_on(repo)
     .await?;
+
+    let Some(caller_member_info) = caller_member_info else {
+        //
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: trl("error-team-admin-required"),
+        });
+    };
+
+    MemberPermComplex::ensure_user_can_delete(&caller_member_info)?;
 
     nucl.coord(async move |context| {
         //

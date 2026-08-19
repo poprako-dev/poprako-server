@@ -15,7 +15,7 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::{Patch, next_snowflake_id};
 use crate::value::chapter::Stage;
 
-pub use perm::UnitPermComplex;
+pub use crate::complex::unit::perm::{UnitListAccess, UnitPermComplex};
 
 /// Pure Unit mutation and linked-list rules.
 pub struct UnitComplex;
@@ -36,7 +36,7 @@ impl UnitComplex {
                 ..
             }
             | UnitEdit::Save {
-                translation: Patch::Assign(translation),
+                translation: Patch::Assign { value: translation },
                 ..
             } => !translation.translated_text.trim().is_empty(),
 
@@ -50,7 +50,7 @@ impl UnitComplex {
                 ..
             }
             | UnitEdit::Save {
-                revision: Patch::Assign(revision),
+                revision: Patch::Assign { value: revision },
                 ..
             } => revision.is_proofread,
 
@@ -122,35 +122,45 @@ impl UnitComplex {
             //
             last -= 1;
 
-            let id = match &edits[last] {
-                //
-                UnitEdit::Create { id, .. }
-                | UnitEdit::Save { id, .. }
-                | UnitEdit::Delete { id } => id.clone(),
-            };
-
             let mut prev = last;
 
             while prev > 0 {
                 //
                 prev -= 1;
 
-                match &edits[prev] {
+                let action = match (&edits[last], &edits[prev]) {
                     //
-                    UnitEdit::Delete { id: prev_id } if prev_id == &id => {
+                    (
+                        UnitEdit::Create { id, .. }
+                        | UnitEdit::Save { id, .. }
+                        | UnitEdit::Delete { id },
+                        UnitEdit::Delete { id: prev_id },
+                    ) if id == prev_id => 1,
+
+                    (
+                        UnitEdit::Create { id, .. }
+                        | UnitEdit::Save { id, .. }
+                        | UnitEdit::Delete { id },
+                        UnitEdit::Save { id: prev_id, .. },
+                    ) if id == prev_id => 2,
+
+                    _ => 0,
+                };
+
+                match action {
+                    //
+                    1 => {
                         //
                         edits.remove(prev);
 
                         last -= 1;
                     }
 
-                    UnitEdit::Save { id: prev_id, .. } if prev_id == &id => {
+                    2 => {
                         //
-                        {
-                            let (head, tail) = edits.split_at_mut(last);
+                        let (head, tail) = edits.split_at_mut(last);
 
-                            Self::merge_edits(&mut head[prev], &mut tail[0]);
-                        }
+                        Self::merge_edits(&mut head[prev], &mut tail[0]);
 
                         edits.remove(prev);
 
@@ -275,7 +285,7 @@ impl UnitComplex {
 
                 UnitEdit::Save {
                     id,
-                    next_id: Patch::Assign(next_id),
+                    next_id: Patch::Assign { value: next_id },
                     ..
                 } => (id, next_id),
 

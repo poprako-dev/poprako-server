@@ -7,36 +7,16 @@ use tracing::instrument;
 
 use crate::model::write::comic_archive::ComicArchiveEntry;
 use crate::part_impl::repo::rdb_impl::entity::comic_archive::ComicArchiveEntryRow;
-use crate::part_impl::repo::rdb_impl::schema::t_assignment::dsl::{
-    f_chapter_id as assignment_chapter_id, t_assignment,
-};
-use crate::part_impl::repo::rdb_impl::schema::t_assignment_invitation::dsl::{
-    f_chapter_id as invitation_chapter_id, t_assignment_invitation,
-};
-use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::{
-    f_id as chapter_id, t_chapter,
-};
-use crate::part_impl::repo::rdb_impl::schema::t_comic::dsl::{
-    f_archived_at as comic_archived_at,
-    f_cover_extension as comic_cover_extension,
-    f_cover_hash as comic_cover_hash, f_cover_key as comic_cover_key,
-    f_cover_uploaded as comic_cover_uploaded,
-    f_cover_version as comic_cover_version, f_id as comic_id,
-    f_updated_at as comic_updated_at, t_comic,
-};
+use crate::part_impl::repo::rdb_impl::schema::t_assignment::dsl::{f_chapter_id as assignment_chapter_id, t_assignment};
+use crate::part_impl::repo::rdb_impl::schema::t_assignment_invitation::dsl::{f_chapter_id as invitation_chapter_id, t_assignment_invitation};
+use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::{f_id as chapter_id, t_chapter};
+use crate::part_impl::repo::rdb_impl::schema::t_chapter_workflow_record::dsl::{f_chapter_id as workflow_record_chapter_id, t_chapter_workflow_record};
+use crate::part_impl::repo::rdb_impl::schema::t_comic::dsl::{f_archived_at as comic_archived_at, f_cover_extension as comic_cover_extension, f_cover_hash as comic_cover_hash, f_cover_key as comic_cover_key, f_cover_uploaded as comic_cover_uploaded, f_cover_version as comic_cover_version, f_id as comic_id, f_updated_at as comic_updated_at, t_comic};
 use crate::part_impl::repo::rdb_impl::schema::t_comic_archive;
-use crate::part_impl::repo::rdb_impl::schema::t_page::dsl::{
-    f_chapter_id as page_chapter_id, t_page,
-};
-use crate::part_impl::repo::rdb_impl::schema::t_term::dsl::{
-    f_termbase_id as term_termbase_id, t_term,
-};
-use crate::part_impl::repo::rdb_impl::schema::t_termbase::dsl::{
-    f_comic_id as termbase_comic_id, f_id as termbase_id, t_termbase,
-};
-use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{
-    f_page_id as unit_page_id, t_unit,
-};
+use crate::part_impl::repo::rdb_impl::schema::t_page::dsl::{f_chapter_id as page_chapter_id, t_page};
+use crate::part_impl::repo::rdb_impl::schema::t_term::dsl::{f_termbase_id as term_termbase_id, t_term};
+use crate::part_impl::repo::rdb_impl::schema::t_termbase::dsl::{f_comic_id as termbase_comic_id, f_id as termbase_id, t_termbase};
+use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{f_page_id as unit_page_id, t_unit};
 use crate::result::{BaseRest, accept};
 use crate::shared::RdbConn;
 use crate::shared::result::diesel;
@@ -86,6 +66,16 @@ pub async fn commit(
     diesel::delete(t_assignment.filter(
         assignment_chapter_id.eq_any(&comic_archive_entry.source_chapter_ids),
     ))
+    .execute(conn)
+    .await
+    .map_err(diesel)?;
+
+    diesel::delete(
+        t_chapter_workflow_record.filter(
+            workflow_record_chapter_id
+                .eq_any(&comic_archive_entry.source_chapter_ids),
+        ),
+    )
     .execute(conn)
     .await
     .map_err(diesel)?;

@@ -11,6 +11,7 @@
 mod tests;
 
 use std::num::NonZeroU16;
+use std::result::Result;
 
 use axum::Json;
 use axum::http::StatusCode;
@@ -182,11 +183,21 @@ where
     // Converts a success body into JSON response and merges any recorded headers.
     fn into_response(self) -> Response {
         //
-        let status = self.status;
+        let Self {
+            status,
+            headers,
+            code,
+            data,
+        } = self;
 
-        let headers = self.headers.clone();
+        let body = Self {
+            status,
+            headers: HeaderMap::new(),
+            code,
+            data,
+        };
 
-        let mut response = (status, Json(self)).into_response();
+        let mut response = (status, Json(body)).into_response();
 
         response.headers_mut().extend(headers);
 
@@ -243,10 +254,10 @@ impl IntoResponse for NoContent {
 }
 
 /// Result of a valued success response.
-pub type HttpResult<T> = std::result::Result<HttpBody<T>, HttpError>;
+pub type HttpResult<T> = Result<HttpBody<T>, HttpError>;
 
 /// Result of an empty success response (`204 No Content`).
-pub type HttpNoContent = std::result::Result<NoContent, HttpError>;
+pub type HttpNoContent = Result<NoContent, HttpError>;
 
 /// Converts a usecase value into a valued [`HttpResult`] with the given status.
 pub fn accept<T>(data: T, status_code: StatusCode) -> HttpResult<T>
@@ -279,6 +290,6 @@ where
 }
 
 /// Returns a `204 No Content` result with an empty body.
-pub fn no_content() -> std::result::Result<NoContent, HttpError> {
+pub fn no_content() -> Result<NoContent, HttpError> {
     Ok(NoContent::new())
 }

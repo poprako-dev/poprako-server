@@ -2,11 +2,12 @@
 
 use diesel::{ExpressionMethods as _, OptionalExtension as _, QueryDsl as _};
 use diesel_async::RunQueryDsl as _;
-use poprako_orchestra::{Run, Step};
+use poprako_orchestra::{AtLeast, Level, Run, Step};
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
 
+use crate::part::nucl::RepeatableRead;
 use crate::part::repo::oper::team::ResolveTeamId;
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::schema::{t_chapter, t_comic, t_workset};
@@ -95,11 +96,11 @@ impl Run<ResolveTeamId<'_>> for HybRepo {
 
 impl<L> Step<ResolveTeamId<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<RepeatableRead>,
 {
     // BaseError for the transactional team-resolution projection.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;

@@ -6,6 +6,7 @@
 #[cfg(test)]
 mod tests;
 
+use std::env::var;
 use std::sync::OnceLock;
 
 use serde::{Deserialize, Deserializer};
@@ -41,7 +42,7 @@ fn ensure_snowflake_init() {
 // Load the snowflake node ID from the `POPRAKO_SNOWFLAKE_NODE_ID` env var.
 fn load_snowflake_node_id() -> u16 {
     //
-    let Ok(value) = std::env::var("POPRAKO_SNOWFLAKE_NODE_ID") else {
+    let Ok(value) = var("POPRAKO_SNOWFLAKE_NODE_ID") else {
         return 0;
     };
 
@@ -64,7 +65,10 @@ pub enum Patch<T> {
     Clear,
 
     /// Replaces the stored field with the carried value.
-    Assign(T),
+    Assign {
+        /// Replacement value for the stored field.
+        value: T,
+    },
 
     /// Preserves the stored field.
     #[default]
@@ -81,7 +85,9 @@ impl<T> Patch<T> {
             //
             Self::Clear => Patch::Clear,
 
-            Self::Assign(value) => Patch::Assign(assign(value)),
+            Self::Assign { value } => Patch::Assign {
+                value: assign(value),
+            },
 
             Self::Skip => Patch::Skip,
         }
@@ -104,14 +110,17 @@ where
     {
         // Discriminant-only tagged representation for Patch deserialization.
         #[derive(Deserialize)]
-        #[serde(tag = "type", content = "value", rename_all = "snake_case")]
+        #[serde(tag = "type", rename_all = "snake_case")]
         enum PatchVal<T> {
             //
             /// Explicit clear — discard the current value.
             Clear,
 
             /// Explicit assign — replace with the given value.
-            Assign(T),
+            Assign {
+                // Replacement value from the tagged input.
+                value: T,
+            },
 
             /// Explicit skip or absent — leave the current value unchanged.
             Skip,
@@ -121,7 +130,7 @@ where
             //
             Some(PatchVal::Clear) => Ok(Self::Clear),
 
-            Some(PatchVal::Assign(value)) => Ok(Self::Assign(value)),
+            Some(PatchVal::Assign { value }) => Ok(Self::Assign { value }),
 
             Some(PatchVal::Skip) | None => Ok(Self::Skip),
         }

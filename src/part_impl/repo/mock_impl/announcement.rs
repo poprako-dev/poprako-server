@@ -9,6 +9,7 @@ use crate::model::read::proj::announcement::AnnouncementInfo;
 use crate::model::read::proj::user::UserInfo;
 use crate::model::read::spec::announcement::AnnouncementListSpec;
 use crate::model::write::announcement::AnnouncementEntry;
+use crate::part::nucl::RepeatableRead;
 use crate::part::repo::oper::announcement::{
     CreateAnnouncement, ListAnnouncementInfos,
 };
@@ -142,7 +143,7 @@ impl Run<ListAnnouncementInfos<'_>> for Mock {
 
 impl Step<CreateAnnouncement<'_>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;

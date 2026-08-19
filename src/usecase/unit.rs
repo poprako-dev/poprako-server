@@ -4,22 +4,23 @@
 // Unit tests for unit creation, editing, and transition rules.
 mod tests;
 
-use poprako_orchestra::{
-    AtLeast, Nucl, OperRun as _, OperStep as _, run_proxy,
-};
+use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
+use poprako_util::i18n::trl;
+
 use crate::complex::chapter::ChapterComplex;
-use crate::complex::unit::{UnitComplex, UnitPermComplex};
+use crate::complex::unit::{UnitComplex, UnitListAccess, UnitPermComplex};
 use crate::data::instr::unit::{
     ListPageUnitInfosInstr, SavePageUnitEditsInstr, into_unit_edits,
 };
 use crate::data::val::unit::ListPageUnitInfosVal;
 use crate::model::read::proj::unit::UnitCounters;
 use crate::model::shared::user::UserToken;
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::Serializable;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
+use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
@@ -38,8 +39,9 @@ use crate::part::repo::oper::unit::{
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::unit::UnitRepo;
-use crate::result::{BaseError, BaseRest, accept};
-use crate::usecase::stage::advance_stages;
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::usecase::stage::start_pending_stages;
+use crate::value::chapter_workflow_record::ChapterWorkflowRecordOrigin;
 use crate::value::role::RoleField;
 use crate::value::unit::UnitEditPerm;
 
@@ -51,7 +53,7 @@ pub async fn list_infos<C, R>(
     instr: ListPageUnitInfosInstr,
 ) -> BaseRest<ListPageUnitInfosVal>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: PageRepo<C>
         + UnitRepo<C>
         + TeamRepo<C>
@@ -61,17 +63,61 @@ where
 {
     let page_info = GetPageInfo { id: &instr.page_id }.run_on(repo).await?;
 
-    UnitPermComplex::ensure_user_can_list_infos(
-        &mut run_proxy! {
-            repo =>
-                for<'a> ResolveTeamId<'a>,
-                for<'a> FindMemberInfo<'a>,
-                for<'a, 'b> FindAssignmentInfo<'a, 'b>;
-        },
-        &token.user_id,
-        &page_info.chapter_id,
-    )
+    let team_id = ResolveTeamId::Chapter {
+        id: &page_info.chapter_id,
+    }
+    .run_on(repo)
     .await?;
+
+    let member_info = FindMemberInfo::UserTeam {
+        user_id: &token.user_id,
+        team_id: &team_id,
+    }
+    .run_on(repo)
+    .await?;
+
+    match member_info {
+        //
+        Some(member_info) => UnitPermComplex::ensure_user_can_list_infos(
+            UnitListAccess::Member {
+                member_info: &member_info,
+            },
+        )?,
+
+        None => {
+            //
+            let assignment_info = FindAssignmentInfo::ChapterUser {
+                chapter_id: &page_info.chapter_id,
+                user_id: &token.user_id,
+            }
+            .run_on(repo)
+            .await?;
+
+            let Some(assignment_info) = assignment_info else {
+                //
+                let err_message = trl("error-unit-list-perm-required");
+
+                tracing::warn!(
+                    err_variant = ?ExpectedVariant::Perm,
+                    err_message = %err_message,
+                    chapter_id = %page_info.chapter_id,
+                    user_id = %token.user_id,
+                    "expected error: unit list permission denied",
+                );
+
+                return Err(BaseError::Expected {
+                    variant: ExpectedVariant::Perm,
+                    message: err_message,
+                });
+            };
+
+            UnitPermComplex::ensure_user_can_list_infos(
+                UnitListAccess::Assignee {
+                    assignment_info: &assignment_info,
+                },
+            )?;
+        }
+    }
 
     let unit_infos = ListUnitInfos {
         page_id: &page_info.id,
@@ -96,19 +142,18 @@ pub async fn save_edits<N, C, R>(
     instr: SavePageUnitEditsInstr,
 ) -> BaseRest<()>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
-    C::Level: AtLeast<RepeatableRead>,
+    C::Level: AtLeast<Serializable>,
     R: PageRepo<C>
         + UnitRepo<C>
         + ChapterRepo<C>
+        + ChapterWorkflowRecordRepo<C>
         + ComicRepo<C>
         + AssignmentRepo<C>
-        + Clone
         + Send
-        + Sync
-        + 'static,
+        + Sync,
 {
     let SavePageUnitEditsInstr { page_id, edits } = instr;
 
@@ -118,7 +163,7 @@ where
 
     let page_scope = GetPageInfo { id: &page_id }.run_on(repo).await?;
 
-    let chapter_id = nucl
+    let () = nucl
         .coord(async move |context| {
             //
             let chapter_info = GetChapterInfoExcluded {
@@ -201,11 +246,19 @@ where
             .step_on(repo, context)
             .await?;
 
-            accept(page_info.chapter_id)
+            start_pending_stages(
+                repo,
+                context,
+                &page_info.chapter_id,
+                Some(token.user_id.clone()),
+                ChapterWorkflowRecordOrigin::UnitEdit,
+                &stages,
+            )
+            .await?;
+
+            accept(())
         })
         .await?;
-
-    advance_stages(((*repo).clone(),), chapter_id, stages);
 
     accept(())
 }

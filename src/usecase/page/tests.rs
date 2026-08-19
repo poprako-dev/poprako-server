@@ -46,6 +46,9 @@ use crate::test_util::{
     assert_expected_message, assert_expected_variant,
     assert_one_image_check_record,
 };
+use crate::usecase::page::delete::delete;
+use crate::usecase::page::list::{get_info, list_infos};
+use crate::usecase::page::reserve::reserve_chapter_pages;
 use crate::value::chapter::{Stage, StageMask, StagePhase};
 use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
@@ -247,7 +250,9 @@ async fn reserve_image_replaces_key_and_enqueues_prom() {
 
     assert!(matches!(
         snapshot.prom_records[0].payload(),
-        TaskPayload::Image(ImagePayload::Delete { object_key }) if object_key == "old.png"
+        TaskPayload::Image {
+            payload: ImagePayload::Delete { object_key },
+        } if object_key == "old.png"
     ));
 
     assert_one_image_check_record(
@@ -383,7 +388,9 @@ async fn reserve_image_replaces_same_hash_with_different_extension() {
     assert!(snapshot.prom_records.iter().any(|record| {
         matches!(
             record.payload(),
-            TaskPayload::Image(ImagePayload::Delete { object_key })
+            TaskPayload::Image {
+                payload: ImagePayload::Delete { object_key },
+            }
                 if object_key == "same.png"
         )
     }));

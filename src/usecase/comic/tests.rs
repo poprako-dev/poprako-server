@@ -40,6 +40,8 @@ use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
 use crate::test_util::fixture::workset;
+use crate::usecase::comic::list::list_infos;
+use crate::usecase::comic::reserve::reserve_cover;
 use crate::value::chapter::{Stage, StageMask, StagePhase};
 use crate::value::comic::ComicWithOpt;
 use crate::value::role::{RoleField, RoleMask};

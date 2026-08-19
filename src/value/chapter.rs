@@ -2,8 +2,9 @@
 
 // Stage-phase bitmask helpers.
 mod mask;
-// Workflow stage, phase, and transition rules.
-mod stage;
+
+/// Workflow stage, phase, and transition rules.
+pub mod stage;
 
 // Keep chapter-specific tests colocated with the value-level invariants they verify.
 #[cfg(test)]
@@ -15,8 +16,8 @@ use utoipa::ToSchema;
 
 use crate::value::incl::InclOpt;
 
-pub use mask::StageMask;
-pub use stage::{Stage, StageOper, StagePhase, try_modify_stage};
+pub use crate::value::chapter::mask::StageMask;
+pub use crate::value::chapter::stage::{Stage, StageOper, StagePhase};
 
 /// Incl opts for chapter info queries.
 ///

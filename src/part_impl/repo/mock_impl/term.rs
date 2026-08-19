@@ -7,6 +7,7 @@ use tracing::instrument;
 
 use crate::model::read::proj::term::TermInfo;
 use crate::model::read::spec::term::TermListSpec;
+use crate::part::nucl::RepeatableRead;
 use crate::part::repo::oper::term::{
     CreateTerm, DeleteTerm, DeleteTerms, GetTermInfo, GetTermInfoExcluded,
     ListTermInfos, LockTerm, UpdateTerm,
@@ -111,7 +112,7 @@ impl<'a> Run<ListTermInfos<'a>> for Mock {
 
 impl<'a> Step<CreateTerm<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -165,7 +166,7 @@ impl<'a> Step<CreateTerm<'a>, MockContext> for Mock {
 
 impl<'a> Step<GetTermInfoExcluded<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -183,7 +184,7 @@ impl<'a> Step<GetTermInfoExcluded<'a>, MockContext> for Mock {
 
 impl<'a> Step<LockTerm<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -206,7 +207,7 @@ impl<'a> Step<LockTerm<'a>, MockContext> for Mock {
 
 impl<'a> Step<UpdateTerm<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -253,7 +254,7 @@ impl<'a> Step<UpdateTerm<'a>, MockContext> for Mock {
 
 impl<'a> Step<DeleteTerm<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -283,7 +284,7 @@ impl<'a> Step<DeleteTerm<'a>, MockContext> for Mock {
 
 impl<'a> Step<DeleteTerms<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;

@@ -17,9 +17,12 @@ use crate::data::instr::assignment_invitation::{
 };
 use crate::data::instr::auth::{LoginAuthInstr, RegisterAuthInstr};
 use crate::data::instr::chapter::{
-    CreateChapterInstr, UpdateChapterInfoInstr, UpdateChapterStageInstr,
+    ChapterStageInstr, ChapterStageOperInstr, CreateChapterInstr,
+    UpdateChapterInfoInstr, UpdateChapterStageInstr,
 };
-use crate::data::instr::chapter_port::ImportChapterTranslationInstr;
+use crate::data::instr::chapter_port::{
+    ChapterTranslationFormatInstr, ImportChapterTranslationInstr,
+};
 use crate::data::instr::comic::{
     CreateComicInstr, MarkComicCoverUploadedInstr, ReserveComicCoverInstr,
     UpdateComicInfoInstr,
@@ -76,6 +79,11 @@ use crate::data::view::announcement::AnnouncementInfoView;
 use crate::data::view::assignment::AssignmentInfoView;
 use crate::data::view::assignment_invitation::AssignmentInvitationInfoView;
 use crate::data::view::chapter::ChapterInfoView;
+use crate::data::view::chapter_workflow_record::{
+    ChapterWorkflowRecordEventView, ChapterWorkflowRecordInfoView,
+    ChapterWorkflowRecordOriginView, ChapterWorkflowRecordStagePhaseView,
+    ChapterWorkflowRecordStageView, ChapterWorkflowRecordTranslationFormatView,
+};
 use crate::data::view::comic::ComicInfoView;
 use crate::data::view::comment::CommentInfoView;
 use crate::data::view::image::ImageUploadSlotView;
@@ -141,6 +149,7 @@ use crate::value::role::RoleField;
         handler::chapter::list_infos,
         handler::chapter::get_pinned,
         handler::chapter::get_info,
+        handler::chapter::list_workflow_record_infos,
         handler::chapter::update_info,
         handler::chapter::mark_pinned,
         handler::chapter::advance_stage,
@@ -224,11 +233,20 @@ use crate::value::role::RoleField;
         MarkComicCoverUploadedInstr,
         ArchiveComicVal,
         ChapterInfoView,
+        ChapterWorkflowRecordEventView,
+        ChapterWorkflowRecordInfoView,
+        ChapterWorkflowRecordOriginView,
+        ChapterWorkflowRecordStagePhaseView,
+        ChapterWorkflowRecordStageView,
+        ChapterWorkflowRecordTranslationFormatView,
         CreateChapterInstr,
         CreateChapterVal,
         UpdateChapterInfoInstr,
+        ChapterStageInstr,
+        ChapterStageOperInstr,
         UpdateChapterStageInstr,
         ExportChapterTranslationVal,
+        ChapterTranslationFormatInstr,
         ImportChapterTranslationInstr,
         ImportChapterTranslationVal,
         PageInfoView,

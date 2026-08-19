@@ -1,6 +1,5 @@
 //! Pure conversion of active comic snapshots into immutable archive payloads.
 
-use poprako_orchestra::{OperProxy as _, Proxy};
 use time::OffsetDateTime;
 
 use poprako_util::i18n::trl;
@@ -11,16 +10,16 @@ use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::comic_archive::{
     ComicArchiveChapterSnapshot, ComicArchiveRecord, ComicArchiveSnapshot,
 };
+use crate::model::read::proj::member::MemberInfo;
 use crate::model::write::comic_archive::ComicArchiveEntry;
-use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part::repo::oper::team::ResolveTeamId;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 use crate::value::chapter::{Stage, StagePhase};
 use crate::value::comic_archive::{
-    ArchivedAssignmentPayload, ArchivedChapterPayload, ArchivedComicPayload,
-    ArchivedPagePayload, ArchivedUnitPayload, ArchivedUserPayload,
-    ArchivedWorksetPayload,
+    ArchivedAssignmentPayload, ArchivedChapterPayload,
+    ArchivedChapterWorkflowRecordDetail, ArchivedChapterWorkflowRecordPayload,
+    ArchivedComicPayload, ArchivedPagePayload, ArchivedUnitPayload,
+    ArchivedUserPayload, ArchivedWorksetPayload,
 };
 
 /// Constructs one immutable comic archive record from a fully locked snapshot.
@@ -118,32 +117,13 @@ pub struct ComicArchivePermComplex;
 
 impl ComicArchivePermComplex {
     /// Verify that the caller is an administrator of the requested team.
-    pub async fn ensure_user_can_export<P>(
-        proxy: &mut P,
-        user_id: &str,
-        team_id: &str,
-    ) -> BaseRest<()>
-    where
-        P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
-    {
-        check_user_is_team_admin(proxy, user_id, team_id).await
+    pub fn ensure_user_can_export(member_info: &MemberInfo) -> BaseRest<()> {
+        check_user_is_team_admin(member_info)
     }
 
     /// Verify that the caller is an administrator of the comic's owning team.
-    pub async fn ensure_user_can_archive<P>(
-        proxy: &mut P,
-        user_id: &str,
-        comic_id: &str,
-    ) -> BaseRest<()>
-    where
-        P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
-            + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
-    {
-        let team_id = ResolveTeamId::Comic { id: comic_id }
-            .proxy_on(proxy)
-            .await?;
-
-        check_user_is_team_admin(proxy, user_id, &team_id).await
+    pub fn ensure_user_can_archive(member_info: &MemberInfo) -> BaseRest<()> {
+        check_user_is_team_admin(member_info)
     }
 }
 
@@ -298,6 +278,19 @@ fn build_chapter_payload(
         created_at: chapter_info.created_at.to_unix_milli(),
         updated_at: chapter_info.updated_at.to_unix_milli(),
         assignments,
+        workflow_records: chapter_snapshot
+            .workflow_record_infos
+            .iter()
+            .map(|record_info| ArchivedChapterWorkflowRecordPayload {
+                id: record_info.id.clone(),
+                actor_user_id: record_info.actor_user_id.clone(),
+                kind: record_info.kind,
+                payload: ArchivedChapterWorkflowRecordDetail::from(
+                    &record_info.payload,
+                ),
+                created_at: record_info.created_at.to_unix_milli(),
+            })
+            .collect(),
         pages: build_page_payloads(chapter_snapshot),
     })
 }
@@ -343,7 +336,7 @@ fn build_entry(
     );
 
     let record = ComicArchiveRecord {
-        id: archived_comic_id.clone(),
+        id: archived_comic_id,
         team_id: comic_archive_snapshot.workset_info.team_id.clone(),
         source_comic_id: comic_archive_snapshot.comic_info.id.clone(),
         archived_payload: serde_json::to_string(&comic_payload).map_err(|error| {

@@ -107,7 +107,7 @@ export async function runIt01Module(ctx: RunCtx): Promise<void> {
         const found = pendingList.find((item) => item.id === inv.id);
 
         assert.ok(found, `pending list must include invitation for ${persona.persona}`);
-        assert.equal(found?.pending, true);
+        assert.equal(found?.is_pending, true);
         assert.equal(found?.team_id, teamId);
         assert.equal(found?.invitee_qid, persona.qid);
         assert.equal(found?.roles, persona.roles);
@@ -296,7 +296,7 @@ export async function runIt01Module(ctx: RunCtx): Promise<void> {
         const consumed = consumedList.find((item) => item.id === inv.id);
 
         assert.ok(consumed, `consumed list must include invitation for ${persona.persona}`);
-        assert.equal(consumed?.pending, false);
+        assert.equal(consumed?.is_pending, false);
     }
 
     // ---------- B4. member list filters and bad params ----------

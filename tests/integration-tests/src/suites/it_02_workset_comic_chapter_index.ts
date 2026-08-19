@@ -1,4 +1,4 @@
-// it_02 — Workset, comic, chapter index allocation and pin/unpin.
+// it_02 — Workset, comic, chapter index allocation and pinning.
 //
 // Preconditions:
 //   - it_00 + it_01 have run. `ctx.sadmin` is authenticated; `ctx.users`
@@ -55,6 +55,7 @@ import {
     listTeamWorksets,
     listWorksetComicInfos,
     listWorksetComics,
+    markChapterPinned,
     patchChapter,
     updateComic,
     updateTeam,
@@ -442,20 +443,20 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
         assignmentIds: {},
     };
 
-    // ---------- C6. chapter pin/unpin ----------
+    // ---------- C6. chapter pinning ----------
 
     const ch2Id = chapterIdsByLabel["ch2"]!;
     const ch4Id = chapterIdsByLabel["ch4"]!;
 
-    // pin ch2
-    await patchChapter(ctx.sadmin, ch2Id, { pin: true });
+    // New chapters become pinned; move the pin from ch5 to ch2.
+    await markChapterPinned(ctx.sadmin, ch2Id);
 
     let pinned = await getPinnedChapter(ctx.sadmin, xingchenId);
 
     assert.equal(pinned?.id ?? null, ch2Id, "pinned endpoint returns ch2");
 
     // pin ch4 -> pin moves to ch4, ch2 unpins
-    await patchChapter(ctx.sadmin, ch4Id, { pin: true });
+    await markChapterPinned(ctx.sadmin, ch4Id);
 
     pinned = await getPinnedChapter(ctx.sadmin, xingchenId);
 
@@ -465,18 +466,11 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
 
     assert.equal(ch2After.is_pinned, false, "ch2 unpinned after ch4 pinned");
 
-    // unpin ch4
-    await patchChapter(ctx.sadmin, ch4Id, { pin: false });
-
-    pinned = await getPinnedChapter(ctx.sadmin, xingchenId);
-
-    assert.equal(pinned, null, "pinned endpoint null after unpin");
-
     // C6.5: path/body id mismatch -> 422 code 7
     expectError(
         await ctx.sadmin.patch<ErrorBody>(`/api/v1/chapters/${ch2Id}`, {
             id: "not-the-path-id",
-            pin: true,
+            subtitle: "x",
         }),
         422,
         7,
@@ -484,15 +478,14 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
 
     // C6.6: non-authorized user patch -> 403/4 (trans_01 has no admin assignment)
     expectError(
-        await trans01.api.patch<ErrorBody>(`/api/v1/chapters/${ch2Id}`, {
-            id: ch2Id,
-            pin: true,
-        }),
+        await trans01.api.post<ErrorBody>(
+            `/api/v1/chapters/${ch2Id}/mark-pinned`,
+        ),
         403,
         4,
     );
 
-    // C6.7: subtitle-only patch leaves pin unchanged; pin-only patch leaves subtitle unchanged
+    // C6.7: subtitle patch leaves pin unchanged; pin action leaves subtitle unchanged.
     const ch2Before = await getChapter(ctx.sadmin, ch2Id);
     const ch2OriginalSubtitle = ch2Before.subtitle;
 
@@ -506,15 +499,12 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
     // restore subtitle for downstream modules
     await patchChapter(ctx.sadmin, ch2Id, { subtitle: ch2OriginalSubtitle });
 
-    await patchChapter(ctx.sadmin, ch2Id, { pin: true });
+    await markChapterPinned(ctx.sadmin, ch2Id);
 
     const ch2AfterPin = await getChapter(ctx.sadmin, ch2Id);
 
     assert.equal(ch2AfterPin.is_pinned, true);
     assert.equal(ch2AfterPin.subtitle, ch2OriginalSubtitle, "pin patch must not change subtitle");
-
-    // unpin to leave clean state
-    await patchChapter(ctx.sadmin, ch2Id, { pin: false });
 
     // ---------- C7. info update full coverage ----------
 

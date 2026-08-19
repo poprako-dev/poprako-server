@@ -1031,6 +1031,66 @@
         }
       }
     },
+    "/api/v1/chapters/{chapter_id}/workflow-records": {
+      "get": {
+        "tags": [
+          "chapters"
+        ],
+        "summary": "`GET /api/v1/chapters/{chapter_id}/workflow-records` — list activity records.",
+        "operationId": "list_workflow_record_infos",
+        "parameters": [
+          {
+            "name": "chapter_id",
+            "in": "path",
+            "description": "Chapter ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Pagination offset (0-based).",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of items to return.",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chapter workflow records listed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpBody_Vec_ChapterWorkflowRecordInfoView"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No perm to view this chapter"
+          },
+          "404": {
+            "description": "Chapter not found"
+          }
+        }
+      }
+    },
     "/api/v1/comics": {
       "post": {
         "tags": [
@@ -2139,6 +2199,9 @@
           },
           "403": {
             "description": "No perm to save units in this page"
+          },
+          "409": {
+            "description": "Serializable conflict; retry the complete request"
           },
           "422": {
             "description": "Invalid Unit edit"
@@ -4181,6 +4244,415 @@
             "description": "Timestamp of last update, in Unix milliseconds."
           }
         }
+      },
+      "ChapterStageInstr": {
+        "type": "string",
+        "description": "Input parameters for updating a chapter's workflow stage.\n\nEncodes a single operation on a specific stage, e.g. \"start translating\"\non the `translate` stage. The use case layer validates that the\ntransition is legal for the current stage phase before applying it.",
+        "enum": [
+          "raw_provide",
+          "translate",
+          "proofread",
+          "typeset_redraw",
+          "review",
+          "publish"
+        ]
+      },
+      "ChapterStageOperInstr": {
+        "type": "string",
+        "description": "Operation accepted by the workflow-stage JSON body.",
+        "enum": [
+          "advance",
+          "revert"
+        ]
+      },
+      "ChapterTranslationFormatInstr": {
+        "type": "string",
+        "description": "Translation format accepted by the import JSON body.",
+        "enum": [
+          "label_plus",
+          "poprako"
+        ]
+      },
+      "ChapterWorkflowRecordEventView": {
+        "oneOf": [
+          {
+            "type": "object",
+            "description": "A chapter and its initial creator assignment were created.",
+            "required": [
+              "kind"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "chapter_created"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "A chapter subtitle changed.",
+            "required": [
+              "data",
+              "kind"
+            ],
+            "properties": {
+              "data": {
+                "type": "object",
+                "description": "A chapter subtitle changed.",
+                "required": [
+                  "previous_subtitle",
+                  "next_subtitle"
+                ],
+                "properties": {
+                  "next_subtitle": {
+                    "type": "string",
+                    "description": "Subtitle after the update."
+                  },
+                  "previous_subtitle": {
+                    "type": "string",
+                    "description": "Subtitle before the update."
+                  }
+                }
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "chapter_subtitle_updated"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "A chapter became the pinned chapter for its comic.",
+            "required": [
+              "kind"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "chapter_pinned"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "A chapter stopped being the pinned chapter for its comic.",
+            "required": [
+              "kind"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "chapter_unpinned"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "A user received a chapter assignment.",
+            "required": [
+              "data",
+              "kind"
+            ],
+            "properties": {
+              "data": {
+                "type": "object",
+                "description": "A user received a chapter assignment.",
+                "required": [
+                  "subject_user_id",
+                  "roles"
+                ],
+                "properties": {
+                  "roles": {
+                    "$ref": "#/components/schemas/RoleMask",
+                    "description": "Initial assignment roles."
+                  },
+                  "subject_user_id": {
+                    "type": "string",
+                    "description": "User receiving the assignment."
+                  }
+                }
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "assignment_created"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "An existing chapter assignment changed roles.",
+            "required": [
+              "data",
+              "kind"
+            ],
+            "properties": {
+              "data": {
+                "type": "object",
+                "description": "An existing chapter assignment changed roles.",
+                "required": [
+                  "subject_user_id",
+                  "previous_roles",
+                  "next_roles"
+                ],
+                "properties": {
+                  "next_roles": {
+                    "$ref": "#/components/schemas/RoleMask",
+                    "description": "Roles after the update."
+                  },
+                  "previous_roles": {
+                    "$ref": "#/components/schemas/RoleMask",
+                    "description": "Roles before the update."
+                  },
+                  "subject_user_id": {
+                    "type": "string",
+                    "description": "User whose roles changed."
+                  }
+                }
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "assignment_roles_updated"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "A chapter assignment was deleted.",
+            "required": [
+              "data",
+              "kind"
+            ],
+            "properties": {
+              "data": {
+                "type": "object",
+                "description": "A chapter assignment was deleted.",
+                "required": [
+                  "subject_user_id",
+                  "previous_roles"
+                ],
+                "properties": {
+                  "previous_roles": {
+                    "$ref": "#/components/schemas/RoleMask",
+                    "description": "Roles before deletion."
+                  },
+                  "subject_user_id": {
+                    "type": "string",
+                    "description": "User whose assignment was removed."
+                  }
+                }
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "assignment_deleted"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "Translation content was imported into a chapter.",
+            "required": [
+              "data",
+              "kind"
+            ],
+            "properties": {
+              "data": {
+                "type": "object",
+                "description": "Translation content was imported into a chapter.",
+                "required": [
+                  "format",
+                  "imported_page_count",
+                  "imported_unit_count"
+                ],
+                "properties": {
+                  "format": {
+                    "$ref": "#/components/schemas/ChapterWorkflowRecordTranslationFormatView",
+                    "description": "Imported content format."
+                  },
+                  "imported_page_count": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "Number of imported pages."
+                  },
+                  "imported_unit_count": {
+                    "type": "integer",
+                    "format": "int32",
+                    "description": "Number of imported units."
+                  }
+                }
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "translation_imported"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "Translation content was successfully exported from a chapter.",
+            "required": [
+              "data",
+              "kind"
+            ],
+            "properties": {
+              "data": {
+                "type": "object",
+                "description": "Translation content was successfully exported from a chapter.",
+                "required": [
+                  "format"
+                ],
+                "properties": {
+                  "format": {
+                    "$ref": "#/components/schemas/ChapterWorkflowRecordTranslationFormatView",
+                    "description": "Generated content format."
+                  }
+                }
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "translation_exported"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "A chapter workflow stage changed phase.",
+            "required": [
+              "data",
+              "kind"
+            ],
+            "properties": {
+              "data": {
+                "type": "object",
+                "description": "A chapter workflow stage changed phase.",
+                "required": [
+                  "stage",
+                  "previous_phase",
+                  "next_phase",
+                  "origin"
+                ],
+                "properties": {
+                  "next_phase": {
+                    "$ref": "#/components/schemas/ChapterWorkflowRecordStagePhaseView",
+                    "description": "Phase after the transition."
+                  },
+                  "origin": {
+                    "$ref": "#/components/schemas/ChapterWorkflowRecordOriginView",
+                    "description": "Action that originated the transition."
+                  },
+                  "previous_phase": {
+                    "$ref": "#/components/schemas/ChapterWorkflowRecordStagePhaseView",
+                    "description": "Phase before the transition."
+                  },
+                  "stage": {
+                    "$ref": "#/components/schemas/ChapterWorkflowRecordStageView",
+                    "description": "Changed workflow stage."
+                  }
+                }
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "stage_transitioned"
+                ]
+              }
+            }
+          }
+        ],
+        "description": "Strongly typed workflow event exposed to clients as a discriminated union."
+      },
+      "ChapterWorkflowRecordInfoView": {
+        "type": "object",
+        "description": "API representation of one immutable chapter workflow record.",
+        "required": [
+          "id",
+          "chapter_id",
+          "event",
+          "created_at"
+        ],
+        "properties": {
+          "actor_user_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "User that caused the record, absent for system work."
+          },
+          "chapter_id": {
+            "type": "string",
+            "description": "Chapter that owns this record."
+          },
+          "created_at": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Record creation time in Unix milliseconds."
+          },
+          "event": {
+            "$ref": "#/components/schemas/ChapterWorkflowRecordEventView",
+            "description": "Strongly typed, language-neutral event data for client-side rendering."
+          },
+          "id": {
+            "type": "string",
+            "description": "Unique workflow record identifier."
+          }
+        }
+      },
+      "ChapterWorkflowRecordOriginView": {
+        "type": "string",
+        "description": "Operation source used by a workflow record event.",
+        "enum": [
+          "manual",
+          "unit_edit",
+          "translation_import",
+          "translation_export",
+          "raw_provide_check"
+        ]
+      },
+      "ChapterWorkflowRecordStagePhaseView": {
+        "type": "string",
+        "description": "Workflow-stage phase used by a workflow record event.",
+        "enum": [
+          "pending",
+          "active",
+          "completed"
+        ]
+      },
+      "ChapterWorkflowRecordStageView": {
+        "type": "string",
+        "description": "Workflow stage used by a workflow record event.",
+        "enum": [
+          "raw_provide",
+          "translate",
+          "proofread",
+          "typeset_redraw",
+          "review",
+          "publish"
+        ]
+      },
+      "ChapterWorkflowRecordTranslationFormatView": {
+        "type": "string",
+        "description": "Translation format used by a workflow record event.",
+        "enum": [
+          "label_plus",
+          "poprako"
+        ]
       },
       "ComicInclOpt": {
         "type": "string",
@@ -7027,6 +7499,62 @@
           }
         }
       },
+      "HttpBody_Vec_ChapterWorkflowRecordInfoView": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Application-level success code, 0 for normal success.",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "API representation of one immutable chapter workflow record.",
+              "required": [
+                "id",
+                "chapter_id",
+                "event",
+                "created_at"
+              ],
+              "properties": {
+                "actor_user_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "User that caused the record, absent for system work."
+                },
+                "chapter_id": {
+                  "type": "string",
+                  "description": "Chapter that owns this record."
+                },
+                "created_at": {
+                  "type": "integer",
+                  "format": "int64",
+                  "description": "Record creation time in Unix milliseconds."
+                },
+                "event": {
+                  "$ref": "#/components/schemas/ChapterWorkflowRecordEventView",
+                  "description": "Strongly typed, language-neutral event data for client-side rendering."
+                },
+                "id": {
+                  "type": "string",
+                  "description": "Unique workflow record identifier."
+                }
+              }
+            }
+          }
+        }
+      },
       "HttpBody_Vec_CommentInfoView": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
@@ -7889,7 +8417,7 @@
             "description": "Raw translation content string."
           },
           "format": {
-            "$ref": "#/components/schemas/TranslationFormat",
+            "$ref": "#/components/schemas/ChapterTranslationFormatInstr",
             "description": "The translation format (e.g., JSON, SRT)."
           }
         }
@@ -8801,31 +9329,11 @@
         "example": 34,
         "minimum": 0
       },
-      "Stage": {
-        "type": "string",
-        "description": "Stage in the chapter production pipeline.",
-        "enum": [
-          "raw-provide",
-          "translate",
-          "proofread",
-          "typeset-redraw",
-          "review",
-          "publish"
-        ]
-      },
       "StageMask": {
         "type": "integer",
         "format": "int32",
         "description": "A composite bitmask storing the phase of all 6 workflow stages.\n\nEach stage occupies 2 bits (4 possible states matching\n[`StagePhaseField`]), ordered from low bits:\n\n| Stage | Bits | Field |\n|:---:|:---:|:---:|\n| RawProvide | 0–1 | `StagePhaseField` |\n| Translate | 2–3 | `StagePhaseField` |\n| Proofread | 4–5 | `StagePhaseField` |\n| TypesetRedraw | 6–7 | `StagePhaseField` |\n| Review | 8–9 | `StagePhaseField` |\n| Publish | 10–11 | `StagePhaseField` |",
         "minimum": 0
-      },
-      "StageOper": {
-        "type": "string",
-        "description": "Operation applied to a workflow stage.",
-        "enum": [
-          "advance",
-          "revert"
-        ]
       },
       "SystemMailInfoView": {
         "type": "object",
@@ -9026,14 +9534,6 @@
             "description": "Timestamp of last update, in milliseconds since Unix epoch."
           }
         }
-      },
-      "TranslationFormat": {
-        "type": "string",
-        "description": "Translation format used by a chapter port.\n\nDetermines the tooling and schema for the chapter's translation files.",
-        "enum": [
-          "label-plus",
-          "poprako"
-        ]
       },
       "UnitCoordInstr": {
         "type": "object",
@@ -9447,7 +9947,7 @@
       },
       "UpdateChapterStageInstr": {
         "type": "object",
-        "description": "Input parameters for updating a chapter's workflow stage.\n\nEncodes a single operation on a specific stage, e.g. \"start translating\"\non the `translate` stage. The use case layer validates that the\ntransition is legal for the current stage phase before applying it.",
+        "description": "Input parameters for applying one chapter workflow-stage operation.",
         "required": [
           "id",
           "stage",
@@ -9459,11 +9959,11 @@
             "description": "Chapter identifier to update."
           },
           "oper": {
-            "$ref": "#/components/schemas/StageOper",
+            "$ref": "#/components/schemas/ChapterStageOperInstr",
             "description": "Operation to apply to the target stage (e.g. start, finish, revert)."
           },
           "stage": {
-            "$ref": "#/components/schemas/Stage",
+            "$ref": "#/components/schemas/ChapterStageInstr",
             "description": "Workflow stage to operate on."
           }
         }

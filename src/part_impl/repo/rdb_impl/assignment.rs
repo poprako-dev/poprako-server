@@ -9,20 +9,21 @@ pub mod tests;
 
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
-use poprako_orchestra::{Run, Step};
+use poprako_orchestra::{AtLeast, Level, Run, Step};
 use time::OffsetDateTime;
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
 
-use self::list::list_infos;
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::write::assignment::{AssignmentEntry, AssignmentRoleRepl};
+use crate::part::nucl::RepeatableRead;
 use crate::part::repo::oper::assignment::{
     CreateAssignment, DeleteAssignments, FindAssignmentInfo, GetAssignmentInfo,
     ListAssignmentInfos, ListAssignmentInfosExcluded, UpdateAssignmentRoles,
 };
 use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::rdb_impl::assignment::list::list_infos;
 use crate::part_impl::repo::rdb_impl::entity::assignment::{
     AssignmentAspectRow, AssignmentEntryRow, AssignmentInfoRow,
     AssignmentRoleTimestamps,
@@ -319,11 +320,11 @@ impl Run<GetAssignmentInfo<'_, '_>> for HybRepo {
 
 impl<L> Step<ListAssignmentInfos<'_, '_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<RepeatableRead>,
 {
     // Use base error for listing assignments inside an existing transaction.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -341,11 +342,11 @@ where
 
 impl<L> Step<FindAssignmentInfo<'_, '_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<RepeatableRead>,
 {
     // Keep transactional assignment lookup failures consistent with run-level errors.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -393,11 +394,11 @@ where
 
 impl<L> Step<ListAssignmentInfosExcluded<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<RepeatableRead>,
 {
     // Normalize excluded-list behavior errors under base repository semantics.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -423,11 +424,11 @@ where
 
 impl<L> Step<CreateAssignment<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<RepeatableRead>,
 {
     // Translate assignment-create failures to base error within transaction.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -445,11 +446,11 @@ where
 
 impl<L> Step<UpdateAssignmentRoles<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<RepeatableRead>,
 {
     // Keep role-update failures mapped to shared repository error contract.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -482,11 +483,11 @@ async fn delete_by_chapter_id(
 
 impl<L> Step<DeleteAssignments<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<RepeatableRead>,
 {
     // Map all delete-assignment branch failures to base repository errors.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;

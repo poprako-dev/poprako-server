@@ -15,6 +15,7 @@ mod tests;
 
 use std::sync::Arc;
 
+use poprako_orchestra::Context;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::mpsc::error::TrySendError;
 use tokio::sync::watch;
@@ -49,7 +50,7 @@ impl AsyncEffectDevelop {
     /// Creates a dispatcher and launches its background task.
     pub fn new<C, R>(repo: Arc<R>, buffer_size: usize) -> Self
     where
-        C: poprako_orchestra::Context,
+        C: Context,
         C: Send + 'static,
         R: AssignmentRepo<C>
             + ChapterRepo<C>
@@ -176,12 +177,14 @@ fn event_name(event: &Event) -> &'static str {
     match event {
         //
         // Internal state field Event.
-        Event::UserActive(_) => "user_active",
+        Event::UserActive { payload: _ } => "user_active",
 
-        Event::UserSignedUp(_) => "user_signed_up",
+        Event::UserSignedUp { payload: _ } => "user_signed_up",
 
-        Event::ChapterPublished(_) => "chapter_published",
+        Event::ChapterPublished { payload: _ } => "chapter_published",
 
-        Event::ChapterWorkflowCompleted(_) => "chapter_workflow_completed",
+        Event::ChapterWorkflowCompleted { payload: _ } => {
+            "chapter_workflow_completed"
+        }
     }
 }

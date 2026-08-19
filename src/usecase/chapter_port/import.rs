@@ -2,9 +2,7 @@
 #[cfg(test)]
 mod tests;
 
-use poprako_orchestra::{
-    AtLeast, Nucl, OperRun as _, OperStep as _, run_proxy,
-};
+use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
@@ -20,15 +18,18 @@ use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::unit::UnitCounters;
 use crate::model::shared::user::UserToken;
 use crate::model::unit_port::UnitTranslationImport;
+use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::model::write::unit::UnitEdit;
 use crate::part::nucl::RepeatableRead;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
+use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
 use crate::part::repo::oper::chapter::{
     AdjustChapterUnitCounters, GetChapterInfoExcluded,
 };
+use crate::part::repo::oper::chapter_workflow_record::CreateChapterWorkflowRecords;
 use crate::part::repo::oper::comic::TouchComicLastActive;
 use crate::part::repo::oper::page::{
     GetPageInfoExcluded, ListPageInfos, SetPageUnitCounters,
@@ -37,9 +38,12 @@ use crate::part::repo::oper::unit::{ApplyUnitEdits, ListUnitOrders};
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::usecase::stage::advance_stages;
+use crate::usecase::stage::start_pending_stages;
 use crate::value::chapter::Stage;
 use crate::value::chapter_port::TranslationFormat;
+use crate::value::chapter_workflow_record::{
+    ChapterWorkflowRecordOrigin, ChapterWorkflowRecordPayload,
+};
 use crate::value::role::RoleField;
 use crate::value::unit::UnitEditPerm;
 
@@ -52,29 +56,19 @@ pub async fn import<N, C, R>(
     chapter_id: String,
 ) -> BaseRest<ImportChapterTranslationVal>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: AssignmentRepo<C>
         + ChapterRepo<C>
+        + ChapterWorkflowRecordRepo<C>
         + ComicRepo<C>
         + PageRepo<C>
         + UnitRepo<C>
-        + Clone
         + Send
-        + Sync
-        + 'static,
+        + Sync,
 {
-    ChapterPortPermComplex::ensure_user_can_import(
-        &mut run_proxy! {
-            repo => for<'a, 'b> FindAssignmentInfo<'a, 'b>;
-        },
-        &token.user_id,
-        &chapter_id,
-    )
-    .await?;
-
     let assignment_info = FindAssignmentInfo::ChapterUser {
         chapter_id: &chapter_id,
         user_id: &token.user_id,
@@ -83,7 +77,7 @@ where
     .await?
     .ok_or_else(|| {
         //
-        let err_message = trl("error-unit-edit-perm-required");
+        let err_message = trl("error-chapter-port-import-perm-required");
 
         tracing::warn!(
             err_variant = ?ExpectedVariant::Perm,
@@ -91,7 +85,7 @@ where
             chapter_id = %chapter_id,
             user_id = %token.user_id,
             operation = "import chapter translation",
-            "expected error: unit edit perm required",
+            "expected error: chapter import assignment required",
         );
 
         BaseError::Expected {
@@ -99,6 +93,8 @@ where
             message: err_message,
         }
     })?;
+
+    ChapterPortPermComplex::ensure_user_can_import(&assignment_info)?;
 
     let edit_perm = UnitEditPerm {
         can_translate: assignment_info
@@ -109,9 +105,11 @@ where
             .has_any_role(&[RoleField::PROOFREADER]),
     };
 
-    let label_plus = matches!(instr.format, TranslationFormat::LabelPlus);
+    let format = TranslationFormat::from(instr.format);
 
-    let imported_pages = match instr.format {
+    let label_plus = matches!(format, TranslationFormat::LabelPlus);
+
+    let imported_pages = match format {
         //
         TranslationFormat::LabelPlus => {
             ChapterImportComplex::parse_label_plus(&instr.content)?
@@ -122,7 +120,7 @@ where
         }
     };
 
-    let stage_chapter_id = chapter_id.clone();
+    let stages = import_stages(edit_perm);
 
     let val = nucl
         .coord(async move |context| {
@@ -213,18 +211,59 @@ where
             .step_on(repo, context)
             .await?;
 
-            accept(ImportChapterTranslationVal {
+            let import_val = ImportChapterTranslationVal {
                 imported_page_count: page_scopes.len() as i32,
                 imported_unit_count,
-            })
+            };
+
+            let workflow_record_entry = ChapterWorkflowRecordEntry::new(
+                chapter_info.id.clone(),
+                Some(token.user_id.clone()),
+                ChapterWorkflowRecordPayload::TranslationImported {
+                    format,
+                    imported_page_count: import_val.imported_page_count,
+                    imported_unit_count: import_val.imported_unit_count,
+                },
+            );
+
+            CreateChapterWorkflowRecords {
+                entries: std::slice::from_ref(&workflow_record_entry),
+            }
+            .step_on(repo, context)
+            .await?;
+
+            start_pending_stages(
+                repo,
+                context,
+                &chapter_info.id,
+                Some(token.user_id.clone()),
+                ChapterWorkflowRecordOrigin::TranslationImport,
+                &stages,
+            )
+            .await?;
+
+            accept(import_val)
         })
         .await?;
 
-    let stages = import_stages(edit_perm);
-
-    advance_stages(((*repo).clone(),), stage_chapter_id, stages);
-
     accept(val)
+}
+
+// Builds the repository execution stages required for import with perms.
+fn import_stages(edit_perm: UnitEditPerm) -> Vec<Stage> {
+    //
+    // Build the repository execution stages required for import with perms.
+    let mut stages = Vec::with_capacity(2);
+
+    if edit_perm.can_translate {
+        stages.push(Stage::Translate);
+    }
+
+    if edit_perm.can_proofread {
+        stages.push(Stage::Proofread);
+    }
+
+    stages
 }
 
 // Builds page edits from imported units for scenario coverage.
@@ -261,21 +300,4 @@ fn page_counters(page_info: &PageInfo) -> UnitCounters {
         translated_unit_count: page_info.translated_unit_count,
         proofread_unit_count: page_info.proofread_unit_count,
     }
-}
-
-// Builds the repository execution stages required for import with perms.
-fn import_stages(edit_perm: UnitEditPerm) -> Vec<Stage> {
-    //
-    // Build the repository execution stages required for import with perms.
-    let mut stages = Vec::with_capacity(2);
-
-    if edit_perm.can_translate {
-        stages.push(Stage::Translate);
-    }
-
-    if edit_perm.can_proofread {
-        stages.push(Stage::Proofread);
-    }
-
-    stages
 }

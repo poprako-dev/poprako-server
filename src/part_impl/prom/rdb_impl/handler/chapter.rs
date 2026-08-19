@@ -3,18 +3,24 @@
 use poprako_orchestra::{Nucl, OperStep as _};
 use tracing::instrument;
 
+use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::part::effect::event::Event;
 use crate::part::effect::event::chapter::ChapterWorkflowCompletedEvent;
 use crate::part::effect::{Develop, EffectEvent as _};
 use crate::part::prom::payload::chapter::ChapterPayload;
 use crate::part::repo::chapter::ChapterRepo;
+use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
 use crate::part::repo::oper::chapter::{
     CompleteChapterRawProvide, GetChapterInfoExcluded,
 };
+use crate::part::repo::oper::chapter_workflow_record::CreateChapterWorkflowRecords;
 use crate::part_impl::prom::rdb_impl::handler::task_flow::TaskFlow;
 use crate::result::{BaseError, accept};
 use crate::shared::RdbContext;
-use crate::value::chapter::Stage;
+use crate::value::chapter::{Stage, StagePhase};
+use crate::value::chapter_workflow_record::{
+    ChapterWorkflowRecordOrigin, ChapterWorkflowRecordPayload,
+};
 
 /// Attempts raw-provision completion once and completes even while uploads remain pending.
 #[instrument(level = "info", skip_all)]
@@ -26,13 +32,27 @@ pub async fn handle<N, R, D>(
 ) -> TaskFlow
 where
     N: Nucl<Context = RdbContext, Error = BaseError>,
-    R: ChapterRepo<RdbContext> + Send + Sync,
+    R: ChapterRepo<RdbContext>
+        + ChapterWorkflowRecordRepo<RdbContext>
+        + Send
+        + Sync,
     D: Develop + Sync,
 {
     match task {
         //
-        ChapterPayload::TryAdvanceRawProvideStage { chapter_id } => {
-            handle_raw_provide(nucl, repo, develop, chapter_id).await
+        ChapterPayload::TryAdvanceRawProvideStage {
+            chapter_id,
+            actor_user_id,
+        } => {
+            //
+            handle_raw_provide(
+                nucl,
+                repo,
+                develop,
+                chapter_id,
+                actor_user_id.clone(),
+            )
+            .await
         }
     }
 }
@@ -43,10 +63,14 @@ async fn handle_raw_provide<N, R, D>(
     repo: &R,
     develop: &D,
     chapter_id: &str,
+    actor_user_id: Option<String>,
 ) -> TaskFlow
 where
     N: Nucl<Context = RdbContext, Error = BaseError>,
-    R: ChapterRepo<RdbContext> + Send + Sync,
+    R: ChapterRepo<RdbContext>
+        + ChapterWorkflowRecordRepo<RdbContext>
+        + Send
+        + Sync,
     D: Develop + Sync,
 {
     let outcome = nucl
@@ -66,6 +90,26 @@ where
                 .step_on(repo, context)
                 .await?;
 
+            if advanced {
+                //
+                let workflow_record_entry = ChapterWorkflowRecordEntry::new(
+                    chapter_id,
+                    actor_user_id,
+                    ChapterWorkflowRecordPayload::StageTransitioned {
+                        stage: Stage::RawProvide,
+                        previous_phase: StagePhase::Pending,
+                        next_phase: StagePhase::Completed,
+                        origin: ChapterWorkflowRecordOrigin::RawProvideCheck,
+                    },
+                );
+
+                CreateChapterWorkflowRecords {
+                    entries: std::slice::from_ref(&workflow_record_entry),
+                }
+                .step_on(repo, context)
+                .await?;
+            }
+
             accept(advanced)
         })
         .await
@@ -77,10 +121,12 @@ where
         Ok(true) => {
             //
             // Internal implementation detail.
-            Event::ChapterWorkflowCompleted(ChapterWorkflowCompletedEvent {
-                chapter_id: chapter_id.to_string(),
-                completed_stage: Stage::RawProvide,
-            })
+            Event::ChapterWorkflowCompleted {
+                payload: ChapterWorkflowCompletedEvent {
+                    chapter_id: chapter_id.to_string(),
+                    completed_stage: Stage::RawProvide,
+                },
+            }
             .develop_on(develop)
             .await;
 
@@ -89,6 +135,8 @@ where
 
         Ok(false) | Err(BaseError::Expected { .. }) => TaskFlow::Complete,
 
-        Err(error) => TaskFlow::Retry(format!("{:?}", error)),
+        Err(error) => TaskFlow::Retry {
+            err_message: format!("{:?}", error),
+        },
     }
 }

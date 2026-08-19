@@ -1,4 +1,4 @@
-use poprako_orchestra::{AtLeast, Nucl, OperStep as _};
+use poprako_orchestra::{AtLeast, Context, Nucl, OperStep as _};
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
@@ -36,7 +36,7 @@ pub async fn delete<N, C, R, P>(
     id: String,
 ) -> BaseRest<()>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
@@ -90,9 +90,11 @@ where
         {
             let (delete_id, payload) = (
                 ImageComplex::gen_delete_id(),
-                TaskPayload::Image(image::ImagePayload::Delete {
-                    object_key: avatar_key.clone(),
-                }),
+                TaskPayload::Image {
+                    payload: image::ImagePayload::Delete {
+                        object_key: avatar_key.clone(),
+                    },
+                },
             );
 
             let task = Task {

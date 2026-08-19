@@ -5,6 +5,11 @@ edits. A successful save returns `204 No Content`; the client then calls
 `GET /api/v1/pages/{page_id}/units` to obtain the latest visible sequence and
 counters.
 
+The save runs in a Serializable transaction. A concurrent write can return
+`409 Conflict` with error `code: 8`; the server does not retry it. The client
+must retry the complete edit batch. A failed Serializable transaction commits
+none of that batch, so resending the same request is safe.
+
 ## Request
 
 The request body is the edit array. Each edit uses the `edit` tag, and unknown

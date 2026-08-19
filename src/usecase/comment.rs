@@ -4,10 +4,10 @@
 // Unit tests that validate comment lifecycle and visibility constraints.
 mod tests;
 
-use poprako_orchestra::{
-    AtLeast, Nucl, OperRun as _, OperStep as _, run_proxy,
-};
+use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
+
+use poprako_util::i18n::trl;
 
 use crate::complex::comment::{CommentComplex, CommentPermComplex};
 use crate::data::instr::comment::{CreateCommentInstr, ListCommentInfosInstr};
@@ -22,7 +22,7 @@ use crate::part::repo::comment::CommentRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::comment::{CreateComment, ListCommentInfos};
 use crate::part::repo::oper::member::FindMemberInfo;
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
 /// Lists comments under a team.
 #[instrument(level = "info", skip(repo, image_pool))]
@@ -32,20 +32,28 @@ pub async fn list_infos<C, R, I>(
     instr: ListCommentInfosInstr,
 ) -> BaseRest<Vec<CommentInfoView>>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: CommentRepo<C> + MemberRepo<C> + Sync,
     I: ImagePool,
 {
     let comment_list_spec = Into::<CommentListSpec>::into(instr);
 
-    CommentPermComplex::ensure_user_can_list_infos(
-        &mut run_proxy! {
-            repo => for<'a> FindMemberInfo<'a>;
-        },
-        &token.user_id,
-        &comment_list_spec.team_id,
-    )
+    let member_info = FindMemberInfo::UserTeam {
+        user_id: &token.user_id,
+        team_id: &comment_list_spec.team_id,
+    }
+    .run_on(repo)
     .await?;
+
+    let Some(member_info) = member_info else {
+        //
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: trl("error-team-member-required"),
+        });
+    };
+
+    CommentPermComplex::ensure_user_can_list_infos(&member_info)?;
 
     let comment_infos = ListCommentInfos {
         spec: &comment_list_spec,
@@ -72,20 +80,28 @@ pub async fn create<N, C, R>(
     instr: CreateCommentInstr,
 ) -> BaseRest<CreateCommentVal>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: CommentRepo<C> + MemberRepo<C> + Send + Sync,
 {
-    CommentPermComplex::ensure_user_can_create(
-        &mut run_proxy! {
-            repo => for<'a> FindMemberInfo<'a>;
-        },
-        &token.user_id,
-        &instr.team_id,
-    )
+    let member_info = FindMemberInfo::UserTeam {
+        user_id: &token.user_id,
+        team_id: &instr.team_id,
+    }
+    .run_on(repo)
     .await?;
+
+    let Some(member_info) = member_info else {
+        //
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: trl("error-team-member-required"),
+        });
+    };
+
+    CommentPermComplex::ensure_user_can_create(&member_info)?;
 
     let comment_info = nucl
         .coord(async move |context| {

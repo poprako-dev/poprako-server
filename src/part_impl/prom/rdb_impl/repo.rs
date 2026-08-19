@@ -11,10 +11,11 @@
 #[cfg(all(test, feature = "rdb", feature = "prom_impl"))]
 pub mod tests;
 
-use poprako_orchestra::{Oper, Step};
+use poprako_orchestra::{AtLeast, Level, Oper, Step};
 use time::OffsetDateTime;
 use tracing::instrument;
 
+use crate::part::nucl::RepeatableRead;
 use crate::part_impl::prom::rdb_impl::entity::{
     LocalMessageRow, LocalMessageStatus,
 };
@@ -202,12 +203,12 @@ impl<'a> PurgeCompleted<'a> {
 
 impl<R, L> Step<PollPending, RdbContext<L>> for RdbPromRepo<R>
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<RepeatableRead>,
     R: Sync,
 {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -270,12 +271,12 @@ where
 
 impl<'a, R, L> Step<ClaimPending<'a>, RdbContext<L>> for RdbPromRepo<R>
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<RepeatableRead>,
     R: Sync,
 {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -317,12 +318,12 @@ where
 
 impl<'a, R, L> Step<CompleteMessage<'a>, RdbContext<L>> for RdbPromRepo<R>
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<RepeatableRead>,
     R: Sync,
 {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -364,12 +365,12 @@ where
 
 impl<'a, R, L> Step<FailMessage<'a>, RdbContext<L>> for RdbPromRepo<R>
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<RepeatableRead>,
     R: Sync,
 {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -411,12 +412,12 @@ where
 
 impl<'a, R, L> Step<RetryMessage<'a>, RdbContext<L>> for RdbPromRepo<R>
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<RepeatableRead>,
     R: Sync,
 {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -461,12 +462,12 @@ where
 
 impl<'a, R, L> Step<ResetStuck<'a>, RdbContext<L>> for RdbPromRepo<R>
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<RepeatableRead>,
     R: Sync,
 {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -528,12 +529,12 @@ where
 
 impl<'a, R, L> Step<PurgeCompleted<'a>, RdbContext<L>> for RdbPromRepo<R>
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<RepeatableRead>,
     R: Sync,
 {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;

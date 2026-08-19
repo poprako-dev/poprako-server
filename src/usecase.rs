@@ -35,6 +35,8 @@
 
 // Stage-processing use cases (internal).
 mod stage;
+// Shared data loaders for use-case orchestration.
+mod internal;
 
 /// Announcement use cases.
 pub mod announcement;

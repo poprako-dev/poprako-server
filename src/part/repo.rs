@@ -32,6 +32,8 @@ pub mod assignment;
 pub mod assignment_invitation;
 /// Chapter repository port.
 pub mod chapter;
+/// Immutable chapter workflow record repository port.
+pub mod chapter_workflow_record;
 /// Comic repository port.
 pub mod comic;
 /// Immutable comic archive repository port.

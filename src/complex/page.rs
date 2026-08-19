@@ -1,23 +1,71 @@
-//! Complex-domain opers for page entities.
+//! Pure rules for page entities.
 
 /// Pure chapter-page manifest matching.
 pub mod manifest;
 
-use poprako_orchestra::{OperProxy as _, Proxy};
-
 use poprako_util::i18n::trl;
 
 use crate::complex::util::{
-    check_user_is_team_admin, check_user_is_team_member,
+    check_user_is_chapter_assignee, check_user_is_team_admin,
+    check_user_is_team_member,
 };
-use crate::part::repo::oper::assignment::FindAssignmentInfo;
-use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part::repo::oper::team::ResolveTeamId;
+use crate::model::read::proj::assignment::AssignmentInfo;
+use crate::model::read::proj::member::MemberInfo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 use crate::value::role::RoleField;
 
-/// Domain opers for page entities.
+// Build and log one expected page-role permission error.
+fn reject_role(message_key: &str, event: &'static str) -> BaseRest<()> {
+    //
+    let err_message = trl(message_key);
+
+    tracing::warn!(
+        err_variant = ?ExpectedVariant::Perm,
+        err_message = %err_message,
+        event,
+        "expected page permission error",
+    );
+
+    Err(BaseError::Expected {
+        variant: ExpectedVariant::Perm,
+        message: err_message,
+    })
+}
+
+// Verify that assignment evidence permits reserving page images.
+fn check_reserve_role(assignment_info: &AssignmentInfo) -> BaseRest<()> {
+    //
+    if !assignment_info
+        .roles
+        .has_any_role(&[RoleField::RAW_PROVIDER, RoleField::REVIEWER])
+    {
+        return reject_role(
+            "error-page-reserve-role-required",
+            "page_reservation_role_missing",
+        );
+    }
+
+    accept(())
+}
+
+// Verify that assignment evidence permits uploading page images.
+fn check_upload_role(assignment_info: &AssignmentInfo) -> BaseRest<()> {
+    //
+    if !assignment_info
+        .roles
+        .has_any_role(&[RoleField::RAW_PROVIDER])
+    {
+        return reject_role(
+            "error-page-upload-role-required",
+            "page_upload_role_missing",
+        );
+    }
+
+    accept(())
+}
+
+/// Pure domain operations for page entities.
 pub struct PageComplex;
 
 impl PageComplex {
@@ -41,228 +89,58 @@ impl PageComplex {
     }
 }
 
-/// Permission-gate opers for page entities.
+/// Evidence that grants page-list access.
+pub enum PageListAccess<'a> {
+    /// Access through team membership.
+    Member {
+        /// Team membership used to establish access.
+        member_info: &'a MemberInfo,
+    },
+
+    /// Access through an assignment on the chapter.
+    Assignee {
+        /// Chapter assignment used to establish access.
+        assignment_info: &'a AssignmentInfo,
+    },
+}
+
+/// Pure permission rules for page entities.
 pub struct PagePermComplex;
 
 impl PagePermComplex {
     /// Verify the caller may reserve page images for the chapter.
-    pub async fn ensure_user_can_reserve<P>(
-        proxy: &mut P,
-        user_id: &str,
-        chapter_id: &str,
-    ) -> BaseRest<()>
-    where
-        P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
-    {
-        check_reserve_role(proxy, user_id, chapter_id).await
+    pub fn ensure_user_can_reserve(
+        assignment_info: &AssignmentInfo,
+    ) -> BaseRest<()> {
+        check_reserve_role(assignment_info)
     }
 
     /// Verify the caller may list pages under a chapter.
-    pub async fn ensure_user_can_list_infos<P>(
-        proxy: &mut P,
-        user_id: &str,
-        chapter_id: &str,
-    ) -> BaseRest<()>
-    where
-        P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
-            + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>
-            + for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
-    {
-        let team_id = ResolveTeamId::Chapter { id: chapter_id }
-            .proxy_on(proxy)
-            .await?;
+    pub fn ensure_user_can_list_infos(
+        access: PageListAccess<'_>,
+    ) -> BaseRest<()> {
+        //
+        match access {
+            //
+            PageListAccess::Member { member_info } => {
+                check_user_is_team_member(member_info)
+            }
 
-        let member_check =
-            check_user_is_team_member(proxy, user_id, &team_id).await;
-
-        if member_check.is_ok() {
-            return accept(());
+            PageListAccess::Assignee { assignment_info } => {
+                check_user_is_chapter_assignee(assignment_info)
+            }
         }
-
-        check_any_assignment(proxy, user_id, chapter_id).await
     }
 
     /// Verify the caller may confirm a page image upload.
-    pub async fn ensure_user_can_mark_image_uploaded<P>(
-        proxy: &mut P,
-        user_id: &str,
-        chapter_id: &str,
-    ) -> BaseRest<()>
-    where
-        P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
-    {
-        check_upload_role(proxy, user_id, chapter_id).await
+    pub fn ensure_user_can_mark_image_uploaded(
+        assignment_info: &AssignmentInfo,
+    ) -> BaseRest<()> {
+        check_upload_role(assignment_info)
     }
 
     /// Verify the caller may delete all pages under the chapter.
-    pub async fn ensure_user_can_delete<P>(
-        proxy: &mut P,
-        user_id: &str,
-        chapter_id: &str,
-    ) -> BaseRest<()>
-    where
-        P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
-            + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
-    {
-        let team_id = ResolveTeamId::Chapter { id: chapter_id }
-            .proxy_on(proxy)
-            .await?;
-
-        check_user_is_team_admin(proxy, user_id, &team_id).await
+    pub fn ensure_user_can_delete(member_info: &MemberInfo) -> BaseRest<()> {
+        check_user_is_team_admin(member_info)
     }
-}
-
-// Verify the caller is assigned as `RAW_PROVIDER` or `REVIEWER` on the
-// chapter, which is required for page image reservation.
-async fn check_reserve_role<P>(
-    proxy: &mut P,
-    user_id: &str,
-    chapter_id: &str,
-) -> BaseRest<()>
-where
-    P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
-{
-    let assignment_info = FindAssignmentInfo::ChapterUser {
-        chapter_id,
-        user_id,
-    }
-    .proxy_on(proxy)
-    .await?;
-
-    let Some(assignment_info) = assignment_info else {
-        //
-        let err_message = trl("error-page-reserve-role-required");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Perm,
-            err_message = %err_message,
-            user_id = %user_id,
-            chapter_id = %chapter_id,
-            "expected error: page reservation assignment missing",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            message: err_message,
-        });
-    };
-
-    if !assignment_info
-        .roles
-        .has_any_role(&[RoleField::RAW_PROVIDER, RoleField::REVIEWER])
-    {
-        let err_message = trl("error-page-reserve-role-required");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Perm,
-            err_message = %err_message,
-            user_id = %user_id,
-            chapter_id = %chapter_id,
-            assignment_roles = ?assignment_info.roles,
-            "expected error: page reservation role missing",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            message: err_message,
-        });
-    }
-
-    accept(())
-}
-
-// Verify the caller is assigned as `RAW_PROVIDER` on the chapter, which
-// is required for page image upload confirmation.
-async fn check_upload_role<P>(
-    proxy: &mut P,
-    user_id: &str,
-    chapter_id: &str,
-) -> BaseRest<()>
-where
-    P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
-{
-    let assignment_info = FindAssignmentInfo::ChapterUser {
-        chapter_id,
-        user_id,
-    }
-    .proxy_on(proxy)
-    .await?;
-
-    let Some(assignment_info) = assignment_info else {
-        //
-        let err_message = trl("error-page-upload-role-required");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Perm,
-            err_message = %err_message,
-            user_id = %user_id,
-            chapter_id = %chapter_id,
-            "expected error: page upload assignment missing",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            message: err_message,
-        });
-    };
-
-    if !assignment_info
-        .roles
-        .has_any_role(&[RoleField::RAW_PROVIDER])
-    {
-        let err_message = trl("error-page-upload-role-required");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Perm,
-            err_message = %err_message,
-            user_id = %user_id,
-            chapter_id = %chapter_id,
-            assignment_roles = ?assignment_info.roles,
-            "expected error: page upload role missing",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            message: err_message,
-        });
-    }
-
-    accept(())
-}
-
-// Verify the caller has any assignment on the chapter (any role qualifies).
-async fn check_any_assignment<P>(
-    proxy: &mut P,
-    user_id: &str,
-    chapter_id: &str,
-) -> BaseRest<()>
-where
-    P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
-{
-    let assignment_info = FindAssignmentInfo::ChapterUser {
-        chapter_id,
-        user_id,
-    }
-    .proxy_on(proxy)
-    .await?;
-
-    if assignment_info.is_none() {
-        //
-        let err_message = trl("error-team-member-required");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Perm,
-            err_message = %err_message,
-            user_id = %user_id,
-            chapter_id = %chapter_id,
-            "expected error: page assignment required",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            message: err_message,
-        });
-    }
-
-    accept(())
 }

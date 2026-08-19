@@ -34,7 +34,16 @@ description: Current PopRaKo Rust architecture, naming, construction, and reposi
 
 - Bind domain payloads such as entries, replacements, specs, and DTOs before
   using them. Construct one-shot Orchestra operation descriptors directly in
-  the consuming `run_on`, `step_on`, or proxy call as required by `fmt/`.
+  the consuming `run_on` or `step_on` call as required by `fmt/`.
+- Keep `complex` pure: it receives already-loaded concrete models and never
+  imports Orchestra, repositories, repository operations, or Prom operations.
+- Put reusable multi-operation read chains behind associated methods on a
+  `*Loader` under private `usecase::internal`. Name model-returning methods
+  with the model suffix, such as `load_info_from_*` or `load_infos_from_*`.
+  Do not wrap a single repository operation in a loader.
+- Pass a loaded model instead of repeating identifiers already present on the
+  model. A loader must convert a missing required model into an error before
+  calling pure rules; do not pass `Option<Model>` into permission helpers.
 - Use guard clauses, `match`, and `let ... else`; do not introduce
   `if ... else`.
 - Bind the value returned by a transaction before converting or returning it.

@@ -1,7 +1,8 @@
-use poprako_orchestra::{Run, Step};
+use poprako_orchestra::{AtLeast, Level, Run, Step};
 use tracing::instrument;
 
 use crate::model::read::proj::member::MemberInfo;
+use crate::part::nucl::RepeatableRead;
 use crate::part::repo::oper::member::{
     CreateMember, DeleteMember, FindMemberInfo, GetMemberInfo, ListMemberInfos,
     ListMemberInfosExcluded, UpdateMember,
@@ -63,11 +64,11 @@ impl Run<GetMemberInfo<'_, '_>> for HybRepo {
 
 impl<L> Step<CreateMember<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<RepeatableRead>,
 {
     // Create a new member row inside the active transaction context.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -85,13 +86,13 @@ where
 
 impl<L> Step<UpdateMember<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<RepeatableRead>,
 {
     // Apply an in-transaction member update request.
     //
     // Supported requests either adjust nickname or change role based on branch.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -125,14 +126,14 @@ where
 
 impl<L> Step<ListMemberInfos<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<RepeatableRead>,
 {
     // Transactional list path for member info queries.
     //
     // Reuses the same selection modes as non-transactional `run` execution,
     // but executes through an explicit DB connection context.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -160,11 +161,11 @@ where
 
 impl<L> Step<FindMemberInfo<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<RepeatableRead>,
 {
     // Transactional lookup for a member by `(user_id, team_id)`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -194,11 +195,11 @@ where
 
 impl<L> Step<GetMemberInfo<'_, '_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<RepeatableRead>,
 {
     // Transactional lookup for a full member info by id and requested includes.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -222,13 +223,13 @@ where
 
 impl<L> Step<ListMemberInfosExcluded<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<RepeatableRead>,
 {
     // Transactional list for member infos excluding one side of relation.
     //
     // One branch excludes all members for a user, the other excludes a full team.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -256,11 +257,11 @@ where
 
 impl<L> Step<DeleteMember<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<RepeatableRead>,
 {
     // Transactional delete operation for a single member by id.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;

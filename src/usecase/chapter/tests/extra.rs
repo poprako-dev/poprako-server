@@ -1,8 +1,9 @@
 use super::{
-    Mock, RoleMask, Stage, StageOper, StagePhase, UpdateChapterStageInstr,
-    assignment, chapter, seed_scope, token, update_stage,
+    Mock, RoleMask, Stage, UpdateChapterStageInstr, assignment, chapter,
+    seed_scope, token, update_stage,
 };
 
+use crate::value::chapter::{StageOper, StagePhase};
 use crate::value::role::RoleField;
 
 #[tokio::test]
@@ -33,8 +34,8 @@ async fn update_stage_admin_reverts_without_role_holder() {
         token("user-1"),
         UpdateChapterStageInstr {
             id: "chapter-1".into(),
-            stage: Stage::Translate,
-            oper: StageOper::Revert,
+            stage: Stage::Translate.into(),
+            oper: StageOper::Revert.into(),
         },
     )
     .await

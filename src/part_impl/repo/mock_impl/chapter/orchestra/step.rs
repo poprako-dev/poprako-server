@@ -2,12 +2,13 @@ use poprako_orchestra::Step;
 use tracing::instrument;
 
 use crate::model::read::proj::chapter::ChapterInfo;
+use crate::part::nucl::RepeatableRead;
 use crate::part::repo::oper::chapter::{
     AdjustChapterUnitCounters, CompleteChapterRawProvide, CreateChapter,
     DeleteChapter, FindPinnedChapterInfo, GetChapterInfo,
     GetChapterInfoExcluded, ListChapterInfosExcluded, LockChapters,
-    ResetChapterRawProvide, SetChapterPageCounters, UnpinOtherChapters,
-    UpdateChapter, UpdateChapterStage,
+    ResetChapterRawProvide, SetChapterPageCounters, StartChapterStage,
+    UnpinOtherChapters, UpdateChapter, UpdateChapterStage,
 };
 use crate::part_impl::repo::mock_impl::chapter::orchestra::find_pinned_chapter_info;
 use crate::part_impl::repo::mock_impl::chapter::{
@@ -19,7 +20,7 @@ use crate::value::chapter::{Stage, StagePhase};
 
 impl<'a> Step<CompleteChapterRawProvide<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -80,9 +81,57 @@ impl<'a> Step<CompleteChapterRawProvide<'a>, MockContext> for Mock {
     }
 }
 
+impl<'a> Step<StartChapterStage<'a>, MockContext> for Mock {
+    // Declares the transaction isolation level required for this mutation.
+    type Level = RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
+    type Error = BaseError;
+
+    #[instrument(level = "info", skip_all)]
+    // Starts the requested pending stage in the transaction-local state.
+    async fn step(
+        &self,
+        context: &mut MockContext,
+        oper: &StartChapterStage<'a>,
+    ) -> BaseRest<bool> {
+        //
+        let Some(chapter_info) = context
+            .state
+            .chapters
+            .iter_mut()
+            .find(|chapter_info| chapter_info.id == oper.id)
+        else {
+            return accept(false);
+        };
+
+        if chapter_info
+            .stages
+            .has_phase(Stage::Publish, StagePhase::Completed)
+        {
+            return accept(false);
+        }
+
+        if !chapter_info
+            .stages
+            .has_phase(oper.stage, StagePhase::Pending)
+        {
+            return accept(false);
+        }
+
+        chapter_info.stages = chapter_info
+            .stages
+            .try_set_phase(oper.stage, StagePhase::Active)?;
+
+        chapter_info.updated_at = now();
+
+        accept(true)
+    }
+}
+
 impl<'a> Step<ResetChapterRawProvide<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -116,7 +165,7 @@ impl<'a> Step<ResetChapterRawProvide<'a>, MockContext> for Mock {
 
 impl<'a, 'b> Step<GetChapterInfo<'a, 'b>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -134,7 +183,7 @@ impl<'a, 'b> Step<GetChapterInfo<'a, 'b>, MockContext> for Mock {
 
 impl<'a, 'b> Step<GetChapterInfoExcluded<'a, 'b>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -152,7 +201,7 @@ impl<'a, 'b> Step<GetChapterInfoExcluded<'a, 'b>, MockContext> for Mock {
 
 impl<'a> Step<ListChapterInfosExcluded<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -170,7 +219,7 @@ impl<'a> Step<ListChapterInfosExcluded<'a>, MockContext> for Mock {
 
 impl<'a> Step<LockChapters<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -188,7 +237,7 @@ impl<'a> Step<LockChapters<'a>, MockContext> for Mock {
 
 impl<'a, 'b> Step<FindPinnedChapterInfo<'a, 'b>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -211,7 +260,7 @@ impl<'a, 'b> Step<FindPinnedChapterInfo<'a, 'b>, MockContext> for Mock {
 
 impl<'a> Step<CreateChapter<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -229,7 +278,7 @@ impl<'a> Step<CreateChapter<'a>, MockContext> for Mock {
 
 impl<'a> Step<UpdateChapter<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -267,7 +316,7 @@ impl<'a> Step<UpdateChapter<'a>, MockContext> for Mock {
 
 impl<'a> Step<UpdateChapterStage<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -299,7 +348,7 @@ impl<'a> Step<UpdateChapterStage<'a>, MockContext> for Mock {
 
 impl<'a> Step<SetChapterPageCounters<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -337,7 +386,7 @@ impl<'a> Step<SetChapterPageCounters<'a>, MockContext> for Mock {
 
 impl<'a> Step<AdjustChapterUnitCounters<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -373,7 +422,7 @@ impl<'a> Step<AdjustChapterUnitCounters<'a>, MockContext> for Mock {
 
 impl<'a> Step<UnpinOtherChapters<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -405,7 +454,7 @@ impl<'a> Step<UnpinOtherChapters<'a>, MockContext> for Mock {
 
 impl<'a> Step<DeleteChapter<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;

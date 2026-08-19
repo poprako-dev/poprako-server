@@ -1,41 +1,49 @@
-use poprako_orchestra::Proxy;
-
 use poprako_util::i18n::trl;
 
 use crate::complex::util::{
     check_user_is_chapter_assignee,
-    check_user_is_chapter_translator_or_proofreader,
-    check_user_is_team_member_by_chapter,
+    check_user_is_chapter_translator_or_proofreader, check_user_is_team_member,
 };
-use crate::part::repo::oper::assignment::FindAssignmentInfo;
-use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part::repo::oper::team::ResolveTeamId;
+use crate::model::read::proj::assignment::AssignmentInfo;
+use crate::model::read::proj::member::MemberInfo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+
+/// Concrete evidence that grants chapter export access.
+pub enum ChapterExportAccess<'a> {
+    /// Access through team membership.
+    Member {
+        /// Team membership used to establish access.
+        member_info: &'a MemberInfo,
+    },
+
+    /// Access through a chapter assignment.
+    Assignee {
+        /// Chapter assignment used to establish access.
+        assignment_info: &'a AssignmentInfo,
+    },
+}
 
 /// Chapter import and export perm rules.
 pub struct ChapterPortPermComplex;
 
 impl ChapterPortPermComplex {
     /// Verify the caller may export chapter translations.
-    pub async fn ensure_user_can_export<P>(
-        proxy: &mut P,
-        user_id: &str,
-        chapter_id: &str,
-    ) -> BaseRest<()>
-    where
-        P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
-            + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>
-            + for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
-    {
-        let member_check =
-            check_user_is_team_member_by_chapter(proxy, user_id, chapter_id)
-                .await;
+    pub fn ensure_user_can_export(
+        access: ChapterExportAccess<'_>,
+    ) -> BaseRest<()> {
+        //
+        let access_check = match access {
+            //
+            ChapterExportAccess::Member { member_info } => {
+                check_user_is_team_member(member_info)
+            }
 
-        if member_check.is_ok() {
-            return accept(());
-        }
+            ChapterExportAccess::Assignee { assignment_info } => {
+                check_user_is_chapter_assignee(assignment_info)
+            }
+        };
 
-        match check_user_is_chapter_assignee(proxy, user_id, chapter_id).await {
+        match access_check {
             //
             Ok(()) => accept(()),
 
@@ -50,8 +58,6 @@ impl ChapterPortPermComplex {
                 tracing::warn!(
                     err_variant = ?ExpectedVariant::Perm,
                     err_message = %err_message,
-                    user_id = %user_id,
-                    chapter_id = %chapter_id,
                     operation = "export",
                     "expected error: chapter port export perm required",
                 );
@@ -67,19 +73,12 @@ impl ChapterPortPermComplex {
     }
 
     /// Verify the caller may import chapter translations.
-    pub async fn ensure_user_can_import<P>(
-        proxy: &mut P,
-        user_id: &str,
-        chapter_id: &str,
-    ) -> BaseRest<()>
-    where
-        P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
-    {
-        match check_user_is_chapter_translator_or_proofreader(
-            proxy, user_id, chapter_id,
-        )
-        .await
-        {
+    pub fn ensure_user_can_import(
+        assignment_info: &AssignmentInfo,
+    ) -> BaseRest<()> {
+        //
+        match check_user_is_chapter_translator_or_proofreader(assignment_info) {
+            //
             Ok(()) => accept(()),
 
             Err(BaseError::Expected {
@@ -93,8 +92,6 @@ impl ChapterPortPermComplex {
                 tracing::warn!(
                     err_variant = ?ExpectedVariant::Perm,
                     err_message = %err_message,
-                    user_id = %user_id,
-                    chapter_id = %chapter_id,
                     operation = "import",
                     "expected error: chapter port import perm required",
                 );

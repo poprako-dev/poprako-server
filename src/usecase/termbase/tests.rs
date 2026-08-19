@@ -16,7 +16,6 @@ use crate::model::read::proj::member::MemberInfo;
 use crate::model::read::proj::term::TermInfo;
 use crate::model::read::proj::termbase::TermbaseInfo;
 use crate::model::read::proj::workset::WorksetInfo;
-use crate::part::repo::oper::termbase::ListTermbaseInfosExcluded;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
@@ -405,18 +404,7 @@ async fn delete_team_cascade_removes_direct_termbases_and_terms() {
     let repo = &mock;
 
     mock.coord(async |context| {
-        TermbaseComplex::delete_team_cascade(
-            &mut step_proxy! {
-                context;
-                repo =>
-                    for<'a> ListTermbaseInfosExcluded<'a>,
-                    for<'a> GetTermbaseInfoExcluded<'a>,
-                    for<'a> DeleteTerms<'a>,
-                    for<'a> DeleteTermbase<'a>;
-            },
-            "team-1",
-        )
-        .await
+        delete_team_cascade(repo, context, "team-1").await
     })
     .await
     .ok()

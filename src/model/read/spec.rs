@@ -6,6 +6,8 @@ pub mod assignment;
 pub mod assignment_invitation;
 /// Chapter query specifications.
 pub mod chapter;
+/// Immutable chapter workflow record query specifications.
+pub mod chapter_workflow_record;
 /// Comic query specifications.
 pub mod comic;
 /// Comment query specifications.

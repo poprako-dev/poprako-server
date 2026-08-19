@@ -6,6 +6,7 @@ use poprako_orchestra::Nucl as _;
 
 use crate::model::read::spec::assignment::AssignmentListSpec;
 use crate::model::write::assignment::{AssignmentEntry, AssignmentRoleRepl};
+use crate::part::nucl::RepeatableRead;
 use crate::part::repo::oper::assignment::{
     CreateAssignment, GetAssignmentInfo, ListAssignmentInfos,
     UpdateAssignmentRoles,
@@ -30,10 +31,9 @@ pub async fn assignment_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let repo = HybRepo::new(shared.clone());
 
-    let nucl =
-        RdbNucl::<crate::part::nucl::RepeatableRead>::new(shared.clone());
+    let nucl = RdbNucl::<RepeatableRead>::new(shared.clone());
 
-    let assignee_form = test_shared::user_entry(PREFIX, "assignee");
+    let assignee_form = test_shared::form::user_entry(PREFIX, "assignee");
 
     test_shared::create_user(&shared, &assignee_form).await;
 

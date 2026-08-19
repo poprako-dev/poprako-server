@@ -101,6 +101,82 @@ export interface ChapterInfoView {
     updated_at: number;
 }
 
+export type ChapterWorkflowRecordEventView =
+    | { kind: "chapter_created" }
+    | {
+          kind: "chapter_subtitle_updated";
+          data: {
+              previous_subtitle: string;
+              next_subtitle: string;
+          };
+      }
+    | { kind: "chapter_pinned" }
+    | { kind: "chapter_unpinned" }
+    | {
+          kind: "assignment_created";
+          data: {
+              subject_user_id: string;
+              roles: number;
+          };
+      }
+    | {
+          kind: "assignment_roles_updated";
+          data: {
+              subject_user_id: string;
+              previous_roles: number;
+              next_roles: number;
+          };
+      }
+    | {
+          kind: "assignment_deleted";
+          data: {
+              subject_user_id: string;
+              previous_roles: number;
+          };
+      }
+    | {
+          kind: "translation_imported";
+          data: {
+              format: "label_plus" | "poprako";
+              imported_page_count: number;
+              imported_unit_count: number;
+          };
+      }
+    | {
+          kind: "translation_exported";
+          data: {
+              format: "label_plus" | "poprako";
+          };
+      }
+    | {
+          kind: "stage_transitioned";
+          data: {
+              stage:
+                  | "raw_provide"
+                  | "translate"
+                  | "proofread"
+                  | "typeset_redraw"
+                  | "review"
+                  | "publish";
+              previous_phase: "pending" | "active" | "completed";
+              next_phase: "pending" | "active" | "completed";
+              origin:
+                  | "manual"
+                  | "unit_edit"
+                  | "translation_import"
+                  | "translation_export"
+                  | "raw_provide_check";
+          };
+      };
+
+export interface ChapterWorkflowRecordInfoView {
+    id: string;
+    chapter_id: string;
+    actor_user_id: string | null;
+    event: ChapterWorkflowRecordEventView;
+    created_at: number;
+}
+
 export interface PageInfoView {
     id: string;
     chapter_id: string;
@@ -149,7 +225,7 @@ export interface MemberInvitationInfoView {
     invitor: UserInfoView | null;
     invitee_qid: string;
     code: string;
-    pending: boolean;
+    is_pending: boolean;
     roles: number;
 }
 
@@ -165,11 +241,13 @@ export interface AssignmentInfoView {
 export interface AssignmentInvitationInfoView {
     id: string;
     chapter_id: string;
-    invitor_id: string;
+    inviter_id: string;
     invitee_qid: string;
     code: string;
-    pending: boolean;
+    is_pending: boolean;
     roles: number;
+    created_at: number;
+    updated_at: number;
 }
 
 export interface AnnouncementInfoView {
@@ -193,10 +271,9 @@ export interface CommentInfoView {
 
 export interface SystemMailInfoView {
     id: string;
-    user_id: string;
     title: string;
     content: string;
-    read: boolean;
+    is_read: boolean;
     created_at: number;
 }
 

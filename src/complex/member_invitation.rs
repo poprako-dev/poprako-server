@@ -1,13 +1,10 @@
 //! Complex-domain opers for member invitations.
 
-use poprako_orchestra::{OperProxy as _, Proxy};
-
 use crate::complex::util::{
     check_user_is_team_admin, check_user_is_team_member,
 };
-use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part::repo::oper::member_invitation::GetMemberInvitationInfo;
-use crate::result::{BaseError, BaseRest};
+use crate::model::read::proj::member::MemberInfo;
+use crate::result::BaseRest;
 use crate::util::next_snowflake_id;
 
 /// Domain opers for member invitations.
@@ -35,80 +32,26 @@ pub struct MemberInvitationPermComplex;
 
 impl MemberInvitationPermComplex {
     /// Verify the caller is a team admin and may create invitations for the team.
-    pub async fn ensure_user_can_create<P>(
-        proxy: &mut P,
-        user_id: &str,
-        team_id: &str,
-    ) -> BaseRest<()>
-    where
-        P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
-    {
-        check_user_is_team_admin(proxy, user_id, team_id).await
+    pub fn ensure_user_can_create(member_info: &MemberInfo) -> BaseRest<()> {
+        check_user_is_team_admin(member_info)
     }
 
     /// Verify the caller is a team member and may list invitations for the team.
-    pub async fn ensure_user_can_list_infos<P>(
-        proxy: &mut P,
-        user_id: &str,
-        team_id: &str,
-    ) -> BaseRest<()>
-    where
-        P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
-    {
-        check_user_is_team_member(proxy, user_id, team_id).await
+    pub fn ensure_user_can_list_infos(
+        member_info: &MemberInfo,
+    ) -> BaseRest<()> {
+        check_user_is_team_member(member_info)
     }
 
     /// Verify the caller is a team admin of the invitation's owning team.
-    pub async fn ensure_user_can_update_info<P>(
-        proxy: &mut P,
-        user_id: &str,
-        invitation_id: &str,
-    ) -> BaseRest<()>
-    where
-        P: for<'a, 'b> Proxy<
-                GetMemberInvitationInfo<'a, 'b>,
-                Error = BaseError,
-            > + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
-    {
-        let member_invitation_info = GetMemberInvitationInfo::Id {
-            id: invitation_id,
-            incls: &[],
-        }
-        .proxy_on(proxy)
-        .await?;
-
-        check_user_is_team_admin(
-            proxy,
-            user_id,
-            &member_invitation_info.team_id,
-        )
-        .await
+    pub fn ensure_user_can_update_info(
+        member_info: &MemberInfo,
+    ) -> BaseRest<()> {
+        check_user_is_team_admin(member_info)
     }
 
     /// Verify the caller is a team admin and may delete the invitation.
-    pub async fn ensure_user_can_delete<P>(
-        proxy: &mut P,
-        user_id: &str,
-        invitation_id: &str,
-    ) -> BaseRest<()>
-    where
-        P: for<'a, 'b> Proxy<
-                GetMemberInvitationInfo<'a, 'b>,
-                Error = BaseError,
-            > + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
-    {
-        let member_invitation_info = GetMemberInvitationInfo::Id {
-            id: invitation_id,
-            incls: &[],
-        }
-        .proxy_on(proxy)
-        .await?;
-
-        check_user_is_team_admin(
-            proxy,
-            user_id,
-            &member_invitation_info.team_id,
-        )
-        .await
+    pub fn ensure_user_can_delete(member_info: &MemberInfo) -> BaseRest<()> {
+        check_user_is_team_admin(member_info)
     }
 }

@@ -82,7 +82,11 @@ pub async fn update_roles(
 
     ensure_path_matches_body_id(&user_id, &instr.user_id)?;
 
-    usecase::assignment::update_roles::<_, RdbContext<RepeatableRead>, HybRepo>(
+    usecase::assignment::update_roles::update_roles::<
+        _,
+        RdbContext<RepeatableRead>,
+        HybRepo,
+    >(
         (harn.nucl().repeatable_read(), harn.repo()),
         user_token,
         instr,

@@ -1,8 +1,9 @@
-use poprako_orchestra::{Run, Step};
+use poprako_orchestra::{AtLeast, Level, Run, Step};
 use tracing::instrument;
 
 use crate::model::read::proj::user::{UserCredential, UserInfo};
 use crate::model::write::user::UserAvatarReservation;
+use crate::part::nucl::RepeatableRead;
 use crate::part::repo::oper::user::{
     CreateUser, DeleteUser, FindUserInfo, GetUserCredential, GetUserInfo,
     GetUserInfoExcluded, ReserveUserAvatar, UpdateUser,
@@ -119,11 +120,11 @@ impl Run<UpdateUser<'_>> for HybRepo {
 
 impl<L> Step<CreateUser<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<RepeatableRead>,
 {
     // Keep transaction-scoped operations on one repository error type.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -141,11 +142,11 @@ where
 
 impl<L> Step<FindUserInfo<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<RepeatableRead>,
 {
     // Keep transaction-scoped reads on one repository error type.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -169,11 +170,11 @@ where
 
 impl<L> Step<UpdateUser<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<RepeatableRead>,
 {
     // Keep transaction-scoped updates on one repository error type.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -217,11 +218,11 @@ where
 
 impl<L> Step<ReserveUserAvatar<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<RepeatableRead>,
 {
     // Keep transaction-scoped reservation on one repository error type.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -241,11 +242,11 @@ where
 
 impl<L> Step<GetUserInfoExcluded<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<RepeatableRead>,
 {
     // Keep transaction-scoped exclusive reads on one repository error type.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -269,11 +270,11 @@ where
 
 impl<L> Step<DeleteUser<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<RepeatableRead>,
 {
     // Keep transaction-scoped deletion on one repository error type.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;

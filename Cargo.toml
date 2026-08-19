@@ -81,7 +81,7 @@ utoipa = { workspace = true, features = ["axum_extras"], optional = true }
 utoipa-swagger-ui = { version = "9", features = ["axum"], optional = true }
 governor = "0.6"
 futures = "0.3.32"
-poprako-orchestra = { version = "0.3.3", features = ["macro", "oper_ext"] }
+poprako-orchestra = { version = "0.6.0", features = ["macro", "oper_ext"] }
 
 [dev-dependencies]
 criterion = { version = "0.7", features = ["async_tokio"] }

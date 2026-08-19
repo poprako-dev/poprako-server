@@ -1,5 +1,9 @@
-mod form;
+pub mod form;
 
+use crate::part_impl::repo::rdb_impl::test_shared::form::{
+    chapter_entry, comic_entry, page_entry, team_entry, user_entry,
+    workset_entry,
+};
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use poprako_orchestra::{Nucl as _, Run as _, Step as _};
@@ -10,6 +14,7 @@ use crate::model::write::page::PageEntry;
 use crate::model::write::team::TeamEntry;
 use crate::model::write::user::UserEntry;
 use crate::model::write::workset::WorksetEntry;
+use crate::part::nucl::RepeatableRead;
 use crate::part::repo::oper::chapter::CreateChapter;
 use crate::part::repo::oper::comic::CreateComic;
 use crate::part::repo::oper::page::CreatePages;
@@ -22,11 +27,6 @@ use crate::part_impl::repo::rdb_impl::schema;
 use crate::result::{BaseError, BaseRest, accept};
 use crate::shared::RdbCore;
 use crate::shared::result::diesel as diesel_error;
-
-pub use self::form::{
-    chapter_entry, comic_entry, page_entry, team_entry, user_entry,
-    workset_entry,
-};
 
 pub struct UserFixture {
     pub user_entry: UserEntry,
@@ -123,6 +123,13 @@ pub async fn cleanup(shared: &RdbCore, prefix: &str) -> BaseRest<()> {
     diesel::delete(
         schema::t_page::table.filter(schema::t_page::f_id.like(&id_pattern)),
     )
+    .execute(&mut conn)
+    .await
+    .map_err(diesel_error)?;
+
+    diesel::delete(schema::t_chapter_workflow_record::table.filter(
+        schema::t_chapter_workflow_record::f_chapter_id.like(&id_pattern),
+    ))
     .execute(&mut conn)
     .await
     .map_err(diesel_error)?;
@@ -252,6 +259,17 @@ pub async fn assert_no_leftovers(
         .await
         .map_err(diesel_error)?;
 
+    let chapter_workflow_record_count: i64 =
+        schema::t_chapter_workflow_record::table
+            .filter(
+                schema::t_chapter_workflow_record::f_chapter_id
+                    .like(&id_pattern),
+            )
+            .count()
+            .get_result(&mut conn)
+            .await
+            .map_err(diesel_error)?;
+
     let comic_count: i64 = schema::t_comic::table
         .filter(schema::t_comic::f_id.like(&id_pattern))
         .count()
@@ -337,6 +355,8 @@ pub async fn assert_no_leftovers(
 
     assert_eq!(chapter_count, 0);
 
+    assert_eq!(chapter_workflow_record_count, 0);
+
     assert_eq!(comic_count, 0);
 
     assert_eq!(comment_count, 0);
@@ -366,8 +386,7 @@ pub async fn create_user(shared: &RdbCore, user_entry: &UserEntry) {
     //
     let repo = HybRepo::new(shared.clone());
 
-    let nucl =
-        RdbNucl::<crate::part::nucl::RepeatableRead>::new(shared.clone());
+    let nucl = RdbNucl::<RepeatableRead>::new(shared.clone());
 
     nucl.coord(async |context| {
         //
@@ -421,8 +440,7 @@ pub async fn seed_workset(shared: &RdbCore, prefix: &str) -> WorksetFixture {
 
     let repo = HybRepo::new(shared.clone());
 
-    let nucl =
-        RdbNucl::<crate::part::nucl::RepeatableRead>::new(shared.clone());
+    let nucl = RdbNucl::<RepeatableRead>::new(shared.clone());
 
     let workset_entry = workset_entry(prefix, &team_fixture.team_entry);
 
@@ -454,8 +472,7 @@ pub async fn seed_comic(shared: &RdbCore, prefix: &str) -> ComicFixture {
 
     let repo = HybRepo::new(shared.clone());
 
-    let nucl =
-        RdbNucl::<crate::part::nucl::RepeatableRead>::new(shared.clone());
+    let nucl = RdbNucl::<RepeatableRead>::new(shared.clone());
 
     let creator_form = user_entry(prefix, "creator");
 
@@ -510,8 +527,7 @@ pub async fn seed_chapter(shared: &RdbCore, prefix: &str) -> ChapterFixture {
 
     let repo = HybRepo::new(shared.clone());
 
-    let nucl =
-        RdbNucl::<crate::part::nucl::RepeatableRead>::new(shared.clone());
+    let nucl = RdbNucl::<RepeatableRead>::new(shared.clone());
 
     let chapter_entry = chapter_entry(
         prefix,
@@ -550,8 +566,7 @@ pub async fn seed_page(shared: &RdbCore, prefix: &str) -> PageFixture {
 
     let repo = HybRepo::new(shared.clone());
 
-    let nucl =
-        RdbNucl::<crate::part::nucl::RepeatableRead>::new(shared.clone());
+    let nucl = RdbNucl::<RepeatableRead>::new(shared.clone());
 
     let page_entry = page_entry(prefix, &chapter_fixture.chapter_entry);
 

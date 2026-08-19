@@ -1,5 +1,7 @@
 //! Calendar-month values used by comic archive export.
 
+mod workflow_record;
+
 #[cfg(test)]
 mod tests;
 
@@ -11,6 +13,9 @@ use time::{Date, Month, OffsetDateTime, PrimitiveDateTime, Time};
 use poprako_util::i18n::trl;
 
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::value::chapter_workflow_record::ChapterWorkflowRecordKind;
+
+pub use crate::value::comic_archive::workflow_record::ArchivedChapterWorkflowRecordDetail;
 
 /// Maximum number of month slots accepted by one export request.
 pub const MAX_EXPORT_MONTHS: usize = 12;
@@ -98,8 +103,25 @@ pub struct ArchivedChapterPayload {
     pub updated_at: i64,
     /// Archived payloads for all assignments on this chapter.
     pub assignments: Vec<ArchivedAssignmentPayload>,
+    /// Immutable workflow records without language-specific rendered text.
+    pub workflow_records: Vec<ArchivedChapterWorkflowRecordPayload>,
     /// Archived payloads for all pages in this chapter.
     pub pages: Vec<ArchivedPagePayload>,
+}
+
+/// Immutable workflow record payload retained inside an archived chapter.
+#[derive(Serialize)]
+pub struct ArchivedChapterWorkflowRecordPayload {
+    /// Original workflow record identifier.
+    pub id: String,
+    /// User that caused the record, absent for system work.
+    pub actor_user_id: Option<String>,
+    /// Stable event kind.
+    pub kind: ChapterWorkflowRecordKind,
+    /// Structured, language-neutral details.
+    pub payload: ArchivedChapterWorkflowRecordDetail,
+    /// Unix timestamp of record creation.
+    pub created_at: i64,
 }
 
 /// Immutable assignment payload serialized into an archive entry.

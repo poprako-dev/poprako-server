@@ -9,7 +9,6 @@
 //! role consistent with the target stage and event.
 
 // Domain-specific cascade helpers: delete-page cleanup and pinned chapter re-link.
-mod cascade;
 // Permission gates for chapter entity operations.
 mod perm;
 // Workflow role validation for chapter stage transitions.
@@ -26,10 +25,11 @@ use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::write::chapter::ChapterStageRepl;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
-use crate::value::chapter::{Stage, StageOper, StagePhase, try_modify_stage};
+use crate::value::chapter::stage::try_modify_stage;
+use crate::value::chapter::{Stage, StageOper, StagePhase};
 use crate::value::index::stored_index_to_user_index;
 
-pub use perm::ChapterPermComplex;
+pub use crate::complex::chapter::perm::ChapterPermComplex;
 
 /// Domain opers for chapter entities: ID generation, workflow-stage
 /// transition computation, and small pure helpers.

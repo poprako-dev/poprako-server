@@ -1,4 +1,4 @@
-use super::super::reserve::validate_page_count;
+use super::super::reserve::validation::validate_page_count;
 
 use crate::complex::image::ImageComplex;
 use crate::part::prom::payload::image::ResourceKind;

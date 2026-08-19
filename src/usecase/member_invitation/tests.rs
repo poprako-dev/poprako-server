@@ -22,8 +22,9 @@ use crate::part::prom::payload::TaskPayload;
 use crate::part::prom::payload::invitation::InvitationPayload;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
+use crate::test_util;
+use crate::test_util::assert_expected_variant;
 use crate::test_util::fixture::team;
-use crate::test_util::{self, assert_expected_variant};
 use crate::value::role::{RoleField, RoleMask};
 
 fn token(user_id: &str) -> UserToken {
@@ -172,9 +173,11 @@ async fn create_admin_creates_pending_invitation() {
 
     assert_eq!(
         snapshot.prom_records[0].payload(),
-        TaskPayload::Invitation(InvitationPayload::Member {
-            invitation_id: created.id,
-        })
+        TaskPayload::Invitation {
+            payload: InvitationPayload::Member {
+                invitation_id: created.id,
+            },
+        }
     );
 
     assert!(snapshot.prom_records[0].visible_at() >= before + EXPIRY_DELAY);

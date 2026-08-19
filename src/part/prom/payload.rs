@@ -21,14 +21,26 @@ pub enum TaskPayload {
     //
     /// Advance raw provision after every chapter page is uploaded.
     #[serde(rename = "AdvanceRawProvide")]
-    Chapter(ChapterPayload),
+    Chapter {
+        /// Chapter-domain task payload.
+        #[serde(flatten)]
+        payload: ChapterPayload,
+    },
 
     /// Image-domain deferred action.
-    Image(ImagePayload),
+    Image {
+        /// Image-domain task payload.
+        #[serde(flatten)]
+        payload: ImagePayload,
+    },
 
     /// Purge an invitation when it is still pending at its expiry time.
     #[serde(rename = "PurgeExpiredInvitation")]
-    Invitation(InvitationPayload),
+    Invitation {
+        /// Invitation-domain task payload.
+        #[serde(flatten)]
+        payload: InvitationPayload,
+    },
 }
 
 impl TaskPayload {
@@ -37,11 +49,11 @@ impl TaskPayload {
         //
         match self {
             //
-            Self::Chapter(_) => "advance_raw_provide",
+            Self::Chapter { .. } => "advance_raw_provide",
 
-            Self::Image(_) => "image",
+            Self::Image { .. } => "image",
 
-            Self::Invitation(_) => "purge_expired_invitation",
+            Self::Invitation { .. } => "purge_expired_invitation",
         }
     }
 }

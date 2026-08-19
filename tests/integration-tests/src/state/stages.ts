@@ -1,6 +1,6 @@
 // Workflow stage constants. Values MUST match `crate::value::chapter::Stage`
-// and `StageOper` in `src/value/chapter.rs`. Stages serialize as kebab-case
-// strings; `StageOper` serializes as `advance` / `revert`.
+// and `StageOper` in `src/value/chapter.rs`. JSON body DTO stages serialize as
+// snake_case strings; `StageOper` serializes as `advance` / `revert`.
 //
 // Stage phase model (from `is_valid_stage_phase` / `try_modify_stage`):
 //   raw-provide    : one-shot  Pending -> Completed          (1 advance)
@@ -61,6 +61,27 @@ export const THREE_PHASE_STAGES: readonly StageName[] = [
 
 export type StageOper = "advance" | "revert";
 
+export type ChapterStageInstr =
+    | "raw_provide"
+    | "translate"
+    | "proofread"
+    | "typeset_redraw"
+    | "review"
+    | "publish";
+
+const CHAPTER_STAGE_INSTR: Record<StageName, ChapterStageInstr> = {
+    "raw-provide": "raw_provide",
+    translate: "translate",
+    proofread: "proofread",
+    "typeset-redraw": "typeset_redraw",
+    review: "review",
+    publish: "publish",
+};
+
+export function chapterStageInstr(stage: StageName): ChapterStageInstr {
+    return CHAPTER_STAGE_INSTR[stage];
+}
+
 // Bit offset of each stage inside the `stages` mask (2 bits per stage).
 // raw-provide=0, translate=2, proofread=4, typeset-redraw=6, review=8, publish=10.
 export const STAGE_BIT_OFFSET: Record<StageName, number> = {
@@ -90,15 +111,15 @@ export function stagePhase(stagesMask: number, stage: StageName): number {
 export function stageAdvanceBody(chapterId: string, stage: StageName): {
     id: string;
     oper: "advance";
-    stage: StageName;
+    stage: ChapterStageInstr;
 } {
-    return { id: chapterId, oper: "advance", stage };
+    return { id: chapterId, oper: "advance", stage: chapterStageInstr(stage) };
 }
 
 export function stageRevertBody(chapterId: string, stage: StageName): {
     id: string;
     oper: "revert";
-    stage: StageName;
+    stage: ChapterStageInstr;
 } {
-    return { id: chapterId, oper: "revert", stage };
+    return { id: chapterId, oper: "revert", stage: chapterStageInstr(stage) };
 }

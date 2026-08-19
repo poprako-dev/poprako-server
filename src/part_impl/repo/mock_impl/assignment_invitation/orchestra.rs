@@ -2,6 +2,7 @@ use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
 use crate::model::read::proj::assignment_invitation::AssignmentInvitationInfo;
+use crate::part::nucl::RepeatableRead;
 use crate::part::repo::oper::assignment_invitation::{
     CreateAssignmentInvitation, DeleteAssignmentInvitations,
     GetAssignmentInvitationInfo, GetAssignmentInvitationInfoExcluded,
@@ -119,7 +120,7 @@ impl<'a> Run<GetAssignmentInvitationInfo<'a>> for Mock {
 
 impl<'a> Step<CreateAssignmentInvitation<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -171,7 +172,7 @@ impl<'a> Step<CreateAssignmentInvitation<'a>, MockContext> for Mock {
 
 impl<'a> Step<GetAssignmentInvitationInfo<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -188,7 +189,7 @@ impl<'a> Step<GetAssignmentInvitationInfo<'a>, MockContext> for Mock {
 
 impl<'a> Step<GetAssignmentInvitationInfoExcluded<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -212,7 +213,7 @@ impl<'a> Step<GetAssignmentInvitationInfoExcluded<'a>, MockContext> for Mock {
 
 impl<'a> Step<MarkAssignmentInvitationUsed<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -243,7 +244,7 @@ impl<'a> Step<MarkAssignmentInvitationUsed<'a>, MockContext> for Mock {
 
 impl<'a> Step<DeleteAssignmentInvitations<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -292,7 +293,7 @@ impl<'a> Step<DeleteAssignmentInvitations<'a>, MockContext> for Mock {
 
 impl<'a> Step<PurgeExpiredAssignmentInvitation<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;

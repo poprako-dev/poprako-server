@@ -6,6 +6,7 @@ mod tests;
 use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
+use crate::part::nucl::RepeatableRead;
 use crate::part::repo::oper::team::ResolveTeamId;
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, unrecoverable,
@@ -103,7 +104,7 @@ impl Run<ResolveTeamId<'_>> for Mock {
 
 impl Step<ResolveTeamId<'_>, MockContext> for Mock {
     // BaseError for the transactional mock team-resolution projection.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;

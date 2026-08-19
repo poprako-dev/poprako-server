@@ -25,6 +25,11 @@ async fn repo_rdb_impls_use_testcontainer() {
 
     chapter::tests::chapter_roundtrip_uses_testcontainer(shared.clone()).await;
 
+    chapter_workflow_record::tests::chapter_workflow_record_roundtrip_uses_testcontainer(
+        shared.clone(),
+    )
+    .await;
+
     comic::tests::comic_roundtrip_uses_testcontainer(shared.clone()).await;
 
     comic_archive::tests::comic_archive_roundtrip_uses_testcontainer(

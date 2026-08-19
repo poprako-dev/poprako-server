@@ -70,6 +70,17 @@ diesel::table! {
 }
 
 diesel::table! {
+    t_chapter_workflow_record (f_id) {
+        f_id -> Text,
+        f_chapter_id -> Text,
+        f_actor_user_id -> Nullable<Text>,
+        f_kind -> Text,
+        f_payload -> Jsonb,
+        f_created_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     t_comic (f_id) {
         f_id -> Text,
         f_workset_id -> Text,
@@ -289,55 +300,31 @@ diesel::table! {
 }
 
 diesel::joinable!(t_announcement -> t_team (f_team_id));
-
 diesel::joinable!(t_announcement -> t_user (f_user_id));
-
 diesel::joinable!(t_assignment -> t_chapter (f_chapter_id));
-
 diesel::joinable!(t_assignment -> t_user (f_user_id));
-
 diesel::joinable!(t_assignment_invitation -> t_chapter (f_chapter_id));
-
 diesel::joinable!(t_assignment_invitation -> t_user (f_inviter_id));
-
 diesel::joinable!(t_chapter -> t_comic (f_comic_id));
-
 diesel::joinable!(t_chapter -> t_user (f_creator_id));
-
+diesel::joinable!(t_chapter_workflow_record -> t_chapter (f_chapter_id));
 diesel::joinable!(t_comic -> t_user (f_creator_id));
-
 diesel::joinable!(t_comic -> t_workset (f_workset_id));
-
 diesel::joinable!(t_comic_archive -> t_team (f_team_id));
-
 diesel::joinable!(t_comment -> t_team (f_team_id));
-
 diesel::joinable!(t_comment -> t_user (f_user_id));
-
 diesel::joinable!(t_member -> t_team (f_team_id));
-
 diesel::joinable!(t_member -> t_user (f_user_id));
-
 diesel::joinable!(t_member_invitation -> t_team (f_team_id));
-
 diesel::joinable!(t_member_invitation -> t_user (f_inviter_id));
-
 diesel::joinable!(t_page -> t_chapter (f_chapter_id));
-
 diesel::joinable!(t_system_mail -> t_user (f_receiver_id));
-
 diesel::joinable!(t_term -> t_termbase (f_termbase_id));
-
 diesel::joinable!(t_term -> t_user (f_creator_id));
-
 diesel::joinable!(t_termbase -> t_comic (f_comic_id));
-
 diesel::joinable!(t_termbase -> t_team (f_team_id));
-
 diesel::joinable!(t_termbase -> t_user (f_creator_id));
-
 diesel::joinable!(t_unit -> t_page (f_page_id));
-
 diesel::joinable!(t_workset -> t_team (f_team_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
@@ -345,6 +332,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     t_assignment,
     t_assignment_invitation,
     t_chapter,
+    t_chapter_workflow_record,
     t_comic,
     t_comic_archive,
     t_comment,

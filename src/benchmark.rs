@@ -237,6 +237,7 @@ fn archive_snapshot() -> Option<ComicArchiveSnapshot> {
                 updated_at: archived_at,
             },
             assignment_infos: vec![assignment_info],
+            workflow_record_infos: Vec::new(),
             page_snapshots,
         });
     }

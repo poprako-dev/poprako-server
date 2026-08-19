@@ -7,6 +7,7 @@ use poprako_orchestra::Nucl as _;
 use crate::model::read::spec::term::TermListSpec;
 use crate::model::write::term::TermEntry;
 use crate::model::write::termbase::TermbaseEntry;
+use crate::part::nucl::RepeatableRead;
 use crate::part::repo::oper::term::{CreateTerm, GetTermInfo, ListTermInfos};
 use crate::part::repo::oper::termbase::CreateTermbase;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
@@ -24,8 +25,7 @@ pub async fn term_array_unique_and_fuzzy_roundtrip(shared: RdbCore) {
 
     let repo = HybRepo::new(shared.clone());
 
-    let nucl =
-        RdbNucl::<crate::part::nucl::RepeatableRead>::new(shared.clone());
+    let nucl = RdbNucl::<RepeatableRead>::new(shared.clone());
 
     let termbase_entry = TermbaseEntry {
         id: format!("{}base", PREFIX),

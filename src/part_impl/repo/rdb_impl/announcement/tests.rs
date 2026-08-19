@@ -6,6 +6,7 @@ use poprako_orchestra::Nucl as _;
 
 use crate::model::read::spec::announcement::AnnouncementListSpec;
 use crate::model::write::announcement::AnnouncementEntry;
+use crate::part::nucl::RepeatableRead;
 use crate::part::repo::oper::announcement::{
     CreateAnnouncement, ListAnnouncementInfos,
 };
@@ -28,8 +29,7 @@ pub async fn announcement_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let repo = HybRepo::new(shared.clone());
 
-    let nucl =
-        RdbNucl::<crate::part::nucl::RepeatableRead>::new(shared.clone());
+    let nucl = RdbNucl::<RepeatableRead>::new(shared.clone());
 
     let announcement_entry = AnnouncementEntry {
         id: format!("{}announcement", PREFIX),

@@ -1,39 +1,62 @@
-use poprako_orchestra::{OperRun as _, Run};
+//! Transactional automatic chapter-stage advancement helpers.
 
+use poprako_orchestra::{Context, OperStep as _};
+
+use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
+use crate::part::repo::chapter::ChapterRepo;
+use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
 use crate::part::repo::oper::chapter::StartChapterStage;
-use crate::result::BaseError;
-use crate::value::chapter::Stage;
+use crate::part::repo::oper::chapter_workflow_record::CreateChapterWorkflowRecords;
+use crate::result::{BaseRest, accept};
+use crate::value::chapter::{Stage, StagePhase};
+use crate::value::chapter_workflow_record::{
+    ChapterWorkflowRecordOrigin, ChapterWorkflowRecordPayload,
+};
 
-/// Advances chapter stages in detached best-effort tasks.
-pub fn advance_stages<R>((repo,): (R,), chapter_id: String, stages: Vec<Stage>)
+/// Starts each still-pending stage and records every real transition atomically.
+pub async fn start_pending_stages<C, R>(
+    repo: &R,
+    context: &mut C,
+    chapter_id: &str,
+    actor_user_id: Option<String>,
+    origin: ChapterWorkflowRecordOrigin,
+    stages: &[Stage],
+) -> BaseRest<()>
 where
-    R: for<'a> Run<StartChapterStage<'a>, Error = BaseError>
-        + Send
-        + Sync
-        + 'static,
+    C: Context,
+    R: ChapterRepo<C> + ChapterWorkflowRecordRepo<C>,
 {
-    // NOTE: Advancements are intentionally best-effort. A task may be dropped
-    // or fail because the same stage can be advanced manually when needed.
-    tokio::spawn(async move {
-        //
-        for stage in stages {
-            //
-            let outcome = StartChapterStage {
-                id: &chapter_id,
-                stage,
-            }
-            .run_on(&repo)
-            .await;
+    let mut entries = Vec::with_capacity(stages.len());
 
-            if let Err(error) = outcome {
-                //
-                tracing::warn!(
-                    err = ?error,
-                    chapter_id = %chapter_id,
-                    stage = ?stage,
-                    "detached chapter stage advancement failed",
-                );
-            }
+    for stage in stages {
+        //
+        let started = StartChapterStage {
+            id: chapter_id,
+            stage: *stage,
         }
-    });
+        .step_on(repo, context)
+        .await?;
+
+        if started {
+            //
+            let payload = ChapterWorkflowRecordPayload::StageTransitioned {
+                stage: *stage,
+                previous_phase: StagePhase::Pending,
+                next_phase: StagePhase::Active,
+                origin,
+            };
+
+            entries.push(ChapterWorkflowRecordEntry::new(
+                chapter_id,
+                actor_user_id.clone(),
+                payload,
+            ));
+        }
+    }
+
+    CreateChapterWorkflowRecords { entries: &entries }
+        .step_on(repo, context)
+        .await?;
+
+    accept(())
 }

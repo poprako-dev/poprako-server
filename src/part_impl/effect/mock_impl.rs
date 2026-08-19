@@ -27,9 +27,11 @@ async fn develop_collects_events() {
     //
     let mock = Mock::new();
 
-    Event::UserActive(UserActiveEvent {
-        user_id: "user-1".into(),
-    })
+    Event::UserActive {
+        payload: UserActiveEvent {
+            user_id: "user-1".into(),
+        },
+    }
     .develop_on(&mock)
     .await;
 

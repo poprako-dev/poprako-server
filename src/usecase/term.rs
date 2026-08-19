@@ -4,9 +4,7 @@
 // Unit tests for term lifecycle, ownership, and conflict guards.
 mod tests;
 
-use poprako_orchestra::{
-    AtLeast, Nucl, OperRun as _, OperStep as _, run_proxy, step_proxy,
-};
+use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
 use crate::complex::term::TermComplex;
@@ -20,8 +18,6 @@ use crate::model::read::spec::term::TermListSpec;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::RepeatableRead;
 use crate::part::repo::member::MemberRepo;
-use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part::repo::oper::team::ResolveTeamId;
 use crate::part::repo::oper::term::{
     CreateTerm, DeleteTerm, GetTermInfo, ListTermInfos, LockTerm, UpdateTerm,
 };
@@ -33,6 +29,8 @@ use crate::part::repo::team::TeamRepo;
 use crate::part::repo::term::TermRepo;
 use crate::part::repo::termbase::TermbaseRepo;
 use crate::result::{BaseError, BaseRest, accept};
+use crate::usecase::internal::member::MemberLoader;
+use crate::usecase::internal::util::LoadMode;
 
 /// Creates a terminology entry inside a terminology base.
 #[instrument(level = "info", skip(nucl, repo))]
@@ -42,7 +40,7 @@ pub async fn create<N, C, R>(
     instr: CreateTermInstr,
 ) -> BaseRest<CreateTermVal>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
@@ -70,19 +68,18 @@ where
             .step_on(repo, context)
             .await?;
 
-            let guarded_repo = &crate::part::nucl::GuardedStep::new(repo);
-
-            TermbasePermComplex::ensure_user_can_write(
-                &mut step_proxy! {
-                    context;
-                    guarded_repo =>
-                        for<'a> ResolveTeamId<'a>,
-                        for<'a> FindMemberInfo<'a>;
-                },
+            let member_info = MemberLoader::load_info_from_termbase(
+                repo,
+                LoadMode::Step { context },
                 &token.user_id,
                 &termbase_info,
             )
             .await?;
+
+            TermbasePermComplex::ensure_user_can_write(
+                &member_info,
+                &termbase_info,
+            )?;
 
             let term_info = CreateTerm { entry: &term_entry }
                 .step_on(repo, context)
@@ -110,7 +107,7 @@ pub async fn get_info<C, R>(
     id: String,
 ) -> BaseRest<TermInfoView>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: TermbaseRepo<C> + TermRepo<C> + TeamRepo<C> + MemberRepo<C> + Sync,
 {
     let term_info = GetTermInfo { id: &id }.run_on(repo).await?;
@@ -121,16 +118,15 @@ where
     .run_on(repo)
     .await?;
 
-    TermbasePermComplex::ensure_user_can_read(
-        &mut run_proxy! {
-            repo =>
-                for<'a> ResolveTeamId<'a>,
-                for<'a> FindMemberInfo<'a>;
-        },
+    let member_info = MemberLoader::load_info_from_termbase(
+        repo,
+        LoadMode::<C>::Run,
         &token.user_id,
         &termbase_info,
     )
     .await?;
+
+    TermbasePermComplex::ensure_user_can_read(&member_info, &termbase_info)?;
 
     accept(term_info.into())
 }
@@ -143,7 +139,7 @@ pub async fn list_infos<C, R>(
     instr: ListTermInfosInstr,
 ) -> BaseRest<Vec<TermInfoView>>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: TermbaseRepo<C> + TermRepo<C> + TeamRepo<C> + MemberRepo<C> + Sync,
 {
     let termbase_info = GetTermbaseInfo {
@@ -152,16 +148,15 @@ where
     .run_on(repo)
     .await?;
 
-    TermbasePermComplex::ensure_user_can_read(
-        &mut run_proxy! {
-            repo =>
-                for<'a> ResolveTeamId<'a>,
-                for<'a> FindMemberInfo<'a>;
-        },
+    let member_info = MemberLoader::load_info_from_termbase(
+        repo,
+        LoadMode::<C>::Run,
         &token.user_id,
         &termbase_info,
     )
     .await?;
+
+    TermbasePermComplex::ensure_user_can_read(&member_info, &termbase_info)?;
 
     let term_info_list_spec = TermListSpec {
         termbase_id: instr.termbase_id,
@@ -187,7 +182,7 @@ pub async fn update_info<N, C, R>(
     instr: UpdateTermInfoInstr,
 ) -> BaseRest<()>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
@@ -219,19 +214,18 @@ where
         .step_on(repo, context)
         .await?;
 
-        let guarded_repo = &crate::part::nucl::GuardedStep::new(repo);
-
-        TermbasePermComplex::ensure_user_can_write(
-            &mut step_proxy! {
-                context;
-                guarded_repo =>
-                    for<'a> ResolveTeamId<'a>,
-                    for<'a> FindMemberInfo<'a>;
-            },
+        let member_info = MemberLoader::load_info_from_termbase(
+            repo,
+            LoadMode::Step { context },
             &token.user_id,
             &termbase_info,
         )
         .await?;
+
+        TermbasePermComplex::ensure_user_can_write(
+            &member_info,
+            &termbase_info,
+        )?;
 
         LockTerm {
             id: &term_info_update.id,
@@ -266,7 +260,7 @@ pub async fn delete<N, C, R>(
     id: String,
 ) -> BaseRest<()>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
@@ -287,19 +281,18 @@ where
         .step_on(repo, context)
         .await?;
 
-        let guarded_repo = &crate::part::nucl::GuardedStep::new(repo);
-
-        TermbasePermComplex::ensure_user_can_write(
-            &mut step_proxy! {
-                context;
-                guarded_repo =>
-                    for<'a> ResolveTeamId<'a>,
-                    for<'a> FindMemberInfo<'a>;
-            },
+        let member_info = MemberLoader::load_info_from_termbase(
+            repo,
+            LoadMode::Step { context },
             &token.user_id,
             &termbase_info,
         )
         .await?;
+
+        TermbasePermComplex::ensure_user_can_write(
+            &member_info,
+            &termbase_info,
+        )?;
 
         LockTerm { id: &term_info.id }
             .step_on(repo, context)

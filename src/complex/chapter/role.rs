@@ -1,156 +1,61 @@
-use poprako_orchestra::{OperProxy as _, Proxy};
-
 use poprako_util::i18n::trl;
 
-use crate::model::read::proj::chapter::ChapterInfo;
-use crate::part::repo::oper::assignment::{
-    FindAssignmentInfo, ListAssignmentInfos,
-};
-use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part::repo::oper::team::ResolveTeamId;
+use crate::model::read::proj::assignment::AssignmentInfo;
+use crate::model::read::proj::member::MemberInfo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::value::chapter::{Stage, StageOper};
 use crate::value::role::{RoleField, RoleMask};
 
-/// Verify the caller holds the workflow role required for `oper` on `stage`.
-///
-/// | Stage | `Advance` | `Revert` |
-/// |---|---|---|
-/// | `RawProvide` | `RAW_PROVIDER` | - |
-/// | `Translate` | `TRANSLATOR` | `PROOFREADER` |
-/// | `Proofread` | `PROOFREADER` | `PROOFREADER` |
-/// | `TypesetRedraw` | `TYPESETTER` or `REDRAWER` | `TYPESETTER` or `REDRAWER` |
-/// | `Review` | `REVIEWER` | `REVIEWER` |
-/// | `Publish` | `PUBLISHER` | - |
-pub async fn check_workflow_role<P>(
-    proxy: &mut P,
-    user_id: &str,
-    chapter_id: &str,
+/// Verify the caller holds the workflow role required for a transition.
+pub fn check_workflow_role(
+    assignment_info: &AssignmentInfo,
+    assignment_infos: &[AssignmentInfo],
     stage: Stage,
     oper: StageOper,
-) -> BaseRest<()>
-where
-    P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>
-        + for<'a, 'b> Proxy<ListAssignmentInfos<'a, 'b>, Error = BaseError>,
-{
-    let assignment_info = FindAssignmentInfo::ChapterUser {
-        chapter_id,
-        user_id,
-    }
-    .proxy_on(proxy)
-    .await?;
+) -> BaseRest<()> {
+    //
+    let required_roles = required_roles_for_transition(stage, oper);
 
-    let Some(assignment_info) = assignment_info else {
-        //
-        let err_message = trl("error-chapter-workflow-role-required");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Perm,
-            err_message = %err_message,
-            user_id = %user_id,
-            chapter_id = %chapter_id,
-            stage = ?stage,
-            oper = ?oper,
-            "expected error: workflow assignment missing",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            message: err_message,
-        });
-    };
-
-    // Domain invariant: a workflow stage cannot be advanced unless at least
-    // one person on the chapter holds the required workflow role. This runs
-    // before the admin bypass so that even admins must ensure the position is
-    // filled.
     if oper == StageOper::Advance {
-        check_chapter_has_role_holder(proxy, chapter_id, stage).await?;
+        //
+        let has_holder = assignment_infos
+            .iter()
+            .any(|info| info.roles.has_any_role(required_roles));
+
+        if !has_holder {
+            //
+            return reject(
+                "error-chapter-no-role-holder",
+                "workflow_role_holder_missing",
+            );
+        }
     }
 
-    let roles = assignment_info.roles;
-
-    if roles.has_any_role(&[RoleField::ADMIN]) {
+    if assignment_info.roles.has_any_role(&[RoleField::ADMIN]) {
         return accept(());
     }
 
-    let required_roles = required_roles_for_transition(stage, oper);
-
-    if required_roles.is_empty() {
-        //
-        let err_message = trl("error-chapter-workflow-role-required");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Perm,
-            err_message = %err_message,
-            user_id = %user_id,
-            chapter_id = %chapter_id,
-            stage = ?stage,
-            oper = ?oper,
-            assignment_roles = ?roles,
-            required_roles = ?required_roles,
-            "expected error: workflow transition role is not configured",
+    if required_roles.is_empty()
+        || !assignment_info.roles.has_any_role(required_roles)
+    {
+        return reject(
+            "error-chapter-workflow-role-required",
+            "workflow_role_missing",
         );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            message: err_message,
-        });
-    }
-
-    if !roles.has_any_role(required_roles) {
-        //
-        let err_message = trl("error-chapter-workflow-role-required");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Perm,
-            err_message = %err_message,
-            user_id = %user_id,
-            chapter_id = %chapter_id,
-            stage = ?stage,
-            oper = ?oper,
-            assignment_roles = ?roles,
-            required_roles = ?required_roles,
-            "expected error: workflow role missing",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            message: err_message,
-        });
     }
 
     accept(())
 }
 
-/// Verify the caller may join a chapter with the given role mask.
-///
-/// Rejects `ADMIN` roles (not assignable through the join flow). The caller
-/// must be a team member whose membership [`RoleMask`] contains the requested
-/// role bits.
-pub async fn check_join_role<P>(
-    proxy: &mut P,
-    user_id: &str,
-    chapter_info: &ChapterInfo,
+/// Verify the caller may join a chapter with the requested roles.
+pub fn check_join_role(
+    member_info: &MemberInfo,
     roles: RoleMask,
-) -> BaseRest<()>
-where
-    P: for<'a> Proxy<ResolveTeamId<'a>, Error = BaseError>
-        + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
-{
+) -> BaseRest<()> {
+    //
     if roles.has_any_role(&[RoleField::ADMIN]) {
         //
         let err_message = trl("error-chapter-role-not-assignable");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Args,
-            err_message = %err_message,
-            user_id = %user_id,
-            chapter_id = %chapter_info.id,
-            comic_id = %chapter_info.comic_id,
-            roles = ?roles,
-            "expected error: admin role is not assignable through join",
-        );
 
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
@@ -158,124 +63,18 @@ where
         });
     }
 
-    let team_id = ResolveTeamId::Comic {
-        id: &chapter_info.comic_id,
-    }
-    .proxy_on(proxy)
-    .await?;
-
-    let member_info = FindMemberInfo::UserTeam {
-        user_id,
-        team_id: &team_id,
-    }
-    .proxy_on(proxy)
-    .await?;
-
-    let Some(member_info) = member_info else {
-        //
-        let err_message = trl("error-team-member-required");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Perm,
-            err_message = %err_message,
-            user_id = %user_id,
-            chapter_id = %chapter_info.id,
-            comic_id = %chapter_info.comic_id,
-            team_id = %team_id,
-            roles = ?roles,
-            "expected error: chapter team member is missing",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            message: err_message,
-        });
-    };
-
     if !member_info.roles.contains_mask(roles) {
         //
-        let err_message = trl("error-chapter-role-not-assignable");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Perm,
-            err_message = %err_message,
-            user_id = %user_id,
-            chapter_id = %chapter_info.id,
-            comic_id = %chapter_info.comic_id,
-            team_id = %team_id,
-            roles = ?roles,
-            member_roles = ?member_info.roles,
-            "expected error: chapter member lacks requested roles",
+        return reject(
+            "error-chapter-role-not-assignable",
+            "chapter_member_roles_missing",
         );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            message: err_message,
-        });
     }
 
     accept(())
 }
 
-// Verify that at least one person on the chapter holds the role(s) required
-// for advancing `stage`. A workflow stage cannot be advanced unless someone
-// is assigned to the corresponding role.
-//
-// Called only for [`StageOper::Advance`]; revert operations do not require a
-// role holder.
-async fn check_chapter_has_role_holder<P>(
-    proxy: &mut P,
-    chapter_id: &str,
-    stage: Stage,
-) -> BaseRest<()>
-where
-    P: for<'a, 'b> Proxy<ListAssignmentInfos<'a, 'b>, Error = BaseError>,
-{
-    let required_roles =
-        required_roles_for_transition(stage, StageOper::Advance);
-
-    let assignment_infos = ListAssignmentInfos::Chapter {
-        chapter_id,
-        role: None,
-        incls: &[],
-    }
-    .proxy_on(proxy)
-    .await?;
-
-    let has_holder = assignment_infos
-        .iter()
-        .any(|info| info.roles.has_any_role(required_roles));
-
-    if !has_holder {
-        //
-        let err_message = trl("error-chapter-no-role-holder");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Perm,
-            err_message = %err_message,
-            chapter_id = %chapter_id,
-            stage = ?stage,
-            required_roles = ?required_roles,
-            "expected error: chapter workflow role has no holder",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            message: err_message,
-        });
-    }
-
-    accept(())
-}
-
-// Verify the caller is permitted to perform the given workflow transition
-// on the chapter. Chapter admins bypass per-stage checks and are allowed any
-// transition. Other assignments are validated against a whitelist.
-//
-// Return the workflow roles required to perform `oper` on `stage`.
-//
-// Returns an empty slice when the combination is unlisted (i.e., disallowed
-// unless the caller holds `ADMIN`).
+// Resolve the assignment roles that can apply one workflow transition.
 fn required_roles_for_transition(
     stage: Stage,
     oper: StageOper,
@@ -307,4 +106,22 @@ fn required_roles_for_transition(
 
         _ => &[],
     }
+}
+
+// Build and log one expected chapter-role permission error.
+fn reject(message_key: &str, event: &'static str) -> BaseRest<()> {
+    //
+    let err_message = trl(message_key);
+
+    tracing::warn!(
+        err_variant = ?ExpectedVariant::Perm,
+        err_message = %err_message,
+        event,
+        "expected chapter role error",
+    );
+
+    Err(BaseError::Expected {
+        variant: ExpectedVariant::Perm,
+        message: err_message,
+    })
 }

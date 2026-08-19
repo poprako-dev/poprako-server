@@ -4,6 +4,7 @@ use time::OffsetDateTime;
 
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::chapter::ChapterInfo;
+use crate::model::read::proj::chapter_workflow_record::ChapterWorkflowRecordInfo;
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::unit::UnitInfo;
@@ -25,6 +26,8 @@ pub struct ComicArchiveChapterSnapshot {
     pub chapter_info: ChapterInfo,
     /// Assignments linked to this chapter at the time of archiving.
     pub assignment_infos: Vec<AssignmentInfo>,
+    /// Immutable workflow records retained in language-neutral form.
+    pub workflow_record_infos: Vec<ChapterWorkflowRecordInfo>,
     /// All pages under this chapter, each containing its text units.
     pub page_snapshots: Vec<ComicArchivePageSnapshot>,
 }

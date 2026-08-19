@@ -1,6 +1,6 @@
 //! Non-transactional team read use cases.
 
-use poprako_orchestra::{OperRun as _, run_proxy};
+use poprako_orchestra::{Context, OperRun as _};
 use tracing::instrument;
 
 use crate::complex::team::TeamPermComplex;
@@ -30,7 +30,7 @@ pub async fn get_info<C, R, I>(
     id: String,
 ) -> BaseRest<TeamInfoView>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: TeamRepo<C>,
     I: ImagePool,
 {
@@ -58,7 +58,7 @@ pub async fn list_infos<C, R, I>(
     instr: ListTeamInfosInstr,
 ) -> BaseRest<Vec<TeamInfoView>>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: TeamRepo<C> + UserRepo<C> + Sync,
     I: ImagePool,
 {
@@ -68,13 +68,10 @@ where
 
         None => {
             //
-            TeamPermComplex::ensure_user_can_list_infos(
-                &mut run_proxy! {
-                    repo => for<'a> GetUserInfo<'a>;
-                },
-                &token.user_id,
-            )
-            .await?;
+            let user_info =
+                GetUserInfo::Id { id: &token.user_id }.run_on(repo).await?;
+
+            TeamPermComplex::ensure_user_can_list_infos(&user_info)?;
         }
 
         Some(_) => {}

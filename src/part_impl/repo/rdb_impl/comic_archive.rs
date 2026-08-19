@@ -13,60 +13,41 @@ use std::collections::HashMap;
 
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
-use poprako_orchestra::{Run, Step};
+use poprako_orchestra::{AtLeast, Level, Run, Step};
 use time::OffsetDateTime;
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
 
+use crate::part::nucl::RepeatableRead;
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::chapter::ChapterInfo;
+use crate::model::read::proj::chapter_workflow_record::ChapterWorkflowRecordInfo;
 use crate::model::read::proj::comic::ComicInfo;
-use crate::model::read::proj::comic_archive::{
-    ComicArchiveChapterSnapshot, ComicArchivePageSnapshot, ComicArchiveSnapshot,
-};
+use crate::model::read::proj::comic_archive::{ComicArchiveChapterSnapshot, ComicArchivePageSnapshot, ComicArchiveSnapshot};
 use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::unit::UnitInfo;
 use crate::model::read::proj::user::UserInfo;
 use crate::model::read::proj::workset::WorksetInfo;
-use crate::part::repo::oper::comic_archive::{
-    CommitComicArchive, DeleteComicArchives, GetComicArchiveSnapshotExcluded,
-    ListComicArchivePayloads,
-};
+use crate::part::repo::oper::comic_archive::{CommitComicArchive, DeleteComicArchives, GetComicArchiveSnapshotExcluded, ListComicArchivePayloads};
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::entity::assignment::AssignmentInfoRow;
 use crate::part_impl::repo::rdb_impl::entity::chapter::ChapterInfoRow;
+use crate::part_impl::repo::rdb_impl::entity::chapter_workflow_record::ChapterWorkflowRecordInfoRow;
 use crate::part_impl::repo::rdb_impl::entity::comic::ComicInfoRow;
 use crate::part_impl::repo::rdb_impl::entity::page::PageInfoRow;
 use crate::part_impl::repo::rdb_impl::entity::unit::UnitInfoRow;
 use crate::part_impl::repo::rdb_impl::entity::user::UserInfoRow;
 use crate::part_impl::repo::rdb_impl::entity::workset::WorksetInfoRow;
-use crate::part_impl::repo::rdb_impl::schema::t_assignment::dsl::{
-    f_chapter_id as assignment_chapter_id, t_assignment,
-};
-use crate::part_impl::repo::rdb_impl::schema::t_assignment_invitation::dsl::{
-    f_chapter_id as invitation_chapter_id, f_id as invitation_id,
-    t_assignment_invitation,
-};
-use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::{
-    f_comic_id as chapter_comic_id, f_id as chapter_id, t_chapter,
-};
-use crate::part_impl::repo::rdb_impl::schema::t_comic::dsl::{
-    f_id as comic_id, t_comic,
-};
-use crate::part_impl::repo::rdb_impl::schema::t_page::dsl::{
-    f_chapter_id as page_chapter_id, f_id as page_id, f_index as page_index,
-    t_page,
-};
-use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{
-    f_page_id as unit_page_id, t_unit,
-};
-use crate::part_impl::repo::rdb_impl::schema::t_user::dsl::{
-    f_id as user_id, t_user,
-};
-use crate::part_impl::repo::rdb_impl::schema::t_workset::dsl::{
-    f_id as workset_id, t_workset,
-};
+use crate::part_impl::repo::rdb_impl::schema::t_assignment::dsl::{f_chapter_id as assignment_chapter_id, t_assignment};
+use crate::part_impl::repo::rdb_impl::schema::t_assignment_invitation::dsl::{f_chapter_id as invitation_chapter_id, f_id as invitation_id, t_assignment_invitation};
+use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::{f_comic_id as chapter_comic_id, f_id as chapter_id, t_chapter};
+use crate::part_impl::repo::rdb_impl::schema::t_chapter_workflow_record::dsl::{f_chapter_id as workflow_record_chapter_id, f_created_at as workflow_record_created_at, f_id as workflow_record_id, t_chapter_workflow_record};
+use crate::part_impl::repo::rdb_impl::schema::t_comic::dsl::{f_id as comic_id, t_comic};
+use crate::part_impl::repo::rdb_impl::schema::t_page::dsl::{f_chapter_id as page_chapter_id, f_id as page_id, f_index as page_index, t_page};
+use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{f_page_id as unit_page_id, t_unit};
+use crate::part_impl::repo::rdb_impl::schema::t_user::dsl::{f_id as user_id, t_user};
+use crate::part_impl::repo::rdb_impl::schema::t_workset::dsl::{f_id as workset_id, t_workset};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::result::diesel;
 use crate::shared::{RdbConn, RdbContext};
@@ -238,6 +219,24 @@ async fn get_snapshot_excluded(
         .map(|chapter_info| chapter_info.id.clone())
         .collect::<Vec<_>>();
 
+    let workflow_record_rows = t_chapter_workflow_record
+        .filter(workflow_record_chapter_id.eq_any(&source_chapter_ids))
+        .select(ChapterWorkflowRecordInfoRow::as_select())
+        .order_by((
+            workflow_record_chapter_id.asc(),
+            workflow_record_created_at.asc(),
+            workflow_record_id.asc(),
+        ))
+        .for_update()
+        .load::<ChapterWorkflowRecordInfoRow>(conn)
+        .await
+        .map_err(diesel)?;
+
+    let workflow_record_infos = workflow_record_rows
+        .into_iter()
+        .map(ChapterWorkflowRecordInfo::try_from)
+        .collect::<BaseRest<Vec<_>>>()?;
+
     let _ = t_assignment_invitation
         .filter(invitation_chapter_id.eq_any(&source_chapter_ids))
         .select(invitation_id)
@@ -349,6 +348,16 @@ async fn get_snapshot_excluded(
             .push(assignment_info);
     }
 
+    let mut workflow_record_infos_by_chapter = HashMap::new();
+
+    for workflow_record_info in workflow_record_infos {
+        //
+        workflow_record_infos_by_chapter
+            .entry(workflow_record_info.chapter_id.clone())
+            .or_insert_with(Vec::new)
+            .push(workflow_record_info);
+    }
+
     let mut unit_infos_by_page = HashMap::new();
 
     for unit_info in unit_infos {
@@ -383,8 +392,11 @@ async fn get_snapshot_excluded(
         .into_iter()
         .map(|chapter_info| {
             //
-            let (assignment_infos, page_snapshots) = (
+            let (assignment_infos, workflow_record_infos, page_snapshots) = (
                 assignment_infos_by_chapter
+                    .remove(&chapter_info.id)
+                    .unwrap_or_default(),
+                workflow_record_infos_by_chapter
                     .remove(&chapter_info.id)
                     .unwrap_or_default(),
                 page_snapshots_by_chapter
@@ -395,6 +407,7 @@ async fn get_snapshot_excluded(
             ComicArchiveChapterSnapshot {
                 chapter_info,
                 assignment_infos,
+                workflow_record_infos,
                 page_snapshots,
             }
         })
@@ -409,11 +422,11 @@ async fn get_snapshot_excluded(
 
 impl<L> Step<GetComicArchiveSnapshotExcluded<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<RepeatableRead>,
 {
     // Use base errors for snapshot reads in comic archive transactions.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -452,11 +465,11 @@ impl Run<ListComicArchivePayloads<'_>> for HybRepo {
 
 impl<L> Step<CommitComicArchive<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<RepeatableRead>,
 {
     // Use base errors for commit operations.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -474,11 +487,11 @@ where
 
 impl<L> Step<DeleteComicArchives<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<RepeatableRead>,
 {
     // Use base errors for comic-archive cleanup during hard deletion.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;

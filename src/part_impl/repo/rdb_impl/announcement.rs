@@ -6,12 +6,13 @@ pub mod tests;
 
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
-use poprako_orchestra::{Run, Step};
+use poprako_orchestra::{AtLeast, Level, Run, Step};
 use tracing::instrument;
 
 use crate::model::read::proj::announcement::AnnouncementInfo;
 use crate::model::read::spec::announcement::AnnouncementListSpec;
 use crate::model::write::announcement::AnnouncementEntry;
+use crate::part::nucl::RepeatableRead;
 use crate::part::repo::oper::announcement::{
     CreateAnnouncement, ListAnnouncementInfos,
 };
@@ -93,11 +94,11 @@ impl Run<ListAnnouncementInfos<'_>> for HybRepo {
 
 impl<L> Step<CreateAnnouncement<'_>, RdbContext<L>> for HybRepo
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<RepeatableRead>,
 {
     // Error type for the Step trait impl on announcement creation.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;

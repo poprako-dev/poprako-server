@@ -4,10 +4,10 @@
 #[cfg(test)]
 pub mod tests;
 
-use poprako_orchestra::{
-    AtLeast, Nucl, OperRun as _, OperStep as _, run_proxy, step_proxy,
-};
+use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
+
+use poprako_util::i18n::trl;
 
 use crate::complex::workset::{WorksetComplex, WorksetPermComplex};
 use crate::data::instr::workset::{
@@ -15,39 +15,24 @@ use crate::data::instr::workset::{
 };
 use crate::data::val::workset::CreateWorksetVal;
 use crate::data::view::workset::WorksetInfoView;
+use crate::model::read::spec::comic::ComicListSpec;
 use crate::model::shared::user::UserToken;
 use crate::model::write::workset::{WorksetEntry, WorksetRepl};
 use crate::part::nucl::{RepeatableRead, Serializable};
 use crate::part::prom::Prom;
-use crate::part::prom::oper::{Defer, DeferBatch};
-use crate::part::prom::payload::TaskPayload;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::chapter::ChapterRepo;
+use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::comic_archive::ComicArchiveRepo;
 use crate::part::repo::member::MemberRepo;
-use crate::part::repo::oper::assignment::DeleteAssignments;
-use crate::part::repo::oper::assignment_invitation::DeleteAssignmentInvitations;
-use crate::part::repo::oper::chapter::{
-    DeleteChapter, GetChapterInfoExcluded, ListChapterInfosExcluded,
-    UnpinOtherChapters, UpdateChapter,
-};
-use crate::part::repo::oper::comic::{
-    DeleteComic, GetComicInfoExcluded, ListComicInfosExcluded,
-    TouchComicLastActive, UpdateComicChapterCount,
-};
-use crate::part::repo::oper::comic_archive::DeleteComicArchives;
+use crate::part::repo::oper::comic::ListComicInfosExcluded;
 use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part::repo::oper::page::{DeletePages, ListPageInfos};
 use crate::part::repo::oper::team::AllocTeamWorksetIndex;
-use crate::part::repo::oper::term::DeleteTerms;
-use crate::part::repo::oper::termbase::{
-    DeleteTermbase, GetTermbaseInfoExcluded, ListTermbaseInfosExcluded,
-};
 use crate::part::repo::oper::workset::{
     CreateWorkset, DeleteWorkset, GetWorksetInfo, GetWorksetInfoExcluded,
-    ListWorksetInfos, UpdateWorkset, UpdateWorksetComicCount,
+    ListWorksetInfos, UpdateWorkset,
 };
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
@@ -55,7 +40,10 @@ use crate::part::repo::term::TermRepo;
 use crate::part::repo::termbase::TermbaseRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::usecase::comic::delete_cascade as delete_comic_cascade;
+use crate::usecase::internal::member::MemberLoader;
+use crate::usecase::internal::util::LoadMode;
 
 /// Creates a new workset inside a team.
 #[instrument(level = "info", skip(nucl, repo))]
@@ -65,20 +53,28 @@ pub async fn create<N, C, R>(
     instr: CreateWorksetInstr,
 ) -> BaseRest<CreateWorksetVal>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: TeamRepo<C> + WorksetRepo<C> + MemberRepo<C> + Send + Sync,
 {
-    WorksetPermComplex::ensure_user_can_create(
-        &mut run_proxy! {
-            repo => for<'a> FindMemberInfo<'a>;
-        },
-        &token.user_id,
-        &instr.team_id,
-    )
+    let member_info = FindMemberInfo::UserTeam {
+        user_id: &token.user_id,
+        team_id: &instr.team_id,
+    }
+    .run_on(repo)
     .await?;
+
+    let Some(member_info) = member_info else {
+        //
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: trl("error-team-admin-required"),
+        });
+    };
+
+    WorksetPermComplex::ensure_user_can_create(&member_info)?;
 
     let workset_id = nucl
         .coord(async move |context| {
@@ -116,19 +112,18 @@ pub async fn get_info<C, R>(
     id: String,
 ) -> BaseRest<WorksetInfoView>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: WorksetRepo<C> + MemberRepo<C> + Sync,
 {
-    WorksetPermComplex::ensure_user_can_get_info(
-        &mut run_proxy! {
-            repo =>
-                for<'a> GetWorksetInfo<'a>,
-                for<'a> FindMemberInfo<'a>;
-        },
+    let member_info = MemberLoader::load_info_from_workset(
+        repo,
+        LoadMode::Run,
         &token.user_id,
         &id,
     )
     .await?;
+
+    WorksetPermComplex::ensure_user_can_get_info(&member_info)?;
 
     let workset_info = GetWorksetInfo { id: &id }.run_on(repo).await?;
 
@@ -143,17 +138,25 @@ pub async fn list_infos<C, R>(
     instr: ListWorksetInfosInstr,
 ) -> BaseRest<Vec<WorksetInfoView>>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: WorksetRepo<C> + MemberRepo<C> + Sync,
 {
-    WorksetPermComplex::ensure_user_can_list_infos(
-        &mut run_proxy! {
-            repo => for<'a> FindMemberInfo<'a>;
-        },
-        &token.user_id,
-        &instr.team_id,
-    )
+    let member_info = FindMemberInfo::UserTeam {
+        user_id: &token.user_id,
+        team_id: &instr.team_id,
+    }
+    .run_on(repo)
     .await?;
+
+    let Some(member_info) = member_info else {
+        //
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: trl("error-team-member-required"),
+        });
+    };
+
+    WorksetPermComplex::ensure_user_can_list_infos(&member_info)?;
 
     let workset_infos = ListWorksetInfos {
         team_id: &instr.team_id,
@@ -174,19 +177,18 @@ pub async fn update_info<C, R>(
     instr: UpdateWorksetInfoInstr,
 ) -> BaseRest<()>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: WorksetRepo<C> + MemberRepo<C> + Sync,
 {
-    WorksetPermComplex::ensure_user_can_update_info(
-        &mut run_proxy! {
-            repo =>
-                for<'a> GetWorksetInfo<'a>,
-                for<'a> FindMemberInfo<'a>;
-        },
+    let member_info = MemberLoader::load_info_from_workset(
+        repo,
+        LoadMode::Run,
         &token.user_id,
         &instr.id,
     )
     .await?;
+
+    WorksetPermComplex::ensure_user_can_update_info(&member_info)?;
 
     let workset_info_update = WorksetRepl {
         id: instr.id,
@@ -211,7 +213,7 @@ pub async fn delete<N, C, R, P>(
     id: String,
 ) -> BaseRest<()>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<Serializable>,
@@ -220,6 +222,7 @@ where
         + ComicArchiveRepo<C>
         + MemberRepo<C>
         + ChapterRepo<C>
+        + ChapterWorkflowRecordRepo<C>
         + PageRepo<C>
         + AssignmentInvitationRepo<C>
         + AssignmentRepo<C>
@@ -230,59 +233,81 @@ where
         + Sync,
     P: Prom<C> + Send + Sync,
 {
-    WorksetPermComplex::ensure_user_can_delete(
-        &mut run_proxy! {
-            repo =>
-                for<'a> GetWorksetInfo<'a>,
-                for<'a> FindMemberInfo<'a>;
-        },
+    let member_info = MemberLoader::load_info_from_workset(
+        repo,
+        LoadMode::Run,
         &token.user_id,
         &id,
     )
     .await?;
 
+    WorksetPermComplex::ensure_user_can_delete(&member_info)?;
+
     nucl.coord(async move |context| {
-        //
-        let guarded_repo = &crate::part::nucl::GuardedStep::new(repo);
-
-        let guarded_prom = &crate::part::nucl::GuardedStep::new(prom);
-
-        WorksetComplex::delete_cascade(
-            &mut step_proxy! {
-                context;
-                guarded_repo =>
-                    for<'a> GetWorksetInfoExcluded<'a>,
-                    for<'a> ListComicInfosExcluded<'a>,
-                    for<'a> DeleteWorkset<'a>,
-                    for<'a, 'b> GetComicInfoExcluded<'a, 'b>,
-                    for<'a> ListChapterInfosExcluded<'a>,
-                    for<'a> DeleteComic<'a>,
-                    for<'a> DeleteComicArchives<'a>,
-                    for<'a> UpdateWorksetComicCount<'a>,
-                    for<'a, 'b> GetChapterInfoExcluded<'a, 'b>,
-                    for<'a> ListPageInfos<'a>,
-                    for<'a> DeleteAssignmentInvitations<'a>,
-                    for<'a> DeleteAssignments<'a>,
-                    for<'a> DeletePages<'a>,
-                    for<'a> DeleteChapter<'a>,
-                    for<'a> UpdateChapter<'a>,
-                    for<'a> UnpinOtherChapters<'a>,
-                    for<'a> UpdateComicChapterCount<'a>,
-                    for<'a> TouchComicLastActive<'a>,
-                    for<'a> ListTermbaseInfosExcluded<'a>,
-                    for<'a> GetTermbaseInfoExcluded<'a>,
-                    for<'a> DeleteTerms<'a>,
-                    for<'a> DeleteTermbase<'a>;
-                guarded_prom =>
-                    for<'a> Defer<'a, String, TaskPayload, ()>,
-                    for<'t, 'a> DeferBatch<'t, 'a, String, TaskPayload, ()>;
-            },
-            &id,
-        )
-        .await?;
-
-        accept(())
+        delete_cascade(repo, prom, context, &id).await
     })
+    .await?;
+
+    accept(())
+}
+
+/// Deletes a workset subtree inside an existing transaction context.
+pub async fn delete_cascade<C, R, P>(
+    repo: &R,
+    prom: &P,
+    context: &mut C,
+    id: &str,
+) -> BaseRest<()>
+where
+    C: Context,
+    R: WorksetRepo<C>
+        + ComicRepo<C>
+        + ComicArchiveRepo<C>
+        + ChapterRepo<C>
+        + ChapterWorkflowRecordRepo<C>
+        + PageRepo<C>
+        + AssignmentInvitationRepo<C>
+        + AssignmentRepo<C>
+        + TermbaseRepo<C>
+        + TermRepo<C>
+        + Sync,
+    P: Prom<C> + Sync,
+{
+    let workset_info =
+        GetWorksetInfoExcluded { id }.step_on(repo, context).await?;
+
+    // Bound each cascade page while repeatedly deleting from offset zero.
+    const PAGE_SIZE: u32 = 50;
+
+    loop {
+        //
+        let list_spec = ComicListSpec {
+            workset_id: workset_info.id.clone(),
+            fuzzy_title: None,
+            stages: None,
+            status: None,
+            incl_opt: Vec::new(),
+            offset: 0,
+            limit: PAGE_SIZE,
+        };
+
+        let comic_infos = ListComicInfosExcluded { spec: &list_spec }
+            .step_on(repo, context)
+            .await?;
+
+        if comic_infos.is_empty() {
+            break;
+        }
+
+        for comic_info in comic_infos {
+            delete_comic_cascade(repo, prom, context, &comic_info.id).await?;
+        }
+    }
+
+    DeleteWorkset {
+        id: &workset_info.id,
+    }
+    .step_on(repo, context)
     .await?;
 
     accept(())

@@ -280,7 +280,9 @@ async fn delete_removes_comic_updates_count_and_enqueues_cover_delete() {
 
     assert!(matches!(
         snapshot.prom_records[0].payload(),
-        TaskPayload::Image(ImagePayload::Delete { object_key }) if object_key == "cover.png"
+        TaskPayload::Image {
+            payload: ImagePayload::Delete { object_key },
+        } if object_key == "cover.png"
     ));
 }
 

@@ -22,7 +22,7 @@ mod test_shared;
 mod tests;
 
 use diesel_async::RunQueryDsl;
-use poprako_orchestra::Step;
+use poprako_orchestra::{AtLeast, Level, Step};
 use time::OffsetDateTime;
 use tokio::sync::watch;
 use tokio_util::sync::CancellationToken;
@@ -30,6 +30,7 @@ use tracing::instrument;
 
 use crate::part::effect::Develop;
 use crate::part::image::ImageManager;
+use crate::part::nucl::RepeatableRead;
 use crate::part::prom::oper::{Defer, DeferBatch};
 use crate::part::prom::payload::TaskPayload;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
@@ -127,11 +128,11 @@ impl Drop for RdbProm {
 
 impl<'a, L> Step<Defer<'a, String, TaskPayload, ()>, RdbContext<L>> for RdbProm
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<RepeatableRead>,
 {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -162,11 +163,11 @@ where
 impl<'t, 'a, L> Step<DeferBatch<'t, 'a, String, TaskPayload, ()>, RdbContext<L>>
     for RdbProm
 where
-    L: poprako_orchestra::Level + Send,
-    L: poprako_orchestra::AtLeast<crate::part::nucl::RepeatableRead>,
+    L: Level + Send,
+    L: AtLeast<RepeatableRead>,
 {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;

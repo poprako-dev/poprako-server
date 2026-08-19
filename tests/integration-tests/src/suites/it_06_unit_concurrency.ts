@@ -12,12 +12,12 @@
 // Covers test-plan: F6, F7, F8, F9.
 //
 // Grounded pins:
-//   - unit save is transactional; concurrent saves to DIFFERENT units commit
-//     independently. Same-unit concurrent saves are last-write-wins (no
-//     version field in the DTO).
+//   - unit save is Serializable. A serialization failure returns 409/code 8;
+//     the client retries the complete request. Same-unit concurrent saves are
+//     last-write-wins after successful commits (no version field in the DTO).
 //   - next_id insert is an in-memory order operation; concurrent inserts
-//     before the same anchor both succeed (each appends before the anchor in
-//     its own transaction; final order has both new units before the anchor).
+//     before the same anchor both eventually succeed after client retries;
+//     final order has both new units before the anchor.
 //
 // Status: IMPLEMENTED.
 
@@ -37,6 +37,7 @@ import {
     savePageUnits,
     updateUnit,
 } from "../http/fixtures.js";
+import { PHASE, stagePhase } from "../state/stages.js";
 import type { RunCtx } from "../state/runCtx.js";
 
 export const IMPLEMENTED = true as const;
@@ -114,7 +115,8 @@ export async function runIt06Module(ctx: RunCtx): Promise<void> {
         savePageUnits(trans03.api, p1Id, buildF6Edits(f6Trans03, "C")),
     ]);
 
-    // All three saves returned a fresh list; final assertions verify state.
+    // All three saves eventually returned a fresh list; the fixture handles
+    // retryable 409/code 8 responses at the client boundary.
     assert.equal(f6A.translated_unit_count <= 12, true, "F6 A count <= 12");
     assert.equal(f6B.translated_unit_count <= 12, true, "F6 B count <= 12");
     assert.equal(f6C.translated_unit_count <= 12, true, "F6 C count <= 12");
@@ -181,7 +183,7 @@ export async function runIt06Module(ctx: RunCtx): Promise<void> {
         ]),
     ]);
 
-    // Both succeed; the later committed Patch wins.
+    // Both eventually succeed; the later committed Patch wins.
     for (const r of f7Results) {
         assert.equal(r.status, "fulfilled", "F7 Patch must commit");
 
@@ -234,20 +236,15 @@ export async function runIt06Module(ctx: RunCtx): Promise<void> {
         ]),
     ]);
 
-    let f8SuccessCount = 0;
-
     for (const r of f8Results) {
-        if (r.status === "fulfilled") {
-            f8SuccessCount += 1;
-        } else {
-            assert.ok(
-                /422|409|status/i.test(String(r.reason)),
-                `F8 rejection must be 422/409, got: ${String(r.reason)}`,
-            );
-        }
+        assert.equal(
+            r.status,
+            "fulfilled",
+            `both F8 inserts must eventually succeed: ${r.status === "rejected" ? String(r.reason) : ""}`,
+        );
     }
 
-    assert.equal(f8SuccessCount, 2, "both F8 inserts must succeed");
+    const f8SuccessCount = f8Results.length;
 
     const p1AfterF8 = await listPageUnits(ctx.sadmin, p1Id);
     const priorIds = new Set(p1AfterF7.unit_infos.map((unit) => unit.id));
@@ -382,6 +379,12 @@ export async function runIt06Module(ctx: RunCtx): Promise<void> {
 
     assert.ok(p1FinalExport.units.length >= 12, "p1 has at least 12 units after F6-F9");
 
-    // main chapter workflow baseline must still hold (it_07 will advance it)
-    assert.equal(mainFinal.stages, 0, "main chapter still at workflow baseline");
+    // Translation edits and the earlier export auto-start their corresponding
+    // workflow stages. it_07 resets these through the public revert API.
+    assert.equal(stagePhase(mainFinal.stages, "translate"), PHASE.ACTIVE);
+    assert.equal(stagePhase(mainFinal.stages, "typeset-redraw"), PHASE.ACTIVE);
+    assert.equal(stagePhase(mainFinal.stages, "raw-provide"), PHASE.PENDING);
+    assert.equal(stagePhase(mainFinal.stages, "proofread"), PHASE.PENDING);
+    assert.equal(stagePhase(mainFinal.stages, "review"), PHASE.PENDING);
+    assert.equal(stagePhase(mainFinal.stages, "publish"), PHASE.PENDING);
 }

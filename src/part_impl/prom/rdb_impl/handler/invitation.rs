@@ -41,6 +41,8 @@ where
         //
         Ok(()) => TaskFlow::Complete,
 
-        Err(error) => TaskFlow::Retry(format!("{:?}", error)),
+        Err(error) => TaskFlow::Retry {
+            err_message: format!("{:?}", error),
+        },
     }
 }

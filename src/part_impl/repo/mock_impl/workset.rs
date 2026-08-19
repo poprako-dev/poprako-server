@@ -5,6 +5,7 @@ use tracing::instrument;
 
 use crate::model::read::proj::workset::WorksetInfo;
 use crate::model::write::workset::WorksetRepl;
+use crate::part::nucl::RepeatableRead;
 use crate::part::repo::oper::workset::{
     AllocWorksetComicIndex, CreateWorkset, DeleteWorkset, GetWorksetInfo,
     GetWorksetInfoExcluded, ListWorksetInfos, ListWorksetInfosExcluded,
@@ -140,7 +141,7 @@ impl<'a> Run<UpdateWorkset<'a>> for Mock {
 
 impl<'a> Step<GetWorksetInfo<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -158,7 +159,7 @@ impl<'a> Step<GetWorksetInfo<'a>, MockContext> for Mock {
 
 impl<'a> Step<ListWorksetInfos<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -176,7 +177,7 @@ impl<'a> Step<ListWorksetInfos<'a>, MockContext> for Mock {
 
 impl<'a> Step<GetWorksetInfoExcluded<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -194,7 +195,7 @@ impl<'a> Step<GetWorksetInfoExcluded<'a>, MockContext> for Mock {
 
 impl<'a> Step<ListWorksetInfosExcluded<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -221,7 +222,7 @@ impl<'a> Step<ListWorksetInfosExcluded<'a>, MockContext> for Mock {
 
 impl<'a> Step<CreateWorkset<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -266,7 +267,7 @@ impl<'a> Step<CreateWorkset<'a>, MockContext> for Mock {
 
 impl<'a> Step<DeleteWorkset<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -333,7 +334,7 @@ impl<'a> Step<DeleteWorkset<'a>, MockContext> for Mock {
 
 impl<'a> Step<AllocWorksetComicIndex<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -369,7 +370,7 @@ impl<'a> Step<AllocWorksetComicIndex<'a>, MockContext> for Mock {
 
 impl<'a> Step<UpdateWorksetComicCount<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;

@@ -167,7 +167,12 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::user::delete::<_, RdbContext<RepeatableRead>, HybRepo, RdbProm>(
+    usecase::user::delete::delete::<
+        _,
+        RdbContext<RepeatableRead>,
+        HybRepo,
+        RdbProm,
+    >(
         (harn.nucl().repeatable_read(), harn.repo(), harn.prom()),
         user_token,
         user_id,

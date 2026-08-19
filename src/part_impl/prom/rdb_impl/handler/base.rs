@@ -16,6 +16,7 @@ use crate::part::image::ImageManager;
 use crate::part::prom::payload::TaskPayload;
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::chapter::ChapterRepo;
+use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member_invitation::MemberInvitationRepo;
 use crate::part::repo::page::PageRepo;
@@ -50,6 +51,7 @@ where
     N: Nucl<Context = RdbContext, Error = BaseError>,
     R: AssignmentInvitationRepo<RdbContext>
         + ChapterRepo<RdbContext>
+        + ChapterWorkflowRecordRepo<RdbContext>
         + ComicRepo<RdbContext>
         + MemberInvitationRepo<RdbContext>
         + PageRepo<RdbContext>
@@ -94,6 +96,7 @@ where
     N: Nucl<Context = RdbContext, Error = BaseError>,
     R: AssignmentInvitationRepo<RdbContext>
         + ChapterRepo<RdbContext>
+        + ChapterWorkflowRecordRepo<RdbContext>
         + ComicRepo<RdbContext>
         + MemberInvitationRepo<RdbContext>
         + PageRepo<RdbContext>
@@ -116,33 +119,37 @@ where
                 "JSON SDK deserialization error",
             );
 
-            return TaskFlow::Dead(format!(
-                "failed to deserialize prom payload: {}",
-                error
-            ));
+            return TaskFlow::Dead {
+                err_message: format!(
+                    "failed to deserialize prom payload: {}",
+                    error
+                ),
+            };
         }
     };
 
     if payload.topic() != topic {
         //
-        return TaskFlow::Dead(format!(
-            "prom topic {} does not match payload topic {}",
-            topic,
-            payload.topic()
-        ));
+        return TaskFlow::Dead {
+            err_message: format!(
+                "prom topic {} does not match payload topic {}",
+                topic,
+                payload.topic()
+            ),
+        };
     }
 
     match payload {
         //
-        TaskPayload::Chapter(task) => {
+        TaskPayload::Chapter { payload: task } => {
             chapter::handle(nucl, repo, develop, &task).await
         }
 
-        TaskPayload::Image(task) => {
+        TaskPayload::Image { payload: task } => {
             image::handle(nucl, repo, image_pool, &task).await
         }
 
-        TaskPayload::Invitation(event) => {
+        TaskPayload::Invitation { payload: event } => {
             invitation::handle(repo, &event).await
         }
     }

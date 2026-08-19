@@ -162,11 +162,13 @@ async fn develop_dispatches_user_signup() {
 
     let develop = AsyncEffectDevelop::new(Arc::clone(&mock), 8);
 
-    Event::UserSignedUp(UserSignedUpEvent {
-        team_id: "team-1".to_string(),
-        invitor_id: "user-owner".to_string(),
-        invitee_qid: "10001".to_string(),
-    })
+    Event::UserSignedUp {
+        payload: UserSignedUpEvent {
+            team_id: "team-1".to_string(),
+            invitor_id: "user-owner".to_string(),
+            invitee_qid: "10001".to_string(),
+        },
+    }
     .develop_on(&develop)
     .await;
 
@@ -201,10 +203,12 @@ async fn develop_dispatches_chapter_workflow_completed() {
 
     let develop = AsyncEffectDevelop::new(Arc::clone(&mock), 8);
 
-    Event::ChapterWorkflowCompleted(ChapterWorkflowCompletedEvent {
-        chapter_id: "chapter-1".to_string(),
-        completed_stage: Stage::Translate,
-    })
+    Event::ChapterWorkflowCompleted {
+        payload: ChapterWorkflowCompletedEvent {
+            chapter_id: "chapter-1".to_string(),
+            completed_stage: Stage::Translate,
+        },
+    }
     .develop_on(&develop)
     .await;
 
@@ -239,9 +243,11 @@ async fn develop_dispatches_chapter_published() {
 
     let develop = AsyncEffectDevelop::new(Arc::clone(&mock), 8);
 
-    Event::ChapterPublished(ChapterPublishedEvent {
-        chapter_id: "chapter-1".to_string(),
-    })
+    Event::ChapterPublished {
+        payload: ChapterPublishedEvent {
+            chapter_id: "chapter-1".to_string(),
+        },
+    }
     .develop_on(&develop)
     .await;
 

@@ -6,6 +6,7 @@ use tracing::instrument;
 use crate::complex::user::UserComplex;
 use crate::model::read::proj::user::{UserCredential, UserInfo};
 use crate::model::write::user::{UserAvatarReservation, UserEntry};
+use crate::part::nucl::RepeatableRead;
 use crate::part::repo::oper::user::{
     CreateUser, DeleteUser, FindUserInfo, GetUserCredential, GetUserInfo,
     GetUserInfoExcluded, ReserveUserAvatar, UpdateUser,
@@ -262,7 +263,7 @@ impl<'a> Run<UpdateUser<'a>> for Mock {
 
 impl<'a> Step<CreateUser<'a>, MockContext> for Mock {
     // Keep step errors as `BaseError` in mocked transactions.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -280,7 +281,7 @@ impl<'a> Step<CreateUser<'a>, MockContext> for Mock {
 
 impl<'a> Step<FindUserInfo<'a>, MockContext> for Mock {
     // Keep step errors as `BaseError` in mocked transactions.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -304,7 +305,7 @@ impl<'a> Step<FindUserInfo<'a>, MockContext> for Mock {
 
 impl<'a> Step<UpdateUser<'a>, MockContext> for Mock {
     // Keep step errors as `BaseError` in mocked transactions.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -322,7 +323,7 @@ impl<'a> Step<UpdateUser<'a>, MockContext> for Mock {
 
 impl<'a> Step<ReserveUserAvatar<'a>, MockContext> for Mock {
     // Keep step errors as `BaseError` in mocked transactions.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -414,7 +415,7 @@ impl<'a> Step<ReserveUserAvatar<'a>, MockContext> for Mock {
 
 impl<'a> Step<GetUserInfoExcluded<'a>, MockContext> for Mock {
     // Keep step errors as `BaseError` in mocked transactions.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -435,7 +436,7 @@ impl<'a> Step<GetUserInfoExcluded<'a>, MockContext> for Mock {
 
 impl<'a> Step<DeleteUser<'a>, MockContext> for Mock {
     // Keep step errors as `BaseError` in mocked transactions.
-    type Level = crate::part::nucl::RepeatableRead;
+    type Level = RepeatableRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;

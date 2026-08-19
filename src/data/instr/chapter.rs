@@ -2,6 +2,9 @@
 
 //! Data transfer objects for chapter use cases.
 
+#[cfg(test)]
+mod tests;
+
 use serde::Deserialize;
 #[cfg(feature = "swagger")]
 use utoipa::{IntoParams, ToSchema};
@@ -53,6 +56,19 @@ pub struct ListChapterInfosInstr {
     pub limit: u32,
 }
 
+/// Input parameters for listing immutable workflow records under one chapter.
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger", derive(IntoParams))]
+#[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
+pub struct ListChapterWorkflowRecordInfosInstr {
+    /// Chapter whose activity records are listed.
+    pub chapter_id: String,
+    /// Pagination offset: number of records to skip before beginning the result set.
+    pub offset: u32,
+    /// Maximum number of records to return.
+    pub limit: u32,
+}
+
 /// Input parameters for partially updating a chapter's profile.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
@@ -69,6 +85,110 @@ pub struct UpdateChapterInfoInstr {
 /// Encodes a single operation on a specific stage, e.g. "start translating"
 /// on the `translate` stage. The use case layer validates that the
 /// transition is legal for the current stage phase before applying it.
+#[derive(Debug, Clone, Copy, Deserialize)]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[serde(rename_all = "snake_case")]
+pub enum ChapterStageInstr {
+    /// Raw-provision stage.
+    RawProvide,
+
+    /// Translation stage.
+    Translate,
+
+    /// Proofreading stage.
+    Proofread,
+
+    /// Typesetting and redraw stage.
+    TypesetRedraw,
+
+    /// Review stage.
+    Review,
+
+    /// Publishing stage.
+    Publish,
+}
+
+impl From<ChapterStageInstr> for Stage {
+    // Converts the transport stage into the domain stage.
+    fn from(stage: ChapterStageInstr) -> Self {
+        //
+        match stage {
+            //
+            ChapterStageInstr::RawProvide => Self::RawProvide,
+
+            ChapterStageInstr::Translate => Self::Translate,
+
+            ChapterStageInstr::Proofread => Self::Proofread,
+
+            ChapterStageInstr::TypesetRedraw => Self::TypesetRedraw,
+
+            ChapterStageInstr::Review => Self::Review,
+
+            ChapterStageInstr::Publish => Self::Publish,
+        }
+    }
+}
+
+impl From<Stage> for ChapterStageInstr {
+    // Converts the domain stage into the transport stage.
+    fn from(stage: Stage) -> Self {
+        //
+        match stage {
+            //
+            Stage::RawProvide => Self::RawProvide,
+
+            Stage::Translate => Self::Translate,
+
+            Stage::Proofread => Self::Proofread,
+
+            Stage::TypesetRedraw => Self::TypesetRedraw,
+
+            Stage::Review => Self::Review,
+
+            Stage::Publish => Self::Publish,
+        }
+    }
+}
+
+/// Operation accepted by the workflow-stage JSON body.
+#[derive(Debug, Clone, Copy, Deserialize)]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[serde(rename_all = "snake_case")]
+pub enum ChapterStageOperInstr {
+    /// Advance the stage.
+    Advance,
+
+    /// Revert the stage.
+    Revert,
+}
+
+impl From<ChapterStageOperInstr> for StageOper {
+    // Converts the transport operation into the domain operation.
+    fn from(oper: ChapterStageOperInstr) -> Self {
+        //
+        match oper {
+            //
+            ChapterStageOperInstr::Advance => Self::Advance,
+
+            ChapterStageOperInstr::Revert => Self::Revert,
+        }
+    }
+}
+
+impl From<StageOper> for ChapterStageOperInstr {
+    // Converts the domain operation into the transport operation.
+    fn from(oper: StageOper) -> Self {
+        //
+        match oper {
+            //
+            StageOper::Advance => Self::Advance,
+
+            StageOper::Revert => Self::Revert,
+        }
+    }
+}
+
+/// Input parameters for applying one chapter workflow-stage operation.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateChapterStageInstr {
@@ -76,7 +196,7 @@ pub struct UpdateChapterStageInstr {
     pub id: String,
 
     /// Workflow stage to operate on.
-    pub stage: Stage,
+    pub stage: ChapterStageInstr,
     /// Operation to apply to the target stage (e.g. start, finish, revert).
-    pub oper: StageOper,
+    pub oper: ChapterStageOperInstr,
 }

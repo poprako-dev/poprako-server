@@ -166,7 +166,7 @@ pub async fn list_infos(
         limit: query.limit,
     };
 
-    usecase::comic::list_infos::<RdbContext<RepeatableRead>, HybRepo, _>(
+    usecase::comic::list::list_infos::<RdbContext<RepeatableRead>, HybRepo, _>(
         (harn.repo(), harn.image_pool()),
         user_token,
         instr,
@@ -258,7 +258,7 @@ pub async fn reserve_cover(
     Json(instr): Json<ReserveComicCoverInstr>,
 ) -> HttpResult<ReserveComicCoverVal> {
     //
-    usecase::comic::reserve_cover::<
+    usecase::comic::reserve::reserve_cover::<
         _,
         RdbContext<RepeatableRead>,
         HybRepo,

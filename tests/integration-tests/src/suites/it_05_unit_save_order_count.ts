@@ -119,11 +119,20 @@ export async function runIt05Module(ctx: RunCtx): Promise<void> {
 
     assert.equal(f10Reserve.pages.length, mainExport.pages.length);
 
-    // invalid format -> 422/2
-    expectError(
+    // JSON body enum values are snake_case; kebab-case is query-only.
+    expectStatus(
         await ctx.sadmin.post<ErrorBody>(`/api/v1/chapters/${f10Chapter.id}/translations/import`, {
             content: "garbage-content",
             format: "label-plus",
+        }),
+        422,
+    );
+
+    // Valid format with invalid content -> 422/2.
+    expectError(
+        await ctx.sadmin.post<ErrorBody>(`/api/v1/chapters/${f10Chapter.id}/translations/import`, {
+            content: "garbage-content",
+            format: "label_plus",
         }),
         422,
         2,

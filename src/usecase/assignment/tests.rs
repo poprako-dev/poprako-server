@@ -23,6 +23,7 @@ use crate::model::read::proj::workset::WorksetInfo;
 use crate::model::shared::user::UserToken;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::test_util::now;
+use crate::usecase::assignment::update_roles::update_roles;
 use crate::value::chapter::{Stage, StageMask, StagePhase};
 use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};

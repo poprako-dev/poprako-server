@@ -285,9 +285,9 @@ async fn archive_retains_comic_marker_queues_images_and_deletes_children() {
         .iter()
         .filter_map(|prom_record| match prom_record.payload() {
             //
-            TaskPayload::Image(ImagePayload::Delete { object_key }) => {
-                Some(object_key.to_string())
-            }
+            TaskPayload::Image {
+                payload: ImagePayload::Delete { object_key },
+            } => Some(object_key.to_string()),
 
             _ => None,
         })

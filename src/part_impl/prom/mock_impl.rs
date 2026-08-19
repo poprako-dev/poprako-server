@@ -15,12 +15,12 @@ mod defer;
 // Internal organization of the `tests` module.
 mod tests;
 
+use crate::part_impl::prom::mock_impl::image_task::ResourceState;
 use poprako_orchestra::{Nucl as _, OperStep as _, Step};
 use time::OffsetDateTime;
 
 use poprako_util::i18n::trl;
 
-use self::image_task::ResourceState;
 use crate::model::read::proj::user::{UserCredential, UserInfo};
 use crate::model::write::page::PageImageRepl;
 use crate::model::write::team::TeamAvatarRepl;
@@ -127,15 +127,15 @@ pub async fn process_pending(mock: &Mock) -> BaseRest<()> {
         match payload {
             //
             // Internal implementation detail.
-            TaskPayload::Chapter(task) => {
+            TaskPayload::Chapter { payload: task } => {
                 chapter::process(mock, &task).await?;
             }
 
-            TaskPayload::Image(task) => {
+            TaskPayload::Image { payload: task } => {
                 process_image_task(mock, &task).await?;
             }
 
-            TaskPayload::Invitation(event) => {
+            TaskPayload::Invitation { payload: event } => {
                 invitation::process(mock, &event).await?;
             }
         }

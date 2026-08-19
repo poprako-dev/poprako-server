@@ -4,7 +4,7 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 
 use fluent_templates::fluent_bundle::FluentValue;
-use poprako_orchestra::OperRun as _;
+use poprako_orchestra::{Context, OperRun as _};
 use tracing::instrument;
 
 use poprako_util::i18n::{trl, trl_kv};
@@ -36,7 +36,7 @@ pub async fn notify_next_phase<C, R>(
     repo: &R,
     event: &ChapterWorkflowCompletedEvent,
 ) where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: AssignmentRepo<C> + ChapterRepo<C> + SystemMailRepo,
 {
     let Some((receiver_role, workflow_label)) =
@@ -66,7 +66,7 @@ pub async fn notify_reviewers_on_progress<C, R>(
     repo: &R,
     event: ChapterWorkflowCompletedEvent,
 ) where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: AssignmentRepo<C> + ChapterRepo<C> + SystemMailRepo,
 {
     let Some(workflow_label) = reviewer_progress_label(event.completed_stage)
@@ -83,7 +83,7 @@ pub async fn notify_reviewers_on_publish<C, R>(
     repo: &R,
     event: ChapterPublishedEvent,
 ) where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: AssignmentRepo<C> + ChapterRepo<C> + SystemMailRepo,
 {
     notify_reviewers(repo, &event.chapter_id, trl("mail-workflow-publish"))
@@ -126,7 +126,7 @@ fn next_phase_config(stage: Stage) -> Option<(RoleField, String)> {
 // Loads the chapter and resolves include data used by notification templates.
 async fn load_chapter<C, R>(repo: &R, chapter_id: &str) -> Option<ChapterInfo>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: ChapterRepo<C>,
 {
     let chapter_info = GetChapterInfo {
@@ -160,7 +160,7 @@ async fn build_assignment_mails<C, R>(
     workflow_label: String,
 ) -> Vec<SystemMailEntry>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: AssignmentRepo<C>,
 {
     let assignment_infos = ListAssignmentInfos::Chapter {
@@ -266,7 +266,7 @@ async fn notify_reviewers<C, R>(
     chapter_id: &str,
     workflow_label: String,
 ) where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: AssignmentRepo<C> + ChapterRepo<C> + SystemMailRepo,
 {
     let Some(chapter_info) = load_chapter(repo, chapter_id).await else {

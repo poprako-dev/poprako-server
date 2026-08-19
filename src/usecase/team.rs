@@ -1,9 +1,11 @@
 //! Team use cases — create, read, update, avatar management, and deletion.
 
-// Process-local online-user lease use cases.
-mod online;
-// Non-transactional team read use cases.
-mod read;
+/// Team deletion orchestration.
+pub mod delete;
+/// Process-local online-user lease use cases.
+pub mod online;
+/// Non-transactional team read use cases.
+pub mod read;
 
 #[cfg(test)]
 // Unit and integration tests for team management policies.
@@ -11,9 +13,7 @@ mod tests;
 
 use std::time::Duration;
 
-use poprako_orchestra::{
-    AtLeast, Nucl, OperRun as _, OperStep as _, run_proxy, step_proxy,
-};
+use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
@@ -32,57 +32,21 @@ use crate::model::shared::user::UserToken;
 use crate::model::write::member::MemberEntry;
 use crate::model::write::team::{TeamAvatarRepl, TeamEntry, TeamRepl};
 use crate::part::image::{ImageManager, ImagePool, ImageUploadSpec};
-use crate::part::nucl::{RepeatableRead, Serializable};
+use crate::part::nucl::RepeatableRead;
 use crate::part::prom::Prom;
-use crate::part::prom::oper::{Defer, DeferBatch};
+use crate::part::prom::oper::DeferBatch;
 use crate::part::prom::payload::{TaskPayload, image};
 use crate::part::prom::task::Task;
-use crate::part::repo::assignment::AssignmentRepo;
-use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
-use crate::part::repo::chapter::ChapterRepo;
-use crate::part::repo::comic::ComicRepo;
-use crate::part::repo::comic_archive::ComicArchiveRepo;
 use crate::part::repo::member::MemberRepo;
-use crate::part::repo::oper::assignment::DeleteAssignments;
-use crate::part::repo::oper::assignment_invitation::DeleteAssignmentInvitations;
-use crate::part::repo::oper::chapter::{
-    DeleteChapter, GetChapterInfoExcluded, ListChapterInfosExcluded,
-    UnpinOtherChapters, UpdateChapter,
-};
-use crate::part::repo::oper::comic::{
-    DeleteComic, GetComicInfoExcluded, ListComicInfosExcluded,
-    TouchComicLastActive, UpdateComicChapterCount,
-};
-use crate::part::repo::oper::comic_archive::DeleteComicArchives;
-use crate::part::repo::oper::member::{
-    CreateMember, DeleteMember, FindMemberInfo, ListMemberInfosExcluded,
-};
-use crate::part::repo::oper::page::{DeletePages, ListPageInfos};
+use crate::part::repo::oper::member::{CreateMember, FindMemberInfo};
 use crate::part::repo::oper::team::{
-    CreateTeam, DeleteTeam, GetTeamInfo, GetTeamInfoExcluded,
-    ReserveTeamAvatar, UpdateTeam,
-};
-use crate::part::repo::oper::term::DeleteTerms;
-use crate::part::repo::oper::termbase::{
-    DeleteTermbase, GetTermbaseInfoExcluded, ListTermbaseInfosExcluded,
+    CreateTeam, GetTeamInfo, GetTeamInfoExcluded, ReserveTeamAvatar, UpdateTeam,
 };
 use crate::part::repo::oper::user::{GetUserInfo, GetUserInfoExcluded};
-use crate::part::repo::oper::workset::{
-    DeleteWorkset, GetWorksetInfoExcluded, ListWorksetInfosExcluded,
-    UpdateWorksetComicCount,
-};
-use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
-use crate::part::repo::term::TermRepo;
-use crate::part::repo::termbase::TermbaseRepo;
-use crate::part::repo::unit::UnitRepo;
 use crate::part::repo::user::UserRepo;
-use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::value::role::{RoleField, RoleMask};
-
-pub use self::online::{list_online_user_ids, mark_self_online};
-pub use self::read::{get_info, list_infos};
 
 /// Creates a new team.
 ///
@@ -100,20 +64,16 @@ pub async fn create<N, C, R, I>(
     instr: CreateTeamInstr,
 ) -> BaseRest<TeamInfoView>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: TeamRepo<C> + UserRepo<C> + MemberRepo<C> + Send + Sync,
     I: ImagePool,
 {
-    TeamPermComplex::ensure_user_can_create(
-        &mut run_proxy! {
-            repo => for<'a> GetUserInfo<'a>;
-        },
-        &token.user_id,
-    )
-    .await?;
+    let user_info = GetUserInfo::Id { id: &token.user_id }.run_on(repo).await?;
+
+    TeamPermComplex::ensure_user_can_create(&user_info)?;
 
     let team_entry = TeamEntry {
         id: TeamComplex::gen_id(),
@@ -169,20 +129,28 @@ pub async fn update_info<C, R>(
     instr: UpdateTeamInfoInstr,
 ) -> BaseRest<()>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: TeamRepo<C> + MemberRepo<C> + Sync,
 {
-    TeamPermComplex::ensure_user_can_update_info(
-        &mut run_proxy! {
-            repo => for<'a> FindMemberInfo<'a>;
-        },
-        &token.user_id,
-        &instr.id,
-    )
+    let member_info = FindMemberInfo::UserTeam {
+        user_id: &token.user_id,
+        team_id: &instr.id,
+    }
+    .run_on(repo)
     .await?;
 
+    let Some(member_info) = member_info else {
+        //
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: trl("error-team-admin-required"),
+        });
+    };
+
+    TeamPermComplex::ensure_user_can_update_info(&member_info)?;
+
     let repl = TeamRepl {
-        id: instr.id.clone(),
+        id: instr.id,
         name: instr.name,
         description: instr.description,
     };
@@ -218,7 +186,7 @@ pub async fn reserve_avatar<N, C, R, P, I>(
     instr: ReserveTeamAvatarInstr,
 ) -> BaseRest<ReserveTeamAvatarVal>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
@@ -232,16 +200,24 @@ where
     )?;
 
     let (transaction_image_hash, image_ext, new_byte_len) =
-        (instr.image_hash.clone(), instr.ext, instr.new_byte_len);
+        (instr.image_hash, instr.ext, instr.new_byte_len);
 
-    TeamPermComplex::ensure_user_can_reserve_avatar(
-        &mut run_proxy! {
-            repo => for<'a> FindMemberInfo<'a>;
-        },
-        &token.user_id,
-        &id,
-    )
+    let member_info = FindMemberInfo::UserTeam {
+        user_id: &token.user_id,
+        team_id: &id,
+    }
+    .run_on(repo)
     .await?;
+
+    let Some(member_info) = member_info else {
+        //
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: trl("error-team-admin-required"),
+        });
+    };
+
+    TeamPermComplex::ensure_user_can_reserve_avatar(&member_info)?;
 
     let (object_key, avatar_version, upload_required) = nucl
         .coord(async move |context| {
@@ -271,11 +247,11 @@ where
                 //
                 batch_ids.push(ImageComplex::gen_delete_id());
 
-                batch_payloads.push(TaskPayload::Image(
-                    image::ImagePayload::Delete {
+                batch_payloads.push(TaskPayload::Image {
+                    payload: image::ImagePayload::Delete {
                         object_key: prev_key.clone(),
                     },
-                ));
+                });
 
                 batch_delays.push(None);
             }
@@ -283,14 +259,14 @@ where
             // Schedule an upload verification check 15 minutes from now.
             batch_ids.push(ImageComplex::gen_check_id());
 
-            batch_payloads.push(TaskPayload::Image(
-                image::ImagePayload::CheckUpload {
+            batch_payloads.push(TaskPayload::Image {
+                payload: image::ImagePayload::CheckUpload {
                     resource_kind: image::ResourceKind::TeamAvatar,
                     resource_id: id.clone(),
                     object_key: avatar_reservation.object_key.clone(),
                     version: avatar_reservation.avatar_version,
                 },
-            ));
+            });
 
             batch_delays.push(Some(Duration::from_secs(15 * 60)));
 
@@ -359,21 +335,29 @@ pub async fn mark_avatar_uploaded<N, C, R, I>(
     instr: MarkTeamAvatarUploadedInstr,
 ) -> BaseRest<()>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: TeamRepo<C> + MemberRepo<C> + Send + Sync,
     I: ImageManager,
 {
-    TeamPermComplex::ensure_user_can_mark_avatar_uploaded(
-        &mut run_proxy! {
-            repo => for<'a> FindMemberInfo<'a>;
-        },
-        &token.user_id,
-        &id,
-    )
+    let member_info = FindMemberInfo::UserTeam {
+        user_id: &token.user_id,
+        team_id: &id,
+    }
+    .run_on(repo)
     .await?;
+
+    let Some(member_info) = member_info else {
+        //
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: trl("error-team-admin-required"),
+        });
+    };
+
+    TeamPermComplex::ensure_user_can_mark_avatar_uploaded(&member_info)?;
 
     let team_info = GetTeamInfo::Id { id: &id }.run_on(repo).await?;
 
@@ -442,31 +426,32 @@ where
     }
 
     let repl = TeamAvatarRepl {
-        id: id.clone(),
+        id,
         avatar_version: instr.image_version,
-        avatar_key: Some(avatar_key.clone()),
+        avatar_key: Some(avatar_key),
         is_avatar_uploaded: true,
     };
 
     nucl.coord(async move |context| {
         //
-        let locked_team_info = GetTeamInfoExcluded::Id { id: &id }
+        let locked_team_info = GetTeamInfoExcluded::Id { id: &repl.id }
             .step_on(repo, context)
             .await?;
 
         if locked_team_info.avatar_version != Some(instr.image_version)
-            || locked_team_info.avatar_key.as_deref() != Some(&avatar_key)
+            || locked_team_info.avatar_key.as_deref()
+                != repl.avatar_key.as_deref()
         {
             let err_message = trl("error-stale-avatar-upload");
 
             tracing::warn!(
                 err_variant = ?ExpectedVariant::Args,
                 err_message = %err_message,
-                team_id = %id,
+                team_id = %repl.id,
                 user_id = %token.user_id,
                 image_version = instr.image_version,
                 locked_image_version = locked_team_info.avatar_version,
-                avatar_key = %avatar_key,
+                avatar_key = ?repl.avatar_key,
                 "expected error: stale team avatar upload",
             );
 
@@ -479,110 +464,6 @@ where
         UpdateTeam::MarkAvatarUploaded { repl: &repl }
             .step_on(repo, context)
             .await?;
-
-        accept(())
-    })
-    .await?;
-
-    accept(())
-}
-
-/// Deletes a team and all associated instr.
-///
-/// Transactional cascade:
-///
-/// 1. Fetches the team info with a pessimistic lock.
-/// 2. Lists all worksets belonging to the team.
-/// 3. Deletes descendant worksets and comics through their own delete paths.
-/// 4. Enqueues avatar deletion if the team had an uploaded avatar.
-/// 5. Deletes the team itself.
-///
-/// # Type Parameters
-///
-/// * `N: Nucl<Context = C>` — Coordination nucleus.
-/// * `C` — Context anchor.
-/// * `R: TeamRepo<C> + WorksetRepo<C> + ComicRepo<C>` — Team, workset, and comic storage.
-/// * `P: Prom<C>` — Prom enqueuer for deferred avatar deletion.
-#[instrument(level = "info", skip(nucl, repo, prom))]
-pub async fn delete<N, C, R, P>(
-    (nucl, repo, prom): (&N, &R, &P),
-    token: UserToken,
-    id: String,
-) -> BaseRest<()>
-where
-    C: poprako_orchestra::Context,
-    N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
-    C::Level: AtLeast<Serializable>,
-    R: TeamRepo<C>
-        + WorksetRepo<C>
-        + ComicRepo<C>
-        + ComicArchiveRepo<C>
-        + MemberRepo<C>
-        + ChapterRepo<C>
-        + PageRepo<C>
-        + AssignmentInvitationRepo<C>
-        + AssignmentRepo<C>
-        + UnitRepo<C>
-        + TermbaseRepo<C>
-        + TermRepo<C>
-        + Send
-        + Sync,
-    P: Prom<C> + Send + Sync,
-{
-    TeamPermComplex::ensure_user_can_delete(
-        &mut run_proxy! {
-            repo => for<'a> FindMemberInfo<'a>;
-        },
-        &token.user_id,
-        &id,
-    )
-    .await?;
-
-    nucl.coord(async move |context| {
-        //
-        let guarded_repo = &crate::part::nucl::GuardedStep::new(repo);
-
-        let guarded_prom = &crate::part::nucl::GuardedStep::new(prom);
-
-        TeamComplex::delete_cascade(
-            &mut step_proxy! {
-                context;
-                guarded_repo =>
-                    for<'a> GetTeamInfoExcluded<'a>,
-                    for<'a> ListWorksetInfosExcluded<'a>,
-                    for<'a> DeleteTeam<'a>,
-                    for<'a> GetWorksetInfoExcluded<'a>,
-                    for<'a> ListComicInfosExcluded<'a>,
-                    for<'a> DeleteWorkset<'a>,
-                    for<'a, 'b> GetComicInfoExcluded<'a, 'b>,
-                    for<'a> ListChapterInfosExcluded<'a>,
-                    for<'a> DeleteComic<'a>,
-                    for<'a> DeleteComicArchives<'a>,
-                    for<'a> UpdateWorksetComicCount<'a>,
-                    for<'a, 'b> GetChapterInfoExcluded<'a, 'b>,
-                    for<'a> ListPageInfos<'a>,
-                    for<'a> DeleteAssignmentInvitations<'a>,
-                    for<'a> DeleteAssignments<'a>,
-                    for<'a> DeletePages<'a>,
-                    for<'a> DeleteChapter<'a>,
-                    for<'a> UpdateChapter<'a>,
-                    for<'a> UnpinOtherChapters<'a>,
-                    for<'a> UpdateComicChapterCount<'a>,
-                    for<'a> TouchComicLastActive<'a>,
-                    for<'a> ListTermbaseInfosExcluded<'a>,
-                    for<'a> GetTermbaseInfoExcluded<'a>,
-                    for<'a> DeleteTerms<'a>,
-                    for<'a> DeleteTermbase<'a>,
-                    for<'a> ListMemberInfosExcluded<'a>,
-                    for<'a> DeleteMember<'a>;
-                guarded_prom =>
-                    for<'a> Defer<'a, String, TaskPayload, ()>,
-                    for<'t, 'a> DeferBatch<'t, 'a, String, TaskPayload, ()>;
-            },
-            &id,
-        )
-        .await?;
 
         accept(())
     })

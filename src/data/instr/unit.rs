@@ -335,9 +335,9 @@ fn resolve_patch_id(
         //
         Patch::Clear => accept(Patch::Clear),
 
-        Patch::Assign(id) => {
-            accept(Patch::Assign(resolve_id(id, local_id_map)?))
-        }
+        Patch::Assign { value: id } => accept(Patch::Assign {
+            value: resolve_id(id, local_id_map)?,
+        }),
 
         Patch::Skip => accept(Patch::Skip),
     }

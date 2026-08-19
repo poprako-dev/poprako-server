@@ -5,6 +5,7 @@
 mod tests;
 
 use std::collections::BTreeMap;
+use std::env::var;
 use std::time::Duration;
 
 use anyhow::Context as _;
@@ -57,26 +58,26 @@ impl R2ImagePool {
         //
         // Internal implementation detail.
         let (account_id, access_key_id) = (
-            std::env::var("R2_ACCOUNT_ID").with_context(
+            var("R2_ACCOUNT_ID").with_context(
                 || "[R2ImagePool::from_env] R2_ACCOUNT_ID is not set",
             )?,
-            std::env::var("R2_ACCESS_KEY_ID").with_context(
+            var("R2_ACCESS_KEY_ID").with_context(
                 || "[R2ImagePool::from_env] R2_ACCESS_KEY_ID is not set",
             )?,
         );
 
         let (secret_access_key, region) = (
-            std::env::var("R2_SECRET_ACCESS_KEY").with_context(
+            var("R2_SECRET_ACCESS_KEY").with_context(
                 || "[R2ImagePool::from_env] R2_SECRET_ACCESS_KEY is not set",
             )?,
-            std::env::var("R2_REGION").unwrap_or_else(|_| "auto".to_string()),
+            var("R2_REGION").unwrap_or_else(|_| "auto".to_string()),
         );
 
         let (bucket, domain) = (
-            std::env::var("R2_BUCKET_NAME").with_context(
+            var("R2_BUCKET_NAME").with_context(
                 || "[R2ImagePool::from_env] R2_BUCKET_NAME is not set",
             )?,
-            std::env::var("R2_CUSTOM_DOMAIN").with_context(
+            var("R2_CUSTOM_DOMAIN").with_context(
                 || "[R2ImagePool::from_env] R2_CUSTOM_DOMAIN is not set",
             )?,
         );

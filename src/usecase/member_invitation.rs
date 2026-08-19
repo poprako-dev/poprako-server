@@ -6,9 +6,7 @@ mod tests;
 
 use std::time::Duration;
 
-use poprako_orchestra::{
-    AtLeast, Nucl, OperRun as _, OperStep as _, run_proxy,
-};
+use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
@@ -38,12 +36,14 @@ use crate::part::repo::member::MemberRepo;
 use crate::part::repo::member_invitation::MemberInvitationRepo;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::member_invitation::{
-    CreateMemberInvitation, DeleteMemberInvitation, GetMemberInvitationInfo,
-    ListMemberInvitationInfos, UpdateMemberInvitation,
+    CreateMemberInvitation, DeleteMemberInvitation, ListMemberInvitationInfos,
+    UpdateMemberInvitation,
 };
 use crate::part::repo::oper::user::FindUserInfo;
 use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::usecase::internal::member::MemberLoader;
+use crate::usecase::internal::util::LoadMode;
 use crate::util::next_snowflake_id;
 
 // Default invitation validity window for member invite tokens.
@@ -57,7 +57,7 @@ pub async fn create<N, C, R, P>(
     instr: CreateMemberInvitationInstr,
 ) -> BaseRest<CreateMemberInvitationVal>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
@@ -66,14 +66,32 @@ where
 {
     let roles = instr.roles;
 
-    MemberInvitationPermComplex::ensure_user_can_create(
-        &mut run_proxy! {
-            repo => for<'a> FindMemberInfo<'a>;
-        },
-        &token.user_id,
-        &instr.team_id,
-    )
+    let member_info = FindMemberInfo::UserTeam {
+        user_id: &token.user_id,
+        team_id: &instr.team_id,
+    }
+    .run_on(repo)
     .await?;
+
+    let Some(member_info) = member_info else {
+        //
+        let err_message = trl("error-team-admin-required");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Perm,
+            err_message = %err_message,
+            team_id = %instr.team_id,
+            user_id = %token.user_id,
+            "expected error: invitation creator membership missing",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: err_message,
+        });
+    };
+
+    MemberInvitationPermComplex::ensure_user_can_create(&member_info)?;
 
     let (member_invitation_id, code) = nucl
         .coord(async move |context| {
@@ -140,8 +158,12 @@ where
                 invitation_id: member_invitation_info.id.clone(),
             };
 
-            let (purge_payload, purge_task_id) =
-                (TaskPayload::Invitation(purge_event), next_snowflake_id());
+            let (purge_payload, purge_task_id) = (
+                TaskPayload::Invitation {
+                    payload: purge_event,
+                },
+                next_snowflake_id(),
+            );
 
             let purge_task = Task {
                 id: &purge_task_id,
@@ -169,18 +191,36 @@ pub async fn list_infos<C, R, I>(
     instr: ListMemberInvitationInfosInstr,
 ) -> BaseRest<Vec<MemberInvitationInfoView>>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     R: MemberInvitationRepo<C> + MemberRepo<C> + Sync,
     I: ImagePool,
 {
-    MemberInvitationPermComplex::ensure_user_can_list_infos(
-        &mut run_proxy! {
-            repo => for<'a> FindMemberInfo<'a>;
-        },
-        &token.user_id,
-        &instr.team_id,
-    )
+    let member_info = FindMemberInfo::UserTeam {
+        user_id: &token.user_id,
+        team_id: &instr.team_id,
+    }
+    .run_on(repo)
     .await?;
+
+    let Some(member_info) = member_info else {
+        //
+        let err_message = trl("error-team-member-required");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Perm,
+            err_message = %err_message,
+            team_id = %instr.team_id,
+            user_id = %token.user_id,
+            "expected error: invitation list membership missing",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: err_message,
+        });
+    };
+
+    MemberInvitationPermComplex::ensure_user_can_list_infos(&member_info)?;
 
     let member_invitation_list_spec = MemberInvitationListSpec {
         team_id: instr.team_id,
@@ -221,22 +261,21 @@ pub async fn update_roles<N, C, R>(
     instr: UpdateMemberInvitationRolesInstr,
 ) -> BaseRest<()>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: MemberInvitationRepo<C> + MemberRepo<C> + Send + Sync,
 {
-    MemberInvitationPermComplex::ensure_user_can_update_info(
-        &mut run_proxy! {
-            repo =>
-                for<'a, 'b> GetMemberInvitationInfo<'a, 'b>,
-                for<'a> FindMemberInfo<'a>;
-        },
+    let member_info = MemberLoader::load_info_from_member_invitation(
+        repo,
+        LoadMode::<C>::Run,
         &token.user_id,
         &instr.id,
     )
     .await?;
+
+    MemberInvitationPermComplex::ensure_user_can_update_info(&member_info)?;
 
     nucl.coord(async move |context| {
         //
@@ -268,22 +307,21 @@ pub async fn delete<N, C, R>(
     id: String,
 ) -> BaseRest<()>
 where
-    C: poprako_orchestra::Context,
+    C: Context,
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: MemberInvitationRepo<C> + MemberRepo<C> + Send + Sync,
 {
-    MemberInvitationPermComplex::ensure_user_can_delete(
-        &mut run_proxy! {
-            repo =>
-                for<'a, 'b> GetMemberInvitationInfo<'a, 'b>,
-                for<'a> FindMemberInfo<'a>;
-        },
+    let member_info = MemberLoader::load_info_from_member_invitation(
+        repo,
+        LoadMode::<C>::Run,
         &token.user_id,
         &id,
     )
     .await?;
+
+    MemberInvitationPermComplex::ensure_user_can_delete(&member_info)?;
 
     nucl.coord(async move |context| {
         //
