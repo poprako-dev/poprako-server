@@ -273,8 +273,7 @@ impl Run<UpdateWorkset<'_>> for HybRepo {
 
 impl<L> Step<GetWorksetInfo<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Use BaseError for transactional context operations.
     type Level = RepeatableRead;
@@ -295,8 +294,7 @@ where
 
 impl<L> Step<ListWorksetInfos<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Use BaseError for transactional context operations.
     type Level = RepeatableRead;
@@ -317,8 +315,7 @@ where
 
 impl<L> Step<GetWorksetInfoExcluded<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Use BaseError for transactional context operations.
     type Level = RepeatableRead;
@@ -339,8 +336,7 @@ where
 
 impl<L> Step<ListWorksetInfosExcluded<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Use BaseError for transactional context operations.
     type Level = RepeatableRead;
@@ -361,8 +357,7 @@ where
 
 impl<L> Step<CreateWorkset<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Use BaseError for transactional context operations.
     type Level = RepeatableRead;
@@ -383,8 +378,7 @@ where
 
 impl<L> Step<DeleteWorkset<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Use BaseError for transactional context operations.
     type Level = RepeatableRead;
@@ -405,8 +399,7 @@ where
 
 impl<L> Step<AllocWorksetComicIndex<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Use BaseError for transactional context operations.
     type Level = RepeatableRead;
@@ -427,8 +420,7 @@ where
 
 impl<L> Step<UpdateWorksetComicCount<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Use BaseError for transactional context operations.
     type Level = RepeatableRead;

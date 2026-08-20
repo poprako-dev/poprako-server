@@ -53,9 +53,8 @@ pub async fn create<N, C, R>(
     instr: CreateWorksetInstr,
 ) -> BaseRest<CreateWorksetVal>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: TeamRepo<C> + WorksetRepo<C> + MemberRepo<C> + Send + Sync,
 {
@@ -213,9 +212,8 @@ pub async fn delete<N, C, R, P>(
     id: String,
 ) -> BaseRest<()>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<Serializable>,
     R: WorksetRepo<C>
         + ComicRepo<C>

@@ -126,8 +126,7 @@ impl Run<CompleteChapterRawProvide<'_>> for HybRepo {
 
 impl<L> Step<StartChapterStage<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Declares the transaction isolation level required for this mutation.
     type Level = RepeatableRead;
@@ -148,8 +147,7 @@ where
 
 impl<L> Step<CompleteChapterRawProvide<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Keep internal step errors aligned with repository-level error semantics.
     type Level = RepeatableRead;
@@ -170,8 +168,7 @@ where
 
 impl<L> Step<ResetChapterRawProvide<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Preserve unified error typing for resetting raw-provide state in transaction scope.
     type Level = RepeatableRead;
@@ -192,8 +189,7 @@ where
 
 impl<L> Step<GetChapterInfo<'_, '_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Keep transaction-level branch consistent with orchestrator-level error behavior.
     type Level = RepeatableRead;
@@ -214,8 +210,7 @@ where
 
 impl<L> Step<GetChapterInfoExcluded<'_, '_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Align error type for read queries that intentionally exclude soft-deleted rows.
     type Level = RepeatableRead;
@@ -236,8 +231,7 @@ where
 
 impl<L> Step<ListChapterInfosExcluded<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Keep error surface stable for transactional filtered list queries.
     type Level = RepeatableRead;
@@ -258,8 +252,7 @@ where
 
 impl<L> Step<LockChapters<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Use the same shared error model for lock orchestration failures.
     type Level = RepeatableRead;
@@ -280,8 +273,7 @@ where
 
 impl<L> Step<FindPinnedChapterInfo<'_, '_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Keep transactional lookup failures equivalent to non-transactional ones.
     type Level = RepeatableRead;
@@ -304,8 +296,7 @@ where
 
 impl<L> Step<CreateChapter<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Use a consistent error type for chapter creation inside transaction.
     type Level = RepeatableRead;
@@ -326,8 +317,7 @@ where
 
 impl<L> Step<UpdateChapter<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Normalize update errors to base repository errors under transaction.
     type Level = RepeatableRead;
@@ -348,8 +338,7 @@ where
 
 impl<L> Step<UpdateChapterStage<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Keep stage-update failures in the same error vocabulary as other step operations.
     type Level = RepeatableRead;
@@ -370,8 +359,7 @@ where
 
 impl<L> Step<SetChapterPageCounters<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Normalize counter-write failures for transactional chapter metrics updates.
     type Level = RepeatableRead;
@@ -401,8 +389,7 @@ where
 
 impl<L> Step<AdjustChapterUnitCounters<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Keep delta-based unit-counter adjustments mapped to base errors.
     type Level = RepeatableRead;
@@ -423,8 +410,7 @@ where
 
 impl<L> Step<UnpinOtherChapters<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Keep unpinning failures aligned with other transaction-level chapter operations.
     type Level = RepeatableRead;
@@ -445,8 +431,7 @@ where
 
 impl<L> Step<DeleteChapter<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Preserve consistent error reporting for chapter deletion operations.
     type Level = RepeatableRead;

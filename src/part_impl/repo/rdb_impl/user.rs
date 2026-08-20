@@ -137,8 +137,7 @@ impl Run<UpdateUser<'_>> for HybRepo {
 
 impl<L> Step<CreateUser<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Keep transaction-scoped operations on one repository error type.
     type Level = RepeatableRead;
@@ -159,8 +158,7 @@ where
 
 impl<L> Step<FindUserInfo<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Keep transaction-scoped reads on one repository error type.
     type Level = RepeatableRead;
@@ -187,8 +185,7 @@ where
 
 impl<L> Step<UpdateUser<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Keep transaction-scoped updates on one repository error type.
     type Level = RepeatableRead;
@@ -235,8 +232,7 @@ where
 
 impl<L> Step<ReserveUserAvatar<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Keep transaction-scoped reservation on one repository error type.
     type Level = RepeatableRead;
@@ -259,8 +255,7 @@ where
 
 impl<L> Step<GetUserInfoExcluded<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Keep transaction-scoped exclusive reads on one repository error type.
     type Level = RepeatableRead;
@@ -287,8 +282,7 @@ where
 
 impl<L> Step<DeleteUser<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Keep transaction-scoped deletion on one repository error type.
     type Level = RepeatableRead;

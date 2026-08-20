@@ -110,9 +110,8 @@ pub async fn create<N, C, R, P>(
     instr: CreateAssignmentInvitationInstr,
 ) -> BaseRest<CreateAssignmentInvitationVal>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: AssignmentInvitationRepo<C>
         + AssignmentRepo<C>
@@ -231,9 +230,8 @@ pub async fn delete<N, C, R>(
     id: String,
 ) -> BaseRest<()>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: AssignmentInvitationRepo<C>
         + AssignmentRepo<C>
@@ -287,9 +285,8 @@ pub async fn join<N, C, R, I>(
     instr: JoinAssignmentInvitationInstr,
 ) -> BaseRest<AssignmentInfoView>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: AssignmentInvitationRepo<C>
         + AssignmentRepo<C>

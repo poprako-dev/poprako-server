@@ -142,9 +142,8 @@ pub async fn save_edits<N, C, R>(
     instr: SavePageUnitEditsInstr,
 ) -> BaseRest<()>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<Serializable>,
     R: PageRepo<C>
         + UnitRepo<C>

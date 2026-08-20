@@ -336,8 +336,7 @@ impl Run<GetMemberInvitationInfo<'_, '_>> for HybRepo {
 
 impl<L> Step<CreateMemberInvitation<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Keep transactional create failures in base error type.
     type Level = RepeatableRead;
@@ -358,8 +357,7 @@ where
 
 impl<L> Step<GetMemberInvitationInfo<'_, '_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Keep transactional read failures in base error type.
     type Level = RepeatableRead;
@@ -390,8 +388,7 @@ where
 
 impl<L> Step<UpdateMemberInvitation<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Keep transactional update failures in base error type.
     type Level = RepeatableRead;
@@ -424,8 +421,7 @@ where
 
 impl<L> Step<GetMemberInvitationInfoExcluded<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Keep transactional exclusive-read failures in base error type.
     type Level = RepeatableRead;
@@ -452,8 +448,7 @@ where
 
 impl<L> Step<DeleteMemberInvitation<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Keep transactional delete failures in base error type.
     type Level = RepeatableRead;
@@ -474,8 +469,7 @@ where
 
 impl<L> Step<PurgeExpiredMemberInvitation<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Keep transactional purge failures in base error type.
     type Level = RepeatableRead;

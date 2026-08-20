@@ -98,8 +98,7 @@ impl Run<GetMemberInfo<'_, '_>> for HybRepo {
 
 impl<L> Step<CreateMember<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Create a new member row inside the active transaction context.
     type Level = RepeatableRead;
@@ -120,8 +119,7 @@ where
 
 impl<L> Step<UpdateMember<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Apply an in-transaction member update request.
     //
@@ -160,8 +158,7 @@ where
 
 impl<L> Step<ListMemberInfos<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Transactional list path for member info queries.
     //
@@ -195,8 +192,7 @@ where
 
 impl<L> Step<FindMemberInfo<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Transactional lookup for a member by `(user_id, team_id)`.
     type Level = RepeatableRead;
@@ -229,8 +225,7 @@ where
 
 impl<L> Step<GetMemberInfo<'_, '_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Transactional lookup for a full member info by id and requested includes.
     type Level = RepeatableRead;
@@ -257,8 +252,7 @@ where
 
 impl<L> Step<ListMemberInfosExcluded<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Transactional list for member infos excluding one side of relation.
     //
@@ -291,8 +285,7 @@ where
 
 impl<L> Step<DeleteMember<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Transactional delete operation for a single member by id.
     type Level = RepeatableRead;

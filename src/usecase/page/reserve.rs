@@ -53,9 +53,8 @@ pub async fn reserve_chapter_pages<N, C, R, P, I>(
     instr: ReserveChapterPagesInstr,
 ) -> BaseRest<ReserveChapterPagesVal>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: ChapterRepo<C>
         + ComicRepo<C>

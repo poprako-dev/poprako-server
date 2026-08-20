@@ -56,9 +56,8 @@ pub async fn reserve_image<N, C, R, P, I>(
     instr: ReservePageImageInstr,
 ) -> BaseRest<ReservedPageVal>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: ChapterRepo<C> + PageRepo<C> + AssignmentRepo<C> + Send + Sync,
     P: Prom<C> + Send + Sync,
@@ -324,9 +323,8 @@ pub async fn mark_image_uploaded<N, C, R, I>(
     instr: MarkPageImageUploadedInstr,
 ) -> BaseRest<()>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: ChapterRepo<C> + PageRepo<C> + AssignmentRepo<C> + Send + Sync,
     I: ImageManager,

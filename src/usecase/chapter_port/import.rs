@@ -55,9 +55,8 @@ pub async fn import<N, C, R>(
     chapter_id: String,
 ) -> BaseRest<ImportChapterTranslationVal>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: AssignmentRepo<C>
         + ChapterRepo<C>

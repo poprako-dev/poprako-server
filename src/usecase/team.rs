@@ -65,9 +65,8 @@ pub async fn create<N, C, R, I>(
     instr: CreateTeamInstr,
 ) -> BaseRest<TeamInfoView>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: TeamRepo<C> + UserRepo<C> + MemberRepo<C> + Send + Sync,
     I: ImagePool,
@@ -187,9 +186,8 @@ pub async fn reserve_avatar<N, C, R, P, I>(
     instr: ReserveTeamAvatarInstr,
 ) -> BaseRest<ReserveTeamAvatarVal>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: TeamRepo<C> + MemberRepo<C> + Send + Sync,
     P: Prom<C> + Send + Sync,
@@ -336,9 +334,8 @@ pub async fn mark_avatar_uploaded<N, C, R, I>(
     instr: MarkTeamAvatarUploadedInstr,
 ) -> BaseRest<()>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: TeamRepo<C> + MemberRepo<C> + Send + Sync,
     I: ImageManager,

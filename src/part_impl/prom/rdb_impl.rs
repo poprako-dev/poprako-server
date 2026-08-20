@@ -129,8 +129,7 @@ impl Drop for RdbProm {
 
 impl<'a, L> Step<Defer<'a, String, TaskPayload, ()>, RdbContext<L>> for RdbProm
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Internal type alias for `Error`.
     type Level = RepeatableRead;
@@ -164,8 +163,7 @@ where
 impl<'t, 'a, L> Step<DeferBatch<'t, 'a, String, TaskPayload, ()>, RdbContext<L>>
     for RdbProm
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Internal type alias for `Error`.
     type Level = RepeatableRead;

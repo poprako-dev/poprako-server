@@ -48,9 +48,8 @@ pub async fn update_stage<N, C, R, P, D>(
     instr: UpdateChapterStageInstr,
 ) -> BaseRest<()>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: ChapterRepo<C>
         + ChapterWorkflowRecordRepo<C>

@@ -192,9 +192,8 @@ pub async fn create<N, C, R>(
     instr: CreateChapterInstr,
 ) -> BaseRest<CreateChapterVal>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: ChapterRepo<C>
         + ChapterWorkflowRecordRepo<C>
@@ -342,9 +341,8 @@ pub async fn update_info<N, C, R>(
     instr: UpdateChapterInfoInstr,
 ) -> BaseRest<()>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: ChapterRepo<C>
         + ChapterWorkflowRecordRepo<C>
@@ -437,9 +435,8 @@ pub async fn mark_pinned<N, C, R>(
     id: String,
 ) -> BaseRest<()>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: ChapterRepo<C>
         + ChapterWorkflowRecordRepo<C>

@@ -117,8 +117,7 @@ impl Run<ListChapterWorkflowRecordInfos<'_>> for HybRepo {
 
 impl<L> Step<CreateChapterWorkflowRecords<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Declares the transaction isolation level required for inserts.
     type Level = RepeatableRead;
@@ -140,8 +139,7 @@ where
 impl<L> Step<ListChapterWorkflowRecordInfosExcluded<'_>, RdbContext<L>>
     for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Declares the transaction isolation level required for locked reads.
     type Level = RepeatableRead;
@@ -162,8 +160,7 @@ where
 
 impl<L> Step<DeleteChapterWorkflowRecords<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Declares the transaction isolation level required for deletion.
     type Level = RepeatableRead;

@@ -60,8 +60,7 @@ impl Run<ListTermInfos<'_>> for HybRepo {
 
 impl<L> Step<CreateTerm<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Create a term row inside an active transaction boundary.
     type Level = RepeatableRead;
@@ -82,8 +81,7 @@ where
 
 impl<L> Step<GetTermInfoExcluded<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Read a term for exclusive use inside an active transaction context.
     type Level = RepeatableRead;
@@ -104,8 +102,7 @@ where
 
 impl<L> Step<LockTerm<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Acquire a row-level lock for a term within a transaction.
     type Level = RepeatableRead;
@@ -126,8 +123,7 @@ where
 
 impl<L> Step<UpdateTerm<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Apply term info updates inside an active transaction boundary.
     type Level = RepeatableRead;
@@ -148,8 +144,7 @@ where
 
 impl<L> Step<DeleteTerm<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Remove one term row inside an active transaction boundary.
     type Level = RepeatableRead;
@@ -170,8 +165,7 @@ where
 
 impl<L> Step<DeleteTerms<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Remove all terms for a termbase inside an active transaction boundary.
     type Level = RepeatableRead;

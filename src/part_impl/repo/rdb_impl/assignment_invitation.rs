@@ -62,8 +62,7 @@ impl Run<GetAssignmentInvitationInfo<'_>> for HybRepo {
 
 impl<L> Step<CreateAssignmentInvitation<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Create invitation rows and return resulting invitation info in tx scope.
     type Level = RepeatableRead;
@@ -83,8 +82,7 @@ where
 
 impl<L> Step<GetAssignmentInvitationInfo<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Transactional fetch for one invitation info by id.
     type Level = RepeatableRead;
@@ -110,8 +108,7 @@ where
 
 impl<L> Step<GetAssignmentInvitationInfoExcluded<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Transactional lookup for invitation by code while skipping soft-excluded rows.
     type Level = RepeatableRead;
@@ -131,8 +128,7 @@ where
 
 impl<L> Step<MarkAssignmentInvitationUsed<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Transactional state transition that marks a pending invitation as used.
     type Level = RepeatableRead;
@@ -152,8 +148,7 @@ where
 
 impl<L> Step<PurgeExpiredAssignmentInvitation<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Transactional delete/update behavior for purging expired invitations.
     type Level = RepeatableRead;
@@ -189,8 +184,7 @@ impl Run<PurgeExpiredAssignmentInvitation<'_>> for HybRepo {
 
 impl<L> Step<DeleteAssignmentInvitations<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Transactional delete for invitation records.
     //

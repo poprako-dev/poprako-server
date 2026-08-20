@@ -92,8 +92,7 @@ impl Run<ListCommentInfos<'_>> for HybRepo {
 
 impl<L> Step<CreateComment<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Error type for the Step trait impl on comment creation.
     type Level = RepeatableRead;

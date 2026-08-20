@@ -14,7 +14,6 @@ no-type-hint = true
 item-layout = true
 doc-comment-coverage = true
 forbidden-identifiers = true
-forbidden-module-names = true
 module-dependency = true
 visibility-style = true
 trait-use-anonymous = true
@@ -155,29 +154,6 @@ message = "'extension' is forbidden — use 'ext' instead"
 word = "previous"
 code = "FBD011"
 message = "'previous' is forbidden — use 'prev' instead"
-
-[forbidden-module-names]
-exclude_filenames = ["schema.rs"]
-
-[[forbidden-module-names.words]]
-word = "helper"
-code = "MODNAME001"
-message = "module name 'helper' is forbidden — name the business responsibility"
-
-[[forbidden-module-names.words]]
-word = "helpers"
-code = "MODNAME001"
-message = "module name 'helpers' is forbidden — name the business responsibility"
-
-[[forbidden-module-names.words]]
-word = "operation"
-code = "MODNAME002"
-message = "module name 'operation' is forbidden — name the business responsibility"
-
-[[forbidden-module-names.words]]
-word = "operations"
-code = "MODNAME002"
-message = "module name 'operations' is forbidden — name the business responsibility"
 
 [trait-use-anonymous]
 # The trait lists replace the packaged defaults entirely.

@@ -89,9 +89,8 @@ pub async fn create<N, C, R>(
     instr: CreateAnnouncementInstr,
 ) -> BaseRest<CreateAnnouncementVal>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: AnnouncementRepo<C> + MemberRepo<C> + Send + Sync,
 {

@@ -47,9 +47,8 @@ pub async fn create<N, C, R>(
     instr: CreateMemberInstr,
 ) -> BaseRest<CreateMemberVal>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: MemberRepo<C> + TeamRepo<C> + UserRepo<C> + Send + Sync,
 {
@@ -144,9 +143,8 @@ pub async fn join_team<N, C, R, I>(
     instr: JoinTeamInstr,
 ) -> BaseRest<MemberInfoView>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: MemberRepo<C> + MemberInvitationRepo<C> + UserRepo<C> + Send + Sync,
     I: ImagePool,
@@ -303,9 +301,8 @@ pub async fn update_roles<N, C, R>(
     instr: UpdateMemberRolesInstr,
 ) -> BaseRest<()>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: MemberRepo<C> + Send + Sync,
 {
@@ -365,9 +362,8 @@ pub async fn delete<N, C, R>(
     id: String,
 ) -> BaseRest<()>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: MemberRepo<C> + Send + Sync,
 {

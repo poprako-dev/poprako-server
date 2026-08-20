@@ -35,8 +35,7 @@ impl Run<ListUnitInfos<'_>> for HybRepo {
 
 impl<L> Step<ListUnitOrders<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Error type for the Step trait impl on unit order list.
     type Level = RepeatableRead;
@@ -57,8 +56,7 @@ where
 
 impl<L> Step<ApplyUnitEdits<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Error type for the Step trait impl on unit edit application.
     type Level = RepeatableRead;

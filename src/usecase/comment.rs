@@ -80,9 +80,8 @@ pub async fn create<N, C, R>(
     instr: CreateCommentInstr,
 ) -> BaseRest<CreateCommentVal>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: CommentRepo<C> + MemberRepo<C> + Send + Sync,
 {

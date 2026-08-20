@@ -76,8 +76,7 @@ impl Run<ListFirstPageInfos<'_>> for HybRepo {
 
 impl<L> Step<GetPageInfo<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Use base error for row-level page reads inside a running transaction.
     type Level = RepeatableRead;
@@ -98,8 +97,7 @@ where
 
 impl<L> Step<ListPageInfos<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Reuse base error semantics for chapter page list operations in transactions.
     type Level = RepeatableRead;
@@ -120,8 +118,7 @@ where
 
 impl<L> Step<ListPageInfosExcluded<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Keep excluded-list query errors on the shared base error channel.
     type Level = RepeatableRead;
@@ -142,8 +139,7 @@ where
 
 impl<L> Step<CreatePages<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Preserve base error behavior for batch page creation inside transaction.
     type Level = RepeatableRead;
@@ -163,8 +159,7 @@ where
 
 impl<L> Step<GetPageInfoExcluded<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Use repository base error for filtered read path with row exclusion.
     type Level = RepeatableRead;
@@ -184,8 +179,7 @@ where
 
 impl<L> Step<ReservePageImage<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Map reservation failures to repository base errors.
     type Level = RepeatableRead;
@@ -205,8 +199,7 @@ where
 
 impl<L> Step<MarkPageImageUploaded<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Keep mark-upload status updates in base error domain.
     type Level = RepeatableRead;
@@ -233,8 +226,7 @@ where
 
 impl<L> Step<SetPageImageUploaded<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Convert set-image state failures into base repository errors.
     type Level = RepeatableRead;
@@ -281,8 +273,7 @@ where
 
 impl<L> Step<SetPageUnitCounters<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Keep counter update failures consistent for transaction call sites.
     type Level = RepeatableRead;
@@ -302,8 +293,7 @@ where
 
 impl<L> Step<ShiftPageIndexesTemporary<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Maintain base-error parity for temporary page index reordering.
     type Level = RepeatableRead;
@@ -324,8 +314,7 @@ where
 
 impl<L> Step<UpdatePageManifest<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Preserve consistent error mapping while updating page manifest metadata.
     type Level = RepeatableRead;
@@ -346,8 +335,7 @@ where
 
 impl<L> Step<ClearPageImagesForPublish<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Return base errors for image clear operations executed at publish time.
     type Level = RepeatableRead;
@@ -368,8 +356,7 @@ where
 
 impl<L> Step<DeletePages<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Keep delete error semantics on the shared repository error type.
     type Level = RepeatableRead;

@@ -119,8 +119,7 @@ impl Run<UpdateTeam<'_>> for HybRepo {
 
 impl<L> Step<CreateTeam<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Convert repository step failures to base error during transaction execution.
     type Level = RepeatableRead;
@@ -141,8 +140,7 @@ where
 
 impl<L> Step<UpdateTeam<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Keep transactional team updates on the same base error contract.
     type Level = RepeatableRead;
@@ -181,8 +179,7 @@ where
 
 impl<L> Step<ReserveTeamAvatar<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Report avatar-reservation validation and mutation errors through base error.
     type Level = RepeatableRead;
@@ -205,8 +202,7 @@ where
 
 impl<L> Step<GetTeamInfoExcluded<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Preserve consistent error typing for locked team detail fetches.
     type Level = RepeatableRead;
@@ -233,8 +229,7 @@ where
 
 impl<L> Step<LockTeam<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Keep lock contention errors on the shared repository error type.
     type Level = RepeatableRead;
@@ -255,8 +250,7 @@ where
 
 impl<L> Step<DeleteTeam<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Use the common base error for hard delete operations in transactions.
     type Level = RepeatableRead;
@@ -277,8 +271,7 @@ where
 
 impl<L> Step<AllocTeamWorksetIndex<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Keep index allocation failures mapped to repository base errors.
     type Level = RepeatableRead;

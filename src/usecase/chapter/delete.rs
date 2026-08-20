@@ -44,9 +44,8 @@ pub async fn delete<N, C, R, P>(
     id: String,
 ) -> BaseRest<()>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<Serializable>,
     R: ChapterRepo<C>
         + ChapterWorkflowRecordRepo<C>

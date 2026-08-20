@@ -108,9 +108,8 @@ pub async fn update_info<N, C, R>(
     instr: UpdateUserInfoInstr,
 ) -> BaseRest<()>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: UserRepo<C> + MemberRepo<C> + Send + Sync,
 {
@@ -174,9 +173,8 @@ pub async fn update_password<N, C, R>(
     instr: UpdateUserPasswordInstr,
 ) -> BaseRest<()>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: UserRepo<C> + Send + Sync,
 {
@@ -275,9 +273,8 @@ pub async fn reserve_avatar<N, C, R, P, I>(
     instr: ReserveUserAvatarInstr,
 ) -> BaseRest<ReserveUserAvatarVal>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: UserRepo<C> + Send + Sync,
     P: Prom<C> + Send + Sync,
@@ -405,9 +402,8 @@ pub async fn mark_avatar_uploaded<N, C, R, I>(
     instr: MarkUserAvatarUploadedInstr,
 ) -> BaseRest<()>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: UserRepo<C> + Send + Sync,
     I: ImageManager,

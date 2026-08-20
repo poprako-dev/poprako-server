@@ -98,8 +98,7 @@ impl Run<ListAnnouncementInfos<'_>> for HybRepo {
 
 impl<L> Step<CreateAnnouncement<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Error type for the Step trait impl on announcement creation.
     type Level = RepeatableRead;

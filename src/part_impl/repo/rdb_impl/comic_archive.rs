@@ -425,8 +425,7 @@ async fn get_snapshot_excluded(
 
 impl<L> Step<GetComicArchiveSnapshotExcluded<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Use base errors for snapshot reads in comic archive transactions.
     type Level = RepeatableRead;
@@ -468,8 +467,7 @@ impl Run<ListComicArchivePayloads<'_>> for HybRepo {
 
 impl<L> Step<CommitComicArchive<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Use base errors for commit operations.
     type Level = RepeatableRead;
@@ -490,8 +488,7 @@ where
 
 impl<L> Step<DeleteComicArchives<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Use base errors for comic-archive cleanup during hard deletion.
     type Level = RepeatableRead;

@@ -86,8 +86,7 @@ impl Run<MarkComicCoverUploaded<'_>> for HybRepo {
 
 impl<L> Step<GetComicInfo<'_, '_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Resolves a single comic record inside an existing DB transaction context.
     type Level = RepeatableRead;
@@ -108,8 +107,7 @@ where
 
 impl<L> Step<ListComicInfos<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Resolves a comic list inside an existing DB transaction context.
     type Level = RepeatableRead;
@@ -130,8 +128,7 @@ where
 
 impl<L> Step<GetComicInfoExcluded<'_, '_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Resolves one comic with excluded include payload inside a transaction.
     type Level = RepeatableRead;
@@ -152,8 +149,7 @@ where
 
 impl<L> Step<ListComicInfosExcluded<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Resolves a filtered excluded-comic list inside a transaction.
     type Level = RepeatableRead;
@@ -174,8 +170,7 @@ where
 
 impl<L> Step<CreateComic<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Creates one comic inside an active transaction context.
     type Level = RepeatableRead;
@@ -196,8 +191,7 @@ where
 
 impl<L> Step<ReserveComicCover<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Reserves a comic cover upload slot inside an active transaction.
     type Level = RepeatableRead;
@@ -220,8 +214,7 @@ where
 
 impl<L> Step<MarkComicCoverUploaded<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Marks cover upload state inside an active transaction.
     type Level = RepeatableRead;
@@ -250,8 +243,7 @@ where
 
 impl<L> Step<DeleteComic<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Deletes one comic inside an active transaction context.
     type Level = RepeatableRead;
@@ -272,8 +264,7 @@ where
 
 impl<L> Step<AllocComicChapterIndex<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Allocates the next chapter index inside an active transaction context.
     type Level = RepeatableRead;
@@ -294,8 +285,7 @@ where
 
 impl<L> Step<UpdateComicChapterCount<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Updates chapter-count totals inside an active transaction context.
     type Level = RepeatableRead;
@@ -316,8 +306,7 @@ where
 
 impl<L> Step<TouchComicLastActive<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Touches last-active timestamp inside an active transaction context.
     type Level = RepeatableRead;

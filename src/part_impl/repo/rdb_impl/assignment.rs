@@ -325,8 +325,7 @@ impl Run<GetAssignmentInfo<'_, '_>> for HybRepo {
 
 impl<L> Step<ListAssignmentInfos<'_, '_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Use base error for listing assignments inside an existing transaction.
     type Level = RepeatableRead;
@@ -347,8 +346,7 @@ where
 
 impl<L> Step<FindAssignmentInfo<'_, '_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Keep transactional assignment lookup failures consistent with run-level errors.
     type Level = RepeatableRead;
@@ -399,8 +397,7 @@ where
 
 impl<L> Step<ListAssignmentInfosExcluded<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Normalize excluded-list behavior errors under base repository semantics.
     type Level = RepeatableRead;
@@ -429,8 +426,7 @@ where
 
 impl<L> Step<CreateAssignment<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Translate assignment-create failures to base error within transaction.
     type Level = RepeatableRead;
@@ -451,8 +447,7 @@ where
 
 impl<L> Step<UpdateAssignmentRoles<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Keep role-update failures mapped to shared repository error contract.
     type Level = RepeatableRead;
@@ -488,8 +483,7 @@ async fn delete_by_chapter_id(
 
 impl<L> Step<DeleteAssignments<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Map all delete-assignment branch failures to base repository errors.
     type Level = RepeatableRead;

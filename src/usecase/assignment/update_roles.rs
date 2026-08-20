@@ -39,9 +39,8 @@ pub async fn update_roles<N, C, R>(
     instr: UpdateAssignmentRolesInstr,
 ) -> BaseRest<()>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: AssignmentRepo<C>
         + ChapterWorkflowRecordRepo<C>

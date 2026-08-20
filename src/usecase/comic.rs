@@ -87,9 +87,8 @@ pub async fn create<N, C, R>(
     instr: CreateComicInstr,
 ) -> BaseRest<CreateComicVal>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: ComicRepo<C>
         + WorksetRepo<C>
@@ -332,9 +331,8 @@ pub async fn mark_cover_uploaded<N, C, R, I>(
     instr: MarkComicCoverUploadedInstr,
 ) -> BaseRest<()>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: ComicRepo<C> + TeamRepo<C> + MemberRepo<C> + Send + Sync,
     I: ImageManager,
@@ -479,9 +477,8 @@ pub async fn delete<N, C, R, P>(
     id: String,
 ) -> BaseRest<()>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<Serializable>,
     R: ComicRepo<C>
         + ComicArchiveRepo<C>

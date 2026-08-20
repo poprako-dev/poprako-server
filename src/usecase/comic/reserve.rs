@@ -33,9 +33,8 @@ pub async fn reserve_cover<N, C, R, P, I>(
     instr: ReserveComicCoverInstr,
 ) -> BaseRest<ReserveComicCoverVal>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: ComicRepo<C> + TeamRepo<C> + MemberRepo<C> + Send + Sync,
     P: Prom<C> + Send + Sync,

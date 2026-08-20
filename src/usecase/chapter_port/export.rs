@@ -56,9 +56,8 @@ pub async fn export<N, C, R>(
     chapter_id: String,
 ) -> BaseRest<ChapterTranslationPortView>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: ChapterRepo<C>
         + ChapterWorkflowRecordRepo<C>
@@ -149,9 +148,8 @@ pub async fn export_label_plus<N, C, R>(
     chapter_id: String,
 ) -> BaseRest<String>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: ChapterRepo<C>
         + ChapterWorkflowRecordRepo<C>
@@ -256,9 +254,8 @@ async fn persist_export_record<N, C, R>(
     format: TranslationFormat,
 ) -> BaseRest<()>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: ChapterRepo<C> + ChapterWorkflowRecordRepo<C> + Send + Sync,
 {

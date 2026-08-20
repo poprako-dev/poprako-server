@@ -203,8 +203,7 @@ impl<'a> PurgeCompleted<'a> {
 
 impl<R, L> Step<PollPending, RdbContext<L>> for RdbPromRepo<R>
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
     R: Sync,
 {
     // Internal type alias for `Error`.
@@ -271,8 +270,7 @@ where
 
 impl<'a, R, L> Step<ClaimPending<'a>, RdbContext<L>> for RdbPromRepo<R>
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
     R: Sync,
 {
     // Internal type alias for `Error`.
@@ -318,8 +316,7 @@ where
 
 impl<'a, R, L> Step<CompleteMessage<'a>, RdbContext<L>> for RdbPromRepo<R>
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
     R: Sync,
 {
     // Internal type alias for `Error`.
@@ -365,8 +362,7 @@ where
 
 impl<'a, R, L> Step<FailMessage<'a>, RdbContext<L>> for RdbPromRepo<R>
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
     R: Sync,
 {
     // Internal type alias for `Error`.
@@ -412,8 +408,7 @@ where
 
 impl<'a, R, L> Step<RetryMessage<'a>, RdbContext<L>> for RdbPromRepo<R>
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
     R: Sync,
 {
     // Internal type alias for `Error`.
@@ -462,8 +457,7 @@ where
 
 impl<'a, R, L> Step<ResetStuck<'a>, RdbContext<L>> for RdbPromRepo<R>
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
     R: Sync,
 {
     // Internal type alias for `Error`.
@@ -529,8 +523,7 @@ where
 
 impl<'a, R, L> Step<PurgeCompleted<'a>, RdbContext<L>> for RdbPromRepo<R>
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
     R: Sync,
 {
     // Internal type alias for `Error`.
