@@ -303,9 +303,11 @@ async fn list_infos_filters_and_sorts_by_last_activity() {
 
     mock.seed_member(admin_member("user-1", "team-1"));
 
-    mock.seed_comic(comic("comic-2", "workset-1", 2));
+    let baseline = OffsetDateTime::now_utc();
 
-    mock.seed_comic(comic("comic-1", "workset-1", 1));
+    for comic_info in comics_with_opposed_activity(baseline) {
+        mock.seed_comic(comic_info);
+    }
 
     mock.seed_comic(comic("comic-other", "workset-2", 0));
 

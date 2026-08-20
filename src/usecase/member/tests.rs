@@ -26,6 +26,7 @@ mod mutate;
 use super::*;
 
 use poprako_util::time::ToUnixMilli as _;
+use time::Duration;
 
 use crate::data::instr::member::{
     CreateMemberInstr, ListMemberInfosInstr, UpdateMemberRolesInstr,
@@ -268,7 +269,19 @@ async fn list_infos_member_lists_team_members() {
     //
     let mock = Mock::new();
 
-    seed_admin(&mock);
+    let baseline = test_util::now();
+
+    let mut admin_member_info = member(
+        "member-admin",
+        "admin-user",
+        "Admin",
+        "team-1",
+        RoleMask::from(RoleField::ADMIN),
+    );
+
+    admin_member_info.user_last_active_at = baseline - Duration::hours(1);
+
+    mock.seed_member(admin_member_info);
 
     let mut translator_member_info = member(
         "member-translator",
@@ -278,7 +291,7 @@ async fn list_infos_member_lists_team_members() {
         RoleMask::from(RoleField::TRANSLATOR),
     );
 
-    let translator_last_active_at = test_util::now();
+    let translator_last_active_at = baseline;
 
     translator_member_info.user_last_active_at = translator_last_active_at;
 
@@ -294,12 +307,12 @@ async fn list_infos_member_lists_team_members() {
 
     assert_eq!(member_info_vals.len(), 2);
 
-    assert_eq!(member_info_vals[0].id, "member-admin");
+    assert_eq!(member_info_vals[0].id, "member-translator");
 
-    assert_eq!(member_info_vals[1].id, "member-translator");
+    assert_eq!(member_info_vals[1].id, "member-admin");
 
     assert_eq!(
-        member_info_vals[1].last_active_at,
+        member_info_vals[0].last_active_at,
         translator_last_active_at.to_unix_milli()
     );
 }
@@ -356,23 +369,43 @@ async fn list_infos_applies_pagination_after_filtering() {
     //
     let mock = Mock::new();
 
-    seed_admin(&mock);
+    let baseline = test_util::now();
 
-    mock.seed_member(member(
+    let mut admin_member_info = member(
+        "member-admin",
+        "admin-user",
+        "Admin",
+        "team-1",
+        RoleMask::from(RoleField::ADMIN),
+    );
+
+    admin_member_info.user_last_active_at = baseline;
+
+    mock.seed_member(admin_member_info);
+
+    let mut reviewer_member_info = member(
         "member-reviewer",
         "reviewer-user",
         "Reviewer",
         "team-1",
         RoleMask::from(RoleField::REVIEWER),
-    ));
+    );
 
-    mock.seed_member(member(
+    reviewer_member_info.user_last_active_at = baseline - Duration::hours(1);
+
+    mock.seed_member(reviewer_member_info);
+
+    let mut translator_member_info = member(
         "member-translator",
         "translator-user",
         "Translator",
         "team-1",
         RoleMask::from(RoleField::TRANSLATOR),
-    ));
+    );
+
+    translator_member_info.user_last_active_at = baseline - Duration::hours(2);
+
+    mock.seed_member(translator_member_info);
 
     let member_info_vals = list_infos(
         (&mock, &mock),
@@ -403,21 +436,31 @@ async fn list_infos_owner_lists_own_memberships() {
     //
     let mock = Mock::new();
 
-    mock.seed_member(member(
+    let baseline = test_util::now();
+
+    let mut first_member_info = member(
         "member-one",
         "user-1",
         "User",
         "team-1",
         RoleMask::from(RoleField::TRANSLATOR),
-    ));
+    );
 
-    mock.seed_member(member(
+    first_member_info.user_last_active_at = baseline - Duration::hours(1);
+
+    mock.seed_member(first_member_info);
+
+    let mut second_member_info = member(
         "member-two",
         "user-1",
         "User",
         "team-2",
         RoleMask::from(RoleField::REVIEWER),
-    ));
+    );
+
+    second_member_info.user_last_active_at = baseline;
+
+    mock.seed_member(second_member_info);
 
     mock.seed_member(member(
         "member-other",
@@ -448,9 +491,9 @@ async fn list_infos_owner_lists_own_memberships() {
 
     assert_eq!(member_info_vals.len(), 2);
 
-    assert_eq!(member_info_vals[0].id, "member-one");
+    assert_eq!(member_info_vals[0].id, "member-two");
 
-    assert_eq!(member_info_vals[1].id, "member-two");
+    assert_eq!(member_info_vals[1].id, "member-one");
 }
 
 #[tokio::test]

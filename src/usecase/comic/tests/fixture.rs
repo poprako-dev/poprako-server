@@ -1,5 +1,7 @@
 use super::*;
 
+use time::Duration;
+
 use crate::data::instr::comic::CreateComicInstr;
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::chapter::ChapterInfo;
@@ -36,6 +38,23 @@ pub fn comic(id: &str, workset_id: &str, index: i32) -> ComicInfo {
         created_at: time,
         updated_at: time,
     }
+}
+
+pub fn comics_with_opposed_activity(
+    baseline: OffsetDateTime,
+) -> [ComicInfo; 2] {
+    [
+        ComicInfo {
+            last_active_at: baseline - Duration::hours(1),
+            updated_at: baseline + Duration::hours(1),
+            ..comic("comic-2", "workset-1", 2)
+        },
+        ComicInfo {
+            last_active_at: baseline,
+            updated_at: baseline - Duration::hours(1),
+            ..comic("comic-1", "workset-1", 1)
+        },
+    ]
 }
 
 pub fn comic_with_uploaded_cover(

@@ -117,7 +117,7 @@ pub async fn list_infos(
                 }
 
                 query
-                    .order_by(f_user_last_active_at.desc())
+                    .order_by((f_user_last_active_at.desc(), f_id.asc()))
                     .offset((*offset) as i64)
                     .limit((*limit) as i64)
                     .load::<MemberInfoRow>(conn)
@@ -133,7 +133,7 @@ pub async fn list_infos(
             } => t_member
                 .filter(f_user_id.eq(owner_id.as_str()))
                 .select(MemberInfoRow::as_select())
-                .order_by(f_user_last_active_at.desc())
+                .order_by((f_user_last_active_at.desc(), f_id.asc()))
                 .offset((*offset) as i64)
                 .limit((*limit) as i64)
                 .load::<MemberInfoRow>(conn)

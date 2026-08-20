@@ -13,6 +13,11 @@ use crate::model::write::user::{
 use crate::part_impl::repo::rdb_impl::entity::user::{
     UserAspectRow, UserCredsRow, UserEntryRow, UserInfoRow,
 };
+use crate::part_impl::repo::rdb_impl::schema::t_member::dsl::{
+    f_user_id as member_user_id,
+    f_user_last_active_at as member_user_last_active_at,
+    t_member as member_table,
+};
 use crate::part_impl::repo::rdb_impl::schema::t_user::dsl::*;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::RdbConn;
@@ -352,6 +357,12 @@ pub async fn touch_last_active(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
 
     diesel::update(t_user.filter(f_id.eq(id)))
         .set(&aspect)
+        .execute(conn)
+        .await
+        .map_err(diesel)?;
+
+    diesel::update(member_table.filter(member_user_id.eq(id)))
+        .set(member_user_last_active_at.eq(now))
         .execute(conn)
         .await
         .map_err(diesel)?;

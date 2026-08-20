@@ -1,6 +1,9 @@
 use super::*;
 
+use crate::part::repo::oper::user::UpdateUser;
+
 // run_reads_seeded_user(GetUserInfo)(positive): a seeded user should be readable outside a transaction.
+// touch_user_last_active(UpdateUser)(positive): touching a user should synchronize all member activity caches.
 // nucl_coord_commits_repo_and_prom(CreateMember, Defer)(positive): successful coordination should commit repo and prom state together.
 // nucl_coord_rolls_back_repo_and_prom(CreateMember, Defer)(negative): failed coordination should discard repo and prom state together.
 
@@ -26,6 +29,24 @@ fn user(id: &str) -> UserInfo {
     }
 }
 
+// Construct a minimal member linked to one seeded user.
+fn member(
+    id: &str,
+    user_id: &str,
+    last_active_at: OffsetDateTime,
+) -> MemberInfo {
+    MemberInfo {
+        id: id.into(),
+        user_id: user_id.into(),
+        user_nickname: "nick".into(),
+        user_last_active_at: last_active_at,
+        team_id: "team-1".into(),
+        user: None,
+        team: None,
+        roles: RoleMask::from(RoleField::RAW_PROVIDER),
+    }
+}
+
 /// Mock helper that verifies a seeded user is readable outside a transaction.
 #[tokio::test]
 async fn run_reads_seeded_user() {
@@ -48,6 +69,39 @@ async fn run_reads_seeded_user() {
     let found = found.ok().unwrap();
 
     assert_eq!(found.id, "user-1");
+}
+
+#[tokio::test]
+async fn touch_user_last_active_synchronizes_members() {
+    //
+    let mock = Mock::new();
+
+    let stale_last_active_at = OffsetDateTime::UNIX_EPOCH;
+
+    mock.seed_user(
+        user("user-1"),
+        UserCredential {
+            user_id: "user-1".into(),
+            password_hash: "hash".into(),
+        },
+    );
+
+    mock.seed_member(member("member-1", "user-1", stale_last_active_at));
+
+    let outcome = mock
+        .run(&UpdateUser::TouchLastActive { id: "user-1" })
+        .await;
+
+    assert!(outcome.is_ok());
+
+    let snapshot = mock.snapshot();
+
+    assert!(snapshot.users[0].last_active_at > stale_last_active_at);
+
+    assert_eq!(
+        snapshot.members[0].user_last_active_at,
+        snapshot.users[0].last_active_at
+    );
 }
 
 #[tokio::test]
