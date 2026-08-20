@@ -12,16 +12,19 @@ pub fn check_user_is_team_member(_member_info: &MemberInfo) -> BaseRest<()> {
     accept(())
 }
 
-/// Verify that membership evidence contains the proofreader role.
-pub fn check_user_is_team_proofreader(
+/// Verify that membership evidence contains a translator or proofreader role.
+pub fn check_user_is_team_translator_or_proofreader(
     member_info: &MemberInfo,
 ) -> BaseRest<()> {
     //
-    if !member_info.roles.has_any_role(&[RoleField::PROOFREADER]) {
+    if !member_info
+        .roles
+        .has_any_role(&[RoleField::TRANSLATOR, RoleField::PROOFREADER])
+    {
         //
         return reject_perm(
-            "error-team-proofreader-required",
-            "team_proofreader_role_missing",
+            "error-team-translator-or-proofreader-required",
+            "team_translation_role_missing",
         );
     }
 
