@@ -215,9 +215,8 @@ pub async fn join<N, C, R>(
     instr: JoinChapterAssignmentInstr,
 ) -> BaseRest<AssignmentInfoView>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: ChapterRepo<C>
         + ChapterWorkflowRecordRepo<C>
@@ -354,9 +353,8 @@ pub async fn delete<N, C, R>(
     id: String,
 ) -> BaseRest<()>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: AssignmentRepo<C>
         + ChapterRepo<C>

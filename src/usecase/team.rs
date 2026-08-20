@@ -46,6 +46,7 @@ use crate::part::repo::oper::user::{GetUserInfo, GetUserInfoExcluded};
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::value::image::ImageKind;
 use crate::value::role::{RoleField, RoleMask};
 
 /// Creates a new team.
@@ -64,9 +65,8 @@ pub async fn create<N, C, R, I>(
     instr: CreateTeamInstr,
 ) -> BaseRest<TeamInfoView>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: TeamRepo<C> + UserRepo<C> + MemberRepo<C> + Send + Sync,
     I: ImagePool,
@@ -186,9 +186,8 @@ pub async fn reserve_avatar<N, C, R, P, I>(
     instr: ReserveTeamAvatarInstr,
 ) -> BaseRest<ReserveTeamAvatarVal>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: TeamRepo<C> + MemberRepo<C> + Send + Sync,
     P: Prom<C> + Send + Sync,
@@ -196,7 +195,7 @@ where
 {
     ImageComplex::ensure_byte_length(
         instr.new_byte_len,
-        image::ResourceKind::TeamAvatar,
+        ImageKind::TeamAvatar,
     )?;
 
     let (transaction_image_hash, image_ext, new_byte_len) =
@@ -261,7 +260,7 @@ where
 
             batch_payloads.push(TaskPayload::Image {
                 payload: image::ImagePayload::CheckUpload {
-                    resource_kind: image::ResourceKind::TeamAvatar,
+                    image_kind: ImageKind::TeamAvatar,
                     resource_id: id.clone(),
                     object_key: avatar_reservation.object_key.clone(),
                     version: avatar_reservation.avatar_version,
@@ -335,9 +334,8 @@ pub async fn mark_avatar_uploaded<N, C, R, I>(
     instr: MarkTeamAvatarUploadedInstr,
 ) -> BaseRest<()>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: TeamRepo<C> + MemberRepo<C> + Send + Sync,
     I: ImageManager,

@@ -25,7 +25,7 @@ use std::sync::Arc;
 use anyhow::Context as _;
 
 use poprako_server::{
-    AppConfig, AsyncEffectDevelop, Harn, HybRepo, JwtAuth, NuclProxy,
+    AppConfig, AsyncEffectDevelop, Harn, HybNucl, HybRepo, JwtAuth,
     R2ImagePool, RdbContext, RdbCore, RdbNucl, RdbProm, RepeatableRead, Sched,
     Serializable,
 };
@@ -56,7 +56,7 @@ async fn main() -> anyhow::Result<()> {
 
     let core = RdbCore::from_env()?;
 
-    let nucl = NuclProxy::new(
+    let nucl = HybNucl::new(
         RdbNucl::<RepeatableRead>::new(core.clone()),
         RdbNucl::<Serializable>::new(core.clone()),
     );

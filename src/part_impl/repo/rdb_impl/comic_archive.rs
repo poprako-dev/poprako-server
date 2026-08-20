@@ -11,8 +11,11 @@ pub mod tests;
 
 use std::collections::HashMap;
 
-use diesel::prelude::*;
-use diesel_async::RunQueryDsl;
+use diesel::prelude::{
+    ExpressionMethods as _, OptionalExtension as _, QueryDsl as _,
+    SelectableHelper as _,
+};
+use diesel_async::RunQueryDsl as _;
 use poprako_orchestra::{AtLeast, Level, Run, Step};
 use time::OffsetDateTime;
 use tracing::instrument;
@@ -422,8 +425,7 @@ async fn get_snapshot_excluded(
 
 impl<L> Step<GetComicArchiveSnapshotExcluded<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Use base errors for snapshot reads in comic archive transactions.
     type Level = RepeatableRead;
@@ -465,8 +467,7 @@ impl Run<ListComicArchivePayloads<'_>> for HybRepo {
 
 impl<L> Step<CommitComicArchive<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Use base errors for commit operations.
     type Level = RepeatableRead;
@@ -487,8 +488,7 @@ where
 
 impl<L> Step<DeleteComicArchives<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Use base errors for comic-archive cleanup during hard deletion.
     type Level = RepeatableRead;

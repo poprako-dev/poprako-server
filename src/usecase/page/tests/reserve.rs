@@ -105,7 +105,7 @@ async fn reserve_chapter_pages_creates_pages_and_urls() {
 
         assert_one_image_check_record(
             &snapshot.prom_records,
-            ResourceKind::PageImage,
+            ImageKind::PageImage,
             &creation.page_id,
             object_key,
             creation.slot.as_ref().unwrap().image_version,

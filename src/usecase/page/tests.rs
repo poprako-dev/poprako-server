@@ -38,7 +38,7 @@ use crate::model::read::proj::workset::WorksetInfo;
 use crate::model::shared::user::UserToken;
 use crate::part::prom::payload::TaskPayload;
 use crate::part::prom::payload::chapter::ChapterPayload;
-use crate::part::prom::payload::image::{ImagePayload, ResourceKind};
+use crate::part::prom::payload::image::ImagePayload;
 use crate::part_impl::prom::mock_impl::process_pending;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
@@ -50,7 +50,7 @@ use crate::usecase::page::delete::delete;
 use crate::usecase::page::list::{get_info, list_infos};
 use crate::usecase::page::reserve::reserve_chapter_pages;
 use crate::value::chapter::{Stage, StageMask, StagePhase};
-use crate::value::image::{ImageExt, ImageHash};
+use crate::value::image::{ImageExt, ImageHash, ImageKind};
 use crate::value::role::{RoleField, RoleMask};
 
 fn token(user_id: &str) -> UserToken {
@@ -257,7 +257,7 @@ async fn reserve_image_replaces_key_and_enqueues_prom() {
 
     assert_one_image_check_record(
         &snapshot.prom_records,
-        ResourceKind::PageImage,
+        ImageKind::PageImage,
         "page-1",
         "page/chapter_chapter-1/page-1-2.jpg",
         2,
@@ -342,7 +342,7 @@ async fn reserve_image_resigns_same_pending_identity() {
 
     assert_one_image_check_record(
         &mock.snapshot().prom_records,
-        ResourceKind::PageImage,
+        ImageKind::PageImage,
         "page-1",
         "same.png",
         4,
@@ -397,7 +397,7 @@ async fn reserve_image_replaces_same_hash_with_different_extension() {
 
     assert_one_image_check_record(
         &snapshot.prom_records,
-        ResourceKind::PageImage,
+        ImageKind::PageImage,
         "page-1",
         snapshot.pages[0].image_key.as_deref().unwrap(),
         5,

@@ -3,7 +3,7 @@
 #[cfg(test)]
 mod tests;
 
-use diesel::prelude::*;
+use diesel::{Insertable, Queryable, Selectable};
 use serde_json::json;
 use time::OffsetDateTime;
 

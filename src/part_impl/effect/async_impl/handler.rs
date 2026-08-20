@@ -41,8 +41,7 @@ impl<R> EffectHandler<R> {
     /// Runs the event consumer loop, dispatching events until a shutdown signal is received.
     pub async fn run<C>(mut self)
     where
-        C: Context,
-        C: Send,
+        C: Context + Send,
         R: AssignmentRepo<C>
             + ChapterRepo<C>
             + TeamRepo<C>

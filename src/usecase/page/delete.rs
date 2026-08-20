@@ -31,9 +31,8 @@ pub async fn delete<N, C, R, P>(
     chapter_id: String,
 ) -> BaseRest<()>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: PageRepo<C>
         + ChapterRepo<C>

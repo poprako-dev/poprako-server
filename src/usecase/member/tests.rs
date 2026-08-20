@@ -25,8 +25,9 @@ mod mutate;
 
 use super::*;
 
-use poprako_util::time::ToUnixMilli as _;
 use time::Duration;
+
+use poprako_util::time::ToUnixMilli as _;
 
 use crate::data::instr::member::{
     CreateMemberInstr, ListMemberInfosInstr, UpdateMemberRolesInstr,

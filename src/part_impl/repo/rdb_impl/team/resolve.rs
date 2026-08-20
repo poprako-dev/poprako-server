@@ -96,8 +96,7 @@ impl Run<ResolveTeamId<'_>> for HybRepo {
 
 impl<L> Step<ResolveTeamId<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // BaseError for the transactional team-resolution projection.
     type Level = RepeatableRead;

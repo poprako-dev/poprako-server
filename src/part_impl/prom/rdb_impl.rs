@@ -13,6 +13,7 @@ mod entity;
 mod handler;
 // Internal organization of the `repo` module.
 mod repo;
+
 #[cfg(all(test, feature = "rdb", feature = "prom_impl"))]
 // Internal organization of the `test_shared` module.
 mod test_shared;
@@ -21,7 +22,7 @@ mod test_shared;
 // Internal organization of the `tests` module.
 mod tests;
 
-use diesel_async::RunQueryDsl;
+use diesel_async::RunQueryDsl as _;
 use poprako_orchestra::{AtLeast, Level, Step};
 use time::OffsetDateTime;
 use tokio::sync::watch;
@@ -128,8 +129,7 @@ impl Drop for RdbProm {
 
 impl<'a, L> Step<Defer<'a, String, TaskPayload, ()>, RdbContext<L>> for RdbProm
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Internal type alias for `Error`.
     type Level = RepeatableRead;
@@ -163,8 +163,7 @@ where
 impl<'t, 'a, L> Step<DeferBatch<'t, 'a, String, TaskPayload, ()>, RdbContext<L>>
     for RdbProm
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Internal type alias for `Error`.
     type Level = RepeatableRead;

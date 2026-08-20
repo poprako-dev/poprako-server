@@ -1,5 +1,10 @@
-use diesel::prelude::*;
-use diesel_async::RunQueryDsl;
+//! Team lifecycle and profile persistence.
+
+use diesel::prelude::{
+    ExpressionMethods as _, OptionalExtension as _, QueryDsl as _,
+    SelectableHelper as _,
+};
+use diesel_async::RunQueryDsl as _;
 use time::OffsetDateTime;
 use tracing::instrument;
 
@@ -13,7 +18,11 @@ use crate::part_impl::repo::rdb_impl::entity::team::{
     TeamAspectRow, TeamEntryRow, TeamInfoRow,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_member;
-use crate::part_impl::repo::rdb_impl::schema::t_team::dsl::*;
+use crate::part_impl::repo::rdb_impl::schema::t_team::dsl::{
+    f_avatar_extension, f_avatar_hash, f_avatar_key, f_avatar_uploaded,
+    f_avatar_version, f_created_at, f_id, f_updated_at, f_workset_next_index,
+    t_team,
+};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::RdbConn;
 use crate::shared::result::{diesel, next_version};
@@ -150,6 +159,44 @@ pub async fn update_info(conn: &mut RdbConn, repl: &TeamRepl) -> BaseRest<()> {
         .map_err(diesel)?;
 
     accept(())
+}
+
+// Load one team info and lock the row for transactional updates.
+#[instrument(level = "info", skip_all)]
+/// Load a team info by ID, locking the row for update.
+pub async fn get_info_excluded(
+    conn: &mut RdbConn,
+    id: &str,
+) -> BaseRest<TeamInfo> {
+    //
+    let row = t_team
+        .filter(f_id.eq(id))
+        .select(TeamInfoRow::as_select())
+        .for_update()
+        .get_result::<TeamInfoRow>(conn)
+        .await
+        .optional()
+        .map_err(diesel)?;
+
+    let Some(row) = row else {
+        //
+        let message = trl("error-team-not-found");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            err_message = %message,
+            team_id = %id,
+            operation = "lock team info",
+            "expected team error",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message,
+        });
+    };
+
+    row.try_into()
 }
 
 // Validate version/hash preconditions and mark avatar upload state.
@@ -320,44 +367,6 @@ pub async fn reserve_avatar(
         avatar_version: version,
         is_upload_required: true,
     })
-}
-
-// Load one team info and lock the row for transactional updates.
-#[instrument(level = "info", skip_all)]
-/// Load a team info by ID, locking the row for update.
-pub async fn get_info_excluded(
-    conn: &mut RdbConn,
-    id: &str,
-) -> BaseRest<TeamInfo> {
-    //
-    let row = t_team
-        .filter(f_id.eq(id))
-        .select(TeamInfoRow::as_select())
-        .for_update()
-        .get_result::<TeamInfoRow>(conn)
-        .await
-        .optional()
-        .map_err(diesel)?;
-
-    let Some(row) = row else {
-        //
-        let message = trl("error-team-not-found");
-
-        tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
-            err_message = %message,
-            team_id = %id,
-            operation = "lock team info",
-            "expected team error",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message,
-        });
-    };
-
-    row.try_into()
 }
 
 // Lock a team row to serialize concurrent writes in the current transaction.

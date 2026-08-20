@@ -43,6 +43,7 @@ use crate::part::repo::oper::user::{
 };
 use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::value::image::ImageKind;
 
 /// Fetches a user's profile with avatar URL resolution.
 ///
@@ -107,9 +108,8 @@ pub async fn update_info<N, C, R>(
     instr: UpdateUserInfoInstr,
 ) -> BaseRest<()>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: UserRepo<C> + MemberRepo<C> + Send + Sync,
 {
@@ -173,9 +173,8 @@ pub async fn update_password<N, C, R>(
     instr: UpdateUserPasswordInstr,
 ) -> BaseRest<()>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: UserRepo<C> + Send + Sync,
 {
@@ -274,9 +273,8 @@ pub async fn reserve_avatar<N, C, R, P, I>(
     instr: ReserveUserAvatarInstr,
 ) -> BaseRest<ReserveUserAvatarVal>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: UserRepo<C> + Send + Sync,
     P: Prom<C> + Send + Sync,
@@ -284,7 +282,7 @@ where
 {
     ImageComplex::ensure_byte_length(
         instr.new_byte_len,
-        image::ResourceKind::UserAvatar,
+        ImageKind::UserAvatar,
     )?;
 
     let (transaction_image_hash, image_ext, new_byte_len) =
@@ -330,7 +328,7 @@ where
 
             batch_payloads.push(TaskPayload::Image {
                 payload: image::ImagePayload::CheckUpload {
-                    resource_kind: image::ResourceKind::UserAvatar,
+                    image_kind: ImageKind::UserAvatar,
                     resource_id: token.user_id.clone(),
                     object_key: avatar_reservation.object_key.clone(),
                     version: avatar_reservation.avatar_version,
@@ -404,9 +402,8 @@ pub async fn mark_avatar_uploaded<N, C, R, I>(
     instr: MarkUserAvatarUploadedInstr,
 ) -> BaseRest<()>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: UserRepo<C> + Send + Sync,
     I: ImageManager,

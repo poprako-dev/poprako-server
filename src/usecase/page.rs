@@ -45,6 +45,7 @@ use crate::part::repo::oper::page::{
 use crate::part::repo::page::PageRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
+use crate::value::image::ImageKind;
 
 /// Reserves a replacement image upload slot for one page.
 #[instrument(level = "info", skip(nucl, repo, prom, image_pool))]
@@ -55,9 +56,8 @@ pub async fn reserve_image<N, C, R, P, I>(
     instr: ReservePageImageInstr,
 ) -> BaseRest<ReservedPageVal>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: ChapterRepo<C> + PageRepo<C> + AssignmentRepo<C> + Send + Sync,
     P: Prom<C> + Send + Sync,
@@ -69,10 +69,7 @@ where
         ext,
     } = instr;
 
-    ImageComplex::ensure_byte_length(
-        new_byte_len,
-        image::ResourceKind::PageImage,
-    )?;
+    ImageComplex::ensure_byte_length(new_byte_len, ImageKind::PageImage)?;
 
     let page_info = GetPageInfo { id: &id }.run_on(repo).await?;
 
@@ -208,7 +205,7 @@ where
             task_ids.push(ImageComplex::gen_check_id());
 
             task_payloads.push(TaskPayload::Image { payload: image::ImagePayload::CheckUpload {
-                resource_kind: image::ResourceKind::PageImage,
+                image_kind: ImageKind::PageImage,
                 resource_id: locked_page_info.id.clone(),
                 object_key: image_key.clone(),
                 version: image_version,
@@ -326,9 +323,8 @@ pub async fn mark_image_uploaded<N, C, R, I>(
     instr: MarkPageImageUploadedInstr,
 ) -> BaseRest<()>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: ChapterRepo<C> + PageRepo<C> + AssignmentRepo<C> + Send + Sync,
     I: ImageManager,

@@ -1,6 +1,6 @@
 //! Diesel entity types for the `t_system_mail` table.
 
-use diesel::prelude::*;
+use diesel::{Insertable, Queryable, Selectable};
 use time::OffsetDateTime;
 
 use crate::model::read::proj::system_mail::SystemMailInfo;

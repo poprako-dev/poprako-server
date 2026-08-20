@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 

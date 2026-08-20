@@ -36,9 +36,8 @@ pub async fn delete<N, C, R, P>(
     id: String,
 ) -> BaseRest<()>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: UserRepo<C> + MemberRepo<C> + Send + Sync,
     P: Prom<C> + Send + Sync,

@@ -1,7 +1,11 @@
 //! RDB-backed member repository — free-query helper functions.
 
-use diesel::prelude::*;
-use diesel_async::RunQueryDsl;
+use diesel::PgTextExpressionMethods as _;
+use diesel::prelude::{
+    ExpressionMethods as _, OptionalExtension as _, QueryDsl as _,
+    SelectableHelper as _,
+};
+use diesel_async::RunQueryDsl as _;
 use time::OffsetDateTime;
 use tracing::instrument;
 
@@ -14,7 +18,13 @@ use crate::part_impl::repo::rdb_impl::entity::member::{
     MemberAspectRow, MemberEntryRow, MemberInfoRow,
 };
 use crate::part_impl::repo::rdb_impl::incl;
-use crate::part_impl::repo::rdb_impl::schema::t_member::dsl::*;
+use crate::part_impl::repo::rdb_impl::schema::t_member::dsl::{
+    f_assigned_admin_at, f_assigned_bot_at, f_assigned_proofreader_at,
+    f_assigned_publisher_at, f_assigned_raw_provider_at,
+    f_assigned_redrawer_at, f_assigned_reviewer_at, f_assigned_translator_at,
+    f_assigned_typesetter_at, f_id, f_team_id, f_user_id,
+    f_user_last_active_at, f_user_nickname, t_member,
+};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::RdbConn;
 use crate::shared::result::diesel;

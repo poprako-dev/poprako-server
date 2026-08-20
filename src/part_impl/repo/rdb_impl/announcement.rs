@@ -4,8 +4,10 @@
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;
 
-use diesel::prelude::*;
-use diesel_async::RunQueryDsl;
+use diesel::prelude::{
+    ExpressionMethods as _, QueryDsl as _, SelectableHelper as _,
+};
+use diesel_async::RunQueryDsl as _;
 use poprako_orchestra::{AtLeast, Level, Run, Step};
 use tracing::instrument;
 
@@ -21,7 +23,9 @@ use crate::part_impl::repo::rdb_impl::entity::announcement::{
     AnnouncementEntryRow, AnnouncementInfoRow,
 };
 use crate::part_impl::repo::rdb_impl::incl;
-use crate::part_impl::repo::rdb_impl::schema::t_announcement::dsl::*;
+use crate::part_impl::repo::rdb_impl::schema::t_announcement::dsl::{
+    f_created_at, f_team_id, t_announcement,
+};
 use crate::result::{BaseError, BaseRest, accept};
 use crate::shared::result::diesel;
 use crate::shared::{RdbConn, RdbContext};
@@ -94,8 +98,7 @@ impl Run<ListAnnouncementInfos<'_>> for HybRepo {
 
 impl<L> Step<CreateAnnouncement<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Error type for the Step trait impl on announcement creation.
     type Level = RepeatableRead;

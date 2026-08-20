@@ -21,8 +21,10 @@ use crate::api::http::middleware::rate_limit::rate_limit;
 use crate::api::http::middleware::trace::{
     propagate_request_id, set_request_id, trace_request,
 };
+
 #[cfg(feature = "swagger")]
 use crate::api::http::openapi::ApiDoc;
+
 use crate::api::http::state::AppHarn;
 
 /// Builds the application router from the production harness.

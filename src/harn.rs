@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 /// Selects one of the transaction coordinators owned by the application.
-pub struct NuclProxy<NR, NS>(NR, NS);
+pub struct HybNucl<NR, NS>(NR, NS);
 
-impl<NR, NS> NuclProxy<NR, NS> {
+impl<NR, NS> HybNucl<NR, NS> {
     /// Combines the repeatable-read and serializable coordinators.
     pub fn new(repeatable_read: NR, serializable: NS) -> Self {
         Self(repeatable_read, serializable)

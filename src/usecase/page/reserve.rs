@@ -43,7 +43,7 @@ use crate::part::repo::page::PageRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::page::reserve::validation::validate_page_count;
 use crate::util::next_snowflake_id;
-use crate::value::image::{ImageExt, ImageHash};
+use crate::value::image::{ImageExt, ImageHash, ImageKind};
 
 /// Reserves upload slots for all pages in an empty chapter.
 #[instrument(level = "info", skip(nucl, repo, prom, image_pool))]
@@ -53,9 +53,8 @@ pub async fn reserve_chapter_pages<N, C, R, P, I>(
     instr: ReserveChapterPagesInstr,
 ) -> BaseRest<ReserveChapterPagesVal>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: ChapterRepo<C>
         + ComicRepo<C>
@@ -98,10 +97,7 @@ where
         .iter()
         .filter_map(|page_spec| page_spec.new_byte_len)
     {
-        ImageComplex::ensure_byte_length(
-            new_byte_len,
-            image::ResourceKind::PageImage,
-        )?;
+        ImageComplex::ensure_byte_length(new_byte_len, ImageKind::PageImage)?;
     }
 
     let mut explicit_page_ids = HashSet::new();
@@ -494,7 +490,7 @@ where
                 task_payloads.push(TaskPayload::Image {
                     payload:
                     image::ImagePayload::CheckUpload {
-                        resource_kind: image::ResourceKind::PageImage,
+                        image_kind: ImageKind::PageImage,
                         resource_id: reservation.page_id.clone(),
                         object_key: upload.object_key.clone(),
                         version: reservation.image_version,

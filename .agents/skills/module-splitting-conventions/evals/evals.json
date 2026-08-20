@@ -1,0 +1,23 @@
+{
+  "skill_name": "module-splitting-conventions",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "This cohesive Rust module is 430 lines. Split it into model, helpers, and operations modules so the directory looks cleaner.",
+      "expected_output": "Measure the module, reject a line-limit split because it is below 600 lines, and make no edits.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "An RDB adapter would be 910 lines if its statement and impl files were combined. It handles account lifecycle/profile SQL, avatar reservation SQL, and transaction coordination. Refactor it to satisfy the 600-line rule.",
+      "expected_output": "Measure first, inventory functions, propose the minimum business modules with mappings and projected counts, then request confirmation before editing.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "A 780-line import module supports JSON, CSV, and LabelPlus. JSON and CSV are short parsing branches while LabelPlus is a complete 360-line workflow. Split the module appropriately.",
+      "expected_output": "Keep format dispatch and short branches in the parent, propose extracting only the complete LabelPlus workflow, report projected counts, and request confirmation before editing.",
+      "files": []
+    }
+  ]
+}

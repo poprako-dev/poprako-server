@@ -8,7 +8,7 @@
 use axum::extract::{Request, State};
 use axum::http::header;
 use axum::middleware::Next;
-use axum::response::{IntoResponse, Response};
+use axum::response::{IntoResponse as _, Response};
 
 use crate::api::http::auth::{AUTH_BEARER_PREFIX, AUTH_COOKIE_NAME};
 use crate::api::http::result::HttpError;

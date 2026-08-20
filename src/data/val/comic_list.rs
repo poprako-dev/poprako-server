@@ -3,6 +3,7 @@
 //! Comic-list-specific DTOs — payload for the comic listing endpoint.
 
 use serde::Serialize;
+
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 

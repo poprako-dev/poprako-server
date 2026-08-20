@@ -50,8 +50,7 @@ impl AsyncEffectDevelop {
     /// Creates a dispatcher and launches its background task.
     pub fn new<C, R>(repo: Arc<R>, buffer_size: usize) -> Self
     where
-        C: Context,
-        C: Send + 'static,
+        C: Context + Send + 'static,
         R: AssignmentRepo<C>
             + ChapterRepo<C>
             + TeamRepo<C>

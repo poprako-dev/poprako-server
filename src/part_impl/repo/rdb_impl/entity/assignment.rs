@@ -1,6 +1,6 @@
 //! Diesel entity types for the `t_assignment` table.
 
-use diesel::prelude::*;
+use diesel::{AsChangeset, Insertable, Queryable, Selectable};
 use time::OffsetDateTime;
 
 use crate::model::read::proj::assignment::AssignmentInfo;

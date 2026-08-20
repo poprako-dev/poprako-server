@@ -5,8 +5,10 @@ mod tests;
 
 use std::collections::HashSet;
 
-use diesel::prelude::*;
-use diesel_async::RunQueryDsl;
+use diesel::prelude::{
+    ExpressionMethods as _, QueryDsl as _, SelectableHelper as _,
+};
+use diesel_async::RunQueryDsl as _;
 use time::OffsetDateTime;
 use tracing::instrument;
 
@@ -17,7 +19,9 @@ use crate::model::write::unit::UnitEdit;
 use crate::part_impl::repo::rdb_impl::entity::unit::{
     UnitAspectRow, UnitEntryRow, UnitInfoRow,
 };
-use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::*;
+use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{
+    f_hidden_at, f_id, f_next_id, f_page_id, t_unit,
+};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::RdbConn;
 use crate::shared::result::diesel;

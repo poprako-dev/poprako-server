@@ -1,24 +1,261 @@
-// Chapter import parsing helpers.
-mod helpers;
+// LabelPlus chapter import rules.
+mod label_plus;
 
 #[cfg(test)]
 // Test cases for chapter-import parsing, translation assembly, and validation.
 mod tests;
 
+use std::collections::HashSet;
+
 use poprako_util::i18n::trl;
 
-use crate::complex::chapter_port::import::helpers::{
-    LabelPlusUnit, build_revision, build_translation, finalize_label_plus_page,
-    flush_label_plus_unit, is_label_plus_page_header,
-    parse_label_plus_unit_header, parse_poprako_document,
-    validate_label_plus_header,
-};
+use crate::complex::chapter_port::import::label_plus::parse_label_plus;
 use crate::data::view::chapter_port::ChapterTranslationPortView;
 use crate::model::page_port::PageTranslationImport;
-use crate::model::shared::unit::UnitCoord;
+use crate::model::shared::unit::{UnitCoord, UnitRevision, UnitTranslation};
 use crate::model::unit_port::UnitTranslationImport;
 use crate::model::write::unit::UnitEdit;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+
+// Construct the stable invalid-content error for PopRaKo input.
+fn invalid_poprako_content(condition: &str) -> BaseError {
+    //
+    let err_message = trl("error-invalid-chapter-import-content");
+
+    tracing::warn!(
+        err_variant = ?ExpectedVariant::Args,
+        err_message = %err_message,
+        condition,
+        "expected error: chapter import content is invalid",
+    );
+
+    BaseError::Expected {
+        variant: ExpectedVariant::Args,
+        message: err_message,
+    }
+}
+
+// Normalize an optional PopRaKo text field without changing non-empty text.
+fn normalize_optional_poprako_text(text: Option<String>) -> Option<String> {
+    text.and_then(normalize_poprako_text)
+}
+
+// Convert the shared PopRaKo document into normalized import pages.
+fn convert_poprako_document(
+    project: ChapterTranslationPortView,
+) -> BaseRest<Vec<PageTranslationImport>> {
+    //
+    if project.pages.len() > 200 {
+        //
+        return Err(invalid_poprako_content(
+            "PopRaKo document has too many pages",
+        ));
+    }
+
+    let page_count = project.pages.len() as i32;
+
+    let mut page_indexes = HashSet::with_capacity(project.pages.len());
+
+    let mut pages = Vec::with_capacity(project.pages.len());
+
+    for page in project.pages {
+        //
+        if page.page_index < 0
+            || page.page_index >= page_count
+            || !page_indexes.insert(page.page_index)
+        {
+            return Err(invalid_poprako_content("invalid PopRaKo page index"));
+        }
+
+        if page.units.len() > 100 {
+            //
+            return Err(invalid_poprako_content(
+                "PopRaKo page has too many units",
+            ));
+        }
+
+        let mut unit_indexes = HashSet::with_capacity(page.units.len());
+
+        let mut units = Vec::with_capacity(page.units.len());
+
+        for unit in page.units {
+            //
+            if unit.unit_index < 0 || !unit_indexes.insert(unit.unit_index) {
+                //
+                return Err(invalid_poprako_content(
+                    "invalid PopRaKo unit index",
+                ));
+            }
+
+            if !unit.x_coord.is_finite() || !unit.y_coord.is_finite() {
+                //
+                return Err(invalid_poprako_content(
+                    "PopRaKo coordinate is not finite",
+                ));
+            }
+
+            units.push(UnitTranslationImport {
+                index: unit.unit_index,
+                x_coord: unit.x_coord,
+                y_coord: unit.y_coord,
+                is_bubble: unit.is_bubble,
+                main_text: None,
+                translated_text: normalize_optional_poprako_text(
+                    unit.translated_text,
+                ),
+                proofread_text: normalize_optional_poprako_text(
+                    unit.proofread_text,
+                ),
+                is_proofread: unit.is_proofread,
+            });
+        }
+
+        units.sort_by_key(|unit| unit.index);
+
+        pages.push(PageTranslationImport {
+            page_index: page.page_index,
+            units,
+        });
+    }
+
+    pages.sort_by_key(|page| page.page_index);
+
+    if pages
+        .iter()
+        .enumerate()
+        .any(|(index, page)| page.page_index != index as i32)
+    {
+        return Err(invalid_poprako_content(
+            "PopRaKo page indexes are incomplete",
+        ));
+    }
+
+    accept(pages)
+}
+
+// Build translated text when the current user has translator permission.
+fn build_translation(
+    parsed_unit: &UnitTranslationImport,
+    user_id: &str,
+    can_translate: bool,
+    label_plus: bool,
+) -> Option<UnitTranslation> {
+    //
+    if !can_translate {
+        return None;
+    }
+
+    let translated_text = match label_plus {
+        //
+        true => parsed_unit.main_text.clone(),
+
+        false => parsed_unit.translated_text.clone(),
+    };
+
+    translated_text.map(|translated_text| UnitTranslation {
+        translated_text,
+        last_translator_id: user_id.to_string(),
+    })
+}
+
+// Build proofread text when the current user has proofreader permission.
+fn build_revision(
+    parsed_unit: &UnitTranslationImport,
+    user_id: &str,
+    can_proofread: bool,
+    label_plus: bool,
+) -> Option<UnitRevision> {
+    //
+    if !can_proofread {
+        return None;
+    }
+
+    let proofread_text = match label_plus {
+        //
+        true => parsed_unit.main_text.clone(),
+
+        false => parsed_unit.proofread_text.clone(),
+    };
+
+    let is_proofread =
+        label_plus && proofread_text.is_some() || parsed_unit.is_proofread;
+
+    if proofread_text.is_none() && !is_proofread {
+        return None;
+    }
+
+    Some(UnitRevision {
+        is_proofread,
+        proofread_text,
+        last_proofreader_id: user_id.to_string(),
+    })
+}
+
+// Normalize PopRaKo text while preserving non-empty whitespace and lines.
+fn normalize_poprako_text(text: String) -> Option<String> {
+    //
+    if text.trim().is_empty() {
+        return None;
+    }
+
+    Some(text)
+}
+
+// Parse and validate a complete PopRaKo JSON document.
+fn parse_poprako(content: &str) -> BaseRest<Vec<PageTranslationImport>> {
+    //
+    let content = content.strip_prefix('\u{feff}').unwrap_or(content);
+
+    let project = serde_json::from_str::<ChapterTranslationPortView>(content)
+        .map_err(|error| {
+        //
+        let err_message = trl("error-invalid-chapter-import-content");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Args,
+            err_message = %err_message,
+            input_length = content.len(),
+            parse_err = ?error,
+            operation = "parse_poprako",
+            "expected error: chapter import JSON is invalid",
+        );
+
+        BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: err_message,
+        }
+    })?;
+
+    convert_poprako_document(project)
+}
+
+// Build one unit creation edit from imported content.
+fn build_unit_create(
+    parsed_unit: &UnitTranslationImport,
+    unit_id: String,
+    user_id: &str,
+    can_translate: bool,
+    can_proofread: bool,
+    label_plus: bool,
+) -> UnitEdit {
+    //
+    let (translation, revision) = (
+        build_translation(parsed_unit, user_id, can_translate, label_plus),
+        build_revision(parsed_unit, user_id, can_proofread, label_plus),
+    );
+
+    UnitEdit::Create {
+        id: unit_id,
+        next_id: None,
+        is_bubble: parsed_unit.is_bubble,
+        coord: UnitCoord {
+            x_coord: parsed_unit.x_coord,
+            y_coord: parsed_unit.y_coord,
+        },
+        translation,
+        revision,
+    }
+}
 
 /// Chapter import parsing and payload merge rules.
 pub struct ChapterImportComplex;
@@ -28,172 +265,14 @@ impl ChapterImportComplex {
     pub fn parse_label_plus(
         content: &str,
     ) -> BaseRest<Vec<PageTranslationImport>> {
-        //
-        let content = content.strip_prefix('\u{feff}').unwrap_or(content);
-
-        let mut lines = content
-            .split('\n')
-            .map(|line| line.strip_suffix('\r').unwrap_or(line));
-
-        validate_label_plus_header(&mut lines)?;
-
-        let (
-            mut pages,
-            mut current_page,
-            mut current_unit,
-            mut main_text_lines,
-        ) = (
-            Vec::new(),
-            None::<Vec<UnitTranslationImport>>,
-            None::<LabelPlusUnit>,
-            Vec::new(),
-        );
-
-        for line in lines {
-            //
-            if is_label_plus_page_header(line) {
-                //
-                flush_label_plus_unit(
-                    &mut current_page,
-                    &mut current_unit,
-                    &mut main_text_lines,
-                )?;
-
-                if let Some(mut units) = current_page.take() {
-                    //
-                    finalize_label_plus_page(&mut units)?;
-
-                    pages.push(PageTranslationImport {
-                        page_index: pages.len() as i32,
-                        units,
-                    });
-                }
-
-                current_page = Some(Vec::new());
-
-                continue;
-            }
-
-            let structural_line = line.trim_end_matches([' ', '\t']);
-
-            if structural_line.starts_with(">>>>>>>>") {
-                //
-                let err_message = trl("error-invalid-chapter-import-content");
-
-                tracing::warn!(
-                    err_variant = ?ExpectedVariant::Args,
-                    err_message = %err_message,
-                    "expected error: LabelPlus structure line is malformed",
-                );
-
-                return Err(BaseError::Expected {
-                    variant: ExpectedVariant::Args,
-                    message: err_message,
-                });
-            }
-
-            if let Some(unit) = parse_label_plus_unit_header(line)? {
-                //
-                if current_page.is_none() {
-                    //
-                    let err_message =
-                        trl("error-invalid-chapter-import-content");
-
-                    tracing::warn!(
-                        err_variant = ?ExpectedVariant::Args,
-                        err_message = %err_message,
-                        line = %line,
-                        "expected error: chapter import unit appears before page",
-                    );
-
-                    return Err(BaseError::Expected {
-                        variant: ExpectedVariant::Args,
-                        message: err_message,
-                    });
-                }
-
-                flush_label_plus_unit(
-                    &mut current_page,
-                    &mut current_unit,
-                    &mut main_text_lines,
-                )?;
-
-                current_unit = Some(unit);
-
-                continue;
-            }
-
-            if current_unit.is_some() && !line.is_empty() {
-                main_text_lines.push(line.to_string());
-            }
-        }
-
-        flush_label_plus_unit(
-            &mut current_page,
-            &mut current_unit,
-            &mut main_text_lines,
-        )?;
-
-        if let Some(mut units) = current_page.take() {
-            //
-            finalize_label_plus_page(&mut units)?;
-
-            pages.push(PageTranslationImport {
-                page_index: pages.len() as i32,
-                units,
-            });
-        }
-
-        if pages.len() > 200 {
-            //
-            let err_message = trl("error-invalid-chapter-import-content");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_message = %err_message,
-                page_count = pages.len(),
-                "expected error: LabelPlus document has too many pages",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message: err_message,
-            });
-        }
-
-        accept(pages)
+        parse_label_plus(content)
     }
 
     /// Parses PopRaKo JSON text into chapter import pages.
     pub fn parse_poprako(
         content: &str,
     ) -> BaseRest<Vec<PageTranslationImport>> {
-        //
-        let content = content.strip_prefix('\u{feff}').unwrap_or(content);
-
-        let project =
-            serde_json::from_str::<ChapterTranslationPortView>(content)
-                .map_err(|error| {
-                    //
-                    let err_message =
-                        trl("error-invalid-chapter-import-content");
-
-                    tracing::warn!(
-                        err_variant = ?ExpectedVariant::Args,
-                        err_message = %err_message,
-                        input_length = content.len(),
-                        parse_err = ?error,
-                        operation = "parse_poprako",
-                        "expected error: chapter import JSON is invalid",
-                    );
-
-                    BaseError::Expected {
-                        variant: ExpectedVariant::Args,
-                        message: err_message,
-                    }
-                })?;
-
-        parse_poprako_document(project)
+        parse_poprako(content)
     }
 
     /// Returns an error when imported pages do not match existing pages.
@@ -233,21 +312,13 @@ impl ChapterImportComplex {
         label_plus: bool,
     ) -> UnitEdit {
         //
-        let (translation, revision) = (
-            build_translation(parsed_unit, user_id, can_translate, label_plus),
-            build_revision(parsed_unit, user_id, can_proofread, label_plus),
-        );
-
-        UnitEdit::Create {
-            id: unit_id,
-            next_id: None,
-            is_bubble: parsed_unit.is_bubble,
-            coord: UnitCoord {
-                x_coord: parsed_unit.x_coord,
-                y_coord: parsed_unit.y_coord,
-            },
-            translation,
-            revision,
-        }
+        build_unit_create(
+            parsed_unit,
+            unit_id,
+            user_id,
+            can_translate,
+            can_proofread,
+            label_plus,
+        )
     }
 }

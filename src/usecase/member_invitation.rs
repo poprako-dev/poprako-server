@@ -57,9 +57,8 @@ pub async fn create<N, C, R, P>(
     instr: CreateMemberInvitationInstr,
 ) -> BaseRest<CreateMemberInvitationVal>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: MemberInvitationRepo<C> + MemberRepo<C> + UserRepo<C> + Send + Sync,
     P: Prom<C> + Send + Sync,
@@ -261,9 +260,8 @@ pub async fn update_roles<N, C, R>(
     instr: UpdateMemberInvitationRolesInstr,
 ) -> BaseRest<()>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: MemberInvitationRepo<C> + MemberRepo<C> + Send + Sync,
 {
@@ -307,9 +305,8 @@ pub async fn delete<N, C, R>(
     id: String,
 ) -> BaseRest<()>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: MemberInvitationRepo<C> + MemberRepo<C> + Send + Sync,
 {

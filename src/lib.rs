@@ -28,9 +28,11 @@ mod part_impl;
 mod result;
 // Shared RDB infrastructure used by port implementations and production extras.
 mod shared;
+
 #[cfg(test)]
 // Internal tests utility helpers for fixtures and assertions.
 mod test_util;
+
 // Application use cases orchestrating the ports-and-transaction-steps core.
 mod usecase;
 // Shared utility functions (snowflake ID generation, etc.).
@@ -46,14 +48,13 @@ pub mod benchmark;
 
 #[cfg(feature = "swagger")]
 pub use crate::api::http::openapi::ApiDoc;
+
 pub use crate::api::http::server::serve;
 pub use crate::api::http::state::AppHarn;
-#[cfg(feature = "benchmark")]
-#[doc(hidden)]
-pub use crate::complex::user::UserComplex;
+
 pub use crate::config::AppConfig;
 pub use crate::extra::sched::Sched;
-pub use crate::harn::{Harn, NuclProxy};
+pub use crate::harn::{Harn, HybNucl};
 pub use crate::log::init_log;
 pub use crate::part::nucl::{RepeatableRead, Serializable};
 pub use crate::part_impl::auth::jwt_impl::JwtAuth;

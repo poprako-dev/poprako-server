@@ -1,5 +1,9 @@
-use diesel::prelude::*;
-use diesel_async::RunQueryDsl;
+use diesel::PgTextExpressionMethods as _;
+use diesel::prelude::{
+    BoolExpressionMethods as _, ExpressionMethods as _, OptionalExtension as _,
+    QueryDsl as _, SelectableHelper as _,
+};
+use diesel_async::RunQueryDsl as _;
 use time::OffsetDateTime;
 use tracing::instrument;
 
@@ -11,21 +15,23 @@ use crate::model::read::spec::comic::ComicListSpec;
 use crate::model::write::comic::{
     ComicCoverReservation, ComicEntry, ComicRepl,
 };
+use crate::part_impl::repo::rdb_impl::comic::stage_filter::list_matching_stage_comic_ids;
 use crate::part_impl::repo::rdb_impl::entity::comic::{
     ComicAspectRow, ComicEntryRow, ComicInfoRow,
 };
 use crate::part_impl::repo::rdb_impl::incl;
-use crate::part_impl::repo::rdb_impl::schema::t_comic::dsl::*;
+use crate::part_impl::repo::rdb_impl::schema::t_comic::dsl::{
+    f_archived_at, f_chapter_count, f_chapter_next_index, f_composed_title,
+    f_cover_extension, f_cover_hash, f_cover_key, f_cover_uploaded,
+    f_cover_version, f_id, f_index, f_last_active_at, f_updated_at,
+    f_workset_id, t_comic,
+};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::RdbConn;
 use crate::shared::result::{diesel, next_version};
 use crate::value::comic::{ComicInclOpt, ComicStatus};
 use crate::value::image::{ImageExt, ImageHash};
-// Resolves comic IDs whose pinned chapter matches every requested workflow phase.
-
-use crate::part_impl::repo::rdb_impl::comic::helpers::{
-    list_matching_stage_comic_ids, stored_index_from_numeric_fuzzy,
-};
+use crate::value::index::user_index_to_stored_index;
 
 /// Queries a single comic row by ID and populates its includes.
 #[instrument(level = "info", skip_all)]
@@ -568,4 +574,15 @@ pub async fn touch_last_active(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
         .map_err(diesel)?;
 
     accept(())
+}
+
+// Parse a numeric fuzzy-title value into its stored comic index.
+fn stored_index_from_numeric_fuzzy(fuzzy_title_value: &str) -> Option<i32> {
+    //
+    match fuzzy_title_value.trim().parse() {
+        //
+        Ok(index) => user_index_to_stored_index(index),
+
+        Err(_) => None,
+    }
 }

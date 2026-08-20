@@ -4,8 +4,11 @@
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;
 
-use diesel::prelude::*;
-use diesel_async::RunQueryDsl;
+use diesel::prelude::{
+    ExpressionMethods as _, OptionalExtension as _, QueryDsl as _,
+    SelectableHelper as _,
+};
+use diesel_async::RunQueryDsl as _;
 use poprako_orchestra::{AtLeast, Level, Run, Step};
 use time::OffsetDateTime;
 use tracing::instrument;
@@ -24,7 +27,9 @@ use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::entity::workset::{
     WorksetAspectRow, WorksetEntryRow, WorksetInfoRow,
 };
-use crate::part_impl::repo::rdb_impl::schema::t_workset::dsl::*;
+use crate::part_impl::repo::rdb_impl::schema::t_workset::dsl::{
+    f_comic_count, f_comic_next_index, f_id, f_index, f_team_id, t_workset,
+};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::result::diesel;
 use crate::shared::{RdbConn, RdbContext};
@@ -268,8 +273,7 @@ impl Run<UpdateWorkset<'_>> for HybRepo {
 
 impl<L> Step<GetWorksetInfo<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Use BaseError for transactional context operations.
     type Level = RepeatableRead;
@@ -290,8 +294,7 @@ where
 
 impl<L> Step<ListWorksetInfos<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Use BaseError for transactional context operations.
     type Level = RepeatableRead;
@@ -312,8 +315,7 @@ where
 
 impl<L> Step<GetWorksetInfoExcluded<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Use BaseError for transactional context operations.
     type Level = RepeatableRead;
@@ -334,8 +336,7 @@ where
 
 impl<L> Step<ListWorksetInfosExcluded<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Use BaseError for transactional context operations.
     type Level = RepeatableRead;
@@ -356,8 +357,7 @@ where
 
 impl<L> Step<CreateWorkset<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Use BaseError for transactional context operations.
     type Level = RepeatableRead;
@@ -378,8 +378,7 @@ where
 
 impl<L> Step<DeleteWorkset<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Use BaseError for transactional context operations.
     type Level = RepeatableRead;
@@ -400,8 +399,7 @@ where
 
 impl<L> Step<AllocWorksetComicIndex<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Use BaseError for transactional context operations.
     type Level = RepeatableRead;
@@ -422,8 +420,7 @@ where
 
 impl<L> Step<UpdateWorksetComicCount<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
 {
     // Use BaseError for transactional context operations.
     type Level = RepeatableRead;

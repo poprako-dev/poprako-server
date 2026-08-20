@@ -3,6 +3,7 @@
 //! Data transfer objects for announcement use cases.
 
 use serde::Deserialize;
+
 #[cfg(feature = "swagger")]
 use utoipa::{IntoParams, ToSchema};
 

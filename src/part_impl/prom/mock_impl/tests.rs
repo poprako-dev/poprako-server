@@ -182,7 +182,7 @@ async fn process_pending_marks_uploaded_image() {
             "prom-1",
             TaskPayload::Image {
                 payload: image::ImagePayload::CheckUpload {
-                    resource_kind: image::ResourceKind::UserAvatar,
+                    image_kind: ImageKind::UserAvatar,
                     resource_id: "user-1".to_string(),
                     object_key: "avatar.png".to_string(),
                     version: 1,
@@ -224,7 +224,7 @@ async fn process_pending_ignores_stale_image_check() {
             "prom-1",
             TaskPayload::Image {
                 payload: image::ImagePayload::CheckUpload {
-                    resource_kind: image::ResourceKind::UserAvatar,
+                    image_kind: ImageKind::UserAvatar,
                     resource_id: "user-1".to_string(),
                     object_key: "avatar-v1.png".to_string(),
                     version: 1,
@@ -263,7 +263,7 @@ async fn process_pending_does_not_revive_cleared_page_image() {
             "prom-1",
             TaskPayload::Image {
                 payload: image::ImagePayload::CheckUpload {
-                    resource_kind: image::ResourceKind::PageImage,
+                    image_kind: ImageKind::PageImage,
                     resource_id: "page-1".to_string(),
                     object_key: "page-1.png".to_string(),
                     version: 1,
@@ -314,7 +314,7 @@ async fn process_pending_rejects_mismatched_image_key() {
             "prom-1",
             TaskPayload::Image {
                 payload: image::ImagePayload::CheckUpload {
-                    resource_kind: image::ResourceKind::UserAvatar,
+                    image_kind: ImageKind::UserAvatar,
                     resource_id: "user-1".to_string(),
                     object_key: "avatar-other.png".to_string(),
                     version: 1,
@@ -351,7 +351,7 @@ async fn process_pending_keeps_missing_resource_image() {
             "prom-1",
             TaskPayload::Image {
                 payload: image::ImagePayload::CheckUpload {
-                    resource_kind: image::ResourceKind::UserAvatar,
+                    image_kind: ImageKind::UserAvatar,
                     resource_id: "missing-user".to_string(),
                     object_key: "orphan-avatar.png".to_string(),
                     version: 1,

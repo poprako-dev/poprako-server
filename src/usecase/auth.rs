@@ -68,9 +68,8 @@ pub async fn register<N, C, R, A, D>(
     instr: RegisterAuthInstr,
 ) -> BaseRest<RegisterAuthVal>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: UserRepo<C> + MemberRepo<C> + MemberInvitationRepo<C> + Send + Sync,
     A: TokenAuth,

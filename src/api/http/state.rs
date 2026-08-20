@@ -5,7 +5,7 @@
 //! functions remain generic; they are monomorphized over these concrete
 //! adapters at the handler call sites.
 
-use crate::harn::{Harn, NuclProxy};
+use crate::harn::{Harn, HybNucl};
 use crate::part::nucl::{RepeatableRead, Serializable};
 use crate::part_impl::auth::jwt_impl::JwtAuth;
 use crate::part_impl::effect::async_impl::AsyncEffectDevelop;
@@ -16,7 +16,7 @@ use crate::part_impl::repo::HybRepo;
 
 /// Production harness type backing the HTTP server state.
 pub type AppHarn = Harn<
-    NuclProxy<RdbNucl<RepeatableRead>, RdbNucl<Serializable>>,
+    HybNucl<RdbNucl<RepeatableRead>, RdbNucl<Serializable>>,
     HybRepo,
     RdbProm,
     JwtAuth,

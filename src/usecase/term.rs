@@ -40,9 +40,8 @@ pub async fn create<N, C, R>(
     instr: CreateTermInstr,
 ) -> BaseRest<CreateTermVal>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: TermbaseRepo<C>
         + TermRepo<C>
@@ -182,9 +181,8 @@ pub async fn update_info<N, C, R>(
     instr: UpdateTermInfoInstr,
 ) -> BaseRest<()>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: TermbaseRepo<C>
         + TermRepo<C>
@@ -260,9 +258,8 @@ pub async fn delete<N, C, R>(
     id: String,
 ) -> BaseRest<()>
 where
-    C: Context,
+    C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C: Send,
     C::Level: AtLeast<RepeatableRead>,
     R: TermbaseRepo<C>
         + TermRepo<C>

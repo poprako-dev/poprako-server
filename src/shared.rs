@@ -2,6 +2,7 @@
 
 /// Result helpers for Diesel-backed shared internals.
 pub mod result;
+
 #[cfg(all(
     test,
     feature = "rdb",

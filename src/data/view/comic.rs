@@ -5,6 +5,7 @@ mod tests;
 
 use futures::future::OptionFuture;
 use serde::Serialize;
+
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 

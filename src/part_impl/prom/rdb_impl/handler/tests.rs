@@ -17,6 +17,7 @@ use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::part_impl::repo::rdb_impl::schema::t_local_message;
 use crate::shared::RdbCore;
+use crate::value::image::ImageKind;
 
 // Constant definition for `PREFIX`.
 const PREFIX: &str = "rdb-test-prom-handler-";
@@ -93,7 +94,7 @@ pub async fn image_payloads_from_rdb_dispatch(shared: RdbCore) {
 
     let check_payload = TaskPayload::Image {
         payload: image::ImagePayload::CheckUpload {
-            resource_kind: image::ResourceKind::UserAvatar,
+            image_kind: ImageKind::UserAvatar,
             resource_id: "missing-user".to_string(),
             object_key: "new-avatar.png".to_string(),
             version: 1,

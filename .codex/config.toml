@@ -1,0 +1,10 @@
+approval_policy = "untrusted"
+
+[[hooks.PermissionRequest]]
+matcher = "^(Bash|apply_patch|Edit|Write)$"
+
+[[hooks.PermissionRequest.hooks]]
+type = "command"
+command = "/usr/bin/python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/pre_tool_use_policy.py\""
+timeout = 10
+statusMessage = "Confirming changes to linters and linters-extra"

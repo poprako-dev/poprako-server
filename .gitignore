@@ -10,7 +10,10 @@
 .env
 
 /references
-/.codex/
+/.codex/*
+!/.codex/config.toml
+!/.codex/hooks/
+!/.codex/hooks/pre_tool_use_policy.py
 
 logs/
 __pycache__/

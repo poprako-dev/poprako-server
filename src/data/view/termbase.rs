@@ -1,6 +1,7 @@
 //! View DTOs for the termbase domain.
 
 use serde::Serialize;
+
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 

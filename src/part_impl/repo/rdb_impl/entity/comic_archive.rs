@@ -1,6 +1,6 @@
 //! Diesel entries for immutable comic archive rows.
 
-use diesel::prelude::*;
+use diesel::Insertable;
 use time::OffsetDateTime;
 
 use crate::model::read::proj::comic_archive::ComicArchiveRecord;

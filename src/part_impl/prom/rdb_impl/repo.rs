@@ -203,8 +203,7 @@ impl<'a> PurgeCompleted<'a> {
 
 impl<R, L> Step<PollPending, RdbContext<L>> for RdbPromRepo<R>
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
     R: Sync,
 {
     // Internal type alias for `Error`.
@@ -222,9 +221,9 @@ where
     ) -> BaseRest<Vec<LocalMessageRow>> {
         //
         // Internal implementation detail.
-        use diesel::prelude::*;
+        use diesel::prelude::{ExpressionMethods as _, QueryDsl as _};
 
-        use diesel_async::RunQueryDsl;
+        use diesel_async::RunQueryDsl as _;
 
         let processing_message =
             diesel::alias!(t_local_message as processing_message);
@@ -271,8 +270,7 @@ where
 
 impl<'a, R, L> Step<ClaimPending<'a>, RdbContext<L>> for RdbPromRepo<R>
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
     R: Sync,
 {
     // Internal type alias for `Error`.
@@ -290,9 +288,9 @@ where
     ) -> BaseRest<bool> {
         //
         // Internal implementation detail.
-        use diesel::prelude::*;
+        use diesel::prelude::{ExpressionMethods as _, QueryDsl as _};
 
-        use diesel_async::RunQueryDsl;
+        use diesel_async::RunQueryDsl as _;
 
         let updated = diesel::update(
             t_local_message::table
@@ -318,8 +316,7 @@ where
 
 impl<'a, R, L> Step<CompleteMessage<'a>, RdbContext<L>> for RdbPromRepo<R>
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
     R: Sync,
 {
     // Internal type alias for `Error`.
@@ -337,9 +334,9 @@ where
     ) -> BaseRest<()> {
         //
         // Internal implementation detail.
-        use diesel::prelude::*;
+        use diesel::prelude::{ExpressionMethods as _, QueryDsl as _};
 
-        use diesel_async::RunQueryDsl;
+        use diesel_async::RunQueryDsl as _;
 
         diesel::update(
             t_local_message::table
@@ -365,8 +362,7 @@ where
 
 impl<'a, R, L> Step<FailMessage<'a>, RdbContext<L>> for RdbPromRepo<R>
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
     R: Sync,
 {
     // Internal type alias for `Error`.
@@ -384,9 +380,9 @@ where
     ) -> BaseRest<()> {
         //
         // Internal implementation detail.
-        use diesel::prelude::*;
+        use diesel::prelude::{ExpressionMethods as _, QueryDsl as _};
 
-        use diesel_async::RunQueryDsl;
+        use diesel_async::RunQueryDsl as _;
 
         diesel::update(
             t_local_message::table
@@ -412,8 +408,7 @@ where
 
 impl<'a, R, L> Step<RetryMessage<'a>, RdbContext<L>> for RdbPromRepo<R>
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
     R: Sync,
 {
     // Internal type alias for `Error`.
@@ -431,9 +426,9 @@ where
     ) -> BaseRest<()> {
         //
         // Internal implementation detail.
-        use diesel::prelude::*;
+        use diesel::prelude::{ExpressionMethods as _, QueryDsl as _};
 
-        use diesel_async::RunQueryDsl;
+        use diesel_async::RunQueryDsl as _;
 
         diesel::update(
             t_local_message::table
@@ -462,8 +457,7 @@ where
 
 impl<'a, R, L> Step<ResetStuck<'a>, RdbContext<L>> for RdbPromRepo<R>
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
     R: Sync,
 {
     // Internal type alias for `Error`.
@@ -481,9 +475,9 @@ where
     ) -> BaseRest<()> {
         //
         // Internal implementation detail.
-        use diesel::prelude::*;
+        use diesel::prelude::{ExpressionMethods as _, QueryDsl as _};
 
-        use diesel_async::RunQueryDsl;
+        use diesel_async::RunQueryDsl as _;
 
         diesel::update(
             t_local_message::table
@@ -529,8 +523,7 @@ where
 
 impl<'a, R, L> Step<PurgeCompleted<'a>, RdbContext<L>> for RdbPromRepo<R>
 where
-    L: Level + Send,
-    L: AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<RepeatableRead>,
     R: Sync,
 {
     // Internal type alias for `Error`.
@@ -548,9 +541,11 @@ where
     ) -> BaseRest<usize> {
         //
         // Internal implementation detail.
-        use diesel::prelude::*;
+        use diesel::prelude::{
+            BoolExpressionMethods as _, ExpressionMethods as _, QueryDsl as _,
+        };
 
-        use diesel_async::RunQueryDsl;
+        use diesel_async::RunQueryDsl as _;
 
         let (expired_completed, expired_dead) = (
             t_local_message::f_status

@@ -15,7 +15,6 @@ mod defer;
 // Internal organization of the `tests` module.
 mod tests;
 
-use crate::part_impl::prom::mock_impl::image_task::ResourceState;
 use poprako_orchestra::{Nucl as _, OperStep as _, Step};
 use time::OffsetDateTime;
 
@@ -38,8 +37,10 @@ use crate::part::repo::oper::page::{
 };
 use crate::part::repo::oper::team::{GetTeamInfoExcluded, UpdateTeam};
 use crate::part::repo::oper::user::{GetUserInfoExcluded, UpdateUser};
+use crate::part_impl::prom::mock_impl::image_task::ResourceState;
 use crate::part_impl::repo::mock_impl::{Mock, MockContext};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::value::image::ImageKind;
 
 #[derive(Clone, Copy)]
 // Fields and state semantics for the `ImageIdentity` struct.
@@ -48,7 +49,7 @@ struct ImageIdentity<'a> {
     //
     // Internal state field `kind`.
     // Resource kind (user avatar / team avatar / comic cover / page image) determines the update path.
-    kind: image::ResourceKind,
+    kind: ImageKind,
     // Primary key of the resource record.
     resource_id: &'a str,
     // Currently assigned object-storage key.
@@ -156,7 +157,7 @@ async fn process_image_task(
         //
         // Internal implementation detail.
         image::ImagePayload::CheckUpload {
-            resource_kind,
+            image_kind,
             resource_id,
             object_key,
             version,
@@ -167,14 +168,14 @@ async fn process_image_task(
                 //
                 // Internal implementation detail.
                 let image_identity = ImageIdentity {
-                    kind: *resource_kind,
+                    kind: *image_kind,
                     resource_id,
                     object_key,
                     version: *version,
                 };
 
                 // Internal implementation detail.
-                if image_identity.kind == image::ResourceKind::PageImage {
+                if image_identity.kind == ImageKind::PageImage {
                     //
                     // Internal implementation detail.
                     let page_info = image_pool
@@ -206,10 +207,10 @@ async fn process_image_task(
                 process_existing_image(image_pool, image_identity, true).await
             }
 
-            false => match resource_kind {
+            false => match image_kind {
                 //
                 // Internal implementation detail.
-                image::ResourceKind::PageImage => {
+                ImageKind::PageImage => {
                     mark_page_image_unverified(
                         image_pool,
                         resource_id,
@@ -223,7 +224,7 @@ async fn process_image_task(
                     //
                     // Internal implementation detail.
                     let image_identity = ImageIdentity {
-                        kind: *resource_kind,
+                        kind: *image_kind,
                         resource_id,
                         object_key,
                         version: *version,
@@ -367,7 +368,7 @@ async fn classify_expected_mark(
     match image_identity.kind {
         //
         // Internal implementation detail.
-        image::ResourceKind::UserAvatar => {
+        ImageKind::UserAvatar => {
             match (GetUserInfoExcluded::Id {
                 id: image_identity.resource_id,
             })
@@ -394,7 +395,7 @@ async fn classify_expected_mark(
             }
         }
 
-        image::ResourceKind::TeamAvatar => {
+        ImageKind::TeamAvatar => {
             match (GetTeamInfoExcluded::Id {
                 id: image_identity.resource_id,
             })
@@ -421,7 +422,7 @@ async fn classify_expected_mark(
             }
         }
 
-        image::ResourceKind::ComicCover => {
+        ImageKind::ComicCover => {
             match (GetComicInfoExcluded {
                 id: image_identity.resource_id,
                 incls: &[],
@@ -448,7 +449,7 @@ async fn classify_expected_mark(
             }
         }
 
-        image::ResourceKind::PageImage => {
+        ImageKind::PageImage => {
             match (GetPageInfoExcluded {
                 id: image_identity.resource_id,
             })
@@ -486,7 +487,7 @@ async fn mark_uploaded(
     match image_identity.kind {
         //
         // Internal implementation detail.
-        image::ResourceKind::UserAvatar => {
+        ImageKind::UserAvatar => {
             let repl = UserAvatarRepl {
                 id: image_identity.resource_id.to_owned(),
                 avatar_version: image_identity.version,
@@ -499,7 +500,7 @@ async fn mark_uploaded(
                 .await
         }
 
-        image::ResourceKind::TeamAvatar => {
+        ImageKind::TeamAvatar => {
             let repl = TeamAvatarRepl {
                 id: image_identity.resource_id.to_owned(),
                 avatar_version: image_identity.version,
@@ -512,7 +513,7 @@ async fn mark_uploaded(
                 .await
         }
 
-        image::ResourceKind::ComicCover => {
+        ImageKind::ComicCover => {
             MarkComicCoverUploaded {
                 id: image_identity.resource_id,
                 cover_version: image_identity.version,
@@ -523,7 +524,7 @@ async fn mark_uploaded(
             .await
         }
 
-        image::ResourceKind::PageImage => {
+        ImageKind::PageImage => {
             //
             // Internal implementation detail.
             let page_info = context

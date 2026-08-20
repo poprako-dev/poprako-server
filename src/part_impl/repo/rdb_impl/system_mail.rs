@@ -4,8 +4,11 @@
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;
 
-use diesel::prelude::*;
-use diesel_async::RunQueryDsl;
+use diesel::prelude::{
+    ExpressionMethods as _, OptionalExtension as _, QueryDsl as _,
+    SelectableHelper as _,
+};
+use diesel_async::RunQueryDsl as _;
 use poprako_orchestra::Run;
 use tracing::instrument;
 
@@ -21,7 +24,9 @@ use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::entity::system_mail::{
     SystemMailEntryRow, SystemMailInfoRow,
 };
-use crate::part_impl::repo::rdb_impl::schema::t_system_mail::dsl::*;
+use crate::part_impl::repo::rdb_impl::schema::t_system_mail::dsl::{
+    f_created_at, f_id, f_read, f_receiver_id, t_system_mail,
+};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::RdbConn;
 use crate::shared::result::diesel;
