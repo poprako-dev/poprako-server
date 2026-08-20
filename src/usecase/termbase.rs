@@ -111,7 +111,8 @@ where
 
             let Some(member_info) = member_info else {
                 //
-                let err_message = trl("error-team-proofreader-required");
+                let err_message =
+                    trl("error-team-translator-or-proofreader-required");
 
                 tracing::warn!(
                     err_variant = ?ExpectedVariant::Perm,

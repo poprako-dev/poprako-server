@@ -1,4 +1,5 @@
 // create(create)(positive): creation normalizes text and increments term_count.
+// create(create)(negative): admin without a translation role cannot create a term.
 // create(create)(negative): duplicate normalized targets are rejected.
 // create(create)(negative): an empty target list is rejected in the business layer.
 // list_infos(list_infos)(positive): fuzzy source does not search targets or comments.
@@ -13,8 +14,8 @@ use crate::model::read::proj::member::MemberInfo;
 use crate::model::read::proj::termbase::TermbaseInfo;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
-use crate::test_util::assert_expected_variant;
 use crate::test_util::fixture::team;
+use crate::test_util::{assert_expected_message, assert_expected_variant};
 use crate::value::role::{RoleField, RoleMask};
 
 fn token(user_id: &str) -> UserToken {
@@ -25,7 +26,7 @@ fn token(user_id: &str) -> UserToken {
 }
 
 fn member(user_id: &str, roles: RoleMask) -> MemberInfo {
-    // Build a team member fixture with explicit proofreader role bits.
+    // Build a team member fixture with explicit role bits.
     MemberInfo {
         id: format!("member-{}", user_id),
         user_id: user_id.into(),
@@ -56,11 +57,11 @@ fn termbase() -> TermbaseInfo {
     }
 }
 
-fn seed_proofreader_scope(mock: &Mock) {
+fn seed_scope(mock: &Mock, role: RoleField) {
     //
     mock.seed_team(team("team-1", "Team", "Desc"));
 
-    mock.seed_member(member("user-1", RoleMask::from(RoleField::PROOFREADER)));
+    mock.seed_member(member("user-1", RoleMask::from(role)));
 
     mock.seed_termbase(termbase());
 }
@@ -79,7 +80,7 @@ async fn create_normalizes_and_increments_count() {
     //
     let mock = Mock::new();
 
-    seed_proofreader_scope(&mock);
+    seed_scope(&mock, RoleField::TRANSLATOR);
 
     let val = create((&mock, &mock), token("user-1"), create_instr())
         .await
@@ -101,11 +102,35 @@ async fn create_normalizes_and_increments_count() {
 }
 
 #[tokio::test]
+async fn create_rejects_admin_without_translation_role() {
+    //
+    let mock = Mock::new();
+
+    seed_scope(&mock, RoleField::ADMIN);
+
+    let error = create((&mock, &mock), token("user-1"), create_instr())
+        .await
+        .unwrap_err();
+
+    assert_expected_message(
+        error,
+        ExpectedVariant::Perm,
+        "error-team-translator-or-proofreader-required",
+    );
+
+    let snapshot = mock.snapshot();
+
+    assert!(snapshot.terms.is_empty());
+
+    assert_eq!(snapshot.termbases[0].term_count, 0);
+}
+
+#[tokio::test]
 async fn create_rejects_duplicate_normalized_targets() {
     //
     let mock = Mock::new();
 
-    seed_proofreader_scope(&mock);
+    seed_scope(&mock, RoleField::TRANSLATOR);
 
     let instr = CreateTermInstr {
         targets: vec!["Target".into(), " target ".into()],
@@ -130,7 +155,7 @@ async fn create_rejects_empty_targets() {
     //
     let mock = Mock::new();
 
-    seed_proofreader_scope(&mock);
+    seed_scope(&mock, RoleField::TRANSLATOR);
 
     let instr = CreateTermInstr {
         targets: Vec::new(),
@@ -155,7 +180,7 @@ async fn list_infos_searches_only_source() {
     //
     let mock = Mock::new();
 
-    seed_proofreader_scope(&mock);
+    seed_scope(&mock, RoleField::PROOFREADER);
 
     create((&mock, &mock), token("user-1"), create_instr())
         .await
@@ -193,7 +218,7 @@ async fn update_replaces_fields_and_touches_parent() {
     //
     let mock = Mock::new();
 
-    seed_proofreader_scope(&mock);
+    seed_scope(&mock, RoleField::TRANSLATOR);
 
     let val = create((&mock, &mock), token("user-1"), create_instr())
         .await
@@ -228,7 +253,7 @@ async fn delete_removes_term_and_decrements_count() {
     //
     let mock = Mock::new();
 
-    seed_proofreader_scope(&mock);
+    seed_scope(&mock, RoleField::TRANSLATOR);
 
     let val = create((&mock, &mock), token("user-1"), create_instr())
         .await

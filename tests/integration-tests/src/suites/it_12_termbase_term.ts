@@ -87,7 +87,7 @@ export async function runIt12Module(ctx: RunCtx): Promise<void> {
         "team description",
     );
     const comicTermbase = await createTermbase(
-        proofreader.api,
+        translator.api,
         { comic_id: mainComicId },
         " Main Comic Glossary ",
         "comic description",
@@ -99,6 +99,19 @@ export async function runIt12Module(ctx: RunCtx): Promise<void> {
     assert.equal(teamInfo.team_id, ctx.ids.defaultTeamId);
     assert.equal(teamInfo.comic_id, undefined);
     assert.equal(teamInfo.term_count, 0);
+
+    expectNoContent(
+        await translator.api.put<null>(`/api/v1/termbases/${comicTermbase.id}`, {
+            description: null,
+            id: comicTermbase.id,
+            name: " Main Comic Glossary Updated ",
+        }),
+    );
+
+    const updatedComicInfo = await getTermbase(translator.api, comicTermbase.id);
+
+    assert.equal(updatedComicInfo.name, "Main Comic Glossary Updated");
+    assert.equal(updatedComicInfo.description, undefined);
 
     const visibleFromComic = expectSuccessList<TermbaseInfoView>(
         await translator.api.get<SuccessBody<TermbaseInfoView[]>>(
@@ -130,19 +143,8 @@ export async function runIt12Module(ctx: RunCtx): Promise<void> {
 
     assert.equal(fuzzyByDescription.length, 0);
 
-    expectError(
-        await translator.api.post<ErrorBody>("/api/v1/terms", {
-            comment: null,
-            source: "Denied",
-            targets: ["拒绝"],
-            termbase_id: comicTermbase.id,
-        }),
-        403,
-        4,
-    );
-
     const term = await createTerm(
-        proofreader.api,
+        translator.api,
         comicTermbase.id,
         " Hero ",
         [" 勇者 ", "英雄"],
@@ -178,7 +180,7 @@ export async function runIt12Module(ctx: RunCtx): Promise<void> {
     );
 
     expectNoContent(
-        await proofreader.api.put<null>(`/api/v1/terms/${term.id}`, {
+        await translator.api.put<null>(`/api/v1/terms/${term.id}`, {
             comment: "   ",
             id: term.id,
             source: " Heroine ",
@@ -210,7 +212,7 @@ export async function runIt12Module(ctx: RunCtx): Promise<void> {
 
     assert.equal(targetFuzzy.length, 0);
 
-    expectNoContent(await proofreader.api.delete<null>(`/api/v1/terms/${term.id}`));
+    expectNoContent(await translator.api.delete<null>(`/api/v1/terms/${term.id}`));
     assert.equal((await getTermbase(translator.api, comicTermbase.id)).term_count, 0);
 
     const cascadeWorkset = await createWorkset(
@@ -285,6 +287,6 @@ export async function runIt12Module(ctx: RunCtx): Promise<void> {
     expectError(await ctx.sadmin.get<ErrorBody>(`/api/v1/termbases/${cascadeTeamTermbase.id}`), 422, 2);
     expectError(await ctx.sadmin.get<ErrorBody>(`/api/v1/terms/${cascadeTeamTerm.id}`), 422, 2);
 
-    expectNoContent(await proofreader.api.delete<null>(`/api/v1/termbases/${comicTermbase.id}`));
+    expectNoContent(await translator.api.delete<null>(`/api/v1/termbases/${comicTermbase.id}`));
     expectNoContent(await proofreader.api.delete<null>(`/api/v1/termbases/${teamTermbase.id}`));
 }

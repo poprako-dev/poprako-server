@@ -3,7 +3,7 @@
 use poprako_util::i18n::trl;
 
 use crate::complex::util::{
-    check_user_is_team_member, check_user_is_team_proofreader,
+    check_user_is_team_member, check_user_is_team_translator_or_proofreader,
 };
 use crate::model::read::proj::member::MemberInfo;
 use crate::model::read::proj::termbase::TermbaseInfo;
@@ -140,11 +140,11 @@ impl TermbasePermComplex {
         check_user_is_team_member(member_info)
     }
 
-    /// Verify proofreader membership for a terminology-base write.
+    /// Verify translator or proofreader membership for a terminology-base write.
     pub fn ensure_user_can_write_team(
         member_info: &MemberInfo,
     ) -> BaseRest<()> {
-        check_user_is_team_proofreader(member_info)
+        check_user_is_team_translator_or_proofreader(member_info)
     }
 
     /// Verify team membership for a terminology-base read.
@@ -180,7 +180,7 @@ impl TermbasePermComplex {
         check_user_is_team_member(member_info)
     }
 
-    /// Verify proofreader membership for a terminology-base write.
+    /// Verify translator or proofreader membership for a terminology-base write.
     pub fn ensure_user_can_write(
         member_info: &MemberInfo,
         termbase_info: &TermbaseInfo,
@@ -210,6 +210,6 @@ impl TermbasePermComplex {
             }
         }
 
-        check_user_is_team_proofreader(member_info)
+        check_user_is_team_translator_or_proofreader(member_info)
     }
 }

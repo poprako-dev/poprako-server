@@ -1,5 +1,6 @@
 // create(create)(positive): proofreader creates and normalizes a team termbase.
-// create(create)(negative): admin without proofreader role cannot create a termbase.
+// create(create)(positive): translator creates a team termbase.
+// create(create)(negative): admin without a translation role cannot create a termbase.
 // create(create)(negative): invalid scope is rejected without persistence.
 // list_comic_infos(list_comic_infos)(positive): comic list inherits team bases and excludes sibling comic bases.
 // list_comic_infos(list_comic_infos)(negative): comic list rejects a user outside the owning team before querying termbases.
@@ -18,8 +19,8 @@ use crate::model::read::proj::termbase::TermbaseInfo;
 use crate::model::read::proj::workset::WorksetInfo;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
-use crate::test_util::assert_expected_variant;
 use crate::test_util::fixture::team;
+use crate::test_util::{assert_expected_message, assert_expected_variant};
 use crate::value::role::{RoleField, RoleMask};
 
 fn token(user_id: &str) -> UserToken {
@@ -166,7 +167,27 @@ async fn create_normalizes_and_persists_for_proofreader() {
 }
 
 #[tokio::test]
-async fn create_rejects_admin_without_proofreader() {
+async fn create_persists_for_translator() {
+    //
+    let mock = Mock::new();
+
+    mock.seed_team(team("team-1", "Team", "Desc"));
+
+    mock.seed_member(member(
+        "user-1",
+        "team-1",
+        RoleMask::from(RoleField::TRANSLATOR),
+    ));
+
+    let val = create((&mock, &mock), token("user-1"), create_instr())
+        .await
+        .unwrap();
+
+    assert_eq!(mock.snapshot().termbases[0].id, val.id);
+}
+
+#[tokio::test]
+async fn create_rejects_admin_without_translation_role() {
     //
     let mock = Mock::new();
 
@@ -182,7 +203,11 @@ async fn create_rejects_admin_without_proofreader() {
         .await
         .unwrap_err();
 
-    assert_expected_variant(error, ExpectedVariant::Perm);
+    assert_expected_message(
+        error,
+        ExpectedVariant::Perm,
+        "error-team-translator-or-proofreader-required",
+    );
 
     assert!(mock.snapshot().termbases.is_empty());
 }
