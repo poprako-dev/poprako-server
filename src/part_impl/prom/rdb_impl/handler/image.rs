@@ -12,7 +12,7 @@ use tracing::instrument;
 
 use crate::model::write::page::PageImageRepl;
 use crate::part::image::ImageManager;
-use crate::part::prom::payload::image::{ImagePayload, ResourceKind};
+use crate::part::prom::payload::image::ImagePayload;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::oper::chapter::GetChapterInfoExcluded;
@@ -28,6 +28,7 @@ use crate::part_impl::prom::rdb_impl::handler::image::resource::ResourceState;
 use crate::part_impl::prom::rdb_impl::handler::task_flow::TaskFlow;
 use crate::result::{BaseError, ExpectedVariant, accept};
 use crate::shared::RdbContext;
+use crate::value::image::ImageKind;
 
 /// Dispatch an image [`ImagePayload`] to its concrete handler.
 #[instrument(level = "info", skip_all)]
@@ -52,7 +53,7 @@ where
         //
         // Internal implementation detail.
         ImagePayload::CheckUpload {
-            resource_kind,
+            image_kind,
             resource_id,
             object_key,
             version,
@@ -60,7 +61,7 @@ where
             //
             // Internal implementation detail.
             let image_identity = ImageIdentity {
-                kind: *resource_kind,
+                kind: *image_kind,
                 resource_id,
                 object_key,
                 version: *version,
@@ -115,7 +116,7 @@ where
         false => match image_identity.kind {
             //
             // Internal implementation detail.
-            ResourceKind::PageImage => {
+            ImageKind::PageImage => {
                 process_unverified_page_image(nucl, repo, image_identity).await
             }
 
@@ -125,7 +126,7 @@ where
         true => {
             //
             // Internal implementation detail.
-            if image_identity.kind == ResourceKind::PageImage {
+            if image_identity.kind == ImageKind::PageImage {
                 //
                 return process_existing_page_image(nucl, repo, image_identity)
                     .await;
@@ -242,7 +243,7 @@ where
                     tracing::warn!(
                         err_variant = ?ExpectedVariant::Args,
                         err_message = %err_message,
-                        resource_kind = ?image_identity.kind,
+                        image_kind = ?image_identity.kind,
                         resource_id = %image_identity.resource_id,
                         image_version = image_identity.version,
                         stored_image_version = locked_page_info.image_version,
@@ -413,7 +414,7 @@ where
                     tracing::warn!(
                         err_variant = ?ExpectedVariant::Args,
                         err_message = %err_message,
-                        resource_kind = ?image_identity.kind,
+                        image_kind = ?image_identity.kind,
                         resource_id = %image_identity.resource_id,
                         image_version = image_identity.version,
                         stored_image_version = locked_page_info.image_version,

@@ -6,7 +6,6 @@ use tracing::instrument;
 use crate::model::write::page::PageImageRepl;
 use crate::model::write::team::TeamAvatarRepl;
 use crate::model::write::user::UserAvatarRepl;
-use crate::part::prom::payload::image::ResourceKind;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::oper::comic::{
     GetComicInfoExcluded, MarkComicCoverUploaded,
@@ -22,6 +21,7 @@ use crate::part::repo::user::UserRepo;
 use crate::part_impl::prom::rdb_impl::handler::image::identity::ImageIdentity;
 use crate::result::{BaseError, BaseRest, accept};
 use crate::shared::RdbContext;
+use crate::value::image::ImageKind;
 
 /// Classification of a deferred image payload against persisted identity.
 pub enum ResourceState {
@@ -109,7 +109,7 @@ where
     match image_identity.kind {
         //
         // Internal implementation detail.
-        ResourceKind::UserAvatar => {
+        ImageKind::UserAvatar => {
             //
             match (GetUserInfoExcluded::Id {
                 id: image_identity.resource_id,
@@ -137,7 +137,7 @@ where
             }
         }
 
-        ResourceKind::TeamAvatar => {
+        ImageKind::TeamAvatar => {
             //
             match (GetTeamInfoExcluded::Id {
                 id: image_identity.resource_id,
@@ -165,7 +165,7 @@ where
             }
         }
 
-        ResourceKind::ComicCover => {
+        ImageKind::ComicCover => {
             //
             match (GetComicInfoExcluded {
                 id: image_identity.resource_id,
@@ -194,7 +194,7 @@ where
             }
         }
 
-        ResourceKind::PageImage => {
+        ImageKind::PageImage => {
             //
             match (GetPageInfoExcluded {
                 id: image_identity.resource_id,
@@ -242,7 +242,7 @@ where
     match image_identity.kind {
         //
         // Internal implementation detail.
-        ResourceKind::UserAvatar => {
+        ImageKind::UserAvatar => {
             //
             let repl = UserAvatarRepl {
                 id: image_identity.resource_id.to_owned(),
@@ -256,7 +256,7 @@ where
                 .await
         }
 
-        ResourceKind::TeamAvatar => {
+        ImageKind::TeamAvatar => {
             //
             let repl = TeamAvatarRepl {
                 id: image_identity.resource_id.to_owned(),
@@ -270,7 +270,7 @@ where
                 .await
         }
 
-        ResourceKind::ComicCover => {
+        ImageKind::ComicCover => {
             //
             MarkComicCoverUploaded {
                 id: image_identity.resource_id,
@@ -282,7 +282,7 @@ where
             .await
         }
 
-        ResourceKind::PageImage => {
+        ImageKind::PageImage => {
             //
             let repl = PageImageRepl {
                 id: image_identity.resource_id.to_owned(),

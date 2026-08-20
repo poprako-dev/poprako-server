@@ -2,6 +2,7 @@
 //! reusable query extractors.
 
 use serde::Deserialize;
+
 #[cfg(feature = "swagger")]
 use utoipa::IntoParams;
 

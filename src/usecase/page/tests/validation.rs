@@ -1,19 +1,17 @@
 use super::super::reserve::validation::validate_page_count;
 
 use crate::complex::image::ImageComplex;
-use crate::part::prom::payload::image::ResourceKind;
+use crate::value::image::ImageKind;
 
 #[test]
 fn image_byte_length_accepts_closed_bounds() {
     //
-    assert!(
-        ImageComplex::ensure_byte_length(1, ResourceKind::PageImage).is_ok()
-    );
+    assert!(ImageComplex::ensure_byte_length(1, ImageKind::PageImage).is_ok());
 
     assert!(
         ImageComplex::ensure_byte_length(
             25 * 1024 * 1024,
-            ResourceKind::PageImage,
+            ImageKind::PageImage,
         )
         .is_ok(),
     );
@@ -22,14 +20,12 @@ fn image_byte_length_accepts_closed_bounds() {
 #[test]
 fn image_byte_length_rejects_values_outside_bounds() {
     //
-    assert!(
-        ImageComplex::ensure_byte_length(0, ResourceKind::PageImage).is_err()
-    );
+    assert!(ImageComplex::ensure_byte_length(0, ImageKind::PageImage).is_err());
 
     assert!(
         ImageComplex::ensure_byte_length(
             25 * 1024 * 1024 + 1,
-            ResourceKind::PageImage,
+            ImageKind::PageImage,
         )
         .is_err(),
     );

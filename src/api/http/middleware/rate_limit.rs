@@ -9,7 +9,7 @@ use std::sync::OnceLock;
 use axum::extract::Request;
 use axum::http::StatusCode;
 use axum::middleware::Next;
-use axum::response::{IntoResponse, Response};
+use axum::response::{IntoResponse as _, Response};
 use governor::{DefaultDirectRateLimiter, Quota, RateLimiter};
 
 /// `from_fn` handler that enforces a global rate limit.

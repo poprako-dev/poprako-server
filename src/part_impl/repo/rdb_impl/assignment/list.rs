@@ -1,5 +1,7 @@
-use diesel::prelude::*;
-use diesel_async::RunQueryDsl;
+use diesel::prelude::{
+    ExpressionMethods as _, QueryDsl as _, SelectableHelper as _,
+};
+use diesel_async::RunQueryDsl as _;
 use tracing::instrument;
 
 use crate::model::read::proj::assignment::AssignmentInfo;
@@ -7,7 +9,12 @@ use crate::model::read::spec::assignment::AssignmentListSpec;
 use crate::part::repo::oper::assignment::ListAssignmentInfos;
 use crate::part_impl::repo::rdb_impl::entity::assignment::AssignmentInfoRow;
 use crate::part_impl::repo::rdb_impl::incl;
-use crate::part_impl::repo::rdb_impl::schema::t_assignment::dsl::*;
+use crate::part_impl::repo::rdb_impl::schema::t_assignment::dsl::{
+    f_assigned_admin_at, f_assigned_proofreader_at, f_assigned_publisher_at,
+    f_assigned_raw_provider_at, f_assigned_redrawer_at, f_assigned_reviewer_at,
+    f_assigned_translator_at, f_assigned_typesetter_at, f_chapter_id,
+    f_created_at, f_id, f_user_id, t_assignment,
+};
 use crate::result::{BaseRest, accept};
 use crate::shared::RdbConn;
 use crate::shared::result::diesel;

@@ -46,6 +46,7 @@ use crate::part::repo::oper::user::{GetUserInfo, GetUserInfoExcluded};
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::value::image::ImageKind;
 use crate::value::role::{RoleField, RoleMask};
 
 /// Creates a new team.
@@ -196,7 +197,7 @@ where
 {
     ImageComplex::ensure_byte_length(
         instr.new_byte_len,
-        image::ResourceKind::TeamAvatar,
+        ImageKind::TeamAvatar,
     )?;
 
     let (transaction_image_hash, image_ext, new_byte_len) =
@@ -261,7 +262,7 @@ where
 
             batch_payloads.push(TaskPayload::Image {
                 payload: image::ImagePayload::CheckUpload {
-                    resource_kind: image::ResourceKind::TeamAvatar,
+                    image_kind: ImageKind::TeamAvatar,
                     resource_id: id.clone(),
                     object_key: avatar_reservation.object_key.clone(),
                     version: avatar_reservation.avatar_version,

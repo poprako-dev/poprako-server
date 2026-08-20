@@ -5,12 +5,15 @@ use axum::extract::{Extension, Path, Query, State};
 use axum::http::StatusCode;
 use serde::Deserialize;
 use tracing::instrument;
+
 #[cfg(feature = "swagger")]
 use utoipa::IntoParams;
 
 use crate::api::http::handler::util::ensure_path_matches_body_id;
+
 #[cfg(feature = "swagger")]
 use crate::api::http::result::HttpBody;
+
 use crate::api::http::result::{
     Accept as _, HttpNoContent, HttpResult, no_content,
 };

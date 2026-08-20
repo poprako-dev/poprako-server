@@ -45,7 +45,7 @@ use crate::model::read::proj::team::TeamInfo;
 use crate::model::read::proj::user::{UserCredential, UserInfo};
 use crate::model::shared::user::UserToken;
 use crate::part::prom::payload::TaskPayload;
-use crate::part::prom::payload::image::{ImagePayload, ResourceKind};
+use crate::part::prom::payload::image::ImagePayload;
 use crate::part_impl::prom::mock_impl::MockPromRecord;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
@@ -56,6 +56,7 @@ use crate::test_util::{
 };
 use crate::usecase::team::delete::delete;
 use crate::usecase::team::read::{get_info, list_infos};
+use crate::value::image::ImageKind;
 use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 

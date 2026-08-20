@@ -1,7 +1,7 @@
 //! Permanent comic archive commit operations.
 
-use diesel::prelude::*;
-use diesel_async::RunQueryDsl;
+use diesel::prelude::{ExpressionMethods as _, QueryDsl as _};
+use diesel_async::RunQueryDsl as _;
 use time::OffsetDateTime;
 use tracing::instrument;
 

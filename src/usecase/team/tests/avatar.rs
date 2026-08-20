@@ -34,7 +34,7 @@ async fn reserve_avatar_updates_state_enqueues_check_and_returns_put_url() {
 
     assert_one_image_check_record(
         &snapshot.prom_records,
-        ResourceKind::TeamAvatar,
+        ImageKind::TeamAvatar,
         "team-1",
         "team_avatar/team-1-1.png",
         1,
@@ -67,7 +67,7 @@ async fn reserve_avatar_replacing_avatar_enqueues_delete_and_check() {
 
     assert_one_image_check_record(
         &snapshot.prom_records,
-        ResourceKind::TeamAvatar,
+        ImageKind::TeamAvatar,
         "team-1",
         "team_avatar/team-1-2.jpg",
         2,

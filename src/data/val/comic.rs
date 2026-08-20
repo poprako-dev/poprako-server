@@ -9,6 +9,7 @@
 //! [`ImagePool`]: crate::part::image::ImagePool
 
 use serde::Serialize;
+
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 

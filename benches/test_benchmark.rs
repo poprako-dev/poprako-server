@@ -4,7 +4,7 @@ use criterion::{BatchSize, Criterion, criterion_group, criterion_main};
 
 use tokio::runtime::Runtime;
 
-use poprako_server::{UserComplex, benchmark};
+use poprako_server::benchmark::{self, UserComplex};
 
 fn benchmark_password_operations(criterion: &mut Criterion) {
     //

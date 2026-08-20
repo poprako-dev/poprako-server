@@ -1,6 +1,7 @@
 //! View DTOs for the page domain.
 
 use serde::Serialize;
+
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 

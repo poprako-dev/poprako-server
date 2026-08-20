@@ -1,6 +1,7 @@
 use super::*;
 
 use crate::part::repo::oper::user::UpdateUser;
+use crate::value::image::ImageKind;
 
 // run_reads_seeded_user(GetUserInfo)(positive): a seeded user should be readable outside a transaction.
 // touch_user_last_active(UpdateUser)(positive): touching a user should synchronize all member activity caches.
@@ -134,7 +135,7 @@ async fn nucl_coord_commits_repo_and_prom() {
 
             let payload = TaskPayload::Image {
                 payload: image::ImagePayload::CheckUpload {
-                    resource_kind: image::ResourceKind::UserAvatar,
+                    image_kind: ImageKind::UserAvatar,
                     resource_id: "user-1".to_string(),
                     object_key: "key".to_string(),
                     version: 1,

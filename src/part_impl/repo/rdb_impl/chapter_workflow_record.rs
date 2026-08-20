@@ -4,8 +4,10 @@
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;
 
-use diesel::prelude::*;
-use diesel_async::RunQueryDsl;
+use diesel::prelude::{
+    ExpressionMethods as _, QueryDsl as _, SelectableHelper as _,
+};
+use diesel_async::RunQueryDsl as _;
 use poprako_orchestra::{AtLeast, Level, Run, Step};
 use tracing::instrument;
 

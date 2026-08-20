@@ -9,6 +9,7 @@
 //! [`ImagePool`]: crate::part::image::ImagePool
 
 use serde::Deserialize;
+
 #[cfg(feature = "swagger")]
 use utoipa::{IntoParams, ToSchema};
 

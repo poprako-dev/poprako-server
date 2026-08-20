@@ -27,7 +27,9 @@ use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::entity::term::{
     TermEntryRow, TermInfoRow,
 };
-use crate::part_impl::repo::rdb_impl::schema::t_term::dsl::*;
+use crate::part_impl::repo::rdb_impl::schema::t_term::dsl::{
+    f_comment, f_id, f_source, f_targets, f_termbase_id, f_updated_at, t_term,
+};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::result::diesel;
 use crate::shared::{RdbConn, RdbContext};

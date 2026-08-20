@@ -11,8 +11,11 @@ pub mod tests;
 
 use std::collections::HashMap;
 
-use diesel::prelude::*;
-use diesel_async::RunQueryDsl;
+use diesel::prelude::{
+    ExpressionMethods as _, OptionalExtension as _, QueryDsl as _,
+    SelectableHelper as _,
+};
+use diesel_async::RunQueryDsl as _;
 use poprako_orchestra::{AtLeast, Level, Run, Step};
 use time::OffsetDateTime;
 use tracing::instrument;

@@ -9,8 +9,26 @@ use base64::Engine as _;
 use base64::engine::general_purpose::STANDARD;
 use serde::de::Error as _;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
+
+/// Image-owning resource discriminator.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ImageKind {
+    //
+    /// Avatar image for a user.
+    UserAvatar,
+
+    /// Avatar image for a team.
+    TeamAvatar,
+
+    /// Cover image for a comic.
+    ComicCover,
+
+    /// Page image for a chapter page.
+    PageImage,
+}
 
 /// SHA-256 content hash encoded as canonical padded RFC 4648 Base64.
 #[derive(Debug, Clone, Default, Eq, PartialEq, Hash)]

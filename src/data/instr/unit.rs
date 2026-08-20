@@ -12,6 +12,7 @@ mod tests;
 use std::collections::HashMap;
 
 use serde::Deserialize;
+
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 

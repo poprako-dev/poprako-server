@@ -1,5 +1,7 @@
-use diesel::prelude::*;
-use diesel_async::RunQueryDsl;
+//! RDB-backed comic stage filtering.
+
+use diesel::prelude::{ExpressionMethods as _, QueryDsl as _};
+use diesel_async::RunQueryDsl as _;
 
 use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::{
     f_comic_id as chapter_comic_id, f_is_pinned as chapter_is_pinned,
@@ -17,7 +19,6 @@ use crate::result::{BaseRest, accept};
 use crate::shared::RdbConn;
 use crate::shared::result::diesel;
 use crate::value::chapter::{Stage, StageMask, StagePhase};
-use crate::value::index::user_index_to_stored_index;
 
 /// List comic IDs with chapters in any stage not ignored by the mask.
 pub async fn list_matching_stage_comic_ids(
@@ -117,16 +118,4 @@ pub async fn list_matching_stage_comic_ids(
     let comic_ids = query.load(conn).await.map_err(diesel)?;
 
     accept(Some(comic_ids))
-}
-
-// Parses a fuzzy title value as an integer and converts to a stored index.
-/// Parse a numeric fuzzy title into a stored page index.
-pub fn stored_index_from_numeric_fuzzy(fuzzy_title_value: &str) -> Option<i32> {
-    //
-    match fuzzy_title_value.trim().parse() {
-        //
-        Ok(index) => user_index_to_stored_index(index),
-
-        Err(_) => None,
-    }
 }

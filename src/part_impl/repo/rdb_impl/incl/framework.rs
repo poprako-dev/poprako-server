@@ -19,8 +19,10 @@
 use std::collections::HashMap;
 use std::future::Future;
 
-use diesel::prelude::*;
-use diesel_async::RunQueryDsl;
+use diesel::prelude::{
+    ExpressionMethods as _, QueryDsl as _, SelectableHelper as _,
+};
+use diesel_async::RunQueryDsl as _;
 use tracing::instrument;
 
 use crate::model::read::proj::chapter::ChapterInfo;

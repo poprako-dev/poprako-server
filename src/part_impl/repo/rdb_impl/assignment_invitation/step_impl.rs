@@ -1,7 +1,10 @@
 //! RDB-backed assignment invitation repository step implementations.
 
-use diesel::prelude::*;
-use diesel_async::RunQueryDsl;
+use diesel::prelude::{
+    ExpressionMethods as _, OptionalExtension as _, QueryDsl as _,
+    SelectableHelper as _,
+};
+use diesel_async::RunQueryDsl as _;
 use time::OffsetDateTime;
 use tracing::instrument;
 
@@ -14,7 +17,10 @@ use crate::part_impl::repo::rdb_impl::entity::assignment_invitation::{
     AssignmentInvitationAspectRow, AssignmentInvitationEntryRow,
     AssignmentInvitationInfoRow,
 };
-use crate::part_impl::repo::rdb_impl::schema::t_assignment_invitation::dsl::*;
+use crate::part_impl::repo::rdb_impl::schema::t_assignment_invitation::dsl::{
+    f_chapter_id, f_code, f_created_at, f_id, f_pending,
+    t_assignment_invitation,
+};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::RdbConn;
 use crate::shared::result::diesel;

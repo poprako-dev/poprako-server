@@ -44,7 +44,7 @@ use crate::model::read::proj::user::UserInfo;
 use crate::model::shared::user::UserToken;
 use crate::part::effect::event::Event;
 use crate::part::prom::payload::TaskPayload;
-use crate::part::prom::payload::image::{ImagePayload, ResourceKind};
+use crate::part::prom::payload::image::ImagePayload;
 use crate::part_impl::prom::mock_impl::MockPromRecord;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
@@ -54,7 +54,7 @@ use crate::test_util::{
     assert_one_image_check_record,
 };
 use crate::usecase::user::delete::delete;
-use crate::value::image::{ImageExt, ImageHash};
+use crate::value::image::{ImageExt, ImageHash, ImageKind};
 use crate::value::role::{RoleField, RoleMask};
 
 /// Builds a [`UserInfo`] fixture with avatar fields set.
@@ -392,7 +392,7 @@ async fn reserve_avatar_updates_state_enqueues_check_and_returns_put_url() {
 
     assert_one_image_check_record(
         &snapshot.prom_records,
-        ResourceKind::UserAvatar,
+        ImageKind::UserAvatar,
         "user-1",
         "user_avatar/user-1-1.png",
         1,
@@ -423,7 +423,7 @@ async fn reserve_avatar_replacing_avatar_enqueues_delete_and_check() {
 
     assert_one_image_check_record(
         &snapshot.prom_records,
-        ResourceKind::UserAvatar,
+        ImageKind::UserAvatar,
         "user-1",
         "user_avatar/user-1-2.jpg",
         2,

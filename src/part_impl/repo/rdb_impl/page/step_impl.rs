@@ -1,7 +1,10 @@
 //! RDB-backed page repository step implementations.
 
-use diesel::prelude::*;
-use diesel_async::RunQueryDsl;
+use diesel::prelude::{
+    ExpressionMethods as _, OptionalExtension as _, QueryDsl as _,
+    SelectableHelper as _,
+};
+use diesel_async::RunQueryDsl as _;
 use time::OffsetDateTime;
 use tracing::instrument;
 
@@ -16,7 +19,10 @@ use crate::model::write::page::{
 use crate::part_impl::repo::rdb_impl::entity::page::{
     PageAspectRow, PageEntryRow, PageInfoRow,
 };
-use crate::part_impl::repo::rdb_impl::schema::t_page::dsl::*;
+use crate::part_impl::repo::rdb_impl::schema::t_page::dsl::{
+    f_chapter_id, f_id, f_image_extension, f_image_hash, f_image_key,
+    f_image_uploaded, f_image_version, f_index, f_updated_at, t_page,
+};
 use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{
     f_page_id as unit_f_page_id, t_unit,
 };

@@ -24,6 +24,8 @@ use crate::value::chapter::StageMask;
 use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
+pub use crate::complex::user::UserComplex;
+
 // Number of chapters generated in the synthetic benchmark archive payload.
 const CHAPTER_COUNT: usize = 8;
 

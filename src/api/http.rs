@@ -11,9 +11,11 @@ pub mod auth;
 pub mod handler;
 /// HTTP middleware: authorization, latency, rate limiting.
 pub mod middleware;
+
 /// OpenAPI documentation types.
 #[cfg(feature = "swagger")]
 pub mod openapi;
+
 /// HTTP result types and response utilities.
 pub mod result;
 /// HTTP router definition.

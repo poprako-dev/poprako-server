@@ -2,11 +2,10 @@
 
 use std::io::Write as _;
 
-use diesel::AsExpression;
 use diesel::pg::Pg;
-use diesel::prelude::*;
 use diesel::serialize::{IsNull, Output, Result as SerializeResult, ToSql};
 use diesel::sql_types::Text;
+use diesel::{AsExpression, Insertable, Queryable};
 use time::OffsetDateTime;
 
 use crate::part::prom::payload::TaskPayload;

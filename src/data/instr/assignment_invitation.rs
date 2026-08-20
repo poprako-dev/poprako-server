@@ -3,6 +3,7 @@
 //! Data transfer objects for assignment invitation use cases.
 
 use serde::Deserialize;
+
 #[cfg(feature = "swagger")]
 use utoipa::{IntoParams, ToSchema};
 

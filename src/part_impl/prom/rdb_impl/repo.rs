@@ -222,9 +222,9 @@ where
     ) -> BaseRest<Vec<LocalMessageRow>> {
         //
         // Internal implementation detail.
-        use diesel::prelude::*;
+        use diesel::prelude::{ExpressionMethods as _, QueryDsl as _};
 
-        use diesel_async::RunQueryDsl;
+        use diesel_async::RunQueryDsl as _;
 
         let processing_message =
             diesel::alias!(t_local_message as processing_message);
@@ -290,9 +290,9 @@ where
     ) -> BaseRest<bool> {
         //
         // Internal implementation detail.
-        use diesel::prelude::*;
+        use diesel::prelude::{ExpressionMethods as _, QueryDsl as _};
 
-        use diesel_async::RunQueryDsl;
+        use diesel_async::RunQueryDsl as _;
 
         let updated = diesel::update(
             t_local_message::table
@@ -337,9 +337,9 @@ where
     ) -> BaseRest<()> {
         //
         // Internal implementation detail.
-        use diesel::prelude::*;
+        use diesel::prelude::{ExpressionMethods as _, QueryDsl as _};
 
-        use diesel_async::RunQueryDsl;
+        use diesel_async::RunQueryDsl as _;
 
         diesel::update(
             t_local_message::table
@@ -384,9 +384,9 @@ where
     ) -> BaseRest<()> {
         //
         // Internal implementation detail.
-        use diesel::prelude::*;
+        use diesel::prelude::{ExpressionMethods as _, QueryDsl as _};
 
-        use diesel_async::RunQueryDsl;
+        use diesel_async::RunQueryDsl as _;
 
         diesel::update(
             t_local_message::table
@@ -431,9 +431,9 @@ where
     ) -> BaseRest<()> {
         //
         // Internal implementation detail.
-        use diesel::prelude::*;
+        use diesel::prelude::{ExpressionMethods as _, QueryDsl as _};
 
-        use diesel_async::RunQueryDsl;
+        use diesel_async::RunQueryDsl as _;
 
         diesel::update(
             t_local_message::table
@@ -481,9 +481,9 @@ where
     ) -> BaseRest<()> {
         //
         // Internal implementation detail.
-        use diesel::prelude::*;
+        use diesel::prelude::{ExpressionMethods as _, QueryDsl as _};
 
-        use diesel_async::RunQueryDsl;
+        use diesel_async::RunQueryDsl as _;
 
         diesel::update(
             t_local_message::table
@@ -548,9 +548,11 @@ where
     ) -> BaseRest<usize> {
         //
         // Internal implementation detail.
-        use diesel::prelude::*;
+        use diesel::prelude::{
+            BoolExpressionMethods as _, ExpressionMethods as _, QueryDsl as _,
+        };
 
-        use diesel_async::RunQueryDsl;
+        use diesel_async::RunQueryDsl as _;
 
         let (expired_completed, expired_dead) = (
             t_local_message::f_status

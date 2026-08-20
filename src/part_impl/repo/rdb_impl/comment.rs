@@ -4,8 +4,10 @@
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;
 
-use diesel::prelude::*;
-use diesel_async::RunQueryDsl;
+use diesel::prelude::{
+    ExpressionMethods as _, QueryDsl as _, SelectableHelper as _,
+};
+use diesel_async::RunQueryDsl as _;
 use poprako_orchestra::{AtLeast, Level, Run, Step};
 use tracing::instrument;
 
@@ -19,7 +21,9 @@ use crate::part_impl::repo::rdb_impl::entity::comment::{
     CommentEntryRow, CommentInfoRow,
 };
 use crate::part_impl::repo::rdb_impl::incl;
-use crate::part_impl::repo::rdb_impl::schema::t_comment::dsl::*;
+use crate::part_impl::repo::rdb_impl::schema::t_comment::dsl::{
+    f_created_at, f_team_id, t_comment,
+};
 use crate::result::{BaseError, BaseRest, accept};
 use crate::shared::result::diesel;
 use crate::shared::{RdbConn, RdbContext};

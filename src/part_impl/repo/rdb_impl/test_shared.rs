@@ -1,9 +1,5 @@
 pub mod form;
 
-use crate::part_impl::repo::rdb_impl::test_shared::form::{
-    chapter_entry, comic_entry, page_entry, team_entry, user_entry,
-    workset_entry,
-};
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use poprako_orchestra::{Nucl as _, Run as _, Step as _};
@@ -24,6 +20,10 @@ use crate::part::repo::oper::workset::CreateWorkset;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::schema;
+use crate::part_impl::repo::rdb_impl::test_shared::form::{
+    chapter_entry, comic_entry, page_entry, team_entry, user_entry,
+    workset_entry,
+};
 use crate::result::{BaseError, BaseRest, accept};
 use crate::shared::RdbCore;
 use crate::shared::result::diesel as diesel_error;

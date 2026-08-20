@@ -1,6 +1,7 @@
 //! Value types for member invitation aggregates.
 
 use serde::Deserialize;
+
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 

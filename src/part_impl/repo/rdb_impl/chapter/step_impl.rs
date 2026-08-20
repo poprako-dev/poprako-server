@@ -1,7 +1,10 @@
 //! RDB-backed chapter repository step implementations.
 
-use diesel::prelude::*;
-use diesel_async::RunQueryDsl;
+use diesel::prelude::{
+    BoolExpressionMethods as _, ExpressionMethods as _, OptionalExtension as _,
+    QueryDsl as _, SelectableHelper as _,
+};
+use diesel_async::RunQueryDsl as _;
 use time::OffsetDateTime;
 use tracing::instrument;
 
@@ -17,7 +20,13 @@ use crate::part_impl::repo::rdb_impl::entity::chapter::{
     ChapterAspectRow, ChapterEntryRow, ChapterInfoRow,
 };
 use crate::part_impl::repo::rdb_impl::incl;
-use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::*;
+use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::{
+    f_comic_id, f_id, f_index, f_is_pinned, f_page_count, f_proofread_at,
+    f_proofread_unit_count, f_proofreading_at, f_published_at,
+    f_total_unit_count, f_translated_at, f_translated_unit_count,
+    f_translating_at, f_typeset_at, f_typesetting_at, f_updated_at,
+    f_uploaded_at, t_chapter,
+};
 use crate::part_impl::repo::rdb_impl::schema::t_page;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::RdbConn;

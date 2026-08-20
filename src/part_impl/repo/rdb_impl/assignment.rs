@@ -7,8 +7,11 @@ mod list;
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;
 
-use diesel::prelude::*;
-use diesel_async::RunQueryDsl;
+use diesel::prelude::{
+    ExpressionMethods as _, OptionalExtension as _, QueryDsl as _,
+    SelectableHelper as _,
+};
+use diesel_async::RunQueryDsl as _;
 use poprako_orchestra::{AtLeast, Level, Run, Step};
 use time::OffsetDateTime;
 use tracing::instrument;
@@ -29,7 +32,9 @@ use crate::part_impl::repo::rdb_impl::entity::assignment::{
     AssignmentRoleTimestamps,
 };
 use crate::part_impl::repo::rdb_impl::incl;
-use crate::part_impl::repo::rdb_impl::schema::t_assignment::dsl::*;
+use crate::part_impl::repo::rdb_impl::schema::t_assignment::dsl::{
+    f_chapter_id, f_created_at, f_id, f_user_id, t_assignment,
+};
 use crate::part_impl::repo::rdb_impl::schema::t_chapter::{
     f_comic_id as chapter_comic_id, table as chapter_table,
 };

@@ -4,8 +4,11 @@
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;
 
-use diesel::prelude::*;
-use diesel_async::RunQueryDsl;
+use diesel::prelude::{
+    ExpressionMethods as _, OptionalExtension as _, QueryDsl as _,
+    SelectableHelper as _,
+};
+use diesel_async::RunQueryDsl as _;
 use poprako_orchestra::{AtLeast, Level, Run, Step};
 use time::OffsetDateTime;
 use tracing::instrument;
@@ -27,7 +30,9 @@ use crate::part_impl::repo::rdb_impl::entity::member_invitation::{
     MemberInvitationInfoRow,
 };
 use crate::part_impl::repo::rdb_impl::incl;
-use crate::part_impl::repo::rdb_impl::schema::t_member_invitation::dsl::*;
+use crate::part_impl::repo::rdb_impl::schema::t_member_invitation::dsl::{
+    f_code, f_created_at, f_id, f_pending, f_team_id, t_member_invitation,
+};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::result::diesel;
 use crate::shared::{RdbConn, RdbContext};

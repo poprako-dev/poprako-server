@@ -3,6 +3,7 @@
 //! Data transfer objects for team profile use cases.
 
 use serde::Deserialize;
+
 #[cfg(feature = "swagger")]
 use utoipa::{IntoParams, ToSchema};
 

@@ -22,6 +22,7 @@ use crate::part::repo::team::TeamRepo;
 use crate::result::{BaseError, BaseRest, accept};
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
+use crate::value::image::ImageKind;
 
 /// Reserves a new comic cover upload slot.
 #[instrument(level = "info", skip(nucl, repo, prom, image_pool))]
@@ -42,7 +43,7 @@ where
 {
     ImageComplex::ensure_byte_length(
         instr.new_byte_len,
-        image::ResourceKind::ComicCover,
+        ImageKind::ComicCover,
     )?;
 
     let (transaction_image_hash, image_ext, new_byte_len) =
@@ -107,7 +108,7 @@ where
 
             batch_payloads.push(TaskPayload::Image {
                 payload: image::ImagePayload::CheckUpload {
-                    resource_kind: image::ResourceKind::ComicCover,
+                    image_kind: ImageKind::ComicCover,
                     resource_id: id.clone(),
                     object_key: cover_reservation.object_key.clone(),
                     version: cover_reservation.cover_version,

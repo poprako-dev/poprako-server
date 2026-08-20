@@ -15,11 +15,11 @@ use crate::data::instr::comic::{
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::proj::workset::WorksetInfo;
 use crate::part::prom::payload::TaskPayload;
-use crate::part::prom::payload::image::{ImagePayload, ResourceKind};
+use crate::part::prom::payload::image::ImagePayload;
 use crate::test_util::{
     assert_expected_message, assert_one_image_check_record,
 };
-use crate::value::image::{ImageExt, ImageHash};
+use crate::value::image::{ImageExt, ImageHash, ImageKind};
 
 fn reserve_instr(ext: ImageExt, hash_byte: u8) -> ReserveComicCoverInstr {
     ReserveComicCoverInstr {
@@ -67,7 +67,7 @@ async fn reserve_cover_updates_state_enqueues_check_and_returns_put_url() {
 
     assert_one_image_check_record(
         &snapshot.prom_records,
-        ResourceKind::ComicCover,
+        ImageKind::ComicCover,
         "comic-1",
         "comic_cover/comic-1-1.png",
         1,

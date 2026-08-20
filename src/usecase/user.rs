@@ -43,6 +43,7 @@ use crate::part::repo::oper::user::{
 };
 use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::value::image::ImageKind;
 
 /// Fetches a user's profile with avatar URL resolution.
 ///
@@ -284,7 +285,7 @@ where
 {
     ImageComplex::ensure_byte_length(
         instr.new_byte_len,
-        image::ResourceKind::UserAvatar,
+        ImageKind::UserAvatar,
     )?;
 
     let (transaction_image_hash, image_ext, new_byte_len) =
@@ -330,7 +331,7 @@ where
 
             batch_payloads.push(TaskPayload::Image {
                 payload: image::ImagePayload::CheckUpload {
-                    resource_kind: image::ResourceKind::UserAvatar,
+                    image_kind: ImageKind::UserAvatar,
                     resource_id: token.user_id.clone(),
                     object_key: avatar_reservation.object_key.clone(),
                     version: avatar_reservation.avatar_version,

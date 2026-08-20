@@ -1,6 +1,6 @@
 //! Diesel entity types for the `t_comment` table.
 
-use diesel::prelude::*;
+use diesel::{Insertable, Queryable, Selectable};
 use time::OffsetDateTime;
 
 use crate::model::read::proj::comment::CommentInfo;

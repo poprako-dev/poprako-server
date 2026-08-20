@@ -1,6 +1,7 @@
 //! Value types for comic aggregates — incl opts for list queries.
 
 use serde::Deserialize;
+
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 

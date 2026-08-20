@@ -2,9 +2,9 @@
 
 use poprako_util::i18n::trl;
 
-use crate::part::prom::payload::image::ResourceKind;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
+use crate::value::image::ImageKind;
 
 /// Domain opers for image lifecycle management: generates unique identifiers for scheduled image deletion and integrity check tasks.
 pub struct ImageComplex;
@@ -20,16 +20,16 @@ impl ImageComplex {
     /// | `PageImage`  | 25 MiB       |
     pub fn ensure_byte_length(
         byte_length: u64,
-        kind: ResourceKind,
+        kind: ImageKind,
     ) -> BaseRest<()> {
         //
         let max_length = match kind {
             //
-            ResourceKind::UserAvatar | ResourceKind::TeamAvatar => 512 * 1024,
+            ImageKind::UserAvatar | ImageKind::TeamAvatar => 512 * 1024,
 
-            ResourceKind::ComicCover => 2 * 1024 * 1024,
+            ImageKind::ComicCover => 2 * 1024 * 1024,
 
-            ResourceKind::PageImage => 25 * 1024 * 1024,
+            ImageKind::PageImage => 25 * 1024 * 1024,
         };
 
         if !(1..=max_length).contains(&byte_length) {
@@ -41,7 +41,7 @@ impl ImageComplex {
                 err_message = %err_message,
                 byte_length = byte_length,
                 max_length = max_length,
-                resource_kind = ?kind,
+                image_kind = ?kind,
                 "expected error: image byte length is invalid",
             );
 

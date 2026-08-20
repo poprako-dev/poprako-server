@@ -6,6 +6,7 @@
 //! Timestamps are converted to Unix milliseconds for JSON serialisation.
 
 use serde::Deserialize;
+
 #[cfg(feature = "swagger")]
 use utoipa::{IntoParams, ToSchema};
 
