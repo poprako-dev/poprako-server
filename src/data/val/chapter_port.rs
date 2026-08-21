@@ -11,6 +11,7 @@ use utoipa::ToSchema;
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ImportChapterTranslationVal {
+    //
     /// Number of pages that were imported.
     pub imported_page_count: i32,
     /// Number of translation units that were imported.

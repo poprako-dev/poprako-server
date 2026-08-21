@@ -6,11 +6,10 @@ use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
 use crate::model::read::proj::term::TermInfo;
-use crate::model::read::spec::term::TermListSpec;
 use crate::part::nucl::RepeatableRead;
 use crate::part::repo::oper::term::{
     CreateTerm, DeleteTerm, DeleteTerms, GetTermInfo, GetTermInfoExcluded,
-    ListTermInfos, LockTerm, UpdateTerm,
+    ListTermInfos, LockTerm, UpdateTerm, UpsertTerms,
 };
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
@@ -45,18 +44,24 @@ fn source_conflicts(
 }
 
 // Internal implementation of `list_infos`.
-fn list_infos(state: &MockState, spec: &TermListSpec) -> Vec<TermInfo> {
+fn list_infos(
+    state: &MockState,
+    termbase_id: &str,
+    fuzzy_source: Option<&str>,
+    offset: u32,
+    limit: u32,
+) -> Vec<TermInfo> {
     //
     // Internal implementation detail.
     // Internal implementation detail.
     let mut term_infos = state
         .terms
         .iter()
-        .filter(|term_info| term_info.termbase_id == spec.termbase_id)
+        .filter(|term_info| term_info.termbase_id == termbase_id)
         .cloned()
         .collect::<Vec<_>>();
 
-    if let Some(fuzzy_source) = &spec.fuzzy_source {
+    if let Some(fuzzy_source) = fuzzy_source {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -71,9 +76,29 @@ fn list_infos(state: &MockState, spec: &TermListSpec) -> Vec<TermInfo> {
 
     term_infos
         .into_iter()
-        .skip(spec.offset as usize)
-        .take(spec.limit as usize)
+        .skip(offset as usize)
+        .take(limit as usize)
         .collect()
+}
+
+// List every term belonging to one terminology base in stable source order.
+fn list_all_infos(state: &MockState, termbase_id: &str) -> Vec<TermInfo> {
+    //
+    let mut term_infos = state
+        .terms
+        .iter()
+        .filter(|term_info| term_info.termbase_id == termbase_id)
+        .cloned()
+        .collect::<Vec<_>>();
+
+    term_infos.sort_by(|left, right| {
+        //
+        left.source
+            .cmp(&right.source)
+            .then_with(|| left.id.cmp(&right.id))
+    });
+
+    term_infos
 }
 
 impl<'a> Run<GetTermInfo<'a>> for Mock {
@@ -81,6 +106,7 @@ impl<'a> Run<GetTermInfo<'a>> for Mock {
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
+    // Resolve one term by identifier.
     #[instrument(level = "info", skip_all)]
     // Internal implementation of `run`.
     async fn run(&self, oper: &GetTermInfo<'a>) -> BaseRest<TermInfo> {
@@ -98,6 +124,7 @@ impl<'a> Run<ListTermInfos<'a>> for Mock {
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
+    // Route list variants against the committed mock state.
     #[instrument(level = "info", skip_all)]
     // Internal implementation of `run`.
     async fn run(&self, oper: &ListTermInfos<'a>) -> BaseRest<Vec<TermInfo>> {
@@ -106,7 +133,23 @@ impl<'a> Run<ListTermInfos<'a>> for Mock {
         // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
-        accept(list_infos(&state, oper.spec))
+        let term_infos = match oper {
+            //
+            ListTermInfos::Query {
+                termbase_id,
+                fuzzy_source,
+                offset,
+                limit,
+            } => {
+                list_infos(&state, termbase_id, *fuzzy_source, *offset, *limit)
+            }
+
+            ListTermInfos::Termbase { termbase_id } => {
+                list_all_infos(&state, termbase_id)
+            }
+        };
+
+        accept(term_infos)
     }
 }
 
@@ -161,6 +204,45 @@ impl<'a> Step<CreateTerm<'a>, MockContext> for Mock {
         context.state.terms.push(term_info.clone());
 
         accept(term_info)
+    }
+}
+
+impl<'a> Step<ListTermInfos<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
+    type Level = RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
+    type Error = BaseError;
+
+    // Route list variants inside the mock transaction snapshot.
+    #[instrument(level = "info", skip_all)]
+    async fn step(
+        &self,
+        context: &mut MockContext,
+        oper: &ListTermInfos<'a>,
+    ) -> BaseRest<Vec<TermInfo>> {
+        //
+        let term_infos = match oper {
+            //
+            ListTermInfos::Query {
+                termbase_id,
+                fuzzy_source,
+                offset,
+                limit,
+            } => list_infos(
+                &context.state,
+                termbase_id,
+                *fuzzy_source,
+                *offset,
+                *limit,
+            ),
+
+            ListTermInfos::Termbase { termbase_id } => {
+                list_all_infos(&context.state, termbase_id)
+            }
+        };
+
+        accept(term_infos)
     }
 }
 
@@ -247,6 +329,79 @@ impl<'a> Step<UpdateTerm<'a>, MockContext> for Mock {
         term_info.comment = oper.update.comment.clone();
 
         term_info.updated_at = now();
+
+        accept(())
+    }
+}
+
+impl<'a> Step<UpsertTerms<'a>, MockContext> for Mock {
+    // Internal type alias for `Error`.
+    type Level = RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
+    type Error = BaseError;
+
+    // Apply imported entries and updates inside the mock transaction.
+    #[instrument(level = "info", skip_all)]
+    async fn step(
+        &self,
+        context: &mut MockContext,
+        oper: &UpsertTerms<'a>,
+    ) -> BaseRest<()> {
+        //
+        for entry in oper.entries {
+            //
+            if source_conflicts(
+                &context.state,
+                None,
+                &entry.termbase_id,
+                &entry.source,
+            ) {
+                return Err(expected("error-already-exists"));
+            }
+
+            let time = now();
+
+            context.state.terms.push(TermInfo {
+                id: entry.id.clone(),
+                termbase_id: entry.termbase_id.clone(),
+                source: entry.source.clone(),
+                targets: entry.targets.clone(),
+                comment: entry.comment.clone(),
+                creator_id: entry.creator_id.clone(),
+                created_at: time,
+                updated_at: time,
+            });
+        }
+
+        for update in oper.updates {
+            //
+            let current = get_info(&context.state, &update.id)?;
+
+            if source_conflicts(
+                &context.state,
+                Some(&update.id),
+                &current.termbase_id,
+                &update.source,
+            ) {
+                return Err(expected("error-already-exists"));
+            }
+
+            let term_info = context
+                .state
+                .terms
+                .iter_mut()
+                .find(|term_info| term_info.id == update.id)
+                .ok_or_else(|| expected("error-term-not-found"))?;
+
+            term_info.source = update.source.clone();
+
+            term_info.targets = update.targets.clone();
+
+            term_info.comment = update.comment.clone();
+
+            term_info.updated_at = now();
+        }
 
         accept(())
     }

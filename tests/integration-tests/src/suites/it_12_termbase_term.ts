@@ -7,8 +7,8 @@
 //   - All terminology fixtures and temporary comic/team roots are deleted.
 //
 // Covers team/comic scopes, comic inheritance, name/source-only fuzzy search,
-// full replacement, target order, counters, perm isolation, path/body
-// identity, duplicate normalization, and comic/termbase cascade cleanup.
+// full replacement, target order, counters, native import/export and merge,
+// perm isolation, path/body identity, duplicate normalization, and cascades.
 
 import assert from "node:assert/strict";
 
@@ -22,7 +22,14 @@ import {
     listMyMembers,
     updateMemberRoles,
 } from "../http/fixtures.js";
-import type { IdVal, TermbaseInfoView, TermInfoView } from "../http/types.js";
+import type {
+    ExportTermbaseVal,
+    IdVal,
+    ImportTermbaseInstr,
+    ImportTermbaseVal,
+    TermbaseInfoView,
+    TermInfoView,
+} from "../http/types.js";
 import { titled } from "../state/prefix.js";
 import { ROLE } from "../state/roles.js";
 import type { RunCtx } from "../state/runCtx.js";
@@ -211,6 +218,124 @@ export async function runIt12Module(ctx: RunCtx): Promise<void> {
     );
 
     assert.equal(targetFuzzy.length, 0);
+
+    const nativeDocument: ImportTermbaseInstr = {
+        name: "Native Port Glossary",
+        description: "Imported description",
+        terms: [
+            {
+                source: "Beta",
+                targets: ["乙"],
+                comment: null,
+            },
+            {
+                source: "Alpha",
+                targets: ["甲"],
+                comment: "initial",
+            },
+        ],
+    };
+
+    const importedTermbase = expectSuccessData<ImportTermbaseVal>(
+        await translator.api.post<SuccessBody<ImportTermbaseVal>>(
+            `/api/v1/teams/${ctx.ids.defaultTeamId}/termbases/import`,
+            nativeDocument,
+        ),
+        201,
+    );
+
+    assert.equal(importedTermbase.created, true);
+    assert.equal(importedTermbase.created_term_count, 2);
+    assert.equal(importedTermbase.merged_term_count, 0);
+
+    const exportedResponse = await translator.api.get<ExportTermbaseVal>(
+        `/api/v1/termbases/${importedTermbase.id}/export`,
+    );
+
+    assert.equal(exportedResponse.status, 200);
+    assert.equal(exportedResponse.headers.get("content-type"), "application/json");
+
+    const exportedDocument = JSON.parse(exportedResponse.rawText) as ExportTermbaseVal;
+
+    assert.deepEqual(exportedDocument.terms.map((entry) => entry.source), ["Alpha", "Beta"]);
+
+    expectError(
+        await translator.api.post<ErrorBody>(
+            `/api/v1/teams/${ctx.ids.defaultTeamId}/termbases/import`,
+            nativeDocument,
+        ),
+        422,
+        2,
+    );
+
+    const mergedDocument: ImportTermbaseInstr = {
+        ...nativeDocument,
+        description: null,
+        terms: [
+            {
+                source: " alpha ",
+                targets: ["甲", "第一"],
+                comment: "merged",
+            },
+            {
+                source: "Gamma",
+                targets: ["丙"],
+                comment: null,
+            },
+        ],
+    };
+
+    const mergedTermbase = expectSuccessData<ImportTermbaseVal>(
+        await translator.api.post<SuccessBody<ImportTermbaseVal>>(
+            `/api/v1/teams/${ctx.ids.defaultTeamId}/termbases/import?force_merge=true`,
+            mergedDocument,
+        ),
+        200,
+    );
+
+    assert.equal(mergedTermbase.id, importedTermbase.id);
+    assert.equal(mergedTermbase.created, false);
+    assert.equal(mergedTermbase.created_term_count, 1);
+    assert.equal(mergedTermbase.merged_term_count, 1);
+
+    const mergedExportResponse = await translator.api.get<ExportTermbaseVal>(
+        `/api/v1/termbases/${importedTermbase.id}/export/download`,
+    );
+
+    assert.equal(mergedExportResponse.status, 200);
+    assert.equal(
+        mergedExportResponse.headers.get("content-disposition"),
+        `attachment; filename="termbase_${importedTermbase.id}.json"`,
+    );
+
+    const mergedExport = JSON.parse(mergedExportResponse.rawText) as ExportTermbaseVal;
+    const alpha = mergedExport.terms.find((entry) => entry.source === "alpha");
+
+    assert.ok(alpha);
+    assert.deepEqual(alpha.targets, ["甲", "第一"]);
+    assert.equal(alpha.comment, "merged");
+    assert.equal(mergedExport.description, null);
+
+    expectError(
+        await translator.api.post<ErrorBody>(
+            `/api/v1/teams/${ctx.ids.defaultTeamId}/termbases/import`,
+            {
+                name: "Oversized Native Glossary",
+                description: null,
+                terms: Array.from({ length: 101 }, (_, index) => ({
+                    source: `Source ${index}`,
+                    targets: [`Target ${index}`],
+                    comment: null,
+                })),
+            },
+        ),
+        422,
+        2,
+    );
+
+    expectNoContent(
+        await translator.api.delete<null>(`/api/v1/termbases/${importedTermbase.id}`),
+    );
 
     expectNoContent(await translator.api.delete<null>(`/api/v1/terms/${term.id}`));
     assert.equal((await getTermbase(translator.api, comicTermbase.id)).term_count, 0);

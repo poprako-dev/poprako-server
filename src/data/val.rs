@@ -30,6 +30,8 @@ pub mod team;
 pub mod term;
 /// Termbase value DTOs.
 pub mod termbase;
+/// Terminology-base import and export values.
+pub mod termbase_port;
 /// Unit value DTOs.
 pub mod unit;
 /// User value DTOs.

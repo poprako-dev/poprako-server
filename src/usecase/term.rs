@@ -8,13 +8,12 @@ use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
 use crate::complex::term::TermComplex;
-use crate::complex::termbase::TermbasePermComplex;
+use crate::complex::termbase::{TermbaseComplex, TermbasePermComplex};
 use crate::data::instr::term::{
     CreateTermInstr, ListTermInfosInstr, UpdateTermInfoInstr,
 };
 use crate::data::val::term::CreateTermVal;
 use crate::data::view::term::TermInfoView;
-use crate::model::read::spec::term::TermListSpec;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::RepeatableRead;
 use crate::part::repo::member::MemberRepo;
@@ -79,6 +78,8 @@ where
                 &member_info,
                 &termbase_info,
             )?;
+
+            TermbaseComplex::ensure_term_capacity(termbase_info.term_count, 1)?;
 
             let term_info = CreateTerm { entry: &term_entry }
                 .step_on(repo, context)
@@ -157,15 +158,13 @@ where
 
     TermbasePermComplex::ensure_user_can_read(&member_info, &termbase_info)?;
 
-    let term_info_list_spec = TermListSpec {
-        termbase_id: instr.termbase_id,
-        fuzzy_source: TermComplex::normalize_fuzzy_source(instr.fuzzy_source),
+    let fuzzy_source = TermComplex::normalize_fuzzy_source(instr.fuzzy_source);
+
+    let term_infos = ListTermInfos::Query {
+        termbase_id: &instr.termbase_id,
+        fuzzy_source: fuzzy_source.as_deref(),
         offset: instr.offset,
         limit: instr.limit,
-    };
-
-    let term_infos = ListTermInfos {
-        spec: &term_info_list_spec,
     }
     .run_on(repo)
     .await?;

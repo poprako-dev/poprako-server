@@ -26,5 +26,7 @@ pub mod member;
 pub mod member_invitation;
 /// Role and perm value types.
 pub mod role;
+/// Terminology-base scope and capacity values.
+pub mod termbase;
 /// Unit-specific values.
 pub mod unit;

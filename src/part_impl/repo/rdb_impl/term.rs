@@ -16,12 +16,11 @@ use tracing::instrument;
 use poprako_util::i18n::trl;
 
 use crate::model::read::proj::term::TermInfo;
-use crate::model::read::spec::term::TermListSpec;
 use crate::model::write::term::{TermEntry, TermRepl};
 use crate::part::nucl::RepeatableRead;
 use crate::part::repo::oper::term::{
     CreateTerm, DeleteTerm, DeleteTerms, GetTermInfo, GetTermInfoExcluded,
-    ListTermInfos, LockTerm, UpdateTerm,
+    ListTermInfos, LockTerm, UpdateTerm, UpsertTerms,
 };
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::entity::term::{
@@ -51,10 +50,33 @@ impl Run<ListTermInfos<'_>> for HybRepo {
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
-    // Resolve a pageable list from the supplied term list spec.
+    // Route list variants to their corresponding query shape.
     #[instrument(level = "info", skip_all)]
     async fn run(&self, oper: &ListTermInfos<'_>) -> BaseRest<Vec<TermInfo>> {
-        submit_query!(self.core, list_infos, oper.spec)
+        //
+        match oper {
+            //
+            ListTermInfos::Query {
+                termbase_id,
+                fuzzy_source,
+                offset,
+                limit,
+            } => {
+                //
+                submit_query!(
+                    self.core,
+                    list_infos,
+                    termbase_id,
+                    *fuzzy_source,
+                    *offset,
+                    *limit
+                )
+            }
+
+            ListTermInfos::Termbase { termbase_id } => {
+                submit_query!(self.core, list_all_infos, termbase_id)
+            }
+        }
     }
 }
 
@@ -76,6 +98,50 @@ where
         oper: &CreateTerm<'_>,
     ) -> BaseRest<TermInfo> {
         create(context.conn(), oper.entry).await
+    }
+}
+
+impl<L> Step<ListTermInfos<'_>, RdbContext<L>> for HybRepo
+where
+    L: Level + Send + AtLeast<RepeatableRead>,
+{
+    // Read selected terms inside the caller's transaction snapshot.
+    type Level = RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
+    type Error = BaseError;
+
+    // Route list variants to their corresponding query shape.
+    #[instrument(level = "info", skip_all)]
+    async fn step(
+        &self,
+        context: &mut RdbContext<L>,
+        oper: &ListTermInfos<'_>,
+    ) -> BaseRest<Vec<TermInfo>> {
+        //
+        match oper {
+            //
+            ListTermInfos::Query {
+                termbase_id,
+                fuzzy_source,
+                offset,
+                limit,
+            } => {
+                //
+                list_infos(
+                    context.conn(),
+                    termbase_id,
+                    *fuzzy_source,
+                    *offset,
+                    *limit,
+                )
+                .await
+            }
+
+            ListTermInfos::Termbase { termbase_id } => {
+                list_all_infos(context.conn(), termbase_id).await
+            }
+        }
     }
 }
 
@@ -142,6 +208,27 @@ where
     }
 }
 
+impl<L> Step<UpsertTerms<'_>, RdbContext<L>> for HybRepo
+where
+    L: Level + Send + AtLeast<RepeatableRead>,
+{
+    // Apply one bounded terminology import inside the caller's transaction.
+    type Level = RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
+    type Error = BaseError;
+
+    // Apply imported entries and updates inside the active transaction.
+    #[instrument(level = "info", skip_all)]
+    async fn step(
+        &self,
+        context: &mut RdbContext<L>,
+        oper: &UpsertTerms<'_>,
+    ) -> BaseRest<()> {
+        upsert_terms(context.conn(), oper.entries, oper.updates).await
+    }
+}
+
 impl<L> Step<DeleteTerm<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send + AtLeast<RepeatableRead>,
@@ -197,6 +284,31 @@ async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     accept(())
 }
 
+// Apply a partial update payload to an existing term row.
+#[instrument(level = "info", skip_all)]
+async fn update_info(conn: &mut RdbConn, update: &TermRepl) -> BaseRest<()> {
+    //
+    // Prepare nullable target entries and write all requested fields in one update.
+    let targets = update
+        .targets
+        .iter()
+        .map(|target| Some(target.as_str()))
+        .collect::<Vec<_>>();
+
+    diesel::update(t_term.filter(f_id.eq(&update.id)))
+        .set((
+            f_source.eq(&update.source),
+            f_targets.eq(targets),
+            f_comment.eq(update.comment.as_deref()),
+            f_updated_at.eq(OffsetDateTime::now_utc()),
+        ))
+        .execute(conn)
+        .await
+        .map_err(diesel)?;
+
+    accept(())
+}
+
 // Escape wildcard characters before reusing user input in a SQL `ILIKE` pattern.
 fn escape_ilike_pattern(input: &str) -> String {
     //
@@ -239,39 +351,48 @@ async fn create(
     accept(row.into())
 }
 
-// Load one term row by id in a lock-compatible path and convert it to response info.
+// Load every terminology entry in deterministic source order.
 #[instrument(level = "info", skip_all)]
-async fn get_info_excluded(conn: &mut RdbConn, id: &str) -> BaseRest<TermInfo> {
+async fn list_all_infos(
+    conn: &mut RdbConn,
+    termbase_id: &str,
+) -> BaseRest<Vec<TermInfo>> {
     //
-    // Use `for_update()` to prevent concurrent updates while resolving this term.
-    let row = t_term
-        .filter(f_id.eq(id))
+    let rows = t_term
+        .filter(f_termbase_id.eq(termbase_id))
+        .order_by((f_source.asc(), f_id.asc()))
         .select(TermInfoRow::as_select())
-        .for_update()
-        .get_result::<TermInfoRow>(conn)
+        .load::<TermInfoRow>(conn)
         .await
-        .optional()
         .map_err(diesel)?;
 
-    let Some(row) = row else {
+    accept(rows.into_iter().map(Into::into).collect())
+}
+
+// Apply bounded imported inserts and replacements inside one adapter step.
+#[instrument(level = "info", skip_all)]
+async fn upsert_terms(
+    conn: &mut RdbConn,
+    entries: &[TermEntry],
+    updates: &[TermRepl],
+) -> BaseRest<()> {
+    //
+    if !entries.is_empty() {
         //
-        let message = trl("error-term-not-found");
+        let rows = entries.iter().map(TermEntryRow::from).collect::<Vec<_>>();
 
-        tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
-            err_message = %message,
-            term_id = %id,
-            operation = "get locked term info",
-            "expected term error",
-        );
+        diesel::insert_into(t_term)
+            .values(&rows)
+            .execute(conn)
+            .await
+            .map_err(diesel)?;
+    }
 
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message,
-        });
-    };
+    for update in updates {
+        update_info(conn, update).await?;
+    }
 
-    accept(row.into())
+    accept(())
 }
 
 // Locks a term row for mutation safety.
@@ -309,45 +430,58 @@ async fn lock_term(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     accept(())
 }
 
-// Apply a partial update payload to an existing term row.
+// Load one term row by id in a lock-compatible path and convert it to response info.
 #[instrument(level = "info", skip_all)]
-async fn update_info(conn: &mut RdbConn, update: &TermRepl) -> BaseRest<()> {
+async fn get_info_excluded(conn: &mut RdbConn, id: &str) -> BaseRest<TermInfo> {
     //
-    // Prepare nullable target entries and write all requested fields in one update.
-    let targets = update
-        .targets
-        .iter()
-        .map(|target| Some(target.as_str()))
-        .collect::<Vec<_>>();
-
-    diesel::update(t_term.filter(f_id.eq(&update.id)))
-        .set((
-            f_source.eq(&update.source),
-            f_targets.eq(targets),
-            f_comment.eq(update.comment.as_deref()),
-            f_updated_at.eq(OffsetDateTime::now_utc()),
-        ))
-        .execute(conn)
+    // Use `for_update()` to prevent concurrent updates while resolving this term.
+    let row = t_term
+        .filter(f_id.eq(id))
+        .select(TermInfoRow::as_select())
+        .for_update()
+        .get_result::<TermInfoRow>(conn)
         .await
+        .optional()
         .map_err(diesel)?;
 
-    accept(())
+    let Some(row) = row else {
+        //
+        let message = trl("error-term-not-found");
+
+        tracing::warn!(
+            error_variant = ?ExpectedVariant::Args,
+            err_message = %message,
+            term_id = %id,
+            operation = "get locked term info",
+            "expected term error",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message,
+        });
+    };
+
+    accept(row.into())
 }
 
 // Build a filtered query for term listing and execute a paged query.
 #[instrument(level = "info", skip_all)]
 async fn list_infos(
     conn: &mut RdbConn,
-    spec: &TermListSpec,
+    termbase_id: &str,
+    fuzzy_source: Option<&str>,
+    offset: u32,
+    limit: u32,
 ) -> BaseRest<Vec<TermInfo>> {
     //
     // Start with a termbase constraint, then apply optional fuzzy source matching.
     let mut query = t_term
-        .filter(f_termbase_id.eq(&spec.termbase_id))
+        .filter(f_termbase_id.eq(termbase_id))
         .select(TermInfoRow::as_select())
         .into_boxed();
 
-    if let Some(fuzzy_source) = &spec.fuzzy_source {
+    if let Some(fuzzy_source) = fuzzy_source {
         //
         let escaped = escape_ilike_pattern(fuzzy_source);
 
@@ -358,8 +492,8 @@ async fn list_infos(
 
     let rows = query
         .order_by(f_updated_at.desc())
-        .offset(spec.offset as i64)
-        .limit(spec.limit as i64)
+        .offset(offset as i64)
+        .limit(limit as i64)
         .load::<TermInfoRow>(conn)
         .await
         .map_err(diesel)?;

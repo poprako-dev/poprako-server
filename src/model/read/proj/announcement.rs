@@ -7,6 +7,7 @@ use crate::model::read::proj::user::UserInfo;
 /// A team announcement as stored in the database, with optional included user data.
 #[cfg_attr(test, derive(Clone))]
 pub struct AnnouncementInfo {
+    //
     /// Unique identifier for the announcement row.
     pub id: String,
 

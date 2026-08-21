@@ -1,5 +1,6 @@
 //! RDB-backed chapter repository.
 
+// Transaction-scoped chapter operations.
 mod step_impl;
 
 /// Chapter RDB integration tests.

@@ -3,6 +3,7 @@
 /// The data needed to create a terminology entry.
 #[cfg_attr(test, derive(Clone))]
 pub struct TermEntry {
+    //
     /// The unique identifier for the new terminology entry.
     pub id: String,
 
@@ -20,9 +21,22 @@ pub struct TermEntry {
     pub creator_id: String,
 }
 
+/// Portable terminology-entry content before persistence identity is assigned.
+#[cfg_attr(test, derive(Clone))]
+pub struct TermImport {
+    //
+    /// Source-language term or phrase.
+    pub source: String,
+    /// Target-language translations.
+    pub targets: Vec<String>,
+    /// Optional annotation or usage note.
+    pub comment: Option<String>,
+}
+
 /// Mutable terminology-entry fields.
 #[cfg_attr(test, derive(Clone))]
 pub struct TermRepl {
+    //
     /// The unique identifier of the term to update.
     pub id: String,
 
@@ -32,4 +46,13 @@ pub struct TermRepl {
     pub targets: Vec<String>,
     /// Updated annotation or usage note for the term.
     pub comment: Option<String>,
+}
+
+/// Persistence changes produced by one terminology-base import.
+pub struct TermUpsertPlan {
+    //
+    /// New terminology entries to insert.
+    pub entries: Vec<TermEntry>,
+    /// Existing terminology entries to replace.
+    pub updates: Vec<TermRepl>,
 }

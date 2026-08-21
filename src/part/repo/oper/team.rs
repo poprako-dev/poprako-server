@@ -19,6 +19,7 @@ pub struct CreateTeam<'a> {
 #[derive(Oper)]
 #[oper(output = TeamInfo)]
 pub enum GetTeamInfo<'a> {
+    //
     /// Fetch by team id.
     Id {
         /// The team identifier.
@@ -74,6 +75,7 @@ pub enum UpdateTeam<'a> {
 #[derive(Oper)]
 #[oper(output = TeamAvatarReservation)]
 pub struct ReserveTeamAvatar<'a> {
+    //
     /// The team id.
     pub id: &'a str,
 
@@ -88,6 +90,7 @@ pub struct ReserveTeamAvatar<'a> {
 #[derive(Oper)]
 #[oper(output = TeamInfo)]
 pub enum GetTeamInfoExcluded<'a> {
+    //
     /// Fetch by team id.
     Id {
         /// The team identifier.

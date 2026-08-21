@@ -4,7 +4,7 @@ use std::collections::HashSet;
 
 use poprako_util::i18n::trl;
 
-use crate::model::write::term::{TermEntry, TermRepl};
+use crate::model::write::term::{TermEntry, TermImport, TermRepl};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 
@@ -153,6 +153,26 @@ impl TermComplex {
             targets,
             comment,
             creator_id,
+        })
+    }
+
+    /// Build normalized portable terminology-entry content.
+    pub fn build_import(
+        source: String,
+        targets: Vec<String>,
+        comment: Option<String>,
+    ) -> BaseRest<TermImport> {
+        //
+        let (source, targets, comment) = (
+            normalize_source(source)?,
+            normalize_targets(targets)?,
+            normalize_comment(comment),
+        );
+
+        accept(TermImport {
+            source,
+            targets,
+            comment,
         })
     }
 

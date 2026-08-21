@@ -8,6 +8,7 @@ use crate::value::image::ImageKind;
 /// Runtime byte limits for uploaded images.
 #[derive(Clone, Copy, Debug, Deserialize)]
 pub struct ImageConfig {
+    //
     /// Maximum byte length for a user avatar upload.
     pub user_avatar_limit: u64,
 

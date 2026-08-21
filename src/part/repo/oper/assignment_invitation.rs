@@ -24,6 +24,7 @@ pub struct ListAssignmentInvitationInfos<'a> {
 #[derive(Oper)]
 #[oper(output = AssignmentInvitationInfo)]
 pub enum GetAssignmentInvitationInfo<'a> {
+    //
     /// Gets by invitation identifier.
     Id {
         /// Invitation identifier.

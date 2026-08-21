@@ -55,6 +55,7 @@ pub enum ListMemberInfos<'a> {
 #[derive(Oper)]
 #[oper(output = Option<MemberInfo>)]
 pub enum FindMemberInfo<'a> {
+    //
     /// Finds by user ID and team ID.
     UserTeam {
         /// The user ID.
@@ -68,6 +69,7 @@ pub enum FindMemberInfo<'a> {
 #[derive(Oper)]
 #[oper(output = MemberInfo)]
 pub enum GetMemberInfo<'a, 'b> {
+    //
     /// Retrieves by member ID.
     Id {
         /// The member ID.

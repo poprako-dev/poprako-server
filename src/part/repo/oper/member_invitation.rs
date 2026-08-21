@@ -65,6 +65,7 @@ pub enum UpdateMemberInvitation<'a> {
 #[derive(Oper)]
 #[oper(output = MemberInvitationInfo)]
 pub enum GetMemberInvitationInfoExcluded<'a> {
+    //
     /// Retrieves by invitation code.
     Code {
         /// The invitation code.

@@ -19,6 +19,7 @@ pub struct CreateUser<'a> {
 #[derive(Oper)]
 #[oper(output = UserInfo)]
 pub enum GetUserInfo<'a> {
+    //
     /// Fetch by user id.
     Id {
         /// The unique user identifier.
@@ -30,6 +31,7 @@ pub enum GetUserInfo<'a> {
 #[derive(Oper)]
 #[oper(output = UserCredential)]
 pub enum GetUserCredential<'a> {
+    //
     /// Fetch by qid.
     Qid {
         /// The OAuth qualified identifier.
@@ -41,6 +43,7 @@ pub enum GetUserCredential<'a> {
 #[derive(Oper)]
 #[oper(output = Option<UserInfo>)]
 pub enum FindUserInfo<'a> {
+    //
     /// Fetch by qid.
     Qid {
         /// The OAuth qualified identifier.
@@ -82,6 +85,7 @@ pub enum UpdateUser<'a> {
 #[derive(Oper)]
 #[oper(output = UserAvatarReservation)]
 pub struct ReserveUserAvatar<'a> {
+    //
     /// The user id.
     pub id: &'a str,
 
@@ -96,6 +100,7 @@ pub struct ReserveUserAvatar<'a> {
 #[derive(Oper)]
 #[oper(output = UserInfo)]
 pub enum GetUserInfoExcluded<'a> {
+    //
     /// Fetch by user id.
     Id {
         /// The unique user identifier.

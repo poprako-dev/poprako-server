@@ -31,6 +31,7 @@ use crate::shared::RdbContext;
 /// Background worker that polls the `t_local_message` table, dispatches by topic,
 /// and completes or fails each record.
 pub struct RdbPromHandler<N, R, I, D> {
+    //
     /// Transaction coordinator used for handler-level database operations.
     pub nucl: N,
 

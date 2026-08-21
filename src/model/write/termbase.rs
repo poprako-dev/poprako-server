@@ -1,8 +1,11 @@
 //! Domain models for team- and comic-scoped terminology bases.
 
+use crate::model::write::term::TermImport;
+
 /// The data needed to create a terminology base.
 #[cfg_attr(test, derive(Clone))]
 pub struct TermbaseEntry {
+    //
     /// The unique identifier for the new terminology base.
     pub id: String,
 
@@ -20,9 +23,21 @@ pub struct TermbaseEntry {
     pub creator_id: String,
 }
 
+/// Portable terminology-base content supplied for import.
+pub struct TermbaseImport {
+    //
+    /// Display name for the imported terminology base.
+    pub name: String,
+    /// Optional description for the imported terminology base.
+    pub description: Option<String>,
+    /// Portable terminology entries included in the document.
+    pub terms: Vec<TermImport>,
+}
+
 /// Mutable terminology-base profile fields.
 #[cfg_attr(test, derive(Clone))]
 pub struct TermbaseRepl {
+    //
     /// The unique identifier of the termbase to update.
     pub id: String,
 

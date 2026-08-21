@@ -1,5 +1,6 @@
 //! RDB-backed unit repository.
 
+// Transaction-scoped unit operations.
 mod step_impl;
 
 /// Unit RDB integration tests.

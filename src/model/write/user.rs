@@ -3,6 +3,7 @@
 /// The data needed to insert a new user row.
 #[cfg_attr(test, derive(Clone))]
 pub struct UserEntry {
+    //
     /// Server-assigned unique user identifier.
     pub id: String,
 
@@ -17,6 +18,7 @@ pub struct UserEntry {
 
 /// Mutable user profile fields replaced together.
 pub struct UserInfoRepl {
+    //
     /// The user identifier.
     pub id: String,
 
@@ -28,6 +30,7 @@ pub struct UserInfoRepl {
 
 /// A user's credential fields replaced together.
 pub struct UserCredsRepl {
+    //
     /// The user identifier.
     pub id: String,
 
@@ -37,6 +40,7 @@ pub struct UserCredsRepl {
 
 /// A user's avatar upload state replaced together.
 pub struct UserAvatarRepl {
+    //
     /// The user identifier.
     pub id: String,
 
@@ -55,6 +59,7 @@ pub struct UserAvatarRepl {
 /// and the version number that must match when marking the upload complete.
 #[cfg_attr(test, derive(Clone))]
 pub struct UserAvatarReservation {
+    //
     /// Generated object-storage key for the client to upload the new avatar to.
     pub object_key: String,
     /// Previous avatar key to delete after the new upload succeeds, absent when there was no prior avatar.

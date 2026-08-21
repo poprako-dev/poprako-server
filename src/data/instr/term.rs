@@ -11,6 +11,7 @@ use utoipa::ToSchema;
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateTermInstr {
+    //
     /// Parent terminology base identifier.
     pub termbase_id: String,
 
@@ -26,6 +27,7 @@ pub struct CreateTermInstr {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateTermInfoInstr {
+    //
     /// Identifier of the terminology entry to update.
     pub id: String,
 
@@ -40,6 +42,7 @@ pub struct UpdateTermInfoInstr {
 /// Input parameters for listing terms inside one terminology base.
 #[derive(Debug)]
 pub struct ListTermInfosInstr {
+    //
     /// Parent terminology base identifier.
     pub termbase_id: String,
 

@@ -34,6 +34,7 @@ pub enum FindAssignmentInfo<'a, 'b> {
 #[derive(Oper)]
 #[oper(output = AssignmentInfo)]
 pub struct GetAssignmentInfo<'a, 'b> {
+    //
     /// Assignment identifier.
     pub id: &'a str,
     /// Assignment inclusion options.
@@ -74,6 +75,7 @@ pub enum ListAssignmentInfos<'a, 'b> {
 #[derive(Oper)]
 #[oper(output = Vec<AssignmentInfo>)]
 pub enum ListAssignmentInfosExcluded<'a> {
+    //
     /// Lists and locks by chapter.
     Chapter {
         /// Chapter identifier.

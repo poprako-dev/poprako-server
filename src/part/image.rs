@@ -10,6 +10,7 @@ use crate::result::BaseRest;
 
 /// Constraints bound into a presigned image upload request.
 pub struct ImageUploadSpec<'a> {
+    //
     /// Storage key identifying the target object path.
     pub object_key: &'a str,
     /// MIME type the client must declare when uploading.
@@ -20,6 +21,7 @@ pub struct ImageUploadSpec<'a> {
 
 /// A presigned upload URL and the headers the client must send unchanged.
 pub struct ImageUploadSlot {
+    //
     /// Presigned URL the client uses for the direct upload.
     pub url: Url,
     /// HTTP headers the client must include verbatim with the upload request.

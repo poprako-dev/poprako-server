@@ -1,5 +1,6 @@
 //! RDB-backed user repository.
 
+// Account creation, credentials, activity, and deletion.
 mod account;
 // Avatar reservation and upload state.
 mod avatar;

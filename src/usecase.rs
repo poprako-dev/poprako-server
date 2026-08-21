@@ -70,6 +70,8 @@ pub mod team;
 pub mod term;
 /// Termbase management use cases.
 pub mod termbase;
+/// Terminology-base native import and export use cases.
+pub mod termbase_port;
 /// Unit ordering use cases.
 pub mod unit;
 /// User management use cases.

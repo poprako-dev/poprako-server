@@ -7,6 +7,7 @@ use crate::shared::RdbCore;
 
 /// Owns the lifecycle of the fixed production periodic-job composition.
 pub struct Sched {
+    //
     /// Shared cancellation signal for every explicitly composed job.
     token: CancellationToken,
 

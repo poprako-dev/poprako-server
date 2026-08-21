@@ -1,5 +1,6 @@
 //! Includes module declarations and private declarative macros.
 
+// Include-framework declarative macros.
 #[macro_use]
 mod macros;
 // Framework include helper traits.

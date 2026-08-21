@@ -11,6 +11,7 @@ use utoipa::ToSchema;
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct RegisterAuthInstr {
+    //
     /// Unique user identifier for authentication.
     pub qid: String,
     /// Display name for the user.
@@ -27,6 +28,7 @@ pub struct RegisterAuthInstr {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct LoginAuthInstr {
+    //
     /// Unique user identifier for authentication.
     pub qid: String,
     /// User password.

@@ -13,6 +13,7 @@ pub struct ChapterPublishedEvent {
 ///
 /// [`ChapterWorkflowCompleted`]: crate::part::effect::event::Event::ChapterWorkflowCompleted
 pub struct ChapterWorkflowCompletedEvent {
+    //
     /// Unique identifier of the chapter whose workflow completed.
     pub chapter_id: String,
     /// The final stage that was reached in the completed workflow.

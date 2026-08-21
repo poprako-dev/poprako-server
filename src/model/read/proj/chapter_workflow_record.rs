@@ -9,6 +9,7 @@ use crate::value::chapter_workflow_record::{
 /// One immutable activity record attached to a chapter workflow.
 #[derive(Clone)]
 pub struct ChapterWorkflowRecordInfo {
+    //
     /// Unique record identifier.
     pub id: String,
     /// Chapter that owns this record.

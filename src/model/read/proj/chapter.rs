@@ -30,6 +30,7 @@ use crate::value::chapter::StageMask;
 /// [`StagePhase`] values independently.
 #[derive(Clone)]
 pub struct ChapterInfo {
+    //
     /// Unique identifier for the chapter.
     pub id: String,
     /// Foreign key to the parent comic this chapter belongs to.

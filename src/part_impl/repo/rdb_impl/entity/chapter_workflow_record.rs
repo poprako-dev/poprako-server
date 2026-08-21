@@ -168,6 +168,7 @@ fn decode_payload(
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_chapter_workflow_record)]
 pub struct ChapterWorkflowRecordInfoRow {
+    //
     pub f_id: String,
     pub f_chapter_id: String,
     pub f_actor_user_id: Option<String>,
@@ -232,6 +233,7 @@ impl TryFrom<ChapterWorkflowRecordInfoRow> for ChapterWorkflowRecordInfo {
 #[derive(Insertable)]
 #[diesel(table_name = t_chapter_workflow_record)]
 pub struct ChapterWorkflowRecordEntryRow<'a> {
+    //
     pub f_id: &'a str,
     pub f_chapter_id: &'a str,
     pub f_actor_user_id: Option<&'a str>,

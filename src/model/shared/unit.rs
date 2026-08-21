@@ -3,6 +3,7 @@
 /// Page-relative Unit coordinates.
 #[derive(Debug, Clone, PartialEq)]
 pub struct UnitCoord {
+    //
     /// Horizontal page-relative coordinate.
     pub x_coord: f64,
     /// Vertical page-relative coordinate.
@@ -12,6 +13,7 @@ pub struct UnitCoord {
 /// Translation content together with its server-derived editor.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UnitTranslation {
+    //
     /// Current translated text.
     pub translated_text: String,
     /// ID of the translator assigning this content.
@@ -21,6 +23,7 @@ pub struct UnitTranslation {
 /// Revision content and approval state together with its server-derived editor.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UnitRevision {
+    //
     /// Whether the revision is approved.
     pub is_proofread: bool,
     /// Current proofread text.

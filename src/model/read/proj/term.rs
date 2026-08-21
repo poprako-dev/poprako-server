@@ -5,6 +5,7 @@ use time::OffsetDateTime;
 /// A persisted terminology entry.
 #[cfg_attr(test, derive(Clone))]
 pub struct TermInfo {
+    //
     /// The unique identifier for this terminology entry.
     pub id: String,
 

@@ -19,6 +19,7 @@ use crate::value::role::RoleMask;
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct AssignmentInfoView {
+    //
     /// Unique identifier of the assignment.
     pub id: String,
 

@@ -6,4 +6,4 @@ port = 8888
 user_avatar_limit = 524288
 team_avatar_limit = 524288
 comic_cover_limit = 2097152
-page_image_limit = 26214400
+page_image_limit = 31457280

@@ -13,6 +13,7 @@ use crate::value::role::RoleMask;
 #[derive(Serialize)]
 #[serde(untagged)]
 pub enum ArchivedChapterWorkflowRecordDetail {
+    //
     /// No details for chapter creation, pinning, or unpinning.
     Empty {},
 
