@@ -212,7 +212,7 @@ async fn create_team_member_creates_comment() {
     seed_member(&mock, "viewer-user", "team-1");
 
     let created_comment =
-        create((&mock, &mock), token("viewer-user"), create_instr("team-1"))
+        create(&mock, token("viewer-user"), create_instr("team-1"))
             .await
             .ok()
             .unwrap();
@@ -233,14 +233,10 @@ async fn create_non_member_is_rejected_without_mutation() {
     //
     let mock = Mock::new();
 
-    let err = create(
-        (&mock, &mock),
-        token("outsider-user"),
-        create_instr("team-1"),
-    )
-    .await
-    .err()
-    .unwrap();
+    let err = create(&mock, token("outsider-user"), create_instr("team-1"))
+        .await
+        .err()
+        .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Perm);
 

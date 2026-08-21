@@ -9,7 +9,7 @@ use diesel::prelude::{
     SelectableHelper as _,
 };
 use diesel_async::RunQueryDsl as _;
-use poprako_orchestra::{AtLeast, Level, Run, Step};
+use poprako_orchestra::Run;
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
@@ -17,9 +17,8 @@ use poprako_util::i18n::trl;
 use crate::model::read::proj::announcement::AnnouncementInfo;
 use crate::model::read::spec::announcement::AnnouncementListSpec;
 use crate::model::write::announcement::{AnnouncementEntry, AnnouncementRepl};
-use crate::part::nucl::RepeatableRead;
 use crate::part::repo::oper::announcement::{
-    CreateAnnouncement, DeleteAnnouncement, GetAnnouncementInfoExcluded,
+    CreateAnnouncement, DeleteAnnouncement, GetAnnouncementInfo,
     ListAnnouncementInfos, UpdateAnnouncement,
 };
 use crate::part_impl::repo::HybRepo;
@@ -31,20 +30,16 @@ use crate::part_impl::repo::rdb_impl::schema::t_announcement::dsl::{
     f_content, f_created_at, f_id, f_team_id, f_title, t_announcement,
 };
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::shared::RdbConn;
 use crate::shared::result::diesel;
-use crate::shared::{RdbConn, RdbContext};
 
-// Loads and locks an announcement row for a subsequent mutation.
+// Loads an announcement row by identifier.
 #[instrument(level = "info", skip_all)]
-async fn get_info_excluded(
-    conn: &mut RdbConn,
-    id: &str,
-) -> BaseRest<AnnouncementInfo> {
+async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<AnnouncementInfo> {
     //
     let row = t_announcement
         .filter(f_id.eq(id))
         .select(AnnouncementInfoRow::as_select())
-        .for_update()
         .get_result::<AnnouncementInfoRow>(conn)
         .await
         .optional()
@@ -58,7 +53,7 @@ async fn get_info_excluded(
             err_variant = ?ExpectedVariant::Args,
             err_message = %err_message,
             announcement_id = %id,
-            operation = "lock announcement info",
+            operation = "get announcement info",
             "expected error: announcement not found",
         );
 
@@ -165,86 +160,52 @@ impl Run<ListAnnouncementInfos<'_>> for HybRepo {
     }
 }
 
-impl<L> Step<CreateAnnouncement<'_>, RdbContext<L>> for HybRepo
-where
-    L: Level + Send + AtLeast<RepeatableRead>,
-{
-    // Error type for the Step trait impl on announcement creation.
-    type Level = RepeatableRead;
-
-    // Defines the adapter error exposed by this operation.
+impl Run<CreateAnnouncement<'_>> for HybRepo {
+    // Error type for the announcement creation query.
     type Error = BaseError;
 
-    // Runs announcement creation within an existing transaction.
+    // Creates an announcement independently.
     #[instrument(level = "info", skip_all)]
-    async fn step(
+    async fn run(
         &self,
-        context: &mut RdbContext<L>,
         oper: &CreateAnnouncement<'_>,
     ) -> BaseRest<AnnouncementInfo> {
-        create(context.conn(), oper.entry).await
+        submit_query!(self.core, create, oper.entry)
     }
 }
 
-impl<L> Step<GetAnnouncementInfoExcluded<'_>, RdbContext<L>> for HybRepo
-where
-    L: Level + Send + AtLeast<RepeatableRead>,
-{
-    // Error level required for the locked announcement read.
-    type Level = RepeatableRead;
-
-    // Defines the adapter error exposed by this operation.
+impl Run<GetAnnouncementInfo<'_>> for HybRepo {
+    // Error type for the announcement lookup query.
     type Error = BaseError;
 
-    // Loads and locks the announcement inside the caller's transaction.
+    // Loads an announcement independently.
     #[instrument(level = "info", skip_all)]
-    async fn step(
+    async fn run(
         &self,
-        context: &mut RdbContext<L>,
-        oper: &GetAnnouncementInfoExcluded<'_>,
+        oper: &GetAnnouncementInfo<'_>,
     ) -> BaseRest<AnnouncementInfo> {
-        get_info_excluded(context.conn(), oper.id).await
+        submit_query!(self.core, get_info, oper.id)
     }
 }
 
-impl<L> Step<UpdateAnnouncement<'_>, RdbContext<L>> for HybRepo
-where
-    L: Level + Send + AtLeast<RepeatableRead>,
-{
-    // Error level required for announcement updates.
-    type Level = RepeatableRead;
-
-    // Defines the adapter error exposed by this operation.
+impl Run<UpdateAnnouncement<'_>> for HybRepo {
+    // Error type for the announcement update query.
     type Error = BaseError;
 
-    // Updates the announcement inside the caller's transaction.
+    // Updates an announcement independently.
     #[instrument(level = "info", skip_all)]
-    async fn step(
-        &self,
-        context: &mut RdbContext<L>,
-        oper: &UpdateAnnouncement<'_>,
-    ) -> BaseRest<()> {
-        update_info(context.conn(), oper.update).await
+    async fn run(&self, oper: &UpdateAnnouncement<'_>) -> BaseRest<()> {
+        submit_query!(self.core, update_info, oper.update)
     }
 }
 
-impl<L> Step<DeleteAnnouncement<'_>, RdbContext<L>> for HybRepo
-where
-    L: Level + Send + AtLeast<RepeatableRead>,
-{
-    // Error level required for announcement deletion.
-    type Level = RepeatableRead;
-
-    // Defines the adapter error exposed by this operation.
+impl Run<DeleteAnnouncement<'_>> for HybRepo {
+    // Error type for the announcement deletion query.
     type Error = BaseError;
 
-    // Deletes the announcement inside the caller's transaction.
+    // Deletes an announcement independently.
     #[instrument(level = "info", skip_all)]
-    async fn step(
-        &self,
-        context: &mut RdbContext<L>,
-        oper: &DeleteAnnouncement<'_>,
-    ) -> BaseRest<()> {
-        delete_announcement(context.conn(), oper.id).await
+    async fn run(&self, oper: &DeleteAnnouncement<'_>) -> BaseRest<()> {
+        submit_query!(self.core, delete_announcement, oper.id)
     }
 }

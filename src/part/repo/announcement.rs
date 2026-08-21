@@ -3,24 +3,21 @@
 use poprako_orchestra::drive;
 
 use crate::part::repo::oper::announcement::{
-    CreateAnnouncement, DeleteAnnouncement, GetAnnouncementInfoExcluded,
+    CreateAnnouncement, DeleteAnnouncement, GetAnnouncementInfo,
     ListAnnouncementInfos, UpdateAnnouncement,
 };
 use crate::result::BaseError;
 
 /// Announcement repository operations.
 ///
-/// Independent lists use [`poprako_orchestra::Run`], while creation steps through the context
-/// coordinated by the caller.
+/// Announcement operations execute independently through [`poprako_orchestra::Run`].
 #[drive(
     context = C,
     error = BaseError,
     run(
         for<'a> ListAnnouncementInfos<'a>,
-    ),
-    step(
         for<'a> CreateAnnouncement<'a>,
-        for<'a> GetAnnouncementInfoExcluded<'a>,
+        for<'a> GetAnnouncementInfo<'a>,
         for<'a> UpdateAnnouncement<'a>,
         for<'a> DeleteAnnouncement<'a>,
     ),

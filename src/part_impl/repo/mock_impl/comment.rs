@@ -2,18 +2,15 @@
 
 use std::cmp::Reverse;
 
-use poprako_orchestra::{Run, Step};
+use poprako_orchestra::Run;
 use tracing::instrument;
 
 use crate::model::read::proj::comment::CommentInfo;
 use crate::model::read::proj::user::UserInfo;
 use crate::model::read::spec::comment::CommentListSpec;
 use crate::model::write::comment::CommentEntry;
-use crate::part::nucl::RepeatableRead;
 use crate::part::repo::oper::comment::{CreateComment, ListCommentInfos};
-use crate::part_impl::repo::mock_impl::{
-    Mock, MockContext, MockState, expected, now,
-};
+use crate::part_impl::repo::mock_impl::{Mock, MockState, expected, now};
 use crate::result::{BaseError, BaseRest, accept};
 use crate::value::comment::CommentInclOpt;
 
@@ -137,20 +134,16 @@ impl Run<ListCommentInfos<'_>> for Mock {
     }
 }
 
-impl Step<CreateComment<'_>, MockContext> for Mock {
+impl Run<CreateComment<'_>> for Mock {
     // Internal type alias for `Error`.
-    type Level = RepeatableRead;
-
-    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
-    async fn step(
-        &self,
-        context: &mut MockContext,
-        oper: &CreateComment<'_>,
-    ) -> BaseRest<CommentInfo> {
-        create_comment(&mut context.state, oper.entry)
+    // Internal implementation of `run`.
+    async fn run(&self, oper: &CreateComment<'_>) -> BaseRest<CommentInfo> {
+        //
+        let mut state = self.state.lock().unwrap();
+
+        create_comment(&mut state, oper.entry)
     }
 }

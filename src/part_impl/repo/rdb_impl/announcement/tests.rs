@@ -1,21 +1,17 @@
-// announcement_roundtrip_uses_testcontainer(CreateAnnouncement, GetAnnouncementInfoExcluded, ListAnnouncementInfos, UpdateAnnouncement, DeleteAnnouncement)(positive): announcement repo creates, updates, lists, and deletes in an isolated PostgreSQL container.
-// announcement_roundtrip_uses_testcontainer(GetAnnouncementInfoExcluded)(negative): deleted announcement should return the expected not-found error.
+// announcement_roundtrip_uses_testcontainer(CreateAnnouncement, GetAnnouncementInfo, ListAnnouncementInfos, UpdateAnnouncement, DeleteAnnouncement)(positive): announcement repo creates, updates, lists, and deletes in an isolated PostgreSQL container.
+// announcement_roundtrip_uses_testcontainer(GetAnnouncementInfo)(negative): deleted announcement should return the expected not-found error.
 
 use super::*;
 
-use poprako_orchestra::Nucl as _;
-
 use crate::model::read::spec::announcement::AnnouncementListSpec;
 use crate::model::write::announcement::{AnnouncementEntry, AnnouncementRepl};
-use crate::part::nucl::RepeatableRead;
 use crate::part::repo::oper::announcement::{
-    CreateAnnouncement, DeleteAnnouncement, GetAnnouncementInfoExcluded,
+    CreateAnnouncement, DeleteAnnouncement, GetAnnouncementInfo,
     ListAnnouncementInfos, UpdateAnnouncement,
 };
-use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::test_shared;
-use crate::result::{BaseError, ExpectedVariant};
+use crate::result::ExpectedVariant;
 use crate::shared::RdbCore;
 use crate::test_util::assert_expected_variant;
 use crate::value::announcement::AnnouncementInclOpt;
@@ -32,8 +28,6 @@ pub async fn announcement_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let repo = HybRepo::new(shared.clone());
 
-    let nucl = RdbNucl::<RepeatableRead>::new(shared.clone());
-
     let announcement_entry = AnnouncementEntry {
         id: format!("{}announcement", PREFIX),
         team_id: team_fixture.team_entry.id.clone(),
@@ -42,17 +36,8 @@ pub async fn announcement_roundtrip_uses_testcontainer(shared: RdbCore) {
         content: "announcement".into(),
     };
 
-    nucl.coord(async |context| {
-        //
-        repo.step(
-            context,
-            &CreateAnnouncement {
-                entry: &announcement_entry,
-            },
-        )
-        .await?;
-
-        Ok::<(), BaseError>(())
+    repo.run(&CreateAnnouncement {
+        entry: &announcement_entry,
     })
     .await
     .ok()
@@ -64,25 +49,15 @@ pub async fn announcement_roundtrip_uses_testcontainer(shared: RdbCore) {
         content: "updated announcement".into(),
     };
 
-    nucl.coord(async |context| {
-        //
-        repo.step(
-            context,
-            &GetAnnouncementInfoExcluded {
-                id: &announcement_entry.id,
-            },
-        )
-        .await?;
+    repo.run(&GetAnnouncementInfo {
+        id: &announcement_entry.id,
+    })
+    .await
+    .ok()
+    .unwrap();
 
-        repo.step(
-            context,
-            &UpdateAnnouncement {
-                update: &announcement_repl,
-            },
-        )
-        .await?;
-
-        Ok::<(), BaseError>(())
+    repo.run(&UpdateAnnouncement {
+        update: &announcement_repl,
     })
     .await
     .ok()
@@ -114,48 +89,29 @@ pub async fn announcement_roundtrip_uses_testcontainer(shared: RdbCore) {
         team_fixture.user_entry.id
     );
 
-    nucl.coord(async |context| {
-        //
-        repo.step(
-            context,
-            &GetAnnouncementInfoExcluded {
-                id: &announcement_entry.id,
-            },
-        )
-        .await?;
-
-        repo.step(
-            context,
-            &DeleteAnnouncement {
-                id: &announcement_entry.id,
-            },
-        )
-        .await?;
-
-        Ok::<(), BaseError>(())
+    repo.run(&GetAnnouncementInfo {
+        id: &announcement_entry.id,
     })
     .await
     .ok()
     .unwrap();
 
-    let missing_error = nucl
-        .coord(async |context| {
-            //
-            repo.step(
-                context,
-                &GetAnnouncementInfoExcluded {
-                    id: &announcement_entry.id,
-                },
-            )
-            .await?;
+    repo.run(&DeleteAnnouncement {
+        id: &announcement_entry.id,
+    })
+    .await
+    .ok()
+    .unwrap();
 
-            Ok::<(), BaseError>(())
+    let missing_error = repo
+        .run(&GetAnnouncementInfo {
+            id: &announcement_entry.id,
         })
         .await
         .err()
         .unwrap();
 
-    assert_expected_variant(missing_error.into(), ExpectedVariant::Args);
+    assert_expected_variant(missing_error, ExpectedVariant::Args);
 
     let announcement_infos = repo
         .run(&ListAnnouncementInfos {

@@ -71,8 +71,8 @@ pub async fn create(
     Json(instr): Json<CreateAnnouncementInstr>,
 ) -> HttpResult<CreateAnnouncementVal> {
     //
-    usecase::announcement::create::<_, RdbContext<RepeatableRead>, HybRepo>(
-        (harn.nucl().repeatable_read(), harn.repo()),
+    usecase::announcement::create::<RdbContext<RepeatableRead>, HybRepo>(
+        harn.repo(),
         user_token,
         instr,
     )
@@ -139,12 +139,8 @@ pub async fn update_info(
     //
     ensure_path_matches_body_id(&announcement_id, &instr.id)?;
 
-    usecase::announcement::update_info::<
-        _,
-        RdbContext<RepeatableRead>,
-        HybRepo,
-    >(
-        (harn.nucl().repeatable_read(), harn.repo()),
+    usecase::announcement::update_info::<RdbContext<RepeatableRead>, HybRepo>(
+        harn.repo(),
         user_token,
         instr,
     )
@@ -172,8 +168,8 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::announcement::delete::<_, RdbContext<RepeatableRead>, HybRepo>(
-        (harn.nucl().repeatable_read(), harn.repo()),
+    usecase::announcement::delete::<RdbContext<RepeatableRead>, HybRepo>(
+        harn.repo(),
         user_token,
         announcement_id,
     )

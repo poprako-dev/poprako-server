@@ -65,8 +65,8 @@ pub async fn create(
     Json(instr): Json<CreateCommentInstr>,
 ) -> HttpResult<CreateCommentVal> {
     //
-    usecase::comment::create::<_, RdbContext<RepeatableRead>, HybRepo>(
-        (harn.nucl().repeatable_read(), harn.repo()),
+    usecase::comment::create::<RdbContext<RepeatableRead>, HybRepo>(
+        harn.repo(),
         user_token,
         instr,
     )

@@ -2,21 +2,18 @@
 
 use std::cmp::Reverse;
 
-use poprako_orchestra::{Run, Step};
+use poprako_orchestra::Run;
 use tracing::instrument;
 
 use crate::model::read::proj::announcement::AnnouncementInfo;
 use crate::model::read::proj::user::UserInfo;
 use crate::model::read::spec::announcement::AnnouncementListSpec;
 use crate::model::write::announcement::{AnnouncementEntry, AnnouncementRepl};
-use crate::part::nucl::RepeatableRead;
 use crate::part::repo::oper::announcement::{
-    CreateAnnouncement, DeleteAnnouncement, GetAnnouncementInfoExcluded,
+    CreateAnnouncement, DeleteAnnouncement, GetAnnouncementInfo,
     ListAnnouncementInfos, UpdateAnnouncement,
 };
-use crate::part_impl::repo::mock_impl::{
-    Mock, MockContext, MockState, expected, now,
-};
+use crate::part_impl::repo::mock_impl::{Mock, MockState, expected, now};
 use crate::result::{BaseError, BaseRest, accept};
 use crate::value::announcement::AnnouncementInclOpt;
 
@@ -189,74 +186,64 @@ impl Run<ListAnnouncementInfos<'_>> for Mock {
     }
 }
 
-impl Step<CreateAnnouncement<'_>, MockContext> for Mock {
+impl Run<CreateAnnouncement<'_>> for Mock {
     // Internal type alias for `Error`.
-    type Level = RepeatableRead;
-
-    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
-    async fn step(
+    // Internal implementation of `run`.
+    async fn run(
         &self,
-        context: &mut MockContext,
         oper: &CreateAnnouncement<'_>,
     ) -> BaseRest<AnnouncementInfo> {
-        create_announcement(&mut context.state, oper.entry)
+        //
+        let mut state = self.state.lock().unwrap();
+
+        create_announcement(&mut state, oper.entry)
     }
 }
 
-impl Step<GetAnnouncementInfoExcluded<'_>, MockContext> for Mock {
+impl Run<GetAnnouncementInfo<'_>> for Mock {
     // Internal type alias for `Error`.
-    type Level = RepeatableRead;
-
-    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Loads an announcement from the transaction snapshot.
-    async fn step(
+    // Loads an announcement independently.
+    async fn run(
         &self,
-        context: &mut MockContext,
-        oper: &GetAnnouncementInfoExcluded<'_>,
+        oper: &GetAnnouncementInfo<'_>,
     ) -> BaseRest<AnnouncementInfo> {
-        get_announcement_info(&context.state, oper.id)
+        //
+        let state = self.state.lock().unwrap();
+
+        get_announcement_info(&state, oper.id)
     }
 }
 
-impl Step<UpdateAnnouncement<'_>, MockContext> for Mock {
+impl Run<UpdateAnnouncement<'_>> for Mock {
     // Internal type alias for `Error`.
-    type Level = RepeatableRead;
-
-    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Updates an announcement in the transaction snapshot.
-    async fn step(
-        &self,
-        context: &mut MockContext,
-        oper: &UpdateAnnouncement<'_>,
-    ) -> BaseRest<()> {
-        update_announcement(&mut context.state, oper.update)
+    // Updates an announcement independently.
+    async fn run(&self, oper: &UpdateAnnouncement<'_>) -> BaseRest<()> {
+        //
+        let mut state = self.state.lock().unwrap();
+
+        update_announcement(&mut state, oper.update)
     }
 }
 
-impl Step<DeleteAnnouncement<'_>, MockContext> for Mock {
+impl Run<DeleteAnnouncement<'_>> for Mock {
     // Internal type alias for `Error`.
-    type Level = RepeatableRead;
-
-    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Deletes an announcement from the transaction snapshot.
-    async fn step(
-        &self,
-        context: &mut MockContext,
-        oper: &DeleteAnnouncement<'_>,
-    ) -> BaseRest<()> {
-        delete_announcement(&mut context.state, oper.id)
+    // Deletes an announcement independently.
+    async fn run(&self, oper: &DeleteAnnouncement<'_>) -> BaseRest<()> {
+        //
+        let mut state = self.state.lock().unwrap();
+
+        delete_announcement(&mut state, oper.id)
     }
 }

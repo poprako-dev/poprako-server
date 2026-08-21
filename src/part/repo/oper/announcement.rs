@@ -20,10 +20,10 @@ pub struct CreateAnnouncement<'a> {
     pub entry: &'a AnnouncementEntry,
 }
 
-/// Looks up and locks an announcement by identifier for mutation.
+/// Looks up an announcement by identifier.
 #[derive(Oper)]
 #[oper(output = AnnouncementInfo)]
-pub struct GetAnnouncementInfoExcluded<'a> {
+pub struct GetAnnouncementInfo<'a> {
     /// The announcement identifier.
     pub id: &'a str,
 }

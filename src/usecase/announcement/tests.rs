@@ -254,7 +254,7 @@ async fn create_team_admin_creates_announcement() {
     );
 
     let created_announcement =
-        create((&mock, &mock), token("admin-user"), create_instr("team-1"))
+        create(&mock, token("admin-user"), create_instr("team-1"))
             .await
             .unwrap();
 
@@ -281,11 +281,10 @@ async fn create_non_admin_member_is_rejected_without_mutation() {
         RoleMask::from(RoleField::TRANSLATOR),
     );
 
-    let err =
-        create((&mock, &mock), token("member-user"), create_instr("team-1"))
-            .await
-            .err()
-            .unwrap();
+    let err = create(&mock, token("member-user"), create_instr("team-1"))
+        .await
+        .err()
+        .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Perm);
 
@@ -297,14 +296,10 @@ async fn create_non_member_is_rejected_without_mutation() {
     //
     let mock = Mock::new();
 
-    let err = create(
-        (&mock, &mock),
-        token("outsider-user"),
-        create_instr("team-1"),
-    )
-    .await
-    .err()
-    .unwrap();
+    let err = create(&mock, token("outsider-user"), create_instr("team-1"))
+        .await
+        .err()
+        .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Perm);
 
@@ -330,13 +325,9 @@ async fn update_info_team_admin_replaces_announcement_content() {
         now(),
     ));
 
-    update_info(
-        (&mock, &mock),
-        token("admin-user"),
-        update_instr("announcement-1"),
-    )
-    .await
-    .unwrap();
+    update_info(&mock, token("admin-user"), update_instr("announcement-1"))
+        .await
+        .unwrap();
 
     let snapshot = mock.snapshot();
 
@@ -367,7 +358,7 @@ async fn update_info_non_admin_member_is_rejected_without_mutation() {
     ));
 
     let err = update_info(
-        (&mock, &mock),
+        &mock,
         token("member-user"),
         update_instr("announcement-1"),
     )
@@ -392,14 +383,10 @@ async fn update_info_missing_announcement_is_rejected_without_mutation() {
         RoleMask::from(RoleField::ADMIN),
     );
 
-    let err = update_info(
-        (&mock, &mock),
-        token("admin-user"),
-        update_instr("missing"),
-    )
-    .await
-    .err()
-    .unwrap();
+    let err = update_info(&mock, token("admin-user"), update_instr("missing"))
+        .await
+        .err()
+        .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Args);
 
@@ -425,7 +412,7 @@ async fn delete_team_admin_deletes_announcement() {
         now(),
     ));
 
-    delete((&mock, &mock), token("admin-user"), "announcement-1".into())
+    delete(&mock, token("admin-user"), "announcement-1".into())
         .await
         .unwrap();
 
@@ -451,14 +438,10 @@ async fn delete_non_admin_member_is_rejected_without_mutation() {
         now(),
     ));
 
-    let err = delete(
-        (&mock, &mock),
-        token("member-user"),
-        "announcement-1".into(),
-    )
-    .await
-    .err()
-    .unwrap();
+    let err = delete(&mock, token("member-user"), "announcement-1".into())
+        .await
+        .err()
+        .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Perm);
 
@@ -477,7 +460,7 @@ async fn delete_missing_announcement_is_rejected_without_mutation() {
         RoleMask::from(RoleField::ADMIN),
     );
 
-    let err = delete((&mock, &mock), token("admin-user"), "missing".into())
+    let err = delete(&mock, token("admin-user"), "missing".into())
         .await
         .err()
         .unwrap();
