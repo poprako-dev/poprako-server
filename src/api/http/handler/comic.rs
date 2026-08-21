@@ -273,6 +273,7 @@ pub async fn reserve_cover(
             harn.repo(),
             harn.prom(),
             harn.image_pool(),
+            &harn.config().image,
         ),
         user_token,
         comic_id,

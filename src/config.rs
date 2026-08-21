@@ -1,23 +1,37 @@
-//! Application configuration loaded from a JSON file at startup.
+//! Application configuration loaded from a TOML file at startup.
+
+mod http;
+// Image upload configuration.
+mod image;
+
+#[cfg(test)]
+mod tests;
 
 use anyhow::Context as _;
 use serde::Deserialize;
 
-/// Runtime configuration for the HTTP server.
+pub use crate::config::http::HttpConfig;
+pub use crate::config::image::ImageConfig;
+
+// Runtime configuration file loaded from the current working directory.
+const DEFAULT_FILE_NAME: &str = "app_config.toml";
+
+/// Runtime application configuration.
 #[derive(Debug, Deserialize)]
 pub struct AppConfig {
-    /// IP address or hostname the HTTP server binds to.
-    pub http_host: String,
-    /// TCP port the HTTP server listens on.
-    pub http_port: u16,
+    /// HTTP server configuration.
+    pub http: HttpConfig,
+
+    /// Image upload configuration.
+    pub image: ImageConfig,
 }
 
 impl AppConfig {
-    /// Reads the application configuration from `application_config.json` in the
+    /// Reads the application configuration from `app_config.toml` in the
     /// current working directory.
     pub async fn from_default_file() -> anyhow::Result<Self> {
         //
-        let content = tokio::fs::read_to_string("application_config.json")
+        let content = tokio::fs::read_to_string(DEFAULT_FILE_NAME)
             .await
             .inspect_err(|error| {
                 //
@@ -28,20 +42,30 @@ impl AppConfig {
                 );
             })
             .with_context(
-                || "[ApplicationConfig::from_default_file] Failed to read application_config.json",
+                || "[ApplicationConfig::from_default_file] Failed to read app_config.toml",
             )?;
 
-        serde_json::from_str(&content)
+        Self::parse(&content)
             .inspect_err(|error| {
                 //
                 tracing::error!(
                     operation = "parse_application_config",
-                    sdk_err = ?error,
-                    "JSON SDK deserialization error",
+                    config_err = ?error,
+                    "application configuration parsing or validation failed",
                 );
             })
             .with_context(
-                || "[ApplicationConfig::from_default_file] Failed to parse application_config.json",
+                || "[ApplicationConfig::from_default_file] Failed to parse app_config.toml",
             )
+    }
+
+    // Parses and validates runtime application configuration.
+    fn parse(content: &str) -> anyhow::Result<Self> {
+        //
+        let config = toml::from_str::<Self>(content)?;
+
+        config.image.validate()?;
+
+        Ok(config)
     }
 }

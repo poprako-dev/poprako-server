@@ -75,7 +75,7 @@ immediately after it.
 - [x] Remove the tracked zero-byte root `openapi.json`.
 - [x] Remove `docs/swagger.previous.json`; no active workflow needs
   it. It currently duplicates `docs/swagger.json` exactly.
-- [x] Keep `application_config.json` at the root because the active local
+- [x] Keep `app_config.toml` at the root because the active local
   startup path reads that exact filename; production uses the deploy copy.
 - [x] Remove legacy `poprako-sr` deployment names and
   `deploy/poprako-sr/`.

@@ -23,6 +23,7 @@ mod avatar;
 // reserve_avatar(reserve_avatar)(positive): replacing an avatar should enqueue delete and check messages.
 // reserve_avatar(reserve_avatar)(negative): missing team should rollback avatar and prom state.
 // reserve_avatar(reserve_avatar)(negative): put URL failure should propagate after transaction commit.
+// reserve_avatar(reserve_avatar)(negative): configured team avatar limit should reject oversized uploads.
 // mark_avatar_uploaded(mark_avatar_uploaded)(positive): matching version should mark the team avatar uploaded.
 // mark_avatar_uploaded(mark_avatar_uploaded)(positive): repeated matching version confirmation should remain successful.
 // mark_avatar_uploaded(mark_avatar_uploaded)(negative): stale version should leave avatar unuploaded.
@@ -35,6 +36,7 @@ use super::*;
 
 use time::OffsetDateTime;
 
+use crate::config::ImageConfig;
 use crate::data::instr::team::{
     CreateTeamInstr, ListTeamInfosInstr, MarkTeamAvatarUploadedInstr,
     ReserveTeamAvatarInstr, UpdateTeamInfoInstr,
@@ -51,7 +53,7 @@ use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::fixture::{team, workset};
 use crate::test_util::{
-    assert_expected_message, assert_expected_variant,
+    IMAGE_CONFIG, assert_expected_message, assert_expected_variant,
     assert_one_image_check_record,
 };
 use crate::usecase::team::delete::delete;

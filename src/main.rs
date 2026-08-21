@@ -54,6 +54,14 @@ async fn main() -> anyhow::Result<()> {
         .await
         .context("failed to load application configuration")?;
 
+    let http_addr = ToSocketAddrs::to_socket_addrs(&format!(
+        "{}:{}",
+        config.http.host, config.http.port
+    ))
+    .into_iter()
+    .find_map(|mut addrs| addrs.next())
+    .context("no address resolved for HTTP listen address")?;
+
     let core = RdbCore::from_env()?;
 
     let nucl = HybNucl::new(
@@ -75,15 +83,7 @@ async fn main() -> anyhow::Result<()> {
         Sched::new(core.clone()),
     );
 
-    let harn = Harn::new(nucl, repo, prom, auth, image_pool, develop);
-
-    let http_addr = ToSocketAddrs::to_socket_addrs(&format!(
-        "{}:{}",
-        config.http_host, config.http_port
-    ))
-    .into_iter()
-    .find_map(|mut addrs| addrs.next())
-    .context("no address resolved for HTTP listen address")?;
+    let harn = Harn::new(config, nucl, repo, prom, auth, image_pool, develop);
 
     let serve_rest = poprako_server::serve(harn.clone(), http_addr).await;
 

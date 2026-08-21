@@ -33,7 +33,7 @@ cargo run -p poprako-server --bin poprako-server
 ```
 
 The API is served under `/api/v1` and listens on the address configured in
-`application_config.json`.
+`app_config.toml`.
 
 ## Common commands
 

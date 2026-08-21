@@ -1,5 +1,5 @@
 use super::{
-    ExpectedVariant, Mock, assert_expected_message, credential,
+    ExpectedVariant, IMAGE_CONFIG, Mock, assert_expected_message, credential,
     mark_avatar_uploaded, mark_instr, reserve_avatar, reserve_instr, token,
     user_with_avatar,
 };
@@ -15,7 +15,7 @@ async fn mark_avatar_uploaded_rejects_old_reservation_replay() {
     );
 
     let reserved = reserve_avatar(
-        (&mock, &mock, &mock, &mock),
+        (&mock, &mock, &mock, &mock, &IMAGE_CONFIG),
         token("user-1"),
         reserve_instr("png"),
     )

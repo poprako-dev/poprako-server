@@ -16,7 +16,7 @@ async fn reserve_chapter_pages_creates_pages_and_urls() {
     let before = OffsetDateTime::now_utc();
 
     let reserved = reserve_chapter_pages(
-        (&mock, &mock, &mock, &mock),
+        (&mock, &mock, &mock, &mock, &IMAGE_CONFIG),
         token("user-1"),
         ReserveChapterPagesInstr {
             chapter_id: "chapter-1".into(),
@@ -152,7 +152,7 @@ async fn reserve_chapter_pages_replaces_existing_manifest() {
     ));
 
     let result = reserve_chapter_pages(
-        (&mock, &mock, &mock, &mock),
+        (&mock, &mock, &mock, &mock, &IMAGE_CONFIG),
         token("user-1"),
         ReserveChapterPagesInstr {
             chapter_id: "chapter-1".into(),
@@ -215,7 +215,7 @@ async fn reserve_chapter_pages_preserves_pending_page_without_new_byte_len() {
     ));
 
     let reserved = reserve_chapter_pages(
-        (&mock, &mock, &mock, &mock),
+        (&mock, &mock, &mock, &mock, &IMAGE_CONFIG),
         token("user-1"),
         ReserveChapterPagesInstr {
             chapter_id: "chapter-1".into(),
@@ -268,7 +268,7 @@ async fn reserve_chapter_pages_resigns_pending_page_with_new_byte_len() {
     ));
 
     let reserved = reserve_chapter_pages(
-        (&mock, &mock, &mock, &mock),
+        (&mock, &mock, &mock, &mock, &IMAGE_CONFIG),
         token("user-1"),
         ReserveChapterPagesInstr {
             chapter_id: "chapter-1".into(),
@@ -322,7 +322,7 @@ async fn reserve_chapter_pages_rejects_new_page_without_new_byte_len() {
     ));
 
     let err = reserve_chapter_pages(
-        (&mock, &mock, &mock, &mock),
+        (&mock, &mock, &mock, &mock, &IMAGE_CONFIG),
         token("user-1"),
         ReserveChapterPagesInstr {
             chapter_id: "chapter-1".into(),
@@ -369,7 +369,7 @@ async fn reserve_chapter_pages_rejects_replacement_without_new_byte_len() {
     ));
 
     let err = reserve_chapter_pages(
-        (&mock, &mock, &mock, &mock),
+        (&mock, &mock, &mock, &mock, &IMAGE_CONFIG),
         token("user-1"),
         ReserveChapterPagesInstr {
             chapter_id: "chapter-1".into(),
@@ -418,7 +418,7 @@ async fn reserve_chapter_pages_replaces_explicit_image_and_deletes_old_key() {
     mock.seed_page(existing_page_info);
 
     let reserved = reserve_chapter_pages(
-        (&mock, &mock, &mock, &mock),
+        (&mock, &mock, &mock, &mock, &IMAGE_CONFIG),
         token("user-1"),
         ReserveChapterPagesInstr {
             chapter_id: "chapter-1".into(),
@@ -470,7 +470,7 @@ async fn reserve_chapter_pages_keeps_raw_pending_when_uploads_are_missing() {
     ));
 
     let reserved = reserve_chapter_pages(
-        (&mock, &mock, &mock, &mock),
+        (&mock, &mock, &mock, &mock, &IMAGE_CONFIG),
         token("user-1"),
         ReserveChapterPagesInstr {
             chapter_id: "chapter-1".into(),
@@ -520,7 +520,7 @@ async fn reserve_chapter_pages_rejects_invalid_count() {
     seed_scope(&mock);
 
     let err = reserve_chapter_pages(
-        (&mock, &mock, &mock, &mock),
+        (&mock, &mock, &mock, &mock, &IMAGE_CONFIG),
         token("user-1"),
         ReserveChapterPagesInstr {
             chapter_id: "chapter-1".into(),

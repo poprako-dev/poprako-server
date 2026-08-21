@@ -41,7 +41,7 @@ async fn reserve_cover_updates_state_enqueues_check_and_returns_put_url() {
     mock.seed_comic(comic("comic-1", "workset-1", 0));
 
     let reserved = reserve_cover(
-        (&mock, &mock, &mock, &mock),
+        (&mock, &mock, &mock, &mock, &IMAGE_CONFIG),
         token("user-1"),
         "comic-1".into(),
         reserve_instr(ImageExt::Png, 1),
@@ -80,7 +80,7 @@ async fn reserve_cover_rolls_back_missing_comic() {
     let mock = Mock::new();
 
     let err = reserve_cover(
-        (&mock, &mock, &mock, &mock),
+        (&mock, &mock, &mock, &mock, &IMAGE_CONFIG),
         token("user-1"),
         "missing".into(),
         reserve_instr(ImageExt::Png, 1),
@@ -213,7 +213,7 @@ async fn mark_cover_uploaded_rejects_old_reservation_replay() {
     });
 
     let reserved = reserve_cover(
-        (&mock, &mock, &mock, &mock),
+        (&mock, &mock, &mock, &mock, &IMAGE_CONFIG),
         token("user-1"),
         "comic-1".into(),
         reserve_instr(ImageExt::Png, 1),

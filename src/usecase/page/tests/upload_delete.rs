@@ -50,7 +50,7 @@ async fn published_chapter_rejects_page_image_writes() {
     seed_published_scope(&mock);
 
     let manifest_result = reserve_chapter_pages(
-        (&mock, &mock, &mock, &mock),
+        (&mock, &mock, &mock, &mock, &IMAGE_CONFIG),
         token("user-1"),
         ReserveChapterPagesInstr {
             chapter_id: "chapter-1".into(),
@@ -67,7 +67,7 @@ async fn published_chapter_rejects_page_image_writes() {
     assert!(matches!(manifest_result, Err(BaseError::Expected { .. })));
 
     let reserve_result = reserve_image(
-        (&mock, &mock, &mock, &mock),
+        (&mock, &mock, &mock, &mock, &IMAGE_CONFIG),
         token("user-1"),
         "page-1".into(),
         ReservePageImageInstr {
@@ -104,7 +104,7 @@ async fn assert_delayed_check_clears_unverified_image(
     seed_mark_scope(&mock);
 
     reserve_image(
-        (&mock, &mock, &mock, &mock),
+        (&mock, &mock, &mock, &mock, &IMAGE_CONFIG),
         token("user-1"),
         "page-1".into(),
         ReservePageImageInstr {
@@ -169,7 +169,7 @@ async fn mark_image_uploaded_rejects_stale_replay_then_accepts_current_version()
     ));
 
     let reserved = reserve_image(
-        (&mock, &mock, &mock, &mock),
+        (&mock, &mock, &mock, &mock, &IMAGE_CONFIG),
         token("user-1"),
         "page-1".into(),
         ReservePageImageInstr {

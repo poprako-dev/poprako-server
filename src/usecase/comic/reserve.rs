@@ -5,6 +5,7 @@ use tracing::instrument;
 
 use crate::complex::comic::{ComicComplex, ComicPermComplex};
 use crate::complex::image::ImageComplex;
+use crate::config::ImageConfig;
 use crate::data::instr::comic::ReserveComicCoverInstr;
 use crate::data::val::comic::ReserveComicCoverVal;
 use crate::data::view::image::ImageUploadSlotView;
@@ -25,9 +26,15 @@ use crate::usecase::internal::util::LoadMode;
 use crate::value::image::ImageKind;
 
 /// Reserves a new comic cover upload slot.
-#[instrument(level = "info", skip(nucl, repo, prom, image_pool))]
+#[instrument(level = "info", skip(nucl, repo, prom, image_pool, image_config))]
 pub async fn reserve_cover<N, C, R, P, I>(
-    (nucl, repo, prom, image_pool): (&N, &R, &P, &I),
+    (nucl, repo, prom, image_pool, image_config): (
+        &N,
+        &R,
+        &P,
+        &I,
+        &ImageConfig,
+    ),
     token: UserToken,
     id: String,
     instr: ReserveComicCoverInstr,
@@ -41,6 +48,7 @@ where
     I: ImagePool,
 {
     ImageComplex::ensure_byte_length(
+        image_config,
         instr.new_byte_len,
         ImageKind::ComicCover,
     )?;

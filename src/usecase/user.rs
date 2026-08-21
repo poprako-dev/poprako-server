@@ -16,6 +16,7 @@ use poprako_util::i18n::trl;
 
 use crate::complex::image::ImageComplex;
 use crate::complex::user::UserComplex;
+use crate::config::ImageConfig;
 use crate::data::instr::user::{
     MarkUserAvatarUploadedInstr, ReserveUserAvatarInstr, UpdateUserInfoInstr,
     UpdateUserPasswordInstr,
@@ -266,9 +267,15 @@ where
 /// * `I: ImagePool` — Generates the signed upload URL.
 ///
 /// [`team::reserve_avatar`]: super::team::reserve_avatar
-#[instrument(level = "info", skip(nucl, repo, prom, image_pool))]
+#[instrument(level = "info", skip(nucl, repo, prom, image_pool, image_config))]
 pub async fn reserve_avatar<N, C, R, P, I>(
-    (nucl, repo, prom, image_pool): (&N, &R, &P, &I),
+    (nucl, repo, prom, image_pool, image_config): (
+        &N,
+        &R,
+        &P,
+        &I,
+        &ImageConfig,
+    ),
     token: UserToken,
     instr: ReserveUserAvatarInstr,
 ) -> BaseRest<ReserveUserAvatarVal>
@@ -281,6 +288,7 @@ where
     I: ImagePool,
 {
     ImageComplex::ensure_byte_length(
+        image_config,
         instr.new_byte_len,
         ImageKind::UserAvatar,
     )?;

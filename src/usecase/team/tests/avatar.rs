@@ -10,7 +10,7 @@ async fn reserve_avatar_updates_state_enqueues_check_and_returns_put_url() {
     mock.seed_member(member("member-1", "user-1", "team-1"));
 
     let val = reserve_avatar(
-        (&mock, &mock, &mock, &mock),
+        (&mock, &mock, &mock, &mock, &IMAGE_CONFIG),
         token("user-1"),
         "team-1".into(),
         reserve_instr("png"),
@@ -53,7 +53,7 @@ async fn reserve_avatar_replacing_avatar_enqueues_delete_and_check() {
     mock.seed_member(member("member-1", "user-1", "team-1"));
 
     reserve_avatar(
-        (&mock, &mock, &mock, &mock),
+        (&mock, &mock, &mock, &mock, &IMAGE_CONFIG),
         token("user-1"),
         "team-1".into(),
         reserve_instr("jpg"),
@@ -82,7 +82,7 @@ async fn reserve_avatar_rolls_back_missing_team() {
     mock.seed_member(member("member-1", "user-1", "team-1"));
 
     let err = reserve_avatar(
-        (&mock, &mock, &mock, &mock),
+        (&mock, &mock, &mock, &mock, &IMAGE_CONFIG),
         token("user-1"),
         "team-1".into(),
         reserve_instr("png"),
@@ -110,7 +110,7 @@ async fn reserve_avatar_propagates_put_url_failure_after_commit() {
     mock.seed_member(member("member-1", "user-1", "team-1"));
 
     let err = reserve_avatar(
-        (&mock, &mock, &mock, &mock),
+        (&mock, &mock, &mock, &mock, &IMAGE_CONFIG),
         token("user-1"),
         "team-1".into(),
         reserve_instr("png"),
@@ -129,6 +129,31 @@ async fn reserve_avatar_propagates_put_url_failure_after_commit() {
     );
 
     assert_eq!(snapshot.prom_records.len(), 1);
+}
+
+#[tokio::test]
+async fn reserve_avatar_rejects_byte_length_above_configured_team_limit() {
+    //
+    let mock = Mock::new();
+
+    let image_config = ImageConfig {
+        team_avatar_limit: 4095,
+        ..IMAGE_CONFIG
+    };
+
+    let err = reserve_avatar(
+        (&mock, &mock, &mock, &mock, &image_config),
+        token("user-1"),
+        "team-1".into(),
+        reserve_instr("png"),
+    )
+    .await
+    .err()
+    .unwrap();
+
+    assert_expected_variant(err, ExpectedVariant::Args);
+
+    assert!(mock.snapshot().teams.is_empty());
 }
 
 #[tokio::test]
@@ -224,7 +249,7 @@ async fn mark_avatar_uploaded_rejects_old_reservation_replay() {
     mock.seed_member(member("member-1", "user-1", "team-1"));
 
     let reserved = reserve_avatar(
-        (&mock, &mock, &mock, &mock),
+        (&mock, &mock, &mock, &mock, &IMAGE_CONFIG),
         token("user-1"),
         "team-1".into(),
         reserve_instr("png"),
