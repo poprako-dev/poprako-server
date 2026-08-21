@@ -96,6 +96,76 @@
         }
       }
     },
+    "/api/v1/announcements/{announcement_id}": {
+      "put": {
+        "tags": [
+          "announcements"
+        ],
+        "summary": "`PUT /api/v1/announcements/{announcement_id}` — replace editable fields.",
+        "operationId": "update_info",
+        "parameters": [
+          {
+            "name": "announcement_id",
+            "in": "path",
+            "description": "Announcement ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAnnouncementInfoInstr"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Announcement updated"
+          },
+          "403": {
+            "description": "Team admin role required"
+          },
+          "422": {
+            "description": "Announcement not found or path mismatch"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "announcements"
+        ],
+        "summary": "`DELETE /api/v1/announcements/{announcement_id}` — delete an announcement.",
+        "operationId": "delete",
+        "parameters": [
+          {
+            "name": "announcement_id",
+            "in": "path",
+            "description": "Announcement ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Announcement deleted"
+          },
+          "403": {
+            "description": "Team admin role required"
+          },
+          "422": {
+            "description": "Announcement not found"
+          }
+        }
+      }
+    },
     "/api/v1/assignment-invitations": {
       "post": {
         "tags": [
@@ -10306,6 +10376,29 @@
             "type": "number",
             "format": "double",
             "description": "Vertical coordinate of the unit bounding box on the page."
+          }
+        }
+      },
+      "UpdateAnnouncementInfoInstr": {
+        "type": "object",
+        "description": "Input parameters for replacing an announcement's editable fields.",
+        "required": [
+          "id",
+          "title",
+          "content"
+        ],
+        "properties": {
+          "content": {
+            "type": "string",
+            "description": "Updated announcement body content."
+          },
+          "id": {
+            "type": "string",
+            "description": "Announcement identifier to update."
+          },
+          "title": {
+            "type": "string",
+            "description": "Updated announcement title."
           }
         }
       },

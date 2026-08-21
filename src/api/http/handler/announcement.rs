@@ -1,4 +1,4 @@
-//! Announcement handlers: create and list.
+//! Announcement handlers.
 
 use axum::Json;
 use axum::extract::{Extension, Path, State};
@@ -13,10 +13,14 @@ use utoipa::IntoParams;
 #[cfg(feature = "swagger")]
 use crate::api::http::result::HttpBody;
 
-use crate::api::http::result::{Accept as _, HttpResult};
+use crate::api::http::handler::util::ensure_path_matches_body_id;
+use crate::api::http::result::{
+    Accept as _, HttpNoContent, HttpResult, no_content,
+};
 use crate::api::http::state::AppHarn;
 use crate::data::instr::announcement::{
     CreateAnnouncementInstr, ListAnnouncementInfosInstr,
+    UpdateAnnouncementInfoInstr,
 };
 use crate::data::val::announcement::CreateAnnouncementVal;
 use crate::data::view::announcement::AnnouncementInfoView;
@@ -110,4 +114,70 @@ pub async fn list_infos(
     )
     .await?
     .accept(StatusCode::OK)
+}
+
+/// `PUT /api/v1/announcements/{announcement_id}` — replace editable fields.
+#[cfg_attr(feature = "swagger", utoipa::path(
+    put,
+    path = "/api/v1/announcements/{announcement_id}",
+    tag = "announcements",
+    params(("announcement_id" = String, Path, description = "Announcement ID")),
+    request_body = UpdateAnnouncementInfoInstr,
+    responses(
+        (status = 204, description = "Announcement updated"),
+        (status = 403, description = "Team admin role required"),
+        (status = 422, description = "Announcement not found or path mismatch"),
+    ),
+))]
+#[instrument(level = "info", skip_all)]
+pub async fn update_info(
+    State(harn): State<AppHarn>,
+    Path(announcement_id): Path<String>,
+    Extension(user_token): Extension<UserToken>,
+    Json(instr): Json<UpdateAnnouncementInfoInstr>,
+) -> HttpNoContent {
+    //
+    ensure_path_matches_body_id(&announcement_id, &instr.id)?;
+
+    usecase::announcement::update_info::<
+        _,
+        RdbContext<RepeatableRead>,
+        HybRepo,
+    >(
+        (harn.nucl().repeatable_read(), harn.repo()),
+        user_token,
+        instr,
+    )
+    .await?;
+
+    no_content()
+}
+
+/// `DELETE /api/v1/announcements/{announcement_id}` — delete an announcement.
+#[cfg_attr(feature = "swagger", utoipa::path(
+    delete,
+    path = "/api/v1/announcements/{announcement_id}",
+    tag = "announcements",
+    params(("announcement_id" = String, Path, description = "Announcement ID")),
+    responses(
+        (status = 204, description = "Announcement deleted"),
+        (status = 403, description = "Team admin role required"),
+        (status = 422, description = "Announcement not found"),
+    ),
+))]
+#[instrument(level = "info", skip_all)]
+pub async fn delete(
+    State(harn): State<AppHarn>,
+    Path(announcement_id): Path<String>,
+    Extension(user_token): Extension<UserToken>,
+) -> HttpNoContent {
+    //
+    usecase::announcement::delete::<_, RdbContext<RepeatableRead>, HybRepo>(
+        (harn.nucl().repeatable_read(), harn.repo()),
+        user_token,
+        announcement_id,
+    )
+    .await?;
+
+    no_content()
 }

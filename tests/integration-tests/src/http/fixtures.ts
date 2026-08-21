@@ -1042,6 +1042,30 @@ export async function createAnnouncement(
     );
 }
 
+export async function updateAnnouncement(
+    api: ApiClient,
+    announcementId: string,
+    title: string,
+    content: string,
+): Promise<void> {
+    expectNoContent(
+        await api.put<null>(`/api/v1/announcements/${announcementId}`, {
+            content,
+            id: announcementId,
+            title,
+        }),
+    );
+}
+
+export async function deleteAnnouncement(
+    api: ApiClient,
+    announcementId: string,
+): Promise<void> {
+    expectNoContent(
+        await api.delete<null>(`/api/v1/announcements/${announcementId}`),
+    );
+}
+
 export async function listTeamAnnouncements(
     api: ApiClient,
     teamId: string,

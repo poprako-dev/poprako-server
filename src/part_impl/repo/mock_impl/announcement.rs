@@ -8,10 +8,11 @@ use tracing::instrument;
 use crate::model::read::proj::announcement::AnnouncementInfo;
 use crate::model::read::proj::user::UserInfo;
 use crate::model::read::spec::announcement::AnnouncementListSpec;
-use crate::model::write::announcement::AnnouncementEntry;
+use crate::model::write::announcement::{AnnouncementEntry, AnnouncementRepl};
 use crate::part::nucl::RepeatableRead;
 use crate::part::repo::oper::announcement::{
-    CreateAnnouncement, ListAnnouncementInfos,
+    CreateAnnouncement, DeleteAnnouncement, GetAnnouncementInfoExcluded,
+    ListAnnouncementInfos, UpdateAnnouncement,
 };
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
@@ -121,6 +122,53 @@ fn create_announcement(
     accept(announcement_info)
 }
 
+// Loads an announcement from mock storage for mutation.
+fn get_announcement_info(
+    state: &MockState,
+    id: &str,
+) -> BaseRest<AnnouncementInfo> {
+    //
+    state
+        .announcements
+        .iter()
+        .find(|announcement_info| announcement_info.id == id)
+        .cloned()
+        .ok_or_else(|| expected("error-announcement-not-found"))
+}
+
+// Replaces an announcement's editable fields in mock storage.
+fn update_announcement(
+    state: &mut MockState,
+    update: &AnnouncementRepl,
+) -> BaseRest<()> {
+    //
+    let announcement_info = state
+        .announcements
+        .iter_mut()
+        .find(|announcement_info| announcement_info.id == update.id)
+        .ok_or_else(|| expected("error-announcement-not-found"))?;
+
+    announcement_info.title = update.title.clone();
+
+    announcement_info.content = update.content.clone();
+
+    accept(())
+}
+
+// Deletes an announcement from mock storage.
+fn delete_announcement(state: &mut MockState, id: &str) -> BaseRest<()> {
+    //
+    let announcement_index = state
+        .announcements
+        .iter()
+        .position(|announcement_info| announcement_info.id == id)
+        .ok_or_else(|| expected("error-announcement-not-found"))?;
+
+    state.announcements.remove(announcement_index);
+
+    accept(())
+}
+
 impl Run<ListAnnouncementInfos<'_>> for Mock {
     // Internal type alias for `Error`.
     // Defines the adapter error exposed by this operation.
@@ -156,5 +204,59 @@ impl Step<CreateAnnouncement<'_>, MockContext> for Mock {
         oper: &CreateAnnouncement<'_>,
     ) -> BaseRest<AnnouncementInfo> {
         create_announcement(&mut context.state, oper.entry)
+    }
+}
+
+impl Step<GetAnnouncementInfoExcluded<'_>, MockContext> for Mock {
+    // Internal type alias for `Error`.
+    type Level = RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
+    type Error = BaseError;
+
+    #[instrument(level = "info", skip_all)]
+    // Loads an announcement from the transaction snapshot.
+    async fn step(
+        &self,
+        context: &mut MockContext,
+        oper: &GetAnnouncementInfoExcluded<'_>,
+    ) -> BaseRest<AnnouncementInfo> {
+        get_announcement_info(&context.state, oper.id)
+    }
+}
+
+impl Step<UpdateAnnouncement<'_>, MockContext> for Mock {
+    // Internal type alias for `Error`.
+    type Level = RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
+    type Error = BaseError;
+
+    #[instrument(level = "info", skip_all)]
+    // Updates an announcement in the transaction snapshot.
+    async fn step(
+        &self,
+        context: &mut MockContext,
+        oper: &UpdateAnnouncement<'_>,
+    ) -> BaseRest<()> {
+        update_announcement(&mut context.state, oper.update)
+    }
+}
+
+impl Step<DeleteAnnouncement<'_>, MockContext> for Mock {
+    // Internal type alias for `Error`.
+    type Level = RepeatableRead;
+
+    // Defines the adapter error exposed by this operation.
+    type Error = BaseError;
+
+    #[instrument(level = "info", skip_all)]
+    // Deletes an announcement from the transaction snapshot.
+    async fn step(
+        &self,
+        context: &mut MockContext,
+        oper: &DeleteAnnouncement<'_>,
+    ) -> BaseRest<()> {
+        delete_announcement(&mut context.state, oper.id)
     }
 }

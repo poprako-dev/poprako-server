@@ -241,6 +241,10 @@ pub fn new(harn: AppHarn) -> Router<AppHarn> {
     let v1_announcement = Router::new()
         .route("/announcements", post(announcement::create))
         .route(
+            "/announcements/{announcement_id}",
+            put(announcement::update_info).delete(announcement::delete),
+        )
+        .route(
             "/teams/{team_id}/announcements",
             get(announcement::list_infos),
         );

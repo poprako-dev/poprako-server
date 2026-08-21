@@ -4,6 +4,12 @@
 // create(create)(positive): team admin should create an announcement.
 // create(create)(negative): non-admin member should be rejected without mutation.
 // create(create)(negative): non-member should be rejected without mutation.
+// update_info(update_info)(positive): team admin should replace announcement content.
+// update_info(update_info)(negative): non-admin member should be rejected without mutation.
+// update_info(update_info)(negative): missing announcement should be rejected without mutation.
+// delete(delete)(positive): team admin should delete an announcement.
+// delete(delete)(negative): non-admin member should be rejected without mutation.
+// delete(delete)(negative): missing announcement should be rejected without mutation.
 
 use super::*;
 
@@ -11,6 +17,7 @@ use time::OffsetDateTime;
 
 use crate::data::instr::announcement::{
     CreateAnnouncementInstr, ListAnnouncementInfosInstr,
+    UpdateAnnouncementInfoInstr,
 };
 use crate::model::read::proj::announcement::AnnouncementInfo;
 use crate::model::read::proj::member::MemberInfo;
@@ -110,6 +117,14 @@ fn create_instr(team_id: &str) -> CreateAnnouncementInstr {
         team_id: team_id.into(),
         title: "title".into(),
         content: "created".into(),
+    }
+}
+
+fn update_instr(id: &str) -> UpdateAnnouncementInfoInstr {
+    UpdateAnnouncementInfoInstr {
+        id: id.into(),
+        title: "updated title".into(),
+        content: "updated content".into(),
     }
 }
 
@@ -292,6 +307,182 @@ async fn create_non_member_is_rejected_without_mutation() {
     .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Perm);
+
+    assert!(mock.snapshot().announcements.is_empty());
+}
+
+#[tokio::test]
+async fn update_info_team_admin_replaces_announcement_content() {
+    //
+    let mock = Mock::new();
+
+    seed_member(
+        &mock,
+        "admin-user",
+        "team-1",
+        RoleMask::from(RoleField::ADMIN),
+    );
+
+    mock.seed_announcement(announcement(
+        "announcement-1",
+        "team-1",
+        "author-user",
+        now(),
+    ));
+
+    update_info(
+        (&mock, &mock),
+        token("admin-user"),
+        update_instr("announcement-1"),
+    )
+    .await
+    .unwrap();
+
+    let snapshot = mock.snapshot();
+
+    assert_eq!(snapshot.announcements[0].title, "updated title");
+
+    assert_eq!(snapshot.announcements[0].content, "updated content");
+
+    assert_eq!(snapshot.announcements[0].user_id, "author-user");
+}
+
+#[tokio::test]
+async fn update_info_non_admin_member_is_rejected_without_mutation() {
+    //
+    let mock = Mock::new();
+
+    seed_member(
+        &mock,
+        "member-user",
+        "team-1",
+        RoleMask::from(RoleField::TRANSLATOR),
+    );
+
+    mock.seed_announcement(announcement(
+        "announcement-1",
+        "team-1",
+        "author-user",
+        now(),
+    ));
+
+    let err = update_info(
+        (&mock, &mock),
+        token("member-user"),
+        update_instr("announcement-1"),
+    )
+    .await
+    .err()
+    .unwrap();
+
+    assert_expected_variant(err, ExpectedVariant::Perm);
+
+    assert_eq!(mock.snapshot().announcements[0].title, "title");
+}
+
+#[tokio::test]
+async fn update_info_missing_announcement_is_rejected_without_mutation() {
+    //
+    let mock = Mock::new();
+
+    seed_member(
+        &mock,
+        "admin-user",
+        "team-1",
+        RoleMask::from(RoleField::ADMIN),
+    );
+
+    let err = update_info(
+        (&mock, &mock),
+        token("admin-user"),
+        update_instr("missing"),
+    )
+    .await
+    .err()
+    .unwrap();
+
+    assert_expected_variant(err, ExpectedVariant::Args);
+
+    assert!(mock.snapshot().announcements.is_empty());
+}
+
+#[tokio::test]
+async fn delete_team_admin_deletes_announcement() {
+    //
+    let mock = Mock::new();
+
+    seed_member(
+        &mock,
+        "admin-user",
+        "team-1",
+        RoleMask::from(RoleField::ADMIN),
+    );
+
+    mock.seed_announcement(announcement(
+        "announcement-1",
+        "team-1",
+        "author-user",
+        now(),
+    ));
+
+    delete((&mock, &mock), token("admin-user"), "announcement-1".into())
+        .await
+        .unwrap();
+
+    assert!(mock.snapshot().announcements.is_empty());
+}
+
+#[tokio::test]
+async fn delete_non_admin_member_is_rejected_without_mutation() {
+    //
+    let mock = Mock::new();
+
+    seed_member(
+        &mock,
+        "member-user",
+        "team-1",
+        RoleMask::from(RoleField::TRANSLATOR),
+    );
+
+    mock.seed_announcement(announcement(
+        "announcement-1",
+        "team-1",
+        "author-user",
+        now(),
+    ));
+
+    let err = delete(
+        (&mock, &mock),
+        token("member-user"),
+        "announcement-1".into(),
+    )
+    .await
+    .err()
+    .unwrap();
+
+    assert_expected_variant(err, ExpectedVariant::Perm);
+
+    assert_eq!(mock.snapshot().announcements.len(), 1);
+}
+
+#[tokio::test]
+async fn delete_missing_announcement_is_rejected_without_mutation() {
+    //
+    let mock = Mock::new();
+
+    seed_member(
+        &mock,
+        "admin-user",
+        "team-1",
+        RoleMask::from(RoleField::ADMIN),
+    );
+
+    let err = delete((&mock, &mock), token("admin-user"), "missing".into())
+        .await
+        .err()
+        .unwrap();
+
+    assert_expected_variant(err, ExpectedVariant::Args);
 
     assert!(mock.snapshot().announcements.is_empty());
 }

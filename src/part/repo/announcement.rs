@@ -3,7 +3,8 @@
 use poprako_orchestra::drive;
 
 use crate::part::repo::oper::announcement::{
-    CreateAnnouncement, ListAnnouncementInfos,
+    CreateAnnouncement, DeleteAnnouncement, GetAnnouncementInfoExcluded,
+    ListAnnouncementInfos, UpdateAnnouncement,
 };
 use crate::result::BaseError;
 
@@ -19,6 +20,9 @@ use crate::result::BaseError;
     ),
     step(
         for<'a> CreateAnnouncement<'a>,
+        for<'a> GetAnnouncementInfoExcluded<'a>,
+        for<'a> UpdateAnnouncement<'a>,
+        for<'a> DeleteAnnouncement<'a>,
     ),
 )]
 pub trait AnnouncementRepo<C> {}

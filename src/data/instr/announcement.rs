@@ -59,3 +59,17 @@ pub struct CreateAnnouncementInstr {
     /// Announcement body content.
     pub content: String,
 }
+
+/// Input parameters for replacing an announcement's editable fields.
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
+pub struct UpdateAnnouncementInfoInstr {
+    //
+    /// Announcement identifier to update.
+    pub id: String,
+
+    /// Updated announcement title.
+    pub title: String,
+    /// Updated announcement body content.
+    pub content: String,
+}

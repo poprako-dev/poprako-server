@@ -31,4 +31,16 @@ impl AnnouncementPermComplex {
     pub fn ensure_user_can_create(member_info: &MemberInfo) -> BaseRest<()> {
         check_user_is_team_admin(member_info)
     }
+
+    /// Verify the caller may update an announcement under the team.
+    pub fn ensure_user_can_update_info(
+        member_info: &MemberInfo,
+    ) -> BaseRest<()> {
+        check_user_is_team_admin(member_info)
+    }
+
+    /// Verify the caller may delete an announcement under the team.
+    pub fn ensure_user_can_delete(member_info: &MemberInfo) -> BaseRest<()> {
+        check_user_is_team_admin(member_info)
+    }
 }

@@ -1,4 +1,4 @@
-//! Announcement use cases — list and create team announcements.
+//! Announcement use cases.
 
 #[cfg(test)]
 // Unit tests for announcement usecase behavior.
@@ -14,18 +14,20 @@ use crate::complex::announcement::{
 };
 use crate::data::instr::announcement::{
     CreateAnnouncementInstr, ListAnnouncementInfosInstr,
+    UpdateAnnouncementInfoInstr,
 };
 use crate::data::val::announcement::CreateAnnouncementVal;
 use crate::data::view::announcement::AnnouncementInfoView;
 use crate::model::read::spec::announcement::AnnouncementListSpec;
 use crate::model::shared::user::UserToken;
-use crate::model::write::announcement::AnnouncementEntry;
+use crate::model::write::announcement::{AnnouncementEntry, AnnouncementRepl};
 use crate::part::image::ImagePool;
 use crate::part::nucl::RepeatableRead;
 use crate::part::repo::announcement::AnnouncementRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::announcement::{
-    CreateAnnouncement, ListAnnouncementInfos,
+    CreateAnnouncement, DeleteAnnouncement, GetAnnouncementInfoExcluded,
+    ListAnnouncementInfos, UpdateAnnouncement,
 };
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
@@ -133,4 +135,133 @@ where
     accept(CreateAnnouncementVal {
         id: announcement_info.id,
     })
+}
+
+/// Replaces an announcement's editable fields.
+#[instrument(level = "info", skip(nucl, repo))]
+pub async fn update_info<N, C, R>(
+    (nucl, repo): (&N, &R),
+    token: UserToken,
+    instr: UpdateAnnouncementInfoInstr,
+) -> BaseRest<()>
+where
+    C: Context + Send,
+    N: Nucl<Context = C, Error = BaseError>,
+    C::Level: AtLeast<RepeatableRead>,
+    R: AnnouncementRepo<C> + MemberRepo<C> + Send + Sync,
+{
+    let () = nucl
+        .coord(async move |context| {
+            //
+            let announcement_info =
+                GetAnnouncementInfoExcluded { id: &instr.id }
+                    .step_on(repo, context)
+                    .await?;
+
+            let member_info = FindMemberInfo::UserTeam {
+                user_id: &token.user_id,
+                team_id: &announcement_info.team_id,
+            }
+            .step_on(repo, context)
+            .await?;
+
+            let Some(member_info) = member_info else {
+                //
+                let err_message = trl("error-team-admin-required");
+
+                tracing::warn!(
+                    err_variant = ?ExpectedVariant::Perm,
+                    err_message = %err_message,
+                    team_id = %announcement_info.team_id,
+                    user_id = %token.user_id,
+                    announcement_id = %announcement_info.id,
+                    "expected error: announcement updater membership missing",
+                );
+
+                return Err(BaseError::Expected {
+                    variant: ExpectedVariant::Perm,
+                    message: err_message,
+                });
+            };
+
+            AnnouncementPermComplex::ensure_user_can_update_info(&member_info)?;
+
+            let announcement_repl = AnnouncementRepl {
+                id: instr.id,
+                title: instr.title,
+                content: instr.content,
+            };
+
+            UpdateAnnouncement {
+                update: &announcement_repl,
+            }
+            .step_on(repo, context)
+            .await?;
+
+            accept(())
+        })
+        .await?;
+
+    accept(())
+}
+
+/// Deletes an announcement.
+#[instrument(level = "info", skip(nucl, repo))]
+pub async fn delete<N, C, R>(
+    (nucl, repo): (&N, &R),
+    token: UserToken,
+    id: String,
+) -> BaseRest<()>
+where
+    C: Context + Send,
+    N: Nucl<Context = C, Error = BaseError>,
+    C::Level: AtLeast<RepeatableRead>,
+    R: AnnouncementRepo<C> + MemberRepo<C> + Send + Sync,
+{
+    let () = nucl
+        .coord(async move |context| {
+            //
+            let announcement_info = GetAnnouncementInfoExcluded { id: &id }
+                .step_on(repo, context)
+                .await?;
+
+            let member_info = FindMemberInfo::UserTeam {
+                user_id: &token.user_id,
+                team_id: &announcement_info.team_id,
+            }
+            .step_on(repo, context)
+            .await?;
+
+            let Some(member_info) = member_info else {
+                //
+                let err_message = trl("error-team-admin-required");
+
+                tracing::warn!(
+                    err_variant = ?ExpectedVariant::Perm,
+                    err_message = %err_message,
+                    team_id = %announcement_info.team_id,
+                    user_id = %token.user_id,
+                    announcement_id = %announcement_info.id,
+                    "expected error: announcement deleter membership missing",
+                );
+
+                return Err(BaseError::Expected {
+                    variant: ExpectedVariant::Perm,
+                    message: err_message,
+                });
+            };
+
+            AnnouncementPermComplex::ensure_user_can_delete(&member_info)?;
+
+            DeleteAnnouncement {
+                id: &announcement_info.id,
+            }
+            .step_on(repo, context)
+            .await?;
+
+            accept(())
+        })
+        .await?;
+
+    accept(())
 }

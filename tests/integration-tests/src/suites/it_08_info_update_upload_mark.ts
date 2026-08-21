@@ -15,7 +15,7 @@
 // Covers test-plan: C8, H1, H2, H3.
 //
 // Grounded pins:
-//   - announcement create: team ADMIN; list: team member.
+//   - announcement create/update/delete: team ADMIN; list: team member.
 //   - comment create/list: team member.
 //   - user profile update: SELF only (token.user_id == data.id) -> 403/4
 //     otherwise. (sadmin cannot edit another user's profile.)
@@ -40,6 +40,7 @@ import {
     createAnnouncement,
     createComment,
     createMemberInvitation,
+    deleteAnnouncement,
     getComic,
     getTeam,
     getUserInfo,
@@ -56,6 +57,7 @@ import {
     reserveComicCover,
     reserveTeamAvatar,
     reserveUserAvatar,
+    updateAnnouncement,
 } from "../http/fixtures.js";
 import { nickname, password, qid, titled } from "../state/prefix.js";
 import { ROLE } from "../state/roles.js";
@@ -172,6 +174,49 @@ export async function runIt08Module(ctx: RunCtx): Promise<void> {
     assert.equal(ann1Full.title, titled("ann-1"));
     assert.equal(ann1Full.content, "content-1");
 
+    await updateAnnouncement(
+        ctx.sadmin,
+        ann1.id,
+        titled("ann-1-updated"),
+        "content-1-updated",
+    );
+
+    const updatedAnnList = await listTeamAnnouncements(ctx.sadmin, teamId);
+    const updatedAnn1 = updatedAnnList.find((announcement) => announcement.id === ann1.id)!;
+
+    assert.equal(updatedAnn1.title, titled("ann-1-updated"));
+    assert.equal(updatedAnn1.content, "content-1-updated");
+
+    expectError(
+        await trans01.api.put<ErrorBody>(`/api/v1/announcements/${ann1.id}`, {
+            content: "forbidden",
+            id: ann1.id,
+            title: "forbidden",
+        }),
+        403,
+        4,
+    );
+
+    expectError(
+        await ctx.sadmin.put<ErrorBody>(`/api/v1/announcements/${ann1.id}`, {
+            content: "mismatch",
+            id: ann2.id,
+            title: "mismatch",
+        }),
+        422,
+        7,
+    );
+
+    expectError(
+        await ctx.sadmin.put<ErrorBody>("/api/v1/announcements/announcement-does-not-exist", {
+            content: "missing",
+            id: "announcement-does-not-exist",
+            title: "missing",
+        }),
+        422,
+        2,
+    );
+
     // non-admin (trans_01) create announcement -> 403/4
     expectError(
         await trans01.api.post<ErrorBody>("/api/v1/announcements", {
@@ -202,6 +247,30 @@ export async function runIt08Module(ctx: RunCtx): Promise<void> {
     const page2 = await listTeamAnnouncementsPaged(ctx.sadmin, teamId, 1, 50);
 
     assert.ok(!page2.find((a) => a.id === page1[0]?.id), "offset=1 must exclude the first");
+
+    expectError(
+        await trans01.api.delete<ErrorBody>(`/api/v1/announcements/${ann1.id}`),
+        403,
+        4,
+    );
+
+    expectError(
+        await ctx.sadmin.delete<ErrorBody>("/api/v1/announcements/announcement-does-not-exist"),
+        422,
+        2,
+    );
+
+    await deleteAnnouncement(ctx.sadmin, ann2.id);
+
+    const ann2Index = ctx.leftoverAnnouncementIds.indexOf(ann2.id);
+
+    if (ann2Index >= 0) {
+        ctx.leftoverAnnouncementIds.splice(ann2Index, 1);
+    }
+
+    const afterDeleteAnnList = await listTeamAnnouncements(ctx.sadmin, teamId);
+
+    assert.ok(!afterDeleteAnnList.find((announcement) => announcement.id === ann2.id));
 
     // ---------- H2. comment ----------
 
