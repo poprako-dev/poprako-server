@@ -101,7 +101,7 @@ fn parse_generated_schema() -> BTreeMap<String, BTreeSet<String>> {
         }
 
         let table_line = lines
-            .find(|candidate| !candidate.trim().is_empty())
+            .find(|cand| !cand.trim().is_empty())
             .expect("generated table declaration should contain a table name")
             .trim();
 

@@ -207,7 +207,7 @@ async fn list_infos_excluded(
     oper: &ListTermbaseInfosExcluded<'_>,
 ) -> BaseRest<Vec<TermbaseInfo>> {
     //
-    // Lock candidate rows so subsequent writes in caller transaction stay safe.
+    // Lock cand rows so subsequent writes in caller transaction stay safe.
     let rows = match oper {
         //
         ListTermbaseInfosExcluded::Team { team_id } => t_termbase
