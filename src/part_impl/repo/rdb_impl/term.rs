@@ -16,7 +16,6 @@ use tracing::instrument;
 use poprako_util::i18n::trl;
 
 use crate::model::read::proj::term::TermInfo;
-use crate::model::read::spec::term::TermListSpec;
 use crate::model::write::term::{TermEntry, TermRepl};
 use crate::part::nucl::RepeatableRead;
 use crate::part::repo::oper::term::{
@@ -57,8 +56,21 @@ impl Run<ListTermInfos<'_>> for HybRepo {
         //
         match oper {
             //
-            ListTermInfos::Spec { spec } => {
-                submit_query!(self.core, list_infos, spec)
+            ListTermInfos::Query {
+                termbase_id,
+                fuzzy_source,
+                offset,
+                limit,
+            } => {
+                //
+                submit_query!(
+                    self.core,
+                    list_infos,
+                    termbase_id,
+                    *fuzzy_source,
+                    *offset,
+                    *limit
+                )
             }
 
             ListTermInfos::Termbase { termbase_id } => {
@@ -109,8 +121,21 @@ where
         //
         match oper {
             //
-            ListTermInfos::Spec { spec } => {
-                list_infos(context.conn(), spec).await
+            ListTermInfos::Query {
+                termbase_id,
+                fuzzy_source,
+                offset,
+                limit,
+            } => {
+                //
+                list_infos(
+                    context.conn(),
+                    termbase_id,
+                    *fuzzy_source,
+                    *offset,
+                    *limit,
+                )
+                .await
             }
 
             ListTermInfos::Termbase { termbase_id } => {
@@ -444,16 +469,19 @@ async fn get_info_excluded(conn: &mut RdbConn, id: &str) -> BaseRest<TermInfo> {
 #[instrument(level = "info", skip_all)]
 async fn list_infos(
     conn: &mut RdbConn,
-    spec: &TermListSpec,
+    termbase_id: &str,
+    fuzzy_source: Option<&str>,
+    offset: u32,
+    limit: u32,
 ) -> BaseRest<Vec<TermInfo>> {
     //
     // Start with a termbase constraint, then apply optional fuzzy source matching.
     let mut query = t_term
-        .filter(f_termbase_id.eq(&spec.termbase_id))
+        .filter(f_termbase_id.eq(termbase_id))
         .select(TermInfoRow::as_select())
         .into_boxed();
 
-    if let Some(fuzzy_source) = &spec.fuzzy_source {
+    if let Some(fuzzy_source) = fuzzy_source {
         //
         let escaped = escape_ilike_pattern(fuzzy_source);
 
@@ -464,8 +492,8 @@ async fn list_infos(
 
     let rows = query
         .order_by(f_updated_at.desc())
-        .offset(spec.offset as i64)
-        .limit(spec.limit as i64)
+        .offset(offset as i64)
+        .limit(limit as i64)
         .load::<TermInfoRow>(conn)
         .await
         .map_err(diesel)?;

@@ -6,7 +6,6 @@ use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
 use crate::model::read::proj::term::TermInfo;
-use crate::model::read::spec::term::TermListSpec;
 use crate::part::nucl::RepeatableRead;
 use crate::part::repo::oper::term::{
     CreateTerm, DeleteTerm, DeleteTerms, GetTermInfo, GetTermInfoExcluded,
@@ -45,18 +44,24 @@ fn source_conflicts(
 }
 
 // Internal implementation of `list_infos`.
-fn list_infos(state: &MockState, spec: &TermListSpec) -> Vec<TermInfo> {
+fn list_infos(
+    state: &MockState,
+    termbase_id: &str,
+    fuzzy_source: Option<&str>,
+    offset: u32,
+    limit: u32,
+) -> Vec<TermInfo> {
     //
     // Internal implementation detail.
     // Internal implementation detail.
     let mut term_infos = state
         .terms
         .iter()
-        .filter(|term_info| term_info.termbase_id == spec.termbase_id)
+        .filter(|term_info| term_info.termbase_id == termbase_id)
         .cloned()
         .collect::<Vec<_>>();
 
-    if let Some(fuzzy_source) = &spec.fuzzy_source {
+    if let Some(fuzzy_source) = fuzzy_source {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -71,8 +76,8 @@ fn list_infos(state: &MockState, spec: &TermListSpec) -> Vec<TermInfo> {
 
     term_infos
         .into_iter()
-        .skip(spec.offset as usize)
-        .take(spec.limit as usize)
+        .skip(offset as usize)
+        .take(limit as usize)
         .collect()
 }
 
@@ -130,7 +135,14 @@ impl<'a> Run<ListTermInfos<'a>> for Mock {
 
         let term_infos = match oper {
             //
-            ListTermInfos::Spec { spec } => list_infos(&state, spec),
+            ListTermInfos::Query {
+                termbase_id,
+                fuzzy_source,
+                offset,
+                limit,
+            } => {
+                list_infos(&state, termbase_id, *fuzzy_source, *offset, *limit)
+            }
 
             ListTermInfos::Termbase { termbase_id } => {
                 list_all_infos(&state, termbase_id)
@@ -212,7 +224,18 @@ impl<'a> Step<ListTermInfos<'a>, MockContext> for Mock {
         //
         let term_infos = match oper {
             //
-            ListTermInfos::Spec { spec } => list_infos(&context.state, spec),
+            ListTermInfos::Query {
+                termbase_id,
+                fuzzy_source,
+                offset,
+                limit,
+            } => list_infos(
+                &context.state,
+                termbase_id,
+                *fuzzy_source,
+                *offset,
+                *limit,
+            ),
 
             ListTermInfos::Termbase { termbase_id } => {
                 list_all_infos(&context.state, termbase_id)

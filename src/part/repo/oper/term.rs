@@ -1,7 +1,6 @@
 use poprako_orchestra::Oper;
 
 use crate::model::read::proj::term::TermInfo;
-use crate::model::read::spec::term::TermListSpec;
 use crate::model::write::term::{TermEntry, TermRepl};
 
 /// Creates a term.
@@ -20,15 +19,21 @@ pub struct GetTermInfo<'a> {
     pub id: &'a str,
 }
 
-/// Lists term infos selected by a query specification or terminology base.
+/// Lists term infos selected by a paged query or terminology base.
 #[derive(Oper)]
 #[oper(output = Vec<TermInfo>)]
 pub enum ListTermInfos<'a> {
     //
-    /// Lists terms matching the given specification.
-    Spec {
-        /// The specification for filtering listed terms.
-        spec: &'a TermListSpec,
+    /// Lists one page of terms with an optional source filter.
+    Query {
+        /// The terminology-base identifier.
+        termbase_id: &'a str,
+        /// Optional normalized substring matched against term sources.
+        fuzzy_source: Option<&'a str>,
+        /// Number of matching terms to skip.
+        offset: u32,
+        /// Maximum number of matching terms to return.
+        limit: u32,
     },
 
     /// Lists every term belonging to one terminology base.

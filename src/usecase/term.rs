@@ -14,7 +14,6 @@ use crate::data::instr::term::{
 };
 use crate::data::val::term::CreateTermVal;
 use crate::data::view::term::TermInfoView;
-use crate::model::read::spec::term::TermListSpec;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::RepeatableRead;
 use crate::part::repo::member::MemberRepo;
@@ -159,15 +158,13 @@ where
 
     TermbasePermComplex::ensure_user_can_read(&member_info, &termbase_info)?;
 
-    let term_info_list_spec = TermListSpec {
-        termbase_id: instr.termbase_id,
-        fuzzy_source: TermComplex::normalize_fuzzy_source(instr.fuzzy_source),
+    let fuzzy_source = TermComplex::normalize_fuzzy_source(instr.fuzzy_source);
+
+    let term_infos = ListTermInfos::Query {
+        termbase_id: &instr.termbase_id,
+        fuzzy_source: fuzzy_source.as_deref(),
         offset: instr.offset,
         limit: instr.limit,
-    };
-
-    let term_infos = ListTermInfos::Spec {
-        spec: &term_info_list_spec,
     }
     .run_on(repo)
     .await?;

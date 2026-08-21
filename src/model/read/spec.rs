@@ -20,7 +20,5 @@ pub mod member_invitation;
 pub mod system_mail;
 /// Team query specifications.
 pub mod team;
-/// Term query specifications.
-pub mod term;
 /// Termbase query specifications.
 pub mod termbase;
