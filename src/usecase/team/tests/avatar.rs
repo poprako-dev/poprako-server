@@ -137,15 +137,20 @@ async fn reserve_avatar_rejects_byte_length_above_configured_team_limit() {
     let mock = Mock::new();
 
     let image_config = ImageConfig {
-        team_avatar_limit: 4095,
+        team_avatar_limit: 1,
         ..IMAGE_CONFIG
+    };
+
+    let instr = ReserveTeamAvatarInstr {
+        new_byte_len: 1024 * 1024 + 1,
+        ..reserve_instr("png")
     };
 
     let err = reserve_avatar(
         (&mock, &mock, &mock, &mock, &image_config),
         token("user-1"),
         "team-1".into(),
-        reserve_instr("png"),
+        instr,
     )
     .await
     .err()

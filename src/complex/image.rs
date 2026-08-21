@@ -14,6 +14,9 @@ use crate::value::image::ImageKind;
 pub struct ImageComplex;
 
 impl ImageComplex {
+    // Number of bytes in one mebibyte.
+    const BYTES_PER_MIB: u64 = 1024 * 1024;
+
     /// Validates the content length against the per-kind upper bound.
     ///
     pub fn ensure_byte_length(
@@ -22,7 +25,9 @@ impl ImageComplex {
         kind: ImageKind,
     ) -> BaseRest<()> {
         //
-        let max_length = image_config.byte_limit_for(kind);
+        let max_length = image_config
+            .limit_for(kind)
+            .saturating_mul(Self::BYTES_PER_MIB);
 
         if !(1..=max_length).contains(&byte_length) {
             //

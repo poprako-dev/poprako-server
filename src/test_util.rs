@@ -15,10 +15,10 @@ use crate::value::image::ImageKind;
 
 /// Image limits matching the default runtime configuration.
 pub const IMAGE_CONFIG: ImageConfig = ImageConfig {
-    user_avatar_limit: 512 * 1024,
-    team_avatar_limit: 512 * 1024,
-    comic_cover_limit: 2 * 1024 * 1024,
-    page_image_limit: 25 * 1024 * 1024,
+    user_avatar_limit: 1,
+    team_avatar_limit: 1,
+    comic_cover_limit: 2,
+    page_image_limit: 25,
 };
 
 /// Asserts that `err` is a [`RootError::Expected`] whose variant matches `expected`.
