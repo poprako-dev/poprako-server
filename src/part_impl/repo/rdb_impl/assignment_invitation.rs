@@ -1,5 +1,6 @@
 //! RDB-backed assignment invitation repository.
 
+// Transaction-scoped assignment invitation operations.
 mod step_impl;
 
 /// Assignment invitation RDB integration tests.

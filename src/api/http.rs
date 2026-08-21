@@ -1,6 +1,7 @@
 //! Active HTTP API module: result types, auth token constants, middleware,
 //! handlers, router, OpenAPI, and server entry point.
 
+// Shared HTTP metrics and transport support.
 mod shared;
 
 // FIXME: why all pub?

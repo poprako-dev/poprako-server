@@ -1,5 +1,6 @@
 //! Application configuration loaded from a TOML file at startup.
 
+// HTTP server configuration.
 mod http;
 // Image upload configuration.
 mod image;

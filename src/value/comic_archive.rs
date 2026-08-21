@@ -1,5 +1,6 @@
 //! Calendar-month values used by comic archive export.
 
+// Archived chapter workflow-record payload values.
 mod workflow_record;
 
 #[cfg(test)]

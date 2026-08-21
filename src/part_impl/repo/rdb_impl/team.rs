@@ -1,5 +1,6 @@
 //! RDB-backed team repository.
 
+// Avatar reservation and upload state.
 mod avatar;
 // Row locking and workset index allocation.
 mod coordination;
