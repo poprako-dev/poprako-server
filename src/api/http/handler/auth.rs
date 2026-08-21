@@ -18,7 +18,7 @@ use crate::api::http::result::{
 use crate::api::http::state::AppHarn;
 use crate::data::instr::auth::{LoginAuthInstr, RegisterAuthInstr};
 use crate::data::val::auth::{LoginAuthVal, RegisterAuthVal};
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::ReptRead;
 use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
 use crate::usecase;
@@ -44,22 +44,17 @@ pub async fn register(
     Json(instr): Json<RegisterAuthInstr>,
 ) -> HttpResult<RegisterAuthVal> {
     //
-    let reply = usecase::auth::register::<
-        _,
-        RdbContext<RepeatableRead>,
-        HybRepo,
-        _,
-        _,
-    >(
-        (
-            harn.nucl().repeatable_read(),
-            harn.repo(),
-            harn.auth(),
-            harn.develop(),
-        ),
-        instr,
-    )
-    .await?;
+    let reply =
+        usecase::auth::register::<_, RdbContext<ReptRead>, HybRepo, _, _>(
+            (
+                harn.nucl().rept_read(),
+                harn.repo(),
+                harn.auth(),
+                harn.develop(),
+            ),
+            instr,
+        )
+        .await?;
 
     let cookie = auth_cookie(&reply.token);
 
@@ -88,7 +83,7 @@ pub async fn login(
     Json(instr): Json<LoginAuthInstr>,
 ) -> HttpResult<LoginAuthVal> {
     //
-    let reply = usecase::auth::login::<RdbContext<RepeatableRead>, HybRepo, _>(
+    let reply = usecase::auth::login::<RdbContext<ReptRead>, HybRepo, _>(
         (harn.repo(), harn.auth()),
         instr,
     )

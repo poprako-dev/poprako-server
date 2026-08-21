@@ -29,7 +29,7 @@ use crate::model::write::chapter::ChapterEntry;
 use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::model::write::comic::{ComicEntry, ComicRepl};
 use crate::part::image::{ImageManager, ImagePool};
-use crate::part::nucl::{RepeatableRead, Serializable};
+use crate::part::nucl::{ReptRead, Serial};
 use crate::part::prom::Prom;
 use crate::part::prom::oper::Defer;
 use crate::part::prom::payload::{TaskPayload, image};
@@ -89,7 +89,7 @@ pub async fn create<N, C, R>(
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<RepeatableRead>,
+    C::Level: AtLeast<ReptRead>,
     R: ComicRepo<C>
         + WorksetRepo<C>
         + MemberRepo<C>
@@ -333,7 +333,7 @@ pub async fn mark_cover_uploaded<N, C, R, I>(
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<RepeatableRead>,
+    C::Level: AtLeast<ReptRead>,
     R: ComicRepo<C> + TeamRepo<C> + MemberRepo<C> + Send + Sync,
     I: ImageManager,
 {
@@ -479,7 +479,7 @@ pub async fn delete<N, C, R, P>(
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<Serializable>,
+    C::Level: AtLeast<Serial>,
     R: ComicRepo<C>
         + ComicArchiveRepo<C>
         + WorksetRepo<C>

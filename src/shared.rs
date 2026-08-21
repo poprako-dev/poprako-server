@@ -21,7 +21,7 @@ use diesel_async::pooled_connection::deadpool::{Object, Pool};
 use poprako_orchestra::{Context, Level};
 use tracing::instrument;
 
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::ReptRead;
 use crate::result::{BaseError, BaseRest, accept};
 use crate::shared::result::{pool_build, pool_get};
 
@@ -89,7 +89,7 @@ impl RdbCore {
 }
 
 /// Transactional context holding a pooled PostgreSQL connection.
-pub struct RdbContext<L = RepeatableRead> {
+pub struct RdbContext<L = ReptRead> {
     //
     /// Pooled PostgreSQL connection owned by this transaction context.
     conn: RdbPooledConn,

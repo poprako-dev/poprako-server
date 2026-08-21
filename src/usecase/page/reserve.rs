@@ -21,7 +21,7 @@ use crate::data::view::image::ImageUploadSlotView;
 use crate::model::shared::user::UserToken;
 use crate::model::write::page::{PageEntry, PageImageSpec, PageManifestRepl};
 use crate::part::image::{ImagePool, ImageUploadSpec};
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::ReptRead;
 use crate::part::prom::Prom;
 use crate::part::prom::oper::{Defer, DeferBatch};
 use crate::part::prom::payload::chapter::ChapterPayload;
@@ -61,7 +61,7 @@ pub async fn reserve_chapter_pages<N, C, R, P, I>(
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<RepeatableRead>,
+    C::Level: AtLeast<ReptRead>,
     R: ChapterRepo<C>
         + ComicRepo<C>
         + AssignmentRepo<C>

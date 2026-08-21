@@ -12,7 +12,7 @@ use poprako_orchestra::nucl::Error as NuclError;
 use poprako_orchestra::{Level, Nucl};
 use tracing::instrument;
 
-use crate::part::nucl::{RepeatableRead, Serializable};
+use crate::part::nucl::{ReptRead, Serial};
 use crate::result::BaseError;
 use crate::shared::result::diesel;
 use crate::shared::{RdbContext, RdbCore};
@@ -25,7 +25,7 @@ trait RdbLevel: Level + Sized {
     ) -> impl Future<Output = diesel::QueryResult<()>> + Send;
 }
 
-impl RdbLevel for RepeatableRead {
+impl RdbLevel for ReptRead {
     // Begins a repeatable-read transaction through Diesel's typed builder.
     async fn begin(conn: &mut AsyncPgConnection) -> diesel::QueryResult<()> {
         //
@@ -40,7 +40,7 @@ impl RdbLevel for RepeatableRead {
     }
 }
 
-impl RdbLevel for Serializable {
+impl RdbLevel for Serial {
     // Begins a serializable transaction through Diesel's typed builder.
     async fn begin(conn: &mut AsyncPgConnection) -> diesel::QueryResult<()> {
         //
@@ -72,7 +72,7 @@ where
 ///
 /// Each call to [`Nucl::coord`] opens a new connection, begins a transaction,
 /// runs the closure, and commits or rolls back on success or failure.
-pub struct RdbNucl<L = RepeatableRead> {
+pub struct RdbNucl<L = ReptRead> {
     //
     /// Shared database connection pool used for transactions.
     core: RdbCore,

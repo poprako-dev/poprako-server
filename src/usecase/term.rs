@@ -15,7 +15,7 @@ use crate::data::instr::term::{
 use crate::data::val::term::CreateTermVal;
 use crate::data::view::term::TermInfoView;
 use crate::model::shared::user::UserToken;
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::ReptRead;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::term::{
     CreateTerm, DeleteTerm, GetTermInfo, ListTermInfos, LockTerm, UpdateTerm,
@@ -41,7 +41,7 @@ pub async fn create<N, C, R>(
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<RepeatableRead>,
+    C::Level: AtLeast<ReptRead>,
     R: TermbaseRepo<C>
         + TermRepo<C>
         + TeamRepo<C>
@@ -182,7 +182,7 @@ pub async fn update_info<N, C, R>(
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<RepeatableRead>,
+    C::Level: AtLeast<ReptRead>,
     R: TermbaseRepo<C>
         + TermRepo<C>
         + TeamRepo<C>
@@ -259,7 +259,7 @@ pub async fn delete<N, C, R>(
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<RepeatableRead>,
+    C::Level: AtLeast<ReptRead>,
     R: TermbaseRepo<C>
         + TermRepo<C>
         + TeamRepo<C>

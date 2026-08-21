@@ -24,7 +24,7 @@ use crate::api::http::state::AppHarn;
 use crate::data::instr::termbase_port::ImportTermbaseInstr;
 use crate::data::val::termbase_port::{ExportTermbaseVal, ImportTermbaseVal};
 use crate::model::shared::user::UserToken;
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::ReptRead;
 use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
 use crate::usecase;
@@ -114,18 +114,15 @@ pub async fn import_team(
     Json(instr): Json<ImportTermbaseInstr>,
 ) -> HttpResult<ImportTermbaseVal> {
     //
-    let import_termbase_val = usecase::termbase_port::import::<
-        _,
-        RdbContext<RepeatableRead>,
-        HybRepo,
-    >(
-        (harn.nucl().repeatable_read(), harn.repo()),
-        user_token,
-        TermbaseScope::Team { team_id },
-        query.force_merge,
-        instr,
-    )
-    .await?;
+    let import_termbase_val =
+        usecase::termbase_port::import::<_, RdbContext<ReptRead>, HybRepo>(
+            (harn.nucl().rept_read(), harn.repo()),
+            user_token,
+            TermbaseScope::Team { team_id },
+            query.force_merge,
+            instr,
+        )
+        .await?;
 
     let status = match import_termbase_val.created {
         //
@@ -163,18 +160,15 @@ pub async fn import_comic(
     Json(instr): Json<ImportTermbaseInstr>,
 ) -> HttpResult<ImportTermbaseVal> {
     //
-    let import_termbase_val = usecase::termbase_port::import::<
-        _,
-        RdbContext<RepeatableRead>,
-        HybRepo,
-    >(
-        (harn.nucl().repeatable_read(), harn.repo()),
-        user_token,
-        TermbaseScope::Comic { comic_id },
-        query.force_merge,
-        instr,
-    )
-    .await?;
+    let import_termbase_val =
+        usecase::termbase_port::import::<_, RdbContext<ReptRead>, HybRepo>(
+            (harn.nucl().rept_read(), harn.repo()),
+            user_token,
+            TermbaseScope::Comic { comic_id },
+            query.force_merge,
+            instr,
+        )
+        .await?;
 
     let status = match import_termbase_val.created {
         //
@@ -193,16 +187,13 @@ async fn export_payload(
     termbase_id: String,
 ) -> Result<Bytes, HttpError> {
     //
-    let export_termbase_val = usecase::termbase_port::export::<
-        _,
-        RdbContext<RepeatableRead>,
-        HybRepo,
-    >(
-        (harn.nucl().repeatable_read(), harn.repo()),
-        user_token,
-        termbase_id,
-    )
-    .await?;
+    let export_termbase_val =
+        usecase::termbase_port::export::<_, RdbContext<ReptRead>, HybRepo>(
+            (harn.nucl().rept_read(), harn.repo()),
+            user_token,
+            termbase_id,
+        )
+        .await?;
 
     serialize_export(&export_termbase_val)
 }

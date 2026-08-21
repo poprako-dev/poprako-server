@@ -18,7 +18,7 @@ use crate::data::view::workset::WorksetInfoView;
 use crate::model::read::spec::comic::ComicListSpec;
 use crate::model::shared::user::UserToken;
 use crate::model::write::workset::{WorksetEntry, WorksetRepl};
-use crate::part::nucl::{RepeatableRead, Serializable};
+use crate::part::nucl::{ReptRead, Serial};
 use crate::part::prom::Prom;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
@@ -55,7 +55,7 @@ pub async fn create<N, C, R>(
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<RepeatableRead>,
+    C::Level: AtLeast<ReptRead>,
     R: TeamRepo<C> + WorksetRepo<C> + MemberRepo<C> + Send + Sync,
 {
     let member_info = FindMemberInfo::UserTeam {
@@ -214,7 +214,7 @@ pub async fn delete<N, C, R, P>(
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<Serializable>,
+    C::Level: AtLeast<Serial>,
     R: WorksetRepo<C>
         + ComicRepo<C>
         + ComicArchiveRepo<C>

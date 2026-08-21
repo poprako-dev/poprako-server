@@ -33,7 +33,7 @@ use crate::model::shared::user::UserToken;
 use crate::model::write::member::MemberEntry;
 use crate::model::write::team::{TeamAvatarRepl, TeamEntry, TeamRepl};
 use crate::part::image::{ImageManager, ImagePool, ImageUploadSpec};
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::ReptRead;
 use crate::part::prom::Prom;
 use crate::part::prom::oper::DeferBatch;
 use crate::part::prom::payload::{TaskPayload, image};
@@ -68,7 +68,7 @@ pub async fn create<N, C, R, I>(
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<RepeatableRead>,
+    C::Level: AtLeast<ReptRead>,
     R: TeamRepo<C> + UserRepo<C> + MemberRepo<C> + Send + Sync,
     I: ImagePool,
 {
@@ -198,7 +198,7 @@ pub async fn reserve_avatar<N, C, R, P, I>(
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<RepeatableRead>,
+    C::Level: AtLeast<ReptRead>,
     R: TeamRepo<C> + MemberRepo<C> + Send + Sync,
     P: Prom<C> + Send + Sync,
     I: ImagePool,
@@ -347,7 +347,7 @@ pub async fn mark_avatar_uploaded<N, C, R, I>(
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<RepeatableRead>,
+    C::Level: AtLeast<ReptRead>,
     R: TeamRepo<C> + MemberRepo<C> + Send + Sync,
     I: ImageManager,
 {

@@ -28,7 +28,7 @@ use crate::data::val::chapter::CreateChapterVal;
 use crate::data::view::chapter::ChapterInfoView;
 use crate::data::view::chapter_workflow_record::ChapterWorkflowRecordInfoView;
 use crate::model::shared::user::UserToken;
-use crate::part::nucl::{RepeatableRead, Serializable};
+use crate::part::nucl::{ReptRead, Serial};
 use crate::part_impl::prom::rdb_impl::RdbProm;
 use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
@@ -90,8 +90,8 @@ pub async fn create(
     Json(instr): Json<CreateChapterInstr>,
 ) -> HttpResult<CreateChapterVal> {
     //
-    usecase::chapter::create::<_, RdbContext<RepeatableRead>, HybRepo>(
-        (harn.nucl().repeatable_read(), harn.repo()),
+    usecase::chapter::create::<_, RdbContext<ReptRead>, HybRepo>(
+        (harn.nucl().rept_read(), harn.repo()),
         user_token,
         instr,
     )
@@ -126,7 +126,7 @@ pub async fn list_infos(
         limit: query.limit,
     };
 
-    usecase::chapter::list_infos::<RdbContext<RepeatableRead>, HybRepo, _>(
+    usecase::chapter::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
         (harn.repo(), harn.image_pool()),
         user_token,
         instr,
@@ -153,7 +153,7 @@ pub async fn get_pinned(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<Option<ChapterInfoView>> {
     //
-    usecase::chapter::get_pinned::<RdbContext<RepeatableRead>, HybRepo>(
+    usecase::chapter::get_pinned::<RdbContext<ReptRead>, HybRepo>(
         (harn.repo(),),
         user_token,
         comic_id,
@@ -181,7 +181,7 @@ pub async fn get_info(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<ChapterInfoView> {
     //
-    usecase::chapter::get_info::<RdbContext<RepeatableRead>, HybRepo>(
+    usecase::chapter::get_info::<RdbContext<ReptRead>, HybRepo>(
         (harn.repo(),),
         user_token,
         chapter_id,
@@ -217,7 +217,7 @@ pub async fn list_workflow_record_infos(
     };
 
     usecase::chapter::workflow_record::list_workflow_record_infos::<
-        RdbContext<RepeatableRead>,
+        RdbContext<ReptRead>,
         HybRepo,
     >((harn.repo(),), user_token, instr)
     .await?
@@ -248,8 +248,8 @@ pub async fn update_info(
     //
     ensure_path_matches_body_id(&chapter_id, &instr.id)?;
 
-    usecase::chapter::update_info::<_, RdbContext<RepeatableRead>, HybRepo>(
-        (harn.nucl().repeatable_read(), harn.repo()),
+    usecase::chapter::update_info::<_, RdbContext<ReptRead>, HybRepo>(
+        (harn.nucl().rept_read(), harn.repo()),
         user_token,
         instr,
     )
@@ -278,8 +278,8 @@ pub async fn mark_pinned(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::chapter::mark_pinned::<_, RdbContext<RepeatableRead>, HybRepo>(
-        (harn.nucl().repeatable_read(), harn.repo()),
+    usecase::chapter::mark_pinned::<_, RdbContext<ReptRead>, HybRepo>(
+        (harn.nucl().rept_read(), harn.repo()),
         user_token,
         chapter_id,
     )
@@ -314,13 +314,13 @@ pub async fn advance_stage(
 
     usecase::chapter::stage::update_stage::<
         _,
-        RdbContext<RepeatableRead>,
+        RdbContext<ReptRead>,
         HybRepo,
         RdbProm,
         _,
     >(
         (
-            harn.nucl().repeatable_read(),
+            harn.nucl().rept_read(),
             harn.repo(),
             harn.prom(),
             harn.develop(),
@@ -354,11 +354,11 @@ pub async fn delete(
     //
     usecase::chapter::delete::delete::<
         _,
-        RdbContext<Serializable>,
+        RdbContext<Serial>,
         HybRepo,
         RdbProm,
     >(
-        (harn.nucl().serializable(), harn.repo(), harn.prom()),
+        (harn.nucl().serial(), harn.repo(), harn.prom()),
         user_token,
         chapter_id,
     )

@@ -17,7 +17,7 @@ use crate::data::instr::unit::{
 };
 use crate::data::val::unit::ListPageUnitInfosVal;
 use crate::model::shared::user::UserToken;
-use crate::part::nucl::{RepeatableRead, Serializable};
+use crate::part::nucl::{ReptRead, Serial};
 use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
 use crate::usecase;
@@ -43,7 +43,7 @@ pub async fn list_infos(
     //
     let instr = ListPageUnitInfosInstr { page_id };
 
-    usecase::unit::list_infos::<RdbContext<RepeatableRead>, HybRepo>(
+    usecase::unit::list_infos::<RdbContext<ReptRead>, HybRepo>(
         (harn.repo(),),
         user_token,
         instr,
@@ -76,8 +76,8 @@ pub async fn save_infos(
     //
     let instr = SavePageUnitEditsInstr { page_id, edits };
 
-    usecase::unit::save_edits::<_, RdbContext<Serializable>, HybRepo>(
-        (harn.nucl().serializable(), harn.repo()),
+    usecase::unit::save_edits::<_, RdbContext<Serial>, HybRepo>(
+        (harn.nucl().serial(), harn.repo()),
         user_token,
         instr,
     )

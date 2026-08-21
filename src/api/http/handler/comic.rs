@@ -31,7 +31,7 @@ use crate::data::val::comic_archive::{
 use crate::data::val::comic_list::ListComicInfosVal;
 use crate::data::view::comic::ComicInfoView;
 use crate::model::shared::user::UserToken;
-use crate::part::nucl::{RepeatableRead, Serializable};
+use crate::part::nucl::{ReptRead, Serial};
 use crate::part_impl::prom::rdb_impl::RdbProm;
 use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
@@ -61,7 +61,7 @@ pub async fn export_archives(
     Query(instr): Query<ExportComicArchivesInstr>,
 ) -> HttpResult<ExportComicArchivesVal> {
     //
-    usecase::comic_archive::export::<RdbContext<RepeatableRead>, HybRepo>(
+    usecase::comic_archive::export::<RdbContext<ReptRead>, HybRepo>(
         (harn.repo(),),
         user_token,
         team_id,
@@ -129,8 +129,8 @@ pub async fn create(
     Json(instr): Json<CreateComicInstr>,
 ) -> HttpResult<CreateComicVal> {
     //
-    usecase::comic::create::<_, RdbContext<RepeatableRead>, HybRepo>(
-        (harn.nucl().repeatable_read(), harn.repo()),
+    usecase::comic::create::<_, RdbContext<ReptRead>, HybRepo>(
+        (harn.nucl().rept_read(), harn.repo()),
         user_token,
         instr,
     )
@@ -170,7 +170,7 @@ pub async fn list_infos(
         limit: query.limit,
     };
 
-    usecase::comic::list::list_infos::<RdbContext<RepeatableRead>, HybRepo, _>(
+    usecase::comic::list::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
         (harn.repo(), harn.image_pool()),
         user_token,
         instr,
@@ -198,7 +198,7 @@ pub async fn get_info(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<ComicInfoView> {
     //
-    usecase::comic::get_info::<RdbContext<RepeatableRead>, HybRepo, _>(
+    usecase::comic::get_info::<RdbContext<ReptRead>, HybRepo, _>(
         (harn.repo(), harn.image_pool()),
         user_token,
         comic_id,
@@ -231,7 +231,7 @@ pub async fn update_info(
     //
     ensure_path_matches_body_id(&comic_id, &instr.id)?;
 
-    usecase::comic::update_info::<RdbContext<RepeatableRead>, HybRepo>(
+    usecase::comic::update_info::<RdbContext<ReptRead>, HybRepo>(
         (harn.repo(),),
         user_token,
         instr,
@@ -264,13 +264,13 @@ pub async fn reserve_cover(
     //
     usecase::comic::reserve::reserve_cover::<
         _,
-        RdbContext<RepeatableRead>,
+        RdbContext<ReptRead>,
         HybRepo,
         RdbProm,
         _,
     >(
         (
-            harn.nucl().repeatable_read(),
+            harn.nucl().rept_read(),
             harn.repo(),
             harn.prom(),
             harn.image_pool(),
@@ -305,17 +305,8 @@ pub async fn mark_cover_uploaded(
     Json(instr): Json<MarkComicCoverUploadedInstr>,
 ) -> HttpNoContent {
     //
-    usecase::comic::mark_cover_uploaded::<
-        _,
-        RdbContext<RepeatableRead>,
-        HybRepo,
-        _,
-    >(
-        (
-            harn.nucl().repeatable_read(),
-            harn.repo(),
-            harn.image_pool(),
-        ),
+    usecase::comic::mark_cover_uploaded::<_, RdbContext<ReptRead>, HybRepo, _>(
+        (harn.nucl().rept_read(), harn.repo(), harn.image_pool()),
         user_token,
         comic_id,
         instr,
@@ -344,13 +335,8 @@ pub async fn archive(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<ArchiveComicVal> {
     //
-    usecase::comic_archive::archive::<
-        _,
-        RdbContext<Serializable>,
-        HybRepo,
-        RdbProm,
-    >(
-        (harn.nucl().serializable(), harn.repo(), harn.prom()),
+    usecase::comic_archive::archive::<_, RdbContext<Serial>, HybRepo, RdbProm>(
+        (harn.nucl().serial(), harn.repo(), harn.prom()),
         user_token,
         comic_id,
     )
@@ -377,8 +363,8 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::comic::delete::<_, RdbContext<Serializable>, HybRepo, RdbProm>(
-        (harn.nucl().serializable(), harn.repo(), harn.prom()),
+    usecase::comic::delete::<_, RdbContext<Serial>, HybRepo, RdbProm>(
+        (harn.nucl().serial(), harn.repo(), harn.prom()),
         user_token,
         comic_id,
     )

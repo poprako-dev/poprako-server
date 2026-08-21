@@ -5,7 +5,7 @@ use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 use crate::model::read::proj::unit::UnitOrder;
 use crate::model::shared::unit::{UnitCoord, UnitRevision, UnitTranslation};
 use crate::model::write::unit::UnitEdit;
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::unit::{
     ApplyUnitEdits, ListUnitInfos, ListUnitOrders,
 };
@@ -27,7 +27,7 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let repo = HybRepo::new(shared.clone());
 
-    let nucl = RdbNucl::<RepeatableRead>::new(shared.clone());
+    let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
     let first_id = format!("{}first", PREFIX);
 

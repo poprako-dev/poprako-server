@@ -19,7 +19,7 @@ use crate::data::instr::comment::{CreateCommentInstr, ListCommentInfosInstr};
 use crate::data::val::comment::CreateCommentVal;
 use crate::data::view::comment::CommentInfoView;
 use crate::model::shared::user::UserToken;
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::ReptRead;
 use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
 use crate::usecase;
@@ -65,7 +65,7 @@ pub async fn create(
     Json(instr): Json<CreateCommentInstr>,
 ) -> HttpResult<CreateCommentVal> {
     //
-    usecase::comment::create::<RdbContext<RepeatableRead>, HybRepo>(
+    usecase::comment::create::<RdbContext<ReptRead>, HybRepo>(
         harn.repo(),
         user_token,
         instr,
@@ -101,7 +101,7 @@ pub async fn list_infos(
         limit: query.limit,
     };
 
-    usecase::comment::list_infos::<RdbContext<RepeatableRead>, HybRepo, _>(
+    usecase::comment::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
         (harn.repo(), harn.image_pool()),
         user_token,
         instr,

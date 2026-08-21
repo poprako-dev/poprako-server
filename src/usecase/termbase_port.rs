@@ -16,7 +16,7 @@ use crate::data::val::termbase_port::{ExportTermbaseVal, ImportTermbaseVal};
 use crate::model::read::proj::termbase::TermbaseInfo;
 use crate::model::shared::user::UserToken;
 use crate::model::write::termbase::{TermbaseImport, TermbaseRepl};
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::ReptRead;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::comic::GetComicInfoExcluded;
@@ -47,7 +47,7 @@ pub async fn export<N, C, R>(
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<RepeatableRead>,
+    C::Level: AtLeast<ReptRead>,
     R: TermbaseRepo<C>
         + TermRepo<C>
         + TeamRepo<C>
@@ -99,7 +99,7 @@ pub async fn import<N, C, R>(
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<RepeatableRead>,
+    C::Level: AtLeast<ReptRead>,
     R: TeamRepo<C>
         + ComicRepo<C>
         + WorksetRepo<C>

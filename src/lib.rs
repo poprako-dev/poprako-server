@@ -55,7 +55,7 @@ pub use crate::config::{AppConfig, HttpConfig, ImageConfig};
 pub use crate::extra::sched::Sched;
 pub use crate::harn::{Harn, HybNucl};
 pub use crate::log::init_log;
-pub use crate::part::nucl::{RepeatableRead, Serializable};
+pub use crate::part::nucl::{ReptRead, Serial};
 pub use crate::part_impl::auth::jwt_impl::JwtAuth;
 pub use crate::part_impl::effect::async_impl::AsyncEffectDevelop;
 pub use crate::part_impl::image::r2_impl::R2ImagePool;

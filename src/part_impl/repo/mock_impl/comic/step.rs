@@ -4,7 +4,7 @@ use tracing::instrument;
 use crate::complex::comic::ComicComplex;
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::write::comic::ComicCoverReservation;
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::comic::{
     AllocComicChapterIndex, CreateComic, DeleteComic, GetComicInfo,
     GetComicInfoExcluded, ListComicInfos, ListComicInfosExcluded,
@@ -19,7 +19,7 @@ use crate::result::{BaseError, accept};
 
 impl<'a> Step<CreateComic<'a>, MockContext> for Mock {
     // Use base errors for create step inside transaction context.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -74,7 +74,7 @@ impl<'a> Step<CreateComic<'a>, MockContext> for Mock {
 
 impl<'a, 'b> Step<GetComicInfo<'a, 'b>, MockContext> for Mock {
     // Use base errors for mocked transaction get.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -92,7 +92,7 @@ impl<'a, 'b> Step<GetComicInfo<'a, 'b>, MockContext> for Mock {
 
 impl<'a, 'b> Step<GetComicInfoExcluded<'a, 'b>, MockContext> for Mock {
     // Use base errors for excluded projection get operation.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -110,7 +110,7 @@ impl<'a, 'b> Step<GetComicInfoExcluded<'a, 'b>, MockContext> for Mock {
 
 impl<'a> Step<ListComicInfosExcluded<'a>, MockContext> for Mock {
     // Use base errors for transaction list operation.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -128,7 +128,7 @@ impl<'a> Step<ListComicInfosExcluded<'a>, MockContext> for Mock {
 
 impl<'a> Step<ListComicInfos<'a>, MockContext> for Mock {
     // Use base errors for transaction list operation.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -146,7 +146,7 @@ impl<'a> Step<ListComicInfos<'a>, MockContext> for Mock {
 
 impl<'a> Step<ReserveComicCover<'a>, MockContext> for Mock {
     // Use base errors for cover reservation steps.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -237,7 +237,7 @@ impl<'a> Step<ReserveComicCover<'a>, MockContext> for Mock {
 
 impl<'a> Step<MarkComicCoverUploaded<'a>, MockContext> for Mock {
     // Use base errors for mock cover upload updates.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -262,7 +262,7 @@ impl<'a> Step<MarkComicCoverUploaded<'a>, MockContext> for Mock {
 
 impl<'a> Step<DeleteComic<'a>, MockContext> for Mock {
     // Use base errors for mocked deletion operations.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -319,7 +319,7 @@ impl<'a> Step<DeleteComic<'a>, MockContext> for Mock {
 
 impl<'a> Step<AllocComicChapterIndex<'a>, MockContext> for Mock {
     // Use base errors for chapter index allocation in mock.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -353,7 +353,7 @@ impl<'a> Step<AllocComicChapterIndex<'a>, MockContext> for Mock {
 
 impl<'a> Step<UpdateComicChapterCount<'a>, MockContext> for Mock {
     // Use base errors for chapter count updates in mock.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -384,7 +384,7 @@ impl<'a> Step<UpdateComicChapterCount<'a>, MockContext> for Mock {
 
 impl<'a> Step<TouchComicLastActive<'a>, MockContext> for Mock {
     // Use base errors for updating comic heartbeat timestamps.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;

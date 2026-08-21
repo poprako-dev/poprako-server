@@ -1,7 +1,7 @@
 use poprako_orchestra::{OperStep as _, Step};
 use time::OffsetDateTime;
 
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::ReptRead;
 use crate::part::prom::oper::{Defer, DeferBatch};
 use crate::part::prom::payload::TaskPayload;
 use crate::part::prom::task::Task;
@@ -12,7 +12,7 @@ use crate::result::{BaseError, accept};
 /// Defers one record in the coordinated mock state.
 impl<'a> Step<Defer<'a, String, TaskPayload, ()>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -43,7 +43,7 @@ impl<'t, 'a> Step<DeferBatch<'t, 'a, String, TaskPayload, ()>, MockContext>
     for Mock
 {
     // Internal type alias for `Error`.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;

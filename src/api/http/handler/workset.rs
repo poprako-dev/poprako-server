@@ -22,7 +22,7 @@ use crate::data::instr::workset::{
 use crate::data::val::workset::CreateWorksetVal;
 use crate::data::view::workset::WorksetInfoView;
 use crate::model::shared::user::UserToken;
-use crate::part::nucl::{RepeatableRead, Serializable};
+use crate::part::nucl::{ReptRead, Serial};
 use crate::part_impl::prom::rdb_impl::RdbProm;
 use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
@@ -48,8 +48,8 @@ pub async fn create(
     Json(instr): Json<CreateWorksetInstr>,
 ) -> HttpResult<CreateWorksetVal> {
     //
-    usecase::workset::create::<_, RdbContext<RepeatableRead>, HybRepo>(
-        (harn.nucl().repeatable_read(), harn.repo()),
+    usecase::workset::create::<_, RdbContext<ReptRead>, HybRepo>(
+        (harn.nucl().rept_read(), harn.repo()),
         user_token,
         instr,
     )
@@ -83,7 +83,7 @@ pub async fn list_infos(
         limit: pagination.limit,
     };
 
-    usecase::workset::list_infos::<RdbContext<RepeatableRead>, HybRepo>(
+    usecase::workset::list_infos::<RdbContext<ReptRead>, HybRepo>(
         (harn.repo(),),
         user_token,
         instr,
@@ -112,7 +112,7 @@ pub async fn get_info(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<WorksetInfoView> {
     //
-    usecase::workset::get_info::<RdbContext<RepeatableRead>, HybRepo>(
+    usecase::workset::get_info::<RdbContext<ReptRead>, HybRepo>(
         (harn.repo(),),
         user_token,
         workset_id,
@@ -145,7 +145,7 @@ pub async fn update_info(
     //
     ensure_path_matches_body_id(&workset_id, &instr.id)?;
 
-    usecase::workset::update_info::<RdbContext<RepeatableRead>, HybRepo>(
+    usecase::workset::update_info::<RdbContext<ReptRead>, HybRepo>(
         (harn.repo(),),
         user_token,
         instr,
@@ -174,8 +174,8 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::workset::delete::<_, RdbContext<Serializable>, HybRepo, RdbProm>(
-        (harn.nucl().serializable(), harn.repo(), harn.prom()),
+    usecase::workset::delete::<_, RdbContext<Serial>, HybRepo, RdbProm>(
+        (harn.nucl().serial(), harn.repo(), harn.prom()),
         user_token,
         workset_id,
     )

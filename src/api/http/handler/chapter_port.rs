@@ -26,7 +26,7 @@ use crate::data::val::chapter_port::ImportChapterTranslationVal;
 use crate::data::view::chapter_port::ChapterTranslationPortView;
 
 use crate::model::shared::user::UserToken;
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::ReptRead;
 use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
 use crate::usecase;
@@ -60,12 +60,8 @@ pub async fn import(
     Json(instr): Json<ImportChapterTranslationInstr>,
 ) -> HttpResult<ImportChapterTranslationVal> {
     //
-    usecase::chapter_port::import::import::<
-        _,
-        RdbContext<RepeatableRead>,
-        HybRepo,
-    >(
-        (harn.nucl().repeatable_read(), harn.repo()),
+    usecase::chapter_port::import::import::<_, RdbContext<ReptRead>, HybRepo>(
+        (harn.nucl().rept_read(), harn.repo()),
         user_token,
         instr,
         chapter_id,
@@ -168,10 +164,10 @@ async fn export_payload(
             //
             let val = usecase::chapter_port::export::export::<
                 _,
-                RdbContext<RepeatableRead>,
+                RdbContext<ReptRead>,
                 HybRepo,
             >(
-                (harn.nucl().repeatable_read(), harn.repo()),
+                (harn.nucl().rept_read(), harn.repo()),
                 user_token,
                 chapter_id,
             )
@@ -199,10 +195,10 @@ async fn export_payload(
             //
             let content = usecase::chapter_port::export::export_label_plus::<
                 _,
-                RdbContext<RepeatableRead>,
+                RdbContext<ReptRead>,
                 HybRepo,
             >(
-                (harn.nucl().repeatable_read(), harn.repo()),
+                (harn.nucl().rept_read(), harn.repo()),
                 user_token,
                 chapter_id,
             )

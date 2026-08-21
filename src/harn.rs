@@ -7,17 +7,17 @@ pub struct HybNucl<NR, NS>(NR, NS);
 
 impl<NR, NS> HybNucl<NR, NS> {
     /// Combines the repeatable-read and serializable coordinators.
-    pub fn new(repeatable_read: NR, serializable: NS) -> Self {
-        Self(repeatable_read, serializable)
+    pub fn new(rept_read: NR, serial: NS) -> Self {
+        Self(rept_read, serial)
     }
 
     /// Returns the repeatable-read transaction coordinator.
-    pub fn repeatable_read(&self) -> &NR {
+    pub fn rept_read(&self) -> &NR {
         &self.0
     }
 
     /// Returns the serializable transaction coordinator.
-    pub fn serializable(&self) -> &NS {
+    pub fn serial(&self) -> &NS {
         &self.1
     }
 }

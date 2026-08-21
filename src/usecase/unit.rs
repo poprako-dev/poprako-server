@@ -17,7 +17,7 @@ use crate::data::instr::unit::{
 use crate::data::val::unit::ListPageUnitInfosVal;
 use crate::model::read::proj::unit::UnitCounters;
 use crate::model::shared::user::UserToken;
-use crate::part::nucl::Serializable;
+use crate::part::nucl::Serial;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
@@ -144,7 +144,7 @@ pub async fn save_edits<N, C, R>(
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<Serializable>,
+    C::Level: AtLeast<Serial>,
     R: PageRepo<C>
         + UnitRepo<C>
         + ChapterRepo<C>

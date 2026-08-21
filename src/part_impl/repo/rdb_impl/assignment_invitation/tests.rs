@@ -4,7 +4,7 @@ use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 
 use crate::model::read::spec::assignment_invitation::AssignmentInvitationListSpec;
 use crate::model::write::assignment_invitation::AssignmentInvitationEntry;
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::assignment_invitation::{
     CreateAssignmentInvitation, ListAssignmentInvitationInfos,
     MarkAssignmentInvitationUsed,
@@ -31,7 +31,7 @@ pub async fn assignment_invitation_roundtrip_uses_testcontainer(
 
     let repo = HybRepo::new(shared.clone());
 
-    let nucl = RdbNucl::<RepeatableRead>::new(shared.clone());
+    let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
     let assignment_invitation_entry = AssignmentInvitationEntry {
         id: format!("{}assignment-invitation", PREFIX),

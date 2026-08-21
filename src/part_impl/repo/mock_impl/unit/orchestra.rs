@@ -2,7 +2,7 @@ use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
 use crate::model::read::proj::unit::{UnitCounters, UnitInfo, UnitOrder};
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::unit::{
     ApplyUnitEdits, ListUnitInfos, ListUnitOrders,
 };
@@ -31,7 +31,7 @@ impl Run<ListUnitInfos<'_>> for Mock {
 
 impl Step<ListUnitOrders<'_>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -49,7 +49,7 @@ impl Step<ListUnitOrders<'_>, MockContext> for Mock {
 
 impl Step<ApplyUnitEdits<'_>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;

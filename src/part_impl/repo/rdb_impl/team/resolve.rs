@@ -7,7 +7,7 @@ use tracing::instrument;
 
 use poprako_util::i18n::trl;
 
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::team::ResolveTeamId;
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::schema::{t_chapter, t_comic, t_workset};
@@ -96,10 +96,10 @@ impl Run<ResolveTeamId<'_>> for HybRepo {
 
 impl<L> Step<ResolveTeamId<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send + AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<ReptRead>,
 {
     // BaseError for the transactional team-resolution projection.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;

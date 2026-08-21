@@ -4,7 +4,7 @@ use poprako_orchestra::{Nucl, Run as _, Step as _};
 
 use crate::model::read::spec::chapter::ChapterListSpec;
 use crate::model::write::chapter::ChapterStageRepl;
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::chapter::{
     FindPinnedChapterInfo, GetChapterInfo, ListChapterInfos, StartChapterStage,
     UpdateChapterStage,
@@ -28,7 +28,7 @@ pub async fn chapter_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let repo = HybRepo::new(shared.clone());
 
-    let nucl = RdbNucl::<RepeatableRead>::new(shared.clone());
+    let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
     let stage_mask = StageMask::try_from(0u32).ok().unwrap();
 

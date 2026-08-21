@@ -24,7 +24,7 @@ use crate::data::instr::term::{
 use crate::data::val::term::CreateTermVal;
 use crate::data::view::term::TermInfoView;
 use crate::model::shared::user::UserToken;
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::ReptRead;
 use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
 use crate::usecase;
@@ -63,8 +63,8 @@ pub async fn create(
     Json(instr): Json<CreateTermInstr>,
 ) -> HttpResult<CreateTermVal> {
     //
-    usecase::term::create::<_, RdbContext<RepeatableRead>, HybRepo>(
-        (harn.nucl().repeatable_read(), harn.repo()),
+    usecase::term::create::<_, RdbContext<ReptRead>, HybRepo>(
+        (harn.nucl().rept_read(), harn.repo()),
         user_token,
         instr,
     )
@@ -99,7 +99,7 @@ pub async fn list_infos(
         limit: query.limit,
     };
 
-    usecase::term::list_infos::<RdbContext<RepeatableRead>, HybRepo>(
+    usecase::term::list_infos::<RdbContext<ReptRead>, HybRepo>(
         (harn.repo(),),
         user_token,
         instr,
@@ -127,7 +127,7 @@ pub async fn get_info(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<TermInfoView> {
     //
-    usecase::term::get_info::<RdbContext<RepeatableRead>, HybRepo>(
+    usecase::term::get_info::<RdbContext<ReptRead>, HybRepo>(
         (harn.repo(),),
         user_token,
         term_id,
@@ -159,8 +159,8 @@ pub async fn update_info(
     //
     ensure_path_matches_body_id(&term_id, &instr.id)?;
 
-    usecase::term::update_info::<_, RdbContext<RepeatableRead>, HybRepo>(
-        (harn.nucl().repeatable_read(), harn.repo()),
+    usecase::term::update_info::<_, RdbContext<ReptRead>, HybRepo>(
+        (harn.nucl().rept_read(), harn.repo()),
         user_token,
         instr,
     )
@@ -188,8 +188,8 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::term::delete::<_, RdbContext<RepeatableRead>, HybRepo>(
-        (harn.nucl().repeatable_read(), harn.repo()),
+    usecase::term::delete::<_, RdbContext<ReptRead>, HybRepo>(
+        (harn.nucl().rept_read(), harn.repo()),
         user_token,
         term_id,
     )
