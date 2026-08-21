@@ -22,6 +22,7 @@ use crate::value::role::RoleMask;
 /// chapter (translator, proofreader, etc.).
 #[cfg_attr(test, derive(Clone))]
 pub struct AssignmentInfo {
+    //
     /// Unique identifier for the assignment record.
     pub id: String,
 

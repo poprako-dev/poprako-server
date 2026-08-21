@@ -12,6 +12,7 @@ use crate::value::incl::InclOpt;
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum ComicStatus {
+    //
     /// A comic with active child resources.
     Active,
 

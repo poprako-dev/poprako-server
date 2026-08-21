@@ -47,6 +47,7 @@ use crate::data::instr::term::{CreateTermInstr, UpdateTermInfoInstr};
 use crate::data::instr::termbase::{
     CreateTermbaseInstr, UpdateTermbaseInfoInstr,
 };
+use crate::data::instr::termbase_port::{ImportTermInstr, ImportTermbaseInstr};
 use crate::data::instr::unit::{
     UnitCoordInstr, UnitEditInstr, UnitRevisionInstr, UnitTranslationInstr,
 };
@@ -70,6 +71,7 @@ use crate::data::val::page::{ReserveChapterPagesVal, ReservedPageVal};
 use crate::data::val::team::ReserveTeamAvatarVal;
 use crate::data::val::term::CreateTermVal;
 use crate::data::val::termbase::CreateTermbaseVal;
+use crate::data::val::termbase_port::{ExportTermbaseVal, ImportTermbaseVal};
 use crate::data::val::unit::ListPageUnitInfosVal;
 use crate::data::val::user::ReserveUserAvatarVal;
 use crate::data::val::workset::CreateWorksetVal;
@@ -94,6 +96,7 @@ use crate::data::view::system_mail::SystemMailInfoView;
 use crate::data::view::team::TeamInfoView;
 use crate::data::view::term::TermInfoView;
 use crate::data::view::termbase::TermbaseInfoView;
+use crate::data::view::termbase_port::TermbaseTermView;
 use crate::data::view::unit::UnitInfoView;
 use crate::data::view::unit_port::UnitTranslationPortView;
 use crate::data::view::user::UserInfoView;
@@ -186,6 +189,10 @@ use crate::value::role::RoleField;
         handler::termbase::get_info,
         handler::termbase::update_info,
         handler::termbase::delete,
+        handler::termbase_port::export,
+        handler::termbase_port::export_download,
+        handler::termbase_port::import_team,
+        handler::termbase_port::import_comic,
         handler::term::create,
         handler::term::list_infos,
         handler::term::get_info,
@@ -286,6 +293,11 @@ use crate::value::role::RoleField;
         CreateTermbaseInstr,
         CreateTermbaseVal,
         UpdateTermbaseInfoInstr,
+        ImportTermInstr,
+        ImportTermbaseInstr,
+        TermbaseTermView,
+        ExportTermbaseVal,
+        ImportTermbaseVal,
         TermInfoView,
         CreateTermInstr,
         CreateTermVal,
@@ -333,6 +345,7 @@ use crate::value::role::RoleField;
         (name = "system-mails", description = "System mail endpoints"),
         (name = "announcements", description = "Announcement endpoints"),
         (name = "comments", description = "Comment endpoints"),
+        (name = "termbase-port", description = "Terminology-base import/export endpoints"),
     )
 )]
 pub struct ApiDoc;

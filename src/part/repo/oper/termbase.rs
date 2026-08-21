@@ -66,6 +66,7 @@ pub struct UpdateTermbase<'a> {
 #[derive(Oper)]
 #[oper(output = ())]
 pub struct UpdateTermbaseTermCount<'a> {
+    //
     /// The termbase id.
     pub id: &'a str,
 

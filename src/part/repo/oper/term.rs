@@ -20,12 +20,22 @@ pub struct GetTermInfo<'a> {
     pub id: &'a str,
 }
 
-/// Lists term infos matching a filter spec.
+/// Lists term infos selected by a query specification or terminology base.
 #[derive(Oper)]
 #[oper(output = Vec<TermInfo>)]
-pub struct ListTermInfos<'a> {
-    /// The specification for filtering listed terms.
-    pub spec: &'a TermListSpec,
+pub enum ListTermInfos<'a> {
+    //
+    /// Lists terms matching the given specification.
+    Spec {
+        /// The specification for filtering listed terms.
+        spec: &'a TermListSpec,
+    },
+
+    /// Lists every term belonging to one terminology base.
+    Termbase {
+        /// The terminology-base identifier.
+        termbase_id: &'a str,
+    },
 }
 
 /// Looks up a term by identifier, matching deleted rows as well.
@@ -50,6 +60,17 @@ pub struct LockTerm<'a> {
 pub struct UpdateTerm<'a> {
     /// The update payload for the term.
     pub update: &'a TermRepl,
+}
+
+/// Applies imported terminology inserts and replacements together.
+#[derive(Oper)]
+#[oper(output = ())]
+pub struct UpsertTerms<'a> {
+    //
+    /// New terminology entries to insert.
+    pub entries: &'a [TermEntry],
+    /// Existing terminology entries to replace.
+    pub updates: &'a [TermRepl],
 }
 
 /// Deletes one term.

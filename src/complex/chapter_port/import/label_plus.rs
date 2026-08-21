@@ -38,6 +38,7 @@ pub fn invalid_label_plus_content(condition: &str) -> BaseError {
 
 /// Internal representation of a LabelPlus unit header.
 pub struct LabelPlusUnit {
+    //
     /// 0-based index of the unit inside its page.
     index: i32,
     /// X-axis coordinate from the header.

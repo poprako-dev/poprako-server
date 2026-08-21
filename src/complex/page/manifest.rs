@@ -20,6 +20,7 @@ pub struct ManifestMatch {
 
 /// Stable matching result for an authoritative page manifest.
 pub struct ManifestPlan {
+    //
     /// Ordered match results aligning each input page to an existing page or a new slot.
     pub matches: Vec<ManifestMatch>,
     /// Indexes of existing pages that were not matched and should be removed.

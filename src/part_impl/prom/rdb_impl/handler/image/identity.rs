@@ -3,6 +3,7 @@ use crate::value::image::ImageKind;
 /// Identity carried by an image-verification task.
 #[derive(Clone, Copy)]
 pub struct ImageIdentity<'a> {
+    //
     /// The kind of resource represented by the image.
     pub kind: ImageKind,
 

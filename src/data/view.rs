@@ -34,6 +34,8 @@ pub mod team;
 pub mod term;
 /// Termbase response views.
 pub mod termbase;
+/// Portable terminology-entry response views.
+pub mod termbase_port;
 /// Unit response views.
 pub mod unit;
 /// Unit-port response views.

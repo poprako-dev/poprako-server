@@ -1,14 +1,16 @@
-// term_array_unique_and_fuzzy_roundtrip(CreateTerm, ListTermInfos)(positive): term storage preserves target order, rejects normalized duplicate sources, and treats fuzzy wildcard characters literally.
+// term_array_unique_and_fuzzy_roundtrip(CreateTerm, ListTermInfos, UpsertTerms)(positive): term storage preserves target order, applies bounded import upserts, rejects normalized duplicate sources, and treats fuzzy wildcard characters literally.
 
 use super::*;
 
 use poprako_orchestra::Nucl as _;
 
 use crate::model::read::spec::term::TermListSpec;
-use crate::model::write::term::TermEntry;
+use crate::model::write::term::{TermEntry, TermRepl};
 use crate::model::write::termbase::TermbaseEntry;
 use crate::part::nucl::RepeatableRead;
-use crate::part::repo::oper::term::{CreateTerm, GetTermInfo, ListTermInfos};
+use crate::part::repo::oper::term::{
+    CreateTerm, GetTermInfo, ListTermInfos, UpsertTerms,
+};
 use crate::part::repo::oper::termbase::CreateTermbase;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::HybRepo;
@@ -88,12 +90,64 @@ pub async fn term_array_unique_and_fuzzy_roundtrip(shared: RdbCore) {
     };
 
     let listed = repo
-        .run(&ListTermInfos { spec: &list_spec })
+        .run(&ListTermInfos::Spec { spec: &list_spec })
         .await
         .ok()
         .unwrap();
 
     assert_eq!(listed.len(), 1);
+
+    let imported_entry = TermEntry {
+        id: format!("{}imported", PREFIX),
+        termbase_id: termbase_entry.id.clone(),
+        source: "Alpha".into(),
+        targets: vec!["阿尔法".into()],
+        comment: None,
+        creator_id: comic_fixture.creator_form.id.clone(),
+    };
+
+    let imported_update = TermRepl {
+        id: term_entry.id.clone(),
+        source: term_entry.source.clone(),
+        targets: vec!["勇者".into(), "英雄".into(), "主角".into()],
+        comment: Some("imported".into()),
+    };
+
+    nucl.coord(async |context| {
+        repo.step(
+            context,
+            &UpsertTerms {
+                entries: std::slice::from_ref(&imported_entry),
+                updates: std::slice::from_ref(&imported_update),
+            },
+        )
+        .await
+    })
+    .await
+    .ok()
+    .unwrap();
+
+    let port_terms = nucl
+        .coord(async |context| {
+            repo.step(
+                context,
+                &ListTermInfos::Termbase {
+                    termbase_id: &termbase_entry.id,
+                },
+            )
+            .await
+        })
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(port_terms.len(), 2);
+
+    assert_eq!(port_terms[0].id, term_entry.id);
+
+    assert_eq!(port_terms[0].targets, ["勇者", "英雄", "主角"]);
+
+    assert_eq!(port_terms[1].id, imported_entry.id);
 
     let duplicate_entry = TermEntry {
         id: format!("{}duplicate", PREFIX),

@@ -54,6 +54,7 @@ use crate::shared::{RdbContext, RdbCore};
 /// Call [`close`](RdbProm::close) before dropping to finish in-flight work
 /// gracefully. Pending records remain durable for the next worker start.
 pub struct RdbProm {
+    //
     // Internal state field `token`.
     /// Cancellation token to signal graceful shutdown of the prom processor.
     token: CancellationToken,

@@ -13,6 +13,7 @@ use crate::value::image::{ImageExt, ImageHash};
 /// [`UserInfoView`]: crate::data::view::user::UserInfoView
 #[derive(Clone)]
 pub struct UserInfo {
+    //
     /// Server-assigned unique user identifier.
     pub id: String,
 
@@ -47,6 +48,7 @@ pub struct UserInfo {
 /// A stored password credential used during login verification.
 #[cfg_attr(test, derive(Clone))]
 pub struct UserCredential {
+    //
     /// Foreign key referencing the user this credential belongs to.
     pub user_id: String,
     /// Bcrypt or similar hashed password for login verification.

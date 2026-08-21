@@ -12,7 +12,7 @@ use axum::routing::{delete, get, post, put};
 use crate::api::http::handler::{
     announcement, assignment, assignment_invitation, auth, chapter,
     chapter_port, comic, comment, health, member, member_invitation, page,
-    system_mail, team, term, termbase, unit, user, workset,
+    system_mail, team, term, termbase, termbase_port, unit, user, workset,
 };
 use crate::api::http::middleware::auth::authorize;
 use crate::api::http::middleware::cors::cors;
@@ -84,7 +84,11 @@ pub fn new(harn: AppHarn) -> Router<AppHarn> {
             get(member_invitation::list_infos),
         )
         .route("/teams/{team_id}/worksets", get(workset::list_infos))
-        .route("/teams/{team_id}/termbases", get(termbase::list_team_infos));
+        .route("/teams/{team_id}/termbases", get(termbase::list_team_infos))
+        .route(
+            "/teams/{team_id}/termbases/import",
+            post(termbase_port::import_team),
+        );
 
     let v1_member = Router::new()
         .route("/members", get(member::list_infos).post(member::create))
@@ -119,6 +123,10 @@ pub fn new(harn: AppHarn) -> Router<AppHarn> {
         .route(
             "/comics/{comic_id}/termbases",
             get(termbase::list_comic_infos),
+        )
+        .route(
+            "/comics/{comic_id}/termbases/import",
+            post(termbase_port::import_comic),
         )
         .route(
             "/comics/{comic_id}",
@@ -248,6 +256,14 @@ pub fn new(harn: AppHarn) -> Router<AppHarn> {
             get(termbase::get_info)
                 .put(termbase::update_info)
                 .delete(termbase::delete),
+        )
+        .route(
+            "/termbases/{termbase_id}/export",
+            get(termbase_port::export),
+        )
+        .route(
+            "/termbases/{termbase_id}/export/download",
+            get(termbase_port::export_download),
         )
         .route("/termbases/{termbase_id}/terms", get(term::list_infos));
 

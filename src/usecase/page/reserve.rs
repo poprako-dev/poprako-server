@@ -87,6 +87,7 @@ where
 
     // Holds one requested upload target within a page reservation.
     struct PageUploadReservation {
+        //
         // Upload destination in object storage.
         object_key: String,
         // Expected size (in bytes) for capacity pre-allocation and verification.
@@ -95,6 +96,7 @@ where
 
     // Holds the identity and optional upload request for one reserved page.
     struct PageReservation {
+        //
         // Page identifier for this reservation.
         page_id: String,
         // Ordering index used to keep reservation payload deterministic.

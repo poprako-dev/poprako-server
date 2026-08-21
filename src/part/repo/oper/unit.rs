@@ -23,6 +23,7 @@ pub struct ListUnitOrders<'a> {
 #[derive(Oper)]
 #[oper(output = UnitCounters)]
 pub struct ApplyUnitEdits<'a> {
+    //
     /// The page id.
     pub page_id: &'a str,
 

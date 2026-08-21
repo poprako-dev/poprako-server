@@ -7,6 +7,7 @@ use crate::model::shared::unit::UnitCoord;
 /// One Unit node in the complete persisted page chain.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UnitOrder {
+    //
     /// Permanent Unit ID.
     pub id: String,
     /// Permanent ID of the following Unit.
@@ -19,6 +20,7 @@ pub struct UnitOrder {
 /// A persisted page Unit.
 #[derive(Debug, Clone)]
 pub struct UnitInfo {
+    //
     /// Permanent Unit ID.
     pub id: String,
 
@@ -64,6 +66,7 @@ impl UnitInfo {
 /// Unit counters stored on a Page and its Chapter.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct UnitCounters {
+    //
     /// Number of visible Units.
     pub total_unit_count: i32,
     /// Number of visible translated Units.
@@ -89,6 +92,7 @@ impl UnitCounters {
 /// Counter change applied to a Chapter after one Page mutation.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct UnitCounterDelta {
+    //
     /// Visible Unit count change.
     pub total_unit_count: i32,
     /// Visible translated Unit count change.

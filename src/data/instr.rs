@@ -32,6 +32,8 @@ pub mod team;
 pub mod term;
 /// Termbase instruction DTOs.
 pub mod termbase;
+/// Terminology-base import instruction DTOs.
+pub mod termbase_port;
 /// Unit instruction DTOs.
 pub mod unit;
 /// User instruction DTOs.

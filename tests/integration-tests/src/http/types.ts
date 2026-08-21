@@ -77,6 +77,37 @@ export interface TermInfoView {
     updated_at: number;
 }
 
+export interface TermPortView {
+    source: string;
+    targets: string[];
+    comment: string | null;
+}
+
+export interface ExportTermbaseVal {
+    name: string;
+    description: string | null;
+    terms: TermPortView[];
+}
+
+export interface ImportTermInstr extends Record<string, unknown> {
+    source: string;
+    targets: string[];
+    comment: string | null;
+}
+
+export interface ImportTermbaseInstr extends Record<string, unknown> {
+    name: string;
+    description: string | null;
+    terms: ImportTermInstr[];
+}
+
+export interface ImportTermbaseVal {
+    id: string;
+    created: boolean;
+    created_term_count: number;
+    merged_term_count: number;
+}
+
 export interface ListComicInfosVal {
     comics: ComicInfoView[];
     pinned_chapters: (ChapterInfoView | null)[];

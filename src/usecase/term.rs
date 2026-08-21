@@ -8,7 +8,7 @@ use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
 use crate::complex::term::TermComplex;
-use crate::complex::termbase::TermbasePermComplex;
+use crate::complex::termbase::{TermbaseComplex, TermbasePermComplex};
 use crate::data::instr::term::{
     CreateTermInstr, ListTermInfosInstr, UpdateTermInfoInstr,
 };
@@ -79,6 +79,8 @@ where
                 &member_info,
                 &termbase_info,
             )?;
+
+            TermbaseComplex::ensure_term_capacity(termbase_info.term_count, 1)?;
 
             let term_info = CreateTerm { entry: &term_entry }
                 .step_on(repo, context)
@@ -164,7 +166,7 @@ where
         limit: instr.limit,
     };
 
-    let term_infos = ListTermInfos {
+    let term_infos = ListTermInfos::Spec {
         spec: &term_info_list_spec,
     }
     .run_on(repo)

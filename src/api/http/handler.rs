@@ -32,6 +32,8 @@ pub mod team;
 pub mod term;
 /// Termbase request handlers.
 pub mod termbase;
+/// Terminology-base native import and export handlers.
+pub mod termbase_port;
 /// Unit request handlers.
 pub mod unit;
 /// User request handlers.

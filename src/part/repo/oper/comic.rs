@@ -20,6 +20,7 @@ pub struct CreateComic<'a> {
 #[derive(Oper)]
 #[oper(output = ComicInfo)]
 pub struct GetComicInfo<'a, 'b> {
+    //
     /// The comic ID.
     pub id: &'a str,
     /// Which relations to include in the response.
@@ -38,6 +39,7 @@ pub struct ListComicInfos<'a> {
 #[derive(Oper)]
 #[oper(output = ComicInfo)]
 pub struct GetComicInfoExcluded<'a, 'b> {
+    //
     /// The comic ID.
     pub id: &'a str,
     /// Which relations to exclude from the response.
@@ -64,6 +66,7 @@ pub struct UpdateComic<'a> {
 #[derive(Oper)]
 #[oper(output = ComicCoverReservation)]
 pub struct ReserveComicCover<'a> {
+    //
     /// The comic ID.
     pub id: &'a str,
     /// The hash of the uploaded cover image.
@@ -76,6 +79,7 @@ pub struct ReserveComicCover<'a> {
 #[derive(Oper)]
 #[oper(output = ())]
 pub struct MarkComicCoverUploaded<'a> {
+    //
     /// The comic ID.
     pub id: &'a str,
     /// The cover version to mark.
@@ -106,6 +110,7 @@ pub struct AllocComicChapterIndex<'a> {
 #[derive(Oper)]
 #[oper(output = ())]
 pub struct UpdateComicChapterCount<'a> {
+    //
     /// The comic ID.
     pub id: &'a str,
     /// The delta to apply (positive or negative).

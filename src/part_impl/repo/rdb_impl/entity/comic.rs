@@ -16,6 +16,7 @@ use crate::value::image::{ImageExt, ImageHash};
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_comic)]
 pub struct ComicInfoRow {
+    //
     pub f_id: String,
     pub f_workset_id: String,
     pub f_index: i32,
@@ -147,6 +148,7 @@ impl TryFrom<ComicInfoRow> for ComicInfo {
 #[derive(Insertable)]
 #[diesel(table_name = t_comic)]
 pub struct ComicEntryRow<'a> {
+    //
     pub f_id: &'a str,
     pub f_workset_id: &'a str,
     pub f_index: i32,
@@ -193,6 +195,7 @@ impl<'a> From<&'a ComicEntry> for ComicEntryRow<'a> {
 #[derive(AsChangeset)]
 #[diesel(table_name = t_comic)]
 pub struct ComicAspectRow<'a> {
+    //
     pub f_title: Option<&'a str>,
     pub f_author: Option<&'a str>,
     pub f_description: Option<Option<&'a str>>,

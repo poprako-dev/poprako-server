@@ -32,6 +32,7 @@ pub struct ListSystemMailInfos<'a> {
 #[derive(Oper)]
 #[oper(output = ())]
 pub struct MarkSystemMailRead<'a> {
+    //
     /// The system mail id.
     pub id: &'a str,
 

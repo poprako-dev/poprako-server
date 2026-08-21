@@ -90,6 +90,7 @@ impl RdbCore {
 
 /// Transactional context holding a pooled PostgreSQL connection.
 pub struct RdbContext<L = RepeatableRead> {
+    //
     /// Pooled PostgreSQL connection owned by this transaction context.
     conn: RdbPooledConn,
     /// Isolation-level marker carried by the context.

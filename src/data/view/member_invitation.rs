@@ -21,6 +21,7 @@ use crate::value::role::RoleMask;
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct MemberInvitationInfoView {
+    //
     /// Unique identifier.
     pub id: String,
 

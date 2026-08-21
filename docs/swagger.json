@@ -1538,6 +1538,73 @@
         }
       }
     },
+    "/api/v1/comics/{comic_id}/termbases/import": {
+      "post": {
+        "tags": [
+          "termbase-port"
+        ],
+        "summary": "`POST /api/v1/comics/{comic_id}/termbases/import` — import into a comic scope.",
+        "operationId": "import_comic",
+        "parameters": [
+          {
+            "name": "comic_id",
+            "in": "path",
+            "description": "Comic ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "force_merge",
+            "in": "query",
+            "description": "Merge into a same-name terminology base instead of rejecting it.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportTermbaseInstr"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Termbase merged",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpBody_ImportTermbaseVal"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Termbase imported",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpBody_ImportTermbaseVal"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Team translator or proofreader required"
+          },
+          "422": {
+            "description": "Invalid document, capacity, or duplicate name"
+          }
+        }
+      }
+    },
     "/api/v1/comments": {
       "post": {
         "tags": [
@@ -2991,6 +3058,73 @@
         }
       }
     },
+    "/api/v1/teams/{team_id}/termbases/import": {
+      "post": {
+        "tags": [
+          "termbase-port"
+        ],
+        "summary": "`POST /api/v1/teams/{team_id}/termbases/import` — import into a team scope.",
+        "operationId": "import_team",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "force_merge",
+            "in": "query",
+            "description": "Merge into a same-name terminology base instead of rejecting it.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportTermbaseInstr"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Termbase merged",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpBody_ImportTermbaseVal"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Termbase imported",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpBody_ImportTermbaseVal"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Team translator or proofreader required"
+          },
+          "422": {
+            "description": "Invalid document, capacity, or duplicate name"
+          }
+        }
+      }
+    },
     "/api/v1/teams/{team_id}/worksets": {
       "get": {
         "tags": [
@@ -3187,6 +3321,82 @@
           },
           "403": {
             "description": "Team proofreader role required"
+          },
+          "422": {
+            "description": "Termbase not found"
+          }
+        }
+      }
+    },
+    "/api/v1/termbases/{termbase_id}/export": {
+      "get": {
+        "tags": [
+          "termbase-port"
+        ],
+        "summary": "`GET /api/v1/termbases/{termbase_id}/export` — export native JSON.",
+        "operationId": "export",
+        "parameters": [
+          {
+            "name": "termbase_id",
+            "in": "path",
+            "description": "Termbase ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Native terminology-base export",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExportTermbaseVal"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Team membership required"
+          },
+          "422": {
+            "description": "Termbase not found"
+          }
+        }
+      }
+    },
+    "/api/v1/termbases/{termbase_id}/export/download": {
+      "get": {
+        "tags": [
+          "termbase-port"
+        ],
+        "summary": "`GET /api/v1/termbases/{termbase_id}/export/download` — download native JSON.",
+        "operationId": "export_download",
+        "parameters": [
+          {
+            "name": "termbase_id",
+            "in": "path",
+            "description": "Termbase ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Native terminology-base download",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExportTermbaseVal"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Team membership required"
           },
           "422": {
             "description": "Termbase not found"
@@ -5362,6 +5572,34 @@
           "type": "string"
         }
       },
+      "ExportTermbaseVal": {
+        "type": "object",
+        "description": "Native portable terminology-base export document.",
+        "required": [
+          "name",
+          "terms"
+        ],
+        "properties": {
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional terminology-base description."
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name of the exported terminology base."
+          },
+          "terms": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TermbaseTermView"
+            },
+            "description": "Portable terminology entries ordered deterministically."
+          }
+        }
+      },
       "HttpBody_ArchiveComicVal": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
@@ -6175,6 +6413,53 @@
                 "type": "integer",
                 "format": "int32",
                 "description": "Number of translation units that were imported."
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_ImportTermbaseVal": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Application-level success code, 0 for normal success.",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "Result of importing one native terminology-base document.",
+            "required": [
+              "id",
+              "created",
+              "created_term_count",
+              "merged_term_count"
+            ],
+            "properties": {
+              "created": {
+                "type": "boolean",
+                "description": "Whether this import created a new terminology base."
+              },
+              "created_term_count": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Number of new terminology entries created."
+              },
+              "id": {
+                "type": "string",
+                "description": "Identifier of the created or merged terminology base."
+              },
+              "merged_term_count": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Number of existing terminology entries merged."
               }
             }
           }
@@ -8450,6 +8735,92 @@
           }
         }
       },
+      "ImportTermInstr": {
+        "type": "object",
+        "description": "One portable terminology entry supplied by an import request.",
+        "required": [
+          "source",
+          "targets"
+        ],
+        "properties": {
+          "comment": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional annotation or usage note."
+          },
+          "source": {
+            "type": "string",
+            "description": "Source-language term or phrase."
+          },
+          "targets": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Target-language translations."
+          }
+        }
+      },
+      "ImportTermbaseInstr": {
+        "type": "object",
+        "description": "Native terminology-base document supplied to an import endpoint.",
+        "required": [
+          "name",
+          "terms"
+        ],
+        "properties": {
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional terminology-base description."
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name of the terminology base."
+          },
+          "terms": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportTermInstr"
+            },
+            "description": "Portable terminology entries to import."
+          }
+        }
+      },
+      "ImportTermbaseVal": {
+        "type": "object",
+        "description": "Result of importing one native terminology-base document.",
+        "required": [
+          "id",
+          "created",
+          "created_term_count",
+          "merged_term_count"
+        ],
+        "properties": {
+          "created": {
+            "type": "boolean",
+            "description": "Whether this import created a new terminology base."
+          },
+          "created_term_count": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Number of new terminology entries created."
+          },
+          "id": {
+            "type": "string",
+            "description": "Identifier of the created or merged terminology base."
+          },
+          "merged_term_count": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Number of existing terminology entries merged."
+          }
+        }
+      },
       "JoinAssignmentInvitationInstr": {
         "type": "object",
         "description": "Input parameters for joining an assignment through an invitation code.",
@@ -9543,6 +9914,34 @@
           }
         }
       },
+      "TermbaseTermView": {
+        "type": "object",
+        "description": "Portable terminology-entry content without persistence metadata.",
+        "required": [
+          "source",
+          "targets"
+        ],
+        "properties": {
+          "comment": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional annotation or usage note."
+          },
+          "source": {
+            "type": "string",
+            "description": "Source-language term or phrase."
+          },
+          "targets": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Target-language translations."
+          }
+        }
+      },
       "UnitCoordInstr": {
         "type": "object",
         "description": "Page-relative Unit coordinates.",
@@ -10373,6 +10772,10 @@
     {
       "name": "comments",
       "description": "Comment endpoints"
+    },
+    {
+      "name": "termbase-port",
+      "description": "Terminology-base import/export endpoints"
     }
   ]
 }

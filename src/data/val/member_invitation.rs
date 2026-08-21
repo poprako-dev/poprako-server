@@ -15,6 +15,7 @@ use utoipa::ToSchema;
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateMemberInvitationVal {
+    //
     /// Unique identifier of the created invitation.
     pub id: String,
     /// Opaque invitation code presented by the invitee to claim the invitation.

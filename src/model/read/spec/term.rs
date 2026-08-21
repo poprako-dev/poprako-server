@@ -2,6 +2,7 @@
 
 /// Filtering and pagination parameters for terms inside one terminology base.
 pub struct TermListSpec {
+    //
     /// The terminology base whose terms are being queried.
     pub termbase_id: String,
 

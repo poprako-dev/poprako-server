@@ -56,6 +56,7 @@ impl ToSql<Text, Pg> for LocalMessageStatus {
 #[derive(Insertable)]
 #[diesel(table_name = t_local_message)]
 pub struct LocalMessageEntryRow<'a> {
+    //
     pub f_id: &'a str,
     pub f_topic: &'a str,
     pub f_status: LocalMessageStatus,
@@ -106,6 +107,7 @@ impl<'a> LocalMessageEntryRow<'a> {
 /// A row read from `t_local_message` during the poll phase.
 #[derive(Debug, Queryable)]
 pub struct LocalMessageRow {
+    //
     pub f_id: String,
     pub f_topic: String,
     pub f_payload: serde_json::Value,
