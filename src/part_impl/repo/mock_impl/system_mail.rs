@@ -65,7 +65,7 @@ fn send_system_mails(
 
         let duplicated = entries
             .iter()
-            .filter(|candidate| candidate.id == system_mail_entry.id)
+            .filter(|cand| cand.id == system_mail_entry.id)
             .count()
             > 1;
 

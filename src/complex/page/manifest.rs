@@ -30,7 +30,7 @@ pub struct ManifestPlan {
 pub struct PageManifestComplex;
 
 impl PageManifestComplex {
-    /// Matches explicit identities first, then consumes automatic hash candidates.
+    /// Matches explicit identities first, then consumes automatic hash cands.
     pub fn build(
         chapter_id: &str,
         existing_page_infos: &[PageInfo],
@@ -94,7 +94,7 @@ impl PageManifestComplex {
                             == Some(&page_spec.image_hash)
                         && page_info.image_ext == Some(page_spec.ext)
                 })
-                .min_by(|(_, left), (_, right)| candidate_order(left, right))
+                .min_by(|(_, left), (_, right)| cand_order(left, right))
                 .map(|(existing_index, _)| existing_index);
 
             let Some(existing_index) = existing_index else {
@@ -124,8 +124,8 @@ impl PageManifestComplex {
     }
 }
 
-// Compare two candidates by translated state, upload time, and index for stable matching.
-fn candidate_order(left: &PageInfo, right: &PageInfo) -> Ordering {
+// Compare two cands by translated state, upload time, and index for stable matching.
+fn cand_order(left: &PageInfo, right: &PageInfo) -> Ordering {
     //
     right
         .total_unit_count

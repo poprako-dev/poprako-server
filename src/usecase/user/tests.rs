@@ -50,7 +50,7 @@ use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::fixture::{credential, user};
 use crate::test_util::{
-    assert_expected_message, assert_expected_variant,
+    IMAGE_CONFIG, assert_expected_message, assert_expected_variant,
     assert_one_image_check_record,
 };
 use crate::usecase::user::delete::delete;
@@ -367,7 +367,7 @@ async fn reserve_avatar_updates_state_enqueues_check_and_returns_put_url() {
     );
 
     let val = reserve_avatar(
-        (&mock, &mock, &mock, &mock),
+        (&mock, &mock, &mock, &mock, &IMAGE_CONFIG),
         token("user-1"),
         reserve_instr("png"),
     )
@@ -410,7 +410,7 @@ async fn reserve_avatar_replacing_avatar_enqueues_delete_and_check() {
     );
 
     reserve_avatar(
-        (&mock, &mock, &mock, &mock),
+        (&mock, &mock, &mock, &mock, &IMAGE_CONFIG),
         token("user-1"),
         reserve_instr("jpg"),
     )
@@ -436,7 +436,7 @@ async fn reserve_avatar_rolls_back_missing_user() {
     let mock = Mock::new();
 
     let err = reserve_avatar(
-        (&mock, &mock, &mock, &mock),
+        (&mock, &mock, &mock, &mock, &IMAGE_CONFIG),
         token("user-1"),
         reserve_instr("png"),
     )
@@ -464,7 +464,7 @@ async fn reserve_avatar_propagates_put_url_failure_after_commit() {
     );
 
     let err = reserve_avatar(
-        (&mock, &mock, &mock, &mock),
+        (&mock, &mock, &mock, &mock, &IMAGE_CONFIG),
         token("user-1"),
         reserve_instr("png"),
     )

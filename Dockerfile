@@ -51,7 +51,7 @@ RUN apk add --no-cache \
 COPY --from=builder --chown=poprako:poprako \
     /work/poprako-server /app/poprako-server
 COPY --chown=poprako:poprako \
-    deploy/poprako-server/application_config.json /app/application_config.json
+    deploy/poprako-server/app_config.toml /app/app_config.toml
 
 USER poprako
 

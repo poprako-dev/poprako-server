@@ -1,0 +1,9 @@
+[http]
+host = "0.0.0.0"
+port = 8888
+
+[image]
+user_avatar_limit = 524288
+team_avatar_limit = 524288
+comic_cover_limit = 2097152
+page_image_limit = 26214400

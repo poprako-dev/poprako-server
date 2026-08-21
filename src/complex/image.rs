@@ -1,7 +1,11 @@
 //! Complex domain logic for image lifecycle tracking — deletion and integrity-check ID generation for asynchronous image processing.
 
+#[cfg(test)]
+mod tests;
+
 use poprako_util::i18n::trl;
 
+use crate::config::ImageConfig;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 use crate::value::image::ImageKind;
@@ -12,25 +16,13 @@ pub struct ImageComplex;
 impl ImageComplex {
     /// Validates the content length against the per-kind upper bound.
     ///
-    /// | Kind         | Max         |
-    /// |--------------|-------------|
-    /// | `UserAvatar` | 512 KiB     |
-    /// | `TeamAvatar` | 512 KiB     |
-    /// | `ComicCover` | 2 MiB       |
-    /// | `PageImage`  | 25 MiB       |
     pub fn ensure_byte_length(
+        image_config: &ImageConfig,
         byte_length: u64,
         kind: ImageKind,
     ) -> BaseRest<()> {
         //
-        let max_length = match kind {
-            //
-            ImageKind::UserAvatar | ImageKind::TeamAvatar => 512 * 1024,
-
-            ImageKind::ComicCover => 2 * 1024 * 1024,
-
-            ImageKind::PageImage => 25 * 1024 * 1024,
-        };
+        let max_length = image_config.byte_limit_for(kind);
 
         if !(1..=max_length).contains(&byte_length) {
             //

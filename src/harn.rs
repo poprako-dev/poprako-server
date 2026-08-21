@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use crate::config::AppConfig;
+
 /// Selects one of the transaction coordinators owned by the application.
 pub struct HybNucl<NR, NS>(NR, NS);
 
@@ -38,6 +40,8 @@ impl<N, R, P, A, I, D> Clone for Harn<N, R, P, A, I, D> {
 
 // Stores the concrete application ports.
 struct HarnInner<N, R, P, A, I, D> {
+    // Runtime application configuration.
+    config: AppConfig,
     // Transaction coordinator selector.
     nucl: N,
     // Repository adapter bundle.
@@ -55,6 +59,7 @@ struct HarnInner<N, R, P, A, I, D> {
 impl<N, R, P, A, I, D> Harn<N, R, P, A, I, D> {
     /// Builds a harness from its application ports.
     pub fn new(
+        config: AppConfig,
         nucl: N,
         repo: R,
         prom: P,
@@ -65,6 +70,7 @@ impl<N, R, P, A, I, D> Harn<N, R, P, A, I, D> {
         //
         Self {
             inner: Arc::new(HarnInner {
+                config,
                 nucl,
                 repo,
                 prom,
@@ -73,6 +79,11 @@ impl<N, R, P, A, I, D> Harn<N, R, P, A, I, D> {
                 develop,
             }),
         }
+    }
+
+    /// Returns the runtime application configuration.
+    pub fn config(&self) -> &AppConfig {
+        &self.inner.config
     }
 
     /// Returns the transaction coordinator selector.

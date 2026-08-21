@@ -218,6 +218,7 @@ pub async fn reserve_avatar(
             harn.repo(),
             harn.prom(),
             harn.image_pool(),
+            &harn.config().image,
         ),
         user_token,
         instr,

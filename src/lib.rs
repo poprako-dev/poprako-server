@@ -52,7 +52,7 @@ pub use crate::api::http::openapi::ApiDoc;
 pub use crate::api::http::server::serve;
 pub use crate::api::http::state::AppHarn;
 
-pub use crate::config::AppConfig;
+pub use crate::config::{AppConfig, HttpConfig, ImageConfig};
 pub use crate::extra::sched::Sched;
 pub use crate::harn::{Harn, HybNucl};
 pub use crate::log::init_log;

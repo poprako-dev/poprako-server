@@ -21,6 +21,7 @@ use poprako_util::i18n::trl;
 use crate::complex::chapter::ChapterComplex;
 use crate::complex::image::ImageComplex;
 use crate::complex::page::{PageComplex, PagePermComplex};
+use crate::config::ImageConfig;
 use crate::data::instr::page::{
     MarkPageImageUploadedInstr, ReservePageImageInstr,
 };
@@ -48,9 +49,15 @@ use crate::util::next_snowflake_id;
 use crate::value::image::ImageKind;
 
 /// Reserves a replacement image upload slot for one page.
-#[instrument(level = "info", skip(nucl, repo, prom, image_pool))]
+#[instrument(level = "info", skip(nucl, repo, prom, image_pool, image_config))]
 pub async fn reserve_image<N, C, R, P, I>(
-    (nucl, repo, prom, image_pool): (&N, &R, &P, &I),
+    (nucl, repo, prom, image_pool, image_config): (
+        &N,
+        &R,
+        &P,
+        &I,
+        &ImageConfig,
+    ),
     token: UserToken,
     id: String,
     instr: ReservePageImageInstr,
@@ -69,7 +76,11 @@ where
         ext,
     } = instr;
 
-    ImageComplex::ensure_byte_length(new_byte_len, ImageKind::PageImage)?;
+    ImageComplex::ensure_byte_length(
+        image_config,
+        new_byte_len,
+        ImageKind::PageImage,
+    )?;
 
     let page_info = GetPageInfo { id: &id }.run_on(repo).await?;
 

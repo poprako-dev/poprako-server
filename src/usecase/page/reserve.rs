@@ -3,7 +3,6 @@
 /// Chapter page-count validation.
 pub mod validation;
 
-use std::collections::HashSet;
 use std::time::Duration;
 
 use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
@@ -15,6 +14,7 @@ use crate::complex::chapter::ChapterComplex;
 use crate::complex::image::ImageComplex;
 use crate::complex::page::manifest::PageManifestComplex;
 use crate::complex::page::{PageComplex, PagePermComplex};
+use crate::config::ImageConfig;
 use crate::data::instr::page::ReserveChapterPagesInstr;
 use crate::data::val::page::{ReserveChapterPagesVal, ReservedPageVal};
 use crate::data::view::image::ImageUploadSlotView;
@@ -41,14 +41,20 @@ use crate::part::repo::oper::page::{
 };
 use crate::part::repo::page::PageRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::usecase::page::reserve::validation::validate_page_count;
+use crate::usecase::page::reserve::validation::validate_page_specs;
 use crate::util::next_snowflake_id;
 use crate::value::image::{ImageExt, ImageHash, ImageKind};
 
 /// Reserves upload slots for all pages in an empty chapter.
-#[instrument(level = "info", skip(nucl, repo, prom, image_pool))]
+#[instrument(level = "info", skip(nucl, repo, prom, image_pool, image_config))]
 pub async fn reserve_chapter_pages<N, C, R, P, I>(
-    (nucl, repo, prom, image_pool): (&N, &R, &P, &I),
+    (nucl, repo, prom, image_pool, image_config): (
+        &N,
+        &R,
+        &P,
+        &I,
+        &ImageConfig,
+    ),
     token: UserToken,
     instr: ReserveChapterPagesInstr,
 ) -> BaseRest<ReserveChapterPagesVal>
@@ -72,61 +78,12 @@ where
         .map(PageImageSpec::from)
         .collect::<Vec<_>>();
 
-    let page_count = i32::try_from(page_specs.len()).map_err(|_| {
-        //
-        let err_message = trl("error-invalid-page-count");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Args,
-            err_message = %err_message,
-            chapter_id = %chapter_id,
-            user_id = %token.user_id,
-            page_count = page_specs.len(),
-            "expected error: invalid page count",
-        );
-
-        BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message: err_message,
-        }
-    })?;
-
-    validate_page_count(page_count)?;
-
-    for new_byte_len in page_specs
-        .iter()
-        .filter_map(|page_spec| page_spec.new_byte_len)
-    {
-        ImageComplex::ensure_byte_length(new_byte_len, ImageKind::PageImage)?;
-    }
-
-    let mut explicit_page_ids = HashSet::new();
-
-    for page_spec in &page_specs {
-        //
-        let Some(page_id) = &page_spec.page_id else {
-            continue;
-        };
-
-        if !explicit_page_ids.insert(page_id) {
-            //
-            let err_message = trl("error-duplicate-page-id");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_message = %err_message,
-                chapter_id = %chapter_id,
-                user_id = %token.user_id,
-                page_id = %page_id,
-                "expected error: duplicate page id in reservation",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message: err_message,
-            });
-        }
-    }
+    let page_count = validate_page_specs(
+        image_config,
+        &page_specs,
+        &chapter_id,
+        &token.user_id,
+    )?;
 
     // Holds one requested upload target within a page reservation.
     struct PageUploadReservation {

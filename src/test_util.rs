@@ -6,11 +6,20 @@ use time::OffsetDateTime;
 
 use poprako_util::i18n::trl;
 
+use crate::ImageConfig;
 use crate::part::prom::payload::TaskPayload;
 use crate::part::prom::payload::image::ImagePayload;
 use crate::part_impl::prom::mock_impl::MockPromRecord;
 use crate::result::{BaseError, ExpectedVariant};
 use crate::value::image::ImageKind;
+
+/// Image limits matching the default runtime configuration.
+pub const IMAGE_CONFIG: ImageConfig = ImageConfig {
+    user_avatar_limit: 512 * 1024,
+    team_avatar_limit: 512 * 1024,
+    comic_cover_limit: 2 * 1024 * 1024,
+    page_image_limit: 25 * 1024 * 1024,
+};
 
 /// Asserts that `err` is a [`RootError::Expected`] whose variant matches `expected`.
 /// Panics with a descriptive message on mismatch.

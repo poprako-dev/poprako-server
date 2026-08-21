@@ -21,6 +21,7 @@ use poprako_util::i18n::trl;
 use crate::complex::image::ImageComplex;
 use crate::complex::member::MemberComplex;
 use crate::complex::team::{TeamComplex, TeamPermComplex};
+use crate::config::ImageConfig;
 use crate::data::instr::team::{
     CreateTeamInstr, MarkTeamAvatarUploadedInstr, ReserveTeamAvatarInstr,
     UpdateTeamInfoInstr,
@@ -178,9 +179,18 @@ where
 /// * `R: TeamRepo<C>` — Team storage.
 /// * `P: Prom<C>` — Prom enqueuer for deferred image opers.
 /// * `I: ImagePool` — Generates the signed upload URL.
-#[instrument(level = "info", skip(nucl, repo, prom, image_pool, token))]
+#[instrument(
+    level = "info",
+    skip(nucl, repo, prom, image_pool, image_config, token)
+)]
 pub async fn reserve_avatar<N, C, R, P, I>(
-    (nucl, repo, prom, image_pool): (&N, &R, &P, &I),
+    (nucl, repo, prom, image_pool, image_config): (
+        &N,
+        &R,
+        &P,
+        &I,
+        &ImageConfig,
+    ),
     token: UserToken,
     id: String,
     instr: ReserveTeamAvatarInstr,
@@ -194,6 +204,7 @@ where
     I: ImagePool,
 {
     ImageComplex::ensure_byte_length(
+        image_config,
         instr.new_byte_len,
         ImageKind::TeamAvatar,
     )?;

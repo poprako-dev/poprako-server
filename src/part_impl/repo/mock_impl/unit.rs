@@ -23,7 +23,7 @@ fn find_order_pos(ordered_ids: &[&str], id: &str) -> Option<usize> {
     ordered_ids
         .iter()
         .enumerate()
-        .find_map(|(pos, candidate)| (*candidate == id).then_some(pos))
+        .find_map(|(pos, cand)| (*cand == id).then_some(pos))
 }
 
 // Move one unit id to a new position based on requested next_id.
@@ -82,20 +82,20 @@ where
 
     let mut head_pos = None;
 
-    for candidate in 0..units.len() {
+    for cand in 0..units.len() {
         //
         // Detect whether this unit has any predecessor.
         let has_predecessor = units.iter().any(|unit| {
             //
             next_id_of(unit)
-                .is_some_and(|next_id| next_id == id_of(&units[candidate]))
+                .is_some_and(|next_id| next_id == id_of(&units[cand]))
         });
 
         if has_predecessor {
             continue;
         }
 
-        if head_pos.replace(candidate).is_some() {
+        if head_pos.replace(cand).is_some() {
             return Err(unrecoverable("persisted Unit chain is corrupt"));
         }
     }
@@ -109,14 +109,16 @@ where
     for index in 0..units.len() - 1 {
         //
         // Find the explicit successor and move it directly after current unit.
-        let next_pos = units[index + 1..].iter().enumerate().find_map(
-            |(pos, candidate)| {
-                //
-                next_id_of(&units[index])
-                    .is_some_and(|next_id| next_id == id_of(candidate))
-                    .then_some(pos)
-            },
-        );
+        let next_pos =
+            units[index + 1..]
+                .iter()
+                .enumerate()
+                .find_map(|(pos, cand)| {
+                    //
+                    next_id_of(&units[index])
+                        .is_some_and(|next_id| next_id == id_of(cand))
+                        .then_some(pos)
+                });
 
         let Some(next_pos) = next_pos else {
             return Err(unrecoverable("persisted Unit chain is corrupt"));

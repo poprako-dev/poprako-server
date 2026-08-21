@@ -43,7 +43,7 @@ use crate::part_impl::prom::mock_impl::process_pending;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::{
-    assert_expected_message, assert_expected_variant,
+    IMAGE_CONFIG, assert_expected_message, assert_expected_variant,
     assert_one_image_check_record,
 };
 use crate::usecase::page::delete::delete;
@@ -211,7 +211,7 @@ async fn reserve_image_replaces_key_and_enqueues_prom() {
     ));
 
     let reserved = reserve_image(
-        (&mock, &mock, &mock, &mock),
+        (&mock, &mock, &mock, &mock, &IMAGE_CONFIG),
         token("user-1"),
         "page-1".into(),
         ReservePageImageInstr {
@@ -280,7 +280,7 @@ async fn reserve_image_reuses_same_uploaded_identity_without_version_bump() {
     ));
 
     let reserved = reserve_image(
-        (&mock, &mock, &mock, &mock),
+        (&mock, &mock, &mock, &mock, &IMAGE_CONFIG),
         token("user-1"),
         "page-1".into(),
         ReservePageImageInstr {
@@ -315,7 +315,7 @@ async fn reserve_image_resigns_same_pending_identity() {
     ));
 
     let reserved = reserve_image(
-        (&mock, &mock, &mock, &mock),
+        (&mock, &mock, &mock, &mock, &IMAGE_CONFIG),
         token("user-1"),
         "page-1".into(),
         ReservePageImageInstr {
@@ -365,7 +365,7 @@ async fn reserve_image_replaces_same_hash_with_different_extension() {
     ));
 
     let reserved = reserve_image(
-        (&mock, &mock, &mock, &mock),
+        (&mock, &mock, &mock, &mock, &IMAGE_CONFIG),
         token("user-1"),
         "page-1".into(),
         ReservePageImageInstr {
@@ -410,7 +410,7 @@ async fn reserve_image_rejects_missing_page() {
     let mock = Mock::new();
 
     let err = reserve_image(
-        (&mock, &mock, &mock, &mock),
+        (&mock, &mock, &mock, &mock, &IMAGE_CONFIG),
         token("user-1"),
         "missing".into(),
         ReservePageImageInstr {
