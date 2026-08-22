@@ -90,8 +90,7 @@ export interface RunCtx {
         outsiderMemberId: string;
     } | null;
 
-    // Announcement/comment ids created during the run (no HTTP delete endpoint;
-    // cleanup targets them by id via SQL).
+    // Announcement/comment ids still requiring direct cleanup after each suite.
     leftoverCommentIds: string[];
     leftoverAnnouncementIds: string[];
 

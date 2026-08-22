@@ -13,7 +13,7 @@ use crate::data::instr::assignment::UpdateAssignmentRolesInstr;
 use crate::model::shared::user::UserToken;
 use crate::model::write::assignment::{AssignmentEntry, AssignmentRoleRepl};
 use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::ReptRead;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
@@ -41,7 +41,7 @@ pub async fn update_roles<N, C, R>(
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<RepeatableRead>,
+    C::Level: AtLeast<ReptRead>,
     R: AssignmentRepo<C>
         + ChapterWorkflowRecordRepo<C>
         + ChapterRepo<C>

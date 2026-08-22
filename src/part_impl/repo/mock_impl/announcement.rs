@@ -2,20 +2,18 @@
 
 use std::cmp::Reverse;
 
-use poprako_orchestra::{Run, Step};
+use poprako_orchestra::Run;
 use tracing::instrument;
 
 use crate::model::read::proj::announcement::AnnouncementInfo;
 use crate::model::read::proj::user::UserInfo;
 use crate::model::read::spec::announcement::AnnouncementListSpec;
-use crate::model::write::announcement::AnnouncementEntry;
-use crate::part::nucl::RepeatableRead;
+use crate::model::write::announcement::{AnnouncementEntry, AnnouncementRepl};
 use crate::part::repo::oper::announcement::{
-    CreateAnnouncement, ListAnnouncementInfos,
+    CreateAnnouncement, DeleteAnnouncement, GetAnnouncementInfo,
+    ListAnnouncementInfos, UpdateAnnouncement,
 };
-use crate::part_impl::repo::mock_impl::{
-    Mock, MockContext, MockState, expected, now,
-};
+use crate::part_impl::repo::mock_impl::{Mock, MockState, expected, now};
 use crate::result::{BaseError, BaseRest, accept};
 use crate::value::announcement::AnnouncementInclOpt;
 
@@ -121,6 +119,53 @@ fn create_announcement(
     accept(announcement_info)
 }
 
+// Loads an announcement from mock storage for mutation.
+fn get_announcement_info(
+    state: &MockState,
+    id: &str,
+) -> BaseRest<AnnouncementInfo> {
+    //
+    state
+        .announcements
+        .iter()
+        .find(|announcement_info| announcement_info.id == id)
+        .cloned()
+        .ok_or_else(|| expected("error-announcement-not-found"))
+}
+
+// Replaces an announcement's editable fields in mock storage.
+fn update_announcement(
+    state: &mut MockState,
+    update: &AnnouncementRepl,
+) -> BaseRest<()> {
+    //
+    let announcement_info = state
+        .announcements
+        .iter_mut()
+        .find(|announcement_info| announcement_info.id == update.id)
+        .ok_or_else(|| expected("error-announcement-not-found"))?;
+
+    announcement_info.title = update.title.clone();
+
+    announcement_info.content = update.content.clone();
+
+    accept(())
+}
+
+// Deletes an announcement from mock storage.
+fn delete_announcement(state: &mut MockState, id: &str) -> BaseRest<()> {
+    //
+    let announcement_index = state
+        .announcements
+        .iter()
+        .position(|announcement_info| announcement_info.id == id)
+        .ok_or_else(|| expected("error-announcement-not-found"))?;
+
+    state.announcements.remove(announcement_index);
+
+    accept(())
+}
+
 impl Run<ListAnnouncementInfos<'_>> for Mock {
     // Internal type alias for `Error`.
     // Defines the adapter error exposed by this operation.
@@ -141,20 +186,64 @@ impl Run<ListAnnouncementInfos<'_>> for Mock {
     }
 }
 
-impl Step<CreateAnnouncement<'_>, MockContext> for Mock {
+impl Run<CreateAnnouncement<'_>> for Mock {
     // Internal type alias for `Error`.
-    type Level = RepeatableRead;
-
-    // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
-    async fn step(
+    // Internal implementation of `run`.
+    async fn run(
         &self,
-        context: &mut MockContext,
         oper: &CreateAnnouncement<'_>,
     ) -> BaseRest<AnnouncementInfo> {
-        create_announcement(&mut context.state, oper.entry)
+        //
+        let mut state = self.state.lock().unwrap();
+
+        create_announcement(&mut state, oper.entry)
+    }
+}
+
+impl Run<GetAnnouncementInfo<'_>> for Mock {
+    // Internal type alias for `Error`.
+    type Error = BaseError;
+
+    #[instrument(level = "info", skip_all)]
+    // Loads an announcement independently.
+    async fn run(
+        &self,
+        oper: &GetAnnouncementInfo<'_>,
+    ) -> BaseRest<AnnouncementInfo> {
+        //
+        let state = self.state.lock().unwrap();
+
+        get_announcement_info(&state, oper.id)
+    }
+}
+
+impl Run<UpdateAnnouncement<'_>> for Mock {
+    // Internal type alias for `Error`.
+    type Error = BaseError;
+
+    #[instrument(level = "info", skip_all)]
+    // Updates an announcement independently.
+    async fn run(&self, oper: &UpdateAnnouncement<'_>) -> BaseRest<()> {
+        //
+        let mut state = self.state.lock().unwrap();
+
+        update_announcement(&mut state, oper.update)
+    }
+}
+
+impl Run<DeleteAnnouncement<'_>> for Mock {
+    // Internal type alias for `Error`.
+    type Error = BaseError;
+
+    #[instrument(level = "info", skip_all)]
+    // Deletes an announcement independently.
+    async fn run(&self, oper: &DeleteAnnouncement<'_>) -> BaseRest<()> {
+        //
+        let mut state = self.state.lock().unwrap();
+
+        delete_announcement(&mut state, oper.id)
     }
 }

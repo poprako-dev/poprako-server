@@ -4,7 +4,7 @@
 // Unit tests that validate comment lifecycle and visibility constraints.
 mod tests;
 
-use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
+use poprako_orchestra::{Context, OperRun as _};
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
@@ -17,7 +17,6 @@ use crate::model::read::spec::comment::CommentListSpec;
 use crate::model::shared::user::UserToken;
 use crate::model::write::comment::CommentEntry;
 use crate::part::image::ImagePool;
-use crate::part::nucl::RepeatableRead;
 use crate::part::repo::comment::CommentRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::comment::{CreateComment, ListCommentInfos};
@@ -73,17 +72,15 @@ where
 }
 
 /// Creates a comment under a team.
-#[instrument(level = "info", skip(nucl, repo))]
-pub async fn create<N, C, R>(
-    (nucl, repo): (&N, &R),
+#[instrument(level = "info", skip(repo))]
+pub async fn create<C, R>(
+    repo: &R,
     token: UserToken,
     instr: CreateCommentInstr,
 ) -> BaseRest<CreateCommentVal>
 where
-    C: Context + Send,
-    N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<RepeatableRead>,
-    R: CommentRepo<C> + MemberRepo<C> + Send + Sync,
+    C: Context,
+    R: CommentRepo<C> + MemberRepo<C> + Sync,
 {
     let member_info = FindMemberInfo::UserTeam {
         user_id: &token.user_id,
@@ -102,23 +99,18 @@ where
 
     CommentPermComplex::ensure_user_can_create(&member_info)?;
 
-    let comment_info = nucl
-        .coord(async move |context| {
-            //
-            let comment_entry = CommentEntry {
-                id: CommentComplex::gen_id(),
-                team_id: instr.team_id,
-                user_id: token.user_id,
-                content: instr.content,
-            };
+    let comment_entry = CommentEntry {
+        id: CommentComplex::gen_id(),
+        team_id: instr.team_id,
+        user_id: token.user_id,
+        content: instr.content,
+    };
 
-            CreateComment {
-                entry: &comment_entry,
-            }
-            .step_on(repo, context)
-            .await
-        })
-        .await?;
+    let comment_info = CreateComment {
+        entry: &comment_entry,
+    }
+    .run_on(repo)
+    .await?;
 
     accept(CreateCommentVal {
         id: comment_info.id,

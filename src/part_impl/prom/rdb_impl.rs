@@ -31,7 +31,7 @@ use tracing::instrument;
 
 use crate::part::effect::Develop;
 use crate::part::image::ImageManager;
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::ReptRead;
 use crate::part::prom::oper::{Defer, DeferBatch};
 use crate::part::prom::payload::TaskPayload;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
@@ -130,10 +130,10 @@ impl Drop for RdbProm {
 
 impl<'a, L> Step<Defer<'a, String, TaskPayload, ()>, RdbContext<L>> for RdbProm
 where
-    L: Level + Send + AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<ReptRead>,
 {
     // Internal type alias for `Error`.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -164,10 +164,10 @@ where
 impl<'t, 'a, L> Step<DeferBatch<'t, 'a, String, TaskPayload, ()>, RdbContext<L>>
     for RdbProm
 where
-    L: Level + Send + AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<ReptRead>,
 {
     // Internal type alias for `Error`.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;

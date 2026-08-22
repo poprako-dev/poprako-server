@@ -26,8 +26,8 @@ use anyhow::Context as _;
 
 use poprako_server::{
     AppConfig, AsyncEffectDevelop, Harn, HybNucl, HybRepo, JwtAuth,
-    R2ImagePool, RdbContext, RdbCore, RdbNucl, RdbProm, RepeatableRead, Sched,
-    Serializable,
+    R2ImagePool, RdbContext, RdbCore, RdbNucl, RdbProm, ReptRead, Sched,
+    Serial,
 };
 
 /// Application entry point.
@@ -65,15 +65,15 @@ async fn main() -> anyhow::Result<()> {
     let core = RdbCore::from_env()?;
 
     let nucl = HybNucl::new(
-        RdbNucl::<RepeatableRead>::new(core.clone()),
-        RdbNucl::<Serializable>::new(core.clone()),
+        RdbNucl::<ReptRead>::new(core.clone()),
+        RdbNucl::<Serial>::new(core.clone()),
     );
 
     let repo = HybRepo::new(core.clone());
 
     let (auth, image_pool) = (JwtAuth::from_env()?, R2ImagePool::from_env()?);
 
-    let develop = AsyncEffectDevelop::new::<RdbContext<RepeatableRead>, _>(
+    let develop = AsyncEffectDevelop::new::<RdbContext<ReptRead>, _>(
         Arc::new(HybRepo::new(core.clone())),
         1024,
     );

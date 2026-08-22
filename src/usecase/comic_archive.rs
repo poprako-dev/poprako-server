@@ -19,7 +19,7 @@ use crate::data::val::comic_archive::{
     ArchiveComicVal, ExportComicArchivesVal,
 };
 use crate::model::shared::user::UserToken;
-use crate::part::nucl::Serializable;
+use crate::part::nucl::Serial;
 use crate::part::prom::Prom;
 use crate::part::prom::oper::DeferBatch;
 use crate::part::prom::payload::{TaskPayload, image};
@@ -124,7 +124,7 @@ pub async fn archive<N, C, R, P>(
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<Serializable>,
+    C::Level: AtLeast<Serial>,
     R: ComicRepo<C>
         + ComicArchiveRepo<C>
         + MemberRepo<C>

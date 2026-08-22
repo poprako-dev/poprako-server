@@ -38,7 +38,7 @@ the seed-only state in its `finally` block. Every current module exports
 | it_05 | `it_05_unit_save_order_count.ts` | Unit v2 create/next ordering, 204-then-list contract, counters, snake_case translation body/query formats, and direct PopRaKo export/import replacement round trips. |
 | it_06 | `it_06_unit_concurrency.ts` | Serializable same-Page writes with client-side 409/code 8 retries, same-anchor inserts, tombstone delete/Patch commit order, and linked-list completeness. |
 | it_07 | `it_07_workflow_sysmail.ts` | Snake_case-body workflow transitions, strongly typed immutable activity events without repository storage JSON or rendered text, pagination, and deferred system mail. |
-| it_08 | `it_08_info_update_upload_mark.ts` | Resource updates, checksum-bound avatar/cover PUTs before version-only mark requests, stale upload rejection, announcements, comments, and profiles. |
+| it_08 | `it_08_info_update_upload_mark.ts` | Resource updates, checksum-bound avatar/cover PUTs before version-only mark requests, stale upload rejection, announcement create/update/delete, comments, and profiles. |
 | it_09 | `it_09_cross_team_perm.ts` | Cross-team authorization isolation (including chapter activity records) and team-scoped online-user leases. |
 | it_10 | `it_10_cascade_delete_cleanup.ts` | Cascade deletion and cleanup side effects. |
 | it_11 | `it_11_comic_archive.ts` | Permanent comic archive snapshots, lifecycle list filtering, and image-delete prom records. |

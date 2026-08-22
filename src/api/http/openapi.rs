@@ -8,7 +8,9 @@ use utoipa::OpenApi;
 
 use crate::api::http::handler;
 use crate::api::http::result::HttpError;
-use crate::data::instr::announcement::CreateAnnouncementInstr;
+use crate::data::instr::announcement::{
+    CreateAnnouncementInstr, UpdateAnnouncementInfoInstr,
+};
 use crate::data::instr::assignment::{
     JoinChapterAssignmentInstr, UpdateAssignmentRolesInstr,
 };
@@ -181,6 +183,8 @@ use crate::value::role::RoleField;
         handler::system_mail::mark_read,
         handler::announcement::create,
         handler::announcement::list_infos,
+        handler::announcement::update_info,
+        handler::announcement::delete,
         handler::comment::create,
         handler::comment::list_infos,
         handler::termbase::create,
@@ -286,6 +290,7 @@ use crate::value::role::RoleField;
         AnnouncementInfoView,
         CreateAnnouncementInstr,
         CreateAnnouncementVal,
+        UpdateAnnouncementInfoInstr,
         CommentInfoView,
         CreateCommentInstr,
         CreateCommentVal,

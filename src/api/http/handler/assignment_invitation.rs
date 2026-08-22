@@ -24,7 +24,7 @@ use crate::data::val::assignment_invitation::CreateAssignmentInvitationVal;
 use crate::data::view::assignment::AssignmentInfoView;
 use crate::data::view::assignment_invitation::AssignmentInvitationInfoView;
 use crate::model::shared::user::UserToken;
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::ReptRead;
 use crate::part_impl::prom::rdb_impl::RdbProm;
 use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
@@ -70,11 +70,11 @@ pub async fn create(
     //
     usecase::assignment_invitation::create::<
         _,
-        RdbContext<RepeatableRead>,
+        RdbContext<ReptRead>,
         HybRepo,
         RdbProm,
     >(
-        (harn.nucl().repeatable_read(), harn.repo(), harn.prom()),
+        (harn.nucl().rept_read(), harn.repo(), harn.prom()),
         user_token,
         instr,
     )
@@ -109,10 +109,11 @@ pub async fn list_infos(
         limit: query.limit,
     };
 
-    usecase::assignment_invitation::list_infos::<
-        RdbContext<RepeatableRead>,
-        HybRepo,
-    >((harn.repo(),), user_token, instr)
+    usecase::assignment_invitation::list_infos::<RdbContext<ReptRead>, HybRepo>(
+        (harn.repo(),),
+        user_token,
+        instr,
+    )
     .await?
     .accept(StatusCode::OK)
 }
@@ -136,12 +137,8 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::assignment_invitation::delete::<
-        _,
-        RdbContext<RepeatableRead>,
-        HybRepo,
-    >(
-        (harn.nucl().repeatable_read(), harn.repo()),
+    usecase::assignment_invitation::delete::<_, RdbContext<ReptRead>, HybRepo>(
+        (harn.nucl().rept_read(), harn.repo()),
         user_token,
         assignment_invitation_id,
     )
@@ -170,17 +167,8 @@ pub async fn join(
     Json(instr): Json<JoinAssignmentInvitationInstr>,
 ) -> HttpResult<AssignmentInfoView> {
     //
-    usecase::assignment_invitation::join::<
-        _,
-        RdbContext<RepeatableRead>,
-        HybRepo,
-        _,
-    >(
-        (
-            harn.nucl().repeatable_read(),
-            harn.repo(),
-            harn.image_pool(),
-        ),
+    usecase::assignment_invitation::join::<_, RdbContext<ReptRead>, HybRepo, _>(
+        (harn.nucl().rept_read(), harn.repo(), harn.image_pool()),
         user_token,
         instr,
     )

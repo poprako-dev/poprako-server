@@ -19,7 +19,7 @@ use crate::model::shared::user::UserToken;
 use crate::model::unit_port::UnitTranslationImport;
 use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::model::write::unit::UnitEdit;
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::ReptRead;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
@@ -57,7 +57,7 @@ pub async fn import<N, C, R>(
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<RepeatableRead>,
+    C::Level: AtLeast<ReptRead>,
     R: AssignmentRepo<C>
         + ChapterRepo<C>
         + ChapterWorkflowRecordRepo<C>

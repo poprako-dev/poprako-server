@@ -19,7 +19,7 @@ use crate::part::auth::TokenAuth;
 use crate::part::effect::event::Event;
 use crate::part::effect::event::user::UserSignedUpEvent;
 use crate::part::effect::{Develop, EffectEvent as _};
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::ReptRead;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::member_invitation::MemberInvitationRepo;
 use crate::part::repo::oper::member::CreateMember;
@@ -70,7 +70,7 @@ pub async fn register<N, C, R, A, D>(
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<RepeatableRead>,
+    C::Level: AtLeast<ReptRead>,
     R: UserRepo<C> + MemberRepo<C> + MemberInvitationRepo<C> + Send + Sync,
     A: TokenAuth,
     D: Develop + Send + Sync,

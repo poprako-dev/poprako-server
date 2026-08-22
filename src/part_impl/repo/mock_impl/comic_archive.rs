@@ -11,7 +11,7 @@ use crate::model::read::proj::comic_archive::{
 };
 use crate::model::read::proj::unit::UnitInfo;
 use crate::model::write::comic_archive::ComicArchiveEntry;
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::comic_archive::{
     CommitComicArchive, DeleteComicArchives, GetComicArchiveSnapshotExcluded,
     ListComicArchivePayloads,
@@ -377,7 +377,7 @@ fn commit(
 
 impl<'a> Step<GetComicArchiveSnapshotExcluded<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -395,7 +395,7 @@ impl<'a> Step<GetComicArchiveSnapshotExcluded<'a>, MockContext> for Mock {
 
 impl<'a> Step<CommitComicArchive<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -413,7 +413,7 @@ impl<'a> Step<CommitComicArchive<'a>, MockContext> for Mock {
 
 impl<'a> Step<DeleteComicArchives<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;

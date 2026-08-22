@@ -21,7 +21,7 @@ use crate::data::instr::team::{
 use crate::data::val::team::ReserveTeamAvatarVal;
 use crate::data::view::team::TeamInfoView;
 use crate::model::shared::user::UserToken;
-use crate::part::nucl::{RepeatableRead, Serializable};
+use crate::part::nucl::{ReptRead, Serial};
 use crate::part_impl::prom::rdb_impl::RdbProm;
 use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
@@ -46,12 +46,8 @@ pub async fn create(
     Json(instr): Json<CreateTeamInstr>,
 ) -> HttpResult<TeamInfoView> {
     //
-    usecase::team::create::<_, RdbContext<RepeatableRead>, HybRepo, _>(
-        (
-            harn.nucl().repeatable_read(),
-            harn.repo(),
-            harn.image_pool(),
-        ),
+    usecase::team::create::<_, RdbContext<ReptRead>, HybRepo, _>(
+        (harn.nucl().rept_read(), harn.repo(), harn.image_pool()),
         user_token,
         instr,
     )
@@ -79,7 +75,7 @@ pub async fn list_infos(
     Query(instr): Query<ListTeamInfosInstr>,
 ) -> HttpResult<Vec<TeamInfoView>> {
     //
-    usecase::team::read::list_infos::<RdbContext<RepeatableRead>, HybRepo, _>(
+    usecase::team::read::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
         (harn.repo(), harn.image_pool()),
         user_token,
         instr,
@@ -108,7 +104,7 @@ pub async fn list_online_user_ids(
 ) -> HttpResult<Vec<String>> {
     //
     usecase::team::online::list_online_user_ids::<
-        RdbContext<RepeatableRead>,
+        RdbContext<ReptRead>,
         HybRepo,
     >((harn.repo(),), user_token, team_id)
     .await?
@@ -134,10 +130,11 @@ pub async fn mark_self_online(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::team::online::mark_self_online::<
-        RdbContext<RepeatableRead>,
-        HybRepo,
-    >((harn.repo(),), user_token, team_id)
+    usecase::team::online::mark_self_online::<RdbContext<ReptRead>, HybRepo>(
+        (harn.repo(),),
+        user_token,
+        team_id,
+    )
     .await?;
 
     no_content()
@@ -161,7 +158,7 @@ pub async fn get_info(
     Path(team_id): Path<String>,
 ) -> HttpResult<TeamInfoView> {
     //
-    usecase::team::read::get_info::<RdbContext<RepeatableRead>, HybRepo, _>(
+    usecase::team::read::get_info::<RdbContext<ReptRead>, HybRepo, _>(
         (harn.repo(), harn.image_pool()),
         team_id,
     )
@@ -193,7 +190,7 @@ pub async fn update_info(
     //
     ensure_path_matches_body_id(&team_id, &instr.id)?;
 
-    usecase::team::update_info::<RdbContext<RepeatableRead>, HybRepo>(
+    usecase::team::update_info::<RdbContext<ReptRead>, HybRepo>(
         (harn.repo(),),
         user_token,
         instr,
@@ -226,13 +223,13 @@ pub async fn reserve_avatar(
     //
     usecase::team::reserve_avatar::<
         _,
-        RdbContext<RepeatableRead>,
+        RdbContext<ReptRead>,
         HybRepo,
         RdbProm,
         _,
     >(
         (
-            harn.nucl().repeatable_read(),
+            harn.nucl().rept_read(),
             harn.repo(),
             harn.prom(),
             harn.image_pool(),
@@ -267,17 +264,8 @@ pub async fn mark_avatar_uploaded(
     Json(instr): Json<MarkTeamAvatarUploadedInstr>,
 ) -> HttpNoContent {
     //
-    usecase::team::mark_avatar_uploaded::<
-        _,
-        RdbContext<RepeatableRead>,
-        HybRepo,
-        _,
-    >(
-        (
-            harn.nucl().repeatable_read(),
-            harn.repo(),
-            harn.image_pool(),
-        ),
+    usecase::team::mark_avatar_uploaded::<_, RdbContext<ReptRead>, HybRepo, _>(
+        (harn.nucl().rept_read(), harn.repo(), harn.image_pool()),
         user_token,
         team_id,
         instr,
@@ -306,13 +294,8 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::team::delete::delete::<
-        _,
-        RdbContext<Serializable>,
-        HybRepo,
-        RdbProm,
-    >(
-        (harn.nucl().serializable(), harn.repo(), harn.prom()),
+    usecase::team::delete::delete::<_, RdbContext<Serial>, HybRepo, RdbProm>(
+        (harn.nucl().serial(), harn.repo(), harn.prom()),
         user_token,
         team_id,
     )

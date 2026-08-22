@@ -1,20 +1,19 @@
-// announcement_roundtrip_uses_testcontainer(CreateAnnouncement, ListAnnouncementInfos)(positive): announcement repo creates and lists included users in an isolated PostgreSQL container.
+// announcement_roundtrip_uses_testcontainer(CreateAnnouncement, GetAnnouncementInfo, ListAnnouncementInfos, UpdateAnnouncement, DeleteAnnouncement)(positive): announcement repo creates, updates, lists, and deletes in an isolated PostgreSQL container.
+// announcement_roundtrip_uses_testcontainer(GetAnnouncementInfo)(negative): deleted announcement should return the expected not-found error.
 
 use super::*;
 
-use poprako_orchestra::Nucl as _;
-
 use crate::model::read::spec::announcement::AnnouncementListSpec;
-use crate::model::write::announcement::AnnouncementEntry;
-use crate::part::nucl::RepeatableRead;
+use crate::model::write::announcement::{AnnouncementEntry, AnnouncementRepl};
 use crate::part::repo::oper::announcement::{
-    CreateAnnouncement, ListAnnouncementInfos,
+    CreateAnnouncement, DeleteAnnouncement, GetAnnouncementInfo,
+    ListAnnouncementInfos, UpdateAnnouncement,
 };
-use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::test_shared;
-use crate::result::BaseError;
+use crate::result::ExpectedVariant;
 use crate::shared::RdbCore;
+use crate::test_util::assert_expected_variant;
 use crate::value::announcement::AnnouncementInclOpt;
 
 const PREFIX: &str = "rdb-test-announcement-domain-";
@@ -29,8 +28,6 @@ pub async fn announcement_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let repo = HybRepo::new(shared.clone());
 
-    let nucl = RdbNucl::<RepeatableRead>::new(shared.clone());
-
     let announcement_entry = AnnouncementEntry {
         id: format!("{}announcement", PREFIX),
         team_id: team_fixture.team_entry.id.clone(),
@@ -39,17 +36,28 @@ pub async fn announcement_roundtrip_uses_testcontainer(shared: RdbCore) {
         content: "announcement".into(),
     };
 
-    nucl.coord(async |context| {
-        //
-        repo.step(
-            context,
-            &CreateAnnouncement {
-                entry: &announcement_entry,
-            },
-        )
-        .await?;
+    repo.run(&CreateAnnouncement {
+        entry: &announcement_entry,
+    })
+    .await
+    .ok()
+    .unwrap();
 
-        Ok::<(), BaseError>(())
+    let announcement_repl = AnnouncementRepl {
+        id: announcement_entry.id.clone(),
+        title: "Updated RDB Announcement".into(),
+        content: "updated announcement".into(),
+    };
+
+    repo.run(&GetAnnouncementInfo {
+        id: &announcement_entry.id,
+    })
+    .await
+    .ok()
+    .unwrap();
+
+    repo.run(&UpdateAnnouncement {
+        update: &announcement_repl,
     })
     .await
     .ok()
@@ -72,10 +80,48 @@ pub async fn announcement_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     assert_eq!(announcement_infos.len(), 1);
 
+    assert_eq!(announcement_infos[0].title, "Updated RDB Announcement");
+
+    assert_eq!(announcement_infos[0].content, "updated announcement");
+
     assert_eq!(
         announcement_infos[0].user.as_ref().unwrap().id,
         team_fixture.user_entry.id
     );
+
+    repo.run(&GetAnnouncementInfo {
+        id: &announcement_entry.id,
+    })
+    .await
+    .ok()
+    .unwrap();
+
+    repo.run(&DeleteAnnouncement {
+        id: &announcement_entry.id,
+    })
+    .await
+    .ok()
+    .unwrap();
+
+    let missing_error = repo
+        .run(&GetAnnouncementInfo {
+            id: &announcement_entry.id,
+        })
+        .await
+        .err()
+        .unwrap();
+
+    assert_expected_variant(missing_error, ExpectedVariant::Args);
+
+    let announcement_infos = repo
+        .run(&ListAnnouncementInfos {
+            spec: &announcement_list_spec,
+        })
+        .await
+        .ok()
+        .unwrap();
+
+    assert!(announcement_infos.is_empty());
 
     test_shared::cleanup(&shared, PREFIX).await.ok().unwrap();
 

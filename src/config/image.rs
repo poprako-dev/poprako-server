@@ -5,35 +5,35 @@ use serde::Deserialize;
 
 use crate::value::image::ImageKind;
 
-/// Runtime byte limits for uploaded images.
+/// Runtime MiB limits for uploaded images.
 #[derive(Clone, Copy, Debug, Deserialize)]
 pub struct ImageConfig {
     //
-    /// Maximum byte length for a user avatar upload.
+    /// Maximum MiB length for a user avatar upload.
     pub user_avatar_limit: u64,
 
-    /// Maximum byte length for a team avatar upload.
+    /// Maximum MiB length for a team avatar upload.
     pub team_avatar_limit: u64,
 
-    /// Maximum byte length for a comic cover upload.
+    /// Maximum MiB length for a comic cover upload.
     pub comic_cover_limit: u64,
 
-    /// Maximum byte length for a chapter page image upload.
+    /// Maximum MiB length for a chapter page image upload.
     pub page_image_limit: u64,
 }
 
 impl ImageConfig {
-    /// Validates that every configured byte limit permits a non-empty upload.
+    /// Validates that every configured MiB limit permits a non-empty upload.
     pub fn validate(&self) -> anyhow::Result<()> {
         //
-        for (field_name, byte_limit) in [
+        for (field_name, mib_limit) in [
             ("user_avatar_limit", self.user_avatar_limit),
             ("team_avatar_limit", self.team_avatar_limit),
             ("comic_cover_limit", self.comic_cover_limit),
             ("page_image_limit", self.page_image_limit),
         ] {
             //
-            if byte_limit == 0 {
+            if mib_limit == 0 {
                 //
                 bail!(
                     "[ImageConfig::validate] {} must be greater than zero",
@@ -45,8 +45,8 @@ impl ImageConfig {
         Ok(())
     }
 
-    /// Returns the configured byte limit for an image kind.
-    pub fn byte_limit_for(&self, image_kind: ImageKind) -> u64 {
+    /// Returns the configured MiB limit for an image kind.
+    pub fn limit_for(&self, image_kind: ImageKind) -> u64 {
         //
         match image_kind {
             //

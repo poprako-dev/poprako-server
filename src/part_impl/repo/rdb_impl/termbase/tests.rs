@@ -6,7 +6,7 @@ use poprako_orchestra::Nucl as _;
 
 use crate::model::read::spec::termbase::TermbaseListSpec;
 use crate::model::write::termbase::TermbaseEntry;
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::comic::CreateComic;
 use crate::part::repo::oper::termbase::{
     CreateTermbase, GetTermbaseInfo, ListTermbaseInfos, UpdateTermbaseTermCount,
@@ -44,7 +44,7 @@ pub async fn termbase_unique_and_query_roundtrip(shared: RdbCore) {
 
     let repo = HybRepo::new(shared.clone());
 
-    let nucl = RdbNucl::<RepeatableRead>::new(shared.clone());
+    let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
     let termbase_entry = TermbaseEntry {
         id: format!("{}main", PREFIX),

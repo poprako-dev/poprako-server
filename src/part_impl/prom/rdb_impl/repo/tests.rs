@@ -9,7 +9,7 @@ use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use time::Duration;
 
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::ReptRead;
 use crate::part_impl::prom::rdb_impl::entity::LocalMessageEntryRow;
 use crate::part_impl::prom::rdb_impl::test_shared;
 use crate::part_impl::repo::HybRepo;
@@ -79,7 +79,7 @@ pub async fn poll_pending_selects_one_visible_message_per_idle_topic(
     let repo = RdbPromRepo::new(HybRepo::new(shared.clone()));
 
     let mut context =
-        RdbContext::<RepeatableRead>::new(shared.get().await.ok().unwrap());
+        RdbContext::<ReptRead>::new(shared.get().await.ok().unwrap());
 
     let mut rows = repo.step(&mut context, &PollPending).await.ok().unwrap();
 
@@ -146,7 +146,7 @@ pub async fn retry_message_allows_later_topic_message_to_advance(
     let retry_visible_at = now + Duration::minutes(5);
 
     let mut context =
-        RdbContext::<RepeatableRead>::new(shared.get().await.ok().unwrap());
+        RdbContext::<ReptRead>::new(shared.get().await.ok().unwrap());
 
     repo.step(
         &mut context,
@@ -237,7 +237,7 @@ pub async fn stale_attempt_finalization_preserves_newer_lease(shared: RdbCore) {
     let retry_visible_at = now + Duration::minutes(5);
 
     let mut context =
-        RdbContext::<RepeatableRead>::new(shared.get().await.ok().unwrap());
+        RdbContext::<ReptRead>::new(shared.get().await.ok().unwrap());
 
     repo.step(
         &mut context,
@@ -400,7 +400,7 @@ pub async fn completed_message_purge_preserves_non_completed_records(
     let dead_before = now - Duration::days(30);
 
     let mut context =
-        RdbContext::<RepeatableRead>::new(shared.get().await.ok().unwrap());
+        RdbContext::<ReptRead>::new(shared.get().await.ok().unwrap());
 
     let purged_count = repo
         .step(

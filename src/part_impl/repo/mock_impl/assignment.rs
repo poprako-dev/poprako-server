@@ -9,7 +9,7 @@ use tracing::instrument;
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::spec::assignment::AssignmentListSpec;
 use crate::model::write::assignment::AssignmentEntry;
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::assignment::{
     CreateAssignment, DeleteAssignments, FindAssignmentInfo, GetAssignmentInfo,
     ListAssignmentInfos, ListAssignmentInfosExcluded, UpdateAssignmentRoles,
@@ -400,7 +400,7 @@ impl Run<GetAssignmentInfo<'_, '_>> for Mock {
 
 impl Step<FindAssignmentInfo<'_, '_>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -442,7 +442,7 @@ impl Step<FindAssignmentInfo<'_, '_>, MockContext> for Mock {
 
 impl Step<ListAssignmentInfosExcluded<'_>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -466,7 +466,7 @@ impl Step<ListAssignmentInfosExcluded<'_>, MockContext> for Mock {
 
 impl Step<ListAssignmentInfos<'_, '_>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -489,7 +489,7 @@ impl Step<ListAssignmentInfos<'_, '_>, MockContext> for Mock {
 
 impl Step<CreateAssignment<'_>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -507,7 +507,7 @@ impl Step<CreateAssignment<'_>, MockContext> for Mock {
 
 impl Step<UpdateAssignmentRoles<'_>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -539,7 +539,7 @@ impl Step<UpdateAssignmentRoles<'_>, MockContext> for Mock {
 
 impl Step<DeleteAssignments<'_>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;

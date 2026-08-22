@@ -6,7 +6,7 @@ use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
 use crate::model::read::proj::term::TermInfo;
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::term::{
     CreateTerm, DeleteTerm, DeleteTerms, GetTermInfo, GetTermInfoExcluded,
     ListTermInfos, LockTerm, UpdateTerm, UpsertTerms,
@@ -155,7 +155,7 @@ impl<'a> Run<ListTermInfos<'a>> for Mock {
 
 impl<'a> Step<CreateTerm<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -209,7 +209,7 @@ impl<'a> Step<CreateTerm<'a>, MockContext> for Mock {
 
 impl<'a> Step<ListTermInfos<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -248,7 +248,7 @@ impl<'a> Step<ListTermInfos<'a>, MockContext> for Mock {
 
 impl<'a> Step<GetTermInfoExcluded<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -266,7 +266,7 @@ impl<'a> Step<GetTermInfoExcluded<'a>, MockContext> for Mock {
 
 impl<'a> Step<LockTerm<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -289,7 +289,7 @@ impl<'a> Step<LockTerm<'a>, MockContext> for Mock {
 
 impl<'a> Step<UpdateTerm<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -336,7 +336,7 @@ impl<'a> Step<UpdateTerm<'a>, MockContext> for Mock {
 
 impl<'a> Step<UpsertTerms<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -409,7 +409,7 @@ impl<'a> Step<UpsertTerms<'a>, MockContext> for Mock {
 
 impl<'a> Step<DeleteTerm<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -439,7 +439,7 @@ impl<'a> Step<DeleteTerm<'a>, MockContext> for Mock {
 
 impl<'a> Step<DeleteTerms<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;

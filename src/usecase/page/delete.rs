@@ -4,7 +4,7 @@ use tracing::instrument;
 use crate::complex::image::ImageComplex;
 use crate::complex::page::PagePermComplex;
 use crate::model::shared::user::UserToken;
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::ReptRead;
 use crate::part::prom::Prom;
 use crate::part::prom::oper::DeferBatch;
 use crate::part::prom::payload::{TaskPayload, image};
@@ -33,7 +33,7 @@ pub async fn delete<N, C, R, P>(
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<RepeatableRead>,
+    C::Level: AtLeast<ReptRead>,
     R: PageRepo<C>
         + ChapterRepo<C>
         + ComicRepo<C>

@@ -21,7 +21,7 @@ use crate::data::instr::assignment::{
 };
 use crate::data::view::assignment::AssignmentInfoView;
 use crate::model::shared::user::UserToken;
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::ReptRead;
 use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
 use crate::usecase;
@@ -46,7 +46,7 @@ pub async fn list_infos(
     Query(instr): Query<ListAssignmentInfosInstr>,
 ) -> HttpResult<Vec<AssignmentInfoView>> {
     //
-    usecase::assignment::list_infos::<RdbContext<RepeatableRead>, HybRepo, _>(
+    usecase::assignment::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
         (harn.repo(), harn.image_pool()),
         user_token,
         instr,
@@ -86,13 +86,9 @@ pub async fn update_roles(
 
     usecase::assignment::update_roles::update_roles::<
         _,
-        RdbContext<RepeatableRead>,
+        RdbContext<ReptRead>,
         HybRepo,
-    >(
-        (harn.nucl().repeatable_read(), harn.repo()),
-        user_token,
-        instr,
-    )
+    >((harn.nucl().rept_read(), harn.repo()), user_token, instr)
     .await?;
 
     no_content()
@@ -117,8 +113,8 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::assignment::delete::<_, RdbContext<RepeatableRead>, HybRepo>(
-        (harn.nucl().repeatable_read(), harn.repo()),
+    usecase::assignment::delete::<_, RdbContext<ReptRead>, HybRepo>(
+        (harn.nucl().rept_read(), harn.repo()),
         user_token,
         assignment_id,
     )
@@ -146,8 +142,8 @@ pub async fn join(
     Json(instr): Json<JoinChapterAssignmentInstr>,
 ) -> HttpResult<AssignmentInfoView> {
     //
-    usecase::assignment::join::<_, RdbContext<RepeatableRead>, HybRepo>(
-        (harn.nucl().repeatable_read(), harn.repo()),
+    usecase::assignment::join::<_, RdbContext<ReptRead>, HybRepo>(
+        (harn.nucl().rept_read(), harn.repo()),
         user_token,
         instr,
     )

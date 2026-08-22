@@ -20,7 +20,7 @@ use poprako_util::i18n::trl;
 
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::write::assignment::{AssignmentEntry, AssignmentRoleRepl};
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::assignment::{
     CreateAssignment, DeleteAssignments, FindAssignmentInfo, GetAssignmentInfo,
     ListAssignmentInfos, ListAssignmentInfosExcluded, UpdateAssignmentRoles,
@@ -325,10 +325,10 @@ impl Run<GetAssignmentInfo<'_, '_>> for HybRepo {
 
 impl<L> Step<ListAssignmentInfos<'_, '_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send + AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<ReptRead>,
 {
     // Use base error for listing assignments inside an existing transaction.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -346,10 +346,10 @@ where
 
 impl<L> Step<FindAssignmentInfo<'_, '_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send + AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<ReptRead>,
 {
     // Keep transactional assignment lookup failures consistent with run-level errors.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -397,10 +397,10 @@ where
 
 impl<L> Step<ListAssignmentInfosExcluded<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send + AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<ReptRead>,
 {
     // Normalize excluded-list behavior errors under base repository semantics.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -426,10 +426,10 @@ where
 
 impl<L> Step<CreateAssignment<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send + AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<ReptRead>,
 {
     // Translate assignment-create failures to base error within transaction.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -447,10 +447,10 @@ where
 
 impl<L> Step<UpdateAssignmentRoles<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send + AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<ReptRead>,
 {
     // Keep role-update failures mapped to shared repository error contract.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -483,10 +483,10 @@ async fn delete_by_chapter_id(
 
 impl<L> Step<DeleteAssignments<'_>, RdbContext<L>> for HybRepo
 where
-    L: Level + Send + AtLeast<RepeatableRead>,
+    L: Level + Send + AtLeast<ReptRead>,
 {
     // Map all delete-assignment branch failures to base repository errors.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;

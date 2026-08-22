@@ -8,7 +8,7 @@ use poprako_util::i18n::trl;
 use crate::complex::image::ImageComplex;
 use crate::complex::team::TeamPermComplex;
 use crate::model::shared::user::UserToken;
-use crate::part::nucl::Serializable;
+use crate::part::nucl::Serial;
 use crate::part::prom::Prom;
 use crate::part::prom::oper::Defer;
 use crate::part::prom::payload::{TaskPayload, image};
@@ -60,7 +60,7 @@ pub async fn delete<N, C, R, P>(
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<Serializable>,
+    C::Level: AtLeast<Serial>,
     R: TeamRepo<C>
         + WorksetRepo<C>
         + ComicRepo<C>

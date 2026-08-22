@@ -7,7 +7,7 @@ use crate::complex::chapter::ChapterPermComplex;
 use crate::complex::image::ImageComplex;
 use crate::model::shared::user::UserToken;
 use crate::model::write::chapter::ChapterPatch;
-use crate::part::nucl::Serializable;
+use crate::part::nucl::Serial;
 use crate::part::prom::Prom;
 use crate::part::prom::oper::DeferBatch;
 use crate::part::prom::payload::{TaskPayload, image};
@@ -46,7 +46,7 @@ pub async fn delete<N, C, R, P>(
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<Serializable>,
+    C::Level: AtLeast<Serial>,
     R: ChapterRepo<C>
         + ChapterWorkflowRecordRepo<C>
         + ComicRepo<C>

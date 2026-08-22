@@ -6,7 +6,7 @@
 //! adapters at the handler call sites.
 
 use crate::harn::{Harn, HybNucl};
-use crate::part::nucl::{RepeatableRead, Serializable};
+use crate::part::nucl::{ReptRead, Serial};
 use crate::part_impl::auth::jwt_impl::JwtAuth;
 use crate::part_impl::effect::async_impl::AsyncEffectDevelop;
 use crate::part_impl::image::r2_impl::R2ImagePool;
@@ -16,7 +16,7 @@ use crate::part_impl::repo::HybRepo;
 
 /// Production harness type backing the HTTP server state.
 pub type AppHarn = Harn<
-    HybNucl<RdbNucl<RepeatableRead>, RdbNucl<Serializable>>,
+    HybNucl<RdbNucl<ReptRead>, RdbNucl<Serial>>,
     HybRepo,
     RdbProm,
     JwtAuth,

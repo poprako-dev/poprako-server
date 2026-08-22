@@ -7,7 +7,7 @@ use crate::model::read::proj::member_invitation::MemberInvitationInfo;
 use crate::model::read::proj::user::UserInfo;
 use crate::model::read::spec::member_invitation::MemberInvitationListSpec;
 use crate::model::write::member_invitation::MemberInvitationEntry;
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::member_invitation::{
     CreateMemberInvitation, DeleteMemberInvitation, GetMemberInvitationInfo,
     GetMemberInvitationInfoExcluded, ListMemberInvitationInfos,
@@ -285,7 +285,7 @@ impl<'a, 'b> Run<GetMemberInvitationInfo<'a, 'b>> for Mock {
 
 impl<'a> Step<CreateMemberInvitation<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -303,7 +303,7 @@ impl<'a> Step<CreateMemberInvitation<'a>, MockContext> for Mock {
 
 impl<'a, 'b> Step<GetMemberInvitationInfo<'a, 'b>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -321,7 +321,7 @@ impl<'a, 'b> Step<GetMemberInvitationInfo<'a, 'b>, MockContext> for Mock {
 
 impl<'a> Step<UpdateMemberInvitation<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -339,7 +339,7 @@ impl<'a> Step<UpdateMemberInvitation<'a>, MockContext> for Mock {
 
 impl<'a> Step<GetMemberInvitationInfoExcluded<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -367,7 +367,7 @@ impl<'a> Step<GetMemberInvitationInfoExcluded<'a>, MockContext> for Mock {
 
 impl<'a> Step<DeleteMemberInvitation<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -399,7 +399,7 @@ impl<'a> Step<DeleteMemberInvitation<'a>, MockContext> for Mock {
 
 impl<'a> Step<PurgeExpiredMemberInvitation<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;

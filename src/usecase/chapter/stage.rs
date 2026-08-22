@@ -15,7 +15,7 @@ use crate::part::effect::event::chapter::{
     ChapterPublishedEvent, ChapterWorkflowCompletedEvent,
 };
 use crate::part::effect::{Develop, EffectEvent as _};
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::ReptRead;
 use crate::part::prom::Prom;
 use crate::part::prom::oper::DeferBatch;
 use crate::part::prom::payload::{TaskPayload, image};
@@ -50,7 +50,7 @@ pub async fn update_stage<N, C, R, P, D>(
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<RepeatableRead>,
+    C::Level: AtLeast<ReptRead>,
     R: ChapterRepo<C>
         + ChapterWorkflowRecordRepo<C>
         + ComicRepo<C>

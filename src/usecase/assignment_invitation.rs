@@ -29,7 +29,7 @@ use crate::model::write::assignment::AssignmentEntry;
 use crate::model::write::assignment_invitation::AssignmentInvitationEntry;
 use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::part::image::ImagePool;
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::ReptRead;
 use crate::part::prom::Prom;
 use crate::part::prom::oper::Defer;
 use crate::part::prom::payload::TaskPayload;
@@ -112,7 +112,7 @@ pub async fn create<N, C, R, P>(
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<RepeatableRead>,
+    C::Level: AtLeast<ReptRead>,
     R: AssignmentInvitationRepo<C>
         + AssignmentRepo<C>
         + ChapterRepo<C>
@@ -232,7 +232,7 @@ pub async fn delete<N, C, R>(
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<RepeatableRead>,
+    C::Level: AtLeast<ReptRead>,
     R: AssignmentInvitationRepo<C>
         + AssignmentRepo<C>
         + ChapterRepo<C>
@@ -287,7 +287,7 @@ pub async fn join<N, C, R, I>(
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<RepeatableRead>,
+    C::Level: AtLeast<ReptRead>,
     R: AssignmentInvitationRepo<C>
         + AssignmentRepo<C>
         + ChapterWorkflowRecordRepo<C>

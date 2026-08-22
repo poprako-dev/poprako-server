@@ -31,7 +31,7 @@ use crate::part::effect::event::Event;
 use crate::part::effect::event::user::UserActiveEvent;
 use crate::part::effect::{Develop, EffectEvent as _};
 use crate::part::image::{ImageManager, ImagePool, ImageUploadSpec};
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::ReptRead;
 use crate::part::prom::Prom;
 use crate::part::prom::oper::DeferBatch;
 use crate::part::prom::payload::{TaskPayload, image};
@@ -111,7 +111,7 @@ pub async fn update_info<N, C, R>(
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<RepeatableRead>,
+    C::Level: AtLeast<ReptRead>,
     R: UserRepo<C> + MemberRepo<C> + Send + Sync,
 {
     // Only the user themselves can update their own profile.
@@ -176,7 +176,7 @@ pub async fn update_password<N, C, R>(
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<RepeatableRead>,
+    C::Level: AtLeast<ReptRead>,
     R: UserRepo<C> + Send + Sync,
 {
     if token.user_id != user_id {
@@ -282,7 +282,7 @@ pub async fn reserve_avatar<N, C, R, P, I>(
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<RepeatableRead>,
+    C::Level: AtLeast<ReptRead>,
     R: UserRepo<C> + Send + Sync,
     P: Prom<C> + Send + Sync,
     I: ImagePool,
@@ -412,7 +412,7 @@ pub async fn mark_avatar_uploaded<N, C, R, I>(
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<RepeatableRead>,
+    C::Level: AtLeast<ReptRead>,
     R: UserRepo<C> + Send + Sync,
     I: ImageManager,
 {

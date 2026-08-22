@@ -4,7 +4,7 @@ use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::ReptRead;
 use crate::part::prom::payload::{TaskPayload, image};
 use crate::part::prom::task::Task;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
@@ -67,7 +67,7 @@ pub async fn image_payloads_from_rdb_dispatch(shared: RdbCore) {
         .ok()
         .unwrap();
 
-    let nucl = RdbNucl::<RepeatableRead>::new(shared.clone());
+    let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
     let rdb_prom_repo = RdbPromRepo::new(HybRepo::new(shared.clone()));
 

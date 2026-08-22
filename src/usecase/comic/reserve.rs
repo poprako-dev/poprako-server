@@ -11,7 +11,7 @@ use crate::data::val::comic::ReserveComicCoverVal;
 use crate::data::view::image::ImageUploadSlotView;
 use crate::model::shared::user::UserToken;
 use crate::part::image::{ImagePool, ImageUploadSpec};
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::ReptRead;
 use crate::part::prom::Prom;
 use crate::part::prom::oper::DeferBatch;
 use crate::part::prom::payload::{TaskPayload, image};
@@ -42,7 +42,7 @@ pub async fn reserve_cover<N, C, R, P, I>(
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<RepeatableRead>,
+    C::Level: AtLeast<ReptRead>,
     R: ComicRepo<C> + TeamRepo<C> + MemberRepo<C> + Send + Sync,
     P: Prom<C> + Send + Sync,
     I: ImagePool,

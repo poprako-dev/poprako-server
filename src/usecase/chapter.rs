@@ -29,7 +29,7 @@ use crate::model::write::assignment::AssignmentEntry;
 use crate::model::write::chapter::{ChapterEntry, ChapterPatch};
 use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::part::image::ImagePool;
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::ReptRead;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
@@ -194,7 +194,7 @@ pub async fn create<N, C, R>(
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<RepeatableRead>,
+    C::Level: AtLeast<ReptRead>,
     R: ChapterRepo<C>
         + ChapterWorkflowRecordRepo<C>
         + ComicRepo<C>
@@ -343,7 +343,7 @@ pub async fn update_info<N, C, R>(
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<RepeatableRead>,
+    C::Level: AtLeast<ReptRead>,
     R: ChapterRepo<C>
         + ChapterWorkflowRecordRepo<C>
         + ComicRepo<C>
@@ -437,7 +437,7 @@ pub async fn mark_pinned<N, C, R>(
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<RepeatableRead>,
+    C::Level: AtLeast<ReptRead>,
     R: ChapterRepo<C>
         + ChapterWorkflowRecordRepo<C>
         + ComicRepo<C>

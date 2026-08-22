@@ -21,7 +21,7 @@ use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::unit::UnitInfo;
 use crate::model::shared::user::UserToken;
 use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::ReptRead;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
@@ -58,7 +58,7 @@ pub async fn export<N, C, R>(
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<RepeatableRead>,
+    C::Level: AtLeast<ReptRead>,
     R: ChapterRepo<C>
         + ChapterWorkflowRecordRepo<C>
         + ComicRepo<C>
@@ -150,7 +150,7 @@ pub async fn export_label_plus<N, C, R>(
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<RepeatableRead>,
+    C::Level: AtLeast<ReptRead>,
     R: ChapterRepo<C>
         + ChapterWorkflowRecordRepo<C>
         + ComicRepo<C>
@@ -256,7 +256,7 @@ async fn persist_export_record<N, C, R>(
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<RepeatableRead>,
+    C::Level: AtLeast<ReptRead>,
     R: ChapterRepo<C> + ChapterWorkflowRecordRepo<C> + Send + Sync,
 {
     let () = nucl

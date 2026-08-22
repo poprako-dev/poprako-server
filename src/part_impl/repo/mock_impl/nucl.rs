@@ -1,13 +1,13 @@
 use poprako_orchestra::Nucl;
 use poprako_orchestra::nucl::Error as NuclError;
 
-use crate::part::nucl::Serializable;
+use crate::part::nucl::Serial;
 use crate::part_impl::repo::mock_impl::{Mock, MockContext};
 use crate::result::BaseError;
 
 impl Nucl for Mock {
     // Uses the strongest mock isolation marker for every transaction test.
-    type Level = Serializable;
+    type Level = Serial;
 
     // Internal type alias for `Error`.
     // Defines the adapter error exposed by this operation.

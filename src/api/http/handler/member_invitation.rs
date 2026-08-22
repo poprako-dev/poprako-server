@@ -26,7 +26,7 @@ use crate::data::instr::member_invitation::{
 use crate::data::val::member_invitation::CreateMemberInvitationVal;
 use crate::data::view::member_invitation::MemberInvitationInfoView;
 use crate::model::shared::user::UserToken;
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::ReptRead;
 use crate::part_impl::prom::rdb_impl::RdbProm;
 use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
@@ -79,11 +79,11 @@ pub async fn create(
     //
     usecase::member_invitation::create::<
         _,
-        RdbContext<RepeatableRead>,
+        RdbContext<ReptRead>,
         HybRepo,
         RdbProm,
     >(
-        (harn.nucl().repeatable_read(), harn.repo(), harn.prom()),
+        (harn.nucl().rept_read(), harn.repo(), harn.prom()),
         user_token,
         instr,
     )
@@ -119,11 +119,11 @@ pub async fn list_infos(
         limit: query.limit,
     };
 
-    usecase::member_invitation::list_infos::<
-        RdbContext<RepeatableRead>,
-        HybRepo,
-        _,
-    >((harn.repo(), harn.image_pool()), user_token, instr)
+    usecase::member_invitation::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
+        (harn.repo(), harn.image_pool()),
+        user_token,
+        instr,
+    )
     .await?
     .accept(StatusCode::OK)
 }
@@ -154,10 +154,10 @@ pub async fn update_roles(
 
     usecase::member_invitation::update_roles::<
         _,
-        RdbContext<RepeatableRead>,
+        RdbContext<ReptRead>,
         HybRepo,
     >(
-        (harn.nucl().repeatable_read(), harn.repo()),
+        (harn.nucl().rept_read(), harn.repo()),
         user_token,
         instr,
     )
@@ -185,8 +185,8 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::member_invitation::delete::<_, RdbContext<RepeatableRead>, HybRepo>(
-        (harn.nucl().repeatable_read(), harn.repo()),
+    usecase::member_invitation::delete::<_, RdbContext<ReptRead>, HybRepo>(
+        (harn.nucl().rept_read(), harn.repo()),
         user_token,
         member_invitation_id,
     )

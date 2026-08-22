@@ -5,18 +5,21 @@
 pub mod tests;
 
 use diesel::prelude::{
-    ExpressionMethods as _, QueryDsl as _, SelectableHelper as _,
+    ExpressionMethods as _, OptionalExtension as _, QueryDsl as _,
+    SelectableHelper as _,
 };
 use diesel_async::RunQueryDsl as _;
-use poprako_orchestra::{AtLeast, Level, Run, Step};
+use poprako_orchestra::Run;
 use tracing::instrument;
+
+use poprako_util::i18n::trl;
 
 use crate::model::read::proj::announcement::AnnouncementInfo;
 use crate::model::read::spec::announcement::AnnouncementListSpec;
-use crate::model::write::announcement::AnnouncementEntry;
-use crate::part::nucl::RepeatableRead;
+use crate::model::write::announcement::{AnnouncementEntry, AnnouncementRepl};
 use crate::part::repo::oper::announcement::{
-    CreateAnnouncement, ListAnnouncementInfos,
+    CreateAnnouncement, DeleteAnnouncement, GetAnnouncementInfo,
+    ListAnnouncementInfos, UpdateAnnouncement,
 };
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::entity::announcement::{
@@ -24,11 +27,44 @@ use crate::part_impl::repo::rdb_impl::entity::announcement::{
 };
 use crate::part_impl::repo::rdb_impl::incl;
 use crate::part_impl::repo::rdb_impl::schema::t_announcement::dsl::{
-    f_created_at, f_team_id, t_announcement,
+    f_content, f_created_at, f_id, f_team_id, f_title, t_announcement,
 };
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::shared::RdbConn;
 use crate::shared::result::diesel;
-use crate::shared::{RdbConn, RdbContext};
+
+// Loads an announcement row by identifier.
+#[instrument(level = "info", skip_all)]
+async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<AnnouncementInfo> {
+    //
+    let row = t_announcement
+        .filter(f_id.eq(id))
+        .select(AnnouncementInfoRow::as_select())
+        .get_result::<AnnouncementInfoRow>(conn)
+        .await
+        .optional()
+        .map_err(diesel)?;
+
+    let Some(row) = row else {
+        //
+        let err_message = trl("error-announcement-not-found");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Args,
+            err_message = %err_message,
+            announcement_id = %id,
+            operation = "get announcement info",
+            "expected error: announcement not found",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: err_message,
+        });
+    };
+
+    accept(row.into())
+}
 
 // Queries announcement rows filtered by team ID, ordered by creation time descending.
 #[instrument(level = "info", skip_all)]
@@ -81,6 +117,34 @@ async fn create(
     accept(row.into())
 }
 
+// Replaces an announcement's editable fields.
+#[instrument(level = "info", skip_all)]
+async fn update_info(
+    conn: &mut RdbConn,
+    update: &AnnouncementRepl,
+) -> BaseRest<()> {
+    //
+    diesel::update(t_announcement.filter(f_id.eq(&update.id)))
+        .set((f_title.eq(&update.title), f_content.eq(&update.content)))
+        .execute(conn)
+        .await
+        .map_err(diesel)?;
+
+    accept(())
+}
+
+// Deletes an announcement row by identifier.
+#[instrument(level = "info", skip_all)]
+async fn delete_announcement(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
+    //
+    diesel::delete(t_announcement.filter(f_id.eq(id)))
+        .execute(conn)
+        .await
+        .map_err(diesel)?;
+
+    accept(())
+}
+
 impl Run<ListAnnouncementInfos<'_>> for HybRepo {
     // Error type for the Run trait impl on announcement list query.
     // Defines the adapter error exposed by this operation.
@@ -96,23 +160,52 @@ impl Run<ListAnnouncementInfos<'_>> for HybRepo {
     }
 }
 
-impl<L> Step<CreateAnnouncement<'_>, RdbContext<L>> for HybRepo
-where
-    L: Level + Send + AtLeast<RepeatableRead>,
-{
-    // Error type for the Step trait impl on announcement creation.
-    type Level = RepeatableRead;
-
-    // Defines the adapter error exposed by this operation.
+impl Run<CreateAnnouncement<'_>> for HybRepo {
+    // Error type for the announcement creation query.
     type Error = BaseError;
 
-    // Runs announcement creation within an existing transaction.
+    // Creates an announcement independently.
     #[instrument(level = "info", skip_all)]
-    async fn step(
+    async fn run(
         &self,
-        context: &mut RdbContext<L>,
         oper: &CreateAnnouncement<'_>,
     ) -> BaseRest<AnnouncementInfo> {
-        create(context.conn(), oper.entry).await
+        submit_query!(self.core, create, oper.entry)
+    }
+}
+
+impl Run<GetAnnouncementInfo<'_>> for HybRepo {
+    // Error type for the announcement lookup query.
+    type Error = BaseError;
+
+    // Loads an announcement independently.
+    #[instrument(level = "info", skip_all)]
+    async fn run(
+        &self,
+        oper: &GetAnnouncementInfo<'_>,
+    ) -> BaseRest<AnnouncementInfo> {
+        submit_query!(self.core, get_info, oper.id)
+    }
+}
+
+impl Run<UpdateAnnouncement<'_>> for HybRepo {
+    // Error type for the announcement update query.
+    type Error = BaseError;
+
+    // Updates an announcement independently.
+    #[instrument(level = "info", skip_all)]
+    async fn run(&self, oper: &UpdateAnnouncement<'_>) -> BaseRest<()> {
+        submit_query!(self.core, update_info, oper.update)
+    }
+}
+
+impl Run<DeleteAnnouncement<'_>> for HybRepo {
+    // Error type for the announcement deletion query.
+    type Error = BaseError;
+
+    // Deletes an announcement independently.
+    #[instrument(level = "info", skip_all)]
+    async fn run(&self, oper: &DeleteAnnouncement<'_>) -> BaseRest<()> {
+        submit_query!(self.core, delete_announcement, oper.id)
     }
 }

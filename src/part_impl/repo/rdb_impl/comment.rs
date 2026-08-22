@@ -8,13 +8,12 @@ use diesel::prelude::{
     ExpressionMethods as _, QueryDsl as _, SelectableHelper as _,
 };
 use diesel_async::RunQueryDsl as _;
-use poprako_orchestra::{AtLeast, Level, Run, Step};
+use poprako_orchestra::Run;
 use tracing::instrument;
 
 use crate::model::read::proj::comment::CommentInfo;
 use crate::model::read::spec::comment::CommentListSpec;
 use crate::model::write::comment::CommentEntry;
-use crate::part::nucl::RepeatableRead;
 use crate::part::repo::oper::comment::{CreateComment, ListCommentInfos};
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::entity::comment::{
@@ -25,8 +24,8 @@ use crate::part_impl::repo::rdb_impl::schema::t_comment::dsl::{
     f_created_at, f_team_id, t_comment,
 };
 use crate::result::{BaseError, BaseRest, accept};
+use crate::shared::RdbConn;
 use crate::shared::result::diesel;
-use crate::shared::{RdbConn, RdbContext};
 
 // Query comment infos matching the given list spec, with optional includes.
 #[instrument(level = "info", skip_all)]
@@ -90,23 +89,13 @@ impl Run<ListCommentInfos<'_>> for HybRepo {
     }
 }
 
-impl<L> Step<CreateComment<'_>, RdbContext<L>> for HybRepo
-where
-    L: Level + Send + AtLeast<RepeatableRead>,
-{
-    // Error type for the Step trait impl on comment creation.
-    type Level = RepeatableRead;
-
-    // Defines the adapter error exposed by this operation.
+impl Run<CreateComment<'_>> for HybRepo {
+    // Error type for the comment creation query.
     type Error = BaseError;
 
-    // Runs comment creation within an existing transaction.
+    // Creates a comment independently.
     #[instrument(level = "info", skip_all)]
-    async fn step(
-        &self,
-        context: &mut RdbContext<L>,
-        oper: &CreateComment<'_>,
-    ) -> BaseRest<CommentInfo> {
-        create(context.conn(), oper.entry).await
+    async fn run(&self, oper: &CreateComment<'_>) -> BaseRest<CommentInfo> {
+        submit_query!(self.core, create, oper.entry)
     }
 }

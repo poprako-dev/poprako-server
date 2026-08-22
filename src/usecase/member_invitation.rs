@@ -26,7 +26,7 @@ use crate::model::write::member_invitation::{
     MemberInvitationEntry, MemberInvitationRoleRepl,
 };
 use crate::part::image::ImagePool;
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::ReptRead;
 use crate::part::prom::Prom;
 use crate::part::prom::oper::Defer;
 use crate::part::prom::payload::TaskPayload;
@@ -59,7 +59,7 @@ pub async fn create<N, C, R, P>(
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<RepeatableRead>,
+    C::Level: AtLeast<ReptRead>,
     R: MemberInvitationRepo<C> + MemberRepo<C> + UserRepo<C> + Send + Sync,
     P: Prom<C> + Send + Sync,
 {
@@ -262,7 +262,7 @@ pub async fn update_roles<N, C, R>(
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<RepeatableRead>,
+    C::Level: AtLeast<ReptRead>,
     R: MemberInvitationRepo<C> + MemberRepo<C> + Send + Sync,
 {
     let member_info = MemberLoader::load_info_from_member_invitation(
@@ -307,7 +307,7 @@ pub async fn delete<N, C, R>(
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<RepeatableRead>,
+    C::Level: AtLeast<ReptRead>,
     R: MemberInvitationRepo<C> + MemberRepo<C> + Send + Sync,
 {
     let member_info = MemberLoader::load_info_from_member_invitation(

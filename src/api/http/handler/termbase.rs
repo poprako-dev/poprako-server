@@ -25,7 +25,7 @@ use crate::data::instr::termbase::{
 use crate::data::val::termbase::CreateTermbaseVal;
 use crate::data::view::termbase::TermbaseInfoView;
 use crate::model::shared::user::UserToken;
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::ReptRead;
 use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
 use crate::usecase;
@@ -64,8 +64,8 @@ pub async fn create(
     Json(instr): Json<CreateTermbaseInstr>,
 ) -> HttpResult<CreateTermbaseVal> {
     //
-    usecase::termbase::create::<_, RdbContext<RepeatableRead>, HybRepo>(
-        (harn.nucl().repeatable_read(), harn.repo()),
+    usecase::termbase::create::<_, RdbContext<ReptRead>, HybRepo>(
+        (harn.nucl().rept_read(), harn.repo()),
         user_token,
         instr,
     )
@@ -99,7 +99,7 @@ pub async fn list_team_infos(
         limit: query.limit,
     };
 
-    usecase::termbase::list_team_infos::<RdbContext<RepeatableRead>, HybRepo>(
+    usecase::termbase::list_team_infos::<RdbContext<ReptRead>, HybRepo>(
         (harn.repo(),),
         user_token,
         instr,
@@ -135,7 +135,7 @@ pub async fn list_comic_infos(
         limit: query.limit,
     };
 
-    usecase::termbase::list_comic_infos::<RdbContext<RepeatableRead>, HybRepo>(
+    usecase::termbase::list_comic_infos::<RdbContext<ReptRead>, HybRepo>(
         (harn.repo(),),
         user_token,
         instr,
@@ -163,7 +163,7 @@ pub async fn get_info(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<TermbaseInfoView> {
     //
-    usecase::termbase::get_info::<RdbContext<RepeatableRead>, HybRepo>(
+    usecase::termbase::get_info::<RdbContext<ReptRead>, HybRepo>(
         (harn.repo(),),
         user_token,
         termbase_id,
@@ -195,8 +195,8 @@ pub async fn update_info(
     //
     ensure_path_matches_body_id(&termbase_id, &instr.id)?;
 
-    usecase::termbase::update_info::<_, RdbContext<RepeatableRead>, HybRepo>(
-        (harn.nucl().repeatable_read(), harn.repo()),
+    usecase::termbase::update_info::<_, RdbContext<ReptRead>, HybRepo>(
+        (harn.nucl().rept_read(), harn.repo()),
         user_token,
         instr,
     )
@@ -224,8 +224,8 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::termbase::delete::<_, RdbContext<RepeatableRead>, HybRepo>(
-        (harn.nucl().repeatable_read(), harn.repo()),
+    usecase::termbase::delete::<_, RdbContext<ReptRead>, HybRepo>(
+        (harn.nucl().rept_read(), harn.repo()),
         user_token,
         termbase_id,
     )

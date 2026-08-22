@@ -17,3 +17,16 @@ pub struct AnnouncementEntry {
     /// Full body text for the new announcement.
     pub content: String,
 }
+
+/// Mutable announcement content fields.
+#[cfg_attr(test, derive(Clone))]
+pub struct AnnouncementRepl {
+    //
+    /// Identifier of the announcement to update.
+    pub id: String,
+
+    /// Replacement headline text.
+    pub title: String,
+    /// Replacement body content.
+    pub content: String,
+}

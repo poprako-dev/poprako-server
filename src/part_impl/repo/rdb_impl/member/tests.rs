@@ -6,7 +6,7 @@ use poprako_orchestra::{Nucl as _, Step as _};
 
 use crate::model::read::spec::member::MemberListSpec;
 use crate::model::write::member::{MemberEntry, MemberRoleRepl};
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::member::{
     CreateMember, GetMemberInfo, ListMemberInfos, UpdateMember,
 };
@@ -31,7 +31,7 @@ pub async fn member_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let repo = HybRepo::new(shared.clone());
 
-    let nucl = RdbNucl::<RepeatableRead>::new(shared.clone());
+    let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
     let admin_role = RoleMask::from(RoleField::ADMIN);
 

@@ -11,7 +11,7 @@ use tracing::instrument;
 use crate::complex::team::TeamComplex;
 use crate::model::read::proj::team::TeamInfo;
 use crate::model::write::team::{TeamAvatarReservation, TeamEntry};
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::team::{
     AllocTeamWorksetIndex, CreateTeam, DeleteTeam, GetTeamInfo,
     GetTeamInfoExcluded, ListTeamInfos, LockTeam, ReserveTeamAvatar,
@@ -389,7 +389,7 @@ impl<'a> Run<UpdateTeam<'a>> for Mock {
 
 impl<'a> Step<CreateTeam<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -414,7 +414,7 @@ impl<'a> Step<CreateTeam<'a>, MockContext> for Mock {
 
 impl<'a> Step<UpdateTeam<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -432,7 +432,7 @@ impl<'a> Step<UpdateTeam<'a>, MockContext> for Mock {
 
 impl<'a> Step<ReserveTeamAvatar<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -450,7 +450,7 @@ impl<'a> Step<ReserveTeamAvatar<'a>, MockContext> for Mock {
 
 impl<'a> Step<GetTeamInfoExcluded<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -471,7 +471,7 @@ impl<'a> Step<GetTeamInfoExcluded<'a>, MockContext> for Mock {
 
 impl<'a> Step<LockTeam<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -494,7 +494,7 @@ impl<'a> Step<LockTeam<'a>, MockContext> for Mock {
 
 impl<'a> Step<DeleteTeam<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -512,7 +512,7 @@ impl<'a> Step<DeleteTeam<'a>, MockContext> for Mock {
 
 impl<'a> Step<AllocTeamWorksetIndex<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
-    type Level = RepeatableRead;
+    type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;

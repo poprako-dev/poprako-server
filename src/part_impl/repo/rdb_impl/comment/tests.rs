@@ -2,16 +2,11 @@
 
 use super::*;
 
-use poprako_orchestra::Nucl as _;
-
 use crate::model::read::spec::comment::CommentListSpec;
 use crate::model::write::comment::CommentEntry;
-use crate::part::nucl::RepeatableRead;
 use crate::part::repo::oper::comment::{CreateComment, ListCommentInfos};
-use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::test_shared;
-use crate::result::BaseError;
 use crate::shared::RdbCore;
 use crate::value::comment::CommentInclOpt;
 
@@ -27,8 +22,6 @@ pub async fn comment_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let repo = HybRepo::new(shared.clone());
 
-    let nucl = RdbNucl::<RepeatableRead>::new(shared.clone());
-
     let comment_entry = CommentEntry {
         id: format!("{}comment", PREFIX),
         team_id: team_fixture.team_entry.id.clone(),
@@ -36,17 +29,8 @@ pub async fn comment_roundtrip_uses_testcontainer(shared: RdbCore) {
         content: "comment".into(),
     };
 
-    nucl.coord(async |context| {
-        //
-        repo.step(
-            context,
-            &CreateComment {
-                entry: &comment_entry,
-            },
-        )
-        .await?;
-
-        Ok::<(), BaseError>(())
+    repo.run(&CreateComment {
+        entry: &comment_entry,
     })
     .await
     .ok()

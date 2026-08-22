@@ -5,7 +5,7 @@ use poprako_util::i18n::trl;
 
 use crate::complex::image::ImageComplex;
 use crate::model::shared::user::UserToken;
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::ReptRead;
 use crate::part::prom::Prom;
 use crate::part::prom::oper::Defer;
 use crate::part::prom::payload::{TaskPayload, image};
@@ -38,7 +38,7 @@ pub async fn delete<N, C, R, P>(
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<RepeatableRead>,
+    C::Level: AtLeast<ReptRead>,
     R: UserRepo<C> + MemberRepo<C> + Send + Sync,
     P: Prom<C> + Send + Sync,
 {

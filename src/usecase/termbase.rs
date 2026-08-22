@@ -19,7 +19,7 @@ use crate::data::val::termbase::CreateTermbaseVal;
 use crate::data::view::termbase::TermbaseInfoView;
 use crate::model::read::spec::termbase::TermbaseListSpec;
 use crate::model::shared::user::UserToken;
-use crate::part::nucl::RepeatableRead;
+use crate::part::nucl::ReptRead;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::comic::GetComicInfoExcluded;
@@ -49,7 +49,7 @@ pub async fn create<N, C, R>(
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<RepeatableRead>,
+    C::Level: AtLeast<ReptRead>,
     R: TeamRepo<C>
         + ComicRepo<C>
         + WorksetRepo<C>
@@ -270,7 +270,7 @@ pub async fn update_info<N, C, R>(
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<RepeatableRead>,
+    C::Level: AtLeast<ReptRead>,
     R: TermbaseRepo<C> + TeamRepo<C> + MemberRepo<C> + Send + Sync,
 {
     let termbase_info_update =
@@ -320,7 +320,7 @@ pub async fn delete<N, C, R>(
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<RepeatableRead>,
+    C::Level: AtLeast<ReptRead>,
     R: TermbaseRepo<C>
         + TermRepo<C>
         + TeamRepo<C>

@@ -6,16 +6,16 @@ use poprako_orchestra::{AtLeast, Level};
 use crate::result::BaseError;
 
 /// PostgreSQL repeatable-read transaction guarantee.
-pub struct RepeatableRead;
+pub struct ReptRead;
 
-impl Level for RepeatableRead {}
+impl Level for ReptRead {}
 
 /// PostgreSQL serializable transaction guarantee.
-pub struct Serializable;
+pub struct Serial;
 
-impl Level for Serializable {}
+impl Level for Serial {}
 
-impl AtLeast<RepeatableRead> for Serializable {}
+impl AtLeast<ReptRead> for Serial {}
 
 impl<BE, E> From<NuclError<BE, E>> for BaseError
 where
