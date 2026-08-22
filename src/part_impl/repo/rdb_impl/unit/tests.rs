@@ -7,7 +7,7 @@ use crate::model::shared::unit::{UnitCoord, UnitRevision, UnitTranslation};
 use crate::model::write::unit::UnitEdit;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::unit::{
-    ApplyUnitEdits, ListUnitInfos, ListUnitOrders,
+    ApplyUnitEdits, ListUnitInfos, ListUnitInfosByIds, ListUnitOrders,
 };
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::HybRepo;
@@ -183,6 +183,23 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
             .collect::<Vec<_>>(),
         vec![second_id.as_str(), first_id.as_str()]
     );
+
+    nucl.coord(async |context| {
+        //
+        let ids = [first_id.clone(), "missing-unit".to_string()];
+
+        let selected = repo
+            .step(context, &ListUnitInfosByIds { ids: &ids })
+            .await?;
+
+        assert_eq!(selected.len(), 1);
+
+        assert_eq!(selected[0].id, first_id);
+
+        accept(())
+    })
+    .await
+    .unwrap();
 
     test_shared::cleanup(&shared, PREFIX).await.unwrap();
 

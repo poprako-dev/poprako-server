@@ -173,3 +173,74 @@ fn conversion_rejects_duplicate_local_ids() {
 
     assert!(into_unit_edits(duplicate, "editor-1", String::new).is_err());
 }
+
+#[test]
+fn transform_conversion_accepts_literal_pairs() {
+    //
+    let instr = serde_json::from_value::<TransformChapterUnitsInstr>(json!({
+        "part": "translated_text",
+        "units": [{
+            "unit_id": "unit-1",
+            "transforms": [
+                {"origin": "abc", "target": "def"},
+                {"origin": "def", "target": ""}
+            ]
+        }]
+    }))
+    .unwrap();
+
+    let transforms = into_unit_transforms(instr.units).unwrap();
+
+    assert_eq!(transforms.len(), 1);
+
+    assert_eq!(transforms[0].transforms[1].target, "");
+}
+
+#[test]
+fn transform_conversion_rejects_duplicate_ids_origins_and_empty_origin() {
+    //
+    let duplicate_ids = vec![
+        UnitTransformInstr {
+            unit_id: "unit-1".to_string(),
+            transforms: vec![UnitTextTransformInstr {
+                origin: "abc".to_string(),
+                target: "def".to_string(),
+            }],
+        },
+        UnitTransformInstr {
+            unit_id: "unit-1".to_string(),
+            transforms: vec![UnitTextTransformInstr {
+                origin: "ghi".to_string(),
+                target: "jkl".to_string(),
+            }],
+        },
+    ];
+
+    assert!(into_unit_transforms(duplicate_ids).is_err());
+
+    let invalid_pairs = vec![UnitTransformInstr {
+        unit_id: "unit-1".to_string(),
+        transforms: vec![
+            UnitTextTransformInstr {
+                origin: "abc".to_string(),
+                target: "def".to_string(),
+            },
+            UnitTextTransformInstr {
+                origin: "abc".to_string(),
+                target: "ghi".to_string(),
+            },
+        ],
+    }];
+
+    assert!(into_unit_transforms(invalid_pairs).is_err());
+
+    let empty_origin = vec![UnitTransformInstr {
+        unit_id: "unit-1".to_string(),
+        transforms: vec![UnitTextTransformInstr {
+            origin: String::new(),
+            target: "removed".to_string(),
+        }],
+    }];
+
+    assert!(into_unit_transforms(empty_origin).is_err());
+}

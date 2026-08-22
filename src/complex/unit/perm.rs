@@ -9,7 +9,7 @@ use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::member::MemberInfo;
 use crate::model::write::unit::UnitEdit;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::value::unit::UnitEditPerm;
+use crate::value::unit::{UnitEditPerm, UnitTextPart};
 
 /// Concrete evidence that grants Unit list access.
 pub enum UnitListAccess<'a> {
@@ -31,6 +31,40 @@ pub enum UnitListAccess<'a> {
 pub struct UnitPermComplex;
 
 impl UnitPermComplex {
+    /// Verifies that the caller may transform the selected Unit text part.
+    pub fn ensure_user_can_transform(
+        perm: UnitEditPerm,
+        part: UnitTextPart,
+    ) -> BaseRest<()> {
+        //
+        let allowed = match part {
+            //
+            UnitTextPart::TranslatedText => perm.can_translate,
+
+            UnitTextPart::ProofreadText => perm.can_proofread,
+        };
+
+        if allowed {
+            return accept(());
+        }
+
+        let err_message = trl("error-unit-transform-perm-required");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Perm,
+            err_message = %err_message,
+            perm = ?perm,
+            part = ?part,
+            operation = "transform",
+            "expected error: unit transform perm required",
+        );
+
+        Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: err_message,
+        })
+    }
+
     /// Verifies that the caller may list Units on a Chapter Page.
     pub fn ensure_user_can_list_infos(
         access: UnitListAccess<'_>,

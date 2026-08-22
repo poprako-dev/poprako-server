@@ -1,7 +1,12 @@
 use super::*;
 
+use time::OffsetDateTime;
+
+use crate::model::read::proj::unit::UnitInfo;
 use crate::model::shared::unit::UnitCoord;
+use crate::model::write::unit::{UnitTextTransform, UnitTransform};
 use crate::result::ExpectedVariant;
+use crate::value::unit::UnitTextPart;
 
 // Build a mocked save edit with a deterministic `next_id` value.
 fn save(id: &str, next_id: Patch<String>) -> UnitEdit {
@@ -27,6 +32,44 @@ fn create(id: &str, next_id: Option<String>) -> UnitEdit {
         },
         translation: None,
         revision: None,
+    }
+}
+
+// Build one visible Unit with both text fields for transform tests.
+fn unit(translated_text: &str, proofread_text: &str) -> UnitInfo {
+    //
+    UnitInfo {
+        id: "unit-1".to_string(),
+        page_id: "page-1".to_string(),
+        next_id: None,
+        is_bubble: true,
+        coord: UnitCoord {
+            x_coord: 1.0,
+            y_coord: 2.0,
+        },
+        translated_text: Some(translated_text.to_string()),
+        last_translator_id: Some("translator-old".to_string()),
+        is_proofread: true,
+        proofread_text: Some(proofread_text.to_string()),
+        last_proofreader_id: Some("proofreader-old".to_string()),
+        hidden_at: None,
+        created_at: OffsetDateTime::UNIX_EPOCH,
+        updated_at: OffsetDateTime::UNIX_EPOCH,
+    }
+}
+
+// Build one Unit transform with literal origin-target pairs.
+fn transform(pairs: &[(&str, &str)]) -> UnitTransform {
+    //
+    UnitTransform {
+        unit_id: "unit-1".to_string(),
+        transforms: pairs
+            .iter()
+            .map(|(origin, target)| UnitTextTransform {
+                origin: (*origin).to_string(),
+                target: (*target).to_string(),
+            })
+            .collect(),
     }
 }
 
@@ -109,6 +152,113 @@ fn normalize_orders_create_prior_to_save_for_the_same_unit() {
         &edits[1],
         UnitEdit::Save { id, .. } if id == "a"
     ));
+}
+
+#[test]
+fn search_phrase_trims_unicode_and_selects_one_text_part() {
+    //
+    let phrase =
+        UnitComplex::normalize_search_phrase(" 译文甲 ".to_string()).unwrap();
+
+    assert_eq!(phrase, "译文甲");
+
+    let unit_info = unit("译文甲正文", "校对正文");
+
+    assert!(UnitComplex::text_part_contains(
+        &unit_info,
+        UnitTextPart::TranslatedText,
+        &phrase,
+    ));
+
+    assert!(!UnitComplex::text_part_contains(
+        &unit_info,
+        UnitTextPart::ProofreadText,
+        &phrase,
+    ));
+
+    assert_args(
+        UnitComplex::normalize_search_phrase(" 两字 ".to_string()).unwrap_err(),
+    );
+}
+
+#[test]
+fn transform_uses_original_text_without_target_cascading() {
+    //
+    let unit_info = unit("abc def", "proofread");
+
+    let unit_transform = transform(&[("abc", "def"), ("def", "final")]);
+
+    let edit = UnitComplex::build_transform_edit(
+        &unit_info,
+        UnitTextPart::TranslatedText,
+        &unit_transform,
+        "translator-new",
+    )
+    .unwrap()
+    .unwrap();
+
+    let UnitEdit::Save {
+        translation: Patch::Assign { value },
+        revision: Patch::Skip,
+        ..
+    } = edit
+    else {
+        panic!("translation transform must build one content-only Save");
+    };
+
+    assert_eq!(value.translated_text, "def final");
+
+    assert_eq!(value.last_translator_id, "translator-new");
+}
+
+#[test]
+fn transform_rejects_overlapping_original_matches() {
+    //
+    let unit_info = unit("abcd", "proofread");
+
+    let unit_transform = transform(&[("abc", "first"), ("bcd", "second")]);
+
+    let error = UnitComplex::build_transform_edit(
+        &unit_info,
+        UnitTextPart::TranslatedText,
+        &unit_transform,
+        "translator-new",
+    )
+    .unwrap_err();
+
+    assert_args(error);
+}
+
+#[test]
+fn proofread_transform_preserves_approval_and_updates_attribution() {
+    //
+    let unit_info = unit("translated", "proofread old");
+
+    let unit_transform = transform(&[("old", "new")]);
+
+    let edit = UnitComplex::build_transform_edit(
+        &unit_info,
+        UnitTextPart::ProofreadText,
+        &unit_transform,
+        "proofreader-new",
+    )
+    .unwrap()
+    .unwrap();
+
+    let UnitEdit::Save {
+        translation: Patch::Skip,
+        revision: Patch::Assign { value },
+        ..
+    } = edit
+    else {
+        panic!("proofread transform must build one content-only Save");
+    };
+
+    assert!(value.is_proofread);
+
+    assert_eq!(value.proofread_text.as_deref(), Some("proofread new"));
+
+    assert_eq!(value.last_proofreader_id, "proofreader-new");
 }
 
 // Assert that an error is an argument validation error.

@@ -9,7 +9,7 @@
 #[cfg(test)]
 mod tests;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use serde::Deserialize;
 
@@ -19,15 +19,28 @@ use utoipa::ToSchema;
 use poprako_util::i18n::trl;
 
 use crate::model::shared::unit::{UnitCoord, UnitRevision, UnitTranslation};
-use crate::model::write::unit::UnitEdit;
+use crate::model::write::unit::{UnitEdit, UnitTextTransform, UnitTransform};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::Patch;
+use crate::value::unit::UnitTextPart;
 
 /// Input parameters for listing visible Units under one Page.
 #[derive(Debug, Deserialize)]
 pub struct ListPageUnitInfosInstr {
     /// Page whose visible Units are listed.
     pub page_id: String,
+}
+
+/// Input parameters for searching visible Units under one Chapter.
+#[derive(Debug)]
+pub struct SearchChapterUnitInfosInstr {
+    //
+    /// Chapter whose visible Units are searched.
+    pub chapter_id: String,
+    /// Unit text field selected for matching.
+    pub part: UnitTextPart,
+    /// Literal substring to search after normalization.
+    pub phrase: String,
 }
 
 /// Input parameters for saving a batch of Unit edits.
@@ -39,6 +52,115 @@ pub struct SavePageUnitEditsInstr {
 
     /// Ordered batch of Unit edits.
     pub edits: Vec<UnitEditInstr>,
+}
+
+/// One literal text transform supplied by the client.
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[serde(deny_unknown_fields)]
+pub struct UnitTextTransformInstr {
+    //
+    /// Literal text selected in the original value.
+    pub origin: String,
+    /// Literal text inserted for each selected match.
+    pub target: String,
+}
+
+impl UnitTextTransformInstr {
+    // Validate and convert one transport transform into its write model.
+    fn into_model(self) -> BaseRest<UnitTextTransform> {
+        //
+        if self.origin.is_empty() {
+            return Err(invalid_unit_transform("empty_origin"));
+        }
+
+        accept(UnitTextTransform {
+            origin: self.origin,
+            target: self.target,
+        })
+    }
+}
+
+/// Text transforms supplied for one permanent Unit.
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[serde(deny_unknown_fields)]
+pub struct UnitTransformInstr {
+    //
+    /// Permanent target Unit ID.
+    pub unit_id: String,
+    /// Literal transforms evaluated against the same original text.
+    pub transforms: Vec<UnitTextTransformInstr>,
+}
+
+impl UnitTransformInstr {
+    // Validate and convert one Unit transform request into its write model.
+    fn into_model(self) -> BaseRest<UnitTransform> {
+        //
+        if self.unit_id.is_empty() {
+            return Err(invalid_unit_transform("empty_unit_id"));
+        }
+
+        if !(1..=20).contains(&self.transforms.len()) {
+            return Err(invalid_unit_transform("transform_count"));
+        }
+
+        let mut origins = HashSet::with_capacity(self.transforms.len());
+
+        let transforms = self
+            .transforms
+            .into_iter()
+            .map(|transform| {
+                //
+                if !origins.insert(transform.origin.clone()) {
+                    return Err(invalid_unit_transform("duplicate_origin"));
+                }
+
+                transform.into_model()
+            })
+            .collect::<BaseRest<Vec<_>>>()?;
+
+        accept(UnitTransform {
+            unit_id: self.unit_id,
+            transforms,
+        })
+    }
+}
+
+/// Input parameters for transforming selected Units under one Chapter.
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[serde(deny_unknown_fields)]
+pub struct TransformChapterUnitsInstr {
+    //
+    /// Unit text field selected for transformation.
+    pub part: UnitTextPart,
+    /// Selected Units and their literal transforms.
+    pub units: Vec<UnitTransformInstr>,
+}
+
+/// Converts transport Unit transforms into validated write models.
+pub fn into_unit_transforms(
+    units: Vec<UnitTransformInstr>,
+) -> BaseRest<Vec<UnitTransform>> {
+    //
+    if !(1..=100).contains(&units.len()) {
+        return Err(invalid_unit_transform("unit_count"));
+    }
+
+    let mut unit_ids = HashSet::with_capacity(units.len());
+
+    units
+        .into_iter()
+        .map(|unit| {
+            //
+            if !unit_ids.insert(unit.unit_id.clone()) {
+                return Err(invalid_unit_transform("duplicate_unit_id"));
+            }
+
+            unit.into_model()
+        })
+        .collect()
 }
 
 /// One transport-facing Unit edit.
@@ -288,6 +410,24 @@ where
         .collect::<BaseRest<Vec<_>>>()?;
 
     accept(edits)
+}
+
+// Build the client-visible error for an invalid Unit transform request.
+fn invalid_unit_transform(reason: &'static str) -> BaseError {
+    //
+    let err_message = trl("error-invalid-unit-transform");
+
+    tracing::warn!(
+        err_variant = ?ExpectedVariant::Args,
+        err_message = %err_message,
+        reason,
+        "expected error: invalid unit transform",
+    );
+
+    BaseError::Expected {
+        variant: ExpectedVariant::Args,
+        message: err_message,
+    }
 }
 
 // Validate a unit edit local reference id is non-empty.

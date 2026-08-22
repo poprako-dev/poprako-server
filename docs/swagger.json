@@ -1101,6 +1101,106 @@
         }
       }
     },
+    "/api/v1/chapters/{chapter_id}/units/search": {
+      "get": {
+        "tags": [
+          "units"
+        ],
+        "summary": "`GET /api/v1/chapters/{chapter_id}/units/search` — search Unit text.",
+        "operationId": "search_infos",
+        "parameters": [
+          {
+            "name": "chapter_id",
+            "in": "path",
+            "description": "Chapter ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "part",
+            "in": "query",
+            "description": "Unit text field selected for matching.",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UnitTextPart"
+            }
+          },
+          {
+            "name": "phrase",
+            "in": "query",
+            "description": "Case-sensitive literal substring to search.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Matching Units listed in page order",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpBody_Vec_UnitInfoView"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No perm to search Units in this Chapter"
+          },
+          "422": {
+            "description": "Search phrase is too short"
+          }
+        }
+      }
+    },
+    "/api/v1/chapters/{chapter_id}/units/transform": {
+      "post": {
+        "tags": [
+          "units"
+        ],
+        "summary": "`POST /api/v1/chapters/{chapter_id}/units/transform` — transform Unit text.",
+        "operationId": "transform",
+        "parameters": [
+          {
+            "name": "chapter_id",
+            "in": "path",
+            "description": "Chapter ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransformChapterUnitsInstr"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Unit transforms applied"
+          },
+          "403": {
+            "description": "Matching Chapter role required"
+          },
+          "409": {
+            "description": "Serializable conflict; retry the complete request"
+          },
+          "422": {
+            "description": "Invalid or overlapping Unit transform"
+          }
+        }
+      }
+    },
     "/api/v1/chapters/{chapter_id}/workflow-records": {
       "get": {
         "tags": [
@@ -8560,6 +8660,106 @@
           }
         }
       },
+      "HttpBody_Vec_UnitInfoView": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Application-level success code, 0 for normal success.",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "Presentation-ready visible Unit information.",
+              "required": [
+                "id",
+                "page_id",
+                "is_bubble",
+                "is_proofread",
+                "x_coord",
+                "y_coord",
+                "created_at",
+                "updated_at"
+              ],
+              "properties": {
+                "created_at": {
+                  "type": "integer",
+                  "format": "int64",
+                  "description": "Creation time as Unix milliseconds."
+                },
+                "id": {
+                  "type": "string",
+                  "description": "Permanent Unit ID."
+                },
+                "is_bubble": {
+                  "type": "boolean",
+                  "description": "Whether the Unit identifies a speech bubble."
+                },
+                "is_proofread": {
+                  "type": "boolean",
+                  "description": "Whether the current revision is approved."
+                },
+                "last_proofreader_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "ID of the proofreader who last assigned revision content."
+                },
+                "last_translator_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "ID of the translator who last assigned translation content."
+                },
+                "page_id": {
+                  "type": "string",
+                  "description": "Owning Page ID."
+                },
+                "proofread_text": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Current proofread text."
+                },
+                "translated_text": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Current translated text."
+                },
+                "updated_at": {
+                  "type": "integer",
+                  "format": "int64",
+                  "description": "Last update time as Unix milliseconds."
+                },
+                "x_coord": {
+                  "type": "number",
+                  "format": "double",
+                  "description": "Horizontal page-relative coordinate."
+                },
+                "y_coord": {
+                  "type": "number",
+                  "format": "double",
+                  "description": "Vertical page-relative coordinate."
+                }
+              }
+            }
+          }
+        }
+      },
       "HttpBody_Vec_WorksetInfoView": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
@@ -10021,6 +10221,28 @@
           }
         }
       },
+      "TransformChapterUnitsInstr": {
+        "type": "object",
+        "description": "Input parameters for transforming selected Units under one Chapter.",
+        "required": [
+          "part",
+          "units"
+        ],
+        "properties": {
+          "part": {
+            "$ref": "#/components/schemas/UnitTextPart",
+            "description": "Unit text field selected for transformation."
+          },
+          "units": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UnitTransformInstr"
+            },
+            "description": "Selected Units and their literal transforms."
+          }
+        },
+        "additionalProperties": false
+      },
       "UnitCoordInstr": {
         "type": "object",
         "description": "Page-relative Unit coordinates.",
@@ -10290,6 +10512,55 @@
               "null"
             ],
             "description": "Replacement proofread text."
+          }
+        },
+        "additionalProperties": false
+      },
+      "UnitTextPart": {
+        "type": "string",
+        "description": "Text field selected by a Unit search or transform request.",
+        "enum": [
+          "translated_text",
+          "proofread_text"
+        ]
+      },
+      "UnitTextTransformInstr": {
+        "type": "object",
+        "description": "One literal text transform supplied by the client.",
+        "required": [
+          "origin",
+          "target"
+        ],
+        "properties": {
+          "origin": {
+            "type": "string",
+            "description": "Literal text selected in the original value."
+          },
+          "target": {
+            "type": "string",
+            "description": "Literal text inserted for each selected match."
+          }
+        },
+        "additionalProperties": false
+      },
+      "UnitTransformInstr": {
+        "type": "object",
+        "description": "Text transforms supplied for one permanent Unit.",
+        "required": [
+          "unit_id",
+          "transforms"
+        ],
+        "properties": {
+          "transforms": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UnitTextTransformInstr"
+            },
+            "description": "Literal transforms evaluated against the same original text."
+          },
+          "unit_id": {
+            "type": "string",
+            "description": "Permanent target Unit ID."
           }
         },
         "additionalProperties": false

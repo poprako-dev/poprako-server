@@ -394,6 +394,17 @@ fn count_infos(unit_infos: &[UnitInfo]) -> UnitCounters {
         })
 }
 
+// List every requested persisted Unit that currently exists.
+fn list_infos_by_ids(state: &MockState, ids: &[String]) -> Vec<UnitInfo> {
+    //
+    state
+        .units
+        .iter()
+        .filter(|unit_info| ids.contains(&unit_info.id))
+        .cloned()
+        .collect()
+}
+
 // List lightweight order objects for one page, kept aligned with unit sequence.
 fn list_orders(state: &MockState, page_id: &str) -> BaseRest<Vec<UnitOrder>> {
     //
