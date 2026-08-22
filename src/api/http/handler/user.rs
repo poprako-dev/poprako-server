@@ -23,7 +23,7 @@ use crate::data::instr::user::{
 use crate::data::val::user::ReserveUserAvatarVal;
 use crate::data::view::user::UserInfoView;
 use crate::model::shared::user::UserToken;
-use crate::part::nucl::ReptRead;
+use crate::part::nucl::{ReptRead, Serial};
 use crate::part_impl::prom::rdb_impl::RdbProm;
 use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
@@ -158,7 +158,8 @@ pub async fn update_password(
     params(("user_id" = String, Path, description = "Target user ID")),
     responses(
         (status = 204, description = "User deleted"),
-        (status = 403, description = "Cannot delete another user's account"),
+        (status = 403, description = "Cannot delete another user or the last admin of a team"),
+        (status = 409, description = "Serializable conflict; retry the complete request"),
         (status = 404, description = "User not found"),
     ),
 ))]
@@ -169,8 +170,8 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::user::delete::delete::<_, RdbContext<ReptRead>, HybRepo, RdbProm>(
-        (harn.nucl().rept_read(), harn.repo(), harn.prom()),
+    usecase::user::delete::delete::<_, RdbContext<Serial>, HybRepo, RdbProm>(
+        (harn.nucl().serial(), harn.repo(), harn.prom()),
         user_token,
         user_id,
     )

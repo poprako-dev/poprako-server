@@ -14,9 +14,13 @@ mod mutate;
 // list_infos(list_infos)(negative): non-member should be rejected.
 // list_infos(list_infos)(negative): invalid list parameter combination should be rejected.
 // update_roles(update_roles)(positive): team admin should update member role mask.
+// update_roles(update_roles)(positive): one of two admins may remove its own admin role.
+// update_roles(update_roles)(negative): the last admin role must be retained.
 // update_roles(update_roles)(negative): non-admin should be rejected without mutation.
 // update_roles(update_roles)(negative): missing member should be rejected.
 // delete(delete)(positive): team admin should delete a member.
+// delete(delete)(positive): one of two admins may delete its own member.
+// delete(delete)(negative): the last admin member must be retained.
 // delete(delete)(negative): non-admin should be rejected without deletion.
 // delete(delete)(negative): missing member should be rejected.
 // join_team(join_team)(positive): invited user should join team and consume invitation.

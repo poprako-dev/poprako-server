@@ -27,6 +27,7 @@ mod delete;
 // mark_avatar_uploaded(mark_avatar_uploaded)(negative): old reservation replay should fail without marking current avatar uploaded.
 // delete(delete)(positive): owner delete should remove user, credentials, and memberships, and enqueue uploaded avatar deletion.
 // delete(delete)(positive): deleting a user without an uploaded avatar should not enqueue prom records.
+// delete(delete)(negative): deleting a user must retain an admin in every affected team.
 // delete(delete)(negative): non-owner delete should return a perm error without mutation.
 // delete(delete)(negative): missing user should rollback state.
 

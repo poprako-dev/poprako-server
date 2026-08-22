@@ -2082,10 +2082,13 @@
             "description": "Member deleted"
           },
           "403": {
-            "description": "No perm to delete this member"
+            "description": "No perm or the team would lose its last admin"
           },
           "404": {
             "description": "Member not found"
+          },
+          "409": {
+            "description": "Serializable conflict; retry the complete request"
           }
         }
       }
@@ -2123,10 +2126,13 @@
             "description": "Member roles updated"
           },
           "403": {
-            "description": "No perm to update this member"
+            "description": "No perm or the team would lose its last admin"
           },
           "404": {
             "description": "Member not found"
+          },
+          "409": {
+            "description": "Serializable conflict; retry the complete request"
           },
           "422": {
             "description": "Path id does not match body id"
@@ -3811,10 +3817,13 @@
             "description": "User deleted"
           },
           "403": {
-            "description": "Cannot delete another user's account"
+            "description": "Cannot delete another user or the last admin of a team"
           },
           "404": {
             "description": "User not found"
+          },
+          "409": {
+            "description": "Serializable conflict; retry the complete request"
           }
         }
       }

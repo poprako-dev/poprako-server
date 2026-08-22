@@ -20,12 +20,12 @@ use crate::model::read::spec::member::MemberListSpec;
 use crate::model::shared::user::UserToken;
 use crate::model::write::member::{MemberEntry, MemberRoleRepl};
 use crate::part::image::ImagePool;
-use crate::part::nucl::ReptRead;
+use crate::part::nucl::{ReptRead, Serial};
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::member_invitation::MemberInvitationRepo;
 use crate::part::repo::oper::member::{
     CreateMember, DeleteMember, FindMemberInfo, GetMemberInfo, ListMemberInfos,
-    UpdateMember,
+    ListMemberInfosExcluded, UpdateMember,
 };
 use crate::part::repo::oper::member_invitation::{
     GetMemberInvitationInfoExcluded, UpdateMemberInvitation,
@@ -303,51 +303,84 @@ pub async fn update_roles<N, C, R>(
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<ReptRead>,
+    C::Level: AtLeast<Serial>,
     R: MemberRepo<C> + Send + Sync,
 {
-    let member_info = GetMemberInfo::Id {
-        id: &instr.id,
-        incls: &[],
-    }
-    .run_on(repo)
-    .await?;
+    let () = nucl
+        .coord(async move |context| {
+            //
+            let member_info = GetMemberInfo::Id {
+                id: &instr.id,
+                incls: &[],
+            }
+            .step_on(repo, context)
+            .await?;
 
-    let caller_member_info = FindMemberInfo::UserTeam {
-        user_id: &token.user_id,
-        team_id: &member_info.team_id,
-    }
-    .run_on(repo)
-    .await?;
+            let caller_member_info = FindMemberInfo::UserTeam {
+                user_id: &token.user_id,
+                team_id: &member_info.team_id,
+            }
+            .step_on(repo, context)
+            .await?;
 
-    let Some(caller_member_info) = caller_member_info else {
-        //
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            message: trl("error-team-admin-required"),
-        });
-    };
+            let Some(caller_member_info) = caller_member_info else {
+                //
+                return Err(BaseError::Expected {
+                    variant: ExpectedVariant::Perm,
+                    message: trl("error-team-admin-required"),
+                });
+            };
 
-    MemberPermComplex::ensure_user_can_update_info(&caller_member_info)?;
+            MemberPermComplex::ensure_user_can_update_info(
+                &caller_member_info,
+            )?;
 
-    nucl.coord(async move |context| {
-        //
-        let member_role_update = MemberRoleRepl {
-            id: instr.id,
-            roles: instr.roles,
-        };
+            let member_infos = ListMemberInfosExcluded::Team {
+                team_id: &member_info.team_id,
+            }
+            .step_on(repo, context)
+            .await?;
 
-        UpdateMember::Role {
-            update: &member_role_update,
-        }
-        .step_on(repo, context)
+            if !MemberComplex::team_has_admin_after_role_update(
+                &member_infos,
+                &member_info,
+                instr.roles,
+            ) {
+                //
+                let err_message = trl("error-forbidden");
+
+                tracing::warn!(
+                    err_variant = ?ExpectedVariant::Perm,
+                    err_message = %err_message,
+                    team_id = %member_info.team_id,
+                    user_id = %token.user_id,
+                    affected_user_id = %member_info.user_id,
+                    member_id = %member_info.id,
+                    roles = ?instr.roles,
+                    operation = "remove last team administrator role",
+                    "expected error: team administrator retention required",
+                );
+
+                return Err(BaseError::Expected {
+                    variant: ExpectedVariant::Perm,
+                    message: err_message,
+                });
+            }
+
+            let member_role_update = MemberRoleRepl {
+                id: member_info.id,
+                roles: instr.roles,
+            };
+
+            UpdateMember::Role {
+                update: &member_role_update,
+            }
+            .step_on(repo, context)
+            .await?;
+
+            accept(())
+        })
         .await?;
-
-        accept(())
-    })
-    .await?;
-
-    let () = ();
 
     accept(())
 }
@@ -364,42 +397,75 @@ pub async fn delete<N, C, R>(
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<ReptRead>,
+    C::Level: AtLeast<Serial>,
     R: MemberRepo<C> + Send + Sync,
 {
-    let member_info = GetMemberInfo::Id {
-        id: &id,
-        incls: &[],
-    }
-    .run_on(repo)
-    .await?;
+    let () = nucl
+        .coord(async move |context| {
+            //
+            let member_info = GetMemberInfo::Id {
+                id: &id,
+                incls: &[],
+            }
+            .step_on(repo, context)
+            .await?;
 
-    let caller_member_info = FindMemberInfo::UserTeam {
-        user_id: &token.user_id,
-        team_id: &member_info.team_id,
-    }
-    .run_on(repo)
-    .await?;
+            let caller_member_info = FindMemberInfo::UserTeam {
+                user_id: &token.user_id,
+                team_id: &member_info.team_id,
+            }
+            .step_on(repo, context)
+            .await?;
 
-    let Some(caller_member_info) = caller_member_info else {
-        //
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            message: trl("error-team-admin-required"),
-        });
-    };
+            let Some(caller_member_info) = caller_member_info else {
+                //
+                return Err(BaseError::Expected {
+                    variant: ExpectedVariant::Perm,
+                    message: trl("error-team-admin-required"),
+                });
+            };
 
-    MemberPermComplex::ensure_user_can_delete(&caller_member_info)?;
+            MemberPermComplex::ensure_user_can_delete(&caller_member_info)?;
 
-    nucl.coord(async move |context| {
-        //
-        DeleteMember { id: &id }.step_on(repo, context).await?;
+            let member_infos = ListMemberInfosExcluded::Team {
+                team_id: &member_info.team_id,
+            }
+            .step_on(repo, context)
+            .await?;
 
-        accept(())
-    })
-    .await?;
+            if !MemberComplex::team_has_admin_after_delete(
+                &member_infos,
+                &member_info,
+            ) {
+                //
+                let err_message = trl("error-forbidden");
 
-    let () = ();
+                tracing::warn!(
+                    err_variant = ?ExpectedVariant::Perm,
+                    err_message = %err_message,
+                    team_id = %member_info.team_id,
+                    user_id = %token.user_id,
+                    affected_user_id = %member_info.user_id,
+                    member_id = %member_info.id,
+                    operation = "delete last team administrator member",
+                    "expected error: team administrator retention required",
+                );
+
+                return Err(BaseError::Expected {
+                    variant: ExpectedVariant::Perm,
+                    message: err_message,
+                });
+            }
+
+            DeleteMember {
+                id: &member_info.id,
+            }
+            .step_on(repo, context)
+            .await?;
+
+            accept(())
+        })
+        .await?;
 
     accept(())
 }

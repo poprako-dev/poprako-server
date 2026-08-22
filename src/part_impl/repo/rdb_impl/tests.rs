@@ -48,6 +48,11 @@ async fn repo_rdb_impls_use_testcontainer() {
 
     member::tests::member_roundtrip_uses_testcontainer(shared.clone()).await;
 
+    member::tests::concurrent_admin_role_removals_are_serialized(
+        shared.clone(),
+    )
+    .await;
+
     member_invitation::tests::member_invitation_roundtrip_uses_testcontainer(
         shared.clone(),
     )
