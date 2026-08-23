@@ -84,7 +84,7 @@ pub async fn list_infos(
     responses(
         (status = 200, description = "Matching Units listed in page order", body = HttpBody<Vec<UnitInfoView>>),
         (status = 403, description = "No perm to search Units in this Chapter"),
-        (status = 422, description = "Search phrase is too short"),
+        (status = 422, description = "Search phrase is empty or more than 100 Units match"),
     ),
 ))]
 #[instrument(level = "info", skip_all)]

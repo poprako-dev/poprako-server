@@ -10,6 +10,8 @@ mod tests;
 use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
+use poprako_util::i18n::trl;
+
 use crate::complex::chapter::ChapterComplex;
 use crate::complex::unit::{UnitComplex, UnitPermComplex};
 use crate::data::instr::unit::{
@@ -40,7 +42,7 @@ use crate::part::repo::oper::unit::{
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::unit::UnitRepo;
-use crate::result::{BaseError, BaseRest, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::internal::unit::UnitAccessLoader;
 use crate::usecase::stage::start_pending_stages;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordOrigin;
@@ -49,6 +51,9 @@ use crate::value::unit::UnitEditPerm;
 
 // Search pages in bounded concurrent batches.
 const SEARCH_PAGE_BATCH_SIZE: usize = 20;
+
+// Maximum number of Unit matches returned by one Chapter search.
+const SEARCH_MATCH_LIMIT: usize = 100;
 
 #[instrument(level = "info", skip(repo))]
 /// Lists visible Units for one Page in final linked-list order.
@@ -135,59 +140,57 @@ where
     .run_on(repo)
     .await?;
 
-    let phrase = &phrase;
+    let mut found_infos = Vec::new();
 
-    let batches = page_infos.chunks(SEARCH_PAGE_BATCH_SIZE).map(
-        |page_batch| async move {
-            //
-            let mut found_infos = Vec::new();
-
-            for page_info in page_batch {
+    for page_batch in page_infos.chunks(SEARCH_PAGE_BATCH_SIZE) {
+        //
+        let batch_unit_infos = futures_util::future::try_join_all(
+            page_batch.iter().map(|page_info| async move {
                 //
-                let unit_infos = ListUnitInfos {
+                ListUnitInfos {
                     page_id: &page_info.id,
                 }
                 .run_on(repo)
-                .await?;
+                .await
+            }),
+        )
+        .await?;
 
-                found_infos.extend(
-                    unit_infos
-                        .into_iter()
-                        .filter(|unit_info| unit_info.hidden_at.is_none())
-                        .enumerate()
-                        .filter_map(|(unit_index, unit_info)| {
-                            //
-                            UnitComplex::text_part_contains(
-                                &unit_info, part, phrase,
-                            )
-                            .then_some((
-                                page_info.index,
-                                unit_index,
-                                unit_info,
-                            ))
-                        }),
-                );
+        for unit_infos in batch_unit_infos {
+            //
+            for unit_info in unit_infos
+                .into_iter()
+                .filter(|unit_info| unit_info.hidden_at.is_none())
+            {
+                //
+                if !UnitComplex::text_part_contains(&unit_info, part, &phrase) {
+                    continue;
+                }
+
+                found_infos.push(UnitInfoView::from(unit_info));
+
+                if found_infos.len() > SEARCH_MATCH_LIMIT {
+                    //
+                    let err_message = trl("error-unit-search-too-many-matches");
+
+                    tracing::warn!(
+                        err_variant = ?ExpectedVariant::Args,
+                        err_message = %err_message,
+                        match_count = found_infos.len(),
+                        match_limit = SEARCH_MATCH_LIMIT,
+                        "expected error: too many Unit search matches",
+                    );
+
+                    return Err(BaseError::Expected {
+                        variant: ExpectedVariant::Args,
+                        message: err_message,
+                    });
+                }
             }
+        }
+    }
 
-            accept(found_infos)
-        },
-    );
-
-    let mut found_infos = futures_util::future::try_join_all(batches)
-        .await?
-        .into_iter()
-        .flatten()
-        .collect::<Vec<_>>();
-
-    found_infos
-        .sort_by_key(|(page_index, unit_index, _)| (*page_index, *unit_index));
-
-    accept(
-        found_infos
-            .into_iter()
-            .map(|(_, _, unit_info)| UnitInfoView::from(unit_info))
-            .collect(),
-    )
+    accept(found_infos)
 }
 
 #[instrument(level = "info", skip(nucl, repo))]

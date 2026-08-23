@@ -3,6 +3,9 @@
 // save_edits(save_edits)(positive): concurrent inserts before one anchor remain a complete chain.
 // save_edits(save_edits)(negative): translator revision edits are rejected and rolled back.
 
+// Unit search tests with dedicated high-cardinality fixtures.
+mod search;
+
 use super::transform::transform;
 use super::*;
 

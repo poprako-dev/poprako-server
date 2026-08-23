@@ -144,10 +144,72 @@ export async function runIt05Module(ctx: RunCtx): Promise<void> {
 
     expectError(
         await trans01.api.get<ErrorBody>(
-            `/api/v1/chapters/${mainChapterId}/units/search?part=translated_text&phrase=ab`,
+            `/api/v1/chapters/${mainChapterId}/units/search?part=translated_text&phrase=%20%E3%80%80%20`,
         ),
         422,
         2,
+    );
+
+    // ---------- F3a. Chapter Unit search match limit ----------
+
+    const searchLimitChapter = await createChapter(
+        ctx.sadmin,
+        ctx.main.comicId,
+        titled("Unit 搜索上限"),
+    );
+
+    await grantChapterWorkerRoles(searchLimitChapter.id, ctx.ids.defaultUserId);
+
+    const searchLimitPages = await reserveChapterPages(
+        ctx.sadmin,
+        searchLimitChapter.id,
+        newPageManifest(2, "jpg"),
+    );
+
+    const firstPageEdits = Array.from({ length: 100 }, (_, unitIndex) => ({
+        ...newBubbleUnit(
+            `search-limit-${unitIndex}`,
+            unitIndex / 100,
+            unitIndex / 100,
+        ),
+        translation: { translated_text: `日-${unitIndex}` },
+    }));
+
+    await savePageUnits(
+        ctx.sadmin,
+        searchLimitPages.pages[0]!.page_id,
+        firstPageEdits,
+    );
+
+    const hundredMatches = await searchChapterUnits(
+        ctx.sadmin,
+        searchLimitChapter.id,
+        "translated_text",
+        "日",
+    );
+
+    assert.equal(hundredMatches.length, 100);
+
+    await savePageUnits(ctx.sadmin, searchLimitPages.pages[1]!.page_id, [
+        {
+            ...newBubbleUnit("search-limit-101", 0.5, 0.5),
+            translation: { translated_text: "第 101 个日文匹配" },
+        },
+    ]);
+
+    expectError(
+        await ctx.sadmin.get<ErrorBody>(
+            `/api/v1/chapters/${searchLimitChapter.id}/units/search?part=translated_text&phrase=%E6%97%A5`,
+        ),
+        422,
+        2,
+    );
+
+    expectStatus(
+        await ctx.sadmin.delete<null>(
+            `/api/v1/chapters/${searchLimitChapter.id}`,
+        ),
+        204,
     );
 
     // ---------- F10. import/export regression ----------
