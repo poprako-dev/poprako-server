@@ -1,7 +1,7 @@
 use super::*;
 
 use crate::value::chapter::{Stage, StagePhase};
-use crate::value::chapter_port::TranslationFormat;
+use crate::value::chapter_port::{ExportFormatSpec, TranslationFormat};
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordOrigin;
 use crate::value::role::{RoleField, RoleMask};
 
@@ -37,7 +37,7 @@ fn payloads_round_trip_through_rdb_storage_forms() {
             imported_unit_count: 8,
         },
         ChapterWorkflowRecordPayload::TranslationExported {
-            format: TranslationFormat::LabelPlus,
+            formats: ExportFormatSpec::BOTH,
         },
         ChapterWorkflowRecordPayload::StageTransitioned {
             stage: Stage::Translate,
@@ -61,6 +61,23 @@ fn payloads_round_trip_through_rdb_storage_forms() {
     }
 }
 
+// legacy_export_payload_decodes_as_one_hot_spec(ChapterWorkflowRecordPayload)(compatibility): existing singular-format rows remain readable after aggregate exports are introduced.
+#[test]
+fn legacy_export_payload_decodes_as_one_hot_spec() {
+    let payload = decode_payload(
+        ChapterWorkflowRecordKind::TranslationExported,
+        serde_json::json!({ "format": "label-plus" }),
+    )
+    .unwrap();
+
+    assert_eq!(
+        payload,
+        ChapterWorkflowRecordPayload::TranslationExported {
+            formats: ExportFormatSpec::LABEL_PLUS,
+        }
+    );
+}
+
 // storage_payload_rejects_kind_mismatch_and_extra_fields(ChapterWorkflowRecordPayload)(negative): persisted JSONB payloads must exactly match their separate kind.
 #[test]
 fn storage_payload_rejects_kind_mismatch_and_extra_fields() {
@@ -77,4 +94,16 @@ fn storage_payload_rejects_kind_mismatch_and_extra_fields() {
     );
 
     assert!(missing_field.is_err());
+
+    let empty_export = decode_payload(
+        ChapterWorkflowRecordKind::TranslationExported,
+        serde_json::json!({
+            "formats": {
+                "label_plus": false,
+                "poprako": false,
+            },
+        }),
+    );
+
+    assert!(empty_export.is_err());
 }

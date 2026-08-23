@@ -1,5 +1,4 @@
-// export(export)(positive): assignee exports chapter metadata and ordered text units, then transactionally records the export and triggers typeset/redraw.
-// export_label_plus(export_label_plus)(positive): assignee exports ordered pages and units as LabelPlus text, then transactionally records the export and triggers typeset/redraw.
+// export(export)(positive): assignee atomically exports both formats from one loaded chapter snapshot, records one export, and triggers typeset/redraw once.
 
 use super::*;
 
@@ -15,6 +14,7 @@ use crate::model::shared::unit::UnitCoord;
 use crate::model::shared::user::UserToken;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::value::chapter::{Stage, StageMask, StagePhase};
+use crate::value::chapter_port::ExportFormatSpec;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
@@ -188,7 +188,7 @@ fn seed_scope(mock: &Mock) {
 }
 
 #[tokio::test]
-async fn export_returns_chapter_pages_and_units() {
+async fn export_returns_both_formats_and_records_one_export() {
     //
     let mock = Mock::new();
 
@@ -204,8 +204,13 @@ async fn export_returns_chapter_pages_and_units() {
         Some("alpha proof"),
     ));
 
-    let exported =
-        export((&mock, &mock), token("user-1"), "chapter-1".into()).await;
+    let exported = export(
+        (&mock, &mock),
+        token("user-1"),
+        "chapter-1".into(),
+        ExportFormatSpec::BOTH,
+    )
+    .await;
 
     let exported = match exported {
         //
@@ -214,24 +219,39 @@ async fn export_returns_chapter_pages_and_units() {
         Err(_) => panic!("expected export success"),
     };
 
-    assert_eq!(exported.chapter_id, "chapter-1");
+    let poprako = exported.poprako.unwrap();
 
-    assert_eq!(exported.chapter_index, 3);
+    assert_eq!(poprako.chapter_id, "chapter-1");
 
-    assert_eq!(exported.chapter_subtitle, Some("Arrival".into()));
+    assert_eq!(poprako.chapter_index, 3);
 
-    assert_eq!(exported.comic_title, "Pop Comic");
+    assert_eq!(poprako.chapter_subtitle, Some("Arrival".into()));
 
-    assert_eq!(exported.pages.len(), 2);
+    assert_eq!(poprako.comic_title, "Pop Comic");
 
-    assert_eq!(exported.pages[0].units.len(), 2);
+    assert_eq!(poprako.pages.len(), 2);
 
-    assert_eq!(exported.pages[0].units[0].unit_id, "unit-a");
+    assert_eq!(poprako.pages[0].units.len(), 2);
+
+    assert_eq!(poprako.pages[0].units[0].unit_id, "unit-a");
 
     assert_eq!(
-        exported.pages[0].units[0].proofread_text,
+        poprako.pages[0].units[0].proofread_text,
         Some("alpha proof".into())
     );
+
+    let label_plus = exported.label_plus.unwrap();
+
+    assert!(label_plus.contains("Exported by PopRaKo Web"));
+
+    assert!(label_plus.contains(">>>>>>>>[000.png]<<<<<<<<"));
+
+    assert!(
+        label_plus
+            .contains("----------------[1]----------------[0.2500,0.7500,1]")
+    );
+
+    assert!(label_plus.contains("alpha proof"));
 
     assert!(
         mock.snapshot().chapters[0]
@@ -241,55 +261,21 @@ async fn export_returns_chapter_pages_and_units() {
 
     let snapshot = mock.snapshot();
 
-    assert!(snapshot.chapter_workflow_records.iter().any(|record| {
-        record.actor_user_id.as_deref() == Some("user-1")
-            && matches!(
-                &record.payload,
-                ChapterWorkflowRecordPayload::TranslationExported { .. },
-            )
-    }));
-}
+    assert_eq!(snapshot.chapter_workflow_records.len(), 2);
 
-#[tokio::test]
-async fn export_label_plus_returns_text_payload() {
-    //
-    let mock = Mock::new();
-
-    seed_scope(&mock);
-
-    mock.seed_unit(unit(
-        "unit-a",
-        "page-1",
-        None,
-        "alpha",
-        Some("alpha proof"),
+    assert!(matches!(
+        &snapshot.chapter_workflow_records[0].payload,
+        ChapterWorkflowRecordPayload::TranslationExported { formats }
+            if *formats == ExportFormatSpec::BOTH
     ));
 
-    let exported =
-        export_label_plus((&mock, &mock), token("user-1"), "chapter-1".into())
-            .await;
-
-    let exported = match exported {
-        //
-        Ok(exported) => exported,
-
-        Err(_) => panic!("expected LabelPlus export success"),
-    };
-
-    assert!(exported.contains("Exported by PopRaKo Web"));
-
-    assert!(exported.contains(">>>>>>>>[000.png]<<<<<<<<"));
-
-    assert!(
-        exported
-            .contains("----------------[1]----------------[0.2500,0.7500,1]")
-    );
-
-    assert!(exported.contains("alpha proof"));
-
-    assert!(
-        mock.snapshot().chapters[0]
-            .stages
-            .has_phase(Stage::TypesetRedraw, StagePhase::Active,)
-    );
+    assert!(matches!(
+        &snapshot.chapter_workflow_records[1].payload,
+        ChapterWorkflowRecordPayload::StageTransitioned {
+            stage: Stage::TypesetRedraw,
+            previous_phase: StagePhase::Pending,
+            next_phase: StagePhase::Active,
+            ..
+        }
+    ));
 }

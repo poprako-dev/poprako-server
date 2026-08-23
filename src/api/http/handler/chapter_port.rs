@@ -9,35 +9,26 @@ use axum::extract::{Extension, Path, Query, State};
 use axum::http::StatusCode;
 use axum::http::header::{CONTENT_DISPOSITION, CONTENT_TYPE};
 use axum::response::Response;
-use serde::Deserialize;
 use tracing::instrument;
 
 #[cfg(feature = "swagger")]
 use crate::api::http::result::HttpBody;
+#[cfg(feature = "swagger")]
+use crate::data::val::chapter_port::ExportChapterTranslationsVal;
 
 use crate::api::http::result::{Accept as _, HttpError, HttpResult};
 use crate::api::http::state::AppHarn;
 use crate::data::instr::chapter_port::{
-    ChapterTranslationFormatInstr, ImportChapterTranslationInstr,
+    ExportChapterTranslationInstr, ImportChapterTranslationInstr,
 };
 use crate::data::val::chapter_port::ImportChapterTranslationVal;
-
-#[cfg(feature = "swagger")]
-use crate::data::view::chapter_port::ChapterTranslationPortView;
 
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
 use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
 use crate::usecase;
-use crate::value::chapter_port::TranslationFormat;
-
-/// Query selecting the export format.
-#[derive(Debug, Deserialize)]
-pub struct TranslationExportQuery {
-    /// Export format: `poprako` or `label_plus`.
-    pub format: ChapterTranslationFormatInstr,
-}
+use crate::value::chapter_port::ExportFormatSpec;
 
 /// `POST /api/v1/chapters/{chapter_id}/translations/import` — import translations.
 #[cfg_attr(feature = "swagger", utoipa::path(
@@ -72,19 +63,17 @@ pub async fn import(
 
 /// `GET /api/v1/chapters/{chapter_id}/translations/export` — export response body.
 ///
-/// `format=poprako` returns a JSON document (`application/json`); `format=label_plus`
-/// returns a LabelPlus text document (`text/plain`).
+/// `format` selects one or both generated documents as a comma-separated value.
 #[cfg_attr(feature = "swagger", utoipa::path(
     get,
     path = "/api/v1/chapters/{chapter_id}/translations/export",
     tag = "chapter-port",
     params(
         ("chapter_id" = String, Path, description = "Chapter ID"),
-        ("format" = ChapterTranslationFormatInstr, Query, description = "Export format: poprako or label_plus"),
+        ("format" = String, Query, description = "Comma-separated export formats: poprako,label_plus"),
     ),
     responses(
-        (status = 200, description = "PopRaKo translation export", body = HttpBody<ChapterTranslationPortView>, content_type = "application/json"),
-        (status = 200, description = "LabelPlus translation export", content_type = "text/plain"),
+        (status = 200, description = "Selected translation exports", body = ExportChapterTranslationsVal, content_type = "application/json"),
         (status = 403, description = "No perm to export this chapter"),
     ),
 ))]
@@ -93,30 +82,28 @@ pub async fn export(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Query(query): Query<TranslationExportQuery>,
+    Query(instr): Query<ExportChapterTranslationInstr>,
 ) -> Result<Response, HttpError> {
     //
     let payload =
-        export_payload(&harn, user_token, chapter_id, query.format.into())
-            .await?;
+        export_payload(&harn, user_token, chapter_id, instr.format).await?;
 
     body_response(payload)
 }
 
 /// `GET /api/v1/chapters/{chapter_id}/translations/export/download` — export as file download.
 ///
-/// `format=poprako` downloads a JSON document (`application/json`);
-/// `format=label_plus` downloads a LabelPlus text document (`text/plain`).
+/// The downloaded JSON contains every document selected by `format`.
 #[cfg_attr(feature = "swagger", utoipa::path(
     get,
     path = "/api/v1/chapters/{chapter_id}/translations/export/download",
     tag = "chapter-port",
     params(
         ("chapter_id" = String, Path, description = "Chapter ID"),
-        ("format" = ChapterTranslationFormatInstr, Query, description = "Export format: poprako or label_plus"),
+        ("format" = String, Query, description = "Comma-separated export formats: poprako,label_plus"),
     ),
     responses(
-        (status = 200, description = "Translation file download", content_type = "application/json"),
+        (status = 200, description = "Selected translation exports download", body = ExportChapterTranslationsVal, content_type = "application/json"),
         (status = 403, description = "No perm to export this chapter"),
     ),
 ))]
@@ -125,14 +112,13 @@ pub async fn export_download(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Query(query): Query<TranslationExportQuery>,
+    Query(instr): Query<ExportChapterTranslationInstr>,
 ) -> Result<Response, HttpError> {
     //
     let filename = format!("chapter_{}", chapter_id);
 
     let payload =
-        export_payload(&harn, user_token, chapter_id, query.format.into())
-            .await?;
+        export_payload(&harn, user_token, chapter_id, instr.format).await?;
 
     download_response(&filename, payload)
 }
@@ -155,62 +141,37 @@ async fn export_payload(
     harn: &AppHarn,
     user_token: UserToken,
     chapter_id: String,
-    format: TranslationFormat,
+    formats: ExportFormatSpec,
 ) -> Result<TranslationExportPayload, HttpError> {
     //
-    match format {
+    let val = usecase::chapter_port::export::export::<
+        _,
+        RdbContext<ReptRead>,
+        HybRepo,
+    >(
+        (harn.nucl().rept_read(), harn.repo()),
+        user_token,
+        chapter_id,
+        formats,
+    )
+    .await?;
+
+    let body = serde_json::to_vec(&val).map_err(|err| {
         //
-        TranslationFormat::PopRaKo => {
-            //
-            let val = usecase::chapter_port::export::export::<
-                _,
-                RdbContext<ReptRead>,
-                HybRepo,
-            >(
-                (harn.nucl().rept_read(), harn.repo()),
-                user_token,
-                chapter_id,
-            )
-            .await?;
+        tracing::error!(
+            operation = "serialize_chapter_export",
+            sdk_err = ?err,
+            "JSON SDK serialization error",
+        );
 
-            let body = serde_json::to_vec(&val).map_err(|err| {
-                //
-                tracing::error!(
-                    operation = "serialize_chapter_export",
-                    sdk_err = ?err,
-                    "JSON SDK serialization error",
-                );
+        HttpError::internal()
+    })?;
 
-                HttpError::internal()
-            })?;
-
-            Ok(TranslationExportPayload {
-                content_type: "application/json",
-                ext: "json",
-                body: Bytes::from(body),
-            })
-        }
-
-        TranslationFormat::LabelPlus => {
-            //
-            let content = usecase::chapter_port::export::export_label_plus::<
-                _,
-                RdbContext<ReptRead>,
-                HybRepo,
-            >(
-                (harn.nucl().rept_read(), harn.repo()),
-                user_token,
-                chapter_id,
-            )
-            .await?;
-
-            Ok(TranslationExportPayload {
-                content_type: "text/plain; charset=utf-8",
-                ext: "txt",
-                body: Bytes::from(content),
-            })
-        }
-    }
+    Ok(TranslationExportPayload {
+        content_type: "application/json",
+        ext: "json",
+        body: Bytes::from(body),
+    })
 }
 
 // Builds a `200 OK` inline export response with the payload's MIME type.

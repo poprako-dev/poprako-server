@@ -12,7 +12,7 @@ use poprako_util::time::ToUnixMilli as _;
 
 use crate::model::read::proj::chapter_workflow_record::ChapterWorkflowRecordInfo;
 use crate::value::chapter::{Stage, StagePhase};
-use crate::value::chapter_port::TranslationFormat;
+use crate::value::chapter_port::{ExportFormatSpec, TranslationFormat};
 use crate::value::chapter_workflow_record::{
     ChapterWorkflowRecordOrigin, ChapterWorkflowRecordPayload,
 };
@@ -110,8 +110,8 @@ pub enum ChapterWorkflowRecordEventView {
 
     /// Translation content was successfully exported from a chapter.
     TranslationExported {
-        /// Generated content format.
-        format: ChapterWorkflowRecordTranslationFormatView,
+        /// Generated content formats.
+        formats: ExportFormatSpec,
     },
 
     /// A chapter workflow stage changed phase.
@@ -338,11 +338,8 @@ impl From<ChapterWorkflowRecordPayload> for ChapterWorkflowRecordEventView {
                 imported_unit_count,
             },
 
-            ChapterWorkflowRecordPayload::TranslationExported { format } => {
-                //
-                Self::TranslationExported {
-                    format: format.into(),
-                }
+            ChapterWorkflowRecordPayload::TranslationExported { formats } => {
+                Self::TranslationExported { formats }
             }
 
             ChapterWorkflowRecordPayload::StageTransitioned {

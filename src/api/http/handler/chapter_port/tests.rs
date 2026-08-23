@@ -1,33 +1,31 @@
-use super::*;
-
 use axum::extract::Query;
 use axum::http::Uri;
 
-use crate::data::instr::chapter_port::ChapterTranslationFormatInstr;
+use crate::data::instr::chapter_port::ExportChapterTranslationInstr;
+use crate::value::chapter_port::ExportFormatSpec;
 
-// translation_export_query_accepts_snake_case_format(TranslationExportQuery)(positive): export query formats use the public snake_case enum contract.
+// translation_export_query_accepts_combined_formats(ExportChapterTranslationInstr)(positive): one export query selects both output formats.
 #[test]
-fn translation_export_query_accepts_snake_case_format() {
-    let uri = "http://localhost/translations/export?format=label_plus"
+fn translation_export_query_accepts_combined_formats() {
+    let uri = "http://localhost/translations/export?format=poprako,label_plus"
         .parse::<Uri>()
         .unwrap();
 
-    let query = Query::<TranslationExportQuery>::try_from_uri(&uri)
+    let instr = Query::<ExportChapterTranslationInstr>::try_from_uri(&uri)
         .unwrap()
         .0;
 
-    assert!(matches!(
-        query.format,
-        ChapterTranslationFormatInstr::LabelPlus
-    ));
+    assert_eq!(instr.format, ExportFormatSpec::BOTH);
 }
 
-// translation_export_query_rejects_kebab_case_format(TranslationExportQuery)(negative): the export query no longer accepts the storage-oriented kebab-case value.
+// translation_export_query_rejects_duplicate_format(ExportChapterTranslationInstr)(negative): one format cannot occur twice in the export spec.
 #[test]
-fn translation_export_query_rejects_kebab_case_format() {
-    let uri = "http://localhost/translations/export?format=label-plus"
+fn translation_export_query_rejects_duplicate_format() {
+    let uri = "http://localhost/translations/export?format=poprako,poprako"
         .parse::<Uri>()
         .unwrap();
 
-    assert!(Query::<TranslationExportQuery>::try_from_uri(&uri).is_err());
+    assert!(
+        Query::<ExportChapterTranslationInstr>::try_from_uri(&uri).is_err()
+    );
 }

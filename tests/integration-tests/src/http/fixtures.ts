@@ -31,6 +31,7 @@ import type {
     PageInfoView,
     PageImageInput,
     ChapterTranslationPortView,
+    ExportChapterTranslationsVal,
     ReserveChapterPagesVal,
     ReservedPageVal,
     ReserveImageVal,
@@ -1144,32 +1145,39 @@ export async function listTeamComments(api: ApiClient, teamId: string): Promise<
 
 // ---------- translation port (import / export) ----------
 
-// Poprako JSON export (unenveloped). Returns parsed JSON.
-export async function exportPoprako(api: ApiClient, chapterId: string): Promise<ChapterTranslationPortView> {
-    const response = await api.get<ChapterTranslationPortView>(
-        `/api/v1/chapters/${chapterId}/translations/export?format=poprako`,
+// Aggregate translation export (unenveloped). Generates every selected format once.
+export async function exportTranslations(
+    api: ApiClient,
+    chapterId: string,
+    formats: ("poprako" | "label_plus")[],
+): Promise<ExportChapterTranslationsVal> {
+    const response = await api.get<ExportChapterTranslationsVal>(
+        `/api/v1/chapters/${chapterId}/translations/export?format=${formats.join(",")}`,
     );
 
     if (response.status !== 200) {
-        throw new Error(`poprako export failed: ${response.status} ${response.rawText}`);
+        throw new Error(`translation export failed: ${response.status} ${response.rawText}`);
     }
 
-    const parsed = JSON.parse(response.rawText) as ChapterTranslationPortView;
-
-    return parsed;
+    return JSON.parse(response.rawText) as ExportChapterTranslationsVal;
 }
 
-// Label-plus text export/download (raw text body).
+// Poprako JSON export. Returns the selected native document.
+export async function exportPoprako(api: ApiClient, chapterId: string): Promise<ChapterTranslationPortView> {
+    const exported = await exportTranslations(api, chapterId, ["poprako"]);
+
+    assert.ok(exported.poprako, "poprako export must be present");
+
+    return exported.poprako;
+}
+
+// Label-plus text export. Returns the selected text document.
 export async function exportLabelPlus(api: ApiClient, chapterId: string): Promise<string> {
-    const response = await api.get<string>(
-        `/api/v1/chapters/${chapterId}/translations/export/download?format=label_plus`,
-    );
+    const exported = await exportTranslations(api, chapterId, ["label_plus"]);
 
-    if (response.status !== 200) {
-        throw new Error(`label-plus export failed: ${response.status} ${response.rawText}`);
-    }
+    assert.ok(exported.label_plus, "label-plus export must be present");
 
-    return response.rawText;
+    return exported.label_plus;
 }
 
 // Import translations into a chapter. `format` is "poprako" or "label_plus".

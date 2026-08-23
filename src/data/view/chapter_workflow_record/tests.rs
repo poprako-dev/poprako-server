@@ -3,6 +3,7 @@ use super::*;
 use serde_json::json;
 use time::OffsetDateTime;
 
+use crate::value::chapter_port::ExportFormatSpec;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordOrigin;
 use crate::value::role::RoleField;
 
@@ -93,12 +94,15 @@ fn workflow_record_view_preserves_each_typed_event() {
         ),
         (
             ChapterWorkflowRecordPayload::TranslationExported {
-                format: TranslationFormat::LabelPlus,
+                formats: ExportFormatSpec::BOTH,
             },
             json!({
                 "kind": "translation_exported",
                 "data": {
-                    "format": "label_plus",
+                    "formats": {
+                        "label_plus": true,
+                        "poprako": true,
+                    },
                 },
             }),
         ),

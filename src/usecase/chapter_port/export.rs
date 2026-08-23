@@ -14,6 +14,7 @@ use poprako_util::i18n::trl;
 use crate::complex::chapter_port::{
     ChapterExportAccess, ChapterExportComplex, ChapterPortPermComplex,
 };
+use crate::data::val::chapter_port::ExportChapterTranslationsVal;
 use crate::data::view::chapter_port::ChapterTranslationPortView;
 use crate::data::view::page_port::PageTranslationPortView;
 use crate::data::view::unit_port::UnitTranslationPortView;
@@ -43,18 +44,19 @@ use crate::part::repo::unit::UnitRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::stage::start_pending_stages;
 use crate::value::chapter::Stage;
-use crate::value::chapter_port::TranslationFormat;
+use crate::value::chapter_port::ExportFormatSpec;
 use crate::value::chapter_workflow_record::{
     ChapterWorkflowRecordOrigin, ChapterWorkflowRecordPayload,
 };
 
-/// Exports one chapter as a JSON-safe translation payload.
+/// Exports one chapter in every selected translation format.
 #[instrument(level = "info", skip(nucl, repo))]
 pub async fn export<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
     chapter_id: String,
-) -> BaseRest<ChapterTranslationPortView>
+    formats: ExportFormatSpec,
+) -> BaseRest<ExportChapterTranslationsVal>
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
@@ -94,9 +96,11 @@ where
 
     let mut page_views = Vec::with_capacity(page_infos.len());
 
-    for page_info in page_infos {
+    let mut units_by_page_id = HashMap::new();
+
+    for page_info in &page_infos {
         //
-        // Load visible units for each page and map them into exported unit views.
+        // Load each page's visible units once for every selected output format.
 
         let unit_infos = ListUnitInfos {
             page_id: &page_info.id,
@@ -105,89 +109,19 @@ where
         .await?;
 
         let unit_views = unit_infos
-            .into_iter()
+            .iter()
             .filter(|unit_info| unit_info.hidden_at.is_none())
             .enumerate()
             .map(|(index, unit_info)| {
-                make_unit_export(&page_info, index, unit_info)
+                make_unit_export(page_info, index, unit_info)
             })
             .collect();
 
         page_views.push(PageTranslationPortView {
-            page_id: page_info.id,
+            page_id: page_info.id.clone(),
             page_index: page_info.index,
             units: unit_views,
         });
-    }
-
-    let val = ChapterTranslationPortView {
-        chapter_id: chapter_info.id,
-        chapter_index: chapter_info.index,
-        chapter_subtitle: non_empty(chapter_info.subtitle),
-        comic_id: chapter_info.comic_id,
-        comic_title: comic_info.title,
-        pages: page_views,
-    };
-
-    persist_export_record(
-        (nucl, repo),
-        &val.chapter_id,
-        token.user_id,
-        TranslationFormat::PopRaKo,
-    )
-    .await?;
-
-    accept(val)
-}
-
-/// Exports one chapter as LabelPlus text.
-#[instrument(level = "info", skip(nucl, repo))]
-pub async fn export_label_plus<N, C, R>(
-    (nucl, repo): (&N, &R),
-    token: UserToken,
-    chapter_id: String,
-) -> BaseRest<String>
-where
-    C: Context + Send,
-    N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<ReptRead>,
-    R: ChapterRepo<C>
-        + ChapterWorkflowRecordRepo<C>
-        + ComicRepo<C>
-        + TeamRepo<C>
-        + MemberRepo<C>
-        + AssignmentRepo<C>
-        + PageRepo<C>
-        + UnitRepo<C>
-        + Send
-        + Sync,
-{
-    ensure_user_can_export::<C, R>(repo, &token, &chapter_id).await?;
-
-    GetChapterInfo {
-        id: &chapter_id,
-        incls: &[],
-    }
-    .run_on(repo)
-    .await?;
-
-    let page_infos = ListPageInfos {
-        chapter_id: &chapter_id,
-    }
-    .run_on(repo)
-    .await?;
-
-    let mut units_by_page_id = HashMap::new();
-
-    for page_info in &page_infos {
-        //
-        // Collect visible units grouped by page before LabelPlus serialization.
-
-        let unit_infos = ListUnitInfos {
-            page_id: &page_info.id,
-        }
-        .run_on(repo)
-        .await?;
 
         let unit_infos = unit_infos
             .into_iter()
@@ -197,53 +131,68 @@ where
         units_by_page_id.insert(page_info.id.clone(), unit_infos);
     }
 
-    let content =
-        ChapterExportComplex::make_label_plus(&page_infos, &units_by_page_id);
+    let poprako = ChapterTranslationPortView {
+        chapter_id: chapter_info.id.clone(),
+        chapter_index: chapter_info.index,
+        chapter_subtitle: non_empty(&chapter_info.subtitle),
+        comic_id: chapter_info.comic_id.clone(),
+        comic_title: comic_info.title,
+        pages: page_views,
+    };
+
+    let label_plus = formats.includes_label_plus().then(|| {
+        ChapterExportComplex::make_label_plus(&page_infos, &units_by_page_id)
+    });
+
+    let val = ExportChapterTranslationsVal {
+        label_plus,
+        poprako: formats.includes_poprako().then_some(poprako),
+    };
 
     persist_export_record(
         (nucl, repo),
-        &chapter_id,
+        &chapter_info.id,
         token.user_id,
-        TranslationFormat::LabelPlus,
+        formats,
     )
     .await?;
 
-    accept(content)
+    accept(val)
 }
 
 // Builds a [`UnitTranslationPortView`] from page and unit info.
 fn make_unit_export(
     page_info: &PageInfo,
     index: usize,
-    unit_info: UnitInfo,
+    unit_info: &UnitInfo,
 ) -> UnitTranslationPortView {
     //
     // Convert one unit into export view fields used by downstream translators.
     UnitTranslationPortView {
-        unit_id: unit_info.id,
+        unit_id: unit_info.id.clone(),
         unit_index: index as i32,
         page_id: page_info.id.clone(),
         page_index: page_info.index,
         x_coord: unit_info.coord.x_coord,
         y_coord: unit_info.coord.y_coord,
         is_bubble: unit_info.is_bubble,
-        translated_text: unit_info.translated_text,
-        translator_id: unit_info.last_translator_id,
+        translated_text: unit_info.translated_text.clone(),
+        translator_id: unit_info.last_translator_id.clone(),
         is_proofread: unit_info.is_proofread,
-        proofread_text: unit_info.proofread_text,
-        proofreader_id: unit_info.last_proofreader_id,
+        proofread_text: unit_info.proofread_text.clone(),
+        proofreader_id: unit_info.last_proofreader_id.clone(),
     }
 }
 
 // Returns [`Some`] with the text if non-empty, [`None`] otherwise.
-fn non_empty(text: String) -> Option<String> {
+fn non_empty(text: &str) -> Option<String> {
     //
     // Trim and normalize optional text fields before sending user-facing translation payloads.
     if text.trim().is_empty() {
         return None;
     }
 
-    Some(text)
+    Some(text.to_string())
 }
 
 // Persists a completed export and starts typesetting/redraw in one transaction.
@@ -251,7 +200,7 @@ async fn persist_export_record<N, C, R>(
     (nucl, repo): (&N, &R),
     chapter_id: &str,
     actor_user_id: String,
-    format: TranslationFormat,
+    formats: ExportFormatSpec,
 ) -> BaseRest<()>
 where
     C: Context + Send,
@@ -272,7 +221,7 @@ where
             let workflow_record_entry = ChapterWorkflowRecordEntry::new(
                 chapter_info.id.clone(),
                 Some(actor_user_id.clone()),
-                ChapterWorkflowRecordPayload::TranslationExported { format },
+                ChapterWorkflowRecordPayload::TranslationExported { formats },
             );
 
             CreateChapterWorkflowRecords {
