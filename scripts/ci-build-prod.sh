@@ -5,6 +5,7 @@ image_name=${IMAGE_NAME:?IMAGE_NAME is required}
 cache_from=${CACHE_FROM:?CACHE_FROM is required}
 cache_to=${CACHE_TO:?CACHE_TO is required}
 metadata_file=${BUILD_METADATA_FILE:?BUILD_METADATA_FILE is required}
+buildx_builder=${BUILDX_BUILDER:?BUILDX_BUILDER is required}
 ghcr_username=${GHCR_USERNAME:?GHCR_USERNAME is required}
 ghcr_token=${GHCR_TOKEN:?GHCR_TOKEN is required}
 github_output=${GITHUB_OUTPUT:?GITHUB_OUTPUT is required}
@@ -64,6 +65,14 @@ command -v jq >/dev/null 2>&1 || {
     exit 1
 }
 
+original_docker_config=${DOCKER_CONFIG:-${HOME:?HOME is required}/.docker}
+buildx_config=${BUILDX_CONFIG:-${original_docker_config}/buildx}
+
+[ -d "$buildx_config" ] || {
+    echo "BUILDX_CONFIG must identify the configured Buildx directory" >&2
+    exit 1
+}
+
 umask 077
 docker_config=$(mktemp -d "${runner_temp}/poprako-ghcr.XXXXXX")
 logged_in=0
@@ -86,6 +95,8 @@ trap cleanup EXIT
 trap 'exit 1' INT TERM
 
 export DOCKER_CONFIG=$docker_config
+export BUILDX_CONFIG=$buildx_config
+export BUILDX_BUILDER=$buildx_builder
 
 printf '%s\n' "$ghcr_token" | docker login ghcr.io \
     --username "$ghcr_username" \
