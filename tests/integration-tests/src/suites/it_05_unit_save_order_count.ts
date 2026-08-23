@@ -13,8 +13,8 @@ import {
 } from "../http/invariants.js";
 import {
     createChapter,
-    exportLabelPlus,
     exportPoprako,
+    exportTranslations,
     getChapter,
     importTranslations,
     newBubbleUnit,
@@ -152,13 +152,22 @@ export async function runIt05Module(ctx: RunCtx): Promise<void> {
 
     // ---------- F10. import/export regression ----------
 
-    const mainExport = await exportPoprako(ctx.sadmin, mainChapterId);
+    const mainExports = await exportTranslations(ctx.sadmin, mainChapterId, [
+        "poprako",
+        "label_plus",
+    ]);
+
+    assert.ok(mainExports.poprako, "combined export must contain PopRaKo");
+
+    assert.ok(mainExports.label_plus, "combined export must contain LabelPlus");
+
+    const mainExport = mainExports.poprako;
 
     assert.ok(mainExport.chapter_id);
     assert.ok(mainExport.comic_id);
     assert.ok(mainExport.pages.length > 0);
 
-    const mainLabelPlus = await exportLabelPlus(ctx.sadmin, mainChapterId);
+    const mainLabelPlus = mainExports.label_plus;
 
     assert.ok(mainLabelPlus.length > 0, "label-plus export must be non-empty text");
 

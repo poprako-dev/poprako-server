@@ -11,9 +11,41 @@ use crate::model::read::proj::chapter_workflow_record::ChapterWorkflowRecordInfo
 use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::part_impl::repo::rdb_impl::schema::t_chapter_workflow_record;
 use crate::result::BaseError;
+use crate::value::chapter_port::{ExportFormatSpec, TranslationFormat};
 use crate::value::chapter_workflow_record::{
     ChapterWorkflowRecordKind, ChapterWorkflowRecordPayload,
 };
+
+// Converts a legacy singular export format into the current format spec.
+fn normalize_legacy_export_payload(
+    kind: ChapterWorkflowRecordKind,
+    payload_fields: &mut serde_json::Map<String, serde_json::Value>,
+) -> Result<(), serde_json::Error> {
+    //
+    match kind {
+        //
+        ChapterWorkflowRecordKind::TranslationExported
+            if payload_fields.len() == 1
+                && payload_fields.contains_key("format") =>
+        {
+            //
+            let Some(format) = payload_fields.remove("format") else {
+                return Ok(());
+            };
+
+            let format = serde_json::from_value::<TranslationFormat>(format)?;
+
+            let formats = ExportFormatSpec::from(format);
+
+            payload_fields
+                .insert("formats".into(), serde_json::to_value(formats)?);
+        }
+
+        _ => {}
+    }
+
+    Ok(())
+}
 
 // Encodes one typed workflow payload for the repository JSONB column.
 fn encode_payload(payload: &ChapterWorkflowRecordPayload) -> serde_json::Value {
@@ -77,8 +109,8 @@ fn encode_payload(payload: &ChapterWorkflowRecordPayload) -> serde_json::Value {
             })
         }
 
-        ChapterWorkflowRecordPayload::TranslationExported { format } => {
-            json!({ "format": format })
+        ChapterWorkflowRecordPayload::TranslationExported { formats } => {
+            json!({ "formats": formats })
         }
 
         ChapterWorkflowRecordPayload::StageTransitioned {
@@ -111,6 +143,8 @@ fn decode_payload(
         payload => return serde_json::from_value(payload),
     };
 
+    normalize_legacy_export_payload(kind, &mut payload_fields)?;
+
     let expected_fields = match kind {
         //
         ChapterWorkflowRecordKind::ChapterCreated
@@ -137,7 +171,7 @@ fn decode_payload(
             &["format", "imported_page_count", "imported_unit_count"][..]
         }
 
-        ChapterWorkflowRecordKind::TranslationExported => &["format"][..],
+        ChapterWorkflowRecordKind::TranslationExported => &["formats"][..],
 
         ChapterWorkflowRecordKind::StageTransitioned => {
             &["stage", "previous_phase", "next_phase", "origin"][..]

@@ -3,7 +3,7 @@
 use serde::Serialize;
 
 use crate::value::chapter::{Stage, StagePhase};
-use crate::value::chapter_port::TranslationFormat;
+use crate::value::chapter_port::{ExportFormatSpec, TranslationFormat};
 use crate::value::chapter_workflow_record::{
     ChapterWorkflowRecordOrigin, ChapterWorkflowRecordPayload,
 };
@@ -61,10 +61,10 @@ pub enum ArchivedChapterWorkflowRecordDetail {
         imported_unit_count: i32,
     },
 
-    /// Exported translation format.
+    /// Exported translation formats.
     TranslationExported {
-        /// Generated content format.
-        format: TranslationFormat,
+        /// Generated content formats.
+        formats: ExportFormatSpec,
     },
 
     /// Workflow-stage phase transition.
@@ -136,8 +136,8 @@ impl From<&ChapterWorkflowRecordPayload>
                 imported_unit_count: *imported_unit_count,
             },
 
-            ChapterWorkflowRecordPayload::TranslationExported { format } => {
-                Self::TranslationExported { format: *format }
+            ChapterWorkflowRecordPayload::TranslationExported { formats } => {
+                Self::TranslationExported { formats: *formats }
             }
 
             ChapterWorkflowRecordPayload::StageTransitioned {

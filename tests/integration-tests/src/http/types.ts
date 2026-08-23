@@ -176,7 +176,10 @@ export type ChapterWorkflowRecordEventView =
     | {
           kind: "translation_exported";
           data: {
-              format: "label_plus" | "poprako";
+              formats: {
+                  label_plus: boolean;
+                  poprako: boolean;
+              };
           };
       }
     | {
@@ -421,4 +424,9 @@ export interface ChapterTranslationPortView {
     comic_title: string;
 
     pages: PageTranslationPortView[];
+}
+
+export interface ExportChapterTranslationsVal {
+    label_plus: string | null;
+    poprako: ChapterTranslationPortView | null;
 }
