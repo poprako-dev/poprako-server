@@ -7,12 +7,16 @@ the visible Units in a Chapter. Both query parameters are required:
 
 - `part`: `translated_text` or `proofread_text`;
 - `phrase`: a case-sensitive literal substring. The server trims surrounding
-  Unicode whitespace and requires at least three Unicode scalar values.
+  Unicode whitespace and accepts any non-empty result, including one Japanese
+  character.
 
 The response is `data: UnitInfoView[]`. Results follow Page index order and the
 stored Unit order within each Page. Page indices are not added to the response.
 Only the selected text field is searched. The implementation reads ordered
 Pages in concurrent batches of 20 while preserving the final stable order.
+At most 100 matching Units may exist across the Chapter. Exactly 100 matches
+succeed; discovering the 101st returns `422 / Args(code 2)` with "Too many
+matches", without a partial result or reading later Page batches.
 
 Search uses the same Chapter membership or assignment visibility as Page Unit
 listing. It is a preview only and does not create a replacement snapshot.

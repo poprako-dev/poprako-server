@@ -33,9 +33,12 @@ Page 响应同时返回：
 
 Chapter 级文本搜索由
 `GET /api/v1/chapters/{chapter_id}/units/search` 提供。请求必须选择
-`translated_text` 或 `proofread_text`，并提供 trim 后至少三个 Unicode
-字符的大小写敏感字面量。实现以 20 Page 为一批并发读取，最终仍按 Page
-与 Unit 链顺序稳定返回，且不向响应增加 Page index。
+`translated_text` 或 `proofread_text`，并提供 Unicode whitespace trim 后
+非空的大小写敏感字面量，单个日文字符也合法。实现以 20 Page 为一批并发
+读取，最终仍按 Page 与 Unit 链顺序稳定返回，且不向响应增加 Page index。
+整个 Chapter 最多允许 100 个匹配 Unit；恰好 100 个正常返回，发现第 101
+个时以 `Args(code 2)` 和“过多匹配项”拒绝请求，不截断或返回部分结果，也
+不再读取后续 Page 批次。
 
 ## 写语义
 

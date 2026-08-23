@@ -1160,7 +1160,7 @@
             "description": "No perm to search Units in this Chapter"
           },
           "422": {
-            "description": "Search phrase is too short"
+            "description": "Search phrase is empty or more than 100 Units match"
           }
         }
       }

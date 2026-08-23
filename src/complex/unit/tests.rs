@@ -155,7 +155,7 @@ fn normalize_orders_create_prior_to_save_for_the_same_unit() {
 }
 
 #[test]
-fn search_phrase_trims_unicode_and_selects_one_text_part() {
+fn search_phrase_trims_unicode_accepts_one_character_and_selects_text_part() {
     //
     let phrase =
         UnitComplex::normalize_search_phrase(" 译文甲 ".to_string()).unwrap();
@@ -176,8 +176,18 @@ fn search_phrase_trims_unicode_and_selects_one_text_part() {
         &phrase,
     ));
 
+    assert_eq!(
+        UnitComplex::normalize_search_phrase(" 日 ".to_string()).unwrap(),
+        "日"
+    );
+
     assert_args(
-        UnitComplex::normalize_search_phrase(" 两字 ".to_string()).unwrap_err(),
+        UnitComplex::normalize_search_phrase(String::new()).unwrap_err(),
+    );
+
+    assert_args(
+        UnitComplex::normalize_search_phrase(" \u{2003}\n ".to_string())
+            .unwrap_err(),
     );
 }
 

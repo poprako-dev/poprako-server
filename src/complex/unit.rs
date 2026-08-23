@@ -120,15 +120,14 @@ impl UnitComplex {
         //
         let phrase = phrase.trim().to_string();
 
-        if phrase.chars().count() < 3 {
+        if phrase.is_empty() {
             //
-            let err_message = trl("error-unit-search-phrase-too-short");
+            let err_message = trl("error-unit-search-phrase-required");
 
             tracing::warn!(
                 err_variant = ?ExpectedVariant::Args,
                 err_message = %err_message,
-                phrase_char_count = phrase.chars().count(),
-                "expected error: unit search phrase too short",
+                "expected error: unit search phrase required",
             );
 
             return Err(BaseError::Expected {
