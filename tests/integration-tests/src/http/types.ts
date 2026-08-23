@@ -238,6 +238,18 @@ export interface UnitInfoView {
     updated_at: number;
 }
 
+export type UnitTextPart = "translated_text" | "proofread_text";
+
+export interface UnitTextTransformInput {
+    origin: string;
+    target: string;
+}
+
+export interface UnitTransformInput {
+    unit_id: string;
+    transforms: UnitTextTransformInput[];
+}
+
 export interface MemberInfoView {
     id: string;
     user_id: string;

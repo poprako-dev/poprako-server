@@ -19,7 +19,10 @@
 //
 // Grounded pins:
 //   - chapter/comic/workset delete: team ADMIN (sadmin).
-//   - team delete: team admin (sadmin for the second team). Team delete
+//   - Concurrent member admin removals leave one admin; a serialization
+//     failure returns 409/code 8 without server-side retry.
+//   - Member and user deletion cannot remove a team's last admin.
+//   - Team delete: team admin (the surviving second-team admin). Team delete
 //     cascades through worksets/comics/chapters/pages/units/members.
 //   - Deleting a chapter decreases comic.chapter_count by 1.
 //     The chapter's pages/units become inaccessible (422/2).
@@ -48,7 +51,9 @@ import {
     listTeamMembers,
     listTeamWorksets,
     listWorksetComics,
+    updateMemberRoles,
 } from "../http/fixtures.js";
+import { ROLE } from "../state/roles.js";
 import type { RunCtx } from "../state/runCtx.js";
 import { cascadeExtraIds } from "./it_02_workset_comic_chapter_index.js";
 
@@ -140,8 +145,8 @@ export async function runIt10Module(ctx: RunCtx): Promise<void> {
     if (ctx.secondTeam) {
         const secondTeamId = ctx.secondTeam.teamId;
 
-        // Clean up FK-restricted children: member_invitation, then all members,
-        // then the team. sadmin is admin of the second team (auto on create).
+        // Clean up the FK-restricted invitation before exercising member
+        // retention and deleting the complete team.
         if (ctx.secondTeam.outsiderInvitationId) {
             expectStatus(
                 await ctx.sadmin.delete<null>(
@@ -151,48 +156,130 @@ export async function runIt10Module(ctx: RunCtx): Promise<void> {
             );
         }
 
-        // Delete all second-team members: outsider first, then sadmin last
-        // (sadmin is admin; deleting own member removes admin role).
-        const secondTeamMembers = await listTeamMembers(ctx.sadmin, secondTeamId);
-
-        // Sort: delete outsider first, sadmin last.
-        const sortedMembers = secondTeamMembers.sort((a) =>
-            a.user_id === ctx.ids.defaultUserId ? 1 : -1,
-        );
-
-        for (const member of sortedMembers) {
-            expectStatus(
-                await ctx.sadmin.delete<null>(`/api/v1/members/${member.id}`),
-                204,
-            );
-        }
-
-        // NOTE: The team itself cannot be deleted via API here because
-        // sadmin loses admin role after deleting own member. `cleanupToSeed`
-        // handles the final team deletion. The FK-restricted children
-        // (invitation, members) are cleaned above.
-        // expectStatus(await ctx.sadmin.delete<null>(
-        //     `/api/v1/teams/${secondTeamId}`,
-        // ), 204);
-
-        // Verify the team still exists and is accessible before cleanup.
-        const teamBeforeCleanup = await getTeam(ctx.sadmin, secondTeamId);
-
-        assert.equal(teamBeforeCleanup.id, secondTeamId, "second team must still exist");
-
-        // outsider's membership is gone; outsider user still exists but has
-        // no memberships.
         const outsider = ctx.secondTeam.outsider;
 
-        if (outsider) {
-            const outsiderMembers = await listMyMembers(outsider.api);
+        assert.ok(outsider, "second-team outsider must exist");
 
-            assert.equal(
-                outsiderMembers.length,
-                0,
-                "outsider must have no memberships after second-team delete",
+        const secondTeamMembers = await listTeamMembers(ctx.sadmin, secondTeamId);
+
+        const sadminMember = secondTeamMembers.find(
+            (member) => member.user_id === ctx.ids.defaultUserId,
+        );
+
+        const outsiderMember = secondTeamMembers.find(
+            (member) => member.user_id === outsider.userId,
+        );
+
+        assert.ok(sadminMember, "sadmin second-team member must exist");
+        assert.ok(outsiderMember, "outsider second-team member must exist");
+
+        // Give both members admin, then concurrently have them remove the
+        // other's admin role from the same initial state.
+        await updateMemberRoles(
+            ctx.sadmin,
+            outsiderMember.id,
+            outsiderMember.roles | ROLE.ADMIN,
+        );
+
+        const [removeOutsiderAdmin, removeSadminAdmin] = await Promise.all([
+            ctx.sadmin.put<ErrorBody>(`/api/v1/members/${outsiderMember.id}/roles`, {
+                id: outsiderMember.id,
+                roles: ROLE.RAW_PROVIDER,
+            }),
+            outsider.api.put<ErrorBody>(`/api/v1/members/${sadminMember.id}/roles`, {
+                id: sadminMember.id,
+                roles: ROLE.RAW_PROVIDER,
+            }),
+        ]);
+
+        const adminRemovalResponses = [removeOutsiderAdmin, removeSadminAdmin];
+
+        assert.equal(
+            adminRemovalResponses.filter((response) => response.status === 204).length,
+            1,
+            "exactly one concurrent admin removal must commit",
+        );
+
+        const rejectedAdminRemoval = adminRemovalResponses.find(
+            (response) => response.status !== 204,
+        );
+
+        assert.ok(rejectedAdminRemoval, "one concurrent admin removal must be rejected");
+        assert.ok(
+            rejectedAdminRemoval.status === 403 || rejectedAdminRemoval.status === 409,
+            `rejected admin removal must be 403 or 409, got ${rejectedAdminRemoval.status}`,
+        );
+
+        expectError(
+            rejectedAdminRemoval,
+            rejectedAdminRemoval.status,
+            rejectedAdminRemoval.status === 409 ? 8 : 4,
+        );
+
+        const membersAfterConcurrentRemoval = await listTeamMembers(ctx.sadmin, secondTeamId);
+
+        const adminMembersAfterConcurrentRemoval = membersAfterConcurrentRemoval.filter(
+            (member) => (member.roles & ROLE.ADMIN) !== 0,
+        );
+
+        assert.equal(
+            adminMembersAfterConcurrentRemoval.length,
+            1,
+            "concurrent role removals must retain exactly one admin",
+        );
+
+        // Normalize the outsider as the sole admin so both member deletion and
+        // user deletion can exercise last-admin retention without touching the
+        // default seed account.
+        if (adminMembersAfterConcurrentRemoval[0]!.user_id === ctx.ids.defaultUserId) {
+            await updateMemberRoles(
+                ctx.sadmin,
+                outsiderMember.id,
+                ROLE.RAW_PROVIDER | ROLE.ADMIN,
+            );
+
+            await updateMemberRoles(
+                outsider.api,
+                sadminMember.id,
+                ROLE.RAW_PROVIDER,
             );
         }
+
+        const normalizedMembers = await listTeamMembers(outsider.api, secondTeamId);
+
+        assert.deepEqual(
+            normalizedMembers
+                .filter((member) => (member.roles & ROLE.ADMIN) !== 0)
+                .map((member) => member.user_id),
+            [outsider.userId],
+            "outsider must be the sole admin before retention checks",
+        );
+
+        expectError(
+            await outsider.api.delete<ErrorBody>(`/api/v1/users/${outsider.userId}`),
+            403,
+            4,
+        );
+
+        expectError(
+            await outsider.api.delete<ErrorBody>(`/api/v1/members/${outsiderMember.id}`),
+            403,
+            4,
+        );
+
+        // Team deletion intentionally removes every member, including the
+        // last admin, because the protected team no longer exists afterward.
+        expectStatus(await outsider.api.delete<null>(`/api/v1/teams/${secondTeamId}`), 204);
+
+        expectError(await ctx.sadmin.get<ErrorBody>(`/api/v1/teams/${secondTeamId}`), 422, 2);
+
+        const outsiderMembers = await listMyMembers(outsider.api);
+
+        assert.equal(
+            outsiderMembers.length,
+            0,
+            "outsider must have no memberships after second-team delete",
+        );
 
         ctx.secondTeam = null;
     }

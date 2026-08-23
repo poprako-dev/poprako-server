@@ -204,6 +204,14 @@ pub fn new(harn: AppHarn) -> Router<AppHarn> {
         );
 
     let v1_unit = Router::new()
+        .route(
+            "/chapters/{chapter_id}/units/search",
+            get(unit::search_infos),
+        )
+        .route(
+            "/chapters/{chapter_id}/units/transform",
+            post(unit::transform),
+        )
         .route("/pages/{page_id}/units", get(unit::list_infos))
         .route("/pages/{page_id}/units/save", post(unit::save_infos));
 

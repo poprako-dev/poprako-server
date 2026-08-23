@@ -12,6 +12,8 @@ artifacts without an active maintainer or regeneration path.
   work required before and immediately after transfer to the official
   organization.
 - `unit-save-api.md` defines the public page-unit save contract.
+- `unit-search-transform-api.md` defines Chapter Unit text preview and batch
+  transform contracts.
 - `swagger.json` is a checked-in generated artifact. Regenerate it with
   `cargo run -p poprako-swagger > docs/swagger.json`; do not edit it by hand.
 

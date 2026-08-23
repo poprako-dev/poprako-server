@@ -4,13 +4,13 @@ use tracing::instrument;
 use crate::model::read::proj::unit::{UnitCounters, UnitInfo, UnitOrder};
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::unit::{
-    ApplyUnitEdits, ListUnitInfos, ListUnitOrders,
+    ApplyUnitEdits, ListUnitInfos, ListUnitInfosByIds, ListUnitOrders,
 };
 use crate::part_impl::repo::mock_impl::unit::{
-    apply_edits, list_infos, list_orders,
+    apply_edits, list_infos, list_infos_by_ids, list_orders,
 };
 use crate::part_impl::repo::mock_impl::{Mock, MockContext};
-use crate::result::{BaseError, BaseRest};
+use crate::result::{BaseError, BaseRest, accept};
 
 impl Run<ListUnitInfos<'_>> for Mock {
     // Internal type alias for `Error`.
@@ -26,6 +26,24 @@ impl Run<ListUnitInfos<'_>> for Mock {
         let state = self.state.lock().unwrap();
 
         list_infos(&state, oper.page_id)
+    }
+}
+
+impl Step<ListUnitInfosByIds<'_>, MockContext> for Mock {
+    // Internal type alias for `Level`.
+    type Level = ReptRead;
+
+    // Defines the adapter error exposed by this operation.
+    type Error = BaseError;
+
+    #[instrument(level = "info", skip_all)]
+    // Lists every requested Unit that exists in the transaction snapshot.
+    async fn step(
+        &self,
+        context: &mut MockContext,
+        oper: &ListUnitInfosByIds<'_>,
+    ) -> BaseRest<Vec<UnitInfo>> {
+        accept(list_infos_by_ids(&context.state, oper.ids))
     }
 }
 

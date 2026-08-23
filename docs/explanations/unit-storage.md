@@ -31,6 +31,12 @@ Page 响应同时返回：
 导出、LabelPlus 与 Comic archive 使用同一有序 visible 列表。外部格式
 需要 `unit_index` 时，仅在输出阶段通过 `enumerate` 临时生成。
 
+Chapter 级文本搜索由
+`GET /api/v1/chapters/{chapter_id}/units/search` 提供。请求必须选择
+`translated_text` 或 `proofread_text`，并提供 trim 后至少三个 Unicode
+字符的大小写敏感字面量。实现以 20 Page 为一批并发读取，最终仍按 Page
+与 Unit 链顺序稳定返回，且不向响应增加 Page index。
+
 ## 写语义
 
 `POST /api/v1/pages/{page_id}/units/save` 的请求体就是 edit 数组，每批
@@ -55,6 +61,12 @@ hidden Unit。移动时先从包含 tombstone 的完整链摘除主体，再插�
 `next_id` 前方；显式 Clear 表示尾部，Skip 保持位置。
 
 最终 visible Unit 不得超过 100；tombstone 不占容量。
+
+`POST /api/v1/chapters/{chapter_id}/units/transform` 对客户端先搜索后选择的
+Unit 执行批量字面量替换。每一组 pair 都以原文本为基准，因此替换结果不
+级联；原文本上的重叠命中会拒绝整个请求。过期 pair、缺失 Unit 与
+tombstone 跳过，跨 Chapter Unit 则拒绝。只有实际修改才进入既有 Unit
+edit 的 counters、署名、Comic touch 与 workflow 流程。
 
 ## 权限与署名
 

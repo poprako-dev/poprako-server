@@ -1,7 +1,9 @@
 //! RDB-backed unit repository.
 
-// Transaction-scoped unit operations.
-mod step_impl;
+// Unit edit application and sequence mutation.
+mod edit;
+// Unit sequence reads and chain validation.
+mod sequence;
 
 /// Unit RDB integration tests.
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
@@ -13,11 +15,12 @@ use tracing::instrument;
 use crate::model::read::proj::unit::{UnitCounters, UnitInfo, UnitOrder};
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::unit::{
-    ApplyUnitEdits, ListUnitInfos, ListUnitOrders,
+    ApplyUnitEdits, ListUnitInfos, ListUnitInfosByIds, ListUnitOrders,
 };
 use crate::part_impl::repo::HybRepo;
-use crate::part_impl::repo::rdb_impl::unit::step_impl::{
-    apply_edits, list_infos, list_orders_for_update,
+use crate::part_impl::repo::rdb_impl::unit::edit::apply_edits;
+use crate::part_impl::repo::rdb_impl::unit::sequence::{
+    list_infos, list_infos_by_ids, list_orders_for_update,
 };
 use crate::result::{BaseError, BaseRest};
 use crate::shared::RdbContext;
@@ -31,6 +34,27 @@ impl Run<ListUnitInfos<'_>> for HybRepo {
     #[instrument(level = "info", skip_all)]
     async fn run(&self, oper: &ListUnitInfos<'_>) -> BaseRest<Vec<UnitInfo>> {
         submit_query!(self.core, list_infos, oper.page_id)
+    }
+}
+
+impl<L> Step<ListUnitInfosByIds<'_>, RdbContext<L>> for HybRepo
+where
+    L: Level + Send + AtLeast<ReptRead>,
+{
+    // Error type for the transaction-scoped Unit selection query.
+    type Level = ReptRead;
+
+    // Defines the adapter error exposed by this operation.
+    type Error = BaseError;
+
+    #[instrument(level = "info", skip_all)]
+    // Lists every requested Unit that currently exists in the transaction.
+    async fn step(
+        &self,
+        context: &mut RdbContext<L>,
+        oper: &ListUnitInfosByIds<'_>,
+    ) -> BaseRest<Vec<UnitInfo>> {
+        list_infos_by_ids(context.conn(), oper.ids).await
     }
 }
 

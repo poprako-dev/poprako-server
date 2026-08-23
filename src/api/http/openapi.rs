@@ -51,7 +51,9 @@ use crate::data::instr::termbase::{
 };
 use crate::data::instr::termbase_port::{ImportTermInstr, ImportTermbaseInstr};
 use crate::data::instr::unit::{
-    UnitCoordInstr, UnitEditInstr, UnitRevisionInstr, UnitTranslationInstr,
+    TransformChapterUnitsInstr, UnitCoordInstr, UnitEditInstr,
+    UnitRevisionInstr, UnitTextTransformInstr, UnitTransformInstr,
+    UnitTranslationInstr,
 };
 use crate::data::instr::user::{
     MarkUserAvatarUploadedInstr, ReserveUserAvatarInstr, UpdateUserInfoInstr,
@@ -111,6 +113,7 @@ use crate::value::comment::CommentInclOpt;
 use crate::value::member::MemberInclOpt;
 use crate::value::member_invitation::MemberInvitationInclOpt;
 use crate::value::role::RoleField;
+use crate::value::unit::UnitTextPart;
 
 /// Top-level OpenAPI document for the PopRaKo HTTP API.
 #[derive(OpenApi)]
@@ -170,7 +173,9 @@ use crate::value::role::RoleField;
         handler::page::reserve_image,
         handler::page::mark_image_uploaded,
         handler::unit::list_infos,
+        handler::unit::search_infos,
         handler::unit::save_infos,
+        handler::unit::transform,
         handler::assignment::list_infos,
         handler::assignment::update_roles,
         handler::assignment::delete,
@@ -278,6 +283,10 @@ use crate::value::role::RoleField;
         UnitCoordInstr,
         UnitTranslationInstr,
         UnitRevisionInstr,
+        UnitTextPart,
+        TransformChapterUnitsInstr,
+        UnitTransformInstr,
+        UnitTextTransformInstr,
         AssignmentInfoView,
         JoinChapterAssignmentInstr,
         UpdateAssignmentRolesInstr,

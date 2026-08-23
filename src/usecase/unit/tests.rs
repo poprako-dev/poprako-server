@@ -3,13 +3,15 @@
 // save_edits(save_edits)(positive): concurrent inserts before one anchor remain a complete chain.
 // save_edits(save_edits)(negative): translator revision edits are rejected and rolled back.
 
+use super::transform::transform;
 use super::*;
 
 use time::OffsetDateTime;
 
 use crate::data::instr::unit::{
-    ListPageUnitInfosInstr, SavePageUnitEditsInstr, UnitCoordInstr,
-    UnitEditInstr, UnitRevisionInstr, UnitTranslationInstr,
+    ListPageUnitInfosInstr, SavePageUnitEditsInstr, TransformChapterUnitsInstr,
+    UnitCoordInstr, UnitEditInstr, UnitRevisionInstr, UnitTextTransformInstr,
+    UnitTransformInstr, UnitTranslationInstr,
 };
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::chapter::ChapterInfo;
@@ -22,6 +24,7 @@ use crate::result::{BaseError, ExpectedVariant};
 use crate::util::Patch;
 use crate::value::chapter::StageMask;
 use crate::value::role::{RoleField, RoleMask};
+use crate::value::unit::UnitTextPart;
 
 #[tokio::test]
 async fn create_uses_token_identity_and_updates_counters() {
@@ -50,6 +53,122 @@ async fn create_uses_token_identity_and_updates_counters() {
     assert_eq!(snapshot.pages[0].translated_unit_count, 1);
 
     assert_eq!(snapshot.chapters[0].total_unit_count, 1);
+}
+
+#[tokio::test]
+async fn transform_updates_selected_text_without_cascading_targets() {
+    //
+    let mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
+
+    let mut transform_assignment =
+        assignment(RoleMask::from(RoleField::TRANSLATOR));
+
+    transform_assignment.id = "assignment-2".to_string();
+
+    transform_assignment.user_id = "translator-2".to_string();
+
+    mock.seed_assignment(transform_assignment);
+
+    save_edits(
+        (&mock, &mock),
+        token("translator-1"),
+        save_instr(vec![create("local-1", None, Some("alpha beta"))]),
+    )
+    .await
+    .unwrap();
+
+    let unit_id = mock.snapshot().units[0].id.clone();
+
+    transform(
+        (&mock, &mock),
+        token("translator-2"),
+        "chapter-1".to_string(),
+        TransformChapterUnitsInstr {
+            part: UnitTextPart::TranslatedText,
+            units: vec![UnitTransformInstr {
+                unit_id,
+                transforms: vec![
+                    UnitTextTransformInstr {
+                        origin: "alpha".to_string(),
+                        target: "beta".to_string(),
+                    },
+                    UnitTextTransformInstr {
+                        origin: "beta".to_string(),
+                        target: "final".to_string(),
+                    },
+                ],
+            }],
+        },
+    )
+    .await
+    .unwrap();
+
+    let snapshot = mock.snapshot();
+
+    assert_eq!(
+        snapshot.units[0].translated_text.as_deref(),
+        Some("beta final")
+    );
+
+    assert_eq!(
+        snapshot.units[0].last_translator_id.as_deref(),
+        Some("translator-2")
+    );
+
+    assert_eq!(snapshot.pages[0].translated_unit_count, 1);
+}
+
+#[tokio::test]
+async fn overlapping_transform_rolls_back_the_complete_request() {
+    //
+    let mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
+
+    save_edits(
+        (&mock, &mock),
+        token("translator-1"),
+        save_instr(vec![create("local-1", None, Some("abcd"))]),
+    )
+    .await
+    .unwrap();
+
+    let before = mock.snapshot();
+
+    let error = transform(
+        (&mock, &mock),
+        token("translator-1"),
+        "chapter-1".to_string(),
+        TransformChapterUnitsInstr {
+            part: UnitTextPart::TranslatedText,
+            units: vec![UnitTransformInstr {
+                unit_id: before.units[0].id.clone(),
+                transforms: vec![
+                    UnitTextTransformInstr {
+                        origin: "abc".to_string(),
+                        target: "first".to_string(),
+                    },
+                    UnitTextTransformInstr {
+                        origin: "bcd".to_string(),
+                        target: "second".to_string(),
+                    },
+                ],
+            }],
+        },
+    )
+    .await
+    .unwrap_err();
+
+    assert!(matches!(
+        error,
+        BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            ..
+        }
+    ));
+
+    assert_eq!(
+        mock.snapshot().units[0].translated_text,
+        before.units[0].translated_text
+    );
 }
 
 #[tokio::test]

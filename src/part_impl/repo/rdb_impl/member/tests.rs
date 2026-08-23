@@ -1,12 +1,19 @@
 // member_roundtrip_uses_testcontainer(MemberRepo)(positive): member repo creates, lists, fetches, and updates roles in an isolated PostgreSQL container.
+// concurrent_admin_role_removals_are_serialized(MemberRepo)(concurrency): overlapping admin removals leave one admin and surface one retryable conflict.
 
 use super::*;
 
-use poprako_orchestra::{Nucl as _, Step as _};
+use std::sync::Arc;
+use std::time::Duration;
 
+use poprako_orchestra::{Nucl as _, OperStep as _, Step as _};
+use tokio::sync::{Semaphore, mpsc};
+
+use crate::complex::member::MemberComplex;
 use crate::model::read::spec::member::MemberListSpec;
 use crate::model::write::member::{MemberEntry, MemberRoleRepl};
-use crate::part::nucl::ReptRead;
+use crate::model::write::user::UserEntry;
+use crate::part::nucl::{ReptRead, Serial};
 use crate::part::repo::oper::member::{
     CreateMember, GetMemberInfo, ListMemberInfos, UpdateMember,
 };
@@ -153,4 +160,219 @@ pub async fn member_roundtrip_uses_testcontainer(shared: RdbCore) {
         .await
         .ok()
         .unwrap();
+}
+
+/// Verifies concurrent admin removals preserve one team administrator.
+pub async fn concurrent_admin_role_removals_are_serialized(shared: RdbCore) {
+    //
+    test_shared::reset(&shared, PREFIX).await;
+
+    let team_fixture = test_shared::seed_user_and_team(&shared, PREFIX).await;
+
+    let second_user_entry = UserEntry {
+        id: format!("{}second-user", PREFIX),
+        qid: format!("{}second-qid", PREFIX),
+        nickname: "RDB second admin".into(),
+        password_hash: "password-hash".into(),
+    };
+
+    test_shared::create_user(&shared, &second_user_entry).await;
+
+    let first_member_entry = MemberEntry {
+        id: format!("{}first-admin-member", PREFIX),
+        user_id: team_fixture.user_entry.id.clone(),
+        user_nickname: team_fixture.user_entry.nickname.clone(),
+        team_id: team_fixture.team_entry.id.clone(),
+        roles: RoleMask::from(RoleField::ADMIN),
+    };
+
+    let second_member_entry = MemberEntry {
+        id: format!("{}second-admin-member", PREFIX),
+        user_id: second_user_entry.id,
+        user_nickname: second_user_entry.nickname,
+        team_id: team_fixture.team_entry.id.clone(),
+        roles: RoleMask::from(RoleField::ADMIN),
+    };
+
+    let repo = HybRepo::new(shared.clone());
+
+    let nucl = RdbNucl::<ReptRead>::new(shared.clone());
+
+    nucl.coord(async |context| {
+        //
+        repo.step(
+            context,
+            &CreateMember {
+                entry: &first_member_entry,
+            },
+        )
+        .await?;
+
+        repo.step(
+            context,
+            &CreateMember {
+                entry: &second_member_entry,
+            },
+        )
+        .await?;
+
+        Ok::<(), BaseError>(())
+    })
+    .await
+    .ok()
+    .unwrap();
+
+    let (ready_tx, mut ready_rx) = mpsc::channel(2);
+
+    let write_permits = Arc::new(Semaphore::new(0));
+
+    let first_removal = tokio::spawn(remove_admin_role_after_read(
+        shared.clone(),
+        team_fixture.team_entry.id.clone(),
+        first_member_entry.id.clone(),
+        ready_tx.clone(),
+        Arc::clone(&write_permits),
+    ));
+
+    let second_removal = tokio::spawn(remove_admin_role_after_read(
+        shared.clone(),
+        team_fixture.team_entry.id.clone(),
+        second_member_entry.id.clone(),
+        ready_tx,
+        Arc::clone(&write_permits),
+    ));
+
+    tokio::time::timeout(Duration::from_secs(10), async {
+        ready_rx
+            .recv()
+            .await
+            .expect("first transaction must report its completed read");
+
+        ready_rx
+            .recv()
+            .await
+            .expect("second transaction must report its completed read");
+    })
+    .await
+    .expect("both transactions must complete their reads");
+
+    write_permits.add_permits(2);
+
+    let (first_outcome, second_outcome) =
+        tokio::join!(first_removal, second_removal);
+
+    let first_outcome =
+        first_outcome.expect("first transaction task must join");
+
+    let second_outcome =
+        second_outcome.expect("second transaction task must join");
+
+    let outcomes = [first_outcome, second_outcome];
+
+    assert_eq!(outcomes.iter().filter(|outcome| outcome.is_ok()).count(), 1);
+
+    let error = outcomes
+        .into_iter()
+        .find_map(Result::err)
+        .expect("one concurrent admin removal must fail");
+
+    assert!(matches!(error, BaseError::Retryable { .. }));
+
+    let member_list_spec = MemberListSpec::Team {
+        team_id: team_fixture.team_entry.id,
+        fuzzy_nickname: None,
+        role: Some(RoleField::ADMIN),
+        incl_opt: Vec::new(),
+        offset: 0,
+        limit: 10,
+    };
+
+    let admin_member_infos = repo
+        .run(&ListMemberInfos::Spec {
+            spec: &member_list_spec,
+        })
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(admin_member_infos.len(), 1);
+
+    test_shared::cleanup(&shared, PREFIX).await.ok().unwrap();
+
+    test_shared::assert_no_leftovers(&shared, PREFIX)
+        .await
+        .ok()
+        .unwrap();
+}
+
+// Removes one admin role after the test releases both completed reads.
+async fn remove_admin_role_after_read(
+    shared: RdbCore,
+    team_id: String,
+    member_id: String,
+    ready_tx: mpsc::Sender<()>,
+    write_permits: Arc<Semaphore>,
+) -> Result<(), BaseError> {
+    //
+    let repo = HybRepo::new(shared.clone());
+
+    let nucl = RdbNucl::<Serial>::new(shared);
+
+    nucl.coord(async move |context| {
+        //
+        let member_list_spec = MemberListSpec::Team {
+            team_id,
+            fuzzy_nickname: None,
+            role: None,
+            incl_opt: Vec::new(),
+            offset: 0,
+            limit: 10,
+        };
+
+        let member_infos = ListMemberInfos::Spec {
+            spec: &member_list_spec,
+        }
+        .step_on(&repo, context)
+        .await?;
+
+        let subject_member_info = member_infos
+            .iter()
+            .find(|member_info| member_info.id == member_id)
+            .expect("subject admin member must exist");
+
+        let roles = RoleMask::from(RoleField::REVIEWER);
+
+        assert!(MemberComplex::team_has_admin_after_role_update(
+            &member_infos,
+            subject_member_info,
+            roles,
+        ));
+
+        ready_tx
+            .send(())
+            .await
+            .expect("test read coordinator must remain available");
+
+        let write_permit = write_permits
+            .acquire()
+            .await
+            .expect("test write coordinator must remain available");
+
+        write_permit.forget();
+
+        let member_role_update = MemberRoleRepl {
+            id: member_id,
+            roles,
+        };
+
+        UpdateMember::Role {
+            update: &member_role_update,
+        }
+        .step_on(&repo, context)
+        .await?;
+
+        Ok::<(), BaseError>(())
+    })
+    .await
+    .map_err(Into::into)
 }

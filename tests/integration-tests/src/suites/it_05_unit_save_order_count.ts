@@ -21,6 +21,8 @@ import {
     newPageManifest,
     reserveChapterPages,
     savePageUnits,
+    searchChapterUnits,
+    transformChapterUnits,
 } from "../http/fixtures.js";
 import { titled } from "../state/prefix.js";
 import type { RunCtx } from "../state/runCtx.js";
@@ -94,6 +96,59 @@ export async function runIt05Module(ctx: RunCtx): Promise<void> {
     assert.equal(f2Order[2], p0UnitIds[1], "u1 shifted to index 2");
 
     await assertPageExportInvariant(ctx.sadmin, mainChapterId, p0Id);
+
+    // ---------- F3. Chapter Unit search and literal transform ----------
+
+    await savePageUnits(trans01.api, p0Id, [
+        {
+            edit: "patch",
+            id: p0UnitIds[0]!,
+            translation: {
+                type: "assign",
+                value: { translated_text: "alpha beta" },
+            },
+        },
+    ]);
+
+    const searchMatches = await searchChapterUnits(
+        trans01.api,
+        mainChapterId,
+        "translated_text",
+        " alpha ",
+    );
+
+    assert.deepEqual(searchMatches.map((unit) => unit.id), [p0UnitIds[0]]);
+
+    await transformChapterUnits(trans01.api, mainChapterId, "translated_text", [
+        {
+            unit_id: p0UnitIds[0]!,
+            transforms: [
+                { origin: "alpha", target: "beta" },
+                { origin: "beta", target: "final" },
+            ],
+        },
+        {
+            unit_id: "missing-unit-is-skipped",
+            transforms: [{ origin: "alpha", target: "unused" }],
+        },
+    ]);
+
+    const transformed = await searchChapterUnits(
+        trans01.api,
+        mainChapterId,
+        "translated_text",
+        "final",
+    );
+
+    assert.equal(transformed[0]!.translated_text, "beta final");
+
+    expectError(
+        await trans01.api.get<ErrorBody>(
+            `/api/v1/chapters/${mainChapterId}/units/search?part=translated_text&phrase=ab`,
+        ),
+        422,
+        2,
+    );
 
     // ---------- F10. import/export regression ----------
 

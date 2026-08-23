@@ -30,7 +30,7 @@ use crate::data::instr::member::{
 use crate::data::val::member::CreateMemberVal;
 use crate::data::view::member::MemberInfoView;
 use crate::model::shared::user::UserToken;
-use crate::part::nucl::ReptRead;
+use crate::part::nucl::{ReptRead, Serial};
 use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
 use crate::usecase;
@@ -162,7 +162,8 @@ pub async fn list_my_infos(
     responses(
         (status = 204, description = "Member roles updated"),
         (status = 422, description = "Path id does not match body id"),
-        (status = 403, description = "No perm to update this member"),
+        (status = 403, description = "No perm or the team would lose its last admin"),
+        (status = 409, description = "Serializable conflict; retry the complete request"),
         (status = 404, description = "Member not found"),
     ),
 ))]
@@ -176,8 +177,8 @@ pub async fn update_roles(
     //
     ensure_path_matches_body_id(&member_id, &instr.id)?;
 
-    usecase::member::update_roles::<_, RdbContext<ReptRead>, HybRepo>(
-        (harn.nucl().rept_read(), harn.repo()),
+    usecase::member::update_roles::<_, RdbContext<Serial>, HybRepo>(
+        (harn.nucl().serial(), harn.repo()),
         user_token,
         instr,
     )
@@ -194,7 +195,8 @@ pub async fn update_roles(
     params(("member_id" = String, Path, description = "Member ID")),
     responses(
         (status = 204, description = "Member deleted"),
-        (status = 403, description = "No perm to delete this member"),
+        (status = 403, description = "No perm or the team would lose its last admin"),
+        (status = 409, description = "Serializable conflict; retry the complete request"),
         (status = 404, description = "Member not found"),
     ),
 ))]
@@ -205,8 +207,8 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::member::delete::<_, RdbContext<ReptRead>, HybRepo>(
-        (harn.nucl().rept_read(), harn.repo()),
+    usecase::member::delete::<_, RdbContext<Serial>, HybRepo>(
+        (harn.nucl().serial(), harn.repo()),
         user_token,
         member_id,
     )

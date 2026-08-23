@@ -37,6 +37,8 @@ import type {
     SystemMailInfoView,
     TeamInfoView,
     UnitInfoView,
+    UnitTextPart,
+    UnitTransformInput,
     UserInfoView,
     WorksetInfoView,
 } from "./types.js";
@@ -859,6 +861,36 @@ export async function listPageUnits(api: ApiClient, pageId: string): Promise<Lis
         await api.get<SuccessBody<ListPageUnitInfosVal>>(`/api/v1/pages/${pageId}/units?offset=0&limit=100`),
         200,
     );
+}
+
+export async function searchChapterUnits(
+    api: ApiClient,
+    chapterId: string,
+    part: UnitTextPart,
+    phrase: string,
+): Promise<UnitInfoView[]> {
+    const query = new URLSearchParams({ part, phrase });
+
+    return expectSuccessData(
+        await api.get<SuccessBody<UnitInfoView[]>>(
+            `/api/v1/chapters/${chapterId}/units/search?${query.toString()}`,
+        ),
+        200,
+    );
+}
+
+export async function transformChapterUnits(
+    api: ApiClient,
+    chapterId: string,
+    part: UnitTextPart,
+    units: UnitTransformInput[],
+): Promise<void> {
+    const response = await api.post<ErrorBody>(
+        `/api/v1/chapters/${chapterId}/units/transform`,
+        { part, units },
+    );
+
+    expectNoContent(response);
 }
 
 // ---------- assignment ----------

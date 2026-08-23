@@ -1,4 +1,7 @@
-//! Unit use cases for listing and saving one Page sequence.
+//! Unit use cases for listing, searching, saving, and transforming text.
+
+/// Chapter-scoped Unit text transformation.
+pub mod transform;
 
 #[cfg(test)]
 // Unit tests for unit creation, editing, and transition rules.
@@ -7,14 +10,14 @@ mod tests;
 use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
-use poprako_util::i18n::trl;
-
 use crate::complex::chapter::ChapterComplex;
-use crate::complex::unit::{UnitComplex, UnitListAccess, UnitPermComplex};
+use crate::complex::unit::{UnitComplex, UnitPermComplex};
 use crate::data::instr::unit::{
-    ListPageUnitInfosInstr, SavePageUnitEditsInstr, into_unit_edits,
+    ListPageUnitInfosInstr, SavePageUnitEditsInstr,
+    SearchChapterUnitInfosInstr, into_unit_edits,
 };
 use crate::data::val::unit::ListPageUnitInfosVal;
+use crate::data::view::unit::UnitInfoView;
 use crate::model::read::proj::unit::UnitCounters;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::Serial;
@@ -28,22 +31,24 @@ use crate::part::repo::oper::chapter::{
     AdjustChapterUnitCounters, GetChapterInfoExcluded,
 };
 use crate::part::repo::oper::comic::TouchComicLastActive;
-use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::page::{
-    GetPageInfo, GetPageInfoExcluded, SetPageUnitCounters,
+    GetPageInfo, GetPageInfoExcluded, ListPageInfos, SetPageUnitCounters,
 };
-use crate::part::repo::oper::team::ResolveTeamId;
 use crate::part::repo::oper::unit::{
     ApplyUnitEdits, ListUnitInfos, ListUnitOrders,
 };
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::unit::UnitRepo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, accept};
+use crate::usecase::internal::unit::UnitAccessLoader;
 use crate::usecase::stage::start_pending_stages;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordOrigin;
 use crate::value::role::RoleField;
 use crate::value::unit::UnitEditPerm;
+
+// Search pages in bounded concurrent batches.
+const SEARCH_PAGE_BATCH_SIZE: usize = 20;
 
 #[instrument(level = "info", skip(repo))]
 /// Lists visible Units for one Page in final linked-list order.
@@ -63,61 +68,14 @@ where
 {
     let page_info = GetPageInfo { id: &instr.page_id }.run_on(repo).await?;
 
-    let team_id = ResolveTeamId::Chapter {
-        id: &page_info.chapter_id,
-    }
-    .run_on(repo)
+    let access_info = UnitAccessLoader::load_access_info_from_chapter::<C, R>(
+        repo,
+        &token.user_id,
+        &page_info.chapter_id,
+    )
     .await?;
 
-    let member_info = FindMemberInfo::UserTeam {
-        user_id: &token.user_id,
-        team_id: &team_id,
-    }
-    .run_on(repo)
-    .await?;
-
-    match member_info {
-        //
-        Some(member_info) => UnitPermComplex::ensure_user_can_list_infos(
-            UnitListAccess::Member {
-                member_info: &member_info,
-            },
-        )?,
-
-        None => {
-            //
-            let assignment_info = FindAssignmentInfo::ChapterUser {
-                chapter_id: &page_info.chapter_id,
-                user_id: &token.user_id,
-            }
-            .run_on(repo)
-            .await?;
-
-            let Some(assignment_info) = assignment_info else {
-                //
-                let err_message = trl("error-unit-list-perm-required");
-
-                tracing::warn!(
-                    err_variant = ?ExpectedVariant::Perm,
-                    err_message = %err_message,
-                    chapter_id = %page_info.chapter_id,
-                    user_id = %token.user_id,
-                    "expected error: unit list permission denied",
-                );
-
-                return Err(BaseError::Expected {
-                    variant: ExpectedVariant::Perm,
-                    message: err_message,
-                });
-            };
-
-            UnitPermComplex::ensure_user_can_list_infos(
-                UnitListAccess::Assignee {
-                    assignment_info: &assignment_info,
-                },
-            )?;
-        }
-    }
+    UnitPermComplex::ensure_user_can_list_infos(access_info.as_access())?;
 
     let unit_infos = ListUnitInfos {
         page_id: &page_info.id,
@@ -132,6 +90,104 @@ where
     };
 
     accept(ListPageUnitInfosVal::from_parts(unit_infos, counters))
+}
+
+#[instrument(
+    level = "info",
+    skip(repo, token, instr),
+    fields(chapter_id = %instr.chapter_id, part = ?instr.part),
+)]
+/// Searches one Unit text field across all visible Units in a Chapter.
+pub async fn search_infos<C, R>(
+    (repo,): (&R,),
+    token: UserToken,
+    instr: SearchChapterUnitInfosInstr,
+) -> BaseRest<Vec<UnitInfoView>>
+where
+    C: Context,
+    R: PageRepo<C>
+        + UnitRepo<C>
+        + TeamRepo<C>
+        + MemberRepo<C>
+        + AssignmentRepo<C>
+        + Sync,
+{
+    let SearchChapterUnitInfosInstr {
+        chapter_id,
+        part,
+        phrase,
+    } = instr;
+
+    let phrase = UnitComplex::normalize_search_phrase(phrase)?;
+
+    let access_info = UnitAccessLoader::load_access_info_from_chapter::<C, R>(
+        repo,
+        &token.user_id,
+        &chapter_id,
+    )
+    .await?;
+
+    UnitPermComplex::ensure_user_can_list_infos(access_info.as_access())?;
+
+    let page_infos = ListPageInfos {
+        chapter_id: &chapter_id,
+    }
+    .run_on(repo)
+    .await?;
+
+    let phrase = &phrase;
+
+    let batches = page_infos.chunks(SEARCH_PAGE_BATCH_SIZE).map(
+        |page_batch| async move {
+            //
+            let mut found_infos = Vec::new();
+
+            for page_info in page_batch {
+                //
+                let unit_infos = ListUnitInfos {
+                    page_id: &page_info.id,
+                }
+                .run_on(repo)
+                .await?;
+
+                found_infos.extend(
+                    unit_infos
+                        .into_iter()
+                        .filter(|unit_info| unit_info.hidden_at.is_none())
+                        .enumerate()
+                        .filter_map(|(unit_index, unit_info)| {
+                            //
+                            UnitComplex::text_part_contains(
+                                &unit_info, part, phrase,
+                            )
+                            .then_some((
+                                page_info.index,
+                                unit_index,
+                                unit_info,
+                            ))
+                        }),
+                );
+            }
+
+            accept(found_infos)
+        },
+    );
+
+    let mut found_infos = futures_util::future::try_join_all(batches)
+        .await?
+        .into_iter()
+        .flatten()
+        .collect::<Vec<_>>();
+
+    found_infos
+        .sort_by_key(|(page_index, unit_index, _)| (*page_index, *unit_index));
+
+    accept(
+        found_infos
+            .into_iter()
+            .map(|(_, _, unit_info)| UnitInfoView::from(unit_info))
+            .collect(),
+    )
 }
 
 #[instrument(level = "info", skip(nucl, repo))]
