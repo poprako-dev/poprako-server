@@ -121,6 +121,8 @@ shift
 
 case "$docker_command" in
     buildx)
+        printf 'buildx-config %s\n' "${BUILDX_CONFIG:-}" >>"$command_log"
+        printf 'buildx-builder %s\n' "${BUILDX_BUILDER:-}" >>"$command_log"
         metadata_file=
 
         while [ "$#" -gt 0 ]; do
@@ -309,11 +311,15 @@ chmod +x \
 
 build_metadata="${test_root}/build-metadata.json"
 github_output="${test_root}/github-output"
+initial_docker_config="${test_root}/docker-config"
+mkdir -p "${initial_docker_config}/buildx"
 
 PATH="${fake_bin}:$PATH" \
 BUILD_METADATA_FILE="$build_metadata" \
+BUILDX_BUILDER=test-builder \
 CACHE_FROM=type=registry,ref=ghcr.io/poprako-dev/poprako-server:buildcache \
 CACHE_TO=type=registry,ref=ghcr.io/poprako-dev/poprako-server:buildcache,mode=max,image-manifest=true,oci-mediatypes=true,ignore-error=true \
+DOCKER_CONFIG="$initial_docker_config" \
 GHCR_TOKEN="$registry_token" \
 GHCR_USERNAME=test-user \
 GITHUB_OUTPUT="$github_output" \
@@ -326,6 +332,8 @@ TEST_SOURCE_IMAGE="$source_image" \
 sh "$project_root/scripts/ci-build-prod.sh" >"$command_output" 2>&1
 
 assert_contains "docker buildx build" "$command_log"
+assert_contains "buildx-config ${initial_docker_config}/buildx" "$command_log"
+assert_contains "buildx-builder test-builder" "$command_log"
 assert_contains "--cache-from type=registry" "$command_log"
 assert_contains "--cache-to type=registry" "$command_log"
 assert_contains "--push" "$command_log"
