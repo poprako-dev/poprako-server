@@ -1,30 +1,131 @@
 #!/usr/bin/env sh
 set -eu
 
-if [ "$#" -ne 8 ]; then
-    echo "expected image, tag, container, root, port, bind host, network, and PostgreSQL container" >&2
+if [ "$#" -ne 9 ]; then
+    echo "expected source image, local image, tag, container, root, port, bind host, network, and PostgreSQL container" >&2
     exit 1
 fi
 
-image_name=$1
-image_tag=$2
-container_name=$3
-deploy_root=$4
-public_port=$5
-bind_host=$6
-docker_network=$7
-postgres_container=$8
+source_image_ref=$1
+image_name=$2
+image_tag=$3
+container_name=$4
+deploy_root=$5
+public_port=$6
+bind_host=$7
+docker_network=$8
+postgres_container=$9
 
 image_ref="${image_name}:${image_tag}"
 release_sha=${image_tag#sha-}
 release_dir="${deploy_root}/releases/${release_sha}"
 legacy_runtime_env_file="${deploy_root}/shared/runtime.env"
 legacy_previous_env_file="${deploy_root}/shared/runtime.env.previous"
-image_archive="${release_dir}/${image_name}-${image_tag}.tar.gz"
 migration_script="${release_dir}/ga-apply-migrations.sh"
 migration_root="${release_dir}/migrations"
 previous_name="${container_name}-previous"
 rollback_required=0
+registry_authenticated=0
+registry_config_dir=
+source_image_repository=ghcr.io/poprako-dev/poprako-server
+
+validate_simple_value() {
+    value=$1
+    label=$2
+
+    case "$value" in
+        "" | *[!A-Za-z0-9._-]*)
+            echo "$label contains unsupported characters" >&2
+            exit 1
+            ;;
+    esac
+}
+
+validate_port() {
+    value=$1
+    label=$2
+
+    case "$value" in
+        "" | *[!0-9]*)
+            echo "$label must be numeric" >&2
+            exit 1
+            ;;
+    esac
+}
+
+validate_source_image() {
+    case "$source_image_ref" in
+        "${source_image_repository}@sha256:"*)
+            source_digest=${source_image_ref#"${source_image_repository}@sha256:"}
+            ;;
+        *)
+            echo "source image must identify the PopRaKo GHCR image by digest" >&2
+            exit 1
+            ;;
+    esac
+
+    [ "${#source_digest}" -eq 64 ] || {
+        echo "source image digest must contain exactly 64 characters" >&2
+        exit 1
+    }
+
+    case "$source_digest" in
+        *[!0-9a-f]*)
+            echo "source image digest must be lowercase hexadecimal" >&2
+            exit 1
+            ;;
+    esac
+}
+
+validate_deploy_root() {
+    case "$deploy_root" in
+        / | /opt | /var | /srv)
+            echo "deployment root must identify a dedicated application directory" >&2
+            exit 1
+            ;;
+        /*) ;;
+        *)
+            echo "deployment root must be absolute" >&2
+            exit 1
+            ;;
+    esac
+
+    case "$deploy_root" in
+        *[!A-Za-z0-9_./-]*)
+            echo "deployment root contains unsupported characters" >&2
+            exit 1
+            ;;
+    esac
+}
+
+validate_source_image
+validate_simple_value "$image_name" image
+validate_simple_value "$container_name" container
+validate_simple_value "$bind_host" "bind host"
+validate_simple_value "$docker_network" network
+validate_simple_value "$postgres_container" "PostgreSQL container"
+validate_port "$public_port" port
+validate_deploy_root
+
+case "$image_tag" in
+    sha-*) ;;
+    *)
+        echo "image tag must start with sha-" >&2
+        exit 1
+        ;;
+esac
+
+[ "${#release_sha}" -eq 40 ] || {
+    echo "image tag commit must contain exactly 40 characters" >&2
+    exit 1
+}
+
+case "$release_sha" in
+    *[!0-9a-f]*)
+        echo "image tag commit must be lowercase hexadecimal" >&2
+        exit 1
+        ;;
+esac
 
 read_runtime_value() {
     label=$1
@@ -47,6 +148,10 @@ read_runtime_value() {
     esac
 }
 
+read_runtime_value GHCR_USERNAME
+ghcr_username=$runtime_value
+read_runtime_value GHCR_TOKEN
+ghcr_token=$runtime_value
 read_runtime_value DATABASE_URL
 database_url=$runtime_value
 read_runtime_value JWT_SECRET
@@ -218,10 +323,27 @@ restore_previous() {
     return 1
 }
 
+cleanup_registry_auth() {
+    if [ -z "$registry_config_dir" ]; then
+        return
+    fi
+
+    if [ "$registry_authenticated" = "1" ]; then
+        docker logout ghcr.io >/dev/null 2>&1 || true
+    fi
+
+    rm -rf "$registry_config_dir"
+    registry_authenticated=0
+    registry_config_dir=
+    unset DOCKER_CONFIG
+}
+
 on_exit() {
     exit_status=$?
 
     trap - EXIT HUP INT TERM
+
+    cleanup_registry_auth
 
     if [ "$rollback_required" = "1" ]; then
         restore_previous || true
@@ -232,11 +354,6 @@ on_exit() {
 
 trap on_exit EXIT
 trap 'exit 1' HUP INT TERM
-
-[ -f "$image_archive" ] || {
-    echo "missing uploaded image archive: $image_archive" >&2
-    exit 1
-}
 
 [ -f "$migration_script" ] || {
     echo "missing migration script: $migration_script" >&2
@@ -250,9 +367,39 @@ trap 'exit 1' HUP INT TERM
 
 docker info >/dev/null
 docker network inspect "$docker_network" >/dev/null
+umask 077
+registry_config_dir=$(mktemp -d)
+export DOCKER_CONFIG=$registry_config_dir
+
+printf '%s\n' "$ghcr_token" | docker login ghcr.io \
+    --username "$ghcr_username" \
+    --password-stdin
+registry_authenticated=1
+
+docker pull "$source_image_ref"
+
+pulled_repo_digests=$(docker image inspect \
+    --format '{{range .RepoDigests}}{{println .}}{{end}}' \
+    "$source_image_ref")
+
+if ! printf '%s\n' "$pulled_repo_digests" | grep -F -x -q "$source_image_ref"; then
+    echo "pulled image does not contain the requested digest" >&2
+    exit 1
+fi
+
+docker tag "$source_image_ref" "$image_ref"
+docker image inspect "$image_ref" >/dev/null
+docker image rm "$source_image_ref" >/dev/null
+docker image inspect "$image_ref" >/dev/null
+
+docker logout ghcr.io >/dev/null 2>&1 || true
+registry_authenticated=0
+rm -rf "$registry_config_dir"
+registry_config_dir=
+unset ghcr_token
+unset DOCKER_CONFIG
+
 sh "$migration_script" "$migration_root" "$postgres_container"
-docker load --input "$image_archive"
-rm -f "$image_archive"
 
 if container_exists "$previous_name"; then
     docker rm -f "$previous_name" >/dev/null
@@ -331,6 +478,7 @@ cleanup_application_images "$previous_image_ref"
 image_id=$(docker image inspect --format '{{.Id}}' "$image_ref")
 
 printf 'deployed_commit=%s\n' "$release_sha"
+printf 'deployed_source_image=%s\n' "$source_image_ref"
 printf 'deployed_image=%s\n' "$image_ref"
 printf 'deployed_image_id=%s\n' "$image_id"
 docker ps \

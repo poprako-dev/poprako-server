@@ -24,7 +24,7 @@ RUN mkdir -p src && \
 
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     CARGO_INCREMENTAL=1 \
-    cargo build --release --bin poprako-server && \
+    cargo build --locked --release --bin poprako-server && \
     rm -rf src
 
 # Rebuild with actual source, reusing the dependency artifacts from the layer
@@ -34,12 +34,14 @@ COPY src ./src
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     CARGO_INCREMENTAL=1 \
     cargo clean --package poprako-server && \
-    cargo build --release --bin poprako-server && \
+    cargo build --locked --release --bin poprako-server && \
     cp /work/target/release/poprako-server /work/poprako-server
 
 FROM alpine:3.22 AS runtime
 
 WORKDIR /app
+
+LABEL org.opencontainers.image.source="https://github.com/poprako-dev/poprako-server"
 
 RUN apk add --no-cache \
     ca-certificates \

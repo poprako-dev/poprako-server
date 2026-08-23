@@ -8,6 +8,12 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      build_production_image:
+        description: Build the production image without deploying it
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -27,6 +33,12 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           submodules: recursive
+
+      - name: Restore Rust build cache
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          shared-key: ci-all-features
+          save-if: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Check Rust workspace
         run: sh scripts/ci-check.sh
@@ -98,16 +110,52 @@ jobs:
       - name: Audit Rust dependencies
         run: sh scripts/ci-audit.sh
 
+  production-image:
+    name: Production image
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && inputs.build_production_image)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_digest: ${{ steps.build.outputs.image_digest }}
+      image_ref: ${{ steps.build.outputs.image_ref }}
+
+    steps:
+      - name: Check out image source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+
+      - name: Build and publish production image
+        id: build
+        env:
+          BUILD_METADATA_FILE: ${{ runner.temp }}/poprako-build-metadata.json
+          CACHE_FROM: type=registry,ref=ghcr.io/poprako-dev/poprako-server:buildcache
+          CACHE_TO: type=registry,ref=ghcr.io/poprako-dev/poprako-server:buildcache,mode=max,image-manifest=true,oci-mediatypes=true,ignore-error=true
+          GHCR_TOKEN: ${{ github.token }}
+          GHCR_USERNAME: ${{ github.actor }}
+          IMAGE_NAME: ghcr.io/poprako-dev/poprako-server:sha-${{ github.sha }}
+        run: sh scripts/ci-build-prod.sh
+
   deploy:
     name: Deploy production
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs:
       - migrations
+      - production-image
       - rust
       - security
       - typescript
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: read
     environment:
       name: production
 
@@ -122,8 +170,11 @@ jobs:
       DEPLOY_PUBLIC_PORT: ${{ secrets.DEPLOY_PUBLIC_PORT }}
       DEPLOY_ROOT: ${{ secrets.DEPLOY_ROOT }}
       DEPLOY_SHA: ${{ github.sha }}
+      DEPLOY_SOURCE_IMAGE: ${{ needs.production-image.outputs.image_ref }}
       DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
       DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+      GHCR_TOKEN: ${{ github.token }}
+      GHCR_USERNAME: ${{ github.actor }}
       JWT_EXPIRATION_HOURS: ${{ secrets.DEPLOY_JWT_EXPIRATION_HOURS }}
       JWT_SECRET: ${{ secrets.DEPLOY_JWT_SECRET }}
       POPRAKO_SNOWFLAKE_NODE_ID: ${{ secrets.DEPLOY_POPRAKO_SNOWFLAKE_NODE_ID }}
@@ -140,5 +191,5 @@ jobs:
         with:
           ref: ${{ github.sha }}
 
-      - name: Build, upload, and deploy
+      - name: Deploy published image
         run: sh scripts/ci-deploy-production.sh
