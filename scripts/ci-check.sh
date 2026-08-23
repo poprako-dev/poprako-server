@@ -16,6 +16,7 @@ fi
 
 cargo fmt --all --check
 sh scripts/check-rust-lines.sh
+sh scripts/test-deployment-scripts.sh
 cargo check --workspace --all-targets --all-features
 sh linters-extra/run-check.sh
 cargo clippy --workspace --all-targets --all-features -- -D warnings
