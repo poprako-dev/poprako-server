@@ -5,7 +5,7 @@ use super::*;
 use crate::model::read::spec::system_mail::SystemMailListSpec;
 use crate::model::write::system_mail::SystemMailEntry;
 use crate::part::repo::oper::system_mail::{
-    ListSystemMailInfos, MarkSystemMailRead, SendSystemMail,
+    ListSystemMailInfos, MarkSystemMailsRead, SendSystemMails,
 };
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::test_shared;
@@ -23,15 +23,23 @@ pub async fn system_mail_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let repo = HybRepo::new(shared.clone());
 
-    let system_mail_entry = SystemMailEntry {
-        id: format!("{}system-mail", PREFIX),
-        receiver_id: user_fixture.user_entry.id.clone(),
-        title: "RDB Mail".into(),
-        content: "mail".into(),
-    };
+    let system_mail_entries = [
+        SystemMailEntry {
+            id: format!("{}system-mail-1", PREFIX),
+            receiver_id: user_fixture.user_entry.id.clone(),
+            title: "RDB Mail One".into(),
+            content: "mail one".into(),
+        },
+        SystemMailEntry {
+            id: format!("{}system-mail-2", PREFIX),
+            receiver_id: user_fixture.user_entry.id.clone(),
+            title: "RDB Mail Two".into(),
+            content: "mail two".into(),
+        },
+    ];
 
-    repo.run(&SendSystemMail {
-        entry: &system_mail_entry,
+    repo.run(&SendSystemMails {
+        entries: &system_mail_entries,
     })
     .await
     .ok()
@@ -52,10 +60,15 @@ pub async fn system_mail_roundtrip_uses_testcontainer(shared: RdbCore) {
         .ok()
         .unwrap();
 
-    assert_eq!(system_mail_infos.len(), 1);
+    assert_eq!(system_mail_infos.len(), 2);
 
-    repo.run(&MarkSystemMailRead {
-        id: &system_mail_entry.id,
+    let system_mail_ids = system_mail_entries
+        .iter()
+        .map(|system_mail_entry| system_mail_entry.id.clone())
+        .collect::<Vec<_>>();
+
+    repo.run(&MarkSystemMailsRead {
+        ids: &system_mail_ids,
         user_id: &user_fixture.user_entry.id,
     })
     .await
@@ -77,7 +90,7 @@ pub async fn system_mail_roundtrip_uses_testcontainer(shared: RdbCore) {
         .ok()
         .unwrap();
 
-    assert_eq!(read_system_mail_infos.len(), 1);
+    assert_eq!(read_system_mail_infos.len(), 2);
 
     test_shared::cleanup(&shared, PREFIX).await.ok().unwrap();
 

@@ -19,6 +19,7 @@ use crate::part::repo::oper::team::ResolveTeamId;
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant};
+use crate::usecase::internal::util::collect_bounded;
 
 /// Lists pages under one chapter.
 #[instrument(level = "info", skip(repo, image_pool))]
@@ -40,14 +41,12 @@ where
     .run_on(repo)
     .await?;
 
-    futures_util::future::join_all(
+    collect_bounded(
         page_infos
             .into_iter()
             .map(|page_info| PageInfoView::from_model(image_pool, page_info)),
     )
     .await
-    .into_iter()
-    .collect()
 }
 
 /// Fetches one page by ID.

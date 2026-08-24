@@ -25,7 +25,7 @@ use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::page::PageLoader;
-use crate::usecase::internal::util::LoadMode;
+use crate::usecase::internal::util::{LoadMode, collect_bounded};
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::comic::ComicWithOpt;
 
@@ -115,105 +115,147 @@ where
         false => HashMap::new(),
     };
 
-    let mut pinned_chapter_assignment_infos =
-        match with_pinned_chapter_assignment {
+    let pinned_chapter_assignment_infos = match with_pinned_chapter_assignment {
+        //
+        true => {
             //
-            true => {
+            let chapter_ids = pinned_chapter_infos
+                .values()
+                .map(|chapter_info| chapter_info.id.clone())
+                .collect::<Vec<_>>();
+
+            let assignment_incls = [AssignmentInclOpt::User];
+
+            let assignment_infos = ListAssignmentInfos::Chapters {
+                chapter_ids: &chapter_ids,
+                incls: &assignment_incls,
+            }
+            .run_on(repo)
+            .await?;
+
+            let mut assignment_infos_by_chapter = HashMap::new();
+
+            for assignment_info in assignment_infos {
                 //
-                let chapter_ids = pinned_chapter_infos
-                    .values()
-                    .map(|chapter_info| chapter_info.id.clone())
-                    .collect::<Vec<_>>();
-
-                let assignment_incls = [AssignmentInclOpt::User];
-
-                let assignment_infos = ListAssignmentInfos::Chapters {
-                    chapter_ids: &chapter_ids,
-                    incls: &assignment_incls,
-                }
-                .run_on(repo)
-                .await?;
-
-                let mut assignment_infos_by_chapter = HashMap::new();
-
-                for assignment_info in assignment_infos {
-                    //
-                    assignment_infos_by_chapter
-                        .entry(assignment_info.chapter_id.clone())
-                        .or_insert_with(Vec::new)
-                        .push(assignment_info);
-                }
-
                 assignment_infos_by_chapter
+                    .entry(assignment_info.chapter_id.clone())
+                    .or_insert_with(Vec::new)
+                    .push(assignment_info);
             }
 
-            false => HashMap::new(),
-        };
+            assignment_infos_by_chapter
+        }
+
+        false => HashMap::new(),
+    };
+
+    let assignment_view_pairs = collect_bounded(
+        pinned_chapter_assignment_infos.into_values().flatten().map(
+            |assignment_info| async move {
+                //
+                let chapter_id = assignment_info.chapter_id.clone();
+
+                let assignment_view = AssignmentInfoView::from_model(
+                    image_pool,
+                    assignment_info,
+                    None,
+                )
+                .await?;
+
+                accept((chapter_id, assignment_view))
+            },
+        ),
+    )
+    .await?;
+
+    let mut assignment_views_by_chapter = HashMap::new();
+
+    for (chapter_id, assignment_view) in assignment_view_pairs {
+        //
+        assignment_views_by_chapter
+            .entry(chapter_id)
+            .or_insert_with(Vec::new)
+            .push(assignment_view);
+    }
+
+    let conversion_inputs = comic_infos
+        .into_iter()
+        .map(|comic_info| {
+            //
+            let chapter_info = pinned_chapter_infos.remove(&comic_info.id);
+
+            let assignment_views = chapter_info
+                .as_ref()
+                .and_then(|chapter_info| {
+                    assignment_views_by_chapter.remove(&chapter_info.id)
+                })
+                .unwrap_or_default();
+
+            let fallback_cover_key =
+                fallback_cover_keys.get(&comic_info.id).cloned();
+
+            (
+                comic_info,
+                chapter_info,
+                assignment_views,
+                fallback_cover_key,
+            )
+        })
+        .collect::<Vec<_>>();
+
+    let converted_infos =
+        collect_bounded(conversion_inputs.into_iter().map(
+            |(
+                comic_info,
+                chapter_info,
+                assignment_views,
+                fallback_cover_key,
+            )| async move {
+                //
+                let chapter_view = match chapter_info {
+                    //
+                    Some(chapter_info) => Some(
+                        ChapterInfoView::from_model(
+                            image_pool,
+                            chapter_info,
+                            None,
+                        )
+                        .await?,
+                    ),
+
+                    None => None,
+                };
+
+                let comic_view = ComicInfoView::from_model(
+                    image_pool,
+                    comic_info,
+                    fallback_cover_key.as_deref(),
+                )
+                .await?;
+
+                accept((comic_view, chapter_view, assignment_views))
+            },
+        ))
+        .await?;
 
     let (
         mut comic_info_views,
         mut pinned_chapter_views,
         mut pinned_chapter_assignment_views,
     ) = (
-        Vec::with_capacity(comic_infos.len()),
-        Vec::with_capacity(comic_infos.len()),
-        Vec::with_capacity(comic_infos.len()),
+        Vec::with_capacity(converted_infos.len()),
+        Vec::with_capacity(converted_infos.len()),
+        Vec::with_capacity(converted_infos.len()),
     );
 
-    for comic_info in comic_infos {
-        //
-        let (pinned_chapter_view, assignment_views_for_chapter) =
-            match pinned_chapter_infos.remove(&comic_info.id) {
-                //
-                Some(chapter_info) => {
-                    //
-                    let assignment_infos = pinned_chapter_assignment_infos
-                        .remove(&chapter_info.id)
-                        .unwrap_or_default();
-
-                    let mut assignment_views =
-                        Vec::with_capacity(assignment_infos.len());
-
-                    for assignment_info in assignment_infos {
-                        //
-                        assignment_views.push(
-                            AssignmentInfoView::from_model(
-                                image_pool,
-                                assignment_info,
-                                None,
-                            )
-                            .await?,
-                        );
-                    }
-
-                    let chapter_view = ChapterInfoView::from_model(
-                        image_pool,
-                        chapter_info,
-                        None,
-                    )
-                    .await?;
-
-                    (Some(chapter_view), assignment_views)
-                }
-
-                None => (None, Vec::new()),
-            };
-
-        let fallback_cover_key =
-            fallback_cover_keys.get(&comic_info.id).map(String::as_str);
-
-        comic_info_views.push(
-            ComicInfoView::from_model(
-                image_pool,
-                comic_info,
-                fallback_cover_key,
-            )
-            .await?,
-        );
+    for (comic_info_view, pinned_chapter_view, assignment_views) in
+        converted_infos
+    {
+        comic_info_views.push(comic_info_view);
 
         pinned_chapter_views.push(pinned_chapter_view);
 
-        pinned_chapter_assignment_views.push(assignment_views_for_chapter);
+        pinned_chapter_assignment_views.push(assignment_views);
     }
 
     accept(ListComicInfosVal {

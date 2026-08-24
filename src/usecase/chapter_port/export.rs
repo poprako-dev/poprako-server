@@ -37,7 +37,7 @@ use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::page::ListPageInfos;
 use crate::part::repo::oper::team::ResolveTeamId;
-use crate::part::repo::oper::unit::ListUnitInfos;
+use crate::part::repo::oper::unit::ListUnitInfosByPageIds;
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::unit::UnitRepo;
@@ -94,19 +94,33 @@ where
     .run_on(repo)
     .await?;
 
+    let page_ids = page_infos
+        .iter()
+        .map(|page_info| page_info.id.clone())
+        .collect::<Vec<_>>();
+
+    let unit_infos = ListUnitInfosByPageIds {
+        page_ids: &page_ids,
+    }
+    .run_on(repo)
+    .await?;
+
     let mut page_views = Vec::with_capacity(page_infos.len());
 
-    let mut units_by_page_id = HashMap::new();
+    let mut units_by_page_id = HashMap::<String, Vec<UnitInfo>>::new();
+
+    for unit_info in unit_infos {
+        //
+        units_by_page_id
+            .entry(unit_info.page_id.clone())
+            .or_default()
+            .push(unit_info);
+    }
 
     for page_info in &page_infos {
         //
-        // Load each page's visible units once for every selected output format.
-
-        let unit_infos = ListUnitInfos {
-            page_id: &page_info.id,
-        }
-        .run_on(repo)
-        .await?;
+        let unit_infos =
+            units_by_page_id.remove(&page_info.id).unwrap_or_default();
 
         let unit_views = unit_infos
             .iter()

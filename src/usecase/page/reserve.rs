@@ -41,6 +41,7 @@ use crate::part::repo::oper::page::{
 };
 use crate::part::repo::page::PageRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::usecase::internal::util::collect_bounded;
 use crate::usecase::page::reserve::validation::validate_page_specs;
 use crate::util::next_snowflake_id;
 use crate::value::image::{ImageExt, ImageHash, ImageKind};
@@ -510,7 +511,7 @@ where
         })
         .await?;
 
-    let pages = futures_util::future::join_all(reservations.into_iter().map(
+    let pages = collect_bounded(reservations.into_iter().map(
         |reservation| async move {
             //
             let slot = match reservation.upload {
@@ -545,9 +546,7 @@ where
             })
         },
     ))
-    .await
-    .into_iter()
-    .collect::<BaseRest<Vec<_>>>()?;
+    .await?;
 
     accept(ReserveChapterPagesVal { pages })
 }

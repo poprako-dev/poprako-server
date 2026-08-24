@@ -4,9 +4,10 @@
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;
 
+use std::collections::HashMap;
+
 use diesel::prelude::{
-    ExpressionMethods as _, OptionalExtension as _, QueryDsl as _,
-    SelectableHelper as _,
+    ExpressionMethods as _, QueryDsl as _, SelectableHelper as _,
 };
 use diesel_async::RunQueryDsl as _;
 use poprako_orchestra::Run;
@@ -18,7 +19,7 @@ use crate::model::read::proj::system_mail::SystemMailInfo;
 use crate::model::read::spec::system_mail::SystemMailListSpec;
 use crate::model::write::system_mail::SystemMailEntry;
 use crate::part::repo::oper::system_mail::{
-    ListSystemMailInfos, MarkSystemMailRead, SendSystemMail, SendSystemMails,
+    ListSystemMailInfos, MarkSystemMailsRead, SendSystemMail, SendSystemMails,
 };
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::entity::system_mail::{
@@ -99,66 +100,75 @@ async fn list_infos(
     accept(rows.into_iter().map(Into::into).collect())
 }
 
-// Validate ownership, then flip `read` for a mail belonging to the receiver.
+// Validate ownership for the complete batch, then mark it read with one update.
 #[instrument(level = "info", skip_all)]
-async fn mark_read(
+async fn mark_read_batch(
     conn: &mut RdbConn,
-    id: &str,
+    ids: &[String],
     user_id: &str,
 ) -> BaseRest<()> {
     //
-    let row = t_system_mail
-        .filter(f_id.eq(id))
-        .select(SystemMailInfoRow::as_select())
-        .get_result::<SystemMailInfoRow>(conn)
+    let receiver_ids = t_system_mail
+        .filter(f_id.eq_any(ids))
+        .select((f_id, f_receiver_id))
+        .load::<(String, String)>(conn)
         .await
-        .optional()
         .map_err(diesel)?;
 
-    let Some(mail) = row else {
+    let receiver_ids_by_system_mail_id =
+        receiver_ids.into_iter().collect::<HashMap<_, _>>();
+
+    for id in ids {
         //
-        let message = trl("error-system-mail-not-found");
+        let Some(receiver_id) = receiver_ids_by_system_mail_id.get(id) else {
+            //
+            let message = trl("error-system-mail-not-found");
 
-        tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
-            err_message = %message,
-            system_mail_id = %id,
-            receiver_user_id = %user_id,
-            operation = "mark system mail read",
-            "expected system mail error",
-        );
+            tracing::warn!(
+                err_variant = ?ExpectedVariant::Args,
+                err_message = %message,
+                system_mail_id = %id,
+                receiver_user_id = %user_id,
+                operation = "mark system mails read",
+                "expected system mail error",
+            );
 
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message,
-        });
-    };
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message,
+            });
+        };
 
-    if mail.f_receiver_id != user_id {
-        //
-        let message = "error-forbidden".to_owned();
+        if receiver_id != user_id {
+            //
+            let message = "error-forbidden".to_owned();
 
-        tracing::warn!(
-            error_variant = ?ExpectedVariant::Perm,
-            err_message = %message,
-            system_mail_id = %id,
-            receiver_user_id = %user_id,
-            actual_receiver_user_id = %mail.f_receiver_id,
-            operation = "mark system mail read",
-            "expected system mail perm error",
-        );
+            tracing::warn!(
+                err_variant = ?ExpectedVariant::Perm,
+                err_message = %message,
+                system_mail_id = %id,
+                receiver_user_id = %user_id,
+                actual_receiver_user_id = %receiver_id,
+                operation = "mark system mails read",
+                "expected system mail perm error",
+            );
 
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            message,
-        });
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Perm,
+                message,
+            });
+        }
     }
 
-    diesel::update(t_system_mail.filter(f_id.eq(id)))
-        .set(f_read.eq(true))
-        .execute(conn)
-        .await
-        .map_err(diesel)?;
+    diesel::update(
+        t_system_mail
+            .filter(f_id.eq_any(ids))
+            .filter(f_receiver_id.eq(user_id)),
+    )
+    .set(f_read.eq(true))
+    .execute(conn)
+    .await
+    .map_err(diesel)?;
 
     accept(())
 }
@@ -202,14 +212,14 @@ impl Run<ListSystemMailInfos<'_>> for HybRepo {
     }
 }
 
-impl Run<MarkSystemMailRead<'_>> for HybRepo {
+impl Run<MarkSystemMailsRead<'_>> for HybRepo {
     // Reuse base error type for read-mark operations.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Verify receiver ownership then set the target mail as read.
-    async fn run(&self, oper: &MarkSystemMailRead<'_>) -> BaseRest<()> {
-        submit_query!(self.core, mark_read, oper.id, oper.user_id)
+    async fn run(&self, oper: &MarkSystemMailsRead<'_>) -> BaseRest<()> {
+        submit_query!(self.core, mark_read_batch, oper.ids, oper.user_id)
     }
 }

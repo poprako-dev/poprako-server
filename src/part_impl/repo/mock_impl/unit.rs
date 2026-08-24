@@ -26,35 +26,6 @@ fn find_order_pos(ordered_ids: &[&str], id: &str) -> Option<usize> {
         .find_map(|(pos, cand)| (*cand == id).then_some(pos))
 }
 
-// Move one unit id to a new position based on requested next_id.
-fn move_order<'a>(
-    ordered_ids: &mut Vec<&'a str>,
-    id: &'a str,
-    next_id: Option<&str>,
-) -> BaseRest<()> {
-    //
-    // Return an operation error if caller targets an unknown id.
-    let Some(pos) = find_order_pos(ordered_ids, id) else {
-        return Err(expected("error-invalid-unit-oper"));
-    };
-
-    let id = ordered_ids.remove(pos);
-
-    let pos = match next_id {
-        //
-        // Insert at explicit next-id position.
-        Some(next_id) => find_order_pos(ordered_ids, next_id)
-            .ok_or_else(|| expected("error-invalid-unit-oper"))?,
-
-        // Append to tail when next-id is omitted.
-        None => ordered_ids.len(),
-    };
-
-    ordered_ids.insert(pos, id);
-
-    accept(())
-}
-
 // Reorders linked-list-like unit slices into a deterministic traversal order.
 fn order_units<T, I, N>(
     units: &mut [T],
@@ -132,6 +103,55 @@ where
     }
 
     accept(())
+}
+
+// Move one unit id to a new position based on requested next_id.
+fn move_order<'a>(
+    ordered_ids: &mut Vec<&'a str>,
+    id: &'a str,
+    next_id: Option<&str>,
+) -> BaseRest<()> {
+    //
+    // Return an operation error if caller targets an unknown id.
+    let Some(pos) = find_order_pos(ordered_ids, id) else {
+        return Err(expected("error-invalid-unit-oper"));
+    };
+
+    let id = ordered_ids.remove(pos);
+
+    let pos = match next_id {
+        //
+        // Insert at explicit next-id position.
+        Some(next_id) => find_order_pos(ordered_ids, next_id)
+            .ok_or_else(|| expected("error-invalid-unit-oper"))?,
+
+        // Append to tail when next-id is omitted.
+        None => ordered_ids.len(),
+    };
+
+    ordered_ids.insert(pos, id);
+
+    accept(())
+}
+
+// List units for one page in deterministic next-id order.
+fn list_infos(state: &MockState, page_id: &str) -> BaseRest<Vec<UnitInfo>> {
+    //
+    // Load all units and enforce chain ordering before returning.
+    let mut unit_infos = state
+        .units
+        .iter()
+        .filter(|unit_info| unit_info.page_id == page_id)
+        .cloned()
+        .collect::<Vec<_>>();
+
+    order_units(
+        &mut unit_infos,
+        |unit_info| unit_info.id.as_str(),
+        |unit_info| unit_info.next_id.as_deref(),
+    )?;
+
+    accept(unit_infos)
 }
 
 // Apply edit instructions into an ordered id list and return new unit traversal order.
@@ -351,26 +371,6 @@ fn write_edit(unit_info: &mut UnitInfo, edit: &UnitEdit) {
     unit_info.updated_at = now();
 }
 
-// List units for one page in deterministic next-id order.
-fn list_infos(state: &MockState, page_id: &str) -> BaseRest<Vec<UnitInfo>> {
-    //
-    // Load all units and enforce chain ordering before returning.
-    let mut unit_infos = state
-        .units
-        .iter()
-        .filter(|unit_info| unit_info.page_id == page_id)
-        .cloned()
-        .collect::<Vec<_>>();
-
-    order_units(
-        &mut unit_infos,
-        |unit_info| unit_info.id.as_str(),
-        |unit_info| unit_info.next_id.as_deref(),
-    )?;
-
-    accept(unit_infos)
-}
-
 // Count translated/proofread units among visible units only.
 fn count_infos(unit_infos: &[UnitInfo]) -> UnitCounters {
     //
@@ -392,6 +392,21 @@ fn count_infos(unit_infos: &[UnitInfo]) -> UnitCounters {
 
             counters
         })
+}
+
+// List units for multiple pages while preserving page and linked-list order.
+fn list_infos_by_page_ids(
+    state: &MockState,
+    page_ids: &[String],
+) -> BaseRest<Vec<UnitInfo>> {
+    //
+    let mut unit_infos = Vec::new();
+
+    for page_id in page_ids {
+        unit_infos.extend(list_infos(state, page_id)?);
+    }
+
+    accept(unit_infos)
 }
 
 // List every requested persisted Unit that currently exists.

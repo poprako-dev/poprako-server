@@ -1,6 +1,7 @@
 //! Mock system mail repository operations.
 
 use std::cmp::Reverse;
+use std::collections::HashSet;
 
 use poprako_orchestra::Run;
 use tracing::instrument;
@@ -8,7 +9,7 @@ use tracing::instrument;
 use crate::model::read::proj::system_mail::SystemMailInfo;
 use crate::model::write::system_mail::SystemMailEntry;
 use crate::part::repo::oper::system_mail::{
-    ListSystemMailInfos, MarkSystemMailRead, SendSystemMail, SendSystemMails,
+    ListSystemMailInfos, MarkSystemMailsRead, SendSystemMail, SendSystemMails,
 };
 use crate::part_impl::repo::mock_impl::{Mock, MockState, expected, now};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
@@ -114,30 +115,39 @@ fn list_system_mail_infos(
         .collect()
 }
 
-// Internal implementation of `mark_system_mail_read`.
-fn mark_system_mail_read(
+// Validate a batch of system mails before marking the complete batch as read.
+fn mark_system_mails_read(
     state: &mut MockState,
-    id: &str,
+    ids: &[String],
     user_id: &str,
 ) -> BaseRest<()> {
     //
-    // Internal implementation detail.
-    // Internal implementation detail.
-    let system_mail_info = state
-        .system_mails
-        .iter_mut()
-        .find(|system_mail_info| system_mail_info.id == id)
-        .ok_or_else(|| expected("error-system-mail-not-found"))?;
-
-    if system_mail_info.receiver_id != user_id {
+    for id in ids {
         //
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            message: "error-forbidden".into(),
-        });
+        let system_mail_info = state
+            .system_mails
+            .iter()
+            .find(|system_mail_info| system_mail_info.id == *id)
+            .ok_or_else(|| expected("error-system-mail-not-found"))?;
+
+        if system_mail_info.receiver_id != user_id {
+            //
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Perm,
+                message: "error-forbidden".into(),
+            });
+        }
     }
 
-    system_mail_info.is_read = true;
+    let system_mail_ids =
+        ids.iter().map(String::as_str).collect::<HashSet<_>>();
+
+    for system_mail_info in &mut state.system_mails {
+        //
+        if system_mail_ids.contains(system_mail_info.id.as_str()) {
+            system_mail_info.is_read = true;
+        }
+    }
 
     accept(())
 }
@@ -196,19 +206,19 @@ impl Run<ListSystemMailInfos<'_>> for Mock {
     }
 }
 
-impl Run<MarkSystemMailRead<'_>> for Mock {
+impl Run<MarkSystemMailsRead<'_>> for Mock {
     // Internal type alias for `Error`.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     // Internal implementation of `run`.
-    async fn run(&self, oper: &MarkSystemMailRead<'_>) -> BaseRest<()> {
+    async fn run(&self, oper: &MarkSystemMailsRead<'_>) -> BaseRest<()> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
         let mut state = self.state.lock().unwrap();
 
-        mark_system_mail_read(&mut state, oper.id, oper.user_id)
+        mark_system_mails_read(&mut state, oper.ids, oper.user_id)
     }
 }

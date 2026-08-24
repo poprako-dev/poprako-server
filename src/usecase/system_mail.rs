@@ -13,7 +13,7 @@ use crate::data::view::system_mail::SystemMailInfoView;
 use crate::model::read::spec::system_mail::SystemMailListSpec;
 use crate::model::shared::user::UserToken;
 use crate::part::repo::oper::system_mail::{
-    ListSystemMailInfos, MarkSystemMailRead,
+    ListSystemMailInfos, MarkSystemMailsRead,
 };
 use crate::part::repo::system_mail::SystemMailRepo;
 use crate::result::{BaseRest, accept};
@@ -84,15 +84,12 @@ pub async fn mark_read<R>(
 where
     R: SystemMailRepo,
 {
-    for id in &ids {
-        //
-        MarkSystemMailRead {
-            id,
-            user_id: &token.user_id,
-        }
-        .run_on(repo)
-        .await?;
+    MarkSystemMailsRead {
+        ids: &ids,
+        user_id: &token.user_id,
     }
+    .run_on(repo)
+    .await?;
 
     accept(())
 }

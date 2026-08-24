@@ -53,7 +53,7 @@ use crate::part::repo::team::TeamRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::page::PageLoader;
-use crate::usecase::internal::util::LoadMode;
+use crate::usecase::internal::util::{LoadMode, collect_bounded};
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 
 /// Lists chapters under one comic.
@@ -99,25 +99,22 @@ where
     let fallback_cover_keys =
         ComicComplex::resolve_fallback_cover_keys(first_page_infos);
 
-    let mut chapter_info_vals = Vec::with_capacity(chapter_infos.len());
+    let chapter_info_vals =
+        collect_bounded(chapter_infos.into_iter().map(|chapter_info| {
+            //
+            let fallback_cover_key = chapter_info
+                .comic
+                .as_ref()
+                .and_then(|comic_info| fallback_cover_keys.get(&comic_info.id))
+                .map(String::as_str);
 
-    for chapter_info in chapter_infos {
-        //
-        let fallback_cover_key = chapter_info
-            .comic
-            .as_ref()
-            .and_then(|comic_info| fallback_cover_keys.get(&comic_info.id))
-            .map(String::as_str);
-
-        chapter_info_vals.push(
             ChapterInfoView::from_model(
                 image_pool,
                 chapter_info,
                 fallback_cover_key,
             )
-            .await?,
-        );
-    }
+        }))
+        .await?;
 
     accept(chapter_info_vals)
 }
