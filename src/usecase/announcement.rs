@@ -30,6 +30,7 @@ use crate::part::repo::oper::announcement::{
 };
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::usecase::internal::util::collect_bounded;
 
 /// Lists announcements under a team.
 #[instrument(level = "info", skip(repo, image_pool))]
@@ -68,16 +69,12 @@ where
     .run_on(repo)
     .await?;
 
-    let mut announcement_info_vals =
-        Vec::with_capacity(announcement_infos.len());
-
-    for announcement_info in announcement_infos {
-        //
-        announcement_info_vals.push(
+    let announcement_info_vals = collect_bounded(
+        announcement_infos.into_iter().map(|announcement_info| {
             AnnouncementInfoView::from_model(image_pool, announcement_info)
-                .await?,
-        );
-    }
+        }),
+    )
+    .await?;
 
     accept(announcement_info_vals)
 }

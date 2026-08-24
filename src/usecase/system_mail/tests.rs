@@ -9,7 +9,7 @@
 // list(list)(positive): should apply pagination after sorting by created_at descending.
 // list(list)(positive): offset exceeding result count should return an empty vec.
 // mark_read(mark_read)(positive): should mark a batch of mails as read after verifying ownership.
-// mark_read(mark_read)(negative): a nonexistent id in the batch should short-circuit with an argument error.
+// mark_read(mark_read)(negative): a nonexistent id should reject the complete batch without mutation.
 // mark_read(mark_read)(negative): a mail belonging to another user should return a perm error without mutation.
 
 use super::*;
@@ -151,7 +151,7 @@ async fn mark_read_marks_batch_of_mails() {
 }
 
 #[tokio::test]
-async fn mark_read_short_circuits_on_missing_id() {
+async fn mark_read_rejects_missing_id_without_mutation() {
     //
     let mock = Mock::new();
 
@@ -170,10 +170,29 @@ async fn mark_read_short_circuits_on_missing_id() {
 
     assert_expected_variant(err, ExpectedVariant::Args);
 
-    // First ID was marked before the second failed (non-transactional).
     let snapshot = mock.snapshot();
 
-    assert!(snapshot.system_mails[0].is_read);
+    assert!(!snapshot.system_mails[0].is_read);
+}
+
+#[tokio::test]
+async fn mark_read_accepts_duplicate_ids() {
+    //
+    let mock = Mock::new();
+
+    let time = OffsetDateTime::now_utc();
+
+    mock.seed_system_mail(mail("sys_mail-1", "user-1", false, time));
+
+    mark_read(
+        (&mock,),
+        token("user-1"),
+        vec!["sys_mail-1".into(), "sys_mail-1".into()],
+    )
+    .await
+    .unwrap();
+
+    assert!(mock.snapshot().system_mails[0].is_read);
 }
 
 #[tokio::test]

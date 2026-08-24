@@ -3,7 +3,7 @@
 use poprako_orchestra::drive;
 
 use crate::part::repo::oper::system_mail::{
-    ListSystemMailInfos, MarkSystemMailRead, SendSystemMail, SendSystemMails,
+    ListSystemMailInfos, MarkSystemMailsRead, SendSystemMail, SendSystemMails,
 };
 use crate::result::BaseError;
 
@@ -17,7 +17,7 @@ use crate::result::BaseError;
         for<'a> SendSystemMail<'a>,
         for<'a> SendSystemMails<'a>,
         for<'a> ListSystemMailInfos<'a>,
-        for<'a> MarkSystemMailRead<'a>,
+        for<'a> MarkSystemMailsRead<'a>,
     ),
 )]
 pub trait SystemMailRepo {}

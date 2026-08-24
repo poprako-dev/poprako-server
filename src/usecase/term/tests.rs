@@ -5,7 +5,7 @@
 // list_infos(list_infos)(positive): fuzzy source does not search targets or comments.
 // update_info(update_info)(positive): update replaces fields and touches the parent.
 // delete(delete)(positive): deletion removes the term and decrements term_count.
-// create(create)(negative): the 101st term is rejected without persistence.
+// create(create)(negative): the 201st term is rejected without persistence.
 
 use super::*;
 
@@ -177,13 +177,17 @@ async fn create_rejects_empty_targets() {
 }
 
 #[tokio::test]
-async fn create_rejects_term_over_capacity() {
+async fn create_accepts_capacity_boundary_and_rejects_term_over_capacity() {
     //
     let mock = Mock::new();
 
     seed_scope(&mock, RoleField::TRANSLATOR);
 
-    mock.state.lock().unwrap().termbases[0].term_count = 100;
+    mock.state.lock().unwrap().termbases[0].term_count = 199;
+
+    create((&mock, &mock), token("user-1"), create_instr())
+        .await
+        .unwrap();
 
     let error = create((&mock, &mock), token("user-1"), create_instr())
         .await
@@ -197,9 +201,9 @@ async fn create_rejects_term_over_capacity() {
 
     let snapshot = mock.snapshot();
 
-    assert!(snapshot.terms.is_empty());
+    assert_eq!(snapshot.terms.len(), 1);
 
-    assert_eq!(snapshot.termbases[0].term_count, 100);
+    assert_eq!(snapshot.termbases[0].term_count, 200);
 }
 
 #[tokio::test]

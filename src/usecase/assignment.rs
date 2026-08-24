@@ -49,7 +49,7 @@ use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::page::PageLoader;
-use crate::usecase::internal::util::LoadMode;
+use crate::usecase::internal::util::{LoadMode, collect_bounded};
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 
 /// Lists assignments by chapter or owner user.
@@ -183,26 +183,23 @@ where
     let fallback_cover_keys =
         ComicComplex::resolve_fallback_cover_keys(fallback_pages);
 
-    let mut assignment_info_vals = Vec::with_capacity(assignment_infos.len());
+    let assignment_info_vals =
+        collect_bounded(assignment_infos.into_iter().map(|assignment_info| {
+            //
+            let fallback_cover_key = assignment_info
+                .chapter
+                .as_ref()
+                .and_then(|chapter_info| chapter_info.comic.as_ref())
+                .and_then(|comic_info| fallback_cover_keys.get(&comic_info.id))
+                .map(String::as_str);
 
-    for assignment_info in assignment_infos {
-        //
-        let fallback_cover_key = assignment_info
-            .chapter
-            .as_ref()
-            .and_then(|chapter_info| chapter_info.comic.as_ref())
-            .and_then(|comic_info| fallback_cover_keys.get(&comic_info.id))
-            .map(String::as_str);
-
-        assignment_info_vals.push(
             AssignmentInfoView::from_model(
                 image_pool,
                 assignment_info,
                 fallback_cover_key,
             )
-            .await?,
-        );
-    }
+        }))
+        .await?;
 
     accept(assignment_info_vals)
 }

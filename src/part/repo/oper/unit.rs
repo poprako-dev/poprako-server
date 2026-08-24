@@ -11,6 +11,14 @@ pub struct ListUnitInfos<'a> {
     pub page_id: &'a str,
 }
 
+/// Lists unit infos for multiple pages in each page's linked-list order.
+#[derive(Oper)]
+#[oper(output = Vec<UnitInfo>)]
+pub struct ListUnitInfosByPageIds<'a> {
+    /// The page ids whose Units should be retrieved.
+    pub page_ids: &'a [String],
+}
+
 /// Lists requested Unit infos that currently exist.
 #[derive(Oper)]
 #[oper(output = Vec<UnitInfo>)]

@@ -3,6 +3,8 @@
 #[cfg(test)]
 mod tests;
 
+use std::collections::HashMap;
+
 use diesel::prelude::{
     ExpressionMethods as _, QueryDsl as _, SelectableHelper as _,
 };
@@ -125,6 +127,50 @@ pub async fn list_infos(
         |unit_info| unit_info.id.as_str(),
         |unit_info| unit_info.next_id.as_deref(),
     )?;
+
+    accept(unit_infos)
+}
+
+/// Lists Units for multiple Pages with one query and validates each linked list.
+pub async fn list_infos_by_page_ids(
+    conn: &mut RdbConn,
+    page_ids: &[String],
+) -> BaseRest<Vec<UnitInfo>> {
+    //
+    let rows = t_unit
+        .filter(f_page_id.eq_any(page_ids))
+        .select(UnitInfoRow::as_select())
+        .load::<UnitInfoRow>(conn)
+        .await
+        .map_err(diesel)?;
+
+    let mut unit_infos_by_page_id = HashMap::<String, Vec<UnitInfo>>::new();
+
+    for row in rows {
+        //
+        let unit_info = UnitInfo::from(row);
+
+        unit_infos_by_page_id
+            .entry(unit_info.page_id.clone())
+            .or_default()
+            .push(unit_info);
+    }
+
+    let mut unit_infos = Vec::new();
+
+    for page_id in page_ids {
+        //
+        let mut page_unit_infos =
+            unit_infos_by_page_id.remove(page_id).unwrap_or_default();
+
+        order_units(
+            &mut page_unit_infos,
+            |unit_info| unit_info.id.as_str(),
+            |unit_info| unit_info.next_id.as_deref(),
+        )?;
+
+        unit_infos.extend(page_unit_infos);
+    }
 
     accept(unit_infos)
 }

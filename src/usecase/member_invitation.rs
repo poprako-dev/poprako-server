@@ -43,7 +43,7 @@ use crate::part::repo::oper::user::FindUserInfo;
 use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::internal::member::MemberLoader;
-use crate::usecase::internal::util::LoadMode;
+use crate::usecase::internal::util::{LoadMode, collect_bounded};
 use crate::util::next_snowflake_id;
 
 // Default invitation validity window for member invite tokens.
@@ -235,19 +235,17 @@ where
     .run_on(repo)
     .await?;
 
-    let mut member_invitation_info_vals =
-        Vec::with_capacity(member_invitation_infos.len());
-
-    for member_invitation_info in member_invitation_infos {
-        //
-        member_invitation_info_vals.push(
-            MemberInvitationInfoView::from_model(
-                image_pool,
-                member_invitation_info,
-            )
-            .await?,
-        );
-    }
+    let member_invitation_info_vals =
+        collect_bounded(member_invitation_infos.into_iter().map(
+            |member_invitation_info| {
+                //
+                MemberInvitationInfoView::from_model(
+                    image_pool,
+                    member_invitation_info,
+                )
+            },
+        ))
+        .await?;
 
     accept(member_invitation_info_vals)
 }

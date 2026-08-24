@@ -15,12 +15,14 @@ use tracing::instrument;
 use crate::model::read::proj::unit::{UnitCounters, UnitInfo, UnitOrder};
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::unit::{
-    ApplyUnitEdits, ListUnitInfos, ListUnitInfosByIds, ListUnitOrders,
+    ApplyUnitEdits, ListUnitInfos, ListUnitInfosByIds, ListUnitInfosByPageIds,
+    ListUnitOrders,
 };
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::unit::edit::apply_edits;
 use crate::part_impl::repo::rdb_impl::unit::sequence::{
-    list_infos, list_infos_by_ids, list_orders_for_update,
+    list_infos, list_infos_by_ids, list_infos_by_page_ids,
+    list_orders_for_update,
 };
 use crate::result::{BaseError, BaseRest};
 use crate::shared::RdbContext;
@@ -34,6 +36,21 @@ impl Run<ListUnitInfos<'_>> for HybRepo {
     #[instrument(level = "info", skip_all)]
     async fn run(&self, oper: &ListUnitInfos<'_>) -> BaseRest<Vec<UnitInfo>> {
         submit_query!(self.core, list_infos, oper.page_id)
+    }
+}
+
+impl Run<ListUnitInfosByPageIds<'_>> for HybRepo {
+    // Error type for the Run trait impl on the page-id unit list query.
+    // Defines the adapter error exposed by this operation.
+    type Error = BaseError;
+
+    // Lists visible Units for the requested page ids.
+    #[instrument(level = "info", skip_all)]
+    async fn run(
+        &self,
+        oper: &ListUnitInfosByPageIds<'_>,
+    ) -> BaseRest<Vec<UnitInfo>> {
+        submit_query!(self.core, list_infos_by_page_ids, oper.page_ids)
     }
 }
 

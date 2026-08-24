@@ -28,13 +28,13 @@ pub struct ListSystemMailInfos<'a> {
     pub spec: &'a SystemMailListSpec,
 }
 
-/// Marks one system mail as read after verifying receiver ownership.
+/// Marks system mails as read after verifying receiver ownership.
 #[derive(Oper)]
 #[oper(output = ())]
-pub struct MarkSystemMailRead<'a> {
+pub struct MarkSystemMailsRead<'a> {
     //
-    /// The system mail id.
-    pub id: &'a str,
+    /// The system mail ids.
+    pub ids: &'a [String],
 
     /// The user id of the receiver.
     pub user_id: &'a str,

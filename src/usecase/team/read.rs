@@ -14,6 +14,7 @@ use crate::part::repo::oper::user::GetUserInfo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
 use crate::result::{BaseRest, accept};
+use crate::usecase::internal::util::collect_bounded;
 
 /// Fetches a team by ID with avatar URL resolution.
 ///
@@ -89,14 +90,12 @@ where
     .run_on(repo)
     .await?;
 
-    let team_info_vals = futures_util::future::join_all(
+    let team_info_vals = collect_bounded(
         team_infos
             .into_iter()
             .map(|team_info| TeamInfoView::from_model(image_pool, team_info)),
     )
-    .await
-    .into_iter()
-    .collect::<BaseRest<Vec<_>>>()?;
+    .await?;
 
     accept(team_info_vals)
 }

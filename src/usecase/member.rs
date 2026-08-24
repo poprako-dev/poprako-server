@@ -35,6 +35,7 @@ use crate::part::repo::oper::user::GetUserInfoExcluded;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::usecase::internal::util::collect_bounded;
 
 /// Creates one member under a team.
 ///
@@ -280,13 +281,11 @@ where
     .run_on(repo)
     .await?;
 
-    let mut member_info_vals = Vec::with_capacity(member_infos.len());
-
-    for member_info in member_infos {
-        //
-        member_info_vals
-            .push(MemberInfoView::from_model(image_pool, member_info).await?);
-    }
+    let member_info_vals =
+        collect_bounded(member_infos.into_iter().map(|member_info| {
+            MemberInfoView::from_model(image_pool, member_info)
+        }))
+        .await?;
 
     accept(member_info_vals)
 }

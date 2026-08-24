@@ -7,7 +7,8 @@ use crate::model::shared::unit::{UnitCoord, UnitRevision, UnitTranslation};
 use crate::model::write::unit::UnitEdit;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::unit::{
-    ApplyUnitEdits, ListUnitInfos, ListUnitInfosByIds, ListUnitOrders,
+    ApplyUnitEdits, ListUnitInfos, ListUnitInfosByIds, ListUnitInfosByPageIds,
+    ListUnitOrders,
 };
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::HybRepo;
@@ -178,6 +179,26 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     assert_eq!(
         unit_infos
+            .iter()
+            .map(|unit_info| unit_info.id.as_str())
+            .collect::<Vec<_>>(),
+        vec![second_id.as_str(), first_id.as_str()]
+    );
+
+    let page_ids = [
+        page_fixture.page_entry.id.clone(),
+        format!("{}missing-page", PREFIX),
+    ];
+
+    let batch_unit_infos = repo
+        .run(&ListUnitInfosByPageIds {
+            page_ids: &page_ids,
+        })
+        .await
+        .unwrap();
+
+    assert_eq!(
+        batch_unit_infos
             .iter()
             .map(|unit_info| unit_info.id.as_str())
             .collect::<Vec<_>>(),
