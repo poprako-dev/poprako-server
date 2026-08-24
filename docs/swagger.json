@@ -6672,7 +6672,7 @@
                     "$ref": "#/components/schemas/AssignmentInfoView"
                   }
                 },
-                "description": "Assignments for each pinned chapter, positionally aligned with `comics`."
+                "description": "Assignments, including their users, for each pinned chapter,\npositionally aligned with `comics`."
               },
               "pinned_chapters": {
                 "type": "array",
@@ -9157,7 +9157,7 @@
                 "$ref": "#/components/schemas/AssignmentInfoView"
               }
             },
-            "description": "Assignments for each pinned chapter, positionally aligned with `comics`."
+            "description": "Assignments, including their users, for each pinned chapter,\npositionally aligned with `comics`."
           },
           "pinned_chapters": {
             "type": "array",

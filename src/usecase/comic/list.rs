@@ -26,6 +26,7 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::page::PageLoader;
 use crate::usecase::internal::util::LoadMode;
+use crate::value::assignment::AssignmentInclOpt;
 use crate::value::comic::ComicWithOpt;
 
 /// Lists comics for a workset with optional filters and derived data.
@@ -124,9 +125,11 @@ where
                     .map(|chapter_info| chapter_info.id.clone())
                     .collect::<Vec<_>>();
 
+                let assignment_incls = [AssignmentInclOpt::User];
+
                 let assignment_infos = ListAssignmentInfos::Chapters {
                     chapter_ids: &chapter_ids,
-                    incls: &[],
+                    incls: &assignment_incls,
                 }
                 .run_on(repo)
                 .await?;
@@ -164,12 +167,24 @@ where
                 //
                 Some(chapter_info) => {
                     //
-                    let assignment_views = pinned_chapter_assignment_infos
+                    let assignment_infos = pinned_chapter_assignment_infos
                         .remove(&chapter_info.id)
-                        .unwrap_or_default()
-                        .into_iter()
-                        .map(AssignmentInfoView::from)
-                        .collect();
+                        .unwrap_or_default();
+
+                    let mut assignment_views =
+                        Vec::with_capacity(assignment_infos.len());
+
+                    for assignment_info in assignment_infos {
+                        //
+                        assignment_views.push(
+                            AssignmentInfoView::from_model(
+                                image_pool,
+                                assignment_info,
+                                None,
+                            )
+                            .await?,
+                        );
+                    }
 
                     let chapter_view = ChapterInfoView::from_model(
                         image_pool,

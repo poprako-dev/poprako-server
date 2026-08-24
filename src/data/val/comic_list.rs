@@ -27,6 +27,7 @@ pub struct ListComicInfosVal {
     /// `None` when the comic has no pinned chapter.
     pub pinned_chapters: Vec<Option<ChapterInfoView>>,
 
-    /// Assignments for each pinned chapter, positionally aligned with `comics`.
+    /// Assignments, including their users, for each pinned chapter,
+    /// positionally aligned with `comics`.
     pub pinned_chapter_assignments: Vec<Vec<AssignmentInfoView>>,
 }

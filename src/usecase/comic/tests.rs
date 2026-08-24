@@ -14,7 +14,7 @@ mod preset_assignment;
 // list_infos(list_infos)(positive): fuzzy title should narrow results by display index, title, or author substring.
 // list_infos(list_infos)(positive): stages filter should narrow by pinned chapter workflow state.
 // list_infos(list_infos)(positive): lifecycle filter should distinguish active and archived comics.
-// list_infos(list_infos)(positive): pinned chapter assignments should be returned in comic order.
+// list_infos(list_infos)(positive): pinned chapter assignments with users should be returned in comic order.
 // list_infos(list_infos)(positive): pagination should be applied after filtering and sorting.
 // list_infos(list_infos)(negative): invalid stages filter should return an argument error.
 // list_infos(list_infos)(negative): pinned chapter assignments without pinned chapters should return an argument error.
@@ -38,7 +38,7 @@ use crate::data::instr::comic::{ListComicInfosInstr, UpdateComicInfoInstr};
 use crate::model::read::proj::comic::ComicInfo;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
-use crate::test_util::fixture::workset;
+use crate::test_util::fixture::{invalid_credential, user, workset};
 use crate::test_util::{IMAGE_CONFIG, assert_expected_variant};
 use crate::usecase::comic::list::list_infos;
 use crate::usecase::comic::reserve::reserve_cover;

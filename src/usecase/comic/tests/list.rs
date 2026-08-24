@@ -1,5 +1,5 @@
 // list_infos(list_infos)(positive): fuzzy title should narrow results by display index, title, or author substring.
-// list_infos(list_infos)(positive): pinned chapter assignments should be returned in comic order.
+// list_infos(list_infos)(positive): pinned chapter assignments with users should be returned in comic order.
 // list_infos(list_infos)(negative): pinned chapter assignments without pinned chapters should return an argument error.
 
 use super::*;
@@ -68,13 +68,28 @@ async fn list_infos_filters_by_lifecycle_status() {
 }
 
 #[tokio::test]
-async fn list_infos_returns_pinned_chapter_assignments_in_comic_order() {
+async fn list_infos_includes_users_in_pinned_chapter_assignments() {
     //
     let mock = Mock::new();
 
     mock.seed_workset(workset("workset-1", "team-1"));
 
     mock.seed_member(admin_member("user-1", "team-1"));
+
+    mock.seed_user(
+        user("user-1", "user-1", "User One"),
+        invalid_credential("user-1"),
+    );
+
+    mock.seed_user(
+        user("user-2", "user-2", "User Two"),
+        invalid_credential("user-2"),
+    );
+
+    mock.seed_user(
+        user("user-3", "user-3", "User Three"),
+        invalid_credential("user-3"),
+    );
 
     mock.seed_comic(comic("comic-2", "workset-1", 2));
 
@@ -129,8 +144,32 @@ async fn list_infos_returns_pinned_chapter_assignments_in_comic_order() {
     );
 
     assert_eq!(
+        list.pinned_chapter_assignments[0]
+            .iter()
+            .find(|assignment_view| assignment_view.user_id == "user-1")
+            .unwrap()
+            .user
+            .as_ref()
+            .unwrap()
+            .nickname,
+        "User One"
+    );
+
+    assert_eq!(
         list.pinned_chapter_assignments[0][1].chapter_id,
         "chapter-1"
+    );
+
+    assert_eq!(
+        list.pinned_chapter_assignments[0]
+            .iter()
+            .find(|assignment_view| assignment_view.user_id == "user-2")
+            .unwrap()
+            .user
+            .as_ref()
+            .unwrap()
+            .nickname,
+        "User Two"
     );
 
     assert_eq!(list.pinned_chapter_assignments[1].len(), 1);
@@ -138,6 +177,15 @@ async fn list_infos_returns_pinned_chapter_assignments_in_comic_order() {
     assert_eq!(
         list.pinned_chapter_assignments[1][0].chapter_id,
         "chapter-2"
+    );
+
+    assert_eq!(
+        list.pinned_chapter_assignments[1][0]
+            .user
+            .as_ref()
+            .unwrap()
+            .nickname,
+        "User Three"
     );
 }
 
