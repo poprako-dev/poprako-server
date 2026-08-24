@@ -114,7 +114,7 @@ pub async fn list_infos(
 
     if let Some(fuzzy_title) = &spec.fuzzy_title {
         //
-        let pattern = format!("%{}%", fuzzy_title);
+        let pattern = format!("%{}%", escape_ilike_pattern(fuzzy_title));
 
         query = match stored_index_from_numeric_fuzzy(fuzzy_title) {
             //
@@ -354,7 +354,9 @@ pub async fn list_infos_excluded(
 
         (Some(fuzzy_title), stage_comic_ids) => {
             //
-            let pattern = format!("%{}%", fuzzy_title);
+            let escaped = escape_ilike_pattern(fuzzy_title);
+
+            let pattern = format!("%{}%", escaped);
 
             match (
                 stored_index_from_numeric_fuzzy(fuzzy_title),
@@ -585,4 +587,13 @@ fn stored_index_from_numeric_fuzzy(fuzzy_title_value: &str) -> Option<i32> {
 
         Err(_) => None,
     }
+}
+
+// Escape wildcard characters for a PostgreSQL ILIKE pattern.
+fn escape_ilike_pattern(input: &str) -> String {
+    //
+    input
+        .replace('\\', "\\\\")
+        .replace('%', "\\%")
+        .replace('_', "\\_")
 }

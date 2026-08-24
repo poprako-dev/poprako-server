@@ -123,6 +123,66 @@ pub async fn comic_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     assert_eq!(comic_infos[0].index, 0);
 
+    for fuzzy_title in ["%", "_", "\\"] {
+        //
+        let comic_list_spec = ComicListSpec {
+            workset_id: comic_fixture.workset_entry.id.clone(),
+            fuzzy_title: Some(fuzzy_title.into()),
+            stages: None,
+            status: None,
+            incl_opt: Vec::new(),
+            offset: 0,
+            limit: 10,
+        };
+
+        let comic_infos = repo
+            .run(&ListComicInfos {
+                spec: &comic_list_spec,
+            })
+            .await
+            .ok()
+            .unwrap();
+
+        assert!(comic_infos.is_empty());
+    }
+
+    let comic_info_update = ComicRepl {
+        id: comic_fixture.comic_entry.id.clone(),
+        title: "RDB 100%_Comic\\Updated".into(),
+        author: "RDB Author Updated".into(),
+        description: Some("updated".into()),
+    };
+
+    repo.run(&UpdateComic {
+        update: &comic_info_update,
+    })
+    .await
+    .ok()
+    .unwrap();
+
+    for fuzzy_title in ["%_", "\\Updated"] {
+        //
+        let comic_list_spec = ComicListSpec {
+            workset_id: comic_fixture.workset_entry.id.clone(),
+            fuzzy_title: Some(fuzzy_title.into()),
+            stages: None,
+            status: None,
+            incl_opt: Vec::new(),
+            offset: 0,
+            limit: 10,
+        };
+
+        let comic_infos = repo
+            .run(&ListComicInfos {
+                spec: &comic_list_spec,
+            })
+            .await
+            .ok()
+            .unwrap();
+
+        assert_eq!(comic_infos.len(), 1);
+    }
+
     test_shared::cleanup(&shared, PREFIX).await.ok().unwrap();
 
     test_shared::assert_no_leftovers(&shared, PREFIX)

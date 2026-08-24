@@ -232,33 +232,30 @@ where
             let image_key_matches = locked_page_info.image_key.as_deref()
                 == Some(image_identity.object_key);
 
-            match (image_version_matches, image_key_matches) {
+            if let (false, _) | (true, false) =
+                (image_version_matches, image_key_matches)
+            {
                 //
-                (true, true) => {}
+                let err_message = "stale page image identity";
 
-                (false, _) | (true, false) => {
-                    //
-                    let err_message = "stale page image identity";
+                tracing::warn!(
+                    err_variant = ?ExpectedVariant::Args,
+                    err_message = %err_message,
+                    image_kind = ?image_identity.kind,
+                    resource_id = %image_identity.resource_id,
+                    image_version = image_identity.version,
+                    stored_image_version = locked_page_info.image_version,
+                    image_key_present = locked_page_info.image_key.is_some(),
+                    image_key_matches,
+                    object_key_present = !image_identity.object_key.is_empty(),
+                    operation = "process_unverified_page_image",
+                    "expected error: stale page image identity",
+                );
 
-                    tracing::warn!(
-                        err_variant = ?ExpectedVariant::Args,
-                        err_message = %err_message,
-                        image_kind = ?image_identity.kind,
-                        resource_id = %image_identity.resource_id,
-                        image_version = image_identity.version,
-                        stored_image_version = locked_page_info.image_version,
-                        image_key_present = locked_page_info.image_key.is_some(),
-                        image_key_matches,
-                        object_key_present = !image_identity.object_key.is_empty(),
-                        operation = "process_unverified_page_image",
-                        "expected error: stale page image identity",
-                    );
-
-                    return Err(BaseError::Expected {
-                        variant: ExpectedVariant::Args,
-                        message: err_message.into(),
-                    });
-                }
+                return Err(BaseError::Expected {
+                    variant: ExpectedVariant::Args,
+                    message: err_message.into(),
+                });
             }
 
             let repl = PageImageRepl {
@@ -403,33 +400,30 @@ where
             let image_key_matches = locked_page_info.image_key.as_deref()
                 == Some(image_identity.object_key);
 
-            match (image_version_matches, image_key_matches) {
+            if let (false, _) | (true, false) =
+                (image_version_matches, image_key_matches)
+            {
                 //
-                (true, true) => {}
+                let err_message = "stale page image identity";
 
-                (false, _) | (true, false) => {
-                    //
-                    let err_message = "stale page image identity";
+                tracing::warn!(
+                    err_variant = ?ExpectedVariant::Args,
+                    err_message = %err_message,
+                    image_kind = ?image_identity.kind,
+                    resource_id = %image_identity.resource_id,
+                    image_version = image_identity.version,
+                    stored_image_version = locked_page_info.image_version,
+                    image_key_present = locked_page_info.image_key.is_some(),
+                    image_key_matches,
+                    object_key_present = !image_identity.object_key.is_empty(),
+                    operation = "process_existing_page_image",
+                    "expected error: stale page image identity",
+                );
 
-                    tracing::warn!(
-                        err_variant = ?ExpectedVariant::Args,
-                        err_message = %err_message,
-                        image_kind = ?image_identity.kind,
-                        resource_id = %image_identity.resource_id,
-                        image_version = image_identity.version,
-                        stored_image_version = locked_page_info.image_version,
-                        image_key_present = locked_page_info.image_key.is_some(),
-                        image_key_matches,
-                        object_key_present = !image_identity.object_key.is_empty(),
-                        operation = "process_existing_page_image",
-                        "expected error: stale page image identity",
-                    );
-
-                    return Err(BaseError::Expected {
-                        variant: ExpectedVariant::Args,
-                        message: err_message.into(),
-                    });
-                }
+                return Err(BaseError::Expected {
+                    variant: ExpectedVariant::Args,
+                    message: err_message.into(),
+                });
             }
 
             let repl = PageImageRepl {
