@@ -1,14 +1,20 @@
 //! Chapter page-count validation.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
-use poprako_util::i18n::trl;
+use poprako_util::i18n::{trl, trl_kv};
 
 use crate::complex::image::ImageComplex;
 use crate::config::ImageConfig;
 use crate::model::write::page::PageImageSpec;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::value::image::ImageKind;
+
+/// Minimum number of pages accepted by a chapter manifest.
+pub const MIN_CHAPTER_PAGE_COUNT: i32 = 1;
+
+/// Maximum number of pages accepted by a chapter manifest.
+pub const MAX_CHAPTER_PAGE_COUNT: i32 = 200;
 
 /// Validates image metadata and page-count constraints before page reservation.
 pub fn validate_page_specs(
@@ -20,7 +26,7 @@ pub fn validate_page_specs(
     //
     let page_count = i32::try_from(page_specs.len()).map_err(|_| {
         //
-        let err_message = trl("error-invalid-page-count");
+        let err_message = invalid_page_count_message();
 
         tracing::warn!(
             err_variant = ?ExpectedVariant::Args,
@@ -84,9 +90,10 @@ pub fn validate_page_specs(
 /// Validates the 200-page manifest cap, which bounds practical upload and review capacity.
 pub fn validate_page_count(page_count: i32) -> BaseRest<()> {
     //
-    if !(1..=200).contains(&page_count) {
+    if !(MIN_CHAPTER_PAGE_COUNT..=MAX_CHAPTER_PAGE_COUNT).contains(&page_count)
+    {
         //
-        let err_message = trl("error-invalid-page-count");
+        let err_message = invalid_page_count_message();
 
         tracing::warn!(
             err_variant = ?ExpectedVariant::Args,
@@ -102,4 +109,15 @@ pub fn validate_page_count(page_count: i32) -> BaseRest<()> {
     }
 
     accept(())
+}
+
+// Builds the translated page-count validation message.
+fn invalid_page_count_message() -> String {
+    //
+    let args = HashMap::from([
+        ("min_count".into(), MIN_CHAPTER_PAGE_COUNT.into()),
+        ("max_count".into(), MAX_CHAPTER_PAGE_COUNT.into()),
+    ]);
+
+    trl_kv("error-invalid-page-count", &args)
 }

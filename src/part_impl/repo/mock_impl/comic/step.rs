@@ -170,7 +170,7 @@ impl<'a> Step<ReserveComicCover<'a>, MockContext> for Mock {
             && comic.cover_hash.as_ref() == Some(oper.image_hash);
 
         if same_hash && comic.cover_ext != Some(oper.image_ext) {
-            return Err(expected("error-invalid-image-extension"));
+            return Err(expected("error-image-extension-mismatch"));
         }
 
         if same_hash {

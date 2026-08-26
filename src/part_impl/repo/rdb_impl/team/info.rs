@@ -301,7 +301,7 @@ pub async fn reserve_avatar(
 
     if same_hash && stored_ext.as_deref() != Some(image_ext.suffix()) {
         //
-        let message = trl("error-invalid-image-extension");
+        let message = trl("error-image-extension-mismatch");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Args,

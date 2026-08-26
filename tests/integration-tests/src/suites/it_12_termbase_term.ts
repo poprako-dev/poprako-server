@@ -322,7 +322,7 @@ export async function runIt12Module(ctx: RunCtx): Promise<void> {
             {
                 name: "Oversized Native Glossary",
                 description: null,
-                terms: Array.from({ length: 101 }, (_, index) => ({
+                terms: Array.from({ length: 201 }, (_, index) => ({
                     source: `Source ${index}`,
                     targets: [`Target ${index}`],
                     comment: null,

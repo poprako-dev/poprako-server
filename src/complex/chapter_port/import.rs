@@ -5,9 +5,9 @@ mod label_plus;
 // Test cases for chapter-import parsing, translation assembly, and validation.
 mod tests;
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
-use poprako_util::i18n::trl;
+use poprako_util::i18n::{trl, trl_kv};
 
 use crate::complex::chapter_port::import::label_plus::parse_label_plus;
 use crate::data::view::chapter_port::ChapterTranslationPortView;
@@ -16,6 +16,29 @@ use crate::model::shared::unit::{UnitCoord, UnitRevision, UnitTranslation};
 use crate::model::unit_port::UnitTranslationImport;
 use crate::model::write::unit::UnitEdit;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::value::chapter_port::MAX_CHAPTER_IMPORT_PAGE_COUNT;
+use crate::value::unit::MAX_PAGE_UNIT_COUNT;
+
+// Construct a localized limit error for PopRaKo input.
+fn invalid_import_limit(key: &str, limit: usize, condition: &str) -> BaseError {
+    //
+    let args = HashMap::from([("limit".into(), limit.into())]);
+
+    let err_message = trl_kv(key, &args);
+
+    tracing::warn!(
+        err_variant = ?ExpectedVariant::Args,
+        err_message = %err_message,
+        limit,
+        condition,
+        "expected error: chapter import limit exceeded",
+    );
+
+    BaseError::Expected {
+        variant: ExpectedVariant::Args,
+        message: err_message,
+    }
+}
 
 // Construct the stable invalid-content error for PopRaKo input.
 fn invalid_poprako_content(condition: &str) -> BaseError {
@@ -45,9 +68,11 @@ fn convert_poprako_document(
     project: ChapterTranslationPortView,
 ) -> BaseRest<Vec<PageTranslationImport>> {
     //
-    if project.pages.len() > 200 {
+    if project.pages.len() > MAX_CHAPTER_IMPORT_PAGE_COUNT {
         //
-        return Err(invalid_poprako_content(
+        return Err(invalid_import_limit(
+            "error-chapter-import-page-count",
+            MAX_CHAPTER_IMPORT_PAGE_COUNT,
             "PopRaKo document has too many pages",
         ));
     }
@@ -67,9 +92,11 @@ fn convert_poprako_document(
             return Err(invalid_poprako_content("invalid PopRaKo page index"));
         }
 
-        if page.units.len() > 100 {
+        if page.units.len() > MAX_PAGE_UNIT_COUNT {
             //
-            return Err(invalid_poprako_content(
+            return Err(invalid_import_limit(
+                "error-chapter-import-unit-count",
+                MAX_PAGE_UNIT_COUNT,
                 "PopRaKo page has too many units",
             ));
         }

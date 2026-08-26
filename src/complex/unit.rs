@@ -6,9 +6,9 @@ mod perm;
 #[cfg(test)]
 mod tests;
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
-use poprako_util::i18n::trl;
+use poprako_util::i18n::{trl, trl_kv};
 
 use crate::model::read::proj::unit::UnitInfo;
 use crate::model::shared::unit::{UnitRevision, UnitTranslation};
@@ -16,7 +16,7 @@ use crate::model::write::unit::{UnitEdit, UnitTransform};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::{Patch, next_snowflake_id};
 use crate::value::chapter::Stage;
-use crate::value::unit::UnitTextPart;
+use crate::value::unit::{MAX_UNIT_EDIT_COUNT, UnitTextPart};
 
 pub use crate::complex::unit::perm::{UnitListAccess, UnitPermComplex};
 
@@ -272,14 +272,20 @@ impl UnitComplex {
         mut edits: Vec<UnitEdit>,
     ) -> BaseRest<Vec<UnitEdit>> {
         //
-        if !(1..=100).contains(&edits.len()) {
+        if !(1..=MAX_UNIT_EDIT_COUNT).contains(&edits.len()) {
             //
-            let err_message = trl("error-invalid-unit-oper");
+            let args = HashMap::from([
+                ("min_count".into(), 1_usize.into()),
+                ("max_count".into(), MAX_UNIT_EDIT_COUNT.into()),
+            ]);
+
+            let err_message = trl_kv("error-invalid-unit-edit-count", &args);
 
             tracing::warn!(
                 err_variant = ?ExpectedVariant::Args,
                 err_message = %err_message,
                 edit_count = edits.len(),
+                max_edit_count = MAX_UNIT_EDIT_COUNT,
                 base_id_count = base_ids.len(),
                 "expected error: unit edit count is invalid",
             );

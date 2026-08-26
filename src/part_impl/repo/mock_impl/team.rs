@@ -182,7 +182,7 @@ fn reserve_team_avatar(
         && team_info.avatar_hash.as_ref() == Some(oper.image_hash);
 
     if same_hash && team_info.avatar_ext != Some(oper.image_ext) {
-        return Err(expected("error-invalid-image-extension"));
+        return Err(expected("error-image-extension-mismatch"));
     }
 
     if same_hash {
@@ -405,7 +405,10 @@ impl<'a> Step<CreateTeam<'a>, MockContext> for Mock {
         // Internal implementation detail.
         // Internal implementation detail.
         if context.create_team_failure {
-            return Err(expected("failed"));
+            //
+            return Err(BaseError::Unrecoverable {
+                message: "mock team creation failed".into(),
+            });
         }
 
         create_team(&mut context.state, oper.entry)

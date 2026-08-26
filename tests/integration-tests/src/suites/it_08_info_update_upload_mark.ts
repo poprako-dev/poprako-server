@@ -93,7 +93,21 @@ export async function runIt08Module(ctx: RunCtx): Promise<void> {
         2,
     );
 
-    // user avatar: self only. trans_01 reserves + marks own avatar.
+    // user avatar: self only. Runtime configuration limits the upload size.
+    const oversizedAvatarError = expectError(
+        await trans01.api.post<ErrorBody>(`/api/v1/users/${trans01.userId}/avatar/reserve`, {
+            image_hash: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAE=",
+            new_byte_len: 1024 * 1024 + 1,
+            ext: "png",
+        }),
+        422,
+        2,
+    );
+
+    assert.match(oversizedAvatarError.message ?? "", /1.*MiB/);
+    assert.doesNotMatch(oversizedAvatarError.message ?? "", /20 MiB/);
+
+    // trans_01 reserves + marks their own avatar.
     const trans01AvatarReserve = await reserveUserAvatar(trans01.api, trans01.userId, "png");
 
     assert.ok(trans01AvatarReserve.slot?.put_url.startsWith("http"));

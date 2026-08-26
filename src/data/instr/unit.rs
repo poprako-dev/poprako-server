@@ -16,13 +16,13 @@ use serde::Deserialize;
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
-use poprako_util::i18n::trl;
+use poprako_util::i18n::{trl, trl_kv};
 
 use crate::model::shared::unit::{UnitCoord, UnitRevision, UnitTranslation};
 use crate::model::write::unit::{UnitEdit, UnitTextTransform, UnitTransform};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::Patch;
-use crate::value::unit::UnitTextPart;
+use crate::value::unit::{MAX_UNIT_TRANSFORM_COUNT, UnitTextPart};
 
 /// Input parameters for listing visible Units under one Page.
 #[derive(Debug, Deserialize)]
@@ -144,8 +144,27 @@ pub fn into_unit_transforms(
     units: Vec<UnitTransformInstr>,
 ) -> BaseRest<Vec<UnitTransform>> {
     //
-    if !(1..=100).contains(&units.len()) {
-        return Err(invalid_unit_transform("unit_count"));
+    if !(1..=MAX_UNIT_TRANSFORM_COUNT).contains(&units.len()) {
+        //
+        let args = HashMap::from([
+            ("min_count".into(), 1_usize.into()),
+            ("max_count".into(), MAX_UNIT_TRANSFORM_COUNT.into()),
+        ]);
+
+        let err_message = trl_kv("error-invalid-unit-transform-count", &args);
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Args,
+            err_message = %err_message,
+            unit_count = units.len(),
+            max_unit_count = MAX_UNIT_TRANSFORM_COUNT,
+            "expected error: Unit transform count is invalid",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: err_message,
+        });
     }
 
     let mut unit_ids = HashSet::with_capacity(units.len());

@@ -7,10 +7,12 @@ pub mod transform;
 // Unit tests for unit creation, editing, and transition rules.
 mod tests;
 
+use std::collections::HashMap;
+
 use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
-use poprako_util::i18n::trl;
+use poprako_util::i18n::trl_kv;
 
 use crate::complex::chapter::ChapterComplex;
 use crate::complex::unit::{UnitComplex, UnitPermComplex};
@@ -47,13 +49,10 @@ use crate::usecase::internal::unit::UnitAccessLoader;
 use crate::usecase::stage::start_pending_stages;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordOrigin;
 use crate::value::role::RoleField;
-use crate::value::unit::UnitEditPerm;
+use crate::value::unit::{MAX_UNIT_SEARCH_MATCH_COUNT, UnitEditPerm};
 
 // Search pages in bounded concurrent batches.
 const SEARCH_PAGE_BATCH_SIZE: usize = 20;
-
-// Maximum number of Unit matches returned by one Chapter search.
-const SEARCH_MATCH_LIMIT: usize = 100;
 
 #[instrument(level = "info", skip(repo))]
 /// Lists visible Units for one Page in final linked-list order.
@@ -169,15 +168,21 @@ where
 
                 found_infos.push(UnitInfoView::from(unit_info));
 
-                if found_infos.len() > SEARCH_MATCH_LIMIT {
+                if found_infos.len() > MAX_UNIT_SEARCH_MATCH_COUNT {
                     //
-                    let err_message = trl("error-unit-search-too-many-matches");
+                    let args = HashMap::from([(
+                        "match_limit".into(),
+                        MAX_UNIT_SEARCH_MATCH_COUNT.into(),
+                    )]);
+
+                    let err_message =
+                        trl_kv("error-unit-search-too-many-matches", &args);
 
                     tracing::warn!(
                         err_variant = ?ExpectedVariant::Args,
                         err_message = %err_message,
                         match_count = found_infos.len(),
-                        match_limit = SEARCH_MATCH_LIMIT,
+                        match_limit = MAX_UNIT_SEARCH_MATCH_COUNT,
                         "expected error: too many Unit search matches",
                     );
 

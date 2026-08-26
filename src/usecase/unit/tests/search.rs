@@ -1,6 +1,8 @@
 use super::*;
 
-use poprako_util::i18n::trl;
+use std::collections::HashMap;
+
+use poprako_util::i18n::trl_kv;
 
 use crate::data::instr::unit::SearchChapterUnitInfosInstr;
 use crate::model::read::proj::unit::UnitInfo;
@@ -64,12 +66,19 @@ async fn one_hundred_and_first_match_returns_args_message() {
             .await
             .unwrap_err();
 
+    let args = HashMap::from([(
+        "match_limit".into(),
+        MAX_UNIT_SEARCH_MATCH_COUNT.into(),
+    )]);
+
+    let expected_message = trl_kv("error-unit-search-too-many-matches", &args);
+
     assert!(matches!(
         error,
         BaseError::Expected {
             variant: ExpectedVariant::Args,
             message,
-        } if message == trl("error-unit-search-too-many-matches")
+        } if message == expected_message
     ));
 }
 
@@ -91,12 +100,19 @@ async fn excess_in_first_batch_does_not_read_later_page_batch() {
             .await
             .unwrap_err();
 
+    let args = HashMap::from([(
+        "match_limit".into(),
+        MAX_UNIT_SEARCH_MATCH_COUNT.into(),
+    )]);
+
+    let expected_message = trl_kv("error-unit-search-too-many-matches", &args);
+
     assert!(matches!(
         error,
         BaseError::Expected {
             variant: ExpectedVariant::Args,
             message,
-        } if message == trl("error-unit-search-too-many-matches")
+        } if message == expected_message
     ));
 }
 

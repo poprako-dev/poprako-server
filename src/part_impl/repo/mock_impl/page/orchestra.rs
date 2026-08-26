@@ -241,6 +241,24 @@ impl<'a> Step<MarkPageImageUploaded<'a>, MockContext> for Mock {
     ) -> BaseRest<()> {
         //
         // Internal implementation detail.
+        let Some(_) = oper.repl.image_key.as_deref() else {
+            //
+            let err_message = String::from("page image key is required");
+
+            tracing::error!(
+                err_message = %err_message,
+                page_id = %oper.repl.id,
+                image_version = oper.repl.image_version,
+                image_uploaded = oper.repl.is_image_uploaded,
+                stage = "set_image_uploaded",
+                "internal invariant violated: page image key is required",
+            );
+
+            return Err(BaseError::Unrecoverable {
+                message: err_message,
+            });
+        };
+
         let page_info = context
             .state
             .pages

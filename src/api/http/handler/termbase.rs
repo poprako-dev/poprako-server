@@ -53,7 +53,7 @@ pub struct TermbaseListQuery {
     request_body = CreateTermbaseInstr,
     responses(
         (status = 201, description = "Termbase created", body = HttpBody<CreateTermbaseVal>),
-        (status = 403, description = "Team proofreader role required"),
+        (status = 403, description = "Team translator or proofreader role required"),
         (status = 422, description = "Invalid scope, parent, or duplicate name"),
     ),
 ))]
@@ -181,7 +181,7 @@ pub async fn get_info(
     request_body = UpdateTermbaseInfoInstr,
     responses(
         (status = 204, description = "Termbase updated"),
-        (status = 403, description = "Team proofreader role required"),
+        (status = 403, description = "Team translator or proofreader role required"),
         (status = 422, description = "Invalid input, duplicate name, or path mismatch"),
     ),
 ))]
@@ -213,7 +213,7 @@ pub async fn update_info(
     params(("termbase_id" = String, Path, description = "Termbase ID")),
     responses(
         (status = 204, description = "Termbase and terms deleted"),
-        (status = 403, description = "Team proofreader role required"),
+        (status = 403, description = "Team translator or proofreader role required"),
         (status = 422, description = "Termbase not found"),
     ),
 ))]

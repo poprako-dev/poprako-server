@@ -1,12 +1,14 @@
 //! LabelPlus text structure validation and page-unit assembly.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
-use poprako_util::i18n::trl;
+use poprako_util::i18n::{trl, trl_kv};
 
 use crate::model::page_port::PageTranslationImport;
 use crate::model::unit_port::UnitTranslationImport;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::value::chapter_port::MAX_CHAPTER_IMPORT_PAGE_COUNT;
+use crate::value::unit::MAX_PAGE_UNIT_COUNT;
 
 /// Normalize LabelPlus text while preserving non-empty whitespace and lines.
 pub fn normalize_label_plus_text(text: String) -> Option<String> {
@@ -161,9 +163,11 @@ pub fn flush_label_plus_unit(
         return Err(invalid_label_plus_content("LabelPlus unit has no page"));
     };
 
-    if page_units.len() >= 100 {
+    if page_units.len() >= MAX_PAGE_UNIT_COUNT {
         //
-        return Err(invalid_label_plus_content(
+        return Err(invalid_label_plus_limit(
+            "error-chapter-import-unit-count",
+            MAX_PAGE_UNIT_COUNT,
             "LabelPlus page has too many units",
         ));
     }
@@ -199,9 +203,11 @@ pub fn finalize_label_plus_page(
     page: &mut [UnitTranslationImport],
 ) -> BaseRest<()> {
     //
-    if page.len() > 100 {
+    if page.len() > MAX_PAGE_UNIT_COUNT {
         //
-        return Err(invalid_label_plus_content(
+        return Err(invalid_label_plus_limit(
+            "error-chapter-import-unit-count",
+            MAX_PAGE_UNIT_COUNT,
             "LabelPlus page has too many units",
         ));
     }
@@ -385,22 +391,39 @@ pub fn parse_label_plus(content: &str) -> BaseRest<Vec<PageTranslationImport>> {
         });
     }
 
-    if pages.len() > 200 {
+    if pages.len() > MAX_CHAPTER_IMPORT_PAGE_COUNT {
         //
-        let err_message = trl("error-invalid-chapter-import-content");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Args,
-            err_message = %err_message,
-            page_count = pages.len(),
-            "expected error: LabelPlus document has too many pages",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message: err_message,
-        });
+        return Err(invalid_label_plus_limit(
+            "error-chapter-import-page-count",
+            MAX_CHAPTER_IMPORT_PAGE_COUNT,
+            "LabelPlus document has too many pages",
+        ));
     }
 
     accept(pages)
+}
+
+// Construct a localized limit error for LabelPlus input.
+fn invalid_label_plus_limit(
+    key: &str,
+    limit: usize,
+    condition: &str,
+) -> BaseError {
+    //
+    let args = HashMap::from([("limit".into(), limit.into())]);
+
+    let err_message = trl_kv(key, &args);
+
+    tracing::warn!(
+        err_variant = ?ExpectedVariant::Args,
+        err_message = %err_message,
+        limit,
+        condition,
+        "expected error: LabelPlus import limit exceeded",
+    );
+
+    BaseError::Expected {
+        variant: ExpectedVariant::Args,
+        message: err_message,
+    }
 }

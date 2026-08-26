@@ -9,7 +9,8 @@ reservation identity, verification rules, and delayed correction semantics.
 An image reservation request contains:
 
 - `image_hash`: the SHA-256 digest of the exact object bytes;
-- `new_byte_len`: the expected object size, from 1 MiB through 20 MiB;
+- `new_byte_len`: the expected object size, from 1 byte through the runtime
+  limit configured for its image kind;
 - `ext`: the normalized file extension.
 
 The persisted upload identity is the complete tuple `(owner id, image_version,

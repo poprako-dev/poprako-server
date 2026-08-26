@@ -3,7 +3,9 @@
 #[cfg(test)]
 mod tests;
 
-use poprako_util::i18n::trl;
+use std::collections::HashMap;
+
+use poprako_util::i18n::trl_kv;
 
 use crate::config::ImageConfig;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
@@ -25,30 +27,51 @@ impl ImageComplex {
         kind: ImageKind,
     ) -> BaseRest<()> {
         //
-        let max_length = image_config
-            .limit_for(kind)
-            .saturating_mul(Self::BYTES_PER_MIB);
+        let max_mib = image_config.limit_for(kind);
+
+        let max_length = max_mib.saturating_mul(Self::BYTES_PER_MIB);
 
         if !(1..=max_length).contains(&byte_length) {
             //
-            let err_message = trl("error-invalid-image-byte-length");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_message = %err_message,
-                byte_length = byte_length,
-                max_length = max_length,
-                image_kind = ?kind,
-                "expected error: image byte length is invalid",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message: err_message,
-            });
+            return Err(Self::invalid_byte_length_rejection(
+                image_config,
+                byte_length,
+                kind,
+            ));
         }
 
         accept(())
+    }
+
+    /// Builds the client-correctable rejection for a missing or invalid image length.
+    pub fn invalid_byte_length_rejection(
+        image_config: &ImageConfig,
+        byte_length: u64,
+        kind: ImageKind,
+    ) -> BaseError {
+        //
+        let max_mib = image_config.limit_for(kind);
+
+        let args = HashMap::from([
+            ("min_bytes".into(), 1_u64.into()),
+            ("max_mib".into(), max_mib.into()),
+        ]);
+
+        let err_message = trl_kv("error-invalid-image-byte-length", &args);
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Args,
+            err_message = %err_message,
+            byte_length,
+            max_length = max_mib.saturating_mul(Self::BYTES_PER_MIB),
+            image_kind = ?kind,
+            "expected error: image byte length is invalid",
+        );
+
+        BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: err_message,
+        }
     }
 
     /// Generate a unique image deletion-task identifier backed by a snowflake value.

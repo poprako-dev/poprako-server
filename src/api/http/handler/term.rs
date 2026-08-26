@@ -52,7 +52,7 @@ pub struct TermListQuery {
     request_body = CreateTermInstr,
     responses(
         (status = 201, description = "Term created", body = HttpBody<CreateTermVal>),
-        (status = 403, description = "Team proofreader role required"),
+        (status = 403, description = "Team translator or proofreader role required"),
         (status = 422, description = "Invalid term, duplicate source, or missing termbase"),
     ),
 ))]
@@ -145,7 +145,7 @@ pub async fn get_info(
     request_body = UpdateTermInfoInstr,
     responses(
         (status = 204, description = "Term updated"),
-        (status = 403, description = "Team proofreader role required"),
+        (status = 403, description = "Team translator or proofreader role required"),
         (status = 422, description = "Invalid term, duplicate source, or path mismatch"),
     ),
 ))]
@@ -177,7 +177,7 @@ pub async fn update_info(
     params(("term_id" = String, Path, description = "Term ID")),
     responses(
         (status = 204, description = "Term deleted"),
-        (status = 403, description = "Team proofreader role required"),
+        (status = 403, description = "Team translator or proofreader role required"),
         (status = 422, description = "Term not found"),
     ),
 ))]

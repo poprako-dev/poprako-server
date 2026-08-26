@@ -16,6 +16,7 @@ use crate::part_impl::repo::mock_impl::{
 };
 use crate::result::{BaseRest, accept};
 use crate::util::Patch;
+use crate::value::unit::MAX_PAGE_UNIT_COUNT;
 
 // Locate a unit id inside ordered id list, used by move/create/save operations.
 fn find_order_pos(ordered_ids: &[&str], id: &str) -> Option<usize> {
@@ -221,7 +222,7 @@ fn apply_order_edits<'a>(
         .filter(|id| !hidden_ids.contains(**id))
         .count();
 
-    if visible_count > 100 {
+    if visible_count > MAX_PAGE_UNIT_COUNT {
         return Err(expected("error-invalid-unit-oper"));
     }
 

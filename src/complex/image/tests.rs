@@ -1,6 +1,7 @@
 use super::ImageComplex;
 
 use crate::config::ImageConfig;
+use crate::result::BaseError;
 use crate::value::image::ImageKind;
 
 const IMAGE_CONFIG: ImageConfig = ImageConfig {
@@ -31,13 +32,42 @@ fn byte_length_uses_each_kind_specific_configured_mib_limit() {
             .is_ok(),
         );
 
-        assert!(
-            ImageComplex::ensure_byte_length(
-                &IMAGE_CONFIG,
-                byte_limit + 1,
-                image_kind,
-            )
-            .is_err(),
-        );
+        let failure = ImageComplex::ensure_byte_length(
+            &IMAGE_CONFIG,
+            byte_limit + 1,
+            image_kind,
+        )
+        .err()
+        .unwrap();
+
+        let BaseError::Expected { message, .. } = failure else {
+            panic!("invalid image length must remain client-correctable");
+        };
+
+        let configured_mib = IMAGE_CONFIG.limit_for(image_kind);
+
+        assert!(message.contains(&configured_mib.to_string()));
+
+        assert!(message.contains("MiB"));
     }
+}
+
+#[test]
+fn missing_byte_length_uses_the_runtime_page_limit_in_its_message() {
+    //
+    let failure = ImageComplex::invalid_byte_length_rejection(
+        &IMAGE_CONFIG,
+        0,
+        ImageKind::PageImage,
+    );
+
+    let BaseError::Expected { message, .. } = failure else {
+        panic!("missing image length must remain client-correctable");
+    };
+
+    assert!(message.contains('4'));
+
+    assert!(message.contains("MiB"));
+
+    assert!(!message.contains("20 MiB"));
 }
