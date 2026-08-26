@@ -176,7 +176,7 @@ async fn register_propagates_token_failure_after_commit_and_event() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Auth);
+    assert!(matches!(err, BaseError::Unrecoverable { .. }));
 
     let snapshot = mock.snapshot();
 
@@ -255,5 +255,5 @@ async fn login_propagates_token_failure() {
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Auth);
+    assert!(matches!(err, BaseError::Unrecoverable { .. }));
 }

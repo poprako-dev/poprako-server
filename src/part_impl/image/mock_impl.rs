@@ -5,13 +5,11 @@ use std::collections::BTreeMap;
 
 use url::Url;
 
-use poprako_util::i18n::trl;
-
 use crate::part::image::{
     ImageManager, ImagePool, ImageUploadSlot, ImageUploadSpec,
 };
 use crate::part_impl::repo::mock_impl::Mock;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, accept};
 
 /// Mock implementation of [ImagePool].
 ///
@@ -25,9 +23,8 @@ impl ImagePool for Mock {
         //
         // Internal implementation detail.
         if self.flags.lock().unwrap().image_get_failure {
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message: trl("error-image-get-failed"),
+            return Err(BaseError::Unrecoverable {
+                message: "mock image download URL generation failed".into(),
             });
         }
 
@@ -42,9 +39,8 @@ impl ImagePool for Mock {
         //
         // Internal implementation detail.
         if self.flags.lock().unwrap().image_get_failure {
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message: trl("error-image-get-failed"),
+            return Err(BaseError::Unrecoverable {
+                message: "mock image thumbnail URL generation failed".into(),
             });
         }
 
@@ -65,9 +61,8 @@ impl ImagePool for Mock {
         //
         // Internal implementation detail.
         if self.flags.lock().unwrap().image_put_failure {
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message: trl("error-image-put-failed"),
+            return Err(BaseError::Unrecoverable {
+                message: "mock image upload URL generation failed".into(),
             });
         }
 
@@ -93,9 +88,8 @@ impl ImageManager for Mock {
         //
         // Internal implementation detail.
         if self.flags.lock().unwrap().image_head_failure {
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message: trl("error-image-head-failed"),
+            return Err(BaseError::Unrecoverable {
+                message: "mock image object lookup failed".into(),
             });
         }
 
@@ -111,9 +105,8 @@ impl ImageManager for Mock {
         //
         // Internal implementation detail.
         if self.flags.lock().unwrap().image_delete_failure {
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message: trl("error-image-delete-failed"),
+            return Err(BaseError::Unrecoverable {
+                message: "mock image object deletion failed".into(),
             });
         }
 
@@ -128,11 +121,11 @@ impl ImageManager for Mock {
 }
 
 // gen_download_url_returns_stable_url(ImagePool::gen_download_url)(positive): download URLs should be deterministic for assertions.
-// gen_download_url_failure_returns_expected_err(ImagePool::gen_download_url)(negative): configured get failures should return an expected error.
+// gen_download_url_failure_returns_unrecoverable_err(ImagePool::gen_download_url)(negative): configured get failures should return an unrecoverable error.
 
-/// Mock helper that returns an expected error when download failure is configured.
+/// Mock helper that returns an unrecoverable error when download failure is configured.
 #[tokio::test]
-async fn gen_download_url_failure_returns_expected_err() {
+async fn gen_download_url_failure_returns_unrecoverable_err() {
     //
     // Internal implementation detail.
     let mock = Mock::new().with_image_get_failure();
@@ -142,11 +135,5 @@ async fn gen_download_url_failure_returns_expected_err() {
         .err()
         .unwrap();
 
-    assert!(matches!(
-        err_download,
-        BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            ..
-        }
-    ));
+    assert!(matches!(err_download, BaseError::Unrecoverable { .. }));
 }

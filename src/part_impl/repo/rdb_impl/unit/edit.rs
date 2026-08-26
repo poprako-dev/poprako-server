@@ -21,6 +21,7 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::RdbConn;
 use crate::shared::result::diesel;
 use crate::util::Patch;
+use crate::value::unit::MAX_PAGE_UNIT_COUNT;
 
 /// Finds the position of an ID in the ordered list.
 pub fn find_order_pos(ordered_ids: &[&str], id: &str) -> Option<usize> {
@@ -180,7 +181,7 @@ pub fn apply_order_edits<'a>(
         .filter(|id| !hidden_ids.contains(**id))
         .count();
 
-    if visible_count > 100 {
+    if visible_count > MAX_PAGE_UNIT_COUNT {
         //
         let err_message = trl("error-invalid-unit-oper");
 
@@ -188,7 +189,7 @@ pub fn apply_order_edits<'a>(
             error_variant = ?ExpectedVariant::Args,
             err_message = %err_message,
             visible_count,
-            max_visible_count = 100,
+            max_visible_count = MAX_PAGE_UNIT_COUNT,
             operation = "reorder",
             stage = "apply_order_edits",
             "expected error: invalid unit operation",

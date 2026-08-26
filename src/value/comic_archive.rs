@@ -6,12 +6,12 @@ mod workflow_record;
 #[cfg(test)]
 mod tests;
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use serde::Serialize;
 use time::{Date, Month, OffsetDateTime, PrimitiveDateTime, Time};
 
-use poprako_util::i18n::trl;
+use poprako_util::i18n::{trl, trl_kv};
 
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordKind;
@@ -248,7 +248,13 @@ impl ComicArchiveMonth {
         //
         if labels.is_empty() || labels.len() > MAX_EXPORT_MONTHS {
             //
-            let err_message = trl("error-invalid-comic-archive-month-count");
+            let args = HashMap::from([
+                ("min_count".into(), 1_usize.into()),
+                ("max_count".into(), MAX_EXPORT_MONTHS.into()),
+            ]);
+
+            let err_message =
+                trl_kv("error-invalid-comic-archive-month-count", &args);
 
             tracing::warn!(
                 err_variant = ?ExpectedVariant::Args,

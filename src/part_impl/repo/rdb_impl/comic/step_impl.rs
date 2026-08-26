@@ -447,7 +447,7 @@ pub async fn reserve_cover(
 
     if same_hash && stored_ext.as_deref() != Some(image_ext.suffix()) {
         //
-        let err_message = trl("error-invalid-image-extension");
+        let err_message = trl("error-image-extension-mismatch");
 
         tracing::warn!(
             error_variant = ?ExpectedVariant::Args,

@@ -1,8 +1,8 @@
 //! Terminology-base validation, perms, and import planning.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
-use poprako_util::i18n::trl;
+use poprako_util::i18n::{trl, trl_kv};
 
 use crate::complex::term::TermComplex;
 use crate::complex::util::{
@@ -96,7 +96,10 @@ fn term_limit_error(
     additional_term_count: usize,
 ) -> BaseError {
     //
-    let err_message = trl("error-termbase-term-limit");
+    let args =
+        HashMap::from([("term_limit".into(), TERMBASE_TERM_LIMIT.into())]);
+
+    let err_message = trl_kv("error-termbase-term-limit", &args);
 
     tracing::warn!(
         err_variant = ?ExpectedVariant::Args,

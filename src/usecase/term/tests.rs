@@ -193,11 +193,13 @@ async fn create_accepts_capacity_boundary_and_rejects_term_over_capacity() {
         .await
         .unwrap_err();
 
-    assert_expected_message(
+    assert!(matches!(
         error,
-        ExpectedVariant::Args,
-        "error-termbase-term-limit",
-    );
+        BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message,
+        } if message.contains("200")
+    ));
 
     let snapshot = mock.snapshot();
 

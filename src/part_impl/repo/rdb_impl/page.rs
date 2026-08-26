@@ -28,7 +28,7 @@ use crate::part_impl::repo::rdb_impl::page::step_impl::{
     mark_image_uploaded, reserve_image, set_image_uploaded, set_unit_counters,
     shift_indexes_temporary, update_manifest,
 };
-use crate::result::{BaseError, BaseRest, ExpectedVariant};
+use crate::result::{BaseError, BaseRest};
 use crate::shared::RdbContext;
 
 impl Run<GetPageInfo<'_>> for HybRepo {
@@ -250,19 +250,17 @@ where
                 //
                 let err_message = String::from("page image key is required");
 
-                tracing::warn!(
-                    error_variant = ?ExpectedVariant::Args,
+                tracing::error!(
                     err_message = %err_message,
                     page_id = %oper.repl.id,
                     image_version = oper.repl.image_version,
                     image_key_present = oper.repl.image_key.is_some(),
                     image_uploaded = oper.repl.is_image_uploaded,
                     stage = "set_image_uploaded",
-                    "expected error: page image key is required",
+                    "internal invariant violated: page image key is required",
                 );
 
-                BaseError::Expected {
-                    variant: ExpectedVariant::Args,
+                BaseError::Unrecoverable {
                     message: err_message,
                 }
             })?,

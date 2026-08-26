@@ -3,6 +3,18 @@ use serde::Deserialize;
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
+/// Maximum number of Unit edits accepted in one request.
+pub const MAX_UNIT_EDIT_COUNT: usize = 100;
+
+/// Maximum number of Unit transforms accepted in one request.
+pub const MAX_UNIT_TRANSFORM_COUNT: usize = 100;
+
+/// Maximum number of visible Units allowed on one page.
+pub const MAX_PAGE_UNIT_COUNT: usize = 100;
+
+/// Maximum number of Unit search matches returned by one request.
+pub const MAX_UNIT_SEARCH_MATCH_COUNT: usize = 100;
+
 /// Text field selected by a Unit search or transform request.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]

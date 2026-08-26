@@ -297,7 +297,7 @@ async fn create_propagates_repo_failure() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert!(matches!(err, BaseError::Unrecoverable { .. }));
 }
 
 #[tokio::test]

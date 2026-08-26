@@ -3398,7 +3398,7 @@
             }
           },
           "403": {
-            "description": "Team proofreader role required"
+            "description": "Team translator or proofreader role required"
           },
           "422": {
             "description": "Invalid scope, parent, or duplicate name"
@@ -3475,7 +3475,7 @@
             "description": "Termbase updated"
           },
           "403": {
-            "description": "Team proofreader role required"
+            "description": "Team translator or proofreader role required"
           },
           "422": {
             "description": "Invalid input, duplicate name, or path mismatch"
@@ -3504,7 +3504,7 @@
             "description": "Termbase and terms deleted"
           },
           "403": {
-            "description": "Team proofreader role required"
+            "description": "Team translator or proofreader role required"
           },
           "422": {
             "description": "Termbase not found"
@@ -3686,7 +3686,7 @@
             }
           },
           "403": {
-            "description": "Team proofreader role required"
+            "description": "Team translator or proofreader role required"
           },
           "422": {
             "description": "Invalid term, duplicate source, or missing termbase"
@@ -3763,7 +3763,7 @@
             "description": "Term updated"
           },
           "403": {
-            "description": "Team proofreader role required"
+            "description": "Team translator or proofreader role required"
           },
           "422": {
             "description": "Invalid term, duplicate source, or path mismatch"
@@ -3792,7 +3792,7 @@
             "description": "Term deleted"
           },
           "403": {
-            "description": "Team proofreader role required"
+            "description": "Team translator or proofreader role required"
           },
           "422": {
             "description": "Term not found"

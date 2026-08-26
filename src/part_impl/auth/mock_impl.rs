@@ -17,9 +17,8 @@ impl TokenAuth for Mock {
         //
         // Internal implementation detail.
         if self.flags.lock().unwrap().token_failure {
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Auth,
-                message: trl("error-token-sign-failed"),
+            return Err(BaseError::Unrecoverable {
+                message: "mock token signing failed".into(),
             });
         }
 
@@ -67,9 +66,9 @@ fn sign_returns_stable_token() {
     assert_eq!(signed, "token:user-1");
 }
 
-/// Mock helper that verifies token failure returns an expected auth error.
+/// Mock helper that verifies signing failure returns an unrecoverable error.
 #[test]
-fn sign_failure_returns_expected_auth() {
+fn sign_failure_returns_unrecoverable() {
     //
     // Internal implementation detail.
     let mock = Mock::new().with_token_failure();
@@ -83,11 +82,5 @@ fn sign_failure_returns_expected_auth() {
     .err()
     .unwrap();
 
-    assert!(matches!(
-        err_token,
-        BaseError::Expected {
-            variant: ExpectedVariant::Auth,
-            ..
-        }
-    ));
+    assert!(matches!(err_token, BaseError::Unrecoverable { .. }));
 }

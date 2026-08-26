@@ -119,7 +119,7 @@ async fn reserve_avatar_propagates_put_url_failure_after_commit() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert!(matches!(err, BaseError::Unrecoverable { .. }));
 
     let snapshot = mock.snapshot();
 

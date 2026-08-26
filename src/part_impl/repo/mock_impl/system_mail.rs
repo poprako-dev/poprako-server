@@ -6,6 +6,8 @@ use std::collections::HashSet;
 use poprako_orchestra::Run;
 use tracing::instrument;
 
+use poprako_util::i18n::trl;
+
 use crate::model::read::proj::system_mail::SystemMailInfo;
 use crate::model::write::system_mail::SystemMailEntry;
 use crate::part::repo::oper::system_mail::{
@@ -134,7 +136,7 @@ fn mark_system_mails_read(
             //
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Perm,
-                message: "error-forbidden".into(),
+                message: trl("error-forbidden"),
             });
         }
     }

@@ -186,22 +186,20 @@ where
                 //
                 let index = i32::try_from(raw_index).map_err(|_| {
                     //
-                    let err_message = trl("error-invalid-page-count");
+                    let err_message = String::from(
+                        "validated page index cannot exceed i32 range",
+                    );
 
-                    tracing::warn!(
-                        err_variant = ?ExpectedVariant::Args,
+                    tracing::error!(
                         err_message = %err_message,
                         chapter_id = %chapter_info.id,
                         user_id = %token.user_id,
                         raw_index,
                         page_count,
-                        "expected error: invalid page index",
+                        "internal invariant violated: invalid page index",
                     );
 
-                    BaseError::Expected {
-                        variant: ExpectedVariant::Args,
-                        message: err_message,
-                    }
+                    BaseError::Unrecoverable { message: err_message }
                 })?;
 
                 let existing_page_info = manifest_plan.matches[raw_index]
@@ -224,23 +222,11 @@ where
 
                     if identity_changed && page_spec.new_byte_len.is_none() {
                         //
-                        let err_message = trl("error-invalid-image-byte-length");
-
-                        tracing::warn!(
-                            err_variant = ?ExpectedVariant::Args,
-                            err_message = %err_message,
-                            chapter_id = %chapter_info.id,
-                            user_id = %token.user_id,
-                            page_id = %existing_page_info.id,
-                            raw_index,
-                            image_version = existing_page_info.image_version,
-                            "expected error: changed page image requires byte length",
-                        );
-
-                        return Err(BaseError::Expected {
-                            variant: ExpectedVariant::Args,
-                            message: err_message,
-                        });
+                        return Err(ImageComplex::invalid_byte_length_rejection(
+                            image_config,
+                            0,
+                            ImageKind::PageImage,
+                        ));
                     }
 
                     let image_version = match identity_changed {
@@ -341,22 +327,11 @@ where
 
                 let new_byte_len = page_spec.new_byte_len.ok_or_else(|| {
                     //
-                    let err_message = trl("error-invalid-image-byte-length");
-
-                    tracing::warn!(
-                        err_variant = ?ExpectedVariant::Args,
-                        err_message = %err_message,
-                        chapter_id = %chapter_info.id,
-                        user_id = %token.user_id,
-                        raw_index,
-                        requested_page_id = ?page_spec.page_id,
-                        "expected error: new page image requires byte length",
-                    );
-
-                    BaseError::Expected {
-                        variant: ExpectedVariant::Args,
-                        message: err_message,
-                    }
+                    ImageComplex::invalid_byte_length_rejection(
+                        image_config,
+                        0,
+                        ImageKind::PageImage,
+                    )
                 })?;
 
                 let (page_id, image_version) = (PageComplex::gen_id(), 1);
