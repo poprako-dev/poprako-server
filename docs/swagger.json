@@ -4600,8 +4600,8 @@
           },
           "index": {
             "type": "integer",
-            "format": "int32",
-            "description": "Ordinal position within the parent comic."
+            "description": "Ordinal position within the parent comic.",
+            "minimum": 0
           },
           "is_pinned": {
             "type": "boolean",
@@ -4609,13 +4609,13 @@
           },
           "page_count": {
             "type": "integer",
-            "format": "int32",
-            "description": "Total number of image pages in the chapter."
+            "description": "Total number of image pages in the chapter.",
+            "minimum": 0
           },
           "proofread_unit_count": {
             "type": "integer",
-            "format": "int32",
-            "description": "Number of units whose proofread has been completed."
+            "description": "Number of units whose proofread has been completed.",
+            "minimum": 0
           },
           "stages": {
             "$ref": "#/components/schemas/StageMask",
@@ -4627,13 +4627,13 @@
           },
           "total_unit_count": {
             "type": "integer",
-            "format": "int32",
-            "description": "Total number of translation units across all pages."
+            "description": "Total number of translation units across all pages.",
+            "minimum": 0
           },
           "translated_unit_count": {
             "type": "integer",
-            "format": "int32",
-            "description": "Number of units whose translation has been completed."
+            "description": "Number of units whose translation has been completed.",
+            "minimum": 0
           },
           "updated_at": {
             "type": "integer",
@@ -4672,7 +4672,7 @@
       },
       "ChapterTranslationPortView": {
         "type": "object",
-        "description": "JSON document exchanged by the PopRaKo translation port.",
+        "description": "JSON document exchanged by the `PopRaKo` translation port.",
         "required": [
           "chapter_id",
           "chapter_index",
@@ -4687,8 +4687,8 @@
           },
           "chapter_index": {
             "type": "integer",
-            "format": "int32",
-            "description": "Ordinal index of the chapter within its comic."
+            "description": "Ordinal index of the chapter within its comic.",
+            "minimum": 0
           },
           "chapter_subtitle": {
             "type": [
@@ -4925,13 +4925,13 @@
                   },
                   "imported_page_count": {
                     "type": "integer",
-                    "format": "int32",
-                    "description": "Number of imported pages."
+                    "description": "Number of imported pages.",
+                    "minimum": 0
                   },
                   "imported_unit_count": {
                     "type": "integer",
-                    "format": "int32",
-                    "description": "Number of imported units."
+                    "description": "Number of imported units.",
+                    "minimum": 0
                   }
                 }
               },
@@ -5135,8 +5135,8 @@
           },
           "chapter_count": {
             "type": "integer",
-            "format": "int32",
-            "description": "Total number of chapters in this comic."
+            "description": "Total number of chapters in this comic.",
+            "minimum": 0
           },
           "cover_thumbnail_url": {
             "type": [
@@ -5185,8 +5185,8 @@
           },
           "index": {
             "type": "integer",
-            "format": "int32",
-            "description": "Ordinal position of the comic within its workset."
+            "description": "Ordinal position of the comic within its workset.",
+            "minimum": 0
           },
           "is_archived": {
             "type": "boolean",
@@ -5755,7 +5755,7 @@
               "string",
               "null"
             ],
-            "description": "LabelPlus text, absent when that format was not selected."
+            "description": "`LabelPlus` text, absent when that format was not selected."
           },
           "poprako": {
             "oneOf": [
@@ -5764,7 +5764,7 @@
               },
               {
                 "$ref": "#/components/schemas/ChapterTranslationPortView",
-                "description": "Native PopRaKo document, absent when that format was not selected."
+                "description": "Native `PopRaKo` document, absent when that format was not selected."
               }
             ]
           }
@@ -5793,11 +5793,11 @@
         "properties": {
           "label_plus": {
             "type": "boolean",
-            "description": "Whether to generate LabelPlus text."
+            "description": "Whether to generate `LabelPlus` text."
           },
           "poprako": {
             "type": "boolean",
-            "description": "Whether to generate the native PopRaKo document."
+            "description": "Whether to generate the native `PopRaKo` document."
           }
         }
       },
@@ -6013,8 +6013,8 @@
               },
               "index": {
                 "type": "integer",
-                "format": "int32",
-                "description": "Ordinal position within the parent comic."
+                "description": "Ordinal position within the parent comic.",
+                "minimum": 0
               },
               "is_pinned": {
                 "type": "boolean",
@@ -6022,13 +6022,13 @@
               },
               "page_count": {
                 "type": "integer",
-                "format": "int32",
-                "description": "Total number of image pages in the chapter."
+                "description": "Total number of image pages in the chapter.",
+                "minimum": 0
               },
               "proofread_unit_count": {
                 "type": "integer",
-                "format": "int32",
-                "description": "Number of units whose proofread has been completed."
+                "description": "Number of units whose proofread has been completed.",
+                "minimum": 0
               },
               "stages": {
                 "$ref": "#/components/schemas/StageMask",
@@ -6040,13 +6040,13 @@
               },
               "total_unit_count": {
                 "type": "integer",
-                "format": "int32",
-                "description": "Total number of translation units across all pages."
+                "description": "Total number of translation units across all pages.",
+                "minimum": 0
               },
               "translated_unit_count": {
                 "type": "integer",
-                "format": "int32",
-                "description": "Number of units whose translation has been completed."
+                "description": "Number of units whose translation has been completed.",
+                "minimum": 0
               },
               "updated_at": {
                 "type": "integer",
@@ -6103,8 +6103,8 @@
               },
               "chapter_count": {
                 "type": "integer",
-                "format": "int32",
-                "description": "Total number of chapters in this comic."
+                "description": "Total number of chapters in this comic.",
+                "minimum": 0
               },
               "cover_thumbnail_url": {
                 "type": [
@@ -6153,8 +6153,8 @@
               },
               "index": {
                 "type": "integer",
-                "format": "int32",
-                "description": "Ordinal position of the comic within its workset."
+                "description": "Ordinal position of the comic within its workset.",
+                "minimum": 0
               },
               "is_archived": {
                 "type": "boolean",
@@ -6574,13 +6574,13 @@
             "properties": {
               "imported_page_count": {
                 "type": "integer",
-                "format": "int32",
-                "description": "Number of pages that were imported."
+                "description": "Number of pages that were imported.",
+                "minimum": 0
               },
               "imported_unit_count": {
                 "type": "integer",
-                "format": "int32",
-                "description": "Number of translation units that were imported."
+                "description": "Number of translation units that were imported.",
+                "minimum": 0
               }
             }
           }
@@ -6617,8 +6617,8 @@
               },
               "created_term_count": {
                 "type": "integer",
-                "format": "int32",
-                "description": "Number of new terminology entries created."
+                "description": "Number of new terminology entries created.",
+                "minimum": 0
               },
               "id": {
                 "type": "string",
@@ -6626,8 +6626,8 @@
               },
               "merged_term_count": {
                 "type": "integer",
-                "format": "int32",
-                "description": "Number of existing terminology entries merged."
+                "description": "Number of existing terminology entries merged.",
+                "minimum": 0
               }
             }
           }
@@ -6719,18 +6719,18 @@
             "properties": {
               "proofread_unit_count": {
                 "type": "integer",
-                "format": "int32",
-                "description": "Number of visible proofread Units."
+                "description": "Number of visible proofread Units.",
+                "minimum": 0
               },
               "total_unit_count": {
                 "type": "integer",
-                "format": "int32",
-                "description": "Number of visible Units."
+                "description": "Number of visible Units.",
+                "minimum": 0
               },
               "translated_unit_count": {
                 "type": "integer",
-                "format": "int32",
-                "description": "Number of visible translated Units."
+                "description": "Number of visible translated Units.",
+                "minimum": 0
               },
               "unit_infos": {
                 "type": "array",
@@ -6936,8 +6936,8 @@
                   },
                   "index": {
                     "type": "integer",
-                    "format": "int32",
-                    "description": "Ordinal position within the parent comic."
+                    "description": "Ordinal position within the parent comic.",
+                    "minimum": 0
                   },
                   "is_pinned": {
                     "type": "boolean",
@@ -6945,13 +6945,13 @@
                   },
                   "page_count": {
                     "type": "integer",
-                    "format": "int32",
-                    "description": "Total number of image pages in the chapter."
+                    "description": "Total number of image pages in the chapter.",
+                    "minimum": 0
                   },
                   "proofread_unit_count": {
                     "type": "integer",
-                    "format": "int32",
-                    "description": "Number of units whose proofread has been completed."
+                    "description": "Number of units whose proofread has been completed.",
+                    "minimum": 0
                   },
                   "stages": {
                     "$ref": "#/components/schemas/StageMask",
@@ -6963,13 +6963,13 @@
                   },
                   "total_unit_count": {
                     "type": "integer",
-                    "format": "int32",
-                    "description": "Total number of translation units across all pages."
+                    "description": "Total number of translation units across all pages.",
+                    "minimum": 0
                   },
                   "translated_unit_count": {
                     "type": "integer",
-                    "format": "int32",
-                    "description": "Number of units whose translation has been completed."
+                    "description": "Number of units whose translation has been completed.",
+                    "minimum": 0
                   },
                   "updated_at": {
                     "type": "integer",
@@ -7062,23 +7062,23 @@
               },
               "index": {
                 "type": "integer",
-                "format": "int32",
-                "description": "Ordinal position within the chapter."
+                "description": "Ordinal position within the chapter.",
+                "minimum": 0
               },
               "proofread_unit_count": {
                 "type": "integer",
-                "format": "int32",
-                "description": "Number of proofread units on this page."
+                "description": "Number of proofread units on this page.",
+                "minimum": 0
               },
               "total_unit_count": {
                 "type": "integer",
-                "format": "int32",
-                "description": "Total number of translation units on this page."
+                "description": "Total number of translation units on this page.",
+                "minimum": 0
               },
               "translated_unit_count": {
                 "type": "integer",
-                "format": "int32",
-                "description": "Number of translated units on this page."
+                "description": "Number of translated units on this page.",
+                "minimum": 0
               },
               "updated_at": {
                 "type": "integer",
@@ -7522,8 +7522,8 @@
               },
               "term_count": {
                 "type": "integer",
-                "format": "int32",
-                "description": "Number of terms in the terminology base."
+                "description": "Number of terms in the terminology base.",
+                "minimum": 0
               },
               "updated_at": {
                 "type": "integer",
@@ -7915,8 +7915,8 @@
                 },
                 "index": {
                   "type": "integer",
-                  "format": "int32",
-                  "description": "Ordinal position within the parent comic."
+                  "description": "Ordinal position within the parent comic.",
+                  "minimum": 0
                 },
                 "is_pinned": {
                   "type": "boolean",
@@ -7924,13 +7924,13 @@
                 },
                 "page_count": {
                   "type": "integer",
-                  "format": "int32",
-                  "description": "Total number of image pages in the chapter."
+                  "description": "Total number of image pages in the chapter.",
+                  "minimum": 0
                 },
                 "proofread_unit_count": {
                   "type": "integer",
-                  "format": "int32",
-                  "description": "Number of units whose proofread has been completed."
+                  "description": "Number of units whose proofread has been completed.",
+                  "minimum": 0
                 },
                 "stages": {
                   "$ref": "#/components/schemas/StageMask",
@@ -7942,13 +7942,13 @@
                 },
                 "total_unit_count": {
                   "type": "integer",
-                  "format": "int32",
-                  "description": "Total number of translation units across all pages."
+                  "description": "Total number of translation units across all pages.",
+                  "minimum": 0
                 },
                 "translated_unit_count": {
                   "type": "integer",
-                  "format": "int32",
-                  "description": "Number of units whose translation has been completed."
+                  "description": "Number of units whose translation has been completed.",
+                  "minimum": 0
                 },
                 "updated_at": {
                   "type": "integer",
@@ -8318,23 +8318,23 @@
                 },
                 "index": {
                   "type": "integer",
-                  "format": "int32",
-                  "description": "Ordinal position within the chapter."
+                  "description": "Ordinal position within the chapter.",
+                  "minimum": 0
                 },
                 "proofread_unit_count": {
                   "type": "integer",
-                  "format": "int32",
-                  "description": "Number of proofread units on this page."
+                  "description": "Number of proofread units on this page.",
+                  "minimum": 0
                 },
                 "total_unit_count": {
                   "type": "integer",
-                  "format": "int32",
-                  "description": "Total number of translation units on this page."
+                  "description": "Total number of translation units on this page.",
+                  "minimum": 0
                 },
                 "translated_unit_count": {
                   "type": "integer",
-                  "format": "int32",
-                  "description": "Number of translated units on this page."
+                  "description": "Number of translated units on this page.",
+                  "minimum": 0
                 },
                 "updated_at": {
                   "type": "integer",
@@ -8636,8 +8636,8 @@
                 },
                 "term_count": {
                   "type": "integer",
-                  "format": "int32",
-                  "description": "Number of terms in the terminology base."
+                  "description": "Number of terms in the terminology base.",
+                  "minimum": 0
                 },
                 "updated_at": {
                   "type": "integer",
@@ -8781,8 +8781,8 @@
               "properties": {
                 "comic_count": {
                   "type": "integer",
-                  "format": "int32",
-                  "description": "Total number of comics in this workset."
+                  "description": "Total number of comics in this workset.",
+                  "minimum": 0
                 },
                 "created_at": {
                   "type": "integer",
@@ -8802,8 +8802,8 @@
                 },
                 "index": {
                   "type": "integer",
-                  "format": "int32",
-                  "description": "Ordinal position of the workset within its team."
+                  "description": "Ordinal position of the workset within its team.",
+                  "minimum": 0
                 },
                 "name": {
                   "type": "string",
@@ -8853,8 +8853,8 @@
             "properties": {
               "comic_count": {
                 "type": "integer",
-                "format": "int32",
-                "description": "Total number of comics in this workset."
+                "description": "Total number of comics in this workset.",
+                "minimum": 0
               },
               "created_at": {
                 "type": "integer",
@@ -8874,8 +8874,8 @@
               },
               "index": {
                 "type": "integer",
-                "format": "int32",
-                "description": "Ordinal position of the workset within its team."
+                "description": "Ordinal position of the workset within its team.",
+                "minimum": 0
               },
               "name": {
                 "type": "string",
@@ -8993,13 +8993,13 @@
         "properties": {
           "imported_page_count": {
             "type": "integer",
-            "format": "int32",
-            "description": "Number of pages that were imported."
+            "description": "Number of pages that were imported.",
+            "minimum": 0
           },
           "imported_unit_count": {
             "type": "integer",
-            "format": "int32",
-            "description": "Number of translation units that were imported."
+            "description": "Number of translation units that were imported.",
+            "minimum": 0
           }
         }
       },
@@ -9075,8 +9075,8 @@
           },
           "created_term_count": {
             "type": "integer",
-            "format": "int32",
-            "description": "Number of new terminology entries created."
+            "description": "Number of new terminology entries created.",
+            "minimum": 0
           },
           "id": {
             "type": "string",
@@ -9084,8 +9084,8 @@
           },
           "merged_term_count": {
             "type": "integer",
-            "format": "int32",
-            "description": "Number of existing terminology entries merged."
+            "description": "Number of existing terminology entries merged.",
+            "minimum": 0
           }
         }
       },
@@ -9187,18 +9187,18 @@
         "properties": {
           "proofread_unit_count": {
             "type": "integer",
-            "format": "int32",
-            "description": "Number of visible proofread Units."
+            "description": "Number of visible proofread Units.",
+            "minimum": 0
           },
           "total_unit_count": {
             "type": "integer",
-            "format": "int32",
-            "description": "Number of visible Units."
+            "description": "Number of visible Units.",
+            "minimum": 0
           },
           "translated_unit_count": {
             "type": "integer",
-            "format": "int32",
-            "description": "Number of visible translated Units."
+            "description": "Number of visible translated Units.",
+            "minimum": 0
           },
           "unit_infos": {
             "type": "array",
@@ -9635,23 +9635,23 @@
           },
           "index": {
             "type": "integer",
-            "format": "int32",
-            "description": "Ordinal position within the chapter."
+            "description": "Ordinal position within the chapter.",
+            "minimum": 0
           },
           "proofread_unit_count": {
             "type": "integer",
-            "format": "int32",
-            "description": "Number of proofread units on this page."
+            "description": "Number of proofread units on this page.",
+            "minimum": 0
           },
           "total_unit_count": {
             "type": "integer",
-            "format": "int32",
-            "description": "Total number of translation units on this page."
+            "description": "Total number of translation units on this page.",
+            "minimum": 0
           },
           "translated_unit_count": {
             "type": "integer",
-            "format": "int32",
-            "description": "Number of translated units on this page."
+            "description": "Number of translated units on this page.",
+            "minimum": 0
           },
           "updated_at": {
             "type": "integer",
@@ -9662,7 +9662,7 @@
       },
       "PageTranslationPortView": {
         "type": "object",
-        "description": "Page object exchanged by the PopRaKo translation port.",
+        "description": "Page object exchanged by the `PopRaKo` translation port.",
         "required": [
           "page_id",
           "page_index",
@@ -9675,8 +9675,8 @@
           },
           "page_index": {
             "type": "integer",
-            "format": "int32",
-            "description": "Zero-based page index within its chapter."
+            "description": "Zero-based page index within its chapter.",
+            "minimum": 0
           },
           "units": {
             "type": "array",
@@ -9972,7 +9972,7 @@
       "RoleMask": {
         "type": "integer",
         "format": "int32",
-        "description": "A composite bitmask combining multiple role perm flags.\n\nBits are OR-ed together from the following role values:\n\n| Value | Name          | Description             |\n|-------|---------------|-------------------------|\n| 1     | `RAW_PROVIDER` | Raw provider            |\n| 2     | `TRANSLATOR`   | Translator              |\n| 4     | `PROOFREADER`  | Proofreader             |\n| 8     | `TYPESETTER`   | Typesetter              |\n| 16    | `REDRAWER`     | Redrawer                |\n| 32    | `REVIEWER`     | Reviewer                |\n| 64    | `PUBLISHER`    | Publisher               |\n| 128   | `ADMIN`        | Admin                   |\n| 256   | `BOT`          | Bot                     |\n\n**Examples:** `1` = RAW_PROVIDER, `6` = TRANSLATOR | PROOFREADER, `255` = all roles except BOT.",
+        "description": "A composite bitmask combining multiple role perm flags.\n\nBits are OR-ed together from the following role values:\n\n| Value | Name          | Description             |\n|-------|---------------|-------------------------|\n| 1     | `RAW_PROVIDER` | Raw provider            |\n| 2     | `TRANSLATOR`   | Translator              |\n| 4     | `PROOFREADER`  | Proofreader             |\n| 8     | `TYPESETTER`   | Typesetter              |\n| 16    | `REDRAWER`     | Redrawer                |\n| 32    | `REVIEWER`     | Reviewer                |\n| 64    | `PUBLISHER`    | Publisher               |\n| 128   | `ADMIN`        | Admin                   |\n| 256   | `BOT`          | Bot                     |\n\n**Examples:** `1` = `RAW_PROVIDER`, `6` = TRANSLATOR | PROOFREADER, `255` = all roles except BOT.",
         "example": 34,
         "minimum": 0
       },
@@ -10172,8 +10172,8 @@
           },
           "term_count": {
             "type": "integer",
-            "format": "int32",
-            "description": "Number of terms in the terminology base."
+            "description": "Number of terms in the terminology base.",
+            "minimum": 0
           },
           "updated_at": {
             "type": "integer",
@@ -10570,7 +10570,7 @@
       },
       "UnitTranslationPortView": {
         "type": "object",
-        "description": "Unit object exchanged by the PopRaKo translation port.",
+        "description": "Unit object exchanged by the `PopRaKo` translation port.",
         "required": [
           "unit_id",
           "unit_index",
@@ -10596,8 +10596,8 @@
           },
           "page_index": {
             "type": "integer",
-            "format": "int32",
-            "description": "Ordinal index of the page within its chapter."
+            "description": "Ordinal index of the page within its chapter.",
+            "minimum": 0
           },
           "proofread_text": {
             "type": [
@@ -10633,8 +10633,8 @@
           },
           "unit_index": {
             "type": "integer",
-            "format": "int32",
-            "description": "Ordinal index of the unit within its page."
+            "description": "Ordinal index of the unit within its page.",
+            "minimum": 0
           },
           "x_coord": {
             "type": "number",
@@ -11025,8 +11025,8 @@
         "properties": {
           "comic_count": {
             "type": "integer",
-            "format": "int32",
-            "description": "Total number of comics in this workset."
+            "description": "Total number of comics in this workset.",
+            "minimum": 0
           },
           "created_at": {
             "type": "integer",
@@ -11046,8 +11046,8 @@
           },
           "index": {
             "type": "integer",
-            "format": "int32",
-            "description": "Ordinal position of the workset within its team."
+            "description": "Ordinal position of the workset within its team.",
+            "minimum": 0
           },
           "name": {
             "type": "string",
