@@ -71,20 +71,15 @@ fn list_announcements(
 
     let limit = spec.limit as usize;
 
-    match offset >= announcement_infos.len() {
+    if offset >= announcement_infos.len() {
+        Vec::new()
+    } else {
         //
         // Internal implementation detail.
         // Internal implementation detail.
-        true => Vec::new(),
+        let end = std::cmp::min(offset + limit, announcement_infos.len());
 
-        false => {
-            //
-            // Internal implementation detail.
-            // Internal implementation detail.
-            let end = std::cmp::min(offset + limit, announcement_infos.len());
-
-            announcement_infos[offset..end].to_vec()
-        }
+        announcement_infos[offset..end].to_vec()
     }
 }
 

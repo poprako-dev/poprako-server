@@ -11,7 +11,7 @@ use tracing::instrument;
 use poprako_util::i18n::trl;
 
 use crate::model::read::proj::chapter::ChapterInfo;
-use crate::model::read::proj::unit::UnitCounterDelta;
+use crate::model::read::proj::unit::UnitCountDelta;
 use crate::model::read::spec::chapter::ChapterListSpec;
 use crate::model::write::chapter::{
     ChapterEntry, ChapterPatch, ChapterStageRepl,
@@ -135,8 +135,8 @@ pub async fn list_infos(
         .filter(f_comic_id.eq(spec.comic_id.as_str()))
         .select(ChapterInfoRow::as_select())
         .order_by(f_index.desc())
-        .offset(spec.offset as i64)
-        .limit(spec.limit as i64)
+        .offset(i64::from(spec.offset))
+        .limit(i64::from(spec.limit))
         .load::<ChapterInfoRow>(conn)
         .await
         .map_err(diesel)?;
@@ -245,7 +245,7 @@ pub async fn create(
     chapter_entry: &ChapterEntry,
 ) -> BaseRest<ChapterInfo> {
     //
-    let entry = ChapterEntryRow::from(chapter_entry);
+    let entry = ChapterEntryRow::try_from(chapter_entry)?;
 
     let row = diesel::insert_into(t_chapter)
         .values(&entry)
@@ -450,18 +450,17 @@ pub async fn set_page_counters(
 pub async fn adjust_unit_counters(
     conn: &mut RdbConn,
     id: &str,
-    delta: &UnitCounterDelta,
+    delta: &UnitCountDelta,
 ) -> BaseRest<()> {
     //
     let now = OffsetDateTime::now_utc();
 
     diesel::update(t_chapter.filter(f_id.eq(id)))
         .set((
-            f_total_unit_count.eq(f_total_unit_count + delta.total_unit_count),
+            f_total_unit_count.eq(f_total_unit_count + delta.total),
             f_translated_unit_count
-                .eq(f_translated_unit_count + delta.translated_unit_count),
-            f_proofread_unit_count
-                .eq(f_proofread_unit_count + delta.proofread_unit_count),
+                .eq(f_translated_unit_count + delta.translated),
+            f_proofread_unit_count.eq(f_proofread_unit_count + delta.proofread),
             f_updated_at.eq(now),
         ))
         .execute(conn)

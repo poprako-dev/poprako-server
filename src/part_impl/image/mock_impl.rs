@@ -11,11 +11,11 @@ use crate::part::image::{
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::{BaseError, BaseRest, accept};
 
-/// Mock implementation of [ImagePool].
+/// Mock implementation of [`ImagePool`].
 ///
 /// Returns deterministic test URLs (`https://test.local/get/{key}` /
 /// `https://test.local/put/{key}`). Configure
-/// [Mock::with_image_get_failure] or [Mock::with_image_put_failure] to test
+/// [`Mock::with_image_get_failure`] or [`Mock::with_image_put_failure`] to test
 /// error paths.
 impl ImagePool for Mock {
     // Internal implementation of `gen_download_url`.
@@ -47,7 +47,7 @@ impl ImagePool for Mock {
         accept(
             Url::parse(&format!(
                 "https://test.local/cdn-cgi/image/width=300,fit=scale-down,quality=80,format=auto,metadata=none/{}",
-                original_key
+                original_key,
             ))
             .unwrap(),
         )
@@ -81,7 +81,7 @@ impl ImagePool for Mock {
     }
 }
 
-/// Mock implementation of [ImageManager].
+/// Mock implementation of [`ImageManager`].
 impl ImageManager for Mock {
     // Internal implementation of `object_exists`.
     async fn object_exists(&self, _: &str) -> BaseRest<bool> {

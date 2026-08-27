@@ -85,7 +85,7 @@ pub struct UserAspectRow<'a> {
 }
 
 impl<'a> UserAspectRow<'a> {
-    pub fn new(updated_at: OffsetDateTime) -> Self {
+    pub const fn new(updated_at: OffsetDateTime) -> Self {
         //
         Self {
             f_nickname: None,
@@ -100,28 +100,28 @@ impl<'a> UserAspectRow<'a> {
         }
     }
 
-    pub fn nickname(mut self, val: &'a str) -> Self {
+    pub const fn nickname(mut self, val: &'a str) -> Self {
         //
         self.f_nickname = Some(val);
 
         self
     }
 
-    pub fn qid(mut self, val: &'a str) -> Self {
+    pub const fn qid(mut self, val: &'a str) -> Self {
         //
         self.f_qid = Some(val);
 
         self
     }
 
-    pub fn avatar_key(mut self, val: &'a str) -> Self {
+    pub const fn avatar_key(mut self, val: &'a str) -> Self {
         //
         self.f_avatar_key = Some(val);
 
         self
     }
 
-    pub fn avatar_uploaded(mut self, val: bool) -> Self {
+    pub const fn avatar_uploaded(mut self, val: bool) -> Self {
         //
         self.f_avatar_uploaded = Some(val);
 
@@ -135,21 +135,21 @@ impl<'a> UserAspectRow<'a> {
         self
     }
 
-    pub fn avatar_hash(mut self, val: &'a ImageHash) -> Self {
+    pub const fn avatar_hash(mut self, val: &'a ImageHash) -> Self {
         //
         self.f_avatar_hash = Some(val.as_bytes());
 
         self
     }
 
-    pub fn avatar_ext(mut self, val: ImageExt) -> Self {
+    pub const fn avatar_ext(mut self, val: ImageExt) -> Self {
         //
         self.f_avatar_extension = Some(val.suffix());
 
         self
     }
 
-    pub fn last_active_at(mut self, val: OffsetDateTime) -> Self {
+    pub const fn last_active_at(mut self, val: OffsetDateTime) -> Self {
         //
         self.f_last_active_at = Some(val);
 
@@ -232,7 +232,7 @@ impl TryFrom<UserInfoRow> for UserInfo {
             }
         };
 
-        accept(UserInfo {
+        accept(Self {
             id: v.f_id,
             qid: v.f_qid,
             nickname: v.f_nickname,
@@ -252,7 +252,7 @@ impl TryFrom<UserInfoRow> for UserInfo {
 impl From<UserCredsRow> for UserCredential {
     fn from(v: UserCredsRow) -> Self {
         //
-        UserCredential {
+        Self {
             user_id: v.f_id,
             password_hash: v.f_password_hash,
         }

@@ -7,7 +7,7 @@ use utoipa::ToSchema;
 
 use crate::data::view::page_port::PageTranslationPortView;
 
-/// JSON document exchanged by the PopRaKo translation port.
+/// JSON document exchanged by the `PopRaKo` translation port.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ChapterTranslationPortView {
@@ -15,7 +15,7 @@ pub struct ChapterTranslationPortView {
     /// Chapter identifier from the exporting chapter.
     pub chapter_id: String,
     /// Ordinal index of the chapter within its comic.
-    pub chapter_index: i32,
+    pub chapter_index: usize,
     /// Optional subtitle from the exporting chapter.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub chapter_subtitle: Option<String>,

@@ -1,7 +1,7 @@
 #![recursion_limit = "256"]
 
 //! Crate root: explicit public re-exports and internal module organization for
-//! the PopRaKo application core.
+//! the `PopRaKo` application core.
 
 // HTTP API layer (handlers, middleware, server, router, OpenAPI).
 mod api;

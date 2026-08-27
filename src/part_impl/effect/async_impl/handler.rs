@@ -30,7 +30,7 @@ pub struct EffectHandler<R> {
 
 impl<R> EffectHandler<R> {
     /// Builds a background handler from its queue and cancellation token.
-    pub fn new(
+    pub const fn new(
         repo: Arc<R>,
         recv: Receiver<Event>,
         token: CancellationToken,
@@ -60,7 +60,7 @@ impl<R> EffectHandler<R> {
                     match event {
                         //
                         Some(event) => {
-                            dispatch::<C, R>(&self.repo, event).await
+                            dispatch::<C, R>(&self.repo, event).await;
                         }
 
                         None => break,

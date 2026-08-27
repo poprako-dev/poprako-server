@@ -42,7 +42,7 @@ pub async fn list_infos<C, R, I>(
 where
     C: Context,
     R: AnnouncementRepo<C> + MemberRepo<C> + Sync,
-    I: ImagePool,
+    I: ImagePool + Sync,
 {
     let announcement_list_spec = Into::<AnnouncementListSpec>::into(instr);
 

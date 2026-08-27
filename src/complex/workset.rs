@@ -27,14 +27,16 @@ impl WorksetPermComplex {
     }
 
     /// Verify the caller is a team member.
-    pub fn ensure_user_can_list_infos(
+    pub const fn ensure_user_can_list_infos(
         member_info: &MemberInfo,
     ) -> BaseRest<()> {
         check_user_is_team_member(member_info)
     }
 
     /// Verify the caller may read the workset.
-    pub fn ensure_user_can_get_info(member_info: &MemberInfo) -> BaseRest<()> {
+    pub const fn ensure_user_can_get_info(
+        member_info: &MemberInfo,
+    ) -> BaseRest<()> {
         check_user_is_team_member(member_info)
     }
 

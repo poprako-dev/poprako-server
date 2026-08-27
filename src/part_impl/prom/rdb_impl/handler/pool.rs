@@ -27,13 +27,13 @@ use crate::part_impl::prom::rdb_impl::repo::{
     ResetStuck, RetryMessage,
 };
 use crate::part_impl::repo::HybRepo;
-use crate::result::BaseRest;
+use crate::result::{BaseError, BaseRest};
 
 // Constant definition for `WORKER_COUNT`.
 const WORKER_COUNT: usize = 4;
 
 // Constant definition for `POLL_INTERVAL`.
-const POLL_INTERVAL: StdDuration = StdDuration::from_secs(60);
+const POLL_INTERVAL: StdDuration = StdDuration::from_mins(1);
 
 // Constant definition for `STUCK_RESET_INTERVAL`.
 const STUCK_RESET_INTERVAL: Duration = Duration::minutes(1);
@@ -96,7 +96,7 @@ where
         let (handler, completed) = (Arc::new(self), Arc::new(Notify::new()));
 
         let (worker_senders, worker_handles) =
-            handler.spawn_workers(completed.clone());
+            handler.spawn_workers(&completed);
 
         handler
             .run_supervisor(&worker_senders, completed.as_ref())
@@ -119,7 +119,7 @@ where
     // Internal implementation of `spawn_workers`.
     fn spawn_workers(
         self: &Arc<Self>,
-        completed: Arc<Notify>,
+        completed: &Arc<Notify>,
     ) -> (Vec<WorkerSender>, Vec<JoinHandle<()>>) {
         //
         // Internal implementation detail.
@@ -186,7 +186,7 @@ where
                 // Internal implementation detail.
                 self.log_reset_stuck().await;
 
-                next_stuck_reset_at = now + STUCK_RESET_INTERVAL;
+                next_stuck_reset_at = schedule_at(now, STUCK_RESET_INTERVAL);
             }
 
             if now >= next_completed_purge_at {
@@ -194,13 +194,30 @@ where
                 // Internal implementation detail.
                 self.log_purge_completed().await;
 
-                next_completed_purge_at = now + COMPLETED_PURGE_INTERVAL;
+                next_completed_purge_at =
+                    schedule_at(now, COMPLETED_PURGE_INTERVAL);
             }
 
             let dispatched = match self.poll().await {
                 //
                 // Internal implementation detail.
-                Ok(rows) => self.dispatch_rows(worker_senders, rows).await,
+                Ok(rows) => {
+                    //
+                    match self.dispatch_rows(worker_senders, rows).await {
+                        //
+                        Ok(dispatched) => dispatched,
+
+                        Err(error) => {
+                            //
+                            tracing::error!(
+                                err = ?error,
+                                "[RdbPromHandler::run] worker index calculation failed",
+                            );
+
+                            false
+                        }
+                    }
+                }
 
                 Err(error) => {
                     //
@@ -226,7 +243,7 @@ where
 
                 () = completed.notified() => {}
 
-                _ = sleep(POLL_INTERVAL) => {}
+                () = sleep(POLL_INTERVAL) => {}
             }
         }
     }
@@ -359,7 +376,7 @@ where
         &self,
         worker_senders: &[WorkerSender],
         rows: Vec<LocalMessageRow>,
-    ) -> bool {
+    ) -> BaseRest<bool> {
         //
         // Internal implementation detail.
         let mut dispatched = false;
@@ -367,6 +384,20 @@ where
         for row in rows {
             //
             // Internal implementation detail.
+            let worker_index = topic_worker_index(&row.f_topic)?;
+
+            let Some(worker_sender) = worker_senders.get(worker_index) else {
+                //
+                tracing::error!(
+                    id = %row.f_id,
+                    worker_index,
+                    worker_count = worker_senders.len(),
+                    "internal invariant violated: prom worker is missing",
+                );
+
+                continue;
+            };
+
             let claimed = match self.claim(&row.f_id, row.f_lease).await {
                 //
                 // Internal implementation detail.
@@ -389,9 +420,7 @@ where
                 continue;
             }
 
-            let worker_index = topic_worker_index(&row.f_topic);
-
-            match worker_senders[worker_index].send(row) {
+            match worker_sender.send(row) {
                 //
                 // Internal implementation detail.
                 Ok(()) => dispatched = true,
@@ -407,7 +436,7 @@ where
             }
         }
 
-        dispatched
+        Ok(dispatched)
     }
 
     #[instrument(level = "info", skip_all)]
@@ -430,7 +459,12 @@ where
     // Internal implementation of `retry`.
     async fn retry(&self, id: &str, lease: i64, message: &str) -> BaseRest<()> {
         //
-        let visible_at = OffsetDateTime::now_utc() + RETRY_DELAY;
+        let visible_at = OffsetDateTime::now_utc()
+            .checked_add(RETRY_DELAY)
+            .ok_or_else(|| BaseError::Unrecoverable {
+                message: "prom retry timestamp is outside the supported range"
+                    .into(),
+            })?;
 
         self.nucl
             .coord(async |context| {
@@ -464,7 +498,13 @@ where
     // Internal implementation of `reset_stuck`.
     async fn reset_stuck(&self) -> BaseRest<()> {
         //
-        let before = OffsetDateTime::now_utc() - PROCESSING_TIMEOUT;
+        let before = OffsetDateTime::now_utc()
+            .checked_sub(PROCESSING_TIMEOUT)
+            .ok_or_else(|| BaseError::Unrecoverable {
+                message:
+                    "prom processing cutoff is outside the supported range"
+                        .into(),
+            })?;
 
         self.nucl
             .coord(async |context| {
@@ -479,10 +519,21 @@ where
     // Internal implementation of `purge_completed`.
     async fn purge_completed(&self) -> BaseRest<usize> {
         //
-        let (completed_before, dead_before) = (
-            OffsetDateTime::now_utc() - COMPLETED_RETENTION,
-            OffsetDateTime::now_utc() - DEAD_RETENTION,
-        );
+        let completed_before = OffsetDateTime::now_utc()
+            .checked_sub(COMPLETED_RETENTION)
+            .ok_or_else(|| BaseError::Unrecoverable {
+                message:
+                    "prom completion cutoff is outside the supported range"
+                        .into(),
+            })?;
+
+        let dead_before = OffsetDateTime::now_utc()
+            .checked_sub(DEAD_RETENTION)
+            .ok_or_else(|| BaseError::Unrecoverable {
+                message:
+                    "prom dead-message cutoff is outside the supported range"
+                        .into(),
+            })?;
 
         let purged_count = self
             .nucl
@@ -516,12 +567,27 @@ where
 }
 
 // Internal implementation of `topic_worker_index`.
-fn topic_worker_index(topic: &str) -> usize {
+fn topic_worker_index(topic: &str) -> BaseRest<usize> {
     //
     // Internal implementation detail.
     let hash = topic.bytes().fold(FNV_OFFSET_BASIS, |hash, byte| {
         (hash ^ u64::from(byte)).wrapping_mul(FNV_PRIME)
     });
 
-    hash as usize % WORKER_COUNT
+    let worker_count =
+        u64::try_from(WORKER_COUNT).map_err(|_| BaseError::Unrecoverable {
+            message: "worker count exceeds u64 range".into(),
+        })?;
+
+    usize::try_from(hash % worker_count).map_err(|_| BaseError::Unrecoverable {
+        message: "worker index exceeds usize range".into(),
+    })
+}
+
+// Computes the next maintenance deadline without panicking at time bounds.
+const fn schedule_at(
+    now: OffsetDateTime,
+    interval: Duration,
+) -> OffsetDateTime {
+    now.saturating_add(interval)
 }

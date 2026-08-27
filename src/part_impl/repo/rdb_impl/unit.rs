@@ -12,7 +12,7 @@ pub mod tests;
 use poprako_orchestra::{AtLeast, Level, Run, Step};
 use tracing::instrument;
 
-use crate::model::read::proj::unit::{UnitCounters, UnitInfo, UnitOrder};
+use crate::model::read::proj::unit::{UnitCountMetrics, UnitInfo, UnitOrder};
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::unit::{
     ApplyUnitEdits, ListUnitInfos, ListUnitInfosByIds, ListUnitInfosByPageIds,
@@ -112,7 +112,7 @@ where
         &self,
         context: &mut RdbContext<L>,
         oper: &ApplyUnitEdits<'_>,
-    ) -> BaseRest<UnitCounters> {
+    ) -> BaseRest<UnitCountMetrics> {
         apply_edits(context.conn(), oper.page_id, oper.orders, oper.edits).await
     }
 }

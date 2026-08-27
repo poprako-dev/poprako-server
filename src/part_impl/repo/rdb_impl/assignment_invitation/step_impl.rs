@@ -46,8 +46,8 @@ pub async fn list_infos(
     let rows = query
         .select(AssignmentInvitationInfoRow::as_select())
         .order_by((f_created_at.desc(), f_id.asc()))
-        .offset(spec.offset as i64)
-        .limit(spec.limit as i64)
+        .offset(i64::from(spec.offset))
+        .limit(i64::from(spec.limit))
         .load::<AssignmentInvitationInfoRow>(conn)
         .await
         .map_err(diesel)?;

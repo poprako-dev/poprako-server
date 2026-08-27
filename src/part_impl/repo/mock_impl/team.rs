@@ -95,20 +95,15 @@ fn list_team_infos(
 
     let limit = oper.spec.limit as usize;
 
-    match offset >= team_infos.len() {
+    if offset >= team_infos.len() {
+        Vec::new()
+    } else {
         //
         // Internal implementation detail.
         // Internal implementation detail.
-        true => Vec::new(),
+        let end = std::cmp::min(offset + limit, team_infos.len());
 
-        false => {
-            //
-            // Internal implementation detail.
-            // Internal implementation detail.
-            let end = std::cmp::min(offset + limit, team_infos.len());
-
-            team_infos[offset..end].to_vec()
-        }
+        team_infos[offset..end].to_vec()
     }
 }
 
@@ -526,7 +521,7 @@ impl<'a> Step<AllocTeamWorksetIndex<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &AllocTeamWorksetIndex<'a>,
-    ) -> BaseRest<i32> {
+    ) -> BaseRest<usize> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -543,7 +538,7 @@ impl<'a> Step<AllocTeamWorksetIndex<'a>, MockContext> for Mock {
             .worksets
             .iter()
             .filter(|workset_info| workset_info.team_id == oper.id)
-            .count() as i32;
+            .count();
 
         accept(workset_index)
     }

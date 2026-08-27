@@ -304,9 +304,13 @@ async fn delete_removes_team_worksets_descendant_comics_and_avatar() {
 
     mock.seed_member(member("member-1", "user-1", "team-1"));
 
-    mock.seed_workset(workset("workset-1", "team-1"));
+    let mut workset_one = workset("workset-1", "team-1");
+    workset_one.comic_count = 1;
+    mock.seed_workset(workset_one);
 
-    mock.seed_workset(workset("workset-2", "team-1"));
+    let mut workset_two = workset("workset-2", "team-1");
+    workset_two.comic_count = 1;
+    mock.seed_workset(workset_two);
 
     mock.seed_comic(comic_with_uploaded_cover(
         "comic-1",

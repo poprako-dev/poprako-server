@@ -66,7 +66,7 @@ pub async fn list_infos<C, R, I>(
 where
     C: Context,
     R: ChapterRepo<C> + MemberRepo<C> + TeamRepo<C> + PageRepo<C> + Sync,
-    I: ImagePool,
+    I: ImagePool + Sync,
 {
     let member_info = MemberLoader::load_info_from_comic(
         repo,
@@ -190,7 +190,7 @@ pub async fn create<N, C, R>(
 ) -> BaseRest<CreateChapterVal>
 where
     C: Context + Send,
-    N: Nucl<Context = C, Error = BaseError>,
+    N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<ReptRead>,
     R: ChapterRepo<C>
         + ChapterWorkflowRecordRepo<C>
@@ -300,27 +300,16 @@ where
             .step_on(repo, context)
             .await?;
 
-            let mut workflow_record_entries = Vec::with_capacity(2);
+            let prev_pinned_chapter_id =
+                prev_pinned_chapter.map(|chapter_info| chapter_info.id);
 
-            if let Some(prev_pinned_chapter) = prev_pinned_chapter {
-                //
-                workflow_record_entries.push(ChapterWorkflowRecordEntry::new(
-                    prev_pinned_chapter.id,
-                    Some(token.user_id.clone()),
-                    ChapterWorkflowRecordPayload::ChapterUnpinned,
-                ));
-            }
-
-            workflow_record_entries.push(ChapterWorkflowRecordEntry::new(
+            record_created_chapter(
+                repo,
+                context,
+                token.user_id,
+                prev_pinned_chapter_id,
                 chapter_info.id.clone(),
-                Some(token.user_id),
-                ChapterWorkflowRecordPayload::ChapterCreated,
-            ));
-
-            CreateChapterWorkflowRecords {
-                entries: &workflow_record_entries,
-            }
-            .step_on(repo, context)
+            )
             .await?;
 
             accept(chapter_info.id)
@@ -339,7 +328,7 @@ pub async fn update_info<N, C, R>(
 ) -> BaseRest<()>
 where
     C: Context + Send,
-    N: Nucl<Context = C, Error = BaseError>,
+    N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<ReptRead>,
     R: ChapterRepo<C>
         + ChapterWorkflowRecordRepo<C>
@@ -433,7 +422,7 @@ pub async fn mark_pinned<N, C, R>(
 ) -> BaseRest<()>
 where
     C: Context + Send,
-    N: Nucl<Context = C, Error = BaseError>,
+    N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<ReptRead>,
     R: ChapterRepo<C>
         + ChapterWorkflowRecordRepo<C>
@@ -549,6 +538,44 @@ where
             accept(())
         })
         .await?;
+
+    accept(())
+}
+
+// Records creation and any displaced pinned chapter in the workflow history.
+async fn record_created_chapter<C, R>(
+    repo: &R,
+    context: &mut C,
+    user_id: String,
+    prev_pinned_chapter_id: Option<String>,
+    chapter_id: String,
+) -> BaseRest<()>
+where
+    C: Context,
+    R: ChapterWorkflowRecordRepo<C> + Sync,
+{
+    let mut workflow_record_entries = Vec::with_capacity(2);
+
+    if let Some(prev_pinned_chapter_id) = prev_pinned_chapter_id {
+        //
+        workflow_record_entries.push(ChapterWorkflowRecordEntry::new(
+            prev_pinned_chapter_id,
+            Some(user_id.clone()),
+            ChapterWorkflowRecordPayload::ChapterUnpinned,
+        ));
+    }
+
+    workflow_record_entries.push(ChapterWorkflowRecordEntry::new(
+        chapter_id,
+        Some(user_id),
+        ChapterWorkflowRecordPayload::ChapterCreated,
+    ));
+
+    CreateChapterWorkflowRecords {
+        entries: &workflow_record_entries,
+    }
+    .step_on(repo, context)
+    .await?;
 
     accept(())
 }

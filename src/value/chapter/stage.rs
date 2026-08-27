@@ -53,7 +53,7 @@ pub enum Stage {
 /// `RawProvide`, `Review`, and `Publish` cannot be `Active` (they are
 /// instantaneous stages). `Translate`, `Proofread`, and `TypesetRedraw`
 /// accept any phase.
-pub fn is_valid_stage_phase(stage: Stage, phase: StagePhase) -> bool {
+pub const fn is_valid_stage_phase(stage: Stage, phase: StagePhase) -> bool {
     //
     match stage {
         //
@@ -131,17 +131,17 @@ pub fn try_modify_stage(
             Stage::RawProvide | Stage::Review | Stage::Publish,
             StagePhase::Pending,
             StageOper::Advance,
-        ) => StagePhase::Completed,
+        )
+        | (_, StagePhase::Active, StageOper::Advance) => StagePhase::Completed,
 
         (
             Stage::RawProvide | Stage::Review,
             StagePhase::Completed,
             StageOper::Revert,
-        ) => StagePhase::Pending,
-
-        (_, StagePhase::Pending, StageOper::Advance) => StagePhase::Active,
-
-        (_, StagePhase::Active, StageOper::Advance) => StagePhase::Completed,
+        )
+        | (_, StagePhase::Active | StagePhase::Pending, StageOper::Revert) => {
+            StagePhase::Pending
+        }
 
         (_, StagePhase::Completed, StageOper::Advance) => {
             //
@@ -162,11 +162,8 @@ pub fn try_modify_stage(
             });
         }
 
-        (_, StagePhase::Completed, StageOper::Revert) => StagePhase::Active,
-
-        (_, StagePhase::Active, StageOper::Revert) => StagePhase::Pending,
-
-        (_, StagePhase::Pending, StageOper::Revert) => StagePhase::Pending,
+        (_, StagePhase::Pending, StageOper::Advance)
+        | (_, StagePhase::Completed, StageOper::Revert) => StagePhase::Active,
     };
 
     if !is_valid_stage_phase(stage, next_phase) {
@@ -217,7 +214,7 @@ impl StagePhaseField {
     ///
     /// Returns `None` for wildcard (`IGNORE`) so callers can explicitly decide
     /// whether wildcard matching is allowed in this context.
-    pub fn as_phase(self) -> Option<StagePhase> {
+    pub const fn as_phase(self) -> Option<StagePhase> {
         //
         match self {
             //
@@ -227,9 +224,7 @@ impl StagePhaseField {
 
             Self::COMPLETED => Some(StagePhase::Completed),
 
-            Self::IGNORE => None,
-
-            _ => unreachable!("stage phase field is validated at construction"),
+            _ => None,
         }
     }
 }

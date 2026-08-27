@@ -103,9 +103,9 @@ pub enum ChapterWorkflowRecordEventView {
         /// Imported content format.
         format: ChapterWorkflowRecordTranslationFormatView,
         /// Number of imported pages.
-        imported_page_count: i32,
+        imported_page_count: usize,
         /// Number of imported units.
-        imported_unit_count: i32,
+        imported_unit_count: usize,
     },
 
     /// Translation content was successfully exported from a chapter.
@@ -133,10 +133,10 @@ pub enum ChapterWorkflowRecordEventView {
 #[serde(rename_all = "snake_case")]
 pub enum ChapterWorkflowRecordTranslationFormatView {
     //
-    /// LabelPlus translation format.
+    /// `LabelPlus` translation format.
     LabelPlus,
 
-    /// PopRaKo native translation format.
+    /// `PopRaKo` native translation format.
     #[serde(rename = "poprako")]
     PopRaKo,
 }

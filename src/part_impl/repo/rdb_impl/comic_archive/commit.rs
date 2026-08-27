@@ -22,8 +22,8 @@ use crate::shared::RdbConn;
 use crate::shared::result::diesel;
 
 // Store archive payload, clear sources, and retain the comic management row.
-#[instrument(level = "info", skip_all)]
 /// Commits one permanent archive and clears its active source resources.
+#[instrument(level = "info", skip_all)]
 pub async fn commit(
     conn: &mut RdbConn,
     comic_archive_entry: &ComicArchiveEntry,

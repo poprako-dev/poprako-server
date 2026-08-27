@@ -22,6 +22,11 @@ use crate::part_impl::repo::mock_impl::Mock;
 use crate::value::chapter::{Stage, StageMask};
 use crate::value::role::{RoleField, RoleMask};
 
+const BUF_SIZE: NonZeroUsize = match NonZeroUsize::new(8) {
+    Some(buf_size) => buf_size,
+    None => NonZeroUsize::MIN,
+};
+
 // Internal implementation of `team_info`.
 // Build a stable test team with non-zero avatar metadata.
 fn team_info() -> TeamInfo {
@@ -160,7 +165,7 @@ async fn develop_dispatches_user_signup() {
 
     mock.seed_team(team_info());
 
-    let develop = AsyncEffectDevelop::new(Arc::clone(&mock), 8);
+    let develop = AsyncEffectDevelop::new(Arc::clone(&mock), BUF_SIZE);
 
     Event::UserSignedUp {
         payload: UserSignedUpEvent {
@@ -201,7 +206,7 @@ async fn develop_dispatches_chapter_workflow_completed() {
         RoleMask::from(RoleField::REVIEWER),
     ));
 
-    let develop = AsyncEffectDevelop::new(Arc::clone(&mock), 8);
+    let develop = AsyncEffectDevelop::new(Arc::clone(&mock), BUF_SIZE);
 
     Event::ChapterWorkflowCompleted {
         payload: ChapterWorkflowCompletedEvent {
@@ -241,7 +246,7 @@ async fn develop_dispatches_chapter_published() {
         RoleMask::from(RoleField::REVIEWER),
     ));
 
-    let develop = AsyncEffectDevelop::new(Arc::clone(&mock), 8);
+    let develop = AsyncEffectDevelop::new(Arc::clone(&mock), BUF_SIZE);
 
     Event::ChapterPublished {
         payload: ChapterPublishedEvent {
@@ -266,7 +271,7 @@ async fn close_is_idempotent() {
     // Internal implementation detail.
     let mock = Arc::new(Mock::new());
 
-    let develop = AsyncEffectDevelop::new(mock, 8);
+    let develop = AsyncEffectDevelop::new(mock, BUF_SIZE);
 
     develop.close().await;
 
@@ -279,7 +284,7 @@ async fn close_is_concurrent() {
     // Internal implementation detail.
     let mock = Arc::new(Mock::new());
 
-    let develop = AsyncEffectDevelop::new(mock, 8);
+    let develop = AsyncEffectDevelop::new(mock, BUF_SIZE);
 
     let (first, second) = tokio::join!(develop.close(), develop.close());
 

@@ -1,4 +1,4 @@
-//! Standalone binary that prints the generated OpenAPI specification to stdout.
+//! Standalone binary that prints the generated `OpenAPI` specification to stdout.
 //!
 //! Run with `cargo run -p poprako-swagger` — the `swagger` feature is always
 //! enabled by this crate's dependency on `poprako-server`, so no `--features`

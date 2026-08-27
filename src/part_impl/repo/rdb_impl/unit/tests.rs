@@ -13,11 +13,26 @@ use crate::part::repo::oper::unit::{
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::test_shared;
+use crate::part_impl::repo::rdb_impl::unit::edit::move_order;
 use crate::result::accept;
 use crate::shared::RdbCore;
 use crate::util::Patch;
 
 const PREFIX: &str = "rdb-test-unit-domain-";
+
+#[test]
+fn move_order_preserves_relative_order_around_the_moved_unit() {
+    //
+    let mut ordered_ids = vec!["a", "b", "c", "d"];
+
+    move_order(&mut ordered_ids, "d", Some("b")).unwrap();
+
+    assert_eq!(ordered_ids, vec!["a", "d", "b", "c"]);
+
+    move_order(&mut ordered_ids, "d", None).unwrap();
+
+    assert_eq!(ordered_ids, vec!["a", "b", "c", "d"]);
+}
 
 /// Verifies Unit v2 persistence through the real transaction adapter.
 pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
@@ -67,7 +82,7 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
             )
             .await?;
 
-        assert_eq!(counters.total_unit_count, 2);
+        assert_eq!(counters.total, 2);
 
         accept(())
     })
@@ -91,7 +106,7 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
             )
             .await?;
 
-        assert_eq!(counters.total_unit_count, 1);
+        assert_eq!(counters.total, 1);
 
         let orders = repo
             .step(
@@ -161,9 +176,9 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
             )
             .await?;
 
-        assert_eq!(counters.total_unit_count, 2);
+        assert_eq!(counters.total, 2);
 
-        assert_eq!(counters.proofread_unit_count, 1);
+        assert_eq!(counters.proofread, 1);
 
         accept(())
     })

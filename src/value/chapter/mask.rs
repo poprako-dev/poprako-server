@@ -53,21 +53,21 @@ impl StageMask {
     }
 
     /// Return workflow stages in mask bit order.
-    pub fn stages() -> &'static [Stage] {
+    pub const fn stages() -> &'static [Stage] {
         Self::STAGES
     }
 
     /// Extract the [`StagePhase`] for a specific stage.
-    pub fn get_phase(&self, stage: Stage) -> StagePhase {
+    pub fn get_phase(self, stage: Stage) -> StagePhase {
         //
         self.field_for_stage(stage)
             .as_phase()
-            .expect("regular workflow masks never contain ignore fields")
+            .map_or(StagePhase::Pending, |phase| phase)
     }
 
     /// Return a new mask with the given stage's phase set.
     pub fn try_set_phase(
-        &self,
+        self,
         stage: Stage,
         phase: StagePhase,
     ) -> BaseRest<Self> {
@@ -94,18 +94,18 @@ impl StageMask {
         let shift = Self::stage_shift(stage);
 
         let value = self.0 & !(0b11 << shift)
-            | ((u8::from(StagePhaseField::from(phase)) as u32) << shift);
+            | (u32::from(u8::from(StagePhaseField::from(phase))) << shift);
 
         Self::try_from(value)
     }
 
     /// Check if a filter mask ignores a specific stage.
-    pub fn ignores_stage(&self, stage: Stage) -> bool {
+    pub fn ignores_stage(self, stage: Stage) -> bool {
         self.field_for_stage(stage) == StagePhaseField::IGNORE
     }
 
     /// Check if this regular mask satisfies a filter mask.
-    pub fn matches_filter(&self, filter: StageMask) -> bool {
+    pub fn matches_filter(self, filter: Self) -> bool {
         //
         Self::STAGES.iter().all(|stage| {
             //
@@ -116,12 +116,12 @@ impl StageMask {
     }
 
     /// Check if a specific stage has the given phase.
-    pub fn has_phase(&self, stage: Stage, phase: StagePhase) -> bool {
+    pub fn has_phase(self, stage: Stage, phase: StagePhase) -> bool {
         self.get_phase(stage) == phase
     }
 
     /// Check if any of the given stages has a non-`Pending` phase.
-    pub fn has_any_stage(&self, stages: &[Stage]) -> bool {
+    pub fn has_any_stage(self, stages: &[Stage]) -> bool {
         //
         stages
             .iter()
@@ -129,7 +129,7 @@ impl StageMask {
     }
 
     /// Check if all of the given stages have a non-`Pending` phase.
-    pub fn has_every_stage(&self, stages: &[Stage]) -> bool {
+    pub fn has_every_stage(self, stages: &[Stage]) -> bool {
         //
         stages
             .iter()
@@ -141,12 +141,12 @@ impl StageMask {
     /// For each 2-bit slot, `self`'s bits must be a superset of `other`'s
     /// bits (i.e. a `PENDING` slot in `other` is always contained; an
     /// `IGNORE` slot in `self` contains any phase in `other`).
-    pub fn contains_mask(&self, other: StageMask) -> bool {
+    pub const fn contains_mask(self, other: Self) -> bool {
         self.0 & other.0 == other.0
     }
 
     /// Return the union of two masks (bitwise OR per 2-bit slot).
-    pub fn union(&self, other: StageMask) -> StageMask {
+    pub const fn union(self, other: Self) -> Self {
         Self(self.0 | other.0)
     }
 
@@ -182,12 +182,14 @@ impl StageMask {
     }
 
     // Decode the requested stage field from `self`.
-    fn field_for_stage(&self, stage: Stage) -> StagePhaseField {
-        Self::field_for_stage_value(self.0, stage).ok().unwrap()
+    fn field_for_stage(self, stage: Stage) -> StagePhaseField {
+        //
+        Self::field_for_stage_value(self.0, stage)
+            .map_or(StagePhaseField::PENDING, |field| field)
     }
 
     // Return the bit offset (in two-bit slots) for the given stage.
-    fn stage_shift(stage: Stage) -> u32 {
+    const fn stage_shift(stage: Stage) -> u32 {
         //
         match stage {
             //

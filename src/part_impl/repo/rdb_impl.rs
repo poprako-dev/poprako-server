@@ -3,6 +3,8 @@
 // Submit query macro that allocates a connection and calls a free function.
 #[macro_use]
 mod submit_query;
+// Numeric conversions at the database boundary.
+mod numeric;
 
 /// Announcement repository operations.
 pub mod announcement;

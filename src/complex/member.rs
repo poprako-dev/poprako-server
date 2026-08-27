@@ -29,11 +29,10 @@ impl MemberComplex {
         //
         member_infos.iter().any(|member_info| {
             //
-            match member_info.id == subject_member_info.id {
-                //
-                true => roles.has_any_role(&[RoleField::ADMIN]),
-
-                false => member_info.roles.has_any_role(&[RoleField::ADMIN]),
+            if member_info.id == subject_member_info.id {
+                roles.has_any_role(&[RoleField::ADMIN])
+            } else {
+                member_info.roles.has_any_role(&[RoleField::ADMIN])
             }
         })
     }
@@ -74,7 +73,7 @@ impl MemberPermComplex {
     }
 
     /// Verify the caller is a teammember.
-    pub fn ensure_user_can_list_infos(
+    pub const fn ensure_user_can_list_infos(
         member_info: &MemberInfo,
     ) -> BaseRest<()> {
         check_user_is_team_member(member_info)

@@ -75,7 +75,7 @@ pub fn check_join_role(
 }
 
 // Resolve the assignment roles that can apply one workflow transition.
-fn required_roles_for_transition(
+const fn required_roles_for_transition(
     stage: Stage,
     oper: StageOper,
 ) -> &'static [RoleField] {

@@ -287,7 +287,7 @@ async fn archive_retains_comic_marker_queues_images_and_deletes_children() {
             //
             TaskPayload::Image {
                 payload: ImagePayload::Delete { object_key },
-            } => Some(object_key.to_string()),
+            } => Some(object_key),
 
             _ => None,
         })

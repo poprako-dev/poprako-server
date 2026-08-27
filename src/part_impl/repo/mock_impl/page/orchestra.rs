@@ -340,11 +340,11 @@ impl<'a> Step<SetPageUnitCounters<'a>, MockContext> for Mock {
             .find(|info| info.id == oper.id)
             .ok_or_else(|| expected("error-page-not-found"))?;
 
-        page_info.total_unit_count = oper.counters.total_unit_count;
+        page_info.total_unit_count = oper.counters.total;
 
-        page_info.translated_unit_count = oper.counters.translated_unit_count;
+        page_info.translated_unit_count = oper.counters.translated;
 
-        page_info.proofread_unit_count = oper.counters.proofread_unit_count;
+        page_info.proofread_unit_count = oper.counters.proofread;
 
         page_info.updated_at = now();
 
@@ -368,12 +368,15 @@ impl<'a> Step<ShiftPageIndexesTemporary<'a>, MockContext> for Mock {
     ) -> BaseRest<()> {
         //
         // Internal implementation detail.
-        for page_info in context.state.pages.iter_mut().filter(|page_info| {
-            page_info.chapter_id == oper.chapter_id && page_info.index >= 0
-        }) {
+        for page_info in context
+            .state
+            .pages
+            .iter_mut()
+            .filter(|page_info| page_info.chapter_id == oper.chapter_id)
+        {
             //
             // Internal implementation detail.
-            page_info.index = -page_info.index - 1;
+            page_info.index = usize::MAX - page_info.index;
 
             page_info.updated_at = now();
         }

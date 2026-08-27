@@ -38,7 +38,7 @@ pub struct ComicInfoView {
     /// Parent workset identifier this comic belongs to.
     pub workset_id: String,
     /// Ordinal position of the comic within its workset.
-    pub index: i32,
+    pub index: usize,
 
     /// Comic title.
     pub title: String,
@@ -58,7 +58,7 @@ pub struct ComicInfoView {
     pub cover_thumbnail_url: Option<String>,
 
     /// Total number of chapters in this comic.
-    pub chapter_count: i32,
+    pub chapter_count: usize,
 
     /// Identifier of the user who created the comic entry.
     pub creator_id: String,
@@ -102,7 +102,7 @@ impl ComicInfoView {
         fallback_cover_key: Option<&str>,
     ) -> BaseRest<Self>
     where
-        P: ImagePool,
+        P: ImagePool + Sync,
     {
         let cover_key = match (model.is_cover_uploaded, &model.cover_key) {
             //

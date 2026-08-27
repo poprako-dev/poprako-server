@@ -12,7 +12,7 @@ use serde::Serialize;
 use utoipa::ToSchema;
 
 use crate::data::view::unit::UnitInfoView;
-use crate::model::read::proj::unit::{UnitCounters, UnitInfo};
+use crate::model::read::proj::unit::{UnitCountMetrics, UnitInfo};
 
 /// Return value for listing visible Units under one Page.
 #[derive(Debug, Serialize)]
@@ -23,18 +23,18 @@ pub struct ListPageUnitInfosVal {
     pub unit_infos: Vec<UnitInfoView>,
 
     /// Number of visible Units.
-    pub total_unit_count: i32,
+    pub total_unit_count: usize,
     /// Number of visible translated Units.
-    pub translated_unit_count: i32,
+    pub translated_unit_count: usize,
     /// Number of visible proofread Units.
-    pub proofread_unit_count: i32,
+    pub proofread_unit_count: usize,
 }
 
 impl ListPageUnitInfosVal {
     /// Converts ordered persisted Units and counters into the response payload.
     pub fn from_parts(
         unit_infos: Vec<UnitInfo>,
-        counters: UnitCounters,
+        counters: UnitCountMetrics,
     ) -> Self {
         //
         Self {
@@ -43,9 +43,9 @@ impl ListPageUnitInfosVal {
                 .filter(|unit_info| unit_info.hidden_at.is_none())
                 .map(UnitInfoView::from)
                 .collect(),
-            total_unit_count: counters.total_unit_count,
-            translated_unit_count: counters.translated_unit_count,
-            proofread_unit_count: counters.proofread_unit_count,
+            total_unit_count: counters.total,
+            translated_unit_count: counters.translated,
+            proofread_unit_count: counters.proofread,
         }
     }
 }

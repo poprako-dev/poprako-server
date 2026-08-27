@@ -71,10 +71,10 @@ where
 #[serde(rename_all = "snake_case")]
 pub enum ChapterTranslationFormatInstr {
     //
-    /// LabelPlus translation format.
+    /// `LabelPlus` translation format.
     LabelPlus,
 
-    /// PopRaKo native translation format.
+    /// `PopRaKo` native translation format.
     #[serde(rename = "poprako")]
     PopRaKo,
 }

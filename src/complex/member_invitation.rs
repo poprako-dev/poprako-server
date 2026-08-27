@@ -21,9 +21,9 @@ impl MemberInvitationComplex {
         //
         let full = next_snowflake_id();
 
-        let len = full.len();
+        let skipped_count = full.chars().count().saturating_sub(6);
 
-        full[len.saturating_sub(6)..].into()
+        full.chars().skip(skipped_count).collect()
     }
 }
 
@@ -37,7 +37,7 @@ impl MemberInvitationPermComplex {
     }
 
     /// Verify the caller is a team member and may list invitations for the team.
-    pub fn ensure_user_can_list_infos(
+    pub const fn ensure_user_can_list_infos(
         member_info: &MemberInfo,
     ) -> BaseRest<()> {
         check_user_is_team_member(member_info)

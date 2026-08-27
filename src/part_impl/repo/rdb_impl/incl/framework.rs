@@ -206,7 +206,7 @@ preload_by_ids! {
         row: WorksetInfoRow,
         info: WorksetInfo,
         table: t_workset,
-        convert: From,
+        convert: TryFrom,
     }
 
     ComicByIds {

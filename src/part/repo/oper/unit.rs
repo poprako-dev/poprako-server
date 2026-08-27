@@ -1,6 +1,6 @@
 use poprako_orchestra::Oper;
 
-use crate::model::read::proj::unit::{UnitCounters, UnitInfo, UnitOrder};
+use crate::model::read::proj::unit::{UnitCountMetrics, UnitInfo, UnitOrder};
 use crate::model::write::unit::UnitEdit;
 
 /// Lists unit infos for a page.
@@ -37,7 +37,7 @@ pub struct ListUnitOrders<'a> {
 
 /// Applies unit edits (reorder, create, update, delete) for a page.
 #[derive(Oper)]
-#[oper(output = UnitCounters)]
+#[oper(output = UnitCountMetrics)]
 pub struct ApplyUnitEdits<'a> {
     //
     /// The page id.

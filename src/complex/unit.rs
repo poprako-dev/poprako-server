@@ -39,6 +39,15 @@ fn invalid_unit_transform(unit_id: &str, reason: &'static str) -> BaseError {
     }
 }
 
+// Build the client-visible error for an invalid Unit operation.
+const fn invalid_unit_oper(err_message: String) -> BaseError {
+    //
+    BaseError::Expected {
+        variant: ExpectedVariant::Args,
+        message: err_message,
+    }
+}
+
 // Apply every non-overlapping transform against the same original text.
 fn transform_text(
     original: &str,
@@ -73,9 +82,10 @@ fn transform_text(
 
     matches.sort_by_key(|text_match| (text_match.0, text_match.1));
 
-    for pair in matches.windows(2) {
+    for (left_match, right_match) in matches.iter().zip(matches.iter().skip(1))
+    {
         //
-        if pair[1].0 < pair[0].1 {
+        if right_match.0 < left_match.1 {
             //
             return Err(invalid_unit_transform(
                 &unit_transform.unit_id,
@@ -94,21 +104,30 @@ fn transform_text(
 
     for (start, end, target) in matches {
         //
-        transformed.push_str(&original[cursor..start]);
+        let unchanged = original.get(cursor..start).ok_or_else(|| {
+            //
+            BaseError::Unrecoverable {
+                message: "Unit transform text boundary is invalid".into(),
+            }
+        })?;
+
+        transformed.push_str(unchanged);
 
         transformed.push_str(target);
 
         cursor = end;
     }
 
-    transformed.push_str(&original[cursor..]);
+    let unchanged =
+        original
+            .get(cursor..)
+            .ok_or_else(|| BaseError::Unrecoverable {
+                message: "Unit transform final text boundary is invalid".into(),
+            })?;
 
-    match transformed == original {
-        //
-        true => accept(None),
+    transformed.push_str(unchanged);
 
-        false => accept(Some(transformed)),
-    }
+    accept((transformed != original).then_some(transformed))
 }
 
 /// Pure Unit mutation and linked-list rules.
@@ -116,7 +135,7 @@ pub struct UnitComplex;
 
 impl UnitComplex {
     /// Trims and validates a Unit search phrase.
-    pub fn normalize_search_phrase(phrase: String) -> BaseRest<String> {
+    pub fn normalize_search_phrase(phrase: &str) -> BaseRest<String> {
         //
         let phrase = phrase.trim().to_string();
 
@@ -269,7 +288,7 @@ impl UnitComplex {
     /// Normalizes one Unit edit batch against the persisted Unit IDs.
     pub fn normalize_edits(
         base_ids: &[&str],
-        mut edits: Vec<UnitEdit>,
+        edits: Vec<UnitEdit>,
     ) -> BaseRest<Vec<UnitEdit>> {
         //
         if !(1..=MAX_UNIT_EDIT_COUNT).contains(&edits.len()) {
@@ -290,23 +309,24 @@ impl UnitComplex {
                 "expected error: unit edit count is invalid",
             );
 
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message: err_message,
-            });
+            return Err(invalid_unit_oper(err_message));
         }
 
-        // Reorder edits so Delete precedes Create and Create precedes Save.
-        // This keeps every new unit ahead of its Saves: compression never
-        // merges into an earlier Create, and applying the batch never targets
-        // a unit before it is created.
-        let delete_count = stable_prior(&mut edits, |edit| {
-            matches!(edit, UnitEdit::Delete { .. })
-        });
+        let (delete_edits, non_delete_edits) =
+            edits.into_iter().partition::<Vec<_>, _>(|edit| {
+                matches!(edit, UnitEdit::Delete { .. })
+            });
 
-        stable_prior(&mut edits[delete_count..], |edit| {
-            matches!(edit, UnitEdit::Create { .. })
-        });
+        let (create_edits, save_edits) =
+            non_delete_edits.into_iter().partition::<Vec<_>, _>(|edit| {
+                matches!(edit, UnitEdit::Create { .. })
+            });
+
+        let mut edits = delete_edits
+            .into_iter()
+            .chain(create_edits)
+            .chain(save_edits)
+            .collect::<Vec<_>>();
 
         Self::compress_edits(&mut edits);
 
@@ -318,32 +338,40 @@ impl UnitComplex {
     // Merge adjacent or contradictory edit operations into canonical forms.
     fn compress_edits(edits: &mut Vec<UnitEdit>) {
         //
-        let mut last = edits.len();
+        let mut edit_slots = std::mem::take(edits)
+            .into_iter()
+            .map(Some)
+            .collect::<Vec<_>>();
 
-        while last > 0 {
+        let mut remaining_slots = edit_slots.as_mut_slice();
+
+        while let Some((later_slot, earlier_slots)) =
+            remaining_slots.split_last_mut()
+        {
             //
-            last -= 1;
-
-            let mut prev = last;
-
-            while prev > 0 {
+            let Some(later_edit) = later_slot.as_mut() else {
                 //
-                prev -= 1;
+                remaining_slots = earlier_slots;
 
-                let action = match (&edits[last], &edits[prev]) {
+                continue;
+            };
+
+            for earlier_slot in earlier_slots.iter_mut().rev() {
+                //
+                let action = match (&*later_edit, earlier_slot.as_ref()) {
                     //
                     (
                         UnitEdit::Create { id, .. }
                         | UnitEdit::Save { id, .. }
                         | UnitEdit::Delete { id },
-                        UnitEdit::Delete { id: prev_id },
+                        Some(UnitEdit::Delete { id: prev_id }),
                     ) if id == prev_id => 1,
 
                     (
                         UnitEdit::Create { id, .. }
                         | UnitEdit::Save { id, .. }
                         | UnitEdit::Delete { id },
-                        UnitEdit::Save { id: prev_id, .. },
+                        Some(UnitEdit::Save { id: prev_id, .. }),
                     ) if id == prev_id => 2,
 
                     _ => 0,
@@ -352,27 +380,26 @@ impl UnitComplex {
                 match action {
                     //
                     1 => {
-                        //
-                        edits.remove(prev);
-
-                        last -= 1;
+                        earlier_slot.take();
                     }
 
                     2 => {
                         //
-                        let (head, tail) = edits.split_at_mut(last);
+                        let Some(mut earlier_edit) = earlier_slot.take() else {
+                            continue;
+                        };
 
-                        Self::merge_edits(&mut head[prev], &mut tail[0]);
-
-                        edits.remove(prev);
-
-                        last -= 1;
+                        Self::merge_edits(&mut earlier_edit, later_edit);
                     }
 
                     _ => {}
                 }
             }
+
+            remaining_slots = earlier_slots;
         }
+
+        edits.extend(edit_slots.into_iter().flatten());
     }
 
     // Validate cross-edit consistency: create/delete/patch order and pointer validity.
@@ -424,98 +451,11 @@ impl UnitComplex {
                 "expected error: unit create edits are inconsistent",
             );
 
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message: err_message,
-            });
+            return Err(invalid_unit_oper(err_message));
         }
 
         edits.iter().try_for_each(|edit| {
-            //
-            match edit {
-                //
-                UnitEdit::Create { .. } => {}
-
-                UnitEdit::Delete { id } if !base_ids.contains(id.as_str()) => {
-                    //
-                    let err_message = trl("error-invalid-unit-oper");
-
-                    tracing::warn!(
-                        err_variant = ?ExpectedVariant::Args,
-                        err_message = %err_message,
-                        unit_id = %id,
-                        operation = "delete",
-                        "expected error: unit delete target is invalid",
-                    );
-
-                    return Err(BaseError::Expected {
-                        variant: ExpectedVariant::Args,
-                        message: err_message,
-                    });
-                }
-
-                UnitEdit::Save { id, .. }
-                    if !base_ids.contains(id.as_str())
-                        && !created_ids.contains(id.as_str()) =>
-                {
-                    let err_message = trl("error-invalid-unit-oper");
-
-                    tracing::warn!(
-                        err_variant = ?ExpectedVariant::Args,
-                        err_message = %err_message,
-                        unit_id = %id,
-                        operation = "save",
-                        "expected error: unit save target is invalid",
-                    );
-
-                    return Err(BaseError::Expected {
-                        variant: ExpectedVariant::Args,
-                        message: err_message,
-                    });
-                }
-
-                _ => {}
-            }
-
-            let (id, next_id) = match edit {
-                //
-                UnitEdit::Create {
-                    id,
-                    next_id: Some(next_id),
-                    ..
-                } => (id, next_id),
-
-                UnitEdit::Save {
-                    id,
-                    next_id: Patch::Assign { value: next_id },
-                    ..
-                } => (id, next_id),
-
-                _ => return accept(()),
-            };
-
-            if next_id == id
-                || (!base_ids.contains(next_id.as_str())
-                    && !created_ids.contains(next_id.as_str()))
-                || deleted_ids.contains(next_id.as_str())
-            {
-                let err_message = trl("error-invalid-unit-oper");
-
-                tracing::warn!(
-                    err_variant = ?ExpectedVariant::Args,
-                    err_message = %err_message,
-                    unit_id = %id,
-                    next_unit_id = %next_id,
-                    "expected error: unit next pointer is invalid",
-                );
-
-                return Err(BaseError::Expected {
-                    variant: ExpectedVariant::Args,
-                    message: err_message,
-                });
-            }
-
-            accept(())
+            Self::validate_edit(&base_ids, &deleted_ids, &created_ids, edit)
         })
     }
 
@@ -524,7 +464,7 @@ impl UnitComplex {
         //
         let (
             UnitEdit::Save {
-                id: earlier_id,
+                id: _,
                 next_id: earlier_next_id,
                 is_bubble: earlier_is_bubble,
                 coord: earlier_coord,
@@ -532,7 +472,7 @@ impl UnitComplex {
                 revision: earlier_revision,
             },
             UnitEdit::Save {
-                id: later_id,
+                id: _,
                 next_id: later_next_id,
                 is_bubble: later_is_bubble,
                 coord: later_coord,
@@ -541,10 +481,8 @@ impl UnitComplex {
             },
         ) = (earlier, later)
         else {
-            unreachable!("only Unit Save edits can be merged");
+            return;
         };
-
-        debug_assert_eq!(earlier_id, later_id);
 
         inherit_option(earlier_is_bubble, later_is_bubble);
 
@@ -556,26 +494,90 @@ impl UnitComplex {
 
         inherit_patch(earlier_revision, later_revision);
     }
-}
 
-// Move all items matching `pred` to the front while preserving stable order.
-fn stable_prior<T, P>(slice: &mut [T], mut pred: P) -> usize
-where
-    P: FnMut(&T) -> bool,
-{
-    let mut tail = 0;
-
-    for current in 0..slice.len() {
+    // Validate one edit target and its optional next pointer.
+    fn validate_edit(
+        base_ids: &HashSet<&str>,
+        deleted_ids: &HashSet<&str>,
+        created_ids: &HashSet<&str>,
+        edit: &UnitEdit,
+    ) -> BaseRest<()> {
         //
-        if pred(&slice[current]) {
+        match edit {
             //
-            slice[tail..=current].rotate_right(1);
+            UnitEdit::Delete { id } if !base_ids.contains(id.as_str()) => {
+                //
+                let err_message = trl("error-invalid-unit-oper");
 
-            tail += 1;
+                tracing::warn!(
+                    err_variant = ?ExpectedVariant::Args,
+                    err_message = %err_message,
+                    unit_id = %id,
+                    operation = "delete",
+                    "expected error: unit delete target is invalid",
+                );
+
+                return Err(invalid_unit_oper(err_message));
+            }
+
+            UnitEdit::Save { id, .. }
+                if !base_ids.contains(id.as_str())
+                    && !created_ids.contains(id.as_str()) =>
+            {
+                let err_message = trl("error-invalid-unit-oper");
+
+                tracing::warn!(
+                    err_variant = ?ExpectedVariant::Args,
+                    err_message = %err_message,
+                    unit_id = %id,
+                    operation = "save",
+                    "expected error: unit save target is invalid",
+                );
+
+                return Err(invalid_unit_oper(err_message));
+            }
+
+            _ => {}
         }
-    }
 
-    tail
+        let Some((id, next_id)) = (match edit {
+            //
+            UnitEdit::Create {
+                id,
+                next_id: Some(next_id),
+                ..
+            }
+            | UnitEdit::Save {
+                id,
+                next_id: Patch::Assign { value: next_id },
+                ..
+            } => Some((id, next_id)),
+
+            _ => None,
+        }) else {
+            return accept(());
+        };
+
+        if next_id == id
+            || (!base_ids.contains(next_id.as_str())
+                && !created_ids.contains(next_id.as_str()))
+            || deleted_ids.contains(next_id.as_str())
+        {
+            let err_message = trl("error-invalid-unit-oper");
+
+            tracing::warn!(
+                err_variant = ?ExpectedVariant::Args,
+                err_message = %err_message,
+                unit_id = %id,
+                next_unit_id = %next_id,
+                "expected error: unit next pointer is invalid",
+            );
+
+            return Err(invalid_unit_oper(err_message));
+        }
+
+        accept(())
+    }
 }
 
 // Copy the older optional value only when the newer optional is empty.

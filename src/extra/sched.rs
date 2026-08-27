@@ -17,6 +17,7 @@ pub struct Sched {
 
 impl Sched {
     /// Starts the explicitly composed periodic jobs.
+    #[must_use]
     pub fn new(_core: RdbCore) -> Self {
         //
         let token = CancellationToken::new();

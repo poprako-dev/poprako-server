@@ -24,6 +24,10 @@ pub struct ImageConfig {
 
 impl ImageConfig {
     /// Validates that every configured MiB limit permits a non-empty upload.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when any configured limit is zero.
     pub fn validate(&self) -> anyhow::Result<()> {
         //
         for (field_name, mib_limit) in [
@@ -36,8 +40,7 @@ impl ImageConfig {
             if mib_limit == 0 {
                 //
                 bail!(
-                    "[ImageConfig::validate] {} must be greater than zero",
-                    field_name,
+                    "[ImageConfig::validate] {field_name} must be greater than zero",
                 );
             }
         }
@@ -46,7 +49,8 @@ impl ImageConfig {
     }
 
     /// Returns the configured MiB limit for an image kind.
-    pub fn limit_for(&self, image_kind: ImageKind) -> u64 {
+    #[must_use]
+    pub const fn limit_for(&self, image_kind: ImageKind) -> u64 {
         //
         match image_kind {
             //

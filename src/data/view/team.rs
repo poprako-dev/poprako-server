@@ -55,7 +55,7 @@ impl TeamInfoView {
         model: TeamInfo,
     ) -> BaseRest<Self>
     where
-        P: ImagePool,
+        P: ImagePool + Sync,
     {
         let (avatar_url, avatar_thumbnail_url) =
             match (model.is_avatar_uploaded, &model.avatar_key) {

@@ -1,3 +1,6 @@
+#![allow(clippy::option_option)]
+#![allow(clippy::struct_field_names)]
+
 //! Diesel entity types for the RDB repository.
 
 /// Announcement Diesel entity types.

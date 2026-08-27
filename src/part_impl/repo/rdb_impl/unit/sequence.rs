@@ -44,63 +44,132 @@ where
         return accept(());
     }
 
-    for index in 0..units.len() {
+    let mut index_by_id = HashMap::with_capacity(units.len());
+
+    for (index, unit) in units.iter().enumerate() {
         //
-        if units[index + 1..]
-            .iter()
-            .any(|unit| id_of(unit) == id_of(&units[index]))
-        {
+        if index_by_id.insert(id_of(unit), index).is_some() {
             return Err(corrupt_unit_chain_err());
         }
     }
 
-    let mut head_pos = None;
+    let mut next_index_by_index = Vec::with_capacity(units.len());
 
-    for cand in 0..units.len() {
+    let mut has_predecessor = vec![false; units.len()];
+
+    for unit in units.iter() {
         //
-        let has_predecessor = units.iter().any(|unit| {
+        let next_index = match next_id_of(unit) {
             //
-            next_id_of(unit)
-                .is_some_and(|next_id| next_id == id_of(&units[cand]))
-        });
+            Some(next_id) => {
+                //
+                let Some(next_index) = index_by_id.get(next_id).copied() else {
+                    return Err(corrupt_unit_chain_err());
+                };
 
-        if has_predecessor {
-            continue;
-        }
+                let Some(has_predecessor) = has_predecessor.get_mut(next_index)
+                else {
+                    return Err(corrupt_unit_chain_err());
+                };
 
-        if head_pos.replace(cand).is_some() {
-            return Err(corrupt_unit_chain_err());
-        }
+                if std::mem::replace(has_predecessor, true) {
+                    return Err(corrupt_unit_chain_err());
+                }
+
+                Some(next_index)
+            }
+
+            None => None,
+        };
+
+        next_index_by_index.push(next_index);
     }
 
-    let Some(head_pos) = head_pos else {
+    let mut head_indexes = has_predecessor.iter().enumerate().filter_map(
+        |(index, has_predecessor)| (!has_predecessor).then_some(index),
+    );
+
+    let Some(head_index) = head_indexes.next() else {
         return Err(corrupt_unit_chain_err());
     };
 
-    units.swap(0, head_pos);
+    if head_indexes.next().is_some() {
+        return Err(corrupt_unit_chain_err());
+    }
 
-    for index in 0..units.len() - 1 {
+    let mut ordered_indexes = Vec::with_capacity(units.len());
+
+    let mut current_index = Some(head_index);
+
+    while let Some(index) = current_index {
         //
-        let next_pos =
-            units[index + 1..]
-                .iter()
-                .enumerate()
-                .find_map(|(pos, cand)| {
-                    //
-                    next_id_of(&units[index])
-                        .is_some_and(|next_id| next_id == id_of(cand))
-                        .then_some(pos)
-                });
+        if ordered_indexes.len() >= units.len() {
+            return Err(corrupt_unit_chain_err());
+        }
 
-        let Some(next_pos) = next_pos else {
+        ordered_indexes.push(index);
+
+        let Some(next_index) = next_index_by_index.get(index).copied() else {
             return Err(corrupt_unit_chain_err());
         };
 
-        units.swap(index + 1, index + 1 + next_pos);
+        current_index = next_index;
     }
 
-    if units.last().is_some_and(|unit| next_id_of(unit).is_some()) {
+    if ordered_indexes.len() != units.len() {
         return Err(corrupt_unit_chain_err());
+    }
+
+    drop(index_by_id);
+
+    let mut original_index_by_position = (0..units.len()).collect::<Vec<_>>();
+
+    let mut position_by_original_index = (0..units.len()).collect::<Vec<_>>();
+
+    for (target_position, desired_original_index) in
+        ordered_indexes.into_iter().enumerate()
+    {
+        //
+        let Some(current_position) = position_by_original_index
+            .get(desired_original_index)
+            .copied()
+        else {
+            return Err(corrupt_unit_chain_err());
+        };
+
+        let Some(displaced_original_index) =
+            original_index_by_position.get(target_position).copied()
+        else {
+            return Err(corrupt_unit_chain_err());
+        };
+
+        debug_assert!(target_position < units.len());
+
+        debug_assert!(current_position < units.len());
+
+        if target_position >= units.len() || current_position >= units.len() {
+            return Err(corrupt_unit_chain_err());
+        }
+
+        units.swap(target_position, current_position);
+
+        original_index_by_position.swap(target_position, current_position);
+
+        let Some(desired_position) =
+            position_by_original_index.get_mut(desired_original_index)
+        else {
+            return Err(corrupt_unit_chain_err());
+        };
+
+        *desired_position = target_position;
+
+        let Some(displaced_position) =
+            position_by_original_index.get_mut(displaced_original_index)
+        else {
+            return Err(corrupt_unit_chain_err());
+        };
+
+        *displaced_position = current_position;
     }
 
     accept(())
@@ -175,8 +244,8 @@ pub async fn list_infos_by_page_ids(
     accept(unit_infos)
 }
 
-#[instrument(level = "info", skip_all)]
 /// Lists every requested persisted Unit that currently exists.
+#[instrument(level = "info", skip_all)]
 pub async fn list_infos_by_ids(
     conn: &mut RdbConn,
     ids: &[String],
@@ -192,8 +261,8 @@ pub async fn list_infos_by_ids(
     accept(rows.into_iter().map(UnitInfo::from).collect())
 }
 
-#[instrument(level = "info", skip_all)]
 /// Locks and lists the complete Unit chain, including tombstones.
+#[instrument(level = "info", skip_all)]
 pub async fn list_orders_for_update(
     conn: &mut RdbConn,
     page_id: &str,

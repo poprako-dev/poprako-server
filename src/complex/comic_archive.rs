@@ -103,9 +103,9 @@ impl ComicArchiveComplex {
             );
 
             BaseError::Unrecoverable {
-                message: format!(
-                    "[ComicArchiveComplex::prepare_entry] blocking task failed: {}",
-                    error
+                    message: format!(
+                        "[ComicArchiveComplex::prepare_entry] blocking task failed: {}",
+                        error,
                 ),
             }
         })?
@@ -153,7 +153,7 @@ fn build_page_payloads(
                     .enumerate()
                     .map(|(index, unit_info)| ArchivedUnitPayload {
                         source_unit_id: unit_info.id.clone(),
-                        index: index as i32,
+                        index,
                         is_bubble: unit_info.is_bubble,
                         is_proofread: unit_info.is_proofread,
                         x_coord: unit_info.coord.x_coord,
@@ -348,9 +348,9 @@ fn build_entry(
             );
 
             BaseError::Unrecoverable {
-                message: format!(
-                    "[ComicArchiveComplex::build_entry] failed to serialize archive payload: {}",
-                    error
+                    message: format!(
+                        "[ComicArchiveComplex::build_entry] failed to serialize archive payload: {}",
+                        error,
                 ),
             }
         })?,

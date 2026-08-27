@@ -1,4 +1,10 @@
+#![allow(clippy::ref_option_ref)]
+
 //! Diesel entity types for the `t_unit` table.
+//!
+//! FIXME: Diesel's generated `AsChangeset` implementation reports
+//! `ref_option_ref` for the intentional tri-state `Option<Option<&T>>` fields.
+//! Flattening them would change the unchanged, clear, and set update semantics.
 
 use diesel::{AsChangeset, Insertable, Queryable, Selectable};
 use time::OffsetDateTime;
@@ -100,26 +106,24 @@ impl<'a> UnitEntryRow<'a> {
             return None;
         };
 
-        let (translated_text, last_translator_id) = match translation {
-            //
-            Some(translation) => (
-                Some(translation.translated_text.as_str()),
-                Some(translation.last_translator_id.as_str()),
-            ),
+        let (translated_text, last_translator_id) =
+            translation.as_ref().map_or((None, None), |translation| {
+                //
+                (
+                    Some(translation.translated_text.as_str()),
+                    Some(translation.last_translator_id.as_str()),
+                )
+            });
 
-            None => (None, None),
-        };
-
-        let (is_proofread, proofread_text, last_proofreader_id) = match revision
-        {
-            Some(revision) => (
-                revision.is_proofread,
-                revision.proofread_text.as_deref(),
-                Some(revision.last_proofreader_id.as_str()),
-            ),
-
-            None => (false, None, None),
-        };
+        let (is_proofread, proofread_text, last_proofreader_id) =
+            revision.as_ref().map_or((false, None, None), |revision| {
+                //
+                (
+                    revision.is_proofread,
+                    revision.proofread_text.as_deref(),
+                    Some(revision.last_proofreader_id.as_str()),
+                )
+            });
 
         let now = OffsetDateTime::now_utc();
 
@@ -182,7 +186,7 @@ impl<'a> UnitAspectRow<'a> {
         }
     }
 
-    pub fn order(mut self, next_id: Option<&'a str>) -> Self {
+    pub const fn order(mut self, next_id: Option<&'a str>) -> Self {
         //
         self.f_next_id = Some(next_id);
 

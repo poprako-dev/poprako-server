@@ -22,8 +22,8 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::RdbConn;
 use crate::shared::result::diesel;
 
-#[instrument(level = "info", skip_all)]
 /// Find user info by QID, returning None when absent.
+#[instrument(level = "info", skip_all)]
 pub async fn find_info_by_qid(
     conn: &mut RdbConn,
     qid: &str,
@@ -40,8 +40,8 @@ pub async fn find_info_by_qid(
     row.map(TryInto::try_into).transpose()
 }
 
-#[instrument(level = "info", skip_all)]
 /// Apply a user info replacement.
+#[instrument(level = "info", skip_all)]
 pub async fn update_info(
     conn: &mut RdbConn,
     repl: &UserInfoRepl,
@@ -62,8 +62,8 @@ pub async fn update_info(
     accept(())
 }
 
-#[instrument(level = "info", skip_all)]
 /// Load user info by ID, locking the row for update.
+#[instrument(level = "info", skip_all)]
 pub async fn get_info_by_id_excluded(
     conn: &mut RdbConn,
     id: &str,
@@ -71,8 +71,8 @@ pub async fn get_info_by_id_excluded(
     get_info(conn, id, true).await
 }
 
-#[instrument(level = "info", skip_all)]
 /// Load a single user info by ID.
+#[instrument(level = "info", skip_all)]
 pub async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
@@ -89,27 +89,27 @@ async fn get_info(
     //
     let query = t_user.filter(f_id.eq(id)).select(UserInfoRow::as_select());
 
-    let row = match excluded {
+    let row = if excluded {
         //
-        true => query
+        query
             .for_update()
             .get_result::<UserInfoRow>(conn)
             .await
             .optional()
-            .map_err(diesel)?,
-
-        false => query
+            .map_err(diesel)?
+    } else {
+        //
+        query
             .get_result::<UserInfoRow>(conn)
             .await
             .optional()
-            .map_err(diesel)?,
+            .map_err(diesel)?
     };
 
-    let operation = match excluded {
-        //
-        true => "lock user info",
-
-        false => "get user info",
+    let operation = if excluded {
+        "lock user info"
+    } else {
+        "get user info"
     };
 
     let Some(row) = row else {

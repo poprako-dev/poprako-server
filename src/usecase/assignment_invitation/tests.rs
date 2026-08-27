@@ -426,7 +426,7 @@ async fn join_invited_user_creates_assignment_and_consumes_invitation() {
         role(RoleField::TRANSLATOR),
     ));
 
-    join((&mock, &mock, &mock), token("target-user"), join_data())
+    join::join((&mock, &mock, &mock), token("target-user"), join_data())
         .await
         .unwrap();
 
@@ -472,7 +472,7 @@ async fn join_existing_assignment_merges_roles() {
         role(RoleField::PROOFREADER),
     ));
 
-    join((&mock, &mock, &mock), token("target-user"), join_data())
+    join::join((&mock, &mock, &mock), token("target-user"), join_data())
         .await
         .unwrap();
 

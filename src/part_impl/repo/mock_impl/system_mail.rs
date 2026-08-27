@@ -101,8 +101,7 @@ fn list_system_mail_infos(
                 && oper
                     .spec
                     .is_read
-                    .map(|is_read| system_mail_info.is_read == is_read)
-                    .unwrap_or(true)
+                    .is_none_or(|is_read| system_mail_info.is_read == is_read)
         })
         .cloned()
         .collect::<Vec<_>>();

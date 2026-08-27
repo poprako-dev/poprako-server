@@ -39,8 +39,8 @@ use crate::shared::result::diesel;
 use crate::shared::{RdbConn, RdbContext};
 
 // Escape `%` and `_` wildcard symbols so fuzzy search stays literal-safe.
-#[instrument(level = "info", skip_all)]
 // Remove one termbase row by id.
+#[instrument(level = "info", skip_all)]
 async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
     // Execute hard delete as the finalization action in repositories.
@@ -61,8 +61,8 @@ fn escape_ilike_pattern(input: &str) -> String {
         .replace('_', "\\_")
 }
 
-#[instrument(level = "info", skip_all)]
 // Load one termbase row by id and map DB entity into response shape.
+#[instrument(level = "info", skip_all)]
 async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<TermbaseInfo> {
     //
     // Return explicit not-found error when the target termbase does not exist.
@@ -92,11 +92,11 @@ async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<TermbaseInfo> {
         });
     };
 
-    accept(row.into())
+    accept(TermbaseInfo::try_from(row)?)
 }
 
-#[instrument(level = "info", skip_all)]
 // Load one termbase row by id with row lock for transactional mutation.
+#[instrument(level = "info", skip_all)]
 async fn get_info_excluded(
     conn: &mut RdbConn,
     id: &str,
@@ -130,11 +130,11 @@ async fn get_info_excluded(
         });
     };
 
-    accept(row.into())
+    accept(TermbaseInfo::try_from(row)?)
 }
 
-#[instrument(level = "info", skip_all)]
 // List termbase rows with team/comic filter and optional fuzzy name.
+#[instrument(level = "info", skip_all)]
 async fn list_infos(
     conn: &mut RdbConn,
     spec: &TermbaseListSpec,
@@ -191,17 +191,17 @@ async fn list_infos(
 
     let rows = query
         .order_by(f_updated_at.desc())
-        .offset(*offset as i64)
-        .limit(*limit as i64)
+        .offset(i64::from(*offset))
+        .limit(i64::from(*limit))
         .load::<TermbaseInfoRow>(conn)
         .await
         .map_err(diesel)?;
 
-    accept(rows.into_iter().map(Into::into).collect())
+    rows.into_iter().map(TermbaseInfo::try_from).collect()
 }
 
-#[instrument(level = "info", skip_all)]
 // List all termbases for team/comic with row lock for later mutation.
+#[instrument(level = "info", skip_all)]
 async fn list_infos_excluded(
     conn: &mut RdbConn,
     oper: &ListTermbaseInfosExcluded<'_>,
@@ -227,11 +227,11 @@ async fn list_infos_excluded(
             .map_err(diesel)?,
     };
 
-    accept(rows.into_iter().map(Into::into).collect())
+    rows.into_iter().map(TermbaseInfo::try_from).collect()
 }
 
-#[instrument(level = "info", skip_all)]
 // Insert a new termbase and return created info.
+#[instrument(level = "info", skip_all)]
 async fn create(
     conn: &mut RdbConn,
     termbase_entry: &TermbaseEntry,
@@ -247,11 +247,11 @@ async fn create(
         .await
         .map_err(diesel)?;
 
-    accept(row.into())
+    accept(TermbaseInfo::try_from(row)?)
 }
 
-#[instrument(level = "info", skip_all)]
 // Update termbase descriptive fields.
+#[instrument(level = "info", skip_all)]
 async fn update_info(
     conn: &mut RdbConn,
     update: &TermbaseRepl,
@@ -271,8 +271,8 @@ async fn update_info(
     accept(())
 }
 
-#[instrument(level = "info", skip_all)]
 // Adjust term count atomically by signed delta.
+#[instrument(level = "info", skip_all)]
 async fn update_term_count(
     conn: &mut RdbConn,
     id: &str,
@@ -292,8 +292,8 @@ async fn update_term_count(
     accept(())
 }
 
-#[instrument(level = "info", skip_all)]
 // Touch updated_at to indicate activity without changing business fields.
+#[instrument(level = "info", skip_all)]
 async fn touch(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
     // Keep liveness and stale-checking aligned for external schedulers.

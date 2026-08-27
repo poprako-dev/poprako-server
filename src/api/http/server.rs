@@ -1,5 +1,6 @@
 //! HTTP server bootstrap and graceful shutdown.
 
+use std::future::pending;
 use std::net::SocketAddr;
 
 use anyhow::Context as _;
@@ -11,7 +12,15 @@ use crate::api::http::shared::prometheus::init_prometheus;
 use crate::api::http::state::AppHarn;
 
 /// Installs Ctrl+C and (on unix) SIGTERM handlers that stop the server.
+///
 /// Binds `addr`, builds the router, and serves until shutdown.
+/// Returns an error when metrics initialization, listener binding, or serving
+/// fails.
+///
+/// # Errors
+///
+/// Returns an error when metrics initialization, listener binding, or serving
+/// fails.
 pub async fn serve<A>(harn: AppHarn, addr: A) -> anyhow::Result<()>
 where
     A: ToSocketAddrs + std::fmt::Debug,
@@ -56,19 +65,44 @@ async fn shutdown_signal() {
     //
     let ctrl_c = async {
         //
-        signal::ctrl_c()
-            .await
-            .expect("failed to install Ctrl+C handler");
+        let Some(failure) = signal::ctrl_c().await.err() else {
+            return;
+        };
+
+        tracing::error!(
+            operation = "install_ctrl_c_handler",
+            sdk_err = %failure,
+            "Tokio signal handler installation failed",
+        );
+
+        pending::<()>().await;
     };
 
     #[cfg(unix)]
     {
         let terminate = async {
             //
-            signal::unix::signal(signal::unix::SignalKind::terminate())
-                .expect("failed to install SIGTERM handler")
-                .recv()
-                .await;
+            let mut terminate_recv = match signal::unix::signal(
+                signal::unix::SignalKind::terminate(),
+            ) {
+                //
+                Ok(terminate_recv) => terminate_recv,
+
+                Err(err) => {
+                    //
+                    tracing::error!(
+                        operation = "install_sigterm_handler",
+                        sdk_err = ?err,
+                        "Tokio signal handler installation failed",
+                    );
+
+                    pending::<()>().await;
+
+                    return;
+                }
+            };
+
+            terminate_recv.recv().await;
         };
 
         tokio::select! {

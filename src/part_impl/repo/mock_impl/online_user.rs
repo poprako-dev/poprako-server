@@ -9,7 +9,7 @@ use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::{BaseError, BaseRest, accept};
 
 // Keep mock lease behavior aligned with the production memory adapter.
-const ONLINE_USER_TTL: Duration = Duration::from_secs(10 * 60);
+const ONLINE_USER_TTL: Duration = Duration::from_mins(10);
 
 impl Run<MarkOnlineUser<'_>> for Mock {
     // Keep mock failures on the shared repository error channel.

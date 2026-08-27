@@ -22,7 +22,6 @@ use crate::data::instr::chapter_port::{
     ExportChapterTranslationInstr, ImportChapterTranslationInstr,
 };
 use crate::data::val::chapter_port::ImportChapterTranslationVal;
-
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
 use crate::part_impl::repo::HybRepo;
@@ -208,7 +207,7 @@ fn download_response(
         .header(CONTENT_TYPE, payload.content_type)
         .header(
             CONTENT_DISPOSITION,
-            format!("attachment; filename=\"{}\"", filename),
+            format!("attachment; filename=\"{filename}\""),
         )
         .body(Body::from(payload.body))
         .map_err(|err| {

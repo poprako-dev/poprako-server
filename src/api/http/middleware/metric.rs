@@ -29,8 +29,7 @@ pub async fn record_response_metric(request: Request, next: Next) -> Response {
 
     let route = matched_path
         .as_ref()
-        .map(MatchedPath::as_str)
-        .unwrap_or("<unmatched>");
+        .map_or("<unmatched>", MatchedPath::as_str);
 
     let status = response.status().as_u16().to_string();
 

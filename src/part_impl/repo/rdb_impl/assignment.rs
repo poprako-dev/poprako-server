@@ -223,7 +223,7 @@ async fn put_roles(
 
     let timestamps = AssignmentRoleTimestamps::from_mask(update.roles, now);
 
-    let aspect = AssignmentAspectRow::new(now).roles(timestamps);
+    let aspect = AssignmentAspectRow::new(now).roles(&timestamps);
 
     let row = diesel::update(t_assignment.filter(f_id.eq(update.id.as_str())))
         .set(&aspect)

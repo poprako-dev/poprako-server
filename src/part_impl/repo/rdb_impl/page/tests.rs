@@ -2,7 +2,7 @@
 
 use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 
-use crate::model::read::proj::unit::UnitCounters;
+use crate::model::read::proj::unit::UnitCountMetrics;
 use crate::model::write::page::PageEntry;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::page::{
@@ -30,10 +30,10 @@ pub async fn page_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
-    let unit_counters = UnitCounters {
-        total_unit_count: 2,
-        translated_unit_count: 1,
-        proofread_unit_count: 1,
+    let unit_counters = UnitCountMetrics {
+        total: 2,
+        translated: 1,
+        proofread: 1,
     };
 
     nucl.coord(async |context| {

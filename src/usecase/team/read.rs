@@ -33,7 +33,7 @@ pub async fn get_info<C, R, I>(
 where
     C: Context,
     R: TeamRepo<C>,
-    I: ImagePool,
+    I: ImagePool + Sync,
 {
     TeamInfoView::from_model(
         image_pool,
@@ -61,21 +61,14 @@ pub async fn list_infos<C, R, I>(
 where
     C: Context,
     R: TeamRepo<C> + UserRepo<C> + Sync,
-    I: ImagePool,
+    I: ImagePool + Sync,
 {
-    match instr.user_id.as_deref() {
+    if instr.user_id.is_none() {
         //
-        Some(user_id) if user_id != token.user_id => todo!(),
+        let user_info =
+            GetUserInfo::Id { id: &token.user_id }.run_on(repo).await?;
 
-        None => {
-            //
-            let user_info =
-                GetUserInfo::Id { id: &token.user_id }.run_on(repo).await?;
-
-            TeamPermComplex::ensure_user_can_list_infos(&user_info)?;
-        }
-
-        Some(_) => {}
+        TeamPermComplex::ensure_user_can_list_infos(&user_info)?;
     }
 
     let team_info_list_spec = TeamListSpec {

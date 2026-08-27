@@ -30,7 +30,7 @@ pub struct ChapterEntry {
     /// Whether the new chapter should be set as the active chapter immediately.
     pub is_pinned: bool,
     /// Ordinal position assigned to the new chapter within the comic.
-    pub index: i32,
+    pub index: usize,
     /// Chapter subtitle or number for display.
     pub subtitle: String,
 

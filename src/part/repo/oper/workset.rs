@@ -68,7 +68,7 @@ pub struct DeleteWorkset<'a> {
 
 /// Allocates a sequential index for a new comic under this workset.
 #[derive(Oper)]
-#[oper(output = i32)]
+#[oper(output = usize)]
 pub struct AllocWorksetComicIndex<'a> {
     /// The workset id.
     pub id: &'a str,

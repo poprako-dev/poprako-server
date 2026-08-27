@@ -45,7 +45,7 @@ pub enum TaskPayload {
 
 impl TaskPayload {
     /// Returns the routing topic string (e.g. `"image"`) for this payload.
-    pub fn topic(&self) -> &'static str {
+    pub const fn topic(&self) -> &'static str {
         //
         match self {
             //

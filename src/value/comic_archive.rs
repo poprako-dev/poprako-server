@@ -30,7 +30,7 @@ pub struct ArchivedComicPayload {
     /// Workset the comic belonged to at archiving time.
     pub workset: ArchivedWorksetPayload,
     /// Display ordering index of the comic within its workset.
-    pub index: i32,
+    pub index: usize,
     /// Title of the comic as displayed to users.
     pub title: String,
     /// Author name associated with the comic.
@@ -38,9 +38,9 @@ pub struct ArchivedComicPayload {
     /// Optional longer description of the comic's content.
     pub description: Option<String>,
     /// Total number of chapters archived with this comic.
-    pub chapter_count: i32,
+    pub chapter_count: usize,
     /// The next sequential index assigned to a new chapter at archiving time.
-    pub chapter_next_index: i32,
+    pub chapter_next_index: usize,
     /// Identifier of the user who created this comic.
     pub creator_id: String,
     /// Unix timestamp of the most recent activity on this comic.
@@ -62,15 +62,15 @@ pub struct ArchivedWorksetPayload {
     /// Identifier of the team that owns this workset.
     pub team_id: String,
     /// Display ordering index of the workset within the team.
-    pub index: i32,
+    pub index: usize,
     /// Human-readable name of the workset.
     pub name: String,
     /// Optional description of the workset's purpose or scope.
     pub description: Option<String>,
     /// Number of comics the workset contained at archiving time.
-    pub comic_count: i32,
+    pub comic_count: usize,
     /// The next sequential index assigned to a new comic at archiving time.
-    pub comic_next_index: i32,
+    pub comic_next_index: usize,
     /// Unix timestamp of when the workset was created.
     pub created_at: i64,
     /// Unix timestamp of when the workset was last modified.
@@ -86,17 +86,17 @@ pub struct ArchivedChapterPayload {
     /// Whether the chapter was pinned at the top of its comic.
     pub is_pinned: bool,
     /// Display ordering index of the chapter within its comic.
-    pub index: i32,
+    pub index: usize,
     /// Subtitle or volume label displayed for this chapter.
     pub subtitle: String,
     /// Total number of pages in this chapter at archiving time.
-    pub page_count: i32,
+    pub page_count: usize,
     /// Total number of translation units across all pages.
-    pub total_unit_count: i32,
+    pub total_unit_count: usize,
     /// Number of units that have been translated.
-    pub translated_unit_count: i32,
+    pub translated_unit_count: usize,
     /// Number of units that have been proofread.
-    pub proofread_unit_count: i32,
+    pub proofread_unit_count: usize,
     /// Bitmask of workflow stages this chapter has entered.
     pub stages: u32,
     /// Identifier of the user who created this chapter.
@@ -180,13 +180,13 @@ pub struct ArchivedPagePayload {
     /// Original database identifier of the page before archiving.
     pub source_page_id: String,
     /// Display ordering index of the page within its chapter.
-    pub index: i32,
+    pub index: usize,
     /// Total number of translation units on this page.
-    pub total_unit_count: i32,
+    pub total_unit_count: usize,
     /// Number of units on this page that have been translated.
-    pub translated_unit_count: i32,
+    pub translated_unit_count: usize,
     /// Number of units on this page that have been proofread.
-    pub proofread_unit_count: i32,
+    pub proofread_unit_count: usize,
     /// Unix timestamp of when the page was created.
     pub created_at: i64,
     /// Unix timestamp of when the page was last modified.
@@ -202,7 +202,7 @@ pub struct ArchivedUnitPayload {
     /// Original database identifier of the unit before archiving.
     pub source_unit_id: String,
     /// Display ordering index of the unit within its page.
-    pub index: i32,
+    pub index: usize,
     /// Whether this unit is a speech bubble (true) or narration box.
     pub is_bubble: bool,
     /// Whether the proofread pass has been completed for this unit.

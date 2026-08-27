@@ -9,7 +9,7 @@ mod tests;
 
 use std::collections::HashSet;
 
-use crate::model::read::proj::unit::{UnitCounters, UnitInfo, UnitOrder};
+use crate::model::read::proj::unit::{UnitCountMetrics, UnitInfo, UnitOrder};
 use crate::model::write::unit::UnitEdit;
 use crate::part_impl::repo::mock_impl::{
     MockState, expected, now, unrecoverable,
@@ -373,22 +373,22 @@ fn write_edit(unit_info: &mut UnitInfo, edit: &UnitEdit) {
 }
 
 // Count translated/proofread units among visible units only.
-fn count_infos(unit_infos: &[UnitInfo]) -> UnitCounters {
+fn count_infos(unit_infos: &[UnitInfo]) -> UnitCountMetrics {
     //
     // Produce summary fields for response after edits are applied.
     unit_infos
         .iter()
         .filter(|unit_info| unit_info.hidden_at.is_none())
-        .fold(UnitCounters::default(), |mut counters, unit_info| {
+        .fold(UnitCountMetrics::default(), |mut counters, unit_info| {
             //
-            counters.total_unit_count += 1;
+            counters.total += 1;
 
             if unit_info.is_translated() {
-                counters.translated_unit_count += 1;
+                counters.translated += 1;
             }
 
             if unit_info.is_proofread {
-                counters.proofread_unit_count += 1;
+                counters.proofread += 1;
             }
 
             counters
@@ -451,7 +451,7 @@ fn apply_edits(
     page_id: &str,
     orders: &[UnitOrder],
     edits: &[UnitEdit],
-) -> BaseRest<UnitCounters> {
+) -> BaseRest<UnitCountMetrics> {
     //
     // Derive a new order first, then apply each edit with conflict checks.
     let ordered_ids = apply_order_edits(orders, edits)?;

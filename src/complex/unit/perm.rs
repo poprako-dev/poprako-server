@@ -67,7 +67,7 @@ impl UnitPermComplex {
 
     /// Verifies that the caller may list Units on a Chapter Page.
     pub fn ensure_user_can_list_infos(
-        access: UnitListAccess<'_>,
+        access: &UnitListAccess<'_>,
     ) -> BaseRest<()> {
         //
         let access_check = match access {
@@ -227,7 +227,7 @@ impl UnitPermComplex {
                 }
 
                 UnitEdit::Delete { .. } => {}
-            };
+            }
         }
 
         accept(())

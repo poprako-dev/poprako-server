@@ -438,7 +438,7 @@ impl Mock {
     }
 }
 
-/// Build an expected-args [RootError] with a translated message.
+/// Build an expected-args [`RootError`] with a translated message.
 pub fn expected(message: &str) -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Args,
@@ -446,7 +446,7 @@ pub fn expected(message: &str) -> BaseError {
     }
 }
 
-/// Build an unrecoverable [RootError] with the given message.
+/// Build an unrecoverable [`RootError`] with the given message.
 pub fn unrecoverable(message: &str) -> BaseError {
     BaseError::Unrecoverable {
         message: message.into(),

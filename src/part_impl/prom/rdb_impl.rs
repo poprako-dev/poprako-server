@@ -79,7 +79,7 @@ impl RdbProm {
 
         let (nucl, repo) = (
             RdbNucl::new(core.clone()),
-            RdbPromRepo::new(HybRepo::new(core.clone())),
+            RdbPromRepo::new(HybRepo::new(core)),
         );
 
         let handler = handler::RdbPromHandler::new(

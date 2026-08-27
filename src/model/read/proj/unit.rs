@@ -3,6 +3,7 @@
 use time::OffsetDateTime;
 
 use crate::model::shared::unit::UnitCoord;
+use crate::result::{BaseError, BaseRest};
 
 /// One Unit node in the complete persisted page chain.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -59,50 +60,70 @@ pub struct UnitInfo {
 impl UnitInfo {
     /// Reports whether this Unit has usable translation or revision text.
     pub fn is_translated(&self) -> bool {
-        has_text(&self.translated_text) || has_text(&self.proofread_text)
+        //
+        has_text(self.translated_text.as_deref())
+            || has_text(self.proofread_text.as_deref())
     }
 }
 
 /// Unit counters stored on a Page and its Chapter.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub struct UnitCounters {
+pub struct UnitCountMetrics {
     //
     /// Number of visible Units.
-    pub total_unit_count: i32,
+    pub total: usize,
     /// Number of visible translated Units.
-    pub translated_unit_count: i32,
+    pub translated: usize,
     /// Number of visible proofread Units.
-    pub proofread_unit_count: i32,
+    pub proofread: usize,
 }
 
-impl UnitCounters {
+impl UnitCountMetrics {
     /// Calculates the counter delta from this snapshot to the next snapshot.
-    pub fn calc_delta(self, next: Self) -> UnitCounterDelta {
+    pub fn calc_delta(self, next: Self) -> BaseRest<UnitCountDelta> {
         //
-        UnitCounterDelta {
-            total_unit_count: next.total_unit_count - self.total_unit_count,
-            translated_unit_count: next.translated_unit_count
-                - self.translated_unit_count,
-            proofread_unit_count: next.proofread_unit_count
-                - self.proofread_unit_count,
-        }
+        Ok(UnitCountDelta {
+            total: signed_count(next.total, "total")?
+                - signed_count(self.total, "total")?,
+            translated: signed_count(next.translated, "translated")?
+                - signed_count(self.translated, "translated")?,
+            proofread: signed_count(next.proofread, "proofread")?
+                - signed_count(self.proofread, "proofread")?,
+        })
     }
 }
 
 /// Counter change applied to a Chapter after one Page mutation.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub struct UnitCounterDelta {
+pub struct UnitCountDelta {
     //
     /// Visible Unit count change.
-    pub total_unit_count: i32,
+    pub total: i32,
     /// Visible translated Unit count change.
-    pub translated_unit_count: i32,
+    pub translated: i32,
     /// Visible proofread Unit count change.
-    pub proofread_unit_count: i32,
+    pub proofread: i32,
 }
 
 // Reports whether a text field contains non-whitespace content.
-fn has_text(text: &Option<String>) -> bool {
+fn has_text(text: Option<&str>) -> bool {
     // Ignore purely-whitespace values so counters only count usable content.
-    text.as_ref().is_some_and(|value| !value.trim().is_empty())
+    text.is_some_and(|value| !value.trim().is_empty())
+}
+
+// Convert a unit count into the signed representation used by counter deltas.
+fn signed_count(value: usize, field: &str) -> BaseRest<i32> {
+    //
+    i32::try_from(value).map_err(|_| {
+        //
+        tracing::error!(
+            field,
+            value,
+            "unrecoverable error: unit count exceeds signed delta range"
+        );
+
+        BaseError::Unrecoverable {
+            message: format!("unit count {} exceeds signed delta range", field),
+        }
+    })
 }

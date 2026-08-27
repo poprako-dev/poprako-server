@@ -97,9 +97,9 @@ fn workset(id: &str) -> WorksetInfo {
 
 // Build chapter fixture with provided unit and proofread counters.
 fn chapter(
-    page_count: i32,
-    total_unit_count: i32,
-    proofread_unit_count: i32,
+    page_count: usize,
+    total_unit_count: usize,
+    proofread_unit_count: usize,
 ) -> ChapterInfo {
     //
     // Build a chapter fixture with configurable unit counters.
@@ -149,9 +149,9 @@ fn assignment(
 // Build page fixture and image metadata for import material.
 fn page(
     id: &str,
-    index: i32,
-    total_unit_count: i32,
-    proofread_unit_count: i32,
+    index: usize,
+    total_unit_count: usize,
+    proofread_unit_count: usize,
 ) -> PageInfo {
     //
     // Build one page fixture and pre-seed image metadata.
@@ -175,7 +175,7 @@ fn page(
 }
 
 // Build unit fixture with translator metadata and optional translated content.
-fn unit(id: &str, page_id: &str, _index: i32, text: &str) -> UnitInfo {
+fn unit(id: &str, page_id: &str, _index: usize, text: &str) -> UnitInfo {
     //
     let time = OffsetDateTime::now_utc();
 
@@ -202,9 +202,9 @@ fn unit(id: &str, page_id: &str, _index: i32, text: &str) -> UnitInfo {
 // Seed workset/comic/chapter/assignment baseline for chapter import.
 fn seed_base(
     mock: &Mock,
-    page_count: i32,
-    total_unit_count: i32,
-    proofread_unit_count: i32,
+    page_count: usize,
+    total_unit_count: usize,
+    proofread_unit_count: usize,
 ) {
     //
     // Seed the minimal base graph (workset, comic, chapter, assignment).

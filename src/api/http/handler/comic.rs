@@ -305,7 +305,7 @@ pub async fn mark_cover_uploaded(
     Json(instr): Json<MarkComicCoverUploadedInstr>,
 ) -> HttpNoContent {
     //
-    usecase::comic::mark_cover_uploaded::<_, RdbContext<ReptRead>, HybRepo, _>(
+    usecase::comic::cover::mark_uploaded::<_, RdbContext<ReptRead>, HybRepo, _>(
         (harn.nucl().rept_read(), harn.repo(), harn.image_pool()),
         user_token,
         comic_id,

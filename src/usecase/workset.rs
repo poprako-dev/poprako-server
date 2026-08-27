@@ -54,7 +54,7 @@ pub async fn create<N, C, R>(
 ) -> BaseRest<CreateWorksetVal>
 where
     C: Context + Send,
-    N: Nucl<Context = C, Error = BaseError>,
+    N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<ReptRead>,
     R: TeamRepo<C> + WorksetRepo<C> + MemberRepo<C> + Send + Sync,
 {
@@ -213,7 +213,7 @@ pub async fn delete<N, C, R, P>(
 ) -> BaseRest<()>
 where
     C: Context + Send,
-    N: Nucl<Context = C, Error = BaseError>,
+    N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<Serial>,
     R: WorksetRepo<C>
         + ComicRepo<C>
@@ -271,11 +271,11 @@ where
         + Sync,
     P: Prom<C> + Sync,
 {
-    let workset_info =
-        GetWorksetInfoExcluded { id }.step_on(repo, context).await?;
-
     // Bound each cascade page while repeatedly deleting from offset zero.
     const PAGE_SIZE: u32 = 50;
+
+    let workset_info =
+        GetWorksetInfoExcluded { id }.step_on(repo, context).await?;
 
     loop {
         //

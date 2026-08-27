@@ -41,7 +41,12 @@ impl PageManifestComplex {
         let (mut assigned_existing_indexes, mut consumed_existing_indexes) =
             (vec![None; page_specs.len()], HashSet::new());
 
-        for (request_index, page_spec) in page_specs.iter().enumerate() {
+        for (request_index, (assigned_existing_index, page_spec)) in
+            assigned_existing_indexes
+                .iter_mut()
+                .zip(page_specs)
+                .enumerate()
+        {
             //
             let Some(page_id) = &page_spec.page_id else {
                 continue;
@@ -76,10 +81,12 @@ impl PageManifestComplex {
 
             consumed_existing_indexes.insert(existing_index);
 
-            assigned_existing_indexes[request_index] = Some(existing_index);
+            *assigned_existing_index = Some(existing_index);
         }
 
-        for (request_index, page_spec) in page_specs.iter().enumerate() {
+        for (assigned_existing_index, page_spec) in
+            assigned_existing_indexes.iter_mut().zip(page_specs)
+        {
             //
             if page_spec.page_id.is_some() {
                 continue;
@@ -104,7 +111,7 @@ impl PageManifestComplex {
 
             consumed_existing_indexes.insert(existing_index);
 
-            assigned_existing_indexes[request_index] = Some(existing_index);
+            *assigned_existing_index = Some(existing_index);
         }
 
         let matches = assigned_existing_indexes

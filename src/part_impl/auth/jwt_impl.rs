@@ -34,6 +34,10 @@ pub struct JwtAuth {
 impl JwtAuth {
     // Creates a JWT signer from a shared secret and token lifetime in hours.
     /// Creates a JWT signer from a shared secret and token lifetime.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the expiration is non-positive or overflows.
     pub fn new(secret: &str, expiration_hours: i64) -> BaseRest<Self> {
         //
         // Internal implementation detail.
@@ -45,7 +49,14 @@ impl JwtAuth {
             });
         }
 
-        let expiration_seconds = expiration_hours * 3600;
+        let Some(expiration_seconds) = expiration_hours.checked_mul(3600)
+        else {
+            //
+            return Err(BaseError::Unrecoverable {
+                message: "[JwtAuth::new] JWT_EXPIRATION_HOURS is too large"
+                    .to_string(),
+            });
+        };
 
         let (encoding_key, decoding_key) = (
             EncodingKey::from_secret(secret.as_bytes()),
@@ -61,6 +72,11 @@ impl JwtAuth {
 
     // Reads token TTL from env vars and builds a signer with validated config.
     /// Reads JWT settings from environment variables.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when required environment variables are missing or
+    /// malformed.
     pub fn from_env() -> anyhow::Result<Self> {
         //
         // Internal implementation detail.
@@ -79,7 +95,7 @@ impl JwtAuth {
             BaseError::Expected { message, .. }
             | BaseError::Retryable { message }
             | BaseError::Unrecoverable { message } => {
-                anyhow::anyhow!("{}", message)
+                anyhow::anyhow!("{message}")
             }
         })
     }
@@ -93,10 +109,33 @@ impl TokenAuth for JwtAuth {
         // Internal implementation detail.
         let now = OffsetDateTime::now_utc();
 
-        let issued_at = now.unix_timestamp() as usize;
+        let timestamp = now.unix_timestamp();
+
+        let issued_at = usize::try_from(timestamp).map_err(|_| {
+            //
+            BaseError::Unrecoverable {
+                message: "JWT issue timestamp is outside the supported range"
+                    .to_string(),
+            }
+        })?;
+
+        let expiration_timestamp = timestamp
+            .checked_add(self.expiration_seconds)
+            .ok_or_else(|| BaseError::Unrecoverable {
+                message:
+                    "JWT expiration timestamp is outside the supported range"
+                        .to_string(),
+            })?;
 
         let expiration =
-            (now.unix_timestamp() + self.expiration_seconds) as usize;
+            usize::try_from(expiration_timestamp).map_err(|_| {
+                //
+                BaseError::Unrecoverable {
+                message:
+                    "JWT expiration timestamp is outside the supported range"
+                        .to_string(),
+            }
+            })?;
 
         let claims = SignClaims {
             sub: &token.user_id,
@@ -121,7 +160,7 @@ impl TokenAuth for JwtAuth {
                 BaseError::Unrecoverable {
                     message: format!(
                         "[JwtAuth::sign_token] error when encoding: {}",
-                        err
+                        err,
                     ),
                 }
             },

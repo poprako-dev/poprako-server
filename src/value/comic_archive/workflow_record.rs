@@ -56,9 +56,9 @@ pub enum ArchivedChapterWorkflowRecordDetail {
         /// Imported content format.
         format: TranslationFormat,
         /// Number of imported pages.
-        imported_page_count: i32,
+        imported_page_count: usize,
         /// Number of imported units.
-        imported_unit_count: i32,
+        imported_unit_count: usize,
     },
 
     /// Exported translation formats.

@@ -14,6 +14,7 @@ pub struct UserComplex;
 
 impl UserComplex {
     /// Generates a unique user identifier backed by a snowflake value.
+    #[must_use]
     pub fn gen_id() -> String {
         next_snowflake_id()
     }
@@ -36,7 +37,7 @@ impl UserComplex {
                 BaseError::Unrecoverable {
                     message: format!(
                         "[UserComplex::hash_password] blocking task failed: {}",
-                        error
+                        error,
                     ),
                 }
             })?
@@ -76,6 +77,7 @@ impl UserComplex {
     }
 
     /// Constructs the object storage key for a user's avatar image from the user ID, version counter, and file extension.
+    #[must_use]
     pub fn gen_avatar_key(
         id: &str,
         avatar_version: u32,
@@ -104,7 +106,7 @@ fn hash_password_sync(password: &str) -> BaseRest<String> {
             BaseError::Unrecoverable {
                 message: format!(
                     "[UserComplex::hash_password] argon2 hashing failed: {}",
-                    error
+                    error,
                 ),
             }
         })
@@ -137,7 +139,7 @@ fn verify_password_sync(password: &str, password_hash: &str) -> bool {
                 operation = "verify_password",
                 sdk_err = ?error,
                 "Argon2 SDK password verification error",
-            )
+            );
         })
         .is_ok()
 }

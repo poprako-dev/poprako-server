@@ -12,12 +12,7 @@ pub fn gen_code() -> String {
     //
     let id = next_snowflake_id();
 
-    let len = id.len();
+    let skipped_count = id.chars().count().saturating_sub(6);
 
-    match len <= 6 {
-        //
-        true => id,
-
-        false => id[len - 6..].to_string(),
-    }
+    id.chars().skip(skipped_count).collect()
 }

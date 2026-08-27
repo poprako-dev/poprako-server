@@ -28,7 +28,7 @@ use crate::shared::result::{pool_build, pool_get};
 // Internal type alias for the Diesel async connection pool.
 type RdbPool = Pool<AsyncPgConnection>;
 
-/// A pooled async PostgreSQL connection obtained from the connection pool.
+/// A pooled async `PostgreSQL` connection obtained from the connection pool.
 pub type RdbPooledConn = Object<AsyncPgConnection>;
 
 /// Alias for the underlying Diesel async connection type.
@@ -62,12 +62,16 @@ impl RdbCore {
             BaseError::Expected { message, .. }
             | BaseError::Retryable { message }
             | BaseError::Unrecoverable { message } => {
-                anyhow::anyhow!("{}", message)
+                anyhow::anyhow!("{message}")
             }
         })
     }
 
     /// Creates a connection pool from a raw database URL string.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the connection pool cannot be constructed.
     pub fn from_database_url(database_url: &str) -> BaseRest<Self> {
         //
         let manager = AsyncDieselConnectionManager::<AsyncPgConnection>::new(
@@ -81,17 +85,21 @@ impl RdbCore {
         })
     }
 
-    #[instrument(level = "info", skip_all)]
     /// Retrieves a pooled connection, blocking until one is available.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when no database connection can be acquired.
+    #[instrument(level = "info", skip_all)]
     pub async fn get(&self) -> BaseRest<RdbPooledConn> {
-        self.pool.get().await.map_err(pool_get)
+        self.pool.get().await.map_err(|source| pool_get(&source))
     }
 }
 
-/// Transactional context holding a pooled PostgreSQL connection.
+/// Transactional context holding a pooled `PostgreSQL` connection.
 pub struct RdbContext<L = ReptRead> {
     //
-    /// Pooled PostgreSQL connection owned by this transaction context.
+    /// Pooled `PostgreSQL` connection owned by this transaction context.
     conn: RdbPooledConn,
     /// Isolation-level marker carried by the context.
     level: PhantomData<L>,
@@ -99,7 +107,7 @@ pub struct RdbContext<L = ReptRead> {
 
 impl<L> RdbContext<L> {
     /// Builds a context from a pooled connection.
-    pub fn new(conn: RdbPooledConn) -> Self {
+    pub const fn new(conn: RdbPooledConn) -> Self {
         //
         Self {
             conn,

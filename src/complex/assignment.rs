@@ -27,9 +27,7 @@ impl AssignmentComplex {
         //
         let admin_roles = RoleMask::from(RoleField::ADMIN);
 
-        preset_roles
-            .map(|roles| roles.union(admin_roles))
-            .unwrap_or(admin_roles)
+        preset_roles.map_or(admin_roles, |roles| roles.union(admin_roles))
     }
 
     /// Merge new roles into an existing assignment.
@@ -65,13 +63,10 @@ impl AssignmentComplex {
         //
         assignment_infos.iter().any(|assignment_info| {
             //
-            match assignment_info.user_id == user_id {
-                //
-                true => roles.has_any_role(&[RoleField::ADMIN]),
-
-                false => {
-                    assignment_info.roles.has_any_role(&[RoleField::ADMIN])
-                }
+            if assignment_info.user_id == user_id {
+                roles.has_any_role(&[RoleField::ADMIN])
+            } else {
+                assignment_info.roles.has_any_role(&[RoleField::ADMIN])
             }
         })
     }
@@ -140,8 +135,8 @@ pub struct AssignmentPermComplex;
 
 impl AssignmentPermComplex {
     /// Verify chapter assignment lists using membership or assignment evidence.
-    pub fn ensure_user_can_list_chapter_infos(
-        access: AssignmentListAccess<'_>,
+    pub const fn ensure_user_can_list_chapter_infos(
+        access: &AssignmentListAccess<'_>,
     ) -> BaseRest<()> {
         //
         match access {
@@ -158,7 +153,7 @@ impl AssignmentPermComplex {
 
     /// Verify user assignment lists using ownership or super-admin evidence.
     pub fn ensure_user_can_list_user_infos(
-        access: UserAssignmentListAccess<'_>,
+        access: &UserAssignmentListAccess<'_>,
     ) -> BaseRest<()> {
         //
         match access {
@@ -181,7 +176,7 @@ impl AssignmentPermComplex {
 
     /// Verify the caller may mutate assignment roles.
     pub fn ensure_user_can_update_roles(
-        access: AssignmentRoleUpdateAccess<'_>,
+        access: &AssignmentRoleUpdateAccess<'_>,
         subject_member_info: &MemberInfo,
         roles: RoleMask,
     ) -> BaseRest<()> {
@@ -219,7 +214,7 @@ impl AssignmentPermComplex {
 
     /// Verify the caller may delete the target assignment.
     pub fn ensure_user_can_delete(
-        access: AssignmentDeleteAccess<'_>,
+        access: &AssignmentDeleteAccess<'_>,
     ) -> BaseRest<()> {
         //
         match access {

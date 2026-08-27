@@ -100,7 +100,7 @@ pub struct DeleteComic<'a> {
 
 /// Allocates a new chapter index for a comic.
 #[derive(Oper)]
-#[oper(output = i32)]
+#[oper(output = usize)]
 pub struct AllocComicChapterIndex<'a> {
     /// The comic ID.
     pub id: &'a str,

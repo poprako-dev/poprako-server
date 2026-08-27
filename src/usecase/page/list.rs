@@ -31,7 +31,7 @@ pub async fn list_infos<C, R, I>(
 where
     C: Context,
     R: PageRepo<C> + TeamRepo<C> + MemberRepo<C> + AssignmentRepo<C> + Sync,
-    I: ImagePool,
+    I: ImagePool + Sync,
 {
     ensure_user_can_list_infos::<C, R>(repo, &token, &instr.chapter_id).await?;
 
@@ -59,7 +59,7 @@ pub async fn get_info<C, R, I>(
 where
     C: Context,
     R: PageRepo<C> + TeamRepo<C> + MemberRepo<C> + AssignmentRepo<C> + Sync,
-    I: ImagePool,
+    I: ImagePool + Sync,
 {
     let page_info = GetPageInfo { id: &id }.run_on(repo).await?;
 
@@ -93,7 +93,7 @@ where
     if let Some(member_info) = member_info {
         //
         return PagePermComplex::ensure_user_can_list_infos(
-            PageListAccess::Member {
+            &PageListAccess::Member {
                 member_info: &member_info,
             },
         );
@@ -124,7 +124,7 @@ where
         });
     };
 
-    PagePermComplex::ensure_user_can_list_infos(PageListAccess::Assignee {
+    PagePermComplex::ensure_user_can_list_infos(&PageListAccess::Assignee {
         assignment_info: &assignment_info,
     })
 }

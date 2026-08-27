@@ -25,8 +25,8 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 /// * `C` — Context anchor.
 /// * `R: UserRepo<C> + MemberRepo<C>` — User and member storage.
 /// * `P: Prom<C>` — Prom enqueuer for deferred avatar deletion.
-#[instrument(level = "info", skip(nucl, repo, prom))]
 /// Deletes a user account and all associated instr.
+#[instrument(level = "info", skip(nucl, repo, prom))]
 ///
 /// Transactional cascade:
 ///
@@ -40,7 +40,7 @@ pub async fn delete<N, C, R, P>(
 ) -> BaseRest<()>
 where
     C: Context + Send,
-    N: Nucl<Context = C, Error = BaseError>,
+    N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<Serial>,
     R: UserRepo<C> + MemberRepo<C> + Send + Sync,
     P: Prom<C> + Send + Sync,

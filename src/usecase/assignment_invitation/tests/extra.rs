@@ -26,10 +26,11 @@ async fn join_mismatched_qid_is_rejected() {
         role(RoleField::TRANSLATOR),
     ));
 
-    let err = join((&mock, &mock, &mock), token("target-user"), join_data())
-        .await
-        .err()
-        .unwrap();
+    let err =
+        join::join((&mock, &mock, &mock), token("target-user"), join_data())
+            .await
+            .err()
+            .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Args);
 

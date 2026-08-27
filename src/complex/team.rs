@@ -34,14 +34,14 @@ pub struct TeamPermComplex;
 
 impl TeamPermComplex {
     /// Verify the caller may mark themselves online in the target team.
-    pub fn ensure_user_can_mark_self_online(
+    pub const fn ensure_user_can_mark_self_online(
         member_info: &MemberInfo,
     ) -> BaseRest<()> {
         check_user_is_team_member(member_info)
     }
 
     /// Verify the caller may list online users in the target team.
-    pub fn ensure_user_can_list_online_user_ids(
+    pub const fn ensure_user_can_list_online_user_ids(
         member_info: &MemberInfo,
     ) -> BaseRest<()> {
         check_user_is_team_member(member_info)

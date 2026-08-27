@@ -13,6 +13,6 @@ pub async fn lock_team(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
 pub async fn increment_workset_next_index(
     conn: &mut RdbConn,
     id: &str,
-) -> BaseRest<i32> {
+) -> BaseRest<usize> {
     info::increment_workset_next_index(conn, id).await
 }

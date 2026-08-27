@@ -32,7 +32,7 @@ fn member(user_id: &str) -> MemberInfo {
     }
 }
 
-fn termbase(term_count: i32) -> TermbaseInfo {
+fn termbase(term_count: usize) -> TermbaseInfo {
     //
     let time = OffsetDateTime::now_utc();
 

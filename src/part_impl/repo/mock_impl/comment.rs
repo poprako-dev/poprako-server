@@ -67,20 +67,15 @@ fn list_comments(
 
     let limit = spec.limit as usize;
 
-    match offset >= comment_infos.len() {
+    if offset >= comment_infos.len() {
+        Vec::new()
+    } else {
         //
         // Internal implementation detail.
         // Internal implementation detail.
-        true => Vec::new(),
+        let end = std::cmp::min(offset + limit, comment_infos.len());
 
-        false => {
-            //
-            // Internal implementation detail.
-            // Internal implementation detail.
-            let end = std::cmp::min(offset + limit, comment_infos.len());
-
-            comment_infos[offset..end].to_vec()
-        }
+        comment_infos[offset..end].to_vec()
     }
 }
 

@@ -13,6 +13,7 @@ use crate::part::repo::oper::termbase::{
     ListTermbaseInfos, ListTermbaseInfosExcluded, TouchTermbase,
     UpdateTermbase, UpdateTermbaseTermCount,
 };
+use crate::part_impl::repo::mock_impl::nucl::apply_signed_delta;
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
@@ -402,13 +403,7 @@ impl<'a> Step<UpdateTermbaseTermCount<'a>, MockContext> for Mock {
             .find(|termbase_info| termbase_info.id == oper.id)
             .ok_or_else(|| expected("error-termbase-not-found"))?;
 
-        let term_count = termbase_info.term_count + oper.delta;
-
-        if term_count < 0 {
-            return Err(expected("error-invalid-term-count"));
-        }
-
-        termbase_info.term_count = term_count;
+        apply_signed_delta(&mut termbase_info.term_count, oper.delta)?;
 
         termbase_info.updated_at = now();
 

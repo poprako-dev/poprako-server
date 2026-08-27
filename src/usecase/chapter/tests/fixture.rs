@@ -65,7 +65,7 @@ pub fn comic(id: &str, workset_id: &str) -> ComicInfo {
 pub fn chapter(
     id: &str,
     comic_id: &str,
-    index: i32,
+    index: usize,
     is_pinned: bool,
 ) -> ChapterInfo {
     //

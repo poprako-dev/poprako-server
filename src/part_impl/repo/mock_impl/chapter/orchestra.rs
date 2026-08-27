@@ -27,20 +27,15 @@ fn list_chapter_infos(
 
     let limit = spec.limit as usize;
 
-    match offset >= chapter_infos.len() {
+    if offset >= chapter_infos.len() {
+        Vec::new()
+    } else {
         //
         // Internal implementation detail.
         // Internal implementation detail.
-        true => Vec::new(),
+        let end = std::cmp::min(offset + limit, chapter_infos.len());
 
-        false => {
-            //
-            // Internal implementation detail.
-            // Internal implementation detail.
-            let end = std::cmp::min(offset + limit, chapter_infos.len());
-
-            chapter_infos[offset..end].to_vec()
-        }
+        chapter_infos[offset..end].to_vec()
     }
 }
 

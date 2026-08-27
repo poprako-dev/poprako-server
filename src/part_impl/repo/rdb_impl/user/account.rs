@@ -27,8 +27,8 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::RdbConn;
 use crate::shared::result::diesel;
 
-#[instrument(level = "info", skip_all)]
 /// Remove a user row from persistence.
+#[instrument(level = "info", skip_all)]
 pub async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
     diesel::delete(t_user.filter(f_id.eq(id)))
@@ -39,8 +39,8 @@ pub async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     accept(())
 }
 
-#[instrument(level = "info", skip_all)]
 /// Insert a new user row from an entry.
+#[instrument(level = "info", skip_all)]
 pub async fn create(
     conn: &mut RdbConn,
     entry: &UserEntry,
@@ -68,8 +68,8 @@ pub async fn create(
     row.try_into()
 }
 
-#[instrument(level = "info", skip_all)]
 /// Load user credentials by QID.
+#[instrument(level = "info", skip_all)]
 pub async fn get_credential_by_qid(
     conn: &mut RdbConn,
     qid: &str,
@@ -104,8 +104,8 @@ pub async fn get_credential_by_qid(
     accept(row.into())
 }
 
-#[instrument(level = "info", skip_all)]
 /// Update the user password hash.
+#[instrument(level = "info", skip_all)]
 pub async fn update_password_hash(
     conn: &mut RdbConn,
     repl: &UserCredsRepl,
@@ -125,8 +125,8 @@ pub async fn update_password_hash(
     accept(())
 }
 
-#[instrument(level = "info", skip_all)]
 /// Update user and membership activity timestamps.
+#[instrument(level = "info", skip_all)]
 pub async fn touch_last_active(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
     let now = OffsetDateTime::now_utc();

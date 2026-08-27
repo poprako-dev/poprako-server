@@ -59,7 +59,7 @@ pub async fn export<N, C, R>(
 ) -> BaseRest<ExportChapterTranslationsVal>
 where
     C: Context + Send,
-    N: Nucl<Context = C, Error = BaseError>,
+    N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<ReptRead>,
     R: ChapterRepo<C>
         + ChapterWorkflowRecordRepo<C>
@@ -184,7 +184,7 @@ fn make_unit_export(
     // Convert one unit into export view fields used by downstream translators.
     UnitTranslationPortView {
         unit_id: unit_info.id.clone(),
-        unit_index: index as i32,
+        unit_index: index,
         page_id: page_info.id.clone(),
         page_index: page_info.index,
         x_coord: unit_info.coord.x_coord,
@@ -218,7 +218,7 @@ async fn persist_export_record<N, C, R>(
 ) -> BaseRest<()>
 where
     C: Context + Send,
-    N: Nucl<Context = C, Error = BaseError>,
+    N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<ReptRead>,
     R: ChapterRepo<C> + ChapterWorkflowRecordRepo<C> + Send + Sync,
 {
@@ -285,7 +285,7 @@ where
     if let Some(member_info) = member_info {
         //
         return ChapterPortPermComplex::ensure_user_can_export(
-            ChapterExportAccess::Member {
+            &ChapterExportAccess::Member {
                 member_info: &member_info,
             },
         );
@@ -318,7 +318,7 @@ where
     };
 
     ChapterPortPermComplex::ensure_user_can_export(
-        ChapterExportAccess::Assignee {
+        &ChapterExportAccess::Assignee {
             assignment_info: &assignment_info,
         },
     )

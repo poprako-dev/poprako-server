@@ -20,6 +20,7 @@
 #![warn(clippy::nursery)]
 
 use std::net::ToSocketAddrs;
+use std::num::NonZeroUsize;
 use std::sync::Arc;
 
 use anyhow::Context as _;
@@ -75,7 +76,7 @@ async fn main() -> anyhow::Result<()> {
 
     let develop = AsyncEffectDevelop::new::<RdbContext<ReptRead>, _>(
         Arc::new(HybRepo::new(core.clone())),
-        1024,
+        NonZeroUsize::new(1024).context("buf_size cannot be 0")?,
     );
 
     let (prom, sched) = (

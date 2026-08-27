@@ -57,7 +57,7 @@ pub fn extract_token(request: &Request) -> String {
                 return value
                     .trim()
                     .strip_prefix(AUTH_BEARER_PREFIX)
-                    .unwrap_or(value.trim())
+                    .unwrap_or_else(|| value.trim())
                     .to_string();
             }
         }

@@ -52,8 +52,7 @@ fn list_infos(
                 && oper
                     .spec
                     .is_pending
-                    .map(|is_pending| info.is_pending == is_pending)
-                    .unwrap_or(true)
+                    .is_none_or(|is_pending| info.is_pending == is_pending)
         })
         .cloned()
         .collect::<Vec<_>>();
@@ -70,13 +69,10 @@ fn list_infos(
 
     let end = std::cmp::min(offset + oper.spec.limit as usize, infos.len());
 
-    match offset >= infos.len() {
-        //
-        // Internal implementation detail.
-        // Internal implementation detail.
-        true => Vec::new(),
-
-        false => infos[offset..end].to_vec(),
+    if offset >= infos.len() {
+        Vec::new()
+    } else {
+        infos[offset..end].to_vec()
     }
 }
 
@@ -132,40 +128,35 @@ impl<'a> Step<CreateAssignmentInvitation<'a>, MockContext> for Mock {
         oper: &CreateAssignmentInvitation<'a>,
     ) -> BaseRest<AssignmentInvitationInfo> {
         //
-        match context.state.assignment_invitations.iter().any(|info| {
+        if context.state.assignment_invitations.iter().any(|info| {
             //
             info.id == oper.entry.id
                 || (info.chapter_id == oper.entry.chapter_id
                     && info.invitee_qid == oper.entry.invitee_qid
                     && info.is_pending)
         }) {
+            Err(expected("error-already-exists"))
+        } else {
             //
             // Internal implementation detail.
             // Internal implementation detail.
-            true => Err(expected("error-already-exists")),
+            let time = now();
 
-            false => {
-                //
-                // Internal implementation detail.
-                // Internal implementation detail.
-                let time = now();
+            let info = AssignmentInvitationInfo {
+                id: oper.entry.id.clone(),
+                chapter_id: oper.entry.chapter_id.clone(),
+                inviter_id: oper.entry.inviter_id.clone(),
+                invitee_qid: oper.entry.invitee_qid.clone(),
+                code: oper.entry.code.clone(),
+                is_pending: true,
+                roles: oper.entry.roles,
+                created_at: time,
+                updated_at: time,
+            };
 
-                let info = AssignmentInvitationInfo {
-                    id: oper.entry.id.clone(),
-                    chapter_id: oper.entry.chapter_id.clone(),
-                    inviter_id: oper.entry.inviter_id.clone(),
-                    invitee_qid: oper.entry.invitee_qid.clone(),
-                    code: oper.entry.code.clone(),
-                    is_pending: true,
-                    roles: oper.entry.roles,
-                    created_at: time,
-                    updated_at: time,
-                };
+            context.state.assignment_invitations.push(info.clone());
 
-                context.state.assignment_invitations.push(info.clone());
-
-                accept(info)
-            }
+            accept(info)
         }
     }
 }

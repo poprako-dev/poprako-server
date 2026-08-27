@@ -123,7 +123,7 @@ pub async fn archive<N, C, R, P>(
 ) -> BaseRest<ArchiveComicVal>
 where
     C: Context + Send,
-    N: Nucl<Context = C, Error = BaseError>,
+    N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<Serial>,
     R: ComicRepo<C>
         + ComicArchiveRepo<C>

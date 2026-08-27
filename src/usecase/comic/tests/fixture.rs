@@ -12,7 +12,7 @@ use crate::model::shared::user::UserToken;
 use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
-pub fn comic(id: &str, workset_id: &str, index: i32) -> ComicInfo {
+pub fn comic(id: &str, workset_id: &str, index: usize) -> ComicInfo {
     //
     let time = OffsetDateTime::now_utc();
 
@@ -114,7 +114,7 @@ pub fn assignment(id: &str, chapter_id: &str, user_id: &str) -> AssignmentInfo {
 pub fn page(
     id: &str,
     chapter_id: &str,
-    index: i32,
+    index: usize,
     image_key: Option<&str>,
     image_uploaded: bool,
 ) -> PageInfo {

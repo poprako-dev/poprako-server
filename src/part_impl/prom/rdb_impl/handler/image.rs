@@ -39,7 +39,7 @@ pub async fn handle<N, R, I>(
     task: &ImagePayload,
 ) -> TaskFlow
 where
-    N: Nucl<Context = RdbContext, Error = BaseError>,
+    N: Nucl<Context = RdbContext, Error = BaseError> + Sync,
     R: ChapterRepo<RdbContext>
         + UserRepo<RdbContext>
         + TeamRepo<RdbContext>
@@ -77,8 +77,8 @@ where
 }
 
 /// Verifies that an uploaded image object exists and confirms current DB ownership.
-#[instrument(level = "info", skip_all)]
 // Internal implementation of `handle_check_uploaded`.
+#[instrument(level = "info", skip_all)]
 async fn handle_check_uploaded<N, R, I>(
     nucl: &N,
     repo: &R,
@@ -86,7 +86,7 @@ async fn handle_check_uploaded<N, R, I>(
     image_identity: ImageIdentity<'_>,
 ) -> TaskFlow
 where
-    N: Nucl<Context = RdbContext, Error = BaseError>,
+    N: Nucl<Context = RdbContext, Error = BaseError> + Sync,
     R: ChapterRepo<RdbContext>
         + UserRepo<RdbContext>
         + TeamRepo<RdbContext>
@@ -110,10 +110,19 @@ where
             }
         };
 
-    match object_exists {
+    if object_exists {
         //
         // Internal implementation detail.
-        false => match image_identity.kind {
+        if image_identity.kind == ImageKind::PageImage {
+            //
+            return process_existing_page_image(nucl, repo, image_identity)
+                .await;
+        }
+
+        process_existing_image(nucl, repo, image_identity).await
+    } else {
+        //
+        match image_identity.kind {
             //
             // Internal implementation detail.
             ImageKind::PageImage => {
@@ -121,26 +130,14 @@ where
             }
 
             _ => process_missing_image(nucl, repo, image_identity).await,
-        },
-
-        true => {
-            //
-            // Internal implementation detail.
-            if image_identity.kind == ImageKind::PageImage {
-                //
-                return process_existing_page_image(nucl, repo, image_identity)
-                    .await;
-            }
-
-            process_existing_image(nucl, repo, image_identity).await
         }
     }
 }
 
 /// Deletes an image object from the storage backend.
 /// Deletes an image object from the storage backend.
-#[instrument(level = "info", skip_all)]
 // Delete the storage object; returns retry task flow on failure.
+#[instrument(level = "info", skip_all)]
 async fn handle_delete<I>(image_pool: &I, object_key: &str) -> TaskFlow
 where
     I: ImageManager + Send + Sync,
@@ -156,181 +153,15 @@ where
     }
 }
 
-/// Clears an unverified current page image without changing chapter workflow.
-#[instrument(level = "info", skip_all)]
-// For pages whose upload finished but the row was not persisted, only update the upload flag without triggering the image pipeline.
-async fn process_unverified_page_image<N, R>(
-    nucl: &N,
-    repo: &R,
-    image_identity: ImageIdentity<'_>,
-) -> TaskFlow
-where
-    N: Nucl<Context = RdbContext, Error = BaseError>,
-    R: ChapterRepo<RdbContext> + PageRepo<RdbContext> + Send + Sync,
-{
-    let page_info = match (GetPageInfo {
-        id: image_identity.resource_id,
-    })
-    .run_on(repo)
-    .await
-    {
-        // Internal implementation detail.
-        Ok(page_info) => page_info,
-
-        Err(BaseError::Expected { .. }) => return TaskFlow::Complete,
-
-        Err(error) => {
-            //
-            return TaskFlow::Retry {
-                err_message: format!("{:?}", error),
-            };
-        }
-    };
-
-    match (
-        page_info.image_version == Some(image_identity.version),
-        page_info.image_key.as_deref() == Some(image_identity.object_key),
-    ) {
-        //
-        // Internal implementation detail.
-        (false, _) => return TaskFlow::Complete,
-
-        (true, false) => {
-            //
-            return TaskFlow::Dead {
-                err_message:
-                    "prom page image version matches but object key differs"
-                        .into(),
-            };
-        }
-
-        (true, true) => {}
-    }
-
-    let outcome = nucl
-        .coord(async move |context| {
-            //
-            // Internal implementation detail.
-            // NOTE: Chapter -> Page is the shared lock order that prevents
-            // both deadlocks and chapter upload-summary races.
-            GetChapterInfoExcluded {
-                id: &page_info.chapter_id,
-                incls: &[],
-            }
-            .step_on(repo, context)
-            .await?;
-
-            let locked_page_info = GetPageInfoExcluded {
-                id: image_identity.resource_id,
-            }
-            .step_on(repo, context)
-            .await?;
-
-            let image_version_matches =
-                locked_page_info.image_version == Some(image_identity.version);
-
-            let image_key_matches = locked_page_info.image_key.as_deref()
-                == Some(image_identity.object_key);
-
-            if let (false, _) | (true, false) =
-                (image_version_matches, image_key_matches)
-            {
-                //
-                let err_message = "stale page image identity";
-
-                tracing::warn!(
-                    err_variant = ?ExpectedVariant::Args,
-                    err_message = %err_message,
-                    image_kind = ?image_identity.kind,
-                    resource_id = %image_identity.resource_id,
-                    image_version = image_identity.version,
-                    stored_image_version = locked_page_info.image_version,
-                    image_key_present = locked_page_info.image_key.is_some(),
-                    image_key_matches,
-                    object_key_present = !image_identity.object_key.is_empty(),
-                    operation = "process_unverified_page_image",
-                    "expected error: stale page image identity",
-                );
-
-                return Err(BaseError::Expected {
-                    variant: ExpectedVariant::Args,
-                    message: err_message.into(),
-                });
-            }
-
-            let repl = PageImageRepl {
-                id: image_identity.resource_id.to_owned(),
-                image_version: image_identity.version,
-                image_key: Some(image_identity.object_key.to_owned()),
-                is_image_uploaded: false,
-            };
-
-            SetPageImageUploaded { repl: &repl }
-                .step_on(repo, context)
-                .await?;
-
-            accept(())
-        })
-        .await
-        .map_err(Into::into);
-
-    match outcome {
-        //
-        // Internal implementation detail.
-        Ok(()) | Err(BaseError::Expected { .. }) => TaskFlow::Complete,
-
-        Err(error) => TaskFlow::Retry {
-            err_message: format!("{:?}", error),
-        },
-    }
-}
-
-#[instrument(level = "info", skip_all)]
-// When the storage object does not exist, clean up the old database pointer only if the identity is still valid.
-async fn process_missing_image<N, R>(
-    nucl: &N,
-    repo: &R,
-    image_identity: ImageIdentity<'_>,
-) -> TaskFlow
-where
-    N: Nucl<Context = RdbContext, Error = BaseError>,
-    R: UserRepo<RdbContext>
-        + TeamRepo<RdbContext>
-        + ComicRepo<RdbContext>
-        + PageRepo<RdbContext>
-        + Send
-        + Sync,
-{
-    match resource::mark_current_or_classify(nucl, repo, image_identity, false)
-        .await
-    {
-        // Internal implementation detail.
-        Ok(
-            ResourceState::Current
-            | ResourceState::Stale
-            | ResourceState::Missing,
-        ) => TaskFlow::Complete,
-
-        Ok(ResourceState::Mismatched) => TaskFlow::Dead {
-            err_message: "prom image identity does not match current resource"
-                .into(),
-        },
-
-        Err(error) => TaskFlow::Retry {
-            err_message: format!("{:?}", error),
-        },
-    }
-}
-
-#[instrument(level = "info", skip_all)]
 // Compare the current page image identity and mark as uploaded when the object exists and is current.
+#[instrument(level = "info", skip_all)]
 async fn process_existing_page_image<N, R>(
     nucl: &N,
     repo: &R,
     image_identity: ImageIdentity<'_>,
 ) -> TaskFlow
 where
-    N: Nucl<Context = RdbContext, Error = BaseError>,
+    N: Nucl<Context = RdbContext, Error = BaseError> + Sync,
     R: ChapterRepo<RdbContext> + PageRepo<RdbContext> + Send + Sync,
 {
     let page_info = match (GetPageInfo {
@@ -426,16 +257,18 @@ where
                 });
             }
 
-            let repl = PageImageRepl {
+            let page_image_repl = PageImageRepl {
                 id: image_identity.resource_id.to_owned(),
                 image_version: image_identity.version,
                 image_key: Some(image_identity.object_key.to_owned()),
                 is_image_uploaded: true,
             };
 
-            MarkPageImageUploaded { repl: &repl }
-                .step_on(repo, context)
-                .await?;
+            MarkPageImageUploaded {
+                repl: &page_image_repl,
+            }
+            .step_on(repo, context)
+            .await?;
 
             accept(())
         })
@@ -445,9 +278,7 @@ where
     match outcome {
         //
         // Internal implementation detail.
-        Ok(()) => TaskFlow::Complete,
-
-        Err(BaseError::Expected { .. }) => TaskFlow::Complete,
+        Ok(()) | Err(BaseError::Expected { .. }) => TaskFlow::Complete,
 
         Err(error) => TaskFlow::Retry {
             err_message: format!("{:?}", error),
@@ -455,15 +286,15 @@ where
     }
 }
 
-#[instrument(level = "info", skip_all)]
 // Perform identity comparison for non-page resources; update upload status when identities match.
+#[instrument(level = "info", skip_all)]
 async fn process_existing_image<N, R>(
     nucl: &N,
     repo: &R,
     image_identity: ImageIdentity<'_>,
 ) -> TaskFlow
 where
-    N: Nucl<Context = RdbContext, Error = BaseError>,
+    N: Nucl<Context = RdbContext, Error = BaseError> + Sync,
     R: ChapterRepo<RdbContext>
         + UserRepo<RdbContext>
         + TeamRepo<RdbContext>
@@ -479,13 +310,181 @@ where
     match resource_state {
         //
         // Internal implementation detail.
-        Ok(ResourceState::Current) | Ok(ResourceState::Stale) => {
-            TaskFlow::Complete
-        }
-
         // SAFETY: stale and deleted resource keys belong exclusively to
         // dedicated Delete tasks.
-        Ok(ResourceState::Missing) => TaskFlow::Complete,
+        Ok(
+            ResourceState::Current
+            | ResourceState::Stale
+            | ResourceState::Missing,
+        ) => TaskFlow::Complete,
+
+        Ok(ResourceState::Mismatched) => TaskFlow::Dead {
+            err_message: "prom image identity does not match current resource"
+                .into(),
+        },
+
+        Err(error) => TaskFlow::Retry {
+            err_message: format!("{:?}", error),
+        },
+    }
+}
+
+/// Clears an unverified current page image without changing chapter workflow.
+// For pages whose upload finished but the row was not persisted, only update the upload flag without triggering the image pipeline.
+#[instrument(level = "info", skip_all)]
+async fn process_unverified_page_image<N, R>(
+    nucl: &N,
+    repo: &R,
+    image_identity: ImageIdentity<'_>,
+) -> TaskFlow
+where
+    N: Nucl<Context = RdbContext, Error = BaseError> + Sync,
+    R: ChapterRepo<RdbContext> + PageRepo<RdbContext> + Send + Sync,
+{
+    let page_info = match (GetPageInfo {
+        id: image_identity.resource_id,
+    })
+    .run_on(repo)
+    .await
+    {
+        // Internal implementation detail.
+        Ok(page_info) => page_info,
+
+        Err(BaseError::Expected { .. }) => return TaskFlow::Complete,
+
+        Err(error) => {
+            //
+            return TaskFlow::Retry {
+                err_message: format!("{:?}", error),
+            };
+        }
+    };
+
+    match (
+        page_info.image_version == Some(image_identity.version),
+        page_info.image_key.as_deref() == Some(image_identity.object_key),
+    ) {
+        //
+        // Internal implementation detail.
+        (false, _) => return TaskFlow::Complete,
+
+        (true, false) => {
+            //
+            return TaskFlow::Dead {
+                err_message:
+                    "prom page image version matches but object key differs"
+                        .into(),
+            };
+        }
+
+        (true, true) => {}
+    }
+
+    let outcome = nucl
+        .coord(async move |context| {
+            //
+            // Internal implementation detail.
+            // NOTE: Chapter -> Page is the shared lock order that prevents
+            // both deadlocks and chapter upload-summary races.
+            GetChapterInfoExcluded {
+                id: &page_info.chapter_id,
+                incls: &[],
+            }
+            .step_on(repo, context)
+            .await?;
+
+            let locked_page_info = GetPageInfoExcluded {
+                id: image_identity.resource_id,
+            }
+            .step_on(repo, context)
+            .await?;
+
+            let image_version_matches =
+                locked_page_info.image_version == Some(image_identity.version);
+
+            let image_key_matches = locked_page_info.image_key.as_deref()
+                == Some(image_identity.object_key);
+
+            if let (false, _) | (true, false) =
+                (image_version_matches, image_key_matches)
+            {
+                //
+                let err_message = "stale page image identity";
+
+                tracing::warn!(
+                    err_variant = ?ExpectedVariant::Args,
+                    err_message = %err_message,
+                    image_kind = ?image_identity.kind,
+                    resource_id = %image_identity.resource_id,
+                    image_version = image_identity.version,
+                    stored_image_version = locked_page_info.image_version,
+                    image_key_present = locked_page_info.image_key.is_some(),
+                    image_key_matches,
+                    object_key_present = !image_identity.object_key.is_empty(),
+                    operation = "process_unverified_page_image",
+                    "expected error: stale page image identity",
+                );
+
+                return Err(BaseError::Expected {
+                    variant: ExpectedVariant::Args,
+                    message: err_message.into(),
+                });
+            }
+
+            let page_image_repl = PageImageRepl {
+                id: image_identity.resource_id.to_owned(),
+                image_version: image_identity.version,
+                image_key: Some(image_identity.object_key.to_owned()),
+                is_image_uploaded: false,
+            };
+
+            SetPageImageUploaded {
+                repl: &page_image_repl,
+            }
+            .step_on(repo, context)
+            .await?;
+
+            accept(())
+        })
+        .await
+        .map_err(Into::into);
+
+    match outcome {
+        //
+        // Internal implementation detail.
+        Ok(()) | Err(BaseError::Expected { .. }) => TaskFlow::Complete,
+
+        Err(error) => TaskFlow::Retry {
+            err_message: format!("{:?}", error),
+        },
+    }
+}
+
+// When the storage object does not exist, clean up the old database pointer only if the identity is still valid.
+#[instrument(level = "info", skip_all)]
+async fn process_missing_image<N, R>(
+    nucl: &N,
+    repo: &R,
+    image_identity: ImageIdentity<'_>,
+) -> TaskFlow
+where
+    N: Nucl<Context = RdbContext, Error = BaseError> + Sync,
+    R: UserRepo<RdbContext>
+        + TeamRepo<RdbContext>
+        + ComicRepo<RdbContext>
+        + PageRepo<RdbContext>
+        + Send
+        + Sync,
+{
+    match resource::mark_current_or_classify(nucl, repo, image_identity, false)
+        .await
+    {
+        // Internal implementation detail.
+        Ok(
+            ResourceState::Current
+            | ResourceState::Stale
+            | ResourceState::Missing,
+        ) => TaskFlow::Complete,
 
         Ok(ResourceState::Mismatched) => TaskFlow::Dead {
             err_message: "prom image identity does not match current resource"

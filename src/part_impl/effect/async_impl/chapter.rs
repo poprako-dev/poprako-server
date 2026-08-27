@@ -37,7 +37,7 @@ pub async fn notify_next_phase<C, R>(
     event: &ChapterWorkflowCompletedEvent,
 ) where
     C: Context,
-    R: AssignmentRepo<C> + ChapterRepo<C> + SystemMailRepo,
+    R: AssignmentRepo<C> + ChapterRepo<C> + SystemMailRepo + Sync,
 {
     let Some((receiver_role, workflow_label)) =
         next_phase_config(event.completed_stage)
@@ -67,7 +67,7 @@ pub async fn notify_reviewers_on_progress<C, R>(
     event: ChapterWorkflowCompletedEvent,
 ) where
     C: Context,
-    R: AssignmentRepo<C> + ChapterRepo<C> + SystemMailRepo,
+    R: AssignmentRepo<C> + ChapterRepo<C> + SystemMailRepo + Sync,
 {
     let Some(workflow_label) = reviewer_progress_label(event.completed_stage)
     else {
@@ -84,7 +84,7 @@ pub async fn notify_reviewers_on_publish<C, R>(
     event: ChapterPublishedEvent,
 ) where
     C: Context,
-    R: AssignmentRepo<C> + ChapterRepo<C> + SystemMailRepo,
+    R: AssignmentRepo<C> + ChapterRepo<C> + SystemMailRepo + Sync,
 {
     notify_reviewers(repo, &event.chapter_id, trl("mail-workflow-publish"))
         .await;
@@ -122,12 +122,12 @@ fn next_phase_config(stage: Stage) -> Option<(RoleField, String)> {
 }
 
 /// Loads a chapter by ID with default include options, returning `None` on lookup failure.
-#[instrument(level = "info", skip_all)]
 // Loads the chapter and resolves include data used by notification templates.
+#[instrument(level = "info", skip_all)]
 async fn load_chapter<C, R>(repo: &R, chapter_id: &str) -> Option<ChapterInfo>
 where
     C: Context,
-    R: ChapterRepo<C>,
+    R: ChapterRepo<C> + Sync,
 {
     let chapter_info = GetChapterInfo {
         id: chapter_id,
@@ -151,8 +151,8 @@ where
 }
 
 /// Builds a list of system mail forms for all assignments in a chapter matching a role.
-#[instrument(level = "info", skip_all)]
 // Fetches assignments and renders localized title, workflow, and assignee fields.
+#[instrument(level = "info", skip_all)]
 async fn build_assignment_mails<C, R>(
     repo: &R,
     chapter_info: &ChapterInfo,
@@ -161,7 +161,7 @@ async fn build_assignment_mails<C, R>(
 ) -> Vec<SystemMailEntry>
 where
     C: Context,
-    R: AssignmentRepo<C>,
+    R: AssignmentRepo<C> + Sync,
 {
     let assignment_infos = ListAssignmentInfos::Chapter {
         chapter_id: &chapter_info.id,
@@ -210,14 +210,14 @@ where
 }
 
 /// Sends a batch of system mail forms, logging a warning on failure.
-#[instrument(level = "info", skip_all)]
 // Submits prepared mails and logs the failure path for observability.
+#[instrument(level = "info", skip_all)]
 async fn send_batch<R>(
     repo: &R,
     chapter_id: &str,
     system_mail_entries: Vec<SystemMailEntry>,
 ) where
-    R: SystemMailRepo,
+    R: SystemMailRepo + Sync,
 {
     if system_mail_entries.is_empty() {
         return;
@@ -250,24 +250,22 @@ fn reviewer_progress_label(stage: Stage) -> Option<String> {
 
         Stage::Proofread => Some(trl("mail-workflow-proofread")),
 
-        Stage::TypesetRedraw => None,
-
         Stage::Review => Some(trl("mail-workflow-review")),
 
-        Stage::Publish => None,
+        Stage::TypesetRedraw | Stage::Publish => None,
     }
 }
 
 /// Notifies all reviewer assignees of a chapter about a workflow event.
-#[instrument(level = "info", skip_all)]
 // Loads current assignees, builds their mail payload, then dispatches notifications.
+#[instrument(level = "info", skip_all)]
 async fn notify_reviewers<C, R>(
     repo: &R,
     chapter_id: &str,
     workflow_label: String,
 ) where
     C: Context,
-    R: AssignmentRepo<C> + ChapterRepo<C> + SystemMailRepo,
+    R: AssignmentRepo<C> + ChapterRepo<C> + SystemMailRepo + Sync,
 {
     let Some(chapter_info) = load_chapter(repo, chapter_id).await else {
         return;

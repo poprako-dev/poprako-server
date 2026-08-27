@@ -27,7 +27,7 @@ fn normalized_key(value: &str) -> String {
 }
 
 // Trim a termbase name and reject empty values.
-fn normalize_name(name: String) -> BaseRest<String> {
+fn normalize_name(name: &str) -> BaseRest<String> {
     //
     let name = name.trim().to_string();
 
@@ -58,12 +58,7 @@ fn normalize_optional(value: Option<String>) -> Option<String> {
         //
         let value = value.trim().to_string();
 
-        match value.is_empty() {
-            //
-            true => None,
-
-            false => Some(value),
-        }
+        if value.is_empty() { None } else { Some(value) }
     })
 }
 
@@ -92,7 +87,7 @@ fn merge_targets(
 
 // Construct the expected capacity error shared by single and imported creates.
 fn term_limit_error(
-    current_term_count: i32,
+    current_term_count: usize,
     additional_term_count: usize,
 ) -> BaseError {
     //
@@ -129,7 +124,7 @@ impl TermbaseComplex {
     pub fn build_entry(
         team_id: Option<String>,
         comic_id: Option<String>,
-        name: String,
+        name: &str,
         description: Option<String>,
         creator_id: String,
     ) -> BaseRest<TermbaseEntry> {
@@ -175,7 +170,7 @@ impl TermbaseComplex {
         termbase_import: TermbaseImport,
     ) -> BaseRest<TermbaseImport> {
         //
-        if termbase_import.terms.len() > TERMBASE_TERM_LIMIT as usize {
+        if termbase_import.terms.len() > TERMBASE_TERM_LIMIT {
             return Err(term_limit_error(0, termbase_import.terms.len()));
         }
 
@@ -187,7 +182,7 @@ impl TermbaseComplex {
         for term_import in termbase_import.terms {
             //
             let term_import = TermComplex::build_import(
-                term_import.source,
+                &term_import.source,
                 term_import.targets,
                 term_import.comment,
             )?;
@@ -213,7 +208,7 @@ impl TermbaseComplex {
         }
 
         let (name, description) = (
-            normalize_name(termbase_import.name)?,
+            normalize_name(&termbase_import.name)?,
             normalize_optional(termbase_import.description),
         );
 
@@ -239,27 +234,10 @@ impl TermbaseComplex {
 
     /// Ensure additional entries keep one terminology base within its limit.
     pub fn ensure_term_capacity(
-        current_term_count: i32,
+        current_term_count: usize,
         additional_term_count: usize,
     ) -> BaseRest<()> {
         //
-        if current_term_count < 0 {
-            //
-            tracing::error!(
-                current_term_count,
-                "unrecoverable error: negative cached termbase term count",
-            );
-
-            return Err(BaseError::Unrecoverable {
-                message: "negative cached termbase term count".into(),
-            });
-        }
-
-        let Ok(additional_term_count) = i32::try_from(additional_term_count)
-        else {
-            return Err(term_limit_error(current_term_count, usize::MAX));
-        };
-
         let Some(resulting_term_count) =
             current_term_count.checked_add(additional_term_count)
         else {
@@ -270,7 +248,7 @@ impl TermbaseComplex {
             //
             return Err(term_limit_error(
                 current_term_count,
-                additional_term_count as usize,
+                additional_term_count,
             ));
         }
 
@@ -281,24 +259,12 @@ impl TermbaseComplex {
     pub fn build_term_upsert_plan(
         termbase_id: &str,
         creator_id: &str,
-        current_term_count: i32,
+        current_term_count: usize,
         existing_term_infos: &[TermInfo],
         imported_terms: Vec<TermImport>,
     ) -> BaseRest<TermUpsertPlan> {
         //
-        let Ok(loaded_term_count) = i32::try_from(existing_term_infos.len())
-        else {
-            //
-            tracing::error!(
-                termbase_id,
-                loaded_term_count = existing_term_infos.len(),
-                "unrecoverable error: loaded term count overflow",
-            );
-
-            return Err(BaseError::Unrecoverable {
-                message: "loaded term count overflow".into(),
-            });
-        };
+        let loaded_term_count = existing_term_infos.len();
 
         if loaded_term_count != current_term_count {
             //
@@ -363,7 +329,7 @@ impl TermbaseComplex {
     /// Build a validated terminology-base profile replacement.
     pub fn build_update(
         id: String,
-        name: String,
+        name: &str,
         description: Option<String>,
     ) -> BaseRest<TermbaseRepl> {
         //
@@ -383,12 +349,14 @@ pub struct TermbasePermComplex;
 
 impl TermbasePermComplex {
     /// Verify team membership for a terminology-base read.
-    pub fn ensure_user_can_read_team(member_info: &MemberInfo) -> BaseRest<()> {
+    pub const fn ensure_user_can_read_team(
+        member_info: &MemberInfo,
+    ) -> BaseRest<()> {
         check_user_is_team_member(member_info)
     }
 
     /// Verify team membership for terminology bases visible from a comic.
-    pub fn ensure_user_can_read_comic(
+    pub const fn ensure_user_can_read_comic(
         member_info: &MemberInfo,
     ) -> BaseRest<()> {
         check_user_is_team_member(member_info)

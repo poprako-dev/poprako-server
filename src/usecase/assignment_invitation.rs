@@ -1,10 +1,11 @@
 //! Assignment invitation use cases.
-
 // Assignment invitation identifier and code generation helpers.
 mod code;
 
+/// Joining an assignment through an invitation.
+pub mod join;
+
 #[cfg(test)]
-// Unit tests for assignment invitation acceptance rules.
 mod tests;
 
 use std::time::Duration;
@@ -14,21 +15,15 @@ use tracing::instrument;
 
 use poprako_util::i18n::trl;
 
-use crate::complex::assignment::AssignmentComplex;
 use crate::complex::chapter::ChapterComplex;
 use crate::data::instr::assignment_invitation::{
-    CreateAssignmentInvitationInstr, JoinAssignmentInvitationInstr,
-    ListAssignmentInvitationInfosInstr,
+    CreateAssignmentInvitationInstr, ListAssignmentInvitationInfosInstr,
 };
 use crate::data::val::assignment_invitation::CreateAssignmentInvitationVal;
-use crate::data::view::assignment::AssignmentInfoView;
 use crate::data::view::assignment_invitation::AssignmentInvitationInfoView;
 use crate::model::read::spec::assignment_invitation::AssignmentInvitationListSpec;
 use crate::model::shared::user::UserToken;
-use crate::model::write::assignment::AssignmentEntry;
 use crate::model::write::assignment_invitation::AssignmentInvitationEntry;
-use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
-use crate::part::image::ImagePool;
 use crate::part::nucl::ReptRead;
 use crate::part::prom::Prom;
 use crate::part::prom::oper::Defer;
@@ -38,35 +33,20 @@ use crate::part::prom::task::Task;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::chapter::ChapterRepo;
-use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
-use crate::part::repo::comic::ComicRepo;
-use crate::part::repo::member::MemberRepo;
-use crate::part::repo::oper::assignment::{
-    CreateAssignment, FindAssignmentInfo, UpdateAssignmentRoles,
-};
+use crate::part::repo::oper::assignment::FindAssignmentInfo;
 use crate::part::repo::oper::assignment_invitation::{
     CreateAssignmentInvitation, DeleteAssignmentInvitations,
-    GetAssignmentInvitationInfo, GetAssignmentInvitationInfoExcluded,
-    ListAssignmentInvitationInfos, MarkAssignmentInvitationUsed,
+    GetAssignmentInvitationInfo, ListAssignmentInvitationInfos,
 };
 use crate::part::repo::oper::chapter::GetChapterInfoExcluded;
-use crate::part::repo::oper::chapter_workflow_record::CreateChapterWorkflowRecords;
-use crate::part::repo::oper::comic::GetComicInfo;
-use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part::repo::oper::user::{FindUserInfo, GetUserInfoExcluded};
-use crate::part::repo::oper::workset::GetWorksetInfo;
+use crate::part::repo::oper::user::FindUserInfo;
 use crate::part::repo::user::UserRepo;
-use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::assignment_invitation::code::{
     gen_assignment_invitation_id, gen_code,
 };
 use crate::util::next_snowflake_id;
-use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 use crate::value::role::{RoleField, RoleMask};
-
-// Assignment invitation code expiration window.
-const EXPIRY_DELAY: Duration = Duration::from_secs(3 * 24 * 60 * 60);
 
 /// Lists assignment invitations under one chapter.
 #[instrument(level = "info", skip(repo))]
@@ -111,7 +91,7 @@ pub async fn create<N, C, R, P>(
 ) -> BaseRest<CreateAssignmentInvitationVal>
 where
     C: Context + Send,
-    N: Nucl<Context = C, Error = BaseError>,
+    N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<ReptRead>,
     R: AssignmentInvitationRepo<C>
         + AssignmentRepo<C>
@@ -145,7 +125,6 @@ where
 
             if let Some(invitee_user_info) = invitee_user_info {
                 //
-
                 let existing_assignment_info =
                     FindAssignmentInfo::ChapterUser {
                         chapter_id: &instr.chapter_id,
@@ -169,10 +148,7 @@ where
                         "expected error: invitee already has a chapter assignment",
                     );
 
-                    return Err(BaseError::Expected {
-                        variant: ExpectedVariant::Args,
-                        message: err_message,
-                    });
+                    return Err(expected(ExpectedVariant::Args, err_message));
                 }
             }
 
@@ -231,7 +207,7 @@ pub async fn delete<N, C, R>(
 ) -> BaseRest<()>
 where
     C: Context + Send,
-    N: Nucl<Context = C, Error = BaseError>,
+    N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<ReptRead>,
     R: AssignmentInvitationRepo<C>
         + AssignmentRepo<C>
@@ -273,238 +249,8 @@ where
     accept(())
 }
 
-/// Joins a chapter assignment with a pending invitation code.
-#[instrument(
-    level = "info",
-    skip(nucl, repo, image_pool, instr),
-    fields(code = "[REDACTED]")
-)]
-pub async fn join<N, C, R, I>(
-    (nucl, repo, image_pool): (&N, &R, &I),
-    token: UserToken,
-    instr: JoinAssignmentInvitationInstr,
-) -> BaseRest<AssignmentInfoView>
-where
-    C: Context + Send,
-    N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<ReptRead>,
-    R: AssignmentInvitationRepo<C>
-        + AssignmentRepo<C>
-        + ChapterWorkflowRecordRepo<C>
-        + UserRepo<C>
-        + MemberRepo<C>
-        + ChapterRepo<C>
-        + ComicRepo<C>
-        + WorksetRepo<C>
-        + Send
-        + Sync,
-    I: ImagePool,
-{
-    let current_user_id = token.user_id;
-
-    let assignment_info = nucl
-        .coord(async move |context| {
-            //
-
-            let current_user_info = GetUserInfoExcluded::Id {
-                id: &current_user_id,
-            }
-            .step_on(repo, context)
-            .await?;
-
-            let assignment_invitation_info =
-                GetAssignmentInvitationInfoExcluded { code: &instr.code }
-                    .step_on(repo, context)
-                    .await?;
-
-            if assignment_invitation_info.invitee_qid != current_user_info.qid {
-                //
-                let err_message = trl("error-no-pending-invitation");
-
-                tracing::warn!(
-                    err_variant = ?ExpectedVariant::Args,
-                    err_message = %err_message,
-                    user_id = %current_user_id,
-                    invitee_qid = %current_user_info.qid,
-                    invitation_invitee_qid = %assignment_invitation_info.invitee_qid,
-                    invitation_code_present = true,
-                    "expected error: assignment invitation does not belong to current user",
-                );
-
-                return Err(BaseError::Expected {
-                    variant: ExpectedVariant::Args,
-                    message: err_message,
-                });
-            }
-
-            validate_roles(
-                assignment_invitation_info.roles,
-                &current_user_id,
-                &assignment_invitation_info.chapter_id,
-            )?;
-
-            let chapter_info = GetChapterInfoExcluded {
-                id: &assignment_invitation_info.chapter_id,
-                incls: &[],
-            }
-            .step_on(repo, context)
-            .await?;
-
-            ChapterComplex::ensure_chapter_writable(&chapter_info)?;
-
-            let comic_info = GetComicInfo {
-                id: &chapter_info.comic_id,
-                incls: &[],
-            }
-            .step_on(repo, context)
-            .await?;
-
-            let workset_info = GetWorksetInfo {
-                id: &comic_info.workset_id,
-            }
-            .step_on(repo, context)
-            .await?;
-
-            let member_info = FindMemberInfo::UserTeam {
-                user_id: &current_user_id,
-                team_id: &workset_info.team_id,
-            }
-            .step_on(repo, context)
-            .await?;
-
-            let Some(member_info) = member_info else {
-                //
-                let err_message = trl("error-chapter-role-not-assignable");
-
-                tracing::warn!(
-                    err_variant = ?ExpectedVariant::Perm,
-                    err_message = %err_message,
-                    chapter_id = %assignment_invitation_info.chapter_id,
-                    user_id = %current_user_id,
-                    team_id = %workset_info.team_id,
-                    roles = ?assignment_invitation_info.roles,
-                    "expected error: invited chapter roles are not assignable",
-                );
-
-                return Err(BaseError::Expected {
-                    variant: ExpectedVariant::Perm,
-                    message: err_message,
-                });
-            };
-
-            if !member_info
-                .roles
-                .contains_mask(assignment_invitation_info.roles)
-            {
-                let err_message = trl("error-chapter-role-not-assignable");
-
-                tracing::warn!(
-                    err_variant = ?ExpectedVariant::Perm,
-                    err_message = %err_message,
-                    chapter_id = %assignment_invitation_info.chapter_id,
-                    user_id = %current_user_id,
-                    team_id = %workset_info.team_id,
-                    roles = ?assignment_invitation_info.roles,
-                    member_roles = ?member_info.roles,
-                    "expected error: invited chapter roles are not assignable",
-                );
-
-                return Err(BaseError::Expected {
-                    variant: ExpectedVariant::Perm,
-                    message: err_message,
-                });
-            }
-
-            let existing_assignment_info = FindAssignmentInfo::ChapterUser {
-                chapter_id: &assignment_invitation_info.chapter_id,
-                user_id: &current_user_id,
-            }
-            .step_on(repo, context)
-            .await?;
-
-            let (assignment_info, workflow_record_payload) = match existing_assignment_info {
-                //
-                Some(existing_assignment_info) => {
-                    //
-                    let assignment_role_update = AssignmentComplex::merge_roles(
-                        &existing_assignment_info,
-                        assignment_invitation_info.roles,
-                    );
-
-                    match assignment_role_update.roles == existing_assignment_info.roles {
-                        //
-                        true => (existing_assignment_info, None),
-
-                        false => {
-                            //
-                            let assignment_info = UpdateAssignmentRoles {
-                                update: &assignment_role_update,
-                            }
-                            .step_on(repo, context)
-                            .await?;
-
-                            let payload = ChapterWorkflowRecordPayload::AssignmentRolesUpdated {
-                                subject_user_id: assignment_info.user_id.clone(),
-                                previous_roles: existing_assignment_info.roles,
-                                next_roles: assignment_role_update.roles,
-                            };
-
-                            (assignment_info, Some(payload))
-                        }
-                    }
-                }
-
-                None => {
-                    //
-                    let assignment_entry = AssignmentEntry {
-                        id: AssignmentComplex::gen_id(),
-                        chapter_id: assignment_invitation_info.chapter_id.clone(),
-                        user_id: current_user_id.clone(),
-                        roles: assignment_invitation_info.roles,
-                    };
-
-                    let assignment_info = CreateAssignment {
-                        entry: &assignment_entry,
-                    }
-                    .step_on(repo, context)
-                    .await?;
-
-                    let payload = ChapterWorkflowRecordPayload::AssignmentCreated {
-                        subject_user_id: assignment_info.user_id.clone(),
-                        roles: assignment_info.roles,
-                    };
-
-                    (assignment_info, Some(payload))
-                }
-            };
-
-            MarkAssignmentInvitationUsed {
-                id: &assignment_invitation_info.id,
-            }
-            .step_on(repo, context)
-            .await?;
-
-            if let Some(payload) = workflow_record_payload {
-                //
-                let workflow_record_entry = ChapterWorkflowRecordEntry::new(
-                    chapter_info.id,
-                    Some(current_user_id),
-                    payload,
-                );
-
-                CreateChapterWorkflowRecords {
-                    entries: std::slice::from_ref(&workflow_record_entry),
-                }
-                .step_on(repo, context)
-                .await?;
-            }
-
-            accept(assignment_info)
-        })
-        .await?;
-
-    AssignmentInfoView::from_model(image_pool, assignment_info, None).await
-}
+// Assignment invitation code expiration window.
+const EXPIRY_DELAY: Duration = Duration::from_hours(72);
 
 // Verifies that the current user is assigned as a chapter administrator.
 #[instrument(level = "info", skip(repo))]
@@ -536,10 +282,7 @@ where
             "expected error: chapter administrator perm required",
         );
 
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            message: err_message,
-        });
+        return Err(expected(ExpectedVariant::Perm, err_message));
     };
 
     if !assignment_info.roles.has_any_role(&[RoleField::ADMIN]) {
@@ -555,21 +298,14 @@ where
             "expected error: chapter administrator perm required",
         );
 
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            message: err_message,
-        });
+        return Err(expected(ExpectedVariant::Perm, err_message));
     }
 
     accept(())
 }
 
 // Validates that the roles mask is non-empty and does not contain ADMIN.
-fn validate_roles(
-    roles: RoleMask,
-    user_id: &str,
-    chapter_id: &str,
-) -> BaseRest<()> {
+fn validate_roles(roles: RoleMask, user: &str, chapter: &str) -> BaseRest<()> {
     //
     if u32::from(roles) == 0 || roles.has_any_role(&[RoleField::ADMIN]) {
         //
@@ -578,17 +314,19 @@ fn validate_roles(
         tracing::warn!(
             err_variant = ?ExpectedVariant::Args,
             err_message = %err_message,
-            chapter_id = %chapter_id,
-            user_id = %user_id,
+            chapter_id = %chapter,
+            user_id = %user,
             roles = ?roles,
             "expected error: chapter roles are not assignable",
         );
 
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message: err_message,
-        });
+        return Err(expected(ExpectedVariant::Args, err_message));
     }
 
     accept(())
+}
+
+// Builds an expected application error with the supplied classification.
+const fn expected(variant: ExpectedVariant, message: String) -> BaseError {
+    BaseError::Expected { variant, message }
 }

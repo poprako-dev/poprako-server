@@ -44,7 +44,7 @@ impl CommentInfoView {
         model: CommentInfo,
     ) -> BaseRest<Self>
     where
-        P: ImagePool,
+        P: ImagePool + Sync,
     {
         accept(Self {
             id: model.id,

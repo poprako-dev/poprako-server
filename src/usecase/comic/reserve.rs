@@ -41,11 +41,11 @@ pub async fn reserve_cover<N, C, R, P, I>(
 ) -> BaseRest<ReserveComicCoverVal>
 where
     C: Context + Send,
-    N: Nucl<Context = C, Error = BaseError>,
+    N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<ReptRead>,
     R: ComicRepo<C> + TeamRepo<C> + MemberRepo<C> + Send + Sync,
     P: Prom<C> + Send + Sync,
-    I: ImagePool,
+    I: ImagePool + Sync,
 {
     ImageComplex::ensure_byte_length(
         image_config,
@@ -122,7 +122,7 @@ where
                 },
             });
 
-            batch_delays.push(Some(Duration::from_secs(15 * 60)));
+            batch_delays.push(Some(Duration::from_mins(15)));
 
             let batch_tasks = batch_ids
                 .iter()
@@ -145,26 +145,23 @@ where
         })
         .await?;
 
-    let slot = match upload_required {
+    let slot = if upload_required {
         //
-        true => {
-            //
-            let upload_spec = ImageUploadSpec {
-                object_key: &object_key,
-                content_type: image_ext.content_type(),
-                content_length: new_byte_len,
-            };
+        let upload_spec = ImageUploadSpec {
+            object_key: &object_key,
+            content_type: image_ext.content_type(),
+            content_length: new_byte_len,
+        };
 
-            let upload_slot = image_pool.get_upload_slot(upload_spec).await?;
+        let upload_slot = image_pool.get_upload_slot(upload_spec).await?;
 
-            Some(ImageUploadSlotView {
-                put_url: upload_slot.url.to_string(),
-                image_version: cover_version,
-                headers: upload_slot.headers,
-            })
-        }
-
-        false => None,
+        Some(ImageUploadSlotView {
+            put_url: upload_slot.url.to_string(),
+            image_version: cover_version,
+            headers: upload_slot.headers,
+        })
+    } else {
+        None
     };
 
     accept(ReserveComicCoverVal { slot })

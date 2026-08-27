@@ -27,6 +27,7 @@ use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::entity::workset::{
     WorksetAspectRow, WorksetEntryRow, WorksetInfoRow,
 };
+use crate::part_impl::repo::rdb_impl::numeric::usize_from_i32;
 use crate::part_impl::repo::rdb_impl::schema::t_workset::dsl::{
     f_comic_count, f_comic_next_index, f_id, f_index, f_team_id, t_workset,
 };
@@ -34,8 +35,8 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::result::diesel;
 use crate::shared::{RdbConn, RdbContext};
 
-#[instrument(level = "info", skip_all)]
 // Remove one workset row by id.
+#[instrument(level = "info", skip_all)]
 async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
     // Hard-delete the row; no additional business side-effects in this layer.
@@ -47,8 +48,8 @@ async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     accept(())
 }
 
-#[instrument(level = "info", skip_all)]
 // Load one workset by id and return a rich info view.
+#[instrument(level = "info", skip_all)]
 async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<WorksetInfo> {
     //
     // Fetch the row by primary key and map missing rows to `error-workset-not-found`.
@@ -78,11 +79,11 @@ async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<WorksetInfo> {
         });
     };
 
-    accept(row.into())
+    accept(WorksetInfo::try_from(row)?)
 }
 
-#[instrument(level = "info", skip_all)]
 // List worksets for one team with stable index ordering.
+#[instrument(level = "info", skip_all)]
 async fn list_infos(
     conn: &mut RdbConn,
     oper: &ListWorksetInfos<'_>,
@@ -93,17 +94,17 @@ async fn list_infos(
         .filter(f_team_id.eq(oper.team_id))
         .select(WorksetInfoRow::as_select())
         .order_by(f_index.asc())
-        .offset(oper.offset as i64)
-        .limit(oper.limit as i64)
+        .offset(i64::from(oper.offset))
+        .limit(i64::from(oper.limit))
         .into_boxed();
 
     let rows = query.load::<WorksetInfoRow>(conn).await.map_err(diesel)?;
 
-    accept(rows.into_iter().map(Into::into).collect())
+    rows.into_iter().map(WorksetInfo::try_from).collect()
 }
 
-#[instrument(level = "info", skip_all)]
 // Update mutable metadata for an existing workset.
+#[instrument(level = "info", skip_all)]
 async fn update_info(conn: &mut RdbConn, update: &WorksetRepl) -> BaseRest<()> {
     //
     // Build an aspect object and persist nickname/description updates with timestamp.
@@ -122,8 +123,8 @@ async fn update_info(conn: &mut RdbConn, update: &WorksetRepl) -> BaseRest<()> {
     accept(())
 }
 
-#[instrument(level = "info", skip_all)]
 // List worksets for team-level operations while excluding other readers.
+#[instrument(level = "info", skip_all)]
 async fn list_infos_excluded(
     conn: &mut RdbConn,
     team_id: &str,
@@ -138,11 +139,11 @@ async fn list_infos_excluded(
         .await
         .map_err(diesel)?;
 
-    accept(rows.into_iter().map(Into::into).collect())
+    rows.into_iter().map(WorksetInfo::try_from).collect()
 }
 
-#[instrument(level = "info", skip_all)]
 // Load one workset with row lock for mutation flows.
+#[instrument(level = "info", skip_all)]
 async fn get_info_excluded(
     conn: &mut RdbConn,
     id: &str,
@@ -176,18 +177,18 @@ async fn get_info_excluded(
         });
     };
 
-    accept(row.into())
+    accept(WorksetInfo::try_from(row)?)
 }
 
-#[instrument(level = "info", skip_all)]
 // Insert a new workset and return its public info record.
+#[instrument(level = "info", skip_all)]
 async fn create(
     conn: &mut RdbConn,
     workset_entry: &WorksetEntry,
 ) -> BaseRest<WorksetInfo> {
     //
     // Convert API entry into row form and read back generated values.
-    let entry = WorksetEntryRow::from(workset_entry);
+    let entry = WorksetEntryRow::try_from(workset_entry)?;
 
     let row = diesel::insert_into(t_workset)
         .values(&entry)
@@ -196,12 +197,12 @@ async fn create(
         .await
         .map_err(diesel)?;
 
-    accept(row.into())
+    accept(WorksetInfo::try_from(row)?)
 }
 
-#[instrument(level = "info", skip_all)]
 // Allocate next comic index atomically for a workset.
-async fn alloc_comic_index(conn: &mut RdbConn, id: &str) -> BaseRest<i32> {
+#[instrument(level = "info", skip_all)]
+async fn alloc_comic_index(conn: &mut RdbConn, id: &str) -> BaseRest<usize> {
     //
     // Increment and return previous next-index value in a single statement.
     let index = diesel::update(t_workset.filter(f_id.eq(id)))
@@ -211,11 +212,11 @@ async fn alloc_comic_index(conn: &mut RdbConn, id: &str) -> BaseRest<i32> {
         .await
         .map_err(diesel)?;
 
-    accept(index)
+    accept(usize_from_i32(index, "t_workset.f_comic_next_index")?)
 }
 
-#[instrument(level = "info", skip_all)]
 // Update comic count by a delta value.
+#[instrument(level = "info", skip_all)]
 async fn update_comic_count(
     conn: &mut RdbConn,
     id: &str,
@@ -413,7 +414,7 @@ where
         &self,
         context: &mut RdbContext<L>,
         oper: &AllocWorksetComicIndex<'_>,
-    ) -> BaseRest<i32> {
+    ) -> BaseRest<usize> {
         alloc_comic_index(context.conn(), oper.id).await
     }
 }

@@ -47,7 +47,7 @@ pub struct ImportTermbaseVal {
     /// Whether this import created a new terminology base.
     pub created: bool,
     /// Number of new terminology entries created.
-    pub created_term_count: i32,
+    pub created_term_count: usize,
     /// Number of existing terminology entries merged.
-    pub merged_term_count: i32,
+    pub merged_term_count: usize,
 }

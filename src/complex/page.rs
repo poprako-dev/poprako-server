@@ -84,7 +84,7 @@ impl PageComplex {
         //
         format!(
             "page/chapter_{}/{}-{}.{}",
-            chapter_id, page_id, image_version, file_ext
+            chapter_id, page_id, image_version, file_ext,
         )
     }
 }
@@ -117,8 +117,8 @@ impl PagePermComplex {
     }
 
     /// Verify the caller may list pages under a chapter.
-    pub fn ensure_user_can_list_infos(
-        access: PageListAccess<'_>,
+    pub const fn ensure_user_can_list_infos(
+        access: &PageListAccess<'_>,
     ) -> BaseRest<()> {
         //
         match access {

@@ -41,7 +41,7 @@ fn repeated_mark_renews_existing_lease() {
         now,
     );
 
-    let renewed_at = now + Duration::from_secs(60);
+    let renewed_at = now + Duration::from_mins(1);
 
     mark_user_online_at(
         &online_user_deadlines,

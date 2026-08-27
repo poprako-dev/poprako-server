@@ -23,7 +23,7 @@ pub struct PageInfoView {
     /// Owning chapter identifier.
     pub chapter_id: String,
     /// Ordinal position within the chapter.
-    pub index: i32,
+    pub index: usize,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Presigned download URL for the full image, if uploaded.
@@ -40,11 +40,11 @@ pub struct PageInfoView {
     pub ext: Option<ImageExt>,
 
     /// Total number of translation units on this page.
-    pub total_unit_count: i32,
+    pub total_unit_count: usize,
     /// Number of translated units on this page.
-    pub translated_unit_count: i32,
+    pub translated_unit_count: usize,
     /// Number of proofread units on this page.
-    pub proofread_unit_count: i32,
+    pub proofread_unit_count: usize,
 
     /// Timestamp of creation, in Unix milliseconds.
     pub created_at: i64,
@@ -60,7 +60,7 @@ impl PageInfoView {
         model: PageInfo,
     ) -> BaseRest<Self>
     where
-        P: ImagePool,
+        P: ImagePool + Sync,
     {
         let (image_url, image_thumbnail_url) =
             match (model.is_image_uploaded, &model.image_key) {

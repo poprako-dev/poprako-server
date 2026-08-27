@@ -20,7 +20,7 @@ pub struct PageEntry {
     /// Foreign key of the parent chapter to insert this page into.
     pub chapter_id: String,
     /// Zero-based ordinal position for this page within the chapter.
-    pub index: i32,
+    pub index: usize,
 
     /// Object-storage key reserved for the page image.
     pub image_key: Option<String>,
@@ -78,7 +78,7 @@ pub struct PageManifestRepl {
     /// The unique identifier of the page whose manifest is being updated.
     pub id: String,
     /// Updated ordinal position of the page within the chapter.
-    pub index: i32,
+    pub index: usize,
 
     /// Updated object-storage key for the page image.
     pub image_key: Option<String>,

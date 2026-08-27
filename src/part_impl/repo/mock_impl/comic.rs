@@ -115,15 +115,15 @@ fn apply_comic_incls(
         match incl_opt {
             //
             ComicInclOpt::Workset => {
-                apply_workset_incl(state, comic_info, true)
+                apply_workset_incl(state, comic_info, true);
             }
 
             ComicInclOpt::WorksetTeam => {
-                apply_team_incl(state, comic_info, true)
+                apply_team_incl(state, comic_info, true);
             }
 
             ComicInclOpt::Creator => {
-                apply_creator_incl(state, comic_info, true)
+                apply_creator_incl(state, comic_info, true);
             }
         }
     }
@@ -148,8 +148,7 @@ fn comic_matches_fuzzy(comic_info: &ComicInfo, fuzzy_title: &str) -> bool {
     match fuzzy_title.trim().parse() {
         //
         Ok(index) => user_index_to_stored_index(index)
-            .map(|index| comic_info.index == index)
-            .unwrap_or(false),
+            .is_some_and(|index| comic_info.index == index),
 
         Err(_) => false,
     }
@@ -170,8 +169,9 @@ fn comic_matches_stages(
             .find(|chapter_info| {
                 chapter_info.comic_id == comic_info.id && chapter_info.is_pinned
             })
-            .map(|chapter_info| chapter_info.stages.matches_filter(stage_mask))
-            .unwrap_or(false),
+            .is_some_and(|chapter_info| {
+                chapter_info.stages.matches_filter(stage_mask)
+            }),
 
         None => true,
     }
@@ -253,8 +253,7 @@ fn list_comic_infos(state: &MockState, spec: &ComicListSpec) -> Vec<ComicInfo> {
             //
             spec.fuzzy_title
                 .as_ref()
-                .map(|keyword| comic_matches_fuzzy(comic_info, keyword))
-                .unwrap_or(true)
+                .is_none_or(|keyword| comic_matches_fuzzy(comic_info, keyword))
         })
         .filter(|comic_info| {
             comic_matches_stages(state, comic_info, spec.stages)
@@ -279,15 +278,12 @@ fn list_comic_infos(state: &MockState, spec: &ComicListSpec) -> Vec<ComicInfo> {
 
     let limit = spec.limit as usize;
 
-    match offset >= comic_infos.len() {
+    if offset >= comic_infos.len() {
+        Vec::new()
+    } else {
         //
-        true => Vec::new(),
+        let end = std::cmp::min(offset + limit, comic_infos.len());
 
-        false => {
-            //
-            let end = std::cmp::min(offset + limit, comic_infos.len());
-
-            comic_infos[offset..end].to_vec()
-        }
+        comic_infos[offset..end].to_vec()
     }
 }

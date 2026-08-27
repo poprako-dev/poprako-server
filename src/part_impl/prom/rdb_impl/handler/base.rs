@@ -49,7 +49,7 @@ pub struct RdbPromHandler<N, R, I, D> {
 
 impl<N, R, I, D> RdbPromHandler<N, R, I, D>
 where
-    N: Nucl<Context = RdbContext, Error = BaseError>,
+    N: Nucl<Context = RdbContext, Error = BaseError> + Sync,
     R: AssignmentInvitationRepo<RdbContext>
         + ChapterRepo<RdbContext>
         + ChapterWorkflowRecordRepo<RdbContext>
@@ -65,7 +65,7 @@ where
     D: Develop + Send + Sync + 'static,
 {
     /// Builds a new prom background handler from its core, nucl, repo, and lifecycle channels.
-    pub fn new(
+    pub const fn new(
         nucl: N,
         repo: RdbPromRepo<R>,
         image_pool: I,
@@ -94,7 +94,7 @@ pub async fn dispatch_payload<N, R, I, D>(
     payload: &serde_json::Value,
 ) -> TaskFlow
 where
-    N: Nucl<Context = RdbContext, Error = BaseError>,
+    N: Nucl<Context = RdbContext, Error = BaseError> + Sync,
     R: AssignmentInvitationRepo<RdbContext>
         + ChapterRepo<RdbContext>
         + ChapterWorkflowRecordRepo<RdbContext>
@@ -123,7 +123,7 @@ where
             return TaskFlow::Dead {
                 err_message: format!(
                     "failed to deserialize prom payload: {}",
-                    error
+                    error,
                 ),
             };
         }

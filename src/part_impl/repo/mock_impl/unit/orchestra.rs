@@ -1,7 +1,7 @@
 use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
-use crate::model::read::proj::unit::{UnitCounters, UnitInfo, UnitOrder};
+use crate::model::read::proj::unit::{UnitCountMetrics, UnitInfo, UnitOrder};
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::unit::{
     ApplyUnitEdits, ListUnitInfos, ListUnitInfosByIds, ListUnitInfosByPageIds,
@@ -100,7 +100,7 @@ impl Step<ApplyUnitEdits<'_>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &ApplyUnitEdits<'_>,
-    ) -> BaseRest<UnitCounters> {
+    ) -> BaseRest<UnitCountMetrics> {
         apply_edits(&mut context.state, oper.page_id, oper.orders, oper.edits)
     }
 }

@@ -41,9 +41,9 @@ impl MemberListSpec {
         //
         match self {
             //
-            MemberListSpec::User { incl_opt, .. } => incl_opt,
-
-            MemberListSpec::Team { incl_opt, .. } => incl_opt,
+            Self::User { incl_opt, .. } | Self::Team { incl_opt, .. } => {
+                incl_opt
+            }
         }
     }
 }

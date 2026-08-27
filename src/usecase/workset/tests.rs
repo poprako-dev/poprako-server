@@ -35,7 +35,7 @@ use crate::test_util::fixture::team;
 use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
-fn workset(id: &str, team_id: &str, index: i32) -> WorksetInfo {
+fn workset(id: &str, team_id: &str, index: usize) -> WorksetInfo {
     //
     // Build a basic workset fixture for pagination and mutation tests.
     let time = OffsetDateTime::now_utc();
@@ -50,6 +50,19 @@ fn workset(id: &str, team_id: &str, index: i32) -> WorksetInfo {
         created_at: time,
         updated_at: time,
     }
+}
+
+fn workset_with_comic_count(
+    id: &str,
+    team_id: &str,
+    index: usize,
+    comic_count: usize,
+) -> WorksetInfo {
+    let mut workset_info = workset(id, team_id, index);
+
+    workset_info.comic_count = comic_count;
+
+    workset_info
 }
 
 fn create_instr(team_id: &str) -> CreateWorksetInstr {
@@ -264,7 +277,7 @@ async fn update_info_updates_workset() {
     //
     let mock = Mock::new();
 
-    mock.seed_workset(workset("workset-1", "team-1", 0));
+    mock.seed_workset(workset_with_comic_count("workset-1", "team-1", 0, 2));
 
     mock.seed_member(admin_member("user-1", "team-1"));
 
@@ -316,7 +329,7 @@ async fn delete_removes_workset_and_enqueues_child_cover_deletes() {
     //
     let mock = Mock::new();
 
-    mock.seed_workset(workset("workset-1", "team-1", 0));
+    mock.seed_workset(workset_with_comic_count("workset-1", "team-1", 0, 2));
 
     mock.seed_member(admin_member("user-1", "team-1"));
 
@@ -358,7 +371,7 @@ async fn delete_enqueues_cover_deletes_across_multiple_comic_batches() {
     //
     let mock = Mock::new();
 
-    mock.seed_workset(workset("workset-1", "team-1", 0));
+    mock.seed_workset(workset_with_comic_count("workset-1", "team-1", 0, 51));
 
     mock.seed_member(admin_member("user-1", "team-1"));
 

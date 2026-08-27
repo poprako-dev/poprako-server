@@ -6,9 +6,13 @@ use super::*;
 #[test]
 fn topic_worker_assignment_is_stable() {
     //
-    let first_worker = topic_worker_index("image");
+    let Ok(first_worker) = topic_worker_index("image") else {
+        panic!("worker index calculation must succeed");
+    };
 
-    let second_worker = topic_worker_index("image");
+    let Ok(second_worker) = topic_worker_index("image") else {
+        panic!("worker index calculation must succeed");
+    };
 
     assert_eq!(first_worker, second_worker);
 }
@@ -16,11 +20,20 @@ fn topic_worker_assignment_is_stable() {
 #[test]
 fn current_topics_use_multiple_workers() {
     //
-    let mut worker_indices = vec![
+    let worker_results = [
         topic_worker_index("image"),
         topic_worker_index("advance_raw_provide"),
         topic_worker_index("purge_expired_invitation"),
     ];
+
+    let mut worker_indices = worker_results
+        .into_iter()
+        .map(|result| match result {
+            Ok(worker_index) => worker_index,
+
+            Err(_) => panic!("worker index calculation must succeed"),
+        })
+        .collect::<Vec<_>>();
 
     worker_indices.sort_unstable();
 

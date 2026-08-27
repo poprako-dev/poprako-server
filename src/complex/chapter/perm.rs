@@ -32,19 +32,21 @@ pub struct ChapterPermComplex;
 
 impl ChapterPermComplex {
     /// Verify the caller may list chapters.
-    pub fn ensure_user_can_list_infos(
+    pub const fn ensure_user_can_list_infos(
         member_info: &MemberInfo,
     ) -> BaseRest<()> {
         check_user_is_team_member(member_info)
     }
 
     /// Verify the caller may read a chapter.
-    pub fn ensure_user_can_get_info(member_info: &MemberInfo) -> BaseRest<()> {
+    pub const fn ensure_user_can_get_info(
+        member_info: &MemberInfo,
+    ) -> BaseRest<()> {
         check_user_is_team_member(member_info)
     }
 
     /// Verify the caller may read a pinned chapter.
-    pub fn ensure_user_can_get_pinned(
+    pub const fn ensure_user_can_get_pinned(
         member_info: &MemberInfo,
     ) -> BaseRest<()> {
         check_user_is_team_member(member_info)

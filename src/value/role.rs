@@ -149,7 +149,7 @@ impl From<RoleField> for u32 {
 /// | 128   | `ADMIN`        | Admin                   |
 /// | 256   | `BOT`          | Bot                     |
 ///
-/// **Examples:** `1` = RAW_PROVIDER, `6` = TRANSLATOR | PROOFREADER, `255` = all roles except BOT.
+/// **Examples:** `1` = `RAW_PROVIDER`, `6` = TRANSLATOR | PROOFREADER, `255` = all roles except BOT.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[cfg_attr(feature = "swagger", schema(example = 34))]
@@ -160,27 +160,27 @@ impl RoleMask {
     const VALID_BITS: u32 = (1 << 8) - 1;
 
     /// Check if the mask contains any of the given role bits.
-    pub fn has_any_role(&self, bits: &[RoleField]) -> bool {
+    pub fn has_any_role(self, bits: &[RoleField]) -> bool {
         //
         bits.iter()
-            .any(|role| u32::from(*self) & u32::from(*role) != 0)
+            .any(|role| u32::from(self) & u32::from(*role) != 0)
     }
 
     /// Check if the mask contains all of the given role bits.
-    pub fn has_every_role(&self, bits: &[RoleField]) -> bool {
+    pub fn has_every_role(self, bits: &[RoleField]) -> bool {
         //
         bits.iter()
-            .all(|role| u32::from(*self) & u32::from(*role) != 0)
+            .all(|role| u32::from(self) & u32::from(*role) != 0)
     }
 
     /// Check if the mask fully contains another mask (all bits set).
-    pub fn contains_mask(&self, other: RoleMask) -> bool {
-        u32::from(*self) & u32::from(other) == u32::from(other)
+    pub fn contains_mask(self, other: Self) -> bool {
+        u32::from(self) & u32::from(other) == u32::from(other)
     }
 
     /// Return the union of two masks.
-    pub fn union(&self, other: RoleMask) -> RoleMask {
-        RoleMask(u32::from(*self) | u32::from(other))
+    pub fn union(self, other: Self) -> Self {
+        Self(u32::from(self) | u32::from(other))
     }
 }
 

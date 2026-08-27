@@ -48,7 +48,7 @@ pub async fn create<N, C, R>(
 ) -> BaseRest<CreateTermbaseVal>
 where
     C: Context + Send,
-    N: Nucl<Context = C, Error = BaseError>,
+    N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<ReptRead>,
     R: TeamRepo<C>
         + ComicRepo<C>
@@ -61,7 +61,7 @@ where
     let termbase_entry = TermbaseComplex::build_entry(
         instr.team_id,
         instr.comic_id,
-        instr.name,
+        &instr.name,
         instr.description,
         token.user_id.clone(),
     )?;
@@ -99,7 +99,13 @@ where
                         workset_info.team_id
                     }
 
-                    _ => unreachable!(),
+                    _ => {
+                        //
+                        return Err(BaseError::Unrecoverable {
+                            message: "validated termbase scope is invalid"
+                                .into(),
+                        });
+                    }
                 };
 
             let member_info = FindMemberInfo::UserTeam {
@@ -269,12 +275,15 @@ pub async fn update_info<N, C, R>(
 ) -> BaseRest<()>
 where
     C: Context + Send,
-    N: Nucl<Context = C, Error = BaseError>,
+    N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<ReptRead>,
     R: TermbaseRepo<C> + TeamRepo<C> + MemberRepo<C> + Send + Sync,
 {
-    let termbase_info_update =
-        TermbaseComplex::build_update(instr.id, instr.name, instr.description)?;
+    let termbase_info_update = TermbaseComplex::build_update(
+        instr.id,
+        &instr.name,
+        instr.description,
+    )?;
 
     nucl.coord(async move |context| {
         //
@@ -319,7 +328,7 @@ pub async fn delete<N, C, R>(
 ) -> BaseRest<()>
 where
     C: Context + Send,
-    N: Nucl<Context = C, Error = BaseError>,
+    N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<ReptRead>,
     R: TermbaseRepo<C>
         + TermRepo<C>

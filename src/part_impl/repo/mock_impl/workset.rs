@@ -11,6 +11,7 @@ use crate::part::repo::oper::workset::{
     GetWorksetInfoExcluded, ListWorksetInfos, ListWorksetInfosExcluded,
     UpdateWorkset, UpdateWorksetComicCount,
 };
+use crate::part_impl::repo::mock_impl::nucl::apply_signed_delta;
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
@@ -48,20 +49,15 @@ fn list_workset_infos(
 
     let limit = oper.limit as usize;
 
-    match offset >= workset_infos.len() {
+    if offset >= workset_infos.len() {
+        Vec::new()
+    } else {
         //
         // Internal implementation detail.
         // Internal implementation detail.
-        true => Vec::new(),
+        let end = std::cmp::min(offset + limit, workset_infos.len());
 
-        false => {
-            //
-            // Internal implementation detail.
-            // Internal implementation detail.
-            let end = std::cmp::min(offset + limit, workset_infos.len());
-
-            workset_infos[offset..end].to_vec()
-        }
+        workset_infos[offset..end].to_vec()
     }
 }
 
@@ -345,7 +341,7 @@ impl<'a> Step<AllocWorksetComicIndex<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &AllocWorksetComicIndex<'a>,
-    ) -> BaseRest<i32> {
+    ) -> BaseRest<usize> {
         //
         // Internal implementation detail.
         // Internal implementation detail.
@@ -362,7 +358,7 @@ impl<'a> Step<AllocWorksetComicIndex<'a>, MockContext> for Mock {
             .comics
             .iter()
             .filter(|comic_info| comic_info.workset_id == oper.id)
-            .count() as i32;
+            .count();
 
         accept(index)
     }
@@ -392,7 +388,7 @@ impl<'a> Step<UpdateWorksetComicCount<'a>, MockContext> for Mock {
             .find(|workset_info| workset_info.id == oper.id)
             .ok_or_else(|| expected("error-workset-not-found"))?;
 
-        workset_info.comic_count += oper.delta;
+        apply_signed_delta(&mut workset_info.comic_count, oper.delta)?;
 
         workset_info.updated_at = now();
 

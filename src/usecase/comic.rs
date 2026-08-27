@@ -1,5 +1,6 @@
 //! Comic use cases — create, read, update, cover management, and deletion.
-
+/// Comic cover upload confirmation use case.
+pub mod cover;
 /// Comic listing use cases.
 pub mod list;
 /// Cover reservation use case.
@@ -12,15 +13,11 @@ pub mod tests;
 use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
-use poprako_util::i18n::trl;
-
 use crate::complex::assignment::AssignmentComplex;
 use crate::complex::chapter::ChapterComplex;
 use crate::complex::comic::{ComicComplex, ComicPermComplex};
 use crate::complex::image::ImageComplex;
-use crate::data::instr::comic::{
-    CreateComicInstr, MarkComicCoverUploadedInstr, UpdateComicInfoInstr,
-};
+use crate::data::instr::comic::{CreateComicInstr, UpdateComicInfoInstr};
 use crate::data::val::comic::CreateComicVal;
 use crate::data::view::comic::ComicInfoView;
 use crate::model::shared::user::UserToken;
@@ -28,7 +25,7 @@ use crate::model::write::assignment::AssignmentEntry;
 use crate::model::write::chapter::ChapterEntry;
 use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::model::write::comic::{ComicEntry, ComicRepl};
-use crate::part::image::{ImageManager, ImagePool};
+use crate::part::image::ImagePool;
 use crate::part::nucl::{ReptRead, Serial};
 use crate::part::prom::Prom;
 use crate::part::prom::oper::Defer;
@@ -48,8 +45,8 @@ use crate::part::repo::oper::chapter::{
 use crate::part::repo::oper::chapter_workflow_record::CreateChapterWorkflowRecords;
 use crate::part::repo::oper::comic::{
     AllocComicChapterIndex, CreateComic, DeleteComic, GetComicInfo,
-    GetComicInfoExcluded, MarkComicCoverUploaded, TouchComicLastActive,
-    UpdateComic, UpdateComicChapterCount,
+    GetComicInfoExcluded, TouchComicLastActive, UpdateComic,
+    UpdateComicChapterCount,
 };
 use crate::part::repo::oper::comic_archive::DeleteComicArchives;
 use crate::part::repo::oper::workset::{
@@ -61,25 +58,16 @@ use crate::part::repo::term::TermRepo;
 use crate::part::repo::termbase::TermbaseRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, accept};
 use crate::usecase::chapter::delete::delete_cascade as delete_chapter_cascade;
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::page::PageLoader;
 use crate::usecase::internal::util::LoadMode;
 use crate::usecase::termbase::delete_comic_cascade;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
+use crate::value::role::RoleMask;
 
-/// Creates a new comic inside a workset together with its first
-/// chapter and a creator admin assignment.
-///
-/// Inside a single transaction this:
-/// 1. Allocates a workset-scoped comic index.
-/// 2. Inserts the comic row.
-/// 3. Bumps the workset comic count.
-/// 4. Allocates a chapter index and inserts the first (pinned) chapter.
-/// 5. Updates the comic's denormalised chapter counter and last-activity
-///    timestamp.
-/// 6. Creates an ADMIN assignment on the new chapter for the caller.
+/// Creates a comic with its first chapter and creator assignment.
 #[instrument(level = "info", skip(nucl, repo))]
 pub async fn create<N, C, R>(
     (nucl, repo): (&N, &R),
@@ -88,7 +76,7 @@ pub async fn create<N, C, R>(
 ) -> BaseRest<CreateComicVal>
 where
     C: Context + Send,
-    N: Nucl<Context = C, Error = BaseError>,
+    N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<ReptRead>,
     R: ComicRepo<C>
         + WorksetRepo<C>
@@ -188,31 +176,13 @@ where
             .step_on(repo, context)
             .await?;
 
-            let assignment_entry = AssignmentEntry {
-                id: AssignmentComplex::gen_id(),
-                chapter_id: chapter_info.id.clone(),
-                user_id: token.user_id.clone(),
-                roles: AssignmentComplex::creator_roles(
-                    instr.preset_assignment_roles,
-                ),
-            };
-
-            CreateAssignment {
-                entry: &assignment_entry,
-            }
-            .step_on(repo, context)
-            .await?;
-
-            let workflow_record_entry = ChapterWorkflowRecordEntry::new(
-                chapter_info.id.clone(),
-                Some(token.user_id),
-                ChapterWorkflowRecordPayload::ChapterCreated,
-            );
-
-            CreateChapterWorkflowRecords {
-                entries: std::slice::from_ref(&workflow_record_entry),
-            }
-            .step_on(repo, context)
+            create_creator_assignment(
+                repo,
+                context,
+                &chapter_info.id,
+                token.user_id,
+                instr.preset_assignment_roles,
+            )
             .await?;
 
             accept((comic_info.id, chapter_info.id))
@@ -240,7 +210,7 @@ where
         + ChapterRepo<C>
         + PageRepo<C>
         + Sync,
-    I: ImagePool,
+    I: ImagePool + Sync,
 {
     let member_info = MemberLoader::load_info_from_comic(
         repo,
@@ -322,153 +292,6 @@ where
     accept(())
 }
 
-/// Marks a reserved comic cover as successfully uploaded.
-#[instrument(level = "info", skip(nucl, repo, image_manager))]
-pub async fn mark_cover_uploaded<N, C, R, I>(
-    (nucl, repo, image_manager): (&N, &R, &I),
-    token: UserToken,
-    id: String,
-    instr: MarkComicCoverUploadedInstr,
-) -> BaseRest<()>
-where
-    C: Context + Send,
-    N: Nucl<Context = C, Error = BaseError>,
-    C::Level: AtLeast<ReptRead>,
-    R: ComicRepo<C> + TeamRepo<C> + MemberRepo<C> + Send + Sync,
-    I: ImageManager,
-{
-    let member_info = MemberLoader::load_info_from_comic(
-        repo,
-        LoadMode::Run,
-        &token.user_id,
-        &id,
-    )
-    .await?;
-
-    ComicPermComplex::ensure_user_can_mark_cover_uploaded(&member_info)?;
-
-    let comic_info = GetComicInfo {
-        id: &id,
-        incls: &[],
-    }
-    .run_on(repo)
-    .await?;
-
-    ComicComplex::ensure_comic_writable(&comic_info)?;
-
-    if comic_info.cover_version != Some(instr.image_version) {
-        //
-        let err_message = trl("error-stale-cover-upload");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Args,
-            err_message = %err_message,
-            comic_id = %id,
-            user_id = %token.user_id,
-            image_version = instr.image_version,
-            stored_image_version = comic_info.cover_version,
-            "expected error: stale comic cover upload",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message: err_message,
-        });
-    }
-
-    if comic_info.is_cover_uploaded == Some(true) {
-        return accept(());
-    }
-
-    let cover_key = comic_info.cover_key.clone().ok_or_else(|| {
-        //
-        let err_message = trl("error-stale-cover-upload");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Args,
-            err_message = %err_message,
-            comic_id = %id,
-            user_id = %token.user_id,
-            image_version = instr.image_version,
-            stored_image_version = comic_info.cover_version,
-            "expected error: stale comic cover upload",
-        );
-
-        BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message: err_message,
-        }
-    })?;
-
-    if !image_manager.object_exists(&cover_key).await? {
-        //
-        let err_message = trl("error-stale-cover-upload");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Args,
-            err_message = %err_message,
-            comic_id = %id,
-            user_id = %token.user_id,
-            image_version = instr.image_version,
-            cover_key = %cover_key,
-            "expected error: stale comic cover upload",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message: err_message,
-        });
-    }
-
-    nucl.coord(async move |context| {
-        //
-        let locked_comic_info = GetComicInfoExcluded {
-            id: &id,
-            incls: &[],
-        }
-        .step_on(repo, context)
-        .await?;
-
-        ComicComplex::ensure_comic_writable(&locked_comic_info)?;
-
-        if locked_comic_info.cover_version != Some(instr.image_version)
-            || locked_comic_info.cover_key.as_deref() != Some(&cover_key)
-        {
-            let err_message = trl("error-stale-cover-upload");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_message = %err_message,
-                comic_id = %id,
-                user_id = %token.user_id,
-                image_version = instr.image_version,
-                locked_image_version = locked_comic_info.cover_version,
-                cover_key = %cover_key,
-                "expected error: stale comic cover upload",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message: err_message,
-            });
-        }
-
-        MarkComicCoverUploaded {
-            id: &id,
-            cover_version: instr.image_version,
-            cover_key: Some(&cover_key),
-            cover_uploaded: true,
-        }
-        .step_on(repo, context)
-        .await?;
-
-        accept(())
-    })
-    .await?;
-
-    accept(())
-}
-
 /// Deletes a comic and updates the parent workset counter.
 #[instrument(level = "info", skip(nucl, repo, prom))]
 pub async fn delete<N, C, R, P>(
@@ -478,7 +301,7 @@ pub async fn delete<N, C, R, P>(
 ) -> BaseRest<()>
 where
     C: Context + Send,
-    N: Nucl<Context = C, Error = BaseError>,
+    N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<Serial>,
     R: ComicRepo<C>
         + ComicArchiveRepo<C>
@@ -586,6 +409,46 @@ where
     UpdateWorksetComicCount {
         id: &comic_info.workset_id,
         delta: -1,
+    }
+    .step_on(repo, context)
+    .await?;
+
+    accept(())
+}
+
+// Creates the initial assignment for a comic creator.
+async fn create_creator_assignment<C, R>(
+    repo: &R,
+    context: &mut C,
+    chapter_id: &str,
+    user_id: String,
+    preset_assignment_roles: Option<RoleMask>,
+) -> BaseRest<()>
+where
+    C: Context,
+    R: AssignmentRepo<C> + ChapterWorkflowRecordRepo<C> + Sync,
+{
+    let assignment_entry = AssignmentEntry {
+        id: AssignmentComplex::gen_id(),
+        chapter_id: chapter_id.to_owned(),
+        user_id: user_id.clone(),
+        roles: AssignmentComplex::creator_roles(preset_assignment_roles),
+    };
+
+    CreateAssignment {
+        entry: &assignment_entry,
+    }
+    .step_on(repo, context)
+    .await?;
+
+    let workflow_record_entry = ChapterWorkflowRecordEntry::new(
+        chapter_id.to_owned(),
+        Some(user_id),
+        ChapterWorkflowRecordPayload::ChapterCreated,
+    );
+
+    CreateChapterWorkflowRecords {
+        entries: std::slice::from_ref(&workflow_record_entry),
     }
     .step_on(repo, context)
     .await?;

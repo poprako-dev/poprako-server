@@ -21,7 +21,7 @@ pub struct AnnouncementPermComplex;
 
 impl AnnouncementPermComplex {
     /// Verify the caller may list announcements under the team.
-    pub fn ensure_user_can_list_infos(
+    pub const fn ensure_user_can_list_infos(
         member_info: &MemberInfo,
     ) -> BaseRest<()> {
         check_user_is_team_member(member_info)

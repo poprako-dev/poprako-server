@@ -37,7 +37,7 @@ fn apply_edits_soft_deletes_and_restores_a_unit() {
 
     let counters = apply_edits(&mut state, "page-1", &[], &[create]).unwrap();
 
-    assert_eq!(counters.total_unit_count, 1);
+    assert_eq!(counters.total, 1);
 
     let hidden = apply_edits(
         &mut state,
@@ -49,7 +49,7 @@ fn apply_edits_soft_deletes_and_restores_a_unit() {
     )
     .unwrap();
 
-    assert_eq!(hidden.total_unit_count, 0);
+    assert_eq!(hidden.total, 0);
 
     assert!(state.units[0].hidden_at.is_some());
 
@@ -83,11 +83,11 @@ fn apply_edits_soft_deletes_and_restores_a_unit() {
     let restored =
         apply_edits(&mut state, "page-1", &hidden_order, &[restore]).unwrap();
 
-    assert_eq!(restored.total_unit_count, 1);
+    assert_eq!(restored.total, 1);
 
-    assert_eq!(restored.translated_unit_count, 1);
+    assert_eq!(restored.translated, 1);
 
-    assert_eq!(restored.proofread_unit_count, 1);
+    assert_eq!(restored.proofread, 1);
 
     assert!(state.units[0].hidden_at.is_none());
 }

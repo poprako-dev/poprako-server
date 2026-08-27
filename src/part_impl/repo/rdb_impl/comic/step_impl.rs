@@ -20,6 +20,7 @@ use crate::part_impl::repo::rdb_impl::entity::comic::{
     ComicAspectRow, ComicEntryRow, ComicInfoRow,
 };
 use crate::part_impl::repo::rdb_impl::incl;
+use crate::part_impl::repo::rdb_impl::numeric::usize_from_i32;
 use crate::part_impl::repo::rdb_impl::schema::t_comic::dsl::{
     f_archived_at, f_chapter_count, f_chapter_next_index, f_composed_title,
     f_cover_extension, f_cover_hash, f_cover_key, f_cover_uploaded,
@@ -131,8 +132,8 @@ pub async fn list_infos(
 
     let rows = query
         .order_by((f_last_active_at.desc(), f_index.asc()))
-        .offset(spec.offset as i64)
-        .limit(spec.limit as i64)
+        .offset(i64::from(spec.offset))
+        .limit(i64::from(spec.limit))
         .load::<ComicInfoRow>(conn)
         .await
         .map_err(diesel)?;
@@ -252,7 +253,7 @@ pub async fn create(
     comic_entry: &ComicEntry,
 ) -> BaseRest<ComicInfo> {
     //
-    let entry = ComicEntryRow::from(comic_entry);
+    let entry = ComicEntryRow::try_from(comic_entry)?;
 
     let row = diesel::insert_into(t_comic)
         .values(&entry)
@@ -322,8 +323,8 @@ pub async fn list_infos_excluded(
             $query
                 .select(ComicInfoRow::as_select())
                 .order_by((f_last_active_at.desc(), f_index.asc()))
-                .offset(spec.offset as i64)
-                .limit(spec.limit as i64)
+                .offset(i64::from(spec.offset))
+                .limit(i64::from(spec.limit))
                 .for_update()
                 .load::<ComicInfoRow>(conn)
                 .await
@@ -532,7 +533,7 @@ pub async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
 pub async fn incr_chapter_next_index(
     conn: &mut RdbConn,
     id: &str,
-) -> BaseRest<i32> {
+) -> BaseRest<usize> {
     //
     let prev = diesel::update(t_comic.filter(f_id.eq(id)))
         .set(f_chapter_next_index.eq(f_chapter_next_index + 1))
@@ -541,7 +542,7 @@ pub async fn incr_chapter_next_index(
         .await
         .map_err(diesel)?;
 
-    accept(prev)
+    accept(usize_from_i32(prev, "t_comic.f_chapter_next_index")?)
 }
 
 /// Adjusts a comic's chapter count by the given delta.
@@ -581,12 +582,12 @@ pub async fn touch_last_active(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
 // Parse a numeric fuzzy-title value into its stored comic index.
 fn stored_index_from_numeric_fuzzy(fuzzy_title_value: &str) -> Option<i32> {
     //
-    match fuzzy_title_value.trim().parse() {
-        //
-        Ok(index) => user_index_to_stored_index(index),
-
-        Err(_) => None,
-    }
+    fuzzy_title_value
+        .trim()
+        .parse::<usize>()
+        .ok()
+        .and_then(user_index_to_stored_index)
+        .and_then(|index| i32::try_from(index).ok())
 }
 
 // Escape wildcard characters for a PostgreSQL ILIKE pattern.

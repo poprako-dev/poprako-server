@@ -14,6 +14,7 @@ use crate::part_impl::repo::mock_impl::chapter::orchestra::find_pinned_chapter_i
 use crate::part_impl::repo::mock_impl::chapter::{
     create_chapter, get_chapter_by_id, list_infos,
 };
+use crate::part_impl::repo::mock_impl::nucl::apply_signed_delta;
 use crate::part_impl::repo::mock_impl::{Mock, MockContext, expected, now};
 use crate::result::{BaseError, BaseRest, accept};
 use crate::value::chapter::{Stage, StagePhase};
@@ -408,11 +409,20 @@ impl<'a> Step<AdjustChapterUnitCounters<'a>, MockContext> for Mock {
             .find(|chapter_info| chapter_info.id == oper.id)
             .ok_or_else(|| expected("error-chapter-not-found"))?;
 
-        chapter_info.total_unit_count += oper.delta.total_unit_count;
+        apply_signed_delta(
+            &mut chapter_info.total_unit_count,
+            oper.delta.total,
+        )?;
 
-        chapter_info.translated_unit_count += oper.delta.translated_unit_count;
+        apply_signed_delta(
+            &mut chapter_info.translated_unit_count,
+            oper.delta.translated,
+        )?;
 
-        chapter_info.proofread_unit_count += oper.delta.proofread_unit_count;
+        apply_signed_delta(
+            &mut chapter_info.proofread_unit_count,
+            oper.delta.proofread,
+        )?;
 
         chapter_info.updated_at = now();
 
@@ -439,13 +449,17 @@ impl<'a> Step<UnpinOtherChapters<'a>, MockContext> for Mock {
         // Internal implementation detail.
         for chapter_info in &mut context.state.chapters {
             //
-            if chapter_info.comic_id == oper.comic_id
-                && chapter_info.id != oper.excluded_id
-            {
-                chapter_info.is_pinned = false;
-
-                chapter_info.updated_at = now();
+            if chapter_info.comic_id != oper.comic_id {
+                continue;
             }
+
+            if chapter_info.id == oper.excluded_id {
+                continue;
+            }
+
+            chapter_info.is_pinned = false;
+
+            chapter_info.updated_at = now();
         }
 
         accept(())

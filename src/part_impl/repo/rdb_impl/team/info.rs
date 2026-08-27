@@ -17,6 +17,7 @@ use crate::model::write::team::{TeamAvatarReservation, TeamEntry, TeamRepl};
 use crate::part_impl::repo::rdb_impl::entity::team::{
     TeamAspectRow, TeamEntryRow, TeamInfoRow,
 };
+use crate::part_impl::repo::rdb_impl::numeric::usize_from_i32;
 use crate::part_impl::repo::rdb_impl::schema::t_member;
 use crate::part_impl::repo::rdb_impl::schema::t_team::dsl::{
     f_avatar_extension, f_avatar_hash, f_avatar_key, f_avatar_uploaded,
@@ -40,8 +41,8 @@ pub async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
 }
 
 // Insert a team entry and return the persisted team info.
-#[instrument(level = "info", skip_all)]
 /// Insert a new team row from an entry.
+#[instrument(level = "info", skip_all)]
 pub async fn create(
     conn: &mut RdbConn,
     entry: &TeamEntry,
@@ -69,8 +70,8 @@ pub async fn create(
 }
 
 // Load one team by id and convert it into DTO view model.
-#[instrument(level = "info", skip_all)]
 /// Load a single team info by ID.
+#[instrument(level = "info", skip_all)]
 pub async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
@@ -106,8 +107,8 @@ pub async fn get_info_by_id(
 }
 
 // Query teams using an optional membership filter, ordering and pagination.
-#[instrument(level = "info", skip_all)]
 /// List team infos filtered and paginated by spec.
+#[instrument(level = "info", skip_all)]
 pub async fn list_infos(
     conn: &mut RdbConn,
     spec: &TeamListSpec,
@@ -132,8 +133,8 @@ pub async fn list_infos(
     let rows = query
         .select(TeamInfoRow::as_select())
         .order_by(f_created_at.desc())
-        .offset(spec.offset as i64)
-        .limit(spec.limit as i64)
+        .offset(i64::from(spec.offset))
+        .limit(i64::from(spec.limit))
         .load::<TeamInfoRow>(conn)
         .await
         .map_err(diesel)?;
@@ -142,8 +143,8 @@ pub async fn list_infos(
 }
 
 // Update mutable team profile fields for the target team.
-#[instrument(level = "info", skip_all)]
 /// Apply a team metadata replacement.
+#[instrument(level = "info", skip_all)]
 pub async fn update_info(conn: &mut RdbConn, repl: &TeamRepl) -> BaseRest<()> {
     //
     let now = OffsetDateTime::now_utc();
@@ -162,8 +163,8 @@ pub async fn update_info(conn: &mut RdbConn, repl: &TeamRepl) -> BaseRest<()> {
 }
 
 // Load one team info and lock the row for transactional updates.
-#[instrument(level = "info", skip_all)]
 /// Load a team info by ID, locking the row for update.
+#[instrument(level = "info", skip_all)]
 pub async fn get_info_excluded(
     conn: &mut RdbConn,
     id: &str,
@@ -200,8 +201,8 @@ pub async fn get_info_excluded(
 }
 
 // Validate version/hash preconditions and mark avatar upload state.
-#[instrument(level = "info", skip_all)]
 /// Mark the team avatar as uploaded.
+#[instrument(level = "info", skip_all)]
 pub async fn mark_avatar_uploaded(
     conn: &mut RdbConn,
     id: &str,
@@ -265,8 +266,8 @@ pub async fn mark_avatar_uploaded(
 }
 
 // Allocate a new avatar reservation version, returning object keys and cleanup metadata.
-#[instrument(level = "info", skip_all)]
 /// Reserve an avatar key and version atomically.
+#[instrument(level = "info", skip_all)]
 pub async fn reserve_avatar(
     conn: &mut RdbConn,
     id: &str,
@@ -370,8 +371,8 @@ pub async fn reserve_avatar(
 }
 
 // Lock a team row to serialize concurrent writes in the current transaction.
-#[instrument(level = "info", skip_all)]
 /// Lock a team row for a transactional update.
+#[instrument(level = "info", skip_all)]
 pub async fn lock_team(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
     let row = t_team
@@ -405,12 +406,12 @@ pub async fn lock_team(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
 }
 
 // Advance workset sequence and return previous value for deterministic IDs.
-#[instrument(level = "info", skip_all)]
 /// Increment and return the workset next index.
+#[instrument(level = "info", skip_all)]
 pub async fn increment_workset_next_index(
     conn: &mut RdbConn,
     id: &str,
-) -> BaseRest<i32> {
+) -> BaseRest<usize> {
     //
     let prev = diesel::update(t_team.filter(f_id.eq(id)))
         .set(f_workset_next_index.eq(f_workset_next_index + 1))
@@ -419,5 +420,5 @@ pub async fn increment_workset_next_index(
         .await
         .map_err(diesel)?;
 
-    accept(prev)
+    accept(usize_from_i32(prev, "t_team.f_workset_next_index")?)
 }

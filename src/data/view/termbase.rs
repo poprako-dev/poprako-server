@@ -31,7 +31,7 @@ pub struct TermbaseInfoView {
     pub description: Option<String>,
 
     /// Number of terms in the terminology base.
-    pub term_count: i32,
+    pub term_count: usize,
 
     /// Identifier of the user who created the terminology base.
     pub creator_id: String,

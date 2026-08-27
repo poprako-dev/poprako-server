@@ -7,10 +7,10 @@ use crate::part::auth::TokenAuth;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
-/// Mock implementation of [TokenAuth].
+/// Mock implementation of [`TokenAuth`].
 ///
 /// Returns a deterministic token (`"token:{user_id}"`) by default.
-/// Configure [Mock::with_token_failure] to test sign failures.
+/// Configure [`Mock::with_token_failure`] to test sign failures.
 impl TokenAuth for Mock {
     // Internal implementation of `sign_token`.
     fn sign_token(&self, token: &UserToken) -> BaseRest<String> {

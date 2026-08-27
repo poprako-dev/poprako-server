@@ -59,12 +59,11 @@ async fn cors_handles_web_client_preflight_before_api_authorization() {
                 let header_value = header_value.as_bytes();
                 let has_authorization =
                     header_value.windows("authorization".len()).any(|window| {
-                        window.eq_ignore_ascii_case("authorization".as_bytes())
+                        window.eq_ignore_ascii_case(b"authorization")
                     });
-                let has_content_type =
-                    header_value.windows("content-type".len()).any(|window| {
-                        window.eq_ignore_ascii_case("content-type".as_bytes())
-                    });
+                let has_content_type = header_value
+                    .windows("content-type".len())
+                    .any(|window| window.eq_ignore_ascii_case(b"content-type"));
 
                 has_authorization && has_content_type
             })

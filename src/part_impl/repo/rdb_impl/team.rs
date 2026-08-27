@@ -37,7 +37,7 @@ use crate::part_impl::repo::rdb_impl::team::info::{
 use crate::result::{BaseError, BaseRest};
 use crate::shared::RdbContext;
 
-impl<'a> Run<CreateTeam<'a>> for HybRepo {
+impl Run<CreateTeam<'_>> for HybRepo {
     // Map team creation orchestration failures to the shared base error type.
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -286,7 +286,7 @@ where
         &self,
         context: &mut RdbContext<L>,
         oper: &AllocTeamWorksetIndex<'_>,
-    ) -> BaseRest<i32> {
+    ) -> BaseRest<usize> {
         increment_workset_next_index(context.conn(), oper.id).await
     }
 }
