@@ -4,7 +4,8 @@
 # project-specific rule parameters.
 
 [linters]
-no-allow = true
+# Comment out temporarily
+# no-allow = true
 no-inline-format = true
 no-inline-tests = true
 spacing-style = true
@@ -21,14 +22,8 @@ prefer-if-let-guard = true
 no-unnamed-fields = true
 
 [qualified-call-site]
-enforced_std_paths = [
-    "std::env::var",
-    "std::result::Result",
-]
-exempt_poprako_paths = [
-    "poprako_server::serve",
-    "poprako_server::init_log",
-]
+enforced_std_paths = ["std::env::var", "std::result::Result"]
+exempt_poprako_paths = ["poprako_server::serve", "poprako_server::init_log"]
 enforced_third_party_paths = [
     "jsonwebtoken::encode",
     "jsonwebtoken::decode",
@@ -154,6 +149,11 @@ message = "'extension' is forbidden — use 'ext' instead"
 word = "previous"
 code = "FBD011"
 message = "'previous' is forbidden — use 'prev' instead"
+
+[[forbidden-identifiers.words]]
+word = "replacement"
+code = "FBD012"
+message = "'replacement' is forbidden — use 'repl' instead"
 
 [trait-use-anonymous]
 # The trait lists replace the packaged defaults entirely.

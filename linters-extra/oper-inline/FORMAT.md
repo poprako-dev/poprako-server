@@ -1,13 +1,12 @@
 # Inline operations
 
-Every `poprako_orchestra::Oper` is a one-shot operation descriptor. Construct
-it directly in the consuming call argument, including `run(...)`, `step(...)`,
-and `exec(...)`. Binding an oper to a local variable first is forbidden,
-including `Defer` and `DeferBatch`.
+Every `poprako_orchestra::Oper` is a one-shot operation descriptor. Do not bind
+an operation descriptor to a local variable. Dispatch operations through the
+operation-receiver extension methods `run_on(...)` and `step_on(...)` only.
+Executor-receiver calls such as `repo.run(&oper)` and
+`repo.step(context, &oper)` are forbidden in production code.
 
 ```bash
-uv run fmt/oper-inline/check.py
-uv run fmt/oper-inline/check.py --self-test
+uv run linters-extra/oper-inline/check.py
+uv run linters-extra/oper-inline/check.py --self-test
 ```
-
-exactly one reference and that reference is a direct call argument.

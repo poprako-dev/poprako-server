@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 import tempfile
 from pathlib import Path
@@ -65,6 +66,32 @@ def oper_names(paths: list[Path], root: Path) -> set[str]:
             if name[:1].isupper():
                 names.add(name)
 
+        for item_kind in {"struct_item", "enum_item"}:
+            for item in descendants(tree.root_node, item_kind):
+                sibling = item.prev_named_sibling
+                derives_oper = False
+
+                while sibling is not None and sibling.type in {
+                    "attribute_item",
+                    "block_comment",
+                    "line_comment",
+                }:
+                    if sibling.type == "attribute_item" and re.search(
+                        r"#\s*\[\s*derive\s*\([^\]]*\bOper\b",
+                        text(source, sibling),
+                    ):
+                        derives_oper = True
+
+                    sibling = sibling.prev_named_sibling
+
+                if not derives_oper:
+                    continue
+
+                name = item.child_by_field_name("name")
+
+                if name is not None:
+                    names.add(text(source, name))
+
     return names
 
 
@@ -95,134 +122,6 @@ def constructor_name(source: bytes, value: tree_sitter.Node) -> str | None:
     return None
 
 
-def binding_name(source: bytes, declaration: tree_sitter.Node) -> str | None:
-    pattern = declaration.child_by_field_name("pattern")
-
-    if pattern is None:
-        return None
-
-    identifiers = descendants(pattern, "identifier")
-
-    if len(identifiers) != 1:
-        return None
-
-    return text(source, identifiers[0])
-
-
-def next_statement(declaration: tree_sitter.Node) -> tree_sitter.Node | None:
-    parent = declaration.parent
-
-    if parent is None:
-        return None
-
-    siblings = parent.named_children
-
-    for index, sibling in enumerate(siblings):
-        if sibling.id == declaration.id and index + 1 < len(siblings):
-            return siblings[index + 1]
-
-    return None
-
-
-def safe_inline_edits(path: Path, names: set[str], root: Path) -> list[tuple[int, int, bytes]]:
-    source = production_source(path, root)
-    tree = PARSER.parse(source)
-    edits: list[tuple[int, int, bytes]] = []
-
-    for declaration in descendants(tree.root_node, "let_declaration"):
-        value = declaration.child_by_field_name("value")
-
-        if value is None or constructor_name(source, value) not in names:
-            continue
-
-        bound_name = binding_name(source, declaration)
-        statement = next_statement(declaration)
-
-        if bound_name is None or statement is None:
-            continue
-
-        references = [
-            identifier
-            for identifier in descendants(statement, "identifier")
-            if text(source, identifier) == bound_name
-        ]
-
-        if len(references) != 1:
-            continue
-
-        reference = references[0]
-        replacement = reference
-        parent = reference.parent
-
-        if parent is not None and parent.type == "reference_expression":
-            replacement = parent
-            parent = parent.parent
-
-        while parent is not None and parent.type == "parenthesized_expression":
-            parent = parent.parent
-
-        if parent is None or parent.type != "arguments":
-            continue
-
-        edits.append((declaration.start_byte, declaration.end_byte, b""))
-        edits.append((replacement.start_byte, replacement.end_byte, source[value.start_byte : value.end_byte]))
-
-    return edits
-
-
-def apply_safe_fixes(paths: list[Path], names: set[str], root: Path) -> None:
-    for path in paths:
-        edits = safe_inline_edits(path, names, root)
-
-        if not edits:
-            continue
-
-        source = path.read_bytes()
-
-        for start, end, replacement in sorted(edits, reverse=True):
-            source = source[:start] + replacement + source[end:]
-
-        path.write_bytes(source)
-
-
-def apply_missing_borrows(paths: list[Path], names: set[str], root: Path) -> None:
-    for path in paths:
-        source = production_source(path, root)
-        tree = PARSER.parse(source)
-        edits: list[tuple[int, bytes]] = []
-
-        expressions = [
-            expression
-            for kind in {"identifier", "scoped_identifier", "struct_expression"}
-            for expression in descendants(tree.root_node, kind)
-        ]
-
-        for expression in expressions:
-            if constructor_name(source, expression) not in names:
-                continue
-
-            parent = expression.parent
-
-            while parent is not None and parent.type == "parenthesized_expression":
-                parent = parent.parent
-
-            if parent is None or parent.type != "arguments":
-                continue
-
-            if expression.parent is not None and expression.parent.type == "reference_expression":
-                continue
-
-            edits.append((expression.start_byte, b"&"))
-
-        updated = path.read_bytes()
-
-        for start, replacement in reversed(edits):
-            updated = updated[:start] + replacement + updated[start:]
-
-        if edits:
-            path.write_bytes(updated)
-
-
 def check_file(path: Path, names: set[str], root: Path) -> list[str]:
     source = production_source(path, root)
     tree = PARSER.parse(source)
@@ -241,8 +140,109 @@ def check_file(path: Path, names: set[str], root: Path) -> list[str]:
 
         errors.append(
             f"{path.relative_to(root)}:{declaration.start_point.row + 1}: "
-            f"OPR001: construct {name} directly in its consuming call argument",
+            f"OPR001: construct {name} directly as a run_on or step_on receiver",
         )
+
+    imported_traits: dict[str, set[str]] = {
+        "Run": set(),
+        "Step": set(),
+    }
+    available_traits: set[str] = set()
+
+    for declaration in descendants(tree.root_node, "use_declaration"):
+        declaration_text = text(source, declaration)
+
+        if "poprako_orchestra" not in declaration_text:
+            continue
+
+        imports_wildcard = re.search(r"(?:\{|::)\s*\*", declaration_text)
+
+        for trait_name in imported_traits:
+            if not imports_wildcard and not re.search(
+                rf"\b{trait_name}\b",
+                declaration_text,
+            ):
+                continue
+
+            available_traits.add(trait_name)
+
+            aliases = re.findall(
+                rf"\b{trait_name}\s+as\s+([A-Za-z_][A-Za-z0-9_]*)",
+                declaration_text,
+            )
+            imported_traits[trait_name].update(
+                alias for alias in aliases if alias != "_"
+            )
+
+            if re.search(
+                rf"\b{trait_name}\b(?!\s+as\b)",
+                declaration_text,
+            ):
+                imported_traits[trait_name].add(trait_name)
+
+    direct_methods = {
+        "run": ("Run", 1, "run_on"),
+        "step": ("Step", 2, "step_on"),
+    }
+
+    for call in descendants(tree.root_node, "call_expression"):
+        function = call.child_by_field_name("function")
+        arguments = call.child_by_field_name("arguments")
+
+        if function is None or arguments is None:
+            continue
+
+        if function.type == "field_expression":
+            field = function.child_by_field_name("field")
+
+            if field is None:
+                continue
+
+            method_name = text(source, field)
+            direct_method = direct_methods.get(method_name)
+
+            if direct_method is None:
+                continue
+
+            trait_name, argument_count, replacement = direct_method
+
+            if trait_name not in available_traits:
+                continue
+
+            if len(arguments.named_children) != argument_count:
+                continue
+
+            errors.append(
+                f"{path.relative_to(root)}:{call.start_point.row + 1}: "
+                f"OPR002: call the operation's {replacement} method instead of "
+                f"{trait_name}::{method_name}",
+            )
+
+            continue
+
+        function_text = text(source, function)
+
+        for method_name, (trait_name, _, replacement) in direct_methods.items():
+            local_trait_names = imported_traits[trait_name]
+            qualified = f"poprako_orchestra::{trait_name}" in function_text
+            trait_paths = local_trait_names | {
+                f"poprako_orchestra::{trait_name}",
+            }
+            ufcs = any(
+                re.search(
+                    rf"(?:^|\bas\s+|::){re.escape(trait_path)}"
+                    rf"(?:::)?(?:<.*>)?>?::{method_name}$",
+                    function_text,
+                )
+                for trait_path in trait_paths
+            )
+
+            if (trait_name in available_traits or qualified) and ufcs:
+                errors.append(
+                    f"{path.relative_to(root)}:{call.start_point.row + 1}: "
+                    f"OPR002: call the operation's {replacement} method instead of "
+                    f"{trait_name}::{method_name}",
+                )
 
     return errors
 
@@ -254,14 +254,17 @@ def self_test() -> int:
         source_dir.mkdir()
         fixture = source_dir / "fixture.rs"
         fixture.write_text(
+            "use poprako_orchestra::{OperRun as _, OperStep as _};\n"
             "trait Oper {}\n"
             "struct Create;\n"
-            "impl Oper for Create {}\n"
+            "#[derive(Oper)]\n"
+            "struct Derived;\n"
             "enum Get { Id { id: String } }\n"
             "impl Oper for Get {}\n"
             "fn valid() {\n"
-            "    consume(&Create);\n"
-            "    consume(&Get::Id { id: String::new() });\n"
+            "    Create.run_on(repo);\n"
+            "    Derived.run_on(repo);\n"
+            "    Get::Id { id: String::new() }.step_on(repo, context);\n"
             "}\n",
         )
 
@@ -270,37 +273,33 @@ def self_test() -> int:
             return 1
 
         fixture.write_text(
+            "use poprako_orchestra::{Run as _, Run as OrchestraRun, Step as _};\n"
             "trait Oper {}\n"
             "struct Create;\n"
             "impl Oper for Create {}\n"
+            "#[derive(Oper)]\n"
+            "struct Derived;\n"
             "enum Get { Id { id: String } }\n"
             "impl Oper for Get {}\n"
             "fn invalid() {\n"
             "    let create = Create;\n"
-            "    consume(&create);\n"
+            "    create.run_on(repo);\n"
+            "    let derived = Derived;\n"
+            "    derived.run_on(repo);\n"
             "    let get = Get::Id { id: String::new() };\n"
-            "    consume(&get);\n"
+            "    get.step_on(repo, context);\n"
+            "    repo.run(&Create);\n"
+            "    repo.step(context, &Create);\n"
+            "    OrchestraRun::run(repo, &Create);\n"
+            "    <Repo as OrchestraRun<Create>>::run(repo, &Create);\n"
+            "    poprako_orchestra::Step::step(repo, context, &Create);\n"
             "}\n",
         )
         diagnostics = check_file(fixture, oper_names([fixture], root), root)
 
-        if len(diagnostics) != 2:
-            print("self-test: bound operations were not fully rejected", file=sys.stderr)
+        if len(diagnostics) != 8:
+            print("self-test: invalid operation calls were not fully rejected", file=sys.stderr)
             print("\n".join(diagnostics), file=sys.stderr)
-            return 1
-
-        names = oper_names([fixture], root)
-        apply_safe_fixes([fixture], names, root)
-        apply_missing_borrows([fixture], names, root)
-
-        if check_file(fixture, names, root):
-            print("self-test: safe fixes did not inline operations", file=sys.stderr)
-            return 1
-
-        fixed = fixture.read_text()
-
-        if "consume(&Get::Id" not in fixed:
-            print("self-test: safe fixes did not retain the operation borrow", file=sys.stderr)
             return 1
 
     return 0
@@ -309,8 +308,6 @@ def self_test() -> int:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, default=ROOT)
-    parser.add_argument("--fix-safe", action=argparse.BooleanOptionalAction, default=True)
-    parser.add_argument("--fix-borrows", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
     root = args.root.resolve()
@@ -319,12 +316,6 @@ def main() -> int:
 
     if args.self_test:
         return self_test()
-
-    if args.fix_safe:
-        apply_safe_fixes(paths, names, root)
-
-    if args.fix_borrows:
-        apply_missing_borrows(paths, names, root)
 
     errors = [error for path in paths for error in check_file(path, names, root)]
 
