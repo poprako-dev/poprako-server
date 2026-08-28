@@ -24,7 +24,7 @@ pub async fn start_pending_stages<C, R>(
 ) -> BaseRest<()>
 where
     C: Context,
-    R: ChapterRepo<C> + ChapterWorkflowRecordRepo<C>,
+    R: ChapterRepo<C> + ChapterWorkflowRecordRepo<C> + Sync,
 {
     let mut entries = Vec::with_capacity(stages.len());
 

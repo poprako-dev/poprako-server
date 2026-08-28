@@ -60,12 +60,12 @@ pub async fn create(
     get,
     path = "/api/v1/teams",
     tag = "teams",
-    description = "Lists teams. Omit `user_id` to list all teams (super-admin only, otherwise `403`); supply `user_id` to list teams that user has joined. Examples: `/api/v1/teams?user_id=u_1&offset=0&limit=20`, `/api/v1/teams?offset=0&limit=20` (super-admin).",
+    description = "Lists teams. Omit `user_id` to list all teams (super-admin only, otherwise `403`); supply the authenticated user's ID to list teams they have joined. A different user's ID is rejected with `403`. Examples: `/api/v1/teams?user_id=u_1&offset=0&limit=20`, `/api/v1/teams?offset=0&limit=20` (super-admin).",
     params(ListTeamInfosInstr),
     responses(
         (status = 200, description = "Teams listed", body = HttpBody<Vec<TeamInfoView>>),
         (status = 401, description = "Authentication required"),
-        (status = 403, description = "Listing all teams requires super-admin"),
+        (status = 403, description = "Listing all teams requires super-admin; user filters must match the authenticated user"),
     ),
 ))]
 #[instrument(level = "info", skip_all)]

@@ -40,18 +40,18 @@ pub struct ChapterInfoView {
     /// Whether the chapter is pinned to the top of its comic's chapter list.
     pub is_pinned: bool,
     /// Ordinal position within the parent comic.
-    pub index: i32,
+    pub index: usize,
     /// Display subtitle for the chapter.
     pub subtitle: String,
 
     /// Total number of image pages in the chapter.
-    pub page_count: i32,
+    pub page_count: usize,
     /// Total number of translation units across all pages.
-    pub total_unit_count: i32,
+    pub total_unit_count: usize,
     /// Number of units whose translation has been completed.
-    pub translated_unit_count: i32,
+    pub translated_unit_count: usize,
     /// Number of units whose proofread has been completed.
-    pub proofread_unit_count: i32,
+    pub proofread_unit_count: usize,
 
     /// Bitmask encoding the current workflow-stage states.
     pub stages: StageMask,
@@ -79,7 +79,7 @@ impl ChapterInfoView {
         fallback_cover_key: Option<&str>,
     ) -> BaseRest<Self>
     where
-        P: ImagePool,
+        P: ImagePool + Sync,
     {
         accept(Self {
             id: model.id,

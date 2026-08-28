@@ -20,7 +20,7 @@ pub struct TermbaseInfo {
     pub description: Option<String>,
 
     /// Denormalised count of terms stored in this terminology base.
-    pub term_count: i32,
+    pub term_count: usize,
 
     /// Foreign key to the user who created this termbase.
     pub creator_id: String,

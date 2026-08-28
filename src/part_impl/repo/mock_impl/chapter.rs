@@ -107,27 +107,27 @@ pub fn apply_chapter_incls(
             //
             // Attach base comic fields.
             ChapterInclOpt::Comic => {
-                apply_comic_incl(state, chapter_info, true)
+                apply_comic_incl(state, chapter_info, true);
             }
 
             // Attach comic workspace relation.
             ChapterInclOpt::ComicWorkset => {
-                apply_comic_workset_incl(state, chapter_info, true)
+                apply_comic_workset_incl(state, chapter_info, true);
             }
 
             // Attach comic workspace team relation.
             ChapterInclOpt::ComicWorksetTeam => {
-                apply_comic_workset_team_incl(state, chapter_info, true)
+                apply_comic_workset_team_incl(state, chapter_info, true);
             }
 
             // Attach comic creator relation.
             ChapterInclOpt::ComicCreator => {
-                apply_comic_creator_incl(state, chapter_info, true)
+                apply_comic_creator_incl(state, chapter_info, true);
             }
 
             // Attach chapter creator relation.
             ChapterInclOpt::Creator => {
-                apply_creator_incl(state, chapter_info, true)
+                apply_creator_incl(state, chapter_info, true);
             }
         }
     }

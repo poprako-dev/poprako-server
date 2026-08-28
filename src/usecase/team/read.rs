@@ -3,6 +3,8 @@
 use poprako_orchestra::{Context, OperRun as _};
 use tracing::instrument;
 
+use poprako_util::i18n::trl;
+
 use crate::complex::team::TeamPermComplex;
 use crate::data::instr::team::ListTeamInfosInstr;
 use crate::data::view::team::TeamInfoView;
@@ -13,7 +15,7 @@ use crate::part::repo::oper::team::{GetTeamInfo, ListTeamInfos};
 use crate::part::repo::oper::user::GetUserInfo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
-use crate::result::{BaseRest, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::internal::util::collect_bounded;
 
 /// Fetches a team by ID with avatar URL resolution.
@@ -33,7 +35,7 @@ pub async fn get_info<C, R, I>(
 where
     C: Context,
     R: TeamRepo<C>,
-    I: ImagePool,
+    I: ImagePool + Sync,
 {
     TeamInfoView::from_model(
         image_pool,
@@ -61,21 +63,34 @@ pub async fn list_infos<C, R, I>(
 where
     C: Context,
     R: TeamRepo<C> + UserRepo<C> + Sync,
-    I: ImagePool,
+    I: ImagePool + Sync,
 {
-    match instr.user_id.as_deref() {
+    if let Some(affected_user_id) = instr.user_id.as_deref()
+        && affected_user_id != token.user_id
+    {
         //
-        Some(user_id) if user_id != token.user_id => todo!(),
+        let err_message = trl("error-forbidden");
 
-        None => {
-            //
-            let user_info =
-                GetUserInfo::Id { id: &token.user_id }.run_on(repo).await?;
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Perm,
+            err_message = %err_message,
+            user_id = %token.user_id,
+            affected_user_id = %affected_user_id,
+            "expected error: team listing ownership required",
+        );
 
-            TeamPermComplex::ensure_user_can_list_infos(&user_info)?;
-        }
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: err_message,
+        });
+    }
 
-        Some(_) => {}
+    if instr.user_id.is_none() {
+        //
+        let user_info =
+            GetUserInfo::Id { id: &token.user_id }.run_on(repo).await?;
+
+        TeamPermComplex::ensure_user_can_list_infos(&user_info)?;
     }
 
     let team_info_list_spec = TeamListSpec {

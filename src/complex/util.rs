@@ -8,7 +8,9 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::value::role::{RoleField, RoleMask};
 
 /// Verify that membership evidence exists.
-pub fn check_user_is_team_member(_member_info: &MemberInfo) -> BaseRest<()> {
+pub const fn check_user_is_team_member(
+    _member_info: &MemberInfo,
+) -> BaseRest<()> {
     accept(())
 }
 
@@ -63,7 +65,7 @@ pub fn check_user_is_team_admin(member_info: &MemberInfo) -> BaseRest<()> {
 }
 
 /// Verify that assignment evidence exists.
-pub fn check_user_is_chapter_assignee(
+pub const fn check_user_is_chapter_assignee(
     _assignment_info: &AssignmentInfo,
 ) -> BaseRest<()> {
     accept(())

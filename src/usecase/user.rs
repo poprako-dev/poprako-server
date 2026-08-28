@@ -67,7 +67,7 @@ pub async fn get_info<C, R, I, D>(
 where
     C: Context,
     R: UserRepo<C>,
-    I: ImagePool,
+    I: ImagePool + Sync,
     D: Develop + Send + Sync,
 {
     let user_info = GetUserInfo::Id { id: &id }.run_on(repo).await?;
@@ -110,7 +110,7 @@ pub async fn update_info<N, C, R>(
 ) -> BaseRest<()>
 where
     C: Context + Send,
-    N: Nucl<Context = C, Error = BaseError>,
+    N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<ReptRead>,
     R: UserRepo<C> + MemberRepo<C> + Send + Sync,
 {
@@ -175,7 +175,7 @@ pub async fn update_password<N, C, R>(
 ) -> BaseRest<()>
 where
     C: Context + Send,
-    N: Nucl<Context = C, Error = BaseError>,
+    N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<ReptRead>,
     R: UserRepo<C> + Send + Sync,
 {
@@ -229,16 +229,18 @@ where
 
     let password_hash = UserComplex::hash_password(&instr.new_password).await?;
 
-    let repl = UserCredsRepl {
+    let credentials_repl = UserCredsRepl {
         id: user_id,
         password_hash,
     };
 
     nucl.coord(async move |context| {
         //
-        UpdateUser::PasswordHash { repl: &repl }
-            .step_on(repo, context)
-            .await?;
+        UpdateUser::PasswordHash {
+            repl: &credentials_repl,
+        }
+        .step_on(repo, context)
+        .await?;
 
         accept(())
     })
@@ -281,11 +283,11 @@ pub async fn reserve_avatar<N, C, R, P, I>(
 ) -> BaseRest<ReserveUserAvatarVal>
 where
     C: Context + Send,
-    N: Nucl<Context = C, Error = BaseError>,
+    N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<ReptRead>,
     R: UserRepo<C> + Send + Sync,
     P: Prom<C> + Send + Sync,
-    I: ImagePool,
+    I: ImagePool + Sync,
 {
     ImageComplex::ensure_byte_length(
         image_config,
@@ -343,7 +345,7 @@ where
                 },
             });
 
-            batch_delays.push(Some(Duration::from_secs(15 * 60)));
+            batch_delays.push(Some(Duration::from_mins(15)));
 
             let batch_tasks = batch_ids
                 .iter()
@@ -366,26 +368,23 @@ where
         })
         .await?;
 
-    let slot = match upload_required {
+    let slot = if upload_required {
         //
-        true => {
-            //
-            let upload_spec = ImageUploadSpec {
-                object_key: &object_key,
-                content_type: image_ext.content_type(),
-                content_length: new_byte_len,
-            };
+        let upload_spec = ImageUploadSpec {
+            object_key: &object_key,
+            content_type: image_ext.content_type(),
+            content_length: new_byte_len,
+        };
 
-            let upload_slot = image_pool.get_upload_slot(upload_spec).await?;
+        let upload_slot = image_pool.get_upload_slot(upload_spec).await?;
 
-            Some(ImageUploadSlotView {
-                put_url: upload_slot.url.to_string(),
-                image_version: avatar_version,
-                headers: upload_slot.headers,
-            })
-        }
-
-        false => None,
+        Some(ImageUploadSlotView {
+            put_url: upload_slot.url.to_string(),
+            image_version: avatar_version,
+            headers: upload_slot.headers,
+        })
+    } else {
+        None
     };
 
     accept(ReserveUserAvatarVal { slot })
@@ -411,9 +410,84 @@ pub async fn mark_avatar_uploaded<N, C, R, I>(
 ) -> BaseRest<()>
 where
     C: Context + Send,
-    N: Nucl<Context = C, Error = BaseError>,
+    N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<ReptRead>,
     R: UserRepo<C> + Send + Sync,
+    I: ImageManager,
+{
+    let avatar_key = prepare_avatar_upload::<C, R, I>(
+        repo,
+        image_manager,
+        &token,
+        &id,
+        instr.image_version,
+    )
+    .await?;
+
+    let Some(avatar_key) = avatar_key else {
+        return accept(());
+    };
+
+    let avatar_repl = UserAvatarRepl {
+        id,
+        avatar_version: instr.image_version,
+        avatar_key: Some(avatar_key),
+        is_avatar_uploaded: true,
+    };
+
+    nucl.coord(async move |context| {
+        //
+        let locked_user_info = GetUserInfoExcluded::Id {
+            id: &avatar_repl.id,
+        }
+        .step_on(repo, context)
+        .await?;
+
+        if locked_user_info.avatar_version != Some(instr.image_version)
+            || locked_user_info.avatar_key.as_deref()
+                != avatar_repl.avatar_key.as_deref()
+        {
+            let err_message = trl("error-stale-avatar-upload");
+
+            tracing::warn!(
+                err_variant = ?ExpectedVariant::Args,
+                err_message = %err_message,
+                user_id = %token.user_id,
+                affected_user_id = %avatar_repl.id,
+                image_version = instr.image_version,
+                locked_image_version = locked_user_info.avatar_version,
+                avatar_key = ?avatar_repl.avatar_key,
+                "expected error: stale user avatar upload",
+            );
+
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: err_message,
+            });
+        }
+
+        UpdateUser::MarkAvatarUploaded { repl: &avatar_repl }
+            .step_on(repo, context)
+            .await?;
+
+        accept(())
+    })
+    .await?;
+
+    accept(())
+}
+
+// Loads and validates the user avatar upload state.
+async fn prepare_avatar_upload<C, R, I>(
+    repo: &R,
+    image_manager: &I,
+    token: &UserToken,
+    id: &str,
+    image_version: u32,
+) -> BaseRest<Option<String>>
+where
+    C: Context,
+    R: UserRepo<C>,
     I: ImageManager,
 {
     if token.user_id != id {
@@ -434,9 +508,9 @@ where
         });
     }
 
-    let user_info = GetUserInfo::Id { id: &id }.run_on(repo).await?;
+    let user_info = GetUserInfo::Id { id }.run_on(repo).await?;
 
-    if user_info.avatar_version != Some(instr.image_version) {
+    if user_info.avatar_version != Some(image_version) {
         //
         let err_message = trl("error-stale-avatar-upload");
 
@@ -445,7 +519,7 @@ where
             err_message = %err_message,
             user_id = %token.user_id,
             affected_user_id = %id,
-            image_version = instr.image_version,
+            image_version,
             stored_image_version = user_info.avatar_version,
             "expected error: stale user avatar upload",
         );
@@ -457,7 +531,7 @@ where
     }
 
     if user_info.is_avatar_uploaded == Some(true) {
-        return accept(());
+        return accept(None);
     }
 
     let avatar_key = user_info.avatar_key.clone().ok_or_else(|| {
@@ -469,7 +543,7 @@ where
             err_message = %err_message,
             user_id = %token.user_id,
             affected_user_id = %id,
-            image_version = instr.image_version,
+            image_version,
             stored_image_version = user_info.avatar_version,
             "expected error: stale user avatar upload",
         );
@@ -480,69 +554,24 @@ where
         }
     })?;
 
-    if !image_manager.object_exists(&avatar_key).await? {
-        //
-        let err_message = trl("error-stale-avatar-upload");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Args,
-            err_message = %err_message,
-            user_id = %token.user_id,
-            affected_user_id = %id,
-            image_version = instr.image_version,
-            avatar_key = %avatar_key,
-            "expected error: stale user avatar upload",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message: err_message,
-        });
+    if image_manager.object_exists(&avatar_key).await? {
+        return accept(Some(avatar_key));
     }
 
-    let repl = UserAvatarRepl {
-        id,
-        avatar_version: instr.image_version,
-        avatar_key: Some(avatar_key),
-        is_avatar_uploaded: true,
-    };
+    let err_message = trl("error-stale-avatar-upload");
 
-    nucl.coord(async move |context| {
-        //
-        let locked_user_info = GetUserInfoExcluded::Id { id: &repl.id }
-            .step_on(repo, context)
-            .await?;
+    tracing::warn!(
+        err_variant = ?ExpectedVariant::Args,
+        err_message = %err_message,
+        user_id = %token.user_id,
+        affected_user_id = %id,
+        image_version,
+        avatar_key = %avatar_key,
+        "expected error: stale user avatar upload",
+    );
 
-        if locked_user_info.avatar_version != Some(instr.image_version)
-            || locked_user_info.avatar_key.as_deref()
-                != repl.avatar_key.as_deref()
-        {
-            let err_message = trl("error-stale-avatar-upload");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_message = %err_message,
-                user_id = %token.user_id,
-                affected_user_id = %repl.id,
-                image_version = instr.image_version,
-                locked_image_version = locked_user_info.avatar_version,
-                avatar_key = ?repl.avatar_key,
-                "expected error: stale user avatar upload",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message: err_message,
-            });
-        }
-
-        UpdateUser::MarkAvatarUploaded { repl: &repl }
-            .step_on(repo, context)
-            .await?;
-
-        accept(())
+    Err(BaseError::Expected {
+        variant: ExpectedVariant::Args,
+        message: err_message,
     })
-    .await?;
-
-    accept(())
 }

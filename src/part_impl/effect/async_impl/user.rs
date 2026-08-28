@@ -24,7 +24,7 @@ use crate::part::repo::user::UserRepo;
 pub async fn touch_last_active<C, R>(repo: &R, event: UserActiveEvent)
 where
     C: Context,
-    R: UserRepo<C>,
+    R: UserRepo<C> + Sync,
 {
     if (UpdateUser::TouchLastActive { id: &event.user_id })
         .run_on(repo)
@@ -43,7 +43,7 @@ where
 pub async fn notify_invitor<C, R>(repo: &R, event: UserSignedUpEvent)
 where
     C: Context,
-    R: TeamRepo<C> + SystemMailRepo,
+    R: TeamRepo<C> + SystemMailRepo + Sync,
 {
     let team_info = GetTeamInfo::Id { id: &event.team_id }.run_on(repo).await;
 

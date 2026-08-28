@@ -77,7 +77,7 @@ fn convert_poprako_document(
         ));
     }
 
-    let page_count = project.pages.len() as i32;
+    let page_count = project.pages.len();
 
     let mut page_indexes = HashSet::with_capacity(project.pages.len());
 
@@ -85,8 +85,7 @@ fn convert_poprako_document(
 
     for page in project.pages {
         //
-        if page.page_index < 0
-            || page.page_index >= page_count
+        if page.page_index >= page_count
             || !page_indexes.insert(page.page_index)
         {
             return Err(invalid_poprako_content("invalid PopRaKo page index"));
@@ -107,7 +106,7 @@ fn convert_poprako_document(
 
         for unit in page.units {
             //
-            if unit.unit_index < 0 || !unit_indexes.insert(unit.unit_index) {
+            if !unit_indexes.insert(unit.unit_index) {
                 //
                 return Err(invalid_poprako_content(
                     "invalid PopRaKo unit index",
@@ -150,7 +149,7 @@ fn convert_poprako_document(
     if pages
         .iter()
         .enumerate()
-        .any(|(index, page)| page.page_index != index as i32)
+        .any(|(index, page)| page.page_index != index)
     {
         return Err(invalid_poprako_content(
             "PopRaKo page indexes are incomplete",
@@ -172,11 +171,10 @@ fn build_translation(
         return None;
     }
 
-    let translated_text = match label_plus {
-        //
-        true => parsed_unit.main_text.clone(),
-
-        false => parsed_unit.translated_text.clone(),
+    let translated_text = if label_plus {
+        parsed_unit.main_text.clone()
+    } else {
+        parsed_unit.translated_text.clone()
     };
 
     translated_text.map(|translated_text| UnitTranslation {
@@ -197,11 +195,10 @@ fn build_revision(
         return None;
     }
 
-    let proofread_text = match label_plus {
-        //
-        true => parsed_unit.main_text.clone(),
-
-        false => parsed_unit.proofread_text.clone(),
+    let proofread_text = if label_plus {
+        parsed_unit.main_text.clone()
+    } else {
+        parsed_unit.proofread_text.clone()
     };
 
     let is_proofread =
@@ -288,14 +285,14 @@ fn build_unit_create(
 pub struct ChapterImportComplex;
 
 impl ChapterImportComplex {
-    /// Parses LabelPlus text into chapter import pages.
+    /// Parses `LabelPlus` text into chapter import pages.
     pub fn parse_label_plus(
         content: &str,
     ) -> BaseRest<Vec<PageTranslationImport>> {
         parse_label_plus(content)
     }
 
-    /// Parses PopRaKo JSON text into chapter import pages.
+    /// Parses `PopRaKo` JSON text into chapter import pages.
     pub fn parse_poprako(
         content: &str,
     ) -> BaseRest<Vec<PageTranslationImport>> {

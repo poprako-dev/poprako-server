@@ -31,7 +31,7 @@ pub async fn handle<N, R, D>(
     task: &ChapterPayload,
 ) -> TaskFlow
 where
-    N: Nucl<Context = RdbContext, Error = BaseError>,
+    N: Nucl<Context = RdbContext, Error = BaseError> + Sync,
     R: ChapterRepo<RdbContext>
         + ChapterWorkflowRecordRepo<RdbContext>
         + Send
@@ -66,7 +66,7 @@ async fn handle_raw_provide<N, R, D>(
     actor_user_id: Option<String>,
 ) -> TaskFlow
 where
-    N: Nucl<Context = RdbContext, Error = BaseError>,
+    N: Nucl<Context = RdbContext, Error = BaseError> + Sync,
     R: ChapterRepo<RdbContext>
         + ChapterWorkflowRecordRepo<RdbContext>
         + Send

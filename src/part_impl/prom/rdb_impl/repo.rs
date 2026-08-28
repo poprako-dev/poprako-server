@@ -40,12 +40,12 @@ pub struct RdbPromRepo<R> {
 
 impl<R> RdbPromRepo<R> {
     /// Builds a new prom repository wrapping the given application repo.
-    pub fn new(repo: R) -> Self {
+    pub const fn new(repo: R) -> Self {
         Self { repo }
     }
 
     /// Returns the application repository used by topic handlers.
-    pub fn inner(&self) -> &R {
+    pub const fn inner(&self) -> &R {
         &self.repo
     }
 }
@@ -79,7 +79,7 @@ pub struct ClaimPending<'a> {
 
 impl<'a> ClaimPending<'a> {
     /// Builds an operation that claims the observed message attempt.
-    pub fn new(id: &'a str, lease: i64) -> Self {
+    pub const fn new(id: &'a str, lease: i64) -> Self {
         Self { id, lease }
     }
 }
@@ -98,7 +98,7 @@ pub struct CompleteMessage<'a> {
 
 impl<'a> CompleteMessage<'a> {
     /// Builds an operation that completes the identified worker attempt.
-    pub fn new(id: &'a str, lease: i64) -> Self {
+    pub const fn new(id: &'a str, lease: i64) -> Self {
         Self { id, lease }
     }
 }
@@ -119,7 +119,7 @@ pub struct FailMessage<'a> {
 
 impl<'a> FailMessage<'a> {
     /// Builds an operation that permanently fails the message identified by `id`.
-    pub fn new(id: &'a str, lease: i64, err_msg: &'a str) -> Self {
+    pub const fn new(id: &'a str, lease: i64, err_msg: &'a str) -> Self {
         //
         Self {
             id,
@@ -147,7 +147,7 @@ pub struct RetryMessage<'a> {
 
 impl<'a> RetryMessage<'a> {
     /// Builds an operation that schedules the message identified by `id` for retry.
-    pub fn new(
+    pub const fn new(
         id: &'a str,
         lease: i64,
         err_msg: &'a str,
@@ -173,7 +173,7 @@ pub struct ResetStuck<'a> {
 
 impl<'a> ResetStuck<'a> {
     /// Builds an operation that resets messages stuck before the cutoff.
-    pub fn new(before: &'a OffsetDateTime) -> Self {
+    pub const fn new(before: &'a OffsetDateTime) -> Self {
         Self { before }
     }
 }
@@ -192,7 +192,7 @@ pub struct PurgeCompleted<'a> {
 
 impl<'a> PurgeCompleted<'a> {
     /// Builds terminal-message purge cutoffs.
-    pub fn new(
+    pub const fn new(
         completed_before: &'a OffsetDateTime,
         dead_before: &'a OffsetDateTime,
     ) -> Self {

@@ -24,7 +24,7 @@ use crate::part::image::{
 use crate::result::{BaseError, BaseRest, accept};
 
 // Expiration duration for presigned upload URLs (10 minutes).
-const PUT_SIGNED_EXPIRATION: Duration = Duration::from_secs(600);
+const PUT_SIGNED_EXPIRATION: Duration = Duration::from_mins(10);
 
 // Cloudflare Image Resizing options for public thumbnail URLs.
 const THUMBNAIL_TRANSFORM: &str =
@@ -45,7 +45,8 @@ pub struct R2ImagePool {
 
 impl R2ImagePool {
     /// Creates an image pool from an already configured S3-compatible client.
-    pub fn new(client: Client, bucket: String, domain: String) -> Self {
+    #[must_use]
+    pub const fn new(client: Client, bucket: String, domain: String) -> Self {
         //
         Self {
             client,
@@ -55,6 +56,11 @@ impl R2ImagePool {
     }
 
     /// Reads Cloudflare R2 settings from environment variables.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when required settings are missing or the client
+    /// cannot be constructed.
     pub fn from_env() -> anyhow::Result<Self> {
         //
         // Internal implementation detail.
@@ -159,7 +165,7 @@ impl ImagePool for R2ImagePool {
                     BaseError::Unrecoverable {
                         message: format!(
                             "[R2ImagePool::get_upload_slot] failed to build presigning config: {}",
-                            err
+                            err,
                         ),
                     }
                 },
@@ -184,10 +190,10 @@ impl ImagePool for R2ImagePool {
                 );
 
                 BaseError::Unrecoverable {
-                    message: format!(
-                        "[R2ImagePool::get_upload_slot] failed to generate presigned put URL: {}",
-                        err
-                    ),
+                        message: format!(
+                            "[R2ImagePool::get_upload_slot] failed to generate presigned put URL: {}",
+                            err,
+                        ),
                 }
             })?;
 
@@ -202,7 +208,7 @@ impl ImagePool for R2ImagePool {
             BaseError::Unrecoverable {
                 message: format!(
                     "[R2ImagePool::get_upload_slot] failed to parse presigned URI: {}",
-                    err
+                    err,
                 ),
             }
         })?;
@@ -240,7 +246,8 @@ impl ImageManager for R2ImagePool {
                 BaseError::Unrecoverable {
                     message: format!(
                         "[R2ImagePool::delete_object] failed to delete '{}': {}",
-                        key, err
+                        key,
+                        err,
                     ),
                 }
             })
@@ -277,7 +284,7 @@ impl ImageManager for R2ImagePool {
                 Err(BaseError::Unrecoverable {
                     message: format!(
                         "[R2ImagePool::object_exists] failed to check '{}': {}",
-                        key, err
+                        key, err,
                     ),
                 })
             }
@@ -298,7 +305,7 @@ fn build_public_url(
         return Err(BaseError::Unrecoverable {
             message: format!(
                 "[R2ImagePool::{}] custom domain is not configured",
-                operation
+                operation,
             ),
         });
     }
@@ -306,16 +313,10 @@ fn build_public_url(
     let domain = domain.trim_end_matches('/');
 
     let url_string =
-        match domain.starts_with("http://") || domain.starts_with("https://") {
-            //
-            // Internal implementation detail.
-            true => {
-                format!("{}/{}", domain, path)
-            }
-
-            false => {
-                format!("https://{}/{}", domain, path)
-            }
+        if domain.starts_with("http://") || domain.starts_with("https://") {
+            format!("{}/{}", domain, path)
+        } else {
+            format!("https://{}/{}", domain, path)
         };
 
     Url::parse(&url_string).map_err(|err| {
@@ -329,7 +330,7 @@ fn build_public_url(
         BaseError::Unrecoverable {
             message: format!(
                 "[R2ImagePool::{}] failed to parse URL '{}': {}",
-                operation, url_string, err
+                operation, url_string, err,
             ),
         }
     })

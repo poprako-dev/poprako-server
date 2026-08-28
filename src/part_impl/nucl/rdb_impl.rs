@@ -82,7 +82,8 @@ pub struct RdbNucl<L = ReptRead> {
 
 impl<L> RdbNucl<L> {
     /// Builds a new `RdbNucl` from an [`RdbCore`] connection pool.
-    pub fn new(core: RdbCore) -> Self {
+    #[must_use]
+    pub const fn new(core: RdbCore) -> Self {
         //
         Self {
             core,

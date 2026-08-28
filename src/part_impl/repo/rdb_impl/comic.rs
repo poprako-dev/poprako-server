@@ -278,7 +278,7 @@ where
         &self,
         context: &mut RdbContext<L>,
         oper: &AllocComicChapterIndex<'_>,
-    ) -> BaseRest<i32> {
+    ) -> BaseRest<usize> {
         incr_chapter_next_index(context.conn(), oper.id).await
     }
 }

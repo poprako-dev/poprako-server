@@ -9,7 +9,7 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 
 // Trim a term source and reject empty values after normalization.
-fn normalize_source(source: String) -> BaseRest<String> {
+fn normalize_source(source: &str) -> BaseRest<String> {
     //
     let source = source.trim().to_string();
 
@@ -111,11 +111,10 @@ fn normalize_comment(comment: Option<String>) -> Option<String> {
         //
         let comment = comment.trim().to_string();
 
-        match comment.is_empty() {
-            //
-            true => None,
-
-            false => Some(comment),
+        if comment.is_empty() {
+            None
+        } else {
+            Some(comment)
         }
     })
 }
@@ -134,7 +133,7 @@ impl TermComplex {
     /// Build a validated terminology entry.
     pub fn build_entry(
         termbase_id: String,
-        source: String,
+        source: &str,
         targets: Vec<String>,
         comment: Option<String>,
         creator_id: String,
@@ -158,7 +157,7 @@ impl TermComplex {
 
     /// Build normalized portable terminology-entry content.
     pub fn build_import(
-        source: String,
+        source: &str,
         targets: Vec<String>,
         comment: Option<String>,
     ) -> BaseRest<TermImport> {
@@ -179,7 +178,7 @@ impl TermComplex {
     /// Build a validated terminology-entry replacement.
     pub fn build_update(
         id: String,
-        source: String,
+        source: &str,
         targets: Vec<String>,
         comment: Option<String>,
     ) -> BaseRest<TermRepl> {

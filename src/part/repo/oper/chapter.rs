@@ -1,7 +1,7 @@
 use poprako_orchestra::Oper;
 
 use crate::model::read::proj::chapter::ChapterInfo;
-use crate::model::read::proj::unit::UnitCounterDelta;
+use crate::model::read::proj::unit::UnitCountDelta;
 use crate::model::read::spec::chapter::ChapterListSpec;
 use crate::model::write::chapter::{
     ChapterEntry, ChapterPatch, ChapterStageRepl,
@@ -134,13 +134,13 @@ pub struct SetChapterPageCounters<'a> {
     /// Chapter identifier.
     pub id: &'a str,
     /// Number of pages.
-    pub page_count: i32,
+    pub page_count: usize,
     /// Total unit count.
-    pub total_unit_count: i32,
+    pub total_unit_count: usize,
     /// Translated unit count.
-    pub translated_unit_count: i32,
+    pub translated_unit_count: usize,
     /// Proofread unit count.
-    pub proofread_unit_count: i32,
+    pub proofread_unit_count: usize,
 }
 
 /// Adjusts the unit counters for a chapter by a delta.
@@ -151,7 +151,7 @@ pub struct AdjustChapterUnitCounters<'a> {
     /// Chapter identifier.
     pub id: &'a str,
     /// Counter delta values.
-    pub delta: UnitCounterDelta,
+    pub delta: UnitCountDelta,
 }
 
 /// Unpins chapters for a comic, excluding a specific chapter.

@@ -31,7 +31,7 @@ READ_ONLY_COMMAND = re.compile(
 def add_confirmation_context() -> None:
     output = {
         "hookSpecificOutput": {
-            "hookEventName": "PermissionRequest",
+            "hookEventName": "PreToolUse",
             "additionalContext": (
                 "This operation touches protected project paths: linters/ or "
                 "linters-extra/. Keep the normal user confirmation prompt."
@@ -99,8 +99,8 @@ def main() -> int:
     if tool_name == "Bash" and shell_touches_protected_path(command):
         add_confirmation_context()
 
-    # PermissionRequest is deliberately left undecided. Codex then presents
-    # its normal confirmation prompt for the pending tool call.
+    # PreToolUse only adds context. Codex still presents its normal
+    # confirmation prompt later when the pending tool call needs approval.
 
     return 0
 

@@ -24,7 +24,7 @@ pub struct WorksetInfoView {
     pub team_id: String,
 
     /// Ordinal position of the workset within its team.
-    pub index: i32,
+    pub index: usize,
 
     /// Workset display name.
     pub name: String,
@@ -33,7 +33,7 @@ pub struct WorksetInfoView {
     pub description: Option<String>,
 
     /// Total number of comics in this workset.
-    pub comic_count: i32,
+    pub comic_count: usize,
 
     /// Timestamp of workset creation, in milliseconds since Unix epoch.
     pub created_at: i64,

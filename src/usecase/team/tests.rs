@@ -17,6 +17,7 @@ mod avatar;
 // list_infos(list_infos)(positive): list should return paged teams in repo order.
 // list_infos(list_infos)(negative): missing page contents should return an empty list.
 // list_infos(list_infos)(negative): listing all teams should require super-admin perm.
+// list_infos(list_infos)(negative): filtering by another user should be rejected.
 // update_info(update_info)(positive): existing team should update name and description.
 // update_info(update_info)(negative): missing team should propagate an argument error.
 // reserve_avatar(reserve_avatar)(positive): first reservation should update avatar state, enqueue a check, and return a put URL.
@@ -408,6 +409,27 @@ async fn list_infos_all_teams_requires_sadmin() {
             .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Perm);
+}
+
+#[tokio::test]
+async fn list_infos_rejects_another_user_filter() {
+    //
+    let mock = Mock::new();
+
+    mock.seed_team(team("team-1", "A", "Desc"));
+
+    mock.seed_member(member("member-1", "user-2", "team-1"));
+
+    let err = list_infos(
+        (&mock, &mock),
+        token("user-1"),
+        list_instr(Some("user-2"), 0, 10),
+    )
+    .await
+    .err()
+    .unwrap();
+
+    assert_expected_message(err, ExpectedVariant::Perm, "error-forbidden");
 }
 
 #[tokio::test]

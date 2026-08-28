@@ -153,7 +153,7 @@ pub struct AssignmentAspectRow {
 }
 
 impl AssignmentAspectRow {
-    pub fn new(updated_at: OffsetDateTime) -> Self {
+    pub const fn new(updated_at: OffsetDateTime) -> Self {
         //
         Self {
             f_assigned_raw_provider_at: None,
@@ -168,7 +168,10 @@ impl AssignmentAspectRow {
         }
     }
 
-    pub fn roles(mut self, timestamps: AssignmentRoleTimestamps) -> Self {
+    pub const fn roles(
+        mut self,
+        timestamps: &AssignmentRoleTimestamps,
+    ) -> Self {
         //
         self.f_assigned_raw_provider_at = Some(timestamps.f_raw_provider);
 

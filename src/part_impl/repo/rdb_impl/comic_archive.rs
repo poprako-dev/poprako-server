@@ -116,13 +116,13 @@ fn order_unit_infos(unit_infos: Vec<UnitInfo>) -> BaseRest<Vec<UnitInfo>> {
         Vec::with_capacity(infos_by_id.len()),
     );
 
-    while let Some(id) = current_id {
+    while let Some(id) = current_id.as_ref() {
         //
-        let Some(unit_info) = infos_by_id.remove(&id) else {
+        let Some(unit_info) = infos_by_id.remove(id) else {
             return Err(corrupt_unit_chain_err());
         };
 
-        current_id = unit_info.next_id.clone();
+        current_id.clone_from(&unit_info.next_id);
 
         if unit_info.hidden_at.is_none() {
             visible_infos.push(unit_info);
@@ -136,13 +136,11 @@ fn order_unit_infos(unit_infos: Vec<UnitInfo>) -> BaseRest<Vec<UnitInfo>> {
     accept(visible_infos)
 }
 
-/// Lock every active descendant needed by an archive transaction.
-#[instrument(level = "info", skip_all)]
-// Build a full snapshot of all descendants and lock them for commit safety.
-async fn get_snapshot_excluded(
+// Lock and load the root Comic and its Workset for an archive snapshot.
+async fn load_archive_root(
     conn: &mut RdbConn,
     source_comic_id: &str,
-) -> BaseRest<ComicArchiveSnapshot> {
+) -> BaseRest<(ComicInfo, WorksetInfo)> {
     //
     let comic_row = t_comic
         .filter(comic_id.eq(source_comic_id))
@@ -201,10 +199,19 @@ async fn get_snapshot_excluded(
         });
     };
 
-    let workset_info = Into::<WorksetInfo>::into(workset_row);
+    let workset_info = WorksetInfo::try_from(workset_row)?;
 
+    accept((comic_info, workset_info))
+}
+
+// Lock and load the source Comic's ordered Chapters.
+async fn load_archive_chapters(
+    conn: &mut RdbConn,
+    source_comic_id: &str,
+) -> BaseRest<Vec<ChapterInfo>> {
+    //
     let chapter_rows = t_chapter
-        .filter(chapter_comic_id.eq(&comic_info.id))
+        .filter(chapter_comic_id.eq(source_comic_id))
         .select(ChapterInfoRow::as_select())
         .order_by(chapter_id.asc())
         .for_update()
@@ -217,13 +224,21 @@ async fn get_snapshot_excluded(
         .map(ChapterInfo::try_from)
         .collect::<BaseRest<Vec<ChapterInfo>>>()?;
 
-    let source_chapter_ids = chapter_infos
-        .iter()
-        .map(|chapter_info| chapter_info.id.clone())
-        .collect::<Vec<_>>();
+    accept(chapter_infos)
+}
 
+// Lock and load workflow records, invitations, assignments, and assignees.
+async fn load_archive_chapter_relations(
+    conn: &mut RdbConn,
+    source_chapter_ids: &[String],
+) -> BaseRest<(
+    Vec<ChapterWorkflowRecordInfo>,
+    Vec<AssignmentInfo>,
+    HashMap<String, UserInfo>,
+)> {
+    //
     let workflow_record_rows = t_chapter_workflow_record
-        .filter(workflow_record_chapter_id.eq_any(&source_chapter_ids))
+        .filter(workflow_record_chapter_id.eq_any(source_chapter_ids))
         .select(ChapterWorkflowRecordInfoRow::as_select())
         .order_by((
             workflow_record_chapter_id.asc(),
@@ -241,7 +256,7 @@ async fn get_snapshot_excluded(
         .collect::<BaseRest<Vec<_>>>()?;
 
     let _ = t_assignment_invitation
-        .filter(invitation_chapter_id.eq_any(&source_chapter_ids))
+        .filter(invitation_chapter_id.eq_any(source_chapter_ids))
         .select(invitation_id)
         .for_update()
         .load::<String>(conn)
@@ -249,7 +264,7 @@ async fn get_snapshot_excluded(
         .map_err(diesel)?;
 
     let assignment_rows = t_assignment
-        .filter(assignment_chapter_id.eq_any(&source_chapter_ids))
+        .filter(assignment_chapter_id.eq_any(source_chapter_ids))
         .select(AssignmentInfoRow::as_select())
         .for_update()
         .load::<AssignmentInfoRow>(conn)
@@ -284,8 +299,17 @@ async fn get_snapshot_excluded(
         })
         .collect::<BaseRest<HashMap<_, _>>>()?;
 
+    accept((workflow_record_infos, assignment_infos, user_infos))
+}
+
+// Lock and load ordered Pages and their Units.
+async fn load_archive_pages(
+    conn: &mut RdbConn,
+    source_chapter_ids: &[String],
+) -> BaseRest<(Vec<PageInfo>, Vec<UnitInfo>)> {
+    //
     let page_rows = t_page
-        .filter(page_chapter_id.eq_any(&source_chapter_ids))
+        .filter(page_chapter_id.eq_any(source_chapter_ids))
         .select(PageInfoRow::as_select())
         .order_by((page_chapter_id.asc(), page_index.asc(), page_id.asc()))
         .for_update()
@@ -312,13 +336,27 @@ async fn get_snapshot_excluded(
         .await
         .map_err(diesel)?;
 
-    let (unit_infos, mut assignment_infos_by_chapter) = (
-        unit_rows
-            .into_iter()
-            .map(Into::into)
-            .collect::<Vec<UnitInfo>>(),
-        HashMap::<String, Vec<AssignmentInfo>>::new(),
-    );
+    let unit_infos = unit_rows
+        .into_iter()
+        .map(Into::into)
+        .collect::<Vec<UnitInfo>>();
+
+    accept((page_infos, unit_infos))
+}
+
+// Assemble loaded archive descendants into Chapter snapshots.
+fn assemble_chapter_snapshots(
+    source_comic_id: &str,
+    chapter_infos: Vec<ChapterInfo>,
+    workflow_record_infos: Vec<ChapterWorkflowRecordInfo>,
+    assignment_infos: Vec<AssignmentInfo>,
+    user_infos: &HashMap<String, UserInfo>,
+    page_infos: Vec<PageInfo>,
+    unit_infos: Vec<UnitInfo>,
+) -> BaseRest<Vec<ComicArchiveChapterSnapshot>> {
+    //
+    let mut assignment_infos_by_chapter =
+        HashMap::<String, Vec<AssignmentInfo>>::new();
 
     for mut assignment_info in assignment_infos {
         //
@@ -415,6 +453,43 @@ async fn get_snapshot_excluded(
             }
         })
         .collect();
+
+    accept(chapter_snapshots)
+}
+
+/// Lock every active descendant needed by an archive transaction.
+// Build a full snapshot of all descendants and lock them for commit safety.
+#[instrument(level = "info", skip_all)]
+async fn get_snapshot_excluded(
+    conn: &mut RdbConn,
+    source_comic_id: &str,
+) -> BaseRest<ComicArchiveSnapshot> {
+    //
+    let (comic_info, workset_info) =
+        load_archive_root(conn, source_comic_id).await?;
+
+    let chapter_infos = load_archive_chapters(conn, &comic_info.id).await?;
+
+    let source_chapter_ids = chapter_infos
+        .iter()
+        .map(|chapter_info| chapter_info.id.clone())
+        .collect::<Vec<_>>();
+
+    let (workflow_record_infos, assignment_infos, user_infos) =
+        load_archive_chapter_relations(conn, &source_chapter_ids).await?;
+
+    let (page_infos, unit_infos) =
+        load_archive_pages(conn, &source_chapter_ids).await?;
+
+    let chapter_snapshots = assemble_chapter_snapshots(
+        source_comic_id,
+        chapter_infos,
+        workflow_record_infos,
+        assignment_infos,
+        &user_infos,
+        page_infos,
+        unit_infos,
+    )?;
 
     accept(ComicArchiveSnapshot {
         comic_info,

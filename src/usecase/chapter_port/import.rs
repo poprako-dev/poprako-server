@@ -14,7 +14,8 @@ use crate::complex::chapter_port::{
 use crate::complex::unit::UnitComplex;
 use crate::data::instr::chapter_port::ImportChapterTranslationInstr;
 use crate::data::val::chapter_port::ImportChapterTranslationVal;
-use crate::model::read::proj::unit::UnitCounters;
+use crate::model::page_port::PageTranslationImport;
+use crate::model::read::proj::unit::{UnitCountMetrics, UnitOrder};
 use crate::model::shared::user::UserToken;
 use crate::model::unit_port::UnitTranslationImport;
 use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
@@ -46,8 +47,8 @@ use crate::value::chapter_workflow_record::{
 use crate::value::role::RoleField;
 use crate::value::unit::UnitEditPerm;
 
-#[instrument(level = "info", skip(nucl, repo))]
 /// Imports chapter translation content through the Unit edit pipeline.
+#[instrument(level = "info", skip(nucl, repo))]
 pub async fn import<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
@@ -56,7 +57,7 @@ pub async fn import<N, C, R>(
 ) -> BaseRest<ImportChapterTranslationVal>
 where
     C: Context + Send,
-    N: Nucl<Context = C, Error = BaseError>,
+    N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<ReptRead>,
     R: AssignmentRepo<C>
         + ChapterRepo<C>
@@ -67,8 +68,149 @@ where
         + Send
         + Sync,
 {
+    let (edit_perm, format, label_plus, imported_pages, stages) =
+        prepare_import(repo, &token, &instr, &chapter_id).await?;
+
+    let val = nucl
+        .coord(async move |context| {
+            //
+            let chapter_info = GetChapterInfoExcluded {
+                id: &chapter_id,
+                incls: &[],
+            }
+            .step_on(repo, context)
+            .await?;
+
+            ChapterComplex::ensure_chapter_writable(&chapter_info)?;
+
+            let page_scopes = ListPageInfos {
+                chapter_id: &chapter_id,
+            }
+            .step_on(repo, context)
+            .await?;
+
+            ChapterImportComplex::validate_page_count(
+                imported_pages.len(),
+                page_scopes.len(),
+            )?;
+
+            let mut imported_unit_count = 0;
+
+            let mut final_page_counters = Vec::with_capacity(page_scopes.len());
+
+            for page_scope in &page_scopes {
+                //
+                let imported_page = imported_pages
+                    .iter()
+                    .find(|page| page.page_index == page_scope.index)
+                    .ok_or_else(|| BaseError::Expected {
+                        variant: ExpectedVariant::Args,
+                        message: trl("error-invalid-chapter-import-content"),
+                    })?;
+
+                let final_counters = replace_page_units(
+                    repo,
+                    context,
+                    &page_scope.id,
+                    imported_page,
+                    &token.user_id,
+                    edit_perm,
+                    label_plus,
+                )
+                .await?;
+
+                final_page_counters.push(final_counters);
+
+                imported_unit_count += imported_page.units.len();
+            }
+
+            let chapter_counters = final_page_counters.iter().copied().fold(
+                UnitCountMetrics::default(),
+                |mut counters, page_counters| {
+                    //
+                    counters.total += page_counters.total;
+
+                    counters.translated += page_counters.translated;
+
+                    counters.proofread += page_counters.proofread;
+
+                    counters
+                },
+            );
+
+            SetChapterPageCounters {
+                id: &chapter_info.id,
+                page_count: page_scopes.len(),
+                total_unit_count: chapter_counters.total,
+                translated_unit_count: chapter_counters.translated,
+                proofread_unit_count: chapter_counters.proofread,
+            }
+            .step_on(repo, context)
+            .await?;
+
+            TouchComicLastActive {
+                id: &chapter_info.comic_id,
+            }
+            .step_on(repo, context)
+            .await?;
+
+            let import_val = ImportChapterTranslationVal {
+                imported_page_count: page_scopes.len(),
+                imported_unit_count,
+            };
+
+            let workflow_record_entry = ChapterWorkflowRecordEntry::new(
+                chapter_info.id.clone(),
+                Some(token.user_id.clone()),
+                ChapterWorkflowRecordPayload::TranslationImported {
+                    format,
+                    imported_page_count: import_val.imported_page_count,
+                    imported_unit_count: import_val.imported_unit_count,
+                },
+            );
+
+            CreateChapterWorkflowRecords {
+                entries: std::slice::from_ref(&workflow_record_entry),
+            }
+            .step_on(repo, context)
+            .await?;
+
+            start_pending_stages(
+                repo,
+                context,
+                &chapter_info.id,
+                Some(token.user_id.clone()),
+                ChapterWorkflowRecordOrigin::TranslationImport,
+                &stages,
+            )
+            .await?;
+
+            accept(import_val)
+        })
+        .await?;
+
+    accept(val)
+}
+
+// Validates permissions and parses the submitted translation content.
+async fn prepare_import<C, R>(
+    repo: &R,
+    token: &UserToken,
+    instr: &ImportChapterTranslationInstr,
+    chapter_id: &str,
+) -> BaseRest<(
+    UnitEditPerm,
+    TranslationFormat,
+    bool,
+    Vec<PageTranslationImport>,
+    Vec<Stage>,
+)>
+where
+    C: Context,
+    R: AssignmentRepo<C> + Sync,
+{
     let assignment_info = FindAssignmentInfo::ChapterUser {
-        chapter_id: &chapter_id,
+        chapter_id,
         user_id: &token.user_id,
     }
     .run_on(repo)
@@ -80,7 +222,7 @@ where
         tracing::warn!(
             err_variant = ?ExpectedVariant::Perm,
             err_message = %err_message,
-            chapter_id = %chapter_id,
+            chapter_id,
             user_id = %token.user_id,
             operation = "import chapter translation",
             "expected error: chapter import assignment required",
@@ -120,202 +262,90 @@ where
 
     let stages = import_stages(edit_perm);
 
-    let val = nucl
-        .coord(async move |context| {
-            //
-            let chapter_info = GetChapterInfoExcluded {
-                id: &chapter_id,
-                incls: &[],
-            }
-            .step_on(repo, context)
-            .await?;
-
-            ChapterComplex::ensure_chapter_writable(&chapter_info)?;
-
-            let page_scopes = ListPageInfos {
-                chapter_id: &chapter_id,
-            }
-            .step_on(repo, context)
-            .await?;
-
-            ChapterImportComplex::validate_page_count(
-                imported_pages.len(),
-                page_scopes.len(),
-            )?;
-
-            let mut imported_unit_count = 0;
-
-            let mut final_page_counters = Vec::with_capacity(page_scopes.len());
-
-            for page_scope in &page_scopes {
-                //
-                let imported_page = imported_pages
-                    .iter()
-                    .find(|page| page.page_index == page_scope.index)
-                    .ok_or_else(|| BaseError::Expected {
-                        variant: ExpectedVariant::Args,
-                        message: trl("error-invalid-chapter-import-content"),
-                    })?;
-
-                let page_info = GetPageInfoExcluded { id: &page_scope.id }
-                    .step_on(repo, context)
-                    .await?;
-
-                let orders = ListUnitOrders {
-                    page_id: &page_info.id,
-                }
-                .step_on(repo, context)
-                .await?;
-
-                let visible_unit_ids = orders
-                    .iter()
-                    .filter(|order| !order.is_hidden)
-                    .map(|order| order.id.clone())
-                    .collect::<Vec<_>>();
-
-                if !visible_unit_ids.is_empty() {
-                    //
-                    let delete_edits = visible_unit_ids
-                        .iter()
-                        .map(|id| UnitEdit::Delete { id: id.clone() })
-                        .collect::<Vec<_>>();
-
-                    let base_ids = orders
-                        .iter()
-                        .map(|order| order.id.as_str())
-                        .collect::<Vec<_>>();
-
-                    let delete_edits =
-                        UnitComplex::normalize_edits(&base_ids, delete_edits)?;
-
-                    ApplyUnitEdits {
-                        page_id: &page_info.id,
-                        orders: &orders,
-                        edits: &delete_edits,
-                    }
-                    .step_on(repo, context)
-                    .await?;
-                }
-
-                let orders = ListUnitOrders {
-                    page_id: &page_info.id,
-                }
-                .step_on(repo, context)
-                .await?;
-
-                let final_counters = if imported_page.units.is_empty() {
-                    UnitCounters::default()
-                } else {
-                    //
-                    let edits = build_page_edits(
-                        &imported_page.units,
-                        &token.user_id,
-                        edit_perm,
-                        label_plus,
-                    );
-
-                    let base_ids = orders
-                        .iter()
-                        .map(|order| order.id.as_str())
-                        .collect::<Vec<_>>();
-
-                    let edits = UnitComplex::normalize_edits(&base_ids, edits)?;
-
-                    ApplyUnitEdits {
-                        page_id: &page_info.id,
-                        orders: &orders,
-                        edits: &edits,
-                    }
-                    .step_on(repo, context)
-                    .await?
-                };
-
-                SetPageUnitCounters {
-                    id: &page_info.id,
-                    counters: final_counters,
-                }
-                .step_on(repo, context)
-                .await?;
-
-                final_page_counters.push(final_counters);
-
-                imported_unit_count += imported_page.units.len() as i32;
-            }
-
-            let chapter_counters = final_page_counters.iter().copied().fold(
-                UnitCounters::default(),
-                |mut counters, page_counters| {
-                    //
-                    counters.total_unit_count += page_counters.total_unit_count;
-
-                    counters.translated_unit_count +=
-                        page_counters.translated_unit_count;
-
-                    counters.proofread_unit_count +=
-                        page_counters.proofread_unit_count;
-
-                    counters
-                },
-            );
-
-            SetChapterPageCounters {
-                id: &chapter_info.id,
-                page_count: page_scopes.len() as i32,
-                total_unit_count: chapter_counters.total_unit_count,
-                translated_unit_count: chapter_counters.translated_unit_count,
-                proofread_unit_count: chapter_counters.proofread_unit_count,
-            }
-            .step_on(repo, context)
-            .await?;
-
-            TouchComicLastActive {
-                id: &chapter_info.comic_id,
-            }
-            .step_on(repo, context)
-            .await?;
-
-            let import_val = ImportChapterTranslationVal {
-                imported_page_count: page_scopes.len() as i32,
-                imported_unit_count,
-            };
-
-            let workflow_record_entry = ChapterWorkflowRecordEntry::new(
-                chapter_info.id.clone(),
-                Some(token.user_id.clone()),
-                ChapterWorkflowRecordPayload::TranslationImported {
-                    format,
-                    imported_page_count: import_val.imported_page_count,
-                    imported_unit_count: import_val.imported_unit_count,
-                },
-            );
-
-            CreateChapterWorkflowRecords {
-                entries: std::slice::from_ref(&workflow_record_entry),
-            }
-            .step_on(repo, context)
-            .await?;
-
-            start_pending_stages(
-                repo,
-                context,
-                &chapter_info.id,
-                Some(token.user_id.clone()),
-                ChapterWorkflowRecordOrigin::TranslationImport,
-                &stages,
-            )
-            .await?;
-
-            accept(import_val)
-        })
-        .await?;
-
-    accept(val)
+    accept((edit_perm, format, label_plus, imported_pages, stages))
 }
 
-// Builds the repository execution stages required for import with perms.
+// Replaces all visible units on one page with imported units.
+async fn replace_page_units<C, R>(
+    repo: &R,
+    context: &mut C,
+    page_id: &str,
+    imported_page: &PageTranslationImport,
+    user_id: &str,
+    edit_perm: UnitEditPerm,
+    label_plus: bool,
+) -> BaseRest<UnitCountMetrics>
+where
+    C: Context,
+    R: PageRepo<C> + UnitRepo<C> + Sync,
+{
+    let page_info = GetPageInfoExcluded { id: page_id }
+        .step_on(repo, context)
+        .await?;
+
+    let orders = ListUnitOrders {
+        page_id: &page_info.id,
+    }
+    .step_on(repo, context)
+    .await?;
+
+    let visible_unit_ids = orders
+        .iter()
+        .filter(|order| !order.is_hidden)
+        .map(|order| order.id.clone())
+        .collect::<Vec<_>>();
+
+    if !visible_unit_ids.is_empty() {
+        //
+        let delete_edits = visible_unit_ids
+            .iter()
+            .map(|id| UnitEdit::Delete { id: id.clone() })
+            .collect::<Vec<_>>();
+
+        let base_ids = orders
+            .iter()
+            .map(|order| order.id.as_str())
+            .collect::<Vec<_>>();
+
+        let delete_edits =
+            UnitComplex::normalize_edits(&base_ids, delete_edits)?;
+
+        ApplyUnitEdits {
+            page_id: &page_info.id,
+            orders: &orders,
+            edits: &delete_edits,
+        }
+        .step_on(repo, context)
+        .await?;
+    }
+
+    let orders = ListUnitOrders {
+        page_id: &page_info.id,
+    }
+    .step_on(repo, context)
+    .await?;
+
+    let final_counters = apply_imported_units(
+        repo,
+        context,
+        (&page_info.id, &orders, imported_page),
+        (user_id, edit_perm, label_plus),
+    )
+    .await?;
+
+    SetPageUnitCounters {
+        id: &page_info.id,
+        counters: final_counters,
+    }
+    .step_on(repo, context)
+    .await?;
+
+    accept(final_counters)
+}
+
+// Selects workflow stages that the importing assignment can edit.
 fn import_stages(edit_perm: UnitEditPerm) -> Vec<Stage> {
     //
-    // Build the repository execution stages required for import with perms.
     let mut stages = Vec::with_capacity(2);
 
     if edit_perm.can_translate {
@@ -329,7 +359,47 @@ fn import_stages(edit_perm: UnitEditPerm) -> Vec<Stage> {
     stages
 }
 
-// Builds page edits from imported units for scenario coverage.
+// Applies imported units against the current page order.
+async fn apply_imported_units<C, R>(
+    repo: &R,
+    context: &mut C,
+    (page_id, orders, imported_page): (
+        &str,
+        &[UnitOrder],
+        &PageTranslationImport,
+    ),
+    (user_id, edit_perm, label_plus): (&str, UnitEditPerm, bool),
+) -> BaseRest<UnitCountMetrics>
+where
+    C: Context,
+    R: UnitRepo<C> + Sync,
+{
+    let Some(_) = imported_page.units.first() else {
+        return accept(UnitCountMetrics::default());
+    };
+
+    let edits =
+        build_page_edits(&imported_page.units, user_id, edit_perm, label_plus);
+
+    let base_ids = orders
+        .iter()
+        .map(|order| order.id.as_str())
+        .collect::<Vec<_>>();
+
+    let edits = UnitComplex::normalize_edits(&base_ids, edits)?;
+
+    let final_counters = ApplyUnitEdits {
+        page_id,
+        orders,
+        edits: &edits,
+    }
+    .step_on(repo, context)
+    .await?;
+
+    accept(final_counters)
+}
+
+// Builds create edits for all imported units on one page.
 fn build_page_edits(
     imported_units: &[UnitTranslationImport],
     user_id: &str,
@@ -337,7 +407,6 @@ fn build_page_edits(
     label_plus: bool,
 ) -> Vec<UnitEdit> {
     //
-    // Build minimal page edits used by import scenario coverage.
     imported_units
         .iter()
         .map(|imported_unit| {

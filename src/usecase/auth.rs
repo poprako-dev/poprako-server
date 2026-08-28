@@ -69,10 +69,10 @@ pub async fn register<N, C, R, A, D>(
 ) -> BaseRest<RegisterAuthVal>
 where
     C: Context + Send,
-    N: Nucl<Context = C, Error = BaseError>,
+    N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<ReptRead>,
     R: UserRepo<C> + MemberRepo<C> + MemberInvitationRepo<C> + Send + Sync,
-    A: TokenAuth,
+    A: TokenAuth + Sync,
     D: Develop + Send + Sync,
 {
     let (user_id, team_id, invitor_id, invitee_qid) = nucl
@@ -192,7 +192,7 @@ pub async fn login<C, R, A>(
 where
     C: Context,
     R: UserRepo<C>,
-    A: TokenAuth,
+    A: TokenAuth + Sync,
 {
     let user_credential = GetUserCredential::Qid { qid: &instr.qid }
         .run_on(repo)

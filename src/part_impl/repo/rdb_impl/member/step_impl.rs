@@ -128,8 +128,8 @@ pub async fn list_infos(
 
                 query
                     .order_by((f_user_last_active_at.desc(), f_id.asc()))
-                    .offset((*offset) as i64)
-                    .limit((*limit) as i64)
+                    .offset(i64::from(*offset))
+                    .limit(i64::from(*limit))
                     .load::<MemberInfoRow>(conn)
                     .await
                     .map_err(diesel)?
@@ -144,8 +144,8 @@ pub async fn list_infos(
                 .filter(f_user_id.eq(owner_id.as_str()))
                 .select(MemberInfoRow::as_select())
                 .order_by((f_user_last_active_at.desc(), f_id.asc()))
-                .offset((*offset) as i64)
-                .limit((*limit) as i64)
+                .offset(i64::from(*offset))
+                .limit(i64::from(*limit))
                 .load::<MemberInfoRow>(conn)
                 .await
                 .map_err(diesel)?,
@@ -389,10 +389,10 @@ struct RoleTimestamps {
 }
 
 // Convert MemberEntry into insert payload, including per-role timestamp defaults.
-fn entity_from_entry<'a>(
-    entry: &'a MemberEntry,
+fn entity_from_entry(
+    entry: &MemberEntry,
     now: OffsetDateTime,
-) -> MemberEntryRow<'a> {
+) -> MemberEntryRow<'_> {
     //
     let timestamps = role_timestamps_from_mask(entry.roles, now);
 

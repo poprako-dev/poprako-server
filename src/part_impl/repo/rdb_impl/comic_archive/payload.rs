@@ -11,8 +11,8 @@ use crate::shared::result::diesel;
 use crate::value::comic_archive::ComicArchiveMonth;
 
 // Load archive payloads by month window and return timestamped serialized blobs.
-#[instrument(level = "info", skip_all)]
 /// Lists serialized archive payloads in the requested months.
+#[instrument(level = "info", skip_all)]
 pub async fn list_payloads(
     conn: &mut RdbConn,
     team_id: &str,

@@ -24,7 +24,7 @@ where
     P: ?Sized,
 {
     /// Builds a single-task operation.
-    pub fn new(task: Task<'a, I, P>) -> Self {
+    pub const fn new(task: Task<'a, I, P>) -> Self {
         //
         Self {
             task,
@@ -60,7 +60,7 @@ where
     P: ?Sized,
 {
     /// Builds a batch operation.
-    pub fn new(tasks: &'t [Task<'a, I, P>]) -> Self {
+    pub const fn new(tasks: &'t [Task<'a, I, P>]) -> Self {
         //
         Self {
             tasks,

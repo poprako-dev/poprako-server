@@ -3,7 +3,7 @@
 use std::result::Result;
 
 /// Categorizes an expected application error by its origin domain.
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum ExpectedVariant {
     //
     /// Invalid or missing arguments.
@@ -47,6 +47,6 @@ pub enum BaseError {
 pub type BaseRest<T> = Result<T, BaseError>;
 
 /// Wraps a value in `Ok(...)` — the simplest use-case return.
-pub fn accept<T>(v: T) -> BaseRest<T> {
+pub const fn accept<T>(v: T) -> BaseRest<T> {
     Ok(v)
 }

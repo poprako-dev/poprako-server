@@ -9,7 +9,7 @@ use crate::value::image::ImageExt;
 pub struct ChapterExportComplex;
 
 impl ChapterExportComplex {
-    /// Converts pages and units into LabelPlus text.
+    /// Converts pages and units into `LabelPlus` text.
     pub fn make_label_plus(
         pages: &[PageInfo],
         units_by_page_id: &HashMap<String, Vec<UnitInfo>>,
@@ -44,17 +44,11 @@ impl ChapterExportComplex {
 
             let units = units_by_page_id
                 .get(&page_info.id)
-                .map(Vec::as_slice)
-                .unwrap_or(&[]);
+                .map_or(&[][..], Vec::as_slice);
 
             for (index, unit_info) in units.iter().enumerate() {
                 //
-                let group = match unit_info.is_bubble {
-                    //
-                    true => 1,
-
-                    false => 2,
-                };
+                let group = if unit_info.is_bubble { 1 } else { 2 };
 
                 writeln!(
                     output,

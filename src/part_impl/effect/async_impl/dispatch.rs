@@ -12,28 +12,30 @@ use crate::part::repo::user::UserRepo;
 use crate::part_impl::effect::async_impl::{chapter, user};
 
 /// Dispatches a domain event to its side-effect handler.
+/// FIXME: why put it here?
 #[instrument(level = "info", skip_all)]
 pub async fn dispatch<C, R>(repo: &R, event: Event)
 where
-    C: Context,
+    C: Context + Send,
     R: AssignmentRepo<C>
         + ChapterRepo<C>
         + TeamRepo<C>
         + SystemMailRepo
-        + UserRepo<C>,
+        + UserRepo<C>
+        + Sync,
 {
     match event {
         //
         Event::UserActive { payload } => {
-            user::touch_last_active(repo, payload).await
+            user::touch_last_active(repo, payload).await;
         }
 
         Event::UserSignedUp { payload } => {
-            user::notify_invitor(repo, payload).await
+            user::notify_invitor(repo, payload).await;
         }
 
         Event::ChapterPublished { payload } => {
-            chapter::notify_reviewers_on_publish(repo, payload).await
+            chapter::notify_reviewers_on_publish(repo, payload).await;
         }
 
         Event::ChapterWorkflowCompleted { payload } => {

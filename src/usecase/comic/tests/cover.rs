@@ -19,6 +19,7 @@ use crate::part::prom::payload::image::ImagePayload;
 use crate::test_util::{
     assert_expected_message, assert_one_image_check_record,
 };
+use crate::usecase::comic::cover::mark_uploaded;
 use crate::value::image::{ImageExt, ImageHash, ImageKind};
 
 fn reserve_instr(ext: ImageExt, hash_byte: u8) -> ReserveComicCoverInstr {
@@ -111,7 +112,7 @@ async fn mark_cover_uploaded_marks_matching_version() {
         ..comic("comic-1", "workset-1", 0)
     });
 
-    mark_cover_uploaded(
+    mark_uploaded(
         (&mock, &mock, &mock),
         token("user-1"),
         "comic-1".into(),
@@ -139,7 +140,7 @@ async fn mark_cover_uploaded_accepts_repeated_matching_version() {
         ..comic("comic-1", "workset-1", 0)
     });
 
-    let first = mark_cover_uploaded(
+    let first = mark_uploaded(
         (&mock, &mock, &mock),
         token("user-1"),
         "comic-1".into(),
@@ -149,7 +150,7 @@ async fn mark_cover_uploaded_accepts_repeated_matching_version() {
 
     assert!(first.is_ok());
 
-    let second = mark_cover_uploaded(
+    let second = mark_uploaded(
         (&mock, &mock, &mock),
         token("user-1"),
         "comic-1".into(),
@@ -177,7 +178,7 @@ async fn mark_cover_uploaded_rejects_stale_version() {
         ..comic("comic-1", "workset-1", 0)
     });
 
-    let err = mark_cover_uploaded(
+    let err = mark_uploaded(
         (&mock, &mock, &mock),
         token("user-1"),
         "comic-1".into(),
@@ -224,7 +225,7 @@ async fn mark_cover_uploaded_rejects_old_reservation_replay() {
 
     assert_eq!(reserved.slot.as_ref().unwrap().image_version, 2);
 
-    let err = mark_cover_uploaded(
+    let err = mark_uploaded(
         (&mock, &mock, &mock),
         token("user-1"),
         "comic-1".into(),

@@ -33,8 +33,18 @@ fn limiter() -> &'static DefaultDirectRateLimiter {
     LIMITER.get_or_init(|| {
         //
         RateLimiter::direct(
-            Quota::per_second(NonZeroU32::new(20).unwrap())
-                .allow_burst(NonZeroU32::new(80).unwrap()),
+            Quota::per_second(nonzero(20)).allow_burst(nonzero(80)),
         )
     })
+}
+
+// Converts a configured positive integer into its non-zero representation.
+const fn nonzero(value: u32) -> NonZeroU32 {
+    //
+    match NonZeroU32::new(value) {
+        //
+        Some(value) => value,
+
+        None => NonZeroU32::MIN,
+    }
 }

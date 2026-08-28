@@ -20,7 +20,7 @@ pub struct ComicEntry {
     /// The workset this comic will be created under.
     pub workset_id: String,
     /// Sorting position assigned by the insertion logic.
-    pub index: i32,
+    pub index: usize,
 
     /// Display title of the comic series or volume.
     pub title: String,

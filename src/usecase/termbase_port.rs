@@ -46,7 +46,7 @@ pub async fn export<N, C, R>(
 ) -> BaseRest<ExportTermbaseVal>
 where
     C: Context + Send,
-    N: Nucl<Context = C, Error = BaseError>,
+    N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<ReptRead>,
     R: TermbaseRepo<C>
         + TermRepo<C>
@@ -98,7 +98,7 @@ pub async fn import<N, C, R>(
 ) -> BaseRest<ImportTermbaseVal>
 where
     C: Context + Send,
-    N: Nucl<Context = C, Error = BaseError>,
+    N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<ReptRead>,
     R: TeamRepo<C>
         + ComicRepo<C>
@@ -114,164 +114,180 @@ where
     let import_termbase_val = nucl
         .coord(async move |context| {
             //
-            let team_id = match &scope {
-                //
-                TermbaseScope::Team { team_id } => {
-                    //
-                    LockTeam { id: team_id }.step_on(repo, context).await?;
+            let team_id = resolve_import_team_id(repo, context, &scope).await?;
 
-                    team_id.clone()
-                }
+            ensure_import_member(repo, context, &token, &team_id).await?;
 
-                TermbaseScope::Comic { comic_id } => {
-                    //
-                    let comic_info = GetComicInfoExcluded {
-                        id: comic_id,
-                        incls: &[],
-                    }
-                    .step_on(repo, context)
-                    .await?;
-
-                    ComicComplex::ensure_comic_writable(&comic_info)?;
-
-                    let workset_info = GetWorksetInfo {
-                        id: &comic_info.workset_id,
-                    }
-                    .step_on(repo, context)
-                    .await?;
-
-                    workset_info.team_id
-                }
-            };
-
-            let member_info = FindMemberInfo::UserTeam {
-                user_id: &token.user_id,
-                team_id: &team_id,
-            }
-            .step_on(repo, context)
-            .await?;
-
-            let Some(member_info) = member_info else {
-                //
-                let err_message =
-                    trl("error-team-translator-or-proofreader-required");
-
-                tracing::warn!(
-                    err_variant = ?ExpectedVariant::Perm,
-                    err_message = %err_message,
-                    team_id = %team_id,
-                    user_id = %token.user_id,
-                    "expected error: termbase importer membership missing",
-                );
-
-                return Err(BaseError::Expected {
-                    variant: ExpectedVariant::Perm,
-                    message: err_message,
-                });
-            };
-
-            TermbasePermComplex::ensure_user_can_write_team(&member_info)?;
-
-            let termbase_infos = match &scope {
-                //
-                TermbaseScope::Team { team_id } => {
-                    //
-                    ListTermbaseInfosExcluded::Team { team_id }
-                        .step_on(repo, context)
-                        .await?
-                }
-
-                TermbaseScope::Comic { comic_id } => {
-                    //
-                    ListTermbaseInfosExcluded::Comic { comic_id }
-                        .step_on(repo, context)
-                        .await?
-                }
-            };
+            let termbase_infos =
+                list_import_targets(repo, context, &scope).await?;
 
             let existing_termbase_info = TermbaseComplex::find_import_target(
                 termbase_infos,
                 &termbase_import.name,
             );
 
-            match existing_termbase_info {
+            let Some(termbase_info) = existing_termbase_info else {
                 //
-                Some(termbase_info) => {
+                let (team_id, comic_id) = match &scope {
                     //
-                    if !force_merge {
-                        return Err(already_exists_err(&termbase_import.name));
+                    TermbaseScope::Team { team_id } => {
+                        (Some(team_id.clone()), None)
                     }
 
-                    apply_import(
-                        repo,
-                        context,
-                        &token,
-                        termbase_info,
-                        termbase_import,
-                        false,
-                    )
-                    .await
-                }
-
-                None => {
-                    //
-                    let (team_id, comic_id) = match &scope {
-                        //
-                        TermbaseScope::Team { team_id } => {
-                            (Some(team_id.clone()), None)
-                        }
-
-                        TermbaseScope::Comic { comic_id } => {
-                            (None, Some(comic_id.clone()))
-                        }
-                    };
-
-                    let termbase_entry = TermbaseComplex::build_entry(
-                        team_id,
-                        comic_id,
-                        termbase_import.name.clone(),
-                        termbase_import.description.clone(),
-                        token.user_id.clone(),
-                    )?;
-
-                    let termbase_info = CreateTermbase {
-                        entry: &termbase_entry,
+                    TermbaseScope::Comic { comic_id } => {
+                        (None, Some(comic_id.clone()))
                     }
-                    .step_on(repo, context)
-                    .await?;
+                };
 
-                    apply_import(
-                        repo,
-                        context,
-                        &token,
-                        termbase_info,
-                        termbase_import,
-                        true,
-                    )
-                    .await
+                let termbase_entry = TermbaseComplex::build_entry(
+                    team_id,
+                    comic_id,
+                    &termbase_import.name,
+                    termbase_import.description.clone(),
+                    token.user_id.clone(),
+                )?;
+
+                let termbase_info = CreateTermbase {
+                    entry: &termbase_entry,
                 }
+                .step_on(repo, context)
+                .await?;
+
+                return apply_import(
+                    repo,
+                    context,
+                    &token,
+                    termbase_info,
+                    termbase_import,
+                    true,
+                )
+                .await;
+            };
+
+            if !force_merge {
+                return Err(already_exists_err(&termbase_import.name));
             }
+
+            apply_import(
+                repo,
+                context,
+                &token,
+                termbase_info,
+                termbase_import,
+                false,
+            )
+            .await
         })
         .await?;
 
     accept(import_termbase_val)
 }
 
-// Construct a stable expected error when a target scope already owns the imported name.
-fn already_exists_err(name: &str) -> BaseError {
-    //
-    let err_message = trl("error-already-exists");
+// Lock the import scope and resolve its owning team.
+async fn resolve_import_team_id<C, R>(
+    repo: &R,
+    context: &mut C,
+    scope: &TermbaseScope,
+) -> BaseRest<String>
+where
+    C: Context,
+    R: TeamRepo<C> + ComicRepo<C> + WorksetRepo<C> + Sync,
+{
+    match scope {
+        //
+        TermbaseScope::Team { team_id } => {
+            //
+            LockTeam { id: team_id }.step_on(repo, context).await?;
 
-    tracing::warn!(
-        err_variant = ?ExpectedVariant::Args,
-        err_message = %err_message,
-        termbase_name = %name,
-        "expected error: imported termbase already exists",
-    );
+            accept(team_id.clone())
+        }
 
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        message: err_message,
+        TermbaseScope::Comic { comic_id } => {
+            //
+            let comic_info = GetComicInfoExcluded {
+                id: comic_id,
+                incls: &[],
+            }
+            .step_on(repo, context)
+            .await?;
+
+            ComicComplex::ensure_comic_writable(&comic_info)?;
+
+            let workset_info = GetWorksetInfo {
+                id: &comic_info.workset_id,
+            }
+            .step_on(repo, context)
+            .await?;
+
+            accept(workset_info.team_id)
+        }
+    }
+}
+
+// Require import permission through membership in the resolved team.
+async fn ensure_import_member<C, R>(
+    repo: &R,
+    context: &mut C,
+    token: &UserToken,
+    team_id: &str,
+) -> BaseRest<()>
+where
+    C: Context,
+    R: MemberRepo<C> + Sync,
+{
+    let member_info = FindMemberInfo::UserTeam {
+        user_id: &token.user_id,
+        team_id,
+    }
+    .step_on(repo, context)
+    .await?;
+
+    let Some(member_info) = member_info else {
+        //
+        let err_message = trl("error-team-translator-or-proofreader-required");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Perm,
+            err_message = %err_message,
+            team_id = %team_id,
+            user_id = %token.user_id,
+            "expected error: termbase importer membership missing",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: err_message,
+        });
+    };
+
+    TermbasePermComplex::ensure_user_can_write_team(&member_info)
+}
+
+// List existing terminology bases within the selected import scope.
+async fn list_import_targets<C, R>(
+    repo: &R,
+    context: &mut C,
+    scope: &TermbaseScope,
+) -> BaseRest<Vec<TermbaseInfo>>
+where
+    C: Context,
+    R: TermbaseRepo<C> + Sync,
+{
+    match scope {
+        //
+        TermbaseScope::Team { team_id } => {
+            //
+            ListTermbaseInfosExcluded::Team { team_id }
+                .step_on(repo, context)
+                .await
+        }
+
+        TermbaseScope::Comic { comic_id } => {
+            //
+            ListTermbaseInfosExcluded::Comic { comic_id }
+                .step_on(repo, context)
+                .await
+        }
     }
 }
 
@@ -339,7 +355,13 @@ where
         //
         UpdateTermbaseTermCount {
             id: &termbase_info.id,
-            delta: created_term_count,
+            delta: i32::try_from(created_term_count).map_err(|_| {
+                //
+                BaseError::Unrecoverable {
+                    message: "created term count exceeds signed delta range"
+                        .into(),
+                }
+            })?,
         }
         .step_on(repo, context)
         .await?;
@@ -353,20 +375,25 @@ where
     })
 }
 
-// Convert one bounded import count into the public response representation.
-fn import_count(count: usize) -> BaseRest<i32> {
+// Construct a stable expected error when a target scope already owns the imported name.
+fn already_exists_err(name: &str) -> BaseError {
     //
-    let Ok(count) = i32::try_from(count) else {
-        //
-        tracing::error!(
-            count,
-            "unrecoverable error: imported term count overflow",
-        );
+    let err_message = trl("error-already-exists");
 
-        return Err(BaseError::Unrecoverable {
-            message: "imported term count overflow".into(),
-        });
-    };
+    tracing::warn!(
+        err_variant = ?ExpectedVariant::Args,
+        err_message = %err_message,
+        termbase_name = %name,
+        "expected error: imported termbase already exists",
+    );
 
+    BaseError::Expected {
+        variant: ExpectedVariant::Args,
+        message: err_message,
+    }
+}
+
+// Convert one bounded import count into the public response representation.
+const fn import_count(count: usize) -> BaseRest<usize> {
     accept(count)
 }

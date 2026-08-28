@@ -5,6 +5,9 @@ use time::OffsetDateTime;
 
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::write::chapter::ChapterEntry;
+use crate::part_impl::repo::rdb_impl::numeric::{
+    i32_from_usize, usize_from_i32,
+};
 use crate::part_impl::repo::rdb_impl::schema::t_chapter;
 use crate::result::BaseError;
 use crate::value::chapter::{Stage, StageMask, StagePhase};
@@ -56,12 +59,24 @@ impl TryFrom<ChapterInfoRow> for ChapterInfo {
             comic_id: row.f_comic_id,
             comic: None,
             is_pinned: row.f_is_pinned,
-            index: row.f_index,
+            index: usize_from_i32(row.f_index, "t_chapter.f_index")?,
             subtitle: row.f_subtitle,
-            page_count: row.f_page_count,
-            total_unit_count: row.f_total_unit_count,
-            translated_unit_count: row.f_translated_unit_count,
-            proofread_unit_count: row.f_proofread_unit_count,
+            page_count: usize_from_i32(
+                row.f_page_count,
+                "t_chapter.f_page_count",
+            )?,
+            total_unit_count: usize_from_i32(
+                row.f_total_unit_count,
+                "t_chapter.f_total_unit_count",
+            )?,
+            translated_unit_count: usize_from_i32(
+                row.f_translated_unit_count,
+                "t_chapter.f_translated_unit_count",
+            )?,
+            proofread_unit_count: usize_from_i32(
+                row.f_proofread_unit_count,
+                "t_chapter.f_proofread_unit_count",
+            )?,
             stages,
             creator_id: row.f_creator_id,
             creator: None,
@@ -90,21 +105,23 @@ pub struct ChapterEntryRow<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> From<&'a ChapterEntry> for ChapterEntryRow<'a> {
-    fn from(chapter_entry: &'a ChapterEntry) -> Self {
+impl<'a> TryFrom<&'a ChapterEntry> for ChapterEntryRow<'a> {
+    type Error = BaseError;
+
+    fn try_from(chapter_entry: &'a ChapterEntry) -> Result<Self, Self::Error> {
         //
         let now = OffsetDateTime::now_utc();
 
-        Self {
+        Ok(Self {
             f_id: &chapter_entry.id,
             f_comic_id: &chapter_entry.comic_id,
             f_is_pinned: chapter_entry.is_pinned,
-            f_index: chapter_entry.index,
+            f_index: i32_from_usize(chapter_entry.index, "t_chapter.f_index")?,
             f_subtitle: &chapter_entry.subtitle,
             f_creator_id: &chapter_entry.creator_id,
             f_created_at: now,
             f_updated_at: now,
-        }
+        })
     }
 }
 
@@ -134,7 +151,7 @@ pub struct ChapterAspectRow<'a> {
 }
 
 impl<'a> ChapterAspectRow<'a> {
-    pub fn new(updated_at: OffsetDateTime) -> Self {
+    pub const fn new(updated_at: OffsetDateTime) -> Self {
         //
         Self {
             f_is_pinned: None,
@@ -156,14 +173,14 @@ impl<'a> ChapterAspectRow<'a> {
         }
     }
 
-    pub fn pinned(mut self, val: bool) -> Self {
+    pub const fn pinned(mut self, val: bool) -> Self {
         //
         self.f_is_pinned = Some(val);
 
         self
     }
 
-    pub fn subtitle(mut self, val: &'a str) -> Self {
+    pub const fn subtitle(mut self, val: &'a str) -> Self {
         //
         self.f_subtitle = Some(val);
 
@@ -197,28 +214,28 @@ impl<'a> ChapterAspectRow<'a> {
         self
     }
 
-    pub fn page_count(mut self, val: i32) -> Self {
+    pub const fn page_count(mut self, val: i32) -> Self {
         //
         self.f_page_count = Some(val);
 
         self
     }
 
-    pub fn total_unit_count(mut self, val: i32) -> Self {
+    pub const fn total_unit_count(mut self, val: i32) -> Self {
         //
         self.f_total_unit_count = Some(val);
 
         self
     }
 
-    pub fn translated_unit_count(mut self, val: i32) -> Self {
+    pub const fn translated_unit_count(mut self, val: i32) -> Self {
         //
         self.f_translated_unit_count = Some(val);
 
         self
     }
 
-    pub fn proofread_unit_count(mut self, val: i32) -> Self {
+    pub const fn proofread_unit_count(mut self, val: i32) -> Self {
         //
         self.f_proofread_unit_count = Some(val);
 
@@ -228,7 +245,7 @@ impl<'a> ChapterAspectRow<'a> {
 
 /// Convert an optional one-shot timestamp to a `StagePhase`:
 /// `Some` maps to `Completed`, `None` maps to `Pending`.
-fn phase_from_one_shot(timestamp: Option<OffsetDateTime>) -> StagePhase {
+const fn phase_from_one_shot(timestamp: Option<OffsetDateTime>) -> StagePhase {
     //
     match timestamp {
         //
@@ -241,7 +258,7 @@ fn phase_from_one_shot(timestamp: Option<OffsetDateTime>) -> StagePhase {
 /// Convert optional start/completed timestamps to a `StagePhase`:
 /// `(Some, Some)` -> `Completed`, `(Some, None)` -> `Active`,
 /// `(None, None)` -> `Pending`.
-fn phase_from_two_step(
+const fn phase_from_two_step(
     started_at: Option<OffsetDateTime>,
     completed_at: Option<OffsetDateTime>,
 ) -> StagePhase {
@@ -256,7 +273,7 @@ fn phase_from_two_step(
     }
 }
 
-/// Resolve a one-shot stage (RawProvide, Review, Publish) to its timestamp:
+/// Resolve a one-shot stage (`RawProvide`, Review, Publish) to its timestamp:
 /// `Some(updated_at)` when completed, `None` when pending.
 fn one_shot_timestamp(
     stages: StageMask,
@@ -266,15 +283,13 @@ fn one_shot_timestamp(
     //
     match stages.get_phase(stage) {
         //
-        StagePhase::Pending => None,
-
         StagePhase::Completed => Some(updated_at),
 
-        StagePhase::Active => unreachable!("one-shot stages cannot be active"),
+        StagePhase::Pending | StagePhase::Active => None,
     }
 }
 
-/// Resolve a two-step stage (Translate, Proofread, TypesetRedraw) to its
+/// Resolve a two-step stage (Translate, Proofread, `TypesetRedraw`) to its
 /// start/completed timestamps. Returns `(Option<Option>, Option<Option>)` for
 /// use in `ChapterAspectRow` fields where `Some(None)` means "clear the column"
 /// and `Some(Some(ts))` means "set the column".

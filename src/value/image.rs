@@ -37,17 +37,17 @@ pub struct ImageHash([u8; 32]);
 
 impl ImageHash {
     /// Builds a hash from its raw SHA-256 bytes.
-    pub fn new(bytes: [u8; 32]) -> Self {
+    pub const fn new(bytes: [u8; 32]) -> Self {
         Self(bytes)
     }
 
     /// Returns the raw SHA-256 bytes.
-    pub fn bytes(&self) -> [u8; 32] {
+    pub const fn bytes(&self) -> [u8; 32] {
         self.0
     }
 
     /// Borrows the raw SHA-256 bytes.
-    pub fn as_bytes(&self) -> &[u8; 32] {
+    pub const fn as_bytes(&self) -> &[u8; 32] {
         &self.0
     }
 
@@ -69,11 +69,10 @@ impl ImageHash {
 
         let image_hash = Self(bytes);
 
-        match image_hash.to_base64() == encoded {
-            //
-            true => Some(image_hash),
-
-            false => None,
+        if image_hash.to_base64() == encoded {
+            Some(image_hash)
+        } else {
+            None
         }
     }
 }
@@ -173,7 +172,7 @@ impl ImageExt {
     }
 
     /// Returns the lowercase object-key suffix.
-    pub fn suffix(self) -> &'static str {
+    pub const fn suffix(self) -> &'static str {
         //
         match self {
             //
@@ -200,7 +199,7 @@ impl ImageExt {
     }
 
     /// Returns the media type bound into an upload signature.
-    pub fn content_type(self) -> &'static str {
+    pub const fn content_type(self) -> &'static str {
         //
         match self {
             //

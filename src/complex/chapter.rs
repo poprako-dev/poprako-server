@@ -43,7 +43,10 @@ impl ChapterComplex {
 
     /// Returns the user-supplied subtitle if present and non-empty, or a
     /// generated default in the format "Ch. N" (1-based).
-    pub fn subtitle_or_default(subtitle: Option<String>, index: i32) -> String {
+    pub fn subtitle_or_default(
+        subtitle: Option<String>,
+        index: usize,
+    ) -> String {
         //
         subtitle
             .filter(|value| !value.trim().is_empty())
@@ -105,7 +108,7 @@ fn get_phase(chapter_info: &ChapterInfo, stage: Stage) -> StagePhase {
 }
 
 // Generate a human-readable default subtitle for a chapter, e.g. `"Ch. 1"`.
-fn default_subtitle(index: i32) -> String {
+fn default_subtitle(index: usize) -> String {
     //
     let mut args = HashMap::new();
 

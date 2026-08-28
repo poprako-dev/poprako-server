@@ -28,6 +28,7 @@ use crate::part_impl::repo::rdb_impl::chapter::step_impl::{
     lock_chapters, reset_raw_provide, set_page_counters, start_stage,
     unpin_others, update_info, update_stage,
 };
+use crate::part_impl::repo::rdb_impl::numeric::i32_from_usize;
 use crate::result::{BaseError, BaseRest};
 use crate::shared::RdbContext;
 
@@ -379,10 +380,19 @@ where
         set_page_counters(
             context.conn(),
             oper.id,
-            oper.page_count,
-            oper.total_unit_count,
-            oper.translated_unit_count,
-            oper.proofread_unit_count,
+            i32_from_usize(oper.page_count, "t_chapter.f_page_count")?,
+            i32_from_usize(
+                oper.total_unit_count,
+                "t_chapter.f_total_unit_count",
+            )?,
+            i32_from_usize(
+                oper.translated_unit_count,
+                "t_chapter.f_translated_unit_count",
+            )?,
+            i32_from_usize(
+                oper.proofread_unit_count,
+                "t_chapter.f_proofread_unit_count",
+            )?,
         )
         .await
     }

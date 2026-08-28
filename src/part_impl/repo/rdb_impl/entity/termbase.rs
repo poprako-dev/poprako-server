@@ -5,7 +5,9 @@ use time::OffsetDateTime;
 
 use crate::model::read::proj::termbase::TermbaseInfo;
 use crate::model::write::termbase::TermbaseEntry;
+use crate::part_impl::repo::rdb_impl::numeric::usize_from_i32;
 use crate::part_impl::repo::rdb_impl::schema::t_termbase;
+use crate::result::BaseError;
 
 /// Raw database row for a terminology base.
 #[derive(Queryable, Selectable)]
@@ -28,20 +30,25 @@ pub struct TermbaseInfoRow {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl From<TermbaseInfoRow> for TermbaseInfo {
-    fn from(row: TermbaseInfoRow) -> Self {
+impl TryFrom<TermbaseInfoRow> for TermbaseInfo {
+    type Error = BaseError;
+
+    fn try_from(row: TermbaseInfoRow) -> Result<Self, Self::Error> {
         //
-        Self {
+        Ok(Self {
             id: row.f_id,
             team_id: row.f_team_id,
             comic_id: row.f_comic_id,
             name: row.f_name,
             description: row.f_description,
-            term_count: row.f_term_count,
+            term_count: usize_from_i32(
+                row.f_term_count,
+                "t_termbase.f_term_count",
+            )?,
             creator_id: row.f_creator_id,
             created_at: row.f_created_at,
             updated_at: row.f_updated_at,
-        }
+        })
     }
 }
 

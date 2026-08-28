@@ -18,8 +18,8 @@ use crate::shared::RdbConn;
 use crate::shared::result::{diesel, next_version};
 use crate::value::image::{ImageExt, ImageHash};
 
-#[instrument(level = "info", skip_all)]
 /// Reserve an avatar key and version atomically.
+#[instrument(level = "info", skip_all)]
 pub async fn reserve_avatar(
     conn: &mut RdbConn,
     id: &str,
@@ -122,8 +122,8 @@ pub async fn reserve_avatar(
     })
 }
 
-#[instrument(level = "info", skip_all)]
 /// Mark the user avatar as uploaded.
+#[instrument(level = "info", skip_all)]
 pub async fn mark_avatar_uploaded(
     conn: &mut RdbConn,
     id: &str,

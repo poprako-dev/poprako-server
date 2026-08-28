@@ -29,7 +29,7 @@ impl<'a> Step<Defer<'a, String, TaskPayload, ()>, MockContext> for Mock {
             .map_err(serialize_payload_err)?;
 
         context.state.prom_records.push(MockPromRecord {
-            id: oper.task.id.to_string(),
+            id: oper.task.id.clone(),
             payload_json,
             visible_at: OffsetDateTime::now_utc()
                 + oper.task.delay.unwrap_or_default(),

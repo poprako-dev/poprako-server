@@ -68,7 +68,7 @@ pub struct TeamAspectRow<'a> {
 }
 
 impl<'a> TeamAspectRow<'a> {
-    pub fn new(updated_at: OffsetDateTime) -> Self {
+    pub const fn new(updated_at: OffsetDateTime) -> Self {
         //
         Self {
             f_name: None,
@@ -82,28 +82,28 @@ impl<'a> TeamAspectRow<'a> {
         }
     }
 
-    pub fn name(mut self, val: &'a str) -> Self {
+    pub const fn name(mut self, val: &'a str) -> Self {
         //
         self.f_name = Some(val);
 
         self
     }
 
-    pub fn description(mut self, val: &'a str) -> Self {
+    pub const fn description(mut self, val: &'a str) -> Self {
         //
         self.f_description = Some(val);
 
         self
     }
 
-    pub fn avatar_key(mut self, val: &'a str) -> Self {
+    pub const fn avatar_key(mut self, val: &'a str) -> Self {
         //
         self.f_avatar_key = Some(val);
 
         self
     }
 
-    pub fn avatar_uploaded(mut self, val: bool) -> Self {
+    pub const fn avatar_uploaded(mut self, val: bool) -> Self {
         //
         self.f_avatar_uploaded = Some(val);
 
@@ -117,14 +117,14 @@ impl<'a> TeamAspectRow<'a> {
         self
     }
 
-    pub fn avatar_hash(mut self, val: &'a ImageHash) -> Self {
+    pub const fn avatar_hash(mut self, val: &'a ImageHash) -> Self {
         //
         self.f_avatar_hash = Some(val.as_bytes());
 
         self
     }
 
-    pub fn avatar_ext(mut self, val: ImageExt) -> Self {
+    pub const fn avatar_ext(mut self, val: ImageExt) -> Self {
         //
         self.f_avatar_extension = Some(val.suffix());
 
@@ -207,7 +207,7 @@ impl TryFrom<TeamInfoRow> for TeamInfo {
             }
         };
 
-        accept(TeamInfo {
+        accept(Self {
             id: v.f_id,
             name: v.f_name,
             description: v.f_description.unwrap_or_default(),

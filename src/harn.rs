@@ -7,17 +7,17 @@ pub struct HybNucl<NR, NS>(NR, NS);
 
 impl<NR, NS> HybNucl<NR, NS> {
     /// Combines the repeatable-read and serializable coordinators.
-    pub fn new(rept_read: NR, serial: NS) -> Self {
+    pub const fn new(rept_read: NR, serial: NS) -> Self {
         Self(rept_read, serial)
     }
 
     /// Returns the repeatable-read transaction coordinator.
-    pub fn rept_read(&self) -> &NR {
+    pub const fn rept_read(&self) -> &NR {
         &self.0
     }
 
     /// Returns the serializable transaction coordinator.
-    pub fn serial(&self) -> &NS {
+    pub const fn serial(&self) -> &NS {
         &self.1
     }
 }
@@ -83,36 +83,43 @@ impl<N, R, P, A, I, D> Harn<N, R, P, A, I, D> {
     }
 
     /// Returns the runtime application configuration.
+    #[must_use]
     pub fn config(&self) -> &AppConfig {
         &self.inner.config
     }
 
     /// Returns the transaction coordinator selector.
+    #[must_use]
     pub fn nucl(&self) -> &N {
         &self.inner.nucl
     }
 
     /// Returns the repository bundle.
+    #[must_use]
     pub fn repo(&self) -> &R {
         &self.inner.repo
     }
 
     /// Returns the deferred-task producer.
+    #[must_use]
     pub fn prom(&self) -> &P {
         &self.inner.prom
     }
 
     /// Returns the token authentication port.
+    #[must_use]
     pub fn auth(&self) -> &A {
         &self.inner.auth
     }
 
     /// Returns the image pool.
+    #[must_use]
     pub fn image_pool(&self) -> &I {
         &self.inner.image_pool
     }
 
     /// Returns the side-effect developer.
+    #[must_use]
     pub fn develop(&self) -> &D {
         &self.inner.develop
     }

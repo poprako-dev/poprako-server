@@ -116,7 +116,7 @@ pub struct DeleteTeam<'a> {
 
 /// Allocates a sequential index for a new workset under this team.
 #[derive(Oper)]
-#[oper(output = i32)]
+#[oper(output = usize)]
 pub struct AllocTeamWorksetIndex<'a> {
     /// The team id.
     pub id: &'a str,

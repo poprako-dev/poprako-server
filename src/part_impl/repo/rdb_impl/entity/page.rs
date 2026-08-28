@@ -1,10 +1,19 @@
+#![allow(clippy::ref_option_ref)]
+
 //! Diesel entity types for the `t_page` table.
+//!
+//! FIXME: Diesel's generated `AsChangeset` implementation reports
+//! `ref_option_ref` for the intentional tri-state `Option<Option<&T>>` field.
+//! Flattening it would change the unchanged, clear, and set update semantics.
 
 use diesel::{AsChangeset, Insertable, Queryable, Selectable};
 use time::OffsetDateTime;
 
 use crate::model::read::proj::page::PageInfo;
 use crate::model::write::page::PageEntry;
+use crate::part_impl::repo::rdb_impl::numeric::{
+    i32_from_usize, usize_from_i32,
+};
 use crate::part_impl::repo::rdb_impl::schema::t_page;
 use crate::result::BaseError;
 use crate::value::image::{ImageExt, ImageHash};
@@ -112,15 +121,24 @@ impl TryFrom<PageInfoRow> for PageInfo {
         Ok(Self {
             id: row.f_id,
             chapter_id: row.f_chapter_id,
-            index: row.f_index,
+            index: usize_from_i32(row.f_index, "t_page.f_index")?,
             image_key,
             is_image_uploaded,
             image_version,
             image_hash,
             image_ext,
-            total_unit_count: row.f_total_unit_count,
-            translated_unit_count: row.f_translated_unit_count,
-            proofread_unit_count: row.f_proofread_unit_count,
+            total_unit_count: usize_from_i32(
+                row.f_total_unit_count,
+                "t_page.f_total_unit_count",
+            )?,
+            translated_unit_count: usize_from_i32(
+                row.f_translated_unit_count,
+                "t_page.f_translated_unit_count",
+            )?,
+            proofread_unit_count: usize_from_i32(
+                row.f_proofread_unit_count,
+                "t_page.f_proofread_unit_count",
+            )?,
             created_at: row.f_created_at,
             updated_at: row.f_updated_at,
         })
@@ -167,7 +185,7 @@ impl<'a> TryFrom<&'a PageEntry> for PageEntryRow<'a> {
         Ok(Self {
             f_id: &entry.id,
             f_chapter_id: &entry.chapter_id,
-            f_index: entry.index,
+            f_index: i32_from_usize(entry.index, "t_page.f_index")?,
             f_image_key: Some(image_key),
             f_image_uploaded: Some(false),
             f_image_version: i64::from(entry.image_version),
@@ -199,7 +217,7 @@ pub struct PageAspectRow<'a> {
 }
 
 impl<'a> PageAspectRow<'a> {
-    pub fn new(updated_at: OffsetDateTime) -> Self {
+    pub const fn new(updated_at: OffsetDateTime) -> Self {
         //
         Self {
             f_index: None,
@@ -215,21 +233,21 @@ impl<'a> PageAspectRow<'a> {
         }
     }
 
-    pub fn index(mut self, val: i32) -> Self {
+    pub const fn index(mut self, val: i32) -> Self {
         //
         self.f_index = Some(val);
 
         self
     }
 
-    pub fn image_key(mut self, val: Option<&'a str>) -> Self {
+    pub const fn image_key(mut self, val: Option<&'a str>) -> Self {
         //
         self.f_image_key = Some(val);
 
         self
     }
 
-    pub fn image_uploaded(mut self, val: bool) -> Self {
+    pub const fn image_uploaded(mut self, val: bool) -> Self {
         //
         self.f_image_uploaded = Some(val);
 
@@ -243,21 +261,21 @@ impl<'a> PageAspectRow<'a> {
         self
     }
 
-    pub fn total_unit_count(mut self, val: i32) -> Self {
+    pub const fn total_unit_count(mut self, val: i32) -> Self {
         //
         self.f_total_unit_count = Some(val);
 
         self
     }
 
-    pub fn translated_unit_count(mut self, val: i32) -> Self {
+    pub const fn translated_unit_count(mut self, val: i32) -> Self {
         //
         self.f_translated_unit_count = Some(val);
 
         self
     }
 
-    pub fn proofread_unit_count(mut self, val: i32) -> Self {
+    pub const fn proofread_unit_count(mut self, val: i32) -> Self {
         //
         self.f_proofread_unit_count = Some(val);
 

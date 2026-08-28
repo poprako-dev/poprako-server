@@ -47,7 +47,7 @@ use crate::usecase::internal::util::{LoadMode, collect_bounded};
 use crate::util::next_snowflake_id;
 
 // Default invitation validity window for member invite tokens.
-const EXPIRY_DELAY: Duration = Duration::from_secs(5 * 24 * 60 * 60);
+const EXPIRY_DELAY: Duration = Duration::from_hours(120);
 
 /// Creates a pending invitation for a team.
 #[instrument(level = "info", skip(nucl, repo, prom))]
@@ -58,7 +58,7 @@ pub async fn create<N, C, R, P>(
 ) -> BaseRest<CreateMemberInvitationVal>
 where
     C: Context + Send,
-    N: Nucl<Context = C, Error = BaseError>,
+    N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<ReptRead>,
     R: MemberInvitationRepo<C> + MemberRepo<C> + UserRepo<C> + Send + Sync,
     P: Prom<C> + Send + Sync,
@@ -192,7 +192,7 @@ pub async fn list_infos<C, R, I>(
 where
     C: Context,
     R: MemberInvitationRepo<C> + MemberRepo<C> + Sync,
-    I: ImagePool,
+    I: ImagePool + Sync,
 {
     let member_info = FindMemberInfo::UserTeam {
         user_id: &token.user_id,
@@ -259,7 +259,7 @@ pub async fn update_roles<N, C, R>(
 ) -> BaseRest<()>
 where
     C: Context + Send,
-    N: Nucl<Context = C, Error = BaseError>,
+    N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<ReptRead>,
     R: MemberInvitationRepo<C> + MemberRepo<C> + Send + Sync,
 {
@@ -304,7 +304,7 @@ pub async fn delete<N, C, R>(
 ) -> BaseRest<()>
 where
     C: Context + Send,
-    N: Nucl<Context = C, Error = BaseError>,
+    N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<ReptRead>,
     R: MemberInvitationRepo<C> + MemberRepo<C> + Send + Sync,
 {

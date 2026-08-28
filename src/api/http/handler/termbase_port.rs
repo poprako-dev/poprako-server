@@ -124,11 +124,10 @@ pub async fn import_team(
         )
         .await?;
 
-    let status = match import_termbase_val.created {
-        //
-        true => StatusCode::CREATED,
-
-        false => StatusCode::OK,
+    let status = if import_termbase_val.created {
+        StatusCode::CREATED
+    } else {
+        StatusCode::OK
     };
 
     import_termbase_val.accept(status)
@@ -170,11 +169,10 @@ pub async fn import_comic(
         )
         .await?;
 
-    let status = match import_termbase_val.created {
-        //
-        true => StatusCode::CREATED,
-
-        false => StatusCode::OK,
+    let status = if import_termbase_val.created {
+        StatusCode::CREATED
+    } else {
+        StatusCode::OK
     };
 
     import_termbase_val.accept(status)
@@ -209,14 +207,14 @@ fn export_response(
         .status(StatusCode::OK)
         .header(CONTENT_TYPE, "application/json");
 
-    let builder = match download {
+    let builder = if download {
         //
-        true => builder.header(
+        builder.header(
             CONTENT_DISPOSITION,
-            format!("attachment; filename=\"termbase_{}.json\"", termbase_id),
-        ),
-
-        false => builder,
+            format!("attachment; filename=\"termbase_{termbase_id}.json\""),
+        )
+    } else {
+        builder
     };
 
     builder.body(Body::from(body)).map_err(|err| {

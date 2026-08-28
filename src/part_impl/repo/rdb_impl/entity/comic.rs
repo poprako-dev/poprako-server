@@ -1,4 +1,10 @@
+#![allow(clippy::ref_option_ref)]
+
 //! Diesel entity types for the `t_comic` table.
+//!
+//! FIXME: Diesel's generated `AsChangeset` implementation reports
+//! `ref_option_ref` for the intentional tri-state `Option<Option<&T>>` field.
+//! Flattening it would change the unchanged, clear, and set update semantics.
 
 use diesel::{AsChangeset, Insertable, Queryable, Selectable};
 use time::OffsetDateTime;
@@ -6,6 +12,9 @@ use time::OffsetDateTime;
 use crate::complex::comic::ComicComplex;
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::write::comic::ComicEntry;
+use crate::part_impl::repo::rdb_impl::numeric::{
+    i32_from_usize, usize_from_i32,
+};
 use crate::part_impl::repo::rdb_impl::schema::t_comic;
 use crate::result::{BaseError, BaseRest, accept};
 use crate::value::image::{ImageExt, ImageHash};
@@ -117,10 +126,10 @@ impl TryFrom<ComicInfoRow> for ComicInfo {
             }
         };
 
-        accept(ComicInfo {
+        accept(Self {
             id: v.f_id,
             workset_id: v.f_workset_id,
-            index: v.f_index,
+            index: usize_from_i32(v.f_index, "t_comic.f_index")?,
             title: v.f_title,
             author: v.f_author,
             description: v.f_description,
@@ -129,7 +138,10 @@ impl TryFrom<ComicInfoRow> for ComicInfo {
             cover_version,
             cover_hash,
             cover_ext,
-            chapter_count: v.f_chapter_count,
+            chapter_count: usize_from_i32(
+                v.f_chapter_count,
+                "t_comic.f_chapter_count",
+            )?,
             creator_id: v.f_creator_id,
             workset: None,
             team: None,
@@ -166,13 +178,15 @@ pub struct ComicEntryRow<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> From<&'a ComicEntry> for ComicEntryRow<'a> {
-    fn from(comic_entry: &'a ComicEntry) -> Self {
+impl<'a> TryFrom<&'a ComicEntry> for ComicEntryRow<'a> {
+    type Error = BaseError;
+
+    fn try_from(comic_entry: &'a ComicEntry) -> Result<Self, Self::Error> {
         //
-        Self {
+        Ok(Self {
             f_id: &comic_entry.id,
             f_workset_id: &comic_entry.workset_id,
-            f_index: comic_entry.index,
+            f_index: i32_from_usize(comic_entry.index, "t_comic.f_index")?,
             f_title: &comic_entry.title,
             f_author: &comic_entry.author,
             f_description: comic_entry.description.as_deref(),
@@ -185,7 +199,7 @@ impl<'a> From<&'a ComicEntry> for ComicEntryRow<'a> {
             f_last_active_at: OffsetDateTime::now_utc(),
             f_created_at: OffsetDateTime::now_utc(),
             f_updated_at: OffsetDateTime::now_utc(),
-        }
+        })
     }
 }
 
@@ -216,7 +230,7 @@ pub struct ComicAspectRow<'a> {
 }
 
 impl<'a> ComicAspectRow<'a> {
-    pub fn new(updated_at: OffsetDateTime) -> Self {
+    pub const fn new(updated_at: OffsetDateTime) -> Self {
         //
         Self {
             f_title: None,
@@ -235,21 +249,21 @@ impl<'a> ComicAspectRow<'a> {
         }
     }
 
-    pub fn title(mut self, val: &'a str) -> Self {
+    pub const fn title(mut self, val: &'a str) -> Self {
         //
         self.f_title = Some(val);
 
         self
     }
 
-    pub fn author(mut self, val: &'a str) -> Self {
+    pub const fn author(mut self, val: &'a str) -> Self {
         //
         self.f_author = Some(val);
 
         self
     }
 
-    pub fn description(mut self, val: Option<&'a str>) -> Self {
+    pub const fn description(mut self, val: Option<&'a str>) -> Self {
         //
         self.f_description = Some(val);
 
@@ -263,14 +277,14 @@ impl<'a> ComicAspectRow<'a> {
         self
     }
 
-    pub fn cover_key(mut self, val: &'a str) -> Self {
+    pub const fn cover_key(mut self, val: &'a str) -> Self {
         //
         self.f_cover_key = Some(val);
 
         self
     }
 
-    pub fn cover_uploaded(mut self, val: bool) -> Self {
+    pub const fn cover_uploaded(mut self, val: bool) -> Self {
         //
         self.f_cover_uploaded = Some(val);
 
@@ -284,35 +298,35 @@ impl<'a> ComicAspectRow<'a> {
         self
     }
 
-    pub fn cover_hash(mut self, val: &'a ImageHash) -> Self {
+    pub const fn cover_hash(mut self, val: &'a ImageHash) -> Self {
         //
         self.f_cover_hash = Some(val.as_bytes());
 
         self
     }
 
-    pub fn cover_ext(mut self, val: ImageExt) -> Self {
+    pub const fn cover_ext(mut self, val: ImageExt) -> Self {
         //
         self.f_cover_extension = Some(val.suffix());
 
         self
     }
 
-    pub fn chapter_count(mut self, val: i32) -> Self {
+    pub const fn chapter_count(mut self, val: i32) -> Self {
         //
         self.f_chapter_count = Some(val);
 
         self
     }
 
-    pub fn chapter_next_index(mut self, val: i32) -> Self {
+    pub const fn chapter_next_index(mut self, val: i32) -> Self {
         //
         self.f_chapter_next_index = Some(val);
 
         self
     }
 
-    pub fn last_active_at(mut self, val: OffsetDateTime) -> Self {
+    pub const fn last_active_at(mut self, val: OffsetDateTime) -> Self {
         //
         self.f_last_active_at = Some(val);
 

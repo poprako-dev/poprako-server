@@ -25,7 +25,7 @@ pub fn next_snowflake_u64() -> u64 {
     ensure_snowflake_init();
 
     // Generate a snowflake id.
-    k_snowflake::create_snowflake().to_decimal() as u64
+    k_snowflake::create_snowflake().to_decimal().cast_unsigned()
 }
 
 // Initialise the global snowflake instance once from the
@@ -50,7 +50,7 @@ fn load_snowflake_node_id() -> u16 {
         //
         Ok(instance) if instance <= 1023 => instance,
 
-        _ => unreachable!(),
+        _ => 0,
     }
 }
 
@@ -58,7 +58,7 @@ fn load_snowflake_node_id() -> u16 {
 ///
 /// `Skip` preserves the stored value, `Clear` resets it, and `Assign` replaces
 /// it with the carried value.
-#[derive(Debug, Clone, Default, PartialEq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub enum Patch<T> {
     //
     /// Resets the stored field.

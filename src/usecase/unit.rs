@@ -22,7 +22,7 @@ use crate::data::instr::unit::{
 };
 use crate::data::val::unit::ListPageUnitInfosVal;
 use crate::data::view::unit::UnitInfoView;
-use crate::model::read::proj::unit::UnitCounters;
+use crate::model::read::proj::unit::UnitCountMetrics;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::Serial;
 use crate::part::repo::assignment::AssignmentRepo;
@@ -54,8 +54,8 @@ use crate::value::unit::{MAX_UNIT_SEARCH_MATCH_COUNT, UnitEditPerm};
 // Search pages in bounded concurrent batches.
 const SEARCH_PAGE_BATCH_SIZE: usize = 20;
 
-#[instrument(level = "info", skip(repo))]
 /// Lists visible Units for one Page in final linked-list order.
+#[instrument(level = "info", skip(repo))]
 pub async fn list_infos<C, R>(
     (repo,): (&R,),
     token: UserToken,
@@ -79,7 +79,7 @@ where
     )
     .await?;
 
-    UnitPermComplex::ensure_user_can_list_infos(access_info.as_access())?;
+    UnitPermComplex::ensure_user_can_list_infos(&access_info.as_access())?;
 
     let unit_infos = ListUnitInfos {
         page_id: &page_info.id,
@@ -87,10 +87,10 @@ where
     .run_on(repo)
     .await?;
 
-    let counters = UnitCounters {
-        total_unit_count: page_info.total_unit_count,
-        translated_unit_count: page_info.translated_unit_count,
-        proofread_unit_count: page_info.proofread_unit_count,
+    let counters = UnitCountMetrics {
+        total: page_info.total_unit_count,
+        translated: page_info.translated_unit_count,
+        proofread: page_info.proofread_unit_count,
     };
 
     accept(ListPageUnitInfosVal::from_parts(unit_infos, counters))
@@ -122,7 +122,7 @@ where
         phrase,
     } = instr;
 
-    let phrase = UnitComplex::normalize_search_phrase(phrase)?;
+    let phrase = UnitComplex::normalize_search_phrase(&phrase)?;
 
     let access_info = UnitAccessLoader::load_access_info_from_chapter::<C, R>(
         repo,
@@ -131,7 +131,7 @@ where
     )
     .await?;
 
-    UnitPermComplex::ensure_user_can_list_infos(access_info.as_access())?;
+    UnitPermComplex::ensure_user_can_list_infos(&access_info.as_access())?;
 
     let page_infos = ListPageInfos {
         chapter_id: &chapter_id,
@@ -141,10 +141,18 @@ where
 
     let mut found_infos = Vec::new();
 
-    for page_batch in page_infos.chunks(SEARCH_PAGE_BATCH_SIZE) {
+    let mut remaining_page_infos = page_infos.iter();
+
+    while let Some(first_page_info) = remaining_page_infos.next() {
         //
+        let page_batch = std::iter::once(first_page_info).chain(
+            remaining_page_infos
+                .by_ref()
+                .take(SEARCH_PAGE_BATCH_SIZE.saturating_sub(1)),
+        );
+
         let batch_unit_infos = futures_util::future::try_join_all(
-            page_batch.iter().map(|page_info| async move {
+            page_batch.map(|page_info| async move {
                 //
                 ListUnitInfos {
                     page_id: &page_info.id,
@@ -198,8 +206,8 @@ where
     accept(found_infos)
 }
 
-#[instrument(level = "info", skip(nucl, repo))]
 /// Saves one authorized batch of Unit edits without returning a payload.
+#[instrument(level = "info", skip(nucl, repo))]
 pub async fn save_edits<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
@@ -207,7 +215,7 @@ pub async fn save_edits<N, C, R>(
 ) -> BaseRest<()>
 where
     C: Context + Send,
-    N: Nucl<Context = C, Error = BaseError>,
+    N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<Serial>,
     R: PageRepo<C>
         + UnitRepo<C>
@@ -288,13 +296,13 @@ where
             .step_on(repo, context)
             .await?;
 
-            let old_counters = UnitCounters {
-                total_unit_count: page_info.total_unit_count,
-                translated_unit_count: page_info.translated_unit_count,
-                proofread_unit_count: page_info.proofread_unit_count,
+            let old_counters = UnitCountMetrics {
+                total: page_info.total_unit_count,
+                translated: page_info.translated_unit_count,
+                proofread: page_info.proofread_unit_count,
             };
 
-            let delta = old_counters.calc_delta(counters);
+            let delta = old_counters.calc_delta(counters)?;
 
             AdjustChapterUnitCounters {
                 id: &page_info.chapter_id,

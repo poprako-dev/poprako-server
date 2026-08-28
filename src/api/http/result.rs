@@ -1,3 +1,11 @@
+#![allow(clippy::option_if_let_else)]
+// FIXME: This module-level allow is needed because Clippy reports
+// `option_if_let_else` inside the generated `Serialize` implementation for
+// `HttpBody<T>`, at the ordinary generic `data: T` field. `T` is not an
+// `Option`, and the source contains no matching `if let` expression; Clippy's
+// suggested `map_or_else` call on `T` is therefore not applicable. Reproduce
+// and report this case upstream, then remove the allow if the false positive
+// is fixed.
 //! HTTP boundary result types: success envelope, error envelope, and the
 //! `Accept` trait that turns a usecase value into a valued response.
 //!
@@ -62,7 +70,7 @@ impl HttpError {
 
         Self {
             status,
-            code: NonZeroU16::new(code).expect("non-zero error code"),
+            code: nonzero_code(code),
             message: Some(message.to_string()),
         }
     }
@@ -72,7 +80,7 @@ impl HttpError {
         //
         Self {
             status: StatusCode::UNPROCESSABLE_ENTITY,
-            code: NonZeroU16::new(7).expect("non-zero error code"),
+            code: nonzero_code(7),
             message: Some(message.to_string()),
         }
     }
@@ -82,7 +90,7 @@ impl HttpError {
         //
         Self {
             status: StatusCode::INTERNAL_SERVER_ERROR,
-            code: NonZeroU16::new(1).expect("non-zero error code"),
+            code: nonzero_code(1),
             message: Some(trl("error-internal")),
         }
     }
@@ -113,7 +121,7 @@ impl From<BaseError> for HttpError {
 
             BaseError::Retryable { message } => Self {
                 status: StatusCode::CONFLICT,
-                code: NonZeroU16::new(8).expect("non-zero error code"),
+                code: nonzero_code(8),
                 message: Some(message),
             },
 
@@ -263,6 +271,9 @@ pub type HttpResult<T> = Result<HttpBody<T>, HttpError>;
 pub type HttpNoContent = Result<NoContent, HttpError>;
 
 /// Converts a usecase value into a valued [`HttpResult`] with the given status.
+/// NOTE: accept is not only used for return a successful `Ok`, but also
+/// provide type infos in type inferences, so it is necessary.
+#[allow(clippy::unnecessary_wraps)]
 pub fn accept<T>(data: T, status_code: StatusCode) -> HttpResult<T>
 where
     T: Serialize,
@@ -295,4 +306,15 @@ where
 /// Returns a `204 No Content` result with an empty body.
 pub fn no_content() -> Result<NoContent, HttpError> {
     Ok(NoContent::new())
+}
+
+// Converts one HTTP application code into its non-zero representation.
+const fn nonzero_code(code: u16) -> NonZeroU16 {
+    //
+    match NonZeroU16::new(code) {
+        //
+        Some(code) => code,
+
+        None => NonZeroU16::MIN,
+    }
 }

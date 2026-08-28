@@ -7,9 +7,9 @@ use crate::value::image::{ImageExt, ImageHash};
 // Build a lightweight page fixture with deterministic metadata.
 fn page(
     id: &str,
-    index: i32,
+    index: usize,
     hash: u8,
-    total_unit_count: i32,
+    total_unit_count: usize,
     image_uploaded: bool,
 ) -> PageInfo {
     PageInfo {

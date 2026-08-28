@@ -45,7 +45,7 @@ pub fn pool_build(source: BuildError) -> BaseError {
 }
 
 /// Converts a pool checkout error into an unrecoverable `RegularError`.
-pub fn pool_get(source: PoolError) -> BaseError {
+pub fn pool_get(source: &PoolError) -> BaseError {
     //
     tracing::error!(
         operation = "get_database_connection",

@@ -14,6 +14,7 @@ use crate::part::repo::oper::comic::{
 use crate::part_impl::repo::mock_impl::comic::{
     get_comic_info, list_comic_infos, mark_comic_cover_uploaded,
 };
+use crate::part_impl::repo::mock_impl::nucl::apply_signed_delta;
 use crate::part_impl::repo::mock_impl::{Mock, MockContext, expected, now};
 use crate::result::{BaseError, accept};
 
@@ -330,7 +331,7 @@ impl<'a> Step<AllocComicChapterIndex<'a>, MockContext> for Mock {
         &self,
         context: &mut MockContext,
         oper: &AllocComicChapterIndex<'a>,
-    ) -> Result<i32, Self::Error> {
+    ) -> Result<usize, Self::Error> {
         //
         // Validate comic exists before computing chapter count.
         context
@@ -345,7 +346,7 @@ impl<'a> Step<AllocComicChapterIndex<'a>, MockContext> for Mock {
             .chapters
             .iter()
             .filter(|chapter_info| chapter_info.comic_id == oper.id)
-            .count() as i32;
+            .count();
 
         accept(index)
     }
@@ -374,7 +375,7 @@ impl<'a> Step<UpdateComicChapterCount<'a>, MockContext> for Mock {
             .find(|comic| comic.id == oper.id)
             .ok_or_else(|| expected("error-comic-not-found"))?;
 
-        comic.chapter_count += oper.delta;
+        apply_signed_delta(&mut comic.chapter_count, oper.delta)?;
 
         comic.updated_at = now();
 

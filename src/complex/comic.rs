@@ -53,7 +53,7 @@ impl ComicComplex {
     }
 
     /// Compose a display title from raw fields for search materialization.
-    pub fn compose_title(index: i32, author: &str, title: &str) -> String {
+    pub fn compose_title(index: usize, author: &str, title: &str) -> String {
         format!("{} {} {}", stored_index_to_user_index(index), author, title)
     }
 
@@ -88,14 +88,16 @@ impl ComicPermComplex {
     }
 
     /// Verify the caller may list comics.
-    pub fn ensure_user_can_list_infos(
+    pub const fn ensure_user_can_list_infos(
         member_info: &MemberInfo,
     ) -> BaseRest<()> {
         check_user_is_team_member(member_info)
     }
 
     /// Verify the caller may read a comic.
-    pub fn ensure_user_can_get_info(member_info: &MemberInfo) -> BaseRest<()> {
+    pub const fn ensure_user_can_get_info(
+        member_info: &MemberInfo,
+    ) -> BaseRest<()> {
         check_user_is_team_member(member_info)
     }
 

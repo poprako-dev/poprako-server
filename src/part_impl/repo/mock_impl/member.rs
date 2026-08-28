@@ -223,17 +223,15 @@ fn list_member_infos(
                 .filter(|member_info| member_info.team_id == *team_id)
                 .filter(|member_info| {
                     //
-                    fuzzy_nickname
-                        .as_ref()
-                        .map(|keyword| {
-                            member_info.user_nickname.contains(keyword.as_str())
-                        })
-                        .unwrap_or(true)
+                    fuzzy_nickname.as_ref().is_none_or(|keyword| {
+                        member_info.user_nickname.contains(keyword.as_str())
+                    })
                 })
                 .filter(|member_info| {
                     //
-                    role.map(|role| member_info.roles.has_any_role(&[role]))
-                        .unwrap_or(true)
+                    role.is_none_or(|role| {
+                        member_info.roles.has_any_role(&[role])
+                    })
                 })
                 .cloned()
                 .collect::<Vec<_>>(),
@@ -265,20 +263,15 @@ fn list_member_infos(
 
     let limit = limit as usize;
 
-    match offset >= member_infos.len() {
+    if offset >= member_infos.len() {
+        Vec::new()
+    } else {
         //
         // Internal implementation detail.
         // Internal implementation detail.
-        true => Vec::new(),
+        let end = std::cmp::min(offset + limit, member_infos.len());
 
-        false => {
-            //
-            // Internal implementation detail.
-            // Internal implementation detail.
-            let end = std::cmp::min(offset + limit, member_infos.len());
-
-            member_infos[offset..end].to_vec()
-        }
+        member_infos[offset..end].to_vec()
     }
 }
 

@@ -34,7 +34,7 @@ pub async fn list_infos<C, R, I>(
 where
     C: Context,
     R: CommentRepo<C> + MemberRepo<C> + Sync,
-    I: ImagePool,
+    I: ImagePool + Sync,
 {
     let comment_list_spec = Into::<CommentListSpec>::into(instr);
 

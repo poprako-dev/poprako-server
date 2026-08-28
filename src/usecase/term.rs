@@ -40,7 +40,7 @@ pub async fn create<N, C, R>(
 ) -> BaseRest<CreateTermVal>
 where
     C: Context + Send,
-    N: Nucl<Context = C, Error = BaseError>,
+    N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<ReptRead>,
     R: TermbaseRepo<C>
         + TermRepo<C>
@@ -51,7 +51,7 @@ where
 {
     let term_entry = TermComplex::build_entry(
         instr.termbase_id,
-        instr.source,
+        &instr.source,
         instr.targets,
         instr.comment,
         token.user_id.clone(),
@@ -181,7 +181,7 @@ pub async fn update_info<N, C, R>(
 ) -> BaseRest<()>
 where
     C: Context + Send,
-    N: Nucl<Context = C, Error = BaseError>,
+    N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<ReptRead>,
     R: TermbaseRepo<C>
         + TermRepo<C>
@@ -192,7 +192,7 @@ where
 {
     let term_info_update = TermComplex::build_update(
         instr.id,
-        instr.source,
+        &instr.source,
         instr.targets,
         instr.comment,
     )?;
@@ -258,7 +258,7 @@ pub async fn delete<N, C, R>(
 ) -> BaseRest<()>
 where
     C: Context + Send,
-    N: Nucl<Context = C, Error = BaseError>,
+    N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<ReptRead>,
     R: TermbaseRepo<C>
         + TermRepo<C>

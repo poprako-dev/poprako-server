@@ -148,7 +148,7 @@ where
     N: Nucl<Context = C, Error = BaseError>,
     C::Level: AtLeast<ReptRead>,
     R: MemberRepo<C> + MemberInvitationRepo<C> + UserRepo<C> + Send + Sync,
-    I: ImagePool,
+    I: ImagePool + Sync,
 {
     let current_user_id = token.user_id;
 
@@ -251,7 +251,7 @@ pub async fn list_infos<C, R, I>(
 where
     C: Context,
     R: MemberRepo<C> + Sync,
-    I: ImagePool,
+    I: ImagePool + Sync,
 {
     let member_list_spec = instr.try_into()?;
 

@@ -5,6 +5,7 @@ use time::OffsetDateTime;
 
 use crate::model::read::proj::member_invitation::MemberInvitationInfo;
 use crate::model::write::member_invitation::MemberInvitationEntry;
+use crate::part_impl::repo::rdb_impl::numeric::u32_from_i64;
 use crate::part_impl::repo::rdb_impl::schema::t_member_invitation;
 use crate::result::BaseError;
 use crate::value::role::RoleMask;
@@ -36,9 +37,12 @@ impl TryFrom<MemberInvitationInfoRow> for MemberInvitationInfo {
 
     fn try_from(v: MemberInvitationInfoRow) -> Result<Self, Self::Error> {
         //
-        let roles = RoleMask::try_from(v.f_role_mask as u32)?;
+        let roles = RoleMask::try_from(u32_from_i64(
+            v.f_role_mask,
+            "t_member_invitation.f_role_mask",
+        )?)?;
 
-        Ok(MemberInvitationInfo {
+        Ok(Self {
             id: v.f_id,
             team_id: v.f_team_id,
             invitor: None,
@@ -104,7 +108,7 @@ pub struct MemberInvitationAspectRow {
 }
 
 impl MemberInvitationAspectRow {
-    pub fn new(updated_at: OffsetDateTime) -> Self {
+    pub const fn new(updated_at: OffsetDateTime) -> Self {
         //
         Self {
             f_pending: None,
@@ -113,14 +117,14 @@ impl MemberInvitationAspectRow {
         }
     }
 
-    pub fn pending(mut self, val: bool) -> Self {
+    pub const fn pending(mut self, val: bool) -> Self {
         //
         self.f_pending = Some(val);
 
         self
     }
 
-    pub fn role_mask(mut self, val: i64) -> Self {
+    pub const fn role_mask(mut self, val: i64) -> Self {
         //
         self.f_role_mask = Some(val);
 

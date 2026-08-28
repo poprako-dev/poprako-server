@@ -31,6 +31,10 @@ pub struct AppConfig {
 impl AppConfig {
     /// Reads the application configuration from `app_config.toml` in the
     /// current working directory.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the file cannot be read or its TOML is invalid.
     pub async fn from_default_file() -> anyhow::Result<Self> {
         //
         let content = tokio::fs::read_to_string(DEFAULT_FILE_NAME)

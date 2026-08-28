@@ -114,7 +114,7 @@ fn assignment(
 
 fn page(
     id: &str,
-    index: i32,
+    index: usize,
     image_key: Option<&str>,
     image_uploaded: bool,
 ) -> PageInfo {

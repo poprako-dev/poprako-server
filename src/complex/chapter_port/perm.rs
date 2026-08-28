@@ -30,7 +30,7 @@ pub struct ChapterPortPermComplex;
 impl ChapterPortPermComplex {
     /// Verify the caller may export chapter translations.
     pub fn ensure_user_can_export(
-        access: ChapterExportAccess<'_>,
+        access: &ChapterExportAccess<'_>,
     ) -> BaseRest<()> {
         //
         let access_check = match access {

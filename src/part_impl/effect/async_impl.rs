@@ -5,6 +5,7 @@ mod chapter;
 // Event dispatch logic.
 mod dispatch;
 // Background event handler runner.
+// TODO: refactor to Actor
 mod handler;
 // User event handlers.
 mod user;
@@ -13,6 +14,7 @@ mod user;
 // Mock and integration tests for async dispatcher behavior.
 mod tests;
 
+use std::num::NonZeroUsize;
 use std::sync::Arc;
 
 use poprako_orchestra::Context;
@@ -49,7 +51,7 @@ pub struct AsyncEffectDevelop {
 
 impl AsyncEffectDevelop {
     /// Creates a dispatcher and launches its background task.
-    pub fn new<C, R>(repo: Arc<R>, buffer_size: usize) -> Self
+    pub fn new<C, R>(repo: Arc<R>, buf_size: NonZeroUsize) -> Self
     where
         C: Context + Send + 'static,
         R: AssignmentRepo<C>
@@ -61,7 +63,7 @@ impl AsyncEffectDevelop {
             + Sync
             + 'static,
     {
-        let (send, recv) = tokio::sync::mpsc::channel(buffer_size);
+        let (send, recv) = tokio::sync::mpsc::channel(buf_size.get());
 
         let token = CancellationToken::new();
 
@@ -113,8 +115,8 @@ impl Clone for AsyncEffectDevelop {
 }
 
 impl Develop for AsyncEffectDevelop {
-    #[instrument(level = "info", skip_all)]
     // Internal implementation of `develop`.
+    #[instrument(level = "info", skip_all)]
     async fn develop<I>(&self, iter: I)
     where
         I: EffectEvent + Send,
@@ -130,7 +132,9 @@ impl Develop for AsyncEffectDevelop {
                 match e {
                     //
                     // Internal implementation detail.
-                    TrySendError::Full(_) if self.token.is_cancelled() => {
+                    TrySendError::Full(_) | TrySendError::Closed(_)
+                        if self.token.is_cancelled() =>
+                    {
                         break;
                     }
 
@@ -141,10 +145,6 @@ impl Develop for AsyncEffectDevelop {
                             event = event_name(&event),
                             "[AsyncEffectDevelop::develop] event queue is full, dropping event",
                         );
-                    }
-
-                    TrySendError::Closed(_) if self.token.is_cancelled() => {
-                        break;
                     }
 
                     TrySendError::Closed(event) => {
@@ -172,7 +172,7 @@ impl Drop for AsyncEffectDevelop {
 
 /// Returns a human-readable label for a domain event variant.
 // Used by queue diagnostics when logging full/closed queue drop events.
-fn event_name(event: &Event) -> &'static str {
+const fn event_name(event: &Event) -> &'static str {
     //
     match event {
         //

@@ -115,7 +115,7 @@ use crate::value::member_invitation::MemberInvitationInclOpt;
 use crate::value::role::RoleField;
 use crate::value::unit::UnitTextPart;
 
-/// Top-level OpenAPI document for the PopRaKo HTTP API.
+/// Top-level `OpenAPI` document for the `PopRaKo` HTTP API.
 #[derive(OpenApi)]
 #[openapi(
     paths(

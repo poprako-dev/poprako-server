@@ -16,7 +16,7 @@ use crate::part_impl::repo::HybRepo;
 use crate::result::{BaseError, BaseRest, accept};
 
 // One successful mark keeps a user online for ten minutes.
-const ONLINE_USER_TTL: Duration = Duration::from_secs(10 * 60);
+const ONLINE_USER_TTL: Duration = Duration::from_mins(10);
 
 // Refresh one online-user deadline using an explicit clock instant.
 fn mark_user_online_at(
@@ -26,7 +26,9 @@ fn mark_user_online_at(
     now: Instant,
 ) {
     //
-    let expires_at = now + ONLINE_USER_TTL;
+    let Some(expires_at) = now.checked_add(ONLINE_USER_TTL) else {
+        return;
+    };
 
     online_user_deadlines
         .entry(team_id.into())

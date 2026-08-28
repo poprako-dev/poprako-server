@@ -25,8 +25,8 @@ use crate::value::chapter::StageMask;
 /// from the comic detail screen. Only one chapter per comic should be
 /// pinned at any time.
 ///
-/// Workflow stages are ordered: raw_provide → translate → proofread →
-/// typeset_redraw → review → publish. Each phase transitions through
+/// Workflow stages are ordered: `raw_provide` → translate → proofread →
+/// `typeset_redraw` → review → publish. Each phase transitions through
 /// [`StagePhase`] values independently.
 #[derive(Clone)]
 pub struct ChapterInfo {
@@ -42,18 +42,18 @@ pub struct ChapterInfo {
     /// Marks this chapter as the currently active chapter within its comic.
     pub is_pinned: bool,
     /// Ordinal position of this chapter within the comic, used for sorting.
-    pub index: i32,
+    pub index: usize,
     /// Human-readable chapter subtitle or number, such as "Chapter 5".
     pub subtitle: String,
 
     /// Denormalised total count of units in this chapter.
-    pub page_count: i32,
+    pub page_count: usize,
     /// Denormalised number of units submitted for translation.
-    pub total_unit_count: i32,
+    pub total_unit_count: usize,
     /// Denormalised number of units with a completed translation.
-    pub translated_unit_count: i32,
+    pub translated_unit_count: usize,
     /// Denormalised number of units with a completed proofread.
-    pub proofread_unit_count: i32,
+    pub proofread_unit_count: usize,
 
     /// Bitmask tracking the completion phase of each workflow stage.
     pub stages: StageMask,

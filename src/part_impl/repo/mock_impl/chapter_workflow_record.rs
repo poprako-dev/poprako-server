@@ -37,17 +37,13 @@ fn list_infos(
 
     let offset = offset as usize;
 
-    match offset >= record_infos.len() {
+    if offset >= record_infos.len() {
+        Vec::new()
+    } else {
         //
-        true => Vec::new(),
+        let end = std::cmp::min(offset + limit as usize, record_infos.len());
 
-        false => {
-            //
-            let end =
-                std::cmp::min(offset + limit as usize, record_infos.len());
-
-            record_infos[offset..end].to_vec()
-        }
+        record_infos[offset..end].to_vec()
     }
 }
 

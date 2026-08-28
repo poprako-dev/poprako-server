@@ -19,14 +19,16 @@ pub struct CommentPermComplex;
 
 impl CommentPermComplex {
     /// Verify the caller may list comments under the team.
-    pub fn ensure_user_can_list_infos(
+    pub const fn ensure_user_can_list_infos(
         member_info: &MemberInfo,
     ) -> BaseRest<()> {
         check_user_is_team_member(member_info)
     }
 
     /// Verify the caller may create a comment under the team.
-    pub fn ensure_user_can_create(member_info: &MemberInfo) -> BaseRest<()> {
+    pub const fn ensure_user_can_create(
+        member_info: &MemberInfo,
+    ) -> BaseRest<()> {
         check_user_is_team_member(member_info)
     }
 }

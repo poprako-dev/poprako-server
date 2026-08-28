@@ -480,12 +480,9 @@ fn resolve_id(
     //
     validate_id(&id)?;
 
-    match local_id_map.get(&id) {
-        //
-        Some(resolved_id) => accept(resolved_id.clone()),
-
-        None => accept(id),
-    }
+    local_id_map
+        .get(&id)
+        .map_or_else(|| accept(id), |resolved_id| accept(resolved_id.clone()))
 }
 
 // Resolve a patch id, handling Clear, Assign, and Skip variants.

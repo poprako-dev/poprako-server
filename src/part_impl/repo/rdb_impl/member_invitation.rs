@@ -75,8 +75,8 @@ async fn list_infos(
 
     let rows = query
         .order_by(f_created_at.desc())
-        .offset(spec.offset as i64)
-        .limit(spec.limit as i64)
+        .offset(i64::from(spec.offset))
+        .limit(i64::from(spec.limit))
         .load::<MemberInvitationInfoRow>(conn)
         .await
         .map_err(diesel)?;

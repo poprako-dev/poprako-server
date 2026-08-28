@@ -136,7 +136,7 @@ fn search_scope(page_count: usize) -> Mock {
 
         page_info.id = format!("page-{}", page_index + 1);
 
-        page_info.index = i32::try_from(page_index).unwrap();
+        page_info.index = page_index;
 
         mock.seed_page(page_info);
     }

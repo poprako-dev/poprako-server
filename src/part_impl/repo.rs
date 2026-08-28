@@ -16,7 +16,7 @@ use dashmap::DashMap;
 
 use crate::shared::RdbCore;
 
-/// Hybrid repository handle backed by PostgreSQL and process-local memory.
+/// Hybrid repository handle backed by `PostgreSQL` and process-local memory.
 #[derive(Clone)]
 pub struct HybRepo {
     //
@@ -28,6 +28,7 @@ pub struct HybRepo {
 
 impl HybRepo {
     /// Builds a new hybrid repository from an [`RdbCore`] connection pool.
+    #[must_use]
     pub fn new(core: RdbCore) -> Self {
         //
         Self {

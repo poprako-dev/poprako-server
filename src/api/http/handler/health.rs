@@ -75,19 +75,14 @@ pub async fn detailed_metrics(
         return Err(StatusCode::SERVICE_UNAVAILABLE);
     };
 
-    Ok((
-        [(
-            header::CONTENT_TYPE,
-            HeaderValue::from_static(
-                "text/plain; version=0.0.4; charset=utf-8",
-            ),
-        )],
-        metrics_text,
-    )
-        .into_response())
+    let content_type =
+        HeaderValue::try_from("text/plain; version=0.0.4; charset=utf-8")
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok(([(header::CONTENT_TYPE, content_type)], metrics_text).into_response())
 }
 
 // Returns true only for loopback addresses, restricting internal status endpoints to localhost.
-fn is_loopback(addr: SocketAddr) -> bool {
+const fn is_loopback(addr: SocketAddr) -> bool {
     addr.ip().is_loopback()
 }

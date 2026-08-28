@@ -10,7 +10,7 @@ pub struct WorksetEntry {
     /// Foreign key referencing the owning team.
     pub team_id: String,
     /// Display ordering index within the team.
-    pub index: i32,
+    pub index: usize,
 
     /// Human-readable workset name.
     pub name: String,

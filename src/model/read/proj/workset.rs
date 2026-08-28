@@ -14,7 +14,7 @@ pub struct WorksetInfo {
     /// Foreign key referencing the owning team.
     pub team_id: String,
     /// Display ordering index within the team.
-    pub index: i32,
+    pub index: usize,
 
     /// Human-readable workset name.
     pub name: String,
@@ -22,7 +22,7 @@ pub struct WorksetInfo {
     pub description: Option<String>,
 
     /// Denormalized count of comics in this workset.
-    pub comic_count: i32,
+    pub comic_count: usize,
 
     /// Timestamp when this workset was created.
     pub created_at: OffsetDateTime,

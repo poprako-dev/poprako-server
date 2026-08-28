@@ -1,7 +1,7 @@
 use poprako_orchestra::Oper;
 
 use crate::model::read::proj::page::PageInfo;
-use crate::model::read::proj::unit::UnitCounters;
+use crate::model::read::proj::unit::UnitCountMetrics;
 use crate::model::write::page::{
     PageEntry, PageImageRepl, PageImageReservation, PageManifestRepl,
 };
@@ -113,7 +113,7 @@ pub struct SetPageUnitCounters<'a> {
     /// The page ID.
     pub id: &'a str,
     /// The unit counters to set.
-    pub counters: UnitCounters,
+    pub counters: UnitCountMetrics,
 }
 
 /// Deletes pages by chapter or by a list of IDs.

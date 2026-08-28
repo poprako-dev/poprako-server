@@ -77,15 +77,23 @@ pub struct MetricMinute {
 }
 
 impl MetricMinute {
+    // Builds an empty snapshot when a bucket cannot be resolved.
+    const fn empty(minute: u64) -> Self {
+        //
+        Self {
+            minute,
+            total: 0,
+            average_latency_ms: 0.0,
+        }
+    }
+
     // Builds one minute bucket snapshot from a raw bucket state.
     fn from_bucket(minute: u64, bucket: &MetricBucket) -> Self {
         //
-        let (total, total_latency_micros) = match bucket.minute == minute {
-            //
-            // Keep latency and count aligned with the requested minute.
-            true => (bucket.total, bucket.total_latency_micros),
-
-            false => (0, 0),
+        let (total, total_latency_micros) = if bucket.minute == minute {
+            (bucket.total, bucket.total_latency_micros)
+        } else {
+            (0, 0)
         };
 
         Self {
@@ -154,9 +162,22 @@ impl MetricWindow {
         (first_minute..=minute)
             .map(|window_minute| {
                 //
-                let bucket_index = window_minute as usize % BUCKET_COUNT;
+                let bucket_index =
+                    usize::try_from(window_minute % BUCKET_COUNT as u64)
+                        .unwrap_or_default();
 
-                let bucket = lock_bucket(&self.buckets[bucket_index]);
+                let Some(bucket) = self.buckets.get(bucket_index) else {
+                    //
+                    tracing::error!(
+                        bucket_index,
+                        bucket_count = BUCKET_COUNT,
+                        "internal invariant violated: metric bucket is missing",
+                    );
+
+                    return MetricMinute::empty(window_minute);
+                };
+
+                let bucket = lock_bucket(bucket);
 
                 MetricMinute::from_bucket(window_minute, &bucket)
             })
@@ -172,9 +193,21 @@ impl MetricWindow {
         latency: Duration,
     ) {
         //
-        let bucket_index = minute as usize % BUCKET_COUNT;
+        let bucket_index =
+            usize::try_from(minute % BUCKET_COUNT as u64).unwrap_or_default();
 
-        let mut bucket = lock_bucket(&self.buckets[bucket_index]);
+        let Some(bucket) = self.buckets.get(bucket_index) else {
+            //
+            tracing::error!(
+                bucket_index,
+                bucket_count = BUCKET_COUNT,
+                "internal invariant violated: metric bucket is missing",
+            );
+
+            return;
+        };
+
+        let mut bucket = lock_bucket(bucket);
 
         if bucket.minute != minute {
             bucket.reset(minute);
@@ -196,6 +229,9 @@ impl MetricWindow {
         }
 
         let Some(matched_path) = matched_path else {
+            //
+            drop(bucket);
+
             return;
         };
 
@@ -203,6 +239,8 @@ impl MetricWindow {
             bucket.by_path.entry(matched_path.to_owned()).or_default();
 
         *path_total = path_total.saturating_add(1);
+
+        drop(bucket);
     }
 
     // Reads and aggregates the current 60-minute window values.
@@ -290,12 +328,15 @@ fn lock_bucket(bucket: &Mutex<MetricBucket>) -> MutexGuard<'_, MetricBucket> {
 // Converts total latency microseconds into a millisecond average.
 fn average_latency_ms(total_latency_micros: u64, total: u64) -> f64 {
     //
-    match total {
-        //
-        0 => 0.0,
-
-        _ => total_latency_micros as f64 / total as f64 / 1_000.0,
+    if total == 0 {
+        return 0.0;
     }
+
+    let latency = total_latency_micros.to_string().parse().unwrap_or(f64::MAX);
+
+    let total = total.to_string().parse::<f64>().unwrap_or(f64::MAX);
+
+    latency / total / 1_000.0
 }
 
 // Merges per-key counters from one map into another without losing existing values.

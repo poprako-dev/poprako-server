@@ -14,11 +14,11 @@ pub const MAX_CHAPTER_IMPORT_PAGE_COUNT: usize = 200;
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub enum TranslationFormat {
     //
-    /// LabelPlus translation format.
+    /// `LabelPlus` translation format.
     #[serde(rename = "label-plus")]
     LabelPlus,
 
-    /// PopRaKo native translation format.
+    /// `PopRaKo` native translation format.
     #[serde(rename = "poprako")]
     PopRaKo,
 }
@@ -28,20 +28,20 @@ pub enum TranslationFormat {
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ExportFormatSpec {
     //
-    /// Whether to generate LabelPlus text.
+    /// Whether to generate `LabelPlus` text.
     label_plus: bool,
-    /// Whether to generate the native PopRaKo document.
+    /// Whether to generate the native `PopRaKo` document.
     poprako: bool,
 }
 
 impl ExportFormatSpec {
-    /// Selects only LabelPlus output.
+    /// Selects only `LabelPlus` output.
     pub const LABEL_PLUS: Self = Self {
         label_plus: true,
         poprako: false,
     };
 
-    /// Selects only native PopRaKo output.
+    /// Selects only native `PopRaKo` output.
     pub const POPRAKO: Self = Self {
         label_plus: false,
         poprako: true,
@@ -53,12 +53,12 @@ impl ExportFormatSpec {
         poprako: true,
     };
 
-    /// Returns whether LabelPlus output is selected.
+    /// Returns whether `LabelPlus` output is selected.
     pub const fn includes_label_plus(self) -> bool {
         self.label_plus
     }
 
-    /// Returns whether native PopRaKo output is selected.
+    /// Returns whether native `PopRaKo` output is selected.
     pub const fn includes_poprako(self) -> bool {
         self.poprako
     }

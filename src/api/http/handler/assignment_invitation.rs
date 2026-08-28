@@ -167,7 +167,12 @@ pub async fn join(
     Json(instr): Json<JoinAssignmentInvitationInstr>,
 ) -> HttpResult<AssignmentInfoView> {
     //
-    usecase::assignment_invitation::join::<_, RdbContext<ReptRead>, HybRepo, _>(
+    usecase::assignment_invitation::join::join::<
+        _,
+        RdbContext<ReptRead>,
+        HybRepo,
+        _,
+    >(
         (harn.nucl().rept_read(), harn.repo(), harn.image_pool()),
         user_token,
         instr,

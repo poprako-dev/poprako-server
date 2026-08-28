@@ -51,6 +51,10 @@ for f in linters-extra/*/check.py; do
                 uv run --python linters-extra/.venv/bin/python python3 "$f" --layer "$layer" || passed=false
             done
             ;;
+        defer-oper-inline|oper-inline)
+            uv run --python linters-extra/.venv/bin/python python3 "$f" --self-test || passed=false
+            uv run --python linters-extra/.venv/bin/python python3 "$f" || passed=false
+            ;;
         *)
             uv run --python linters-extra/.venv/bin/python python3 "$f" || passed=false
             ;;

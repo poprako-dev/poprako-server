@@ -57,17 +57,19 @@ pub async fn prepare_archive(archive_input: ArchiveInput) -> bool {
     .is_ok()
 }
 
-/// Benchmarks LabelPlus parsing with a repeated real-world import payload.
+/// Benchmarks `LabelPlus` parsing with a repeated real-world import payload.
+#[must_use]
 pub fn parse_label_plus() -> bool {
     ChapterImportComplex::parse_label_plus(label_plus_content()).is_ok()
 }
 
-/// Benchmarks PopRaKo JSON parsing with a large generated project payload.
+/// Benchmarks `PopRaKo` JSON parsing with a large generated project payload.
+#[must_use]
 pub fn parse_poprako() -> bool {
     ChapterImportComplex::parse_poprako(poprako_content()).is_ok()
 }
 
-/// Benchmarks LabelPlus rendering for a large page-and-unit collection.
+/// Benchmarks `LabelPlus` rendering for a large page-and-unit collection.
 pub struct LabelPlusExportInput {
     //
     /// Pages of the exported chapter used in the benchmark.
@@ -76,12 +78,14 @@ pub struct LabelPlusExportInput {
     units_by_page_id: HashMap<String, Vec<UnitInfo>>,
 }
 
-/// Builds one large LabelPlus export input outside the benchmark measurement.
+/// Builds one large `LabelPlus` export input outside the benchmark measurement.
+#[must_use]
 pub fn label_plus_export_input() -> LabelPlusExportInput {
     export_input()
 }
 
-/// Renders LabelPlus output for a pre-built page-and-unit collection.
+/// Renders `LabelPlus` output for a pre-built page-and-unit collection.
+#[must_use]
 pub fn make_label_plus(label_plus_export_input: &LabelPlusExportInput) -> bool {
     //
     !ChapterExportComplex::make_label_plus(
@@ -95,6 +99,7 @@ pub fn make_label_plus(label_plus_export_input: &LabelPlusExportInput) -> bool {
 pub struct UnitOrderInput(Vec<UnitOrder>);
 
 /// Builds an unordered maximum-size Unit chain.
+#[must_use]
 pub fn unit_order_input() -> UnitOrderInput {
     //
     UnitOrderInput(
@@ -110,6 +115,7 @@ pub fn unit_order_input() -> UnitOrderInput {
 }
 
 /// Reconstructs visible IDs from a pre-built linked list.
+#[must_use]
 pub fn order_visible_unit_ids(unit_order_input: UnitOrderInput) -> bool {
     //
     let mut orders_by_id = unit_order_input
@@ -202,7 +208,7 @@ fn archive_snapshot() -> Option<ComicArchiveSnapshot> {
                 page_info: PageInfo {
                     id: page_id,
                     chapter_id: chapter_id.clone(),
-                    index: page_index as i32,
+                    index: page_index,
                     image_key: Some(format!(
                         "pages/{}-{}.webp",
                         chapter_index, page_index,
@@ -211,9 +217,9 @@ fn archive_snapshot() -> Option<ComicArchiveSnapshot> {
                     image_version: Some(1),
                     image_hash: Some(ImageHash::new([0u8; 32])),
                     image_ext: Some(ImageExt::Webp),
-                    total_unit_count: UNIT_COUNT as i32,
-                    translated_unit_count: UNIT_COUNT as i32,
-                    proofread_unit_count: UNIT_COUNT as i32,
+                    total_unit_count: UNIT_COUNT,
+                    translated_unit_count: UNIT_COUNT,
+                    proofread_unit_count: UNIT_COUNT,
                     created_at: archived_at,
                     updated_at: archived_at,
                 },
@@ -227,12 +233,12 @@ fn archive_snapshot() -> Option<ComicArchiveSnapshot> {
                 comic_id: "comic-1".into(),
                 comic: None,
                 is_pinned: chapter_index == 0,
-                index: chapter_index as i32,
+                index: chapter_index,
                 subtitle: format!("Chapter {}", chapter_index),
-                page_count: PAGE_COUNT as i32,
-                total_unit_count: (PAGE_COUNT * UNIT_COUNT) as i32,
-                translated_unit_count: (PAGE_COUNT * UNIT_COUNT) as i32,
-                proofread_unit_count: (PAGE_COUNT * UNIT_COUNT) as i32,
+                page_count: PAGE_COUNT,
+                total_unit_count: PAGE_COUNT * UNIT_COUNT,
+                translated_unit_count: PAGE_COUNT * UNIT_COUNT,
+                proofread_unit_count: PAGE_COUNT * UNIT_COUNT,
                 stages,
                 creator_id: "user-1".into(),
                 creator: None,
@@ -245,41 +251,7 @@ fn archive_snapshot() -> Option<ComicArchiveSnapshot> {
         });
     }
 
-    Some(ComicArchiveSnapshot {
-        comic_info: ComicInfo {
-            id: "comic-1".into(),
-            workset_id: "workset-1".into(),
-            index: 0,
-            title: "Benchmark Comic".into(),
-            author: "Benchmark Author".into(),
-            description: Some("Benchmark archive payload".into()),
-            cover_key: Some("covers/comic-1.webp".into()),
-            is_cover_uploaded: Some(true),
-            cover_version: Some(1),
-            cover_hash: Some(ImageHash::default()),
-            cover_ext: Some(ImageExt::Webp),
-            chapter_count: CHAPTER_COUNT as i32,
-            creator_id: "user-1".into(),
-            workset: None,
-            team: None,
-            creator: None,
-            last_active_at: archived_at,
-            archived_at: None,
-            created_at: archived_at,
-            updated_at: archived_at,
-        },
-        workset_info: WorksetInfo {
-            id: "workset-1".into(),
-            team_id: "team-1".into(),
-            index: 0,
-            name: "Benchmark Workset".into(),
-            description: None,
-            comic_count: 1,
-            created_at: archived_at,
-            updated_at: archived_at,
-        },
-        chapter_snapshots,
-    })
+    Some(comic_archive_snapshot(archived_at, chapter_snapshots))
 }
 
 // Returns cached benchmark LabelPlus text for parse benchmarks.
@@ -306,9 +278,7 @@ fn poprako_content() -> &'static str {
                 .map(|index| {
                     //
                     format!(
-                        "{{\"id\":\"unit-{}\",\"x\":1.0,\"y\":2.0,\"index_in_page\":{},\"is_inbox\":true,\"translated_text\":\"translated\",\"prooved_text\":\"proofread\",\"is_prooved\":true}}",
-                        index,
-                        index,
+                        "{{\"id\":\"unit-{index}\",\"x\":1.0,\"y\":2.0,\"index_in_page\":{index},\"is_inbox\":true,\"translated_text\":\"translated\",\"prooved_text\":\"proofread\",\"is_prooved\":true}}",
                     )
                 })
                 .collect::<Vec<_>>();
@@ -316,8 +286,7 @@ fn poprako_content() -> &'static str {
             let units = unit_strings.join(",");
 
             format!(
-                "{{\"author\":\"benchmark\",\"title\":\"benchmark\",\"pages\":[{{\"image_filename\":\"001.png\",\"units\":[{}]}}]}}",
-                units,
+                "{{\"author\":\"benchmark\",\"title\":\"benchmark\",\"pages\":[{{\"image_filename\":\"001.png\",\"units\":[{units}]}}]}}",
             )
         })
         .as_str()
@@ -345,15 +314,15 @@ fn export_input() -> LabelPlusExportInput {
         pages.push(PageInfo {
             id: page_id.clone(),
             chapter_id: "chapter-1".into(),
-            index: page_index as i32,
+            index: page_index,
             image_key: Some(format!("pages/{}.png", page_index)),
             is_image_uploaded: Some(true),
             image_version: Some(1),
             image_hash: Some(ImageHash::new([0u8; 32])),
             image_ext: Some(ImageExt::Png),
-            total_unit_count: UNIT_COUNT as i32,
-            translated_unit_count: UNIT_COUNT as i32,
-            proofread_unit_count: UNIT_COUNT as i32,
+            total_unit_count: UNIT_COUNT,
+            translated_unit_count: UNIT_COUNT,
+            proofread_unit_count: UNIT_COUNT,
             created_at: archived_at,
             updated_at: archived_at,
         });
@@ -399,7 +368,7 @@ fn unit_info(
         id: format!("unit-{}-{}-{}", chapter_index, page_index, unit_index),
         page_id: page_id.into(),
         next_id: (unit_index + 1 < UNIT_COUNT).then(|| {
-            format!("unit-{}-{}-{}", chapter_index, page_index, unit_index + 1,)
+            format!("unit-{}-{}-{}", chapter_index, page_index, unit_index + 1)
         }),
         is_bubble: unit_index.is_multiple_of(2),
         is_proofread: true,
@@ -420,5 +389,48 @@ fn unit_info(
         hidden_at: None,
         created_at: archived_at,
         updated_at: archived_at,
+    }
+}
+
+// Builds the root Comic and Workset snapshot around generated Chapters.
+fn comic_archive_snapshot(
+    archived_at: OffsetDateTime,
+    chapter_snapshots: Vec<ComicArchiveChapterSnapshot>,
+) -> ComicArchiveSnapshot {
+    //
+    ComicArchiveSnapshot {
+        comic_info: ComicInfo {
+            id: "comic-1".into(),
+            workset_id: "workset-1".into(),
+            index: 0,
+            title: "Benchmark Comic".into(),
+            author: "Benchmark Author".into(),
+            description: Some("Benchmark archive payload".into()),
+            cover_key: Some("covers/comic-1.webp".into()),
+            is_cover_uploaded: Some(true),
+            cover_version: Some(1),
+            cover_hash: Some(ImageHash::default()),
+            cover_ext: Some(ImageExt::Webp),
+            chapter_count: CHAPTER_COUNT,
+            creator_id: "user-1".into(),
+            workset: None,
+            team: None,
+            creator: None,
+            last_active_at: archived_at,
+            archived_at: None,
+            created_at: archived_at,
+            updated_at: archived_at,
+        },
+        workset_info: WorksetInfo {
+            id: "workset-1".into(),
+            team_id: "team-1".into(),
+            index: 0,
+            name: "Benchmark Workset".into(),
+            description: None,
+            comic_count: 1,
+            created_at: archived_at,
+            updated_at: archived_at,
+        },
+        chapter_snapshots,
     }
 }

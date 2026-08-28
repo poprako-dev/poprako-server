@@ -1,3 +1,5 @@
+#![allow(clippy::struct_field_names)]
+
 //! Diesel entity types for the `t_local_message` table.
 
 use std::io::Write as _;
@@ -28,7 +30,7 @@ pub enum LocalMessageStatus {
 }
 
 impl LocalMessageStatus {
-    pub fn as_str(self) -> &'static str {
+    pub const fn as_str(self) -> &'static str {
         //
         match self {
             //
@@ -87,17 +89,31 @@ impl<'a> LocalMessageEntryRow<'a> {
                 BaseError::Unrecoverable {
                     message: format!(
                         "failed to serialize prom payload: {}",
-                        err_serde
+                        err_serde,
                     ),
                 }
             })?;
+
+        let delay = time::Duration::try_from(task.delay.unwrap_or_default())
+            .map_err(|_| BaseError::Unrecoverable {
+                message: "prom task delay is outside the supported range"
+                    .to_string(),
+            })?;
+
+        let f_visible_at =
+            now.checked_add(delay)
+                .ok_or_else(|| BaseError::Unrecoverable {
+                    message:
+                        "prom task visibility is outside the supported range"
+                            .to_string(),
+                })?;
 
         accept(Self {
             f_id: task.id.as_ref(),
             f_topic: task.payload.topic(),
             f_status: LocalMessageStatus::Pending,
             f_payload,
-            f_visible_at: now + task.delay.unwrap_or_default(),
+            f_visible_at,
             f_created_at: now,
             f_updated_at: now,
         })

@@ -5,6 +5,7 @@ use time::OffsetDateTime;
 
 use crate::model::read::proj::assignment_invitation::AssignmentInvitationInfo;
 use crate::model::write::assignment_invitation::AssignmentInvitationEntry;
+use crate::part_impl::repo::rdb_impl::numeric::u32_from_i64;
 use crate::part_impl::repo::rdb_impl::schema::t_assignment_invitation;
 use crate::result::BaseError;
 use crate::value::role::RoleMask;
@@ -36,7 +37,10 @@ impl TryFrom<AssignmentInvitationInfoRow> for AssignmentInvitationInfo {
 
     fn try_from(row: AssignmentInvitationInfoRow) -> Result<Self, Self::Error> {
         //
-        let roles = RoleMask::try_from(row.f_role_mask as u32)?;
+        let roles = RoleMask::try_from(u32_from_i64(
+            row.f_role_mask,
+            "t_assignment_invitation.f_role_mask",
+        )?)?;
 
         Ok(Self {
             id: row.f_id,
@@ -105,7 +109,7 @@ pub struct AssignmentInvitationAspectRow {
 }
 
 impl AssignmentInvitationAspectRow {
-    pub fn new(updated_at: OffsetDateTime) -> Self {
+    pub const fn new(updated_at: OffsetDateTime) -> Self {
         //
         Self {
             f_pending: None,
@@ -113,7 +117,7 @@ impl AssignmentInvitationAspectRow {
         }
     }
 
-    pub fn pending(mut self, val: bool) -> Self {
+    pub const fn pending(mut self, val: bool) -> Self {
         //
         self.f_pending = Some(val);
 

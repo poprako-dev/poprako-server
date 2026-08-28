@@ -112,9 +112,7 @@ fn list_infos(
     };
 
     assignment_infos.retain(|assignment_info| {
-        //
-        role.map(|role| assignment_info.roles.has_any_role(&[role]))
-            .unwrap_or(true)
+        role.is_none_or(|role| assignment_info.roles.has_any_role(&[role]))
     });
 
     for assignment_info in &mut assignment_infos {
@@ -133,13 +131,11 @@ fn list_infos(
         //
         // Internal implementation detail.
         // Internal implementation detail.
-        Some((offset, limit)) => match offset >= assignment_infos.len() {
+        Some((offset, limit)) => {
             //
-            // Internal implementation detail.
-            // Internal implementation detail.
-            true => Vec::new(),
-
-            false => {
+            if offset >= assignment_infos.len() {
+                Vec::new()
+            } else {
                 //
                 // Internal implementation detail.
                 // Internal implementation detail.
@@ -147,7 +143,7 @@ fn list_infos(
 
                 assignment_infos[offset..end].to_vec()
             }
-        },
+        }
 
         None => assignment_infos,
     }

@@ -1,4 +1,4 @@
-//! LabelPlus text structure validation and page-unit assembly.
+//! `LabelPlus` text structure validation and page-unit assembly.
 
 use std::collections::{HashMap, HashSet};
 
@@ -10,7 +10,7 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::value::chapter_port::MAX_CHAPTER_IMPORT_PAGE_COUNT;
 use crate::value::unit::MAX_PAGE_UNIT_COUNT;
 
-/// Normalize LabelPlus text while preserving non-empty whitespace and lines.
+/// Normalize `LabelPlus` text while preserving non-empty whitespace and lines.
 pub fn normalize_label_plus_text(text: String) -> Option<String> {
     //
     if text.trim().is_empty() {
@@ -20,7 +20,7 @@ pub fn normalize_label_plus_text(text: String) -> Option<String> {
     Some(text)
 }
 
-/// Construct the stable invalid-content error for LabelPlus input.
+/// Construct the stable invalid-content error for `LabelPlus` input.
 pub fn invalid_label_plus_content(condition: &str) -> BaseError {
     //
     let err_message = trl("error-invalid-chapter-import-content");
@@ -38,11 +38,11 @@ pub fn invalid_label_plus_content(condition: &str) -> BaseError {
     }
 }
 
-/// Internal representation of a LabelPlus unit header.
+/// Internal representation of a `LabelPlus` unit header.
 pub struct LabelPlusUnit {
     //
     /// 0-based index of the unit inside its page.
-    index: i32,
+    index: usize,
     /// X-axis coordinate from the header.
     x_coord: f64,
     /// Y-axis coordinate from the header.
@@ -51,12 +51,12 @@ pub struct LabelPlusUnit {
     is_bubble: bool,
 }
 
-/// Remove only spaces and tabs that follow LabelPlus structure lines.
+/// Remove only spaces and tabs that follow `LabelPlus` structure lines.
 pub fn trim_label_plus_structure_line(line: &str) -> &str {
     line.trim_end_matches([' ', '\t'])
 }
 
-/// Check whether a line is a complete LabelPlus page header.
+/// Check whether a line is a complete `LabelPlus` page header.
 pub fn is_label_plus_page_header(line: &str) -> bool {
     //
     let line = trim_label_plus_structure_line(line);
@@ -66,7 +66,7 @@ pub fn is_label_plus_page_header(line: &str) -> bool {
         .is_some_and(|filename| !filename.is_empty())
 }
 
-/// Parse a LabelPlus unit header, including its strict index and flag checks.
+/// Parse a `LabelPlus` unit header, including its strict index and flag checks.
 pub fn parse_label_plus_unit_header(
     line: &str,
 ) -> BaseRest<Option<LabelPlusUnit>> {
@@ -91,31 +91,33 @@ pub fn parse_label_plus_unit_header(
         ));
     };
 
-    let parts = coord_text.split(',').collect::<Vec<_>>();
+    let mut parts = coord_text.split(',');
 
-    if parts.len() != 3 {
+    let (Some(x_coord_text), Some(y_coord_text), Some(bubble_text), None) =
+        (parts.next(), parts.next(), parts.next(), parts.next())
+    else {
         //
         return Err(invalid_label_plus_content(
             "invalid LabelPlus coordinate count",
         ));
-    }
+    };
 
-    let index = index_text.parse::<i32>().map_err(|_| {
+    let index = index_text.parse::<usize>().map_err(|_| {
         invalid_label_plus_content("invalid LabelPlus unit index")
     })?;
 
-    if index < 1 {
+    if index == 0 {
         //
         return Err(invalid_label_plus_content(
             "LabelPlus unit index is not positive",
         ));
     }
 
-    let x_coord = parts[0].parse::<f64>().map_err(|_| {
+    let x_coord = x_coord_text.parse::<f64>().map_err(|_| {
         invalid_label_plus_content("invalid LabelPlus x coordinate")
     })?;
 
-    let y_coord = parts[1].parse::<f64>().map_err(|_| {
+    let y_coord = y_coord_text.parse::<f64>().map_err(|_| {
         invalid_label_plus_content("invalid LabelPlus y coordinate")
     })?;
 
@@ -126,7 +128,7 @@ pub fn parse_label_plus_unit_header(
         ));
     }
 
-    let is_bubble = match parts[2] {
+    let is_bubble = match bubble_text {
         //
         "1" => true,
 
@@ -148,7 +150,7 @@ pub fn parse_label_plus_unit_header(
     }))
 }
 
-/// Flush the buffered LabelPlus unit into the current page.
+/// Flush the buffered `LabelPlus` unit into the current page.
 pub fn flush_label_plus_unit(
     current_page: &mut Option<Vec<UnitTranslationImport>>,
     current_unit: &mut Option<LabelPlusUnit>,
@@ -198,7 +200,7 @@ pub fn flush_label_plus_unit(
     accept(())
 }
 
-/// Validate and order one parsed LabelPlus page.
+/// Validate and order one parsed `LabelPlus` page.
 pub fn finalize_label_plus_page(
     page: &mut [UnitTranslationImport],
 ) -> BaseRest<()> {
@@ -216,7 +218,7 @@ pub fn finalize_label_plus_page(
 
     for unit in page.iter() {
         //
-        if unit.index < 0 || !indexes.insert(unit.index) {
+        if !indexes.insert(unit.index) {
             //
             return Err(invalid_label_plus_content(
                 "invalid LabelPlus unit index",
@@ -229,7 +231,7 @@ pub fn finalize_label_plus_page(
     accept(())
 }
 
-/// Validate the fixed LabelPlus preamble and its separator layout.
+/// Validate the fixed `LabelPlus` preamble and its separator layout.
 pub fn validate_label_plus_header<'a, I>(lines: &mut I) -> BaseRest<()>
 where
     I: Iterator<Item = &'a str>,
@@ -279,7 +281,7 @@ where
     accept(())
 }
 
-/// Parse a complete LabelPlus document into chapter import pages.
+/// Parse a complete `LabelPlus` document into chapter import pages.
 pub fn parse_label_plus(content: &str) -> BaseRest<Vec<PageTranslationImport>> {
     //
     let content = content.strip_prefix('\u{feff}').unwrap_or(content);
@@ -312,7 +314,7 @@ pub fn parse_label_plus(content: &str) -> BaseRest<Vec<PageTranslationImport>> {
                 finalize_label_plus_page(&mut units)?;
 
                 pages.push(PageTranslationImport {
-                    page_index: pages.len() as i32,
+                    page_index: pages.len(),
                     units,
                 });
             }
@@ -386,7 +388,7 @@ pub fn parse_label_plus(content: &str) -> BaseRest<Vec<PageTranslationImport>> {
         finalize_label_plus_page(&mut units)?;
 
         pages.push(PageTranslationImport {
-            page_index: pages.len() as i32,
+            page_index: pages.len(),
             units,
         });
     }

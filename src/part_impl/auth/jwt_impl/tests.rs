@@ -33,7 +33,7 @@ fn sign_token() {
 
     let token_data = decode::<TestClaims>(
         &signed_token,
-        &DecodingKey::from_secret("test-secret".as_bytes()),
+        &DecodingKey::from_secret(b"test-secret"),
         &Validation::new(Algorithm::HS256),
     )
     .unwrap();

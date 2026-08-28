@@ -48,7 +48,7 @@ use crate::test_util::{
 };
 use crate::usecase::page::delete::delete;
 use crate::usecase::page::list::{get_info, list_infos};
-use crate::usecase::page::reserve::reserve_chapter_pages;
+use crate::usecase::page::reserve::{reserve_chapter_pages, reserve_image};
 use crate::value::chapter::{Stage, StageMask, StagePhase};
 use crate::value::image::{ImageExt, ImageHash, ImageKind};
 use crate::value::role::{RoleField, RoleMask};
@@ -103,7 +103,7 @@ fn comic(id: &str, workset_id: &str) -> ComicInfo {
     }
 }
 
-fn chapter(id: &str, comic_id: &str, page_count: i32) -> ChapterInfo {
+fn chapter(id: &str, comic_id: &str, page_count: usize) -> ChapterInfo {
     //
     let time = OffsetDateTime::now_utc();
 
@@ -161,7 +161,7 @@ fn assignment(
 
 fn page(
     id: &str,
-    index: i32,
+    index: usize,
     image_key: Option<&str>,
     image_uploaded: bool,
     image_version: u32,

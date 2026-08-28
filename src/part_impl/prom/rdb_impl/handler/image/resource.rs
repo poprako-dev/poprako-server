@@ -59,7 +59,7 @@ pub async fn mark_current_or_classify<N, R>(
     image_uploaded: bool,
 ) -> BaseRest<ResourceState>
 where
-    N: Nucl<Context = RdbContext, Error = BaseError>,
+    N: Nucl<Context = RdbContext, Error = BaseError> + Sync,
     R: UserRepo<RdbContext>
         + TeamRepo<RdbContext>
         + ComicRepo<RdbContext>
@@ -127,7 +127,7 @@ where
                         object_key: info.avatar_key.as_deref(),
                     };
 
-                    classify_current_identity(current_identity, image_identity)
+                    classify_current_identity(&current_identity, image_identity)
                 }
 
                 Err(BaseError::Expected { .. }) => {
@@ -155,7 +155,7 @@ where
                         object_key: info.avatar_key.as_deref(),
                     };
 
-                    classify_current_identity(current_identity, image_identity)
+                    classify_current_identity(&current_identity, image_identity)
                 }
 
                 Err(BaseError::Expected { .. }) => {
@@ -184,7 +184,7 @@ where
                         object_key: info.cover_key.as_deref(),
                     };
 
-                    classify_current_identity(current_identity, image_identity)
+                    classify_current_identity(&current_identity, image_identity)
                 }
 
                 Err(BaseError::Expected { .. }) => {
@@ -212,7 +212,7 @@ where
                         object_key: info.image_key.as_deref(),
                     };
 
-                    classify_current_identity(current_identity, image_identity)
+                    classify_current_identity(&current_identity, image_identity)
                 }
 
                 Err(BaseError::Expected { .. }) => {
@@ -245,30 +245,34 @@ where
         // Internal implementation detail.
         ImageKind::UserAvatar => {
             //
-            let repl = UserAvatarRepl {
+            let user_avatar_repl = UserAvatarRepl {
                 id: image_identity.resource_id.to_owned(),
                 avatar_version: image_identity.version,
                 avatar_key: Some(image_identity.object_key.to_owned()),
                 is_avatar_uploaded: image_uploaded,
             };
 
-            UpdateUser::MarkAvatarUploaded { repl: &repl }
-                .step_on(repo, context)
-                .await
+            UpdateUser::MarkAvatarUploaded {
+                repl: &user_avatar_repl,
+            }
+            .step_on(repo, context)
+            .await
         }
 
         ImageKind::TeamAvatar => {
             //
-            let repl = TeamAvatarRepl {
+            let team_avatar_repl = TeamAvatarRepl {
                 id: image_identity.resource_id.to_owned(),
                 avatar_version: image_identity.version,
                 avatar_key: Some(image_identity.object_key.to_owned()),
                 is_avatar_uploaded: image_uploaded,
             };
 
-            UpdateTeam::MarkAvatarUploaded { repl: &repl }
-                .step_on(repo, context)
-                .await
+            UpdateTeam::MarkAvatarUploaded {
+                repl: &team_avatar_repl,
+            }
+            .step_on(repo, context)
+            .await
         }
 
         ImageKind::ComicCover => {
@@ -285,23 +289,25 @@ where
 
         ImageKind::PageImage => {
             //
-            let repl = PageImageRepl {
+            let page_image_repl = PageImageRepl {
                 id: image_identity.resource_id.to_owned(),
                 image_version: image_identity.version,
                 image_key: Some(image_identity.object_key.to_owned()),
                 is_image_uploaded: true,
             };
 
-            MarkPageImageUploaded { repl: &repl }
-                .step_on(repo, context)
-                .await
+            MarkPageImageUploaded {
+                repl: &page_image_repl,
+            }
+            .step_on(repo, context)
+            .await
         }
     }
 }
 
 // Internal implementation of `classify_current_identity`.
 fn classify_current_identity(
-    current_identity: CurrentImageIdentity<'_>,
+    current_identity: &CurrentImageIdentity<'_>,
     image_identity: ImageIdentity<'_>,
 ) -> BaseRest<ResourceState> {
     //

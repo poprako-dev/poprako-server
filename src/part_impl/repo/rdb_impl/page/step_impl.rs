@@ -12,13 +12,14 @@ use poprako_util::i18n::trl;
 
 use crate::complex::page::PageComplex;
 use crate::model::read::proj::page::PageInfo;
-use crate::model::read::proj::unit::UnitCounters;
+use crate::model::read::proj::unit::UnitCountMetrics;
 use crate::model::write::page::{
     PageEntry, PageImageReservation, PageManifestRepl,
 };
 use crate::part_impl::repo::rdb_impl::entity::page::{
     PageAspectRow, PageEntryRow, PageInfoRow,
 };
+use crate::part_impl::repo::rdb_impl::numeric::i32_from_usize;
 use crate::part_impl::repo::rdb_impl::schema::t_page::dsl::{
     f_chapter_id, f_id, f_image_extension, f_image_hash, f_image_key,
     f_image_uploaded, f_image_version, f_index, f_updated_at, t_page,
@@ -171,7 +172,7 @@ pub async fn update_manifest(
 
     let row = diesel::update(t_page.filter(f_id.eq(&update.id)))
         .set((
-            f_index.eq(update.index),
+            f_index.eq(i32_from_usize(update.index, "t_page.f_index")?),
             f_image_key.eq(update.image_key.as_deref()),
             f_image_uploaded.eq(update.is_image_uploaded),
             f_image_version.eq(i64::from(update.image_version)),
@@ -253,7 +254,7 @@ pub async fn list_first_infos_by_chapter_ids(
     rows.into_iter().map(TryInto::try_into).collect()
 }
 
-/// Batch-insert pages from a slice of model_entries and return the created infos.
+/// Batch-insert pages from a slice of `model_entries` and return the created infos.
 #[instrument(level = "info", skip_all)]
 pub async fn create_batch(
     conn: &mut RdbConn,
@@ -435,15 +436,24 @@ pub async fn set_image_uploaded(
 pub async fn set_unit_counters(
     conn: &mut RdbConn,
     id: &str,
-    counters: UnitCounters,
+    counters: UnitCountMetrics,
 ) -> BaseRest<()> {
     //
     let now = OffsetDateTime::now_utc();
 
     let aspect = PageAspectRow::new(now)
-        .total_unit_count(counters.total_unit_count)
-        .translated_unit_count(counters.translated_unit_count)
-        .proofread_unit_count(counters.proofread_unit_count);
+        .total_unit_count(i32_from_usize(
+            counters.total,
+            "t_page.f_total_unit_count",
+        )?)
+        .translated_unit_count(i32_from_usize(
+            counters.translated,
+            "t_page.f_translated_unit_count",
+        )?)
+        .proofread_unit_count(i32_from_usize(
+            counters.proofread,
+            "t_page.f_proofread_unit_count",
+        )?);
 
     diesel::update(t_page.filter(f_id.eq(id)))
         .set(&aspect)

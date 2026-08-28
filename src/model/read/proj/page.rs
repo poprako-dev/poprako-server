@@ -32,7 +32,7 @@ pub struct PageInfo {
     /// Foreign key to the parent chapter this page belongs to.
     pub chapter_id: String,
     /// Zero-based ordinal position of this page within the chapter.
-    pub index: i32,
+    pub index: usize,
 
     /// Object-storage key reserved for the page image, `None` before reservation.
     pub image_key: Option<String>,
@@ -46,11 +46,11 @@ pub struct PageInfo {
     pub image_ext: Option<ImageExt>,
 
     /// Number of translation units (text blocks) on this page.
-    pub total_unit_count: i32,
+    pub total_unit_count: usize,
     /// Number of units on this page that have been translated.
-    pub translated_unit_count: i32,
+    pub translated_unit_count: usize,
     /// Number of units on this page that have been proofread.
-    pub proofread_unit_count: i32,
+    pub proofread_unit_count: usize,
 
     /// Timestamp when this page record was first created.
     pub created_at: OffsetDateTime,

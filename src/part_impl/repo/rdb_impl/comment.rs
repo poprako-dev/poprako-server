@@ -38,8 +38,8 @@ async fn list_infos(
         .filter(f_team_id.eq(spec.team_id.as_str()))
         .select(CommentInfoRow::as_select())
         .order_by(f_created_at.desc())
-        .offset(spec.offset as i64)
-        .limit(spec.limit as i64)
+        .offset(i64::from(spec.offset))
+        .limit(i64::from(spec.limit))
         .load::<CommentInfoRow>(conn)
         .await
         .map_err(diesel)?;

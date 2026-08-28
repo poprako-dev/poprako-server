@@ -30,7 +30,7 @@ pub struct ComicInfo {
     /// The workset this comic belongs to.
     pub workset_id: String,
     /// Sorting position of the comic within its workset.
-    pub index: i32,
+    pub index: usize,
 
     /// Display title of the comic series or volume.
     pub title: String,
@@ -51,7 +51,7 @@ pub struct ComicInfo {
     pub cover_ext: Option<ImageExt>,
 
     /// Denormalised count of chapters attached to this comic.
-    pub chapter_count: i32,
+    pub chapter_count: usize,
 
     /// The user who created this comic record.
     pub creator_id: String,

@@ -54,7 +54,7 @@ impl AssignmentInfoView {
         fallback_cover_key: Option<&str>,
     ) -> BaseRest<Self>
     where
-        P: ImagePool,
+        P: ImagePool + Sync,
     {
         accept(Self {
             id: model.id,

@@ -8,6 +8,7 @@ use poprako_util::i18n::trl;
 use crate::complex::chapter::{ChapterComplex, ChapterPermComplex};
 use crate::complex::image::ImageComplex;
 use crate::data::instr::chapter::UpdateChapterStageInstr;
+use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::shared::user::UserToken;
 use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::part::effect::event::Event;
@@ -49,7 +50,7 @@ pub async fn update_stage<N, C, R, P, D>(
 ) -> BaseRest<()>
 where
     C: Context + Send,
-    N: Nucl<Context = C, Error = BaseError>,
+    N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<ReptRead>,
     R: ChapterRepo<C>
         + ChapterWorkflowRecordRepo<C>
@@ -65,43 +66,7 @@ where
 
     let oper = StageOper::from(instr.oper);
 
-    let assignment_info = FindAssignmentInfo::ChapterUser {
-        chapter_id: &instr.id,
-        user_id: &token.user_id,
-    }
-    .run_on(repo)
-    .await?;
-
-    let Some(assignment_info) = assignment_info else {
-        //
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Perm,
-            message: trl("error-chapter-workflow-role-required"),
-        });
-    };
-
-    let assignment_infos = match oper {
-        //
-        StageOper::Advance => {
-            //
-            ListAssignmentInfos::Chapter {
-                chapter_id: &instr.id,
-                role: None,
-                incls: &[],
-            }
-            .run_on(repo)
-            .await?
-        }
-
-        StageOper::Revert => Vec::new(),
-    };
-
-    ChapterPermComplex::ensure_user_can_update_stage(
-        &assignment_info,
-        &assignment_infos,
-        stage,
-        oper,
-    )?;
+    ensure_update_stage_perm(repo, &token, &instr, stage, oper).await?;
 
     let (workflow_completed_chapter_id, published_chapter_id) = nucl
         .coord(async move |context| {
@@ -189,28 +154,66 @@ where
         })
         .await?;
 
-    if let Some(chapter_id) = workflow_completed_chapter_id {
-        //
-        Event::ChapterWorkflowCompleted {
-            payload: ChapterWorkflowCompletedEvent {
-                chapter_id,
-                completed_stage: stage,
-            },
-        }
-        .develop_on(develop)
-        .await;
-    }
-
-    if let Some(chapter_id) = published_chapter_id {
-        //
-        Event::ChapterPublished {
-            payload: ChapterPublishedEvent { chapter_id },
-        }
-        .develop_on(develop)
-        .await;
-    }
+    develop_stage_events(
+        develop,
+        stage,
+        workflow_completed_chapter_id,
+        published_chapter_id,
+    )
+    .await;
 
     accept(())
+}
+
+// Validates the caller's assignment and workflow-stage permission.
+async fn ensure_update_stage_perm<C, R>(
+    repo: &R,
+    token: &UserToken,
+    instr: &UpdateChapterStageInstr,
+    stage: Stage,
+    oper: StageOper,
+) -> BaseRest<()>
+where
+    C: Context,
+    R: AssignmentRepo<C> + Sync,
+{
+    let assignment_info = FindAssignmentInfo::ChapterUser {
+        chapter_id: &instr.id,
+        user_id: &token.user_id,
+    }
+    .run_on(repo)
+    .await?;
+
+    let Some(assignment_info) = assignment_info else {
+        //
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: trl("error-chapter-workflow-role-required"),
+        });
+    };
+
+    let assignment_infos = match oper {
+        //
+        StageOper::Advance => {
+            //
+            ListAssignmentInfos::Chapter {
+                chapter_id: &instr.id,
+                role: None,
+                incls: &[],
+            }
+            .run_on(repo)
+            .await?
+        }
+
+        StageOper::Revert => Vec::<AssignmentInfo>::new(),
+    };
+
+    ChapterPermComplex::ensure_user_can_update_stage(
+        &assignment_info,
+        &assignment_infos,
+        stage,
+        oper,
+    )
 }
 
 // Clear uploaded page images and enqueue their object-storage deletions.
@@ -254,4 +257,35 @@ where
     DeferBatch::new(&tasks).step_on(prom, context).await?;
 
     accept(())
+}
+
+// Develops workflow completion and publication events after commit.
+async fn develop_stage_events<D>(
+    develop: &D,
+    stage: Stage,
+    workflow_completed_chapter_id: Option<String>,
+    published_chapter_id: Option<String>,
+) where
+    D: Develop + Sync,
+{
+    if let Some(chapter_id) = workflow_completed_chapter_id {
+        //
+        Event::ChapterWorkflowCompleted {
+            payload: ChapterWorkflowCompletedEvent {
+                chapter_id,
+                completed_stage: stage,
+            },
+        }
+        .develop_on(develop)
+        .await;
+    }
+
+    if let Some(chapter_id) = published_chapter_id {
+        //
+        Event::ChapterPublished {
+            payload: ChapterPublishedEvent { chapter_id },
+        }
+        .develop_on(develop)
+        .await;
+    }
 }

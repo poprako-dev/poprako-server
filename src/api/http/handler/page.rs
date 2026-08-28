@@ -178,7 +178,7 @@ pub async fn reserve_image(
     Json(instr): Json<ReservePageImageInstr>,
 ) -> HttpResult<ReservedPageVal> {
     //
-    usecase::page::reserve_image::<
+    usecase::page::reserve::reserve_image::<
         _,
         RdbContext<ReptRead>,
         HybRepo,

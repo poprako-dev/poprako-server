@@ -1,5 +1,5 @@
 use std::borrow::Cow;
-use std::collections::HashMap;
+use std::collections::hash_map::{HashMap, RandomState};
 use std::sync::LazyLock;
 
 use fluent_templates::fluent_bundle::FluentValue;
@@ -32,7 +32,7 @@ pub fn trl(key: &str) -> String {
 /// `{$name}` syntax.
 pub fn trl_kv(
     key: &str,
-    args: &HashMap<Cow<'static, str>, FluentValue>,
+    args: &HashMap<Cow<'static, str>, FluentValue, RandomState>,
 ) -> String {
     LOCALES.lookup_with_args(&LANGUAGE, key, args)
 }

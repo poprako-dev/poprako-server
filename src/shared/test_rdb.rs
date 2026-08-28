@@ -49,7 +49,7 @@ pub async fn start() -> TestRdb {
         .expect("test PostgreSQL port should be available");
 
     let database_url =
-        format!("postgres://postgres:postgres@{}:{}/postgres", host, port,);
+        format!("postgres://postgres:postgres@{}:{}/postgres", host, port);
 
     run_migrations(&database_url);
 

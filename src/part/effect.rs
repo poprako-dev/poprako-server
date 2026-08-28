@@ -48,13 +48,13 @@ impl EffectEvent for Vec<Event> {
 
     // Consumes the vector and yields its events one by one.
     fn into_iter(self) -> Self::Iter {
-        <Vec<Event> as IntoIterator>::into_iter(self)
+        <Self as IntoIterator>::into_iter(self)
     }
 }
 
 impl EffectEvent for Event {
     // Single-element event iterator wrapping one domain event.
-    type Iter = Once<Event>;
+    type Iter = Once<Self>;
 
     // Consumes the event and yields it as a single-element iterator.
     fn into_iter(self) -> Self::Iter {

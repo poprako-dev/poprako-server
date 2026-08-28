@@ -5,7 +5,7 @@
 pub struct UnitTranslationImport {
     //
     /// Import ordering index within the page.
-    pub index: i32,
+    pub index: usize,
 
     /// Horizontal coordinate of this unit on the page image.
     pub x_coord: f64,

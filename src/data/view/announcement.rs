@@ -46,7 +46,7 @@ impl AnnouncementInfoView {
         model: AnnouncementInfo,
     ) -> BaseRest<Self>
     where
-        P: ImagePool,
+        P: ImagePool + Sync,
     {
         accept(Self {
             id: model.id,

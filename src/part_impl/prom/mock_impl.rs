@@ -161,10 +161,8 @@ async fn process_image_task(
             resource_id,
             object_key,
             version,
-        } => match image_pool.object_exists(object_key).await? {
-            //
-            // Internal implementation detail.
-            true => {
+        } => {
+            if image_pool.object_exists(object_key).await? {
                 //
                 // Internal implementation detail.
                 let image_identity = ImageIdentity {
@@ -198,43 +196,47 @@ async fn process_image_task(
                         != Some(image_identity.object_key)
                     {
                         return Err(BaseError::Unrecoverable {
-                            message: "prom page image version matches but object key differs"
-                            .into(),
-                        });
+                        message: "prom page image version matches but object key differs"
+                        .into(),
+                    });
                     }
                 }
 
                 process_existing_image(image_pool, image_identity, true).await
-            }
-
-            false => match image_kind {
-                //
-                // Internal implementation detail.
-                ImageKind::PageImage => {
-                    mark_page_image_unverified(
-                        image_pool,
-                        resource_id,
-                        object_key,
-                        *version,
-                    )
-                    .await
-                }
-
-                _ => {
+            } else {
+                match image_kind {
                     //
                     // Internal implementation detail.
-                    let image_identity = ImageIdentity {
-                        kind: *image_kind,
-                        resource_id,
-                        object_key,
-                        version: *version,
-                    };
-
-                    process_existing_image(image_pool, image_identity, false)
+                    ImageKind::PageImage => {
+                        mark_page_image_unverified(
+                            image_pool,
+                            resource_id,
+                            object_key,
+                            *version,
+                        )
                         .await
+                    }
+
+                    _ => {
+                        //
+                        // Internal implementation detail.
+                        let image_identity = ImageIdentity {
+                            kind: *image_kind,
+                            resource_id,
+                            object_key,
+                            version: *version,
+                        };
+
+                        process_existing_image(
+                            image_pool,
+                            image_identity,
+                            false,
+                        )
+                        .await
+                    }
                 }
-            },
-        },
+            }
+        }
 
         image::ImagePayload::Delete { object_key } => {
             image_pool.delete_object(object_key).await

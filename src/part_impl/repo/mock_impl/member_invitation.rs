@@ -61,12 +61,9 @@ fn list_member_invitation_infos(
         .filter(|member_invitation_info| {
             //
             member_invitation_info.team_id == spec.team_id
-                && spec
-                    .is_pending
-                    .map(|is_pending| {
-                        member_invitation_info.is_pending == is_pending
-                    })
-                    .unwrap_or(true)
+                && spec.is_pending.is_none_or(|is_pending| {
+                    member_invitation_info.is_pending == is_pending
+                })
         })
         .cloned()
         .collect::<Vec<_>>();
@@ -84,21 +81,15 @@ fn list_member_invitation_infos(
 
     let limit = spec.limit as usize;
 
-    match offset >= member_invitation_infos.len() {
+    if offset >= member_invitation_infos.len() {
+        Vec::new()
+    } else {
         //
         // Internal implementation detail.
         // Internal implementation detail.
-        true => Vec::new(),
+        let end = std::cmp::min(offset + limit, member_invitation_infos.len());
 
-        false => {
-            //
-            // Internal implementation detail.
-            // Internal implementation detail.
-            let end =
-                std::cmp::min(offset + limit, member_invitation_infos.len());
-
-            member_invitation_infos[offset..end].to_vec()
-        }
+        member_invitation_infos[offset..end].to_vec()
     }
 }
 

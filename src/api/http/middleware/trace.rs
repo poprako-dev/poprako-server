@@ -67,8 +67,7 @@ fn make_request_span(request: &Request) -> Span {
 
     let remote_addr = connect_info
         .map(|connect_info| connect_info.0)
-        .map(|addr| addr.to_string())
-        .unwrap_or_else(|| "unknown".to_owned());
+        .map_or_else(|| "unknown".to_owned(), |addr| addr.to_string());
 
     tracing::info_span!(
         "request",
