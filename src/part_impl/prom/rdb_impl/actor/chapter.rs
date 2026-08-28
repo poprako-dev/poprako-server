@@ -1,4 +1,4 @@
-//! Handler for deferred chapter workflow advancement.
+//! Actor for deferred chapter workflow advancement.
 
 use poprako_orchestra::{Nucl, OperStep as _};
 use tracing::instrument;
@@ -14,7 +14,7 @@ use crate::part::repo::oper::chapter::{
     CompleteChapterRawProvide, GetChapterInfoExcluded,
 };
 use crate::part::repo::oper::chapter_workflow_record::CreateChapterWorkflowRecords;
-use crate::part_impl::prom::rdb_impl::handler::task_flow::TaskFlow;
+use crate::part_impl::prom::rdb_impl::actor::task_flow::TaskFlow;
 use crate::result::{BaseError, accept};
 use crate::shared::RdbContext;
 use crate::value::chapter::{Stage, StagePhase};

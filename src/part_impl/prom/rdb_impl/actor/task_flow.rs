@@ -1,4 +1,4 @@
-/// Outcome of a topic handler invocation.
+/// Outcome of a topic actor invocation.
 pub enum TaskFlow {
     //
     /// Task completed successfully; move record to Completed status.

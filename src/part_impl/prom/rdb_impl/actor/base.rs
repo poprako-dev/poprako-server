@@ -1,11 +1,11 @@
-//! Shared types and dispatch logic for the prom handler submodules.
+//! Shared types and dispatch logic for the prom actor submodules.
 //!
-//! Defined here so that both the parent [`handler`] and its child modules
+//! Defined here so that both the parent [`actor`] and its child modules
 //! (notably [`pool`]) can import without creating an upward ancestor
 //! dependency.
 //!
-//! [`handler`]: crate::part_impl::prom::rdb_impl::handler
-//! [`pool`]: crate::part_impl::prom::rdb_impl::handler::pool
+//! [`actor`]: crate::part_impl::prom::rdb_impl::actor
+//! [`pool`]: crate::part_impl::prom::rdb_impl::actor::pool
 
 use poprako_orchestra::Nucl;
 use tokio_util::sync::CancellationToken;
@@ -22,32 +22,32 @@ use crate::part::repo::member_invitation::MemberInvitationRepo;
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
-use crate::part_impl::prom::rdb_impl::handler::task_flow::TaskFlow;
-use crate::part_impl::prom::rdb_impl::handler::{chapter, image, invitation};
+use crate::part_impl::prom::rdb_impl::actor::task_flow::TaskFlow;
+use crate::part_impl::prom::rdb_impl::actor::{chapter, image, invitation};
 use crate::part_impl::prom::rdb_impl::repo::RdbPromRepo;
 use crate::result::BaseError;
 use crate::shared::RdbContext;
 
 /// Background worker that polls the `t_local_message` table, dispatches by topic,
 /// and completes or fails each record.
-pub struct RdbPromHandler<N, R, I, D> {
+pub struct RdbPromActor<N, R, I, D> {
     //
-    /// Transaction coordinator used for handler-level database operations.
-    pub nucl: N,
+    /// Transaction coordinator used for actor-level database operations.
+    nucl: N,
 
     /// Repository wrapping message lifecycle and domain queries.
-    pub repo: RdbPromRepo<R>,
+    repo: RdbPromRepo<R>,
 
     /// Object storage client for image verification and cleanup.
-    pub image_pool: I,
+    image_pool: I,
     /// Shared side-effect developer for automatic workflow events.
-    pub develop: D,
+    develop: D,
 
     /// Shutdown signal propagated from the owning [`RdbProm`].
-    pub token: CancellationToken,
+    token: CancellationToken,
 }
 
-impl<N, R, I, D> RdbPromHandler<N, R, I, D>
+impl<N, R, I, D> RdbPromActor<N, R, I, D>
 where
     N: Nucl<Context = RdbContext, Error = BaseError> + Sync,
     R: AssignmentInvitationRepo<RdbContext>
@@ -64,7 +64,7 @@ where
     I: ImageManager + Send + Sync + 'static,
     D: Develop + Send + Sync + 'static,
 {
-    /// Builds a new prom background handler from its core, nucl, repo, and lifecycle channels.
+    /// Builds a new prom background actor from its core, nucl, repo, and lifecycle channels.
     pub const fn new(
         nucl: N,
         repo: RdbPromRepo<R>,
@@ -80,6 +80,36 @@ where
             develop,
             token,
         }
+    }
+
+    /// Returns the transaction coordinator used by the actor.
+    #[must_use]
+    pub const fn nucl(&self) -> &N {
+        &self.nucl
+    }
+
+    /// Returns the repository used for message lifecycle and domain queries.
+    #[must_use]
+    pub const fn repo(&self) -> &RdbPromRepo<R> {
+        &self.repo
+    }
+
+    /// Returns the image manager used for image tasks.
+    #[must_use]
+    pub const fn image_pool(&self) -> &I {
+        &self.image_pool
+    }
+
+    /// Returns the side-effect developer used for workflow events.
+    #[must_use]
+    pub const fn develop(&self) -> &D {
+        &self.develop
+    }
+
+    /// Returns the cancellation token that controls the actor lifecycle.
+    #[must_use]
+    pub const fn token(&self) -> &CancellationToken {
+        &self.token
     }
 }
 

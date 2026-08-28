@@ -1,5 +1,5 @@
-//! Background event handler — receives events from the channel and
-//! dispatches them to the appropriate domain handler.
+//! Background event actor — receives events from the channel and dispatches
+//! them to the appropriate domain actor.
 
 use std::sync::Arc;
 
@@ -17,8 +17,8 @@ use crate::part::repo::user::UserRepo;
 use crate::part_impl::effect::async_impl::dispatch::dispatch;
 
 /// Background event consumer that receives events from the channel and
-/// dispatches them to the appropriate domain handler.
-pub struct EffectHandler<R> {
+/// dispatches them to the appropriate domain actor.
+pub struct EffectActor<R> {
     //
     /// Shared repository access for event processing.
     repo: Arc<R>,
@@ -28,8 +28,8 @@ pub struct EffectHandler<R> {
     token: CancellationToken,
 }
 
-impl<R> EffectHandler<R> {
-    /// Builds a background handler from its queue and cancellation token.
+impl<R> EffectActor<R> {
+    /// Builds a background actor from its queue and cancellation token.
     pub const fn new(
         repo: Arc<R>,
         recv: Receiver<Event>,

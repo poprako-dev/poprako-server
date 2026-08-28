@@ -9,8 +9,8 @@
 
 // Internal organization of the `entity` module.
 mod entity;
-// Internal organization of the `handler` module.
-mod handler;
+// Internal organization of the `actor` module.
+mod actor;
 // Internal organization of the `repo` module.
 mod repo;
 
@@ -82,7 +82,7 @@ impl RdbProm {
             RdbPromRepo::new(HybRepo::new(core)),
         );
 
-        let handler = handler::RdbPromHandler::new(
+        let actor = actor::RdbPromActor::new(
             nucl,
             repo,
             image_pool,
@@ -93,7 +93,7 @@ impl RdbProm {
         tokio::spawn(async move {
             //
             // Internal implementation detail.
-            handler.run().await;
+            actor.run().await;
 
             done_send.send_replace(true);
         });

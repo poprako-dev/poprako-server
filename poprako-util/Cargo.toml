@@ -11,9 +11,6 @@ categories = ["internationalization", "asynchronous"]
 readme = false
 publish.workspace = true
 
-[lints]
-workspace = true
-
 [dependencies]
 fluent-templates.workspace = true
 time.workspace = true

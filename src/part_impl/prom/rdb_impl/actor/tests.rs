@@ -8,9 +8,9 @@ use crate::part::nucl::ReptRead;
 use crate::part::prom::payload::{TaskPayload, image};
 use crate::part::prom::task::Task;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
+use crate::part_impl::prom::rdb_impl::actor::base::dispatch_payload;
+use crate::part_impl::prom::rdb_impl::actor::task_flow::TaskFlow;
 use crate::part_impl::prom::rdb_impl::entity::LocalMessageEntryRow;
-use crate::part_impl::prom::rdb_impl::handler::base::dispatch_payload;
-use crate::part_impl::prom::rdb_impl::handler::task_flow::TaskFlow;
 use crate::part_impl::prom::rdb_impl::repo::RdbPromRepo;
 use crate::part_impl::prom::rdb_impl::test_shared;
 use crate::part_impl::repo::HybRepo;
@@ -20,7 +20,7 @@ use crate::shared::RdbCore;
 use crate::value::image::ImageKind;
 
 // Constant definition for `PREFIX`.
-const PREFIX: &str = "rdb-test-prom-handler-";
+const PREFIX: &str = "rdb-test-prom-actor-";
 
 /// Verifies that payloads stored by the RDB defer path are decoded and
 /// dispatched by their topic.
@@ -29,7 +29,7 @@ pub async fn image_payloads_from_rdb_dispatch(shared: RdbCore) {
     // Internal state field test_shared.
     test_shared::reset(&shared, PREFIX).await;
 
-    let delete_id = "rdb-test-prom-handler-delete".to_string();
+    let delete_id = "rdb-test-prom-actor-delete".to_string();
 
     let delete_payload = TaskPayload::Image {
         payload: image::ImagePayload::Delete {
@@ -60,7 +60,7 @@ pub async fn image_payloads_from_rdb_dispatch(shared: RdbCore) {
         .unwrap();
 
     let delete_payload: serde_json::Value = t_local_message::table
-        .filter(t_local_message::f_id.eq("rdb-test-prom-handler-delete"))
+        .filter(t_local_message::f_id.eq("rdb-test-prom-actor-delete"))
         .select(t_local_message::f_payload)
         .first(&mut conn)
         .await
@@ -90,7 +90,7 @@ pub async fn image_payloads_from_rdb_dispatch(shared: RdbCore) {
         vec!["old-avatar.png".to_string()]
     );
 
-    let check_id = "rdb-test-prom-handler-check-uploaded".to_string();
+    let check_id = "rdb-test-prom-actor-check-uploaded".to_string();
 
     let check_payload = TaskPayload::Image {
         payload: image::ImagePayload::CheckUpload {
@@ -120,9 +120,7 @@ pub async fn image_payloads_from_rdb_dispatch(shared: RdbCore) {
         .unwrap();
 
     let check_uploaded_payload: serde_json::Value = t_local_message::table
-        .filter(
-            t_local_message::f_id.eq("rdb-test-prom-handler-check-uploaded"),
-        )
+        .filter(t_local_message::f_id.eq("rdb-test-prom-actor-check-uploaded"))
         .select(t_local_message::f_payload)
         .first(&mut conn)
         .await

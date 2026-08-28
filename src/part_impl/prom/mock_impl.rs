@@ -110,7 +110,7 @@ impl MockPromRecord {
 /// Process all pending prom records in mock state.
 ///
 /// Deserializes each record's stored payload and
-/// executes the same handler logic as the production handler against
+/// executes the same actor logic as the production actor against
 /// [`Mock`]'s in-memory implementations of all ports.
 ///
 /// Call this after a usecase has enqueued prom records to exercise

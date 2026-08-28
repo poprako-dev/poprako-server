@@ -18,7 +18,7 @@ use crate::part::repo::oper::user::{GetUserInfoExcluded, UpdateUser};
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
-use crate::part_impl::prom::rdb_impl::handler::image::identity::ImageIdentity;
+use crate::part_impl::prom::rdb_impl::actor::image::identity::ImageIdentity;
 use crate::result::{BaseError, BaseRest, accept};
 use crate::shared::RdbContext;
 use crate::value::image::ImageKind;
@@ -107,13 +107,13 @@ where
         + Send
         + Sync,
 {
-    match image_identity.kind {
+    match image_identity.kind() {
         //
         // Internal implementation detail.
         ImageKind::UserAvatar => {
             //
             match (GetUserInfoExcluded::Id {
-                id: image_identity.resource_id,
+                id: image_identity.resource_id(),
             })
             .step_on(repo, context)
             .await
@@ -141,7 +141,7 @@ where
         ImageKind::TeamAvatar => {
             //
             match (GetTeamInfoExcluded::Id {
-                id: image_identity.resource_id,
+                id: image_identity.resource_id(),
             })
             .step_on(repo, context)
             .await
@@ -169,7 +169,7 @@ where
         ImageKind::ComicCover => {
             //
             match (GetComicInfoExcluded {
-                id: image_identity.resource_id,
+                id: image_identity.resource_id(),
                 incls: &[],
             })
             .step_on(repo, context)
@@ -198,7 +198,7 @@ where
         ImageKind::PageImage => {
             //
             match (GetPageInfoExcluded {
-                id: image_identity.resource_id,
+                id: image_identity.resource_id(),
             })
             .step_on(repo, context)
             .await
@@ -240,15 +240,15 @@ where
         + Send
         + Sync,
 {
-    match image_identity.kind {
+    match image_identity.kind() {
         //
         // Internal implementation detail.
         ImageKind::UserAvatar => {
             //
             let user_avatar_repl = UserAvatarRepl {
-                id: image_identity.resource_id.to_owned(),
-                avatar_version: image_identity.version,
-                avatar_key: Some(image_identity.object_key.to_owned()),
+                id: image_identity.resource_id().to_owned(),
+                avatar_version: image_identity.version(),
+                avatar_key: Some(image_identity.object_key().to_owned()),
                 is_avatar_uploaded: image_uploaded,
             };
 
@@ -262,9 +262,9 @@ where
         ImageKind::TeamAvatar => {
             //
             let team_avatar_repl = TeamAvatarRepl {
-                id: image_identity.resource_id.to_owned(),
-                avatar_version: image_identity.version,
-                avatar_key: Some(image_identity.object_key.to_owned()),
+                id: image_identity.resource_id().to_owned(),
+                avatar_version: image_identity.version(),
+                avatar_key: Some(image_identity.object_key().to_owned()),
                 is_avatar_uploaded: image_uploaded,
             };
 
@@ -278,9 +278,9 @@ where
         ImageKind::ComicCover => {
             //
             MarkComicCoverUploaded {
-                id: image_identity.resource_id,
-                cover_version: image_identity.version,
-                cover_key: Some(image_identity.object_key),
+                id: image_identity.resource_id(),
+                cover_version: image_identity.version(),
+                cover_key: Some(image_identity.object_key()),
                 cover_uploaded: image_uploaded,
             }
             .step_on(repo, context)
@@ -290,9 +290,9 @@ where
         ImageKind::PageImage => {
             //
             let page_image_repl = PageImageRepl {
-                id: image_identity.resource_id.to_owned(),
-                image_version: image_identity.version,
-                image_key: Some(image_identity.object_key.to_owned()),
+                id: image_identity.resource_id().to_owned(),
+                image_version: image_identity.version(),
+                image_key: Some(image_identity.object_key().to_owned()),
                 is_image_uploaded: true,
             };
 
@@ -312,8 +312,8 @@ fn classify_current_identity(
 ) -> BaseRest<ResourceState> {
     //
     match (
-        current_identity.version == Some(image_identity.version),
-        current_identity.object_key == Some(image_identity.object_key),
+        current_identity.version == Some(image_identity.version()),
+        current_identity.object_key == Some(image_identity.object_key()),
     ) {
         //
         // Internal implementation detail.

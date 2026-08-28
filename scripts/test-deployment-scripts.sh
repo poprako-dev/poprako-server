@@ -271,15 +271,23 @@ set -eu
 
 printf 'ssh' >>"${TEST_COMMAND_LOG:?}"
 
+remote_command=
+
 for command_arg in "$@"; do
     printf ' %s' "$command_arg" >>"$TEST_COMMAND_LOG"
+
+    remote_command=$command_arg
 done
 
 printf '\n' >>"$TEST_COMMAND_LOG"
 
-while IFS= read -r ignored_input; do
-    :
-done
+case "$remote_command" in
+    *ga-remote-deploy.sh*)
+        while IFS= read -r ignored_input; do
+            :
+        done
+        ;;
+esac
 EOF
 
 cat >"${fake_bin}/scp" <<'EOF'

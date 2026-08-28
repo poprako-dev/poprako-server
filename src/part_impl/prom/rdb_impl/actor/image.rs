@@ -1,4 +1,4 @@
-//! Handler for the "image" prom topic.
+//! Actor for the "image" prom topic.
 //!
 //! Dispatches image [`ImagePayload`] variants to their concrete implementations.
 
@@ -23,14 +23,14 @@ use crate::part::repo::oper::page::{
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
-use crate::part_impl::prom::rdb_impl::handler::image::identity::ImageIdentity;
-use crate::part_impl::prom::rdb_impl::handler::image::resource::ResourceState;
-use crate::part_impl::prom::rdb_impl::handler::task_flow::TaskFlow;
+use crate::part_impl::prom::rdb_impl::actor::image::identity::ImageIdentity;
+use crate::part_impl::prom::rdb_impl::actor::image::resource::ResourceState;
+use crate::part_impl::prom::rdb_impl::actor::task_flow::TaskFlow;
 use crate::result::{BaseError, ExpectedVariant, accept};
 use crate::shared::RdbContext;
 use crate::value::image::ImageKind;
 
-/// Dispatch an image [`ImagePayload`] to its concrete handler.
+/// Dispatch an image [`ImagePayload`] to its concrete actor.
 #[instrument(level = "info", skip_all)]
 pub async fn handle<N, R, I>(
     nucl: &N,
@@ -60,12 +60,12 @@ where
         } => {
             //
             // Internal implementation detail.
-            let image_identity = ImageIdentity {
-                kind: *image_kind,
+            let image_identity = ImageIdentity::new(
+                *image_kind,
                 resource_id,
                 object_key,
-                version: *version,
-            };
+                *version,
+            );
 
             handle_check_uploaded(nucl, repo, image_pool, image_identity).await
         }
@@ -97,7 +97,7 @@ where
     I: ImageManager + Send + Sync,
 {
     let object_exists =
-        match image_pool.object_exists(image_identity.object_key).await {
+        match image_pool.object_exists(image_identity.object_key()).await {
             //
             // Internal implementation detail.
             Ok(object_info) => object_info,
@@ -113,7 +113,7 @@ where
     if object_exists {
         //
         // Internal implementation detail.
-        if image_identity.kind == ImageKind::PageImage {
+        if image_identity.kind() == ImageKind::PageImage {
             //
             return process_existing_page_image(nucl, repo, image_identity)
                 .await;
@@ -122,7 +122,7 @@ where
         process_existing_image(nucl, repo, image_identity).await
     } else {
         //
-        match image_identity.kind {
+        match image_identity.kind() {
             //
             // Internal implementation detail.
             ImageKind::PageImage => {
@@ -165,7 +165,7 @@ where
     R: ChapterRepo<RdbContext> + PageRepo<RdbContext> + Send + Sync,
 {
     let page_info = match (GetPageInfo {
-        id: image_identity.resource_id,
+        id: image_identity.resource_id(),
     })
     .run_on(repo)
     .await
@@ -187,8 +187,8 @@ where
     };
 
     match (
-        page_info.image_version == Some(image_identity.version),
-        page_info.image_key.as_deref() == Some(image_identity.object_key),
+        page_info.image_version == Some(image_identity.version()),
+        page_info.image_key.as_deref() == Some(image_identity.object_key()),
     ) {
         //
         // Internal implementation detail.
@@ -220,16 +220,16 @@ where
             .await?;
 
             let locked_page_info = GetPageInfoExcluded {
-                id: image_identity.resource_id,
+                id: image_identity.resource_id(),
             }
             .step_on(repo, context)
             .await?;
 
             let image_version_matches =
-                locked_page_info.image_version == Some(image_identity.version);
+                locked_page_info.image_version == Some(image_identity.version());
 
             let image_key_matches = locked_page_info.image_key.as_deref()
-                == Some(image_identity.object_key);
+                == Some(image_identity.object_key());
 
             if let (false, _) | (true, false) =
                 (image_version_matches, image_key_matches)
@@ -240,13 +240,13 @@ where
                 tracing::warn!(
                     err_variant = ?ExpectedVariant::Args,
                     err_message = %err_message,
-                    image_kind = ?image_identity.kind,
-                    resource_id = %image_identity.resource_id,
-                    image_version = image_identity.version,
+                    image_kind = ?image_identity.kind(),
+                    resource_id = %image_identity.resource_id(),
+                    image_version = image_identity.version(),
                     stored_image_version = locked_page_info.image_version,
                     image_key_present = locked_page_info.image_key.is_some(),
                     image_key_matches,
-                    object_key_present = !image_identity.object_key.is_empty(),
+                    object_key_present = !image_identity.object_key().is_empty(),
                     operation = "process_existing_page_image",
                     "expected error: stale page image identity",
                 );
@@ -258,9 +258,9 @@ where
             }
 
             let page_image_repl = PageImageRepl {
-                id: image_identity.resource_id.to_owned(),
-                image_version: image_identity.version,
-                image_key: Some(image_identity.object_key.to_owned()),
+                id: image_identity.resource_id().to_owned(),
+                image_version: image_identity.version(),
+                image_key: Some(image_identity.object_key().to_owned()),
                 is_image_uploaded: true,
             };
 
@@ -342,7 +342,7 @@ where
     R: ChapterRepo<RdbContext> + PageRepo<RdbContext> + Send + Sync,
 {
     let page_info = match (GetPageInfo {
-        id: image_identity.resource_id,
+        id: image_identity.resource_id(),
     })
     .run_on(repo)
     .await
@@ -361,8 +361,8 @@ where
     };
 
     match (
-        page_info.image_version == Some(image_identity.version),
-        page_info.image_key.as_deref() == Some(image_identity.object_key),
+        page_info.image_version == Some(image_identity.version()),
+        page_info.image_key.as_deref() == Some(image_identity.object_key()),
     ) {
         //
         // Internal implementation detail.
@@ -394,16 +394,16 @@ where
             .await?;
 
             let locked_page_info = GetPageInfoExcluded {
-                id: image_identity.resource_id,
+                id: image_identity.resource_id(),
             }
             .step_on(repo, context)
             .await?;
 
             let image_version_matches =
-                locked_page_info.image_version == Some(image_identity.version);
+                locked_page_info.image_version == Some(image_identity.version());
 
             let image_key_matches = locked_page_info.image_key.as_deref()
-                == Some(image_identity.object_key);
+                == Some(image_identity.object_key());
 
             if let (false, _) | (true, false) =
                 (image_version_matches, image_key_matches)
@@ -414,13 +414,13 @@ where
                 tracing::warn!(
                     err_variant = ?ExpectedVariant::Args,
                     err_message = %err_message,
-                    image_kind = ?image_identity.kind,
-                    resource_id = %image_identity.resource_id,
-                    image_version = image_identity.version,
+                    image_kind = ?image_identity.kind(),
+                    resource_id = %image_identity.resource_id(),
+                    image_version = image_identity.version(),
                     stored_image_version = locked_page_info.image_version,
                     image_key_present = locked_page_info.image_key.is_some(),
                     image_key_matches,
-                    object_key_present = !image_identity.object_key.is_empty(),
+                    object_key_present = !image_identity.object_key().is_empty(),
                     operation = "process_unverified_page_image",
                     "expected error: stale page image identity",
                 );
@@ -432,9 +432,9 @@ where
             }
 
             let page_image_repl = PageImageRepl {
-                id: image_identity.resource_id.to_owned(),
-                image_version: image_identity.version,
-                image_key: Some(image_identity.object_key.to_owned()),
+                id: image_identity.resource_id().to_owned(),
+                image_version: image_identity.version(),
+                image_key: Some(image_identity.object_key().to_owned()),
                 is_image_uploaded: false,
             };
 

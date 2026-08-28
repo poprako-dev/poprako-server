@@ -1,4 +1,4 @@
-//! Chapter event handlers for async side effects.
+//! Chapter event actors for async side effects.
 
 use std::borrow::Cow;
 use std::collections::HashMap;

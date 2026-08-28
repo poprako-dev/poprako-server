@@ -10,7 +10,7 @@ async fn prom_rdb_impls_use_testcontainer() {
 
     let shared = test_rdb.core();
 
-    handler::tests::image_payloads_from_rdb_dispatch(shared.clone()).await;
+    actor::tests::image_payloads_from_rdb_dispatch(shared.clone()).await;
 
     repo::tests::poll_pending_selects_one_visible_message_per_idle_topic(
         shared.clone(),

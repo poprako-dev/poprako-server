@@ -1,4 +1,4 @@
-//! Event dispatcher for async side-effect handlers.
+//! Event dispatcher for async side-effect actors.
 
 use poprako_orchestra::Context;
 use tracing::instrument;
@@ -11,7 +11,7 @@ use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
 use crate::part_impl::effect::async_impl::{chapter, user};
 
-/// Dispatches a domain event to its side-effect handler.
+/// Dispatches a domain event to its side-effect actor.
 /// FIXME: why put it here?
 #[instrument(level = "info", skip_all)]
 pub async fn dispatch<C, R>(repo: &R, event: Event)

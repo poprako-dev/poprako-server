@@ -17,11 +17,11 @@ use tracing::instrument;
 use crate::part::effect::Develop;
 use crate::part::image::ImageManager;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
-use crate::part_impl::prom::rdb_impl::entity::LocalMessageRow;
-use crate::part_impl::prom::rdb_impl::handler::base::{
-    RdbPromHandler, dispatch_payload,
+use crate::part_impl::prom::rdb_impl::actor::base::{
+    RdbPromActor, dispatch_payload,
 };
-use crate::part_impl::prom::rdb_impl::handler::task_flow::TaskFlow;
+use crate::part_impl::prom::rdb_impl::actor::task_flow::TaskFlow;
+use crate::part_impl::prom::rdb_impl::entity::LocalMessageRow;
 use crate::part_impl::prom::rdb_impl::repo::{
     ClaimPending, CompleteMessage, FailMessage, PollPending, PurgeCompleted,
     ResetStuck, RetryMessage,
@@ -83,7 +83,7 @@ pub fn enforce_retry_limit(
     }
 }
 
-impl<I, D> RdbPromHandler<RdbNucl, HybRepo, I, D>
+impl<I, D> RdbPromActor<RdbNucl, HybRepo, I, D>
 where
     I: ImageManager + Send + Sync + 'static,
     D: Develop + Send + Sync + 'static,
@@ -93,12 +93,11 @@ where
     pub async fn run(self) {
         //
         // Internal implementation detail.
-        let (handler, completed) = (Arc::new(self), Arc::new(Notify::new()));
+        let (actor, completed) = (Arc::new(self), Arc::new(Notify::new()));
 
-        let (worker_senders, worker_handles) =
-            handler.spawn_workers(&completed);
+        let (worker_senders, worker_handles) = actor.spawn_workers(&completed);
 
-        handler
+        actor
             .run_supervisor(&worker_senders, completed.as_ref())
             .await;
 
@@ -110,7 +109,7 @@ where
                 //
                 tracing::error!(
                     err = ?error,
-                    "[RdbPromHandler::run] worker task failed",
+                    "[RdbPromActor::run] worker task failed",
                 );
             }
         }
@@ -134,7 +133,7 @@ where
             let (worker_sender, mut worker_receiver) =
                 mpsc::unbounded_channel();
 
-            let (handler, completed) = (self.clone(), completed.clone());
+            let (actor, completed) = (self.clone(), completed.clone());
 
             let worker_handle = tokio::spawn(async move {
                 //
@@ -142,14 +141,14 @@ where
                 while let Some(row) = worker_receiver.recv().await {
                     //
                     // Internal implementation detail.
-                    handler.process_row(&row).await;
+                    actor.process_row(&row).await;
 
                     completed.notify_one();
                 }
 
                 tracing::debug!(
                     worker_index,
-                    "[RdbPromHandler::worker] worker stopped",
+                    "[RdbPromActor::worker] worker stopped",
                 );
             });
 
@@ -175,7 +174,7 @@ where
         loop {
             //
             // Internal implementation detail.
-            if self.token.is_cancelled() {
+            if self.token().is_cancelled() {
                 break;
             }
 
@@ -211,7 +210,7 @@ where
                             //
                             tracing::error!(
                                 err = ?error,
-                                "[RdbPromHandler::run] worker index calculation failed",
+                                "[RdbPromActor::run] worker index calculation failed",
                             );
 
                             false
@@ -224,7 +223,7 @@ where
                     // Internal implementation detail.
                     tracing::error!(
                         err = ?error,
-                        "[RdbPromHandler::run] poll failed",
+                        "[RdbPromActor::run] poll failed",
                     );
 
                     false
@@ -239,7 +238,7 @@ where
                 //
                 biased;
 
-                () = self.token.cancelled() => break,
+                () = self.token().cancelled() => break,
 
                 () = completed.notified() => {}
 
@@ -254,10 +253,10 @@ where
         //
         // Internal implementation detail.
         let task_flow = dispatch_payload(
-            &self.nucl,
-            self.repo.inner(),
-            &self.image_pool,
-            &self.develop,
+            self.nucl(),
+            self.repo().inner(),
+            self.image_pool(),
+            self.develop(),
             &row.f_topic,
             &row.f_payload,
         )
@@ -275,7 +274,7 @@ where
                     tracing::error!(
                         id = %row.f_id,
                         err = ?error,
-                        "[RdbPromHandler::process_row] complete failed",
+                        "[RdbPromActor::process_row] complete failed",
                     );
                 }
             }
@@ -289,7 +288,7 @@ where
                         id = %row.f_id,
                         original_err = %error,
                         err = ?mark_error,
-                        "[RdbPromHandler::process_row] retry mark failed",
+                        "[RdbPromActor::process_row] retry mark failed",
                     );
                 }
             }
@@ -301,7 +300,7 @@ where
                     id = %row.f_id,
                     topic = %row.f_topic,
                     err = %error,
-                    "[RdbPromHandler::process_row] task failed",
+                    "[RdbPromActor::process_row] task failed",
                 );
 
                 if let Err(mark_error) =
@@ -311,7 +310,7 @@ where
                         id = %row.f_id,
                         original_err = %error,
                         err = ?mark_error,
-                        "[RdbPromHandler::process_row] fail mark failed",
+                        "[RdbPromActor::process_row] fail mark failed",
                     );
                 }
             }
@@ -325,7 +324,7 @@ where
             //
             tracing::error!(
                 err = ?error,
-                "[RdbPromHandler::run] reset stuck failed",
+                "[RdbPromActor::run] reset stuck failed",
             );
         }
     }
@@ -342,7 +341,7 @@ where
                     //
                     tracing::info!(
                         purged_count,
-                        "[RdbPromHandler::run] purged expired completed messages",
+                        "[RdbPromActor::run] purged expired completed messages",
                     );
                 }
             }
@@ -351,7 +350,7 @@ where
                 //
                 tracing::error!(
                     err = ?error,
-                    "[RdbPromHandler::run] purge completed failed",
+                    "[RdbPromActor::run] purge completed failed",
                 );
             }
         }
@@ -362,9 +361,9 @@ where
     async fn poll(&self) -> BaseRest<Vec<LocalMessageRow>> {
         //
         let rows = self
-            .nucl
+            .nucl()
             .coord(async |context| {
-                PollPending.step_on(&self.repo, context).await
+                PollPending.step_on(self.repo(), context).await
             })
             .await?;
 
@@ -409,7 +408,7 @@ where
                     tracing::error!(
                         id = %row.f_id,
                         err = ?error,
-                        "[RdbPromHandler::dispatch_rows] claim failed",
+                        "[RdbPromActor::dispatch_rows] claim failed",
                     );
 
                     continue;
@@ -430,7 +429,7 @@ where
                     tracing::error!(
                         id = %error.0.f_id,
                         worker_index,
-                        "[RdbPromHandler::dispatch_rows] worker channel closed",
+                        "[RdbPromActor::dispatch_rows] worker channel closed",
                     );
                 }
             }
@@ -443,11 +442,11 @@ where
     // Internal implementation of `complete`.
     async fn complete(&self, id: &str, lease: i64) -> BaseRest<()> {
         //
-        self.nucl
+        self.nucl()
             .coord(async |context| {
                 //
                 CompleteMessage::new(id, lease)
-                    .step_on(&self.repo, context)
+                    .step_on(self.repo(), context)
                     .await
             })
             .await?;
@@ -466,11 +465,11 @@ where
                     .into(),
             })?;
 
-        self.nucl
+        self.nucl()
             .coord(async |context| {
                 //
                 RetryMessage::new(id, lease, message, &visible_at)
-                    .step_on(&self.repo, context)
+                    .step_on(self.repo(), context)
                     .await
             })
             .await?;
@@ -482,11 +481,11 @@ where
     // Internal implementation of `fail`.
     async fn fail(&self, id: &str, lease: i64, message: &str) -> BaseRest<()> {
         //
-        self.nucl
+        self.nucl()
             .coord(async |context| {
                 //
                 FailMessage::new(id, lease, message)
-                    .step_on(&self.repo, context)
+                    .step_on(self.repo(), context)
                     .await
             })
             .await?;
@@ -506,9 +505,9 @@ where
                         .into(),
             })?;
 
-        self.nucl
+        self.nucl()
             .coord(async |context| {
-                ResetStuck::new(&before).step_on(&self.repo, context).await
+                ResetStuck::new(&before).step_on(self.repo(), context).await
             })
             .await?;
 
@@ -536,11 +535,11 @@ where
             })?;
 
         let purged_count = self
-            .nucl
+            .nucl()
             .coord(async |context| {
                 //
                 PurgeCompleted::new(&completed_before, &dead_before)
-                    .step_on(&self.repo, context)
+                    .step_on(self.repo(), context)
                     .await
             })
             .await?;
@@ -553,11 +552,11 @@ where
     async fn claim(&self, id: &str, lease: i64) -> BaseRest<bool> {
         //
         let claimed = self
-            .nucl
+            .nucl()
             .coord(async |context| {
                 //
                 ClaimPending::new(id, lease)
-                    .step_on(&self.repo, context)
+                    .step_on(self.repo(), context)
                     .await
             })
             .await?;

@@ -1,7 +1,7 @@
 //! Repository for prom task handling and `t_local_message` lifecycle operations.
 //!
 //! These operation types and [`Step`] implementations are used exclusively
-//! by the background handler. They are NOT part of the public [`Prom`]
+//! by the background actor. They are NOT part of the public [`Prom`]
 //! port trait — only producer-side defer operations are exposed through the
 //! port system.
 //!
@@ -26,15 +26,15 @@ use crate::shared::result::diesel;
 
 // ── Handle ──────────────────────────────────────────────────────────────────
 
-/// Repository used by the prom background handler.
+/// Repository used by the prom background actor.
 ///
-/// Owns the application repository used by topic handlers while also providing
+/// Owns the application repository used by topic actors while also providing
 /// polling, claiming, completion, failure, retry, and recovery operations for
 /// records in `t_local_message`.
 ///
-/// [`RdbPromHandler`]: super::handler::RdbPromHandler
+/// [`RdbPromActor`]: super::actor::RdbPromActor
 pub struct RdbPromRepo<R> {
-    /// Delegate application repository used by topic handlers.
+    /// Delegate application repository used by topic actors.
     repo: R,
 }
 
@@ -44,7 +44,7 @@ impl<R> RdbPromRepo<R> {
         Self { repo }
     }
 
-    /// Returns the application repository used by topic handlers.
+    /// Returns the application repository used by topic actors.
     pub const fn inner(&self) -> &R {
         &self.repo
     }
