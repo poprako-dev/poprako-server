@@ -46,7 +46,8 @@ pub struct CreateTeamInstr {
 /// Exactly one listing mode applies based on `user_id`:
 /// - `user_id` omitted: list all teams (requires super-admin, otherwise
 ///   `403`);
-/// - `user_id` present: list teams the given user has joined.
+/// - `user_id` present: list teams the authenticated user has joined. A
+///   different user's ID is rejected with `403`.
 ///
 /// Example: `/api/v1/teams?user_id=u_123&offset=0&limit=20`.
 #[derive(Debug, Deserialize)]
@@ -54,8 +55,8 @@ pub struct CreateTeamInstr {
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ListTeamInfosInstr {
     //
-    /// Filter to teams joined by this user. Omit to list all teams
-    /// (super-admin only).
+    /// Filter to teams joined by the authenticated user. A different user's
+    /// ID is rejected. Omit to list all teams (super-admin only).
     pub user_id: Option<String>,
 
     /// Pagination offset.

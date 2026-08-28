@@ -2550,13 +2550,13 @@
           "teams"
         ],
         "summary": "`GET /api/v1/teams` — list teams with pagination.",
-        "description": "Lists teams. Omit `user_id` to list all teams (super-admin only, otherwise `403`); supply `user_id` to list teams that user has joined. Examples: `/api/v1/teams?user_id=u_1&offset=0&limit=20`, `/api/v1/teams?offset=0&limit=20` (super-admin).",
+        "description": "Lists teams. Omit `user_id` to list all teams (super-admin only, otherwise `403`); supply the authenticated user's ID to list teams they have joined. A different user's ID is rejected with `403`. Examples: `/api/v1/teams?user_id=u_1&offset=0&limit=20`, `/api/v1/teams?offset=0&limit=20` (super-admin).",
         "operationId": "list_infos",
         "parameters": [
           {
             "name": "user_id",
             "in": "query",
-            "description": "Filter to teams joined by this user. Omit to list all teams\n(super-admin only).",
+            "description": "Filter to teams joined by the authenticated user. A different user's\nID is rejected. Omit to list all teams (super-admin only).",
             "required": false,
             "schema": {
               "type": "string"
@@ -2600,7 +2600,7 @@
             "description": "Authentication required"
           },
           "403": {
-            "description": "Listing all teams requires super-admin"
+            "description": "Listing all teams requires super-admin; user filters must match the authenticated user"
           }
         }
       },

@@ -3,6 +3,8 @@
 use poprako_orchestra::{Context, OperRun as _};
 use tracing::instrument;
 
+use poprako_util::i18n::trl;
+
 use crate::complex::team::TeamPermComplex;
 use crate::data::instr::team::ListTeamInfosInstr;
 use crate::data::view::team::TeamInfoView;
@@ -13,7 +15,7 @@ use crate::part::repo::oper::team::{GetTeamInfo, ListTeamInfos};
 use crate::part::repo::oper::user::GetUserInfo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
-use crate::result::{BaseRest, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::internal::util::collect_bounded;
 
 /// Fetches a team by ID with avatar URL resolution.
@@ -63,6 +65,26 @@ where
     R: TeamRepo<C> + UserRepo<C> + Sync,
     I: ImagePool + Sync,
 {
+    if let Some(affected_user_id) = instr.user_id.as_deref()
+        && affected_user_id != token.user_id
+    {
+        //
+        let err_message = trl("error-forbidden");
+
+        tracing::warn!(
+            err_variant = ?ExpectedVariant::Perm,
+            err_message = %err_message,
+            user_id = %token.user_id,
+            affected_user_id = %affected_user_id,
+            "expected error: team listing ownership required",
+        );
+
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: err_message,
+        });
+    }
+
     if instr.user_id.is_none() {
         //
         let user_info =
