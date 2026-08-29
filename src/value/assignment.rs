@@ -16,7 +16,6 @@ use crate::value::incl::InclOpt;
 #[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub enum AssignmentInclOpt {
-    //
     /// Embed the assigned user (`user`).
     #[serde(rename = "user")]
     User,

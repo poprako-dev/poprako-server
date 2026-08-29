@@ -48,7 +48,7 @@ pub async fn list_infos(
     let instr = ListPageInfosInstr { chapter_id };
 
     usecase::page::list::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
-        (harn.repo(), harn.image_pool()),
+        (harn.repo(), harn.obj_dept()),
         user_token,
         instr,
     )
@@ -76,7 +76,7 @@ pub async fn get_info(
 ) -> HttpResult<PageInfoView> {
     //
     usecase::page::list::get_info::<RdbContext<ReptRead>, HybRepo, _>(
-        (harn.repo(), harn.image_pool()),
+        (harn.repo(), harn.obj_dept()),
         user_token,
         page_id,
     )
@@ -102,8 +102,8 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::page::delete::delete::<_, RdbContext<ReptRead>, HybRepo, RdbProm>(
-        (harn.nucl().rept_read(), harn.repo(), harn.prom()),
+    usecase::page::delete::delete::<_, RdbContext<ReptRead>, HybRepo, _>(
+        (harn.nucl().rept_read(), harn.repo(), harn.obj_dept()),
         user_token,
         chapter_id,
     )
@@ -147,7 +147,7 @@ pub async fn reserve_chapter_pages(
             harn.nucl().rept_read(),
             harn.repo(),
             harn.prom(),
-            harn.image_pool(),
+            harn.obj_dept(),
             &harn.config().image,
         ),
         user_token,
@@ -182,14 +182,14 @@ pub async fn reserve_image(
         _,
         RdbContext<ReptRead>,
         HybRepo,
-        RdbProm,
+        _,
         _,
     >(
         (
             harn.nucl().rept_read(),
             harn.repo(),
             harn.prom(),
-            harn.image_pool(),
+            harn.obj_dept(),
             &harn.config().image,
         ),
         user_token,
@@ -221,8 +221,8 @@ pub async fn mark_image_uploaded(
     Json(instr): Json<MarkPageImageUploadedInstr>,
 ) -> HttpNoContent {
     //
-    usecase::page::mark_image_uploaded::<_, RdbContext<ReptRead>, HybRepo, _>(
-        (harn.nucl().rept_read(), harn.repo(), harn.image_pool()),
+    usecase::page::mark_image_uploaded::<RdbContext<ReptRead>, HybRepo, _>(
+        (harn.repo(), harn.obj_dept()),
         user_token,
         page_id,
         instr,

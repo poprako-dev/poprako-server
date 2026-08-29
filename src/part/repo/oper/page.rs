@@ -2,9 +2,7 @@ use poprako_orchestra::Oper;
 
 use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::unit::UnitCountMetrics;
-use crate::model::write::page::{
-    PageEntry, PageImageRepl, PageImageReservation, PageManifestRepl,
-};
+use crate::model::write::page::{PageEntry, PageManifestRepl};
 
 /// Retrieves a single page's info by ID.
 #[derive(Oper)]
@@ -70,46 +68,10 @@ pub struct UpdatePageManifest<'a> {
     pub update: &'a PageManifestRepl,
 }
 
-/// Invalidates all page image keys after chapter publication.
-#[derive(Oper)]
-#[oper(output = Vec<String>)]
-pub struct ClearPageImagesForPublish<'a> {
-    /// The chapter ID whose images to clear.
-    pub chapter_id: &'a str,
-}
-
-/// Reserves an image slot for a page.
-#[derive(Oper)]
-#[oper(output = PageImageReservation)]
-pub struct ReservePageImage<'a> {
-    //
-    /// The page ID.
-    pub id: &'a str,
-    /// The file extension for the image.
-    pub file_ext: &'a str,
-}
-
-/// Marks a page image as uploaded.
-#[derive(Oper)]
-#[oper(output = ())]
-pub struct MarkPageImageUploaded<'a> {
-    /// The replacement payload.
-    pub repl: &'a PageImageRepl,
-}
-
-/// Sets one page image's verified upload state for its current identity.
-#[derive(Oper)]
-#[oper(output = ())]
-pub struct SetPageImageUploaded<'a> {
-    /// The replacement payload.
-    pub repl: &'a PageImageRepl,
-}
-
 /// Sets the unit counters for a page.
 #[derive(Oper)]
 #[oper(output = ())]
 pub struct SetPageUnitCounters<'a> {
-    //
     /// The page ID.
     pub id: &'a str,
     /// The unit counters to set.
@@ -120,7 +82,6 @@ pub struct SetPageUnitCounters<'a> {
 #[derive(Oper)]
 #[oper(output = ())]
 pub enum DeletePages<'a> {
-    //
     /// Deletes all pages for a chapter.
     Chapter {
         /// The chapter ID.

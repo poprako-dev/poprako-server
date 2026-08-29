@@ -1,11 +1,7 @@
 use poprako_orchestra::Oper;
 
 use crate::model::read::proj::user::{UserCredential, UserInfo};
-use crate::model::write::user::{
-    UserAvatarRepl, UserAvatarReservation, UserCredsRepl, UserEntry,
-    UserInfoRepl,
-};
-use crate::value::image::{ImageExt, ImageHash};
+use crate::model::write::user::{UserCredsRepl, UserEntry, UserInfoRepl};
 
 /// Creates a user.
 #[derive(Oper)]
@@ -19,7 +15,6 @@ pub struct CreateUser<'a> {
 #[derive(Oper)]
 #[oper(output = UserInfo)]
 pub enum GetUserInfo<'a> {
-    //
     /// Fetch by user id.
     Id {
         /// The unique user identifier.
@@ -31,7 +26,6 @@ pub enum GetUserInfo<'a> {
 #[derive(Oper)]
 #[oper(output = UserCredential)]
 pub enum GetUserCredential<'a> {
-    //
     /// Fetch by qid.
     Qid {
         /// The OAuth qualified identifier.
@@ -43,7 +37,6 @@ pub enum GetUserCredential<'a> {
 #[derive(Oper)]
 #[oper(output = Option<UserInfo>)]
 pub enum FindUserInfo<'a> {
-    //
     /// Fetch by qid.
     Qid {
         /// The OAuth qualified identifier.
@@ -55,17 +48,10 @@ pub enum FindUserInfo<'a> {
 #[derive(Oper)]
 #[oper(output = ())]
 pub enum UpdateUser<'a> {
-    //
     /// Updates user metadata fields.
     Info {
         /// The replacement payload.
         repl: &'a UserInfoRepl,
-    },
-
-    /// Marks a user avatar as uploaded.
-    MarkAvatarUploaded {
-        /// The replacement payload.
-        repl: &'a UserAvatarRepl,
     },
 
     /// Touches the last-active timestamp.
@@ -81,26 +67,10 @@ pub enum UpdateUser<'a> {
     },
 }
 
-/// Reserves a user avatar slot for an upload.
-#[derive(Oper)]
-#[oper(output = UserAvatarReservation)]
-pub struct ReserveUserAvatar<'a> {
-    //
-    /// The user id.
-    pub id: &'a str,
-
-    /// The image hash for deduplication.
-    pub image_hash: &'a ImageHash,
-
-    /// The image file extension.
-    pub image_ext: ImageExt,
-}
-
 /// Looks up a user by identifier, matching deleted rows as well.
 #[derive(Oper)]
 #[oper(output = UserInfo)]
 pub enum GetUserInfoExcluded<'a> {
-    //
     /// Fetch by user id.
     Id {
         /// The unique user identifier.

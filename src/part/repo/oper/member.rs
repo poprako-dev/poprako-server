@@ -19,7 +19,6 @@ pub struct CreateMember<'a> {
 #[derive(Oper)]
 #[oper(output = ())]
 pub enum UpdateMember<'a> {
-    //
     /// Updates the member's nickname.
     UserNickname {
         /// The nickname replacement payload.
@@ -37,7 +36,6 @@ pub enum UpdateMember<'a> {
 #[derive(Oper)]
 #[oper(output = Vec<MemberInfo>)]
 pub enum ListMemberInfos<'a> {
-    //
     /// Lists members matching the given spec.
     Spec {
         /// The filter and pagination specification.
@@ -55,7 +53,6 @@ pub enum ListMemberInfos<'a> {
 #[derive(Oper)]
 #[oper(output = Option<MemberInfo>)]
 pub enum FindMemberInfo<'a> {
-    //
     /// Finds by user ID and team ID.
     UserTeam {
         /// The user ID.
@@ -69,7 +66,6 @@ pub enum FindMemberInfo<'a> {
 #[derive(Oper)]
 #[oper(output = MemberInfo)]
 pub enum GetMemberInfo<'a, 'b> {
-    //
     /// Retrieves by member ID.
     Id {
         /// The member ID.
@@ -83,7 +79,6 @@ pub enum GetMemberInfo<'a, 'b> {
 #[derive(Oper)]
 #[oper(output = Vec<MemberInfo>)]
 pub enum ListMemberInfosExcluded<'a> {
-    //
     /// Lists memberships for a user with excluded fields omitted.
     User {
         /// The user ID.

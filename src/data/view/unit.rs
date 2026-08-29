@@ -19,7 +19,6 @@ use crate::model::read::proj::unit::UnitInfo;
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UnitInfoView {
-    //
     /// Permanent Unit ID.
     pub id: String,
     /// Owning Page ID.

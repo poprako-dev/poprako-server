@@ -13,6 +13,7 @@ use poprako_orchestra::{AtLeast, Level, Run, Step};
 use time::OffsetDateTime;
 use tracing::instrument;
 
+use poprako_rdb_core::RdbConn;
 use poprako_util::i18n::trl;
 
 use crate::model::read::proj::workset::WorksetInfo;
@@ -32,8 +33,8 @@ use crate::part_impl::repo::rdb_impl::schema::t_workset::dsl::{
     f_comic_count, f_comic_next_index, f_id, f_index, f_team_id, t_workset,
 };
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::shared::RdbContext;
 use crate::shared::result::diesel;
-use crate::shared::{RdbConn, RdbContext};
 
 // Remove one workset row by id.
 #[instrument(level = "info", skip_all)]

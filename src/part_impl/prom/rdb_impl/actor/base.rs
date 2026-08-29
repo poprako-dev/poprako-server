@@ -11,8 +11,10 @@ use poprako_orchestra::Nucl;
 use tokio_util::sync::CancellationToken;
 use tracing::instrument;
 
+use poprako_obj_dept::ObjDept;
+
 use crate::part::effect::Develop;
-use crate::part::image::ImageManager;
+use crate::part::obj_dept::PageImage;
 use crate::part::prom::payload::TaskPayload;
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::chapter::ChapterRepo;
@@ -23,23 +25,23 @@ use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
 use crate::part_impl::prom::rdb_impl::actor::task_flow::TaskFlow;
-use crate::part_impl::prom::rdb_impl::actor::{chapter, image, invitation};
+use crate::part_impl::prom::rdb_impl::actor::{chapter, invitation};
 use crate::part_impl::prom::rdb_impl::repo::RdbPromRepo;
 use crate::result::BaseError;
 use crate::shared::RdbContext;
 
 /// Background worker that polls the `t_local_message` table, dispatches by topic,
 /// and completes or fails each record.
-pub struct RdbPromActor<N, R, I, D> {
-    //
+pub struct RdbPromActor<N, R, O, D> {
     /// Transaction coordinator used for actor-level database operations.
     nucl: N,
 
     /// Repository wrapping message lifecycle and domain queries.
     repo: RdbPromRepo<R>,
 
-    /// Object storage client for image verification and cleanup.
-    image_pool: I,
+    /// Total object department used by business workflow checks.
+    obj_dept: O,
+
     /// Shared side-effect developer for automatic workflow events.
     develop: D,
 
@@ -47,7 +49,7 @@ pub struct RdbPromActor<N, R, I, D> {
     token: CancellationToken,
 }
 
-impl<N, R, I, D> RdbPromActor<N, R, I, D>
+impl<N, R, O, D> RdbPromActor<N, R, O, D>
 where
     N: Nucl<Context = RdbContext, Error = BaseError> + Sync,
     R: AssignmentInvitationRepo<RdbContext>
@@ -61,14 +63,13 @@ where
         + Send
         + Sync
         + 'static,
-    I: ImageManager + Send + Sync + 'static,
     D: Develop + Send + Sync + 'static,
 {
     /// Builds a new prom background actor from its core, nucl, repo, and lifecycle channels.
     pub const fn new(
         nucl: N,
         repo: RdbPromRepo<R>,
-        image_pool: I,
+        obj_dept: O,
         develop: D,
         token: CancellationToken,
     ) -> Self {
@@ -76,7 +77,7 @@ where
         Self {
             nucl,
             repo,
-            image_pool,
+            obj_dept,
             develop,
             token,
         }
@@ -94,10 +95,10 @@ where
         &self.repo
     }
 
-    /// Returns the image manager used for image tasks.
+    /// Returns the total object department used by workflow checks.
     #[must_use]
-    pub const fn image_pool(&self) -> &I {
-        &self.image_pool
+    pub const fn obj_dept(&self) -> &O {
+        &self.obj_dept
     }
 
     /// Returns the side-effect developer used for workflow events.
@@ -115,10 +116,10 @@ where
 
 /// Decodes and dispatches one persisted prom payload.
 #[instrument(level = "info", skip_all)]
-pub async fn dispatch_payload<N, R, I, D>(
+pub async fn dispatch_payload<N, R, O, D>(
     nucl: &N,
     repo: &R,
-    image_pool: &I,
+    obj_dept: &O,
     develop: &D,
     topic: &str,
     payload: &serde_json::Value,
@@ -135,7 +136,7 @@ where
         + UserRepo<RdbContext>
         + Send
         + Sync,
-    I: ImageManager + Send + Sync,
+    O: ObjDept<PageImage, RdbContext> + Sync,
     D: Develop + Sync,
 {
     let payload = match serde_json::from_value::<TaskPayload>(payload.clone()) {
@@ -173,11 +174,7 @@ where
     match payload {
         //
         TaskPayload::Chapter { payload: task } => {
-            chapter::handle(nucl, repo, develop, &task).await
-        }
-
-        TaskPayload::Image { payload: task } => {
-            image::handle(nucl, repo, image_pool, &task).await
+            chapter::handle(nucl, repo, obj_dept, develop, &task).await
         }
 
         TaskPayload::Invitation { payload: event } => {

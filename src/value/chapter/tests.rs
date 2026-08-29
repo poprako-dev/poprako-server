@@ -13,9 +13,10 @@
 // rejects_active_one_shot_filter_mask(WorkflowStageMask::try_filter_from)(negative): filter masks reject active one-shot stages.
 // rejects_invalid_set_phase(WorkflowStageMask::try_set_phase)(negative): setting an active one-shot phase is rejected.
 
-use super::*;
-
-use crate::value::chapter::stage::{is_valid_stage_phase, try_modify_stage};
+use super::mask::StageMask;
+use super::stage::{
+    Stage, StageOper, StagePhase, is_valid_stage_phase, try_modify_stage,
+};
 
 #[test]
 fn validates_one_shot_phases() {

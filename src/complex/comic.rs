@@ -1,7 +1,5 @@
 //! Pure rules for comic entities.
 
-use std::collections::HashMap;
-
 use poprako_util::i18n::trl;
 
 use crate::complex::util::{
@@ -10,7 +8,6 @@ use crate::complex::util::{
 };
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::proj::member::MemberInfo;
-use crate::model::read::proj::page::PageInfo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 use crate::value::index::stored_index_to_user_index;
@@ -47,27 +44,9 @@ impl ComicComplex {
         next_snowflake_id()
     }
 
-    /// Construct the object-storage key for a comic cover image.
-    pub fn gen_cover_key(id: &str, version: u32, file_ext: &str) -> String {
-        format!("comic_cover/{}-{}.{}", id, version, file_ext)
-    }
-
     /// Compose a display title from raw fields for search materialization.
     pub fn compose_title(index: usize, author: &str, title: &str) -> String {
         format!("{} {} {}", stored_index_to_user_index(index), author, title)
-    }
-
-    /// Builds fallback cover keys from uploaded first-page evidence.
-    pub fn resolve_fallback_cover_keys(
-        page_infos_by_comic_id: HashMap<String, PageInfo>,
-    ) -> HashMap<String, String> {
-        //
-        page_infos_by_comic_id
-            .into_iter()
-            .filter_map(|(comic_id, page_info)| {
-                page_info.image_key.map(|image_key| (comic_id, image_key))
-            })
-            .collect()
     }
 }
 

@@ -2,33 +2,13 @@ use std::sync::Arc;
 
 use crate::config::AppConfig;
 
-/// Selects one of the transaction coordinators owned by the application.
-pub struct HybNucl<NR, NS>(NR, NS);
-
-impl<NR, NS> HybNucl<NR, NS> {
-    /// Combines the repeatable-read and serializable coordinators.
-    pub const fn new(rept_read: NR, serial: NS) -> Self {
-        Self(rept_read, serial)
-    }
-
-    /// Returns the repeatable-read transaction coordinator.
-    pub const fn rept_read(&self) -> &NR {
-        &self.0
-    }
-
-    /// Returns the serializable transaction coordinator.
-    pub const fn serial(&self) -> &NS {
-        &self.1
-    }
-}
-
 /// Central application harness that wires together all port implementations.
-pub struct Harn<N, R, P, A, I, D> {
+pub struct Harn<N, R, O, P, A, D> {
     /// Shared harness storage.
-    inner: Arc<HarnInner<N, R, P, A, I, D>>,
+    inner: Arc<HarnInner<N, R, O, P, A, D>>,
 }
 
-impl<N, R, P, A, I, D> Clone for Harn<N, R, P, A, I, D> {
+impl<N, R, O, P, A, D> Clone for Harn<N, R, O, P, A, D> {
     // Clones the shared harness handle.
     fn clone(&self) -> Self {
         //
@@ -39,34 +19,28 @@ impl<N, R, P, A, I, D> Clone for Harn<N, R, P, A, I, D> {
 }
 
 // Stores the concrete application ports.
-struct HarnInner<N, R, P, A, I, D> {
-    //
+struct HarnInner<N, R, O, P, A, D> {
     // Runtime application configuration.
     config: AppConfig,
     // Transaction coordinator selector.
     nucl: N,
     // Repository adapter bundle.
     repo: R,
+    // Reliable remote-object lifecycle adapter.
+    obj_dept: O,
     // Deferred-task producer.
     prom: P,
     // Authentication adapter.
     auth: A,
-    // Image storage adapter.
-    image_pool: I,
     // Side-effect dispatcher.
     develop: D,
 }
 
-impl<N, R, P, A, I, D> Harn<N, R, P, A, I, D> {
+impl<N, R, O, P, A, D> Harn<N, R, O, P, A, D> {
     /// Builds a harness from its application ports.
     pub fn new(
         config: AppConfig,
-        nucl: N,
-        repo: R,
-        prom: P,
-        auth: A,
-        image_pool: I,
-        develop: D,
+        (nucl, repo, obj_dept, prom, auth, develop): (N, R, O, P, A, D),
     ) -> Self {
         //
         Self {
@@ -74,9 +48,9 @@ impl<N, R, P, A, I, D> Harn<N, R, P, A, I, D> {
                 config,
                 nucl,
                 repo,
+                obj_dept,
                 prom,
                 auth,
-                image_pool,
                 develop,
             }),
         }
@@ -100,6 +74,12 @@ impl<N, R, P, A, I, D> Harn<N, R, P, A, I, D> {
         &self.inner.repo
     }
 
+    /// Returns the reliable remote-object lifecycle adapter.
+    #[must_use]
+    pub fn obj_dept(&self) -> &O {
+        &self.inner.obj_dept
+    }
+
     /// Returns the deferred-task producer.
     #[must_use]
     pub fn prom(&self) -> &P {
@@ -110,12 +90,6 @@ impl<N, R, P, A, I, D> Harn<N, R, P, A, I, D> {
     #[must_use]
     pub fn auth(&self) -> &A {
         &self.inner.auth
-    }
-
-    /// Returns the image pool.
-    #[must_use]
-    pub fn image_pool(&self) -> &I {
-        &self.inner.image_pool
     }
 
     /// Returns the side-effect developer.

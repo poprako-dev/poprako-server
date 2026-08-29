@@ -21,11 +21,13 @@ import tree_sitter
 import tree_sitter_rust
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
-from production_source import production_source
+from production_source import is_production_path, production_files, production_source
 
 
 ROOT = Path(__file__).parents[2]
 PARSER = tree_sitter.Parser(tree_sitter.Language(tree_sitter_rust.language()))
+REEXPORT = re.compile(r"pub(?:\s*\([^)]*\))?\s+use\b")
+PUBLIC_REEXPORT = re.compile(r"pub\s+use\b")
 PATH_NODES = {"scoped_identifier", "scoped_type_identifier"}
 
 
@@ -93,6 +95,7 @@ def external_crate_roots(root: Path) -> set[str]:
     roots = {
         "alloc",
         "core",
+        "proc_macro",
         "std",
     }
 
@@ -252,40 +255,6 @@ def import_policy_diagnostics(
             for imported_path in local_paths
         )
 
-        if path.name == "lib.rs" or not declaration_text.lstrip().startswith("pub use"):
-            continue
-
-        imported = imported_paths(declaration, source)
-        has_wildcard = "*" in declaration_text
-        function_paths = [
-            (path_node, imported_path)
-            for imported_path, _, path_node in imported
-            if imported_path[-1][:1].islower()
-        ]
-
-        if has_wildcard:
-            diagnostics.append(
-                diagnostic(
-                    path,
-                    root,
-                    declaration,
-                    "QCS006",
-                    "function re-exports are forbidden outside lib.rs",
-                ),
-            )
-            continue
-
-        diagnostics.extend(
-            diagnostic(
-                path,
-                root,
-                path_node,
-                "QCS006",
-                f"function re-export `{'::'.join(imported_path)}` is forbidden outside lib.rs",
-            )
-            for path_node, imported_path in function_paths
-        )
-
     return diagnostics
 
 
@@ -427,14 +396,75 @@ def configured_set(root: Path, key: str) -> set[str]:
     return {str(value) for value in section.get(key, [])}
 
 
+def workspace_rust_paths(root: Path) -> list[Path]:
+    cargo_paths = [root / "Cargo.toml", *root.glob("*/Cargo.toml")]
+    paths: set[Path] = set()
+
+    for cargo_path in cargo_paths:
+        crate_root = cargo_path.parent
+
+        for directory_name in ("src", "benches", "examples", "tests"):
+            directory = crate_root / directory_name
+
+            if directory.is_dir():
+                paths.update(
+                    path
+                    for path in directory.rglob("*.rs")
+                    if is_production_path(path.relative_to(root))
+                )
+
+        build_script = crate_root / "build.rs"
+
+        if build_script.is_file():
+            paths.add(build_script)
+
+    return sorted(paths)
+
+
+def reexport_diagnostics(path: Path, root: Path) -> list[str]:
+    source = path.read_bytes()
+    tree = PARSER.parse(source)
+    diagnostics: list[str] = []
+
+    for declaration in descendants(tree.root_node):
+        if declaration.type != "use_declaration":
+            continue
+
+        declaration_text = text(source, declaration).lstrip()
+
+        if REEXPORT.match(declaration_text) is None:
+            continue
+
+        is_public_reexport = PUBLIC_REEXPORT.match(declaration_text) is not None
+
+        if path.name == "lib.rs" and is_public_reexport:
+            continue
+
+        message = "re-exports are forbidden outside lib.rs"
+
+        if not is_public_reexport:
+            message = "restricted-visibility re-exports are forbidden"
+
+        diagnostics.append(
+            diagnostic(path, root, declaration, "QCS006", message),
+        )
+
+    return diagnostics
+
+
 def check_root(root: Path) -> list[str]:
     enforced_std_paths = configured_set(root, "enforced_std_paths")
     exempt_poprako_paths = configured_set(root, "exempt_poprako_paths")
     enforced_third_party_paths = configured_paths(root)
 
-    return [
+    diagnostics = [
         diagnostic
-        for path in sorted((root / "src").rglob("*.rs"))
+        for path in workspace_rust_paths(root)
+        for diagnostic in reexport_diagnostics(path, root)
+    ]
+    diagnostics.extend(
+        diagnostic
+        for path in production_files(root)
         for diagnostic in check_file(
             path,
             root,
@@ -442,7 +472,9 @@ def check_root(root: Path) -> list[str]:
             exempt_poprako_paths,
             enforced_third_party_paths,
         )
-    ]
+    )
+
+    return diagnostics
 
 
 def self_test() -> int:
@@ -477,6 +509,7 @@ def self_test() -> int:
             "use time::OffsetDateTime;\n"
             "use crate::module::local_call;\n"
             "use crate::part::nucl::RepeatableRead;\n"
+            "pub use crate::module::LocalType;\n"
             "#[derive(serde::Deserialize)]\n"
             "#[tracing::instrument]\n"
             "struct Item;\n"
@@ -494,8 +527,21 @@ def self_test() -> int:
             print("self-test: valid qualified-path policy was rejected", file=sys.stderr)
             return 1
 
+        member_source_dir = root / "member" / "src"
+        member_source_dir.mkdir(parents=True)
+        (root / "member" / "Cargo.toml").write_text(
+            "[package]\nname = \"member\"\nversion = \"0.0.0\"\nedition = \"2024\"\n",
+        )
+        (member_source_dir / "lib.rs").write_text(
+            "pub use crate::module::AllowedType;\n",
+        )
+        (member_source_dir / "module.rs").write_text(
+            "pub use crate::nested::ForbiddenType;\n",
+        )
+
         fixture.write_text(
             "use serde_json::Value;\n"
+            "pub(crate) use crate::module::CrateType;\n"
             "fn invalid<C: poprako_orchestra::Context>(value: std::result::Result<(), ()>) {\n"
             "    let _ = std::env::var(\"VALUE\");\n"
             "    crate::module::local_call();\n"
@@ -516,12 +562,15 @@ def self_test() -> int:
             "use self::module::Thing;\n"
             "use local_module::Thing;\n"
             "pub use crate::module::local_call;\n"
-            "pub use crate::module::{LocalType, another_call};\n",
+            "pub use crate::module::{LocalType, another_call};\n"
+            "pub(crate) use crate::module::CrateType;\n"
+            "pub(super) use crate::module::*;\n"
+            "pub(in crate) use crate::module::ScopedType;\n",
         )
 
         diagnostics = check_root(root)
 
-        if len(diagnostics) != 12 or not any("QCS001" in item for item in diagnostics) or not any("QCS002" in item for item in diagnostics) or not any("QCS003" in item for item in diagnostics) or len([item for item in diagnostics if "QCS004" in item]) != 4 or len([item for item in diagnostics if "QCS005" in item]) != 1 or len([item for item in diagnostics if "QCS006" in item]) != 2 or len([item for item in diagnostics if "QCS007" in item]) != 1:
+        if len(diagnostics) != 17 or not any("QCS001" in item for item in diagnostics) or not any("QCS002" in item for item in diagnostics) or not any("QCS003" in item for item in diagnostics) or len([item for item in diagnostics if "QCS004" in item]) != 4 or len([item for item in diagnostics if "QCS005" in item]) != 1 or len([item for item in diagnostics if "QCS006" in item]) != 7 or len([item for item in diagnostics if "QCS007" in item]) != 1:
             print("self-test: forbidden qualified call-site paths were not fully rejected", file=sys.stderr)
             print("\n".join(diagnostics), file=sys.stderr)
             return 1

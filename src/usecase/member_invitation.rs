@@ -6,9 +6,13 @@ mod tests;
 
 use std::time::Duration;
 
-use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
+use poprako_orchestra::{
+    AtLeast, Context, Nucl, OperRun as _, OperStep as _, Run,
+};
 use tracing::instrument;
 
+use poprako_obj_dept::oper::GenObjUrl;
+use poprako_obj_dept::rest::ObjDeptError;
 use poprako_util::i18n::trl;
 
 use crate::complex::member_invitation::{
@@ -25,8 +29,8 @@ use crate::model::shared::user::UserToken;
 use crate::model::write::member_invitation::{
     MemberInvitationEntry, MemberInvitationRoleRepl,
 };
-use crate::part::image::ImagePool;
 use crate::part::nucl::ReptRead;
+use crate::part::obj_dept::UserAvatar;
 use crate::part::prom::Prom;
 use crate::part::prom::oper::Defer;
 use crate::part::prom::payload::TaskPayload;
@@ -44,6 +48,7 @@ use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::{LoadMode, collect_bounded};
+use crate::usecase::view::member_invitation_info_view;
 use crate::util::next_snowflake_id;
 
 // Default invitation validity window for member invite tokens.
@@ -183,16 +188,16 @@ where
 }
 
 /// Lists invitations for a team.
-#[instrument(level = "info", skip(repo, image_pool))]
-pub async fn list_infos<C, R, I>(
-    (repo, image_pool): (&R, &I),
+#[instrument(level = "info", skip(repo, obj_dept))]
+pub async fn list_infos<C, R, O>(
+    (repo, obj_dept): (&R, &O),
     token: UserToken,
     instr: ListMemberInvitationInfosInstr,
 ) -> BaseRest<Vec<MemberInvitationInfoView>>
 where
     C: Context,
     R: MemberInvitationRepo<C> + MemberRepo<C> + Sync,
-    I: ImagePool + Sync,
+    O: for<'a> Run<GenObjUrl<'a, UserAvatar>, Error = ObjDeptError> + Sync,
 {
     let member_info = FindMemberInfo::UserTeam {
         user_id: &token.user_id,
@@ -238,11 +243,7 @@ where
     let member_invitation_info_vals =
         collect_bounded(member_invitation_infos.into_iter().map(
             |member_invitation_info| {
-                //
-                MemberInvitationInfoView::from_model(
-                    image_pool,
-                    member_invitation_info,
-                )
+                member_invitation_info_view(obj_dept, member_invitation_info)
             },
         ))
         .await?;

@@ -13,6 +13,7 @@ use poprako_orchestra::{AtLeast, Level, Run, Step};
 use time::OffsetDateTime;
 use tracing::instrument;
 
+use poprako_rdb_core::RdbConn;
 use poprako_util::i18n::trl;
 
 use crate::model::read::proj::term::TermInfo;
@@ -30,8 +31,8 @@ use crate::part_impl::repo::rdb_impl::schema::t_term::dsl::{
     f_comment, f_id, f_source, f_targets, f_termbase_id, f_updated_at, t_term,
 };
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::shared::RdbContext;
 use crate::shared::result::diesel;
-use crate::shared::{RdbConn, RdbContext};
 
 impl Run<GetTermInfo<'_>> for HybRepo {
     // Map `GetTermInfo` to repository orchestration without ambient transaction.

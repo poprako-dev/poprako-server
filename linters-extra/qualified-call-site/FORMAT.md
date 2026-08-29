@@ -2,6 +2,11 @@
 
 Production call sites must use the project's path policy:
 
+- Plain `pub use` re-exports are allowed only in `lib.rs`, for every item kind
+  including wildcards. Restricted-visibility re-exports such as
+  `pub(crate) use`, `pub(super) use`, and `pub(in ...) use` are always
+  forbidden, including in `lib.rs`. This rule scans `src`, `tests`, `benches`,
+  `examples`, and `build.rs` for every workspace crate.
 - `std::...` paths must be imported and used through their local name.
 - Local `crate::...` paths may appear only in `use` declarations. All
   expressions, types, trait bounds, and function calls must use imported local

@@ -13,7 +13,6 @@ pub const MAX_CHAPTER_IMPORT_PAGE_COUNT: usize = 200;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub enum TranslationFormat {
-    //
     /// `LabelPlus` translation format.
     #[serde(rename = "label-plus")]
     LabelPlus,
@@ -27,7 +26,6 @@ pub enum TranslationFormat {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ExportFormatSpec {
-    //
     /// Whether to generate `LabelPlus` text.
     label_plus: bool,
     /// Whether to generate the native `PopRaKo` document.
@@ -73,7 +71,6 @@ impl<'de> Deserialize<'de> for ExportFormatSpec {
         // Capture the serialized format flags before validating their combination.
         #[derive(Deserialize)]
         struct Fields {
-            //
             // Whether to generate LabelPlus output.
             label_plus: bool,
 

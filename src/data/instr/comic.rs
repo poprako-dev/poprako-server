@@ -4,9 +4,6 @@
 //! presentation-ready values for the comic aggregate.
 //!
 //! Timestamps are converted to Unix milliseconds for JSON serialisation.
-//! Cover URLs are resolved from object-storage keys via [`ImagePool`].
-//!
-//! [`ImagePool`]: crate::part::image::ImagePool
 
 use serde::Deserialize;
 
@@ -15,7 +12,7 @@ use utoipa::{IntoParams, ToSchema};
 
 use crate::model::read::spec::comic::ComicListSpec;
 use crate::result::{BaseError, BaseRest, accept};
-use crate::value::chapter::StageMask;
+use crate::value::chapter::mask::StageMask;
 use crate::value::comic::{ComicInclOpt, ComicStatus, ComicWithOpt};
 use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::RoleMask;
@@ -24,7 +21,6 @@ use crate::value::role::RoleMask;
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ReserveComicCoverInstr {
-    //
     /// SHA-256 identity of the exact cover bytes.
     pub image_hash: ImageHash,
     /// Upload size used for validation and PUT signing.
@@ -49,7 +45,6 @@ pub struct MarkComicCoverUploadedInstr {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateComicInstr {
-    //
     /// Parent workset identifier.
     pub workset_id: String,
 
@@ -77,7 +72,6 @@ pub struct CreateComicInstr {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateComicInfoInstr {
-    //
     /// Comic identifier.
     pub id: String,
 
@@ -94,7 +88,6 @@ pub struct UpdateComicInfoInstr {
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ListComicInfosInstr {
-    //
     /// Parent workset identifier.
     pub workset_id: String,
 

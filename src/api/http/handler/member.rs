@@ -45,7 +45,6 @@ use crate::value::member::MemberInclOpt;
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct MemberMeListQuery {
-    //
     /// Related rows to embed. Repeatable. Values: `user`, `team`.
     #[serde(default, rename = "incl")]
     pub incl_opt: Vec<MemberInclOpt>,
@@ -107,7 +106,7 @@ pub async fn list_infos(
 ) -> HttpResult<Vec<MemberInfoView>> {
     //
     usecase::member::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
-        (harn.repo(), harn.image_pool()),
+        (harn.repo(), harn.obj_dept()),
         user_token,
         instr,
     )
@@ -144,7 +143,7 @@ pub async fn list_my_infos(
     };
 
     usecase::member::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
-        (harn.repo(), harn.image_pool()),
+        (harn.repo(), harn.obj_dept()),
         user_token,
         instr,
     )
@@ -237,7 +236,7 @@ pub async fn join(
 ) -> HttpResult<MemberInfoView> {
     //
     usecase::member::join_team::<_, RdbContext<ReptRead>, HybRepo, _>(
-        (harn.nucl().rept_read(), harn.repo(), harn.image_pool()),
+        (harn.nucl().rept_read(), harn.repo(), harn.obj_dept()),
         user_token,
         instr,
     )

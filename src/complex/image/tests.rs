@@ -1,6 +1,6 @@
 use super::ImageComplex;
 
-use crate::config::ImageConfig;
+use crate::config::image::ImageConfig;
 use crate::result::BaseError;
 use crate::value::image::ImageKind;
 

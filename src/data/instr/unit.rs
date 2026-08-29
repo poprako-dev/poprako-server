@@ -34,7 +34,6 @@ pub struct ListPageUnitInfosInstr {
 /// Input parameters for searching visible Units under one Chapter.
 #[derive(Debug)]
 pub struct SearchChapterUnitInfosInstr {
-    //
     /// Chapter whose visible Units are searched.
     pub chapter_id: String,
     /// Unit text field selected for matching.
@@ -46,7 +45,6 @@ pub struct SearchChapterUnitInfosInstr {
 /// Input parameters for saving a batch of Unit edits.
 #[derive(Debug, Deserialize)]
 pub struct SavePageUnitEditsInstr {
-    //
     /// Page whose Units are being edited.
     pub page_id: String,
 
@@ -59,7 +57,6 @@ pub struct SavePageUnitEditsInstr {
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(deny_unknown_fields)]
 pub struct UnitTextTransformInstr {
-    //
     /// Literal text selected in the original value.
     pub origin: String,
     /// Literal text inserted for each selected match.
@@ -86,7 +83,6 @@ impl UnitTextTransformInstr {
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(deny_unknown_fields)]
 pub struct UnitTransformInstr {
-    //
     /// Permanent target Unit ID.
     pub unit_id: String,
     /// Literal transforms evaluated against the same original text.
@@ -132,7 +128,6 @@ impl UnitTransformInstr {
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(deny_unknown_fields)]
 pub struct TransformChapterUnitsInstr {
-    //
     /// Unit text field selected for transformation.
     pub part: UnitTextPart,
     /// Selected Units and their literal transforms.
@@ -187,7 +182,6 @@ pub fn into_unit_transforms(
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(tag = "edit", rename_all = "snake_case", deny_unknown_fields)]
 pub enum UnitEditInstr {
-    //
     /// Creates one Unit with a request-local ID.
     Create {
         /// Request-local ID used for references within this batch.
@@ -258,7 +252,6 @@ pub enum UnitEditInstr {
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(deny_unknown_fields)]
 pub struct UnitCoordInstr {
-    //
     /// Horizontal page-relative coordinate.
     pub x_coord: f64,
     /// Vertical page-relative coordinate.
@@ -290,7 +283,6 @@ pub struct UnitTranslationInstr {
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(deny_unknown_fields)]
 pub struct UnitRevisionInstr {
-    //
     /// Replacement approval state.
     pub is_proofread: bool,
 

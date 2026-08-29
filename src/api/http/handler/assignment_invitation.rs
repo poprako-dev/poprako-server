@@ -37,7 +37,6 @@ use crate::usecase;
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct AssignmentInvitationListQuery {
-    //
     /// When `Some(true)`, returns only unconsumed invitations;
     /// `Some(false)` returns only consumed ones; `None` returns all.
     pub is_pending: Option<bool>,
@@ -173,7 +172,7 @@ pub async fn join(
         HybRepo,
         _,
     >(
-        (harn.nucl().rept_read(), harn.repo(), harn.image_pool()),
+        (harn.nucl().rept_read(), harn.repo(), harn.obj_dept()),
         user_token,
         instr,
     )

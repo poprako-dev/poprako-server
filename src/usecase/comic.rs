@@ -10,13 +10,18 @@ pub mod reserve;
 #[cfg(test)]
 pub mod tests;
 
-use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
+use poprako_orchestra::{
+    AtLeast, Context, Nucl, OperRun as _, OperStep as _, Run,
+};
 use tracing::instrument;
+
+use poprako_obj_dept::oper::GenObjUrl;
+use poprako_obj_dept::rest::ObjDeptError;
+use poprako_obj_dept::{ObjDept, obj_inst};
 
 use crate::complex::assignment::AssignmentComplex;
 use crate::complex::chapter::ChapterComplex;
 use crate::complex::comic::{ComicComplex, ComicPermComplex};
-use crate::complex::image::ImageComplex;
 use crate::data::instr::comic::{CreateComicInstr, UpdateComicInfoInstr};
 use crate::data::val::comic::CreateComicVal;
 use crate::data::view::comic::ComicInfoView;
@@ -25,12 +30,8 @@ use crate::model::write::assignment::AssignmentEntry;
 use crate::model::write::chapter::ChapterEntry;
 use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::model::write::comic::{ComicEntry, ComicRepl};
-use crate::part::image::ImagePool;
 use crate::part::nucl::{ReptRead, Serial};
-use crate::part::prom::Prom;
-use crate::part::prom::oper::Defer;
-use crate::part::prom::payload::{TaskPayload, image};
-use crate::part::prom::task::Task;
+use crate::part::obj_dept::{ComicCover, PageImage, TeamAvatar, UserAvatar};
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::chapter::ChapterRepo;
@@ -61,9 +62,9 @@ use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseError, BaseRest, accept};
 use crate::usecase::chapter::delete::delete_cascade as delete_chapter_cascade;
 use crate::usecase::internal::member::MemberLoader;
-use crate::usecase::internal::page::PageLoader;
 use crate::usecase::internal::util::LoadMode;
 use crate::usecase::termbase::delete_comic_cascade;
+use crate::usecase::view::comic_info_view;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 use crate::value::role::RoleMask;
 
@@ -196,9 +197,9 @@ where
 }
 
 /// Fetches a comic by ID with cover URL resolution.
-#[instrument(level = "info", skip(repo, image_pool))]
-pub async fn get_info<C, R, I>(
-    (repo, image_pool): (&R, &I),
+#[instrument(level = "info", skip(repo, obj_dept))]
+pub async fn get_info<C, R, O>(
+    (repo, obj_dept): (&R, &O),
     token: UserToken,
     id: String,
 ) -> BaseRest<ComicInfoView>
@@ -210,7 +211,10 @@ where
         + ChapterRepo<C>
         + PageRepo<C>
         + Sync,
-    I: ImagePool + Sync,
+    O: for<'a> Run<GenObjUrl<'a, ComicCover>, Error = ObjDeptError>
+        + for<'a> Run<GenObjUrl<'a, TeamAvatar>, Error = ObjDeptError>
+        + for<'a> Run<GenObjUrl<'a, UserAvatar>, Error = ObjDeptError>
+        + Sync,
 {
     let member_info = MemberLoader::load_info_from_comic(
         repo,
@@ -229,21 +233,7 @@ where
     .run_on(repo)
     .await?;
 
-    let first_page_infos = PageLoader::load_infos_from_comics(
-        repo,
-        std::slice::from_ref(&comic_info.id),
-    )
-    .await?;
-
-    let fallback_cover_keys =
-        ComicComplex::resolve_fallback_cover_keys(first_page_infos);
-
-    ComicInfoView::from_model(
-        image_pool,
-        comic_info,
-        fallback_cover_keys.get(&id).map(String::as_str),
-    )
-    .await
+    comic_info_view(obj_dept, comic_info).await
 }
 
 /// Updates a comic's title, author, and description.
@@ -293,9 +283,9 @@ where
 }
 
 /// Deletes a comic and updates the parent workset counter.
-#[instrument(level = "info", skip(nucl, repo, prom))]
-pub async fn delete<N, C, R, P>(
-    (nucl, repo, prom): (&N, &R, &P),
+#[instrument(level = "info", skip(nucl, repo, obj_dept))]
+pub async fn delete<N, C, R, O>(
+    (nucl, repo, obj_dept): (&N, &R, &O),
     token: UserToken,
     id: String,
 ) -> BaseRest<()>
@@ -318,7 +308,7 @@ where
         + TermRepo<C>
         + Send
         + Sync,
-    P: Prom<C> + Send + Sync,
+    O: ObjDept<ComicCover, C> + ObjDept<PageImage, C> + Send + Sync,
 {
     let member_info = MemberLoader::load_info_from_comic(
         repo,
@@ -331,7 +321,7 @@ where
     ComicPermComplex::ensure_user_can_delete(&member_info)?;
 
     nucl.coord(async move |context| {
-        delete_cascade(repo, prom, context, &id).await
+        delete_cascade(repo, obj_dept, context, &id).await
     })
     .await?;
 
@@ -339,9 +329,9 @@ where
 }
 
 /// Deletes a comic subtree inside an existing transaction context.
-pub async fn delete_cascade<C, R, P>(
+pub async fn delete_cascade<C, R, O>(
     repo: &R,
-    prom: &P,
+    obj_dept: &O,
     context: &mut C,
     id: &str,
 ) -> BaseRest<()>
@@ -358,7 +348,7 @@ where
         + TermbaseRepo<C>
         + TermRepo<C>
         + Sync,
-    P: Prom<C> + Sync,
+    O: ObjDept<ComicCover, C> + ObjDept<PageImage, C> + Sync,
 {
     let comic_info = GetComicInfoExcluded { id, incls: &[] }
         .step_on(repo, context)
@@ -373,28 +363,17 @@ where
     .await?;
 
     for chapter_info in chapter_infos {
-        delete_chapter_cascade(repo, prom, context, &chapter_info.id).await?;
+        //
+        delete_chapter_cascade(repo, obj_dept, context, &chapter_info.id)
+            .await?;
     }
 
-    if let Some(cover_key) = &comic_info.cover_key
-        && comic_info.is_cover_uploaded == Some(true)
-    {
-        let delete_id = ImageComplex::gen_delete_id();
+    let cover_ids = [comic_info.id.clone()];
 
-        let payload = TaskPayload::Image {
-            payload: image::ImagePayload::Delete {
-                object_key: cover_key.clone(),
-            },
-        };
-
-        let task = Task {
-            id: &delete_id,
-            payload: &payload,
-            delay: None,
-        };
-
-        Defer::new(task).step_on(prom, context).await?;
-    }
+    obj_inst! { DelObjs<ComicCover>::Remove { ids: &cover_ids } }
+        .step_on(obj_dept, context)
+        .await
+        .map_err(BaseError::from)?;
 
     DeleteComicArchives {
         source_comic_id: &comic_info.id,

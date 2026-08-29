@@ -19,7 +19,6 @@ use crate::data::view::comic::ComicInfoView;
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ListComicInfosVal {
-    //
     /// Comic information for the listed comics.
     pub comics: Vec<ComicInfoView>,
 

@@ -20,7 +20,7 @@ import tree_sitter
 import tree_sitter_rust
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
-from production_source import production_source
+from production_source import production_files, production_source
 
 
 ROOT = Path(__file__).parents[2]
@@ -311,7 +311,7 @@ def main() -> int:
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
     root = args.root.resolve()
-    paths = sorted((root / "src").rglob("*.rs"))
+    paths = production_files(root)
     names = oper_names(paths, root)
 
     if args.self_test:

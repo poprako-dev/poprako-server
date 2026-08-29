@@ -6,13 +6,19 @@ mod tests;
 
 use std::collections::HashMap;
 
-use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
+use poprako_orchestra::{
+    AtLeast, Context, Nucl, OperRun as _, OperStep as _, Run,
+};
 use tracing::instrument;
 
+use poprako_obj_dept::obj_inst;
+use poprako_obj_dept::oper::GetObjMeta;
+use poprako_obj_dept::rest::ObjDeptError;
 use poprako_util::i18n::trl;
 
-use crate::complex::chapter_port::{
-    ChapterExportAccess, ChapterExportComplex, ChapterPortPermComplex,
+use crate::complex::chapter_port::export::ChapterExportComplex;
+use crate::complex::chapter_port::perm::{
+    ChapterExportAccess, ChapterPortPermComplex,
 };
 use crate::data::val::chapter_port::ExportChapterTranslationsVal;
 use crate::data::view::chapter_port::ChapterTranslationPortView;
@@ -23,6 +29,7 @@ use crate::model::read::proj::unit::UnitInfo;
 use crate::model::shared::user::UserToken;
 use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::part::nucl::ReptRead;
+use crate::part::obj_dept::PageImage;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
@@ -43,16 +50,16 @@ use crate::part::repo::team::TeamRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::stage::start_pending_stages;
-use crate::value::chapter::Stage;
+use crate::value::chapter::stage::Stage;
 use crate::value::chapter_port::ExportFormatSpec;
 use crate::value::chapter_workflow_record::{
     ChapterWorkflowRecordOrigin, ChapterWorkflowRecordPayload,
 };
 
 /// Exports one chapter in every selected translation format.
-#[instrument(level = "info", skip(nucl, repo))]
-pub async fn export<N, C, R>(
-    (nucl, repo): (&N, &R),
+#[instrument(level = "info", skip(nucl, repo, obj_dept))]
+pub async fn export<N, C, R, O>(
+    (nucl, repo, obj_dept): (&N, &R, &O),
     token: UserToken,
     chapter_id: String,
     formats: ExportFormatSpec,
@@ -71,6 +78,7 @@ where
         + UnitRepo<C>
         + Send
         + Sync,
+    O: for<'a> Run<GetObjMeta<'a, PageImage>, Error = ObjDeptError> + Sync,
 {
     ensure_user_can_export::<C, R>(repo, &token, &chapter_id).await?;
 
@@ -109,6 +117,8 @@ where
 
     let mut units_by_page_id = HashMap::<String, Vec<UnitInfo>>::new();
 
+    let mut ext_by_page_id = HashMap::<String, String>::new();
+
     for unit_info in unit_infos {
         //
         units_by_page_id
@@ -119,6 +129,16 @@ where
 
     for page_info in &page_infos {
         //
+        let obj_meta =
+            obj_inst! { GetObjMeta<PageImage> { id: &page_info.id } }
+                .run_on(obj_dept)
+                .await
+                .map_err(BaseError::from)?;
+
+        if let Some(obj_meta) = obj_meta {
+            ext_by_page_id.insert(page_info.id.clone(), obj_meta.ext);
+        }
+
         let unit_infos =
             units_by_page_id.remove(&page_info.id).unwrap_or_default();
 
@@ -155,7 +175,12 @@ where
     };
 
     let label_plus = formats.includes_label_plus().then(|| {
-        ChapterExportComplex::make_label_plus(&page_infos, &units_by_page_id)
+        //
+        ChapterExportComplex::make_label_plus(
+            &page_infos,
+            &units_by_page_id,
+            &ext_by_page_id,
+        )
     });
 
     let val = ExportChapterTranslationsVal {

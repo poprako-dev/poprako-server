@@ -124,7 +124,6 @@ pub async fn export_download(
 
 // Internal payload carrying the serialised export content and response metadata.
 struct TranslationExportPayload {
-    //
     // MIME type of the HTTP response body.
     content_type: &'static str,
     // File extension for the downloaded filename suffix.
@@ -147,8 +146,9 @@ async fn export_payload(
         _,
         RdbContext<ReptRead>,
         HybRepo,
+        _,
     >(
-        (harn.nucl().rept_read(), harn.repo()),
+        (harn.nucl().rept_read(), harn.repo(), harn.obj_dept()),
         user_token,
         chapter_id,
         formats,

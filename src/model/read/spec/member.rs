@@ -5,7 +5,6 @@ use crate::value::role::RoleField;
 
 /// Filtering and pagination parameters for listing memberships.
 pub enum MemberListSpec {
-    //
     /// List teams/memberships owned by a specific user.
     User {
         /// ID of the user whose memberships to list.

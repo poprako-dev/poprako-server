@@ -1,7 +1,7 @@
 //! Calendar-month values used by comic archive export.
 
-// Archived chapter workflow-record payload values.
-mod workflow_record;
+/// Archived chapter workflow-record payload values.
+pub mod workflow_record;
 
 #[cfg(test)]
 mod tests;
@@ -15,8 +15,7 @@ use poprako_util::i18n::{trl, trl_kv};
 
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordKind;
-
-pub use crate::value::comic_archive::workflow_record::ArchivedChapterWorkflowRecordDetail;
+use crate::value::comic_archive::workflow_record::ArchivedChapterWorkflowRecordDetail;
 
 /// Maximum number of month slots accepted by one export request.
 pub const MAX_EXPORT_MONTHS: usize = 12;
@@ -24,7 +23,6 @@ pub const MAX_EXPORT_MONTHS: usize = 12;
 /// Complete immutable comic payload serialized once when archiving.
 #[derive(Serialize)]
 pub struct ArchivedComicPayload {
-    //
     /// Original database identifier of the comic before archiving.
     pub source_comic_id: String,
     /// Workset the comic belonged to at archiving time.
@@ -56,7 +54,6 @@ pub struct ArchivedComicPayload {
 /// Immutable workset payload serialized into an archive entry.
 #[derive(Serialize)]
 pub struct ArchivedWorksetPayload {
-    //
     /// Original database identifier of the workset.
     pub id: String,
     /// Identifier of the team that owns this workset.
@@ -80,7 +77,6 @@ pub struct ArchivedWorksetPayload {
 /// Immutable chapter payload serialized into an archive entry.
 #[derive(Serialize)]
 pub struct ArchivedChapterPayload {
-    //
     /// Original database identifier of the chapter before archiving.
     pub source_chapter_id: String,
     /// Whether the chapter was pinned at the top of its comic.
@@ -116,7 +112,6 @@ pub struct ArchivedChapterPayload {
 /// Immutable workflow record payload retained inside an archived chapter.
 #[derive(Serialize)]
 pub struct ArchivedChapterWorkflowRecordPayload {
-    //
     /// Original workflow record identifier.
     pub id: String,
     /// User that caused the record, absent for system work.
@@ -132,7 +127,6 @@ pub struct ArchivedChapterWorkflowRecordPayload {
 /// Immutable assignment payload serialized into an archive entry.
 #[derive(Serialize)]
 pub struct ArchivedAssignmentPayload {
-    //
     /// Original database identifier of the assignment before archiving.
     pub source_assignment_id: String,
     /// Identifier of the user assigned to this chapter.
@@ -150,19 +144,12 @@ pub struct ArchivedAssignmentPayload {
 /// Immutable user payload serialized into an archive entry.
 #[derive(Serialize)]
 pub struct ArchivedUserPayload {
-    //
     /// Original database identifier of the user.
     pub id: String,
     /// Qualified user identifier used for login and display.
     pub qid: String,
     /// Display nickname chosen by the user.
     pub nickname: String,
-    /// Optional storage key for the user's avatar image.
-    pub avatar_key: Option<String>,
-    /// Whether the avatar has been uploaded to object storage.
-    pub avatar_uploaded: Option<bool>,
-    /// Version counter incremented each time the avatar is replaced.
-    pub avatar_version: Option<u32>,
     /// Whether the user has super-administrator privileges.
     pub is_sadmin: bool,
     /// Unix timestamp of the user's most recent activity.
@@ -176,7 +163,6 @@ pub struct ArchivedUserPayload {
 /// Immutable page payload serialized into an archive entry.
 #[derive(Serialize)]
 pub struct ArchivedPagePayload {
-    //
     /// Original database identifier of the page before archiving.
     pub source_page_id: String,
     /// Display ordering index of the page within its chapter.
@@ -198,7 +184,6 @@ pub struct ArchivedPagePayload {
 /// Immutable unit payload serialized into an archive entry.
 #[derive(Serialize)]
 pub struct ArchivedUnitPayload {
-    //
     /// Original database identifier of the unit before archiving.
     pub source_unit_id: String,
     /// Display ordering index of the unit within its page.
@@ -227,7 +212,6 @@ pub struct ArchivedUnitPayload {
 
 /// One validated UTC calendar-month range.
 pub struct ComicArchiveMonth {
-    //
     /// Human-readable label in "YYYY-MM" format for this month slot.
     pub label: String,
 

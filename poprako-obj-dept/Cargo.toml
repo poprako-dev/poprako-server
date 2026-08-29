@@ -7,5 +7,27 @@ license.workspace = true
 repository.workspace = true
 publish.workspace = true
 
+[features]
+rdb_impl = [
+    "dep:diesel",
+    "dep:diesel-async",
+    "dep:poprako-obj-dept-macro",
+    "dep:poprako-rdb-core",
+    "dep:tokio",
+    "dep:tokio-util",
+    "dep:tracing",
+]
+
 [dependencies]
+base64 = "0.22.1"
+diesel = { version = "2.3.7", features = ["postgres", "time"], optional = true }
+diesel-async = { version = "0.9.0", features = ["postgres"], optional = true }
+poprako-orchestra = { version = "0.6.0", features = ["macro"] }
+poprako-obj-dept-macro = { path = "../poprako-obj-dept-macro", optional = true }
+poprako-rdb-core = { path = "../poprako-rdb-core", optional = true }
+serde = { version = "1.0.228", features = ["derive"] }
+time = "0.3.47"
+tracing = { version = "0.1.44", optional = true }
+tokio = { version = "1.52.1", features = ["macros", "rt", "sync", "time"], optional = true }
+tokio-util = { version = "0.7.18", features = ["rt"], optional = true }
 url = "2.5.8"

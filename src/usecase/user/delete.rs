@@ -1,16 +1,13 @@
 use poprako_orchestra::{AtLeast, Context, Nucl, OperStep as _};
 use tracing::instrument;
 
+use poprako_obj_dept::{ObjDept, obj_inst};
 use poprako_util::i18n::trl;
 
-use crate::complex::image::ImageComplex;
 use crate::complex::member::MemberComplex;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::Serial;
-use crate::part::prom::Prom;
-use crate::part::prom::oper::Defer;
-use crate::part::prom::payload::{TaskPayload, image};
-use crate::part::prom::task::Task;
+use crate::part::obj_dept::UserAvatar;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::member::{
     DeleteMember, ListMemberInfos, ListMemberInfosExcluded,
@@ -26,15 +23,15 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 /// * `R: UserRepo<C> + MemberRepo<C>` — User and member storage.
 /// * `P: Prom<C>` — Prom enqueuer for deferred avatar deletion.
 /// Deletes a user account and all associated instr.
-#[instrument(level = "info", skip(nucl, repo, prom))]
+#[instrument(level = "info", skip(nucl, repo, obj_dept))]
 ///
 /// Transactional cascade:
 ///
 /// 1. **Permission check:** the caller must own the account. Returns `Perm`
 ///    error on mismatch.
 /// 2. Fetches the user info with a pessimistic lock.
-pub async fn delete<N, C, R, P>(
-    (nucl, repo, prom): (&N, &R, &P),
+pub async fn delete<N, C, R, O>(
+    (nucl, repo, obj_dept): (&N, &R, &O),
     token: UserToken,
     id: String,
 ) -> BaseRest<()>
@@ -43,7 +40,7 @@ where
     N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<Serial>,
     R: UserRepo<C> + MemberRepo<C> + Send + Sync,
-    P: Prom<C> + Send + Sync,
+    O: ObjDept<UserAvatar, C> + Send + Sync,
 {
     if token.user_id != id {
         //
@@ -65,7 +62,7 @@ where
 
     nucl.coord(async move |context| {
         //
-        let user_info = GetUserInfoExcluded::Id { id: &id }
+        GetUserInfoExcluded::Id { id: &id }
             .step_on(repo, context)
             .await?;
 
@@ -118,29 +115,14 @@ where
             .await?;
         }
 
+        let obj_ids = [id.clone()];
+
+        obj_inst! { DelObjs<UserAvatar>::Remove { ids: &obj_ids } }
+            .step_on(obj_dept, context)
+            .await
+            .map_err(BaseError::from)?;
+
         DeleteUser { id: &id }.step_on(repo, context).await?;
-
-        // Enqueue avatar object deletion if one was uploaded.
-        if let Some(avatar_key) = &user_info.avatar_key
-            && user_info.is_avatar_uploaded == Some(true)
-        {
-            let (delete_id, payload) = (
-                ImageComplex::gen_delete_id(),
-                TaskPayload::Image {
-                    payload: image::ImagePayload::Delete {
-                        object_key: avatar_key.clone(),
-                    },
-                },
-            );
-
-            let task = Task {
-                id: &delete_id,
-                payload: &payload,
-                delay: None,
-            };
-
-            Defer::new(task).step_on(prom, context).await?;
-        }
 
         accept(())
     })

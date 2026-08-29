@@ -18,6 +18,9 @@ from pathlib import Path
 import tree_sitter
 import tree_sitter_rust
 
+sys.path.insert(0, str(Path(__file__).parents[1]))
+from production_source import production_files, production_source
+
 
 ROOT = Path(__file__).parents[2]
 PARSER = tree_sitter.Parser(tree_sitter.Language(tree_sitter_rust.language()))
@@ -60,7 +63,7 @@ def diagnostic(
 
 
 def check_file(path: Path, root: Path) -> list[str]:
-    source = path.read_bytes()
+    source = production_source(path, root)
     tree = PARSER.parse(source)
     pending = [tree.root_node]
     diagnostics: list[str] = []
@@ -89,7 +92,7 @@ def check_file(path: Path, root: Path) -> list[str]:
 def check_root(root: Path) -> list[str]:
     return [
         diagnostic
-        for path in sorted((root / "src").rglob("*.rs"))
+        for path in production_files(root)
         if path.name not in EXCLUDED_FILENAMES
         for diagnostic in check_file(path, root)
     ]
@@ -111,7 +114,7 @@ def self_test() -> int:
 
         diagnostics = check_root(root)
 
-        if len(diagnostics) != 3:
+        if len(diagnostics) != 2:
             print(
                 "self-test: forbidden module names were not fully detected",
                 file=sys.stderr,
@@ -121,7 +124,7 @@ def self_test() -> int:
 
         (source_dir / "schema.rs").write_text("mod operation;\n")
 
-        if len(check_root(root)) != 3:
+        if len(check_root(root)) != 2:
             print("self-test: generated schema was not excluded", file=sys.stderr)
             return 1
 

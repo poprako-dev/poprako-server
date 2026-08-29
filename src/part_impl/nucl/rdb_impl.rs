@@ -12,10 +12,32 @@ use poprako_orchestra::nucl::Error as NuclError;
 use poprako_orchestra::{Level, Nucl};
 use tracing::instrument;
 
+use poprako_rdb_core::RdbCore;
+
 use crate::part::nucl::{ReptRead, Serial};
 use crate::result::BaseError;
+use crate::shared::RdbContext;
 use crate::shared::result::diesel;
-use crate::shared::{RdbContext, RdbCore};
+
+/// Selects one of the transaction coordinators owned by the application.
+pub struct HybNucl<NR, NS>(NR, NS);
+
+impl<NR, NS> HybNucl<NR, NS> {
+    /// Combines the repeatable-read and serializable coordinators.
+    pub const fn new(rept_read: NR, serial: NS) -> Self {
+        Self(rept_read, serial)
+    }
+
+    /// Returns the repeatable-read transaction coordinator.
+    pub const fn rept_read(&self) -> &NR {
+        &self.0
+    }
+
+    /// Returns the serializable transaction coordinator.
+    pub const fn serial(&self) -> &NS {
+        &self.1
+    }
+}
 
 // Selects the typed Diesel transaction isolation builder.
 trait RdbLevel: Level + Sized {
@@ -73,7 +95,6 @@ where
 /// Each call to [`Nucl::coord`] opens a new connection, begins a transaction,
 /// runs the closure, and commits or rolls back on success or failure.
 pub struct RdbNucl<L = ReptRead> {
-    //
     /// Shared database connection pool used for transactions.
     core: RdbCore,
     /// Isolation-level marker carried by this coordinator.
@@ -115,7 +136,11 @@ where
         T: Send,
         E: Send,
     {
-        let conn = self.core.get().await.map_err(NuclError::Backend)?;
+        let conn = self
+            .core
+            .get()
+            .await
+            .map_err(|source| NuclError::Backend(source.into()))?;
 
         let mut rdb_context = RdbContext::new(conn);
 

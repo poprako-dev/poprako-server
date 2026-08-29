@@ -23,7 +23,6 @@ pub struct GetTermInfo<'a> {
 #[derive(Oper)]
 #[oper(output = Vec<TermInfo>)]
 pub enum ListTermInfos<'a> {
-    //
     /// Lists one page of terms with an optional source filter.
     Query {
         /// The terminology-base identifier.
@@ -71,7 +70,6 @@ pub struct UpdateTerm<'a> {
 #[derive(Oper)]
 #[oper(output = ())]
 pub struct UpsertTerms<'a> {
-    //
     /// New terminology entries to insert.
     pub entries: &'a [TermEntry],
     /// Existing terminology entries to replace.

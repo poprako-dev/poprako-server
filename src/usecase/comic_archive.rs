@@ -9,6 +9,7 @@ use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use time::OffsetDateTime;
 use tracing::instrument;
 
+use poprako_obj_dept::{ObjDept, obj_inst};
 use poprako_util::i18n::trl;
 
 use crate::complex::comic_archive::{
@@ -20,10 +21,7 @@ use crate::data::val::comic_archive::{
 };
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::Serial;
-use crate::part::prom::Prom;
-use crate::part::prom::oper::DeferBatch;
-use crate::part::prom::payload::{TaskPayload, image};
-use crate::part::prom::task::Task;
+use crate::part::obj_dept::{ComicCover, PageImage};
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::comic_archive::ComicArchiveRepo;
 use crate::part::repo::member::MemberRepo;
@@ -36,7 +34,6 @@ use crate::part::repo::team::TeamRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
-use crate::util::next_snowflake_id;
 use crate::value::comic_archive::ComicArchiveMonth;
 
 /// Exports selected retained UTC month slots for one team.
@@ -115,9 +112,9 @@ where
 }
 
 /// Archive one active comic, its descendants, and all retained image keys.
-#[instrument(level = "info", skip(nucl, repo, prom))]
-pub async fn archive<N, C, R, P>(
-    (nucl, repo, prom): (&N, &R, &P),
+#[instrument(level = "info", skip(nucl, repo, obj_dept))]
+pub async fn archive<N, C, R, O>(
+    (nucl, repo, obj_dept): (&N, &R, &O),
     token: UserToken,
     comic_id: String,
 ) -> BaseRest<ArchiveComicVal>
@@ -131,7 +128,7 @@ where
         + TeamRepo<C>
         + Send
         + Sync,
-    P: Prom<C> + Send + Sync,
+    O: ObjDept<ComicCover, C> + ObjDept<PageImage, C> + Send + Sync,
 {
     let member_info = MemberLoader::load_info_from_comic(
         repo,
@@ -158,41 +155,28 @@ where
 
             let archived_at = OffsetDateTime::now_utc();
 
-            let (comic_archive_entry, image_keys) =
-                ComicArchiveComplex::prepare_entry(
-                    comic_archive_snapshot,
-                    token.user_id,
-                    archived_at,
-                )
-                .await?;
+            let comic_archive_entry = ComicArchiveComplex::prepare_entry(
+                comic_archive_snapshot,
+                token.user_id,
+                archived_at,
+            )
+            .await?;
 
-            let (mut delete_ids, mut delete_payloads) =
-                (Vec::new(), Vec::new());
+            let cover_ids = [comic_archive_entry.source_comic_id.clone()];
 
-            for image_key in image_keys {
-                //
-                delete_ids.push(next_snowflake_id());
+            obj_inst! { DelObjs<ComicCover>::Detach { ids: &cover_ids } }
+                .step_on(obj_dept, context)
+                .await
+                .map_err(BaseError::from)?;
 
-                delete_payloads.push(TaskPayload::Image {
-                    payload: image::ImagePayload::Delete {
-                        object_key: image_key,
-                    },
-                });
+            obj_inst! {
+                DelObjs<PageImage>::Remove {
+                    ids: &comic_archive_entry.source_page_ids,
+                }
             }
-
-            let delete_tasks = delete_ids
-                .iter()
-                .zip(delete_payloads.iter())
-                .map(|(id, payload)| Task {
-                    id,
-                    payload,
-                    delay: None,
-                })
-                .collect::<Vec<Task<'_, String, TaskPayload>>>();
-
-            DeferBatch::new(&delete_tasks)
-                .step_on(prom, context)
-                .await?;
+            .step_on(obj_dept, context)
+            .await
+            .map_err(BaseError::from)?;
 
             CommitComicArchive {
                 entry: &comic_archive_entry,

@@ -10,13 +10,13 @@ use crate::part_impl::repo::rdb_impl::numeric::{
 };
 use crate::part_impl::repo::rdb_impl::schema::t_chapter;
 use crate::result::BaseError;
-use crate::value::chapter::{Stage, StageMask, StagePhase};
+use crate::value::chapter::mask::StageMask;
+use crate::value::chapter::stage::{Stage, StagePhase};
 
 /// Raw database row for the `t_chapter` table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_chapter)]
 pub struct ChapterInfoRow {
-    //
     pub f_id: String,
 
     pub f_comic_id: String,
@@ -90,7 +90,6 @@ impl TryFrom<ChapterInfoRow> for ChapterInfo {
 #[derive(Insertable)]
 #[diesel(table_name = t_chapter)]
 pub struct ChapterEntryRow<'a> {
-    //
     pub f_id: &'a str,
 
     pub f_comic_id: &'a str,
@@ -129,7 +128,6 @@ impl<'a> TryFrom<&'a ChapterEntry> for ChapterEntryRow<'a> {
 #[derive(AsChangeset)]
 #[diesel(table_name = t_chapter)]
 pub struct ChapterAspectRow<'a> {
-    //
     pub f_is_pinned: Option<bool>,
     pub f_subtitle: Option<&'a str>,
     pub f_uploaded_at: Option<Option<OffsetDateTime>>,

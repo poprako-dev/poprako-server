@@ -7,9 +7,8 @@ use std::collections::HashMap;
 
 use poprako_util::i18n::trl_kv;
 
-use crate::config::ImageConfig;
+use crate::config::image::ImageConfig;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::util::next_snowflake_id;
 use crate::value::image::ImageKind;
 
 /// Domain opers for image lifecycle management: generates unique identifiers for scheduled image deletion and integrity check tasks.
@@ -72,15 +71,5 @@ impl ImageComplex {
             variant: ExpectedVariant::Args,
             message: err_message,
         }
-    }
-
-    /// Generate a unique image deletion-task identifier backed by a snowflake value.
-    pub fn gen_delete_id() -> String {
-        next_snowflake_id()
-    }
-
-    /// Generate a unique image integrity-check identifier backed by a snowflake value.
-    pub fn gen_check_id() -> String {
-        next_snowflake_id()
     }
 }

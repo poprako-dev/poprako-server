@@ -1,10 +1,11 @@
+use poprako_rdb_core::RdbConn;
+
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::part_impl::repo::rdb_impl::incl::framework::{
     BatchByIds, ChapterByIds, ComicByIds, Incl, TeamByIds, UserByIds,
     WorksetByIds, populate,
 };
 use crate::result::BaseRest;
-use crate::shared::RdbConn;
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::incl::expand_incl_opts;
 

@@ -2,12 +2,13 @@
 
 use super::*;
 
+use poprako_rdb_core::RdbCore;
+
 use crate::model::read::spec::comment::CommentListSpec;
 use crate::model::write::comment::CommentEntry;
 use crate::part::repo::oper::comment::{CreateComment, ListCommentInfos};
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::test_shared;
-use crate::shared::RdbCore;
 use crate::value::comment::CommentInclOpt;
 
 const PREFIX: &str = "rdb-test-comment-domain-";

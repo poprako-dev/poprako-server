@@ -3,6 +3,8 @@
 use diesel::prelude::{ExpressionMethods as _, QueryDsl as _};
 use diesel_async::RunQueryDsl as _;
 
+use poprako_rdb_core::RdbConn;
+
 use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::{
     f_comic_id as chapter_comic_id, f_is_pinned as chapter_is_pinned,
     f_proofread_at as chapter_proofread_at,
@@ -16,9 +18,9 @@ use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::{
     f_uploaded_at as chapter_uploaded_at, t_chapter,
 };
 use crate::result::{BaseRest, accept};
-use crate::shared::RdbConn;
 use crate::shared::result::diesel;
-use crate::value::chapter::{Stage, StageMask, StagePhase};
+use crate::value::chapter::mask::StageMask;
+use crate::value::chapter::stage::{Stage, StagePhase};
 
 /// List comic IDs with chapters in any stage not ignored by the mask.
 pub async fn list_matching_stage_comic_ids(

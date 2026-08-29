@@ -6,9 +6,9 @@
 //! Convert to [`ChapterInfoView`] for presentation.
 //!
 //! [`ChapterInfoView`]: crate::data::view::chapter::ChapterInfoView
-//! [`StagePhase`]: crate::value::chapter::StagePhase
+//! [`StagePhase`]: crate::value::chapter::stage::StagePhase
 
-use crate::value::chapter::StageMask;
+use crate::value::chapter::mask::StageMask;
 
 /// The data needed to insert a new chapter row.
 ///
@@ -21,7 +21,6 @@ use crate::value::chapter::StageMask;
 /// [`ChapterComplex::gen_id`]: crate::complex::chapter::ChapterComplex::gen_id
 #[cfg_attr(test, derive(Clone))]
 pub struct ChapterEntry {
-    //
     /// Unique identifier to insert for the new chapter.
     pub id: String,
     /// Foreign key identifying the parent comic.
@@ -46,7 +45,6 @@ pub struct ChapterEntry {
 /// handled via [`ChapterStageRepl`] instead.
 #[cfg_attr(test, derive(Clone))]
 pub struct ChapterPatch {
-    //
     /// Unique identifier of the chapter whose profile fields are being changed.
     pub id: String,
 
@@ -61,7 +59,6 @@ pub struct ChapterPatch {
 /// The use case layer validates transition legality before building this update.
 #[cfg_attr(test, derive(Clone))]
 pub struct ChapterStageRepl {
-    //
     /// Unique identifier of the chapter whose stages are being transitioned.
     pub id: String,
 

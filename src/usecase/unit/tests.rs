@@ -25,7 +25,7 @@ use crate::model::shared::user::UserToken;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::{BaseError, ExpectedVariant};
 use crate::util::Patch;
-use crate::value::chapter::StageMask;
+use crate::value::chapter::mask::StageMask;
 use crate::value::role::{RoleField, RoleMask};
 use crate::value::unit::UnitTextPart;
 
@@ -503,11 +503,6 @@ fn comic() -> ComicInfo {
         title: "comic".to_string(),
         author: "author".to_string(),
         description: None,
-        cover_key: None,
-        is_cover_uploaded: None,
-        cover_version: None,
-        cover_hash: None,
-        cover_ext: None,
         chapter_count: 1,
         creator_id: "translator-1".to_string(),
         workset: None,
@@ -555,11 +550,6 @@ fn page() -> PageInfo {
         id: "page-1".to_string(),
         chapter_id: "chapter-1".to_string(),
         index: 0,
-        image_key: None,
-        is_image_uploaded: None,
-        image_version: None,
-        image_hash: None,
-        image_ext: None,
         total_unit_count: 0,
         translated_unit_count: 0,
         proofread_unit_count: 0,

@@ -42,7 +42,6 @@ use crate::value::member_invitation::MemberInvitationInclOpt;
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct MemberInvitationListQuery {
-    //
     /// When `Some(true)`, returns only unconsumed invitations;
     /// `Some(false)` returns only consumed ones; `None` returns all.
     pub is_pending: Option<bool>,
@@ -120,7 +119,7 @@ pub async fn list_infos(
     };
 
     usecase::member_invitation::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
-        (harn.repo(), harn.image_pool()),
+        (harn.repo(), harn.obj_dept()),
         user_token,
         instr,
     )

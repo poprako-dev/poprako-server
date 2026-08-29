@@ -8,7 +8,7 @@ use crate::complex::util::{
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::member::MemberInfo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::value::chapter::{Stage, StageOper};
+use crate::value::chapter::stage::{Stage, StageOper};
 use crate::value::role::{RoleField, RoleMask};
 
 // Verify that assignment evidence contains the chapter-admin role.

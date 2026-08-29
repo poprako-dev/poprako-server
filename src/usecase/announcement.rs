@@ -4,9 +4,11 @@
 // Unit tests for announcement usecase behavior.
 mod tests;
 
-use poprako_orchestra::{Context, OperRun as _};
+use poprako_orchestra::{Context, OperRun as _, Run};
 use tracing::instrument;
 
+use poprako_obj_dept::oper::GenObjUrl;
+use poprako_obj_dept::rest::ObjDeptError;
 use poprako_util::i18n::trl;
 
 use crate::complex::announcement::{
@@ -21,7 +23,7 @@ use crate::data::view::announcement::AnnouncementInfoView;
 use crate::model::read::spec::announcement::AnnouncementListSpec;
 use crate::model::shared::user::UserToken;
 use crate::model::write::announcement::{AnnouncementEntry, AnnouncementRepl};
-use crate::part::image::ImagePool;
+use crate::part::obj_dept::UserAvatar;
 use crate::part::repo::announcement::AnnouncementRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::announcement::{
@@ -31,18 +33,19 @@ use crate::part::repo::oper::announcement::{
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::internal::util::collect_bounded;
+use crate::usecase::view::announcement_info_view;
 
 /// Lists announcements under a team.
-#[instrument(level = "info", skip(repo, image_pool))]
-pub async fn list_infos<C, R, I>(
-    (repo, image_pool): (&R, &I),
+#[instrument(level = "info", skip(repo, obj_dept))]
+pub async fn list_infos<C, R, O>(
+    (repo, obj_dept): (&R, &O),
     token: UserToken,
     instr: ListAnnouncementInfosInstr,
 ) -> BaseRest<Vec<AnnouncementInfoView>>
 where
     C: Context,
     R: AnnouncementRepo<C> + MemberRepo<C> + Sync,
-    I: ImagePool + Sync,
+    O: for<'a> Run<GenObjUrl<'a, UserAvatar>, Error = ObjDeptError> + Sync,
 {
     let announcement_list_spec = Into::<AnnouncementListSpec>::into(instr);
 
@@ -71,7 +74,7 @@ where
 
     let announcement_info_vals = collect_bounded(
         announcement_infos.into_iter().map(|announcement_info| {
-            AnnouncementInfoView::from_model(image_pool, announcement_info)
+            announcement_info_view(obj_dept, announcement_info)
         }),
     )
     .await?;

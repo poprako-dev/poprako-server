@@ -4,6 +4,8 @@ use super::*;
 
 use poprako_orchestra::Nucl as _;
 
+use poprako_rdb_core::RdbCore;
+
 use crate::model::write::term::{TermEntry, TermRepl};
 use crate::model::write::termbase::TermbaseEntry;
 use crate::part::nucl::ReptRead;
@@ -15,7 +17,6 @@ use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::result::BaseError;
-use crate::shared::RdbCore;
 
 const PREFIX: &str = "rdb-test-term-domain-";
 

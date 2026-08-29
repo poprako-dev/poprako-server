@@ -9,12 +9,6 @@ CREATE TABLE IF NOT EXISTS "t_comic" (
     "f_description"         TEXT,
     "f_composed_title"      TEXT        NOT NULL DEFAULT '',
 
-    "f_cover_key"           TEXT,
-    "f_cover_uploaded"      BOOLEAN,
-    "f_cover_version"       BIGINT,
-    "f_cover_hash"          BYTEA,
-    "f_cover_extension"     TEXT,
-
     "f_chapter_count"       INTEGER     NOT NULL DEFAULT 0,
     "f_chapter_next_index"  INTEGER     NOT NULL DEFAULT 0,
 

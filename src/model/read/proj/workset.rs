@@ -7,7 +7,6 @@ use time::OffsetDateTime;
 /// Worksets are scoped to a team and carry denormalized comic counters.
 #[derive(Clone)]
 pub struct WorksetInfo {
-    //
     /// Server-assigned unique workset identifier.
     pub id: String,
 

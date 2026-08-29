@@ -4,6 +4,8 @@ use diesel::prelude::{
 use diesel_async::RunQueryDsl as _;
 use tracing::instrument;
 
+use poprako_rdb_core::RdbConn;
+
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::spec::assignment::AssignmentListSpec;
 use crate::part::repo::oper::assignment::ListAssignmentInfos;
@@ -16,7 +18,6 @@ use crate::part_impl::repo::rdb_impl::schema::t_assignment::dsl::{
     f_created_at, f_id, f_user_id, t_assignment,
 };
 use crate::result::{BaseRest, accept};
-use crate::shared::RdbConn;
 use crate::shared::result::diesel;
 use crate::value::role::RoleField;
 

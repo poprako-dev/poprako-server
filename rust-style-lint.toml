@@ -72,6 +72,9 @@ allow_public_fields = [
     "part_impl::repo::rdb_impl::entity",
     "part_impl::prom::rdb_impl::entity",
     "part_impl::prom::rdb_impl::handler",
+    "key",
+    "oper",
+    "rdb_impl",
 ]
 exclude_files = ["src/part_impl/repo/rdb_impl/schema.rs"]
 

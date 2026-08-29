@@ -17,7 +17,6 @@ use crate::part_impl::repo::rdb_impl::numeric::{
 };
 use crate::part_impl::repo::rdb_impl::schema::t_comic;
 use crate::result::{BaseError, BaseRest, accept};
-use crate::value::image::{ImageExt, ImageHash};
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
 
@@ -25,7 +24,6 @@ use crate::value::image::{ImageExt, ImageHash};
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_comic)]
 pub struct ComicInfoRow {
-    //
     pub f_id: String,
     pub f_workset_id: String,
     pub f_index: i32,
@@ -34,12 +32,6 @@ pub struct ComicInfoRow {
     pub f_author: String,
     pub f_description: Option<String>,
     pub f_composed_title: String,
-
-    pub f_cover_key: Option<String>,
-    pub f_cover_uploaded: Option<bool>,
-    pub f_cover_version: Option<i64>,
-    pub f_cover_hash: Option<Vec<u8>>,
-    pub f_cover_extension: Option<String>,
 
     pub f_chapter_count: i32,
     pub f_chapter_next_index: i32,
@@ -59,73 +51,6 @@ impl TryFrom<ComicInfoRow> for ComicInfo {
 
     fn try_from(v: ComicInfoRow) -> BaseRest<Self> {
         //
-        let (
-            cover_key,
-            is_cover_uploaded,
-            cover_version,
-            cover_hash,
-            cover_ext,
-        ) = match (
-            v.f_cover_key,
-            v.f_cover_uploaded,
-            v.f_cover_version,
-            v.f_cover_hash,
-            v.f_cover_extension,
-        ) {
-            //
-            (None, None, None, None, None) => (None, None, None, None, None),
-
-            (
-                Some(cover_key),
-                Some(is_cover_uploaded),
-                Some(cover_version),
-                Some(cover_hash),
-                Some(cover_ext),
-            ) => {
-                //
-                let cover_version = u32::try_from(cover_version).map_err(|_| {
-                        //
-                        BaseError::Unrecoverable {
-                            message: "[ComicInfoRow] f_cover_version must be non-negative".into(),
-                        }
-                    })?;
-
-                let cover_hash = cover_hash.try_into().map_err(|_| {
-                    //
-                    BaseError::Unrecoverable {
-                        message:
-                            "[ComicInfoRow] f_cover_hash must contain 32 bytes"
-                                .into(),
-                    }
-                })?;
-
-                let cover_ext =
-                    ImageExt::parse(&cover_ext).ok_or_else(|| {
-                        //
-                        BaseError::Unrecoverable {
-                        message:
-                            "[ComicInfoRow] f_cover_extension must be supported"
-                                .into(),
-                    }
-                    })?;
-
-                (
-                    Some(cover_key),
-                    Some(is_cover_uploaded),
-                    Some(cover_version),
-                    Some(ImageHash::new(cover_hash)),
-                    Some(cover_ext),
-                )
-            }
-
-            _ => {
-                //
-                return Err(BaseError::Unrecoverable {
-                        message: "[ComicInfoRow] cover fields must be all null or all present".into(),
-                    });
-            }
-        };
-
         accept(Self {
             id: v.f_id,
             workset_id: v.f_workset_id,
@@ -133,11 +58,6 @@ impl TryFrom<ComicInfoRow> for ComicInfo {
             title: v.f_title,
             author: v.f_author,
             description: v.f_description,
-            cover_key,
-            is_cover_uploaded,
-            cover_version,
-            cover_hash,
-            cover_ext,
             chapter_count: usize_from_i32(
                 v.f_chapter_count,
                 "t_comic.f_chapter_count",
@@ -160,7 +80,6 @@ impl TryFrom<ComicInfoRow> for ComicInfo {
 #[derive(Insertable)]
 #[diesel(table_name = t_comic)]
 pub struct ComicEntryRow<'a> {
-    //
     pub f_id: &'a str,
     pub f_workset_id: &'a str,
     pub f_index: i32,
@@ -209,17 +128,10 @@ impl<'a> TryFrom<&'a ComicEntry> for ComicEntryRow<'a> {
 #[derive(AsChangeset)]
 #[diesel(table_name = t_comic)]
 pub struct ComicAspectRow<'a> {
-    //
     pub f_title: Option<&'a str>,
     pub f_author: Option<&'a str>,
     pub f_description: Option<Option<&'a str>>,
     pub f_composed_title: Option<String>,
-
-    pub f_cover_key: Option<&'a str>,
-    pub f_cover_uploaded: Option<bool>,
-    pub f_cover_version: Option<i64>,
-    pub f_cover_hash: Option<&'a [u8]>,
-    pub f_cover_extension: Option<&'a str>,
 
     pub f_chapter_count: Option<i32>,
     pub f_chapter_next_index: Option<i32>,
@@ -237,11 +149,6 @@ impl<'a> ComicAspectRow<'a> {
             f_author: None,
             f_description: None,
             f_composed_title: None,
-            f_cover_key: None,
-            f_cover_uploaded: None,
-            f_cover_version: None,
-            f_cover_hash: None,
-            f_cover_extension: None,
             f_chapter_count: None,
             f_chapter_next_index: None,
             f_last_active_at: None,
@@ -273,41 +180,6 @@ impl<'a> ComicAspectRow<'a> {
     pub fn composed_title(mut self, val: String) -> Self {
         //
         self.f_composed_title = Some(val);
-
-        self
-    }
-
-    pub const fn cover_key(mut self, val: &'a str) -> Self {
-        //
-        self.f_cover_key = Some(val);
-
-        self
-    }
-
-    pub const fn cover_uploaded(mut self, val: bool) -> Self {
-        //
-        self.f_cover_uploaded = Some(val);
-
-        self
-    }
-
-    pub fn cover_version(mut self, val: u32) -> Self {
-        //
-        self.f_cover_version = Some(i64::from(val));
-
-        self
-    }
-
-    pub const fn cover_hash(mut self, val: &'a ImageHash) -> Self {
-        //
-        self.f_cover_hash = Some(val.as_bytes());
-
-        self
-    }
-
-    pub const fn cover_ext(mut self, val: ImageExt) -> Self {
-        //
-        self.f_cover_extension = Some(val.suffix());
 
         self
     }

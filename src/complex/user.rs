@@ -75,16 +75,6 @@ impl UserComplex {
     pub fn hash_password_for_test(password: &str) -> BaseRest<String> {
         hash_password_sync(password)
     }
-
-    /// Constructs the object storage key for a user's avatar image from the user ID, version counter, and file extension.
-    #[must_use]
-    pub fn gen_avatar_key(
-        id: &str,
-        avatar_version: u32,
-        file_ext: &str,
-    ) -> String {
-        format!("user_avatar/{}-{}.{}", id, avatar_version, file_ext)
-    }
 }
 
 // Hashes a plaintext password with the Argon2id algorithm on the current thread.

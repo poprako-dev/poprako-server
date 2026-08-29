@@ -3,6 +3,8 @@
 use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 use time::{Duration, OffsetDateTime};
 
+use poprako_rdb_core::RdbCore;
+
 use crate::model::read::spec::chapter_workflow_record::ChapterWorkflowRecordListSpec;
 use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::part::nucl::ReptRead;
@@ -14,8 +16,7 @@ use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::result::BaseError;
-use crate::shared::RdbCore;
-use crate::value::chapter::{Stage, StagePhase};
+use crate::value::chapter::stage::{Stage, StagePhase};
 use crate::value::chapter_workflow_record::{
     ChapterWorkflowRecordOrigin, ChapterWorkflowRecordPayload,
 };

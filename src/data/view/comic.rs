@@ -3,7 +3,6 @@
 #[cfg(test)]
 mod tests;
 
-use futures::future::OptionFuture;
 use serde::Serialize;
 
 #[cfg(feature = "swagger")]
@@ -15,23 +14,16 @@ use crate::data::view::team::TeamInfoView;
 use crate::data::view::user::UserInfoView;
 use crate::data::view::workset::WorksetInfoView;
 use crate::model::read::proj::comic::ComicInfo;
-use crate::part::image::ImagePool;
-use crate::result::{BaseRest, accept};
 
 /// Presentation-ready comic information.
 ///
-/// Mirrors [`ComicInfo`] but converts timestamps to Unix milliseconds and
-/// resolves the cover key to a signed download URL via [`ImagePool`] when
-/// the cover has been uploaded.
-///
-/// Construct via [`ComicInfoView::from_model`] — the conversion requires
-/// an [`ImagePool`] instance for URL signing.
+/// Mirrors [`ComicInfo`], converts timestamps to Unix milliseconds, and
+/// accepts object URLs already resolved by the use-case layer.
 ///
 /// [`ComicInfo`]: crate::model::read::proj::comic::ComicInfo
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ComicInfoView {
-    //
     /// Unique comic identifier.
     pub id: String,
 
@@ -52,11 +44,6 @@ pub struct ComicInfoView {
     /// no cover has been uploaded.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cover_url: Option<String>,
-    /// Resolved signed download URL for the cover thumbnail, or [`None`] if
-    /// no cover has been uploaded.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub cover_thumbnail_url: Option<String>,
-
     /// Total number of chapters in this comic.
     pub chapter_count: usize,
 
@@ -91,60 +78,32 @@ pub struct ComicInfoView {
 impl ComicInfoView {
     /// Converts a [`ComicInfo`] into a presentation-ready value.
     ///
-    /// Resolves a signed cover download URL when the cover has been uploaded
-    /// and a key is present. Timestamps are converted from [`OffsetDateTime`]
-    /// to Unix milliseconds.
+    /// Accepts the resolved cover URL and converts timestamps from
+    /// [`OffsetDateTime`] to Unix milliseconds.
     ///
     /// [`OffsetDateTime`]: time::OffsetDateTime
-    pub async fn from_model<P>(
-        image_pool: &P,
+    pub fn from_model(
         model: ComicInfo,
-        fallback_cover_key: Option<&str>,
-    ) -> BaseRest<Self>
-    where
-        P: ImagePool + Sync,
-    {
-        let cover_key = match (model.is_cover_uploaded, &model.cover_key) {
-            //
-            (Some(true), Some(key)) => Some(key.as_str()),
-
-            _ => fallback_cover_key,
-        };
-
-        let (cover_url, cover_thumbnail_url) = match cover_key {
-            //
-            Some(key) => (
-                image_pool.gen_download_url(key).await.ok(),
-                image_pool.gen_thumbnail_download_url(key).await.ok(),
-            ),
-
-            None => (None, None),
-        };
-
+        cover_url: Option<String>,
+        team: Option<TeamInfoView>,
+        creator: Option<UserInfoView>,
+    ) -> Self {
+        //
         let workset = model.workset.map(WorksetInfoView::from);
 
-        accept(Self {
+        Self {
             id: model.id,
             workset_id: model.workset_id,
             index: model.index,
             title: model.title,
             author: model.author,
             description: model.description,
-            cover_url: cover_url.map(Into::into),
-            cover_thumbnail_url: cover_thumbnail_url.map(Into::into),
+            cover_url,
             chapter_count: model.chapter_count,
             creator_id: model.creator_id,
             workset,
-            team: OptionFuture::from(model.team.map(|team_info| {
-                TeamInfoView::from_model(image_pool, team_info)
-            }))
-            .await
-            .transpose()?,
-            creator: OptionFuture::from(model.creator.map(|user_info| {
-                UserInfoView::from_model(image_pool, user_info)
-            }))
-            .await
-            .transpose()?,
+            team,
+            creator,
             last_active_at: model.last_active_at.to_unix_milli(),
             is_archived: model.archived_at.is_some(),
             archived_at: model
@@ -152,6 +111,6 @@ impl ComicInfoView {
                 .map(|archived_at| archived_at.to_unix_milli()),
             created_at: model.created_at.to_unix_milli(),
             updated_at: model.updated_at.to_unix_milli(),
-        })
+        }
     }
 }

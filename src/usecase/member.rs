@@ -4,9 +4,13 @@
 // Unit tests for team membership and invitation boundary conditions.
 mod tests;
 
-use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
+use poprako_orchestra::{
+    AtLeast, Context, Nucl, OperRun as _, OperStep as _, Run,
+};
 use tracing::instrument;
 
+use poprako_obj_dept::oper::GenObjUrl;
+use poprako_obj_dept::rest::ObjDeptError;
 use poprako_util::i18n::trl;
 
 use crate::complex::member::{MemberComplex, MemberPermComplex};
@@ -19,8 +23,8 @@ use crate::data::view::member::MemberInfoView;
 use crate::model::read::spec::member::MemberListSpec;
 use crate::model::shared::user::UserToken;
 use crate::model::write::member::{MemberEntry, MemberRoleRepl};
-use crate::part::image::ImagePool;
 use crate::part::nucl::{ReptRead, Serial};
+use crate::part::obj_dept::{TeamAvatar, UserAvatar};
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::member_invitation::MemberInvitationRepo;
 use crate::part::repo::oper::member::{
@@ -36,6 +40,7 @@ use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::internal::util::collect_bounded;
+use crate::usecase::view::member_info_view;
 
 /// Creates one member under a team.
 ///
@@ -135,11 +140,11 @@ where
 /// Joins the current user to a team with a pending invitation code.
 #[instrument(
     level = "info",
-    skip(nucl, repo, image_pool, instr),
+    skip(nucl, repo, obj_dept, instr),
     fields(code = "[REDACTED]")
 )]
-pub async fn join_team<N, C, R, I>(
-    (nucl, repo, image_pool): (&N, &R, &I),
+pub async fn join_team<N, C, R, O>(
+    (nucl, repo, obj_dept): (&N, &R, &O),
     token: UserToken,
     instr: JoinTeamInstr,
 ) -> BaseRest<MemberInfoView>
@@ -148,7 +153,9 @@ where
     N: Nucl<Context = C, Error = BaseError>,
     C::Level: AtLeast<ReptRead>,
     R: MemberRepo<C> + MemberInvitationRepo<C> + UserRepo<C> + Send + Sync,
-    I: ImagePool + Sync,
+    O: for<'a> Run<GenObjUrl<'a, UserAvatar>, Error = ObjDeptError>
+        + for<'a> Run<GenObjUrl<'a, TeamAvatar>, Error = ObjDeptError>
+        + Sync,
 {
     let current_user_id = token.user_id;
 
@@ -236,22 +243,24 @@ where
         })
         .await?;
 
-    MemberInfoView::from_model(image_pool, member_info).await
+    member_info_view(obj_dept, member_info).await
 }
 
 /// Lists members under one team.
 ///
 /// The caller must already be a member of the target team.
-#[instrument(level = "info", skip(repo, image_pool))]
-pub async fn list_infos<C, R, I>(
-    (repo, image_pool): (&R, &I),
+#[instrument(level = "info", skip(repo, obj_dept))]
+pub async fn list_infos<C, R, O>(
+    (repo, obj_dept): (&R, &O),
     token: UserToken,
     instr: ListMemberInfosInstr,
 ) -> BaseRest<Vec<MemberInfoView>>
 where
     C: Context,
     R: MemberRepo<C> + Sync,
-    I: ImagePool + Sync,
+    O: for<'a> Run<GenObjUrl<'a, UserAvatar>, Error = ObjDeptError>
+        + for<'a> Run<GenObjUrl<'a, TeamAvatar>, Error = ObjDeptError>
+        + Sync,
 {
     let member_list_spec = instr.try_into()?;
 
@@ -281,11 +290,12 @@ where
     .run_on(repo)
     .await?;
 
-    let member_info_vals =
-        collect_bounded(member_infos.into_iter().map(|member_info| {
-            MemberInfoView::from_model(image_pool, member_info)
-        }))
-        .await?;
+    let member_info_vals = collect_bounded(
+        member_infos
+            .into_iter()
+            .map(|member_info| member_info_view(obj_dept, member_info)),
+    )
+    .await?;
 
     accept(member_info_vals)
 }

@@ -1,9 +1,10 @@
+use poprako_rdb_core::RdbConn;
+
 use crate::model::read::proj::announcement::AnnouncementInfo;
 use crate::part_impl::repo::rdb_impl::incl::framework::{
     BatchByIds, Incl, UserByIds, populate,
 };
 use crate::result::BaseRest;
-use crate::shared::RdbConn;
 use crate::value::announcement::AnnouncementInclOpt;
 use crate::value::incl::expand_incl_opts;
 

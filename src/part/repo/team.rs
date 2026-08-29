@@ -4,8 +4,7 @@ use poprako_orchestra::drive;
 
 use crate::part::repo::oper::team::{
     AllocTeamWorksetIndex, CreateTeam, DeleteTeam, GetTeamInfo,
-    GetTeamInfoExcluded, ListTeamInfos, LockTeam, ReserveTeamAvatar,
-    ResolveTeamId, UpdateTeam,
+    GetTeamInfoExcluded, ListTeamInfos, LockTeam, ResolveTeamId, UpdateTeam,
 };
 use crate::result::BaseError;
 
@@ -26,7 +25,6 @@ use crate::result::BaseError;
     step(
         for<'a> CreateTeam<'a>,
         for<'a> UpdateTeam<'a>,
-        for<'a> ReserveTeamAvatar<'a>,
         for<'a> GetTeamInfoExcluded<'a>,
         for<'a> LockTeam<'a>,
         for<'a> ResolveTeamId<'a>,

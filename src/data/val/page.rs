@@ -25,7 +25,6 @@ pub struct ReserveChapterPagesVal {
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ReservedPageVal {
-    //
     /// Reserved page identifier.
     pub page_id: String,
 

@@ -16,7 +16,6 @@ use utoipa::ToSchema;
 /// Image-owning resource discriminator.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ImageKind {
-    //
     /// Avatar image for a user.
     UserAvatar,
 
@@ -39,11 +38,6 @@ impl ImageHash {
     /// Builds a hash from its raw SHA-256 bytes.
     pub const fn new(bytes: [u8; 32]) -> Self {
         Self(bytes)
-    }
-
-    /// Returns the raw SHA-256 bytes.
-    pub const fn bytes(&self) -> [u8; 32] {
-        self.0
     }
 
     /// Borrows the raw SHA-256 bytes.
@@ -109,7 +103,6 @@ impl<'de> Deserialize<'de> for ImageHash {
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(rename_all = "lowercase")]
 pub enum ImageExt {
-    //
     /// The JPEG image format.
     Jpg,
 

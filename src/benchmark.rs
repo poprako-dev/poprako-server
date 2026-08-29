@@ -5,9 +5,8 @@ use std::sync::OnceLock;
 
 use time::OffsetDateTime;
 
-use crate::complex::chapter_port::{
-    ChapterExportComplex, ChapterImportComplex,
-};
+use crate::complex::chapter_port::export::ChapterExportComplex;
+use crate::complex::chapter_port::import::ChapterImportComplex;
 use crate::complex::comic_archive::ComicArchiveComplex;
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::chapter::ChapterInfo;
@@ -20,11 +19,8 @@ use crate::model::read::proj::unit::{UnitInfo, UnitOrder};
 use crate::model::read::proj::user::UserInfo;
 use crate::model::read::proj::workset::WorksetInfo;
 use crate::model::shared::unit::UnitCoord;
-use crate::value::chapter::StageMask;
-use crate::value::image::{ImageExt, ImageHash};
+use crate::value::chapter::mask::StageMask;
 use crate::value::role::{RoleField, RoleMask};
-
-pub use crate::complex::user::UserComplex;
 
 // Number of chapters generated in the synthetic benchmark archive payload.
 const CHAPTER_COUNT: usize = 8;
@@ -71,7 +67,6 @@ pub fn parse_poprako() -> bool {
 
 /// Benchmarks `LabelPlus` rendering for a large page-and-unit collection.
 pub struct LabelPlusExportInput {
-    //
     /// Pages of the exported chapter used in the benchmark.
     pages: Vec<PageInfo>,
     /// Translation units keyed by their parent page ID.
@@ -91,6 +86,7 @@ pub fn make_label_plus(label_plus_export_input: &LabelPlusExportInput) -> bool {
     !ChapterExportComplex::make_label_plus(
         &label_plus_export_input.pages,
         &label_plus_export_input.units_by_page_id,
+        &std::collections::HashMap::new(),
     )
     .is_empty()
 }
@@ -209,14 +205,6 @@ fn archive_snapshot() -> Option<ComicArchiveSnapshot> {
                     id: page_id,
                     chapter_id: chapter_id.clone(),
                     index: page_index,
-                    image_key: Some(format!(
-                        "pages/{}-{}.webp",
-                        chapter_index, page_index,
-                    )),
-                    is_image_uploaded: Some(true),
-                    image_version: Some(1),
-                    image_hash: Some(ImageHash::new([0u8; 32])),
-                    image_ext: Some(ImageExt::Webp),
                     total_unit_count: UNIT_COUNT,
                     translated_unit_count: UNIT_COUNT,
                     proofread_unit_count: UNIT_COUNT,
@@ -315,11 +303,6 @@ fn export_input() -> LabelPlusExportInput {
             id: page_id.clone(),
             chapter_id: "chapter-1".into(),
             index: page_index,
-            image_key: Some(format!("pages/{}.png", page_index)),
-            is_image_uploaded: Some(true),
-            image_version: Some(1),
-            image_hash: Some(ImageHash::new([0u8; 32])),
-            image_ext: Some(ImageExt::Png),
             total_unit_count: UNIT_COUNT,
             translated_unit_count: UNIT_COUNT,
             proofread_unit_count: UNIT_COUNT,
@@ -343,11 +326,6 @@ fn user_info(archived_at: OffsetDateTime) -> UserInfo {
         id: "user-1".into(),
         qid: "benchmark-qid".into(),
         nickname: "benchmark-user".into(),
-        avatar_key: None,
-        is_avatar_uploaded: None,
-        avatar_version: None,
-        avatar_hash: None,
-        avatar_ext: None,
         is_sadmin: false,
         last_active_at: archived_at,
         created_at: archived_at,
@@ -406,11 +384,6 @@ fn comic_archive_snapshot(
             title: "Benchmark Comic".into(),
             author: "Benchmark Author".into(),
             description: Some("Benchmark archive payload".into()),
-            cover_key: Some("covers/comic-1.webp".into()),
-            is_cover_uploaded: Some(true),
-            cover_version: Some(1),
-            cover_hash: Some(ImageHash::default()),
-            cover_ext: Some(ImageExt::Webp),
             chapter_count: CHAPTER_COUNT,
             creator_id: "user-1".into(),
             workset: None,

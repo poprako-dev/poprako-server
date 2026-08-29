@@ -5,12 +5,12 @@
 //! functions remain generic; they are monomorphized over these concrete
 //! adapters at the handler call sites.
 
-use crate::harn::{Harn, HybNucl};
+use crate::harn::Harn;
 use crate::part::nucl::{ReptRead, Serial};
 use crate::part_impl::auth::jwt_impl::JwtAuth;
 use crate::part_impl::effect::async_impl::AsyncEffectDevelop;
-use crate::part_impl::image::r2_impl::R2ImagePool;
-use crate::part_impl::nucl::rdb_impl::RdbNucl;
+use crate::part_impl::nucl::rdb_impl::{HybNucl, RdbNucl};
+use crate::part_impl::obj_dept::AppObjDept;
 use crate::part_impl::prom::rdb_impl::RdbProm;
 use crate::part_impl::repo::HybRepo;
 
@@ -18,8 +18,8 @@ use crate::part_impl::repo::HybRepo;
 pub type AppHarn = Harn<
     HybNucl<RdbNucl<ReptRead>, RdbNucl<Serial>>,
     HybRepo,
+    AppObjDept,
     RdbProm,
     JwtAuth,
-    R2ImagePool,
     AsyncEffectDevelop,
 >;

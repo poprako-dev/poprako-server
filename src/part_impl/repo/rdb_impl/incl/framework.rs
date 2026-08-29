@@ -25,6 +25,8 @@ use diesel::prelude::{
 use diesel_async::RunQueryDsl as _;
 use tracing::instrument;
 
+use poprako_rdb_core::RdbConn;
+
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::proj::team::TeamInfo;
@@ -39,7 +41,6 @@ use crate::part_impl::repo::rdb_impl::schema::{
     t_chapter, t_comic, t_team, t_user, t_workset,
 };
 use crate::result::{BaseRest, accept};
-use crate::shared::RdbConn;
 use crate::shared::result::diesel;
 
 // ── BatchByIds trait ────────────────────────────────────────────────────────

@@ -2,7 +2,7 @@
 
 use serde::Serialize;
 
-use crate::value::chapter::{Stage, StagePhase};
+use crate::value::chapter::stage::{Stage, StagePhase};
 use crate::value::chapter_port::{ExportFormatSpec, TranslationFormat};
 use crate::value::chapter_workflow_record::{
     ChapterWorkflowRecordOrigin, ChapterWorkflowRecordPayload,
@@ -13,7 +13,6 @@ use crate::value::role::RoleMask;
 #[derive(Serialize)]
 #[serde(untagged)]
 pub enum ArchivedChapterWorkflowRecordDetail {
-    //
     /// No details for chapter creation, pinning, or unpinning.
     Empty {},
 

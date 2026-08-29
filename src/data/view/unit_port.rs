@@ -9,7 +9,6 @@ use utoipa::ToSchema;
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UnitTranslationPortView {
-    //
     /// Unit identifier from the exporting chapter.
     pub unit_id: String,
     /// Ordinal index of the unit within its page.

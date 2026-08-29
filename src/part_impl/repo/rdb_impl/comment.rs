@@ -11,6 +11,8 @@ use diesel_async::RunQueryDsl as _;
 use poprako_orchestra::Run;
 use tracing::instrument;
 
+use poprako_rdb_core::RdbConn;
+
 use crate::model::read::proj::comment::CommentInfo;
 use crate::model::read::spec::comment::CommentListSpec;
 use crate::model::write::comment::CommentEntry;
@@ -24,7 +26,6 @@ use crate::part_impl::repo::rdb_impl::schema::t_comment::dsl::{
     f_created_at, f_team_id, t_comment,
 };
 use crate::result::{BaseError, BaseRest, accept};
-use crate::shared::RdbConn;
 use crate::shared::result::diesel;
 
 // Query comment infos matching the given list spec, with optional includes.

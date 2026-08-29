@@ -4,7 +4,6 @@ use crate::util::Patch;
 /// One literal text transform applied against an original Unit field value.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UnitTextTransform {
-    //
     /// Literal text selected in the original value.
     pub origin: String,
     /// Literal text inserted in place of each match.
@@ -14,7 +13,6 @@ pub struct UnitTextTransform {
 /// Text transforms requested for one permanent Unit.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UnitTransform {
-    //
     /// Permanent target Unit ID.
     pub unit_id: String,
     /// Literal transforms evaluated against the same original text.
@@ -24,7 +22,6 @@ pub struct UnitTransform {
 /// One normalized Unit mutation.
 #[derive(Debug, Clone, PartialEq)]
 pub enum UnitEdit {
-    //
     /// Creates one Unit with complete structural fields.
     Create {
         /// Permanent Unit ID.

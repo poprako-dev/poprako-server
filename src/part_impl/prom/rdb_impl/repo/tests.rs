@@ -1,6 +1,7 @@
 // completed_message_purge_preserves_non_completed_records(PurgeCompleted)(positive): expired completed records are purged while recent completed, pending, and dead records remain.
 // poll_pending_selects_one_visible_message_per_idle_topic(PollPending)(positive): polling is fair across topics and skips topics with processing work.
 // retry_message_allows_later_topic_message_to_advance(RetryMessage)(positive): delayed retries are equivalent to re-enqueueing behind visible work.
+// wait_message_preserves_retry_budget(RetryMessage)(positive): waiting for external state returns the task to Pending without incrementing its retry counter.
 // stale_attempt_finalization_preserves_newer_lease(CompleteMessage/RetryMessage/FailMessage)(negative): an expired worker lease cannot finalize a newer processing attempt or overwrite Dead.
 
 use super::*;
@@ -9,12 +10,14 @@ use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use time::Duration;
 
+use poprako_rdb_core::RdbCore;
+
 use crate::part::nucl::ReptRead;
 use crate::part_impl::prom::rdb_impl::entity::LocalMessageEntryRow;
 use crate::part_impl::prom::rdb_impl::test_shared;
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::schema::t_local_message;
-use crate::shared::{RdbContext, RdbCore};
+use crate::shared::RdbContext;
 
 // Constant definition for `PREFIX`.
 const PREFIX: &str = "rdb-test-prom-purge-";
@@ -22,6 +25,8 @@ const PREFIX: &str = "rdb-test-prom-purge-";
 const POLL_PREFIX: &str = "rdb-test-prom-poll-";
 // Constant definition for `LEASE_PREFIX`.
 const LEASE_PREFIX: &str = "rdb-test-prom-lease-";
+// Constant definition for `WAIT_PREFIX`.
+const WAIT_PREFIX: &str = "rdb-test-prom-wait-";
 
 /// Verifies polling is fair across topics and skips topics with processing
 /// work.
@@ -155,6 +160,7 @@ pub async fn retry_message_allows_later_topic_message_to_advance(
             0,
             "temporary failure",
             &retry_visible_at,
+            1,
         ),
     )
     .await
@@ -178,6 +184,83 @@ pub async fn retry_message_allows_later_topic_message_to_advance(
         .unwrap();
 
     test_shared::assert_no_leftovers(&shared, POLL_PREFIX)
+        .await
+        .ok()
+        .unwrap();
+}
+
+/// Verifies waiting for external state preserves the failure retry budget.
+pub async fn wait_message_preserves_retry_budget(shared: RdbCore) {
+    //
+    test_shared::reset(&shared, WAIT_PREFIX).await;
+
+    let now = OffsetDateTime::now_utc();
+
+    let entry = local_message_entry(
+        "rdb-test-prom-wait-page-object",
+        "rdb-test-prom-wait-chapter",
+        LocalMessageStatus::Processing,
+        now,
+    );
+
+    let mut conn = shared.get().await.ok().unwrap();
+
+    diesel::insert_into(t_local_message::table)
+        .values(&entry)
+        .execute(&mut conn)
+        .await
+        .ok()
+        .unwrap();
+
+    diesel::update(
+        t_local_message::table
+            .filter(t_local_message::f_id.eq("rdb-test-prom-wait-page-object")),
+    )
+    .set(t_local_message::f_retried_count.eq(3_i64))
+    .execute(&mut conn)
+    .await
+    .ok()
+    .unwrap();
+
+    let repo = RdbPromRepo::new(HybRepo::new(shared.clone()));
+
+    let visible_at = now + Duration::minutes(5);
+
+    let mut context =
+        RdbContext::<ReptRead>::new(shared.get().await.ok().unwrap());
+
+    repo.step(
+        &mut context,
+        &RetryMessage::new(
+            "rdb-test-prom-wait-page-object",
+            0,
+            "page objects are pending",
+            &visible_at,
+            0,
+        ),
+    )
+    .await
+    .ok()
+    .unwrap();
+
+    let row: (String, i64) = t_local_message::table
+        .filter(t_local_message::f_id.eq("rdb-test-prom-wait-page-object"))
+        .select((t_local_message::f_status, t_local_message::f_retried_count))
+        .first(&mut conn)
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(row.0, LocalMessageStatus::Pending.as_str());
+
+    assert_eq!(row.1, 3);
+
+    test_shared::cleanup(&shared, WAIT_PREFIX)
+        .await
+        .ok()
+        .unwrap();
+
+    test_shared::assert_no_leftovers(&shared, WAIT_PREFIX)
         .await
         .ok()
         .unwrap();
@@ -254,6 +337,7 @@ pub async fn stale_attempt_finalization_preserves_newer_lease(shared: RdbCore) {
             0,
             "stale retry",
             &retry_visible_at,
+            1,
         ),
     )
     .await

@@ -4,6 +4,8 @@ use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 
+use poprako_rdb_core::RdbCore;
+
 use crate::model::write::chapter::ChapterEntry;
 use crate::model::write::comic::ComicEntry;
 use crate::model::write::page::PageEntry;
@@ -25,7 +27,6 @@ use crate::part_impl::repo::rdb_impl::test_shared::form::{
     workset_entry,
 };
 use crate::result::{BaseError, BaseRest, accept};
-use crate::shared::RdbCore;
 use crate::shared::result::diesel as diesel_error;
 
 pub struct UserFixture {

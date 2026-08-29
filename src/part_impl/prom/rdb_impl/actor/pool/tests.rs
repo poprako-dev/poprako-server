@@ -6,11 +6,11 @@ use super::*;
 #[test]
 fn topic_worker_assignment_is_stable() {
     //
-    let Ok(first_worker) = topic_worker_index("image") else {
+    let Ok(first_worker) = topic_worker_index("advance_raw_provide") else {
         panic!("worker index calculation must succeed");
     };
 
-    let Ok(second_worker) = topic_worker_index("image") else {
+    let Ok(second_worker) = topic_worker_index("advance_raw_provide") else {
         panic!("worker index calculation must succeed");
     };
 
@@ -21,7 +21,6 @@ fn topic_worker_assignment_is_stable() {
 fn current_topics_use_multiple_workers() {
     //
     let worker_results = [
-        topic_worker_index("image"),
         topic_worker_index("advance_raw_provide"),
         topic_worker_index("purge_expired_invitation"),
     ];

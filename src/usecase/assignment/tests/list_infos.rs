@@ -91,10 +91,7 @@ async fn list_infos_deep_chapter_comic_workset_team_incl_fills_full_chain() {
 
     assert_eq!(comic_info_val.team.as_ref().unwrap().id, "team-1");
 
-    assert_eq!(
-        comic_info_val.cover_url,
-        Some("https://test.local/get/page.png".into())
-    );
+    assert!(comic_info_val.cover_url.is_none());
 }
 
 #[tokio::test]

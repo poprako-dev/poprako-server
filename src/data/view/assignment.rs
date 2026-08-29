@@ -1,6 +1,5 @@
 //! View DTOs for the assignment domain.
 
-use futures::future::OptionFuture;
 use serde::Serialize;
 
 #[cfg(feature = "swagger")]
@@ -11,15 +10,12 @@ use poprako_util::time::ToUnixMilli as _;
 use crate::data::view::chapter::ChapterInfoView;
 use crate::data::view::user::UserInfoView;
 use crate::model::read::proj::assignment::AssignmentInfo;
-use crate::part::image::ImagePool;
-use crate::result::{BaseRest, accept};
 use crate::value::role::RoleMask;
 
 /// Presentation-ready chapter assignment information.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct AssignmentInfoView {
-    //
     /// Unique identifier of the assignment.
     pub id: String,
 
@@ -48,37 +44,22 @@ impl AssignmentInfoView {
     /// Build a response value and eagerly resolve included user/chapter references.
     /// Converts an assignment model into a presentation-ready value,
     /// resolving included user avatar when present.
-    pub async fn from_model<P>(
-        image_pool: &P,
+    pub fn from_model(
         model: AssignmentInfo,
-        fallback_cover_key: Option<&str>,
-    ) -> BaseRest<Self>
-    where
-        P: ImagePool + Sync,
-    {
-        accept(Self {
+        user: Option<UserInfoView>,
+        chapter: Option<ChapterInfoView>,
+    ) -> Self {
+        //
+        Self {
             id: model.id,
             chapter_id: model.chapter_id,
             user_id: model.user_id,
-            user: OptionFuture::from(model.user.map(|user_info| {
-                UserInfoView::from_model(image_pool, user_info)
-            }))
-            .await
-            .transpose()?,
-            chapter: OptionFuture::from(model.chapter.map(|chapter_info| {
-                //
-                ChapterInfoView::from_model(
-                    image_pool,
-                    chapter_info,
-                    fallback_cover_key,
-                )
-            }))
-            .await
-            .transpose()?,
+            user,
+            chapter,
             roles: model.roles,
             created_at: model.created_at.to_unix_milli(),
             updated_at: model.updated_at.to_unix_milli(),
-        })
+        }
     }
 }
 

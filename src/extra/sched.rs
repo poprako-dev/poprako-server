@@ -3,11 +3,10 @@
 use tokio::sync::watch;
 use tokio_util::sync::CancellationToken;
 
-use crate::shared::RdbCore;
+use poprako_rdb_core::RdbCore;
 
 /// Owns the lifecycle of the fixed production periodic-job composition.
 pub struct Sched {
-    //
     /// Shared cancellation signal for every explicitly composed job.
     token: CancellationToken,
 

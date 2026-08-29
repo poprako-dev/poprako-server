@@ -10,8 +10,6 @@
 
 use time::OffsetDateTime;
 
-use crate::value::image::{ImageExt, ImageHash};
-
 /// A pagerecord as stored in the database.
 ///
 /// Progress is tracked via three denormalised counters (`total_unit_count`,
@@ -25,7 +23,6 @@ use crate::value::image::{ImageExt, ImageHash};
 /// [`ChapterInfo`]: crate::model::read::proj::chapter::ChapterInfo
 #[cfg_attr(test, derive(Clone))]
 pub struct PageInfo {
-    //
     /// The unique identifier for this page record.
     pub id: String,
 
@@ -33,17 +30,6 @@ pub struct PageInfo {
     pub chapter_id: String,
     /// Zero-based ordinal position of this page within the chapter.
     pub index: usize,
-
-    /// Object-storage key reserved for the page image, `None` before reservation.
-    pub image_key: Option<String>,
-    /// Whether the client has confirmed the image upload for this page, if one exists.
-    pub is_image_uploaded: Option<bool>,
-    /// Monotonically increasing version counter, bumped on each image reservation.
-    pub image_version: Option<u32>,
-    /// Content-addressable hash of the uploaded image file.
-    pub image_hash: Option<ImageHash>,
-    /// File format.
-    pub image_ext: Option<ImageExt>,
 
     /// Number of translation units (text blocks) on this page.
     pub total_unit_count: usize,

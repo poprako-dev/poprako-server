@@ -13,6 +13,7 @@ static_loader! {
     };
 }
 
+// Caches the process-wide Fluent language selection.
 static LANGUAGE: LazyLock<LanguageIdentifier> = LazyLock::new(|| {
     //
     let lang =
@@ -21,6 +22,7 @@ static LANGUAGE: LazyLock<LanguageIdentifier> = LazyLock::new(|| {
     lang.parse().unwrap_or_else(|_| langid!("zh-CN"))
 });
 
+/// Looks up a Fluent message for the current language.
 pub fn trl(key: &str) -> String {
     LOCALES.lookup(&LANGUAGE, key)
 }

@@ -11,7 +11,7 @@ fn reserved_page_serializes_absent_slot_as_null() {
     let reserved_page_val = ReservedPageVal {
         page_id: "page-1".into(),
         index: 0,
-        image_hash: ImageHash::new([0; 32]),
+        image_hash: ImageHash::default(),
         ext: ImageExt::Png,
         slot: None,
     };
@@ -32,7 +32,7 @@ fn reserved_page_serializes_required_slot_headers() {
     let reserved_page_val = ReservedPageVal {
         page_id: "page-1".into(),
         index: 0,
-        image_hash: ImageHash::new([0; 32]),
+        image_hash: ImageHash::default(),
         ext: ImageExt::Png,
         slot: Some(ImageUploadSlotView {
             put_url: "https://upload.example/page-1".into(),

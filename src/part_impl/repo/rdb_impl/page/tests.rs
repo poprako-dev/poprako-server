@@ -1,20 +1,19 @@
-// page_roundtrip_uses_testcontainer(SetPageUnitCounters, ReservePageImage, ListPageInfos)(positive): page repo persists, returns the replaced image key, and updates page counters in an isolated PostgreSQL container.
+// page_roundtrip_uses_testcontainer(SetPageUnitCounters, ListPageInfos)(positive): page repo persists and updates page counters in an isolated PostgreSQL container.
 
 use poprako_orchestra::{Nucl as _, Run as _, Step as _};
+
+use poprako_rdb_core::RdbCore;
 
 use crate::model::read::proj::unit::UnitCountMetrics;
 use crate::model::write::page::PageEntry;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::page::{
-    CreatePages, GetPageInfo, ListFirstPageInfos, ListPageInfos,
-    ReservePageImage, SetPageUnitCounters,
+    CreatePages, ListFirstPageInfos, ListPageInfos, SetPageUnitCounters,
 };
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::result::BaseError;
-use crate::shared::RdbCore;
-use crate::value::image::ImageExt;
 
 const PREFIX: &str = "rdb-test-page-domain-";
 
@@ -69,13 +68,7 @@ pub async fn page_roundtrip_uses_testcontainer(shared: RdbCore) {
         id: format!("{}page-later", PREFIX),
         chapter_id: page_fixture.chapter_entry.id.clone(),
         index: 1,
-        image_key: Some("page/previous.png".into()),
-        image_version: 1,
-        image_hash: Default::default(),
-        image_ext: ImageExt::Jpg,
     };
-
-    let second_page_id = second_page_entry.id.clone();
 
     nucl.coord(async |context| {
         //
@@ -92,43 +85,6 @@ pub async fn page_roundtrip_uses_testcontainer(shared: RdbCore) {
     .await
     .ok()
     .unwrap();
-
-    let image_reservation = nucl
-        .coord(async |context| {
-            repo.step(
-                context,
-                &ReservePageImage {
-                    id: &second_page_id,
-                    file_ext: "jpg",
-                },
-            )
-            .await
-        })
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        image_reservation.prev_object_key,
-        Some("page/previous.png".into())
-    );
-
-    assert_eq!(image_reservation.image_version, 2);
-
-    let replaced_page_info = repo
-        .run(&GetPageInfo {
-            id: &second_page_id,
-        })
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        replaced_page_info.image_key,
-        Some(image_reservation.object_key)
-    );
-
-    assert!(replaced_page_info.is_image_uploaded != Some(true));
 
     let chapter_ids = vec![page_fixture.chapter_entry.id.clone()];
 

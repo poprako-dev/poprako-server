@@ -10,7 +10,6 @@ use time::OffsetDateTime;
 /// [`SystemMailInfoView`]: crate::data::view::system_mail::SystemMailInfoView
 #[cfg_attr(test, derive(Clone))]
 pub struct SystemMailInfo {
-    //
     /// The unique identifier for this system mail record.
     pub id: String,
 

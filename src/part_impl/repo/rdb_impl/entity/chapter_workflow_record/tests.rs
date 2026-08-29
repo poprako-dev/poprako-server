@@ -1,6 +1,6 @@
 use super::*;
 
-use crate::value::chapter::{Stage, StagePhase};
+use crate::value::chapter::stage::{Stage, StagePhase};
 use crate::value::chapter_port::{ExportFormatSpec, TranslationFormat};
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordOrigin;
 use crate::value::role::{RoleField, RoleMask};

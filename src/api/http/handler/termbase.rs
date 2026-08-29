@@ -35,7 +35,6 @@ use crate::usecase;
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct TermbaseListQuery {
-    //
     /// Optional case-insensitive name substring.
     pub fuzzy_name: Option<String>,
 

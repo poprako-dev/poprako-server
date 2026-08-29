@@ -4,6 +4,8 @@ use super::*;
 
 use poprako_orchestra::Nucl as _;
 
+use poprako_rdb_core::RdbCore;
+
 use crate::model::read::spec::member_invitation::MemberInvitationListSpec;
 use crate::model::write::member_invitation::MemberInvitationEntry;
 use crate::part::nucl::ReptRead;
@@ -14,7 +16,6 @@ use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::result::BaseError;
-use crate::shared::RdbCore;
 use crate::value::member_invitation::MemberInvitationInclOpt;
 use crate::value::role::{RoleField, RoleMask};
 

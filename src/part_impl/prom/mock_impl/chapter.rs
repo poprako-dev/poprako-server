@@ -1,15 +1,19 @@
 use poprako_orchestra::{Nucl as _, OperStep as _};
 
+use poprako_obj_dept::obj_inst;
+
 use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::part::effect::EffectEvent as _;
 use crate::part::effect::event::Event;
 use crate::part::effect::event::chapter::ChapterWorkflowCompletedEvent;
+use crate::part::obj_dept::PageImage;
 use crate::part::prom::payload::chapter::ChapterPayload;
 use crate::part::repo::oper::chapter::CompleteChapterRawProvide;
 use crate::part::repo::oper::chapter_workflow_record::CreateChapterWorkflowRecords;
+use crate::part::repo::oper::page::ListPageInfos;
 use crate::part_impl::repo::mock_impl::Mock;
-use crate::result::{BaseRest, accept};
-use crate::value::chapter::{Stage, StagePhase};
+use crate::result::{BaseError, BaseRest, accept};
+use crate::value::chapter::stage::{Stage, StagePhase};
 use crate::value::chapter_workflow_record::{
     ChapterWorkflowRecordOrigin, ChapterWorkflowRecordPayload,
 };
@@ -36,6 +40,23 @@ async fn process_raw_provide(
     let advanced = mock
         .coord(async move |context| {
             //
+            let page_infos =
+                ListPageInfos { chapter_id }.step_on(mock, context).await?;
+
+            for page_info in &page_infos {
+                //
+                let obj_meta = obj_inst! {
+                    GetObjMeta<PageImage> { id: &page_info.id }
+                }
+                .step_on(mock, context)
+                .await
+                .map_err(BaseError::from)?;
+
+                if !obj_meta.is_some_and(|obj_meta| obj_meta.f_is_uploaded) {
+                    return accept(false);
+                }
+            }
+
             let advanced = CompleteChapterRawProvide { id: chapter_id }
                 .step_on(mock, context)
                 .await?;

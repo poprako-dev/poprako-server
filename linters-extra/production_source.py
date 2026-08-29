@@ -1,31 +1,34 @@
-"""Re-export the shared production-source masker from the linters submodule.
-
-The canonical implementation lives in the `linters/` submodule
-(`rust_style_lint/production_source.py`) and is pinned by poprako-server's
-.gitmodules. This shim loads it under a distinct module name so that
-`from production_source import production_source` inside the local checkers
-keeps resolving to this file without a circular import.
-"""
+"""Re-export the shared production-source masker from the linters submodule."""
 
 from __future__ import annotations
 
-import importlib.util
-import sys
+import re
 from pathlib import Path
 
+from rust_style_lint.production_source import production_source
 
-_IMPLEMENTATION = (
-    Path(__file__).parent.parent / "linters" / "rust_style_lint" / "production_source.py"
+
+_NON_PRODUCTION_PARTS = {"test", "tests", "mock", "mocks", "mock_impl"}
+_NON_PRODUCTION_FILENAME = re.compile(
+    r"(?:^|[_-])(test|tests|mock|mocks)(?:[_-]|$)",
 )
-_MODULE_NAME = "_linters_submodule_production_source"
 
-spec = importlib.util.spec_from_file_location(_MODULE_NAME, _IMPLEMENTATION)
 
-assert spec is not None
-assert spec.loader is not None
+def is_production_path(path: Path) -> bool:
+    """Return whether a Rust path belongs to production code."""
+    if path.name == "tests.rs":
+        return False
 
-module = importlib.util.module_from_spec(spec)
-sys.modules[_MODULE_NAME] = module
-spec.loader.exec_module(module)
+    if any(part in _NON_PRODUCTION_PARTS for part in path.parts):
+        return False
 
-production_source = module.production_source
+    return _NON_PRODUCTION_FILENAME.search(path.stem) is None
+
+
+def production_files(root: Path, subdir: str = "src") -> list[Path]:
+    """Return Rust files outside test and mock paths."""
+    return sorted(
+        path
+        for path in (root / subdir).rglob("*.rs")
+        if is_production_path(path.relative_to(root))
+    )

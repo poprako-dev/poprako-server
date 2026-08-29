@@ -23,7 +23,6 @@ use crate::data::val::workset::CreateWorksetVal;
 use crate::data::view::workset::WorksetInfoView;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::{ReptRead, Serial};
-use crate::part_impl::prom::rdb_impl::RdbProm;
 use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
 use crate::usecase;
@@ -174,8 +173,8 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::workset::delete::<_, RdbContext<Serial>, HybRepo, RdbProm>(
-        (harn.nucl().serial(), harn.repo(), harn.prom()),
+    usecase::workset::delete::<_, RdbContext<Serial>, HybRepo, _>(
+        (harn.nucl().serial(), harn.repo(), harn.obj_dept()),
         user_token,
         workset_id,
     )

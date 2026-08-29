@@ -3,6 +3,7 @@
 
 use poprako_orchestra::{Nucl as _, Run, Step};
 
+use poprako_rdb_core::RdbCore;
 use poprako_util::i18n::trl;
 
 use crate::model::read::spec::team::TeamListSpec;
@@ -15,7 +16,6 @@ use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::result::{BaseError, ExpectedVariant};
-use crate::shared::RdbCore;
 
 const PREFIX: &str = "rdb-test-team-domain-";
 

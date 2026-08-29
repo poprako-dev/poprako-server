@@ -1,11 +1,8 @@
-use url::Url;
+//! Object lifecycle values split by function.
 
-use crate::key::ObjKeyRef;
-
-pub struct ObjSpec<'a> {
-    pub key: ObjKeyRef<'a>,
-}
-
-pub struct ObjSlot {
-    pub url: Url,
-}
+/// Current object metadata.
+pub mod meta;
+/// Upload capability values.
+pub mod slot;
+/// Durable object-task values.
+pub mod task;

@@ -18,7 +18,6 @@ use crate::util::Patch;
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_unit)]
 pub struct UnitInfoRow {
-    //
     pub f_id: String,
 
     pub f_page_id: String,
@@ -68,7 +67,6 @@ impl From<UnitInfoRow> for UnitInfo {
 #[derive(Insertable)]
 #[diesel(table_name = t_unit)]
 pub struct UnitEntryRow<'a> {
-    //
     pub f_id: &'a str,
 
     pub f_page_id: &'a str,
@@ -149,7 +147,6 @@ impl<'a> UnitEntryRow<'a> {
 #[derive(AsChangeset)]
 #[diesel(table_name = t_unit)]
 pub struct UnitAspectRow<'a> {
-    //
     pub f_next_id: Option<Option<&'a str>>,
     pub f_hidden_at: Option<Option<OffsetDateTime>>,
 

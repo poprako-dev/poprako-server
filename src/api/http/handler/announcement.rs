@@ -40,7 +40,6 @@ use crate::value::announcement::AnnouncementInclOpt;
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct AnnouncementListQuery {
-    //
     /// Related rows to embed. Repeatable. Values: `user`.
     #[serde(default, rename = "incl")]
     pub incl_opt: Vec<AnnouncementInclOpt>,
@@ -108,7 +107,7 @@ pub async fn list_infos(
     };
 
     usecase::announcement::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
-        (harn.repo(), harn.image_pool()),
+        (harn.repo(), harn.obj_dept()),
         user_token,
         instr,
     )

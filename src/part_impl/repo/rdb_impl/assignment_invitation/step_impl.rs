@@ -8,6 +8,7 @@ use diesel_async::RunQueryDsl as _;
 use time::OffsetDateTime;
 use tracing::instrument;
 
+use poprako_rdb_core::RdbConn;
 use poprako_util::i18n::trl;
 
 use crate::model::read::proj::assignment_invitation::AssignmentInvitationInfo;
@@ -22,7 +23,6 @@ use crate::part_impl::repo::rdb_impl::schema::t_assignment_invitation::dsl::{
     t_assignment_invitation,
 };
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::shared::RdbConn;
 use crate::shared::result::diesel;
 
 /// Queries assignment invitation rows selected by a list specification.

@@ -13,7 +13,8 @@ use crate::model::read::proj::workset::WorksetInfo;
 use crate::model::write::chapter::ChapterEntry;
 use crate::part_impl::repo::mock_impl::{MockState, expected, now};
 use crate::result::{BaseRest, accept};
-use crate::value::chapter::{ChapterInclOpt, StageMask};
+use crate::value::chapter::ChapterInclOpt;
+use crate::value::chapter::mask::StageMask;
 use crate::value::incl::expand_incl_opts;
 
 /// Looks up a chapter by id from the mock state, applying include options to

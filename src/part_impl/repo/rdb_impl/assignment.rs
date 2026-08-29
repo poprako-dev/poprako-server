@@ -16,6 +16,7 @@ use poprako_orchestra::{AtLeast, Level, Run, Step};
 use time::OffsetDateTime;
 use tracing::instrument;
 
+use poprako_rdb_core::RdbConn;
 use poprako_util::i18n::trl;
 
 use crate::model::read::proj::assignment::AssignmentInfo;
@@ -39,8 +40,8 @@ use crate::part_impl::repo::rdb_impl::schema::t_chapter::{
     f_comic_id as chapter_comic_id, table as chapter_table,
 };
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::shared::RdbContext;
 use crate::shared::result::diesel;
-use crate::shared::{RdbConn, RdbContext};
 use crate::value::assignment::AssignmentInclOpt;
 
 // Build list query helper functions for assignment read paths.

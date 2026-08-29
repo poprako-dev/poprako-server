@@ -6,9 +6,7 @@
 //!
 //! [`Mock`]: crate::part_impl::repo::mock_impl::Mock
 
-mod extra;
 // Delete flow coverage, including avatar cleanup and related records.
-mod delete;
 
 // get_info(get_info)(positive): a user reading itself should receive info and emit UserActive.
 // get_info(get_info)(positive): reading another user should not emit UserActive.
@@ -36,44 +34,15 @@ use super::*;
 use time::OffsetDateTime;
 
 use crate::complex::user::UserComplex;
-use crate::data::instr::user::{
-    MarkUserAvatarUploadedInstr, ReserveUserAvatarInstr, UpdateUserInfoInstr,
-    UpdateUserPasswordInstr,
-};
+use crate::data::instr::user::{UpdateUserInfoInstr, UpdateUserPasswordInstr};
 use crate::model::read::proj::member::MemberInfo;
-use crate::model::read::proj::user::UserInfo;
 use crate::model::shared::user::UserToken;
 use crate::part::effect::event::Event;
-use crate::part::prom::payload::TaskPayload;
-use crate::part::prom::payload::image::ImagePayload;
-use crate::part_impl::prom::mock_impl::MockPromRecord;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
+use crate::test_util::assert_expected_variant;
 use crate::test_util::fixture::{credential, user};
-use crate::test_util::{
-    IMAGE_CONFIG, assert_expected_message, assert_expected_variant,
-    assert_one_image_check_record,
-};
-use crate::usecase::user::delete::delete;
-use crate::value::image::{ImageExt, ImageHash, ImageKind};
 use crate::value::role::{RoleField, RoleMask};
-
-/// Builds a [`UserInfo`] fixture with avatar fields set.
-fn user_with_avatar(
-    id: &str,
-    qid: &str,
-    nickname: &str,
-    avatar_key: &str,
-    avatar_uploaded: bool,
-    avatar_version: u32,
-) -> UserInfo {
-    UserInfo {
-        avatar_key: Some(avatar_key.into()),
-        is_avatar_uploaded: Some(avatar_uploaded),
-        avatar_version: Some(avatar_version),
-        ..user(id, qid, nickname)
-    }
-}
 
 /// Builds a [`MemberInfo`] fixture.
 fn member(
@@ -119,36 +88,6 @@ fn update_password_instr(
         current_password: current_password.into(),
         new_password: new_password.into(),
     }
-}
-
-/// Builds a [`ReserveUserAvatarData`] fixture.
-fn reserve_instr(file_ext: &str) -> ReserveUserAvatarInstr {
-    ReserveUserAvatarInstr {
-        image_hash: ImageHash::new([1; 32]),
-        new_byte_len: 4096,
-        ext: ImageExt::parse(file_ext).unwrap(),
-    }
-}
-
-/// Builds a [`MarkUserAvatarUploadedData`] fixture.
-fn mark_instr(image_version: u32) -> MarkUserAvatarUploadedInstr {
-    MarkUserAvatarUploadedInstr { image_version }
-}
-
-/// Counts deferred image-delete records matching the given object key.
-fn count_delete_records(records: &[MockPromRecord], object_key: &str) -> usize {
-    records
-        .iter()
-        .filter(|record| {
-            matches!(
-                record.payload(),
-                TaskPayload::Image {
-                    payload: ImagePayload::Delete { object_key: key },
-                }
-                    if key == object_key
-            )
-        })
-        .count()
 }
 
 #[tokio::test]
@@ -355,241 +294,4 @@ async fn update_password_rejects_an_incorrect_current_password() {
         )
         .await
     );
-}
-
-#[tokio::test]
-async fn reserve_avatar_updates_state_enqueues_check_and_returns_put_url() {
-    //
-    let mock = Mock::new();
-
-    mock.seed_user(
-        user("user-1", "qid-1", "Nick"),
-        credential("user-1", "password"),
-    );
-
-    let val = reserve_avatar(
-        (&mock, &mock, &mock, &mock, &IMAGE_CONFIG),
-        token("user-1"),
-        reserve_instr("png"),
-    )
-    .await
-    .unwrap();
-
-    assert_eq!(val.slot.as_ref().unwrap().image_version, 1);
-
-    assert_eq!(
-        val.slot.as_ref().unwrap().put_url,
-        "https://test.local/put/user_avatar/user-1-1.png"
-    );
-
-    let snapshot = mock.snapshot();
-
-    assert_eq!(
-        snapshot.users[0].avatar_key.as_deref(),
-        Some("user_avatar/user-1-1.png")
-    );
-
-    assert_ne!(snapshot.users[0].is_avatar_uploaded, Some(true));
-
-    assert_one_image_check_record(
-        &snapshot.prom_records,
-        ImageKind::UserAvatar,
-        "user-1",
-        "user_avatar/user-1-1.png",
-        1,
-    );
-}
-
-#[tokio::test]
-async fn reserve_avatar_replacing_avatar_enqueues_delete_and_check() {
-    //
-    let mock = Mock::new();
-
-    mock.seed_user(
-        user_with_avatar("user-1", "qid-1", "Nick", "old-key", true, 1),
-        credential("user-1", "password"),
-    );
-
-    reserve_avatar(
-        (&mock, &mock, &mock, &mock, &IMAGE_CONFIG),
-        token("user-1"),
-        reserve_instr("jpg"),
-    )
-    .await
-    .unwrap();
-
-    let snapshot = mock.snapshot();
-
-    assert_eq!(count_delete_records(&snapshot.prom_records, "old-key"), 1);
-
-    assert_one_image_check_record(
-        &snapshot.prom_records,
-        ImageKind::UserAvatar,
-        "user-1",
-        "user_avatar/user-1-2.jpg",
-        2,
-    );
-}
-
-#[tokio::test]
-async fn reserve_avatar_rolls_back_missing_user() {
-    //
-    let mock = Mock::new();
-
-    let err = reserve_avatar(
-        (&mock, &mock, &mock, &mock, &IMAGE_CONFIG),
-        token("user-1"),
-        reserve_instr("png"),
-    )
-    .await
-    .err()
-    .unwrap();
-
-    assert_expected_variant(err, ExpectedVariant::Args);
-
-    let snapshot = mock.snapshot();
-
-    assert!(snapshot.users.is_empty());
-
-    assert!(snapshot.prom_records.is_empty());
-}
-
-#[tokio::test]
-async fn reserve_avatar_propagates_put_url_failure_after_commit() {
-    //
-    let mock = Mock::new().with_image_put_failure();
-
-    mock.seed_user(
-        user("user-1", "qid-1", "Nick"),
-        credential("user-1", "password"),
-    );
-
-    let err = reserve_avatar(
-        (&mock, &mock, &mock, &mock, &IMAGE_CONFIG),
-        token("user-1"),
-        reserve_instr("png"),
-    )
-    .await
-    .err()
-    .unwrap();
-
-    assert!(matches!(err, BaseError::Unrecoverable { .. }));
-
-    let snapshot = mock.snapshot();
-
-    assert_eq!(
-        snapshot.users[0].avatar_key.as_deref(),
-        Some("user_avatar/user-1-1.png")
-    );
-
-    assert_eq!(snapshot.prom_records.len(), 1);
-}
-
-#[tokio::test]
-async fn mark_avatar_uploaded_marks_matching_version() {
-    //
-    let mock = Mock::new();
-
-    mock.seed_user(
-        user_with_avatar("user-1", "qid-1", "Nick", "key", false, 2),
-        credential("user-1", "password"),
-    );
-
-    mark_avatar_uploaded(
-        (&mock, &mock, &mock),
-        token("user-1"),
-        "user-1".into(),
-        mark_instr(2),
-    )
-    .await
-    .unwrap();
-
-    assert_eq!(mock.snapshot().users[0].is_avatar_uploaded, Some(true));
-}
-
-#[tokio::test]
-async fn mark_avatar_uploaded_accepts_repeated_matching_version() {
-    //
-    let mock = Mock::new();
-
-    mock.seed_user(
-        user_with_avatar("user-1", "qid-1", "Nick", "key", false, 2),
-        credential("user-1", "password"),
-    );
-
-    let first = mark_avatar_uploaded(
-        (&mock, &mock, &mock),
-        token("user-1"),
-        "user-1".into(),
-        mark_instr(2),
-    )
-    .await;
-
-    assert!(first.is_ok());
-
-    let second = mark_avatar_uploaded(
-        (&mock, &mock, &mock),
-        token("user-1"),
-        "user-1".into(),
-        mark_instr(2),
-    )
-    .await;
-
-    assert!(second.is_ok());
-
-    assert_eq!(mock.snapshot().users[0].is_avatar_uploaded, Some(true));
-}
-
-#[tokio::test]
-async fn mark_avatar_uploaded_rejects_non_owner() {
-    //
-    let mock = Mock::new();
-
-    mock.seed_user(
-        user_with_avatar("user-1", "qid-1", "Nick", "key", false, 2),
-        credential("user-1", "password"),
-    );
-
-    let err = mark_avatar_uploaded(
-        (&mock, &mock, &mock),
-        token("user-2"),
-        "user-1".into(),
-        mark_instr(2),
-    )
-    .await
-    .err()
-    .unwrap();
-
-    assert_expected_variant(err, ExpectedVariant::Perm);
-
-    assert_ne!(mock.snapshot().users[0].is_avatar_uploaded, Some(true));
-}
-
-#[tokio::test]
-async fn mark_avatar_uploaded_rolls_back_stale_version() {
-    //
-    let mock = Mock::new();
-
-    mock.seed_user(
-        user_with_avatar("user-1", "qid-1", "Nick", "key", false, 2),
-        credential("user-1", "password"),
-    );
-
-    let err = mark_avatar_uploaded(
-        (&mock, &mock, &mock),
-        token("user-1"),
-        "user-1".into(),
-        mark_instr(1),
-    )
-    .await
-    .err()
-    .unwrap();
-
-    assert_expected_message(
-        err,
-        ExpectedVariant::Args,
-        "error-stale-avatar-upload",
-    );
-
-    assert_ne!(mock.snapshot().users[0].is_avatar_uploaded, Some(true));
 }

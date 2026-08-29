@@ -7,16 +7,20 @@ pub mod delete;
 // Unit tests for account, role, and membership operations.
 mod tests;
 
-use std::time::Duration;
-
-use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
+use poprako_orchestra::{
+    AtLeast, Context, Nucl, OperRun as _, OperStep as _, Run,
+};
 use tracing::instrument;
 
+use poprako_obj_dept::model::slot::ObjSlotSpec;
+use poprako_obj_dept::oper::{GenObjUrl, GetObjMeta};
+use poprako_obj_dept::rest::ObjDeptError;
+use poprako_obj_dept::{ObjDept, obj_inst};
 use poprako_util::i18n::trl;
 
 use crate::complex::image::ImageComplex;
 use crate::complex::user::UserComplex;
-use crate::config::ImageConfig;
+use crate::config::image::ImageConfig;
 use crate::data::instr::user::{
     MarkUserAvatarUploadedInstr, ReserveUserAvatarInstr, UpdateUserInfoInstr,
     UpdateUserPasswordInstr,
@@ -26,24 +30,20 @@ use crate::data::view::image::ImageUploadSlotView;
 use crate::data::view::user::UserInfoView;
 use crate::model::shared::user::UserToken;
 use crate::model::write::member::MemberNicknameRepl;
-use crate::model::write::user::{UserAvatarRepl, UserCredsRepl, UserInfoRepl};
+use crate::model::write::user::{UserCredsRepl, UserInfoRepl};
 use crate::part::effect::event::Event;
 use crate::part::effect::event::user::UserActiveEvent;
 use crate::part::effect::{Develop, EffectEvent as _};
-use crate::part::image::{ImageManager, ImagePool, ImageUploadSpec};
 use crate::part::nucl::ReptRead;
-use crate::part::prom::Prom;
-use crate::part::prom::oper::DeferBatch;
-use crate::part::prom::payload::{TaskPayload, image};
-use crate::part::prom::task::Task;
+use crate::part::obj_dept::UserAvatar;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::member::UpdateMember;
 use crate::part::repo::oper::user::{
-    GetUserCredential, GetUserInfo, GetUserInfoExcluded, ReserveUserAvatar,
-    UpdateUser,
+    GetUserCredential, GetUserInfo, GetUserInfoExcluded, UpdateUser,
 };
 use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::usecase::view::user_info_view;
 use crate::value::image::ImageKind;
 
 /// Fetches a user's profile with avatar URL resolution.
@@ -56,18 +56,18 @@ use crate::value::image::ImageKind;
 ///
 /// * `C` — Context anchor.
 /// * `R: UserRepo<C>` — User storage.
-/// * `I: ImagePool` — Resolves the avatar signed URL.
+/// * `O` — Resolves the avatar signed URL through `ObjDept`.
 /// * `D: EffectDevelop` — Processes the activity event (only for self-reads).
-#[instrument(level = "info", skip(repo, image_pool, develop))]
-pub async fn get_info<C, R, I, D>(
-    (repo, image_pool, develop): (&R, &I, &D),
+#[instrument(level = "info", skip(repo, obj_dept, develop))]
+pub async fn get_info<C, R, O, D>(
+    (repo, obj_dept, develop): (&R, &O, &D),
     token: UserToken,
     id: String,
 ) -> BaseRest<UserInfoView>
 where
     C: Context,
     R: UserRepo<C>,
-    I: ImagePool + Sync,
+    O: for<'a> Run<GenObjUrl<'a, UserAvatar>, Error = ObjDeptError> + Sync,
     D: Develop + Send + Sync,
 {
     let user_info = GetUserInfo::Id { id: &id }.run_on(repo).await?;
@@ -84,7 +84,7 @@ where
         .await;
     }
 
-    UserInfoView::from_model(image_pool, user_info).await
+    user_info_view(obj_dept, user_info).await
 }
 
 /// Updates a user's QQ ID and nickname.
@@ -266,18 +266,12 @@ where
 /// * `C` — Context anchor.
 /// * `R: UserRepo<C>` — User storage.
 /// * `P: Prom<C>` — Prom enqueuer.
-/// * `I: ImagePool` — Generates the signed upload URL.
+/// * `O: ObjDept` — Reserves the avatar object and its signed upload URL.
 ///
 /// [`team::reserve_avatar`]: super::team::reserve_avatar
-#[instrument(level = "info", skip(nucl, repo, prom, image_pool, image_config))]
-pub async fn reserve_avatar<N, C, R, P, I>(
-    (nucl, repo, prom, image_pool, image_config): (
-        &N,
-        &R,
-        &P,
-        &I,
-        &ImageConfig,
-    ),
+#[instrument(level = "info", skip(nucl, repo, obj_dept, image_config))]
+pub async fn reserve_avatar<N, C, R, O>(
+    (nucl, repo, obj_dept, image_config): (&N, &R, &O, &ImageConfig),
     token: UserToken,
     instr: ReserveUserAvatarInstr,
 ) -> BaseRest<ReserveUserAvatarVal>
@@ -286,8 +280,7 @@ where
     N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<ReptRead>,
     R: UserRepo<C> + Send + Sync,
-    P: Prom<C> + Send + Sync,
-    I: ImagePool + Sync,
+    O: ObjDept<UserAvatar, C> + Send + Sync,
 {
     ImageComplex::ensure_byte_length(
         image_config,
@@ -295,283 +288,70 @@ where
         ImageKind::UserAvatar,
     )?;
 
-    let (transaction_image_hash, image_ext, new_byte_len) =
-        (instr.image_hash, instr.ext, instr.new_byte_len);
-
-    let (object_key, avatar_version, upload_required) = nucl
+    let obj_slot = nucl
         .coord(async move |context| {
             //
-            let avatar_reservation = ReserveUserAvatar {
+            GetUserInfoExcluded::Id { id: &token.user_id }
+                .step_on(repo, context)
+                .await?;
+
+            let obj_spec = ObjSlotSpec {
                 id: &token.user_id,
-                image_hash: &transaction_image_hash,
-                image_ext,
-            }
-            .step_on(repo, context)
-            .await?;
+                hash: instr.image_hash.as_bytes(),
+                ext: instr.ext.suffix(),
+                content_type: instr.ext.content_type(),
+                byte_len: instr.new_byte_len,
+            };
 
-            let (mut batch_ids, mut batch_payloads, mut batch_delays) =
-                (Vec::new(), Vec::new(), Vec::new());
-
-            if !avatar_reservation.is_upload_required {
-                //
-                return accept((
-                    avatar_reservation.object_key,
-                    avatar_reservation.avatar_version,
-                    false,
-                ));
-            }
-
-            if let Some(prev_key) = &avatar_reservation.prev_object_key {
-                //
-                batch_ids.push(ImageComplex::gen_delete_id());
-
-                batch_payloads.push(TaskPayload::Image {
-                    payload: image::ImagePayload::Delete {
-                        object_key: prev_key.clone(),
-                    },
-                });
-
-                batch_delays.push(None);
-            }
-
-            batch_ids.push(ImageComplex::gen_check_id());
-
-            batch_payloads.push(TaskPayload::Image {
-                payload: image::ImagePayload::CheckUpload {
-                    image_kind: ImageKind::UserAvatar,
-                    resource_id: token.user_id.clone(),
-                    object_key: avatar_reservation.object_key.clone(),
-                    version: avatar_reservation.avatar_version,
-                },
-            });
-
-            batch_delays.push(Some(Duration::from_mins(15)));
-
-            let batch_tasks = batch_ids
-                .iter()
-                .zip(batch_payloads.iter())
-                .zip(batch_delays.iter())
-                .map(|((id, payload), delay)| Task {
-                    id,
-                    payload,
-                    delay: *delay,
-                })
-                .collect::<Vec<Task<'_, String, TaskPayload>>>();
-
-            DeferBatch::new(&batch_tasks).step_on(prom, context).await?;
-
-            accept((
-                avatar_reservation.object_key,
-                avatar_reservation.avatar_version,
-                true,
-            ))
+            obj_inst! { GenObjSlot<UserAvatar> { spec: &obj_spec } }
+                .step_on(obj_dept, context)
+                .await
+                .map_err(BaseError::from)
         })
         .await?;
 
-    let slot = if upload_required {
-        //
-        let upload_spec = ImageUploadSpec {
-            object_key: &object_key,
-            content_type: image_ext.content_type(),
-            content_length: new_byte_len,
-        };
-
-        let upload_slot = image_pool.get_upload_slot(upload_spec).await?;
-
-        Some(ImageUploadSlotView {
-            put_url: upload_slot.url.to_string(),
-            image_version: avatar_version,
-            headers: upload_slot.headers,
-        })
-    } else {
-        None
-    };
+    let slot = Some(ImageUploadSlotView {
+        put_url: obj_slot.url.to_string(),
+        image_version: obj_slot.key.version,
+        headers: obj_slot.headers,
+    });
 
     accept(ReserveUserAvatarVal { slot })
 }
 
-/// Marks a reserved user avatar as successfully uploaded.
-///
-/// Transactional — the update runs inside a short-lived transaction so the
-/// version check and mark are atomic. The caller must own the resource
-/// (`token.user_id == id`).
-///
-/// # Type Parameters
-///
-/// * `N: Nucl<Context = C>` — Transaction coordinator.
-/// * `C` — Context anchor.
-/// * `R: UserRepo<C>` — User storage.
-#[instrument(level = "info", skip(nucl, repo, image_manager))]
-pub async fn mark_avatar_uploaded<N, C, R, I>(
-    (nucl, repo, image_manager): (&N, &R, &I),
+/// Confirms the requested avatar generation is the current `ObjDept` object.
+#[instrument(level = "info", skip(obj_dept))]
+pub async fn mark_avatar_uploaded<O>(
+    (obj_dept,): (&O,),
     token: UserToken,
     id: String,
     instr: MarkUserAvatarUploadedInstr,
 ) -> BaseRest<()>
 where
-    C: Context + Send,
-    N: Nucl<Context = C, Error = BaseError> + Sync,
-    C::Level: AtLeast<ReptRead>,
-    R: UserRepo<C> + Send + Sync,
-    I: ImageManager,
-{
-    let avatar_key = prepare_avatar_upload::<C, R, I>(
-        repo,
-        image_manager,
-        &token,
-        &id,
-        instr.image_version,
-    )
-    .await?;
-
-    let Some(avatar_key) = avatar_key else {
-        return accept(());
-    };
-
-    let avatar_repl = UserAvatarRepl {
-        id,
-        avatar_version: instr.image_version,
-        avatar_key: Some(avatar_key),
-        is_avatar_uploaded: true,
-    };
-
-    nucl.coord(async move |context| {
-        //
-        let locked_user_info = GetUserInfoExcluded::Id {
-            id: &avatar_repl.id,
-        }
-        .step_on(repo, context)
-        .await?;
-
-        if locked_user_info.avatar_version != Some(instr.image_version)
-            || locked_user_info.avatar_key.as_deref()
-                != avatar_repl.avatar_key.as_deref()
-        {
-            let err_message = trl("error-stale-avatar-upload");
-
-            tracing::warn!(
-                err_variant = ?ExpectedVariant::Args,
-                err_message = %err_message,
-                user_id = %token.user_id,
-                affected_user_id = %avatar_repl.id,
-                image_version = instr.image_version,
-                locked_image_version = locked_user_info.avatar_version,
-                avatar_key = ?avatar_repl.avatar_key,
-                "expected error: stale user avatar upload",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message: err_message,
-            });
-        }
-
-        UpdateUser::MarkAvatarUploaded { repl: &avatar_repl }
-            .step_on(repo, context)
-            .await?;
-
-        accept(())
-    })
-    .await?;
-
-    accept(())
-}
-
-// Loads and validates the user avatar upload state.
-async fn prepare_avatar_upload<C, R, I>(
-    repo: &R,
-    image_manager: &I,
-    token: &UserToken,
-    id: &str,
-    image_version: u32,
-) -> BaseRest<Option<String>>
-where
-    C: Context,
-    R: UserRepo<C>,
-    I: ImageManager,
+    O: for<'a> Run<GetObjMeta<'a, UserAvatar>, Error = ObjDeptError> + Sync,
 {
     if token.user_id != id {
         //
-        let err_message = trl("error-forbidden");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Perm,
-            err_message = %err_message,
-            user_id = %token.user_id,
-            affected_user_id = %id,
-            "expected error: avatar upload ownership required",
-        );
-
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: err_message,
+            message: trl("error-forbidden"),
         });
     }
 
-    let user_info = GetUserInfo::Id { id }.run_on(repo).await?;
+    let obj_meta = obj_inst! { GetObjMeta<UserAvatar> { id: &id } }
+        .run_on(obj_dept)
+        .await
+        .map_err(BaseError::from)?;
 
-    if user_info.avatar_version != Some(image_version) {
+    match obj_meta {
         //
-        let err_message = trl("error-stale-avatar-upload");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Args,
-            err_message = %err_message,
-            user_id = %token.user_id,
-            affected_user_id = %id,
-            image_version,
-            stored_image_version = user_info.avatar_version,
-            "expected error: stale user avatar upload",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message: err_message,
-        });
-    }
-
-    if user_info.is_avatar_uploaded == Some(true) {
-        return accept(None);
-    }
-
-    let avatar_key = user_info.avatar_key.clone().ok_or_else(|| {
-        //
-        let err_message = trl("error-stale-avatar-upload");
-
-        tracing::warn!(
-            err_variant = ?ExpectedVariant::Args,
-            err_message = %err_message,
-            user_id = %token.user_id,
-            affected_user_id = %id,
-            image_version,
-            stored_image_version = user_info.avatar_version,
-            "expected error: stale user avatar upload",
-        );
-
-        BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message: err_message,
+        Some(obj_meta) if obj_meta.key.version == instr.image_version => {
+            accept(())
         }
-    })?;
 
-    if image_manager.object_exists(&avatar_key).await? {
-        return accept(Some(avatar_key));
+        _ => Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: trl("error-stale-avatar-upload"),
+        }),
     }
-
-    let err_message = trl("error-stale-avatar-upload");
-
-    tracing::warn!(
-        err_variant = ?ExpectedVariant::Args,
-        err_message = %err_message,
-        user_id = %token.user_id,
-        affected_user_id = %id,
-        image_version,
-        avatar_key = %avatar_key,
-        "expected error: stale user avatar upload",
-    );
-
-    Err(BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        message: err_message,
-    })
 }

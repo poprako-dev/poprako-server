@@ -2,6 +2,8 @@
 
 use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 
+use poprako_rdb_core::RdbCore;
+
 use crate::model::read::proj::unit::UnitOrder;
 use crate::model::shared::unit::{UnitCoord, UnitRevision, UnitTranslation};
 use crate::model::write::unit::UnitEdit;
@@ -15,7 +17,6 @@ use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::part_impl::repo::rdb_impl::unit::edit::move_order;
 use crate::result::accept;
-use crate::shared::RdbCore;
 use crate::util::Patch;
 
 const PREFIX: &str = "rdb-test-unit-domain-";

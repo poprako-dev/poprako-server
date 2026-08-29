@@ -34,7 +34,6 @@ use crate::value::comment::CommentInclOpt;
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct CommentListQuery {
-    //
     /// Related rows to embed. Repeatable. Values: `user`.
     #[serde(default, rename = "incl")]
     pub incl_opt: Vec<CommentInclOpt>,
@@ -102,7 +101,7 @@ pub async fn list_infos(
     };
 
     usecase::comment::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
-        (harn.repo(), harn.image_pool()),
+        (harn.repo(), harn.obj_dept()),
         user_token,
         instr,
     )

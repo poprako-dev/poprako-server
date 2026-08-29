@@ -5,12 +5,11 @@
 //!
 //! [`ComicInfoView`]: crate::data::view::comic::ComicInfoView
 
-use crate::value::chapter::StageMask;
+use crate::value::chapter::mask::StageMask;
 use crate::value::comic::{ComicInclOpt, ComicStatus};
 
 /// Filtering and pagination parameters for listing comics within a workset.
 pub struct ComicListSpec {
-    //
     /// The workset whose comics should be listed.
     pub workset_id: String,
 

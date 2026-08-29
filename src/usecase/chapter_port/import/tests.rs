@@ -17,9 +17,8 @@ use crate::model::shared::user::UserToken;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
-use crate::value::chapter::StageMask;
+use crate::value::chapter::mask::StageMask;
 use crate::value::chapter_port::TranslationFormat;
-use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
 // LabelPlus fixture content used for chapter import integration tests.
@@ -60,11 +59,6 @@ fn comic(id: &str) -> ComicInfo {
         title: "Pop Comic".into(),
         author: "author".into(),
         description: None,
-        cover_key: None,
-        is_cover_uploaded: None,
-        cover_version: None,
-        cover_hash: None,
-        cover_ext: None,
         chapter_count: 1,
         creator_id: "user-1".into(),
         workset: None,
@@ -161,11 +155,6 @@ fn page(
         id: id.into(),
         chapter_id: "chapter-1".into(),
         index,
-        image_key: Some(format!("page-{}.png", index)),
-        is_image_uploaded: Some(true),
-        image_version: Some(1),
-        image_hash: Some(ImageHash::new([0u8; 32])),
-        image_ext: Some(ImageExt::Png),
         total_unit_count,
         translated_unit_count: total_unit_count,
         proofread_unit_count,

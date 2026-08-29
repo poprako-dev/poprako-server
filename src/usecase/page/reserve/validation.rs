@@ -5,8 +5,7 @@ use std::collections::{HashMap, HashSet};
 use poprako_util::i18n::{trl, trl_kv};
 
 use crate::complex::image::ImageComplex;
-use crate::config::ImageConfig;
-use crate::model::read::proj::page::PageInfo;
+use crate::config::image::ImageConfig;
 use crate::model::write::page::PageImageSpec;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::value::image::ImageKind;
@@ -93,65 +92,6 @@ pub fn validate_page_count(page_count: usize) -> BaseRest<()> {
     }
 
     accept(())
-}
-
-/// Builds the unrecoverable error for an invalid manifest index.
-pub fn invalid_manifest_index(
-    chapter_id: &str,
-    user_id: &str,
-    existing_index: usize,
-    existing_page_count: usize,
-) -> BaseError {
-    //
-    tracing::error!(
-        err_message = %"page manifest referenced an invalid existing page index",
-        chapter_id,
-        user_id,
-        existing_index,
-        existing_page_count,
-        "internal invariant violated: invalid page manifest index",
-    );
-
-    BaseError::Unrecoverable {
-        message: "page manifest referenced an invalid existing page index"
-            .into(),
-    }
-}
-
-/// Converts a validated page position for the response contract.
-pub fn checked_page_index(index: usize) -> BaseRest<u32> {
-    //
-    u32::try_from(index).map_err(|_| BaseError::Unrecoverable {
-        message: "[reserve_chapter_pages] page index must be non-negative"
-            .into(),
-    })
-}
-
-/// Computes the image version for a retained or replaced image.
-pub fn next_image_version(
-    page_info: &PageInfo,
-    identity_changed: bool,
-) -> BaseRest<u32> {
-    //
-    if identity_changed {
-        //
-        return page_info
-            .image_version
-            .unwrap_or(0)
-            .checked_add(1)
-            .ok_or_else(|| BaseError::Unrecoverable {
-                message: "[reserve_chapter_pages] image version overflow"
-                    .into(),
-            });
-    }
-
-    page_info
-        .image_version
-        .ok_or_else(|| BaseError::Unrecoverable {
-            message:
-                "[reserve_chapter_pages] retained page image version is missing"
-                    .into(),
-        })
 }
 
 // Builds the translated page-count validation message.

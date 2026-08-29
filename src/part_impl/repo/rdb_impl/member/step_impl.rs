@@ -9,6 +9,7 @@ use diesel_async::RunQueryDsl as _;
 use time::OffsetDateTime;
 use tracing::instrument;
 
+use poprako_rdb_core::RdbConn;
 use poprako_util::i18n::trl;
 
 use crate::model::read::proj::member::MemberInfo;
@@ -26,7 +27,6 @@ use crate::part_impl::repo::rdb_impl::schema::t_member::dsl::{
     f_user_last_active_at, f_user_nickname, t_member,
 };
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::shared::RdbConn;
 use crate::shared::result::diesel;
 use crate::value::member::MemberInclOpt;
 use crate::value::role::{RoleField, RoleMask};
@@ -359,7 +359,6 @@ fn escape_ilike_pattern(input: &str) -> String {
 
 // Track per-role assignment timestamps captured from a role mask.
 struct RoleTimestamps {
-    //
     // Timestamp of raw provider assignment; absent means role not enabled.
     raw_provider: Option<OffsetDateTime>,
 

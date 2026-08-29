@@ -32,7 +32,6 @@ use crate::data::val::comic_list::ListComicInfosVal;
 use crate::data::view::comic::ComicInfoView;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::{ReptRead, Serial};
-use crate::part_impl::prom::rdb_impl::RdbProm;
 use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
 use crate::usecase;
@@ -82,7 +81,6 @@ pub async fn export_archives(
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ComicListQuery {
-    //
     /// Fuzzy title substring filter (case-insensitive).
     pub fuzzy_title: Option<String>,
 
@@ -171,7 +169,7 @@ pub async fn list_infos(
     };
 
     usecase::comic::list::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
-        (harn.repo(), harn.image_pool()),
+        (harn.repo(), harn.obj_dept()),
         user_token,
         instr,
     )
@@ -199,7 +197,7 @@ pub async fn get_info(
 ) -> HttpResult<ComicInfoView> {
     //
     usecase::comic::get_info::<RdbContext<ReptRead>, HybRepo, _>(
-        (harn.repo(), harn.image_pool()),
+        (harn.repo(), harn.obj_dept()),
         user_token,
         comic_id,
     )
@@ -266,14 +264,12 @@ pub async fn reserve_cover(
         _,
         RdbContext<ReptRead>,
         HybRepo,
-        RdbProm,
         _,
     >(
         (
             harn.nucl().rept_read(),
             harn.repo(),
-            harn.prom(),
-            harn.image_pool(),
+            harn.obj_dept(),
             &harn.config().image,
         ),
         user_token,
@@ -305,8 +301,8 @@ pub async fn mark_cover_uploaded(
     Json(instr): Json<MarkComicCoverUploadedInstr>,
 ) -> HttpNoContent {
     //
-    usecase::comic::cover::mark_uploaded::<_, RdbContext<ReptRead>, HybRepo, _>(
-        (harn.nucl().rept_read(), harn.repo(), harn.image_pool()),
+    usecase::comic::cover::mark_uploaded::<RdbContext<ReptRead>, HybRepo, _>(
+        (harn.repo(), harn.obj_dept()),
         user_token,
         comic_id,
         instr,
@@ -335,8 +331,8 @@ pub async fn archive(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<ArchiveComicVal> {
     //
-    usecase::comic_archive::archive::<_, RdbContext<Serial>, HybRepo, RdbProm>(
-        (harn.nucl().serial(), harn.repo(), harn.prom()),
+    usecase::comic_archive::archive::<_, RdbContext<Serial>, HybRepo, _>(
+        (harn.nucl().serial(), harn.repo(), harn.obj_dept()),
         user_token,
         comic_id,
     )
@@ -363,8 +359,8 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::comic::delete::<_, RdbContext<Serial>, HybRepo, RdbProm>(
-        (harn.nucl().serial(), harn.repo(), harn.prom()),
+    usecase::comic::delete::<_, RdbContext<Serial>, HybRepo, _>(
+        (harn.nucl().serial(), harn.repo(), harn.obj_dept()),
         user_token,
         comic_id,
     )

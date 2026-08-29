@@ -1,6 +1,5 @@
 //! View DTOs for the announcement domain.
 
-use futures::future::OptionFuture;
 use serde::Serialize;
 
 #[cfg(feature = "swagger")]
@@ -10,14 +9,11 @@ use poprako_util::time::ToUnixMilli as _;
 
 use crate::data::view::user::UserInfoView;
 use crate::model::read::proj::announcement::AnnouncementInfo;
-use crate::part::image::ImagePool;
-use crate::result::{BaseRest, accept};
 
 /// Presentation-ready team announcement information.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct AnnouncementInfoView {
-    //
     /// Unique identifier.
     pub id: String,
 
@@ -41,25 +37,19 @@ pub struct AnnouncementInfoView {
 impl AnnouncementInfoView {
     /// Build the response object from a model row and resolved optional user.
     /// Converts an announcement model into a presentation value.
-    pub async fn from_model<P>(
-        image_pool: &P,
+    pub fn from_model(
         model: AnnouncementInfo,
-    ) -> BaseRest<Self>
-    where
-        P: ImagePool + Sync,
-    {
-        accept(Self {
+        user: Option<UserInfoView>,
+    ) -> Self {
+        //
+        Self {
             id: model.id,
             team_id: model.team_id,
             user_id: model.user_id,
-            user: OptionFuture::from(model.user.map(|user_info| {
-                UserInfoView::from_model(image_pool, user_info)
-            }))
-            .await
-            .transpose()?,
+            user,
             title: model.title,
             content: model.content,
             created_at: model.created_at.to_unix_milli(),
-        })
+        }
     }
 }

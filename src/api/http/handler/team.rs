@@ -22,7 +22,6 @@ use crate::data::val::team::ReserveTeamAvatarVal;
 use crate::data::view::team::TeamInfoView;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::{ReptRead, Serial};
-use crate::part_impl::prom::rdb_impl::RdbProm;
 use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
 use crate::usecase;
@@ -47,7 +46,7 @@ pub async fn create(
 ) -> HttpResult<TeamInfoView> {
     //
     usecase::team::create::<_, RdbContext<ReptRead>, HybRepo, _>(
-        (harn.nucl().rept_read(), harn.repo(), harn.image_pool()),
+        (harn.nucl().rept_read(), harn.repo(), harn.obj_dept()),
         user_token,
         instr,
     )
@@ -76,7 +75,7 @@ pub async fn list_infos(
 ) -> HttpResult<Vec<TeamInfoView>> {
     //
     usecase::team::read::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
-        (harn.repo(), harn.image_pool()),
+        (harn.repo(), harn.obj_dept()),
         user_token,
         instr,
     )
@@ -159,7 +158,7 @@ pub async fn get_info(
 ) -> HttpResult<TeamInfoView> {
     //
     usecase::team::read::get_info::<RdbContext<ReptRead>, HybRepo, _>(
-        (harn.repo(), harn.image_pool()),
+        (harn.repo(), harn.obj_dept()),
         team_id,
     )
     .await?
@@ -221,18 +220,11 @@ pub async fn reserve_avatar(
     Json(instr): Json<ReserveTeamAvatarInstr>,
 ) -> HttpResult<ReserveTeamAvatarVal> {
     //
-    usecase::team::reserve_avatar::<
-        _,
-        RdbContext<ReptRead>,
-        HybRepo,
-        RdbProm,
-        _,
-    >(
+    usecase::team::reserve_avatar::<_, RdbContext<ReptRead>, HybRepo, _>(
         (
             harn.nucl().rept_read(),
             harn.repo(),
-            harn.prom(),
-            harn.image_pool(),
+            harn.obj_dept(),
             &harn.config().image,
         ),
         user_token,
@@ -264,8 +256,8 @@ pub async fn mark_avatar_uploaded(
     Json(instr): Json<MarkTeamAvatarUploadedInstr>,
 ) -> HttpNoContent {
     //
-    usecase::team::mark_avatar_uploaded::<_, RdbContext<ReptRead>, HybRepo, _>(
-        (harn.nucl().rept_read(), harn.repo(), harn.image_pool()),
+    usecase::team::mark_avatar_uploaded::<RdbContext<ReptRead>, HybRepo, _>(
+        (harn.repo(), harn.obj_dept()),
         user_token,
         team_id,
         instr,
@@ -294,8 +286,8 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::team::delete::delete::<_, RdbContext<Serial>, HybRepo, RdbProm>(
-        (harn.nucl().serial(), harn.repo(), harn.prom()),
+    usecase::team::delete::delete::<_, RdbContext<Serial>, HybRepo, _>(
+        (harn.nucl().serial(), harn.repo(), harn.obj_dept()),
         user_token,
         team_id,
     )

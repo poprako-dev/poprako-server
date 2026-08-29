@@ -3,16 +3,13 @@
 use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
+use poprako_obj_dept::{ObjDept, obj_inst};
 use poprako_util::i18n::trl;
 
-use crate::complex::image::ImageComplex;
 use crate::complex::team::TeamPermComplex;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::Serial;
-use crate::part::prom::Prom;
-use crate::part::prom::oper::Defer;
-use crate::part::prom::payload::{TaskPayload, image};
-use crate::part::prom::task::Task;
+use crate::part::obj_dept::{ComicCover, PageImage, TeamAvatar};
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::chapter::ChapterRepo;
@@ -51,9 +48,9 @@ use crate::usecase::workset::delete_cascade as delete_workset_cascade;
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C> + WorksetRepo<C> + ComicRepo<C>` — Team, workset, and comic storage.
 /// * `P: Prom<C>` — Prom enqueuer for deferred avatar deletion.
-#[instrument(level = "info", skip(nucl, repo, prom))]
-pub async fn delete<N, C, R, P>(
-    (nucl, repo, prom): (&N, &R, &P),
+#[instrument(level = "info", skip(nucl, repo, obj_dept))]
+pub async fn delete<N, C, R, O>(
+    (nucl, repo, obj_dept): (&N, &R, &O),
     token: UserToken,
     id: String,
 ) -> BaseRest<()>
@@ -76,7 +73,11 @@ where
         + TermRepo<C>
         + Send
         + Sync,
-    P: Prom<C> + Send + Sync,
+    O: ObjDept<TeamAvatar, C>
+        + ObjDept<ComicCover, C>
+        + ObjDept<PageImage, C>
+        + Send
+        + Sync,
 {
     let member_info = FindMemberInfo::UserTeam {
         user_id: &token.user_id,
@@ -96,7 +97,7 @@ where
     TeamPermComplex::ensure_user_can_delete(&member_info)?;
 
     nucl.coord(async move |context| {
-        delete_cascade(repo, prom, context, &id).await
+        delete_cascade(repo, obj_dept, context, &id).await
     })
     .await?;
 
@@ -104,9 +105,9 @@ where
 }
 
 // Delete a team subtree inside the caller-owned transaction.
-async fn delete_cascade<C, R, P>(
+async fn delete_cascade<C, R, O>(
     repo: &R,
-    prom: &P,
+    obj_dept: &O,
     context: &mut C,
     id: &str,
 ) -> BaseRest<()>
@@ -125,7 +126,10 @@ where
         + TermbaseRepo<C>
         + TermRepo<C>
         + Sync,
-    P: Prom<C> + Sync,
+    O: ObjDept<TeamAvatar, C>
+        + ObjDept<ComicCover, C>
+        + ObjDept<PageImage, C>
+        + Sync,
 {
     let team_info = GetTeamInfoExcluded::Id { id }
         .step_on(repo, context)
@@ -140,28 +144,17 @@ where
     .await?;
 
     for workset_info in workset_infos {
-        delete_workset_cascade(repo, prom, context, &workset_info.id).await?;
+        //
+        delete_workset_cascade(repo, obj_dept, context, &workset_info.id)
+            .await?;
     }
 
-    if let Some(avatar_key) = &team_info.avatar_key
-        && team_info.is_avatar_uploaded == Some(true)
-    {
-        let delete_id = ImageComplex::gen_delete_id();
+    let avatar_ids = [team_info.id.clone()];
 
-        let payload = TaskPayload::Image {
-            payload: image::ImagePayload::Delete {
-                object_key: avatar_key.clone(),
-            },
-        };
-
-        let task = Task {
-            id: &delete_id,
-            payload: &payload,
-            delay: None,
-        };
-
-        Defer::new(task).step_on(prom, context).await?;
-    }
+    obj_inst! { DelObjs<TeamAvatar>::Remove { ids: &avatar_ids } }
+        .step_on(obj_dept, context)
+        .await
+        .map_err(BaseError::from)?;
 
     let member_infos = ListMemberInfosExcluded::Team {
         team_id: &team_info.id,

@@ -13,7 +13,6 @@ use crate::value::unit::{UnitEditPerm, UnitTextPart};
 
 /// Concrete evidence that grants Unit list access.
 pub enum UnitListAccess<'a> {
-    //
     /// Access through team membership.
     Member {
         /// Team membership used to establish access.

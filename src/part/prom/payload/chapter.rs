@@ -4,7 +4,6 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum ChapterPayload {
-    //
     /// Advance raw provision after all page uploads finish.
     TryAdvanceRawProvideStage {
         /// Unique identifier of the chapter to verify upload completion for.

@@ -24,8 +24,8 @@ use crate::model::shared::user::UserToken;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::test_util::now;
 use crate::usecase::assignment::update_roles::update_roles;
-use crate::value::chapter::{Stage, StageMask, StagePhase};
-use crate::value::image::{ImageExt, ImageHash};
+use crate::value::chapter::mask::StageMask;
+use crate::value::chapter::stage::{Stage, StagePhase};
 use crate::value::role::{RoleField, RoleMask};
 
 // Build a token fixture for authenticated user_id.
@@ -58,11 +58,6 @@ fn user(id: &str, is_sadmin: bool) -> UserInfo {
         id: id.into(),
         qid: id.into(),
         nickname: id.into(),
-        avatar_key: None,
-        is_avatar_uploaded: None,
-        avatar_version: None,
-        avatar_hash: None,
-        avatar_ext: None,
         is_sadmin,
         last_active_at: time,
         created_at: time,
@@ -89,11 +84,6 @@ fn team(id: &str) -> TeamInfo {
         id: id.into(),
         name: id.into(),
         description: "description".into(),
-        avatar_key: None,
-        is_avatar_uploaded: None,
-        avatar_version: None,
-        avatar_hash: None,
-        avatar_ext: None,
         created_at: time,
         updated_at: time,
     }
@@ -130,11 +120,6 @@ fn comic(id: &str, workset_id: &str) -> ComicInfo {
         title: id.into(),
         author: "author".into(),
         description: None,
-        cover_key: None,
-        is_cover_uploaded: None,
-        cover_version: None,
-        cover_hash: None,
-        cover_ext: None,
         chapter_count: 1,
         creator_id: "creator-user".into(),
         workset: None,
@@ -210,7 +195,7 @@ fn assignment(
 }
 
 // Build a page fixture with stable image metadata.
-fn page(id: &str, chapter_id: &str, image_key: &str) -> PageInfo {
+fn page(id: &str, chapter_id: &str, _image_key: &str) -> PageInfo {
     //
     // Build a page fixture with image metadata for assignment page listings.
     let time = now();
@@ -219,11 +204,6 @@ fn page(id: &str, chapter_id: &str, image_key: &str) -> PageInfo {
         id: id.into(),
         chapter_id: chapter_id.into(),
         index: 0,
-        image_key: Some(image_key.into()),
-        is_image_uploaded: Some(true),
-        image_version: Some(1),
-        image_hash: Some(ImageHash::new([0u8; 32])),
-        image_ext: Some(ImageExt::Png),
         total_unit_count: 0,
         translated_unit_count: 0,
         proofread_unit_count: 0,

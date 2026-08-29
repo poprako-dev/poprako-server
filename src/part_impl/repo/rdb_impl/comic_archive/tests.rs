@@ -7,6 +7,8 @@ use diesel_async::RunQueryDsl;
 use poprako_orchestra::Nucl as _;
 use time::OffsetDateTime;
 
+use poprako_rdb_core::RdbCore;
+
 use crate::complex::comic_archive::ComicArchiveComplex;
 use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::model::write::comic_archive::ComicArchiveEntry;
@@ -22,7 +24,6 @@ use crate::part_impl::repo::rdb_impl::schema::{
 };
 use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::result::BaseError;
-use crate::shared::RdbCore;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 
 const PREFIX: &str = "rdb-test-comic-archive-domain-";
@@ -96,7 +97,7 @@ pub async fn comic_archive_roundtrip_uses_testcontainer(shared: RdbCore) {
                 )
                 .await?;
 
-            let (comic_archive_entry, _) = ComicArchiveComplex::prepare_entry(
+            let comic_archive_entry = ComicArchiveComplex::prepare_entry(
                 comic_archive_snapshot,
                 archiver_id.clone(),
                 OffsetDateTime::now_utc(),

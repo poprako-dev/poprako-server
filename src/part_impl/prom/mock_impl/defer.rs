@@ -6,7 +6,8 @@ use crate::part::prom::oper::{Defer, DeferBatch};
 use crate::part::prom::payload::TaskPayload;
 use crate::part::prom::task::Task;
 use crate::part_impl::prom::mock_impl::json::serialize_payload_err;
-use crate::part_impl::prom::mock_impl::{Mock, MockContext, MockPromRecord};
+use crate::part_impl::prom::mock_impl::{Mock, MockPromRecord};
+use crate::part_impl::repo::mock_impl::MockContext;
 use crate::result::{BaseError, accept};
 
 /// Defers one record in the coordinated mock state.

@@ -1,20 +1,20 @@
 use std::collections::HashMap;
 
-use poprako_orchestra::{Context, OperRun as _};
+use poprako_orchestra::{Context, OperRun as _, Run};
 use tracing::instrument;
 
+use poprako_obj_dept::oper::GenObjUrl;
+use poprako_obj_dept::rest::ObjDeptError;
 use poprako_util::i18n::trl;
 
-use crate::complex::comic::{ComicComplex, ComicPermComplex};
+use crate::complex::comic::ComicPermComplex;
 use crate::data::instr::comic::ListComicInfosInstr;
 use crate::data::val::comic_list::ListComicInfosVal;
 use crate::data::view::assignment::AssignmentInfoView;
-use crate::data::view::chapter::ChapterInfoView;
-use crate::data::view::comic::ComicInfoView;
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::shared::user::UserToken;
-use crate::part::image::ImagePool;
+use crate::part::obj_dept::{ComicCover, TeamAvatar, UserAvatar};
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
@@ -26,15 +26,17 @@ use crate::part::repo::page::PageRepo;
 use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::internal::member::MemberLoader;
-use crate::usecase::internal::page::PageLoader;
 use crate::usecase::internal::util::{LoadMode, collect_bounded};
+use crate::usecase::view::{
+    assignment_info_view, chapter_info_view, comic_info_view,
+};
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::comic::ComicWithOpt;
 
 /// Lists comics for a workset with optional filters and derived data.
-#[instrument(level = "info", skip(repo, image_pool))]
-pub async fn list_infos<C, R, I>(
-    (repo, image_pool): (&R, &I),
+#[instrument(level = "info", skip(repo, obj_dept))]
+pub async fn list_infos<C, R, O>(
+    (repo, obj_dept): (&R, &O),
     token: UserToken,
     instr: ListComicInfosInstr,
 ) -> BaseRest<ListComicInfosVal>
@@ -47,7 +49,10 @@ where
         + AssignmentRepo<C>
         + PageRepo<C>
         + Sync,
-    I: ImagePool + Sync,
+    O: for<'a> Run<GenObjUrl<'a, ComicCover>, Error = ObjDeptError>
+        + for<'a> Run<GenObjUrl<'a, TeamAvatar>, Error = ObjDeptError>
+        + for<'a> Run<GenObjUrl<'a, UserAvatar>, Error = ObjDeptError>
+        + Sync,
 {
     let (with_pinned_chapter, with_pinned_chapter_assignment) = (
         instr.with_opt.contains(&ComicWithOpt::PinnedChapter),
@@ -81,12 +86,6 @@ where
         .iter()
         .map(|comic_info| comic_info.id.clone())
         .collect::<Vec<_>>();
-
-    let first_page_infos =
-        PageLoader::load_infos_from_comics(repo, &comic_ids).await?;
-
-    let fallback_cover_keys =
-        ComicComplex::resolve_fallback_cover_keys(first_page_infos);
 
     // NOTE: `with` cannot be executed elegantly by repo layer,
     // so we have to handle it in usecase layer.
@@ -141,12 +140,8 @@ where
                 //
                 let chapter_id = assignment_info.chapter_id.clone();
 
-                let assignment_view = AssignmentInfoView::from_model(
-                    image_pool,
-                    assignment_info,
-                    None,
-                )
-                .await?;
+                let assignment_view =
+                    assignment_info_view(obj_dept, assignment_info).await?;
 
                 accept((chapter_id, assignment_view))
             },
@@ -165,11 +160,10 @@ where
     }
 
     build_list_val(
-        image_pool,
+        obj_dept,
         comic_infos,
         pinned_chapter_infos,
         assignment_views_by_chapter,
-        fallback_cover_keys,
     )
     .await
 }
@@ -205,15 +199,17 @@ fn validate_with_options(
 }
 
 // Build aligned comic, pinned-chapter, and assignment response vectors.
-async fn build_list_val<I>(
-    image_pool: &I,
+async fn build_list_val<O>(
+    obj_dept: &O,
     comic_infos: Vec<ComicInfo>,
     mut pinned_chapter_infos: HashMap<String, ChapterInfo>,
     mut assignment_views_by_chapter: HashMap<String, Vec<AssignmentInfoView>>,
-    fallback_cover_keys: HashMap<String, String>,
 ) -> BaseRest<ListComicInfosVal>
 where
-    I: ImagePool + Sync,
+    O: for<'a> Run<GenObjUrl<'a, ComicCover>, Error = ObjDeptError>
+        + for<'a> Run<GenObjUrl<'a, TeamAvatar>, Error = ObjDeptError>
+        + for<'a> Run<GenObjUrl<'a, UserAvatar>, Error = ObjDeptError>
+        + Sync,
 {
     let conversion_inputs = comic_infos
         .into_iter()
@@ -228,52 +224,28 @@ where
                 })
                 .unwrap_or_default();
 
-            let fallback_cover_key =
-                fallback_cover_keys.get(&comic_info.id).cloned();
-
-            (
-                comic_info,
-                chapter_info,
-                assignment_views,
-                fallback_cover_key,
-            )
+            (comic_info, chapter_info, assignment_views)
         })
         .collect::<Vec<_>>();
 
-    let converted_infos =
-        collect_bounded(conversion_inputs.into_iter().map(
-            |(
-                comic_info,
-                chapter_info,
-                assignment_views,
-                fallback_cover_key,
-            )| async move {
+    let converted_infos = collect_bounded(conversion_inputs.into_iter().map(
+        |(comic_info, chapter_info, assignment_views)| async move {
+            //
+            let chapter_view = match chapter_info {
                 //
-                let chapter_view = match chapter_info {
-                    //
-                    Some(chapter_info) => Some(
-                        ChapterInfoView::from_model(
-                            image_pool,
-                            chapter_info,
-                            None,
-                        )
-                        .await?,
-                    ),
+                Some(chapter_info) => {
+                    Some(chapter_info_view(obj_dept, chapter_info).await?)
+                }
 
-                    None => None,
-                };
+                None => None,
+            };
 
-                let comic_view = ComicInfoView::from_model(
-                    image_pool,
-                    comic_info,
-                    fallback_cover_key.as_deref(),
-                )
-                .await?;
+            let comic_view = comic_info_view(obj_dept, comic_info).await?;
 
-                accept((comic_view, chapter_view, assignment_views))
-            },
-        ))
-        .await?;
+            accept((comic_view, chapter_view, assignment_views))
+        },
+    ))
+    .await?;
 
     let mut comic_info_views = Vec::with_capacity(converted_infos.len());
 

@@ -7,17 +7,21 @@ pub mod update_roles;
 // Unit tests that cover assignment orchestration invariants.
 mod tests;
 
-use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
+use poprako_orchestra::{
+    AtLeast, Context, Nucl, OperRun as _, OperStep as _, Run,
+};
 use tracing::instrument;
 
+use poprako_obj_dept::oper::GenObjUrl;
+use poprako_obj_dept::rest::ObjDeptError;
 use poprako_util::i18n::trl;
 
 use crate::complex::assignment::{
     AssignmentComplex, AssignmentDeleteAccess, AssignmentListAccess,
     AssignmentPermComplex, UserAssignmentListAccess,
 };
-use crate::complex::chapter::{ChapterComplex, ChapterPermComplex};
-use crate::complex::comic::ComicComplex;
+use crate::complex::chapter::ChapterComplex;
+use crate::complex::chapter::perm::ChapterPermComplex;
 use crate::data::instr::assignment::{
     JoinChapterAssignmentInstr, ListAssignmentInfosInstr,
 };
@@ -26,8 +30,8 @@ use crate::model::read::spec::assignment::AssignmentListSpec;
 use crate::model::shared::user::UserToken;
 use crate::model::write::assignment::AssignmentEntry;
 use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
-use crate::part::image::ImagePool;
 use crate::part::nucl::ReptRead;
+use crate::part::obj_dept::{ComicCover, TeamAvatar, UserAvatar};
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
@@ -48,14 +52,14 @@ use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::internal::member::MemberLoader;
-use crate::usecase::internal::page::PageLoader;
 use crate::usecase::internal::util::{LoadMode, collect_bounded};
+use crate::usecase::view::assignment_info_view;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 
 /// Lists assignments by chapter or owner user.
-#[instrument(level = "info", skip(repo, image_pool))]
-pub async fn list_infos<C, R, I>(
-    (repo, image_pool): (&R, &I),
+#[instrument(level = "info", skip(repo, obj_dept))]
+pub async fn list_infos<C, R, O>(
+    (repo, obj_dept): (&R, &O),
     token: UserToken,
     instr: ListAssignmentInfosInstr,
 ) -> BaseRest<Vec<AssignmentInfoView>>
@@ -68,7 +72,10 @@ where
         + UserRepo<C>
         + PageRepo<C>
         + Sync,
-    I: ImagePool + Sync,
+    O: for<'a> Run<GenObjUrl<'a, ComicCover>, Error = ObjDeptError>
+        + for<'a> Run<GenObjUrl<'a, TeamAvatar>, Error = ObjDeptError>
+        + for<'a> Run<GenObjUrl<'a, UserAvatar>, Error = ObjDeptError>
+        + Sync,
 {
     let assignment_list_spec = instr.try_into()?;
 
@@ -80,34 +87,9 @@ where
     .run_on(repo)
     .await?;
 
-    let comic_ids = assignment_infos
-        .iter()
-        .filter_map(|assignment_info| assignment_info.chapter.as_ref())
-        .filter_map(|chapter_info| chapter_info.comic.as_ref())
-        .map(|comic_info| comic_info.id.clone())
-        .collect::<Vec<_>>();
-
-    let fallback_pages =
-        PageLoader::load_infos_from_comics(repo, &comic_ids).await?;
-
-    let fallback_cover_keys =
-        ComicComplex::resolve_fallback_cover_keys(fallback_pages);
-
     let assignment_info_vals =
         collect_bounded(assignment_infos.into_iter().map(|assignment_info| {
-            //
-            let fallback_cover_key = assignment_info
-                .chapter
-                .as_ref()
-                .and_then(|chapter_info| chapter_info.comic.as_ref())
-                .and_then(|comic_info| fallback_cover_keys.get(&comic_info.id))
-                .map(String::as_str);
-
-            AssignmentInfoView::from_model(
-                image_pool,
-                assignment_info,
-                fallback_cover_key,
-            )
+            assignment_info_view(obj_dept, assignment_info)
         }))
         .await?;
 

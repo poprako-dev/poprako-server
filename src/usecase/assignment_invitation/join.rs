@@ -1,8 +1,10 @@
 //! Joining assignments through pending invitation codes.
 
-use poprako_orchestra::{AtLeast, Context, Nucl, OperStep as _};
+use poprako_orchestra::{AtLeast, Context, Nucl, OperStep as _, Run};
 use tracing::instrument;
 
+use poprako_obj_dept::oper::GenObjUrl;
+use poprako_obj_dept::rest::ObjDeptError;
 use poprako_util::i18n::trl;
 
 use crate::complex::assignment::AssignmentComplex;
@@ -16,8 +18,8 @@ use crate::model::read::proj::user::UserInfo;
 use crate::model::shared::user::UserToken;
 use crate::model::write::assignment::AssignmentEntry;
 use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
-use crate::part::image::ImagePool;
 use crate::part::nucl::ReptRead;
+use crate::part::obj_dept::{ComicCover, TeamAvatar, UserAvatar};
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::chapter::ChapterRepo;
@@ -39,17 +41,18 @@ use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::user::UserRepo;
 use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::usecase::view::assignment_info_view;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 use crate::value::role::{RoleField, RoleMask};
 
 /// Joins a chapter assignment with a pending invitation code.
 #[instrument(
     level = "info",
-    skip(nucl, repo, image_pool, instr),
+    skip(nucl, repo, obj_dept, instr),
     fields(code = "[REDACTED]")
 )]
-pub async fn join<N, C, R, I>(
-    (nucl, repo, image_pool): (&N, &R, &I),
+pub async fn join<N, C, R, O>(
+    (nucl, repo, obj_dept): (&N, &R, &O),
     token: UserToken,
     instr: JoinAssignmentInvitationInstr,
 ) -> BaseRest<AssignmentInfoView>
@@ -67,7 +70,10 @@ where
         + WorksetRepo<C>
         + Send
         + Sync,
-    I: ImagePool + Sync,
+    O: for<'a> Run<GenObjUrl<'a, ComicCover>, Error = ObjDeptError>
+        + for<'a> Run<GenObjUrl<'a, TeamAvatar>, Error = ObjDeptError>
+        + for<'a> Run<GenObjUrl<'a, UserAvatar>, Error = ObjDeptError>
+        + Sync,
 {
     let current_user_id = token.user_id;
 
@@ -167,7 +173,7 @@ where
         })
         .await?;
 
-    AssignmentInfoView::from_model(image_pool, assignment_info, None).await
+    assignment_info_view(obj_dept, assignment_info).await
 }
 
 // Verifies that an invitation targets the current user and has valid roles.

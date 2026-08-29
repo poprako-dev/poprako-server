@@ -13,7 +13,6 @@ fn comic_info_view_omits_none_fields() {
         author: "Author".into(),
         description: None,
         cover_url: None,
-        cover_thumbnail_url: None,
         chapter_count: 0,
         creator_id: "user-1".into(),
         workset: None,
@@ -32,14 +31,8 @@ fn comic_info_view_omits_none_fields() {
         panic!("comic info value must serialize as an object");
     };
 
-    for field_name in [
-        "description",
-        "cover_url",
-        "cover_thumbnail_url",
-        "workset",
-        "team",
-        "creator",
-    ] {
+    for field_name in ["description", "cover_url", "workset", "team", "creator"]
+    {
         assert!(!object.contains_key(field_name));
     }
 }

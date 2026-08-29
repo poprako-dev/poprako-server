@@ -3,13 +3,12 @@
 use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
-use crate::complex::user::UserComplex;
 use crate::model::read::proj::user::{UserCredential, UserInfo};
-use crate::model::write::user::{UserAvatarReservation, UserEntry};
+use crate::model::write::user::UserEntry;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::user::{
     CreateUser, DeleteUser, FindUserInfo, GetUserCredential, GetUserInfo,
-    GetUserInfoExcluded, ReserveUserAvatar, UpdateUser,
+    GetUserInfoExcluded, UpdateUser,
 };
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
@@ -32,11 +31,6 @@ fn create_user(state: &mut MockState, entry: &UserEntry) -> BaseRest<UserInfo> {
         id: entry.id.clone(),
         qid: entry.qid.clone(),
         nickname: entry.nickname.clone(),
-        avatar_key: None,
-        is_avatar_uploaded: None,
-        avatar_version: None,
-        avatar_hash: None,
-        avatar_ext: None,
         is_sadmin: false,
         last_active_at: time,
         created_at: time,
@@ -103,8 +97,6 @@ fn update_user(state: &mut MockState, oper: &UpdateUser<'_>) -> BaseRest<()> {
         //
         UpdateUser::Info { repl } => repl.id.as_str(),
 
-        UpdateUser::MarkAvatarUploaded { repl } => repl.id.as_str(),
-
         UpdateUser::TouchLastActive { id } => id,
 
         UpdateUser::PasswordHash { repl } => repl.id.as_str(),
@@ -113,14 +105,8 @@ fn update_user(state: &mut MockState, oper: &UpdateUser<'_>) -> BaseRest<()> {
     let update = match oper {
         //
         UpdateUser::Info { repl } => {
-            Some((repl.qid.as_str(), repl.nickname.as_str(), None))
+            Some((repl.qid.as_str(), repl.nickname.as_str()))
         }
-
-        UpdateUser::MarkAvatarUploaded { repl } => Some((
-            repl.id.as_str(),
-            repl.id.as_str(),
-            Some(repl.avatar_version),
-        )),
 
         UpdateUser::TouchLastActive { .. }
         | UpdateUser::PasswordHash { .. } => None,
@@ -134,41 +120,11 @@ fn update_user(state: &mut MockState, oper: &UpdateUser<'_>) -> BaseRest<()> {
 
     let updated_at = now();
 
-    match update {
+    if let Some((qid, nickname)) = update {
         //
-        // Internal implementation detail.
-        // Internal implementation detail.
-        Some((qid, nickname, None)) => {
-            //
-            // Update qid and nickname on one mutable user object.
-            user_info.qid = qid.to_string();
+        user_info.qid = qid.to_string();
 
-            user_info.nickname = nickname.to_string();
-        }
-
-        Some((_, _, Some(avatar_version))) => {
-            //
-            // Validate optimistic avatar token before toggling upload state.
-            if user_info.avatar_version != Some(avatar_version)
-                || matches!(
-                    oper,
-                    UpdateUser::MarkAvatarUploaded { repl }
-                        if repl.avatar_key.as_deref().is_some_and(|avatar_key| {
-                            user_info.avatar_key.as_deref() != Some(avatar_key)
-                        })
-                )
-            {
-                return Err(expected("error-stale-avatar-upload"));
-            }
-
-            let UpdateUser::MarkAvatarUploaded { repl } = oper else {
-                unreachable!();
-            };
-
-            user_info.is_avatar_uploaded = Some(repl.is_avatar_uploaded);
-        }
-
-        None => {}
+        user_info.nickname = nickname.to_string();
     }
 
     if matches!(oper, UpdateUser::TouchLastActive { .. }) {
@@ -335,98 +291,6 @@ impl<'a> Step<UpdateUser<'a>, MockContext> for Mock {
         oper: &UpdateUser<'a>,
     ) -> BaseRest<()> {
         update_user(&mut context.state, oper)
-    }
-}
-
-impl<'a> Step<ReserveUserAvatar<'a>, MockContext> for Mock {
-    // Keep step errors as `BaseError` in mocked transactions.
-    type Level = ReptRead;
-
-    // Defines the adapter error exposed by this operation.
-    type Error = BaseError;
-
-    // Reserve/reuse avatar metadata and return reservation detail.
-    #[instrument(level = "info", skip_all)]
-    async fn step(
-        &self,
-        context: &mut MockContext,
-        oper: &ReserveUserAvatar<'a>,
-    ) -> BaseRest<UserAvatarReservation> {
-        //
-        // Locate user and branch on same-hash reuse or new hash allocation.
-        let user_info = context
-            .state
-            .users
-            .iter_mut()
-            .find(|user_info| user_info.id == oper.id)
-            .ok_or_else(|| expected("error-user-not-found"))?;
-
-        let same_hash = user_info.avatar_key.is_some()
-            && user_info.avatar_hash.as_ref() == Some(oper.image_hash);
-
-        if same_hash && user_info.avatar_ext != Some(oper.image_ext) {
-            return Err(expected("error-image-extension-mismatch"));
-        }
-
-        if same_hash {
-            //
-            // Keep existing key when hash matches and extension is unchanged.
-            let object_key = user_info.avatar_key.clone().ok_or_else(|| {
-                //
-                BaseError::Unrecoverable {
-                    message: "[Mock::ReserveUserAvatar] avatar key is missing"
-                        .into(),
-                }
-            })?;
-
-            return accept(UserAvatarReservation {
-                object_key,
-                prev_object_key: None,
-                avatar_version: user_info.avatar_version.ok_or_else(|| {
-                    //
-                    BaseError::Unrecoverable {
-                        message: "[Mock::ReserveUserAvatar] avatar version is missing".into(),
-                    }
-                })?,
-                is_upload_required: user_info.is_avatar_uploaded != Some(true),
-            });
-        }
-
-        let avatar_version = user_info
-            .avatar_version
-            .unwrap_or(0)
-            .checked_add(1)
-            .ok_or_else(|| BaseError::Unrecoverable {
-                message: "[Mock::ReserveUserAvatar] avatar version overflow"
-                    .into(),
-            })?;
-
-        let object_key = UserComplex::gen_avatar_key(
-            oper.id,
-            avatar_version,
-            oper.image_ext.suffix(),
-        );
-
-        let prev_object_key = user_info.avatar_key.clone();
-
-        user_info.avatar_key = Some(object_key.clone());
-
-        user_info.is_avatar_uploaded = Some(false);
-
-        user_info.avatar_version = Some(avatar_version);
-
-        user_info.avatar_hash = Some(oper.image_hash.clone());
-
-        user_info.avatar_ext = Some(oper.image_ext);
-
-        user_info.updated_at = now();
-
-        accept(UserAvatarReservation {
-            object_key,
-            prev_object_key,
-            avatar_version,
-            is_upload_required: true,
-        })
     }
 }
 

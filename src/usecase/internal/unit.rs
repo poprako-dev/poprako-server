@@ -4,7 +4,7 @@ use poprako_orchestra::{Context, OperRun as _};
 
 use poprako_util::i18n::trl;
 
-use crate::complex::unit::UnitListAccess;
+use crate::complex::unit::perm::UnitListAccess;
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::member::MemberInfo;
 use crate::part::repo::assignment::AssignmentRepo;
@@ -17,7 +17,6 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
 /// Loaded evidence that grants Unit list and search access.
 pub enum UnitListAccessInfo {
-    //
     /// Access through team membership.
     Member {
         /// Team membership evidence.

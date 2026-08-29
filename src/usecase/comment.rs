@@ -4,9 +4,11 @@
 // Unit tests that validate comment lifecycle and visibility constraints.
 mod tests;
 
-use poprako_orchestra::{Context, OperRun as _};
+use poprako_orchestra::{Context, OperRun as _, Run};
 use tracing::instrument;
 
+use poprako_obj_dept::oper::GenObjUrl;
+use poprako_obj_dept::rest::ObjDeptError;
 use poprako_util::i18n::trl;
 
 use crate::complex::comment::{CommentComplex, CommentPermComplex};
@@ -16,25 +18,26 @@ use crate::data::view::comment::CommentInfoView;
 use crate::model::read::spec::comment::CommentListSpec;
 use crate::model::shared::user::UserToken;
 use crate::model::write::comment::CommentEntry;
-use crate::part::image::ImagePool;
+use crate::part::obj_dept::UserAvatar;
 use crate::part::repo::comment::CommentRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::comment::{CreateComment, ListCommentInfos};
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::internal::util::collect_bounded;
+use crate::usecase::view::comment_info_view;
 
 /// Lists comments under a team.
-#[instrument(level = "info", skip(repo, image_pool))]
-pub async fn list_infos<C, R, I>(
-    (repo, image_pool): (&R, &I),
+#[instrument(level = "info", skip(repo, obj_dept))]
+pub async fn list_infos<C, R, O>(
+    (repo, obj_dept): (&R, &O),
     token: UserToken,
     instr: ListCommentInfosInstr,
 ) -> BaseRest<Vec<CommentInfoView>>
 where
     C: Context,
     R: CommentRepo<C> + MemberRepo<C> + Sync,
-    I: ImagePool + Sync,
+    O: for<'a> Run<GenObjUrl<'a, UserAvatar>, Error = ObjDeptError> + Sync,
 {
     let comment_list_spec = Into::<CommentListSpec>::into(instr);
 
@@ -61,11 +64,12 @@ where
     .run_on(repo)
     .await?;
 
-    let comment_info_vals =
-        collect_bounded(comment_infos.into_iter().map(|comment_info| {
-            CommentInfoView::from_model(image_pool, comment_info)
-        }))
-        .await?;
+    let comment_info_vals = collect_bounded(
+        comment_infos
+            .into_iter()
+            .map(|comment_info| comment_info_view(obj_dept, comment_info)),
+    )
+    .await?;
 
     accept(comment_info_vals)
 }

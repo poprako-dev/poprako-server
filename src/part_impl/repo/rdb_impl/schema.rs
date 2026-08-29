@@ -89,11 +89,6 @@ diesel::table! {
         f_author -> Text,
         f_description -> Nullable<Text>,
         f_composed_title -> Text,
-        f_cover_key -> Nullable<Text>,
-        f_cover_uploaded -> Nullable<Bool>,
-        f_cover_version -> Nullable<Int8>,
-        f_cover_hash -> Nullable<Bytea>,
-        f_cover_extension -> Nullable<Text>,
         f_chapter_count -> Int4,
         f_chapter_next_index -> Int4,
         f_creator_id -> Text,
@@ -112,6 +107,18 @@ diesel::table! {
         f_archived_payload -> Text,
         f_archiver_id -> Text,
         f_created_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
+    t_comic_cover (f_id) {
+        f_id -> Text,
+        f_version -> Int8,
+        f_is_uploaded -> Nullable<Bool>,
+        f_hash -> Nullable<Bytea>,
+        f_ext -> Nullable<Text>,
+        f_created_at -> Timestamptz,
+        f_updated_at -> Timestamptz,
     }
 }
 
@@ -176,18 +183,43 @@ diesel::table! {
 }
 
 diesel::table! {
+    t_obj_prom_task (f_id) {
+        f_id -> Text,
+        f_topic -> Text,
+        f_oper -> Text,
+        f_obj_id -> Text,
+        f_version -> Int8,
+        f_generation -> Int8,
+        f_status -> Text,
+        f_visible_at -> Timestamptz,
+        f_retried_count -> Int8,
+        f_lease -> Int8,
+        f_error -> Nullable<Text>,
+        f_created_at -> Timestamptz,
+        f_updated_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     t_page (f_id) {
         f_id -> Text,
         f_chapter_id -> Text,
         f_index -> Int4,
-        f_image_key -> Nullable<Text>,
-        f_image_uploaded -> Nullable<Bool>,
-        f_image_version -> Nullable<Int8>,
-        f_image_hash -> Nullable<Bytea>,
-        f_image_extension -> Nullable<Text>,
         f_total_unit_count -> Int4,
         f_translated_unit_count -> Int4,
         f_proofread_unit_count -> Int4,
+        f_created_at -> Timestamptz,
+        f_updated_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
+    t_page_image (f_id) {
+        f_id -> Text,
+        f_version -> Int8,
+        f_is_uploaded -> Nullable<Bool>,
+        f_hash -> Nullable<Bytea>,
+        f_ext -> Nullable<Text>,
         f_created_at -> Timestamptz,
         f_updated_at -> Timestamptz,
     }
@@ -209,12 +241,19 @@ diesel::table! {
         f_id -> Text,
         f_name -> Text,
         f_description -> Nullable<Text>,
-        f_avatar_key -> Nullable<Text>,
-        f_avatar_uploaded -> Nullable<Bool>,
-        f_avatar_version -> Nullable<Int8>,
-        f_avatar_hash -> Nullable<Bytea>,
-        f_avatar_extension -> Nullable<Text>,
         f_workset_next_index -> Int4,
+        f_created_at -> Timestamptz,
+        f_updated_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
+    t_team_avatar (f_id) {
+        f_id -> Text,
+        f_version -> Int8,
+        f_is_uploaded -> Nullable<Bool>,
+        f_hash -> Nullable<Bytea>,
+        f_ext -> Nullable<Text>,
         f_created_at -> Timestamptz,
         f_updated_at -> Timestamptz,
     }
@@ -272,14 +311,20 @@ diesel::table! {
         f_nickname -> Text,
         f_qid -> Text,
         f_is_sadmin -> Bool,
-        f_avatar_key -> Nullable<Text>,
-        f_avatar_source -> Nullable<Text>,
-        f_avatar_uploaded -> Nullable<Bool>,
-        f_avatar_version -> Nullable<Int8>,
-        f_avatar_hash -> Nullable<Bytea>,
-        f_avatar_extension -> Nullable<Text>,
         f_password_hash -> Text,
         f_last_active_at -> Timestamptz,
+        f_created_at -> Timestamptz,
+        f_updated_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
+    t_user_avatar (f_id) {
+        f_id -> Text,
+        f_version -> Int8,
+        f_is_uploaded -> Nullable<Bool>,
+        f_hash -> Nullable<Bytea>,
+        f_ext -> Nullable<Text>,
         f_created_at -> Timestamptz,
         f_updated_at -> Timestamptz,
     }
@@ -335,16 +380,21 @@ diesel::allow_tables_to_appear_in_same_query!(
     t_chapter_workflow_record,
     t_comic,
     t_comic_archive,
+    t_comic_cover,
     t_comment,
     t_local_message,
     t_member,
     t_member_invitation,
+    t_obj_prom_task,
     t_page,
+    t_page_image,
     t_system_mail,
     t_team,
+    t_team_avatar,
     t_term,
     t_termbase,
     t_unit,
     t_user,
+    t_user_avatar,
     t_workset,
 );

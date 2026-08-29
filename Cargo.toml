@@ -4,7 +4,8 @@ members = [
     "poprako-util",
     "poprako-swagger",
     "poprako-obj-dept",
-    "poprako-rdb-impl",
+    "poprako-obj-dept-macro",
+    "poprako-rdb-core",
 ]
 default-members = ["."]
 resolver = "3"
@@ -75,6 +76,8 @@ base62 = "2.2.4"
 base64 = "0.22"
 k-snowflake = "2.1.1"
 poprako-util = { path = "poprako-util" }
+poprako-obj-dept = { path = "poprako-obj-dept", features = ["rdb_impl"] }
+poprako-rdb-core = { path = "poprako-rdb-core" }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json.workspace = true
 time = { workspace = true, features = ["serde"] }

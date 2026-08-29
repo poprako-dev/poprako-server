@@ -7,7 +7,6 @@ use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 
 /// One immutable chapter workflow record to persist within a transaction.
 pub struct ChapterWorkflowRecordEntry {
-    //
     /// Unique record identifier.
     pub id: String,
     /// Chapter that owns this record.

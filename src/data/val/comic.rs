@@ -4,9 +4,6 @@
 //! presentation-ready values for the comic aggregate.
 //!
 //! Timestamps are converted to Unix milliseconds for JSON serialisation.
-//! Cover URLs are resolved from object-storage keys via [`ImagePool`].
-//!
-//! [`ImagePool`]: crate::part::image::ImagePool
 
 use serde::Serialize;
 
@@ -29,7 +26,6 @@ pub struct ReserveComicCoverVal {
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateComicVal {
-    //
     /// Newly created comic identifier.
     pub id: String,
     /// Identifier of the auto-created first chapter.

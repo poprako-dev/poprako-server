@@ -17,7 +17,6 @@ use crate::model::read::proj::workset::WorksetInfo;
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct WorksetInfoView {
-    //
     /// Unique workset identifier.
     pub id: String,
     /// Owning team identifier.

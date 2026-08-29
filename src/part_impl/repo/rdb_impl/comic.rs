@@ -11,19 +11,17 @@ use poprako_orchestra::{AtLeast, Level, Run, Step};
 use tracing::instrument;
 
 use crate::model::read::proj::comic::ComicInfo;
-use crate::model::write::comic::ComicCoverReservation;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::comic::{
     AllocComicChapterIndex, CreateComic, DeleteComic, GetComicInfo,
     GetComicInfoExcluded, ListComicInfos, ListComicInfosExcluded,
-    MarkComicCoverUploaded, ReserveComicCover, TouchComicLastActive,
-    UpdateComic, UpdateComicChapterCount,
+    TouchComicLastActive, UpdateComic, UpdateComicChapterCount,
 };
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::comic::step_impl::{
     create, delete, get_info_by_id, get_info_excluded, incr_chapter_next_index,
-    list_infos, list_infos_excluded, mark_cover_uploaded, reserve_cover,
-    touch_last_active, update_chapter_count, update_info,
+    list_infos, list_infos_excluded, touch_last_active, update_chapter_count,
+    update_info,
 };
 use crate::result::{BaseError, BaseRest};
 use crate::shared::RdbContext;
@@ -61,26 +59,6 @@ impl Run<UpdateComic<'_>> for HybRepo {
     #[instrument(level = "info", skip_all)]
     async fn run(&self, oper: &UpdateComic<'_>) -> BaseRest<()> {
         submit_query!(self.core, update_info, oper.update)
-    }
-}
-
-impl Run<MarkComicCoverUploaded<'_>> for HybRepo {
-    // Maps the `MarkComicCoverUploaded` repository operation to non-transactional execution.
-    // Defines the adapter error exposed by this operation.
-    type Error = BaseError;
-
-    // Persists cover upload state (version/key/flag) and returns no payload.
-    #[instrument(level = "info", skip_all)]
-    async fn run(&self, oper: &MarkComicCoverUploaded<'_>) -> BaseRest<()> {
-        //
-        submit_query!(
-            self.core,
-            mark_cover_uploaded,
-            oper.id,
-            oper.cover_version,
-            oper.cover_key,
-            oper.cover_uploaded
-        )
     }
 }
 
@@ -186,58 +164,6 @@ where
         oper: &CreateComic<'_>,
     ) -> BaseRest<ComicInfo> {
         create(context.conn(), oper.entry).await
-    }
-}
-
-impl<L> Step<ReserveComicCover<'_>, RdbContext<L>> for HybRepo
-where
-    L: Level + Send + AtLeast<ReptRead>,
-{
-    // Reserves a comic cover upload slot inside an active transaction.
-    type Level = ReptRead;
-
-    // Defines the adapter error exposed by this operation.
-    type Error = BaseError;
-
-    // Creates reservation metadata for cover upload and returns claim details.
-    #[instrument(level = "info", skip_all)]
-    async fn step(
-        &self,
-        context: &mut RdbContext<L>,
-        oper: &ReserveComicCover<'_>,
-    ) -> BaseRest<ComicCoverReservation> {
-        //
-        reserve_cover(context.conn(), oper.id, oper.image_hash, oper.image_ext)
-            .await
-    }
-}
-
-impl<L> Step<MarkComicCoverUploaded<'_>, RdbContext<L>> for HybRepo
-where
-    L: Level + Send + AtLeast<ReptRead>,
-{
-    // Marks cover upload state inside an active transaction.
-    type Level = ReptRead;
-
-    // Defines the adapter error exposed by this operation.
-    type Error = BaseError;
-
-    // Writes uploaded-cover state and persists metadata changes for the comic.
-    #[instrument(level = "info", skip_all)]
-    async fn step(
-        &self,
-        context: &mut RdbContext<L>,
-        oper: &MarkComicCoverUploaded<'_>,
-    ) -> BaseRest<()> {
-        //
-        mark_cover_uploaded(
-            context.conn(),
-            oper.id,
-            oper.cover_version,
-            oper.cover_key,
-            oper.cover_uploaded,
-        )
-        .await
     }
 }
 

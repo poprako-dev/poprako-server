@@ -1,6 +1,5 @@
 //! View DTOs for the member-invitation domain.
 
-use futures::future::OptionFuture;
 use serde::Serialize;
 
 #[cfg(feature = "swagger")]
@@ -8,8 +7,6 @@ use utoipa::ToSchema;
 
 use crate::data::view::user::UserInfoView;
 use crate::model::read::proj::member_invitation::MemberInvitationInfo;
-use crate::part::image::ImagePool;
-use crate::result::{BaseRest, accept};
 use crate::value::role::RoleMask;
 
 /// Presentation-ready member invitation information.
@@ -21,7 +18,6 @@ use crate::value::role::RoleMask;
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct MemberInvitationInfoView {
-    //
     /// Unique identifier.
     pub id: String,
 
@@ -49,27 +45,21 @@ pub struct MemberInvitationInfoView {
 impl MemberInvitationInfoView {
     /// Converts an invitation model into a presentation-ready value,
     /// resolving included invitor avatar when present.
-    pub async fn from_model<P>(
-        image_pool: &P,
+    pub fn from_model(
         model: MemberInvitationInfo,
-    ) -> BaseRest<Self>
-    where
-        P: ImagePool + Sync,
-    {
-        accept(Self {
+        invitor: Option<UserInfoView>,
+    ) -> Self {
+        //
+        Self {
             id: model.id,
             team_id: model.team_id,
             invitor_id: model.invitor_id,
-            invitor: OptionFuture::from(model.invitor.map(|user_info| {
-                UserInfoView::from_model(image_pool, user_info)
-            }))
-            .await
-            .transpose()?,
+            invitor,
             invitee_qid: model.invitee_qid,
             code: model.code,
             is_pending: model.is_pending,
             roles: model.roles,
-        })
+        }
     }
 }
 

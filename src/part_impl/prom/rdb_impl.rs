@@ -29,19 +29,21 @@ use tokio::sync::watch;
 use tokio_util::sync::CancellationToken;
 use tracing::instrument;
 
+use poprako_rdb_core::RdbCore;
+
 use crate::part::effect::Develop;
-use crate::part::image::ImageManager;
 use crate::part::nucl::ReptRead;
 use crate::part::prom::oper::{Defer, DeferBatch};
 use crate::part::prom::payload::TaskPayload;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
+use crate::part_impl::obj_dept::AppObjDept;
 use crate::part_impl::prom::rdb_impl::entity::LocalMessageEntryRow;
 use crate::part_impl::prom::rdb_impl::repo::RdbPromRepo;
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::schema::t_local_message;
 use crate::result::{BaseError, BaseRest, accept};
+use crate::shared::RdbContext;
 use crate::shared::result::diesel;
-use crate::shared::{RdbContext, RdbCore};
 
 // ── Handle type ────────────────────────────────────────────────────────────
 
@@ -54,7 +56,6 @@ use crate::shared::{RdbContext, RdbCore};
 /// Call [`close`](RdbProm::close) before dropping to finish in-flight work
 /// gracefully. Pending records remain durable for the next worker start.
 pub struct RdbProm {
-    //
     // Internal state field `token`.
     /// Cancellation token to signal graceful shutdown of the prom processor.
     token: CancellationToken,
@@ -68,9 +69,8 @@ impl RdbProm {
     /// The supervisor polls `t_local_message` and routes each topic to one of four
     /// serial worker tasks. Different topics can run concurrently, while messages
     /// from one topic never execute concurrently in this process.
-    pub fn new<I, D>(core: RdbCore, image_pool: I, develop: D) -> Self
+    pub fn new<D>(core: RdbCore, obj_dept: AppObjDept, develop: D) -> Self
     where
-        I: ImageManager + Send + Sync + 'static,
         D: Develop + Send + Sync + 'static,
     {
         let token = CancellationToken::new();
@@ -82,10 +82,10 @@ impl RdbProm {
             RdbPromRepo::new(HybRepo::new(core)),
         );
 
-        let actor = actor::RdbPromActor::new(
+        let actor = actor::base::RdbPromActor::new(
             nucl,
             repo,
-            image_pool,
+            obj_dept,
             develop,
             token.clone(),
         );

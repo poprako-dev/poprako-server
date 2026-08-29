@@ -14,12 +14,13 @@ use crate::model::read::proj::member::MemberInfo;
 use crate::model::write::comic_archive::ComicArchiveEntry;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
-use crate::value::chapter::{Stage, StagePhase};
+use crate::value::chapter::stage::{Stage, StagePhase};
+use crate::value::comic_archive::workflow_record::ArchivedChapterWorkflowRecordDetail;
 use crate::value::comic_archive::{
     ArchivedAssignmentPayload, ArchivedChapterPayload,
-    ArchivedChapterWorkflowRecordDetail, ArchivedChapterWorkflowRecordPayload,
-    ArchivedComicPayload, ArchivedPagePayload, ArchivedUnitPayload,
-    ArchivedUserPayload, ArchivedWorksetPayload,
+    ArchivedChapterWorkflowRecordPayload, ArchivedComicPayload,
+    ArchivedPagePayload, ArchivedUnitPayload, ArchivedUserPayload,
+    ArchivedWorksetPayload,
 };
 
 /// Constructs one immutable comic archive record from a fully locked snapshot.
@@ -77,21 +78,19 @@ impl ComicArchiveComplex {
         })
     }
 
-    /// Builds one compressed archive row and deduplicated image keys on Tokio's blocking pool.
+    /// Builds one compressed archive row on Tokio's blocking pool.
     pub async fn prepare_entry(
         comic_archive_snapshot: ComicArchiveSnapshot,
         archiver_id: String,
         archived_at: OffsetDateTime,
-    ) -> BaseRest<(ComicArchiveEntry, Vec<String>)> {
+    ) -> BaseRest<ComicArchiveEntry> {
         //
         tokio::task::spawn_blocking(move || {
             //
-            let image_keys = collect_image_keys(&comic_archive_snapshot);
-
             let comic_archive_entry =
                 build_entry(comic_archive_snapshot, archiver_id, archived_at)?;
 
-            accept((comic_archive_entry, image_keys))
+            accept(comic_archive_entry)
         })
         .await
         .map_err(|error| {
@@ -240,9 +239,6 @@ fn build_assignment_payload(
             id: user_info.id.clone(),
             qid: user_info.qid.clone(),
             nickname: user_info.nickname.clone(),
-            avatar_key: user_info.avatar_key.clone(),
-            avatar_uploaded: user_info.is_avatar_uploaded,
-            avatar_version: user_info.avatar_version,
             is_sadmin: user_info.is_sadmin,
             last_active_at: user_info.last_active_at.to_unix_milli(),
             created_at: user_info.created_at.to_unix_milli(),
@@ -293,34 +289,6 @@ fn build_chapter_payload(
             .collect(),
         pages: build_page_payloads(chapter_snapshot),
     })
-}
-
-// Collects every current comic or page object key, including reserved uploads.
-fn collect_image_keys(
-    comic_archive_snapshot: &ComicArchiveSnapshot,
-) -> Vec<String> {
-    //
-    let mut image_keys = Vec::new();
-
-    if let Some(cover_key) = &comic_archive_snapshot.comic_info.cover_key {
-        image_keys.push(cover_key.clone());
-    }
-
-    for chapter_snapshot in &comic_archive_snapshot.chapter_snapshots {
-        //
-        for page_snapshot in &chapter_snapshot.page_snapshots {
-            //
-            if let Some(image_key) = &page_snapshot.page_info.image_key {
-                image_keys.push(image_key.clone());
-            }
-        }
-    }
-
-    image_keys.sort();
-
-    image_keys.dedup();
-
-    image_keys
 }
 
 // Builds one compressed archive row and source cleanup identifiers.

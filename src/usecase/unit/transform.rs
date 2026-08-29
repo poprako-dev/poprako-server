@@ -8,7 +8,8 @@ use tracing::instrument;
 use poprako_util::i18n::trl;
 
 use crate::complex::chapter::ChapterComplex;
-use crate::complex::unit::{UnitComplex, UnitPermComplex};
+use crate::complex::unit::UnitComplex;
+use crate::complex::unit::perm::UnitPermComplex;
 use crate::data::instr::unit::{
     TransformChapterUnitsInstr, into_unit_transforms,
 };
@@ -121,7 +122,6 @@ pub fn build_page_edits(
 
 // Groups the Chapter-scoped models used by a Unit transformation.
 struct TransformScope {
-    //
     // Chapter being transformed.
     chapter_info: ChapterInfo,
     // Pages belonging to the Chapter.

@@ -25,7 +25,7 @@
 //! | `C` | Context shared by coordinated steps |
 //! | `R: XxxRepo<C>` | Repository bundle for data access |
 //! | `P: Prom<C>` | Deferred-action enqueuer |
-//! | `I: ImagePool` | Object-storage signed URL provider |
+//! | `O: ObjDept` or direct ObjDept `Run` bounds | Object lifecycle provider |
 //! | `D: EffectDevelop` | Side-effect processor for domain events |
 //! | `A: TokenAuth` | Authentication token signer |
 //!
@@ -76,5 +76,7 @@ pub mod termbase_port;
 pub mod unit;
 /// User management use cases.
 pub mod user;
+/// Use-case-side object-backed view resolution.
+pub mod view;
 /// Workset lifecycle use cases.
 pub mod workset;

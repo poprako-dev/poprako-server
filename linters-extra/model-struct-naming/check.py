@@ -19,7 +19,7 @@ import tree_sitter
 import tree_sitter_rust
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
-from production_source import production_source
+from production_source import production_files, production_source
 
 
 DEFAULT_ROOT = Path(__file__).parents[2]
@@ -29,7 +29,7 @@ PARSER = tree_sitter.Parser(tree_sitter.Language(tree_sitter_rust.language()))
 
 
 def rust_files(root: Path) -> list[Path]:
-    return sorted((root / "src" / LAYER).rglob("*.rs"))
+    return production_files(root, f"src/{LAYER}")
 
 
 def pascal_name(module: str) -> str:

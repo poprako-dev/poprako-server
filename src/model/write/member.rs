@@ -7,7 +7,6 @@ use crate::value::role::RoleMask;
 /// Includes a [`RoleMask`] specifying the member's perms within the team.
 #[cfg_attr(test, derive(Clone))]
 pub struct MemberEntry {
-    //
     /// Unique identifier for the new membership record.
     pub id: String,
 
@@ -25,7 +24,6 @@ pub struct MemberEntry {
 
 /// Mutable fields for a membership record.
 pub struct MemberRoleRepl {
-    //
     /// Identifies which membership record to update.
     pub id: String,
     /// Updated bitmask of roles and perms for the member.
@@ -34,7 +32,6 @@ pub struct MemberRoleRepl {
 
 /// A cached member nickname replacement.
 pub struct MemberNicknameRepl {
-    //
     /// The user whose memberships are being updated.
     pub user_id: String,
 

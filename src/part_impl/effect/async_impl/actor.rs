@@ -19,7 +19,6 @@ use crate::part_impl::effect::async_impl::dispatch::dispatch;
 /// Background event consumer that receives events from the channel and
 /// dispatches them to the appropriate domain actor.
 pub struct EffectActor<R> {
-    //
     /// Shared repository access for event processing.
     repo: Arc<R>,
     /// Channel receiver that yields queued events.

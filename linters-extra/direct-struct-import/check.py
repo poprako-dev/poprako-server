@@ -18,7 +18,7 @@ import tree_sitter
 import tree_sitter_rust
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
-from production_source import production_source
+from production_source import production_files, production_source
 
 
 ROOT = Path(__file__).parents[2]
@@ -62,10 +62,10 @@ def layer_domains(root: Path, layer: str) -> set[str]:
         return {
             path.stem
             for role in DATA_ROLES
-            for path in (root / "src" / layer / role).glob("*.rs")
+            for path in production_files(root, f"src/{layer}/{role}")
         }
 
-    return {path.stem for path in (root / "src" / layer).glob("*.rs")}
+    return {path.stem for path in production_files(root, f"src/{layer}")}
 
 
 def legacy_aliases(layer: str, domains: set[str]) -> set[str]:
@@ -223,12 +223,12 @@ def main() -> int:
     domains = layer_domains(root, args.layer)
 
     if args.fix:
-        for path in sorted((root / "src").rglob("*.rs")):
+        for path in production_files(root):
             remove_legacy_imports(path, root, args.layer, domains)
 
     errors = [
         error
-        for path in sorted((root / "src").rglob("*.rs"))
+        for path in production_files(root)
         for error in check_file(path, root, args.layer, domains)
     ]
 

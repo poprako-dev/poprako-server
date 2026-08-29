@@ -35,7 +35,6 @@ use crate::value::unit::UnitTextPart;
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 #[serde(deny_unknown_fields)]
 pub struct UnitSearchQuery {
-    //
     /// Unit text field selected for matching.
     pub part: UnitTextPart,
     /// Case-sensitive literal substring to search.

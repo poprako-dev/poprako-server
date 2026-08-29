@@ -22,5 +22,7 @@
 #![allow(clippy::unnecessary_wraps)]
 #![allow(clippy::uninlined_format_args)]
 
+/// Fluent localization helpers.
 pub mod i18n;
+/// Timestamp conversion helpers.
 pub mod time;

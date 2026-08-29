@@ -8,6 +8,7 @@ use diesel_async::RunQueryDsl as _;
 use time::OffsetDateTime;
 use tracing::instrument;
 
+use poprako_rdb_core::RdbConn;
 use poprako_util::i18n::trl;
 
 use crate::model::read::proj::user::UserInfo;
@@ -19,7 +20,6 @@ use crate::part_impl::repo::rdb_impl::schema::t_user::dsl::{
     f_id, f_qid, t_user,
 };
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::shared::RdbConn;
 use crate::shared::result::diesel;
 
 /// Find user info by QID, returning None when absent.

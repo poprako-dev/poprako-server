@@ -15,8 +15,8 @@ use tokio::time::sleep;
 use tracing::instrument;
 
 use crate::part::effect::Develop;
-use crate::part::image::ImageManager;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
+use crate::part_impl::obj_dept::AppObjDept;
 use crate::part_impl::prom::rdb_impl::actor::base::{
     RdbPromActor, dispatch_payload,
 };
@@ -74,7 +74,6 @@ pub fn enforce_retry_limit(
     //
     match (task_flow, retried_count >= 3) {
         //
-        // Internal implementation detail.
         (TaskFlow::Retry { err_message: error }, true) => {
             TaskFlow::Dead { err_message: error }
         }
@@ -83,16 +82,14 @@ pub fn enforce_retry_limit(
     }
 }
 
-impl<I, D> RdbPromActor<RdbNucl, HybRepo, I, D>
+impl<D> RdbPromActor<RdbNucl, HybRepo, AppObjDept, D>
 where
-    I: ImageManager + Send + Sync + 'static,
     D: Develop + Send + Sync + 'static,
 {
     /// Runs the polling supervisor and drains in-flight worker tasks on shutdown.
     #[instrument(level = "info", skip_all)]
     pub async fn run(self) {
         //
-        // Internal implementation detail.
         let (actor, completed) = (Arc::new(self), Arc::new(Notify::new()));
 
         let (worker_senders, worker_handles) = actor.spawn_workers(&completed);
@@ -121,7 +118,6 @@ where
         completed: &Arc<Notify>,
     ) -> (Vec<WorkerSender>, Vec<JoinHandle<()>>) {
         //
-        // Internal implementation detail.
         let (mut worker_senders, mut worker_handles) = (
             Vec::with_capacity(WORKER_COUNT),
             Vec::with_capacity(WORKER_COUNT),
@@ -129,7 +125,6 @@ where
 
         for worker_index in 0..WORKER_COUNT {
             //
-            // Internal implementation detail.
             let (worker_sender, mut worker_receiver) =
                 mpsc::unbounded_channel();
 
@@ -137,10 +132,8 @@ where
 
             let worker_handle = tokio::spawn(async move {
                 //
-                // Internal implementation detail.
                 while let Some(row) = worker_receiver.recv().await {
                     //
-                    // Internal implementation detail.
                     actor.process_row(&row).await;
 
                     completed.notify_one();
@@ -167,13 +160,11 @@ where
         completed: &Notify,
     ) {
         //
-        // Internal implementation detail.
         let (mut next_stuck_reset_at, mut next_completed_purge_at) =
             (OffsetDateTime::now_utc(), OffsetDateTime::now_utc());
 
         loop {
             //
-            // Internal implementation detail.
             if self.token().is_cancelled() {
                 break;
             }
@@ -182,7 +173,6 @@ where
 
             if now >= next_stuck_reset_at {
                 //
-                // Internal implementation detail.
                 self.log_reset_stuck().await;
 
                 next_stuck_reset_at = schedule_at(now, STUCK_RESET_INTERVAL);
@@ -190,7 +180,6 @@ where
 
             if now >= next_completed_purge_at {
                 //
-                // Internal implementation detail.
                 self.log_purge_completed().await;
 
                 next_completed_purge_at =
@@ -199,7 +188,6 @@ where
 
             let dispatched = match self.poll().await {
                 //
-                // Internal implementation detail.
                 Ok(rows) => {
                     //
                     match self.dispatch_rows(worker_senders, rows).await {
@@ -220,7 +208,6 @@ where
 
                 Err(error) => {
                     //
-                    // Internal implementation detail.
                     tracing::error!(
                         err = ?error,
                         "[RdbPromActor::run] poll failed",
@@ -251,11 +238,10 @@ where
     // Internal implementation of `process_row`.
     async fn process_row(&self, row: &LocalMessageRow) {
         //
-        // Internal implementation detail.
         let task_flow = dispatch_payload(
             self.nucl(),
             self.repo().inner(),
-            self.image_pool(),
+            self.obj_dept(),
             self.develop(),
             &row.f_topic,
             &row.f_payload,
@@ -266,7 +252,6 @@ where
 
         match task_flow {
             //
-            // Internal implementation detail.
             TaskFlow::Complete => {
                 //
                 if let Err(error) = self.complete(&row.f_id, row.f_lease).await
@@ -280,22 +265,15 @@ where
             }
 
             TaskFlow::Retry { err_message: error } => {
-                //
-                if let Err(mark_error) =
-                    self.retry(&row.f_id, row.f_lease, &error).await
-                {
-                    tracing::error!(
-                        id = %row.f_id,
-                        original_err = %error,
-                        err = ?mark_error,
-                        "[RdbPromActor::process_row] retry mark failed",
-                    );
-                }
+                self.log_reschedule(row, &error, 1).await;
+            }
+
+            TaskFlow::Wait { err_message: error } => {
+                self.log_reschedule(row, &error, 0).await;
             }
 
             TaskFlow::Dead { err_message: error } => {
                 //
-                // Internal implementation detail.
                 tracing::error!(
                     id = %row.f_id,
                     topic = %row.f_topic,
@@ -334,7 +312,6 @@ where
         //
         match self.purge_completed().await {
             //
-            // Internal implementation detail.
             Ok(purged_count) => {
                 //
                 if purged_count > 0 {
@@ -377,12 +354,10 @@ where
         rows: Vec<LocalMessageRow>,
     ) -> BaseRest<bool> {
         //
-        // Internal implementation detail.
         let mut dispatched = false;
 
         for row in rows {
             //
-            // Internal implementation detail.
             let worker_index = topic_worker_index(&row.f_topic)?;
 
             let Some(worker_sender) = worker_senders.get(worker_index) else {
@@ -399,12 +374,10 @@ where
 
             let claimed = match self.claim(&row.f_id, row.f_lease).await {
                 //
-                // Internal implementation detail.
                 Ok(claimed) => claimed,
 
                 Err(error) => {
                     //
-                    // Internal implementation detail.
                     tracing::error!(
                         id = %row.f_id,
                         err = ?error,
@@ -421,7 +394,6 @@ where
 
             match worker_sender.send(row) {
                 //
-                // Internal implementation detail.
                 Ok(()) => dispatched = true,
 
                 Err(error) => {
@@ -454,27 +426,52 @@ where
         Ok(())
     }
 
-    #[instrument(level = "info", skip_all)]
-    // Internal implementation of `retry`.
-    async fn retry(&self, id: &str, lease: i64, message: &str) -> BaseRest<()> {
+    // Logs a failed attempt to return one task to pending.
+    async fn log_reschedule(
+        &self,
+        row: &LocalMessageRow,
+        message: &str,
+        retry_delta: i64,
+    ) {
         //
-        let visible_at = OffsetDateTime::now_utc()
-            .checked_add(RETRY_DELAY)
-            .ok_or_else(|| BaseError::Unrecoverable {
-                message: "prom retry timestamp is outside the supported range"
-                    .into(),
-            })?;
+        let rest = async {
+            //
+            let visible_at = OffsetDateTime::now_utc()
+                .checked_add(RETRY_DELAY)
+                .ok_or_else(|| BaseError::Unrecoverable {
+                    message:
+                        "prom retry timestamp is outside the supported range"
+                            .into(),
+                })?;
 
-        self.nucl()
-            .coord(async |context| {
-                //
-                RetryMessage::new(id, lease, message, &visible_at)
+            self.nucl()
+                .coord(async |context| {
+                    //
+                    RetryMessage::new(
+                        &row.f_id,
+                        row.f_lease,
+                        message,
+                        &visible_at,
+                        retry_delta,
+                    )
                     .step_on(self.repo(), context)
                     .await
-            })
-            .await?;
+                })
+                .await?;
 
-        Ok(())
+            Ok::<(), BaseError>(())
+        }
+        .await;
+
+        if let Err(mark_error) = rest {
+            //
+            tracing::error!(
+                id = %row.f_id,
+                original_err = %message,
+                err = ?mark_error,
+                "[RdbPromActor::process_row] reschedule failed",
+            );
+        }
     }
 
     #[instrument(level = "info", skip_all)]
@@ -568,7 +565,6 @@ where
 // Internal implementation of `topic_worker_index`.
 fn topic_worker_index(topic: &str) -> BaseRest<usize> {
     //
-    // Internal implementation detail.
     let hash = topic.bytes().fold(FNV_OFFSET_BASIS, |hash, byte| {
         (hash ^ u64::from(byte)).wrapping_mul(FNV_PRIME)
     });

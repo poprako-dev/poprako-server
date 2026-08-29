@@ -1,8 +1,5 @@
 //! Pure rules for page entities.
 
-/// Pure chapter-page manifest matching.
-pub mod manifest;
-
 use poprako_util::i18n::trl;
 
 use crate::complex::util::{
@@ -73,25 +70,10 @@ impl PageComplex {
     pub fn gen_id() -> String {
         next_snowflake_id()
     }
-
-    /// Construct the object-storage key for a page image.
-    pub fn gen_image_key(
-        chapter_id: &str,
-        page_id: &str,
-        image_version: u32,
-        file_ext: &str,
-    ) -> String {
-        //
-        format!(
-            "page/chapter_{}/{}-{}.{}",
-            chapter_id, page_id, image_version, file_ext,
-        )
-    }
 }
 
 /// Evidence that grants page-list access.
 pub enum PageListAccess<'a> {
-    //
     /// Access through team membership.
     Member {
         /// Team membership used to establish access.

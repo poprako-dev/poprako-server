@@ -18,15 +18,6 @@ impl TeamComplex {
     pub fn gen_id() -> String {
         next_snowflake_id()
     }
-
-    /// Generate the object-storage key for a team avatar image.
-    pub fn gen_avatar_key(
-        id: &str,
-        avatar_version: u32,
-        file_ext: &str,
-    ) -> String {
-        format!("team_avatar/{}-{}.{}", id, avatar_version, file_ext)
-    }
 }
 
 /// Pure permission rules for team entities.

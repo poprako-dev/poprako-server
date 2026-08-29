@@ -6,11 +6,9 @@ use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::proj::member::MemberInfo;
-use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::workset::WorksetInfo;
 use crate::model::shared::user::UserToken;
-use crate::value::chapter::StageMask;
-use crate::value::image::{ImageExt, ImageHash};
+use crate::value::chapter::mask::StageMask;
 
 pub fn token(user_id: &str) -> UserToken {
     UserToken {
@@ -45,11 +43,6 @@ pub fn comic(id: &str, workset_id: &str) -> ComicInfo {
         title: "comic".into(),
         author: "author".into(),
         description: None,
-        cover_key: None,
-        is_cover_uploaded: None,
-        cover_version: None,
-        cover_hash: None,
-        cover_ext: None,
         chapter_count: 2,
         creator_id: "user-1".into(),
         workset: None,
@@ -118,27 +111,6 @@ pub fn assignment(
         user: None,
         chapter: None,
         roles: role_mask,
-        created_at: time,
-        updated_at: time,
-    }
-}
-
-pub fn page(id: &str, chapter_id: &str, image_key: Option<&str>) -> PageInfo {
-    //
-    let time = OffsetDateTime::now_utc();
-
-    PageInfo {
-        id: id.into(),
-        chapter_id: chapter_id.into(),
-        index: 0,
-        image_key: image_key.map(Into::into),
-        is_image_uploaded: Some(image_key.is_some()),
-        image_version: Some(1),
-        image_hash: Some(ImageHash::new([0u8; 32])),
-        image_ext: Some(ImageExt::Png),
-        total_unit_count: 0,
-        translated_unit_count: 0,
-        proofread_unit_count: 0,
         created_at: time,
         updated_at: time,
     }

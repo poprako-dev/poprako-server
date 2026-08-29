@@ -6,13 +6,13 @@
 //! Convert to [`ChapterInfoView`] for presentation.
 //!
 //! [`ChapterInfoView`]: crate::data::view::chapter::ChapterInfoView
-//! [`StagePhase`]: crate::value::chapter::StagePhase
+//! [`StagePhase`]: crate::value::chapter::stage::StagePhase
 
 use time::OffsetDateTime;
 
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::proj::user::UserInfo;
-use crate::value::chapter::StageMask;
+use crate::value::chapter::mask::StageMask;
 
 /// A chapterrecord as stored in the database.
 ///
@@ -30,7 +30,6 @@ use crate::value::chapter::StageMask;
 /// [`StagePhase`] values independently.
 #[derive(Clone)]
 pub struct ChapterInfo {
-    //
     /// Unique identifier for the chapter.
     pub id: String,
     /// Foreign key to the parent comic this chapter belongs to.

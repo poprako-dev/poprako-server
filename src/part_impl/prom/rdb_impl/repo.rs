@@ -32,7 +32,7 @@ use crate::shared::result::diesel;
 /// polling, claiming, completion, failure, retry, and recovery operations for
 /// records in `t_local_message`.
 ///
-/// [`RdbPromActor`]: super::actor::RdbPromActor
+/// [`RdbPromActor`]: super::actor::base::RdbPromActor
 pub struct RdbPromRepo<R> {
     /// Delegate application repository used by topic actors.
     repo: R,
@@ -69,7 +69,6 @@ pub struct PollPending;
 #[derive(Oper)]
 #[oper(output = bool)]
 pub struct ClaimPending<'a> {
-    //
     // Internal state field `id`.
     /// ID of the local-message row to claim.
     id: &'a str,
@@ -88,7 +87,6 @@ impl<'a> ClaimPending<'a> {
 #[derive(Oper)]
 #[oper(output = ())]
 pub struct CompleteMessage<'a> {
-    //
     // Internal state field `id`.
     /// ID of the local-message row to mark complete.
     id: &'a str,
@@ -107,7 +105,6 @@ impl<'a> CompleteMessage<'a> {
 #[derive(Oper)]
 #[oper(output = ())]
 pub struct FailMessage<'a> {
-    //
     // Internal state field `id`.
     /// ID of the local-message row to mark as failed.
     id: &'a str,
@@ -133,7 +130,6 @@ impl<'a> FailMessage<'a> {
 #[derive(Oper)]
 #[oper(output = ())]
 pub struct RetryMessage<'a> {
-    //
     // Internal state field `id`.
     /// ID of the local-message row to retry.
     id: &'a str,
@@ -143,6 +139,8 @@ pub struct RetryMessage<'a> {
     error: &'a str,
     /// Timestamp after which the retry becomes visible for processing.
     visible_at: &'a OffsetDateTime,
+    /// Amount consumed from the failure retry budget.
+    retry_delta: i64,
 }
 
 impl<'a> RetryMessage<'a> {
@@ -152,6 +150,7 @@ impl<'a> RetryMessage<'a> {
         lease: i64,
         err_msg: &'a str,
         visible_at: &'a OffsetDateTime,
+        retry_delta: i64,
     ) -> Self {
         //
         Self {
@@ -159,6 +158,7 @@ impl<'a> RetryMessage<'a> {
             lease,
             error: err_msg,
             visible_at,
+            retry_delta,
         }
     }
 }
@@ -182,7 +182,6 @@ impl<'a> ResetStuck<'a> {
 #[derive(Oper)]
 #[oper(output = usize)]
 pub struct PurgeCompleted<'a> {
-    //
     // Internal state field `completed_before`.
     /// Cutoff timestamp for completed records to purge.
     completed_before: &'a OffsetDateTime,
@@ -448,7 +447,7 @@ where
             t_local_message::f_status.eq(LocalMessageStatus::Pending.as_str()),
             t_local_message::f_last_error.eq(Some(oper.error)),
             t_local_message::f_retried_count
-                .eq(t_local_message::f_retried_count + 1),
+                .eq(t_local_message::f_retried_count + oper.retry_delta),
             t_local_message::f_visible_at.eq(*oper.visible_at),
             t_local_message::f_updated_at.eq(OffsetDateTime::now_utc()),
         ))

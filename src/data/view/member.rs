@@ -1,6 +1,5 @@
 //! View DTOs for the member domain.
 
-use futures::future::OptionFuture;
 use serde::Serialize;
 
 #[cfg(feature = "swagger")]
@@ -11,15 +10,12 @@ use poprako_util::time::ToUnixMilli as _;
 use crate::data::view::team::TeamInfoView;
 use crate::data::view::user::UserInfoView;
 use crate::model::read::proj::member::MemberInfo;
-use crate::part::image::ImagePool;
-use crate::result::{BaseRest, accept};
 use crate::value::role::RoleMask;
 
 /// Presentation-ready membership information.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct MemberInfoView {
-    //
     /// Unique member identifier.
     pub id: String,
 
@@ -47,31 +43,22 @@ pub struct MemberInfoView {
 impl MemberInfoView {
     /// Converts a member model into a presentation-ready value,
     /// resolving included user/team instr when present.
-    pub async fn from_model<P>(
-        image_pool: &P,
+    pub fn from_model(
         model: MemberInfo,
-    ) -> BaseRest<Self>
-    where
-        P: ImagePool + Sync,
-    {
-        accept(Self {
+        user: Option<UserInfoView>,
+        team: Option<TeamInfoView>,
+    ) -> Self {
+        //
+        Self {
             id: model.id,
             user_id: model.user_id,
             nickname: model.user_nickname,
             last_active_at: model.user_last_active_at.to_unix_milli(),
             team_id: model.team_id,
-            user: OptionFuture::from(model.user.map(|user_info| {
-                UserInfoView::from_model(image_pool, user_info)
-            }))
-            .await
-            .transpose()?,
-            team: OptionFuture::from(model.team.map(|team_info| {
-                TeamInfoView::from_model(image_pool, team_info)
-            }))
-            .await
-            .transpose()?,
+            user,
+            team,
             roles: model.roles,
-        })
+        }
     }
 }
 

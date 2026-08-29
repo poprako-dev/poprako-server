@@ -19,7 +19,7 @@ import tree_sitter
 import tree_sitter_rust
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
-from production_source import production_source
+from production_source import production_files, production_source
 
 
 ROOT = Path(__file__).parents[2]
@@ -212,7 +212,7 @@ def check_file(path: Path, root: Path) -> list[str]:
 def check_root(root: Path) -> list[str]:
     return [
         diagnostic
-        for path in sorted((root / "src" / "complex").rglob("*.rs"))
+        for path in production_files(root, "src/complex")
         for diagnostic in check_file(path, root)
     ]
 

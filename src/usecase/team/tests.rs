@@ -7,7 +7,6 @@
 //! [`Mock`]: crate::part_impl::repo::mock_impl::Mock
 
 // Team avatar reservation, upload check, and cleanup behavior.
-mod avatar;
 
 // create(create)(positive): creating a team should persist it and return team info.
 // create(create)(positive): creating a team should make creator an admin member.
@@ -37,49 +36,20 @@ use super::*;
 
 use time::OffsetDateTime;
 
-use crate::config::ImageConfig;
 use crate::data::instr::team::{
-    CreateTeamInstr, ListTeamInfosInstr, MarkTeamAvatarUploadedInstr,
-    ReserveTeamAvatarInstr, UpdateTeamInfoInstr,
+    CreateTeamInstr, ListTeamInfosInstr, UpdateTeamInfoInstr,
 };
-use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::proj::member::MemberInfo;
-use crate::model::read::proj::team::TeamInfo;
 use crate::model::read::proj::user::{UserCredential, UserInfo};
 use crate::model::shared::user::UserToken;
-use crate::part::prom::payload::TaskPayload;
-use crate::part::prom::payload::image::ImagePayload;
-use crate::part_impl::prom::mock_impl::MockPromRecord;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
-use crate::test_util::fixture::{team, workset};
-use crate::test_util::{
-    IMAGE_CONFIG, assert_expected_message, assert_expected_variant,
-    assert_one_image_check_record,
-};
-use crate::usecase::team::delete::delete;
+use crate::test_util::fixture::team;
+use crate::test_util::{assert_expected_message, assert_expected_variant};
 use crate::usecase::team::read::{get_info, list_infos};
-use crate::value::image::ImageKind;
-use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
 // Build a team fixture with explicit avatar metadata for avatar-related assertions.
-fn team_with_avatar(
-    id: &str,
-    name: &str,
-    description: &str,
-    avatar_key: &str,
-    avatar_uploaded: bool,
-    avatar_version: u32,
-) -> TeamInfo {
-    TeamInfo {
-        avatar_key: Some(avatar_key.into()),
-        is_avatar_uploaded: Some(avatar_uploaded),
-        avatar_version: Some(avatar_version),
-        ..team(id, name, description)
-    }
-}
-
 // Build a generic member fixture for team-related membership checks.
 fn member(id: &str, user_id: &str, team_id: &str) -> MemberInfo {
     MemberInfo {
@@ -91,39 +61,6 @@ fn member(id: &str, user_id: &str, team_id: &str) -> MemberInfo {
         user: None,
         team: None,
         roles: RoleMask::from(RoleField::ADMIN),
-    }
-}
-
-// Build a comic fixture that already has an uploaded cover.
-fn comic_with_uploaded_cover(
-    id: &str,
-    workset_id: &str,
-    cover_key: &str,
-) -> ComicInfo {
-    //
-    let time = OffsetDateTime::now_utc();
-
-    ComicInfo {
-        id: id.into(),
-        workset_id: workset_id.into(),
-        index: 0,
-        title: "comic".into(),
-        author: "author".into(),
-        description: None,
-        cover_key: Some(cover_key.into()),
-        is_cover_uploaded: Some(true),
-        cover_version: Some(1),
-        cover_hash: Some(ImageHash::default()),
-        cover_ext: Some(ImageExt::Png),
-        chapter_count: 0,
-        creator_id: "user-1".into(),
-        workset: None,
-        team: None,
-        creator: None,
-        last_active_at: time,
-        archived_at: None,
-        created_at: time,
-        updated_at: time,
     }
 }
 
@@ -151,11 +88,6 @@ fn user(id: &str, is_sadmin: bool) -> UserInfo {
         id: id.into(),
         qid: id.into(),
         nickname: id.into(),
-        avatar_key: None,
-        is_avatar_uploaded: None,
-        avatar_version: None,
-        avatar_hash: None,
-        avatar_ext: None,
         is_sadmin,
         last_active_at: time,
         created_at: time,
@@ -176,20 +108,6 @@ fn list_instr(
     }
 }
 
-// Build avatar-reservation instr with fixed byte length and hash.
-fn reserve_instr(file_ext: &str) -> ReserveTeamAvatarInstr {
-    ReserveTeamAvatarInstr {
-        image_hash: ImageHash::new([1; 32]),
-        new_byte_len: 4096,
-        ext: ImageExt::parse(file_ext).unwrap(),
-    }
-}
-
-// Build mark-upload instr targeting a specific cover version.
-fn mark_instr(image_version: u32) -> MarkTeamAvatarUploadedInstr {
-    MarkTeamAvatarUploadedInstr { image_version }
-}
-
 // Build update instr carrying new team name and description.
 fn update_instr(
     id: &str,
@@ -201,22 +119,6 @@ fn update_instr(
         name: name.into(),
         description: description.into(),
     }
-}
-
-// Count deferred image-delete prom records for a specific object key.
-fn count_delete_records(records: &[MockPromRecord], object_key: &str) -> usize {
-    records
-        .iter()
-        .filter(|record| {
-            matches!(
-                record.payload(),
-                TaskPayload::Image {
-                    payload: ImagePayload::Delete { object_key: key },
-                }
-                    if key == object_key
-            )
-        })
-        .count()
 }
 
 #[tokio::test]
@@ -302,34 +204,17 @@ async fn create_propagates_repo_failure() {
 }
 
 #[tokio::test]
-async fn get_info_returns_uploaded_avatar_url() {
+async fn get_info_returns_team_without_avatar() {
     //
     let mock = Mock::new();
 
-    mock.seed_team(team_with_avatar(
-        "team-1",
-        "Team",
-        "Desc",
-        "avatar-key",
-        true,
-        2,
-    ));
+    mock.seed_team(team("team-1", "Team", "Desc"));
 
     let val = get_info((&mock, &mock), "team-1".into()).await.unwrap();
 
     assert_eq!(val.id, "team-1");
 
-    assert_eq!(
-        val.avatar_url.as_deref(),
-        Some("https://test.local/get/avatar-key")
-    );
-
-    assert_eq!(
-        val.avatar_thumbnail_url.as_deref(),
-        Some(
-            "https://test.local/cdn-cgi/image/width=300,fit=scale-down,quality=80,format=auto,metadata=none/avatar-key"
-        )
-    );
+    assert!(val.avatar_url.is_none());
 }
 
 #[tokio::test]

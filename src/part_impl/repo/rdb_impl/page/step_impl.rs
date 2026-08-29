@@ -8,28 +8,24 @@ use diesel_async::RunQueryDsl as _;
 use time::OffsetDateTime;
 use tracing::instrument;
 
+use poprako_rdb_core::RdbConn;
 use poprako_util::i18n::trl;
 
-use crate::complex::page::PageComplex;
 use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::unit::UnitCountMetrics;
-use crate::model::write::page::{
-    PageEntry, PageImageReservation, PageManifestRepl,
-};
+use crate::model::write::page::{PageEntry, PageManifestRepl};
 use crate::part_impl::repo::rdb_impl::entity::page::{
     PageAspectRow, PageEntryRow, PageInfoRow,
 };
 use crate::part_impl::repo::rdb_impl::numeric::i32_from_usize;
 use crate::part_impl::repo::rdb_impl::schema::t_page::dsl::{
-    f_chapter_id, f_id, f_image_extension, f_image_hash, f_image_key,
-    f_image_uploaded, f_image_version, f_index, f_updated_at, t_page,
+    f_chapter_id, f_id, f_index, f_updated_at, t_page,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{
     f_page_id as unit_f_page_id, t_unit,
 };
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::shared::RdbConn;
-use crate::shared::result::{diesel, next_version};
+use crate::shared::result::diesel;
 
 /// Load a single page info by ID.
 #[instrument(level = "info", skip_all)]
@@ -168,16 +164,9 @@ pub async fn update_manifest(
     //
     let now = OffsetDateTime::now_utc();
 
-    let image_hash = update.image_hash.bytes();
-
     let row = diesel::update(t_page.filter(f_id.eq(&update.id)))
         .set((
             f_index.eq(i32_from_usize(update.index, "t_page.f_index")?),
-            f_image_key.eq(update.image_key.as_deref()),
-            f_image_uploaded.eq(update.is_image_uploaded),
-            f_image_version.eq(i64::from(update.image_version)),
-            f_image_hash.eq(image_hash.to_vec()),
-            f_image_extension.eq(update.image_ext.suffix()),
             f_updated_at.eq(now),
         ))
         .returning(PageInfoRow::as_returning())
@@ -186,53 +175,6 @@ pub async fn update_manifest(
         .map_err(diesel)?;
 
     row.try_into()
-}
-
-/// Invalidates every page image identity after chapter publication.
-#[instrument(level = "info", skip_all)]
-pub async fn clear_images_for_publish(
-    conn: &mut RdbConn,
-    chapter_id: &str,
-) -> BaseRest<Vec<String>> {
-    //
-    let rows = t_page
-        .filter(f_chapter_id.eq(chapter_id))
-        .select(PageInfoRow::as_select())
-        .order_by((f_index.asc(), f_id.asc()))
-        .for_update()
-        .load::<PageInfoRow>(conn)
-        .await
-        .map_err(diesel)?;
-
-    let page_infos = rows
-        .into_iter()
-        .map(TryInto::try_into)
-        .collect::<BaseRest<Vec<PageInfo>>>()?;
-
-    let object_keys = page_infos
-        .iter()
-        .filter_map(|page_info| page_info.image_key.clone())
-        .collect::<Vec<_>>();
-
-    let now = OffsetDateTime::now_utc();
-
-    for page_info in page_infos {
-        //
-        diesel::update(t_page.filter(f_id.eq(&page_info.id)))
-            .set((
-                f_image_key.eq(None::<String>),
-                f_image_uploaded.eq(None::<bool>),
-                f_image_version.eq(None::<i64>),
-                f_image_hash.eq(None::<Vec<u8>>),
-                f_image_extension.eq(None::<String>),
-                f_updated_at.eq(now),
-            ))
-            .execute(conn)
-            .await
-            .map_err(diesel)?;
-    }
-
-    accept(object_keys)
 }
 
 /// Query the lowest-index page info for each requested chapter.
@@ -274,161 +216,6 @@ pub async fn create_batch(
         .map_err(diesel)?;
 
     rows.into_iter().map(TryInto::try_into).collect()
-}
-
-/// Reserve a new image slot for a page: bump version, generate object key,
-/// and return the reservation with previous key for cleanup.
-#[instrument(level = "info", skip_all)]
-pub async fn reserve_image(
-    conn: &mut RdbConn,
-    id: &str,
-    file_ext: &str,
-) -> BaseRest<PageImageReservation> {
-    //
-    let now = OffsetDateTime::now_utc();
-
-    let (chapter_id, prev_key, raw_version) = t_page
-        .filter(f_id.eq(id))
-        .select((f_chapter_id, f_image_key, f_image_version))
-        .for_update()
-        .get_result::<(String, Option<String>, Option<i64>)>(conn)
-        .await
-        .map_err(diesel)?;
-
-    let image_version = next_version(raw_version.unwrap_or(0))?;
-
-    let object_key =
-        PageComplex::gen_image_key(&chapter_id, id, image_version, file_ext);
-
-    diesel::update(t_page.filter(f_id.eq(id)))
-        .set((
-            f_image_key.eq(Some(&object_key)),
-            f_image_uploaded.eq(false),
-            f_image_version.eq(i64::from(image_version)),
-            f_updated_at.eq(now),
-        ))
-        .execute(conn)
-        .await
-        .map_err(diesel)?;
-
-    accept(PageImageReservation {
-        object_key,
-        prev_object_key: prev_key,
-        image_version,
-    })
-}
-
-/// Mark a page's image as successfully uploaded, checking version staleness.
-#[instrument(level = "info", skip_all)]
-pub async fn mark_image_uploaded(
-    conn: &mut RdbConn,
-    id: &str,
-    version: u32,
-    image_key: Option<&str>,
-) -> BaseRest<()> {
-    //
-    let now = OffsetDateTime::now_utc();
-
-    let affected = match image_key {
-        //
-        Some(image_key) => {
-            //
-            diesel::update(
-                t_page
-                    .filter(f_id.eq(id))
-                    .filter(f_image_version.eq(i64::from(version)))
-                    .filter(f_image_key.eq(image_key)),
-            )
-            .set((f_image_uploaded.eq(true), f_updated_at.eq(now)))
-            .execute(conn)
-            .await
-        }
-
-        None => {
-            //
-            diesel::update(
-                t_page
-                    .filter(f_id.eq(id))
-                    .filter(f_image_version.eq(i64::from(version))),
-            )
-            .set((f_image_uploaded.eq(true), f_updated_at.eq(now)))
-            .execute(conn)
-            .await
-        }
-    }
-    .map_err(diesel)?;
-
-    if affected == 0 {
-        //
-        let err_message = trl("error-stale-page-image-upload");
-
-        tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
-            err_message = %err_message,
-            page_id = %id,
-            image_version = version,
-            image_key_present = image_key.is_some(),
-            image_uploaded = true,
-            affected,
-            stage = "mark_image_uploaded",
-            "expected error: stale page image upload",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message: err_message,
-        });
-    }
-
-    accept(())
-}
-
-/// Sets the verified upload flag for one current page image identity.
-#[instrument(level = "info", skip_all)]
-pub async fn set_image_uploaded(
-    conn: &mut RdbConn,
-    id: &str,
-    version: u32,
-    image_key: &str,
-    image_uploaded: bool,
-) -> BaseRest<()> {
-    //
-    let now = OffsetDateTime::now_utc();
-
-    let affected = diesel::update(
-        t_page
-            .filter(f_id.eq(id))
-            .filter(f_image_version.eq(i64::from(version)))
-            .filter(f_image_key.eq(image_key)),
-    )
-    .set((f_image_uploaded.eq(image_uploaded), f_updated_at.eq(now)))
-    .execute(conn)
-    .await
-    .map_err(diesel)?;
-
-    if affected == 0 {
-        //
-        let err_message = trl("error-stale-page-image-upload");
-
-        tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
-            err_message = %err_message,
-            page_id = %id,
-            image_version = version,
-            image_key_present = true,
-            image_uploaded,
-            affected,
-            stage = "set_image_uploaded",
-            "expected error: stale page image upload",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message: err_message,
-        });
-    }
-
-    accept(())
 }
 
 /// Persist unit counters (total, translated, proofread) onto a page row.

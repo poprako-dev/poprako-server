@@ -5106,7 +5106,7 @@
       },
       "ComicInfoView": {
         "type": "object",
-        "description": "Presentation-ready comic information.\n\nMirrors [`ComicInfo`] but converts timestamps to Unix milliseconds and\nresolves the cover key to a signed download URL via [`ImagePool`] when\nthe cover has been uploaded.\n\nConstruct via [`ComicInfoView::from_model`] — the conversion requires\nan [`ImagePool`] instance for URL signing.\n\n[`ComicInfo`]: crate::model::read::proj::comic::ComicInfo",
+        "description": "Presentation-ready comic information.\n\nMirrors [`ComicInfo`], converts timestamps to Unix milliseconds, and\naccepts object URLs already resolved by the use-case layer.\n\n[`ComicInfo`]: crate::model::read::proj::comic::ComicInfo",
         "required": [
           "id",
           "workset_id",
@@ -5137,13 +5137,6 @@
             "type": "integer",
             "description": "Total number of chapters in this comic.",
             "minimum": 0
-          },
-          "cover_thumbnail_url": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Resolved signed download URL for the cover thumbnail, or [`None`] if\nno cover has been uploaded."
           },
           "cover_url": {
             "type": [
@@ -6074,7 +6067,7 @@
           },
           "data": {
             "type": "object",
-            "description": "Presentation-ready comic information.\n\nMirrors [`ComicInfo`] but converts timestamps to Unix milliseconds and\nresolves the cover key to a signed download URL via [`ImagePool`] when\nthe cover has been uploaded.\n\nConstruct via [`ComicInfoView::from_model`] — the conversion requires\nan [`ImagePool`] instance for URL signing.\n\n[`ComicInfo`]: crate::model::read::proj::comic::ComicInfo",
+            "description": "Presentation-ready comic information.\n\nMirrors [`ComicInfo`], converts timestamps to Unix milliseconds, and\naccepts object URLs already resolved by the use-case layer.\n\n[`ComicInfo`]: crate::model::read::proj::comic::ComicInfo",
             "required": [
               "id",
               "workset_id",
@@ -6105,13 +6098,6 @@
                 "type": "integer",
                 "description": "Total number of chapters in this comic.",
                 "minimum": 0
-              },
-              "cover_thumbnail_url": {
-                "type": [
-                  "string",
-                  "null"
-                ],
-                "description": "Resolved signed download URL for the cover thumbnail, or [`None`] if\nno cover has been uploaded."
               },
               "cover_url": {
                 "type": [
@@ -7046,13 +7032,6 @@
                   }
                 ]
               },
-              "image_thumbnail_url": {
-                "type": [
-                  "string",
-                  "null"
-                ],
-                "description": "Presigned download URL for the thumbnail, if uploaded."
-              },
               "image_url": {
                 "type": [
                   "string",
@@ -7334,7 +7313,7 @@
           },
           "data": {
             "type": "object",
-            "description": "Presentation-ready team profile information.\n\nConverts the raw [`TeamInfo`] timestamps to Unix milliseconds and\nresolves the avatar key to a signed download URL via [`ImagePool`] when\nthe avatar has been uploaded.",
+            "description": "Presentation-ready team profile information.\n\nConverts raw [`TeamInfo`] timestamps to Unix milliseconds and accepts an\navatar URL already resolved by the use-case layer.",
             "required": [
               "id",
               "name",
@@ -7343,13 +7322,6 @@
               "updated_at"
             ],
             "properties": {
-              "avatar_thumbnail_url": {
-                "type": [
-                  "string",
-                  "null"
-                ],
-                "description": "Signed avatar thumbnail download URL, when one has been uploaded."
-              },
               "avatar_url": {
                 "type": [
                   "string",
@@ -7551,7 +7523,7 @@
           },
           "data": {
             "type": "object",
-            "description": "Presentation-ready user profile information.\n\nConverts the raw [`UserInfo`] timestamps to Unix milliseconds and\nresolves the avatar key to a signed download URL via [`ImagePool`] when\nthe avatar has been uploaded.",
+            "description": "Presentation-ready user profile information.\n\nConverts raw [`UserInfo`] timestamps to Unix milliseconds and accepts an\navatar URL already resolved by the use-case layer.",
             "required": [
               "id",
               "nickname",
@@ -7562,13 +7534,6 @@
               "updated_at"
             ],
             "properties": {
-              "avatar_thumbnail_url": {
-                "type": [
-                  "string",
-                  "null"
-                ],
-                "description": "Resolved signed download URL for the avatar thumbnail, or [`None`] if\nno avatar has been uploaded."
-              },
               "avatar_url": {
                 "type": [
                   "string",
@@ -8302,13 +8267,6 @@
                     }
                   ]
                 },
-                "image_thumbnail_url": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
-                  "description": "Presigned download URL for the thumbnail, if uploaded."
-                },
                 "image_url": {
                   "type": [
                     "string",
@@ -8442,7 +8400,7 @@
             "type": "array",
             "items": {
               "type": "object",
-              "description": "Presentation-ready team profile information.\n\nConverts the raw [`TeamInfo`] timestamps to Unix milliseconds and\nresolves the avatar key to a signed download URL via [`ImagePool`] when\nthe avatar has been uploaded.",
+              "description": "Presentation-ready team profile information.\n\nConverts raw [`TeamInfo`] timestamps to Unix milliseconds and accepts an\navatar URL already resolved by the use-case layer.",
               "required": [
                 "id",
                 "name",
@@ -8451,13 +8409,6 @@
                 "updated_at"
               ],
               "properties": {
-                "avatar_thumbnail_url": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
-                  "description": "Signed avatar thumbnail download URL, when one has been uploaded."
-                },
                 "avatar_url": {
                   "type": [
                     "string",
@@ -9619,13 +9570,6 @@
               }
             ]
           },
-          "image_thumbnail_url": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Presigned download URL for the thumbnail, if uploaded."
-          },
           "image_url": {
             "type": [
               "string",
@@ -10018,7 +9962,7 @@
       },
       "TeamInfoView": {
         "type": "object",
-        "description": "Presentation-ready team profile information.\n\nConverts the raw [`TeamInfo`] timestamps to Unix milliseconds and\nresolves the avatar key to a signed download URL via [`ImagePool`] when\nthe avatar has been uploaded.",
+        "description": "Presentation-ready team profile information.\n\nConverts raw [`TeamInfo`] timestamps to Unix milliseconds and accepts an\navatar URL already resolved by the use-case layer.",
         "required": [
           "id",
           "name",
@@ -10027,13 +9971,6 @@
           "updated_at"
         ],
         "properties": {
-          "avatar_thumbnail_url": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Signed avatar thumbnail download URL, when one has been uploaded."
-          },
           "avatar_url": {
             "type": [
               "string",
@@ -10952,7 +10889,7 @@
       },
       "UserInfoView": {
         "type": "object",
-        "description": "Presentation-ready user profile information.\n\nConverts the raw [`UserInfo`] timestamps to Unix milliseconds and\nresolves the avatar key to a signed download URL via [`ImagePool`] when\nthe avatar has been uploaded.",
+        "description": "Presentation-ready user profile information.\n\nConverts raw [`UserInfo`] timestamps to Unix milliseconds and accepts an\navatar URL already resolved by the use-case layer.",
         "required": [
           "id",
           "nickname",
@@ -10963,13 +10900,6 @@
           "updated_at"
         ],
         "properties": {
-          "avatar_thumbnail_url": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Resolved signed download URL for the avatar thumbnail, or [`None`] if\nno avatar has been uploaded."
-          },
           "avatar_url": {
             "type": [
               "string",

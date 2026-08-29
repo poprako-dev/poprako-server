@@ -5,8 +5,9 @@ use diesel_async::RunQueryDsl as _;
 use time::OffsetDateTime;
 use tracing::instrument;
 
+use poprako_rdb_core::RdbConn;
+
 use crate::result::{BaseRest, accept};
-use crate::shared::RdbConn;
 use crate::shared::result::diesel;
 use crate::value::comic_archive::ComicArchiveMonth;
 
@@ -21,7 +22,6 @@ pub async fn list_payloads(
     // Queryable projection row for one archive slot.
     #[derive(Queryable)]
     struct ArchivePayloadRow {
-        //
         // UTC timestamp when the archive slot was created.
         created_at: OffsetDateTime,
         // Serialized payload snapshot JSON for a retention slot.

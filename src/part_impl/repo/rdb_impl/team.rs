@@ -1,7 +1,5 @@
 //! RDB-backed team repository.
 
-// Avatar reservation and upload state.
-mod avatar;
 // Row locking and workset index allocation.
 mod coordination;
 // Team lifecycle and profile persistence.
@@ -17,17 +15,12 @@ use poprako_orchestra::{AtLeast, Level, Run, Step};
 use tracing::instrument;
 
 use crate::model::read::proj::team::TeamInfo;
-use crate::model::write::team::TeamAvatarReservation;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::team::{
     AllocTeamWorksetIndex, CreateTeam, DeleteTeam, GetTeamInfo,
-    GetTeamInfoExcluded, ListTeamInfos, LockTeam, ReserveTeamAvatar,
-    UpdateTeam,
+    GetTeamInfoExcluded, ListTeamInfos, LockTeam, UpdateTeam,
 };
 use crate::part_impl::repo::HybRepo;
-use crate::part_impl::repo::rdb_impl::team::avatar::{
-    mark_avatar_uploaded, reserve_avatar,
-};
 use crate::part_impl::repo::rdb_impl::team::coordination::{
     increment_workset_next_index, lock_team,
 };
@@ -102,18 +95,6 @@ impl Run<UpdateTeam<'_>> for HybRepo {
             UpdateTeam::Info { repl } => {
                 submit_query!(self.core, update_info, repl)
             }
-
-            UpdateTeam::MarkAvatarUploaded { repl } => {
-                //
-                submit_query!(
-                    self.core,
-                    mark_avatar_uploaded,
-                    &repl.id,
-                    repl.avatar_version,
-                    repl.avatar_key.as_deref(),
-                    repl.is_avatar_uploaded
-                )
-            }
         }
     }
 }
@@ -162,42 +143,7 @@ where
             UpdateTeam::Info { repl } => {
                 update_info(context.conn(), repl).await
             }
-
-            UpdateTeam::MarkAvatarUploaded { repl } => {
-                //
-                mark_avatar_uploaded(
-                    context.conn(),
-                    &repl.id,
-                    repl.avatar_version,
-                    repl.avatar_key.as_deref(),
-                    repl.is_avatar_uploaded,
-                )
-                .await
-            }
         }
-    }
-}
-
-impl<L> Step<ReserveTeamAvatar<'_>, RdbContext<L>> for HybRepo
-where
-    L: Level + Send + AtLeast<ReptRead>,
-{
-    // Report avatar-reservation validation and mutation errors through base error.
-    type Level = ReptRead;
-
-    // Defines the adapter error exposed by this operation.
-    type Error = BaseError;
-
-    #[instrument(level = "info", skip_all)]
-    // Reserve the next avatar slot and return upload reservation metadata.
-    async fn step(
-        &self,
-        context: &mut RdbContext<L>,
-        oper: &ReserveTeamAvatar<'_>,
-    ) -> BaseRest<TeamAvatarReservation> {
-        //
-        reserve_avatar(context.conn(), oper.id, oper.image_hash, oper.image_ext)
-            .await
     }
 }
 

@@ -21,7 +21,7 @@ import tree_sitter
 import tree_sitter_rust
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
-from production_source import production_source
+from production_source import production_files, production_source
 
 
 DEFAULT_ROOT = Path(__file__).parents[2]
@@ -59,7 +59,7 @@ def file_module(path: Path, root: Path) -> tuple[str, ...]:
 
 def rust_files(root: Path) -> list[RustFile]:
     complex_dir = root / "src" / "complex"
-    paths = sorted(complex_dir.rglob("*.rs")) if complex_dir.is_dir() else []
+    paths = production_files(root, "src/complex") if complex_dir.is_dir() else []
     root_module = root / "src" / "complex.rs"
 
     if root_module.is_file():

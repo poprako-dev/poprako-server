@@ -12,7 +12,6 @@ use utoipa::ToSchema;
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct SystemMailInfoView {
-    //
     /// Unique identifier.
     pub id: String,
 

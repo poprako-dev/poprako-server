@@ -17,7 +17,7 @@ use crate::part_impl::repo::mock_impl::chapter::{
 use crate::part_impl::repo::mock_impl::nucl::apply_signed_delta;
 use crate::part_impl::repo::mock_impl::{Mock, MockContext, expected, now};
 use crate::result::{BaseError, BaseRest, accept};
-use crate::value::chapter::{Stage, StagePhase};
+use crate::value::chapter::stage::{Stage, StagePhase};
 
 impl<'a> Step<CompleteChapterRawProvide<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
@@ -59,14 +59,7 @@ impl<'a> Step<CompleteChapterRawProvide<'a>, MockContext> for Mock {
             .filter(|page_info| page_info.chapter_id == oper.id)
             .count();
 
-        let all_pages_uploaded = page_count > 0
-            && context.state.pages.iter().all(|page_info| {
-                //
-                page_info.chapter_id != oper.id
-                    || page_info.is_image_uploaded.unwrap_or(false)
-            });
-
-        if !all_pages_uploaded {
+        if page_count == 0 {
             return accept(false);
         }
 

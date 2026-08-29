@@ -8,7 +8,7 @@ use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
 use crate::part::repo::oper::chapter::StartChapterStage;
 use crate::part::repo::oper::chapter_workflow_record::CreateChapterWorkflowRecords;
 use crate::result::{BaseRest, accept};
-use crate::value::chapter::{Stage, StagePhase};
+use crate::value::chapter::stage::{Stage, StagePhase};
 use crate::value::chapter_workflow_record::{
     ChapterWorkflowRecordOrigin, ChapterWorkflowRecordPayload,
 };
