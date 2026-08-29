@@ -1,3 +1,6 @@
+#[cfg(test)]
+mod tests;
+
 use std::borrow::Cow;
 use std::collections::hash_map::{HashMap, RandomState};
 use std::sync::LazyLock;
@@ -10,6 +13,7 @@ static_loader! {
     static LOCALES = {
         locales: "locales",
         fallback_language: "zh-CN",
+        customise: |bundle| bundle.set_use_isolating(false),
     };
 }
 

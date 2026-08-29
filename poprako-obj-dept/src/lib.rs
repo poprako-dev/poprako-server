@@ -22,6 +22,8 @@
 #![allow(clippy::unnecessary_wraps)]
 #![allow(clippy::uninlined_format_args)]
 
+/// Generic actor lifecycle.
+pub mod actor;
 /// Immutable logical object identities.
 pub mod key;
 /// Object metadata, upload capability, and task values.
@@ -35,9 +37,6 @@ pub mod prom;
 /// Rest and error types for object operations.
 pub mod rest;
 
-#[cfg(feature = "rdb_impl")]
-/// Generic actor lifecycle and state rules.
-pub mod actor;
 #[cfg(feature = "rdb_impl")]
 /// Diesel-backed object contract.
 pub mod rdb_impl;

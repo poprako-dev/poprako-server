@@ -13,9 +13,6 @@ rdb_impl = [
     "dep:diesel-async",
     "dep:poprako-obj-dept-macro",
     "dep:poprako-rdb-core",
-    "dep:tokio",
-    "dep:tokio-util",
-    "dep:tracing",
 ]
 
 [dependencies]
@@ -27,7 +24,7 @@ poprako-obj-dept-macro = { path = "../poprako-obj-dept-macro", optional = true }
 poprako-rdb-core = { path = "../poprako-rdb-core", optional = true }
 serde = { version = "1.0.228", features = ["derive"] }
 time = "0.3.47"
-tracing = { version = "0.1.44", optional = true }
-tokio = { version = "1.52.1", features = ["macros", "rt", "sync", "time"], optional = true }
-tokio-util = { version = "0.7.18", features = ["rt"], optional = true }
+tracing = "0.1.44"
+tokio = { version = "1.52.1", features = ["macros", "rt", "sync", "time"] }
+tokio-util = { version = "0.7.18", features = ["rt"] }
 url = "2.5.8"

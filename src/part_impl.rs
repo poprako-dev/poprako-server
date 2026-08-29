@@ -6,8 +6,6 @@ pub mod effect;
 pub mod nucl;
 /// Reliable remote-object lifecycle implementation.
 pub mod obj_dept;
-/// Physical object-storage implementation.
-pub mod obj_pool;
 /// Prom (deferred action) implementation (RDBMS-based, mock).
 pub mod prom;
 /// Repository implementations (RDBMS, mock).

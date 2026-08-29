@@ -14,9 +14,11 @@ use tokio::task::JoinHandle;
 use tokio::time::sleep;
 use tracing::instrument;
 
+use poprako_obj_dept::ObjDept;
+
 use crate::part::effect::Develop;
+use crate::part::obj_dept::PageImage;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
-use crate::part_impl::obj_dept::AppObjDept;
 use crate::part_impl::prom::rdb_impl::actor::base::{
     RdbPromActor, dispatch_payload,
 };
@@ -28,6 +30,7 @@ use crate::part_impl::prom::rdb_impl::repo::{
 };
 use crate::part_impl::repo::HybRepo;
 use crate::result::{BaseError, BaseRest};
+use crate::shared::RdbContext;
 
 // Constant definition for `WORKER_COUNT`.
 const WORKER_COUNT: usize = 4;
@@ -82,8 +85,9 @@ pub fn enforce_retry_limit(
     }
 }
 
-impl<D> RdbPromActor<RdbNucl, HybRepo, AppObjDept, D>
+impl<O, D> RdbPromActor<RdbNucl, HybRepo, O, D>
 where
+    O: ObjDept<PageImage, RdbContext> + Send + Sync + 'static,
     D: Develop + Send + Sync + 'static,
 {
     /// Runs the polling supervisor and drains in-flight worker tasks on shutdown.

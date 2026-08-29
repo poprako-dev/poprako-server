@@ -21,9 +21,9 @@ poprako-rdb-core <- poprako-obj-dept <- poprako-server
 ```
 
 `poprako-rdb-core` contains neutral RDB mechanics. `poprako-obj-dept` contains
-the `ObjPool`, `ObjProm`, and `ObjPromDefer` traits, values, operations, actor,
-typed Diesel glue, and declaration macros. `poprako-server` supplies the R2
-pool, generated schema, business markers, concrete object manifest, concrete
+the `ObjPool`, `ObjProm`, and `ObjPromDefer` support traits, values, operations,
+actor, typed Diesel glue, and declaration macros. `poprako-server` supplies the
+private R2 support implementation, generated schema, business markers, concrete object manifest, concrete
 RDB prom declaration, and the total `NormObjDept` composition.
 
 No image-specific pool abstraction or server application port sits between
@@ -108,6 +108,9 @@ Expired processing work returns to pending. Remote failures have no attempt
 limit.
 
 ## Single actor
+
+The generic actor lifecycle is always compiled. Only its typed RDB handler
+support lives under `actor::rdb_impl` and follows the `rdb_impl` feature.
 
 `ObjActor::new` immediately spawns exactly one event loop and returns one
 `ObjActorDesc`. The loop claims globally across every topic and currently

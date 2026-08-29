@@ -5,15 +5,14 @@ use std::sync::Arc;
 use anyhow::Context as _;
 
 use poprako_server::{
-    AppConfig, AsyncEffectDevelop, Harn, HybNucl, HybRepo, JwtAuth, R2ObjPool,
-    RdbContext, RdbCore, RdbNucl, RdbProm, ReptRead, Sched, Serial,
-    new_obj_dept,
+    AppConfig, AsyncEffectDevelop, Harn, HybNucl, HybRepo, JwtAuth, RdbContext,
+    RdbCore, RdbNucl, RdbProm, ReptRead, Serial, new_obj_dept,
 };
 
 /// Application entry point.
 ///
 /// Parses CLI flags, loads configuration, initializes runtime dependencies
-/// (database pool, authentication, image pool, effect dispatcher), wires them
+/// (database pool, authentication, object department, effect dispatcher), wires them
 /// into an application harness, and launches the HTTP server. Pass `--swagger`
 /// to print the `OpenAPI` spec to stdout instead of launching the server.
 #[tokio::main]
@@ -51,30 +50,22 @@ async fn main() -> anyhow::Result<()> {
 
     let repo = HybRepo::new(core.clone());
 
-    let (auth, obj_pool) = (JwtAuth::from_env()?, R2ObjPool::from_env()?);
+    let auth = JwtAuth::from_env()?;
 
-    let obj_dept = new_obj_dept(core.clone(), obj_pool);
+    let obj_dept = new_obj_dept(core.clone())?;
 
     let develop = AsyncEffectDevelop::new::<RdbContext<ReptRead>, _>(
         Arc::new(HybRepo::new(core.clone())),
         NonZeroUsize::new(1024).context("buf_size cannot be 0")?,
     );
 
-    let (prom, sched) = (
-        RdbProm::new(core.clone(), obj_dept.clone(), develop.clone()),
-        Sched::new(core.clone()),
-    );
+    let prom = RdbProm::new();
 
     let harn = Harn::new(config, (nucl, repo, obj_dept, prom, auth, develop));
 
     let serve_rest = poprako_server::serve(harn.clone(), http_addr).await;
 
-    tokio::join!(
-        harn.obj_dept().close(),
-        harn.prom().close(),
-        harn.develop().close(),
-        sched.close(),
-    );
+    tokio::join!(harn.obj_dept().close(), harn.develop().close(),);
 
     serve_rest
 }

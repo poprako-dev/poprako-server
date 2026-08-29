@@ -188,14 +188,14 @@ pub fn expand_items(input: TokenStream) -> Result<TokenStream> {
             }
         }
 
-        impl<Pool, Prom> #dept<Pool, Prom>
+        impl<P, M> #dept<P, M>
         where
-            Pool: ::poprako_obj_dept::pool::ObjPool,
-            Prom: ::poprako_obj_dept::prom::ObjProm,
+            P: ::poprako_obj_dept::pool::ObjPool,
+            M: ::poprako_obj_dept::prom::ObjProm,
         {
             async fn dispatch(
                 core: ::poprako_rdb_core::RdbCore,
-                pool: Pool,
+                pool: P,
                 task: ::poprako_obj_dept::model::task::ObjPromTask,
             ) -> ::poprako_obj_dept::rest::ObjDeptRest<
                 ::poprako_obj_dept::model::task::ObjTaskAction,
@@ -228,12 +228,12 @@ macro_rules! expand_op_impl_tokens {
             format_ident!("__obj_dept_{}", to_snake_case(&obj.to_string()),);
 
         quote! {
-        impl<'a, Pool, Prom> ::poprako_orchestra::Run<
+        impl<'a, P, M> ::poprako_orchestra::Run<
             ::poprako_obj_dept::oper::GetObjMeta<'a, #obj>,
-        > for #dept<Pool, Prom>
+        > for #dept<P, M>
         where
-            Pool: ::poprako_obj_dept::pool::ObjPool,
-            Prom: ::poprako_obj_dept::prom::ObjProm,
+            P: ::poprako_obj_dept::pool::ObjPool,
+            M: ::poprako_obj_dept::prom::ObjProm,
         {
             type Error = ::poprako_obj_dept::rest::ObjDeptError;
 
@@ -255,14 +255,14 @@ macro_rules! expand_op_impl_tokens {
             }
         }
 
-        impl<'a, L, Pool, Prom> ::poprako_orchestra::Step<
+        impl<'a, L, P, M> ::poprako_orchestra::Step<
             ::poprako_obj_dept::oper::GetObjMeta<'a, #obj>,
             ::poprako_rdb_core::RdbContext<L>,
-        > for #dept<Pool, Prom>
+        > for #dept<P, M>
         where
             L: ::poprako_orchestra::Level + Send,
-            Pool: ::poprako_obj_dept::pool::ObjPool,
-            Prom: ::poprako_obj_dept::prom::ObjProm,
+            P: ::poprako_obj_dept::pool::ObjPool,
+            M: ::poprako_obj_dept::prom::ObjProm,
         {
             type Level = L;
             type Error = ::poprako_obj_dept::rest::ObjDeptError;
@@ -283,12 +283,12 @@ macro_rules! expand_op_impl_tokens {
             }
         }
 
-        impl<'a, Pool, Prom> ::poprako_orchestra::Run<
+        impl<'a, P, M> ::poprako_orchestra::Run<
             ::poprako_obj_dept::oper::GenObjUrl<'a, #obj>,
-        > for #dept<Pool, Prom>
+        > for #dept<P, M>
         where
-            Pool: ::poprako_obj_dept::pool::ObjPool,
-            Prom: ::poprako_obj_dept::prom::ObjProm,
+            P: ::poprako_obj_dept::pool::ObjPool,
+            M: ::poprako_obj_dept::prom::ObjProm,
         {
             type Error = ::poprako_obj_dept::rest::ObjDeptError;
 
@@ -321,14 +321,14 @@ macro_rules! expand_op_impl_tokens {
             }
         }
 
-        impl<'a, L, Pool, Prom> ::poprako_orchestra::Step<
+        impl<'a, L, P, M> ::poprako_orchestra::Step<
             ::poprako_obj_dept::oper::GenObjSlot<'a, #obj>,
             ::poprako_rdb_core::RdbContext<L>,
-        > for #dept<Pool, Prom>
+        > for #dept<P, M>
         where
             L: ::poprako_orchestra::Level + Send,
-            Pool: ::poprako_obj_dept::pool::ObjPool,
-            Prom: ::poprako_obj_dept::prom::ObjProm
+            P: ::poprako_obj_dept::pool::ObjPool,
+            M: ::poprako_obj_dept::prom::ObjProm
                 + ::poprako_obj_dept::prom::ObjPromDefer<
                     ::poprako_rdb_core::RdbContext<L>,
                 >,
@@ -415,14 +415,14 @@ macro_rules! expand_op_impl_tokens {
             }
         }
 
-        impl<'a, L, Pool, Prom> ::poprako_orchestra::Step<
+        impl<'a, L, P, M> ::poprako_orchestra::Step<
             ::poprako_obj_dept::oper::DelObjs<'a, #obj>,
             ::poprako_rdb_core::RdbContext<L>,
-        > for #dept<Pool, Prom>
+        > for #dept<P, M>
         where
             L: ::poprako_orchestra::Level + Send,
-            Pool: ::poprako_obj_dept::pool::ObjPool,
-            Prom: ::poprako_obj_dept::prom::ObjProm
+            P: ::poprako_obj_dept::pool::ObjPool,
+            M: ::poprako_obj_dept::prom::ObjProm
                 + ::poprako_obj_dept::prom::ObjPromDefer<
                     ::poprako_rdb_core::RdbContext<L>,
                 >,

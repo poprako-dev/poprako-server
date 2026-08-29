@@ -45,8 +45,6 @@ mod complex;
 mod config;
 // Inbound request and outbound response DTOs for the HTTP API layer.
 mod data;
-// Fixed production extras outside the port-implementation tree.
-mod extra;
 // Application harness wiring all ports together for production and test use.
 mod harn;
 // Tracing-subscriber initialisation shared across binaries.
@@ -60,7 +58,7 @@ mod part;
 mod part_impl;
 // Root error and result types used across all layers.
 mod result;
-// Shared RDB infrastructure used by port implementations and production extras.
+// Shared RDB infrastructure used by port implementations.
 mod shared;
 
 #[cfg(test)]
@@ -93,15 +91,13 @@ pub use crate::api::http::state::AppHarn;
 pub use crate::config::AppConfig;
 pub use crate::config::http::HttpConfig;
 pub use crate::config::image::ImageConfig;
-pub use crate::extra::sched::Sched;
 pub use crate::harn::Harn;
 pub use crate::log::init_log;
 pub use crate::part::nucl::{ReptRead, Serial};
 pub use crate::part_impl::auth::jwt_impl::JwtAuth;
 pub use crate::part_impl::effect::async_impl::AsyncEffectDevelop;
 pub use crate::part_impl::nucl::rdb_impl::{HybNucl, RdbNucl};
-pub use crate::part_impl::obj_dept::{AppObjDept, NormObjDept, new_obj_dept};
-pub use crate::part_impl::obj_pool::r2_impl::R2ObjPool;
+pub use crate::part_impl::obj_dept::{NormObjDept, new_obj_dept};
 pub use crate::part_impl::prom::rdb_impl::RdbProm;
 pub use crate::part_impl::repo::HybRepo;
 pub use crate::shared::RdbContext;

@@ -3,6 +3,9 @@
 #[cfg(test)]
 mod mock_impl;
 
+// R2 object-storage implementation.
+mod r2_impl;
+
 use poprako_obj_dept::actor::{ObjActor, ObjActorDesc};
 use poprako_obj_dept::pool::ObjPool;
 use poprako_obj_dept::prom::ObjProm;
@@ -13,7 +16,7 @@ use poprako_rdb_core::RdbCore;
 use crate::__impl_mock_obj_dept;
 
 use crate::part::obj_dept::{ComicCover, PageImage, TeamAvatar, UserAvatar};
-use crate::part_impl::obj_pool::r2_impl::R2ObjPool;
+use crate::part_impl::obj_dept::r2_impl::R2ObjPool;
 use crate::part_impl::repo::rdb_impl::schema::{
     t_comic_cover, t_obj_prom_task, t_page_image, t_team_avatar, t_user_avatar,
 };
@@ -48,21 +51,21 @@ objs_def! {
 }
 
 /// Total object department composed from storage and durable-task adapters.
-pub struct NormObjDept<Pool, Prom> {
+pub struct NormObjDept<P = R2ObjPool, M = RdbObjProm> {
     /// Shared relational database core.
     core: RdbCore,
     /// Physical object-storage adapter.
-    pool: Pool,
+    pool: P,
     /// Durable object-task adapter.
-    prom: Prom,
+    prom: M,
     /// Control descriptor for the single actor.
     actor_desc: ObjActorDesc,
 }
 
-impl<Pool, Prom> NormObjDept<Pool, Prom>
+impl<P, M> NormObjDept<P, M>
 where
-    Pool: ObjPool,
-    Prom: ObjProm,
+    P: ObjPool,
+    M: ObjProm,
 {
     /// Cancels the actor and waits for it to finish.
     pub async fn close(&self) {
@@ -73,7 +76,7 @@ where
     }
 
     // Creates the total department and starts its single actor.
-    fn new(core: RdbCore, pool: Pool, prom: Prom) -> Self {
+    fn new(core: RdbCore, pool: P, prom: M) -> Self {
         //
         let actor_core = core.clone();
 
@@ -102,30 +105,13 @@ where
     }
 
     // Returns the physical object-storage adapter.
-    const fn pool(&self) -> &Pool {
+    const fn pool(&self) -> &P {
         &self.pool
     }
 
     // Returns the durable object-task adapter.
-    const fn prom(&self) -> &Prom {
+    const fn prom(&self) -> &M {
         &self.prom
-    }
-}
-
-impl<Pool, Prom> Clone for NormObjDept<Pool, Prom>
-where
-    Pool: Clone,
-    Prom: Clone,
-{
-    // Clones handles without starting another actor.
-    fn clone(&self) -> Self {
-        //
-        Self {
-            core: self.core.clone(),
-            pool: self.pool.clone(),
-            prom: self.prom.clone(),
-            actor_desc: self.actor_desc.clone(),
-        }
     }
 }
 
@@ -143,16 +129,17 @@ macro_rules! __impl_mock_obj_dept_callback {
 __objs_manifest!(__impl_mock_obj_dept_callback);
 
 /// Builds the production `ObjDept` without exposing its actor-side adapter.
-#[must_use]
+///
+/// # Errors
+///
+/// Returns an error when the R2 object-storage configuration is unavailable.
 pub fn new_obj_dept(
     core: RdbCore,
-    pool: R2ObjPool,
-) -> NormObjDept<R2ObjPool, RdbObjProm> {
+) -> anyhow::Result<NormObjDept<R2ObjPool, RdbObjProm>> {
     //
+    let pool = R2ObjPool::from_env()?;
+
     let prom = RdbObjProm::new(core.clone());
 
-    NormObjDept::new(core, pool, prom)
+    Ok(NormObjDept::new(core, pool, prom))
 }
-
-/// Production object department type.
-pub type AppObjDept = NormObjDept<R2ObjPool, RdbObjProm>;
