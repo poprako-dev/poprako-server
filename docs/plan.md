@@ -202,6 +202,19 @@ F: Future<Output = TaskFlow> + Send + 'static
 callback 输入使用 owned `TaskPayload`，不使用 borrowed topic/value，也不额外
 clone topic。
 
+`TaskFlow` 的可见性固定为：
+
+- 定义在 `part_impl::prom::task_flow::TaskFlow`。
+- `task_flow` 与 `TaskFlow` 使用普通 `pub`，但其 ancestor `part_impl` 保持
+  private，因此 library 内的 `harn` 与 RDB actor 都可访问，外部 crate
+  无法命名。
+- 创建 actor 的泛型入口是 `part_impl::prom::rdb_impl` 内部未 root
+  re-export 的 free function，不是 `RdbProm` 的 public associated method。
+- 该内部 free function 才声明 `F: Future<Output = TaskFlow>`；root 公开 API
+  不得泄漏 `TaskFlow`。
+- binary main 只调用 root re-export 的生产组合入口，并且看不到 callback、
+  `TaskFlow` 或 handler 的具体类型。
+
 每条 row 的顺序必须是：
 
 1. supervisor poll row。
@@ -240,7 +253,9 @@ actor 在进入 usecase 前处理。
 
 必须从现有 handler 原样迁移以下行为：
 
-1. 使用独立的 `RdbNucl<ReptRead>::coord` 开启业务事务。
+1. usecase 只接收泛型注入的 `N`，并要求
+   `N: Nucl<Context = RdbContext, Error = BaseError>`；通过 `nucl.coord`
+   开启业务事务。usecase 不引用 concrete `RdbNucl`。
 2. 先锁 Chapter，再读取 Page；锁顺序仍是 Chapter→Page。
 3. 对每个 page 通过 `ObjDept<PageImage, RdbContext>` 读取最新 ObjMeta。
 4. 任一 page 缺失或 `f_is_uploaded == false`，事务正常结束并返回 Wait。
@@ -266,7 +281,9 @@ Invitation 必须继续直接对独立业务 repo 调用 `run_on`：
 ## 8. 生产组合与 Develop 生命周期
 
 生产组合位于 `harn`，因为它是同时看见 usecase 与 part_impl 的 composition
-root。不得让 RDB adapter 反向依赖 usecase。
+root。不得让 RDB adapter 反向依赖 usecase。`harn` 中的生产组合入口使用
+普通 `pub` 并由 crate root re-export 给 binary main；handler、callback 和
+RDB actor 构造 free function 均不做 root re-export。
 
 组合时创建：
 
