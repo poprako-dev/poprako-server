@@ -24,32 +24,6 @@ use crate::result::{BaseError, BaseRest, accept};
 use crate::shared::RdbContext;
 use crate::shared::result::diesel;
 
-// ── Handle ──────────────────────────────────────────────────────────────────
-
-/// Repository used by the prom background actor.
-///
-/// Owns the application repository used by topic actors while also providing
-/// polling, claiming, completion, failure, retry, and recovery operations for
-/// records in `t_local_message`.
-///
-/// [`RdbPromActor`]: super::actor::base::RdbPromActor
-pub struct RdbPromRepo<R> {
-    /// Delegate application repository used by topic actors.
-    repo: R,
-}
-
-impl<R> RdbPromRepo<R> {
-    /// Builds a new prom repository wrapping the given application repo.
-    pub const fn new(repo: R) -> Self {
-        Self { repo }
-    }
-
-    /// Returns the application repository used by topic actors.
-    pub const fn inner(&self) -> &R {
-        &self.repo
-    }
-}
-
 // ── Operations ──────────────────────────────────────────────────────────────
 
 /// Poll the oldest visible pending record from each topic without processing work.
@@ -205,10 +179,24 @@ impl<'a> PurgeCompleted<'a> {
 
 // ── Step impls ──────────────────────────────────────────────────────────────
 
-impl<R, L> Step<PollPending, RdbContext<L>> for RdbPromRepo<R>
+/// Queue repository used by the prom background actor.
+///
+/// Provides polling, claiming, completion, failure, retry, and recovery
+/// operations for records in `t_local_message`.
+///
+/// [`RdbPromActor`]: super::actor::base::RdbPromActor
+pub struct RdbPromRepo;
+
+impl RdbPromRepo {
+    /// Builds the local-message queue repository.
+    pub const fn new() -> Self {
+        Self
+    }
+}
+
+impl<L> Step<PollPending, RdbContext<L>> for RdbPromRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
-    R: Sync,
 {
     // Internal type alias for `Error`.
     type Level = ReptRead;
@@ -272,10 +260,9 @@ where
     }
 }
 
-impl<'a, R, L> Step<ClaimPending<'a>, RdbContext<L>> for RdbPromRepo<R>
+impl<'a, L> Step<ClaimPending<'a>, RdbContext<L>> for RdbPromRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
-    R: Sync,
 {
     // Internal type alias for `Error`.
     type Level = ReptRead;
@@ -318,10 +305,9 @@ where
     }
 }
 
-impl<'a, R, L> Step<CompleteMessage<'a>, RdbContext<L>> for RdbPromRepo<R>
+impl<'a, L> Step<CompleteMessage<'a>, RdbContext<L>> for RdbPromRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
-    R: Sync,
 {
     // Internal type alias for `Error`.
     type Level = ReptRead;
@@ -364,10 +350,9 @@ where
     }
 }
 
-impl<'a, R, L> Step<FailMessage<'a>, RdbContext<L>> for RdbPromRepo<R>
+impl<'a, L> Step<FailMessage<'a>, RdbContext<L>> for RdbPromRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
-    R: Sync,
 {
     // Internal type alias for `Error`.
     type Level = ReptRead;
@@ -410,10 +395,9 @@ where
     }
 }
 
-impl<'a, R, L> Step<RetryMessage<'a>, RdbContext<L>> for RdbPromRepo<R>
+impl<'a, L> Step<RetryMessage<'a>, RdbContext<L>> for RdbPromRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
-    R: Sync,
 {
     // Internal type alias for `Error`.
     type Level = ReptRead;
@@ -459,10 +443,9 @@ where
     }
 }
 
-impl<'a, R, L> Step<ResetStuck<'a>, RdbContext<L>> for RdbPromRepo<R>
+impl<'a, L> Step<ResetStuck<'a>, RdbContext<L>> for RdbPromRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
-    R: Sync,
 {
     // Internal type alias for `Error`.
     type Level = ReptRead;
@@ -525,10 +508,9 @@ where
     }
 }
 
-impl<'a, R, L> Step<PurgeCompleted<'a>, RdbContext<L>> for RdbPromRepo<R>
+impl<'a, L> Step<PurgeCompleted<'a>, RdbContext<L>> for RdbPromRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
-    R: Sync,
 {
     // Internal type alias for `Error`.
     type Level = ReptRead;

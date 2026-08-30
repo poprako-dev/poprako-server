@@ -41,17 +41,13 @@
 
 ### 2.2 RdbProm 直接知道业务实现
 
-当前通用 Prom 的 RDB 实现直接持有具体 ObjDept 和 Develop，并通过
-`RdbPromRepo<R>` 同时持有 queue repo 与业务 repo。这使 RDB queue
-mechanics、业务 usecase 和生产组合混在同一层。
-
-最终处理不是删除业务能力，而是移动所有权：
+当前通用 Prom 的 RDB 实现通过 `RdbPromRepo<R>` 同时持有 queue repo 与
+业务 repo，混淆了持久化队列和业务消费依赖。最终拆分字段所有权：
 
 - `RdbProm` 必须持有 `RdbCore`。
 - `RdbProm` 继续拥有 actor 生命周期。
-- RDB actor 只调用一个静态 callback，不出现 ObjDept、Develop 或具体业务
-  repo 的类型约束。
-- 业务 callback 的长期 owner 持有 ObjDept 和 Develop。
+- `RdbPromRepo` 只处理队列表。
+- RDB actor 直接持有 ObjDept、Develop 和独立业务 repo，并分派 usecase。
 - Chapter 成功后仍通过同一份 Develop 派发 event。
 
 ### 2.3 错误的 unit struct 修改
@@ -77,18 +73,16 @@ usecase::prom
     └── 不依赖 part_impl
 
 harn
-    ├── 组合 usecase::prom
-    ├── 组合 part_impl::prom::rdb_impl
-    └── 创建静态 local-message callback
+    ├── 只保存已组装的应用零件
+    └── 禁止业务逻辑、actor handler、后台任务和构造工厂
 
 part_impl::prom::rdb_impl
     ├── 依赖 RdbCore
     ├── 依赖 t_local_message typed Diesel schema
     ├── 依赖通用 Prom payload
-    ├── 不依赖 ObjDept
-    ├── 不依赖 Develop
-    ├── 不依赖业务 repo
-    ├── 不依赖 usecase
+    ├── RdbProm 只保存 RdbCore 与 actor 生命周期信号
+    ├── RdbPromActor 持有消费端所需的 ObjDept、Develop 和业务 repo
+    ├── RdbPromActor 直接分派 usecase::prom
     └── 不依赖 Sched
 
 part_impl::obj_dept
@@ -98,8 +92,8 @@ part_impl::obj_dept
     └── 与通用 Prom 零依赖
 ```
 
-`part` 仍只放 usecase 通过泛型注入的能力。local-message callback、queue
-repo、actor 和组合胶水都不是 part。
+`part` 仍只放 usecase 通过泛型注入的能力。local-message queue repo、actor
+和构造逻辑都不是 part。
 
 ## 4. RdbProm 的固定职责
 
@@ -121,7 +115,7 @@ RdbProm
 - `close(&self)` 必须可重复、可并发调用。
 - `Drop` 只 cancel，不等待。
 - `done_send.send_replace(true)` 只能发生在四个 worker 全部 join 之后。
-- callback 的泛型类型只存在于构造函数和 spawned future，不进入
+- actor 的 ObjDept、Develop 泛型只存在于构造函数和 spawned future，不进入
   `RdbProm` 字段、Harn 类型或 HTTP state 类型。
 
 RdbProm 的两条数据库路径必须严格隔离：
@@ -147,7 +141,7 @@ queue_repo = RdbPromRepo
 
 `RdbCore::clone()` 必须只共享同一个 pool。禁止重新调用
 `RdbCore::from_env()`，禁止缓存 pooled connection，禁止让 queue context
-跨越业务 callback。
+跨越业务 usecase 调用。
 
 ## 5. Queue repo 拆分
 
@@ -181,14 +175,11 @@ core 或 connection，只实现 `t_local_message` 的 typed Diesel operations。
 - 修改 `LocalMessageEntryRow` 或 `LocalMessageRow` 的列合同
 - 修改 migration 或 generated schema
 
-## 6. RDB actor 的静态 callback
+## 6. RDB actor 的静态业务分派
 
-RDB actor 泛型只表示 callback：
-
-```rust
-H: Fn(TaskPayload) -> F + Send + Sync + 'static
-F: Future<Output = TaskFlow> + Send + 'static
-```
+RDB actor 直接持有静态类型的 ObjDept 与 Develop，并使用自身持有的
+`RdbNucl<ReptRead>` 和 `HybRepo` 调用 `usecase::prom`。不得增加只负责原样
+转发这些依赖的 handler 或 callback。
 
 不得使用：
 
@@ -199,21 +190,17 @@ F: Future<Output = TaskFlow> + Send + 'static
 - `TypeId`
 - runtime handler lookup
 
-callback 输入使用 owned `TaskPayload`，不使用 borrowed topic/value，也不额外
-clone topic。
+actor 从 owned JSON value 解码 `TaskPayload`，不额外 clone topic。
 
 `TaskFlow` 的可见性固定为：
 
 - 定义在 `part_impl::prom::task_flow::TaskFlow`。
 - `task_flow` 与 `TaskFlow` 使用普通 `pub`，但其 ancestor `part_impl` 保持
-  private，因此 library 内的 `harn` 与 RDB actor 都可访问，外部 crate
+  private，因此 library 内的 RDB actor 可访问，外部 crate
   无法命名。
-- 创建 actor 的泛型入口是 `part_impl::prom::rdb_impl` 内部未 root
-  re-export 的 free function，不是 `RdbProm` 的 public associated method。
-- 该内部 free function 才声明 `F: Future<Output = TaskFlow>`；root 公开 API
-  不得泄漏 `TaskFlow`。
-- binary main 只调用 root re-export 的生产组合入口，并且看不到 callback、
-  `TaskFlow` 或 handler 的具体类型。
+- 创建 actor 的泛型入口是 `part_impl::prom::rdb_impl` 的 free function，
+  由 crate root 以 `new_prom` 重导出，不是 `RdbProm` 的 associated method。
+- binary main 只调用 `new_prom`；不存在额外 callback 或 handler 类型。
 
 每条 row 的顺序必须是：
 
@@ -224,11 +211,11 @@ clone topic。
 5. row 发送到对应 worker。
 6. worker 内 clone 当前已有的 JSON value 并反序列化 `TaskPayload`。
 7. worker 内核对 `payload.topic() == row.f_topic`。
-8. malformed JSON 或 topic mismatch 直接产生 `Dead`，不调用业务 callback。
-9. 合法 payload 才调用 callback。
-10. callback 完成后才执行 complete、retry 或 fail 的独立 transaction。
+8. malformed JSON 或 topic mismatch 直接产生 `Dead`，不调用业务 usecase。
+9. 合法 payload 由 actor 直接匹配并调用对应 usecase。
+10. usecase 完成后才执行 complete、retry 或 fail 的独立 transaction。
 
-callback 运行期间不得持有 queue connection。
+usecase 运行期间不得持有 queue connection。
 
 ## 7. 业务 usecase
 
@@ -246,7 +233,7 @@ PromTaskAction
 `Dead` 不属于业务 usecase 输出；malformed JSON 和 topic mismatch 由 RDB
 actor 在进入 usecase 前处理。
 
-组合层把 `PromTaskAction` 一对一映射为 actor 私有的 `TaskFlow`。usecase
+actor 把 `PromTaskAction` 一对一映射为 actor 私有的 `TaskFlow`。usecase
 不得依赖 `TaskFlow` 或任何 part_impl 类型。
 
 ### 7.1 Chapter task
@@ -278,43 +265,39 @@ Invitation 必须继续直接对独立业务 repo 调用 `run_on`：
 - 成功返回 Complete。
 - 失败返回 Retry，并保持原错误文本格式。
 
-## 8. 生产组合与 Develop 生命周期
+## 8. RDB actor 组合与 Develop 生命周期
 
-生产组合位于 `harn`，因为它是同时看见 usecase 与 part_impl 的 composition
-root。不得让 RDB adapter 反向依赖 usecase。`harn` 中的生产组合入口使用
-普通 `pub` 并由 crate root re-export 给 binary main；handler、callback 和
-RDB actor 构造 free function 均不做 root re-export。
+`harn.rs` 仅保存 main 已经完成组装的应用零件。该模块必须通过模块注释明确
+禁止业务逻辑、actor handler、后台任务和 composition factory。
 
-组合时创建：
+`part_impl::prom::rdb_impl::new` 在 Prom adapter 内部创建消费 actor：
 
 ```text
-handler_nucl = RdbNucl<ReptRead>::new(core.clone())
-handler_repo = HybRepo::new(core.clone())
-handler_obj_dept = obj_dept.clone()
-handler_develop = develop.clone()
+queue_nucl = RdbNucl<ReptRead>::new(core.clone())
+queue_repo = RdbPromRepo::new()
+task_repo = HybRepo::new(core.clone())
+actor_obj_dept = obj_dept
+actor_develop = develop
 ```
 
-`handler_repo` 必须使用 `HybRepo::new(core.clone())`，不得 clone Harn 中的
+`task_repo` 必须使用 `HybRepo::new(core.clone())`，不得 clone Harn 中的
 repo；现有 actor 使用独立 process-local map，该行为必须保持。
 
-上述四项放进一个长期存活的 `Arc<LocalMessageHandler<N, R, O, D>>`。
-每次 callback：
-
-- 只执行 `Arc::clone(&handler)`。
-- 绝不 clone `LocalMessageHandler`。
-- 绝不按 task clone Develop。
-- 绝不按 task clone ObjDept。
+`RdbPromActor` 自己校验 topic、匹配 `TaskPayload`、调用 `usecase::prom` 并将
+`PromTaskAction` 映射为队列状态。禁止再创建只做转发的独立 handler。
+每次任务直接借用 `Arc<RdbPromActor<...>>` 内的 ObjDept 与 Develop。绝不按
+task clone Develop 或 ObjDept。
 
 原因：`AsyncEffectDevelop` 的任意 clone 在 Drop 时都会 cancel 共享 token。
-按 task clone 会在第一条任务结束时关闭全局 Develop。长期 `Arc` 必须一直
-存活到四个 worker 全部 drain。
+按 task clone 会在第一条任务结束时关闭全局 Develop。actor 的 `Arc` 必须
+一直存活到四个 worker 全部 drain。
 
 ObjDept 的共享必须恢复既有 `Clone` 语义：只 clone core、pool、prom 和同一
 actor descriptor，不创建第二个 ObjActor。不得重新调用 production factory
 构造第二个 ObjDept。
 
-Harn 仍只持有 usecase 所需的 `RdbProm`、ObjDept 和 Develop。callback 的
-具体类型不进入 Harn 泛型。
+Harn 仍只持有 usecase 所需的 `RdbProm`、ObjDept 和 Develop。actor 的具体
+泛型不进入 Harn。
 
 `main` 的启动顺序与 shutdown 关系保持：
 
@@ -323,7 +306,7 @@ Harn 仍只持有 usecase 所需的 `RdbProm`、ObjDept 和 Develop。callback �
   和 Develop。
 - 不改成顺序关闭。
 
-当前并发关闭可能使 Develop 在 Chapter handler 派发前被 cancel。该行为是
+当前并发关闭可能使 Develop 在 Chapter usecase 派发前被 cancel。该行为是
 现状，本次不得偷偷改善，也不得在文档中声称 event 已实现可靠投递。
 
 ## 9. Actor 状态机冻结
@@ -344,7 +327,7 @@ Harn 仍只持有 usecase 所需的 `RdbProm`、ObjDept 和 Develop。callback �
 - Retry 的 retried count 增量为 1。
 - Wait 的 retried count 增量为 0。
 - `retried_count >= 3` 只把 Retry 转成 Dead，不影响 Wait。
-- retry visible time 为 handler 返回后的当前时间加五分钟。
+- retry visible time 为 usecase 返回后的当前时间加五分钟。
 - reset 以十五分钟 Processing timeout 为界。
 - reset 的 Pending 与 Dead 两个分支都增加 lease。
 - reset 阈值继续使用 `< 3` 与 `>= 3`。
@@ -365,13 +348,13 @@ cancellation 只允许终止 supervisor：
 1. supervisor 看见 token 后退出。
 2. drop 全部 worker senders。
 3. workers 继续处理已经 claim 或已经入队的 row。
-4. callback、Develop 和 final queue mutation 外层不得添加 cancellation
+4. usecase、Develop 和 final queue mutation 外层不得添加 cancellation
    select、timeout 或 abort。
 5. 逐个 await 四个 worker handles。
 6. 所有 worker 完成后才设置 done 为 true。
 7. `RdbProm::close()` 等待 done。
 
-这保证不会新增“Chapter 已提交但 handler 被取消，重跑又因阶段已推进而不再
+这保证不会新增“Chapter 已提交但 usecase 被取消，重跑又因阶段已推进而不再
 派发 event”的丢失路径。
 
 ## 11. ObjDept 私有 prom 的隔离
@@ -433,10 +416,10 @@ ObjActor
 - 同 shard 串行、不同 shard 并行，FNV 分片不变。
 - actor 启动后立即 reset/purge，各时间常量不变。
 - close 可重复、可并发、actor 已完成后仍可调用。
-- close 在已 claim handler 被 barrier 阻塞时持续等待；释放后 callback 与
+- close 在已 claim usecase 被 barrier 阻塞时持续等待；释放后 usecase 与
   final mutation 完成才返回。
 - Drop cancel。
-- 第一条 callback 完成后 Develop 仍未被 per-task Drop cancel。
+- 第一条任务完成后 Develop 仍未被 per-task Drop cancel。
 - Chapter commit → Develop → local-message Complete 的顺序。
 - Invitation 不新增外层 coord。
 
@@ -449,20 +432,19 @@ ObjActor
 - 保持全部 typed Diesel query 与 transaction 调用点不变。
 - 运行 repo 与 actor targeted tests。
 
-### 阶段 C：建立静态 callback seam
+### 阶段 C：建立 actor 静态业务分派
 
-- actor 泛型化为 `H/F`。
+- actor 泛型化持有 ObjDept 与 Develop。
 - 保持 actor pool、shard、状态机和生命周期原实现。
-- 在 callback 前保留 deserialize/topic validation。
-- callback 后保留原 final mutation。
+- 在 usecase 前保留 deserialize/topic validation。
+- usecase 后保留原 final mutation。
 - 运行全部 actor characterization tests。
 
 ### 阶段 D：迁移业务 usecase
 
 - 将 Chapter 与 Invitation 业务编排移到 `usecase::prom`。
 - Chapter 保持 coord，Invitation 保持 run。
-- composition root 创建长期 `Arc<LocalMessageHandler<...>>`。
-- 映射 usecase action 到 actor TaskFlow。
+- actor 直接匹配 payload 并映射 usecase action 到 TaskFlow。
 - 运行 page reserve、chapter workflow、invitation 和 effect tests。
 
 ### 阶段 E：生产组装
@@ -494,13 +476,13 @@ cargo test -p poprako-server
 - 不删除 RdbCore。
 - 不删除、跳过或异步 fire-and-forget Develop event。
 - 不让 RdbProm 直接出现 ObjDept、Develop 或具体业务 repo 字段。
-- 不把业务 handler 留在 rdb_impl actor 子树。
+- 不把业务规则写回 rdb_impl；actor 只做任务分派和 action 映射。
 - 不创建第二个 ObjDept。
 - 不按 task clone Develop。
 - 不让任一临时 owner 的 Drop cancel 全局 actor/effect。
 - 不让 producer 使用 RdbProm 自己的 core 开新 transaction。
-- 不把 claim、handler、complete 合并成一个 transaction。
-- 不让 queue connection 跨 callback。
+- 不把 claim、usecase、complete 合并成一个 transaction。
+- 不让 queue connection 跨 usecase。
 - 不把 Invitation 包进新的 coord。
 - 不改变 worker 数、分片、时间常量或状态机错误处理。
 - 不引入 dyn、boxed future、async_trait 或 runtime registry。
@@ -521,14 +503,14 @@ cargo test -p poprako-server
 |---|---|
 | RdbProm 变成 unit struct | 固定持有 RdbCore、token、watch receiver |
 | actor descriptor 移到 main | actor 生命周期继续由 RdbProm 拥有 |
-| 删除 Develop | Develop 由长期业务 callback owner 持有 |
-| 每次任务 clone Develop | 每次只 clone Arc，Develop clone 活到 worker drain |
-| 私有 handler 由 binary main 命名 | handler 在 library composition root 内构造 |
+| 删除 Develop | Develop 由长期 actor owner 持有 |
+| 每次任务 clone Develop | worker 只 clone actor Arc，Develop 活到 worker drain |
+| 私有 handler 由 binary main 命名 | 删除无意义 handler，由 actor 直接分派 |
 | queue repo 继续包装业务 repo | 改为无业务泛型的 queue-only repo |
-| handler 继续位于 part_impl | 业务编排迁入 usecase，composition 只做映射 |
-| 所有 handler 统一 transaction | Chapter 保持 coord，Invitation 保持 run |
+| 业务编排继续位于 part_impl | 业务规则迁入 usecase，actor 只分派并映射 |
+| 所有任务统一 transaction | Chapter 保持 coord，Invitation 保持 run |
 | 单 actor 被误解为单 worker | 保留一个 supervisor 与固定四 worker |
-| shutdown 直接取消 handler | 只停 supervisor，继续 drain workers |
+| shutdown 直接取消 usecase | 只停 supervisor，继续 drain workers |
 | producer 误用 self.core | producer 永远只写 caller context.conn |
 | 仅用快照声称等价 | 增加 transaction、并发、时间和 barrier characterization tests |
 

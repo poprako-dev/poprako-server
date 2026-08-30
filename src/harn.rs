@@ -1,3 +1,9 @@
+//! Storage for the already-composed application parts.
+//!
+//! This module must contain no business logic, actor handler, background task,
+//! or composition factory. It only stores application parts and exposes
+//! references to them.
+
 use std::sync::Arc;
 
 use crate::config::AppConfig;

@@ -1,6 +1,6 @@
-//! Actor for deferred chapter workflow advancement.
+//! Deferred local-message business use cases.
 
-use poprako_orchestra::{Nucl, OperStep as _};
+use poprako_orchestra::{Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
 use poprako_obj_dept::{ObjDept, obj_inst};
@@ -11,15 +11,19 @@ use crate::part::effect::event::chapter::ChapterWorkflowCompletedEvent;
 use crate::part::effect::{Develop, EffectEvent as _};
 use crate::part::obj_dept::PageImage;
 use crate::part::prom::payload::chapter::ChapterPayload;
+use crate::part::prom::payload::invitation::InvitationPayload;
+use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
+use crate::part::repo::member_invitation::MemberInvitationRepo;
+use crate::part::repo::oper::assignment_invitation::PurgeExpiredAssignmentInvitation;
 use crate::part::repo::oper::chapter::{
     CompleteChapterRawProvide, GetChapterInfoExcluded,
 };
 use crate::part::repo::oper::chapter_workflow_record::CreateChapterWorkflowRecords;
+use crate::part::repo::oper::member_invitation::PurgeExpiredMemberInvitation;
 use crate::part::repo::oper::page::ListPageInfos;
 use crate::part::repo::page::PageRepo;
-use crate::part_impl::prom::rdb_impl::actor::task_flow::TaskFlow;
 use crate::result::{BaseError, accept};
 use crate::shared::RdbContext;
 use crate::value::chapter::stage::{Stage, StagePhase};
@@ -27,15 +31,30 @@ use crate::value::chapter_workflow_record::{
     ChapterWorkflowRecordOrigin, ChapterWorkflowRecordPayload,
 };
 
-/// Attempts raw-provision completion and waits while uploads remain pending.
+/// Business action requested after handling one deferred local message.
+pub enum PromTaskAction {
+    /// The business task completed and the message may be completed.
+    Complete,
+
+    /// The business task failed transiently and should consume retry budget.
+    Retry {
+        /// Diagnostic message retained for the next attempt.
+        message: String,
+    },
+
+    /// The business task is waiting without consuming retry budget.
+    Wait {
+        /// Diagnostic message retained for the next attempt.
+        message: String,
+    },
+}
+
+/// Handles one deferred chapter workflow task.
 #[instrument(level = "info", skip_all)]
-pub async fn handle<N, R, O, D>(
-    nucl: &N,
-    repo: &R,
-    obj_dept: &O,
-    develop: &D,
+pub async fn handle_chapter<N, R, O, D>(
+    (nucl, repo, obj_dept, develop): (&N, &R, &O, &D),
     task: &ChapterPayload,
-) -> TaskFlow
+) -> PromTaskAction
 where
     N: Nucl<Context = RdbContext, Error = BaseError> + Sync,
     R: ChapterRepo<RdbContext>
@@ -66,7 +85,46 @@ where
     }
 }
 
-// Internal implementation of `handle_raw_provide`.
+/// Handles one deferred invitation task without an outer transaction.
+#[instrument(level = "info", skip_all)]
+pub async fn handle_invitation<R>(
+    (repo,): (&R,),
+    task: &InvitationPayload,
+) -> PromTaskAction
+where
+    R: AssignmentInvitationRepo<RdbContext>
+        + MemberInvitationRepo<RdbContext>
+        + Send
+        + Sync,
+{
+    let outcome = match task {
+        //
+        InvitationPayload::Assignment { invitation_id } => {
+            //
+            PurgeExpiredAssignmentInvitation { id: invitation_id }
+                .run_on(repo)
+                .await
+        }
+
+        InvitationPayload::Member { invitation_id } => {
+            //
+            PurgeExpiredMemberInvitation { id: invitation_id }
+                .run_on(repo)
+                .await
+        }
+    };
+
+    match outcome {
+        //
+        Ok(()) => PromTaskAction::Complete,
+
+        Err(error) => PromTaskAction::Retry {
+            message: format!("{:?}", error),
+        },
+    }
+}
+
+// Attempts raw-provision completion and waits while uploads remain pending.
 async fn handle_raw_provide<N, R, O, D>(
     nucl: &N,
     repo: &R,
@@ -74,7 +132,7 @@ async fn handle_raw_provide<N, R, O, D>(
     develop: &D,
     chapter_id: &str,
     actor_user_id: Option<String>,
-) -> TaskFlow
+) -> PromTaskAction
 where
     N: Nucl<Context = RdbContext, Error = BaseError> + Sync,
     R: ChapterRepo<RdbContext>
@@ -88,7 +146,6 @@ where
     let outcome = nucl
         .coord(async move |context| {
             //
-            // Internal implementation detail.
             // NOTE: Chapter -> Page is the shared lock order that prevents
             // both deadlocks and chapter upload-summary races.
             GetChapterInfoExcluded {
@@ -146,10 +203,8 @@ where
 
     match outcome {
         //
-        // Internal implementation detail.
         Ok(Some(true)) => {
             //
-            // Internal implementation detail.
             Event::ChapterWorkflowCompleted {
                 payload: ChapterWorkflowCompletedEvent {
                     chapter_id: chapter_id.to_string(),
@@ -159,17 +214,19 @@ where
             .develop_on(develop)
             .await;
 
-            TaskFlow::Complete
+            PromTaskAction::Complete
         }
 
-        Ok(Some(false)) | Err(BaseError::Expected { .. }) => TaskFlow::Complete,
+        Ok(Some(false)) | Err(BaseError::Expected { .. }) => {
+            PromTaskAction::Complete
+        }
 
-        Ok(None) => TaskFlow::Wait {
-            err_message: "page objects are pending".into(),
+        Ok(None) => PromTaskAction::Wait {
+            message: "page objects are pending".into(),
         },
 
-        Err(error) => TaskFlow::Retry {
-            err_message: format!("{:?}", error),
+        Err(error) => PromTaskAction::Retry {
+            message: format!("{:?}", error),
         },
     }
 }

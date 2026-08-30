@@ -115,6 +115,23 @@ where
     }
 }
 
+impl<P, M> Clone for NormObjDept<P, M>
+where
+    P: Clone,
+    M: Clone,
+{
+    // Clones the shared object department handle.
+    fn clone(&self) -> Self {
+        //
+        Self {
+            core: self.core.clone(),
+            pool: self.pool.clone(),
+            prom: self.prom.clone(),
+            actor_desc: self.actor_desc.clone(),
+        }
+    }
+}
+
 impl_obj_dept! { NormObjDept }
 
 #[cfg(test)]

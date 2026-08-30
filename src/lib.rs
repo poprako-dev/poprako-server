@@ -98,6 +98,6 @@ pub use crate::part_impl::auth::jwt_impl::JwtAuth;
 pub use crate::part_impl::effect::async_impl::AsyncEffectDevelop;
 pub use crate::part_impl::nucl::rdb_impl::{HybNucl, RdbNucl};
 pub use crate::part_impl::obj_dept::{NormObjDept, new_obj_dept};
-pub use crate::part_impl::prom::rdb_impl::RdbProm;
+pub use crate::part_impl::prom::rdb_impl::{RdbProm, new as new_prom};
 pub use crate::part_impl::repo::HybRepo;
 pub use crate::shared::RdbContext;

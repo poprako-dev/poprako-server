@@ -19,16 +19,13 @@ use poprako_obj_dept::ObjDept;
 use crate::part::effect::Develop;
 use crate::part::obj_dept::PageImage;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
-use crate::part_impl::prom::rdb_impl::actor::base::{
-    RdbPromActor, dispatch_payload,
-};
-use crate::part_impl::prom::rdb_impl::actor::task_flow::TaskFlow;
+use crate::part_impl::prom::rdb_impl::actor::base::RdbPromActor;
 use crate::part_impl::prom::rdb_impl::entity::LocalMessageRow;
 use crate::part_impl::prom::rdb_impl::repo::{
     ClaimPending, CompleteMessage, FailMessage, PollPending, PurgeCompleted,
     ResetStuck, RetryMessage,
 };
-use crate::part_impl::repo::HybRepo;
+use crate::part_impl::prom::task_flow::TaskFlow;
 use crate::result::{BaseError, BaseRest};
 use crate::shared::RdbContext;
 
@@ -85,7 +82,7 @@ pub fn enforce_retry_limit(
     }
 }
 
-impl<O, D> RdbPromActor<RdbNucl, HybRepo, O, D>
+impl<O, D> RdbPromActor<RdbNucl, O, D>
 where
     O: ObjDept<PageImage, RdbContext> + Send + Sync + 'static,
     D: Develop + Send + Sync + 'static,
@@ -242,15 +239,8 @@ where
     // Internal implementation of `process_row`.
     async fn process_row(&self, row: &LocalMessageRow) {
         //
-        let task_flow = dispatch_payload(
-            self.nucl(),
-            self.repo().inner(),
-            self.obj_dept(),
-            self.develop(),
-            &row.f_topic,
-            &row.f_payload,
-        )
-        .await;
+        let task_flow =
+            self.dispatch_payload(&row.f_topic, &row.f_payload).await;
 
         let task_flow = enforce_retry_limit(task_flow, row.f_retried_count);
 

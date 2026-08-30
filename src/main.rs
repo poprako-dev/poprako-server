@@ -6,7 +6,7 @@ use anyhow::Context as _;
 
 use poprako_server::{
     AppConfig, AsyncEffectDevelop, Harn, HybNucl, HybRepo, JwtAuth, RdbContext,
-    RdbCore, RdbNucl, RdbProm, ReptRead, Serial, new_obj_dept,
+    RdbCore, RdbNucl, ReptRead, Serial, new_obj_dept, new_prom,
 };
 
 /// Application entry point.
@@ -59,13 +59,17 @@ async fn main() -> anyhow::Result<()> {
         NonZeroUsize::new(1024).context("buf_size cannot be 0")?,
     );
 
-    let prom = RdbProm::new();
+    let prom = new_prom(core.clone(), obj_dept.clone(), develop.clone());
 
     let harn = Harn::new(config, (nucl, repo, obj_dept, prom, auth, develop));
 
     let serve_rest = poprako_server::serve(harn.clone(), http_addr).await;
 
-    tokio::join!(harn.obj_dept().close(), harn.develop().close(),);
+    tokio::join!(
+        harn.obj_dept().close(),
+        harn.prom().close(),
+        harn.develop().close(),
+    );
 
     serve_rest
 }
