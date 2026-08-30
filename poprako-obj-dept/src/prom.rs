@@ -57,4 +57,50 @@ pub trait ObjPromDefer<C> {
         topic: &'a str,
         key: &'a ObjKey,
     ) -> impl Future<Output = ObjDeptRest<()>> + Send;
+
+    /// Defers Check tasks in one caller-transaction batch.
+    fn defer_checks<'a>(
+        &'a self,
+        context: &'a mut C,
+        topic: &'a str,
+        checks: &'a [ObjPromCheck],
+    ) -> impl Future<Output = ObjDeptRest<()>> + Send;
+
+    /// Defers Delete tasks in one caller-transaction batch.
+    fn defer_deletes<'a>(
+        &'a self,
+        context: &'a mut C,
+        topic: &'a str,
+        keys: &'a [ObjKey],
+    ) -> impl Future<Output = ObjDeptRest<()>> + Send;
+}
+
+/// One Check task requested by a batch object lifecycle operation.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ObjPromCheck {
+    //
+    /// Logical object generation to verify.
+    key: ObjKey,
+    /// Time after which absence is treated as a failed upload.
+    expires_at: OffsetDateTime,
+}
+
+impl ObjPromCheck {
+    /// Creates one deferred check for an exact logical object generation.
+    #[must_use]
+    pub const fn new(key: ObjKey, expires_at: OffsetDateTime) -> Self {
+        Self { key, expires_at }
+    }
+
+    /// Returns the exact logical object generation to verify.
+    #[must_use]
+    pub const fn key(&self) -> &ObjKey {
+        &self.key
+    }
+
+    /// Returns the time after which absence is treated as a failed upload.
+    #[must_use]
+    pub const fn expires_at(&self) -> OffsetDateTime {
+        self.expires_at
+    }
 }

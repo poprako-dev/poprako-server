@@ -34,15 +34,18 @@
 
 use super::*;
 
+use poprako_obj_dept::key::ObjKey;
+use poprako_obj_dept::model::meta::ObjMeta;
 use time::OffsetDateTime;
 
 use crate::data::instr::team::{
-    CreateTeamInstr, ListTeamInfosInstr, UpdateTeamInfoInstr,
+    CreateTeamInstr, ListTeamInfosInstr, MarkTeamAvatarUploadedInstr,
+    UpdateTeamInfoInstr,
 };
 use crate::model::read::proj::member::MemberInfo;
 use crate::model::read::proj::user::{UserCredential, UserInfo};
 use crate::model::shared::user::UserToken;
-use crate::part_impl::repo::mock_impl::Mock;
+use crate::part_impl::repo::mock_impl::{Mock, MockContext, MockObjRecord};
 use crate::result::ExpectedVariant;
 use crate::test_util::fixture::team;
 use crate::test_util::{assert_expected_message, assert_expected_variant};
@@ -69,6 +72,49 @@ fn token(user_id: &str) -> UserToken {
     UserToken {
         user_id: user_id.into(),
     }
+}
+
+fn seed_team_avatar(mock: &Mock, version: u32) {
+    let key = ObjKey {
+        id: "team-1".into(),
+        version,
+    };
+
+    let meta = ObjMeta {
+        key,
+        is_available: false,
+        hash: vec![0; 32],
+        ext: "png".into(),
+    };
+
+    mock.state
+        .lock()
+        .unwrap()
+        .objs
+        .entry("team_avatar")
+        .or_default()
+        .insert(
+            "team-1".into(),
+            MockObjRecord {
+                version,
+                meta: Some(meta),
+            },
+        );
+}
+
+async fn mark_team_avatar(
+    mock: &Mock,
+    version: u32,
+) -> crate::result::BaseRest<()> {
+    mark_avatar_uploaded::<MockContext, _, _>(
+        (mock, mock),
+        token("user-1"),
+        "team-1".into(),
+        MarkTeamAvatarUploadedInstr {
+            image_version: version,
+        },
+    )
+    .await
 }
 
 // Build login-credential data for the seeded user.
@@ -358,4 +404,46 @@ async fn update_info_propagates_missing_team() {
     .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Args);
+}
+
+#[tokio::test]
+async fn mark_avatar_uploaded_marks_current_generation_idempotently() {
+    let mock = Mock::new();
+
+    mock.seed_member(member("member-1", "user-1", "team-1"));
+
+    seed_team_avatar(&mock, 3);
+
+    mark_team_avatar(&mock, 3).await.unwrap();
+
+    mark_team_avatar(&mock, 3).await.unwrap();
+
+    assert!(
+        mock.snapshot().objs["team_avatar"]["team-1"]
+            .meta
+            .as_ref()
+            .unwrap()
+            .is_available
+    );
+}
+
+#[tokio::test]
+async fn mark_avatar_uploaded_rejects_stale_generation() {
+    let mock = Mock::new();
+
+    mock.seed_member(member("member-1", "user-1", "team-1"));
+
+    seed_team_avatar(&mock, 3);
+
+    let err = mark_team_avatar(&mock, 2).await.err().unwrap();
+
+    assert_expected_variant(err, ExpectedVariant::Args);
+
+    assert!(
+        !mock.snapshot().objs["team_avatar"]["team-1"]
+            .meta
+            .as_ref()
+            .unwrap()
+            .is_available
+    );
 }

@@ -1,10 +1,9 @@
 //! Joining assignments through pending invitation codes.
 
-use poprako_orchestra::{AtLeast, Context, Nucl, OperStep as _, Run};
+use poprako_orchestra::{AtLeast, Context, Nucl, OperStep as _};
 use tracing::instrument;
 
-use poprako_obj_dept::oper::GenObjUrl;
-use poprako_obj_dept::rest::ObjDeptError;
+use poprako_obj_dept::ObjDeptView;
 use poprako_util::i18n::trl;
 
 use crate::complex::assignment::AssignmentComplex;
@@ -41,7 +40,7 @@ use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::user::UserRepo;
 use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::usecase::view::assignment_info_view;
+use crate::usecase::assignment::view::assignment_info_view;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 use crate::value::role::{RoleField, RoleMask};
 
@@ -70,9 +69,9 @@ where
         + WorksetRepo<C>
         + Send
         + Sync,
-    O: for<'a> Run<GenObjUrl<'a, ComicCover>, Error = ObjDeptError>
-        + for<'a> Run<GenObjUrl<'a, TeamAvatar>, Error = ObjDeptError>
-        + for<'a> Run<GenObjUrl<'a, UserAvatar>, Error = ObjDeptError>
+    O: ObjDeptView<ComicCover, C>
+        + ObjDeptView<TeamAvatar, C>
+        + ObjDeptView<UserAvatar, C>
         + Sync,
 {
     let current_user_id = token.user_id;

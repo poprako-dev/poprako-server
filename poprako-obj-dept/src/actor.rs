@@ -42,7 +42,7 @@ impl ObjActorDesc {
         //
         let mut done_recv = self.done_recv.clone();
 
-        if let Err(err) = done_recv.wait_for(|f_is_done| *f_is_done).await {
+        if let Err(err) = done_recv.wait_for(|is_done| *is_done).await {
             //
             tracing::error!(
                 operation = "join_obj_actor",
@@ -171,6 +171,9 @@ where
     rest(prom, task, &action).await
 }
 
+// FIXME: Before adding high-volume object topics, redesign this globally
+// serial loop for bounded parallel claim/processing, independent reset
+// maintenance, operator recovery, and completed-task retention.
 // Runs the globally serial durable-task loop.
 async fn run_actor<P, H, F>(prom: P, handler: H, token: CancellationToken)
 where

@@ -6,23 +6,14 @@ mod mock_impl;
 // R2 object-storage implementation.
 mod r2_impl;
 
-use std::future::Future;
-
-use poprako_orchestra::{Level, Step};
-use url::Url;
-
 use poprako_obj_dept::actor::{ObjActor, ObjActorDesc};
-use poprako_obj_dept::model::meta::ObjMeta;
-use poprako_obj_dept::oper::GetObjMeta;
 use poprako_obj_dept::pool::{ObjPool, ObjPoolView};
 use poprako_obj_dept::prom::ObjProm;
-use poprako_obj_dept::rdb_impl::decode_row;
-use poprako_obj_dept::rest::{ObjDeptError, ObjDeptRest};
 use poprako_obj_dept::{impl_obj_dept, objs_def, rdb_obj_prom};
-use poprako_rdb_core::{RdbContext, RdbCore};
+use poprako_rdb_core::RdbCore;
 
 #[cfg(test)]
-use crate::__impl_mock_obj_dept;
+use crate::implement_mock_obj_dept;
 
 use crate::part::obj_dept::{ComicCover, PageImage, TeamAvatar, UserAvatar};
 use crate::part_impl::obj_dept::r2_impl::R2ObjPool;
@@ -41,21 +32,25 @@ objs_def! {
         table: t_page_image,
         topic: "page_image",
         namespace: "page_image",
+        url_profile: ImageThumbnail,
     },
     UserAvatar {
         table: t_user_avatar,
         topic: "user_avatar",
         namespace: "user_avatar",
+        url_profile: ImageThumbnail,
     },
     TeamAvatar {
         table: t_team_avatar,
         topic: "team_avatar",
         namespace: "team_avatar",
+        url_profile: ImageThumbnail,
     },
     ComicCover {
         table: t_comic_cover,
         topic: "comic_cover",
         namespace: "comic_cover",
+        url_profile: ImageThumbnail,
     },
 }
 
@@ -75,50 +70,25 @@ pub struct NormObjDept<P = R2ObjPool, M = RdbObjProm> {
 /// Read-only projection of object metadata and physical storage.
 #[derive(Clone)]
 pub struct NormObjView<P> {
+    //
+    /// Shared relational database core.
+    core: RdbCore,
     /// Physical object-storage adapter.
     pool: P,
 }
 
-impl<P> ObjPoolView for NormObjView<P>
+impl<P> NormObjView<P>
 where
-    P: ObjPoolView + Sync,
+    P: ObjPoolView,
 {
-    // Generates one physical-object read URL.
-    fn gen_url(
-        &self,
-        key: &str,
-    ) -> impl Future<Output = ObjDeptRest<Url>> + Send {
-        self.pool.gen_url(key)
+    // Returns the shared relational database core.
+    const fn core(&self) -> &RdbCore {
+        &self.core
     }
 
-    // Checks whether one physical object exists.
-    fn has(&self, key: &str) -> impl Future<Output = ObjDeptRest<bool>> + Send {
-        self.pool.has(key)
-    }
-}
-
-impl<'a, L, P> Step<GetObjMeta<'a, PageImage>, RdbContext<L>> for NormObjView<P>
-where
-    L: Level + Send,
-    P: ObjPoolView + Sync,
-{
-    // Transaction isolation required by the metadata read.
-    type Level = L;
-
-    // Object metadata adapter error.
-    type Error = ObjDeptError;
-
-    // Reads the latest page-image metadata in the caller transaction.
-    async fn step(
-        &self,
-        context: &mut RdbContext<L>,
-        oper: &GetObjMeta<'a, PageImage>,
-    ) -> ObjDeptRest<Option<ObjMeta>> {
-        //
-        let row =
-            __obj_dept_page_image::load(context.conn(), oper.id, false).await?;
-
-        row.map_or(Ok(None), |row| decode_row(oper.id, row))
+    // Returns the physical object-storage adapter.
+    const fn pool(&self) -> &P {
+        &self.pool
     }
 }
 
@@ -139,6 +109,7 @@ where
     pub fn view(&self) -> NormObjView<P> {
         //
         NormObjView {
+            core: self.core.clone(),
             pool: self.pool.clone(),
         }
     }
@@ -206,18 +177,21 @@ where
     }
 }
 
-impl_obj_dept! { NormObjDept }
+impl_obj_dept! {
+    dept: NormObjDept,
+    view: NormObjView,
+}
 
+// Expands test adapters from the object manifest.
 #[cfg(test)]
-// Expands test adapters from the same total object manifest.
-macro_rules! __impl_mock_obj_dept_callback {
-    ($(($marker:ident, $module:ident, $topic:literal, $namespace:literal),)*) => {
-        $(__impl_mock_obj_dept!($marker, $topic, $namespace);)*
+macro_rules! implement_mock_obj_dept_from_manifest {
+    ($(($marker:ident, $module:ident, $topic:literal, $namespace:literal, $url_profile:ident),)*) => {
+        $(implement_mock_obj_dept!($marker, $topic, $namespace, $url_profile);)*
     };
 }
 
 #[cfg(test)]
-__objs_manifest!(__impl_mock_obj_dept_callback);
+for_each_obj!(implement_mock_obj_dept_from_manifest);
 
 /// Builds the production `ObjDept` without exposing its actor-side adapter.
 ///

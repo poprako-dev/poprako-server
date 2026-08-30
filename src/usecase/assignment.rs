@@ -2,18 +2,17 @@
 
 /// Assignment role-update orchestration.
 pub mod update_roles;
+/// Assignment presentation assembly.
+pub mod view;
 
 #[cfg(test)]
 // Unit tests that cover assignment orchestration invariants.
 mod tests;
 
-use poprako_orchestra::{
-    AtLeast, Context, Nucl, OperRun as _, OperStep as _, Run,
-};
+use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
-use poprako_obj_dept::oper::GenObjUrl;
-use poprako_obj_dept::rest::ObjDeptError;
+use poprako_obj_dept::ObjDeptView;
 use poprako_util::i18n::trl;
 
 use crate::complex::assignment::{
@@ -51,9 +50,9 @@ use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::usecase::assignment::view::assignment_info_views;
 use crate::usecase::internal::member::MemberLoader;
-use crate::usecase::internal::util::{LoadMode, collect_bounded};
-use crate::usecase::view::assignment_info_view;
+use crate::usecase::internal::util::LoadMode;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 
 /// Lists assignments by chapter or owner user.
@@ -72,9 +71,9 @@ where
         + UserRepo<C>
         + PageRepo<C>
         + Sync,
-    O: for<'a> Run<GenObjUrl<'a, ComicCover>, Error = ObjDeptError>
-        + for<'a> Run<GenObjUrl<'a, TeamAvatar>, Error = ObjDeptError>
-        + for<'a> Run<GenObjUrl<'a, UserAvatar>, Error = ObjDeptError>
+    O: ObjDeptView<ComicCover, C>
+        + ObjDeptView<TeamAvatar, C>
+        + ObjDeptView<UserAvatar, C>
         + Sync,
 {
     let assignment_list_spec = instr.try_into()?;
@@ -88,10 +87,7 @@ where
     .await?;
 
     let assignment_info_vals =
-        collect_bounded(assignment_infos.into_iter().map(|assignment_info| {
-            assignment_info_view(obj_dept, assignment_info)
-        }))
-        .await?;
+        assignment_info_views(obj_dept, assignment_infos).await?;
 
     accept(assignment_info_vals)
 }

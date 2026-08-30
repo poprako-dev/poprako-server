@@ -11,7 +11,7 @@
 //
 // Covers archive creation, perm rejection (non-admin member),
 // repeated-archive failure, month export, child-resource
-// inaccessibility, audit fields, outbox delete records, active-data cleanup,
+// inaccessibility, audit fields, object delete tasks, active-data cleanup,
 // and stable workset comic counts.
 
 import assert from "node:assert/strict";
@@ -34,9 +34,14 @@ import type { RunCtx } from "../state/runCtx.js";
 
 export const IMPLEMENTED = true as const;
 
-interface ActiveImageKeys {
-    cover_key: string | null;
-    page_key: string | null;
+interface ActiveObjectVersion {
+    f_obj_id: string;
+    f_version: string;
+}
+
+interface ActiveObjectVersions {
+    cover: ActiveObjectVersion;
+    pages: ActiveObjectVersion[];
 }
 
 interface ArchiveAuditRow {
@@ -86,29 +91,36 @@ export async function runIt11Module(ctx: RunCtx): Promise<void> {
     // ---------- snapshot pre-archive state ----------
 
     const workset_before_archive = await getWorkset(ctx.sadmin, workset.id);
-    const active_image_keys = await withDatabaseClient(async (client) => {
-        const image_result = await client.query<ActiveImageKeys>(
-            `
-              SELECT
-                comic."f_cover_key" AS cover_key,
-                page."f_image_key" AS page_key
-              FROM "t_comic" comic
-              JOIN "t_page" page ON page."f_chapter_id" = $1
-              WHERE comic."f_id" = $2
-              ORDER BY page."f_image_key"
-              LIMIT 1
-            `,
-            [comic.chapter_id, comic.id],
-        );
+    const active_object_versions: ActiveObjectVersions =
+        await withDatabaseClient(async (client) => {
+            const [cover_result, page_result] = await Promise.all([
+                client.query<ActiveObjectVersion>(
+                    `SELECT "f_id" AS f_obj_id, "f_version" FROM "t_comic_cover" WHERE "f_id" = $1`,
+                    [comic.id],
+                ),
+                client.query<ActiveObjectVersion>(
+                    `
+                      SELECT page_image."f_id" AS f_obj_id, page_image."f_version"
+                      FROM "t_page_image" page_image
+                      JOIN "t_page" page ON page."f_id" = page_image."f_id"
+                      WHERE page."f_chapter_id" = ANY($1)
+                      ORDER BY page."f_chapter_id", page."f_index"
+                    `,
+                    [[comic.chapter_id, chapter2.id]],
+                ),
+            ]);
 
-        return image_result.rows[0]!;
-    });
+            return {
+                cover: cover_result.rows[0]!,
+                pages: page_result.rows,
+            };
+        });
 
-    assert.ok(active_image_keys.cover_key, "archive fixture must retain a reserved cover key");
-    assert.ok(active_image_keys.page_key, "archive fixture must retain a reserved page key");
+    assert.equal(active_object_versions.cover.f_obj_id, comic.id);
+    assert.equal(active_object_versions.pages.length, 2);
 
     // Archive requires every chapter to have completed publish. Set the
-    // completed state directly so this scenario can retain image keys and
+    // completed state directly so this scenario can retain object versions and
     // verify archive-side cleanup of the remaining sources.
     await withDatabaseClient(async (client) => {
         await client.query(
@@ -191,7 +203,7 @@ export async function runIt11Module(ctx: RunCtx): Promise<void> {
     assert.ok(default_comics.some((comic_info) => comic_info.id === comic.id));
     assert.ok(!active_comics.some((active_comic) => active_comic.id === comic.id));
 
-    // ---------- archive audit rows and outbox ----------
+    // ---------- archive audit rows and object delete tasks ----------
 
     const archive_rows = await withDatabaseClient(async (client) => {
         const [comic_rows, delete_rows] = await Promise.all([
@@ -199,13 +211,11 @@ export async function runIt11Module(ctx: RunCtx): Promise<void> {
                 `SELECT "f_archiver_id", "f_source_comic_id", "f_created_at" FROM "t_comic_archive" WHERE "f_id" = $1`,
                 [archive_comic_val.archived_id],
             ),
-            client.query<{ object_key: string }>(
+            client.query<ActiveObjectVersion & { f_topic: string }>(
                 `
-                  SELECT "f_payload"->'Image'->'Delete'->>'object_key' AS object_key
-                  FROM "t_local_message"
-                  WHERE "f_topic" = 'image'
-                    AND "f_payload" ? 'Image'
-                    AND "f_payload"->'Image' ? 'Delete'
+                  SELECT "f_topic", "f_obj_id", "f_version"
+                  FROM "t_obj_prom_task"
+                  WHERE "f_oper" = 'obj_prom_oper:delete'
                 `,
             ),
         ]);
@@ -218,19 +228,20 @@ export async function runIt11Module(ctx: RunCtx): Promise<void> {
     assert.equal(archive_rows.comic_rows.rows[0]!.f_source_comic_id, comic.id);
     assert.ok(Number.isFinite(archive_rows.comic_rows.rows[0]!.f_created_at.getTime()));
 
-    // Image delete keys in outbox cover both the reserved cover and all page images.
-    const delete_keys = archive_rows.delete_rows.rows
-        .map((delete_row) => delete_row.object_key)
-        .filter((object_key): object_key is string => object_key !== null);
+    const hasDeleteTask = (topic: string, object: ActiveObjectVersion) =>
+        archive_rows.delete_rows.rows.some(
+            (task) =>
+                task.f_topic === topic &&
+                task.f_obj_id === object.f_obj_id &&
+                task.f_version === object.f_version,
+        );
 
-    assert.ok(delete_keys.includes(active_image_keys.cover_key));
-    assert.ok(delete_keys.includes(active_image_keys.page_key));
+    assert.ok(hasDeleteTask("comic_cover", active_object_versions.cover));
 
-    // All reserved page images across both chapters must have delete entries.
-    // Two pages total → at least 2 page-key delete entries.
-    const page_delete_keys = delete_keys.filter(
-        (object_key) => object_key.startsWith("page/chapter_"),
+    assert.ok(
+        active_object_versions.pages.every((page_image) =>
+            hasDeleteTask("page_image", page_image),
+        ),
+        "all reserved page images must have delete tasks",
     );
-
-    assert.ok(page_delete_keys.length >= 2, "all reserved page images must have delete entries");
 }

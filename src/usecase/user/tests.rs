@@ -31,14 +31,18 @@
 
 use super::*;
 
+use poprako_obj_dept::key::ObjKey;
+use poprako_obj_dept::model::meta::ObjMeta;
 use time::OffsetDateTime;
 
 use crate::complex::user::UserComplex;
-use crate::data::instr::user::{UpdateUserInfoInstr, UpdateUserPasswordInstr};
+use crate::data::instr::user::{
+    MarkUserAvatarUploadedInstr, UpdateUserInfoInstr, UpdateUserPasswordInstr,
+};
 use crate::model::read::proj::member::MemberInfo;
 use crate::model::shared::user::UserToken;
 use crate::part::effect::event::Event;
-use crate::part_impl::repo::mock_impl::Mock;
+use crate::part_impl::repo::mock_impl::{Mock, MockContext, MockObjRecord};
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
 use crate::test_util::fixture::{credential, user};
@@ -68,6 +72,35 @@ fn token(user_id: &str) -> UserToken {
     UserToken {
         user_id: user_id.into(),
     }
+}
+
+// Seeds one current user-avatar generation that is not yet available.
+fn seed_user_avatar(mock: &Mock, user_id: &str, version: u32) {
+    let key = ObjKey {
+        id: user_id.into(),
+        version,
+    };
+
+    let meta = ObjMeta {
+        key,
+        is_available: false,
+        hash: vec![0; 32],
+        ext: "png".into(),
+    };
+
+    mock.state
+        .lock()
+        .unwrap()
+        .objs
+        .entry("user_avatar")
+        .or_default()
+        .insert(
+            user_id.into(),
+            MockObjRecord {
+                version,
+                meta: Some(meta),
+            },
+        );
 }
 
 /// Builds an [`UpdateUserInfoData`] fixture.
@@ -147,6 +180,92 @@ async fn get_info_propagates_missing_user() {
         .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Args);
+}
+
+#[tokio::test]
+async fn mark_avatar_uploaded_optimistically_exposes_current_generation() {
+    //
+    let mock = Mock::new();
+
+    seed_user_avatar(&mock, "user-1", 3);
+
+    for _ in 0..2 {
+        mark_avatar_uploaded::<MockContext, _>(
+            (&mock,),
+            token("user-1"),
+            "user-1".into(),
+            MarkUserAvatarUploadedInstr { image_version: 3 },
+        )
+        .await
+        .unwrap();
+    }
+
+    let snapshot = mock.snapshot();
+
+    let avatar_meta = snapshot.objs["user_avatar"]["user-1"]
+        .meta
+        .as_ref()
+        .unwrap();
+
+    assert!(avatar_meta.is_available);
+}
+
+#[tokio::test]
+async fn mark_avatar_uploaded_rejects_stale_generation_without_mutation() {
+    //
+    let mock = Mock::new();
+
+    seed_user_avatar(&mock, "user-1", 3);
+
+    let err = mark_avatar_uploaded::<MockContext, _>(
+        (&mock,),
+        token("user-1"),
+        "user-1".into(),
+        MarkUserAvatarUploadedInstr { image_version: 2 },
+    )
+    .await
+    .err()
+    .unwrap();
+
+    assert_expected_variant(err, ExpectedVariant::Args);
+
+    let snapshot = mock.snapshot();
+
+    let avatar_meta = snapshot.objs["user_avatar"]["user-1"]
+        .meta
+        .as_ref()
+        .unwrap();
+
+    assert!(!avatar_meta.is_available);
+}
+
+#[tokio::test]
+async fn mark_avatar_uploaded_rejects_non_owner_without_mutation() {
+    //
+    let mock = Mock::new();
+
+    seed_user_avatar(&mock, "user-1", 3);
+
+    let err = mark_avatar_uploaded::<MockContext, _>(
+        (&mock,),
+        token("user-2"),
+        "user-1".into(),
+        MarkUserAvatarUploadedInstr { image_version: 3 },
+    )
+    .await
+    .err()
+    .unwrap();
+
+    assert_expected_variant(err, ExpectedVariant::Perm);
+
+    let snapshot = mock.snapshot();
+
+    let avatar_meta = snapshot.objs["user_avatar"]["user-1"]
+        .meta
+        .as_ref()
+        .unwrap();
+
+    assert!(!avatar_meta.is_available);
 }
 
 #[tokio::test]

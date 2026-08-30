@@ -1,11 +1,11 @@
-//! Comic-cover verification status.
+//! Comic-cover optimistic upload availability.
 
-use poprako_orchestra::{Context, OperRun as _, Run};
+use poprako_orchestra::{Context, OperRun as _};
 use tracing::instrument;
 
-use poprako_obj_dept::obj_inst;
-use poprako_obj_dept::oper::GetObjMeta;
-use poprako_obj_dept::rest::ObjDeptError;
+use poprako_obj_dept::key::ObjKey;
+use poprako_obj_dept::oper::MarkObjUploadedOutcome;
+use poprako_obj_dept::{ObjDept, obj_inst};
 use poprako_util::i18n::trl;
 
 use crate::complex::comic::ComicPermComplex;
@@ -19,7 +19,7 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
 
-/// Confirms the requested cover generation is the current `ObjDept` object.
+/// Optimistically marks the requested current cover generation as uploaded.
 #[instrument(level = "info", skip(repo, obj_dept))]
 pub async fn mark_uploaded<C, R, O>(
     (repo, obj_dept): (&R, &O),
@@ -30,7 +30,7 @@ pub async fn mark_uploaded<C, R, O>(
 where
     C: Context,
     R: ComicRepo<C> + TeamRepo<C> + MemberRepo<C> + Sync,
-    O: for<'a> Run<GetObjMeta<'a, ComicCover>, Error = ObjDeptError> + Sync,
+    O: ObjDept<ComicCover, C> + Sync,
 {
     let member_info = MemberLoader::load_info_from_comic(
         repo,
@@ -42,18 +42,24 @@ where
 
     ComicPermComplex::ensure_user_can_mark_cover_uploaded(&member_info)?;
 
-    let obj_meta = obj_inst! { GetObjMeta<ComicCover> { id: &id } }
+    // SAFETY: This is an optimistic exact-generation transition. It does not
+    // synchronously prove PUT success, object presence, or content integrity;
+    // the delayed actor may reset this generation after a failed HEAD check.
+    let cover_key = ObjKey {
+        id,
+        version: instr.image_version,
+    };
+
+    let marked = obj_inst! { MarkObjUploaded<ComicCover> { key: &cover_key } }
         .run_on(obj_dept)
         .await
         .map_err(BaseError::from)?;
 
-    match obj_meta {
+    match marked {
         //
-        Some(obj_meta) if obj_meta.key.version == instr.image_version => {
-            accept(())
-        }
+        MarkObjUploadedOutcome::Marked => accept(()),
 
-        _ => Err(BaseError::Expected {
+        MarkObjUploadedOutcome::NotCurrent => Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
             message: trl("error-stale-cover-upload"),
         }),

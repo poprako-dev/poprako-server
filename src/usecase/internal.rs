@@ -4,3 +4,5 @@ pub mod member;
 pub mod unit;
 /// Shared internal loader execution values.
 pub mod util;
+/// Request-scoped object URL hydration for nested response models.
+pub mod view;

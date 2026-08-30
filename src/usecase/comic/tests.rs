@@ -31,11 +31,15 @@ mod preset_assignment;
 use super::*;
 
 use fixture::*;
+use poprako_obj_dept::key::ObjKey;
+use poprako_obj_dept::model::meta::ObjMeta;
 use time::OffsetDateTime;
 
-use crate::data::instr::comic::{ListComicInfosInstr, UpdateComicInfoInstr};
+use crate::data::instr::comic::{
+    ListComicInfosInstr, MarkComicCoverUploadedInstr, UpdateComicInfoInstr,
+};
 use crate::model::read::proj::comic::ComicInfo;
-use crate::part_impl::repo::mock_impl::Mock;
+use crate::part_impl::repo::mock_impl::{Mock, MockContext, MockObjRecord};
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
 use crate::test_util::fixture::{invalid_credential, user, workset};
@@ -44,6 +48,55 @@ use crate::value::chapter::mask::StageMask;
 use crate::value::chapter::stage::{Stage, StagePhase};
 use crate::value::comic::ComicWithOpt;
 use crate::value::role::{RoleField, RoleMask};
+
+fn seed_comic_cover_scope(mock: &Mock, version: u32) {
+    mock.seed_workset(workset("workset-1", "team-1"));
+
+    mock.seed_comic(comic("comic-1", "workset-1", 0));
+
+    mock.seed_member(admin_member("user-1", "team-1"));
+
+    let key = ObjKey {
+        id: "comic-1".into(),
+        version,
+    };
+
+    let meta = ObjMeta {
+        key,
+        is_available: false,
+        hash: vec![0; 32],
+        ext: "png".into(),
+    };
+
+    mock.state
+        .lock()
+        .unwrap()
+        .objs
+        .entry("comic_cover")
+        .or_default()
+        .insert(
+            "comic-1".into(),
+            MockObjRecord {
+                version,
+                meta: Some(meta),
+            },
+        );
+}
+
+async fn mark_comic_cover(
+    mock: &Mock,
+    version: u32,
+) -> crate::result::BaseRest<()> {
+    cover::mark_uploaded::<MockContext, _, _>(
+        (mock, mock),
+        token("user-1"),
+        "comic-1".into(),
+        MarkComicCoverUploadedInstr {
+            image_version: version,
+        },
+    )
+    .await
+}
 
 #[tokio::test]
 async fn create_allocates_index_and_updates_count() {
@@ -130,6 +183,44 @@ async fn create_rolls_back_missing_workset() {
     assert_expected_variant(err, ExpectedVariant::Args);
 
     assert!(snapshot.comics.is_empty());
+}
+
+#[tokio::test]
+async fn mark_cover_uploaded_marks_current_generation_idempotently() {
+    let mock = Mock::new();
+
+    seed_comic_cover_scope(&mock, 3);
+
+    mark_comic_cover(&mock, 3).await.unwrap();
+
+    mark_comic_cover(&mock, 3).await.unwrap();
+
+    assert!(
+        mock.snapshot().objs["comic_cover"]["comic-1"]
+            .meta
+            .as_ref()
+            .unwrap()
+            .is_available
+    );
+}
+
+#[tokio::test]
+async fn mark_cover_uploaded_rejects_stale_generation() {
+    let mock = Mock::new();
+
+    seed_comic_cover_scope(&mock, 3);
+
+    let err = mark_comic_cover(&mock, 2).await.err().unwrap();
+
+    assert_expected_variant(err, ExpectedVariant::Args);
+
+    assert!(
+        !mock.snapshot().objs["comic_cover"]["comic-1"]
+            .meta
+            .as_ref()
+            .unwrap()
+            .is_available
+    );
 }
 
 #[tokio::test]

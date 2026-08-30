@@ -1,14 +1,16 @@
 //! Announcement use cases.
 
+/// Announcement presentation assembly.
+pub mod view;
+
 #[cfg(test)]
 // Unit tests for announcement usecase behavior.
 mod tests;
 
-use poprako_orchestra::{Context, OperRun as _, Run};
+use poprako_orchestra::{Context, OperRun as _};
 use tracing::instrument;
 
-use poprako_obj_dept::oper::GenObjUrl;
-use poprako_obj_dept::rest::ObjDeptError;
+use poprako_obj_dept::ObjDeptView;
 use poprako_util::i18n::trl;
 
 use crate::complex::announcement::{
@@ -32,8 +34,7 @@ use crate::part::repo::oper::announcement::{
 };
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::usecase::internal::util::collect_bounded;
-use crate::usecase::view::announcement_info_view;
+use crate::usecase::announcement::view::announcement_info_views;
 
 /// Lists announcements under a team.
 #[instrument(level = "info", skip(repo, obj_dept))]
@@ -45,7 +46,7 @@ pub async fn list_infos<C, R, O>(
 where
     C: Context,
     R: AnnouncementRepo<C> + MemberRepo<C> + Sync,
-    O: for<'a> Run<GenObjUrl<'a, UserAvatar>, Error = ObjDeptError> + Sync,
+    O: ObjDeptView<UserAvatar, C> + Sync,
 {
     let announcement_list_spec = Into::<AnnouncementListSpec>::into(instr);
 
@@ -72,12 +73,8 @@ where
     .run_on(repo)
     .await?;
 
-    let announcement_info_vals = collect_bounded(
-        announcement_infos.into_iter().map(|announcement_info| {
-            announcement_info_view(obj_dept, announcement_info)
-        }),
-    )
-    .await?;
+    let announcement_info_vals =
+        announcement_info_views(obj_dept, announcement_infos).await?;
 
     accept(announcement_info_vals)
 }

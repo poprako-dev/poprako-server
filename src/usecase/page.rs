@@ -6,16 +6,18 @@ pub mod delete;
 pub mod list;
 /// Page-manifest reservation orchestration.
 pub mod reserve;
+/// Page presentation assembly.
+pub mod view;
 
 #[cfg(test)]
 mod tests;
 
-use poprako_orchestra::{Context, OperRun as _, Run};
+use poprako_orchestra::{Context, OperRun as _};
 use tracing::instrument;
 
-use poprako_obj_dept::obj_inst;
-use poprako_obj_dept::oper::GetObjMeta;
-use poprako_obj_dept::rest::ObjDeptError;
+use poprako_obj_dept::key::ObjKey;
+use poprako_obj_dept::oper::MarkObjUploadedOutcome;
+use poprako_obj_dept::{ObjDept, obj_inst};
 use poprako_util::i18n::trl;
 
 use crate::complex::page::PagePermComplex;
@@ -28,7 +30,7 @@ use crate::part::repo::oper::page::GetPageInfo;
 use crate::part::repo::page::PageRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
-/// Confirms the requested page generation is the current `ObjDept` object.
+/// Optimistically marks the requested current page generation as uploaded.
 #[instrument(level = "info", skip(repo, obj_dept))]
 pub async fn mark_image_uploaded<C, R, O>(
     (repo, obj_dept): (&R, &O),
@@ -39,7 +41,7 @@ pub async fn mark_image_uploaded<C, R, O>(
 where
     C: Context,
     R: PageRepo<C> + AssignmentRepo<C>,
-    O: for<'a> Run<GetObjMeta<'a, PageImage>, Error = ObjDeptError> + Sync,
+    O: ObjDept<PageImage, C> + Sync,
 {
     let page_info = GetPageInfo { id: &id }.run_on(repo).await?;
 
@@ -60,18 +62,24 @@ where
 
     PagePermComplex::ensure_user_can_mark_image_uploaded(&assignment_info)?;
 
-    let obj_meta = obj_inst! { GetObjMeta<PageImage> { id: &id } }
+    // SAFETY: This is an optimistic exact-generation transition. It does not
+    // synchronously prove PUT success, object presence, or content integrity;
+    // the delayed actor may reset this generation after a failed HEAD check.
+    let image_key = ObjKey {
+        id,
+        version: instr.image_version,
+    };
+
+    let marked = obj_inst! { MarkObjUploaded<PageImage> { key: &image_key } }
         .run_on(obj_dept)
         .await
         .map_err(BaseError::from)?;
 
-    match obj_meta {
+    match marked {
         //
-        Some(obj_meta) if obj_meta.key.version == instr.image_version => {
-            accept(())
-        }
+        MarkObjUploadedOutcome::Marked => accept(()),
 
-        _ => Err(BaseError::Expected {
+        MarkObjUploadedOutcome::NotCurrent => Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
             message: trl("error-stale-page-image-upload"),
         }),

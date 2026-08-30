@@ -61,7 +61,7 @@ impl RdbProm {
 
         let mut done = self.done.clone();
 
-        if let Err(error) = done.wait_for(|f_is_done| *f_is_done).await {
+        if let Err(error) = done.wait_for(|is_done| *is_done).await {
             //
             tracing::error!(
                 err = %error,

@@ -1,5 +1,9 @@
 # ObjDept Review Record
 
+> Superseded: this review covers the earlier PageImage-only slice and its
+> passing checklist is not evidence for the current branch. The active issue
+> inventory is `plans/obj-dept-review-issues.md`.
+
 ## Review target
 
 The reviewed slice is limited to the static PageImage declaration, total

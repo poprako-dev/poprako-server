@@ -2762,6 +2762,7 @@ dependencies = [
  "base64",
  "diesel",
  "diesel-async",
+ "futures-util",
  "poprako-obj-dept-macro",
  "poprako-orchestra",
  "poprako-rdb-core",

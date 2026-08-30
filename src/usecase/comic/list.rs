@@ -1,16 +1,15 @@
 use std::collections::HashMap;
 
-use poprako_orchestra::{Context, OperRun as _, Run};
+use poprako_orchestra::{Context, OperRun as _};
 use tracing::instrument;
 
-use poprako_obj_dept::oper::GenObjUrl;
-use poprako_obj_dept::rest::ObjDeptError;
+use poprako_obj_dept::ObjDeptView;
 use poprako_util::i18n::trl;
 
 use crate::complex::comic::ComicPermComplex;
 use crate::data::instr::comic::ListComicInfosInstr;
 use crate::data::val::comic_list::ListComicInfosVal;
-use crate::data::view::assignment::AssignmentInfoView;
+use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::shared::user::UserToken;
@@ -26,10 +25,8 @@ use crate::part::repo::page::PageRepo;
 use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::internal::member::MemberLoader;
-use crate::usecase::internal::util::{LoadMode, collect_bounded};
-use crate::usecase::view::{
-    assignment_info_view, chapter_info_view, comic_info_view,
-};
+use crate::usecase::internal::util::LoadMode;
+use crate::usecase::internal::view::{ObjViewIds, ObjViewSnapshot};
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::comic::ComicWithOpt;
 
@@ -49,9 +46,9 @@ where
         + AssignmentRepo<C>
         + PageRepo<C>
         + Sync,
-    O: for<'a> Run<GenObjUrl<'a, ComicCover>, Error = ObjDeptError>
-        + for<'a> Run<GenObjUrl<'a, TeamAvatar>, Error = ObjDeptError>
-        + for<'a> Run<GenObjUrl<'a, UserAvatar>, Error = ObjDeptError>
+    O: ObjDeptView<ComicCover, C>
+        + ObjDeptView<TeamAvatar, C>
+        + ObjDeptView<UserAvatar, C>
         + Sync,
 {
     let (with_pinned_chapter, with_pinned_chapter_assignment) = (
@@ -134,38 +131,25 @@ where
         HashMap::new()
     };
 
-    let assignment_view_pairs = collect_bounded(
-        pinned_chapter_assignment_infos.into_values().flatten().map(
-            |assignment_info| async move {
-                //
-                let chapter_id = assignment_info.chapter_id.clone();
+    let mut obj_view_ids = ObjViewIds::default();
 
-                let assignment_view =
-                    assignment_info_view(obj_dept, assignment_info).await?;
+    obj_view_ids.collect_comics(&comic_infos);
 
-                accept((chapter_id, assignment_view))
-            },
-        ),
-    )
-    .await?;
+    obj_view_ids.collect_chapters(pinned_chapter_infos.values());
 
-    let mut assignment_views_by_chapter = HashMap::new();
+    obj_view_ids.collect_assignments(
+        pinned_chapter_assignment_infos.values().flatten(),
+    );
 
-    for (chapter_id, assignment_view) in assignment_view_pairs {
-        //
-        assignment_views_by_chapter
-            .entry(chapter_id)
-            .or_insert_with(Vec::new)
-            .push(assignment_view);
-    }
+    let obj_view_snapshot =
+        ObjViewSnapshot::load::<C, O>(obj_dept, obj_view_ids).await?;
 
-    build_list_val(
-        obj_dept,
+    accept(build_list_val(
+        &obj_view_snapshot,
         comic_infos,
         pinned_chapter_infos,
-        assignment_views_by_chapter,
-    )
-    .await
+        pinned_chapter_assignment_infos,
+    ))
 }
 
 // Validate dependencies between optional pinned-chapter response fields.
@@ -199,74 +183,51 @@ fn validate_with_options(
 }
 
 // Build aligned comic, pinned-chapter, and assignment response vectors.
-async fn build_list_val<O>(
-    obj_dept: &O,
+fn build_list_val(
+    obj_view_snapshot: &ObjViewSnapshot,
     comic_infos: Vec<ComicInfo>,
     mut pinned_chapter_infos: HashMap<String, ChapterInfo>,
-    mut assignment_views_by_chapter: HashMap<String, Vec<AssignmentInfoView>>,
-) -> BaseRest<ListComicInfosVal>
-where
-    O: for<'a> Run<GenObjUrl<'a, ComicCover>, Error = ObjDeptError>
-        + for<'a> Run<GenObjUrl<'a, TeamAvatar>, Error = ObjDeptError>
-        + for<'a> Run<GenObjUrl<'a, UserAvatar>, Error = ObjDeptError>
-        + Sync,
-{
-    let conversion_inputs = comic_infos
-        .into_iter()
-        .map(|comic_info| {
-            //
-            let chapter_info = pinned_chapter_infos.remove(&comic_info.id);
+    mut assignment_infos_by_chapter: HashMap<String, Vec<AssignmentInfo>>,
+) -> ListComicInfosVal {
+    //
+    let mut comic_info_views = Vec::with_capacity(comic_infos.len());
 
-            let assignment_views = chapter_info
-                .as_ref()
-                .and_then(|chapter_info| {
-                    assignment_views_by_chapter.remove(&chapter_info.id)
-                })
-                .unwrap_or_default();
-
-            (comic_info, chapter_info, assignment_views)
-        })
-        .collect::<Vec<_>>();
-
-    let converted_infos = collect_bounded(conversion_inputs.into_iter().map(
-        |(comic_info, chapter_info, assignment_views)| async move {
-            //
-            let chapter_view = match chapter_info {
-                //
-                Some(chapter_info) => {
-                    Some(chapter_info_view(obj_dept, chapter_info).await?)
-                }
-
-                None => None,
-            };
-
-            let comic_view = comic_info_view(obj_dept, comic_info).await?;
-
-            accept((comic_view, chapter_view, assignment_views))
-        },
-    ))
-    .await?;
-
-    let mut comic_info_views = Vec::with_capacity(converted_infos.len());
-
-    let mut pinned_chapter_views = Vec::with_capacity(converted_infos.len());
+    let mut pinned_chapter_views = Vec::with_capacity(comic_infos.len());
 
     let mut pinned_chapter_assignment_views =
-        Vec::with_capacity(converted_infos.len());
+        Vec::with_capacity(comic_infos.len());
 
-    for (comic_info_view, pinned_chapter_view, assignment_views) in
-        converted_infos
-    {
-        comic_info_views.push(comic_info_view);
+    for comic_info in comic_infos {
+        //
+        let chapter_info = pinned_chapter_infos.remove(&comic_info.id);
+
+        let assignment_infos = chapter_info
+            .as_ref()
+            .and_then(|chapter_info| {
+                assignment_infos_by_chapter.remove(&chapter_info.id)
+            })
+            .unwrap_or_default();
+
+        let assignment_views = assignment_infos
+            .into_iter()
+            .map(|assignment_info| {
+                obj_view_snapshot.assignment(assignment_info)
+            })
+            .collect();
+
+        let pinned_chapter_view = chapter_info
+            .map(|chapter_info| obj_view_snapshot.chapter(chapter_info));
+
+        comic_info_views.push(obj_view_snapshot.comic(comic_info));
 
         pinned_chapter_views.push(pinned_chapter_view);
 
         pinned_chapter_assignment_views.push(assignment_views);
     }
 
-    accept(ListComicInfosVal {
+    ListComicInfosVal {
         comics: comic_info_views,
         pinned_chapters: pinned_chapter_views,
         pinned_chapter_assignments: pinned_chapter_assignment_views,
-    })
+    }
 }

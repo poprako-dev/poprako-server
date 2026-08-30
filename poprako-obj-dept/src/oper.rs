@@ -1,30 +1,36 @@
+use std::collections::HashMap;
 use std::marker::PhantomData;
 
 use poprako_orchestra::Oper;
-use url::Url;
 
+use crate::key::ObjKey;
+use crate::model::mark::MarkObjUploadedOutcome as ObjMarkUploadedOutcome;
 use crate::model::meta::ObjMeta;
 use crate::model::slot::{ObjSlot, ObjSlotSpec};
+use crate::model::url::ObjUrls;
 
-/// Reads the latest RDB metadata for one business object.
+/// Result of marking an exact current object generation as uploaded.
+pub type MarkObjUploadedOutcome = ObjMarkUploadedOutcome;
+
+/// Reads current object metadata for a collection of business objects.
 #[derive(Oper)]
-#[oper(output = Option<ObjMeta>)]
-pub struct GetObjMeta<'a, B> {
+#[oper(output = HashMap<String, ObjMeta>)]
+pub struct ListObjMetas<'a, B> {
     //
-    /// Stable business-object identifier.
-    pub id: &'a str,
+    /// Stable business-object identifiers.
+    pub ids: &'a [String],
     /// Compile-time object marker selected for this operation.
     #[doc(hidden)]
     pub _m: PhantomData<fn() -> B>,
 }
 
-/// Generates a read URL for the verified current object.
+/// Generates read URLs for the supplied metadata versions.
 #[derive(Oper)]
-#[oper(output = Option<Url>)]
-pub struct GenObjUrl<'a, B> {
+#[oper(output = HashMap<String, ObjUrls>)]
+pub struct GenObjUrls<'a, B> {
     //
-    /// Stable business-object identifier.
-    pub id: &'a str,
+    /// Metadata versions whose physical keys will be resolved.
+    pub metas: &'a HashMap<String, ObjMeta>,
     /// Compile-time object marker selected for this operation.
     #[doc(hidden)]
     pub _m: PhantomData<fn() -> B>,
@@ -42,13 +48,37 @@ pub struct GenObjSlot<'a, B> {
     pub _m: PhantomData<fn() -> B>,
 }
 
+/// Generates new generations and locally signed write capabilities in bulk.
+#[derive(Oper)]
+#[oper(output = HashMap<String, ObjSlot>)]
+pub struct GenObjSlots<'a, B> {
+    //
+    /// Business-planned objects and their write requirements.
+    pub specs: &'a [ObjSlotSpec<'a>],
+    /// Compile-time object marker selected for this operation.
+    #[doc(hidden)]
+    pub _m: PhantomData<fn() -> B>,
+}
+
+/// Optimistically marks one exact current object generation as uploaded.
+#[derive(Oper)]
+#[oper(output = MarkObjUploadedOutcome)]
+pub struct MarkObjUploaded<'a, B> {
+    //
+    /// Exact logical object generation declared uploaded by the client.
+    pub key: &'a ObjKey,
+    /// Compile-time object marker selected for this operation.
+    #[doc(hidden)]
+    pub _m: PhantomData<fn() -> B>,
+}
+
 /// Reliably retires current objects inside the caller-owned transaction.
 #[derive(Oper)]
 #[oper(output = ())]
-pub enum DelObjs<'a, B> {
+pub enum RetireObjs<'a, B> {
     //
     /// Defers physical deletion and retains each identifier's version watermark.
-    Detach {
+    PreserveWatermarks {
         /// Business-object identifiers to detach.
         ids: &'a [String],
         /// Compile-time object marker selected for this operation.
@@ -57,7 +87,10 @@ pub enum DelObjs<'a, B> {
     },
 
     /// Defers physical deletion and removes each object row.
-    Remove {
+    ///
+    /// The supplied business identifiers must never be reused within this
+    /// object topic; otherwise removing the watermark permits an ABA race.
+    RemoveRows {
         /// Business-object identifiers whose rows are removed.
         ids: &'a [String],
         /// Compile-time object marker selected for this operation.

@@ -246,6 +246,8 @@ pub struct MockFlags {
     pub archive_commit_failure: bool,
     /// Simulates a failure in team creation within a transaction.
     pub create_team_failure: bool,
+    /// Disables thumbnail URL capability in the object-pool mock.
+    pub obj_thumbnail_disabled: bool,
 }
 
 /// The top-level mock repository and [`Nucl`] implementation.
@@ -367,7 +369,7 @@ impl Mock {
                 id: id.to_owned(),
                 version: 1,
             },
-            f_is_uploaded: true,
+            is_available: true,
             hash: vec![0; 32],
             ext: ext.to_owned(),
         };
@@ -422,6 +424,13 @@ impl Mock {
     pub fn with_create_team_failure(self) -> Self {
         //
         self.flags.lock().unwrap().create_team_failure = true;
+
+        self
+    }
+
+    /// Disable thumbnail URLs for subsequent object read operations.
+    pub fn with_obj_thumbnail_disabled(self) -> Self {
+        self.flags.lock().unwrap().obj_thumbnail_disabled = true;
 
         self
     }

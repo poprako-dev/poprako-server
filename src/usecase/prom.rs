@@ -1,18 +1,14 @@
 //! Deferred local-message business use cases.
 
-use poprako_orchestra::{Nucl, OperRun as _, OperStep as _, Step};
+use poprako_orchestra::{Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
-use poprako_obj_dept::obj_inst;
-use poprako_obj_dept::oper::GetObjMeta;
-use poprako_obj_dept::pool::ObjPoolView;
-use poprako_obj_dept::rest::ObjDeptError;
+use poprako_obj_dept::{ObjDeptView, obj_inst};
 
 use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::part::effect::event::Event;
 use crate::part::effect::event::chapter::ChapterWorkflowCompletedEvent;
 use crate::part::effect::{Develop, EffectEvent as _};
-use crate::part::nucl::ReptRead;
 use crate::part::obj_dept::PageImage;
 use crate::part::prom::payload::chapter::ChapterPayload;
 use crate::part::prom::payload::invitation::InvitationPayload;
@@ -67,13 +63,7 @@ where
         + PageRepo<RdbContext>
         + Send
         + Sync,
-    V: ObjPoolView
-        + for<'a> Step<
-            GetObjMeta<'a, PageImage>,
-            RdbContext,
-            Level = ReptRead,
-            Error = ObjDeptError,
-        > + Sync,
+    V: ObjDeptView<PageImage, RdbContext> + Sync,
     D: Develop + Sync,
 {
     match task {
@@ -151,13 +141,7 @@ where
         + PageRepo<RdbContext>
         + Send
         + Sync,
-    V: ObjPoolView
-        + for<'a> Step<
-            GetObjMeta<'a, PageImage>,
-            RdbContext,
-            Level = ReptRead,
-            Error = ObjDeptError,
-        > + Sync,
+    V: ObjDeptView<PageImage, RdbContext> + Sync,
     D: Develop + Sync,
 {
     let rest = nucl
@@ -173,25 +157,34 @@ where
             let page_infos =
                 ListPageInfos { chapter_id }.step_on(repo, context).await?;
 
-            for page_info in &page_infos {
-                //
-                let obj_meta = obj_inst! {
-                    GetObjMeta<PageImage> { id: &page_info.id }
-                }
-                .step_on(obj_view, context)
-                .await
-                .map_err(BaseError::from)?;
+            let page_ids = page_infos
+                .iter()
+                .map(|page_info| page_info.id.clone())
+                .collect::<Vec<_>>();
 
-                if !obj_meta.is_some_and(|obj_meta| obj_meta.f_is_uploaded) {
-                    return accept(None);
-                }
+            let obj_metas = obj_inst! {
+                ListObjMetas<PageImage> { ids: &page_ids }
+            }
+            .step_on(obj_view, context)
+            .await
+            .map_err(BaseError::from)?;
+
+            let are_images_uploaded = page_infos.iter().all(|page_info| {
+                //
+                obj_metas
+                    .get(&page_info.id)
+                    .is_some_and(|obj_meta| obj_meta.is_available)
+            });
+
+            if !are_images_uploaded {
+                return accept(None);
             }
 
-            let f_is_advanced = CompleteChapterRawProvide { id: chapter_id }
+            let is_advanced = CompleteChapterRawProvide { id: chapter_id }
                 .step_on(repo, context)
                 .await?;
 
-            if f_is_advanced {
+            if is_advanced {
                 //
                 let workflow_record_entry = ChapterWorkflowRecordEntry::new(
                     chapter_id,
@@ -211,7 +204,7 @@ where
                 .await?;
             }
 
-            accept(Some(f_is_advanced))
+            accept(Some(is_advanced))
         })
         .await
         .map_err(Into::into);

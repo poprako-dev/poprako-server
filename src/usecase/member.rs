@@ -1,16 +1,16 @@
 //! Member use cases: create, join, list, role update, and deletion.
 
+/// Member presentation assembly.
+pub mod view;
+
 #[cfg(test)]
 // Unit tests for team membership and invitation boundary conditions.
 mod tests;
 
-use poprako_orchestra::{
-    AtLeast, Context, Nucl, OperRun as _, OperStep as _, Run,
-};
+use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
-use poprako_obj_dept::oper::GenObjUrl;
-use poprako_obj_dept::rest::ObjDeptError;
+use poprako_obj_dept::ObjDeptView;
 use poprako_util::i18n::trl;
 
 use crate::complex::member::{MemberComplex, MemberPermComplex};
@@ -39,8 +39,7 @@ use crate::part::repo::oper::user::GetUserInfoExcluded;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::usecase::internal::util::collect_bounded;
-use crate::usecase::view::member_info_view;
+use crate::usecase::member::view::{member_info_view, member_info_views};
 
 /// Creates one member under a team.
 ///
@@ -153,9 +152,7 @@ where
     N: Nucl<Context = C, Error = BaseError>,
     C::Level: AtLeast<ReptRead>,
     R: MemberRepo<C> + MemberInvitationRepo<C> + UserRepo<C> + Send + Sync,
-    O: for<'a> Run<GenObjUrl<'a, UserAvatar>, Error = ObjDeptError>
-        + for<'a> Run<GenObjUrl<'a, TeamAvatar>, Error = ObjDeptError>
-        + Sync,
+    O: ObjDeptView<UserAvatar, C> + ObjDeptView<TeamAvatar, C> + Sync,
 {
     let current_user_id = token.user_id;
 
@@ -258,9 +255,7 @@ pub async fn list_infos<C, R, O>(
 where
     C: Context,
     R: MemberRepo<C> + Sync,
-    O: for<'a> Run<GenObjUrl<'a, UserAvatar>, Error = ObjDeptError>
-        + for<'a> Run<GenObjUrl<'a, TeamAvatar>, Error = ObjDeptError>
-        + Sync,
+    O: ObjDeptView<UserAvatar, C> + ObjDeptView<TeamAvatar, C> + Sync,
 {
     let member_list_spec = instr.try_into()?;
 
@@ -290,12 +285,7 @@ where
     .run_on(repo)
     .await?;
 
-    let member_info_vals = collect_bounded(
-        member_infos
-            .into_iter()
-            .map(|member_info| member_info_view(obj_dept, member_info)),
-    )
-    .await?;
+    let member_info_vals = member_info_views(obj_dept, member_infos).await?;
 
     accept(member_info_vals)
 }

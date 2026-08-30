@@ -36,12 +36,13 @@ pub struct PageImageSpec {
     pub ext: ImageExt,
 }
 
-/// Persisted manifest state for one retained or newly created page.
-/// TODO: why is this necessary?
-pub struct PageManifestRepl {
+/// Final persisted identity and position for one page-manifest item.
+pub struct PageManifestEntry {
     //
-    /// The unique identifier of the page whose manifest is being updated.
+    /// The unique identifier of the retained or newly created page.
     pub id: String,
-    /// Updated ordinal position of the page within the chapter.
+    /// Foreign key of the parent chapter for this manifest item.
+    pub chapter_id: String,
+    /// Final ordinal position of the page within the chapter.
     pub index: usize,
 }

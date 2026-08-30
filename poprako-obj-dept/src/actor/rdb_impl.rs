@@ -22,14 +22,26 @@ pub enum ObjKeyState {
     /// The current row retains only its watermark.
     Retired,
 
-    /// The current version awaits remote verification.
-    Pending,
+    /// The current version is not known to be remotely present.
+    Unavailable,
 
-    /// The current version is verified.
-    Verified,
+    /// The current version is known to be remotely present.
+    Available,
 
     /// The task is newer than the persisted watermark.
     Future,
+}
+
+/// Returns whether a Check task must reconcile remote presence.
+#[must_use]
+pub const fn requires_presence_reconciliation(state: ObjKeyState) -> bool {
+    matches!(state, ObjKeyState::Unavailable | ObjKeyState::Available)
+}
+
+/// Returns whether a failed presence CAS observed the same active generation.
+#[must_use]
+pub const fn presence_cas_conflict_requires_retry(state: ObjKeyState) -> bool {
+    matches!(state, ObjKeyState::Unavailable | ObjKeyState::Available)
 }
 
 /// Classifies a task version against the latest object row.
@@ -63,9 +75,9 @@ pub fn classify(
             //
             (None, None, None) => Ok(ObjKeyState::Retired),
 
-            (Some(false), Some(_), Some(_)) => Ok(ObjKeyState::Pending),
+            (Some(false), Some(_), Some(_)) => Ok(ObjKeyState::Unavailable),
 
-            (Some(true), Some(_), Some(_)) => Ok(ObjKeyState::Verified),
+            (Some(true), Some(_), Some(_)) => Ok(ObjKeyState::Available),
 
             _ => Err(ObjDeptError::Unrecoverable {
                 message: "invalid object row".into(),
@@ -78,7 +90,7 @@ pub fn classify(
 #[doc(hidden)]
 #[macro_export]
 // Expands the typed RDB object handler selected by manifest dispatch.
-macro_rules! __obj_handle {
+macro_rules! handle_obj_task {
     ($core:expr, $pool:expr, $task:expr, $obj_mod:ident $(,)?) => {{
         use ::poprako_obj_dept::pool::ObjPool as _;
 
@@ -91,7 +103,22 @@ macro_rules! __obj_handle {
             .get()
             .await
             .map_err(::poprako_obj_dept::rdb_impl::rdb_err)?;
-        let row = $obj_mod::load(&mut conn, &key.id, false).await?;
+        let (row, initial_revision) = match task.oper.as_str() {
+            ::poprako_obj_dept::model::task::CHECK => {
+                let presence_state =
+                    $obj_mod::load_for_presence_reconciliation(
+                        &mut conn,
+                        &key.id,
+                    )
+                    .await?;
+
+                match presence_state {
+                    Some((row, revision)) => (Some(row), Some(revision)),
+                    None => (None, None),
+                }
+            }
+            _ => ($obj_mod::load(&mut conn, &key.id, false).await?, None),
+        };
         let state = ::poprako_obj_dept::actor::rdb_impl::classify(
             key.version,
             row.as_ref(),
@@ -100,10 +127,6 @@ macro_rules! __obj_handle {
         drop(conn);
 
         match (task.oper.as_str(), state) {
-            (
-                ::poprako_obj_dept::model::task::CHECK,
-                ::poprako_obj_dept::actor::rdb_impl::ObjKeyState::Verified,
-            ) => Ok(::poprako_obj_dept::model::task::ObjTaskAction::Complete),
             (
                 ::poprako_obj_dept::model::task::CHECK,
                 ::poprako_obj_dept::actor::rdb_impl::ObjKeyState::Missing
@@ -123,11 +146,21 @@ macro_rules! __obj_handle {
 
                 Ok(::poprako_obj_dept::model::task::ObjTaskAction::Complete)
             }
-            (
-                ::poprako_obj_dept::model::task::CHECK,
-                ::poprako_obj_dept::actor::rdb_impl::ObjKeyState::Pending,
-            ) => {
-                let f_exists = ::tokio::time::timeout(
+            (::poprako_obj_dept::model::task::CHECK, state)
+                if ::poprako_obj_dept::actor::rdb_impl::requires_presence_reconciliation(state) =>
+            {
+                let Some(initial_revision) = initial_revision else {
+                    return Ok(
+                        ::poprako_obj_dept::model::task::ObjTaskAction::Operator {
+                            message: "active object lacks a revision token".into(),
+                        },
+                    );
+                };
+
+                // SAFETY: Remote existence is intentionally accepted as upload
+                // evidence. Content-hash verification is deferred because it
+                // would materially reduce upload throughput.
+                let exists = ::tokio::time::timeout(
                     ::poprako_obj_dept::actor::rdb_impl::REMOTE_TIMEOUT,
                     pool.has(&physical_key),
                 )
@@ -141,13 +174,23 @@ macro_rules! __obj_handle {
                     .get()
                     .await
                     .map_err(::poprako_obj_dept::rdb_impl::rdb_err)?;
-                let updated = match f_exists {
+                let updated = match exists {
                     true => {
-                        $obj_mod::verify(&mut conn, &key.id, key.version)
+                        $obj_mod::mark_uploaded_if_revision(
+                            &mut conn,
+                            &key.id,
+                            key.version,
+                            initial_revision,
+                        )
                             .await?
                     }
                     false => {
-                        $obj_mod::retire(&mut conn, &key.id, key.version)
+                        $obj_mod::mark_unuploaded_if_revision(
+                            &mut conn,
+                            &key.id,
+                            key.version,
+                            initial_revision,
+                        )
                             .await?
                     }
                 };
@@ -176,8 +219,8 @@ macro_rules! __obj_handle {
 
                 drop(conn);
 
-                let f_delete = match (updated, changed_state) {
-                    (1, _) => !f_exists,
+                match (updated, changed_state) {
+                    (1, _) => {}
                     (
                         0,
                         Some(
@@ -185,19 +228,21 @@ macro_rules! __obj_handle {
                             | ::poprako_obj_dept::actor::rdb_impl::ObjKeyState::Stale
                             | ::poprako_obj_dept::actor::rdb_impl::ObjKeyState::Retired,
                         ),
-                    ) => true,
-                    (
-                        0,
-                        Some(
-                            ::poprako_obj_dept::actor::rdb_impl::ObjKeyState::Verified,
-                        ),
-                    ) => false,
-                    (
-                        0,
-                        Some(
-                            ::poprako_obj_dept::actor::rdb_impl::ObjKeyState::Pending,
-                        ),
                     ) => {
+                        ::tokio::time::timeout(
+                            ::poprako_obj_dept::actor::rdb_impl::REMOTE_TIMEOUT,
+                            pool.del(&physical_key),
+                        )
+                        .await
+                        .map_err(|_| {
+                            ::poprako_obj_dept::rest::ObjDeptError::Retryable {
+                                message: "object delete timed out".into(),
+                            }
+                        })??;
+                    }
+                    (0, Some(state))
+                        if ::poprako_obj_dept::actor::rdb_impl::presence_cas_conflict_requires_retry(state) =>
+                    {
                         return Ok(
                             ::poprako_obj_dept::model::task::ObjTaskAction::Retry {
                                 message: "object changed during check".into(),
@@ -217,19 +262,6 @@ macro_rules! __obj_handle {
                         );
                     }
                     _ => unreachable!("checked object update count and state"),
-                };
-
-                if f_delete {
-                    ::tokio::time::timeout(
-                        ::poprako_obj_dept::actor::rdb_impl::REMOTE_TIMEOUT,
-                        pool.del(&physical_key),
-                    )
-                    .await
-                    .map_err(|_| {
-                        ::poprako_obj_dept::rest::ObjDeptError::Retryable {
-                            message: "object delete timed out".into(),
-                        }
-                    })??;
                 }
 
                 Ok(::poprako_obj_dept::model::task::ObjTaskAction::Complete)
@@ -261,8 +293,8 @@ macro_rules! __obj_handle {
             }
             (
                 ::poprako_obj_dept::model::task::DELETE,
-                ::poprako_obj_dept::actor::rdb_impl::ObjKeyState::Pending
-                | ::poprako_obj_dept::actor::rdb_impl::ObjKeyState::Verified
+                ::poprako_obj_dept::actor::rdb_impl::ObjKeyState::Unavailable
+                | ::poprako_obj_dept::actor::rdb_impl::ObjKeyState::Available
                 | ::poprako_obj_dept::actor::rdb_impl::ObjKeyState::Future,
             ) => Ok(::poprako_obj_dept::model::task::ObjTaskAction::Operator {
                 message: "delete task targets current object".into(),

@@ -2,7 +2,7 @@ use poprako_orchestra::Oper;
 
 use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::unit::UnitCountMetrics;
-use crate::model::write::page::{PageEntry, PageManifestRepl};
+use crate::model::write::page::{PageEntry, PageManifestEntry};
 
 /// Retrieves a single page's info by ID.
 #[derive(Oper)]
@@ -60,12 +60,12 @@ pub struct ShiftPageIndexesTemporary<'a> {
     pub chapter_id: &'a str,
 }
 
-/// Updates one retained page to its final manifest identity and position.
+/// Applies the complete final page manifest in one typed batch upsert.
 #[derive(Oper)]
-#[oper(output = PageInfo)]
-pub struct UpdatePageManifest<'a> {
-    /// The manifest update payload.
-    pub update: &'a PageManifestRepl,
+#[oper(output = Vec<PageInfo>)]
+pub struct ApplyPageManifest<'a> {
+    /// Final manifest entries in request order.
+    pub entries: &'a [PageManifestEntry],
 }
 
 /// Sets the unit counters for a page.

@@ -6,8 +6,11 @@ pub struct ObjMeta {
     //
     /// Current logical object key.
     pub key: ObjKey,
-    /// Whether remote storage has been verified.
-    pub f_is_uploaded: bool,
+    /// Whether reads may expose the object.
+    ///
+    /// A client upload mark enables availability optimistically. The object
+    /// actor may revoke it later when its presence check fails.
+    pub is_available: bool,
     /// Opaque content hash.
     pub hash: Vec<u8>,
     /// Validated object suffix.

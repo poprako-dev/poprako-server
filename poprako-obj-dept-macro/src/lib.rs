@@ -26,6 +26,8 @@
 
 // Expands one typed object declaration.
 mod object;
+// Parses shared total-department object manifest entries.
+mod obj_dept_entry;
 // Expands one total ObjDept implementation.
 mod impl_obj_dept;
 // Expands one typed RDB ObjProm adapter.
@@ -66,7 +68,7 @@ pub fn impl_obj_dept(input: TokenStream) -> TokenStream {
 /// Expands ObjDept items supplied by the local object manifest.
 #[doc(hidden)]
 #[proc_macro]
-pub fn impl_obj_dept_items(input: TokenStream) -> TokenStream {
+pub fn expand_obj_dept_items(input: TokenStream) -> TokenStream {
     //
     impl_obj_dept::expand_items(input.into())
         .unwrap_or_else(syn::Error::into_compile_error)

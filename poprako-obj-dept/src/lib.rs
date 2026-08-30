@@ -46,49 +46,66 @@ mod tests;
 
 use poprako_orchestra::drive;
 
-use crate::oper::{DelObjs, GenObjSlot, GenObjUrl, GetObjMeta};
+use crate::oper::{
+    GenObjSlot, GenObjSlots, GenObjUrls, ListObjMetas, MarkObjUploaded,
+    RetireObjs,
+};
 use crate::rest::ObjDeptError;
+
+pub use crate::model::mark::MarkObjUploadedOutcome;
 
 #[cfg(feature = "rdb_impl")]
 pub use poprako_obj_dept_macro::{
-    impl_obj_dept, impl_obj_dept_items as __impl_obj_dept_items, objs_def,
-    rdb_obj_prom,
+    expand_obj_dept_items, impl_obj_dept, objs_def, rdb_obj_prom,
 };
 #[cfg(feature = "rdb_impl")]
 pub use poprako_rdb_core::{RdbContext, RdbCore};
 
 extern crate self as poprako_obj_dept;
 
-/// Reliable object operations for one compile-time marker.
+/// Read-only object operations for one compile-time marker.
 #[drive(
     context = C,
     error = ObjDeptError,
     run(
-        for<'a> GetObjMeta<'a, B>,
-        for<'a> GenObjUrl<'a, B>,
+        for<'a> ListObjMetas<'a, B>,
+        for<'a> GenObjUrls<'a, B>,
+    ),
+    step(for<'a> ListObjMetas<'a, B>),
+)]
+pub trait ObjDeptView<B, C> {}
+
+/// Writable object operations for one compile-time marker.
+#[drive(
+    context = C,
+    error = ObjDeptError,
+    run(
+        for<'a> ListObjMetas<'a, B>,
+        for<'a> GenObjUrls<'a, B>,
+        for<'a> MarkObjUploaded<'a, B>,
     ),
     step(
-        for<'a> GetObjMeta<'a, B>,
+        for<'a> ListObjMetas<'a, B>,
         for<'a> GenObjSlot<'a, B>,
-        for<'a> DelObjs<'a, B>,
+        for<'a> GenObjSlots<'a, B>,
+        for<'a> RetireObjs<'a, B>,
     ),
 )]
 pub trait ObjDept<B, C> {}
 
-// Constructs an ObjDept operation while hiding its marker field.
 /// Constructs an `ObjDept` operation while hiding its marker field.
 #[macro_export]
 // Expands an operation while supplying its marker field.
 macro_rules! obj_inst {
-    (GetObjMeta<$obj:ident> { id: $id:expr $(,)? }) => {
-        ::poprako_obj_dept::oper::GetObjMeta::<$obj> {
-            id: $id,
+    (ListObjMetas<$obj:ident> { ids: $ids:expr $(,)? }) => {
+        ::poprako_obj_dept::oper::ListObjMetas::<$obj> {
+            ids: $ids,
             _m: ::core::marker::PhantomData,
         }
     };
-    (GenObjUrl<$obj:ident> { id: $id:expr $(,)? }) => {
-        ::poprako_obj_dept::oper::GenObjUrl::<$obj> {
-            id: $id,
+    (GenObjUrls<$obj:ident> { metas: $metas:expr $(,)? }) => {
+        ::poprako_obj_dept::oper::GenObjUrls::<$obj> {
+            metas: $metas,
             _m: ::core::marker::PhantomData,
         }
     };
@@ -98,17 +115,29 @@ macro_rules! obj_inst {
             _m: ::core::marker::PhantomData,
         }
     };
-    (DelObjs<$obj:ident>::Detach { ids: $ids:expr $(,)? }) => {{
-        let oper: ::poprako_obj_dept::oper::DelObjs<'_, $obj> =
-            ::poprako_obj_dept::oper::DelObjs::Detach {
+    (GenObjSlots<$obj:ident> { specs: $specs:expr $(,)? }) => {
+        ::poprako_obj_dept::oper::GenObjSlots::<$obj> {
+            specs: $specs,
+            _m: ::core::marker::PhantomData,
+        }
+    };
+    (MarkObjUploaded<$obj:ident> { key: $key:expr $(,)? }) => {
+        ::poprako_obj_dept::oper::MarkObjUploaded::<$obj> {
+            key: $key,
+            _m: ::core::marker::PhantomData,
+        }
+    };
+    (RetireObjs<$obj:ident>::PreserveWatermarks { ids: $ids:expr $(,)? }) => {{
+        let oper: ::poprako_obj_dept::oper::RetireObjs<'_, $obj> =
+            ::poprako_obj_dept::oper::RetireObjs::PreserveWatermarks {
                 ids: $ids,
                 _m: ::core::marker::PhantomData,
             };
         oper
     }};
-    (DelObjs<$obj:ident>::Remove { ids: $ids:expr $(,)? }) => {{
-        let oper: ::poprako_obj_dept::oper::DelObjs<'_, $obj> =
-            ::poprako_obj_dept::oper::DelObjs::Remove {
+    (RetireObjs<$obj:ident>::RemoveRows { ids: $ids:expr $(,)? }) => {{
+        let oper: ::poprako_obj_dept::oper::RetireObjs<'_, $obj> =
+            ::poprako_obj_dept::oper::RetireObjs::RemoveRows {
                 ids: $ids,
                 _m: ::core::marker::PhantomData,
             };

@@ -3,9 +3,9 @@
 use poprako_orchestra::drive;
 
 use crate::part::repo::oper::page::{
-    CreatePages, DeletePages, GetPageInfo, GetPageInfoExcluded,
-    ListFirstPageInfos, ListPageInfos, ListPageInfosExcluded,
-    SetPageUnitCounters, ShiftPageIndexesTemporary, UpdatePageManifest,
+    ApplyPageManifest, CreatePages, DeletePages, GetPageInfo,
+    GetPageInfoExcluded, ListFirstPageInfos, ListPageInfos,
+    ListPageInfosExcluded, SetPageUnitCounters, ShiftPageIndexesTemporary,
 };
 use crate::result::BaseError;
 
@@ -26,7 +26,7 @@ use crate::result::BaseError;
         for<'a> GetPageInfoExcluded<'a>,
         for<'a> SetPageUnitCounters<'a>,
         for<'a> ShiftPageIndexesTemporary<'a>,
-        for<'a> UpdatePageManifest<'a>,
+        for<'a> ApplyPageManifest<'a>,
         for<'a> DeletePages<'a>,
     ),
 )]

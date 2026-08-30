@@ -1,17 +1,22 @@
+use std::collections::HashSet;
+
 use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
 use crate::model::read::proj::page::PageInfo;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::page::{
-    CreatePages, DeletePages, GetPageInfo, GetPageInfoExcluded,
-    ListFirstPageInfos, ListPageInfos, ListPageInfosExcluded,
-    SetPageUnitCounters, ShiftPageIndexesTemporary, UpdatePageManifest,
+    ApplyPageManifest, CreatePages, DeletePages, GetPageInfo,
+    GetPageInfoExcluded, ListFirstPageInfos, ListPageInfos,
+    ListPageInfosExcluded, SetPageUnitCounters, ShiftPageIndexesTemporary,
 };
 use crate::part_impl::repo::mock_impl::page::{
     get_page_by_id, list_first_pages, list_infos, page_from_entry,
+    page_from_manifest_entry,
 };
-use crate::part_impl::repo::mock_impl::{Mock, MockContext, expected, now};
+use crate::part_impl::repo::mock_impl::{
+    Mock, MockContext, expected, now, unrecoverable,
+};
 use crate::result::{BaseError, BaseRest, accept};
 
 impl<'a> Run<GetPageInfo<'a>> for Mock {
@@ -209,22 +214,19 @@ impl<'a> Step<ShiftPageIndexesTemporary<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
+    // Move current page indexes out of the final nonnegative range.
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &ShiftPageIndexesTemporary<'a>,
     ) -> BaseRest<()> {
         //
-        // Internal implementation detail.
         for page_info in context
             .state
             .pages
             .iter_mut()
             .filter(|page_info| page_info.chapter_id == oper.chapter_id)
         {
-            //
-            // Internal implementation detail.
             page_info.index = usize::MAX - page_info.index;
 
             page_info.updated_at = now();
@@ -234,7 +236,7 @@ impl<'a> Step<ShiftPageIndexesTemporary<'a>, MockContext> for Mock {
     }
 }
 
-impl<'a> Step<UpdatePageManifest<'a>, MockContext> for Mock {
+impl<'a> Step<ApplyPageManifest<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
     type Level = ReptRead;
 
@@ -242,26 +244,66 @@ impl<'a> Step<UpdatePageManifest<'a>, MockContext> for Mock {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
+    // Apply retained index updates and new page inserts as one mock operation.
     async fn step(
         &self,
         context: &mut MockContext,
-        oper: &UpdatePageManifest<'a>,
-    ) -> BaseRest<PageInfo> {
+        oper: &ApplyPageManifest<'a>,
+    ) -> BaseRest<Vec<PageInfo>> {
         //
-        // Internal implementation detail.
-        let page_info = context
-            .state
-            .pages
-            .iter_mut()
-            .find(|page_info| page_info.id == oper.update.id)
-            .ok_or_else(|| expected("error-page-not-found"))?;
+        let mut seen_ids = HashSet::with_capacity(oper.entries.len());
 
-        page_info.index = oper.update.index;
+        let mut page_infos = Vec::with_capacity(oper.entries.len());
 
-        page_info.updated_at = now();
+        for entry in oper.entries {
+            //
+            let is_unique = seen_ids.insert(entry.id.as_str());
 
-        accept(page_info.clone())
+            if let false = is_unique {
+                //
+                return Err(unrecoverable(
+                    "page manifest contains a duplicate page id",
+                ));
+            }
+
+            let existing_page_info = context
+                .state
+                .pages
+                .iter_mut()
+                .find(|page_info| page_info.id == entry.id);
+
+            let page_info = match existing_page_info {
+                //
+                Some(page_info) => {
+                    //
+                    if let false = page_info.chapter_id == entry.chapter_id {
+                        //
+                        return Err(unrecoverable(
+                            "page manifest cannot move a page between chapters",
+                        ));
+                    }
+
+                    page_info.index = entry.index;
+
+                    page_info.updated_at = now();
+
+                    page_info.clone()
+                }
+
+                None => {
+                    //
+                    let page_info = page_from_manifest_entry(entry);
+
+                    context.state.pages.push(page_info.clone());
+
+                    page_info
+                }
+            };
+
+            page_infos.push(page_info);
+        }
+
+        accept(page_infos)
     }
 }
 

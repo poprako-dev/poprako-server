@@ -1,3 +1,6 @@
+// Generates typed Diesel entries for each object module.
+mod rdb_entry;
+
 use std::collections::HashSet;
 
 use proc_macro2::TokenStream;
@@ -5,21 +8,27 @@ use quote::{format_ident, quote};
 use syn::parse::{Parse, ParseStream};
 use syn::{Ident, LitStr, Path, Result, Token, braced};
 
-// One object declaration in the total manifest.
+// Stores one parsed object manifest declaration.
 struct ObjInput {
     //
-    // Compile-time object marker.
+    // Identifies the object marker type.
     marker: Ident,
-    // Diesel table path.
+
+    // Identifies the typed Diesel table module.
     table: Path,
-    // Durable task topic.
+
+    // Stores the object task topic.
     topic: LitStr,
-    // Physical storage namespace.
+
+    // Stores the object-key namespace.
     namespace: LitStr,
+
+    // Selects the object URL generation profile.
+    url_profile: Ident,
 }
 
 impl Parse for ObjInput {
-    // Parses one object declaration.
+    // Parses one object manifest declaration.
     fn parse(input: ParseStream<'_>) -> Result<Self> {
         //
         let marker = input.parse()?;
@@ -44,6 +53,23 @@ impl Parse for ObjInput {
 
         let namespace = content.parse()?;
 
+        content.parse::<Token![,]>()?;
+
+        parse_field(&content, "url_profile")?;
+
+        let url_profile = content.parse::<Ident>()?;
+
+        if !matches!(
+            url_profile.to_string().as_str(),
+            "OriginOnly" | "ImageThumbnail"
+        ) {
+            //
+            return Err(syn::Error::new(
+                url_profile.span(),
+                "expected `OriginOnly` or `ImageThumbnail`",
+            ));
+        }
+
         if content.peek(Token![,]) {
             content.parse::<Token![,]>()?;
         }
@@ -57,15 +83,16 @@ impl Parse for ObjInput {
             table,
             topic,
             namespace,
+            url_profile,
         })
     }
 }
 
-// Complete object manifest.
+// Wraps the object declarations accepted by the macro.
 struct ObjsInput(Vec<ObjInput>);
 
 impl Parse for ObjsInput {
-    // Parses the complete object manifest.
+    // Parses all object manifest declarations.
     fn parse(input: ParseStream<'_>) -> Result<Self> {
         //
         let mut objs = Vec::new();
@@ -94,11 +121,7 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
 
     validate_unique(&objs)?;
 
-    let mut modules = Vec::with_capacity(objs.len());
-
-    for obj in &objs {
-        modules.push(expand_obj(obj));
-    }
+    let modules = objs.iter().map(expand_obj);
 
     let unique_markers = objs.iter().map(|obj| &obj.marker);
 
@@ -108,19 +131,19 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
         //
         let marker = &obj.marker;
 
-        let module =
-            format_ident!("__obj_dept_{}", to_snake_case(&marker.to_string()),);
+        let module = marker_module(marker);
 
         let topic = &obj.topic;
 
         let namespace = &obj.namespace;
 
-        quote!((#marker, #module, #topic, #namespace),)
+        let url_profile = &obj.url_profile;
+
+        quote!((#marker, #module, #topic, #namespace, #url_profile),)
     });
 
     Ok(quote! {
-        #[doc(hidden)]
-        mod __obj_dept_unique {
+        mod obj_manifest_uniqueness {
             trait Marker {}
 
             #(impl Marker for super::#unique_markers {})*
@@ -132,7 +155,7 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
 
         #(#modules)*
 
-        macro_rules! __objs_manifest {
+        macro_rules! for_each_obj {
             ($callback:ident) => {
                 $callback! {
                     #(#manifest)*
@@ -142,7 +165,7 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
     })
 }
 
-// Rejects duplicate marker, table, topic, and namespace values.
+// Validates object-manifest identifiers for uniqueness.
 fn validate_unique(objs: &[ObjInput]) -> Result<()> {
     //
     let mut markers = HashSet::new();
@@ -184,51 +207,12 @@ fn validate_unique(objs: &[ObjInput]) -> Result<()> {
     Ok(())
 }
 
-// Expands typed Diesel helpers for one object declaration.
-fn expand_obj(obj: &ObjInput) -> TokenStream {
-    //
-    let marker = &obj.marker;
-
-    let table = &obj.table;
-
-    let topic = &obj.topic;
-
-    let namespace = &obj.namespace;
-
-    let module =
-        format_ident!("__obj_dept_{}", to_snake_case(&marker.to_string()),);
-
-    let load = expand_load(table);
-
-    let write = expand_write(table);
-
-    let detach = expand_detach(table);
-
-    let verify = expand_verify(table);
-
-    let retire = expand_retire(table);
-
-    let remove = expand_remove(table);
-
-    quote! {
-        #[doc(hidden)]
-        mod #module {
-            use super::#table;
-
-            pub const TOPIC: &str = #topic;
-            pub const NAMESPACE: &str = #namespace;
-
-            #load
-            #write
-            #detach
-            #verify
-            #retire
-            #remove
-        }
-    }
+// Builds the generated RDB module identifier for an object marker.
+fn marker_module(marker: &Ident) -> Ident {
+    format_ident!("{}_rdb_impl", to_snake_case(&marker.to_string()))
 }
 
-// Inserts one manifest value or reports its duplicate.
+// Validates one distinct object-manifest value.
 fn validate_value(
     values: &mut HashSet<String>,
     value: String,
@@ -246,268 +230,7 @@ fn validate_value(
     ))
 }
 
-// Generates the standardized row-load implementation.
-fn expand_load(table: &Path) -> TokenStream {
-    //
-    quote! {
-        #[derive(::diesel::Queryable, ::diesel::Selectable)]
-        #[diesel(table_name = #table)]
-        #[diesel(check_for_backend(::diesel::pg::Pg))]
-        struct FullRow {
-            #[diesel(column_name = f_id)]
-            id: String,
-            #[diesel(column_name = f_version)]
-            version: i64,
-            #[diesel(column_name = f_is_uploaded)]
-            f_is_uploaded: Option<bool>,
-            #[diesel(column_name = f_hash)]
-            hash: Option<Vec<u8>>,
-            #[diesel(column_name = f_ext)]
-            ext: Option<String>,
-            #[diesel(column_name = f_created_at)]
-            created_at: ::time::OffsetDateTime,
-            #[diesel(column_name = f_updated_at)]
-            updated_at: ::time::OffsetDateTime,
-        }
-
-        impl From<FullRow> for ::poprako_obj_dept::rdb_impl::ObjRdbRow {
-            //
-            fn from(row: FullRow) -> Self {
-                //
-                let FullRow {
-                    //
-                    id,
-                    version,
-                    f_is_uploaded,
-                    hash,
-                    ext,
-                    created_at,
-                    updated_at,
-                } = row;
-
-                drop((id, created_at, updated_at));
-
-                Self {
-                    version,
-                    f_is_uploaded,
-                    hash,
-                    ext,
-                }
-            }
-        }
-
-        pub fn load<'a>(
-            conn: &'a mut ::poprako_rdb_core::RdbConn,
-            id: &'a str,
-            lock: bool,
-        ) -> impl ::std::future::Future<
-            Output = ::poprako_obj_dept::rest::ObjDeptRest<
-                Option<::poprako_obj_dept::rdb_impl::ObjRdbRow>,
-            >,
-        > + Send {
-            async move {
-                use ::diesel::OptionalExtension as _;
-                use ::diesel::prelude::{ExpressionMethods as _, QueryDsl as _};
-                use ::diesel::SelectableHelper as _;
-                use ::diesel_async::RunQueryDsl as _;
-
-                let row = match lock {
-                    true => #table::table
-                        .filter(#table::f_id.eq(id))
-                        .for_update()
-                        .select(FullRow::as_select())
-                        .first::<FullRow>(conn)
-                        .await,
-
-                    false => #table::table
-                        .filter(#table::f_id.eq(id))
-                        .select(FullRow::as_select())
-                        .first::<FullRow>(conn)
-                        .await,
-                }
-                .optional()
-                .map_err(::poprako_obj_dept::rdb_impl::diesel_err)?;
-
-                Ok(row.map(Into::into))
-            }
-        }
-    }
-}
-
-// Generates the standardized row-write implementation.
-fn expand_write(table: &Path) -> TokenStream {
-    //
-    quote! {
-        pub fn write<'a>(
-            conn: &'a mut ::poprako_rdb_core::RdbConn,
-            write: ::poprako_obj_dept::rdb_impl::ObjRdbWrite<'a>,
-        ) -> impl ::std::future::Future<
-            Output = ::poprako_obj_dept::rest::ObjDeptRest<()>,
-        > + Send {
-            async move {
-                use ::diesel::prelude::ExpressionMethods as _;
-                use ::diesel_async::RunQueryDsl as _;
-
-                ::diesel::insert_into(#table::table)
-                    .values((
-                        #table::f_id.eq(write.id),
-                        #table::f_version.eq(i64::from(write.version)),
-                        #table::f_is_uploaded.eq(false),
-                        #table::f_hash.eq(write.hash),
-                        #table::f_ext.eq(write.ext),
-                    ))
-                    .on_conflict(#table::f_id)
-                    .do_update()
-                    .set((
-                        #table::f_version.eq(i64::from(write.version)),
-                        #table::f_is_uploaded.eq(false),
-                        #table::f_hash.eq(write.hash),
-                        #table::f_ext.eq(write.ext),
-                        #table::f_updated_at.eq(::time::OffsetDateTime::now_utc()),
-                    ))
-                    .execute(conn)
-                    .await
-                    .map_err(::poprako_obj_dept::rdb_impl::diesel_err)?;
-
-                Ok(())
-            }
-        }
-    }
-}
-
-// Generates the standardized object-detach implementation.
-fn expand_detach(table: &Path) -> TokenStream {
-    //
-    quote! {
-        pub fn detach<'a>(
-            conn: &'a mut ::poprako_rdb_core::RdbConn,
-            id: &'a str,
-        ) -> impl ::std::future::Future<
-            Output = ::poprako_obj_dept::rest::ObjDeptRest<()>,
-        > + Send {
-            async move {
-                use ::diesel::prelude::{ExpressionMethods as _, QueryDsl as _};
-                use ::diesel_async::RunQueryDsl as _;
-
-                ::diesel::update(#table::table.filter(#table::f_id.eq(id)))
-                    .set((
-                        #table::f_is_uploaded.eq(None::<bool>),
-                        #table::f_hash.eq(None::<Vec<u8>>),
-                        #table::f_ext.eq(None::<String>),
-                        #table::f_updated_at.eq(::time::OffsetDateTime::now_utc()),
-                    ))
-                    .execute(conn)
-                    .await
-                    .map_err(::poprako_obj_dept::rdb_impl::diesel_err)?;
-
-                Ok(())
-            }
-        }
-    }
-}
-
-// Generates the standardized upload-verification implementation.
-fn expand_verify(table: &Path) -> TokenStream {
-    //
-    quote! {
-        pub fn verify(
-            conn: &mut ::poprako_rdb_core::RdbConn,
-            id: &str,
-            version: u32,
-        ) -> impl ::std::future::Future<
-            Output = ::poprako_obj_dept::rest::ObjDeptRest<usize>,
-        > + Send {
-            async move {
-                use ::diesel::prelude::{ExpressionMethods as _, QueryDsl as _};
-                use ::diesel_async::RunQueryDsl as _;
-
-                let updated = ::diesel::update(
-                    #table::table
-                        .filter(#table::f_id.eq(id))
-                        .filter(#table::f_version.eq(i64::from(version)))
-                        .filter(#table::f_is_uploaded.eq(false))
-                        .filter(#table::f_hash.is_not_null())
-                        .filter(#table::f_ext.is_not_null()),
-                )
-                .set((
-                    #table::f_is_uploaded.eq(true),
-                    #table::f_updated_at.eq(::time::OffsetDateTime::now_utc()),
-                ))
-                .execute(conn)
-                .await
-                .map_err(::poprako_obj_dept::rdb_impl::diesel_err)?;
-
-                Ok(updated)
-            }
-        }
-    }
-}
-
-// Generates the standardized object-retirement implementation.
-fn expand_retire(table: &Path) -> TokenStream {
-    //
-    quote! {
-        pub fn retire(
-            conn: &mut ::poprako_rdb_core::RdbConn,
-            id: &str,
-            version: u32,
-        ) -> impl ::std::future::Future<
-            Output = ::poprako_obj_dept::rest::ObjDeptRest<usize>,
-        > + Send {
-            async move {
-                use ::diesel::prelude::{ExpressionMethods as _, QueryDsl as _};
-                use ::diesel_async::RunQueryDsl as _;
-
-                let updated = ::diesel::update(
-                    #table::table
-                        .filter(#table::f_id.eq(id))
-                        .filter(#table::f_version.eq(i64::from(version)))
-                        .filter(#table::f_is_uploaded.eq(false))
-                        .filter(#table::f_hash.is_not_null())
-                        .filter(#table::f_ext.is_not_null()),
-                )
-                .set((
-                    #table::f_is_uploaded.eq(None::<bool>),
-                    #table::f_hash.eq(None::<Vec<u8>>),
-                    #table::f_ext.eq(None::<String>),
-                    #table::f_updated_at.eq(::time::OffsetDateTime::now_utc()),
-                ))
-                .execute(conn)
-                .await
-                .map_err(::poprako_obj_dept::rdb_impl::diesel_err)?;
-
-                Ok(updated)
-            }
-        }
-    }
-}
-
-// Generates the standardized object-removal implementation.
-fn expand_remove(table: &Path) -> TokenStream {
-    //
-    quote! {
-        pub fn remove<'a>(
-            conn: &'a mut ::poprako_rdb_core::RdbConn,
-            id: &'a str,
-        ) -> impl ::std::future::Future<
-            Output = ::poprako_obj_dept::rest::ObjDeptRest<()>,
-        > + Send {
-            async move {
-                use ::diesel::prelude::{ExpressionMethods as _, QueryDsl as _};
-                use ::diesel_async::RunQueryDsl as _;
-
-                ::diesel::delete(#table::table.filter(#table::f_id.eq(id)))
-                    .execute(conn)
-                    .await
-                    .map_err(::poprako_obj_dept::rdb_impl::diesel_err)?;
-
-                Ok(())
-            }
-        }
-    }
-}
-
-// Converts a Rust type identifier into its snake-case namespace component.
+// Converts an object marker into a generated module name.
 fn to_snake_case(name: &str) -> String {
     //
     let mut snake_case = String::with_capacity(name.len());
@@ -524,11 +247,11 @@ fn to_snake_case(name: &str) -> String {
             character.is_lowercase() || character.is_ascii_digit()
         });
 
-        let f_word_boundary = current.is_uppercase()
+        let is_word_boundary = current.is_uppercase()
             && !snake_case.is_empty()
             && (follows_lowercase || next.is_some_and(char::is_lowercase));
 
-        if f_word_boundary {
+        if is_word_boundary {
             snake_case.push('_');
         }
 
@@ -540,7 +263,36 @@ fn to_snake_case(name: &str) -> String {
     snake_case
 }
 
-// Parses one exact named field.
+// Expands one object module and its typed Diesel operations.
+fn expand_obj(obj: &ObjInput) -> TokenStream {
+    //
+    let table = &obj.table;
+
+    let topic = &obj.topic;
+
+    let namespace = &obj.namespace;
+
+    let url_profile = &obj.url_profile;
+
+    let module = marker_module(&obj.marker);
+
+    let rdb_entry = rdb_entry::expand(table);
+
+    quote! {
+        mod #module {
+            use super::#table;
+
+            pub const TOPIC: &str = #topic;
+            pub const NAMESPACE: &str = #namespace;
+            pub const URL_PROFILE: ::poprako_obj_dept::pool::ObjUrlProfile =
+                ::poprako_obj_dept::pool::ObjUrlProfile::#url_profile;
+
+            #rdb_entry
+        }
+    }
+}
+
+// Parses a named field in an object manifest declaration.
 fn parse_field(input: ParseStream<'_>, expected: &str) -> Result<()> {
     //
     let field = input.parse::<Ident>()?;

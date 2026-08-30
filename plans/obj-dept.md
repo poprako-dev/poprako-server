@@ -1,5 +1,10 @@
 # ObjDept Implementation Plan
 
+> Superseded: this records the earlier PageImage-only infrastructure slice.
+> Current implementation and recheck work are governed by
+> `plans/obj-dept-remediation.md` and
+> `plans/obj-dept-review-issues.md`.
+
 ## Current stage
 
 Implement and verify the smallest complete infrastructure slice without
@@ -15,7 +20,7 @@ cutting existing Page traffic over.
 
 - keep `ObjKey`, `ObjSpec`, `ObjMeta`, and `ObjSlot` in
   `poprako-obj-dept`;
-- define `GetObjMeta`, `GenObjUrl`, `GenObjSlot`, and `DelObjs`;
+- define `ListObjMetas`, `GenObjUrls`, `GenObjSlot`, and `DelObjs`;
 - compose them as `ObjDept<B, C>`;
 - expose the optional typed RDB seam under `rdb_impl`.
 
@@ -89,7 +94,7 @@ The deferred stage will eventually:
 
 - move existing verified Page objects and metadata;
 - call `GenObjSlot<PageImage>` from both Page reservation paths;
-- call `GetObjMeta<PageImage>` and `GenObjUrl<PageImage>` from Page reads;
+- call `ListObjMetas<PageImage>` and `GenObjUrls<PageImage>` from Page reads;
 - call `DelObjs<PageImage>` from publish and owner deletion transactions;
 - drain and remove only legacy Page image messages;
 - remove old `t_page` image columns after its rollback window.

@@ -7,17 +7,13 @@
 //! [`actor`]: crate::part_impl::prom::rdb_impl::actor
 //! [`pool`]: crate::part_impl::prom::rdb_impl::actor::pool
 
-use poprako_orchestra::Step;
 use tokio_util::sync::CancellationToken;
 use tracing::instrument;
 
-use poprako_obj_dept::oper::GetObjMeta;
-use poprako_obj_dept::pool::ObjPoolView;
-use poprako_obj_dept::rest::ObjDeptError;
+use poprako_obj_dept::ObjDeptView;
 use poprako_rdb_core::RdbCore;
 
 use crate::part::effect::Develop;
-use crate::part::nucl::ReptRead;
 use crate::part::obj_dept::PageImage;
 use crate::part::prom::payload::TaskPayload;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
@@ -28,27 +24,9 @@ use crate::shared::RdbContext;
 use crate::usecase::prom::{PromTaskAction, handle_chapter, handle_invitation};
 
 /// Read-only object capabilities available to the general prom actor.
-pub trait ObjView:
-    ObjPoolView
-    + for<'a> Step<
-        GetObjMeta<'a, PageImage>,
-        RdbContext,
-        Level = ReptRead,
-        Error = ObjDeptError,
-    >
-{
-}
+pub trait ObjView: ObjDeptView<PageImage, RdbContext> {}
 
-impl<T> ObjView for T where
-    T: ObjPoolView
-        + for<'a> Step<
-            GetObjMeta<'a, PageImage>,
-            RdbContext,
-            Level = ReptRead,
-            Error = ObjDeptError,
-        >
-{
-}
+impl<T> ObjView for T where T: ObjDeptView<PageImage, RdbContext> {}
 
 /// Background worker that polls the `t_local_message` table, dispatches by topic,
 /// and completes or fails each record.

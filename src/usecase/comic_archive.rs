@@ -164,13 +164,15 @@ where
 
             let cover_ids = [comic_archive_entry.source_comic_id.clone()];
 
-            obj_inst! { DelObjs<ComicCover>::Detach { ids: &cover_ids } }
-                .step_on(obj_dept, context)
-                .await
-                .map_err(BaseError::from)?;
+            obj_inst! {
+                RetireObjs<ComicCover>::PreserveWatermarks { ids: &cover_ids }
+            }
+            .step_on(obj_dept, context)
+            .await
+            .map_err(BaseError::from)?;
 
             obj_inst! {
-                DelObjs<PageImage>::Remove {
+                RetireObjs<PageImage>::RemoveRows {
                     ids: &comic_archive_entry.source_page_ids,
                 }
             }

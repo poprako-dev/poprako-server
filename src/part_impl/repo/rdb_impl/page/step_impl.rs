@@ -4,6 +4,7 @@ use diesel::prelude::{
     ExpressionMethods as _, OptionalExtension as _, QueryDsl as _,
     SelectableHelper as _,
 };
+use diesel::upsert::excluded;
 use diesel_async::RunQueryDsl as _;
 use time::OffsetDateTime;
 use tracing::instrument;
@@ -13,7 +14,7 @@ use poprako_util::i18n::trl;
 
 use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::unit::UnitCountMetrics;
-use crate::model::write::page::{PageEntry, PageManifestRepl};
+use crate::model::write::page::{PageEntry, PageManifestEntry};
 use crate::part_impl::repo::rdb_impl::entity::page::{
     PageAspectRow, PageEntryRow, PageInfoRow,
 };
@@ -155,26 +156,45 @@ pub async fn shift_indexes_temporary(
     accept(())
 }
 
-/// Persists the final index and image identity for one manifest page.
+/// Applies the final manifest with one insert-or-index-update statement.
 #[instrument(level = "info", skip_all)]
-pub async fn update_manifest(
+pub async fn apply_manifest(
     conn: &mut RdbConn,
-    update: &PageManifestRepl,
-) -> BaseRest<PageInfo> {
+    model_entries: &[PageManifestEntry],
+) -> BaseRest<Vec<PageInfo>> {
     //
-    let now = OffsetDateTime::now_utc();
+    let entries = model_entries
+        .iter()
+        .map(PageEntryRow::try_from)
+        .collect::<BaseRest<Vec<_>>>()?;
 
-    let row = diesel::update(t_page.filter(f_id.eq(&update.id)))
+    let manifest_upsert = diesel::insert_into(t_page)
+        .values(&entries)
+        .on_conflict(f_id)
+        .do_update()
         .set((
-            f_index.eq(i32_from_usize(update.index, "t_page.f_index")?),
-            f_updated_at.eq(now),
-        ))
-        .returning(PageInfoRow::as_returning())
-        .get_result::<PageInfoRow>(conn)
-        .await
-        .map_err(diesel)?;
+            f_index.eq(excluded(f_index)),
+            f_updated_at.eq(excluded(f_updated_at)),
+        ));
 
-    row.try_into()
+    let rows = diesel::query_dsl::methods::FilterDsl::filter(
+        manifest_upsert,
+        f_chapter_id.eq(excluded(f_chapter_id)),
+    )
+    .returning(PageInfoRow::as_returning())
+    .get_results::<PageInfoRow>(conn)
+    .await
+    .map_err(diesel)?;
+
+    if rows.len() != model_entries.len() {
+        //
+        return Err(BaseError::Unrecoverable {
+            message: "page manifest upsert returned an unexpected row count"
+                .into(),
+        });
+    }
+
+    rows.into_iter().map(TryInto::try_into).collect()
 }
 
 /// Query the lowest-index page info for each requested chapter.

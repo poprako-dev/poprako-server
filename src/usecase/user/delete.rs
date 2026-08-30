@@ -117,7 +117,7 @@ where
 
         let obj_ids = [id.clone()];
 
-        obj_inst! { DelObjs<UserAvatar>::Remove { ids: &obj_ids } }
+        obj_inst! { RetireObjs<UserAvatar>::RemoveRows { ids: &obj_ids } }
             .step_on(obj_dept, context)
             .await
             .map_err(BaseError::from)?;

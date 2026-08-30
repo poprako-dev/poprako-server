@@ -43,18 +43,27 @@ async fn process_raw_provide(
             let page_infos =
                 ListPageInfos { chapter_id }.step_on(mock, context).await?;
 
-            for page_info in &page_infos {
-                //
-                let obj_meta = obj_inst! {
-                    GetObjMeta<PageImage> { id: &page_info.id }
-                }
-                .step_on(mock, context)
-                .await
-                .map_err(BaseError::from)?;
+            let page_ids = page_infos
+                .iter()
+                .map(|page_info| page_info.id.clone())
+                .collect::<Vec<_>>();
 
-                if !obj_meta.is_some_and(|obj_meta| obj_meta.f_is_uploaded) {
-                    return accept(false);
-                }
+            let obj_metas = obj_inst! {
+                ListObjMetas<PageImage> { ids: &page_ids }
+            }
+            .step_on(mock, context)
+            .await
+            .map_err(BaseError::from)?;
+
+            let are_images_uploaded = page_infos.iter().all(|page_info| {
+                //
+                obj_metas
+                    .get(&page_info.id)
+                    .is_some_and(|obj_meta| obj_meta.is_available)
+            });
+
+            if !are_images_uploaded {
+                return accept(false);
             }
 
             let advanced = CompleteChapterRawProvide { id: chapter_id }

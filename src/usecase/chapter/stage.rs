@@ -234,10 +234,12 @@ where
         .map(|page_info| page_info.id)
         .collect::<Vec<_>>();
 
-    obj_inst! { DelObjs<PageImage>::Detach { ids: &page_ids } }
-        .step_on(obj_dept, context)
-        .await
-        .map_err(BaseError::from)
+    obj_inst! {
+        RetireObjs<PageImage>::PreserveWatermarks { ids: &page_ids }
+    }
+    .step_on(obj_dept, context)
+    .await
+    .map_err(BaseError::from)
 }
 
 // Develops workflow completion and publication events after commit.

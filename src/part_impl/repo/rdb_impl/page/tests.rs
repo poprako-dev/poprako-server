@@ -5,10 +5,11 @@ use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 use poprako_rdb_core::RdbCore;
 
 use crate::model::read::proj::unit::UnitCountMetrics;
-use crate::model::write::page::PageEntry;
+use crate::model::write::page::{PageEntry, PageManifestEntry};
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::page::{
-    CreatePages, ListFirstPageInfos, ListPageInfos, SetPageUnitCounters,
+    ApplyPageManifest, CreatePages, ListFirstPageInfos, ListPageInfos,
+    SetPageUnitCounters, ShiftPageIndexesTemporary,
 };
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::HybRepo;
@@ -64,27 +65,117 @@ pub async fn page_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     assert_eq!(page_infos[0].total_unit_count, 2);
 
+    assert_eq!(page_infos[0].translated_unit_count, 1);
+
+    assert_eq!(page_infos[0].proofread_unit_count, 1);
+
+    let retained_created_at = page_infos[0].created_at;
+
     let second_page_entry = PageEntry {
         id: format!("{}page-later", PREFIX),
         chapter_id: page_fixture.chapter_entry.id.clone(),
         index: 1,
     };
 
+    let new_page_info = nucl
+        .coord(async |context| {
+            //
+            let page_infos = repo
+                .step(
+                    context,
+                    &CreatePages {
+                        entries: std::slice::from_ref(&second_page_entry),
+                    },
+                )
+                .await?;
+
+            page_infos.into_iter().next().ok_or_else(|| {
+                BaseError::Unrecoverable {
+                    message: "page creation returned no row".into(),
+                }
+            })
+        })
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(new_page_info.total_unit_count, 0);
+
+    assert_eq!(new_page_info.translated_unit_count, 0);
+
+    assert_eq!(new_page_info.proofread_unit_count, 0);
+
+    let new_created_at = new_page_info.created_at;
+
+    assert!(new_created_at <= time::OffsetDateTime::now_utc());
+
+    let manifest_entries = vec![
+        PageManifestEntry {
+            id: second_page_entry.id.clone(),
+            chapter_id: page_fixture.chapter_entry.id.clone(),
+            index: 0,
+        },
+        PageManifestEntry {
+            id: page_fixture.page_entry.id.clone(),
+            chapter_id: page_fixture.chapter_entry.id.clone(),
+            index: 1,
+        },
+    ];
+
     nucl.coord(async |context| {
         //
         repo.step(
             context,
-            &CreatePages {
-                entries: &[second_page_entry],
+            &ShiftPageIndexesTemporary {
+                chapter_id: &page_fixture.chapter_entry.id,
             },
         )
         .await?;
+
+        let page_infos = repo
+            .step(
+                context,
+                &ApplyPageManifest {
+                    entries: &manifest_entries,
+                },
+            )
+            .await?;
+
+        assert_eq!(page_infos.len(), 2);
 
         Ok::<(), BaseError>(())
     })
     .await
     .ok()
     .unwrap();
+
+    let reordered_page_infos = repo
+        .run(&ListPageInfos {
+            chapter_id: &page_fixture.chapter_entry.id,
+        })
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(reordered_page_infos[0].id, second_page_entry.id);
+
+    assert_eq!(reordered_page_infos[0].total_unit_count, 0);
+
+    assert_eq!(reordered_page_infos[0].translated_unit_count, 0);
+
+    assert_eq!(reordered_page_infos[0].proofread_unit_count, 0);
+
+    assert_eq!(reordered_page_infos[0].created_at, new_created_at);
+
+    assert_eq!(reordered_page_infos[1].id, page_fixture.page_entry.id);
+
+    assert_eq!(reordered_page_infos[1].total_unit_count, 2);
+
+    assert_eq!(reordered_page_infos[1].translated_unit_count, 1);
+
+    assert_eq!(reordered_page_infos[1].proofread_unit_count, 1);
+
+    assert_eq!(reordered_page_infos[1].created_at, retained_created_at);
 
     let chapter_ids = vec![page_fixture.chapter_entry.id.clone()];
 
@@ -101,7 +192,75 @@ pub async fn page_roundtrip_uses_testcontainer(shared: RdbCore) {
         .find(|page_info| page_info.chapter_id == page_fixture.chapter_entry.id)
         .expect("first page info for the chapter");
 
-    assert_eq!(first_page_info.id, page_fixture.page_entry.id);
+    assert_eq!(first_page_info.id, second_page_entry.id);
+
+    let rollback_entries = vec![
+        PageManifestEntry {
+            id: page_fixture.page_entry.id.clone(),
+            chapter_id: page_fixture.chapter_entry.id.clone(),
+            index: 0,
+        },
+        PageManifestEntry {
+            id: second_page_entry.id.clone(),
+            chapter_id: page_fixture.chapter_entry.id.clone(),
+            index: 1,
+        },
+    ];
+
+    let rollback_result = nucl
+        .coord(async |context| {
+            //
+            repo.step(
+                context,
+                &ShiftPageIndexesTemporary {
+                    chapter_id: &page_fixture.chapter_entry.id,
+                },
+            )
+            .await?;
+
+            repo.step(
+                context,
+                &ApplyPageManifest {
+                    entries: &rollback_entries,
+                },
+            )
+            .await?;
+
+            Err::<(), BaseError>(BaseError::Unrecoverable {
+                message: "force page-manifest rollback".into(),
+            })
+        })
+        .await;
+
+    assert!(rollback_result.is_err());
+
+    let rolled_back_page_infos = repo
+        .run(&ListPageInfos {
+            chapter_id: &page_fixture.chapter_entry.id,
+        })
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(rolled_back_page_infos[0].id, second_page_entry.id);
+
+    assert_eq!(rolled_back_page_infos[0].created_at, new_created_at);
+
+    assert_eq!(rolled_back_page_infos[0].total_unit_count, 0);
+
+    assert_eq!(rolled_back_page_infos[0].translated_unit_count, 0);
+
+    assert_eq!(rolled_back_page_infos[0].proofread_unit_count, 0);
+
+    assert_eq!(rolled_back_page_infos[1].id, page_fixture.page_entry.id);
+
+    assert_eq!(rolled_back_page_infos[1].created_at, retained_created_at);
+
+    assert_eq!(rolled_back_page_infos[1].total_unit_count, 2);
+
+    assert_eq!(rolled_back_page_infos[1].translated_unit_count, 1);
+
+    assert_eq!(rolled_back_page_infos[1].proofread_unit_count, 1);
 
     test_shared::cleanup(&shared, PREFIX).await.ok().unwrap();
 

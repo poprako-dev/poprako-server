@@ -12,30 +12,50 @@ use poprako_obj_dept::key::ObjKey;
 use poprako_obj_dept::model::meta::ObjMeta;
 use poprako_obj_dept::model::slot::ObjSlot;
 use poprako_obj_dept::model::task::ObjTask;
-use poprako_obj_dept::oper::{DelObjs, GenObjSlot};
+use poprako_obj_dept::model::url::ObjUrls;
+use poprako_obj_dept::oper::{GenObjSlot, GenObjSlots, RetireObjs};
+use poprako_obj_dept::pool::ObjUrlProfile;
 use poprako_obj_dept::rest::{ObjDeptError, ObjDeptRest};
 
 use crate::part_impl::repo::mock_impl::{Mock, MockObjRecord};
 
-pub fn gen_url(
+pub fn gen_urls(
     namespace: &str,
     meta: Option<&ObjMeta>,
-) -> ObjDeptRest<Option<Url>> {
+    profile: ObjUrlProfile,
+    thumbnail_enabled: bool,
+) -> ObjDeptRest<Option<ObjUrls>> {
     let Some(meta) = meta else {
         return Ok(None);
     };
 
-    if !meta.f_is_uploaded {
+    if !meta.is_available {
         return Ok(None);
     }
 
     let key = meta.key.encode(namespace);
 
-    Url::parse(&format!("https://obj.test/{}", key))
-        .map(Some)
-        .map_err(|source| ObjDeptError::Unrecoverable {
-            message: source.to_string(),
-        })
+    let origin_url =
+        Url::parse(&format!("https://obj.test/{}", key)).map_err(|source| {
+            ObjDeptError::Unrecoverable {
+                message: source.to_string(),
+            }
+        })?;
+    let thumbnail_url = match (profile, thumbnail_enabled) {
+        (ObjUrlProfile::ImageThumbnail, true) => Some(
+            Url::parse(&format!("https://obj.test/thumbnail/{}", key))
+                .map_err(|source| ObjDeptError::Unrecoverable {
+                    message: source.to_string(),
+                })?,
+        ),
+        (ObjUrlProfile::OriginOnly | ObjUrlProfile::ImageThumbnail, false)
+        | (ObjUrlProfile::OriginOnly, true) => None,
+    };
+
+    Ok(Some(ObjUrls {
+        origin_url,
+        thumbnail_url,
+    }))
 }
 
 pub fn gen_slot(
@@ -67,7 +87,7 @@ pub fn gen_slot(
 
     let meta = ObjMeta {
         key: key.clone(),
-        f_is_uploaded: false,
+        is_available: false,
         hash: oper.spec.hash.to_vec(),
         ext: oper.spec.ext.to_owned(),
     };
@@ -97,14 +117,46 @@ pub fn gen_slot(
     })
 }
 
-pub fn del_objs<B>(
+pub fn gen_slots(
     objs: &mut HashMap<String, MockObjRecord>,
     tasks: &mut Vec<(&'static str, ObjTask)>,
     topic: &'static str,
-    oper: &DelObjs<'_, B>,
+    namespace: &str,
+    oper: &GenObjSlots<'_, impl Sized>,
+) -> ObjDeptRest<HashMap<String, ObjSlot>> {
+    let mut ids = oper.specs.iter().map(|spec| spec.id).collect::<Vec<_>>();
+
+    ids.sort_unstable();
+
+    if ids.windows(2).any(|pair| pair[0] == pair[1]) {
+        return Err(ObjDeptError::Invalid {
+            message: "duplicate object slot id".into(),
+        });
+    }
+
+    oper.specs
+        .iter()
+        .map(|spec| {
+            let single_oper = GenObjSlot {
+                spec,
+                _m: std::marker::PhantomData::<fn() -> ()>,
+            };
+            let slot = gen_slot(objs, tasks, topic, namespace, &single_oper)?;
+
+            Ok((spec.id.to_owned(), slot))
+        })
+        .collect()
+}
+
+pub fn retire_objs<B>(
+    objs: &mut HashMap<String, MockObjRecord>,
+    tasks: &mut Vec<(&'static str, ObjTask)>,
+    topic: &'static str,
+    oper: &RetireObjs<'_, B>,
 ) {
     let ids = match oper {
-        DelObjs::Detach { ids, .. } | DelObjs::Remove { ids, .. } => ids,
+        RetireObjs::PreserveWatermarks { ids, .. }
+        | RetireObjs::RemoveRows { ids, .. } => ids,
     };
 
     for id in *ids {
@@ -117,7 +169,7 @@ pub fn del_objs<B>(
         }
     }
 
-    if matches!(oper, DelObjs::Remove { .. }) {
+    if matches!(oper, RetireObjs::RemoveRows { .. }) {
         for id in *ids {
             objs.remove(id);
         }
@@ -125,34 +177,88 @@ pub fn del_objs<B>(
 }
 
 #[macro_export]
-macro_rules! __impl_mock_obj_dept {
-    ($obj:ty, $topic:literal, $namespace:literal) => {
+macro_rules! implement_mock_obj_dept {
+    ($obj:ty, $topic:literal, $namespace:literal, $url_profile:ident) => {
         impl<'a>
             ::poprako_orchestra::Run<
-                ::poprako_obj_dept::oper::GetObjMeta<'a, $obj>,
+                ::poprako_obj_dept::oper::MarkObjUploaded<'a, $obj>,
             > for $crate::part_impl::repo::mock_impl::Mock
         {
             type Error = ::poprako_obj_dept::rest::ObjDeptError;
 
             async fn run(
                 &self,
-                oper: &::poprako_obj_dept::oper::GetObjMeta<'a, $obj>,
+                oper: &::poprako_obj_dept::oper::MarkObjUploaded<'a, $obj>,
             ) -> ::poprako_obj_dept::rest::ObjDeptRest<
-                Option<::poprako_obj_dept::model::meta::ObjMeta>,
+                ::poprako_obj_dept::model::mark::MarkObjUploadedOutcome,
+            > {
+                let mut state = self.state.lock().unwrap();
+                let Some(record) = state
+                    .objs
+                    .get_mut($topic)
+                    .and_then(|objs| objs.get_mut(&oper.key.id))
+                else {
+                    return Ok(
+                        ::poprako_obj_dept::model::mark::MarkObjUploadedOutcome::NotCurrent,
+                    );
+                };
+
+                if record.version != oper.key.version {
+                    return Ok(
+                        ::poprako_obj_dept::model::mark::MarkObjUploadedOutcome::NotCurrent,
+                    );
+                }
+
+                let Some(meta) = record.meta.as_mut() else {
+                    return Ok(
+                        ::poprako_obj_dept::model::mark::MarkObjUploadedOutcome::NotCurrent,
+                    );
+                };
+
+                meta.is_available = true;
+
+                Ok(
+                    ::poprako_obj_dept::model::mark::MarkObjUploadedOutcome::Marked,
+                )
+            }
+        }
+
+        impl<'a>
+            ::poprako_orchestra::Run<
+                ::poprako_obj_dept::oper::ListObjMetas<'a, $obj>,
+            > for $crate::part_impl::repo::mock_impl::Mock
+        {
+            type Error = ::poprako_obj_dept::rest::ObjDeptError;
+
+            async fn run(
+                &self,
+                oper: &::poprako_obj_dept::oper::ListObjMetas<'a, $obj>,
+            ) -> ::poprako_obj_dept::rest::ObjDeptRest<
+                ::std::collections::HashMap<
+                    String,
+                    ::poprako_obj_dept::model::meta::ObjMeta,
+                >,
             > {
                 let state = self.state.lock().unwrap();
 
-                Ok(state
-                    .objs
-                    .get($topic)
-                    .and_then(|objs| objs.get(oper.id))
-                    .and_then(|record| record.meta.clone()))
+                Ok(oper
+                    .ids
+                    .iter()
+                    .filter_map(|id| {
+                        state
+                            .objs
+                            .get($topic)
+                            .and_then(|objs| objs.get(id))
+                            .and_then(|record| record.meta.clone())
+                            .map(|obj_meta| (id.clone(), obj_meta))
+                    })
+                    .collect())
             }
         }
 
         impl<'a>
             ::poprako_orchestra::Step<
-                ::poprako_obj_dept::oper::GetObjMeta<'a, $obj>,
+                ::poprako_obj_dept::oper::ListObjMetas<'a, $obj>,
                 $crate::part_impl::repo::mock_impl::MockContext,
             > for $crate::part_impl::repo::mock_impl::Mock
         {
@@ -162,40 +268,97 @@ macro_rules! __impl_mock_obj_dept {
             async fn step(
                 &self,
                 context: &mut $crate::part_impl::repo::mock_impl::MockContext,
-                oper: &::poprako_obj_dept::oper::GetObjMeta<'a, $obj>,
+                oper: &::poprako_obj_dept::oper::ListObjMetas<'a, $obj>,
             ) -> ::poprako_obj_dept::rest::ObjDeptRest<
-                Option<::poprako_obj_dept::model::meta::ObjMeta>,
+                ::std::collections::HashMap<
+                    String,
+                    ::poprako_obj_dept::model::meta::ObjMeta,
+                >,
             > {
-                Ok(context
-                    .state
-                    .objs
-                    .get($topic)
-                    .and_then(|objs| objs.get(oper.id))
-                    .and_then(|record| record.meta.clone()))
+                Ok(oper
+                    .ids
+                    .iter()
+                    .filter_map(|id| {
+                        context
+                            .state
+                            .objs
+                            .get($topic)
+                            .and_then(|objs| objs.get(id))
+                            .and_then(|record| record.meta.clone())
+                            .map(|obj_meta| (id.clone(), obj_meta))
+                    })
+                    .collect())
             }
         }
 
         impl<'a>
             ::poprako_orchestra::Run<
-                ::poprako_obj_dept::oper::GenObjUrl<'a, $obj>,
+                ::poprako_obj_dept::oper::GenObjUrls<'a, $obj>,
             > for $crate::part_impl::repo::mock_impl::Mock
         {
             type Error = ::poprako_obj_dept::rest::ObjDeptError;
 
             async fn run(
                 &self,
-                oper: &::poprako_obj_dept::oper::GenObjUrl<'a, $obj>,
-            ) -> ::poprako_obj_dept::rest::ObjDeptRest<Option<::url::Url>> {
-                let state = self.state.lock().unwrap();
+                oper: &::poprako_obj_dept::oper::GenObjUrls<'a, $obj>,
+            ) -> ::poprako_obj_dept::rest::ObjDeptRest<
+                ::std::collections::HashMap<
+                    ::std::string::String,
+                    ::poprako_obj_dept::model::url::ObjUrls,
+                >,
+            > {
+                let mut urls = ::std::collections::HashMap::new();
+                let thumbnail_enabled =
+                    !self.flags.lock().unwrap().obj_thumbnail_disabled;
 
-                let meta = state
-                    .objs
-                    .get($topic)
-                    .and_then(|objs| objs.get(oper.id))
-                    .and_then(|record| record.meta.as_ref());
+                for (id, obj_meta) in oper.metas {
+                    let Some(url) =
+                        $crate::part_impl::obj_dept::mock_impl::gen_urls(
+                            $namespace,
+                            Some(obj_meta),
+                            ::poprako_obj_dept::pool::ObjUrlProfile::$url_profile,
+                            thumbnail_enabled,
+                        )?
+                    else {
+                        continue;
+                    };
 
-                $crate::part_impl::obj_dept::mock_impl::gen_url(
-                    $namespace, meta,
+                    urls.insert(id.clone(), url);
+                }
+
+                Ok(urls)
+            }
+        }
+
+        impl<'a>
+            ::poprako_orchestra::Step<
+                ::poprako_obj_dept::oper::GenObjSlots<'a, $obj>,
+                $crate::part_impl::repo::mock_impl::MockContext,
+            > for $crate::part_impl::repo::mock_impl::Mock
+        {
+            type Level = $crate::part::nucl::ReptRead;
+            type Error = ::poprako_obj_dept::rest::ObjDeptError;
+
+            async fn step(
+                &self,
+                context: &mut $crate::part_impl::repo::mock_impl::MockContext,
+                oper: &::poprako_obj_dept::oper::GenObjSlots<'a, $obj>,
+            ) -> ::poprako_obj_dept::rest::ObjDeptRest<
+                ::std::collections::HashMap<
+                    String,
+                    ::poprako_obj_dept::model::slot::ObjSlot,
+                >,
+            > {
+                let $crate::part_impl::repo::mock_impl::MockState {
+                    objs,
+                    obj_tasks,
+                    ..
+                } = &mut context.state;
+
+                let objs = objs.entry($topic).or_default();
+
+                $crate::part_impl::obj_dept::mock_impl::gen_slots(
+                    objs, obj_tasks, $topic, $namespace, oper,
                 )
             }
         }
@@ -232,7 +395,7 @@ macro_rules! __impl_mock_obj_dept {
 
         impl<'a>
             ::poprako_orchestra::Step<
-                ::poprako_obj_dept::oper::DelObjs<'a, $obj>,
+                ::poprako_obj_dept::oper::RetireObjs<'a, $obj>,
                 $crate::part_impl::repo::mock_impl::MockContext,
             > for $crate::part_impl::repo::mock_impl::Mock
         {
@@ -242,7 +405,7 @@ macro_rules! __impl_mock_obj_dept {
             async fn step(
                 &self,
                 context: &mut $crate::part_impl::repo::mock_impl::MockContext,
-                oper: &::poprako_obj_dept::oper::DelObjs<'a, $obj>,
+                oper: &::poprako_obj_dept::oper::RetireObjs<'a, $obj>,
             ) -> ::poprako_obj_dept::rest::ObjDeptRest<()> {
                 let $crate::part_impl::repo::mock_impl::MockState {
                     objs,
@@ -252,7 +415,7 @@ macro_rules! __impl_mock_obj_dept {
 
                 let objs = objs.entry($topic).or_default();
 
-                $crate::part_impl::obj_dept::mock_impl::del_objs(
+                $crate::part_impl::obj_dept::mock_impl::retire_objs(
                     objs, obj_tasks, $topic, oper,
                 );
 

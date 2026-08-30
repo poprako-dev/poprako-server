@@ -6,20 +6,20 @@ pub mod delete;
 pub mod online;
 /// Non-transactional team read use cases.
 pub mod read;
+/// Team presentation assembly.
+pub mod view;
 
 #[cfg(test)]
 // Unit and integration tests for team management policies.
 mod tests;
 
-use poprako_orchestra::{
-    AtLeast, Context, Nucl, OperRun as _, OperStep as _, Run,
-};
+use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
+use poprako_obj_dept::key::ObjKey;
 use poprako_obj_dept::model::slot::ObjSlotSpec;
-use poprako_obj_dept::oper::{GenObjUrl, GetObjMeta};
-use poprako_obj_dept::rest::ObjDeptError;
-use poprako_obj_dept::{ObjDept, obj_inst};
+use poprako_obj_dept::oper::MarkObjUploadedOutcome;
+use poprako_obj_dept::{ObjDept, ObjDeptView, obj_inst};
 use poprako_util::i18n::trl;
 
 use crate::complex::image::ImageComplex;
@@ -47,7 +47,7 @@ use crate::part::repo::oper::user::{GetUserInfo, GetUserInfoExcluded};
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::usecase::view::team_info_view;
+use crate::usecase::team::view::team_info_view;
 use crate::value::image::ImageKind;
 use crate::value::role::{RoleField, RoleMask};
 
@@ -71,7 +71,7 @@ where
     N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<ReptRead>,
     R: TeamRepo<C> + UserRepo<C> + MemberRepo<C> + Send + Sync,
-    O: for<'a> Run<GenObjUrl<'a, TeamAvatar>, Error = ObjDeptError> + Sync,
+    O: ObjDeptView<TeamAvatar, C> + Sync,
 {
     let user_info = GetUserInfo::Id { id: &token.user_id }.run_on(repo).await?;
 
@@ -248,7 +248,7 @@ where
     accept(ReserveTeamAvatarVal { slot })
 }
 
-/// Confirms the requested avatar generation is the current `ObjDept` object.
+/// Optimistically marks the requested current avatar generation as uploaded.
 #[instrument(level = "info", skip(repo, obj_dept))]
 pub async fn mark_avatar_uploaded<C, R, O>(
     (repo, obj_dept): (&R, &O),
@@ -259,7 +259,7 @@ pub async fn mark_avatar_uploaded<C, R, O>(
 where
     C: Context,
     R: MemberRepo<C>,
-    O: for<'a> Run<GetObjMeta<'a, TeamAvatar>, Error = ObjDeptError> + Sync,
+    O: ObjDept<TeamAvatar, C> + Sync,
 {
     let member_info = FindMemberInfo::UserTeam {
         user_id: &token.user_id,
@@ -278,18 +278,24 @@ where
 
     TeamPermComplex::ensure_user_can_mark_avatar_uploaded(&member_info)?;
 
-    let obj_meta = obj_inst! { GetObjMeta<TeamAvatar> { id: &id } }
+    // SAFETY: This is an optimistic exact-generation transition. It does not
+    // synchronously prove PUT success, object presence, or content integrity;
+    // the delayed actor may reset this generation after a failed HEAD check.
+    let avatar_key = ObjKey {
+        id,
+        version: instr.image_version,
+    };
+
+    let marked = obj_inst! { MarkObjUploaded<TeamAvatar> { key: &avatar_key } }
         .run_on(obj_dept)
         .await
         .map_err(BaseError::from)?;
 
-    match obj_meta {
+    match marked {
         //
-        Some(obj_meta) if obj_meta.key.version == instr.image_version => {
-            accept(())
-        }
+        MarkObjUploadedOutcome::Marked => accept(()),
 
-        _ => Err(BaseError::Expected {
+        MarkObjUploadedOutcome::NotCurrent => Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
             message: trl("error-stale-avatar-upload"),
         }),

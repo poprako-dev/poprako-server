@@ -6,14 +6,10 @@ mod tests;
 
 use std::collections::HashMap;
 
-use poprako_orchestra::{
-    AtLeast, Context, Nucl, OperRun as _, OperStep as _, Run,
-};
+use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
-use poprako_obj_dept::obj_inst;
-use poprako_obj_dept::oper::GetObjMeta;
-use poprako_obj_dept::rest::ObjDeptError;
+use poprako_obj_dept::{ObjDeptView, obj_inst};
 use poprako_util::i18n::trl;
 
 use crate::complex::chapter_port::export::ChapterExportComplex;
@@ -78,7 +74,7 @@ where
         + UnitRepo<C>
         + Send
         + Sync,
-    O: for<'a> Run<GetObjMeta<'a, PageImage>, Error = ObjDeptError> + Sync,
+    O: ObjDeptView<PageImage, C> + Sync,
 {
     ensure_user_can_export::<C, R>(repo, &token, &chapter_id).await?;
 
@@ -119,6 +115,16 @@ where
 
     let mut ext_by_page_id = HashMap::<String, String>::new();
 
+    let page_ids = page_infos
+        .iter()
+        .map(|page_info| page_info.id.clone())
+        .collect::<Vec<_>>();
+
+    let obj_metas = obj_inst! { ListObjMetas<PageImage> { ids: &page_ids } }
+        .run_on(obj_dept)
+        .await
+        .map_err(BaseError::from)?;
+
     for unit_info in unit_infos {
         //
         units_by_page_id
@@ -129,14 +135,8 @@ where
 
     for page_info in &page_infos {
         //
-        let obj_meta =
-            obj_inst! { GetObjMeta<PageImage> { id: &page_info.id } }
-                .run_on(obj_dept)
-                .await
-                .map_err(BaseError::from)?;
-
-        if let Some(obj_meta) = obj_meta {
-            ext_by_page_id.insert(page_info.id.clone(), obj_meta.ext);
+        if let Some(obj_meta) = obj_metas.get(&page_info.id) {
+            ext_by_page_id.insert(page_info.id.clone(), obj_meta.ext.clone());
         }
 
         let unit_infos =

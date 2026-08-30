@@ -1,3 +1,6 @@
+// Generates deferred object-promotion task operations.
+mod defer;
+
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::parse::{Parse, ParseStream};
@@ -47,14 +50,18 @@ impl Parse for PromInput {
 /// Expands the typed Diesel `ObjProm` adapter.
 #[expect(
     clippy::too_many_lines,
-    reason = "the typed Diesel declaration remains one auditable code-generation unit"
+    reason = "actor-side task transitions remain one auditable generated state machine"
 )]
 pub fn expand(input: TokenStream) -> Result<TokenStream> {
     //
     let PromInput { name, table } = syn::parse2(input)?;
 
     let module =
-        format_ident!("__obj_dept_{}", to_snake_case(&name.to_string()),);
+        format_ident!("{}_rdb_impl", to_snake_case(&name.to_string()),);
+
+    let defer_module = defer::expand_module(&table);
+
+    let defer_impl = defer::expand_impl(&name, &module);
 
     Ok(quote! {
         #[derive(Clone)]
@@ -69,7 +76,6 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
             }
         }
 
-        #[doc(hidden)]
         mod #module {
             use super::#table;
 
@@ -78,7 +84,7 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
             use ::diesel_async::RunQueryDsl as _;
 
             use ::poprako_obj_dept::key::ObjKey;
-            use ::poprako_obj_dept::model::task::{CHECK, DELETE, ObjPromTask};
+            use ::poprako_obj_dept::model::task::ObjPromTask;
             use ::poprako_obj_dept::rdb_impl::{diesel_err, rdb_err};
             use ::poprako_obj_dept::rest::{ObjDeptError, ObjDeptRest};
             use ::poprako_rdb_core::{RdbConn, RdbCore};
@@ -92,6 +98,8 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
                 ::time::Duration::minutes(5);
             const PROCESSING_TIMEOUT: ::time::Duration =
                 ::time::Duration::minutes(3);
+
+            #defer_module
 
             #[derive(::diesel::Queryable, ::diesel::Selectable)]
             #[diesel(table_name = #table)]
@@ -161,84 +169,6 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
                         retried_count: row.retried_count,
                         lease: row.lease,
                     }
-                }
-            }
-
-            #[derive(::diesel::Queryable, ::diesel::Selectable)]
-            #[diesel(table_name = #table)]
-            #[diesel(check_for_backend(::diesel::pg::Pg))]
-            struct TaskIdentityRow {
-                #[diesel(column_name = f_topic)]
-                topic: String,
-                #[diesel(column_name = f_oper)]
-                oper: String,
-                #[diesel(column_name = f_obj_id)]
-                obj_id: String,
-                #[diesel(column_name = f_version)]
-                version: i64,
-                #[diesel(column_name = f_generation)]
-                generation: i64,
-                #[diesel(column_name = f_status)]
-                status: String,
-            }
-
-            pub async fn defer_task(
-                conn: &mut RdbConn,
-                topic: &str,
-                oper: &str,
-                key: &ObjKey,
-                visible_at: ::time::OffsetDateTime,
-            ) -> ObjDeptRest<()> {
-                let id = ::poprako_obj_dept::model::task::obj_task_id(
-                    topic,
-                    oper,
-                    key,
-                    ORDINARY_GENERATION,
-                );
-
-                ::diesel::insert_into(#table::table)
-                    .values((
-                        #table::f_id.eq(&id),
-                        #table::f_topic.eq(topic),
-                        #table::f_oper.eq(oper),
-                        #table::f_obj_id.eq(&key.id),
-                        #table::f_version.eq(i64::from(key.version)),
-                        #table::f_generation.eq(ORDINARY_GENERATION),
-                        #table::f_status.eq(PENDING),
-                        #table::f_visible_at.eq(visible_at),
-                    ))
-                    .on_conflict_do_nothing()
-                    .execute(conn)
-                    .await
-                    .map_err(diesel_err)?;
-
-                let row = #table::table
-                    .filter(#table::f_id.eq(&id))
-                    .select(TaskIdentityRow::as_select())
-                    .first::<TaskIdentityRow>(conn)
-                    .await
-                    .map_err(diesel_err)?;
-                let f_same = row.topic == topic
-                    && row.oper == oper
-                    && row.obj_id == key.id
-                    && row.version == i64::from(key.version)
-                    && row.generation == ORDINARY_GENERATION;
-
-                if !f_same {
-                    //
-                    return Err(ObjDeptError::Unrecoverable {
-                        message: "object task identity conflict".into(),
-                    });
-                }
-
-                match row.status.as_str() {
-                    PENDING | PROCESSING | COMPLETED => Ok(()),
-                    OPERATOR => Err(ObjDeptError::Conflict {
-                        message: "object task requires operator repair".into(),
-                    }),
-                    _ => Err(ObjDeptError::Unrecoverable {
-                        message: "invalid object task status".into(),
-                    }),
                 }
             }
 
@@ -510,53 +440,7 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
             }
         }
 
-        impl<L> ::poprako_obj_dept::prom::ObjPromDefer<
-            ::poprako_rdb_core::RdbContext<L>,
-        > for #name
-        where
-            L: ::poprako_orchestra::Level + Send,
-        {
-            async fn defer_check<'a>(
-                &'a self,
-                context: &'a mut ::poprako_rdb_core::RdbContext<L>,
-                topic: &'a str,
-                key: &'a ::poprako_obj_dept::key::ObjKey,
-                expires_at: ::time::OffsetDateTime,
-            ) -> ::poprako_obj_dept::rest::ObjDeptRest<()> {
-                let visible_at = expires_at
-                    .checked_add(::time::Duration::minutes(1))
-                    .ok_or_else(|| {
-                        ::poprako_obj_dept::rest::ObjDeptError::Unrecoverable {
-                            message: "object check visibility overflow".into(),
-                        }
-                    })?;
-
-                #module::defer_task(
-                    context.conn(),
-                    topic,
-                    ::poprako_obj_dept::model::task::CHECK,
-                    key,
-                    visible_at,
-                )
-                .await
-            }
-
-            async fn defer_delete<'a>(
-                &'a self,
-                context: &'a mut ::poprako_rdb_core::RdbContext<L>,
-                topic: &'a str,
-                key: &'a ::poprako_obj_dept::key::ObjKey,
-            ) -> ::poprako_obj_dept::rest::ObjDeptRest<()> {
-                #module::defer_task(
-                    context.conn(),
-                    topic,
-                    ::poprako_obj_dept::model::task::DELETE,
-                    key,
-                    ::time::OffsetDateTime::now_utc(),
-                )
-                .await
-            }
-        }
+        #defer_impl
     })
 }
 
@@ -577,11 +461,11 @@ fn to_snake_case(name: &str) -> String {
             character.is_lowercase() || character.is_ascii_digit()
         });
 
-        let f_word_boundary = current.is_uppercase()
+        let is_word_boundary = current.is_uppercase()
             && !snake_case.is_empty()
             && (follows_lowercase || next.is_some_and(char::is_lowercase));
 
-        if f_word_boundary {
+        if is_word_boundary {
             snake_case.push('_');
         }
 

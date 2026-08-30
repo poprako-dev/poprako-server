@@ -22,6 +22,7 @@ objs_def! {
         table: t_page_image,
         topic: "page_image",
         namespace: "page_image",
+        url_profile: ImageThumbnail,
     },
 }
 
@@ -29,7 +30,12 @@ objs_def! {
 fn expands_direct_typed_object() {
     let _marker = PageImage;
 
-    assert_eq!(__obj_dept_page_image::TOPIC, "page_image");
+    assert_eq!(page_image_rdb_impl::TOPIC, "page_image");
 
-    assert_eq!(__obj_dept_page_image::NAMESPACE, "page_image");
+    assert_eq!(page_image_rdb_impl::NAMESPACE, "page_image");
+
+    assert_eq!(
+        page_image_rdb_impl::URL_PROFILE,
+        poprako_obj_dept::pool::ObjUrlProfile::ImageThumbnail,
+    );
 }

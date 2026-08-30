@@ -78,7 +78,5 @@ pub mod termbase_port;
 pub mod unit;
 /// User management use cases.
 pub mod user;
-/// Use-case-side object-backed view resolution.
-pub mod view;
 /// Workset lifecycle use cases.
 pub mod workset;

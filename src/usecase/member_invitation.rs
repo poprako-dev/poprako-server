@@ -1,18 +1,18 @@
 //! Member invitation use cases.
 
+/// Member-invitation presentation assembly.
+pub mod view;
+
 #[cfg(test)]
 // Unit tests for member invitation creation and cancellation semantics.
 mod tests;
 
 use std::time::Duration;
 
-use poprako_orchestra::{
-    AtLeast, Context, Nucl, OperRun as _, OperStep as _, Run,
-};
+use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
-use poprako_obj_dept::oper::GenObjUrl;
-use poprako_obj_dept::rest::ObjDeptError;
+use poprako_obj_dept::ObjDeptView;
 use poprako_util::i18n::trl;
 
 use crate::complex::member_invitation::{
@@ -47,8 +47,8 @@ use crate::part::repo::oper::user::FindUserInfo;
 use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::internal::member::MemberLoader;
-use crate::usecase::internal::util::{LoadMode, collect_bounded};
-use crate::usecase::view::member_invitation_info_view;
+use crate::usecase::internal::util::LoadMode;
+use crate::usecase::member_invitation::view::member_invitation_info_views;
 use crate::util::next_snowflake_id;
 
 // Default invitation validity window for member invite tokens.
@@ -197,7 +197,7 @@ pub async fn list_infos<C, R, O>(
 where
     C: Context,
     R: MemberInvitationRepo<C> + MemberRepo<C> + Sync,
-    O: for<'a> Run<GenObjUrl<'a, UserAvatar>, Error = ObjDeptError> + Sync,
+    O: ObjDeptView<UserAvatar, C> + Sync,
 {
     let member_info = FindMemberInfo::UserTeam {
         user_id: &token.user_id,
@@ -241,12 +241,7 @@ where
     .await?;
 
     let member_invitation_info_vals =
-        collect_bounded(member_invitation_infos.into_iter().map(
-            |member_invitation_info| {
-                member_invitation_info_view(obj_dept, member_invitation_info)
-            },
-        ))
-        .await?;
+        member_invitation_info_views(obj_dept, member_invitation_infos).await?;
 
     accept(member_invitation_info_vals)
 }

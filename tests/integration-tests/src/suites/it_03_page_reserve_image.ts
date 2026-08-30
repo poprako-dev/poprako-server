@@ -172,11 +172,19 @@ export async function runIt03Module(ctx: RunCtx): Promise<void> {
         );
     }
 
-    // after mark, each page image_url non-null
+    // Mark optimistically exposes the exact current generation. The delayed
+    // actor may revoke it if remote presence verification fails.
     const markedPages = await listChapterPages(ctx.sadmin, mainChapterId);
 
     for (const page of markedPages) {
-        assert.ok(page.image_url, `page ${page.id} must have image_url after mark`);
+        assert.ok(
+            page.image_url,
+            `page ${page.id} image_url must be available after mark`,
+        );
+        assert.ok(
+            page.image_thumbnail_url,
+            `page ${page.id} image_thumbnail_url must be available after mark`,
+        );
     }
 
     const retainedManifest = await reserveChapterPages(
@@ -251,10 +259,17 @@ export async function runIt03Module(ctx: RunCtx): Promise<void> {
         204,
     );
 
-    // p2 image_url still non-null; updated_at increased
+    // Replacement mark immediately exposes the new generation's URLs.
     const p2After = (await listChapterPages(ctx.sadmin, mainChapterId)).find((p) => p.id === p2Id);
 
-    assert.ok(p2After?.image_url, "p2 image_url still non-null after replace");
+    assert.ok(
+        p2After?.image_url,
+        "p2 image_url must be available after replacement mark",
+    );
+    assert.ok(
+        p2After?.image_thumbnail_url,
+        "p2 image_thumbnail_url must be available after replacement mark",
+    );
 
     // stale version mark -> 422/2 (version mismatch)
     expectError(

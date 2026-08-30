@@ -10,7 +10,7 @@ use diesel::{AsChangeset, Insertable, Queryable, Selectable};
 use time::OffsetDateTime;
 
 use crate::model::read::proj::page::PageInfo;
-use crate::model::write::page::PageEntry;
+use crate::model::write::page::{PageEntry, PageManifestEntry};
 use crate::part_impl::repo::rdb_impl::numeric::{
     i32_from_usize, usize_from_i32,
 };
@@ -82,6 +82,23 @@ impl<'a> TryFrom<&'a PageEntry> for PageEntryRow<'a> {
     type Error = BaseError;
 
     fn try_from(entry: &'a PageEntry) -> Result<Self, Self::Error> {
+        //
+        let now = OffsetDateTime::now_utc();
+
+        Ok(Self {
+            f_id: &entry.id,
+            f_chapter_id: &entry.chapter_id,
+            f_index: i32_from_usize(entry.index, "t_page.f_index")?,
+            f_created_at: now,
+            f_updated_at: now,
+        })
+    }
+}
+
+impl<'a> TryFrom<&'a PageManifestEntry> for PageEntryRow<'a> {
+    type Error = BaseError;
+
+    fn try_from(entry: &'a PageManifestEntry) -> Result<Self, Self::Error> {
         //
         let now = OffsetDateTime::now_utc();
 

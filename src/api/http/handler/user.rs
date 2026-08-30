@@ -235,7 +235,7 @@ pub async fn mark_avatar_uploaded(
     Json(instr): Json<MarkUserAvatarUploadedInstr>,
 ) -> HttpNoContent {
     //
-    usecase::user::mark_avatar_uploaded(
+    usecase::user::mark_avatar_uploaded::<RdbContext, _>(
         (harn.obj_dept(),),
         user_token,
         user_id,

@@ -20,7 +20,8 @@ use tracing::instrument;
 use url::Url;
 
 use poprako_obj_dept::model::slot::ObjPoolSlot;
-use poprako_obj_dept::pool::{ObjPool, ObjPoolView};
+use poprako_obj_dept::model::url::ObjUrls;
+use poprako_obj_dept::pool::{ObjPool, ObjPoolView, ObjUrlProfile};
 use poprako_obj_dept::rest::{ObjDeptError, ObjDeptRest};
 
 // Expiration duration for presigned upload URLs (10 minutes).
@@ -109,9 +110,34 @@ impl R2ObjPool {
 
 impl ObjPoolView for R2ObjPool {
     #[instrument(level = "info", skip_all)]
-    // Generates one public object URL.
-    async fn gen_url(&self, key: &str) -> ObjDeptRest<Url> {
-        build_public_url(&self.domain, key)
+    // Generates the original and Cloudflare-resized object URLs.
+    async fn gen_urls(
+        &self,
+        key: &str,
+        profile: ObjUrlProfile,
+    ) -> ObjDeptRest<ObjUrls> {
+        //
+        let origin_url = build_public_url(&self.domain, key)?;
+
+        let thumbnail_url = match profile {
+            //
+            ObjUrlProfile::OriginOnly => None,
+
+            ObjUrlProfile::ImageThumbnail => {
+                //
+                let thumbnail_path = format!(
+                    "cdn-cgi/image/width=300,fit=scale-down,quality=80,format=auto,metadata=none/{}",
+                    key,
+                );
+
+                Some(build_public_url(&self.domain, &thumbnail_path)?)
+            }
+        };
+
+        Ok(ObjUrls {
+            origin_url,
+            thumbnail_url,
+        })
     }
 
     #[instrument(level = "info", skip_all)]

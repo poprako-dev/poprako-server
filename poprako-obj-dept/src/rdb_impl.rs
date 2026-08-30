@@ -22,7 +22,7 @@ pub struct ObjRdbRow {
     pub ext: Option<String>,
 }
 
-/// Pending latest object values written by `GenObjSlot`.
+/// Next active object values written by `GenObjSlot`.
 #[derive(Debug, Clone, Copy)]
 pub struct ObjRdbWrite<'a> {
     //
@@ -54,14 +54,14 @@ pub fn decode_row(id: &str, row: ObjRdbRow) -> ObjDeptRest<Option<ObjMeta>> {
         //
         (None, None, None) => Ok(None),
 
-        (Some(f_is_uploaded), Some(hash), Some(ext)) => {
+        (Some(is_available), Some(hash), Some(ext)) => {
             //
             Ok(Some(ObjMeta {
                 key: ObjKey {
                     id: id.to_owned(),
                     version,
                 },
-                f_is_uploaded,
+                is_available,
                 hash,
                 ext,
             }))
@@ -84,7 +84,17 @@ pub fn next_version(id: &str, row: Option<&ObjRdbRow>) -> ObjDeptRest<u32> {
         //
         Some(row) => {
             //
-            decode_row(id, row.clone())?;
+            match (&row.f_is_uploaded, &row.hash, &row.ext) {
+                //
+                (None, None, None) | (Some(_), Some(_), Some(_)) => {}
+
+                _ => {
+                    //
+                    return Err(ObjDeptError::Unrecoverable {
+                        message: format!("invalid object row: {}", id),
+                    });
+                }
+            }
 
             u32::try_from(row.version).map_err(|_| {
                 //

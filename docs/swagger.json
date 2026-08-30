@@ -5138,6 +5138,13 @@
             "description": "Total number of chapters in this comic.",
             "minimum": 0
           },
+          "cover_thumbnail_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Resolved signed download URL for the cover thumbnail, when available."
+          },
           "cover_url": {
             "type": [
               "string",
@@ -6099,6 +6106,13 @@
                 "description": "Total number of chapters in this comic.",
                 "minimum": 0
               },
+              "cover_thumbnail_url": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Resolved signed download URL for the cover thumbnail, when available."
+              },
               "cover_url": {
                 "type": [
                   "string",
@@ -7032,6 +7046,13 @@
                   }
                 ]
               },
+              "image_thumbnail_url": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Presigned download URL for the thumbnail image, if available."
+              },
               "image_url": {
                 "type": [
                   "string",
@@ -7313,7 +7334,7 @@
           },
           "data": {
             "type": "object",
-            "description": "Presentation-ready team profile information.\n\nConverts raw [`TeamInfo`] timestamps to Unix milliseconds and accepts an\navatar URL already resolved by the use-case layer.",
+            "description": "Presentation-ready team profile information.\n\nConverts raw [`TeamInfo`] timestamps to Unix milliseconds and accepts an\navatar origin and thumbnail URLs already resolved by the use-case layer.",
             "required": [
               "id",
               "name",
@@ -7322,6 +7343,13 @@
               "updated_at"
             ],
             "properties": {
+              "avatar_thumbnail_url": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Signed avatar-thumbnail download URL, when available."
+              },
               "avatar_url": {
                 "type": [
                   "string",
@@ -7523,7 +7551,7 @@
           },
           "data": {
             "type": "object",
-            "description": "Presentation-ready user profile information.\n\nConverts raw [`UserInfo`] timestamps to Unix milliseconds and accepts an\navatar URL already resolved by the use-case layer.",
+            "description": "Presentation-ready user profile information.\n\nConverts raw [`UserInfo`] timestamps to Unix milliseconds and accepts an\navatar origin and thumbnail URLs already resolved by the use-case layer.",
             "required": [
               "id",
               "nickname",
@@ -7534,6 +7562,13 @@
               "updated_at"
             ],
             "properties": {
+              "avatar_thumbnail_url": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Resolved signed download URL for the avatar thumbnail, when available."
+              },
               "avatar_url": {
                 "type": [
                   "string",
@@ -8267,6 +8302,13 @@
                     }
                   ]
                 },
+                "image_thumbnail_url": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Presigned download URL for the thumbnail image, if available."
+                },
                 "image_url": {
                   "type": [
                     "string",
@@ -8400,7 +8442,7 @@
             "type": "array",
             "items": {
               "type": "object",
-              "description": "Presentation-ready team profile information.\n\nConverts raw [`TeamInfo`] timestamps to Unix milliseconds and accepts an\navatar URL already resolved by the use-case layer.",
+              "description": "Presentation-ready team profile information.\n\nConverts raw [`TeamInfo`] timestamps to Unix milliseconds and accepts an\navatar origin and thumbnail URLs already resolved by the use-case layer.",
               "required": [
                 "id",
                 "name",
@@ -8409,6 +8451,13 @@
                 "updated_at"
               ],
               "properties": {
+                "avatar_thumbnail_url": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Signed avatar-thumbnail download URL, when available."
+                },
                 "avatar_url": {
                   "type": [
                     "string",
@@ -9570,6 +9619,13 @@
               }
             ]
           },
+          "image_thumbnail_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Presigned download URL for the thumbnail image, if available."
+          },
           "image_url": {
             "type": [
               "string",
@@ -9962,7 +10018,7 @@
       },
       "TeamInfoView": {
         "type": "object",
-        "description": "Presentation-ready team profile information.\n\nConverts raw [`TeamInfo`] timestamps to Unix milliseconds and accepts an\navatar URL already resolved by the use-case layer.",
+        "description": "Presentation-ready team profile information.\n\nConverts raw [`TeamInfo`] timestamps to Unix milliseconds and accepts an\navatar origin and thumbnail URLs already resolved by the use-case layer.",
         "required": [
           "id",
           "name",
@@ -9971,6 +10027,13 @@
           "updated_at"
         ],
         "properties": {
+          "avatar_thumbnail_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Signed avatar-thumbnail download URL, when available."
+          },
           "avatar_url": {
             "type": [
               "string",
@@ -10889,7 +10952,7 @@
       },
       "UserInfoView": {
         "type": "object",
-        "description": "Presentation-ready user profile information.\n\nConverts raw [`UserInfo`] timestamps to Unix milliseconds and accepts an\navatar URL already resolved by the use-case layer.",
+        "description": "Presentation-ready user profile information.\n\nConverts raw [`UserInfo`] timestamps to Unix milliseconds and accepts an\navatar origin and thumbnail URLs already resolved by the use-case layer.",
         "required": [
           "id",
           "nickname",
@@ -10900,6 +10963,13 @@
           "updated_at"
         ],
         "properties": {
+          "avatar_thumbnail_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Resolved signed download URL for the avatar thumbnail, when available."
+          },
           "avatar_url": {
             "type": [
               "string",

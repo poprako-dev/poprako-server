@@ -151,7 +151,7 @@ where
 
     let avatar_ids = [team_info.id.clone()];
 
-    obj_inst! { DelObjs<TeamAvatar>::Remove { ids: &avatar_ids } }
+    obj_inst! { RetireObjs<TeamAvatar>::RemoveRows { ids: &avatar_ids } }
         .step_on(obj_dept, context)
         .await
         .map_err(BaseError::from)?;

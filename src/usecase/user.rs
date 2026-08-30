@@ -2,20 +2,20 @@
 
 /// User deletion use case.
 pub mod delete;
+/// User presentation assembly.
+pub mod view;
 
 #[cfg(test)]
 // Unit tests for account, role, and membership operations.
 mod tests;
 
-use poprako_orchestra::{
-    AtLeast, Context, Nucl, OperRun as _, OperStep as _, Run,
-};
+use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
+use poprako_obj_dept::key::ObjKey;
 use poprako_obj_dept::model::slot::ObjSlotSpec;
-use poprako_obj_dept::oper::{GenObjUrl, GetObjMeta};
-use poprako_obj_dept::rest::ObjDeptError;
-use poprako_obj_dept::{ObjDept, obj_inst};
+use poprako_obj_dept::oper::MarkObjUploadedOutcome;
+use poprako_obj_dept::{ObjDept, ObjDeptView, obj_inst};
 use poprako_util::i18n::trl;
 
 use crate::complex::image::ImageComplex;
@@ -43,7 +43,7 @@ use crate::part::repo::oper::user::{
 };
 use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::usecase::view::user_info_view;
+use crate::usecase::user::view::user_info_view;
 use crate::value::image::ImageKind;
 
 /// Fetches a user's profile with avatar URL resolution.
@@ -67,7 +67,7 @@ pub async fn get_info<C, R, O, D>(
 where
     C: Context,
     R: UserRepo<C>,
-    O: for<'a> Run<GenObjUrl<'a, UserAvatar>, Error = ObjDeptError> + Sync,
+    O: ObjDeptView<UserAvatar, C> + Sync,
     D: Develop + Send + Sync,
 {
     let user_info = GetUserInfo::Id { id: &id }.run_on(repo).await?;
@@ -319,16 +319,17 @@ where
     accept(ReserveUserAvatarVal { slot })
 }
 
-/// Confirms the requested avatar generation is the current `ObjDept` object.
+/// Optimistically marks the requested current avatar generation as uploaded.
 #[instrument(level = "info", skip(obj_dept))]
-pub async fn mark_avatar_uploaded<O>(
+pub async fn mark_avatar_uploaded<C, O>(
     (obj_dept,): (&O,),
     token: UserToken,
     id: String,
     instr: MarkUserAvatarUploadedInstr,
 ) -> BaseRest<()>
 where
-    O: for<'a> Run<GetObjMeta<'a, UserAvatar>, Error = ObjDeptError> + Sync,
+    C: Context,
+    O: ObjDept<UserAvatar, C> + Sync,
 {
     if token.user_id != id {
         //
@@ -338,18 +339,24 @@ where
         });
     }
 
-    let obj_meta = obj_inst! { GetObjMeta<UserAvatar> { id: &id } }
+    // SAFETY: This is an optimistic exact-generation transition. It does not
+    // synchronously prove PUT success, object presence, or content integrity;
+    // the delayed actor may reset this generation after a failed HEAD check.
+    let avatar_key = ObjKey {
+        id,
+        version: instr.image_version,
+    };
+
+    let marked = obj_inst! { MarkObjUploaded<UserAvatar> { key: &avatar_key } }
         .run_on(obj_dept)
         .await
         .map_err(BaseError::from)?;
 
-    match obj_meta {
+    match marked {
         //
-        Some(obj_meta) if obj_meta.key.version == instr.image_version => {
-            accept(())
-        }
+        MarkObjUploadedOutcome::Marked => accept(()),
 
-        _ => Err(BaseError::Expected {
+        MarkObjUploadedOutcome::NotCurrent => Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
             message: trl("error-stale-avatar-upload"),
         }),

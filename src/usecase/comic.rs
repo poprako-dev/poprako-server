@@ -5,19 +5,17 @@ pub mod cover;
 pub mod list;
 /// Cover reservation use case.
 pub mod reserve;
+/// Comic presentation assembly.
+pub mod view;
 
 /// Comic use-case test helpers.
 #[cfg(test)]
 pub mod tests;
 
-use poprako_orchestra::{
-    AtLeast, Context, Nucl, OperRun as _, OperStep as _, Run,
-};
+use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
-use poprako_obj_dept::oper::GenObjUrl;
-use poprako_obj_dept::rest::ObjDeptError;
-use poprako_obj_dept::{ObjDept, obj_inst};
+use poprako_obj_dept::{ObjDept, ObjDeptView, obj_inst};
 
 use crate::complex::assignment::AssignmentComplex;
 use crate::complex::chapter::ChapterComplex;
@@ -61,10 +59,10 @@ use crate::part::repo::unit::UnitRepo;
 use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseError, BaseRest, accept};
 use crate::usecase::chapter::delete::delete_cascade as delete_chapter_cascade;
+use crate::usecase::comic::view::comic_info_view;
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
 use crate::usecase::termbase::delete_comic_cascade;
-use crate::usecase::view::comic_info_view;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 use crate::value::role::RoleMask;
 
@@ -211,9 +209,9 @@ where
         + ChapterRepo<C>
         + PageRepo<C>
         + Sync,
-    O: for<'a> Run<GenObjUrl<'a, ComicCover>, Error = ObjDeptError>
-        + for<'a> Run<GenObjUrl<'a, TeamAvatar>, Error = ObjDeptError>
-        + for<'a> Run<GenObjUrl<'a, UserAvatar>, Error = ObjDeptError>
+    O: ObjDeptView<ComicCover, C>
+        + ObjDeptView<TeamAvatar, C>
+        + ObjDeptView<UserAvatar, C>
         + Sync,
 {
     let member_info = MemberLoader::load_info_from_comic(
@@ -370,7 +368,7 @@ where
 
     let cover_ids = [comic_info.id.clone()];
 
-    obj_inst! { DelObjs<ComicCover>::Remove { ids: &cover_ids } }
+    obj_inst! { RetireObjs<ComicCover>::RemoveRows { ids: &cover_ids } }
         .step_on(obj_dept, context)
         .await
         .map_err(BaseError::from)?;

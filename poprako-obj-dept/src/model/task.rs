@@ -37,14 +37,14 @@ pub fn validate_task(task: &ObjPromTask) -> ObjDeptRest<()> {
     //
     let key = task.key()?;
 
-    let f_nonnegative = task.generation >= 0 && task.retried_count >= 0;
+    let is_nonnegative = task.generation >= 0 && task.retried_count >= 0;
 
-    let f_valid_lease = task.lease > 0;
+    let has_valid_lease = task.lease > 0;
 
     let expected_id =
         obj_task_id(&task.topic, &task.oper, &key, task.generation);
 
-    match (f_nonnegative, f_valid_lease, task.id == expected_id) {
+    match (is_nonnegative, has_valid_lease, task.id == expected_id) {
         //
         (true, true, true) => Ok(()),
 

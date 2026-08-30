@@ -170,7 +170,7 @@ where
         .map(|page_info| page_info.id)
         .collect::<Vec<_>>();
 
-    obj_inst! { DelObjs<PageImage>::Remove { ids: &page_ids } }
+    obj_inst! { RetireObjs<PageImage>::RemoveRows { ids: &page_ids } }
         .step_on(obj_dept, context)
         .await
         .map_err(BaseError::from)

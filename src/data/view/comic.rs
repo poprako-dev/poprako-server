@@ -45,6 +45,9 @@ pub struct ComicInfoView {
     /// no cover has been uploaded.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cover_url: Option<String>,
+    /// Resolved signed download URL for the cover thumbnail, when available.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cover_thumbnail_url: Option<String>,
     /// Total number of chapters in this comic.
     pub chapter_count: usize,
 
@@ -79,13 +82,14 @@ pub struct ComicInfoView {
 impl ComicInfoView {
     /// Converts a [`ComicInfo`] into a presentation-ready value.
     ///
-    /// Accepts the resolved cover URL and converts timestamps from
+    /// Accepts resolved cover origin/thumbnail URLs and converts timestamps from
     /// [`OffsetDateTime`] to Unix milliseconds.
     ///
     /// [`OffsetDateTime`]: time::OffsetDateTime
     pub fn from_model(
         model: ComicInfo,
         cover_url: Option<String>,
+        cover_thumbnail_url: Option<String>,
         team: Option<TeamInfoView>,
         creator: Option<UserInfoView>,
     ) -> Self {
@@ -100,6 +104,7 @@ impl ComicInfoView {
             author: model.author,
             description: model.description,
             cover_url,
+            cover_thumbnail_url,
             chapter_count: model.chapter_count,
             creator_id: model.creator_id,
             workset,

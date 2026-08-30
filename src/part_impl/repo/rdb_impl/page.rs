@@ -13,16 +13,16 @@ use tracing::instrument;
 use crate::model::read::proj::page::PageInfo;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::page::{
-    CreatePages, DeletePages, GetPageInfo, GetPageInfoExcluded,
-    ListFirstPageInfos, ListPageInfos, ListPageInfosExcluded,
-    SetPageUnitCounters, ShiftPageIndexesTemporary, UpdatePageManifest,
+    ApplyPageManifest, CreatePages, DeletePages, GetPageInfo,
+    GetPageInfoExcluded, ListFirstPageInfos, ListPageInfos,
+    ListPageInfosExcluded, SetPageUnitCounters, ShiftPageIndexesTemporary,
 };
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::page::step_impl::{
-    create_batch, delete_by_chapter_id, delete_by_ids, get_info_by_id,
-    get_info_excluded, list_first_infos_by_chapter_ids, list_infos,
-    list_infos_excluded, set_unit_counters, shift_indexes_temporary,
-    update_manifest,
+    apply_manifest, create_batch, delete_by_chapter_id, delete_by_ids,
+    get_info_by_id, get_info_excluded, list_first_infos_by_chapter_ids,
+    list_infos, list_infos_excluded, set_unit_counters,
+    shift_indexes_temporary,
 };
 use crate::result::{BaseError, BaseRest};
 use crate::shared::RdbContext;
@@ -205,7 +205,7 @@ where
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Perform temporary page index shifts for chapter-level reindex workflows.
+    // Move current indexes aside before the manifest batch applies final indexes.
     async fn step(
         &self,
         context: &mut RdbContext<L>,
@@ -215,24 +215,24 @@ where
     }
 }
 
-impl<L> Step<UpdatePageManifest<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<ApplyPageManifest<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
-    // Preserve consistent error mapping while updating page manifest metadata.
+    // Maintain base-error parity for page manifest writes.
     type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Update manifest content and return refreshed page info in transaction.
+    // Apply all final page identities and indexes with one typed batch upsert.
     async fn step(
         &self,
         context: &mut RdbContext<L>,
-        oper: &UpdatePageManifest<'_>,
-    ) -> BaseRest<PageInfo> {
-        update_manifest(context.conn(), oper.update).await
+        oper: &ApplyPageManifest<'_>,
+    ) -> BaseRest<Vec<PageInfo>> {
+        apply_manifest(context.conn(), oper.entries).await
     }
 }
 

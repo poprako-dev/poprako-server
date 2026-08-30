@@ -1,5 +1,8 @@
 //! View DTOs for the page domain.
 
+#[cfg(test)]
+mod tests;
+
 use serde::Serialize;
 
 #[cfg(feature = "swagger")]
@@ -27,6 +30,9 @@ pub struct PageInfoView {
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Presigned download URL for the full image, if uploaded.
     pub image_url: Option<String>,
+    /// Presigned download URL for the thumbnail image, if available.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub image_thumbnail_url: Option<String>,
     /// Content hash of the page image, if one exists.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub image_hash: Option<ImageHash>,
@@ -48,12 +54,12 @@ pub struct PageInfoView {
 }
 
 impl PageInfoView {
-    /// Materialize page image URLs when uploaded, then render API payload fields.
     /// Converts a [`PageInfo`] into a presentation-ready value.
     pub fn from_model(
         model: PageInfo,
         obj_meta: Option<&ObjMeta>,
         image_url: Option<String>,
+        image_thumbnail_url: Option<String>,
     ) -> Self {
         //
         let image_hash = obj_meta.and_then(|meta| {
@@ -70,6 +76,7 @@ impl PageInfoView {
             chapter_id: model.chapter_id,
             index: model.index,
             image_url,
+            image_thumbnail_url,
             image_hash,
             ext,
             total_unit_count: model.total_unit_count,

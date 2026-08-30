@@ -4,19 +4,18 @@
 pub mod delete;
 /// Chapter workflow stage mutation use case.
 pub mod stage;
+/// Chapter presentation assembly.
+pub mod view;
 /// Immutable workflow record listing use case.
 pub mod workflow_record;
 
 #[cfg(test)]
 mod tests;
 
-use poprako_orchestra::{
-    AtLeast, Context, Nucl, OperRun as _, OperStep as _, Run,
-};
+use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
-use poprako_obj_dept::oper::GenObjUrl;
-use poprako_obj_dept::rest::ObjDeptError;
+use poprako_obj_dept::ObjDeptView;
 use poprako_util::i18n::trl;
 
 use crate::complex::assignment::AssignmentComplex;
@@ -56,9 +55,9 @@ use crate::part::repo::oper::comic::{
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::usecase::chapter::view::chapter_info_views;
 use crate::usecase::internal::member::MemberLoader;
-use crate::usecase::internal::util::{LoadMode, collect_bounded};
-use crate::usecase::view::chapter_info_view;
+use crate::usecase::internal::util::LoadMode;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 
 /// Lists chapters under one comic.
@@ -71,9 +70,9 @@ pub async fn list_infos<C, R, O>(
 where
     C: Context,
     R: ChapterRepo<C> + MemberRepo<C> + TeamRepo<C> + PageRepo<C> + Sync,
-    O: for<'a> Run<GenObjUrl<'a, ComicCover>, Error = ObjDeptError>
-        + for<'a> Run<GenObjUrl<'a, TeamAvatar>, Error = ObjDeptError>
-        + for<'a> Run<GenObjUrl<'a, UserAvatar>, Error = ObjDeptError>
+    O: ObjDeptView<ComicCover, C>
+        + ObjDeptView<TeamAvatar, C>
+        + ObjDeptView<UserAvatar, C>
         + Sync,
 {
     let member_info = MemberLoader::load_info_from_comic(
@@ -95,12 +94,7 @@ where
 
     let chapter_infos = ListChapterInfos { spec: &spec }.run_on(repo).await?;
 
-    let chapter_info_vals = collect_bounded(
-        chapter_infos
-            .into_iter()
-            .map(|chapter_info| chapter_info_view(obj_dept, chapter_info)),
-    )
-    .await?;
+    let chapter_info_vals = chapter_info_views(obj_dept, chapter_infos).await?;
 
     accept(chapter_info_vals)
 }

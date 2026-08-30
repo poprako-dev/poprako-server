@@ -1,10 +1,9 @@
 //! Non-transactional team read use cases.
 
-use poprako_orchestra::{Context, OperRun as _, Run};
+use poprako_orchestra::{Context, OperRun as _};
 use tracing::instrument;
 
-use poprako_obj_dept::oper::GenObjUrl;
-use poprako_obj_dept::rest::ObjDeptError;
+use poprako_obj_dept::ObjDeptView;
 use poprako_util::i18n::trl;
 
 use crate::complex::team::TeamPermComplex;
@@ -18,8 +17,7 @@ use crate::part::repo::oper::user::GetUserInfo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::usecase::internal::util::collect_bounded;
-use crate::usecase::view::team_info_view;
+use crate::usecase::team::view::{team_info_view, team_info_views};
 
 /// Fetches a team by ID with avatar URL resolution.
 ///
@@ -38,7 +36,7 @@ pub async fn get_info<C, R, O>(
 where
     C: Context,
     R: TeamRepo<C>,
-    O: for<'a> Run<GenObjUrl<'a, TeamAvatar>, Error = ObjDeptError> + Sync,
+    O: ObjDeptView<TeamAvatar, C> + Sync,
 {
     let team_info = GetTeamInfo::Id { id: &id }.run_on(repo).await?;
 
@@ -47,7 +45,7 @@ where
 
 /// Lists teams with pagination.
 ///
-/// Non-transactional read. Each team's avatar URL is resolved individually.
+/// Non-transactional read. Avatar URLs are resolved in one object batch.
 ///
 /// # Type Parameters
 ///
@@ -64,7 +62,7 @@ pub async fn list_infos<C, R, O>(
 where
     C: Context,
     R: TeamRepo<C> + UserRepo<C> + Sync,
-    O: for<'a> Run<GenObjUrl<'a, TeamAvatar>, Error = ObjDeptError> + Sync,
+    O: ObjDeptView<TeamAvatar, C> + Sync,
 {
     if let Some(affected_user_id) = instr.user_id.as_deref()
         && affected_user_id != token.user_id
@@ -106,12 +104,7 @@ where
     .run_on(repo)
     .await?;
 
-    let team_info_vals = collect_bounded(
-        team_infos
-            .into_iter()
-            .map(|team_info| team_info_view(obj_dept, team_info)),
-    )
-    .await?;
+    let team_info_vals = team_info_views(obj_dept, team_infos).await?;
 
     accept(team_info_vals)
 }

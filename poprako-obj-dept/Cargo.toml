@@ -19,6 +19,7 @@ rdb_impl = [
 base64 = "0.22.1"
 diesel = { version = "2.3.7", features = ["postgres", "time"], optional = true }
 diesel-async = { version = "0.9.0", features = ["postgres"], optional = true }
+futures-util = "0.3.32"
 poprako-orchestra = { version = "0.6.0", features = ["macro"] }
 poprako-obj-dept-macro = { path = "../poprako-obj-dept-macro", optional = true }
 poprako-rdb-core = { path = "../poprako-rdb-core", optional = true }
