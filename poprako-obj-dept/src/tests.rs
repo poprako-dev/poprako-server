@@ -5,15 +5,13 @@ use crate::actor::rdb_impl::{
     ObjKeyState, classify, presence_cas_conflict_requires_retry,
     requires_presence_reconciliation,
 };
-use crate::model::mark::MarkObjUploadedOutcome;
 use crate::model::meta::ObjMeta;
 use crate::model::slot::ObjSlot;
 use crate::model::task::{CHECK, ObjPromTask, obj_task_id, validate_task};
 use crate::model::url::ObjUrls;
-use crate::obj_inst;
 use crate::oper::{
-    GenObjSlot, GenObjSlots, GenObjUrls, ListObjMetas, MarkObjUploaded,
-    RetireObjs,
+    ClearObjs, DeleteObjs, GenObjSlot, GenObjSlots, GenObjUrls, ListObjMetas,
+    MarkObjUploaded,
 };
 use crate::rest::ObjDeptError;
 use crate::{ObjDept, ObjDeptView};
@@ -60,8 +58,8 @@ impl<'a> Run<MarkObjUploaded<'a, PageImage>> for TestDept {
     async fn run(
         &self,
         _oper: &MarkObjUploaded<'a, PageImage>,
-    ) -> Result<MarkObjUploadedOutcome, Self::Error> {
-        Ok(MarkObjUploadedOutcome::Marked)
+    ) -> Result<bool, Self::Error> {
+        Ok(true)
     }
 }
 
@@ -107,14 +105,27 @@ impl<'a> Step<GenObjSlots<'a, PageImage>, TestContext> for TestDept {
     }
 }
 
-impl<'a> Step<RetireObjs<'a, PageImage>, TestContext> for TestDept {
+impl<'a> Step<ClearObjs<'a, PageImage>, TestContext> for TestDept {
     type Level = TestLevel;
     type Error = ObjDeptError;
 
     async fn step(
         &self,
         _context: &mut TestContext,
-        _oper: &RetireObjs<'a, PageImage>,
+        _oper: &ClearObjs<'a, PageImage>,
+    ) -> Result<(), Self::Error> {
+        Ok(())
+    }
+}
+
+impl<'a> Step<DeleteObjs<'a, PageImage>, TestContext> for TestDept {
+    type Level = TestLevel;
+    type Error = ObjDeptError;
+
+    async fn step(
+        &self,
+        _context: &mut TestContext,
+        _oper: &DeleteObjs<'a, PageImage>,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -156,17 +167,16 @@ fn operations_keep_marker_in_their_type_identity() {
 
     require_oper_output::<GenObjSlot<'static, PageImage>, ObjSlot>();
 
-    require_oper_output::<
-        MarkObjUploaded<'static, PageImage>,
-        MarkObjUploadedOutcome,
-    >();
+    require_oper_output::<MarkObjUploaded<'static, PageImage>, bool>();
 
     require_oper_output::<
         GenObjSlots<'static, PageImage>,
         std::collections::HashMap<String, ObjSlot>,
     >();
 
-    require_oper_output::<RetireObjs<'static, PageImage>, ()>();
+    require_oper_output::<ClearObjs<'static, PageImage>, ()>();
+
+    require_oper_output::<DeleteObjs<'static, PageImage>, ()>();
 }
 
 #[test]
@@ -180,29 +190,17 @@ fn obj_dept_view_aggregates_only_read_capabilities() {
 }
 
 #[test]
-fn retirement_variants_retain_their_input_ids() {
+fn cleanup_operations_retain_their_input_ids() {
     //
     let ids = vec!["page-1".to_owned(), "page-2".to_owned()];
 
-    let preserve = obj_inst! {
-        RetireObjs<PageImage>::PreserveWatermarks { ids: &ids }
-    };
+    let clear = ClearObjs::<PageImage>::new(&ids);
 
-    let remove = obj_inst! { RetireObjs<PageImage>::RemoveRows { ids: &ids } };
+    let delete = DeleteObjs::<PageImage>::new(&ids);
 
-    let preserve_ids = match preserve {
-        RetireObjs::PreserveWatermarks { ids, .. } => ids,
-        RetireObjs::RemoveRows { .. } => &[],
-    };
+    assert_eq!(clear.ids, ids);
 
-    let remove_ids = match remove {
-        RetireObjs::RemoveRows { ids, .. } => ids,
-        RetireObjs::PreserveWatermarks { .. } => &[],
-    };
-
-    assert_eq!(preserve_ids, ids);
-
-    assert_eq!(remove_ids, ids);
+    assert_eq!(delete.ids, ids);
 }
 
 fn task() -> ObjPromTask {

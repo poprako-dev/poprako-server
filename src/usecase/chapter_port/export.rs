@@ -9,7 +9,8 @@ use std::collections::HashMap;
 use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
-use poprako_obj_dept::{ObjDeptView, obj_inst};
+use poprako_obj_dept::ObjDeptView;
+use poprako_obj_dept::oper::ListObjMetas;
 use poprako_util::i18n::trl;
 
 use crate::complex::chapter_port::export::ChapterExportComplex;
@@ -120,7 +121,7 @@ where
         .map(|page_info| page_info.id.clone())
         .collect::<Vec<_>>();
 
-    let obj_metas = obj_inst! { ListObjMetas<PageImage> { ids: &page_ids } }
+    let obj_metas = ListObjMetas::<PageImage>::new(&page_ids)
         .run_on(obj_dept)
         .await
         .map_err(BaseError::from)?;

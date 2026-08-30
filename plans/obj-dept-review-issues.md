@@ -56,7 +56,7 @@ diff and was rechecked together on 2026-08-30. Shared validation evidence:
 
 - `cargo fmt --all --check`: passed;
 - `cargo check --all-features`: passed without warnings;
-- `cargo test -p poprako-server`: 352 passed;
+- `cargo test -p poprako-server`: 353 passed;
 - `cargo test -p poprako-obj-dept -p poprako-obj-dept-macro`: passed,
   including unit, generated-manifest, RDB expansion, and doc-test targets;
 - `tests/integration-tests/pnpm typecheck`: passed;
@@ -96,7 +96,9 @@ no-business-ID-reuse invariant are not erased by these test results.
 | OBJ-Q-017 | High | RESOLVED | Object markers lack a URL rendition profile for future Font support |
 | OBJ-Q-018 | High | RESOLVED | Remove permits business-ID reuse ABA against old keys and tasks |
 | OBJ-Q-019 | High | RESOLVED | Database `f_` names leak into domain models and ordinary locals |
-| OBJ-Q-020 | High | RESOLVED | Lifecycle APIs encode distinct outcomes behind ambiguous names and a bare bool |
+| OBJ-Q-020 | High | RESOLVED | Lifecycle APIs used ambiguous availability and retirement vocabulary |
+| OBJ-Q-021 | High | RESOLVED | obj_inst! hides operation types from Rust LSP navigation |
+| OBJ-Q-022 | High | RESOLVED | Object cleanup API leaks persistence strategies into use cases |
 | OBJ-P-001 | Blocker | RESOLVED | DelObjs is a per-ID loop disguised as a batch API |
 | OBJ-P-002 | Blocker | RESOLVED | Page manifest persistence is N+1 and lookup is quadratic |
 | OBJ-P-003 | Blocker | RESOLVED | Page image validation/reservation is N+1 |
@@ -467,8 +469,8 @@ no-business-ID-reuse invariant are not erased by these test results.
 - Severity: High
 - Status: RESOLVED
 - Evidence:
-  - poprako-obj-dept/src/oper.rs, RetireObjs::RemoveRows deletes the
-    latest-state row and documents the no-ID-reuse invariant
+  - poprako-obj-dept/src/oper.rs, DeleteObjs ends the object identity and
+    documents the no-ID-reuse invariant
   - generated slot allocation starts an absent row from its initial generation
   - physical keys and durable task identities include business ID and version
 - Finding: deleting the row also deletes its generation watermark. Reusing the
@@ -509,26 +511,66 @@ no-business-ID-reuse invariant are not erased by these test results.
   tokens, generated RDB row mappings, and direct SQL integration row structs;
   format, compile, and tests pass.
 
-### OBJ-Q-020 — Lifecycle APIs hide distinct outcomes behind ambiguous names
+### OBJ-Q-020 — Lifecycle APIs use ambiguous state and retirement vocabulary
 
 - Severity: High
 - Status: RESOLVED
 - Evidence:
-  - MarkObjUploaded returns a bare bool whose variants are not self-describing
   - ObjKeyState::Verified names optimistic client availability as verification
-  - DelObjs combines watermark-preserving detach and row removal under a name
-    that suggests only physical deletion
-- Finding: these names overstate guarantees and conceal materially different
-  state transitions. That makes future callers, especially a Font flow, likely
-  to mishandle stale marks or choose the ABA-sensitive removal mode.
-- Required disposition: replace the mark bool with a named outcome, rename the
-  optimistic state so it does not claim verification, and rename the retirement
-  operation/variants so watermark preservation versus row removal is explicit
-  at call sites.
+  - DelObjs combined cleanup for active and deleted business entities
+- Finding: the state and retirement names overstate guarantees and conceal
+  materially different state transitions. The attempted
+  `MarkObjUploadedOutcome` repair introduced a nonstandard `Outcome` type that
+  did not improve this codebase's vocabulary.
+- Required disposition: keep `MarkObjUploaded` returning `bool`, bind it to the
+  semantic local `marked`, and match `true`/`false` at the immediate use-case
+  boundary. Rename the optimistic state so it does not claim verification, and
+  split cleanup operations by business lifecycle intent.
 - Remediation: Phase 6.
-- Recheck: operation signatures and match arms are self-describing, no active
-  identifier claims content verification, and retirement call sites state
-  whether they preserve the generation watermark.
+- Recheck: no `Outcome` lifecycle type remains, no active identifier claims
+  content verification, and cleanup call sites express business lifecycle
+  intent.
+
+### OBJ-Q-021 — obj_inst! hides operation types from Rust LSP navigation
+
+- Severity: High
+- Status: RESOLVED
+- Evidence:
+  - poprako-obj-dept/src/lib.rs defined `obj_inst!`, whose invocation tokens
+    mentioned names such as `MarkObjUploaded` without resolving them as Rust
+    paths in the calling module
+  - use-case callers therefore had no import or navigable reference to the
+    operation structure they were invoking
+- Finding: the macro existed only to inject `PhantomData`, but made
+  go-to-definition and ordinary type discovery fail at every call site.
+- Required disposition: delete `obj_inst!`; make marker fields private; expose
+  ordinary associated constructors on each operation; import and invoke the
+  real operation types directly at every caller.
+- Remediation: Phase 6.
+- Recheck: repository scans contain no `obj_inst` reference; all operation call
+  sites compile through `Type::<Marker>::new(...)`; format, compile, and tests
+  pass.
+
+### OBJ-Q-022 — Object cleanup API leaks persistence strategies into use cases
+
+- Severity: High
+- Status: RESOLVED
+- Evidence:
+  - `RetireObjs` grouped two business transitions into one mode enum
+  - `PreserveWatermarks` and `RemoveRows` named RDB persistence choices at
+    application call sites
+- Finding: callers should decide whether the owning business entity remains
+  active or has ended its lifecycle. They must not select how ObjDept persists
+  generation state.
+- Required disposition: replace the enum with independent `ClearObjs<B>` and
+  `DeleteObjs<B>` operations. `ClearObjs` is used when the business entity stays
+  active and may receive another file; `DeleteObjs` is used only when the
+  owning entity is permanently deleted and its identifier cannot be reused.
+  Keep detach/remove mechanics private to generated RDB code.
+- Remediation: Phase 6.
+- Recheck: Rust source contains no `RetireObjs`, `PreserveWatermarks`, or
+  `RemoveRows`; both operations remain batched and transaction-scoped; compile
+  and focused lifecycle tests pass.
 
 ## Performance issues
 
@@ -719,6 +761,15 @@ no-business-ID-reuse invariant are not erased by these test results.
 - Required disposition: use slice::from_ref for singleton reads, eliminate the
   deletion copy through batch normalization, and consume or borrow decoded row
   data without duplicate ID/row clones where practical.
+- Resolution note: singleton view and cleanup calls now borrow their model
+  IDs with `slice::from_ref`; page view assembly looks up by the borrowed model
+  ID before consuming the model; bulk slot generation moves prior keys into
+  Delete work with `Option::take` and keys its temporary pool-slot map by
+  borrowed `&str`; the mock slot path moves the replaced row instead of cloning
+  the whole record. Remaining lifecycle key copies create independent owned
+  values required simultaneously by returned slots, durable Check tasks, or
+  owned response maps. The actor's retry clone remains explicitly deferred by
+  OBJ-P-010 and the required actor FIXME.
 - Remediation: Phase 3, Phase 5, and Phase 6 cleanup.
 - Recheck: Clippy passes with denied warnings and focused review records any
   clone that remains structurally required.

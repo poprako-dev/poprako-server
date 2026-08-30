@@ -9,7 +9,8 @@ use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use time::OffsetDateTime;
 use tracing::instrument;
 
-use poprako_obj_dept::{ObjDept, obj_inst};
+use poprako_obj_dept::ObjDept;
+use poprako_obj_dept::oper::{ClearObjs, DeleteObjs};
 use poprako_util::i18n::trl;
 
 use crate::complex::comic_archive::{
@@ -162,23 +163,17 @@ where
             )
             .await?;
 
-            let cover_ids = [comic_archive_entry.source_comic_id.clone()];
-
-            obj_inst! {
-                RetireObjs<ComicCover>::PreserveWatermarks { ids: &cover_ids }
-            }
+            ClearObjs::<ComicCover>::new(std::slice::from_ref(
+                &comic_archive_entry.source_comic_id,
+            ))
             .step_on(obj_dept, context)
             .await
             .map_err(BaseError::from)?;
 
-            obj_inst! {
-                RetireObjs<PageImage>::RemoveRows {
-                    ids: &comic_archive_entry.source_page_ids,
-                }
-            }
-            .step_on(obj_dept, context)
-            .await
-            .map_err(BaseError::from)?;
+            DeleteObjs::<PageImage>::new(&comic_archive_entry.source_page_ids)
+                .step_on(obj_dept, context)
+                .await
+                .map_err(BaseError::from)?;
 
             CommitComicArchive {
                 entry: &comic_archive_entry,

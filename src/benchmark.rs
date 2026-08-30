@@ -26,10 +26,10 @@ use crate::value::role::{RoleField, RoleMask};
 const CHAPTER_COUNT: usize = 8;
 
 // Number of pages included in each benchmark chapter snapshot.
-const PAGE_COUNT: usize = 8;
+const PAGE_COUNT: u16 = 8;
 
 // Number of units included on each benchmark page.
-const UNIT_COUNT: usize = 48;
+const UNIT_COUNT: u16 = 48;
 
 /// Benchmarks archive preparation for a large comic snapshot.
 pub struct ArchiveInput(ComicArchiveSnapshot);
@@ -182,13 +182,13 @@ fn archive_snapshot() -> Option<ComicArchiveSnapshot> {
             updated_at: archived_at,
         };
 
-        let mut page_snapshots = Vec::with_capacity(PAGE_COUNT);
+        let mut page_snapshots = Vec::with_capacity(usize::from(PAGE_COUNT));
 
         for page_index in 0..PAGE_COUNT {
             //
             let page_id = format!("page-{}-{}", chapter_index, page_index);
 
-            let mut unit_infos = Vec::with_capacity(UNIT_COUNT);
+            let mut unit_infos = Vec::with_capacity(usize::from(UNIT_COUNT));
 
             for unit_index in 0..UNIT_COUNT {
                 //
@@ -205,10 +205,10 @@ fn archive_snapshot() -> Option<ComicArchiveSnapshot> {
                 page_info: PageInfo {
                     id: page_id,
                     chapter_id: chapter_id.clone(),
-                    index: page_index,
-                    total_unit_count: UNIT_COUNT,
-                    translated_unit_count: UNIT_COUNT,
-                    proofread_unit_count: UNIT_COUNT,
+                    index: usize::from(page_index),
+                    total_unit_count: usize::from(UNIT_COUNT),
+                    translated_unit_count: usize::from(UNIT_COUNT),
+                    proofread_unit_count: usize::from(UNIT_COUNT),
                     created_at: archived_at,
                     updated_at: archived_at,
                 },
@@ -224,10 +224,10 @@ fn archive_snapshot() -> Option<ComicArchiveSnapshot> {
                 is_pinned: chapter_index == 0,
                 index: chapter_index,
                 subtitle: format!("Chapter {}", chapter_index),
-                page_count: PAGE_COUNT,
-                total_unit_count: PAGE_COUNT * UNIT_COUNT,
-                translated_unit_count: PAGE_COUNT * UNIT_COUNT,
-                proofread_unit_count: PAGE_COUNT * UNIT_COUNT,
+                page_count: usize::from(PAGE_COUNT),
+                total_unit_count: usize::from(PAGE_COUNT * UNIT_COUNT),
+                translated_unit_count: usize::from(PAGE_COUNT * UNIT_COUNT),
+                proofread_unit_count: usize::from(PAGE_COUNT * UNIT_COUNT),
                 stages,
                 creator_id: "user-1".into(),
                 creator: None,
@@ -286,7 +286,7 @@ fn export_input() -> LabelPlusExportInput {
     //
     let archived_at = OffsetDateTime::UNIX_EPOCH;
 
-    let mut pages = Vec::with_capacity(PAGE_COUNT * 8);
+    let mut pages = Vec::with_capacity(usize::from(PAGE_COUNT) * 8);
 
     let mut units_by_page_id = HashMap::new();
 
@@ -303,10 +303,10 @@ fn export_input() -> LabelPlusExportInput {
         pages.push(PageInfo {
             id: page_id.clone(),
             chapter_id: "chapter-1".into(),
-            index: page_index,
-            total_unit_count: UNIT_COUNT,
-            translated_unit_count: UNIT_COUNT,
-            proofread_unit_count: UNIT_COUNT,
+            index: usize::from(page_index),
+            total_unit_count: usize::from(UNIT_COUNT),
+            translated_unit_count: usize::from(UNIT_COUNT),
+            proofread_unit_count: usize::from(UNIT_COUNT),
             created_at: archived_at,
             updated_at: archived_at,
         });
@@ -338,8 +338,8 @@ fn user_info(archived_at: OffsetDateTime) -> UserInfo {
 fn unit_info(
     page_id: &str,
     chapter_index: usize,
-    page_index: usize,
-    unit_index: usize,
+    page_index: u16,
+    unit_index: u16,
     archived_at: OffsetDateTime,
 ) -> UnitInfo {
     //
@@ -352,8 +352,8 @@ fn unit_info(
         is_bubble: unit_index.is_multiple_of(2),
         is_proofread: true,
         coord: UnitCoord {
-            x_coord: unit_index as f64,
-            y_coord: page_index as f64,
+            x_coord: f64::from(unit_index),
+            y_coord: f64::from(page_index),
         },
         translated_text: Some(format!(
             "Translated text for chapter {}, page {}, unit {}.",

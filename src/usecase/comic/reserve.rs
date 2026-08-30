@@ -1,8 +1,9 @@
 use poprako_orchestra::{AtLeast, Context, Nucl, OperStep as _};
 use tracing::instrument;
 
+use poprako_obj_dept::ObjDept;
 use poprako_obj_dept::model::slot::ObjSlotSpec;
-use poprako_obj_dept::{ObjDept, obj_inst};
+use poprako_obj_dept::oper::GenObjSlot;
 
 use crate::complex::comic::{ComicComplex, ComicPermComplex};
 use crate::complex::image::ImageComplex;
@@ -73,7 +74,7 @@ where
                 byte_len: instr.new_byte_len,
             };
 
-            obj_inst! { GenObjSlot<ComicCover> { spec: &obj_spec } }
+            GenObjSlot::<ComicCover>::new(&obj_spec)
                 .step_on(obj_dept, context)
                 .await
                 .map_err(BaseError::from)

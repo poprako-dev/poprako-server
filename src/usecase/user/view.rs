@@ -4,8 +4,9 @@ use std::collections::HashMap;
 
 use poprako_orchestra::{Context, OperRun as _};
 
+use poprako_obj_dept::ObjDeptView;
 use poprako_obj_dept::model::url::ObjUrls;
-use poprako_obj_dept::{ObjDeptView, obj_inst};
+use poprako_obj_dept::oper::{GenObjUrls, ListObjMetas};
 
 use crate::data::view::user::UserInfoView;
 use crate::model::read::proj::user::UserInfo;
@@ -21,12 +22,12 @@ where
     C: Context,
     O: ObjDeptView<UserAvatar, C> + Sync,
 {
-    let user_id = model.id.clone();
-
     let avatar_urls =
-        avatar_urls::<C, O>(obj_dept, std::slice::from_ref(&user_id)).await?;
+        avatar_urls::<C, O>(obj_dept, std::slice::from_ref(&model.id)).await?;
 
-    accept(user_info_view_from_urls(model, avatar_urls.get(&user_id)))
+    let urls = avatar_urls.get(&model.id);
+
+    accept(user_info_view_from_urls(model, urls))
 }
 
 /// Renders one user with URLs from an already-loaded object snapshot.
@@ -62,16 +63,15 @@ where
 
     user_ids.dedup();
 
-    let obj_metas = obj_inst! { ListObjMetas<UserAvatar> { ids: &user_ids } }
+    let obj_metas = ListObjMetas::<UserAvatar>::new(&user_ids)
         .run_on(obj_dept)
         .await
         .map_err(BaseError::from)?;
 
-    let avatar_urls =
-        obj_inst! { GenObjUrls<UserAvatar> { metas: &obj_metas } }
-            .run_on(obj_dept)
-            .await
-            .map_err(BaseError::from)?;
+    let avatar_urls = GenObjUrls::<UserAvatar>::new(&obj_metas)
+        .run_on(obj_dept)
+        .await
+        .map_err(BaseError::from)?;
 
     accept(avatar_urls)
 }

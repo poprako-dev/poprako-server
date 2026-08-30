@@ -78,11 +78,16 @@ are forbidden in ObjDept.
   supplied metadata versions;
 - `GenObjSlot<B>` for allocation and a signed write capability;
 - `GenObjSlots<B>` for batch allocation and signed write capabilities;
-- `RetireObjs<B>` for reliable physical retirement while either preserving
-  version watermarks or removing metadata rows.
+- `ClearObjs<B>` for clearing current files while their owning business
+  entities remain active;
+- `DeleteObjs<B>` for ending object lifecycles together with permanently
+  deleted business entities.
 
-Operation structures have no constructors. Every phantom field is `_m`, and
-`obj_inst!` supplies it so use cases initialize only meaningful fields.
+Operation structures expose ordinary associated constructors and keep their
+phantom marker fields private. Callers import and invoke the real operation
+type directly so rust-analyzer navigation reaches its definition; no operation
+construction macro is used. `MarkObjUploaded<B>` returns `bool`, bound as
+`marked` and handled at the immediate use-case boundary.
 
 `ObjSlotSpec` carries `id`, `hash`, `ext`, `content_type`, and `byte_len`.
 `ObjMeta` carries `key`, `is_available`, `hash`, and `ext`. Availability is an
@@ -92,14 +97,13 @@ use `ObjDeptError` and `ObjDeptRest`.
 R2 pool provides a thumbnail; the optional field permits a future pool or
 object kind without that capability.
 
-`RetireObjs::PreserveWatermarks` keeps the version watermark while clearing the
-active tuple. `RetireObjs::RemoveRows` removes the metadata row. Both record
-Delete work in the caller-owned transaction before business mutation commits;
-neither performs remote I/O in that transaction. `RemoveRows` is safe only
-under the public invariant that a business object ID is never reused within
-the same topic. A future object kind that permits ID reuse must preserve its
-watermark or introduce a monotonic lifecycle epoch in both physical keys and
-durable task identities.
+`ClearObjs` makes the current files unavailable and guarantees that later
+reservations cannot reuse an earlier generation. `DeleteObjs` ends the object
+lifecycle and is valid only when the owning business identifiers will never be
+reused for that object kind. Both record Delete work in the caller-owned
+transaction before business mutation commits; neither performs remote I/O in
+that transaction. A future object kind that permits business-ID reuse must use
+`ClearObjs` or introduce a monotonic identity epoch.
 
 ## Pool and durable tasks
 
@@ -171,8 +175,9 @@ use cases select a logical object by business row id plus compile-time marker.
 Reserve flows validate policy, then run `GenObjSlot` or `GenObjSlots` in the
 owner transaction.
 Read flows combine business data with explicit ObjDept metadata or URLs.
-Delete and cascade flows run `RetireObjs` in the same transaction as
-business-row mutation.
+Delete and cascade flows run `DeleteObjs` in the same transaction as
+business-row mutation. Workflows that keep their business entities but clear
+current files run `ClearObjs`.
 
 The mark-uploaded endpoints optimistically set the submitted exact current
 ObjDept generation to uploaded. Origin and supported thumbnail URLs are

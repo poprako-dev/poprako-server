@@ -4,8 +4,9 @@ use std::collections::HashMap;
 
 use poprako_orchestra::{Context, OperRun as _};
 
+use poprako_obj_dept::ObjDeptView;
 use poprako_obj_dept::model::url::ObjUrls;
-use poprako_obj_dept::{ObjDeptView, obj_inst};
+use poprako_obj_dept::oper::{GenObjUrls, ListObjMetas};
 
 use crate::data::view::team::TeamInfoView;
 use crate::model::read::proj::team::TeamInfo;
@@ -21,12 +22,12 @@ where
     C: Context,
     O: ObjDeptView<TeamAvatar, C> + Sync,
 {
-    let team_id = model.id.clone();
-
     let avatar_urls =
-        avatar_urls::<C, O>(obj_dept, std::slice::from_ref(&team_id)).await?;
+        avatar_urls::<C, O>(obj_dept, std::slice::from_ref(&model.id)).await?;
 
-    accept(team_info_view_from_urls(model, avatar_urls.get(&team_id)))
+    let urls = avatar_urls.get(&model.id);
+
+    accept(team_info_view_from_urls(model, urls))
 }
 
 /// Renders one team with URLs from an already-loaded object snapshot.
@@ -91,16 +92,15 @@ where
 
     team_ids.dedup();
 
-    let obj_metas = obj_inst! { ListObjMetas<TeamAvatar> { ids: &team_ids } }
+    let obj_metas = ListObjMetas::<TeamAvatar>::new(&team_ids)
         .run_on(obj_dept)
         .await
         .map_err(BaseError::from)?;
 
-    let avatar_urls =
-        obj_inst! { GenObjUrls<TeamAvatar> { metas: &obj_metas } }
-            .run_on(obj_dept)
-            .await
-            .map_err(BaseError::from)?;
+    let avatar_urls = GenObjUrls::<TeamAvatar>::new(&obj_metas)
+        .run_on(obj_dept)
+        .await
+        .map_err(BaseError::from)?;
 
     accept(avatar_urls)
 }

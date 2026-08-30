@@ -9,9 +9,12 @@ use std::time::Duration;
 use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
+use poprako_obj_dept::ObjDept;
 use poprako_obj_dept::model::meta::ObjMeta;
 use poprako_obj_dept::model::slot::{ObjSlot, ObjSlotSpec};
-use poprako_obj_dept::{ObjDept, obj_inst};
+use poprako_obj_dept::oper::{
+    DeleteObjs, GenObjSlot, GenObjSlots, ListObjMetas,
+};
 use poprako_util::i18n::trl;
 
 use crate::complex::chapter::ChapterComplex;
@@ -181,11 +184,10 @@ where
                 byte_len: instr.new_byte_len,
             };
 
-            let obj_slot =
-                obj_inst! { GenObjSlot<PageImage> { spec: &obj_spec } }
-                    .step_on(obj_dept, context)
-                    .await
-                    .map_err(BaseError::from)?;
+            let obj_slot = GenObjSlot::<PageImage>::new(&obj_spec)
+                .step_on(obj_dept, context)
+                .await
+                .map_err(BaseError::from)?;
 
             let advance_id = next_snowflake_id();
 
@@ -308,11 +310,10 @@ where
         .map(|(manifest_entry, _)| manifest_entry.id.clone())
         .collect::<Vec<_>>();
 
-    let retained_obj_metas =
-        obj_inst! { ListObjMetas<PageImage> { ids: &retained_page_ids } }
-            .step_on(obj_dept, context)
-            .await
-            .map_err(BaseError::from)?;
+    let retained_obj_metas = ListObjMetas::<PageImage>::new(&retained_page_ids)
+        .step_on(obj_dept, context)
+        .await
+        .map_err(BaseError::from)?;
 
     for (manifest_entry, page_spec) in manifest_entries.iter().zip(page_specs) {
         //
@@ -348,11 +349,10 @@ where
         })
         .collect::<Vec<_>>();
 
-    let mut obj_slots =
-        obj_inst! { GenObjSlots<PageImage> { specs: &obj_specs } }
-            .step_on(obj_dept, context)
-            .await
-            .map_err(BaseError::from)?;
+    let mut obj_slots = GenObjSlots::<PageImage>::new(&obj_specs)
+        .step_on(obj_dept, context)
+        .await
+        .map_err(BaseError::from)?;
 
     let page_reservations = manifest_entries
         .iter()
@@ -383,12 +383,10 @@ where
         })
         .collect::<BaseRest<Vec<_>>>()?;
 
-    obj_inst! {
-        RetireObjs<PageImage>::RemoveRows { ids: &deleted_page_ids }
-    }
-    .step_on(obj_dept, context)
-    .await
-    .map_err(BaseError::from)?;
+    DeleteObjs::<PageImage>::new(&deleted_page_ids)
+        .step_on(obj_dept, context)
+        .await
+        .map_err(BaseError::from)?;
 
     DeletePages::Ids {
         ids: &deleted_page_ids,

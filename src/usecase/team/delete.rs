@@ -3,7 +3,8 @@
 use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
-use poprako_obj_dept::{ObjDept, obj_inst};
+use poprako_obj_dept::ObjDept;
+use poprako_obj_dept::oper::DeleteObjs;
 use poprako_util::i18n::trl;
 
 use crate::complex::team::TeamPermComplex;
@@ -149,9 +150,7 @@ where
             .await?;
     }
 
-    let avatar_ids = [team_info.id.clone()];
-
-    obj_inst! { RetireObjs<TeamAvatar>::RemoveRows { ids: &avatar_ids } }
+    DeleteObjs::<TeamAvatar>::new(std::slice::from_ref(&team_info.id))
         .step_on(obj_dept, context)
         .await
         .map_err(BaseError::from)?;

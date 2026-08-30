@@ -14,8 +14,8 @@ use tracing::instrument;
 
 use poprako_obj_dept::key::ObjKey;
 use poprako_obj_dept::model::slot::ObjSlotSpec;
-use poprako_obj_dept::oper::MarkObjUploadedOutcome;
-use poprako_obj_dept::{ObjDept, ObjDeptView, obj_inst};
+use poprako_obj_dept::oper::{GenObjSlot, MarkObjUploaded};
+use poprako_obj_dept::{ObjDept, ObjDeptView};
 use poprako_util::i18n::trl;
 
 use crate::complex::image::ImageComplex;
@@ -303,7 +303,7 @@ where
                 byte_len: instr.new_byte_len,
             };
 
-            obj_inst! { GenObjSlot<UserAvatar> { spec: &obj_spec } }
+            GenObjSlot::<UserAvatar>::new(&obj_spec)
                 .step_on(obj_dept, context)
                 .await
                 .map_err(BaseError::from)
@@ -347,18 +347,13 @@ where
         version: instr.image_version,
     };
 
-    let marked = obj_inst! { MarkObjUploaded<UserAvatar> { key: &avatar_key } }
+    let marked = MarkObjUploaded::<UserAvatar>::new(&avatar_key)
         .run_on(obj_dept)
         .await
         .map_err(BaseError::from)?;
 
-    match marked {
-        //
-        MarkObjUploadedOutcome::Marked => accept(()),
-
-        MarkObjUploadedOutcome::NotCurrent => Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message: trl("error-stale-avatar-upload"),
-        }),
-    }
+    marked.then_some(()).ok_or_else(|| BaseError::Expected {
+        variant: ExpectedVariant::Args,
+        message: trl("error-stale-avatar-upload"),
+    })
 }

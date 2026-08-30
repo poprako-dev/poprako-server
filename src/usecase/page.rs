@@ -15,9 +15,9 @@ mod tests;
 use poprako_orchestra::{Context, OperRun as _};
 use tracing::instrument;
 
+use poprako_obj_dept::ObjDept;
 use poprako_obj_dept::key::ObjKey;
-use poprako_obj_dept::oper::MarkObjUploadedOutcome;
-use poprako_obj_dept::{ObjDept, obj_inst};
+use poprako_obj_dept::oper::MarkObjUploaded;
 use poprako_util::i18n::trl;
 
 use crate::complex::page::PagePermComplex;
@@ -28,7 +28,7 @@ use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
 use crate::part::repo::oper::page::GetPageInfo;
 use crate::part::repo::page::PageRepo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 
 /// Optimistically marks the requested current page generation as uploaded.
 #[instrument(level = "info", skip(repo, obj_dept))]
@@ -70,18 +70,13 @@ where
         version: instr.image_version,
     };
 
-    let marked = obj_inst! { MarkObjUploaded<PageImage> { key: &image_key } }
+    let marked = MarkObjUploaded::<PageImage>::new(&image_key)
         .run_on(obj_dept)
         .await
         .map_err(BaseError::from)?;
 
-    match marked {
-        //
-        MarkObjUploadedOutcome::Marked => accept(()),
-
-        MarkObjUploadedOutcome::NotCurrent => Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message: trl("error-stale-page-image-upload"),
-        }),
-    }
+    marked.then_some(()).ok_or_else(|| BaseError::Expected {
+        variant: ExpectedVariant::Args,
+        message: trl("error-stale-page-image-upload"),
+    })
 }

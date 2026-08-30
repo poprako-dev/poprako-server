@@ -1,7 +1,5 @@
 //! Object lifecycle values split by function.
 
-/// Upload-mark results.
-pub mod mark;
 /// Current object metadata.
 pub mod meta;
 /// Upload capability values.

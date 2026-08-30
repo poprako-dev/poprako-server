@@ -20,6 +20,11 @@ impl UserComplex {
     }
 
     /// Hashes a plaintext password on Tokio's blocking pool and returns its Argon2id-encoded value.
+    ///
+    /// # Errors
+    ///
+    /// Returns an unrecoverable error when the blocking task cannot complete
+    /// or Argon2id fails to produce a password hash.
     pub async fn hash_password(password: &str) -> BaseRest<String> {
         //
         let password = password.to_owned();

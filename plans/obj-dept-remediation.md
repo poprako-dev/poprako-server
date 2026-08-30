@@ -33,7 +33,7 @@ poprako-rdb-core <- poprako-obj-dept <- poprako-server
 | Phase 3: object/task batches | OBJ-Q-018, OBJ-P-001, OBJ-P-003, OBJ-P-011, OBJ-P-012, OBJ-P-014, OBJ-P-015 |
 | Phase 4: page manifest batch | OBJ-P-002, OBJ-P-003 |
 | Phase 5: nested hydration | OBJ-P-004, OBJ-P-005, OBJ-P-011 |
-| Phase 6: safety debt and cleanup | OBJ-Q-003, OBJ-Q-004, OBJ-Q-008, OBJ-Q-011, OBJ-Q-014, OBJ-Q-015, OBJ-Q-016, OBJ-Q-018, OBJ-Q-019, OBJ-Q-020, OBJ-P-007, OBJ-P-008, OBJ-P-009, OBJ-P-010, OBJ-P-013 |
+| Phase 6: safety debt and cleanup | OBJ-Q-003, OBJ-Q-004, OBJ-Q-008, OBJ-Q-011, OBJ-Q-014, OBJ-Q-015, OBJ-Q-016, OBJ-Q-018, OBJ-Q-019, OBJ-Q-020, OBJ-Q-021, OBJ-P-007, OBJ-P-008, OBJ-P-009, OBJ-P-010, OBJ-P-013 |
 | Phase 7: verification | OBJ-Q-002, OBJ-Q-009, OBJ-Q-010, OBJ-Q-016, OBJ-Q-019, OBJ-P-015 and every actionable issue's recheck |
 | Separate tracks | OBJ-Q-012, OBJ-Q-013 |
 
@@ -74,7 +74,7 @@ The following decisions are not reopened by this plan:
    thumbnail URL fields.
 4. A top-level list request performs at most one metadata query per required
    object marker, regardless of result count or include depth.
-5. `RetireObjs` and page manifest reservation use true batch persistence. Their
+5. `ClearObjs`, `DeleteObjs`, and page manifest reservation use true batch persistence. Their
    database round-trip count must be bounded independently of item count.
 6. A future manifest entry receives total-department and read-view
    implementations without handwritten marker-specific forwarding code.
@@ -120,7 +120,7 @@ Before implementation, confirm these minimal responsibility-based splits:
   token composition in `impl_obj_dept.rs` (projected 210-260 lines).
 - Move generated metadata/URL operations and read-view implementations to
   `impl_obj_dept/read.rs` (projected 180-260 lines).
-- Move generated slot reservation and object retirement operations to
+- Move generated slot reservation and object cleanup operations to
   `impl_obj_dept/lifecycle.rs` (projected 260-360 lines).
 
 These are line-limit splits only. They must not change public behavior by
@@ -295,7 +295,7 @@ lock ordering and the existing latest-generation rules.
 5. Keep the single-item methods as thin wrappers over the batch engine where
    that does not complicate borrowing.
 
-### `RetireObjs`
+### `ClearObjs` and `DeleteObjs`
 
 Replace the current loop with this fixed-round-trip pipeline:
 
@@ -303,14 +303,14 @@ Replace the current loop with this fixed-round-trip pipeline:
 2. load all current rows for update once;
 3. derive all active keys in memory;
 4. defer all Delete tasks as one batch;
-5. detach or remove all rows with one statement.
+5. apply the operation-specific state change with one statement.
 
-Missing IDs remain idempotent. Any invalid row or task identity conflict rolls
-back the entire caller transaction; partial retirement is not allowed.
+Missing IDs remain idempotent. Any invalid state or task identity conflict
+rolls back the entire caller transaction; partial cleanup is not allowed.
 
 ### Business-ID lifetime and removal
 
-`RemoveRows` loses the persisted generation watermark, so its safety depends on a
+`DeleteObjs` ends the durable object identity, so its safety depends on a
 public lifetime invariant rather than only transaction isolation:
 
 1. Publish and enforce that a business ID is never reused within one object
@@ -356,7 +356,7 @@ task.
 5. Fetch all retained `PageImage` metadata with one `ListObjMetas` step and
    validate it in memory.
 6. Reserve all changed/new images with one `GenObjSlots<PageImage>` step.
-7. Retire removed images through the repaired batch `RetireObjs` implementation.
+7. Delete removed images through the batch `DeleteObjs` implementation.
 8. Preserve manifest response order by joining result maps back to the input
    sequence in memory.
 
@@ -454,19 +454,22 @@ mark for the same ID and generation:
 
 ### Lifecycle vocabulary
 
-1. Replace the bare bool output of `MarkObjUploaded` with a named result whose
-   success and stale/current mismatch outcomes are explicit at every match.
+1. Keep the bool output of `MarkObjUploaded`, bind it as `marked`, and handle
+   `true`/`false` at the immediate use-case boundary. Do not introduce a generic
+   `Outcome` type for this transition.
 2. Rename `ObjKeyState::Verified`; client marking is optimistic availability,
    not remote or content verification.
-3. Rename `RetireObjs` and its variants so call sites state whether they preserve
-   the generation watermark or remove the row.
+3. Split cleanup into `ClearObjs` for active business entities and `DeleteObjs`
+   for ended business entities. Do not expose persistence strategy as an enum
+   or constructor name.
 4. Keep the database-column `f_` prefix only on actual schema/table tokens and
    typed RDB row mappings. Domain state uses `is_available`; ordinary locals
    use direct semantic names such as `marked`, `exists`, and
    `include_thumbnail`.
-5. Resolve OBJ-Q-019 only after the targeted naming scan, compile, and tests
-   pass. Resolve OBJ-Q-020 only after all three lifecycle API names are
-   self-describing.
+5. Delete `obj_inst!`. Give each operation an ordinary associated constructor
+   so rust-analyzer resolves the real type at every call site.
+6. Resolve OBJ-Q-019 through OBJ-Q-021 only after the targeted naming scans,
+   compile, and tests pass.
 
 ### Required ObjActor `FIXME`
 
@@ -515,7 +518,7 @@ change.
 
 ### Batch and transaction tests
 
-- `RetireObjs` handles multiple, duplicate, and missing IDs without partial
+- `ClearObjs` and `DeleteObjs` handle multiple, duplicate, and missing IDs without partial
   changes.
 - Batch lock contention returns a retryable error and rolls back the complete
   operation.
@@ -581,6 +584,6 @@ The repair is complete only when:
 - actor correction is revision-fenced against same-generation marks, anchor
   acquisition is validated atomically, and the business-ID reuse disposition
   is explicit;
-- lifecycle outcomes and retirement modes have self-describing types/names,
+- lifecycle and cleanup operations have self-describing domain names,
   and database `f_` prefixes do not leak across the RDB boundary;
 - standard format, compile, test, Clippy, and line-limit checks pass.

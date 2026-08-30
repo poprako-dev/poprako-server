@@ -1,7 +1,8 @@
 use poprako_orchestra::{AtLeast, Context, Nucl, OperStep as _};
 use tracing::instrument;
 
-use poprako_obj_dept::{ObjDept, obj_inst};
+use poprako_obj_dept::ObjDept;
+use poprako_obj_dept::oper::DeleteObjs;
 
 use crate::complex::page::PagePermComplex;
 use crate::model::shared::user::UserToken;
@@ -71,7 +72,7 @@ where
             .map(|page_info| page_info.id)
             .collect::<Vec<_>>();
 
-        obj_inst! { RetireObjs<PageImage>::RemoveRows { ids: &page_ids } }
+        DeleteObjs::<PageImage>::new(&page_ids)
             .step_on(obj_dept, context)
             .await
             .map_err(BaseError::from)?;

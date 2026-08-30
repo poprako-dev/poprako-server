@@ -4,9 +4,10 @@ use std::collections::HashMap;
 
 use poprako_orchestra::{Context, OperRun as _};
 
+use poprako_obj_dept::ObjDeptView;
 use poprako_obj_dept::model::meta::ObjMeta;
 use poprako_obj_dept::model::url::ObjUrls;
-use poprako_obj_dept::{ObjDeptView, obj_inst};
+use poprako_obj_dept::oper::{GenObjUrls, ListObjMetas};
 
 use crate::data::view::page::PageInfoView;
 use crate::model::read::proj::page::PageInfo;
@@ -32,17 +33,17 @@ where
     C: Context,
     O: ObjDeptView<PageImage, C> + Sync,
 {
-    let page_id = model.id.clone();
-
     let image_data =
-        load_image_data::<C, O>(obj_dept, std::slice::from_ref(&page_id))
+        load_image_data::<C, O>(obj_dept, std::slice::from_ref(&model.id))
             .await?;
 
-    let image_urls = image_data.image_urls.get(&page_id);
+    let obj_meta = image_data.obj_metas.get(&model.id);
+
+    let image_urls = image_data.image_urls.get(&model.id);
 
     accept(PageInfoView::from_model(
         model,
-        image_data.obj_metas.get(&page_id),
+        obj_meta,
         image_urls.map(|urls| urls.origin_url.to_string()),
         image_urls
             .and_then(|urls| urls.thumbnail_url.as_ref())
@@ -71,13 +72,13 @@ where
             .into_iter()
             .map(|model| {
                 //
-                let page_id = model.id.clone();
+                let obj_meta = image_data.obj_metas.get(&model.id);
 
-                let image_urls = image_data.image_urls.get(&page_id);
+                let image_urls = image_data.image_urls.get(&model.id);
 
                 PageInfoView::from_model(
                     model,
-                    image_data.obj_metas.get(&page_id),
+                    obj_meta,
                     image_urls.map(|urls| urls.origin_url.to_string()),
                     image_urls
                         .and_then(|urls| urls.thumbnail_url.as_ref())
@@ -111,12 +112,12 @@ where
 
     page_ids.dedup();
 
-    let obj_metas = obj_inst! { ListObjMetas<PageImage> { ids: &page_ids } }
+    let obj_metas = ListObjMetas::<PageImage>::new(&page_ids)
         .run_on(obj_dept)
         .await
         .map_err(BaseError::from)?;
 
-    let image_urls = obj_inst! { GenObjUrls<PageImage> { metas: &obj_metas } }
+    let image_urls = GenObjUrls::<PageImage>::new(&obj_metas)
         .run_on(obj_dept)
         .await
         .map_err(BaseError::from)?;

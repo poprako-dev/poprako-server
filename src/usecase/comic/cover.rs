@@ -3,9 +3,9 @@
 use poprako_orchestra::{Context, OperRun as _};
 use tracing::instrument;
 
+use poprako_obj_dept::ObjDept;
 use poprako_obj_dept::key::ObjKey;
-use poprako_obj_dept::oper::MarkObjUploadedOutcome;
-use poprako_obj_dept::{ObjDept, obj_inst};
+use poprako_obj_dept::oper::MarkObjUploaded;
 use poprako_util::i18n::trl;
 
 use crate::complex::comic::ComicPermComplex;
@@ -15,7 +15,7 @@ use crate::part::obj_dept::ComicCover;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::team::TeamRepo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
 
@@ -50,18 +50,13 @@ where
         version: instr.image_version,
     };
 
-    let marked = obj_inst! { MarkObjUploaded<ComicCover> { key: &cover_key } }
+    let marked = MarkObjUploaded::<ComicCover>::new(&cover_key)
         .run_on(obj_dept)
         .await
         .map_err(BaseError::from)?;
 
-    match marked {
-        //
-        MarkObjUploadedOutcome::Marked => accept(()),
-
-        MarkObjUploadedOutcome::NotCurrent => Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message: trl("error-stale-cover-upload"),
-        }),
-    }
+    marked.then_some(()).ok_or_else(|| BaseError::Expected {
+        variant: ExpectedVariant::Args,
+        message: trl("error-stale-cover-upload"),
+    })
 }

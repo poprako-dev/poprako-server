@@ -1,7 +1,8 @@
 use poprako_orchestra::{AtLeast, Context, Nucl, OperStep as _};
 use tracing::instrument;
 
-use poprako_obj_dept::{ObjDept, obj_inst};
+use poprako_obj_dept::ObjDept;
+use poprako_obj_dept::oper::DeleteObjs;
 use poprako_util::i18n::trl;
 
 use crate::complex::member::MemberComplex;
@@ -115,9 +116,7 @@ where
             .await?;
         }
 
-        let obj_ids = [id.clone()];
-
-        obj_inst! { RetireObjs<UserAvatar>::RemoveRows { ids: &obj_ids } }
+        DeleteObjs::<UserAvatar>::new(std::slice::from_ref(&id))
             .step_on(obj_dept, context)
             .await
             .map_err(BaseError::from)?;

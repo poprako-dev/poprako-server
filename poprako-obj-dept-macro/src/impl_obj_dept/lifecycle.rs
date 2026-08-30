@@ -4,7 +4,7 @@ use syn::Ident;
 
 use crate::obj_dept_entry::ObjEntry;
 
-/// Generates batch-first reservation and retirement operations.
+/// Generates batch-first reservation and cleanup operations.
 #[expect(
     clippy::too_many_lines,
     reason = "one marker lifecycle shares a single batch-first generated engine"
@@ -14,6 +14,22 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
     let obj = entry.marker();
 
     let obj_module = entry.module();
+
+    let clear_objs_step = cleanup_step(
+        dept,
+        obj,
+        obj_module,
+        &quote::format_ident!("ClearObjs"),
+        &quote::format_ident!("detach_many"),
+    );
+
+    let delete_objs_step = cleanup_step(
+        dept,
+        obj,
+        obj_module,
+        &quote::format_ident!("DeleteObjs"),
+        &quote::format_ident!("remove_many"),
+    );
 
     quote! {
         impl<'a, P, M> ::poprako_orchestra::Run<
@@ -28,9 +44,7 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
             async fn run(
                 &self,
                 oper: &::poprako_obj_dept::oper::MarkObjUploaded<'a, #obj>,
-            ) -> ::poprako_obj_dept::rest::ObjDeptRest<
-                ::poprako_obj_dept::model::mark::MarkObjUploadedOutcome,
-            > {
+            ) -> ::poprako_obj_dept::rest::ObjDeptRest<bool> {
                 let mut conn = self.core().get().await.map_err(
                     ::poprako_obj_dept::rdb_impl::rdb_err,
                 )?;
@@ -47,12 +61,8 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                 .await?;
 
                 match updated {
-                    0 => Ok(
-                        ::poprako_obj_dept::model::mark::MarkObjUploadedOutcome::NotCurrent,
-                    ),
-                    1 => Ok(
-                        ::poprako_obj_dept::model::mark::MarkObjUploadedOutcome::Marked,
-                    ),
+                    0 => Ok(false),
+                    1 => Ok(true),
                     _ => Err(
                         ::poprako_obj_dept::rest::ObjDeptError::Unrecoverable {
                             message: "object upload mark changed multiple rows".into(),
@@ -171,7 +181,7 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                                 )
                                 .await?;
 
-                            Ok((spec.id.to_owned(), pool_slot))
+                            Ok((spec.id, pool_slot))
                         },
                     );
 
@@ -193,8 +203,8 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                 #obj_module::write_many(context.conn(), &writes).await?;
 
                 let delete_keys = planned
-                    .iter()
-                    .filter_map(|(_, previous_key)| previous_key.clone())
+                    .iter_mut()
+                    .filter_map(|(_, previous_key)| previous_key.take())
                     .collect::<Vec<_>>();
 
                 self.prom()
@@ -204,7 +214,9 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                 let checks = planned
                     .iter()
                     .map(|(key, _)| {
-                        let pool_slot = pool_slots.get(&key.id).ok_or_else(|| {
+                        let pool_slot = pool_slots
+                            .get(key.id.as_str())
+                            .ok_or_else(|| {
                             ::poprako_obj_dept::rest::ObjDeptError::Unrecoverable {
                                 message: "generated object slot is missing".into(),
                             }
@@ -225,12 +237,14 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
 
                 for (key, _) in planned {
                     //
-                    let pool_slot = pool_slots.remove(&key.id).ok_or_else(|| {
-                        //
-                        ::poprako_obj_dept::rest::ObjDeptError::Unrecoverable {
-                            message: "generated object slot is missing".into(),
-                        }
-                    })?;
+                    let pool_slot = pool_slots
+                        .remove(key.id.as_str())
+                        .ok_or_else(|| {
+                            //
+                            ::poprako_obj_dept::rest::ObjDeptError::Unrecoverable {
+                                message: "generated object slot is missing".into(),
+                            }
+                        })?;
 
                     slots.insert(
                         key.id.clone(),
@@ -273,10 +287,8 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                 use ::poprako_orchestra::Step as _;
 
                 let specs = [*oper.spec];
-                let batch_oper = ::poprako_obj_dept::oper::GenObjSlots::<#obj> {
-                    specs: &specs,
-                    _m: ::core::marker::PhantomData,
-                };
+                let batch_oper =
+                    ::poprako_obj_dept::oper::GenObjSlots::<#obj>::new(&specs);
                 let mut slots = self.step(context, &batch_oper).await?;
 
                 slots.remove(oper.spec.id).ok_or_else(|| {
@@ -287,8 +299,24 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
             }
         }
 
+        #clear_objs_step
+
+        #delete_objs_step
+    }
+}
+
+// Generates a transaction-scoped cleanup step for an object operation.
+fn cleanup_step(
+    dept: &Ident,
+    obj: &Ident,
+    obj_module: &Ident,
+    operation: &Ident,
+    persist: &Ident,
+) -> TokenStream {
+    //
+    quote! {
         impl<'a, L, P, M> ::poprako_orchestra::Step<
-            ::poprako_obj_dept::oper::RetireObjs<'a, #obj>,
+            ::poprako_obj_dept::oper::#operation<'a, #obj>,
             ::poprako_rdb_core::RdbContext<L>,
         > for #dept<P, M>
         where
@@ -306,15 +334,11 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
             async fn step(
                 &self,
                 context: &mut ::poprako_rdb_core::RdbContext<L>,
-                oper: &::poprako_obj_dept::oper::RetireObjs<'a, #obj>,
+                oper: &::poprako_obj_dept::oper::#operation<'a, #obj>,
             ) -> ::poprako_obj_dept::rest::ObjDeptRest<()> {
                 use ::poprako_obj_dept::prom::ObjPromDefer as _;
 
-                let ids = match oper {
-                    ::poprako_obj_dept::oper::RetireObjs::PreserveWatermarks { ids, .. }
-                    | ::poprako_obj_dept::oper::RetireObjs::RemoveRows { ids, .. } => ids,
-                };
-                let mut ids = ids.to_vec();
+                let mut ids = oper.ids.to_vec();
 
                 ids.sort_unstable();
                 ids.dedup();
@@ -341,16 +365,7 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                     .defer_deletes(context, #obj_module::TOPIC, &delete_keys)
                     .await?;
 
-                match oper {
-                    //
-                    ::poprako_obj_dept::oper::RetireObjs::PreserveWatermarks { .. } => {
-                        #obj_module::detach_many(context.conn(), &ids).await?;
-                    }
-
-                    ::poprako_obj_dept::oper::RetireObjs::RemoveRows { .. } => {
-                        #obj_module::remove_many(context.conn(), &ids).await?;
-                    }
-                }
+                #obj_module::#persist(context.conn(), &ids).await?;
 
                 Ok(())
             }

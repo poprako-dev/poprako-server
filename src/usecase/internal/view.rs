@@ -7,8 +7,9 @@ use std::collections::{HashMap, HashSet};
 
 use poprako_orchestra::{Context, OperRun as _};
 
+use poprako_obj_dept::ObjDeptView;
 use poprako_obj_dept::model::url::ObjUrls;
-use poprako_obj_dept::{ObjDeptView, obj_inst};
+use poprako_obj_dept::oper::{GenObjUrls, ListObjMetas};
 
 use crate::data::view::assignment::AssignmentInfoView;
 use crate::data::view::chapter::ChapterInfoView;
@@ -260,12 +261,12 @@ where
         return accept(HashMap::new());
     }
 
-    let obj_metas = obj_inst! { ListObjMetas<B> { ids: ids } }
+    let obj_metas = ListObjMetas::<B>::new(ids)
         .run_on(obj_dept)
         .await
         .map_err(BaseError::from)?;
 
-    let obj_urls = obj_inst! { GenObjUrls<B> { metas: &obj_metas } }
+    let obj_urls = GenObjUrls::<B>::new(&obj_metas)
         .run_on(obj_dept)
         .await
         .map_err(BaseError::from)?;

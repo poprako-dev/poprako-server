@@ -3,7 +3,8 @@
 use poprako_orchestra::{Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
-use poprako_obj_dept::{ObjDeptView, obj_inst};
+use poprako_obj_dept::ObjDeptView;
+use poprako_obj_dept::oper::ListObjMetas;
 
 use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::part::effect::event::Event;
@@ -162,12 +163,10 @@ where
                 .map(|page_info| page_info.id.clone())
                 .collect::<Vec<_>>();
 
-            let obj_metas = obj_inst! {
-                ListObjMetas<PageImage> { ids: &page_ids }
-            }
-            .step_on(obj_view, context)
-            .await
-            .map_err(BaseError::from)?;
+            let obj_metas = ListObjMetas::<PageImage>::new(&page_ids)
+                .step_on(obj_view, context)
+                .await
+                .map_err(BaseError::from)?;
 
             let are_images_uploaded = page_infos.iter().all(|page_info| {
                 //

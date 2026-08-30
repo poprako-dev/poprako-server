@@ -158,6 +158,11 @@ word = "replacement"
 code = "FBD012"
 message = "'replacement' is forbidden — use 'repl' instead"
 
+[[forbidden-identifiers.words]]
+word = "outcome"
+code = "FBD013"
+message = "'outcome' is forbidden"
+
 [trait-use-anonymous]
 # The trait lists replace the packaged defaults entirely.
 external_traits = [

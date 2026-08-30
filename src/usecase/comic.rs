@@ -15,7 +15,8 @@ pub mod tests;
 use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
-use poprako_obj_dept::{ObjDept, ObjDeptView, obj_inst};
+use poprako_obj_dept::oper::DeleteObjs;
+use poprako_obj_dept::{ObjDept, ObjDeptView};
 
 use crate::complex::assignment::AssignmentComplex;
 use crate::complex::chapter::ChapterComplex;
@@ -366,9 +367,7 @@ where
             .await?;
     }
 
-    let cover_ids = [comic_info.id.clone()];
-
-    obj_inst! { RetireObjs<ComicCover>::RemoveRows { ids: &cover_ids } }
+    DeleteObjs::<ComicCover>::new(std::slice::from_ref(&comic_info.id))
         .step_on(obj_dept, context)
         .await
         .map_err(BaseError::from)?;

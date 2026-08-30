@@ -3,8 +3,9 @@ use super::*;
 use poprako_orchestra::{Nucl as _, OperRun as _, OperStep as _};
 
 use poprako_obj_dept::model::slot::ObjSlotSpec;
-use poprako_obj_dept::obj_inst;
-use poprako_obj_dept::oper::MarkObjUploadedOutcome;
+use poprako_obj_dept::oper::{
+    ClearObjs, DeleteObjs, GenObjUrls, MarkObjUploaded,
+};
 use poprako_obj_dept::pool::ObjUrlProfile;
 
 use crate::part::obj_dept::PageImage;
@@ -67,7 +68,7 @@ async fn mock_operation_can_disable_thumbnails() {
     };
     let metas = HashMap::from([(String::from("page-1"), meta)]);
 
-    let urls = obj_inst! { GenObjUrls<PageImage> { metas: &metas } }
+    let urls = GenObjUrls::<PageImage>::new(&metas)
         .run_on(&mock)
         .await
         .unwrap();
@@ -109,11 +110,11 @@ async fn upload_mark_is_exact_current_and_idempotent() {
             },
         );
 
-    let first = obj_inst! { MarkObjUploaded<PageImage> { key: &key } }
+    let first = MarkObjUploaded::<PageImage>::new(&key)
         .run_on(&mock)
         .await
         .unwrap();
-    let second = obj_inst! { MarkObjUploaded<PageImage> { key: &key } }
+    let second = MarkObjUploaded::<PageImage>::new(&key)
         .run_on(&mock)
         .await
         .unwrap();
@@ -121,7 +122,7 @@ async fn upload_mark_is_exact_current_and_idempotent() {
         version: 3,
         ..key.clone()
     };
-    let stale = obj_inst! { MarkObjUploaded<PageImage> { key: &stale_key } }
+    let stale = MarkObjUploaded::<PageImage>::new(&stale_key)
         .run_on(&mock)
         .await
         .unwrap();
@@ -129,20 +130,18 @@ async fn upload_mark_is_exact_current_and_idempotent() {
         id: String::from("missing"),
         version: 1,
     };
-    let missing = obj_inst! {
-        MarkObjUploaded<PageImage> { key: &missing_key }
-    }
-    .run_on(&mock)
-    .await
-    .unwrap();
+    let missing = MarkObjUploaded::<PageImage>::new(&missing_key)
+        .run_on(&mock)
+        .await
+        .unwrap();
 
-    assert_eq!(first, MarkObjUploadedOutcome::Marked);
+    assert!(first);
 
-    assert_eq!(second, MarkObjUploadedOutcome::Marked);
+    assert!(second);
 
-    assert_eq!(stale, MarkObjUploadedOutcome::NotCurrent);
+    assert!(!stale);
 
-    assert_eq!(missing, MarkObjUploadedOutcome::NotCurrent);
+    assert!(!missing);
 
     let snapshot = mock.snapshot();
     let uploaded = snapshot
@@ -173,16 +172,16 @@ async fn upload_mark_is_exact_current_and_idempotent() {
 
     assert!(detached_prepared);
 
-    let detached = obj_inst! { MarkObjUploaded<PageImage> { key: &key } }
+    let detached = MarkObjUploaded::<PageImage>::new(&key)
         .run_on(&mock)
         .await
         .unwrap();
 
-    assert_eq!(detached, MarkObjUploadedOutcome::NotCurrent);
+    assert!(!detached);
 }
 
 #[tokio::test]
-async fn slot_and_remove_defer_check_and_delete_debt() {
+async fn slot_and_delete_defer_check_and_delete_debt() {
     let mock = Mock::new();
 
     let obj_dept = mock.clone();
@@ -197,13 +196,13 @@ async fn slot_and_remove_defer_check_and_delete_debt() {
             byte_len: 1024,
         };
 
-        obj_inst! { GenObjSlot<PageImage> { spec: &obj_spec } }
+        GenObjSlot::<PageImage>::new(&obj_spec)
             .step_on(&obj_dept, context)
             .await?;
 
         let ids = vec![String::from("page-1")];
 
-        obj_inst! { RetireObjs<PageImage>::RemoveRows { ids: &ids } }
+        DeleteObjs::<PageImage>::new(&ids)
             .step_on(&obj_dept, context)
             .await?;
 
@@ -226,6 +225,41 @@ async fn slot_and_remove_defer_check_and_delete_debt() {
     assert!(matches!(snapshot.obj_tasks[0].1, ObjTask::Check { .. }));
 
     assert!(matches!(snapshot.obj_tasks[1].1, ObjTask::Delete { .. }));
+}
+
+#[tokio::test]
+async fn clear_allows_replacement_without_reusing_a_generation() {
+    let mock = Mock::new();
+    let obj_dept = mock.clone();
+
+    let replacement = mock
+        .coord(async move |context| {
+            let obj_spec = ObjSlotSpec {
+                id: "page-1",
+                hash: &[1; 32],
+                ext: "png",
+                content_type: "image/png",
+                byte_len: 1024,
+            };
+
+            GenObjSlot::<PageImage>::new(&obj_spec)
+                .step_on(&obj_dept, context)
+                .await?;
+
+            let ids = vec![String::from("page-1")];
+
+            ClearObjs::<PageImage>::new(&ids)
+                .step_on(&obj_dept, context)
+                .await?;
+
+            GenObjSlot::<PageImage>::new(&obj_spec)
+                .step_on(&obj_dept, context)
+                .await
+        })
+        .await
+        .unwrap();
+
+    assert_eq!(replacement.key.version, 2);
 }
 
 #[tokio::test]
@@ -252,7 +286,7 @@ async fn batch_slots_reject_duplicate_ids_before_mutation() {
                 },
             ];
 
-            obj_inst! { GenObjSlots<PageImage> { specs: &specs } }
+            GenObjSlots::<PageImage>::new(&specs)
                 .step_on(&obj_dept, context)
                 .await
         })
