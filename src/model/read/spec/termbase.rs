@@ -2,6 +2,7 @@
 
 /// Filtering and pagination parameters for terminology-base lists.
 pub enum TermbaseListSpec {
+    //
     /// List terminology bases directly owned by a team.
     Team {
         /// ID of the team whose termbases to list.

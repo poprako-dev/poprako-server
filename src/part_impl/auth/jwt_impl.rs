@@ -19,6 +19,7 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
 /// JWT issuer for user session tokens.
 pub struct JwtAuth {
+    //
     // Internal state field `expiration_seconds`.
     /// Token lifetime in seconds from issuance.
     expiration_seconds: i64,
@@ -204,6 +205,7 @@ impl TokenAuth for JwtAuth {
 #[derive(Debug, Serialize)]
 // Holds JWT standard + app-specific claim fields emitted by the signer.
 struct SignClaims<'a> {
+    //
     // Internal state field `sub`.
     // JWT standard subject claim carrying the user primary key.
     sub: &'a str,

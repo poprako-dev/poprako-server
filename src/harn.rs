@@ -26,6 +26,7 @@ impl<N, R, O, P, A, D> Clone for Harn<N, R, O, P, A, D> {
 
 // Stores the concrete application ports.
 struct HarnInner<N, R, O, P, A, D> {
+    //
     // Runtime application configuration.
     config: AppConfig,
     // Transaction coordinator selector.

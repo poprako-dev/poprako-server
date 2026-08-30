@@ -24,6 +24,7 @@ pub const ATTEMPT_TIMEOUT: std::time::Duration =
 /// Control descriptor for the single object actor.
 #[derive(Clone)]
 pub struct ObjActorDesc {
+    //
     /// Actor cancellation signal.
     token: CancellationToken,
     /// Actor completion receiver.
@@ -63,7 +64,7 @@ impl ObjActor {
     )]
     pub fn new<P, H, F>(prom: P, handler: H) -> ObjActorDesc
     where
-        P: ObjProm,
+        P: ObjProm + Send + Sync + 'static,
         H: Fn(ObjPromTask) -> F + Send + Sync + 'static,
         F: Future<Output = ObjDeptRest<ObjTaskAction>> + Send + 'static,
     {

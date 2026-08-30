@@ -95,6 +95,7 @@ where
 /// Each call to [`Nucl::coord`] opens a new connection, begins a transaction,
 /// runs the closure, and commits or rolls back on success or failure.
 pub struct RdbNucl<L = ReptRead> {
+    //
     /// Shared database connection pool used for transactions.
     core: RdbCore,
     /// Isolation-level marker carried by this coordinator.

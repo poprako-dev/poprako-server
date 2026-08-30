@@ -14,6 +14,7 @@ use crate::value::role::RoleField;
 
 /// Filtering and pagination parameters for listing chapter assignments.
 pub enum AssignmentListSpec {
+    //
     /// List assignments on a specific chapter, optionally filtered by role.
     Chapter {
         /// Foreign key scoping the listing to a single chapter.

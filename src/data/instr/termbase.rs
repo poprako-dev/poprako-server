@@ -11,6 +11,7 @@ use utoipa::ToSchema;
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateTermbaseInstr {
+    //
     /// Team scope identifier; absent for comic-scoped termbases.
     pub team_id: Option<String>,
     /// Comic scope identifier; absent for team-scoped termbases.
@@ -26,6 +27,7 @@ pub struct CreateTermbaseInstr {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateTermbaseInfoInstr {
+    //
     /// Terminology-base identifier to update.
     pub id: String,
 
@@ -38,6 +40,7 @@ pub struct UpdateTermbaseInfoInstr {
 /// Input parameters for listing team-owned terminology bases.
 #[derive(Debug)]
 pub struct ListTeamTermbaseInfosInstr {
+    //
     /// Owning team identifier.
     pub team_id: String,
 
@@ -53,6 +56,7 @@ pub struct ListTeamTermbaseInfosInstr {
 /// Input parameters for listing terminology bases visible from a comic.
 #[derive(Debug)]
 pub struct ListComicTermbaseInfosInstr {
+    //
     /// Owning comic identifier.
     pub comic_id: String,
 

@@ -7,6 +7,7 @@ use syn::{Ident, LitStr, Path, Result, Token, braced};
 
 // One object declaration in the total manifest.
 struct ObjInput {
+    //
     // Compile-time object marker.
     marker: Ident,
     // Diesel table path.

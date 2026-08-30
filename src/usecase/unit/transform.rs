@@ -122,6 +122,7 @@ pub fn build_page_edits(
 
 // Groups the Chapter-scoped models used by a Unit transformation.
 struct TransformScope {
+    //
     // Chapter being transformed.
     chapter_info: ChapterInfo,
     // Pages belonging to the Chapter.

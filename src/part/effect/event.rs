@@ -16,6 +16,7 @@ use crate::part::effect::event::user::{UserActiveEvent, UserSignedUpEvent};
 ///
 /// [`EffectDevelop`]: crate::part::effect::EffectDevelop
 pub enum Event {
+    //
     /// Emitted when a user shows activity (e.g., views their own profile).
     UserActive {
         /// Activity event details.

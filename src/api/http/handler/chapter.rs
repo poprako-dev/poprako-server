@@ -44,6 +44,7 @@ use crate::value::chapter::ChapterInclOpt;
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ChapterListQuery {
+    //
     /// Related rows to embed. Repeatable. Values: `comic`, `comic.workset`,
     /// `comic.workset.team`, `comic.creator`, `creator`. Dotted values imply
     /// their parent segments.
@@ -62,6 +63,7 @@ pub struct ChapterListQuery {
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ChapterWorkflowRecordListQuery {
+    //
     /// Pagination offset (0-based).
     pub offset: u32,
     /// Maximum number of items to return.

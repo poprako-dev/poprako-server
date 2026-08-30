@@ -18,6 +18,7 @@ use crate::value::role::RoleMask;
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateChapterInstr {
+    //
     /// Identifier of the parent comic to create the chapter in.
     pub comic_id: String,
 
@@ -42,6 +43,7 @@ pub struct CreateChapterInstr {
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ListChapterInfosInstr {
+    //
     /// Parent comic whose chapters to list.
     pub comic_id: String,
 
@@ -63,6 +65,7 @@ pub struct ListChapterInfosInstr {
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ListChapterWorkflowRecordInfosInstr {
+    //
     /// Chapter whose activity records are listed.
     pub chapter_id: String,
     /// Pagination offset: number of records to skip before beginning the result set.
@@ -75,6 +78,7 @@ pub struct ListChapterWorkflowRecordInfosInstr {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateChapterInfoInstr {
+    //
     /// Chapter identifier to update.
     pub id: String,
 
@@ -91,6 +95,7 @@ pub struct UpdateChapterInfoInstr {
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum ChapterStageInstr {
+    //
     /// Raw-provision stage.
     RawProvide,
 
@@ -157,6 +162,7 @@ impl From<Stage> for ChapterStageInstr {
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum ChapterStageOperInstr {
+    //
     /// Advance the stage.
     Advance,
 
@@ -194,6 +200,7 @@ impl From<StageOper> for ChapterStageOperInstr {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateChapterStageInstr {
+    //
     /// Chapter identifier to update.
     pub id: String,
 

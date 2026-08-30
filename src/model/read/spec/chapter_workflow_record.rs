@@ -2,6 +2,7 @@
 
 /// Pagination and ownership filter for chapter workflow records.
 pub struct ChapterWorkflowRecordListSpec {
+    //
     /// Chapter whose records are listed.
     pub chapter_id: String,
     /// Number of records to skip.

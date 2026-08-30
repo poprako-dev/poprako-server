@@ -50,10 +50,10 @@ use crate::shared::result::diesel;
 /// Shared across every entity repo that needs eager-loading of this table's data.
 pub trait BatchByIds {
     /// The Diesel row type (Queryable + Selectable).
-    type Row: Send;
+    type Row;
 
     /// The domain info type produced from each row.
-    type Info: Clone + Send;
+    type Info;
 
     /// Execute `SELECT * FROM table WHERE f_id IN (...)`.
     fn load(
@@ -76,7 +76,7 @@ pub trait Incl {
     type Owner;
 
     /// The related entity being loaded.
-    type Related: Clone;
+    type Related;
 
     /// Which [`BatchByIds`] to use for the database query.
     type Query: BatchByIds<Info = Self::Related>;
@@ -103,6 +103,7 @@ pub async fn populate<I>(
 ) -> BaseRest<()>
 where
     I: Incl,
+    I::Related: Clone,
 {
     //
     let mut key_counts = HashMap::new();

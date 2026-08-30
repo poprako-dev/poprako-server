@@ -7,6 +7,7 @@ pub type ObjDeptRest<T> = std::result::Result<T, ObjDeptError>;
 /// Failure returned by an `ObjDept` operation.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ObjDeptError {
+    //
     /// The supplied object instruction is invalid.
     Invalid {
         /// Safe diagnostic for the invalid instruction.

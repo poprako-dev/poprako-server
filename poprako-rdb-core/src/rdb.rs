@@ -24,6 +24,7 @@ pub type RdbRest<T> = Result<T, RdbError>;
 /// Error exposed by reusable RDB infrastructure.
 #[derive(Debug)]
 pub enum RdbError {
+    //
     /// The connection pool could not be constructed.
     PoolBuild {
         /// Original pool-construction failure.
@@ -118,6 +119,7 @@ impl RdbCore {
 
 /// Transaction context carrying one pooled `PostgreSQL` connection.
 pub struct RdbContext<L> {
+    //
     /// Pooled connection used by this transaction context.
     conn: RdbPooledConn,
     /// Compile-time Orchestra transaction level.

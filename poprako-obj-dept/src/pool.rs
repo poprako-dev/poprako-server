@@ -7,14 +7,20 @@ use url::Url;
 use crate::model::slot::ObjPoolSlot;
 use crate::rest::ObjDeptRest;
 
-/// Storage-neutral physical object operations.
-pub trait ObjPool: Clone + Send + Sync + 'static {
+/// Read-only physical object operations.
+pub trait ObjPoolView {
     /// Generates a public or signed read URL for one physical key.
     fn gen_url(
         &self,
         key: &str,
     ) -> impl Future<Output = ObjDeptRest<Url>> + Send;
 
+    /// Checks whether one physical key exists.
+    fn has(&self, key: &str) -> impl Future<Output = ObjDeptRest<bool>> + Send;
+}
+
+/// Complete storage-neutral physical object operations.
+pub trait ObjPool: ObjPoolView {
     /// Generates a write capability for one physical key.
     fn gen_slot(
         &self,
@@ -22,9 +28,6 @@ pub trait ObjPool: Clone + Send + Sync + 'static {
         content_type: &str,
         byte_len: u64,
     ) -> impl Future<Output = ObjDeptRest<ObjPoolSlot>> + Send;
-
-    /// Checks whether one physical key exists.
-    fn has(&self, key: &str) -> impl Future<Output = ObjDeptRest<bool>> + Send;
 
     /// Deletes one physical key idempotently.
     fn del(&self, key: &str) -> impl Future<Output = ObjDeptRest<()>> + Send;

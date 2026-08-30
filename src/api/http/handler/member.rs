@@ -45,6 +45,7 @@ use crate::value::member::MemberInclOpt;
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct MemberMeListQuery {
+    //
     /// Related rows to embed. Repeatable. Values: `user`, `team`.
     #[serde(default, rename = "incl")]
     pub incl_opt: Vec<MemberInclOpt>,

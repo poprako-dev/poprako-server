@@ -9,7 +9,7 @@ use crate::model::task::ObjPromTask;
 use crate::rest::ObjDeptRest;
 
 /// Actor-side durable task operations.
-pub trait ObjProm: Clone + Send + Sync + 'static {
+pub trait ObjProm {
     /// Reclaims expired work across every object topic.
     fn reset_tasks(&self) -> impl Future<Output = ObjDeptRest<usize>> + Send;
 
@@ -40,7 +40,7 @@ pub trait ObjProm: Clone + Send + Sync + 'static {
 }
 
 /// Transaction-side durable task creation.
-pub trait ObjPromDefer<C>: Clone + Send + Sync + 'static {
+pub trait ObjPromDefer<C> {
     /// Defers one Check task in the caller transaction.
     fn defer_check<'a>(
         &'a self,

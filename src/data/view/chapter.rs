@@ -23,6 +23,7 @@ use crate::value::chapter::mask::StageMask;
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ChapterInfoView {
+    //
     /// Unique chapter identifier.
     pub id: String,
     /// Owning comic identifier.

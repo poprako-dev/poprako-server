@@ -15,6 +15,7 @@ use crate::value::incl::InclOpt;
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum MemberInclOpt {
+    //
     /// Embed the member's user profile (`user`).
     User,
 

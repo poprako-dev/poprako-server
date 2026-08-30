@@ -14,6 +14,7 @@ use crate::value::image::{ImageExt, ImageHash};
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ReserveChapterPagesInstr {
+    //
     /// Target chapter identifier.
     pub chapter_id: String,
     /// Page images to reserve for the chapter.
@@ -24,6 +25,7 @@ pub struct ReserveChapterPagesInstr {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct PageImageInstr {
+    //
     /// Existing page identifier, if updating an existing page.
     pub page_id: Option<String>,
     /// Content hash of the page image.
@@ -53,6 +55,7 @@ impl From<PageImageInstr> for PageImageSpec {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ReservePageImageInstr {
+    //
     /// Content hash of the page image to reserve.
     pub image_hash: ImageHash,
     /// Size of the page image in bytes.

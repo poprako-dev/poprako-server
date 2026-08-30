@@ -59,7 +59,7 @@ async fn main() -> anyhow::Result<()> {
         NonZeroUsize::new(1024).context("buf_size cannot be 0")?,
     );
 
-    let prom = new_prom(core.clone(), obj_dept.clone(), develop.clone());
+    let prom = new_prom(core.clone(), obj_dept.view(), develop.clone());
 
     let harn = Harn::new(config, (nucl, repo, obj_dept, prom, auth, develop));
 

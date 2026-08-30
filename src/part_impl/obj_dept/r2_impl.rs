@@ -20,7 +20,7 @@ use tracing::instrument;
 use url::Url;
 
 use poprako_obj_dept::model::slot::ObjPoolSlot;
-use poprako_obj_dept::pool::ObjPool;
+use poprako_obj_dept::pool::{ObjPool, ObjPoolView};
 use poprako_obj_dept::rest::{ObjDeptError, ObjDeptRest};
 
 // Expiration duration for presigned upload URLs (10 minutes).
@@ -29,6 +29,7 @@ const PUT_SIGNED_EXPIRATION: Duration = Duration::from_mins(10);
 /// Cloudflare R2-backed physical object pool.
 #[derive(Clone)]
 pub struct R2ObjPool {
+    //
     // Internal state field `client`.
     /// HTTP client configured for Cloudflare R2 API requests.
     client: Client,
@@ -106,13 +107,50 @@ impl R2ObjPool {
     }
 }
 
-impl ObjPool for R2ObjPool {
+impl ObjPoolView for R2ObjPool {
     #[instrument(level = "info", skip_all)]
     // Generates one public object URL.
     async fn gen_url(&self, key: &str) -> ObjDeptRest<Url> {
         build_public_url(&self.domain, key)
     }
 
+    #[instrument(level = "info", skip_all)]
+    // Checks whether one object exists in R2.
+    async fn has(&self, key: &str) -> ObjDeptRest<bool> {
+        //
+        match self
+            .client
+            .head_object()
+            .bucket(&self.bucket)
+            .key(key)
+            .send()
+            .await
+        {
+            Ok(_) => Ok(true),
+
+            Err(SdkError::ServiceError(e))
+                if matches!(e.err(), HeadObjectError::NotFound(_)) =>
+            {
+                Ok(false)
+            }
+
+            Err(err) => {
+                //
+                tracing::error!(
+                    operation = "object_exists",
+                    sdk_err = ?err,
+                    "R2 SDK request error",
+                );
+
+                Err(ObjDeptError::Retryable {
+                    message: "failed to check physical object".into(),
+                })
+            }
+        }
+    }
+}
+
+impl ObjPool for R2ObjPool {
     #[instrument(level = "info", skip_all)]
     // Generates one signed upload capability.
     async fn gen_slot(
@@ -224,41 +262,6 @@ impl ObjPool for R2ObjPool {
                     message: "failed to delete physical object".into(),
                 }
             })
-    }
-
-    #[instrument(level = "info", skip_all)]
-    // Checks whether one object exists in R2.
-    async fn has(&self, key: &str) -> ObjDeptRest<bool> {
-        //
-        match self
-            .client
-            .head_object()
-            .bucket(&self.bucket)
-            .key(key)
-            .send()
-            .await
-        {
-            Ok(_) => Ok(true),
-
-            Err(SdkError::ServiceError(e))
-                if matches!(e.err(), HeadObjectError::NotFound(_)) =>
-            {
-                Ok(false)
-            }
-
-            Err(err) => {
-                //
-                tracing::error!(
-                    operation = "object_exists",
-                    sdk_err = ?err,
-                    "R2 SDK request error",
-                );
-
-                Err(ObjDeptError::Retryable {
-                    message: "failed to check physical object".into(),
-                })
-            }
-        }
     }
 }
 

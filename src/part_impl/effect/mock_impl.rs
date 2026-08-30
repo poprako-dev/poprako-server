@@ -11,11 +11,8 @@ use crate::part_impl::repo::mock_impl::Mock;
 /// be drained via [`Mock::drain_events`] for assertion.
 impl Develop for Mock {
     // Collect emitted events into the mock event buffer during tests.
-    async fn develop<I>(&self, iter: I)
-    where
-        I: EffectEvent + Send,
-    {
-        self.events.lock().unwrap().extend(iter.into_iter());
+    async fn develop(&self, events: Vec<Event>) {
+        self.events.lock().unwrap().extend(events);
     }
 }
 

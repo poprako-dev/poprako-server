@@ -16,6 +16,7 @@ use crate::model::read::proj::user::UserInfo;
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UserInfoView {
+    //
     /// Unique user identifier.
     pub id: String,
 

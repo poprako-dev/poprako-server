@@ -26,6 +26,7 @@ impl Parse for DeptInput {
 
 // One object entry received from the manifest callback.
 struct ObjEntry {
+    //
     // Compile-time object marker.
     marker: Ident,
     // Generated typed helper module.
@@ -69,6 +70,7 @@ impl Parse for ObjEntry {
 
 // Complete callback input used to generate ObjDept implementations.
 struct ItemsInput {
+    //
     // Total ObjDept type name.
     dept: Ident,
     // Registered objects.
@@ -190,8 +192,8 @@ pub fn expand_items(input: TokenStream) -> Result<TokenStream> {
 
         impl<P, M> #dept<P, M>
         where
-            P: ::poprako_obj_dept::pool::ObjPool,
-            M: ::poprako_obj_dept::prom::ObjProm,
+            P: ::poprako_obj_dept::pool::ObjPool + ::core::marker::Sync,
+            M: ::poprako_obj_dept::prom::ObjProm + ::core::marker::Sync,
         {
             async fn dispatch(
                 core: ::poprako_rdb_core::RdbCore,
@@ -232,8 +234,8 @@ macro_rules! expand_op_impl_tokens {
             ::poprako_obj_dept::oper::GetObjMeta<'a, #obj>,
         > for #dept<P, M>
         where
-            P: ::poprako_obj_dept::pool::ObjPool,
-            M: ::poprako_obj_dept::prom::ObjProm,
+            P: ::poprako_obj_dept::pool::ObjPool + ::core::marker::Sync,
+            M: ::poprako_obj_dept::prom::ObjProm + ::core::marker::Sync,
         {
             type Error = ::poprako_obj_dept::rest::ObjDeptError;
 
@@ -261,8 +263,8 @@ macro_rules! expand_op_impl_tokens {
         > for #dept<P, M>
         where
             L: ::poprako_orchestra::Level + Send,
-            P: ::poprako_obj_dept::pool::ObjPool,
-            M: ::poprako_obj_dept::prom::ObjProm,
+            P: ::poprako_obj_dept::pool::ObjPool + ::core::marker::Sync,
+            M: ::poprako_obj_dept::prom::ObjProm + ::core::marker::Sync,
         {
             type Level = L;
             type Error = ::poprako_obj_dept::rest::ObjDeptError;
@@ -287,8 +289,8 @@ macro_rules! expand_op_impl_tokens {
             ::poprako_obj_dept::oper::GenObjUrl<'a, #obj>,
         > for #dept<P, M>
         where
-            P: ::poprako_obj_dept::pool::ObjPool,
-            M: ::poprako_obj_dept::prom::ObjProm,
+            P: ::poprako_obj_dept::pool::ObjPool + ::core::marker::Sync,
+            M: ::poprako_obj_dept::prom::ObjProm + ::core::marker::Sync,
         {
             type Error = ::poprako_obj_dept::rest::ObjDeptError;
 
@@ -327,8 +329,8 @@ macro_rules! expand_op_impl_tokens {
         > for #dept<P, M>
         where
             L: ::poprako_orchestra::Level + Send,
-            P: ::poprako_obj_dept::pool::ObjPool,
-            M: ::poprako_obj_dept::prom::ObjProm
+            P: ::poprako_obj_dept::pool::ObjPool + ::core::marker::Sync,
+            M: ::poprako_obj_dept::prom::ObjProm + ::core::marker::Sync
                 + ::poprako_obj_dept::prom::ObjPromDefer<
                     ::poprako_rdb_core::RdbContext<L>,
                 >,
@@ -421,8 +423,8 @@ macro_rules! expand_op_impl_tokens {
         > for #dept<P, M>
         where
             L: ::poprako_orchestra::Level + Send,
-            P: ::poprako_obj_dept::pool::ObjPool,
-            M: ::poprako_obj_dept::prom::ObjProm
+            P: ::poprako_obj_dept::pool::ObjPool + ::core::marker::Sync,
+            M: ::poprako_obj_dept::prom::ObjProm + ::core::marker::Sync
                 + ::poprako_obj_dept::prom::ObjPromDefer<
                     ::poprako_rdb_core::RdbContext<L>,
                 >,

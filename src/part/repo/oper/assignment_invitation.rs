@@ -24,6 +24,7 @@ pub struct ListAssignmentInvitationInfos<'a> {
 #[derive(Oper)]
 #[oper(output = AssignmentInvitationInfo)]
 pub enum GetAssignmentInvitationInfo<'a> {
+    //
     /// Gets by invitation identifier.
     Id {
         /// Invitation identifier.
@@ -59,6 +60,7 @@ pub struct PurgeExpiredAssignmentInvitation<'a> {
 #[derive(Oper)]
 #[oper(output = ())]
 pub enum DeleteAssignmentInvitations<'a> {
+    //
     /// Deletes by invitation identifier.
     Id {
         /// Invitation identifier.

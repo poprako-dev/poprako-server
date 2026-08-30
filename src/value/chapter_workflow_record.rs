@@ -14,6 +14,7 @@ use crate::value::role::RoleMask;
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(rename_all = "kebab-case")]
 pub enum ChapterWorkflowRecordKind {
+    //
     /// A chapter and its initial creator assignment were created.
     ChapterCreated,
 
@@ -79,6 +80,7 @@ impl ChapterWorkflowRecordKind {
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(rename_all = "kebab-case")]
 pub enum ChapterWorkflowRecordOrigin {
+    //
     /// A user explicitly advanced or reverted a stage.
     Manual,
 
@@ -100,6 +102,7 @@ pub enum ChapterWorkflowRecordOrigin {
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(tag = "type", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum ChapterWorkflowRecordPayload {
+    //
     /// No additional details are needed for chapter creation.
     ChapterCreated,
 

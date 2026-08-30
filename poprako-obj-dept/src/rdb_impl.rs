@@ -11,6 +11,7 @@ use crate::rest::{ObjDeptError, ObjDeptRest};
 /// Standardized latest object row decoded from a concrete Diesel table.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ObjRdbRow {
+    //
     /// Stored generation watermark.
     pub version: i64,
     /// Current upload evidence, or none for a detached row.
@@ -24,6 +25,7 @@ pub struct ObjRdbRow {
 /// Pending latest object values written by `GenObjSlot`.
 #[derive(Debug, Clone, Copy)]
 pub struct ObjRdbWrite<'a> {
+    //
     /// Stable business-object identifier.
     pub id: &'a str,
     /// Newly allocated generation.

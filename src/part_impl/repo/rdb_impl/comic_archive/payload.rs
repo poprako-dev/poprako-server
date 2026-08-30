@@ -22,6 +22,7 @@ pub async fn list_payloads(
     // Queryable projection row for one archive slot.
     #[derive(Queryable)]
     struct ArchivePayloadRow {
+        //
         // UTC timestamp when the archive slot was created.
         created_at: OffsetDateTime,
         // Serialized payload snapshot JSON for a retention slot.

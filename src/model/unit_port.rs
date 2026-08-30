@@ -3,6 +3,7 @@
 /// One parsed import unit.
 #[derive(Debug)]
 pub struct UnitTranslationImport {
+    //
     /// Import ordering index within the page.
     pub index: usize,
 

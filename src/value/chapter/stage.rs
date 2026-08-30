@@ -12,6 +12,7 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(rename_all = "kebab-case")]
 pub enum StagePhase {
+    //
     /// The stage has not started yet.
     Pending,
 
@@ -27,6 +28,7 @@ pub enum StagePhase {
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(rename_all = "kebab-case")]
 pub enum Stage {
+    //
     /// Raw provide phase.
     RawProvide,
 
@@ -68,6 +70,7 @@ pub const fn is_valid_stage_phase(stage: Stage, phase: StagePhase) -> bool {
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(rename_all = "kebab-case")]
 pub enum StageOper {
+    //
     /// Advance to the next phase.
     Advance,
 

@@ -16,6 +16,7 @@ use utoipa::ToSchema;
 /// Image-owning resource discriminator.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ImageKind {
+    //
     /// Avatar image for a user.
     UserAvatar,
 
@@ -103,6 +104,7 @@ impl<'de> Deserialize<'de> for ImageHash {
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(rename_all = "lowercase")]
 pub enum ImageExt {
+    //
     /// The JPEG image format.
     Jpg,
 

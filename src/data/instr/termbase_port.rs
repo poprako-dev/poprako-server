@@ -12,6 +12,7 @@ use crate::model::write::termbase::TermbaseImport;
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ImportTermInstr {
+    //
     /// Source-language term or phrase.
     pub source: String,
     /// Target-language translations.
@@ -36,6 +37,7 @@ impl From<ImportTermInstr> for TermImport {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ImportTermbaseInstr {
+    //
     /// Display name of the terminology base.
     pub name: String,
     /// Optional terminology-base description.

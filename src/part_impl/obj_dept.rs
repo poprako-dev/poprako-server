@@ -6,11 +6,20 @@ mod mock_impl;
 // R2 object-storage implementation.
 mod r2_impl;
 
+use std::future::Future;
+
+use poprako_orchestra::{Level, Step};
+use url::Url;
+
 use poprako_obj_dept::actor::{ObjActor, ObjActorDesc};
-use poprako_obj_dept::pool::ObjPool;
+use poprako_obj_dept::model::meta::ObjMeta;
+use poprako_obj_dept::oper::GetObjMeta;
+use poprako_obj_dept::pool::{ObjPool, ObjPoolView};
 use poprako_obj_dept::prom::ObjProm;
+use poprako_obj_dept::rdb_impl::decode_row;
+use poprako_obj_dept::rest::{ObjDeptError, ObjDeptRest};
 use poprako_obj_dept::{impl_obj_dept, objs_def, rdb_obj_prom};
-use poprako_rdb_core::RdbCore;
+use poprako_rdb_core::{RdbContext, RdbCore};
 
 #[cfg(test)]
 use crate::__impl_mock_obj_dept;
@@ -52,6 +61,7 @@ objs_def! {
 
 /// Total object department composed from storage and durable-task adapters.
 pub struct NormObjDept<P = R2ObjPool, M = RdbObjProm> {
+    //
     /// Shared relational database core.
     core: RdbCore,
     /// Physical object-storage adapter.
@@ -62,10 +72,60 @@ pub struct NormObjDept<P = R2ObjPool, M = RdbObjProm> {
     actor_desc: ObjActorDesc,
 }
 
+/// Read-only projection of object metadata and physical storage.
+#[derive(Clone)]
+pub struct NormObjView<P> {
+    /// Physical object-storage adapter.
+    pool: P,
+}
+
+impl<P> ObjPoolView for NormObjView<P>
+where
+    P: ObjPoolView + Sync,
+{
+    // Generates one physical-object read URL.
+    fn gen_url(
+        &self,
+        key: &str,
+    ) -> impl Future<Output = ObjDeptRest<Url>> + Send {
+        self.pool.gen_url(key)
+    }
+
+    // Checks whether one physical object exists.
+    fn has(&self, key: &str) -> impl Future<Output = ObjDeptRest<bool>> + Send {
+        self.pool.has(key)
+    }
+}
+
+impl<'a, L, P> Step<GetObjMeta<'a, PageImage>, RdbContext<L>> for NormObjView<P>
+where
+    L: Level + Send,
+    P: ObjPoolView + Sync,
+{
+    // Transaction isolation required by the metadata read.
+    type Level = L;
+
+    // Object metadata adapter error.
+    type Error = ObjDeptError;
+
+    // Reads the latest page-image metadata in the caller transaction.
+    async fn step(
+        &self,
+        context: &mut RdbContext<L>,
+        oper: &GetObjMeta<'a, PageImage>,
+    ) -> ObjDeptRest<Option<ObjMeta>> {
+        //
+        let row =
+            __obj_dept_page_image::load(context.conn(), oper.id, false).await?;
+
+        row.map_or(Ok(None), |row| decode_row(oper.id, row))
+    }
+}
+
 impl<P, M> NormObjDept<P, M>
 where
-    P: ObjPool,
-    M: ObjProm,
+    P: ObjPool + Clone + Send + Sync + 'static,
+    M: ObjProm + Clone + Send + Sync + 'static,
 {
     /// Cancels the actor and waits for it to finish.
     pub async fn close(&self) {
@@ -73,6 +133,14 @@ where
         self.actor_desc.cancel();
 
         self.actor_desc.join().await;
+    }
+
+    /// Returns a read-only projection without the durable object-task adapter.
+    pub fn view(&self) -> NormObjView<P> {
+        //
+        NormObjView {
+            pool: self.pool.clone(),
+        }
     }
 
     // Creates the total department and starts its single actor.
@@ -98,7 +166,13 @@ where
             actor_desc,
         }
     }
+}
 
+impl<P, M> NormObjDept<P, M>
+where
+    P: ObjPool,
+    M: ObjProm,
+{
     // Returns the shared relational database core.
     const fn core(&self) -> &RdbCore {
         &self.core

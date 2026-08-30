@@ -14,12 +14,8 @@ use tokio::task::JoinHandle;
 use tokio::time::sleep;
 use tracing::instrument;
 
-use poprako_obj_dept::ObjDept;
-
 use crate::part::effect::Develop;
-use crate::part::obj_dept::PageImage;
-use crate::part_impl::nucl::rdb_impl::RdbNucl;
-use crate::part_impl::prom::rdb_impl::actor::base::RdbPromActor;
+use crate::part_impl::prom::rdb_impl::actor::base::{ObjView, RdbPromActor};
 use crate::part_impl::prom::rdb_impl::entity::LocalMessageRow;
 use crate::part_impl::prom::rdb_impl::repo::{
     ClaimPending, CompleteMessage, FailMessage, PollPending, PurgeCompleted,
@@ -27,7 +23,6 @@ use crate::part_impl::prom::rdb_impl::repo::{
 };
 use crate::part_impl::prom::task_flow::TaskFlow;
 use crate::result::{BaseError, BaseRest};
-use crate::shared::RdbContext;
 
 // Constant definition for `WORKER_COUNT`.
 const WORKER_COUNT: usize = 4;
@@ -82,9 +77,9 @@ pub fn enforce_retry_limit(
     }
 }
 
-impl<O, D> RdbPromActor<RdbNucl, O, D>
+impl<V, D> RdbPromActor<V, D>
 where
-    O: ObjDept<PageImage, RdbContext> + Send + Sync + 'static,
+    V: ObjView + Send + Sync + 'static,
     D: Develop + Send + Sync + 'static,
 {
     /// Runs the polling supervisor and drains in-flight worker tasks on shutdown.

@@ -13,6 +13,7 @@ use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::proj::team::TeamInfo;
 use crate::model::read::proj::workset::WorksetInfo;
+use crate::part::effect::EffectEvent as _;
 use crate::part::effect::event::Event;
 use crate::part::effect::event::chapter::{
     ChapterPublishedEvent, ChapterWorkflowCompletedEvent,

@@ -27,6 +27,7 @@ pub struct ListMemberInvitationInfos<'a> {
 #[derive(Oper)]
 #[oper(output = MemberInvitationInfo)]
 pub enum GetMemberInvitationInfo<'a, 'b> {
+    //
     /// Retrieves by invitation ID.
     Id {
         /// The invitation ID.
@@ -46,6 +47,7 @@ pub enum GetMemberInvitationInfo<'a, 'b> {
 #[derive(Oper)]
 #[oper(output = ())]
 pub enum UpdateMemberInvitation<'a> {
+    //
     /// Updates the invitation fields.
     Info {
         /// The update payload.
@@ -63,6 +65,7 @@ pub enum UpdateMemberInvitation<'a> {
 #[derive(Oper)]
 #[oper(output = MemberInvitationInfo)]
 pub enum GetMemberInvitationInfoExcluded<'a> {
+    //
     /// Retrieves by invitation code.
     Code {
         /// The invitation code.

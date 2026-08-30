@@ -13,6 +13,7 @@ use crate::data::view::chapter_port::ChapterTranslationPortView;
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ExportChapterTranslationsVal {
+    //
     /// `LabelPlus` text, absent when that format was not selected.
     pub label_plus: Option<String>,
     /// Native `PopRaKo` document, absent when that format was not selected.
@@ -23,6 +24,7 @@ pub struct ExportChapterTranslationsVal {
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ImportChapterTranslationVal {
+    //
     /// Number of pages that were imported.
     pub imported_page_count: usize,
     /// Number of translation units that were imported.

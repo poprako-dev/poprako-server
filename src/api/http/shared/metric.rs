@@ -30,6 +30,7 @@ static METRIC_WINDOW: LazyLock<MetricWindow> = LazyLock::new(MetricWindow::new);
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct MetricTotal {
+    //
     /// Total request count in the current sliding window.
     pub total: u64,
     /// Mean latency across all requests in the window, in milliseconds.
@@ -66,6 +67,7 @@ impl MetricTotal {
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct MetricMinute {
+    //
     /// Unix timestamp truncated to minute granularity.
     pub minute: u64,
     /// Request count recorded in this minute.
@@ -105,6 +107,7 @@ impl MetricMinute {
 #[derive(Default)]
 // One sliding bucket that stores request counters and latency for one minute.
 struct MetricBucket {
+    //
     // Bucket minute key, used for modulo rotation.
     minute: u64,
     // Total request count in this bucket.

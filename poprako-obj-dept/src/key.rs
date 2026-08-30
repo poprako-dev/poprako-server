@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 /// Owned logical identity of one object generation.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct ObjKey {
+    //
     /// Stable business-object identifier.
     pub id: String,
     /// Generation allocated for this object identity.
@@ -32,6 +33,7 @@ impl ObjKey {
 /// Borrowed logical identity of one object generation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ObjKeyRef<'a> {
+    //
     /// Stable business-object identifier.
     pub id: &'a str,
     /// Generation allocated for this object identity.

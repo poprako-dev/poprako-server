@@ -23,6 +23,7 @@ use crate::result::BaseError;
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_workset)]
 pub struct WorksetInfoRow {
+    //
     pub f_id: String,
     pub f_team_id: String,
     pub f_index: i32,
@@ -64,6 +65,7 @@ impl TryFrom<WorksetInfoRow> for WorksetInfo {
 #[derive(Insertable)]
 #[diesel(table_name = t_workset)]
 pub struct WorksetEntryRow<'a> {
+    //
     pub f_id: &'a str,
     pub f_team_id: &'a str,
     pub f_index: i32,
@@ -98,6 +100,7 @@ impl<'a> TryFrom<&'a WorksetEntry> for WorksetEntryRow<'a> {
 #[derive(AsChangeset)]
 #[diesel(table_name = t_workset)]
 pub struct WorksetAspectRow<'a> {
+    //
     pub f_name: Option<&'a str>,
     pub f_description: Option<Option<&'a str>>,
 

@@ -70,6 +70,7 @@ where
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum ChapterTranslationFormatInstr {
+    //
     /// `LabelPlus` translation format.
     LabelPlus,
 
@@ -108,6 +109,7 @@ impl From<TranslationFormat> for ChapterTranslationFormatInstr {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ImportChapterTranslationInstr {
+    //
     /// The translation format (e.g., JSON, SRT).
     pub format: ChapterTranslationFormatInstr,
     /// Raw translation content string.

@@ -13,6 +13,7 @@ use crate::model::read::proj::termbase::TermbaseInfo;
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ExportTermbaseVal {
+    //
     /// Display name of the exported terminology base.
     pub name: String,
     /// Optional terminology-base description.
@@ -40,6 +41,7 @@ impl ExportTermbaseVal {
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ImportTermbaseVal {
+    //
     /// Identifier of the created or merged terminology base.
     pub id: String,
     /// Whether this import created a new terminology base.

@@ -5,6 +5,7 @@ use syn::{Ident, Path, Result, Token, braced};
 
 // Typed durable-task adapter declaration.
 struct PromInput {
+    //
     // Generated adapter type name.
     name: Ident,
     // Diesel task table path.

@@ -3,6 +3,7 @@ use crate::key::ObjKey;
 /// Latest metadata for one business object.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ObjMeta {
+    //
     /// Current logical object key.
     pub key: ObjKey,
     /// Whether remote storage has been verified.

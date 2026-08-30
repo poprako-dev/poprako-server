@@ -7,36 +7,61 @@
 //! [`actor`]: crate::part_impl::prom::rdb_impl::actor
 //! [`pool`]: crate::part_impl::prom::rdb_impl::actor::pool
 
-use poprako_orchestra::Nucl;
+use poprako_orchestra::Step;
 use tokio_util::sync::CancellationToken;
 use tracing::instrument;
 
-use poprako_obj_dept::ObjDept;
+use poprako_obj_dept::oper::GetObjMeta;
+use poprako_obj_dept::pool::ObjPoolView;
+use poprako_obj_dept::rest::ObjDeptError;
+use poprako_rdb_core::RdbCore;
 
 use crate::part::effect::Develop;
+use crate::part::nucl::ReptRead;
 use crate::part::obj_dept::PageImage;
 use crate::part::prom::payload::TaskPayload;
+use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::prom::rdb_impl::repo::RdbPromRepo;
 use crate::part_impl::prom::task_flow::TaskFlow;
 use crate::part_impl::repo::HybRepo;
-use crate::result::BaseError;
 use crate::shared::RdbContext;
 use crate::usecase::prom::{PromTaskAction, handle_chapter, handle_invitation};
 
+/// Read-only object capabilities available to the general prom actor.
+pub trait ObjView:
+    ObjPoolView
+    + for<'a> Step<
+        GetObjMeta<'a, PageImage>,
+        RdbContext,
+        Level = ReptRead,
+        Error = ObjDeptError,
+    >
+{
+}
+
+impl<T> ObjView for T where
+    T: ObjPoolView
+        + for<'a> Step<
+            GetObjMeta<'a, PageImage>,
+            RdbContext,
+            Level = ReptRead,
+            Error = ObjDeptError,
+        >
+{
+}
+
 /// Background worker that polls the `t_local_message` table, dispatches by topic,
 /// and completes or fails each record.
-pub struct RdbPromActor<N, O, D> {
-    /// Transaction coordinator used for actor-level database operations.
-    nucl: N,
+pub struct RdbPromActor<V, D> {
+    //
+    /// Shared relational database core.
+    core: RdbCore,
 
     /// Repository implementing persisted message lifecycle operations.
     repo: RdbPromRepo,
 
-    /// Repository used by deferred business tasks.
-    task_repo: HybRepo,
-
-    /// Object department used by deferred object checks.
-    obj_dept: O,
+    /// Read-only object capabilities used by deferred checks.
+    obj_view: V,
 
     /// Effect dispatcher used after committed business changes.
     develop: D,
@@ -45,31 +70,28 @@ pub struct RdbPromActor<N, O, D> {
     token: CancellationToken,
 }
 
-impl<N, O, D> RdbPromActor<N, O, D> {
-    /// Builds a prom actor with its queue and business dependencies.
+impl<V, D> RdbPromActor<V, D> {
+    /// Builds a prom actor from its core and read-only object view.
     pub const fn new(
-        nucl: N,
-        repo: RdbPromRepo,
-        task_repo: HybRepo,
-        obj_dept: O,
+        core: RdbCore,
+        obj_view: V,
         develop: D,
         token: CancellationToken,
     ) -> Self {
         //
         Self {
-            nucl,
-            repo,
-            task_repo,
-            obj_dept,
+            core,
+            repo: RdbPromRepo::new(),
+            obj_view,
             develop,
             token,
         }
     }
 
-    /// Returns the transaction coordinator used by the actor.
+    /// Returns a transaction coordinator over the shared core.
     #[must_use]
-    pub const fn nucl(&self) -> &N {
-        &self.nucl
+    pub fn nucl(&self) -> RdbNucl {
+        RdbNucl::new(self.core.clone())
     }
 
     /// Returns the repository used for persisted message lifecycle operations.
@@ -78,16 +100,16 @@ impl<N, O, D> RdbPromActor<N, O, D> {
         &self.repo
     }
 
-    /// Returns the repository used by deferred business tasks.
+    /// Returns a business repository over the shared core.
     #[must_use]
-    pub const fn task_repo(&self) -> &HybRepo {
-        &self.task_repo
+    pub fn task_repo(&self) -> HybRepo {
+        HybRepo::new(self.core.clone())
     }
 
     /// Returns the object department used by deferred object checks.
     #[must_use]
-    pub const fn obj_dept(&self) -> &O {
-        &self.obj_dept
+    pub const fn obj_view(&self) -> &V {
+        &self.obj_view
     }
 
     /// Returns the effect dispatcher used after committed business changes.
@@ -103,10 +125,9 @@ impl<N, O, D> RdbPromActor<N, O, D> {
     }
 }
 
-impl<N, O, D> RdbPromActor<N, O, D>
+impl<V, D> RdbPromActor<V, D>
 where
-    N: Nucl<Context = RdbContext, Error = BaseError> + Sync,
-    O: ObjDept<PageImage, RdbContext> + Send + Sync,
+    V: ObjView + Send + Sync,
     D: Develop + Send + Sync,
 {
     /// Decodes and dispatches one persisted prom payload.
@@ -150,24 +171,23 @@ where
             };
         }
 
+        let nucl = self.nucl();
+
+        let task_repo = self.task_repo();
+
         let action = match task {
             //
             TaskPayload::Chapter { payload } => {
                 //
                 handle_chapter(
-                    (
-                        self.nucl(),
-                        self.task_repo(),
-                        self.obj_dept(),
-                        self.develop(),
-                    ),
+                    (&nucl, &task_repo, self.obj_view(), self.develop()),
                     &payload,
                 )
                 .await
             }
 
             TaskPayload::Invitation { payload } => {
-                handle_invitation((self.task_repo(),), &payload).await
+                handle_invitation((&task_repo,), &payload).await
             }
         };
 

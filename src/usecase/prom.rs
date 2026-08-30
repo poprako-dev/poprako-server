@@ -1,14 +1,18 @@
 //! Deferred local-message business use cases.
 
-use poprako_orchestra::{Nucl, OperRun as _, OperStep as _};
+use poprako_orchestra::{Nucl, OperRun as _, OperStep as _, Step};
 use tracing::instrument;
 
-use poprako_obj_dept::{ObjDept, obj_inst};
+use poprako_obj_dept::obj_inst;
+use poprako_obj_dept::oper::GetObjMeta;
+use poprako_obj_dept::pool::ObjPoolView;
+use poprako_obj_dept::rest::ObjDeptError;
 
 use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::part::effect::event::Event;
 use crate::part::effect::event::chapter::ChapterWorkflowCompletedEvent;
 use crate::part::effect::{Develop, EffectEvent as _};
+use crate::part::nucl::ReptRead;
 use crate::part::obj_dept::PageImage;
 use crate::part::prom::payload::chapter::ChapterPayload;
 use crate::part::prom::payload::invitation::InvitationPayload;
@@ -33,6 +37,7 @@ use crate::value::chapter_workflow_record::{
 
 /// Business action requested after handling one deferred local message.
 pub enum PromTaskAction {
+    //
     /// The business task completed and the message may be completed.
     Complete,
 
@@ -51,8 +56,8 @@ pub enum PromTaskAction {
 
 /// Handles one deferred chapter workflow task.
 #[instrument(level = "info", skip_all)]
-pub async fn handle_chapter<N, R, O, D>(
-    (nucl, repo, obj_dept, develop): (&N, &R, &O, &D),
+pub async fn handle_chapter<N, R, V, D>(
+    (nucl, repo, obj_view, develop): (&N, &R, &V, &D),
     task: &ChapterPayload,
 ) -> PromTaskAction
 where
@@ -62,7 +67,13 @@ where
         + PageRepo<RdbContext>
         + Send
         + Sync,
-    O: ObjDept<PageImage, RdbContext> + Sync,
+    V: ObjPoolView
+        + for<'a> Step<
+            GetObjMeta<'a, PageImage>,
+            RdbContext,
+            Level = ReptRead,
+            Error = ObjDeptError,
+        > + Sync,
     D: Develop + Sync,
 {
     match task {
@@ -75,7 +86,7 @@ where
             handle_raw_provide(
                 nucl,
                 repo,
-                obj_dept,
+                obj_view,
                 develop,
                 chapter_id,
                 actor_user_id.clone(),
@@ -97,7 +108,7 @@ where
         + Send
         + Sync,
 {
-    let outcome = match task {
+    let rest = match task {
         //
         InvitationPayload::Assignment { invitation_id } => {
             //
@@ -114,7 +125,7 @@ where
         }
     };
 
-    match outcome {
+    match rest {
         //
         Ok(()) => PromTaskAction::Complete,
 
@@ -125,10 +136,10 @@ where
 }
 
 // Attempts raw-provision completion and waits while uploads remain pending.
-async fn handle_raw_provide<N, R, O, D>(
+async fn handle_raw_provide<N, R, V, D>(
     nucl: &N,
     repo: &R,
-    obj_dept: &O,
+    obj_view: &V,
     develop: &D,
     chapter_id: &str,
     actor_user_id: Option<String>,
@@ -140,14 +151,18 @@ where
         + PageRepo<RdbContext>
         + Send
         + Sync,
-    O: ObjDept<PageImage, RdbContext> + Sync,
+    V: ObjPoolView
+        + for<'a> Step<
+            GetObjMeta<'a, PageImage>,
+            RdbContext,
+            Level = ReptRead,
+            Error = ObjDeptError,
+        > + Sync,
     D: Develop + Sync,
 {
-    let outcome = nucl
+    let rest = nucl
         .coord(async move |context| {
             //
-            // NOTE: Chapter -> Page is the shared lock order that prevents
-            // both deadlocks and chapter upload-summary races.
             GetChapterInfoExcluded {
                 id: chapter_id,
                 incls: &[],
@@ -163,7 +178,7 @@ where
                 let obj_meta = obj_inst! {
                     GetObjMeta<PageImage> { id: &page_info.id }
                 }
-                .step_on(obj_dept, context)
+                .step_on(obj_view, context)
                 .await
                 .map_err(BaseError::from)?;
 
@@ -172,11 +187,11 @@ where
                 }
             }
 
-            let advanced = CompleteChapterRawProvide { id: chapter_id }
+            let f_is_advanced = CompleteChapterRawProvide { id: chapter_id }
                 .step_on(repo, context)
                 .await?;
 
-            if advanced {
+            if f_is_advanced {
                 //
                 let workflow_record_entry = ChapterWorkflowRecordEntry::new(
                     chapter_id,
@@ -196,12 +211,12 @@ where
                 .await?;
             }
 
-            accept(Some(advanced))
+            accept(Some(f_is_advanced))
         })
         .await
         .map_err(Into::into);
 
-    match outcome {
+    match rest {
         //
         Ok(Some(true)) => {
             //

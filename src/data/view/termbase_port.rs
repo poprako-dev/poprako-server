@@ -11,6 +11,7 @@ use crate::model::read::proj::term::TermInfo;
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct TermbaseTermView {
+    //
     /// Source-language term or phrase.
     pub source: String,
     /// Target-language translations.

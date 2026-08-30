@@ -1,5 +1,6 @@
 /// Outcome of a local-message task invocation.
 pub enum TaskFlow {
+    //
     /// Task completed successfully; move record to Completed status.
     Complete,
 

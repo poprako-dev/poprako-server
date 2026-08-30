@@ -16,6 +16,7 @@ pub struct CreateTeam<'a> {
 #[derive(Oper)]
 #[oper(output = TeamInfo)]
 pub enum GetTeamInfo<'a> {
+    //
     /// Fetch by team id.
     Id {
         /// The team identifier.
@@ -27,6 +28,7 @@ pub enum GetTeamInfo<'a> {
 #[derive(Oper)]
 #[oper(output = String)]
 pub enum ResolveTeamId<'a> {
+    //
     /// Resolve from a comic identifier.
     Comic {
         /// The comic identifier.
@@ -52,6 +54,7 @@ pub struct ListTeamInfos<'a> {
 #[derive(Oper)]
 #[oper(output = ())]
 pub enum UpdateTeam<'a> {
+    //
     /// Updates team metadata fields.
     Info {
         /// The replacement payload.
@@ -63,6 +66,7 @@ pub enum UpdateTeam<'a> {
 #[derive(Oper)]
 #[oper(output = TeamInfo)]
 pub enum GetTeamInfoExcluded<'a> {
+    //
     /// Fetch by team id.
     Id {
         /// The team identifier.

@@ -16,6 +16,7 @@ use crate::value::role::RoleMask;
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ListAssignmentInvitationInfosInstr {
+    //
     /// Parent chapter whose assignment invitations to list.
     pub chapter_id: String,
 
@@ -33,6 +34,7 @@ pub struct ListAssignmentInvitationInfosInstr {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateAssignmentInvitationInstr {
+    //
     /// Identifier of the chapter to create the invitation for.
     pub chapter_id: String,
     /// Qualified identifier of the user being invited.

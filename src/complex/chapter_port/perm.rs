@@ -10,6 +10,7 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
 /// Concrete evidence that grants chapter export access.
 pub enum ChapterExportAccess<'a> {
+    //
     /// Access through team membership.
     Member {
         /// Team membership used to establish access.

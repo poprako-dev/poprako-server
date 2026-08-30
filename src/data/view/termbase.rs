@@ -13,6 +13,7 @@ use crate::model::read::proj::termbase::TermbaseInfo;
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct TermbaseInfoView {
+    //
     /// Unique terminology-base identifier.
     pub id: String,
 

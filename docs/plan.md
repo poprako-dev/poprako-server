@@ -47,7 +47,8 @@
 - `RdbProm` 必须持有 `RdbCore`。
 - `RdbProm` 继续拥有 actor 生命周期。
 - `RdbPromRepo` 只处理队列表。
-- RDB actor 直接持有 ObjDept、Develop 和独立业务 repo，并分派 usecase。
+- RDB actor 只持有 `RdbCore`、窄 `ObjView` 与既有 Develop 生命周期依赖，
+  不持有完整 ObjDept；业务 repo 与 transaction coordinator 由 core 构造。
 - Chapter 成功后仍通过同一份 Develop 派发 event。
 
 ### 2.3 错误的 unit struct 修改
@@ -81,7 +82,7 @@ part_impl::prom::rdb_impl
     ├── 依赖 t_local_message typed Diesel schema
     ├── 依赖通用 Prom payload
     ├── RdbProm 只保存 RdbCore 与 actor 生命周期信号
-    ├── RdbPromActor 持有消费端所需的 ObjDept、Develop 和业务 repo
+    ├── RdbPromActor 持有 RdbCore、ObjView 与 Develop
     ├── RdbPromActor 直接分派 usecase::prom
     └── 不依赖 Sched
 
@@ -115,7 +116,7 @@ RdbProm
 - `close(&self)` 必须可重复、可并发调用。
 - `Drop` 只 cancel，不等待。
 - `done_send.send_replace(true)` 只能发生在四个 worker 全部 join 之后。
-- actor 的 ObjDept、Develop 泛型只存在于构造函数和 spawned future，不进入
+- actor 的 ObjView、Develop 泛型只存在于构造函数和 spawned future，不进入
   `RdbProm` 字段、Harn 类型或 HTTP state 类型。
 
 RdbProm 的两条数据库路径必须严格隔离：
@@ -177,9 +178,10 @@ core 或 connection，只实现 `t_local_message` 的 typed Diesel operations。
 
 ## 6. RDB actor 的静态业务分派
 
-RDB actor 直接持有静态类型的 ObjDept 与 Develop，并使用自身持有的
-`RdbNucl<ReptRead>` 和 `HybRepo` 调用 `usecase::prom`。不得增加只负责原样
-转发这些依赖的 handler 或 callback。
+RDB actor 直接持有静态类型的 `ObjView` 与 Develop，并从自身 `RdbCore`
+构造 `RdbNucl<ReptRead>` 和 `HybRepo` 调用 `usecase::prom`。`ObjView` 只组合
+typed meta read 与 `ObjPoolView`，不得包含完整 ObjDept、slot、delete 或
+ObjProm 能力。不得增加只负责原样转发这些依赖的 handler 或 callback。
 
 不得使用：
 
@@ -244,7 +246,8 @@ actor 把 `PromTaskAction` 一对一映射为 actor 私有的 `TaskFlow`。useca
    `N: Nucl<Context = RdbContext, Error = BaseError>`；通过 `nucl.coord`
    开启业务事务。usecase 不引用 concrete `RdbNucl`。
 2. 先锁 Chapter，再读取 Page；锁顺序仍是 Chapter→Page。
-3. 对每个 page 通过 `ObjDept<PageImage, RdbContext>` 读取最新 ObjMeta。
+3. 对每个 page 通过泛型注入的 typed `GetObjMeta<PageImage>` 读取最新
+   ObjMeta；该能力来自 ObjDept 承诺的持久化结果，但消费端不持有 ObjDept。
 4. 任一 page 缺失或 `f_is_uploaded == false`，事务正常结束并返回 Wait。
 5. 全部完成后执行 `CompleteChapterRawProvide`。
 6. 实际发生推进时，在同一事务写入 workflow record。
@@ -273,28 +276,25 @@ Invitation 必须继续直接对独立业务 repo 调用 `run_on`：
 `part_impl::prom::rdb_impl::new` 在 Prom adapter 内部创建消费 actor：
 
 ```text
-queue_nucl = RdbNucl<ReptRead>::new(core.clone())
-queue_repo = RdbPromRepo::new()
-task_repo = HybRepo::new(core.clone())
-actor_obj_dept = obj_dept
+actor_core = core.clone()
+actor_obj_view = obj_dept.view()
 actor_develop = develop
 ```
 
-`task_repo` 必须使用 `HybRepo::new(core.clone())`，不得 clone Harn 中的
-repo；现有 actor 使用独立 process-local map，该行为必须保持。
+业务 repo 必须使用 `HybRepo::new(actor_core.clone())`，不得 clone Harn 中的
+repo；queue nucl 同样从 actor core 构造。
 
 `RdbPromActor` 自己校验 topic、匹配 `TaskPayload`、调用 `usecase::prom` 并将
 `PromTaskAction` 映射为队列状态。禁止再创建只做转发的独立 handler。
-每次任务直接借用 `Arc<RdbPromActor<...>>` 内的 ObjDept 与 Develop。绝不按
-task clone Develop 或 ObjDept。
+每次任务直接借用 `Arc<RdbPromActor<...>>` 内的 ObjView 与 Develop。绝不按
+task clone Develop 或 ObjView。
 
 原因：`AsyncEffectDevelop` 的任意 clone 在 Drop 时都会 cancel 共享 token。
 按 task clone 会在第一条任务结束时关闭全局 Develop。actor 的 `Arc` 必须
 一直存活到四个 worker 全部 drain。
 
-ObjDept 的共享必须恢复既有 `Clone` 语义：只 clone core、pool、prom 和同一
-actor descriptor，不创建第二个 ObjActor。不得重新调用 production factory
-构造第二个 ObjDept。
+`NormObjDept::view()` 只投影共享 ObjPool 的只读能力，不复制 ObjProm 或 actor
+descriptor，也不创建第二个 ObjActor。
 
 Harn 仍只持有 usecase 所需的 `RdbProm`、ObjDept 和 Develop。actor 的具体
 泛型不进入 Harn。
@@ -434,7 +434,7 @@ ObjActor
 
 ### 阶段 C：建立 actor 静态业务分派
 
-- actor 泛型化持有 ObjDept 与 Develop。
+- actor 泛型化持有 ObjView 与 Develop，完整 ObjDept 不进入 actor。
 - 保持 actor pool、shard、状态机和生命周期原实现。
 - 在 usecase 前保留 deserialize/topic validation。
 - usecase 后保留原 final mutation。

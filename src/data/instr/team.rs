@@ -13,6 +13,7 @@ use crate::value::image::{ImageExt, ImageHash};
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ReserveTeamAvatarInstr {
+    //
     /// SHA-256 identity of the exact avatar bytes.
     pub image_hash: ImageHash,
     /// Upload size used for validation and PUT signing.
@@ -33,6 +34,7 @@ pub struct MarkTeamAvatarUploadedInstr {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateTeamInstr {
+    //
     /// Team display name.
     pub name: String,
     /// Team description text.
@@ -52,6 +54,7 @@ pub struct CreateTeamInstr {
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ListTeamInfosInstr {
+    //
     /// Filter to teams joined by the authenticated user. A different user's
     /// ID is rejected. Omit to list all teams (super-admin only).
     pub user_id: Option<String>,
@@ -66,6 +69,7 @@ pub struct ListTeamInfosInstr {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateTeamInfoInstr {
+    //
     /// Team identifier.
     pub id: String,
 

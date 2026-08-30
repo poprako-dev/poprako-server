@@ -21,6 +21,7 @@ use crate::value::role::RoleMask;
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ReserveComicCoverInstr {
+    //
     /// SHA-256 identity of the exact cover bytes.
     pub image_hash: ImageHash,
     /// Upload size used for validation and PUT signing.
@@ -45,6 +46,7 @@ pub struct MarkComicCoverUploadedInstr {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateComicInstr {
+    //
     /// Parent workset identifier.
     pub workset_id: String,
 
@@ -72,6 +74,7 @@ pub struct CreateComicInstr {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateComicInfoInstr {
+    //
     /// Comic identifier.
     pub id: String,
 
@@ -88,6 +91,7 @@ pub struct UpdateComicInfoInstr {
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ListComicInfosInstr {
+    //
     /// Parent workset identifier.
     pub workset_id: String,
 

@@ -52,6 +52,7 @@ use crate::value::image::{ImageExt, ImageHash, ImageKind};
 
 // One page and its resolved object reservation.
 struct PageReservation {
+    //
     // Stable page identifier.
     page_id: String,
     // Final page position.

@@ -25,19 +25,14 @@ use tokio::sync::watch;
 use tokio_util::sync::CancellationToken;
 use tracing::instrument;
 
-use poprako_obj_dept::ObjDept;
 use poprako_rdb_core::RdbCore;
 
 use crate::part::effect::Develop;
 use crate::part::nucl::ReptRead;
-use crate::part::obj_dept::PageImage;
 use crate::part::prom::oper::{Defer, DeferBatch};
 use crate::part::prom::payload::TaskPayload;
-use crate::part_impl::nucl::rdb_impl::RdbNucl;
-use crate::part_impl::prom::rdb_impl::actor::base::RdbPromActor;
+use crate::part_impl::prom::rdb_impl::actor::base::{ObjView, RdbPromActor};
 use crate::part_impl::prom::rdb_impl::entity::LocalMessageEntryRow;
-use crate::part_impl::prom::rdb_impl::repo::RdbPromRepo;
-use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::schema::t_local_message;
 use crate::result::{BaseError, BaseRest, accept};
 use crate::shared::RdbContext;
@@ -48,6 +43,7 @@ use crate::shared::result::diesel;
 /// Call [`close`](RdbProm::close) to stop polling and drain claimed work before
 /// shutdown. Pending records remain durable for the next process start.
 pub struct RdbProm {
+    //
     /// Shared relational database core used to construct the queue consumer.
     core: RdbCore,
     /// Cancellation signal for the queue supervisor.
@@ -159,9 +155,9 @@ where
 
 /// Starts the queue consumer with its statically typed business dependencies.
 #[must_use]
-pub fn new<O, D>(core: RdbCore, obj_dept: O, develop: D) -> RdbProm
+pub fn new<V, D>(core: RdbCore, obj_view: V, develop: D) -> RdbProm
 where
-    O: ObjDept<PageImage, RdbContext> + Send + Sync + 'static,
+    V: ObjView + Send + Sync + 'static,
     D: Develop + Send + Sync + 'static,
 {
     let token = CancellationToken::new();
@@ -170,17 +166,9 @@ where
 
     let rdb_prom = RdbProm { core, token, done };
 
-    let queue_nucl = RdbNucl::new(rdb_prom.core.clone());
-
-    let queue_repo = RdbPromRepo::new();
-
-    let task_repo = HybRepo::new(rdb_prom.core.clone());
-
     let actor = RdbPromActor::new(
-        queue_nucl,
-        queue_repo,
-        task_repo,
-        obj_dept,
+        rdb_prom.core.clone(),
+        obj_view,
         develop,
         rdb_prom.token.clone(),
     );

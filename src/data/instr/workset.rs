@@ -14,6 +14,7 @@ use utoipa::{IntoParams, ToSchema};
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateWorksetInstr {
+    //
     /// Owning team identifier to create the workset under.
     pub team_id: String,
 
@@ -29,6 +30,7 @@ pub struct CreateWorksetInstr {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateWorksetInfoInstr {
+    //
     /// Workset identifier to update.
     pub id: String,
 
@@ -43,6 +45,7 @@ pub struct UpdateWorksetInfoInstr {
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ListWorksetInfosInstr {
+    //
     /// Owning team identifier to list worksets for.
     pub team_id: String,
 

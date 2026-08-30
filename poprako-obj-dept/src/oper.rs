@@ -10,6 +10,7 @@ use crate::model::slot::{ObjSlot, ObjSlotSpec};
 #[derive(Oper)]
 #[oper(output = Option<ObjMeta>)]
 pub struct GetObjMeta<'a, B> {
+    //
     /// Stable business-object identifier.
     pub id: &'a str,
     /// Compile-time object marker selected for this operation.
@@ -21,6 +22,7 @@ pub struct GetObjMeta<'a, B> {
 #[derive(Oper)]
 #[oper(output = Option<Url>)]
 pub struct GenObjUrl<'a, B> {
+    //
     /// Stable business-object identifier.
     pub id: &'a str,
     /// Compile-time object marker selected for this operation.
@@ -32,6 +34,7 @@ pub struct GenObjUrl<'a, B> {
 #[derive(Oper)]
 #[oper(output = ObjSlot)]
 pub struct GenObjSlot<'a, B> {
+    //
     /// Business-planned object and write requirements.
     pub spec: &'a ObjSlotSpec<'a>,
     /// Compile-time object marker selected for this operation.
@@ -43,6 +46,7 @@ pub struct GenObjSlot<'a, B> {
 #[derive(Oper)]
 #[oper(output = ())]
 pub enum DelObjs<'a, B> {
+    //
     /// Defers physical deletion and retains each identifier's version watermark.
     Detach {
         /// Business-object identifiers to detach.

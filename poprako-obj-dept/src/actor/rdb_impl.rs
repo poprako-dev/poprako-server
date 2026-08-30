@@ -12,6 +12,7 @@ pub const REMOTE_TIMEOUT: std::time::Duration =
 /// Relative position of a task key against the latest object row.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ObjKeyState {
+    //
     /// No row remains.
     Missing,
 

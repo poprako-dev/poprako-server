@@ -23,8 +23,8 @@ use tokio::sync::watch;
 use tokio_util::sync::CancellationToken;
 use tracing::instrument;
 
+use crate::part::effect::Develop;
 use crate::part::effect::event::Event;
-use crate::part::effect::{Develop, EffectEvent};
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::system_mail::SystemMailRepo;
@@ -38,6 +38,7 @@ use crate::part::repo::user::UserRepo;
 /// [`close`](AsyncEffectDevelop::close) before dropping to drain pending
 /// events gracefully.
 pub struct AsyncEffectDevelop {
+    //
     // Internal state field `send`.
     /// Bounded channel sender for enqueueing events.
     send: Sender<Event>,
@@ -114,15 +115,13 @@ impl Clone for AsyncEffectDevelop {
 impl Develop for AsyncEffectDevelop {
     // Internal implementation of `develop`.
     #[instrument(level = "info", skip_all)]
-    async fn develop<I>(&self, iter: I)
-    where
-        I: EffectEvent + Send,
-    {
+    async fn develop(&self, events: Vec<Event>) {
+        //
         if self.token.is_cancelled() {
             return;
         }
 
-        for event in iter.into_iter() {
+        for event in events {
             //
             if let Err(e) = self.send.try_send(event) {
                 //

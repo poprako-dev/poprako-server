@@ -15,8 +15,6 @@
 pub mod event;
 
 use std::future::Future;
-use std::iter::Once;
-use std::vec::IntoIter;
 
 use crate::part::effect::event::Event;
 
@@ -26,39 +24,30 @@ use crate::part::effect::event::Event;
 /// Construct the appropriate [`Event`] variant before calling
 /// [`develop_on`](EffectEvent::develop_on).
 pub trait EffectEvent {
-    /// The iterator type yielded by [`into_iter`](EffectEvent::into_iter).
-    type Iter: Iterator<Item = Event>;
-
-    /// Consumes self and returns an iterator of [`Event`] values.
-    fn into_iter(self) -> Self::Iter;
+    /// Consumes self and returns its events.
+    fn into_events(self) -> Vec<Event>;
 
     /// Dispatches this event through `develop`.
-    fn develop_on<D>(self, develop: &D) -> impl Future<Output = ()> + Send
+    fn develop_on<D>(self, develop: &D) -> impl Future<Output = ()>
     where
-        Self: Sized + Send,
+        Self: Sized,
         D: Develop + ?Sized,
     {
-        develop.develop(self)
+        develop.develop(self.into_events())
     }
 }
 
 impl EffectEvent for Vec<Event> {
-    // Event iterator for a pre-collected vector of side effects.
-    type Iter = IntoIter<Event>;
-
-    // Consumes the vector and yields its events one by one.
-    fn into_iter(self) -> Self::Iter {
-        <Self as IntoIterator>::into_iter(self)
+    // Returns the pre-collected side effects.
+    fn into_events(self) -> Vec<Event> {
+        self
     }
 }
 
 impl EffectEvent for Event {
-    // Single-element event iterator wrapping one domain event.
-    type Iter = Once<Self>;
-
-    // Consumes the event and yields it as a single-element iterator.
-    fn into_iter(self) -> Self::Iter {
-        std::iter::once(self)
+    // Wraps one event for dispatch.
+    fn into_events(self) -> Vec<Event> {
+        vec![self]
     }
 }
 
@@ -69,7 +58,5 @@ impl EffectEvent for Event {
 /// notifications, etc.).
 pub trait Develop {
     /// Dispatches each event in the provided iterator to the appropriate side-effect handlers.
-    fn develop<I>(&self, iter: I) -> impl Future<Output = ()> + Send
-    where
-        I: EffectEvent + Send;
+    fn develop(&self, events: Vec<Event>) -> impl Future<Output = ()> + Send;
 }

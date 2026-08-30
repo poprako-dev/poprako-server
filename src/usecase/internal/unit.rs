@@ -17,6 +17,7 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
 /// Loaded evidence that grants Unit list and search access.
 pub enum UnitListAccessInfo {
+    //
     /// Access through team membership.
     Member {
         /// Team membership evidence.

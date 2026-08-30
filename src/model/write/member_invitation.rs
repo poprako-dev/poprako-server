@@ -4,6 +4,7 @@ use crate::value::role::RoleMask;
 
 /// The data needed to insert a member invitation row.
 pub struct MemberInvitationEntry {
+    //
     /// Unique identifier for the new invitation record.
     pub id: String,
 
@@ -24,6 +25,7 @@ pub struct MemberInvitationEntry {
 
 /// Mutable fields for a member invitation.
 pub struct MemberInvitationRoleRepl {
+    //
     /// Identifies which invitation record to update.
     pub id: String,
     /// Updated role mask to assign upon acceptance.

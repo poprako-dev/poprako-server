@@ -3,6 +3,7 @@
 /// The data needed to insert a team announcement row.
 #[cfg_attr(test, derive(Clone))]
 pub struct AnnouncementEntry {
+    //
     /// Unique identifier to insert for the new announcement row.
     pub id: String,
 
@@ -20,6 +21,7 @@ pub struct AnnouncementEntry {
 /// Mutable announcement content fields.
 #[cfg_attr(test, derive(Clone))]
 pub struct AnnouncementRepl {
+    //
     /// Identifier of the announcement to update.
     pub id: String,
 

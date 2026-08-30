@@ -72,6 +72,7 @@ pub struct UpdatePageManifest<'a> {
 #[derive(Oper)]
 #[oper(output = ())]
 pub struct SetPageUnitCounters<'a> {
+    //
     /// The page ID.
     pub id: &'a str,
     /// The unit counters to set.
@@ -82,6 +83,7 @@ pub struct SetPageUnitCounters<'a> {
 #[derive(Oper)]
 #[oper(output = ())]
 pub enum DeletePages<'a> {
+    //
     /// Deletes all pages for a chapter.
     Chapter {
         /// The chapter ID.
