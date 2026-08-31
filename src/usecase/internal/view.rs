@@ -5,7 +5,7 @@ mod tests;
 
 use std::collections::{HashMap, HashSet};
 
-use poprako_orchestra::{Context, OperRun as _};
+use poprako_orchestra::{Context, OperRun as _, Run};
 
 use poprako_obj_dept::ObjDeptView;
 use poprako_obj_dept::key::KeyMap;
@@ -22,8 +22,11 @@ use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::proj::team::TeamInfo;
 use crate::model::read::proj::user::UserInfo;
-use crate::part::obj_dept::{ComicCover, TeamAvatar, UserAvatar};
+use crate::part::obj_dept::{ComicCover, PageImage, TeamAvatar, UserAvatar};
+use crate::part::repo::oper::chapter::ListPinnedChapterInfos;
+use crate::part::repo::oper::page::ListFirstPageInfos;
 use crate::result::{BaseError, BaseRest, accept};
+use crate::usecase::internal::page::PageLoader;
 
 /// Deduplicated object identifiers discovered in a complete include graph.
 #[derive(Default)]
@@ -120,6 +123,17 @@ impl ObjViewIds {
     fn collect_team(&mut self, team_info: &TeamInfo) {
         self.team_avatars.insert(team_info.id.clone());
     }
+
+    // Returns the sorted comic identifiers used for cover fallback lookup.
+    fn comic_ids(&self) -> Vec<String> {
+        //
+        let mut comic_ids =
+            self.comic_covers.iter().cloned().collect::<Vec<_>>();
+
+        comic_ids.sort_unstable();
+
+        comic_ids
+    }
 }
 
 /// Object URLs loaded once for every marker present in a request include graph.
@@ -127,6 +141,12 @@ pub struct ObjViewSnapshot {
     //
     /// Comic-cover URLs by comic identifier.
     comic_covers: HashMap<String, ObjUrls>,
+
+    /// First-page identifiers by comic for cover fallback.
+    comic_fallback_pages: HashMap<String, String>,
+
+    /// First-page image URLs by page identifier.
+    page_images: HashMap<String, ObjUrls>,
 
     /// Team-avatar URLs by team identifier.
     team_avatars: HashMap<String, ObjUrls>,
@@ -168,9 +188,50 @@ impl ObjViewSnapshot {
 
         accept(Self {
             comic_covers,
+            comic_fallback_pages: HashMap::new(),
+            page_images: HashMap::new(),
             team_avatars,
             user_avatars,
         })
+    }
+
+    /// Loads nested object URLs and the comic-cover fallback relationship.
+    pub async fn load_with_comic_fallbacks<C, R, O>(
+        repo: &R,
+        obj_dept: &O,
+        ids: ObjViewIds,
+    ) -> BaseRest<Self>
+    where
+        C: Context,
+        R: for<'a> Run<ListPinnedChapterInfos<'a>, Error = BaseError>
+            + for<'a> Run<ListFirstPageInfos<'a>, Error = BaseError>
+            + Sync,
+        O: ObjDeptView<ComicCover, C>
+            + ObjDeptView<PageImage, C>
+            + ObjDeptView<TeamAvatar, C>
+            + ObjDeptView<UserAvatar, C>
+            + Sync,
+    {
+        let comic_ids = ids.comic_ids();
+
+        let (mut snapshot, comic_fallback_pages) = futures_util::try_join!(
+            Self::load::<C, O>(obj_dept, ids),
+            PageLoader::load_ids_from_comics(repo, &comic_ids),
+        )?;
+
+        let mut page_ids =
+            comic_fallback_pages.values().cloned().collect::<Vec<_>>();
+
+        page_ids.sort_unstable();
+
+        page_ids.dedup();
+
+        snapshot.page_images =
+            load_obj_urls::<C, O, PageImage>(obj_dept, &page_ids).await?;
+
+        snapshot.comic_fallback_pages = comic_fallback_pages;
+
+        accept(snapshot)
     }
 
     /// Renders an assignment and every included model without further I/O.
@@ -211,8 +272,15 @@ impl ObjViewSnapshot {
     /// Renders a comic and every included model without further I/O.
     pub fn comic(&self, mut comic_info: ComicInfo) -> ComicInfoView {
         //
+        let dedicated_cover_urls = self.comic_covers.get(&comic_info.id);
+
+        let fallback_cover_urls = self
+            .comic_fallback_pages
+            .get(&comic_info.id)
+            .and_then(|page_id| self.page_images.get(page_id));
+
         let (cover_url, cover_thumbnail_url) =
-            resolved_urls(&self.comic_covers, &comic_info.id);
+            resolved_obj_urls(dedicated_cover_urls.or(fallback_cover_urls));
 
         let team = comic_info.team.take().map(|team_info| self.team(team_info));
 
@@ -249,6 +317,21 @@ impl ObjViewSnapshot {
     }
 }
 
+// Resolves origin and thumbnail strings from one object URL value.
+fn resolved_obj_urls(
+    urls: Option<&ObjUrls>,
+) -> (Option<String>, Option<String>) {
+    //
+    let Some(urls) = urls else {
+        return (None, None);
+    };
+
+    (
+        Some(urls.origin_url.to_string()),
+        urls.thumbnail_url.as_ref().map(ToString::to_string),
+    )
+}
+
 // Loads URLs for the supplied object marker identifiers.
 async fn load_obj_urls<C, O, K>(
     obj_dept: &O,
@@ -281,13 +364,5 @@ fn resolved_urls(
     urls_by_id: &HashMap<String, ObjUrls>,
     id: &str,
 ) -> (Option<String>, Option<String>) {
-    //
-    let Some(urls) = urls_by_id.get(id) else {
-        return (None, None);
-    };
-
-    (
-        Some(urls.origin_url.to_string()),
-        urls.thumbnail_url.as_ref().map(ToString::to_string),
-    )
+    resolved_obj_urls(urls_by_id.get(id))
 }

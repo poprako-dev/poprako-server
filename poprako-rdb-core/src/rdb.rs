@@ -122,6 +122,7 @@ pub struct RdbContext<L> {
     //
     /// Pooled connection used by this transaction context.
     conn: RdbPooledConn,
+
     /// Compile-time Orchestra transaction level.
     level: PhantomData<L>,
 }

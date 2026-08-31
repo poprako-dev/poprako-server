@@ -40,7 +40,10 @@ import {
     createChapter,
     deleteChapterPages,
     getChapter,
+    getComic,
     listChapterPages,
+    listComicChapters,
+    listWorksetComics,
     markPageImageUploaded,
     newBubbleUnit,
     newPageManifest,
@@ -90,6 +93,26 @@ export async function runIt03Module(ctx: RunCtx): Promise<void> {
     }
 
     ctx.main.pageIds = pageIds;
+
+    const retainedPendingManifest = await reserveChapterPages(
+        ctx.sadmin,
+        mainChapterId,
+        reserveVal.pages.map((page) => ({
+            page_id: page.page_id,
+            image_hash: page.image_hash,
+            ext: page.ext,
+        })),
+    );
+
+    assert.deepEqual(
+        retainedPendingManifest.pages.map((page) => page.page_id),
+        pageIds,
+        "pending images with identical hash and extension must retain page identities",
+    );
+    assert.ok(
+        retainedPendingManifest.pages.every((page) => page.slot === null),
+        "retained pending identities without new_byte_len must not allocate slots",
+    );
 
     // list pages: 8 pages, index 0..7, all unit counts 0
     const pages = await listChapterPages(ctx.sadmin, mainChapterId);
@@ -187,6 +210,53 @@ export async function runIt03Module(ctx: RunCtx): Promise<void> {
         );
     }
 
+    const firstMarkedPage = markedPages.find((page) => page.index === 0)!;
+
+    const fallbackComic = await getComic(ctx.sadmin, ctx.main.comicId);
+
+    assert.equal(
+        fallbackComic.cover_url,
+        firstMarkedPage.image_url,
+        "comic cover must fall back to the pinned chapter's first uploaded page",
+    );
+    assert.equal(
+        fallbackComic.cover_thumbnail_url,
+        firstMarkedPage.image_thumbnail_url,
+        "comic cover thumbnail must use the same fallback page generation",
+    );
+
+    const worksetComics = await listWorksetComics(
+        ctx.sadmin,
+        ctx.main.worksetId,
+    );
+    const fallbackComicInList = worksetComics.find(
+        (comic) => comic.id === ctx.main!.comicId,
+    )!;
+
+    assert.equal(fallbackComicInList.cover_url, firstMarkedPage.image_url);
+    assert.equal(
+        fallbackComicInList.cover_thumbnail_url,
+        firstMarkedPage.image_thumbnail_url,
+    );
+
+    const chaptersWithComic = await listComicChapters(
+        ctx.sadmin,
+        ctx.main.comicId,
+        "&incl=comic",
+    );
+    const pinnedChapterWithComic = chaptersWithComic.find(
+        (chapter) => chapter.id === mainChapterId,
+    )!;
+
+    assert.equal(
+        pinnedChapterWithComic.comic?.cover_url,
+        firstMarkedPage.image_url,
+    );
+    assert.equal(
+        pinnedChapterWithComic.comic?.cover_thumbnail_url,
+        firstMarkedPage.image_thumbnail_url,
+    );
+
     const retainedManifest = await reserveChapterPages(
         ctx.sadmin,
         mainChapterId,
@@ -202,6 +272,30 @@ export async function runIt03Module(ctx: RunCtx): Promise<void> {
     assert.ok(
         retainedManifest.pages.every((page) => page.slot === null),
         "unchanged uploaded manifest entries without new_byte_len must not receive slots",
+    );
+
+    const orderedMarkedPages = [...markedPages].sort(
+        (left, right) => left.index - right.index,
+    );
+    const automaticallyMatchedManifest = await reserveChapterPages(
+        ctx.sadmin,
+        mainChapterId,
+        orderedMarkedPages.map((page, index) => ({
+            page_id: index === 0 ? null : page.id,
+            image_hash: page.image_hash!,
+            new_byte_len: index === 0 ? 1 : undefined,
+            ext: page.ext!,
+        })),
+    );
+
+    assert.equal(
+        automaticallyMatchedManifest.pages[0]?.page_id,
+        orderedMarkedPages[0]?.id,
+        "hash-plus-extension auto matching must retain the existing page identity",
+    );
+    assert.ok(
+        automaticallyMatchedManifest.pages.every((page) => page.slot === null),
+        "auto matching identical available content must not allocate a new generation",
     );
 
     expectError(

@@ -1,13 +1,15 @@
 //! Assignment presentation assembly.
 
-use poprako_orchestra::Context;
+use poprako_orchestra::{Context, Run};
 
 use poprako_obj_dept::ObjDeptView;
 
 use crate::data::view::assignment::AssignmentInfoView;
 use crate::model::read::proj::assignment::AssignmentInfo;
-use crate::part::obj_dept::{ComicCover, TeamAvatar, UserAvatar};
-use crate::result::{BaseRest, accept};
+use crate::part::obj_dept::{ComicCover, PageImage, TeamAvatar, UserAvatar};
+use crate::part::repo::oper::chapter::ListPinnedChapterInfos;
+use crate::part::repo::oper::page::ListFirstPageInfos;
+use crate::result::{BaseError, BaseRest, accept};
 use crate::usecase::internal::view::{ObjViewIds, ObjViewSnapshot};
 
 /// Resolves one assignment model and its included models.
@@ -32,13 +34,18 @@ where
 }
 
 /// Resolves assignment models from one request-scoped object URL snapshot.
-pub async fn assignment_info_views<C, O>(
+pub async fn assignment_info_views<C, R, O>(
+    repo: &R,
     obj_dept: &O,
     models: Vec<AssignmentInfo>,
 ) -> BaseRest<Vec<AssignmentInfoView>>
 where
     C: Context,
+    R: for<'a> Run<ListPinnedChapterInfos<'a>, Error = BaseError>
+        + for<'a> Run<ListFirstPageInfos<'a>, Error = BaseError>
+        + Sync,
     O: ObjDeptView<ComicCover, C>
+        + ObjDeptView<PageImage, C>
         + ObjDeptView<TeamAvatar, C>
         + ObjDeptView<UserAvatar, C>
         + Sync,
@@ -47,7 +54,10 @@ where
 
     ids.collect_assignments(&models);
 
-    let snapshot = ObjViewSnapshot::load::<C, O>(obj_dept, ids).await?;
+    let snapshot = ObjViewSnapshot::load_with_comic_fallbacks::<C, R, O>(
+        repo, obj_dept, ids,
+    )
+    .await?;
 
     accept(
         models

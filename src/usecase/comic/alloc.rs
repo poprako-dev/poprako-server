@@ -83,7 +83,7 @@ where
         })
         .await?;
 
-    let slot = Some(ImageUploadSlotView {
+    let slot = obj_slot.map(|obj_slot| ImageUploadSlotView {
         put_url: obj_slot.url.to_string(),
         image_ver: obj_slot.key.ver,
         headers: obj_slot.headers,

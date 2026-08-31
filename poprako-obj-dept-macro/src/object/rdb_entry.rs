@@ -16,8 +16,10 @@ pub fn expand(table: &Path) -> TokenStream {
         struct FullRow {
             #[diesel(column_name = f_id)]
             id: String,
+
             #[diesel(column_name = f_version)]
             ver: i64,
+
             #[diesel(column_name = f_key)]
             key: Option<String>,
             #[diesel(column_name = f_is_uploaded)]
@@ -26,6 +28,7 @@ pub fn expand(table: &Path) -> TokenStream {
             hash: Option<Vec<u8>>,
             #[diesel(column_name = f_ext)]
             ext: Option<String>,
+
             #[diesel(column_name = f_created_at)]
             created_at: ::time::OffsetDateTime,
             #[diesel(column_name = f_updated_at)]
@@ -38,6 +41,7 @@ pub fn expand(table: &Path) -> TokenStream {
         struct ObjStateRow {
             #[diesel(column_name = f_version)]
             ver: i64,
+
             #[diesel(column_name = f_key)]
             key: Option<String>,
             #[diesel(column_name = f_is_uploaded)]
@@ -54,6 +58,7 @@ pub fn expand(table: &Path) -> TokenStream {
         struct ObjPresenceStateRow {
             #[diesel(column_name = f_version)]
             ver: i64,
+
             #[diesel(column_name = f_key)]
             key: Option<String>,
             #[diesel(column_name = f_is_uploaded)]
@@ -62,6 +67,7 @@ pub fn expand(table: &Path) -> TokenStream {
             hash: Option<Vec<u8>>,
             #[diesel(column_name = f_ext)]
             ext: Option<String>,
+
             #[diesel(column_name = f_updated_at)]
             revision: ::time::OffsetDateTime,
         }
@@ -86,6 +92,7 @@ pub fn expand(table: &Path) -> TokenStream {
         struct ObjStateEntryRow {
             #[diesel(column_name = f_id)]
             id: String,
+
             #[diesel(column_name = f_version)]
             ver: i64,
             #[diesel(column_name = f_key)]
@@ -167,8 +174,10 @@ pub fn expand(table: &Path) -> TokenStream {
         struct ObjWriteRow<'a> {
             #[diesel(column_name = f_id)]
             id: &'a str,
+
             #[diesel(column_name = f_version)]
             ver: i64,
+
             #[diesel(column_name = f_key)]
             key: &'a str,
             #[diesel(column_name = f_is_uploaded)]

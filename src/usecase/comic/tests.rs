@@ -1,6 +1,8 @@
+mod cover;
 mod fixture;
 mod list;
 mod preset_assignment;
+mod view;
 
 // create(create)(positive): creating a comic should allocate workset-scoped index and update comic count.
 // create(create)(positive): first-chapter creator preset roles are merged with chapter admin.
@@ -88,7 +90,7 @@ async fn mark_comic_cover(
     mock: &Mock,
     version: u32,
 ) -> crate::result::BaseRest<()> {
-    cover::mark_uploaded::<MockContext, _, _>(
+    super::cover::mark_uploaded::<MockContext, _, _>(
         (mock, mock),
         token("user-1"),
         "comic-1".into(),

@@ -107,16 +107,19 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
             struct FullRow {
                 #[diesel(column_name = f_id)]
                 id: String,
+
                 #[diesel(column_name = f_topic)]
                 topic: String,
                 #[diesel(column_name = f_oper)]
                 oper: String,
+
                 #[diesel(column_name = f_obj_id)]
                 obj_id: String,
                 #[diesel(column_name = f_version)]
                 ver: i64,
                 #[diesel(column_name = f_key)]
                 image: String,
+
                 #[diesel(column_name = f_generation)]
                 gen_no: i64,
                 #[diesel(column_name = f_status)]
@@ -129,6 +132,7 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
                 lease: i64,
                 #[diesel(column_name = f_error)]
                 error: Option<String>,
+
                 #[diesel(column_name = f_created_at)]
                 created_at: ::time::OffsetDateTime,
                 #[diesel(column_name = f_updated_at)]
@@ -141,16 +145,19 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
             struct TaskRow {
                 #[diesel(column_name = f_id)]
                 id: String,
+
                 #[diesel(column_name = f_topic)]
                 topic: String,
                 #[diesel(column_name = f_oper)]
                 oper: String,
+
                 #[diesel(column_name = f_obj_id)]
                 obj_id: String,
                 #[diesel(column_name = f_version)]
                 ver: i64,
                 #[diesel(column_name = f_key)]
                 image: String,
+
                 #[diesel(column_name = f_generation)]
                 gen_no: i64,
                 #[diesel(column_name = f_retried_count)]

@@ -34,6 +34,7 @@ pub struct TeamInfoView {
     /// Signed avatar-thumbnail download URL, when available.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub avatar_thumbnail_url: Option<String>,
+
     /// Timestamp of creation, in Unix milliseconds.
     pub created_at: i64,
     /// Timestamp of last update, in Unix milliseconds.

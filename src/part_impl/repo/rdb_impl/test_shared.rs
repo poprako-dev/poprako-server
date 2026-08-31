@@ -56,9 +56,13 @@ pub struct ComicFixture {
 pub struct ChapterFixture {
     //
     pub creator_form: UserEntry,
+
     pub team_entry: TeamEntry,
+
     pub workset_entry: WorksetEntry,
+
     pub comic_entry: ComicEntry,
+
     pub chapter_entry: ChapterEntry,
 }
 

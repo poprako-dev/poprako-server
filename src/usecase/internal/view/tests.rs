@@ -14,9 +14,13 @@ use super::{ObjViewIds, ObjViewSnapshot};
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::comic::ComicInfo;
+use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::team::TeamInfo;
 use crate::model::read::proj::user::UserInfo;
-use crate::part::obj_dept::{ComicCover, TeamAvatar, UserAvatar};
+use crate::part::obj_dept::{ComicCover, PageImage, TeamAvatar, UserAvatar};
+use crate::part::repo::oper::chapter::ListPinnedChapterInfos;
+use crate::part::repo::oper::page::ListFirstPageInfos;
+use crate::result::{BaseError, accept};
 use crate::value::chapter::mask::StageMask;
 use crate::value::role::RoleMask;
 
@@ -34,6 +38,7 @@ impl Context for TestContext {
 struct TestObjDept {
     calls: Mutex<HashMap<&'static str, Vec<Vec<String>>>>,
     failures: Mutex<HashSet<&'static str>>,
+    omissions: Mutex<HashSet<(&'static str, String)>>,
 }
 
 impl TestObjDept {
@@ -62,6 +67,20 @@ impl TestObjDept {
     fn fails(&self, operation: &'static str) -> bool {
         self.failures.lock().unwrap().contains(operation)
     }
+
+    fn omit(&self, operation: &'static str, id: &str) {
+        self.omissions
+            .lock()
+            .unwrap()
+            .insert((operation, id.into()));
+    }
+
+    fn is_omitted(&self, operation: &'static str, id: &str) -> bool {
+        self.omissions
+            .lock()
+            .unwrap()
+            .contains(&(operation, id.into()))
+    }
 }
 
 macro_rules! impl_obj_view {
@@ -84,6 +103,7 @@ macro_rules! impl_obj_view {
                 Ok(oper
                     .ids
                     .iter()
+                    .filter(|id| !self.is_omitted($list_operation, id))
                     .map(|id| {
                         (
                             id.clone(),
@@ -163,8 +183,111 @@ macro_rules! impl_obj_view {
 }
 
 impl_obj_view!(ComicCover, "cover-list", "cover-urls");
+impl_obj_view!(PageImage, "page-list", "page-urls");
 impl_obj_view!(TeamAvatar, "team-list", "team-urls");
 impl_obj_view!(UserAvatar, "user-list", "user-urls");
+
+struct TestRepo;
+
+impl<'a> Run<ListPinnedChapterInfos<'a>> for TestRepo {
+    type Error = BaseError;
+
+    async fn run(
+        &self,
+        oper: &ListPinnedChapterInfos<'a>,
+    ) -> Result<Vec<ChapterInfo>, Self::Error> {
+        let chapter_info = fallback_chapter_info();
+
+        match oper.comic_ids.contains(&chapter_info.comic_id) {
+            true => accept(vec![chapter_info]),
+            false => accept(Vec::new()),
+        }
+    }
+}
+
+impl<'a> Run<ListFirstPageInfos<'a>> for TestRepo {
+    type Error = BaseError;
+
+    async fn run(
+        &self,
+        oper: &ListFirstPageInfos<'a>,
+    ) -> Result<Vec<PageInfo>, Self::Error> {
+        let page_info = fallback_page_info();
+
+        match oper.chapter_ids.contains(&page_info.chapter_id) {
+            true => accept(vec![page_info]),
+            false => accept(Vec::new()),
+        }
+    }
+}
+
+#[tokio::test]
+async fn comic_uses_pinned_first_page_when_dedicated_cover_is_absent() {
+    let obj_dept = TestObjDept::default();
+
+    obj_dept.omit("cover-list", "comic-1");
+
+    let assignment_info = assignment_info();
+
+    let mut ids = ObjViewIds::default();
+
+    ids.collect_assignments(std::slice::from_ref(&assignment_info));
+
+    let snapshot =
+        ObjViewSnapshot::load_with_comic_fallbacks::<TestContext, _, _>(
+            &TestRepo, &obj_dept, ids,
+        )
+        .await
+        .unwrap();
+
+    let comic_view = snapshot
+        .assignment(assignment_info)
+        .chapter
+        .and_then(|chapter| chapter.comic)
+        .unwrap();
+
+    assert_eq!(
+        comic_view.cover_url.as_deref(),
+        Some("https://obj.test/page-1"),
+    );
+    assert_eq!(
+        comic_view.cover_thumbnail_url.as_deref(),
+        Some("https://obj.test/thumbnail/page-1"),
+    );
+}
+
+#[tokio::test]
+async fn comic_prefers_dedicated_cover_over_pinned_first_page() {
+    let obj_dept = TestObjDept::default();
+
+    let assignment_info = assignment_info();
+
+    let mut ids = ObjViewIds::default();
+
+    ids.collect_assignments(std::slice::from_ref(&assignment_info));
+
+    let snapshot =
+        ObjViewSnapshot::load_with_comic_fallbacks::<TestContext, _, _>(
+            &TestRepo, &obj_dept, ids,
+        )
+        .await
+        .unwrap();
+
+    let comic_view = snapshot
+        .assignment(assignment_info)
+        .chapter
+        .and_then(|chapter| chapter.comic)
+        .unwrap();
+
+    assert_eq!(
+        comic_view.cover_url.as_deref(),
+        Some("https://obj.test/comic-1"),
+    );
+    assert_eq!(
+        comic_view.cover_thumbnail_url.as_deref(),
+        Some("https://obj.test/thumbnail/comic-1"),
+    );
+}
 
 #[tokio::test]
 async fn nested_repeated_models_load_once_per_object_marker() {
@@ -384,6 +507,33 @@ fn assignment_info() -> AssignmentInfo {
         user: Some(user_info),
         chapter: Some(chapter_info),
         roles: RoleMask::try_from(1).unwrap(),
+        created_at,
+        updated_at: created_at,
+    }
+}
+
+fn fallback_chapter_info() -> ChapterInfo {
+    let mut assignment_info = assignment_info();
+
+    let mut chapter_info = assignment_info.chapter.take().unwrap();
+
+    chapter_info.comic = None;
+
+    chapter_info.creator = None;
+
+    chapter_info
+}
+
+fn fallback_page_info() -> PageInfo {
+    let created_at = OffsetDateTime::now_utc();
+
+    PageInfo {
+        id: "page-1".into(),
+        chapter_id: "chapter-1".into(),
+        index: 0,
+        total_unit_count: 0,
+        translated_unit_count: 0,
+        proofread_unit_count: 0,
         created_at,
         updated_at: created_at,
     }

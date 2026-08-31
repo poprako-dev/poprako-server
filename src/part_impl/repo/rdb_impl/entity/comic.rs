@@ -26,6 +26,7 @@ use crate::result::{BaseError, BaseRest, accept};
 pub struct ComicInfoRow {
     //
     pub f_id: String,
+
     pub f_workset_id: String,
     pub f_index: i32,
 
@@ -83,6 +84,7 @@ impl TryFrom<ComicInfoRow> for ComicInfo {
 pub struct ComicEntryRow<'a> {
     //
     pub f_id: &'a str,
+
     pub f_workset_id: &'a str,
     pub f_index: i32,
 

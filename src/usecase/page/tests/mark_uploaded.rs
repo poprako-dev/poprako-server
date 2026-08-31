@@ -115,3 +115,52 @@ async fn stale_generation_does_not_mark_current() {
             .is_avail
     );
 }
+
+#[tokio::test]
+async fn stale_replay_is_rejected_before_current_generation_is_accepted() {
+    let mock = Mock::new();
+
+    seed_scope(&mock);
+
+    let stale_error = mark(&mock, 2).await.err().unwrap();
+
+    assert_expected_variant(stale_error, ExpectedVariant::Args);
+    assert!(
+        !mock.snapshot().objs["page_image"]["page-1"]
+            .meta
+            .as_ref()
+            .unwrap()
+            .is_avail
+    );
+
+    mark(&mock, 3).await.unwrap();
+
+    assert!(
+        mock.snapshot().objs["page_image"]["page-1"]
+            .meta
+            .as_ref()
+            .unwrap()
+            .is_avail
+    );
+}
+
+#[tokio::test]
+async fn non_raw_provider_cannot_mark_page_image_uploaded() {
+    let mock = Mock::new();
+
+    seed_scope(&mock);
+
+    mock.state.lock().unwrap().assignments[0].roles =
+        RoleMask::from(RoleField::REVIEWER);
+
+    let error = mark(&mock, 3).await.err().unwrap();
+
+    assert_expected_variant(error, ExpectedVariant::Perm);
+    assert!(
+        !mock.snapshot().objs["page_image"]["page-1"]
+            .meta
+            .as_ref()
+            .unwrap()
+            .is_avail
+    );
+}

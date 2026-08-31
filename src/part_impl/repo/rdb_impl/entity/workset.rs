@@ -25,6 +25,7 @@ use crate::result::BaseError;
 pub struct WorksetInfoRow {
     //
     pub f_id: String,
+
     pub f_team_id: String,
     pub f_index: i32,
 
@@ -67,6 +68,7 @@ impl TryFrom<WorksetInfoRow> for WorksetInfo {
 pub struct WorksetEntryRow<'a> {
     //
     pub f_id: &'a str,
+
     pub f_team_id: &'a str,
     pub f_index: i32,
 

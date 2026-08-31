@@ -26,6 +26,7 @@ pub struct ChapterInfoView {
     //
     /// Unique chapter identifier.
     pub id: String,
+
     /// Owning comic identifier.
     pub comic_id: String,
 
@@ -36,6 +37,7 @@ pub struct ChapterInfoView {
 
     /// Whether the chapter is pinned to the top of its comic's chapter list.
     pub is_pinned: bool,
+
     /// Ordinal position within the parent comic.
     pub index: usize,
     /// Display subtitle for the chapter.

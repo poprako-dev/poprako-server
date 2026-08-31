@@ -91,6 +91,18 @@ export async function runIt08Module(ctx: RunCtx): Promise<void> {
         "team avatar_thumbnail_url must be available after mark",
     );
 
+    const repeatedTeamAvatarAlloc = await reserveTeamAvatar(
+        ctx.sadmin,
+        teamId,
+        "png",
+    );
+
+    assert.equal(
+        repeatedTeamAvatarAlloc.slot,
+        null,
+        "allocating the same available team avatar must be idempotent",
+    );
+
     // stale avatar version -> 422/2
     expectError(
         await ctx.sadmin.post<ErrorBody>(`/api/v1/teams/${teamId}/avatar/mark-uploaded`, {
@@ -132,6 +144,18 @@ export async function runIt08Module(ctx: RunCtx): Promise<void> {
         "trans_01 avatar_thumbnail_url must be available after mark",
     );
 
+    const repeatedUserAvatarAlloc = await reserveUserAvatar(
+        trans01.api,
+        trans01.userId,
+        "png",
+    );
+
+    assert.equal(
+        repeatedUserAvatarAlloc.slot,
+        null,
+        "allocating the same available user avatar must be idempotent",
+    );
+
     // non-owner reserve trans_01's avatar -> 403/4 (trans_02 tries)
     expectError(
         await trans02.api.post<ErrorBody>(`/api/v1/users/${trans01.userId}/avatar/alloc`, {
@@ -162,6 +186,18 @@ export async function runIt08Module(ctx: RunCtx): Promise<void> {
     assert.ok(
         comicAfterCover.cover_thumbnail_url,
         "comic cover_thumbnail_url must be available after mark",
+    );
+
+    const repeatedComicCoverAlloc = await reserveComicCover(
+        ctx.sadmin,
+        xingchenId,
+        "png",
+    );
+
+    assert.equal(
+        repeatedComicCoverAlloc.slot,
+        null,
+        "allocating the same available comic cover must be idempotent",
     );
 
     // non-admin (trans_01) reserve comic cover -> 403/4

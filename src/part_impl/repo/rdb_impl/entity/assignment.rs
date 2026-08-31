@@ -15,6 +15,7 @@ use crate::value::role::{RoleField, RoleMask};
 pub struct AssignmentInfoRow {
     //
     pub f_id: String,
+
     pub f_chapter_id: String,
     pub f_user_id: String,
 
@@ -92,6 +93,7 @@ impl TryFrom<AssignmentInfoRow> for AssignmentInfo {
 pub struct AssignmentEntryRow<'a> {
     //
     pub f_id: &'a str,
+
     pub f_chapter_id: &'a str,
     pub f_user_id: &'a str,
 

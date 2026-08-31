@@ -19,7 +19,7 @@ use poprako_util::i18n::trl;
 
 use crate::complex::chapter::ChapterComplex;
 use crate::complex::image::ImageComplex;
-use crate::complex::page::{PageComplex, PagePermComplex};
+use crate::complex::page::{PageComplex, PagePermComplex, manifest};
 use crate::config::image::ImageConfig;
 use crate::data::instr::page::{AllocChapterPagesInstr, AllocPageImageInstr};
 use crate::data::val::page::{AllocChapterPagesVal, AllocatedPageVal};
@@ -190,22 +190,25 @@ where
                 .await
                 .map_err(BaseError::from)?;
 
-            let advance_id = next_snowflake_id();
+            if obj_slot.is_some() {
+                //
+                let advance_id = next_snowflake_id();
 
-            let advance_payload = TaskPayload::Chapter {
-                payload: ChapterPayload::TryAdvanceRawProvideStage {
-                    chapter_id: page_info.chapter_id.clone(),
-                    actor_user_id: Some(token.user_id.clone()),
-                },
-            };
+                let advance_payload = TaskPayload::Chapter {
+                    payload: ChapterPayload::TryAdvanceRawProvideStage {
+                        chapter_id: page_info.chapter_id.clone(),
+                        actor_user_id: Some(token.user_id.clone()),
+                    },
+                };
 
-            let advance_task = Task {
-                id: &advance_id,
-                payload: &advance_payload,
-                delay: Some(Duration::from_mins(20)),
-            };
+                let advance_task = Task {
+                    id: &advance_id,
+                    payload: &advance_payload,
+                    delay: Some(Duration::from_mins(20)),
+                };
 
-            Defer::new(advance_task).step_on(prom, context).await?;
+                Defer::new(advance_task).step_on(prom, context).await?;
+            }
 
             accept(obj_slot)
         })
@@ -216,15 +219,12 @@ where
         index: page_index,
         image_hash,
         ext: image_ext,
-        obj_slot: Some(obj_slot),
+        obj_slot,
     })
 }
 
 // Applies the manifest diff and object obligations in one transaction.
-#[expect(
-    clippy::too_many_lines,
-    reason = "one transaction visibly coordinates manifest, object, task, and counter invariants"
-)]
+#[expect(clippy::too_many_lines, reason = "coordinates manifest invariants")]
 async fn apply_manifest<C, R, P, O>(
     (repo, prom, obj_dept, context): (&R, &P, &O, &mut C),
     user_id: &str,
@@ -253,33 +253,88 @@ where
     .step_on(repo, context)
     .await?;
 
-    let existing_page_infos_by_id = existing_page_infos
+    let existing_page_ids = existing_page_infos
         .iter()
-        .map(|page_info| (page_info.id.as_str(), page_info))
-        .collect::<HashMap<_, _>>();
-
-    let retained_ids = page_specs
-        .iter()
-        .filter_map(|page_spec| page_spec.page_id.as_deref())
-        .collect::<HashSet<_>>();
-
-    let deleted_page_ids = existing_page_infos
-        .iter()
-        .filter(|page_info| !retained_ids.contains(page_info.id.as_str()))
         .map(|page_info| page_info.id.clone())
         .collect::<Vec<_>>();
 
-    let manifest_entries = page_specs
+    let existing_obj_metas = ListObjMetas::<PageImage>::new(&existing_page_ids)
+        .step_on(obj_dept, context)
+        .await
+        .map_err(BaseError::from)?;
+
+    let manifest_candidates = existing_page_infos
+        .iter()
+        .map(|page_info| {
+            //
+            let obj_meta = existing_obj_metas.get(&page_info.id);
+
+            manifest::PageManifestCand {
+                id: &page_info.id,
+                chapter_id: &page_info.chapter_id,
+                index: page_info.index,
+                has_units: page_info.total_unit_count > 0,
+                image_uploaded: obj_meta.is_some_and(|meta| meta.is_avail),
+                image_hash: obj_meta.map(|meta| meta.hash.as_slice()),
+                image_ext: obj_meta.map(|meta| meta.ext.as_str()),
+            }
+        })
+        .collect::<Vec<_>>();
+
+    let manifest_plan = manifest::PageManifestComplex::build(
+        &chapter_info.id,
+        &manifest_candidates,
+        page_specs,
+    )?;
+
+    let mut retained_ids = HashSet::new();
+
+    for manifest_match in &manifest_plan.matches {
+        //
+        let Some(existing_index) = manifest_match.existing_index else {
+            continue;
+        };
+
+        let page_info = existing_page_infos
+            .get(existing_index)
+            .ok_or_else(page_manifest_result_missing)?;
+
+        retained_ids.insert(page_info.id.as_str());
+    }
+
+    let deleted_page_ids = manifest_plan
+        .deleted_existing_indexes
+        .iter()
+        .map(|existing_index| {
+            //
+            existing_page_infos
+                .get(*existing_index)
+                .map(|page_info| page_info.id.clone())
+                .ok_or_else(page_manifest_result_missing)
+        })
+        .collect::<BaseRest<Vec<_>>>()?;
+
+    let manifest_entries = manifest_plan
+        .matches
         .iter()
         .enumerate()
-        .map(|(index, page_spec)| {
+        .map(|(index, manifest_match)| {
             //
-            plan_manifest_entry(
-                &existing_page_infos_by_id,
-                &chapter_info.id,
+            let id = match manifest_match.existing_index {
+                //
+                Some(existing_index) => existing_page_infos
+                    .get(existing_index)
+                    .map(|page_info| page_info.id.clone())
+                    .ok_or_else(page_manifest_result_missing)?,
+
+                None => PageComplex::gen_id(),
+            };
+
+            accept(PageManifestEntry {
+                id,
+                chapter_id: chapter_info.id.clone(),
                 index,
-                page_spec,
-            )
+            })
         })
         .collect::<BaseRest<Vec<_>>>()?;
 
@@ -369,10 +424,7 @@ where
 
             let obj_slot = match page_spec.new_byte_len {
                 //
-                Some(_) => obj_slots
-                    .remove(&manifest_entry.id)
-                    .map(Some)
-                    .ok_or_else(obj_slot_result_missing)?,
+                Some(_) => obj_slots.remove(&manifest_entry.id),
 
                 None => None,
             };
@@ -462,31 +514,6 @@ fn alloc_val(alloc: PageAlloc) -> BaseRest<AllocatedPageVal> {
     })
 }
 
-// Plans one final manifest identity without issuing repository operations.
-fn plan_manifest_entry(
-    existing_page_infos_by_id: &HashMap<&str, &PageInfo>,
-    chapter_id: &str,
-    index: usize,
-    page_spec: &PageImageSpec,
-) -> BaseRest<PageManifestEntry> {
-    //
-    let id = match &page_spec.page_id {
-        //
-        Some(page_id) => existing_page_infos_by_id
-            .get(page_id.as_str())
-            .map(|page_info| page_info.id.clone())
-            .ok_or_else(|| page_not_found(page_id))?,
-
-        None => PageComplex::gen_id(),
-    };
-
-    accept(PageManifestEntry {
-        id,
-        chapter_id: chapter_id.to_owned(),
-        index,
-    })
-}
-
 // Builds an internal error for an incomplete page manifest result.
 fn page_manifest_result_missing() -> BaseError {
     //
@@ -512,13 +539,9 @@ fn ensure_retained_obj(
 
     let same_hash = obj_meta.hash.as_slice() == page_spec.image_hash.as_bytes();
 
-    match (
-        obj_meta.is_avail,
-        same_hash,
-        obj_meta.ext == page_spec.ext.suffix(),
-    ) {
+    match (same_hash, obj_meta.ext == page_spec.ext.suffix()) {
         //
-        (true, true, true) => accept(()),
+        (true, true) => accept(()),
 
         _ => Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
@@ -544,23 +567,6 @@ fn page_counters(
                 counters.2 + page_info.proofread_unit_count,
             )
         })
-}
-
-// Builds the expected missing-page error.
-fn page_not_found(page_id: &str) -> BaseError {
-    //
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        message: format!("{}: {}", trl("error-page-not-found"), page_id),
-    }
-}
-
-// Builds an internal error for an incomplete batch object-slot result.
-fn obj_slot_result_missing() -> BaseError {
-    //
-    BaseError::Unrecoverable {
-        message: "page object-slot result is incomplete".into(),
-    }
 }
 
 // Validates the caller and current chapter state.

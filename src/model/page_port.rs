@@ -8,6 +8,7 @@ pub struct PageTranslationImport {
     //
     /// Zero-based page index in the imported document.
     pub page_index: usize,
+
     /// Translated units belonging to this imported page.
     pub units: Vec<UnitTranslationImport>,
 }

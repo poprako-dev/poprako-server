@@ -13,7 +13,7 @@ use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::shared::user::UserToken;
-use crate::part::obj_dept::{ComicCover, TeamAvatar, UserAvatar};
+use crate::part::obj_dept::{ComicCover, PageImage, TeamAvatar, UserAvatar};
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
@@ -47,6 +47,7 @@ where
         + PageRepo<C>
         + Sync,
     O: ObjDeptView<ComicCover, C>
+        + ObjDeptView<PageImage, C>
         + ObjDeptView<TeamAvatar, C>
         + ObjDeptView<UserAvatar, C>
         + Sync,
@@ -142,7 +143,12 @@ where
     );
 
     let obj_view_snapshot =
-        ObjViewSnapshot::load::<C, O>(obj_dept, obj_view_ids).await?;
+        ObjViewSnapshot::load_with_comic_fallbacks::<C, R, O>(
+            repo,
+            obj_dept,
+            obj_view_ids,
+        )
+        .await?;
 
     accept(build_list_val(
         &obj_view_snapshot,

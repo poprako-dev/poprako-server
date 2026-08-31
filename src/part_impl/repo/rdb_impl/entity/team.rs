@@ -15,6 +15,7 @@ use crate::result::{BaseError, BaseRest, accept};
 pub struct TeamInfoRow {
     //
     pub f_id: String,
+
     pub f_name: String,
     pub f_description: Option<String>,
 
@@ -32,6 +33,7 @@ pub struct TeamInfoRow {
 pub struct TeamEntryRow<'a> {
     //
     pub f_id: &'a str,
+
     pub f_name: &'a str,
     pub f_description: &'a str,
 

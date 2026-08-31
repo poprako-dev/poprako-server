@@ -204,6 +204,7 @@ fn decode_payload(
 pub struct ChapterWorkflowRecordInfoRow {
     //
     pub f_id: String,
+
     pub f_chapter_id: String,
     pub f_actor_user_id: Option<String>,
     pub f_kind: String,
@@ -269,6 +270,7 @@ impl TryFrom<ChapterWorkflowRecordInfoRow> for ChapterWorkflowRecordInfo {
 pub struct ChapterWorkflowRecordEntryRow<'a> {
     //
     pub f_id: &'a str,
+
     pub f_chapter_id: &'a str,
     pub f_actor_user_id: Option<&'a str>,
     pub f_kind: String,

@@ -10,12 +10,15 @@ pub struct ChapterWorkflowRecordEntry {
     //
     /// Unique record identifier.
     pub id: String,
+
     /// Chapter that owns this record.
     pub chapter_id: String,
     /// User that caused the event, or `None` for a system operation.
     pub actor_user_id: Option<String>,
+
     /// Typed event details. Its kind is derived at storage time.
     pub payload: ChapterWorkflowRecordPayload,
+
     /// Fixed record creation timestamp.
     pub created_at: OffsetDateTime,
 }

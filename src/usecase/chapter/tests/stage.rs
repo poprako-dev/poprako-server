@@ -1,5 +1,12 @@
 use super::*;
 
+use poprako_obj_dept::key::ObjKey;
+use poprako_obj_dept::model::meta::ObjMeta;
+use poprako_obj_dept::model::task::ObjTask;
+use time::OffsetDateTime;
+
+use crate::model::read::proj::page::PageInfo;
+use crate::part_impl::repo::mock_impl::MockObjRecord;
 use crate::value::chapter::stage::{StageOper, StagePhase};
 use crate::value::chapter_workflow_record::{
     ChapterWorkflowRecordOrigin, ChapterWorkflowRecordPayload,
@@ -167,6 +174,88 @@ async fn update_stage_rejects_invalid_transition() {
     .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Args);
+}
+
+#[tokio::test]
+async fn update_stage_publish_enqueues_page_image_delete() {
+    let mock = Mock::new();
+
+    seed_scope(&mock, "user-1", RoleMask::from(RoleField::PUBLISHER));
+    mock.seed_chapter(chapter("chapter-1", "comic-1", 1, false));
+    mock.seed_assignment(assignment(
+        "chapter-1",
+        "user-1",
+        RoleMask::from(RoleField::PUBLISHER),
+    ));
+
+    let created_at = OffsetDateTime::now_utc();
+
+    mock.seed_page(PageInfo {
+        id: "page-1".into(),
+        chapter_id: "chapter-1".into(),
+        index: 0,
+        total_unit_count: 0,
+        translated_unit_count: 0,
+        proofread_unit_count: 0,
+        created_at,
+        updated_at: created_at,
+    });
+
+    let key = ObjKey {
+        id: "page-1".into(),
+        ver: 1,
+        image: "page/chapter_chapter-1/page-1-1.png".into(),
+    };
+
+    mock.state
+        .lock()
+        .unwrap()
+        .objs
+        .entry("page_image")
+        .or_default()
+        .insert(
+            "page-1".into(),
+            MockObjRecord {
+                version: 1,
+                meta: Some(ObjMeta {
+                    key,
+                    is_avail: true,
+                    hash: vec![0; 32],
+                    ext: "png".into(),
+                }),
+            },
+        );
+
+    update_stage(
+        (&mock, &mock, &mock, &mock),
+        token("user-1"),
+        UpdateChapterStageInstr {
+            id: "chapter-1".into(),
+            stage: Stage::Publish.into(),
+            oper: StageOper::Advance.into(),
+        },
+    )
+    .await
+    .unwrap();
+
+    let snapshot = mock.snapshot();
+
+    assert!(snapshot.objs["page_image"]["page-1"].meta.is_none());
+    assert!(snapshot.obj_tasks.iter().any(|(_, task)| {
+        matches!(task, ObjTask::Delete { key } if key.id == "page-1")
+    }));
+
+    let events = mock.drain_events();
+
+    assert_eq!(events.len(), 2);
+    assert!(matches!(
+        events[0],
+        crate::part::effect::event::Event::ChapterWorkflowCompleted { .. }
+    ));
+    assert!(matches!(
+        events[1],
+        crate::part::effect::event::Event::ChapterPublished { .. }
+    ));
 }
 
 #[tokio::test]

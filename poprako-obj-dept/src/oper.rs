@@ -68,9 +68,9 @@ where
     }
 }
 
-/// Generates a new generation and its locally signed write capability.
+/// Allocates or resumes one generation and its locally signed write capability.
 #[derive(Oper)]
-#[oper(output = ObjSlot)]
+#[oper(output = Option<ObjSlot>)]
 pub struct GenObjSlot<'a, K>
 where
     K: KeyMap,
@@ -87,7 +87,7 @@ impl<'a, K> GenObjSlot<'a, K>
 where
     K: KeyMap,
 {
-    /// Creates a reservation for one business object.
+    /// Creates an allocation request for one business object.
     #[must_use]
     pub const fn new(spec: &'a ObjSlotSpec<'a, K>) -> Self {
         //

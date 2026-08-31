@@ -12,11 +12,13 @@ pub struct UnitTranslationPortView {
     //
     /// Unit identifier from the exporting chapter.
     pub unit_id: String,
+
     /// Ordinal index of the unit within its page.
     pub unit_index: usize,
 
     /// Parent page identifier from the exporting chapter.
     pub page_id: String,
+
     /// Ordinal index of the page within its chapter.
     pub page_index: usize,
 

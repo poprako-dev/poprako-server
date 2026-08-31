@@ -30,6 +30,7 @@ pub struct ComicInfoView {
 
     /// Parent workset identifier this comic belongs to.
     pub workset_id: String,
+
     /// Ordinal position of the comic within its workset.
     pub index: usize,
 
@@ -48,6 +49,7 @@ pub struct ComicInfoView {
     /// Resolved signed download URL for the cover thumbnail, when available.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cover_thumbnail_url: Option<String>,
+
     /// Total number of chapters in this comic.
     pub chapter_count: usize,
 

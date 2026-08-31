@@ -41,6 +41,7 @@ import {
     createAssignmentInvitation,
     deleteAssignment,
     deleteAssignmentInvitation,
+    getComic,
     joinAssignmentInvitation,
     joinChapterAssignment,
     listChapterAssignmentInvitations,
@@ -188,6 +189,19 @@ export async function runIt04Module(ctx: RunCtx): Promise<void> {
     assert.equal(trans01MainAssignment?.chapter?.comic?.id, ctx.main.comicId);
     assert.ok(trans01MainAssignment?.chapter?.comic?.workset, "workset embedded");
     assert.equal(trans01MainAssignment?.chapter?.comic?.workset?.id, ctx.main.worksetId);
+
+    const directComic = await getComic(ctx.sadmin, ctx.main.comicId);
+
+    assert.equal(
+        trans01MainAssignment?.chapter?.comic?.cover_url,
+        directComic.cover_url,
+        "assignment nested comic must preserve the page-image cover fallback",
+    );
+    assert.equal(
+        trans01MainAssignment?.chapter?.comic?.cover_thumbnail_url,
+        directComic.cover_thumbnail_url,
+        "assignment nested comic must preserve the fallback thumbnail",
+    );
 
     // E1.8: role=TRANSLATOR filter returns only translator-bit assignments.
     const translatorAssignments = await listChapterAssignments(

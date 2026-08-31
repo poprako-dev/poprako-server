@@ -286,6 +286,115 @@ async fn slot_and_delete_defer_check_and_delete_debt() {
 }
 
 #[tokio::test]
+async fn matching_available_content_returns_no_slot_without_mutation() {
+    let mock = Mock::new();
+
+    let obj_dept = mock.clone();
+
+    let first_slot = mock
+        .coord(async move |context| {
+            let obj_spec = ObjSlotSpec {
+                dom: page_dom("page-1"),
+                hash: &[1; 32],
+                content_type: "image/png",
+                byte_len: 1024,
+            };
+
+            GenObjSlot::<PageImage>::new(&obj_spec)
+                .step_on(&obj_dept, context)
+                .await
+        })
+        .await
+        .unwrap()
+        .unwrap();
+
+    MarkObjUploaded::<PageImage>::new(&ObjGen {
+        id: first_slot.key.id.clone(),
+        ver: first_slot.key.ver,
+    })
+    .run_on(&mock)
+    .await
+    .unwrap();
+
+    let task_count = mock.snapshot().obj_tasks.len();
+
+    let obj_dept = mock.clone();
+
+    let repeated_slot = mock
+        .coord(async move |context| {
+            let obj_spec = ObjSlotSpec {
+                dom: page_dom("page-1"),
+                hash: &[1; 32],
+                content_type: "image/png",
+                byte_len: 1024,
+            };
+
+            GenObjSlot::<PageImage>::new(&obj_spec)
+                .step_on(&obj_dept, context)
+                .await
+        })
+        .await
+        .unwrap();
+
+    assert!(repeated_slot.is_none());
+    assert_eq!(mock.snapshot().objs["page_image"]["page-1"].version, 1);
+    assert_eq!(mock.snapshot().obj_tasks.len(), task_count);
+}
+
+#[tokio::test]
+async fn matching_pending_content_resumes_the_current_generation() {
+    let mock = Mock::new();
+
+    let obj_dept = mock.clone();
+
+    let first_slot = mock
+        .coord(async move |context| {
+            let obj_spec = ObjSlotSpec {
+                dom: page_dom("page-1"),
+                hash: &[1; 32],
+                content_type: "image/png",
+                byte_len: 1024,
+            };
+
+            GenObjSlot::<PageImage>::new(&obj_spec)
+                .step_on(&obj_dept, context)
+                .await
+        })
+        .await
+        .unwrap()
+        .unwrap();
+
+    let obj_dept = mock.clone();
+
+    let resumed_slot = mock
+        .coord(async move |context| {
+            let obj_spec = ObjSlotSpec {
+                dom: page_dom("page-1"),
+                hash: &[1; 32],
+                content_type: "image/png",
+                byte_len: 1024,
+            };
+
+            GenObjSlot::<PageImage>::new(&obj_spec)
+                .step_on(&obj_dept, context)
+                .await
+        })
+        .await
+        .unwrap()
+        .unwrap();
+
+    assert_eq!(resumed_slot.key, first_slot.key);
+    assert_eq!(mock.snapshot().objs["page_image"]["page-1"].version, 1);
+    assert_eq!(mock.snapshot().obj_tasks.len(), 2);
+    assert!(
+        mock.snapshot()
+            .obj_tasks
+            .iter()
+            .all(|(_, task)| matches!(task, ObjTask::Check { .. }))
+    );
+}
+
+#[tokio::test]
 async fn clear_allows_replacement_without_reusing_a_generation() {
     let mock = Mock::new();
     let obj_dept = mock.clone();
@@ -316,7 +425,7 @@ async fn clear_allows_replacement_without_reusing_a_generation() {
         .await
         .unwrap();
 
-    assert_eq!(replacement.key.ver, 2);
+    assert_eq!(replacement.unwrap().key.ver, 2);
 }
 
 #[tokio::test]

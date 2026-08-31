@@ -20,6 +20,7 @@ pub struct WorksetInfoView {
     //
     /// Unique workset identifier.
     pub id: String,
+
     /// Owning team identifier.
     pub team_id: String,
 

@@ -16,16 +16,19 @@ pub fn expand_module(table: &Path) -> TokenStream {
         struct TaskIdentityRow {
             #[diesel(column_name = f_id)]
             id: String,
+
             #[diesel(column_name = f_topic)]
             topic: String,
             #[diesel(column_name = f_oper)]
             oper: String,
+
             #[diesel(column_name = f_obj_id)]
             obj_id: String,
             #[diesel(column_name = f_version)]
             ver: i64,
             #[diesel(column_name = f_key)]
             image: String,
+
             #[diesel(column_name = f_generation)]
             gen_no: i64,
             #[diesel(column_name = f_status)]
@@ -37,16 +40,19 @@ pub fn expand_module(table: &Path) -> TokenStream {
         struct TaskInsertRow<'a> {
             #[diesel(column_name = f_id)]
             id: &'a str,
+
             #[diesel(column_name = f_topic)]
             topic: &'a str,
             #[diesel(column_name = f_oper)]
             oper: &'a str,
+
             #[diesel(column_name = f_obj_id)]
             obj_id: &'a str,
             #[diesel(column_name = f_version)]
             ver: i64,
             #[diesel(column_name = f_key)]
             image: &'a str,
+
             #[diesel(column_name = f_generation)]
             gen_no: i64,
             #[diesel(column_name = f_status)]
@@ -57,8 +63,11 @@ pub fn expand_module(table: &Path) -> TokenStream {
 
         pub struct PreparedTask {
             pub id: String,
+
             oper: &'static str,
+
             key: ObjKey,
+
             visible_at: ::time::OffsetDateTime,
         }
 

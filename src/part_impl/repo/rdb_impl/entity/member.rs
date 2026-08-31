@@ -15,6 +15,7 @@ use crate::value::role::{RoleField, RoleMask};
 pub struct MemberInfoRow {
     //
     pub f_id: String,
+
     pub f_user_id: String,
     pub f_user_nickname: String,
     pub f_team_id: String,
@@ -43,6 +44,7 @@ pub struct MemberInfoRow {
 pub struct MemberEntryRow<'a> {
     //
     pub f_id: &'a str,
+
     pub f_user_id: &'a str,
     pub f_user_nickname: &'a str,
     pub f_team_id: &'a str,

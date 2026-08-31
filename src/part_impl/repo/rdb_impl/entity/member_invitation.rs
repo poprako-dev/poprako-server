@@ -18,6 +18,7 @@ use crate::value::role::RoleMask;
 pub struct MemberInvitationInfoRow {
     //
     pub f_id: String,
+
     pub f_inviter_id: String,
     pub f_team_id: String,
     pub f_invitee_qid: String,
@@ -63,6 +64,7 @@ impl TryFrom<MemberInvitationInfoRow> for MemberInvitationInfo {
 pub struct MemberInvitationEntryRow<'a> {
     //
     pub f_id: &'a str,
+
     pub f_inviter_id: &'a str,
     pub f_team_id: &'a str,
     pub f_invitee_qid: &'a str,

@@ -1,13 +1,19 @@
 use super::super::view::page_info_views;
+use super::*;
 
 use time::OffsetDateTime;
 
 use poprako_obj_dept::key::ObjKey;
 use poprako_obj_dept::model::meta::ObjMeta;
 
+use crate::data::instr::page::ListPageInfosInstr;
 use crate::model::read::proj::page::PageInfo;
 use crate::part_impl::repo::mock_impl::{Mock, MockObjRecord};
+use crate::result::ExpectedVariant;
+use crate::test_util::assert_expected_variant;
+use crate::usecase::page::list::{get_info, list_infos};
 use crate::value::image::{ImageExt, ImageHash};
+use crate::value::role::RoleField;
 
 fn page(id: &str, index: usize) -> PageInfo {
     let time = OffsetDateTime::now_utc();
@@ -120,4 +126,112 @@ async fn page_views_keep_each_image_url_with_its_metadata_snapshot() {
     assert_eq!(missing_view.image_hash, None);
 
     assert_eq!(missing_view.ext, None);
+}
+
+#[tokio::test]
+async fn list_infos_sorts_pages_and_resolves_only_available_image_urls() {
+    let mock = Mock::new();
+
+    seed_page_scope(&mock, 2);
+
+    mock.seed_member(page_member(
+        "user-1",
+        RoleMask::from(RoleField::TRANSLATOR),
+    ));
+    mock.seed_page(page("page-2", 2));
+    mock.seed_page(page("page-1", 1));
+
+    seed_page_obj(&mock, "page-2", 2, true, 2, ImageExt::Png);
+    seed_page_obj(&mock, "page-1", 1, false, 1, ImageExt::Jpg);
+
+    let pages = list_infos(
+        (&mock, &mock),
+        page_token("user-1"),
+        ListPageInfosInstr {
+            chapter_id: "chapter-1".into(),
+        },
+    )
+    .await
+    .unwrap();
+
+    assert_eq!(pages.len(), 2);
+    assert_eq!(pages[0].id, "page-1");
+    assert_eq!(pages[0].image_url, None);
+    assert_eq!(pages[0].image_thumbnail_url, None);
+    assert_eq!(pages[1].id, "page-2");
+    assert_eq!(
+        pages[1].image_url.as_deref(),
+        Some("https://obj.test/page/chapter_chapter-1/page-2-2.png")
+    );
+    assert_eq!(
+        pages[1].image_thumbnail_url.as_deref(),
+        Some("https://obj.test/thumbnail/page/chapter_chapter-1/page-2-2.png")
+    );
+}
+
+#[tokio::test]
+async fn list_infos_rejects_non_member_without_assignment() {
+    let mock = Mock::new();
+
+    seed_page_scope(&mock, 0);
+
+    let error = list_infos(
+        (&mock, &mock),
+        page_token("user-1"),
+        ListPageInfosInstr {
+            chapter_id: "chapter-1".into(),
+        },
+    )
+    .await
+    .err()
+    .unwrap();
+
+    assert_expected_variant(error, ExpectedVariant::Perm);
+}
+
+#[tokio::test]
+async fn get_info_resolves_available_image_metadata_and_urls() {
+    let mock = Mock::new();
+
+    seed_page_scope(&mock, 1);
+
+    mock.seed_member(page_member(
+        "user-1",
+        RoleMask::from(RoleField::TRANSLATOR),
+    ));
+    mock.seed_page(page("page-1", 0));
+
+    seed_page_obj(&mock, "page-1", 7, true, 7, ImageExt::Png);
+
+    let found = get_info((&mock, &mock), page_token("user-1"), "page-1".into())
+        .await
+        .unwrap();
+
+    assert_eq!(found.id, "page-1");
+    assert_eq!(found.image_hash, Some(ImageHash::new([7; 32])));
+    assert_eq!(found.ext, Some(ImageExt::Png));
+    assert_eq!(
+        found.image_url.as_deref(),
+        Some("https://obj.test/page/chapter_chapter-1/page-1-7.png")
+    );
+    assert_eq!(
+        found.image_thumbnail_url.as_deref(),
+        Some("https://obj.test/thumbnail/page/chapter_chapter-1/page-1-7.png")
+    );
+}
+
+#[tokio::test]
+async fn get_info_rejects_non_member_without_assignment() {
+    let mock = Mock::new();
+
+    seed_page_scope(&mock, 1);
+
+    mock.seed_page(page("page-1", 0));
+
+    let error = get_info((&mock, &mock), page_token("user-1"), "page-1".into())
+        .await
+        .err()
+        .unwrap();
+
+    assert_expected_variant(error, ExpectedVariant::Perm);
 }
