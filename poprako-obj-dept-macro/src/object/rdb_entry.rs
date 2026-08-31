@@ -120,7 +120,7 @@ pub fn expand(table: &Path) -> TokenStream {
             }
         }
 
-        pub fn decode_many<B>(
+        pub fn decode_many<K>(
             rows: Vec<ObjRdbEntry>,
         ) -> ::poprako_obj_dept::rest::ObjDeptRest<
             ::std::collections::HashMap<
@@ -129,7 +129,7 @@ pub fn expand(table: &Path) -> TokenStream {
             >,
         >
         where
-            B: ::poprako_obj_dept::key::KeyMap<Img = String>,
+            K: ::poprako_obj_dept::key::KeyMap<Img = String>,
         {
             //
             let mut obj_metas = ::std::collections::HashMap::new();
@@ -139,7 +139,7 @@ pub fn expand(table: &Path) -> TokenStream {
                 let id = row_entry.id;
 
                 let Some(obj_meta) =
-                    ::poprako_obj_dept::rdb_impl::decode_row::<B>(
+                    ::poprako_obj_dept::rdb_impl::decode_row::<K>(
                         &id,
                         row_entry.row,
                     )?

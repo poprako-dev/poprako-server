@@ -7,12 +7,12 @@ use crate::key::{KeyMap, ObjKey};
 
 /// Input required to allocate one object version.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ObjSlotSpec<'a, B>
+pub struct ObjSlotSpec<'a, K>
 where
-    B: KeyMap,
+    K: KeyMap,
 {
     /// Typed business identity from which the physical key is derived.
-    pub dom: B::Dom,
+    pub dom: K::Dom,
 
     /// Opaque content hash.
     pub hash: &'a [u8],

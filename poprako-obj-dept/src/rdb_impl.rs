@@ -45,9 +45,9 @@ pub struct ObjRdbWrite<'a> {
 /// # Errors
 ///
 /// Returns an unrecoverable error when the row is inconsistent or out of range.
-pub fn decode_row<B>(id: &str, row: ObjRdbRow) -> ObjDeptRest<Option<ObjMeta>>
+pub fn decode_row<K>(id: &str, row: ObjRdbRow) -> ObjDeptRest<Option<ObjMeta>>
 where
-    B: KeyMap<Img = String>,
+    K: KeyMap<Img = String>,
 {
     //
     let ver = u32::try_from(row.ver).map_err(|_| {
@@ -63,7 +63,7 @@ where
 
         (Some(key), Some(is_avail), Some(hash), Some(ext)) => {
             //
-            validate_key::<B>(id, ver, &ext, &key)?;
+            validate_key::<K>(id, ver, &ext, &key)?;
 
             //
             Ok(Some(ObjMeta {
@@ -130,12 +130,12 @@ pub fn next_ver(id: &str, row: Option<&ObjRdbRow>) -> ObjDeptRest<u32> {
 /// # Errors
 ///
 /// Returns an unrecoverable error when the row is inconsistent or out of range.
-pub fn active_key<B>(
+pub fn active_key<K>(
     id: &str,
     row: Option<&ObjRdbRow>,
 ) -> ObjDeptRest<Option<ObjKey>>
 where
-    B: KeyMap<Img = String>,
+    K: KeyMap<Img = String>,
 {
     //
     let Some(row) = row else {
@@ -153,7 +153,7 @@ where
                 }
             })?;
 
-            validate_key::<B>(id, ver, ext, key)?;
+            validate_key::<K>(id, ver, ext, key)?;
 
             Ok(Some(ObjKey {
                 id: id.to_owned(),
@@ -218,22 +218,22 @@ pub fn rdb_err(source: RdbError) -> ObjDeptError {
 }
 
 // Validates a stored physical key against its relational metadata.
-fn validate_key<B>(id: &str, ver: u32, ext: &str, key: &str) -> ObjDeptRest<()>
+fn validate_key<K>(id: &str, ver: u32, ext: &str, key: &str) -> ObjDeptRest<()>
 where
-    B: KeyMap<Img = String>,
+    K: KeyMap<Img = String>,
 {
     //
     let image = key.to_owned();
 
     let (dom, decoded_ver) =
-        B::reverse(&image).map_err(|_| ObjDeptError::Unrecoverable {
+        K::reverse(&image).map_err(|_| ObjDeptError::Unrecoverable {
             message: format!("invalid object key: {}", id),
         })?;
 
-    let is_consistent = B::id(&dom) == id
-        && B::ext(&dom) == ext
+    let is_consistent = K::id(&dom) == id
+        && K::ext(&dom) == ext
         && decoded_ver == ver
-        && B::forward(&dom, decoded_ver) == image;
+        && K::forward(&dom, decoded_ver) == image;
 
     match () {
         //

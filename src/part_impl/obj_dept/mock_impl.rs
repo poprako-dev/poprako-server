@@ -57,16 +57,16 @@ pub fn gen_urls(
     }))
 }
 
-pub fn gen_slot<B>(
+pub fn gen_slot<K>(
     objs: &mut HashMap<String, MockObjRecord>,
     tasks: &mut Vec<(&'static str, ObjTask)>,
     topic: &'static str,
-    oper: &GenObjSlot<'_, B>,
+    oper: &GenObjSlot<'_, K>,
 ) -> ObjDeptRest<ObjSlot>
 where
-    B: KeyMap<Img = String>,
+    K: KeyMap<Img = String>,
 {
-    let id = B::id(&oper.spec.dom);
+    let id = K::id(&oper.spec.dom);
 
     let ver = objs.get(id).map_or(Ok(1), |previous| {
         previous.version.checked_add(1).ok_or_else(|| {
@@ -79,14 +79,14 @@ where
     let key = ObjKey {
         id: id.to_owned(),
         ver,
-        image: B::forward(&oper.spec.dom, ver),
+        image: K::forward(&oper.spec.dom, ver),
     };
 
     let meta = ObjMeta {
         key: key.clone(),
         is_avail: false,
         hash: oper.spec.hash.to_vec(),
-        ext: B::ext(&oper.spec.dom).to_owned(),
+        ext: K::ext(&oper.spec.dom).to_owned(),
     };
 
     let previous = objs.insert(
@@ -118,19 +118,19 @@ where
     })
 }
 
-pub fn gen_slots<B>(
+pub fn gen_slots<K>(
     objs: &mut HashMap<String, MockObjRecord>,
     tasks: &mut Vec<(&'static str, ObjTask)>,
     topic: &'static str,
-    oper: &GenObjSlots<'_, B>,
+    oper: &GenObjSlots<'_, K>,
 ) -> ObjDeptRest<HashMap<String, ObjSlot>>
 where
-    B: KeyMap<Img = String>,
+    K: KeyMap<Img = String>,
 {
     let mut ids = oper
         .specs
         .iter()
-        .map(|spec| B::id(&spec.dom))
+        .map(|spec| K::id(&spec.dom))
         .collect::<Vec<_>>();
 
     ids.sort_unstable();
@@ -144,10 +144,10 @@ where
     oper.specs
         .iter()
         .map(|spec| {
-            let single_oper = GenObjSlot::<B>::new(spec);
+            let single_oper = GenObjSlot::<K>::new(spec);
             let slot = gen_slot(objs, tasks, topic, &single_oper)?;
 
-            Ok((B::id(&spec.dom).to_owned(), slot))
+            Ok((K::id(&spec.dom).to_owned(), slot))
         })
         .collect()
 }

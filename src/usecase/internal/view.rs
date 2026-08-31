@@ -250,25 +250,25 @@ impl ObjViewSnapshot {
 }
 
 // Loads URLs for the supplied object marker identifiers.
-async fn load_obj_urls<C, O, B>(
+async fn load_obj_urls<C, O, K>(
     obj_dept: &O,
     ids: &[String],
 ) -> BaseRest<HashMap<String, ObjUrls>>
 where
     C: Context,
-    B: KeyMap,
-    O: ObjDeptView<B, C> + Sync,
+    K: KeyMap,
+    O: ObjDeptView<K, C> + Sync,
 {
     if ids.is_empty() {
         return accept(HashMap::new());
     }
 
-    let obj_metas = ListObjMetas::<B>::new(ids)
+    let obj_metas = ListObjMetas::<K>::new(ids)
         .run_on(obj_dept)
         .await
         .map_err(BaseError::from)?;
 
-    let obj_urls = GenObjUrls::<B>::new(&obj_metas)
+    let obj_urls = GenObjUrls::<K>::new(&obj_metas)
         .run_on(obj_dept)
         .await
         .map_err(BaseError::from)?;

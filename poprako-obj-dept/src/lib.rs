@@ -67,14 +67,14 @@ extern crate self as poprako_obj_dept;
     context = C,
     error = ObjDeptError,
     run(
-        for<'a> ListObjMetas<'a, B>,
-        for<'a> GenObjUrls<'a, B>,
+        for<'a> ListObjMetas<'a, K>,
+        for<'a> GenObjUrls<'a, K>,
     ),
-    step(for<'a> ListObjMetas<'a, B>),
+    step(for<'a> ListObjMetas<'a, K>),
 )]
-pub trait ObjDeptView<B, C>
+pub trait ObjDeptView<K, C>
 where
-    B: KeyMap,
+    K: KeyMap,
 {
 }
 
@@ -83,20 +83,20 @@ where
     context = C,
     error = ObjDeptError,
     run(
-        for<'a> ListObjMetas<'a, B>,
-        for<'a> GenObjUrls<'a, B>,
-        for<'a> MarkObjUploaded<'a, B>,
+        for<'a> ListObjMetas<'a, K>,
+        for<'a> GenObjUrls<'a, K>,
+        for<'a> MarkObjUploaded<'a, K>,
     ),
     step(
-        for<'a> ListObjMetas<'a, B>,
-        for<'a> GenObjSlot<'a, B>,
-        for<'a> GenObjSlots<'a, B>,
-        for<'a> ClearObjs<'a, B>,
-        for<'a> DeleteObjs<'a, B>,
+        for<'a> ListObjMetas<'a, K>,
+        for<'a> GenObjSlot<'a, K>,
+        for<'a> GenObjSlots<'a, K>,
+        for<'a> ClearObjs<'a, K>,
+        for<'a> DeleteObjs<'a, K>,
     ),
 )]
-pub trait ObjDept<B, C>
+pub trait ObjDept<K, C>
 where
-    B: KeyMap,
+    K: KeyMap,
 {
 }
