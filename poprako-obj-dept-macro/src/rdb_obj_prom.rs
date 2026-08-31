@@ -114,11 +114,11 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
                 #[diesel(column_name = f_obj_id)]
                 obj_id: String,
                 #[diesel(column_name = f_version)]
-                version: i64,
+                ver: i64,
                 #[diesel(column_name = f_key)]
                 image: String,
                 #[diesel(column_name = f_generation)]
-                generation: i64,
+                gen_no: i64,
                 #[diesel(column_name = f_status)]
                 status: String,
                 #[diesel(column_name = f_visible_at)]
@@ -148,11 +148,11 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
                 #[diesel(column_name = f_obj_id)]
                 obj_id: String,
                 #[diesel(column_name = f_version)]
-                version: i64,
+                ver: i64,
                 #[diesel(column_name = f_key)]
                 image: String,
                 #[diesel(column_name = f_generation)]
-                generation: i64,
+                gen_no: i64,
                 #[diesel(column_name = f_retried_count)]
                 retried_count: i64,
                 #[diesel(column_name = f_lease)]
@@ -168,9 +168,9 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
                         topic: row.topic,
                         oper: row.oper,
                         obj_id: row.obj_id,
-                        version: row.version,
+                        ver: row.ver,
                         image: row.image,
-                        generation: row.generation,
+                        gen_no: row.gen_no,
                         retried_count: row.retried_count,
                         lease: row.lease,
                     }
@@ -377,9 +377,9 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
                     topic,
                     oper,
                     obj_id,
-                    version,
+                    ver,
                     image,
-                    generation,
+                    gen_no: gen_value,
                     status,
                     visible_at,
                     retried_count,
@@ -394,9 +394,9 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
                     topic,
                     oper,
                     obj_id,
-                    version,
+                    ver,
                     image,
-                    generation,
+                    gen_value,
                     status,
                     visible_at,
                     retried_count,

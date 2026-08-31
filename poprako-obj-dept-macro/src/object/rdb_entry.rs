@@ -17,7 +17,7 @@ pub fn expand(table: &Path) -> TokenStream {
             #[diesel(column_name = f_id)]
             id: String,
             #[diesel(column_name = f_version)]
-            version: i64,
+            ver: i64,
             #[diesel(column_name = f_key)]
             key: Option<String>,
             #[diesel(column_name = f_is_uploaded)]
@@ -37,7 +37,7 @@ pub fn expand(table: &Path) -> TokenStream {
         #[diesel(check_for_backend(::diesel::pg::Pg))]
         struct ObjStateRow {
             #[diesel(column_name = f_version)]
-            version: i64,
+            ver: i64,
             #[diesel(column_name = f_key)]
             key: Option<String>,
             #[diesel(column_name = f_is_uploaded)]
@@ -53,7 +53,7 @@ pub fn expand(table: &Path) -> TokenStream {
         #[diesel(check_for_backend(::diesel::pg::Pg))]
         struct ObjPresenceStateRow {
             #[diesel(column_name = f_version)]
-            version: i64,
+            ver: i64,
             #[diesel(column_name = f_key)]
             key: Option<String>,
             #[diesel(column_name = f_is_uploaded)]
@@ -71,7 +71,7 @@ pub fn expand(table: &Path) -> TokenStream {
             fn from(row: ObjStateRow) -> Self {
                 //
                 Self {
-                    version: row.version,
+                    ver: row.ver,
                     key: row.key,
                     f_is_uploaded: row.f_is_uploaded,
                     hash: row.hash,
@@ -87,7 +87,7 @@ pub fn expand(table: &Path) -> TokenStream {
             #[diesel(column_name = f_id)]
             id: String,
             #[diesel(column_name = f_version)]
-            version: i64,
+            ver: i64,
             #[diesel(column_name = f_key)]
             key: Option<String>,
             #[diesel(column_name = f_is_uploaded)]
@@ -110,7 +110,7 @@ pub fn expand(table: &Path) -> TokenStream {
                 Self {
                     id: row.id,
                     row: ::poprako_obj_dept::rdb_impl::ObjRdbRow {
-                        version: row.version,
+                        ver: row.ver,
                         key: row.key,
                         f_is_uploaded: row.f_is_uploaded,
                         hash: row.hash,
@@ -159,7 +159,7 @@ pub fn expand(table: &Path) -> TokenStream {
             #[diesel(column_name = f_id)]
             id: &'a str,
             #[diesel(column_name = f_version)]
-            version: i64,
+            ver: i64,
         }
 
         #[derive(::diesel::Insertable)]
@@ -168,7 +168,7 @@ pub fn expand(table: &Path) -> TokenStream {
             #[diesel(column_name = f_id)]
             id: &'a str,
             #[diesel(column_name = f_version)]
-            version: i64,
+            ver: i64,
             #[diesel(column_name = f_key)]
             key: &'a str,
             #[diesel(column_name = f_is_uploaded)]
@@ -241,7 +241,7 @@ pub fn expand(table: &Path) -> TokenStream {
 
             Ok(row.map(|row| {
                 let state = ::poprako_obj_dept::rdb_impl::ObjRdbRow {
-                    version: row.version,
+                    ver: row.ver,
                     key: row.key,
                     f_is_uploaded: row.f_is_uploaded,
                     hash: row.hash,
@@ -308,7 +308,7 @@ pub fn expand(table: &Path) -> TokenStream {
                 .iter()
                 .map(|id| ObjAnchorRow {
                     id,
-                    version: 0,
+                    ver: 0,
                 })
                 .collect::<Vec<_>>();
 
@@ -340,7 +340,7 @@ pub fn expand(table: &Path) -> TokenStream {
                 .iter()
                 .map(|write| ObjWriteRow {
                     id: write.id,
-                    version: i64::from(write.version),
+                    ver: i64::from(write.ver),
                     key: write.key,
                     f_is_uploaded: false,
                     hash: write.hash,
@@ -422,33 +422,33 @@ pub fn expand(table: &Path) -> TokenStream {
         pub async fn mark_uploaded(
             conn: &mut ::poprako_rdb_core::RdbConn,
             id: &str,
-            version: u32,
+            ver: u32,
         ) -> ::poprako_obj_dept::rest::ObjDeptRest<usize> {
-            set_uploaded(conn, id, version, true).await
+            set_uploaded(conn, id, ver, true).await
         }
 
         pub async fn mark_uploaded_if_revision(
             conn: &mut ::poprako_rdb_core::RdbConn,
             id: &str,
-            version: u32,
+            ver: u32,
             revision: ::time::OffsetDateTime,
         ) -> ::poprako_obj_dept::rest::ObjDeptRest<usize> {
-            set_uploaded_if_revision(conn, id, version, true, revision).await
+            set_uploaded_if_revision(conn, id, ver, true, revision).await
         }
 
         pub async fn mark_unuploaded_if_revision(
             conn: &mut ::poprako_rdb_core::RdbConn,
             id: &str,
-            version: u32,
+            ver: u32,
             revision: ::time::OffsetDateTime,
         ) -> ::poprako_obj_dept::rest::ObjDeptRest<usize> {
-            set_uploaded_if_revision(conn, id, version, false, revision).await
+            set_uploaded_if_revision(conn, id, ver, false, revision).await
         }
 
         async fn set_uploaded(
             conn: &mut ::poprako_rdb_core::RdbConn,
             id: &str,
-            version: u32,
+            ver: u32,
             f_is_uploaded: bool,
         ) -> ::poprako_obj_dept::rest::ObjDeptRest<usize> {
             use ::diesel::prelude::{ExpressionMethods as _, QueryDsl as _};
@@ -457,7 +457,7 @@ pub fn expand(table: &Path) -> TokenStream {
             ::diesel::update(
                 #table::table
                     .filter(#table::f_id.eq(id))
-                    .filter(#table::f_version.eq(i64::from(version)))
+                    .filter(#table::f_version.eq(i64::from(ver)))
                     .filter(#table::f_key.is_not_null())
                     .filter(#table::f_is_uploaded.is_not_null())
                     .filter(#table::f_hash.is_not_null())
@@ -475,7 +475,7 @@ pub fn expand(table: &Path) -> TokenStream {
         async fn set_uploaded_if_revision(
             conn: &mut ::poprako_rdb_core::RdbConn,
             id: &str,
-            version: u32,
+            ver: u32,
             f_is_uploaded: bool,
             revision: ::time::OffsetDateTime,
         ) -> ::poprako_obj_dept::rest::ObjDeptRest<usize> {
@@ -485,7 +485,7 @@ pub fn expand(table: &Path) -> TokenStream {
             ::diesel::update(
                 #table::table
                     .filter(#table::f_id.eq(id))
-                    .filter(#table::f_version.eq(i64::from(version)))
+                    .filter(#table::f_version.eq(i64::from(ver)))
                     .filter(#table::f_updated_at.eq(revision))
                     .filter(#table::f_key.is_not_null())
                     .filter(#table::f_is_uploaded.is_not_null())

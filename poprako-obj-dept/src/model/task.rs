@@ -13,7 +13,7 @@ pub fn obj_task_id(
     topic: &str,
     oper: &str,
     key: &ObjKey,
-    generation: i64,
+    gen_no: i64,
 ) -> String {
     //
     format!(
@@ -23,10 +23,10 @@ pub fn obj_task_id(
         oper,
         key.id.len(),
         key.id,
-        key.version,
+        key.ver,
         key.image.len(),
         key.image,
-        generation,
+        gen_no,
     )
 }
 
@@ -39,12 +39,11 @@ pub fn validate_task(task: &ObjPromTask) -> ObjDeptRest<()> {
     //
     let key = task.key()?;
 
-    let is_nonnegative = task.generation >= 0 && task.retried_count >= 0;
+    let is_nonnegative = task.gen_no >= 0 && task.retried_count >= 0;
 
     let has_valid_lease = task.lease > 0;
 
-    let expected_id =
-        obj_task_id(&task.topic, &task.oper, &key, task.generation);
+    let expected_id = obj_task_id(&task.topic, &task.oper, &key, task.gen_no);
 
     match (is_nonnegative, has_valid_lease, task.id == expected_id) {
         //
@@ -69,11 +68,11 @@ pub struct ObjPromTask {
     /// Persisted object identifier.
     pub obj_id: String,
     /// Persisted object version.
-    pub version: i64,
+    pub ver: i64,
     /// Persisted complete physical object key.
     pub image: String,
     /// Obligation generation.
-    pub generation: i64,
+    pub gen_no: i64,
     /// Completed retry count.
     pub retried_count: i64,
     /// Exact fencing lease.
@@ -88,16 +87,16 @@ impl ObjPromTask {
     /// Returns a message when the stored version is invalid.
     pub fn key(&self) -> ObjDeptRest<ObjKey> {
         //
-        let Ok(version) = u32::try_from(self.version) else {
+        let Ok(ver) = u32::try_from(self.ver) else {
             //
             return Err(ObjDeptError::Invalid {
-                message: "object task version is outside u32".into(),
+                message: "object task ver is outside u32".into(),
             });
         };
 
         Ok(ObjKey {
             id: self.obj_id.clone(),
-            version,
+            ver,
             image: self.image.clone(),
         })
     }

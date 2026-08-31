@@ -13,7 +13,7 @@ use crate::rest::{ObjDeptError, ObjDeptRest};
 pub struct ObjRdbRow {
     //
     /// Stored generation watermark.
-    pub version: i64,
+    pub ver: i64,
     /// Complete physical key, or none for a detached row.
     pub key: Option<String>,
     /// Current upload evidence, or none for a detached row.
@@ -31,7 +31,7 @@ pub struct ObjRdbWrite<'a> {
     /// Stable business-object identifier.
     pub id: &'a str,
     /// Newly allocated generation.
-    pub version: u32,
+    pub ver: u32,
     /// Complete immutable physical object key.
     pub key: &'a str,
     /// Validated content hash.
@@ -50,10 +50,10 @@ where
     B: KeyMap<Img = String>,
 {
     //
-    let version = u32::try_from(row.version).map_err(|_| {
+    let ver = u32::try_from(row.ver).map_err(|_| {
         //
         ObjDeptError::Unrecoverable {
-            message: "object version is outside u32".into(),
+            message: "object ver is outside u32".into(),
         }
     })?;
 
@@ -61,18 +61,18 @@ where
         //
         (None, None, None, None) => Ok(None),
 
-        (Some(key), Some(is_available), Some(hash), Some(ext)) => {
+        (Some(key), Some(is_avail), Some(hash), Some(ext)) => {
             //
-            validate_key::<B>(id, version, &ext, &key)?;
+            validate_key::<B>(id, ver, &ext, &key)?;
 
             //
             Ok(Some(ObjMeta {
                 key: ObjKey {
                     id: id.to_owned(),
-                    version,
+                    ver,
                     image: key,
                 },
-                is_available,
+                is_avail,
                 hash,
                 ext,
             }))
@@ -84,14 +84,14 @@ where
     }
 }
 
-/// Allocates the next version after validating the current row.
+/// Allocates the next ver after validating the current row.
 ///
 /// # Errors
 ///
-/// Returns an unrecoverable error for an invalid row or version overflow.
-pub fn next_version(id: &str, row: Option<&ObjRdbRow>) -> ObjDeptRest<u32> {
+/// Returns an unrecoverable error for an invalid row or ver overflow.
+pub fn next_ver(id: &str, row: Option<&ObjRdbRow>) -> ObjDeptRest<u32> {
     //
-    let version = match row {
+    let ver = match row {
         //
         Some(row) => {
             //
@@ -108,10 +108,10 @@ pub fn next_version(id: &str, row: Option<&ObjRdbRow>) -> ObjDeptRest<u32> {
                 }
             }
 
-            u32::try_from(row.version).map_err(|_| {
+            u32::try_from(row.ver).map_err(|_| {
                 //
                 ObjDeptError::Unrecoverable {
-                    message: "object version is outside u32".into(),
+                    message: "object ver is outside u32".into(),
                 }
             })?
         }
@@ -119,10 +119,9 @@ pub fn next_version(id: &str, row: Option<&ObjRdbRow>) -> ObjDeptRest<u32> {
         None => 0,
     };
 
-    version
-        .checked_add(1)
+    ver.checked_add(1)
         .ok_or_else(|| ObjDeptError::Unrecoverable {
-            message: "object version overflow".into(),
+            message: "object ver overflow".into(),
         })
 }
 
@@ -147,18 +146,18 @@ where
         //
         (Some(key), Some(_), Some(_), Some(ext)) => {
             //
-            let version = u32::try_from(row.version).map_err(|_| {
+            let ver = u32::try_from(row.ver).map_err(|_| {
                 //
                 ObjDeptError::Unrecoverable {
-                    message: "object version is outside u32".into(),
+                    message: "object ver is outside u32".into(),
                 }
             })?;
 
-            validate_key::<B>(id, version, ext, key)?;
+            validate_key::<B>(id, ver, ext, key)?;
 
             Ok(Some(ObjKey {
                 id: id.to_owned(),
-                version,
+                ver,
                 image: key.clone(),
             }))
         }
@@ -219,27 +218,22 @@ pub fn rdb_err(source: RdbError) -> ObjDeptError {
 }
 
 // Validates a stored physical key against its relational metadata.
-fn validate_key<B>(
-    id: &str,
-    version: u32,
-    ext: &str,
-    key: &str,
-) -> ObjDeptRest<()>
+fn validate_key<B>(id: &str, ver: u32, ext: &str, key: &str) -> ObjDeptRest<()>
 where
     B: KeyMap<Img = String>,
 {
     //
     let image = key.to_owned();
 
-    let (dom, decoded_version) =
+    let (dom, decoded_ver) =
         B::reverse(&image).map_err(|_| ObjDeptError::Unrecoverable {
             message: format!("invalid object key: {}", id),
         })?;
 
     let is_consistent = B::id(&dom) == id
         && B::ext(&dom) == ext
-        && decoded_version == version
-        && B::forward(&dom, decoded_version) == image;
+        && decoded_ver == ver
+        && B::forward(&dom, decoded_ver) == image;
 
     match () {
         //

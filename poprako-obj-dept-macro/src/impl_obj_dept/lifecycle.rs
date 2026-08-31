@@ -56,7 +56,7 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                 let updated = #obj_module::mark_uploaded(
                     &mut conn,
                     &oper.key.id,
-                    oper.key.version,
+                    oper.key.ver,
                 )
                 .await?;
 
@@ -158,7 +158,7 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
 
                     let previous = previous_rows.remove(id);
 
-                    let version = ::poprako_obj_dept::rdb_impl::next_version(
+                    let ver = ::poprako_obj_dept::rdb_impl::next_ver(
                         id,
                         previous.as_ref(),
                     )?;
@@ -171,12 +171,12 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
 
                     let image = <#obj as ::poprako_obj_dept::key::KeyMap>::forward(
                         &spec.dom,
-                        version,
+                        ver,
                     );
 
                     let key = ::poprako_obj_dept::key::ObjKey {
                         id: id.to_owned(),
-                        version,
+                        ver,
                         image,
                     };
 
@@ -214,7 +214,7 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                             id: <#obj as ::poprako_obj_dept::key::KeyMap>::id(
                                 &spec.dom,
                             ),
-                            version: key.version,
+                            ver: key.ver,
                             key: &key.image,
                             hash: spec.hash,
                             ext: <#obj as ::poprako_obj_dept::key::KeyMap>::ext(

@@ -17,10 +17,10 @@ use crate::value::comic::{ComicInclOpt, ComicStatus, ComicWithOpt};
 use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::RoleMask;
 
-/// Request to reserve a comic cover upload.
+/// Request to allocate a comic cover upload.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
-pub struct ReserveComicCoverInstr {
+pub struct AllocComicCoverInstr {
     //
     /// SHA-256 identity of the exact cover bytes.
     pub image_hash: ImageHash,
@@ -30,12 +30,13 @@ pub struct ReserveComicCoverInstr {
     pub ext: ImageExt,
 }
 
-/// Request to confirm one reserved comic cover version.
+/// Request to confirm one allocated comic cover version.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct MarkComicCoverUploadedInstr {
     /// Version returned in the cover upload slot.
-    pub image_version: u32,
+    #[serde(rename = "image_version")]
+    pub image_ver: u32,
 }
 
 /// Input parameters for creating a new comic inside a workset.
@@ -70,7 +71,7 @@ pub struct CreateComicInstr {
 ///
 /// Cover updates are handled by dedicated endpoints.
 ///
-/// [`reserve_cover`]: crate::usecase::comic::reserve_cover
+/// [`alloc_cover`]: crate::usecase::comic::alloc_cover
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateComicInfoInstr {

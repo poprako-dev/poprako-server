@@ -1,11 +1,11 @@
-//! Page image status, listing, reservation, and deletion.
+//! Page image status, listing, allocation, and deletion.
 
+/// Page-manifest allocation orchestration.
+pub mod alloc;
 /// Page deletion orchestration.
 pub mod delete;
 /// Page-list orchestration.
 pub mod list;
-/// Page-manifest reservation orchestration.
-pub mod reserve;
 /// Page presentation assembly.
 pub mod view;
 
@@ -16,7 +16,7 @@ use poprako_orchestra::{Context, OperRun as _};
 use tracing::instrument;
 
 use poprako_obj_dept::ObjDept;
-use poprako_obj_dept::key::ObjGeneration;
+use poprako_obj_dept::key::ObjGen;
 use poprako_obj_dept::oper::MarkObjUploaded;
 use poprako_util::i18n::trl;
 
@@ -65,9 +65,9 @@ where
     // SAFETY: This is an optimistic exact-generation transition. It does not
     // synchronously prove PUT success, object presence, or content integrity;
     // the delayed actor may reset this generation after a failed HEAD check.
-    let image_key = ObjGeneration {
+    let image_key = ObjGen {
         id,
-        version: instr.image_version,
+        ver: instr.image_ver,
     };
 
     let marked = MarkObjUploaded::<PageImage>::new(&image_key)

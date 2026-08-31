@@ -1,10 +1,10 @@
 //! Comic use cases — create, read, update, cover management, and deletion.
+/// Cover allocation use case.
+pub mod alloc;
 /// Comic cover upload confirmation use case.
 pub mod cover;
 /// Comic listing use cases.
 pub mod list;
-/// Cover reservation use case.
-pub mod reserve;
 /// Comic presentation assembly.
 pub mod view;
 

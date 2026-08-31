@@ -1,8 +1,8 @@
-use super::super::reserve::reserve_chapter_pages;
+use super::super::alloc::alloc_chapter_pages;
 
 use time::OffsetDateTime;
 
-use crate::data::instr::page::{PageImageInstr, ReserveChapterPagesInstr};
+use crate::data::instr::page::{AllocChapterPagesInstr, PageImageInstr};
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::comic::ComicInfo;
@@ -140,7 +140,7 @@ async fn mixed_manifest_preserves_order_counters_and_object_obligations() {
 
     mock.seed_page_image_obj("page-deleted", "png");
 
-    let instr = ReserveChapterPagesInstr {
+    let instr = AllocChapterPagesInstr {
         chapter_id: "chapter-1".into(),
         pages: vec![
             page_instr(Some("page-b"), 0, None),
@@ -149,7 +149,7 @@ async fn mixed_manifest_preserves_order_counters_and_object_obligations() {
         ],
     };
 
-    let reserved = reserve_chapter_pages(
+    let reserved = alloc_chapter_pages(
         (&mock, &mock, &mock, &mock, &IMAGE_CONFIG),
         token(),
         instr,
@@ -222,12 +222,12 @@ async fn maximum_manifest_reserves_all_pages_in_input_order() {
         .map(|index| page_instr(None, index, Some(1024)))
         .collect::<Vec<_>>();
 
-    let instr = ReserveChapterPagesInstr {
+    let instr = AllocChapterPagesInstr {
         chapter_id: "chapter-1".into(),
         pages,
     };
 
-    let reserved = reserve_chapter_pages(
+    let reserved = alloc_chapter_pages(
         (&mock, &mock, &mock, &mock, &IMAGE_CONFIG),
         token(),
         instr,
@@ -258,12 +258,12 @@ async fn unknown_retained_page_rejects_before_manifest_writes() {
 
     mock.seed_page(page("page-a", 0, 3, 2, 1));
 
-    let instr = ReserveChapterPagesInstr {
+    let instr = AllocChapterPagesInstr {
         chapter_id: "chapter-1".into(),
         pages: vec![page_instr(Some("unknown-page"), 0, None)],
     };
 
-    let result = reserve_chapter_pages(
+    let result = alloc_chapter_pages(
         (&mock, &mock, &mock, &mock, &IMAGE_CONFIG),
         token(),
         instr,
@@ -299,7 +299,7 @@ async fn missing_retained_object_rolls_back_manifest_reorder() {
 
     mock.seed_page(page("page-b", 1, 4, 3, 2));
 
-    let instr = ReserveChapterPagesInstr {
+    let instr = AllocChapterPagesInstr {
         chapter_id: "chapter-1".into(),
         pages: vec![
             page_instr(Some("page-b"), 0, None),
@@ -307,7 +307,7 @@ async fn missing_retained_object_rolls_back_manifest_reorder() {
         ],
     };
 
-    let result = reserve_chapter_pages(
+    let result = alloc_chapter_pages(
         (&mock, &mock, &mock, &mock, &IMAGE_CONFIG),
         token(),
         instr,
@@ -347,7 +347,7 @@ async fn duplicate_page_id_is_args_error_without_side_effects() {
 
     mock.seed_page(page("page-a", 0, 3, 2, 1));
 
-    let instr = ReserveChapterPagesInstr {
+    let instr = AllocChapterPagesInstr {
         chapter_id: "chapter-1".into(),
         pages: vec![
             page_instr(Some("page-a"), 1, Some(1024)),
@@ -355,7 +355,7 @@ async fn duplicate_page_id_is_args_error_without_side_effects() {
         ],
     };
 
-    let error = reserve_chapter_pages(
+    let error = alloc_chapter_pages(
         (&mock, &mock, &mock, &mock, &IMAGE_CONFIG),
         token(),
         instr,
@@ -409,12 +409,12 @@ async fn cross_chapter_retained_page_is_args_error_without_side_effects() {
 
     mock.seed_page(other_page);
 
-    let instr = ReserveChapterPagesInstr {
+    let instr = AllocChapterPagesInstr {
         chapter_id: "chapter-1".into(),
         pages: vec![page_instr(Some("page-other"), 0, None)],
     };
 
-    let error = reserve_chapter_pages(
+    let error = alloc_chapter_pages(
         (&mock, &mock, &mock, &mock, &IMAGE_CONFIG),
         token(),
         instr,

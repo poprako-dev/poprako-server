@@ -16,7 +16,7 @@ pub const MIN_CHAPTER_PAGE_COUNT: usize = 1;
 /// Maximum number of pages accepted by a chapter manifest.
 pub const MAX_CHAPTER_PAGE_COUNT: usize = 200;
 
-/// Validates image metadata and page-count constraints before page reservation.
+/// Validates image metadata and page-count constraints before page allocation.
 pub fn validate_page_specs(
     image_config: &ImageConfig,
     page_specs: &[PageImageSpec],
@@ -57,7 +57,7 @@ pub fn validate_page_specs(
                 chapter_id = %chapter_id,
                 user_id = %user_id,
                 page_id = %page_id,
-                "expected error: duplicate page id in reservation",
+                "expected error: duplicate page id in allocation",
             );
 
             return Err(BaseError::Expected {

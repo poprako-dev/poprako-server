@@ -9,10 +9,10 @@ use utoipa::ToSchema;
 
 use crate::value::image::{ImageExt, ImageHash};
 
-/// Request to reserve a user avatar upload.
+/// Request to allocate a user avatar upload.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
-pub struct ReserveUserAvatarInstr {
+pub struct AllocUserAvatarInstr {
     //
     /// SHA-256 identity of the exact avatar bytes.
     pub image_hash: ImageHash,
@@ -22,12 +22,13 @@ pub struct ReserveUserAvatarInstr {
     pub ext: ImageExt,
 }
 
-/// Request to confirm one reserved user avatar version.
+/// Request to confirm one allocated user avatar version.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct MarkUserAvatarUploadedInstr {
     /// Version returned in the avatar upload slot.
-    pub image_version: u32,
+    #[serde(rename = "image_version")]
+    pub image_ver: u32,
 }
 
 /// Input parameters for updating a user's profile.

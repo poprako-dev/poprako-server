@@ -17,7 +17,7 @@ pub trait KeyMap {
     fn ext(value: &Self::Dom) -> &str;
 
     /// Builds the complete physical key for one allocated generation.
-    fn forward(value: &Self::Dom, version: u32) -> Self::Img;
+    fn forward(value: &Self::Dom, ver: u32) -> Self::Img;
 
     /// Decodes one complete physical key into its business identity and generation.
     ///
@@ -35,7 +35,7 @@ pub struct ObjKey {
     pub id: String,
 
     /// Generation allocated for this object identity.
-    pub version: u32,
+    pub ver: u32,
 
     /// Complete immutable physical object key.
     pub image: String,
@@ -43,11 +43,11 @@ pub struct ObjKey {
 
 /// Client-addressable logical object generation.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct ObjGeneration {
+pub struct ObjGen {
     //
     /// Stable object-table identifier.
     pub id: String,
 
     /// Generation allocated for this object identity.
-    pub version: u32,
+    pub ver: u32,
 }

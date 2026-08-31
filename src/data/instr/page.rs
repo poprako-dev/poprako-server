@@ -13,11 +13,11 @@ use crate::value::image::{ImageExt, ImageHash};
 /// Input parameters for reserving all page images of a chapter.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
-pub struct ReserveChapterPagesInstr {
+pub struct AllocChapterPagesInstr {
     //
     /// Target chapter identifier.
     pub chapter_id: String,
-    /// Page images to reserve for the chapter.
+    /// Page images to allocate for the chapter.
     pub pages: Vec<PageImageInstr>,
 }
 
@@ -54,9 +54,9 @@ impl From<PageImageInstr> for PageImageSpec {
 /// Input parameters for reserving one page image.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
-pub struct ReservePageImageInstr {
+pub struct AllocPageImageInstr {
     //
-    /// Content hash of the page image to reserve.
+    /// Content hash of the page image to allocate.
     pub image_hash: ImageHash,
     /// Size of the page image in bytes.
     pub new_byte_len: u64,
@@ -68,8 +68,9 @@ pub struct ReservePageImageInstr {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct MarkPageImageUploadedInstr {
-    /// Image version from the reservation, used as an idempotency guard.
-    pub image_version: u32,
+    /// Image version from the allocation, used as an idempotency guard.
+    #[serde(rename = "image_version")]
+    pub image_ver: u32,
 }
 
 /// Input parameters for listing all pages under one chapter.

@@ -28,7 +28,7 @@ pub fn gen_urls(
         return Ok(None);
     };
 
-    if !meta.is_available {
+    if !meta.is_avail {
         return Ok(None);
     }
 
@@ -68,23 +68,23 @@ where
 {
     let id = B::id(&oper.spec.dom);
 
-    let version = objs.get(id).map_or(Ok(1), |previous| {
+    let ver = objs.get(id).map_or(Ok(1), |previous| {
         previous.version.checked_add(1).ok_or_else(|| {
             ObjDeptError::Unrecoverable {
-                message: "object version overflow".into(),
+                message: "object ver overflow".into(),
             }
         })
     })?;
 
     let key = ObjKey {
         id: id.to_owned(),
-        version,
-        image: B::forward(&oper.spec.dom, version),
+        ver,
+        image: B::forward(&oper.spec.dom, ver),
     };
 
     let meta = ObjMeta {
         key: key.clone(),
-        is_available: false,
+        is_avail: false,
         hash: oper.spec.hash.to_vec(),
         ext: B::ext(&oper.spec.dom).to_owned(),
     };
@@ -92,7 +92,7 @@ where
     let previous = objs.insert(
         id.to_owned(),
         MockObjRecord {
-            version,
+            version: ver,
             meta: Some(meta),
         },
     );
@@ -209,7 +209,7 @@ macro_rules! implement_mock_obj_dept {
                     return Ok(false);
                 };
 
-                if record.version != oper.key.version {
+                if record.version != oper.key.ver {
                     return Ok(false);
                 }
 
@@ -217,7 +217,7 @@ macro_rules! implement_mock_obj_dept {
                     return Ok(false);
                 };
 
-                meta.is_available = true;
+                meta.is_avail = true;
 
                 Ok(true)
             }

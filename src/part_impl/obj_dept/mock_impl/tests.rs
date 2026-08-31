@@ -2,7 +2,7 @@ use super::*;
 
 use poprako_orchestra::{Nucl as _, OperRun as _, OperStep as _};
 
-use poprako_obj_dept::key::{KeyMap, ObjGeneration};
+use poprako_obj_dept::key::{KeyMap, ObjGen};
 use poprako_obj_dept::model::slot::ObjSlotSpec;
 use poprako_obj_dept::oper::{
     ClearObjs, DeleteObjs, GenObjUrls, MarkObjUploaded,
@@ -71,10 +71,10 @@ fn origin_only_profile_omits_thumbnail() {
     let meta = ObjMeta {
         key: ObjKey {
             id: String::from("page-1"),
-            version: 1,
+            ver: 1,
             image: "page/chapter_chapter-1/page-1-1.png".into(),
         },
-        is_available: true,
+        is_avail: true,
         hash: vec![1; 32],
         ext: String::from("png"),
     };
@@ -91,10 +91,10 @@ fn image_thumbnail_profile_generates_thumbnail() {
     let meta = ObjMeta {
         key: ObjKey {
             id: String::from("page-1"),
-            version: 1,
+            ver: 1,
             image: "page/chapter_chapter-1/page-1-1.png".into(),
         },
-        is_available: true,
+        is_avail: true,
         hash: vec![1; 32],
         ext: String::from("png"),
     };
@@ -112,10 +112,10 @@ async fn mock_operation_can_disable_thumbnails() {
     let meta = ObjMeta {
         key: ObjKey {
             id: String::from("page-1"),
-            version: 1,
+            ver: 1,
             image: "page/chapter_chapter-1/page-1-1.png".into(),
         },
-        is_available: true,
+        is_avail: true,
         hash: vec![1; 32],
         ext: String::from("png"),
     };
@@ -140,12 +140,12 @@ async fn upload_mark_is_exact_current_and_idempotent() {
     let mock = Mock::new();
     let key = ObjKey {
         id: String::from("page-1"),
-        version: 4,
+        ver: 4,
         image: "page/chapter_chapter-1/page-1-4.png".into(),
     };
     let meta = ObjMeta {
         key: key.clone(),
-        is_available: false,
+        is_avail: false,
         hash: vec![4; 32],
         ext: String::from("png"),
     };
@@ -159,14 +159,14 @@ async fn upload_mark_is_exact_current_and_idempotent() {
         .insert(
             key.id.clone(),
             MockObjRecord {
-                version: key.version,
+                version: key.ver,
                 meta: Some(meta),
             },
         );
 
-    let generation = ObjGeneration {
+    let generation = ObjGen {
         id: key.id.clone(),
-        version: key.version,
+        ver: key.ver,
     };
 
     let first = MarkObjUploaded::<PageImage>::new(&generation)
@@ -177,17 +177,17 @@ async fn upload_mark_is_exact_current_and_idempotent() {
         .run_on(&mock)
         .await
         .unwrap();
-    let stale_key = ObjGeneration {
+    let stale_key = ObjGen {
         id: key.id.clone(),
-        version: 3,
+        ver: 3,
     };
     let stale = MarkObjUploaded::<PageImage>::new(&stale_key)
         .run_on(&mock)
         .await
         .unwrap();
-    let missing_key = ObjGeneration {
+    let missing_key = ObjGen {
         id: String::from("missing"),
-        version: 1,
+        ver: 1,
     };
     let missing = MarkObjUploaded::<PageImage>::new(&missing_key)
         .run_on(&mock)
@@ -208,7 +208,7 @@ async fn upload_mark_is_exact_current_and_idempotent() {
         .get("page_image")
         .and_then(|objs| objs.get("page-1"))
         .and_then(|record| record.meta.as_ref())
-        .is_some_and(|meta| meta.is_available);
+        .is_some_and(|meta| meta.is_avail);
 
     assert!(uploaded);
 
@@ -316,7 +316,7 @@ async fn clear_allows_replacement_without_reusing_a_generation() {
         .await
         .unwrap();
 
-    assert_eq!(replacement.key.version, 2);
+    assert_eq!(replacement.key.ver, 2);
 }
 
 #[tokio::test]

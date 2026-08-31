@@ -64,7 +64,7 @@ where
 
     let mut uploaded = metas
         .iter()
-        .filter(|(_, meta)| meta.is_available)
+        .filter(|(_, meta)| meta.is_avail)
         .collect::<Vec<_>>();
 
     uploaded.sort_unstable_by_key(|(id, _)| id.as_str());

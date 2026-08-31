@@ -87,8 +87,8 @@ impl ComicPermComplex {
         check_user_is_team_admin(member_info)
     }
 
-    /// Verify the caller may reserve a comic cover.
-    pub fn ensure_user_can_reserve_cover(
+    /// Verify the caller may allocate a comic cover.
+    pub fn ensure_user_can_alloc_cover(
         member_info: &MemberInfo,
     ) -> BaseRest<()> {
         check_user_is_team_admin(member_info)

@@ -115,7 +115,7 @@ export async function runIt03Module(ctx: RunCtx): Promise<void> {
 
     // duplicate explicit page ids are rejected before the manifest transaction
     expectError(
-        await ctx.sadmin.post<ErrorBody>(`/api/v1/chapters/${mainChapterId}/pages/reserve`, {
+        await ctx.sadmin.post<ErrorBody>(`/api/v1/chapters/${mainChapterId}/pages/alloc`, {
             chapter_id: mainChapterId,
             pages: [
                 {
@@ -138,7 +138,7 @@ export async function runIt03Module(ctx: RunCtx): Promise<void> {
 
     // page_count 0 -> 422/2
     expectError(
-        await ctx.sadmin.post<ErrorBody>(`/api/v1/chapters/${mainChapterId}/pages/reserve`, {
+        await ctx.sadmin.post<ErrorBody>(`/api/v1/chapters/${mainChapterId}/pages/alloc`, {
             chapter_id: mainChapterId,
             pages: [],
         }),
@@ -148,7 +148,7 @@ export async function runIt03Module(ctx: RunCtx): Promise<void> {
 
     // path chapter_id / body chapter_id mismatch -> 422 (path/body id rule)
     expectError(
-        await ctx.sadmin.post<ErrorBody>(`/api/v1/chapters/${mainChapterId}/pages/reserve`, {
+        await ctx.sadmin.post<ErrorBody>(`/api/v1/chapters/${mainChapterId}/pages/alloc`, {
             chapter_id: "not-the-path-id",
             pages: newPageManifest(1, "jpg"),
         }),
@@ -205,7 +205,7 @@ export async function runIt03Module(ctx: RunCtx): Promise<void> {
     );
 
     expectError(
-        await ctx.sadmin.post<ErrorBody>(`/api/v1/chapters/${mainChapterId}/pages/reserve`, {
+        await ctx.sadmin.post<ErrorBody>(`/api/v1/chapters/${mainChapterId}/pages/alloc`, {
             chapter_id: mainChapterId,
             pages: [
                 {
@@ -220,7 +220,7 @@ export async function runIt03Module(ctx: RunCtx): Promise<void> {
     );
 
     expectError(
-        await ctx.sadmin.post<ErrorBody>(`/api/v1/chapters/${mainChapterId}/pages/reserve`, {
+        await ctx.sadmin.post<ErrorBody>(`/api/v1/chapters/${mainChapterId}/pages/alloc`, {
             chapter_id: mainChapterId,
             pages: [
                 ...markedPages.map((page) => ({
@@ -290,7 +290,7 @@ export async function runIt03Module(ctx: RunCtx): Promise<void> {
     );
 
     expectError(
-        await guest01.api.post<ErrorBody>(`/api/v1/pages/${p2Id}/image/reserve`, {
+        await guest01.api.post<ErrorBody>(`/api/v1/pages/${p2Id}/image/alloc`, {
             image_hash: sortedPages[2]!.image_hash,
             new_byte_len: 1,
             ext: sortedPages[2]!.ext,
@@ -301,7 +301,7 @@ export async function runIt03Module(ctx: RunCtx): Promise<void> {
 
     // D2.7: non-existent page_id reserve/mark -> 422/2
     expectError(
-        await ctx.sadmin.post<ErrorBody>("/api/v1/pages/page-does-not-exist/image/reserve", {
+        await ctx.sadmin.post<ErrorBody>("/api/v1/pages/page-does-not-exist/image/alloc", {
             image_hash: sortedPages[0]!.image_hash,
             new_byte_len: 1,
             ext: sortedPages[0]!.ext,
@@ -408,7 +408,7 @@ export async function runIt03Module(ctx: RunCtx): Promise<void> {
 
     // old page id image reserve -> 422/2
     expectError(
-        await ctx.sadmin.post<ErrorBody>(`/api/v1/pages/${oldD3PageId}/image/reserve`, {
+        await ctx.sadmin.post<ErrorBody>(`/api/v1/pages/${oldD3PageId}/image/alloc`, {
             image_hash: sortedPages[0]!.image_hash,
             new_byte_len: 1,
             ext: sortedPages[0]!.ext,

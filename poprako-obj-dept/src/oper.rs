@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 
 use poprako_orchestra::Oper;
 
-use crate::key::{KeyMap, ObjGeneration};
+use crate::key::{KeyMap, ObjGen};
 use crate::model::meta::ObjMeta;
 use crate::model::slot::{ObjSlot, ObjSlotSpec};
 use crate::model::url::ObjUrls;
@@ -137,7 +137,7 @@ where
 {
     //
     /// Exact logical object generation declared uploaded by the client.
-    pub key: &'a ObjGeneration,
+    pub key: &'a ObjGen,
     /// Compile-time object marker selected for this operation.
     #[doc(hidden)]
     _m: PhantomData<fn() -> B>,
@@ -149,7 +149,7 @@ where
 {
     /// Creates an upload declaration for one exact object generation.
     #[must_use]
-    pub const fn new(key: &'a ObjGeneration) -> Self {
+    pub const fn new(key: &'a ObjGen) -> Self {
         //
         Self {
             key,

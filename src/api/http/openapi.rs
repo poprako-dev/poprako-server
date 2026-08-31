@@ -26,7 +26,7 @@ use crate::data::instr::chapter_port::{
     ChapterTranslationFormatInstr, ImportChapterTranslationInstr,
 };
 use crate::data::instr::comic::{
-    CreateComicInstr, MarkComicCoverUploadedInstr, ReserveComicCoverInstr,
+    AllocComicCoverInstr, CreateComicInstr, MarkComicCoverUploadedInstr,
     UpdateComicInfoInstr,
 };
 use crate::data::instr::comment::CreateCommentInstr;
@@ -37,12 +37,12 @@ use crate::data::instr::member_invitation::{
     CreateMemberInvitationInstr, UpdateMemberInvitationRolesInstr,
 };
 use crate::data::instr::page::{
-    MarkPageImageUploadedInstr, PageImageInstr, ReserveChapterPagesInstr,
-    ReservePageImageInstr,
+    AllocChapterPagesInstr, AllocPageImageInstr, MarkPageImageUploadedInstr,
+    PageImageInstr,
 };
 use crate::data::instr::system_mail::MarkSystemMailReadInstr;
 use crate::data::instr::team::{
-    CreateTeamInstr, MarkTeamAvatarUploadedInstr, ReserveTeamAvatarInstr,
+    AllocTeamAvatarInstr, CreateTeamInstr, MarkTeamAvatarUploadedInstr,
     UpdateTeamInfoInstr,
 };
 use crate::data::instr::term::{CreateTermInstr, UpdateTermInfoInstr};
@@ -56,7 +56,7 @@ use crate::data::instr::unit::{
     UnitTranslationInstr,
 };
 use crate::data::instr::user::{
-    MarkUserAvatarUploadedInstr, ReserveUserAvatarInstr, UpdateUserInfoInstr,
+    AllocUserAvatarInstr, MarkUserAvatarUploadedInstr, UpdateUserInfoInstr,
     UpdateUserPasswordInstr,
 };
 use crate::data::instr::workset::{CreateWorksetInstr, UpdateWorksetInfoInstr};
@@ -65,19 +65,19 @@ use crate::data::val::assignment_invitation::CreateAssignmentInvitationVal;
 use crate::data::val::auth::{LoginAuthVal, RegisterAuthVal};
 use crate::data::val::chapter::CreateChapterVal;
 use crate::data::val::chapter_port::ImportChapterTranslationVal;
-use crate::data::val::comic::{CreateComicVal, ReserveComicCoverVal};
+use crate::data::val::comic::{AllocComicCoverVal, CreateComicVal};
 use crate::data::val::comic_archive::ArchiveComicVal;
 use crate::data::val::comic_list::ListComicInfosVal;
 use crate::data::val::comment::CreateCommentVal;
 use crate::data::val::member::CreateMemberVal;
 use crate::data::val::member_invitation::CreateMemberInvitationVal;
-use crate::data::val::page::{ReserveChapterPagesVal, ReservedPageVal};
-use crate::data::val::team::ReserveTeamAvatarVal;
+use crate::data::val::page::{AllocChapterPagesVal, AllocatedPageVal};
+use crate::data::val::team::AllocTeamAvatarVal;
 use crate::data::val::term::CreateTermVal;
 use crate::data::val::termbase::CreateTermbaseVal;
 use crate::data::val::termbase_port::{ExportTermbaseVal, ImportTermbaseVal};
 use crate::data::val::unit::ListPageUnitInfosVal;
-use crate::data::val::user::ReserveUserAvatarVal;
+use crate::data::val::user::AllocUserAvatarVal;
 use crate::data::val::workset::CreateWorksetVal;
 use crate::data::view::announcement::AnnouncementInfoView;
 use crate::data::view::assignment::AssignmentInfoView;
@@ -129,13 +129,13 @@ use crate::value::unit::UnitTextPart;
         handler::user::update_info,
         handler::user::update_password,
         handler::user::delete,
-        handler::user::reserve_avatar,
+        handler::user::alloc_avatar,
         handler::user::mark_avatar_uploaded,
         handler::team::create,
         handler::team::list_infos,
         handler::team::get_info,
         handler::team::update_info,
-        handler::team::reserve_avatar,
+        handler::team::alloc_avatar,
         handler::team::mark_avatar_uploaded,
         handler::team::list_online_user_ids,
         handler::team::mark_self_online,
@@ -149,7 +149,7 @@ use crate::value::unit::UnitTextPart;
         handler::comic::list_infos,
         handler::comic::get_info,
         handler::comic::update_info,
-        handler::comic::reserve_cover,
+        handler::comic::alloc_cover,
         handler::comic::mark_cover_uploaded,
         handler::comic::archive,
         handler::comic::export_archives,
@@ -169,8 +169,8 @@ use crate::value::unit::UnitTextPart;
         handler::page::list_infos,
         handler::page::get_info,
         handler::page::delete,
-        handler::page::reserve_chapter_pages,
-        handler::page::reserve_image,
+        handler::page::alloc_chapter_pages,
+        handler::page::alloc_image,
         handler::page::mark_image_uploaded,
         handler::unit::list_infos,
         handler::unit::search_infos,
@@ -227,14 +227,14 @@ use crate::value::unit::UnitTextPart;
         UserInfoView,
         UpdateUserInfoInstr,
         UpdateUserPasswordInstr,
-        ReserveUserAvatarInstr,
-        ReserveUserAvatarVal,
+        AllocUserAvatarInstr,
+        AllocUserAvatarVal,
         MarkUserAvatarUploadedInstr,
         TeamInfoView,
         CreateTeamInstr,
         UpdateTeamInfoInstr,
-        ReserveTeamAvatarInstr,
-        ReserveTeamAvatarVal,
+        AllocTeamAvatarInstr,
+        AllocTeamAvatarVal,
         MarkTeamAvatarUploadedInstr,
         WorksetInfoView,
         CreateWorksetInstr,
@@ -246,8 +246,8 @@ use crate::value::unit::UnitTextPart;
         CreateComicInstr,
         CreateComicVal,
         UpdateComicInfoInstr,
-        ReserveComicCoverInstr,
-        ReserveComicCoverVal,
+        AllocComicCoverInstr,
+        AllocComicCoverVal,
         MarkComicCoverUploadedInstr,
         ArchiveComicVal,
         ChapterInfoView,
@@ -272,10 +272,10 @@ use crate::value::unit::UnitTextPart;
         PageInfoView,
         PageImageInstr,
         ImageUploadSlotView,
-        ReserveChapterPagesInstr,
-        ReserveChapterPagesVal,
-        ReservePageImageInstr,
-        ReservedPageVal,
+        AllocChapterPagesInstr,
+        AllocChapterPagesVal,
+        AllocPageImageInstr,
+        AllocatedPageVal,
         MarkPageImageUploadedInstr,
         UnitInfoView,
         ListPageUnitInfosVal,

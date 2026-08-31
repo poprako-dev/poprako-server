@@ -367,10 +367,10 @@ impl Mock {
         let meta = ObjMeta {
             key: ObjKey {
                 id: id.to_owned(),
-                version: 1,
+                ver: 1,
                 image: format!("page/chapter_test/{}-1.{}", id, ext),
             },
-            is_available: true,
+            is_avail: true,
             hash: vec![0; 32],
             ext: ext.to_owned(),
         };

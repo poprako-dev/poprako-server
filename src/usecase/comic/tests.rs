@@ -58,13 +58,13 @@ fn seed_comic_cover_scope(mock: &Mock, version: u32) {
 
     let key = ObjKey {
         id: "comic-1".into(),
-        version,
+        ver: version,
         image: format!("comic_cover/comic-1-{}.png", version),
     };
 
     let meta = ObjMeta {
         key,
-        is_available: false,
+        is_avail: false,
         hash: vec![0; 32],
         ext: "png".into(),
     };
@@ -92,9 +92,7 @@ async fn mark_comic_cover(
         (mock, mock),
         token("user-1"),
         "comic-1".into(),
-        MarkComicCoverUploadedInstr {
-            image_version: version,
-        },
+        MarkComicCoverUploadedInstr { image_ver: version },
     )
     .await
 }
@@ -201,7 +199,7 @@ async fn mark_cover_uploaded_marks_current_generation_idempotently() {
             .meta
             .as_ref()
             .unwrap()
-            .is_available
+            .is_avail
     );
 }
 
@@ -220,7 +218,7 @@ async fn mark_cover_uploaded_rejects_stale_generation() {
             .meta
             .as_ref()
             .unwrap()
-            .is_available
+            .is_avail
     );
 }
 

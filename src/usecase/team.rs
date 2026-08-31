@@ -16,7 +16,7 @@ mod tests;
 use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
-use poprako_obj_dept::key::ObjGeneration;
+use poprako_obj_dept::key::ObjGen;
 use poprako_obj_dept::model::slot::ObjSlotSpec;
 use poprako_obj_dept::oper::{GenObjSlot, MarkObjUploaded};
 use poprako_obj_dept::{ObjDept, ObjDeptView};
@@ -27,10 +27,10 @@ use crate::complex::member::MemberComplex;
 use crate::complex::team::{TeamComplex, TeamPermComplex};
 use crate::config::image::ImageConfig;
 use crate::data::instr::team::{
-    CreateTeamInstr, MarkTeamAvatarUploadedInstr, ReserveTeamAvatarInstr,
+    AllocTeamAvatarInstr, CreateTeamInstr, MarkTeamAvatarUploadedInstr,
     UpdateTeamInfoInstr,
 };
-use crate::data::val::team::ReserveTeamAvatarVal;
+use crate::data::val::team::AllocTeamAvatarVal;
 use crate::data::view::image::ImageUploadSlotView;
 use crate::data::view::team::TeamInfoView;
 use crate::model::shared::user::UserToken;
@@ -162,11 +162,11 @@ where
     accept(())
 }
 
-/// Reserves a new avatar upload slot for a team.
+/// Allocates a new avatar upload slot for a team.
 ///
 /// Transactional flow:
 ///
-/// 1. Calls [`ReserveTeamAvatar`] — updates the avatar key, increments
+/// 1. Calls [`AllocTeamAvatarInstr`] — updates the avatar key, increments
 ///    the version, and returns any previous avatar key for cleanup.
 /// 2. If replacing an existing avatar, defers an immediate image-delete payload.
 /// 3. Defers an image upload-check payload with a 15-minute delay.
@@ -179,14 +179,14 @@ where
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C>` — Team storage.
 /// * `P: Prom<C>` — Prom enqueuer for deferred image opers.
-/// * `O: ObjDept` — Reserves the avatar object and its signed upload URL.
+/// * `O: ObjDept` — Allocates the avatar object and its signed upload URL.
 #[instrument(level = "info", skip(nucl, repo, obj_dept, image_config, token))]
-pub async fn reserve_avatar<N, C, R, O>(
+pub async fn alloc_avatar<N, C, R, O>(
     (nucl, repo, obj_dept, image_config): (&N, &R, &O, &ImageConfig),
     token: UserToken,
     id: String,
-    instr: ReserveTeamAvatarInstr,
-) -> BaseRest<ReserveTeamAvatarVal>
+    instr: AllocTeamAvatarInstr,
+) -> BaseRest<AllocTeamAvatarVal>
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError> + Sync,
@@ -215,7 +215,7 @@ where
         });
     };
 
-    TeamPermComplex::ensure_user_can_reserve_avatar(&member_info)?;
+    TeamPermComplex::ensure_user_can_alloc_avatar(&member_info)?;
 
     let obj_slot = nucl
         .coord(async move |context| {
@@ -243,11 +243,11 @@ where
 
     let slot = Some(ImageUploadSlotView {
         put_url: obj_slot.url.to_string(),
-        image_version: obj_slot.key.version,
+        image_ver: obj_slot.key.ver,
         headers: obj_slot.headers,
     });
 
-    accept(ReserveTeamAvatarVal { slot })
+    accept(AllocTeamAvatarVal { slot })
 }
 
 /// Optimistically marks the requested current avatar generation as uploaded.
@@ -283,9 +283,9 @@ where
     // SAFETY: This is an optimistic exact-generation transition. It does not
     // synchronously prove PUT success, object presence, or content integrity;
     // the delayed actor may reset this generation after a failed HEAD check.
-    let avatar_key = ObjGeneration {
+    let avatar_key = ObjGen {
         id,
-        version: instr.image_version,
+        ver: instr.image_ver,
     };
 
     let marked = MarkObjUploaded::<TeamAvatar>::new(&avatar_key)

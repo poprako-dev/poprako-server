@@ -45,8 +45,8 @@ impl TeamPermComplex {
         check_user_is_team_admin(member_info)
     }
 
-    /// Verify the caller may reserve a team avatar.
-    pub fn ensure_user_can_reserve_avatar(
+    /// Verify the caller may allocate a team avatar.
+    pub fn ensure_user_can_alloc_avatar(
         member_info: &MemberInfo,
     ) -> BaseRest<()> {
         check_user_is_team_admin(member_info)

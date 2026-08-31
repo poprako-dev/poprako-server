@@ -40,13 +40,13 @@ fn seed_scope(mock: &Mock) {
 
     let key = ObjKey {
         id: "page-1".into(),
-        version: 3,
+        ver: 3,
         image: "page/chapter_chapter-1/page-1-3.png".into(),
     };
 
     let meta = ObjMeta {
         key,
-        is_available: false,
+        is_avail: false,
         hash: vec![0; 32],
         ext: "png".into(),
     };
@@ -73,9 +73,7 @@ async fn mark(mock: &Mock, version: u32) -> crate::result::BaseRest<()> {
             user_id: "user-1".into(),
         },
         "page-1".into(),
-        MarkPageImageUploadedInstr {
-            image_version: version,
-        },
+        MarkPageImageUploadedInstr { image_ver: version },
     )
     .await
 }
@@ -95,7 +93,7 @@ async fn current_generation_is_marked_idempotently() {
             .meta
             .as_ref()
             .unwrap()
-            .is_available
+            .is_avail
     );
 }
 
@@ -114,6 +112,6 @@ async fn stale_generation_does_not_mark_current() {
             .meta
             .as_ref()
             .unwrap()
-            .is_available
+            .is_avail
     );
 }

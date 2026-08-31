@@ -22,13 +22,13 @@ impl ImageComplex {
     const BYTES_PER_MIB: u64 = 1024 * 1024;
 
     /// Builds the canonical page-image physical key.
-    pub fn page_key(value: &PageImageKey, version: u32) -> String {
+    pub fn page_key(value: &PageImageKey, ver: u32) -> String {
         //
         format!(
             "page/chapter_{}/{}-{}.{}",
             value.chapter_id,
             value.page_id,
-            version,
+            ver,
             value.ext.suffix(),
         )
     }
@@ -42,7 +42,7 @@ impl ImageComplex {
 
         let (stem, ext) = filename.rsplit_once('.')?;
 
-        let (page_id, version) = stem.rsplit_once('-')?;
+        let (page_id, ver) = stem.rsplit_once('-')?;
 
         let image_key = PageImageKey {
             chapter_id: chapter_id.to_owned(),
@@ -50,49 +50,48 @@ impl ImageComplex {
             ext: ImageExt::parse(ext)?,
         };
 
-        let version = version.parse().ok()?;
+        let ver = ver.parse().ok()?;
 
-        (Self::page_key(&image_key, version) == value)
-            .then_some((image_key, version))
+        (Self::page_key(&image_key, ver) == value).then_some((image_key, ver))
     }
 
     /// Builds the canonical user-avatar physical key.
-    pub fn user_avatar_key(value: &UserAvatarKey, version: u32) -> String {
-        Self::flat_key("user_avatar", &value.user_id, version, value.ext)
+    pub fn user_avatar_key(value: &UserAvatarKey, ver: u32) -> String {
+        Self::flat_key("user_avatar", &value.user_id, ver, value.ext)
     }
 
     /// Parses one canonical user-avatar physical key.
     pub fn parse_user_avatar_key(value: &str) -> Option<(UserAvatarKey, u32)> {
         //
-        let (id, ext, version) = Self::parse_flat_key("user_avatar", value)?;
+        let (id, ext, ver) = Self::parse_flat_key("user_avatar", value)?;
 
-        Some((UserAvatarKey { user_id: id, ext }, version))
+        Some((UserAvatarKey { user_id: id, ext }, ver))
     }
 
     /// Builds the canonical team-avatar physical key.
-    pub fn team_avatar_key(value: &TeamAvatarKey, version: u32) -> String {
-        Self::flat_key("team_avatar", &value.team_id, version, value.ext)
+    pub fn team_avatar_key(value: &TeamAvatarKey, ver: u32) -> String {
+        Self::flat_key("team_avatar", &value.team_id, ver, value.ext)
     }
 
     /// Parses one canonical team-avatar physical key.
     pub fn parse_team_avatar_key(value: &str) -> Option<(TeamAvatarKey, u32)> {
         //
-        let (id, ext, version) = Self::parse_flat_key("team_avatar", value)?;
+        let (id, ext, ver) = Self::parse_flat_key("team_avatar", value)?;
 
-        Some((TeamAvatarKey { team_id: id, ext }, version))
+        Some((TeamAvatarKey { team_id: id, ext }, ver))
     }
 
     /// Builds the canonical comic-cover physical key.
-    pub fn comic_cover_key(value: &ComicCoverKey, version: u32) -> String {
-        Self::flat_key("comic_cover", &value.comic_id, version, value.ext)
+    pub fn comic_cover_key(value: &ComicCoverKey, ver: u32) -> String {
+        Self::flat_key("comic_cover", &value.comic_id, ver, value.ext)
     }
 
     /// Parses one canonical comic-cover physical key.
     pub fn parse_comic_cover_key(value: &str) -> Option<(ComicCoverKey, u32)> {
         //
-        let (id, ext, version) = Self::parse_flat_key("comic_cover", value)?;
+        let (id, ext, ver) = Self::parse_flat_key("comic_cover", value)?;
 
-        Some((ComicCoverKey { comic_id: id, ext }, version))
+        Some((ComicCoverKey { comic_id: id, ext }, ver))
     }
 
     /// Validates the content length against the per-kind upper bound.
@@ -151,8 +150,8 @@ impl ImageComplex {
     }
 
     // Builds one canonical non-page physical key.
-    fn flat_key(prefix: &str, id: &str, version: u32, ext: ImageExt) -> String {
-        format!("{}/{}-{}.{}", prefix, id, version, ext.suffix())
+    fn flat_key(prefix: &str, id: &str, ver: u32, ext: ImageExt) -> String {
+        format!("{}/{}-{}.{}", prefix, id, ver, ext.suffix())
     }
 
     // Parses one canonical non-page physical key.
@@ -165,16 +164,16 @@ impl ImageComplex {
 
         let (stem, ext) = filename.rsplit_once('.')?;
 
-        let (id, version) = stem.rsplit_once('-')?;
+        let (id, ver) = stem.rsplit_once('-')?;
 
         let ext = ImageExt::parse(ext)?;
 
-        let version = version.parse().ok()?;
+        let ver = ver.parse().ok()?;
 
-        (Self::flat_key(prefix, id, version, ext) == value).then_some((
+        (Self::flat_key(prefix, id, ver, ext) == value).then_some((
             id.to_owned(),
             ext,
-            version,
+            ver,
         ))
     }
 }

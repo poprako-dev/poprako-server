@@ -90,10 +90,10 @@ macro_rules! impl_obj_view {
                             ObjMeta {
                                 key: ObjKey {
                                     id: id.clone(),
-                                    version: 1,
+                                    ver: 1,
                                     image: format!("test/{}-1.png", id),
                                 },
-                                is_available: true,
+                                is_avail: true,
                                 hash: vec![1; 32],
                                 ext: "png".into(),
                             },

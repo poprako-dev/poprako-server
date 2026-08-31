@@ -15,10 +15,10 @@ use crate::api::http::result::{
 };
 use crate::api::http::state::AppHarn;
 use crate::data::instr::team::{
-    CreateTeamInstr, ListTeamInfosInstr, MarkTeamAvatarUploadedInstr,
-    ReserveTeamAvatarInstr, UpdateTeamInfoInstr,
+    AllocTeamAvatarInstr, CreateTeamInstr, ListTeamInfosInstr,
+    MarkTeamAvatarUploadedInstr, UpdateTeamInfoInstr,
 };
-use crate::data::val::team::ReserveTeamAvatarVal;
+use crate::data::val::team::AllocTeamAvatarVal;
 use crate::data::view::team::TeamInfoView;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::{ReptRead, Serial};
@@ -199,28 +199,28 @@ pub async fn update_info(
     no_content()
 }
 
-/// `POST /api/v1/teams/{team_id}/avatar/reserve` — reserve a team avatar upload slot.
+/// `POST /api/v1/teams/{team_id}/avatar/alloc` — allocate a team avatar upload slot.
 #[cfg_attr(feature = "swagger", utoipa::path(
     post,
-    path = "/api/v1/teams/{team_id}/avatar/reserve",
+    path = "/api/v1/teams/{team_id}/avatar/alloc",
     tag = "teams",
     params(("team_id" = String, Path, description = "Team ID")),
-    request_body = ReserveTeamAvatarInstr,
+    request_body = AllocTeamAvatarInstr,
     responses(
-        (status = 200, description = "Avatar upload URL reserved", body = HttpBody<ReserveTeamAvatarVal>),
+        (status = 200, description = "Avatar upload URL allocated", body = HttpBody<AllocTeamAvatarVal>),
         (status = 403, description = "No perm to modify this team's avatar"),
         (status = 404, description = "Team not found"),
     ),
 ))]
 #[instrument(level = "info", skip_all)]
-pub async fn reserve_avatar(
+pub async fn alloc_avatar(
     State(harn): State<AppHarn>,
     Path(team_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(instr): Json<ReserveTeamAvatarInstr>,
-) -> HttpResult<ReserveTeamAvatarVal> {
+    Json(instr): Json<AllocTeamAvatarInstr>,
+) -> HttpResult<AllocTeamAvatarVal> {
     //
-    usecase::team::reserve_avatar::<_, RdbContext<ReptRead>, HybRepo, _>(
+    usecase::team::alloc_avatar::<_, RdbContext<ReptRead>, HybRepo, _>(
         (
             harn.nucl().rept_read(),
             harn.repo(),

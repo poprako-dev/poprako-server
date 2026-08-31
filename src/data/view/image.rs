@@ -17,7 +17,8 @@ pub struct ImageUploadSlotView {
     /// Presigned PUT URL.
     pub put_url: String,
     /// Monotonic image identity version.
-    pub image_version: u32,
+    #[serde(rename = "image_version")]
+    pub image_ver: u32,
     /// Headers bound into the PUT signature.
     pub headers: BTreeMap<String, String>,
 }

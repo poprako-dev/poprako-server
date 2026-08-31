@@ -44,8 +44,8 @@ impl KeyMap for PageImage {
     }
 
     // Builds the canonical page-image key.
-    fn forward(value: &Self::Dom, version: u32) -> Self::Img {
-        ImageComplex::page_key(value, version)
+    fn forward(value: &Self::Dom, ver: u32) -> Self::Img {
+        ImageComplex::page_key(value, ver)
     }
 
     // Parses the canonical page-image key.
@@ -71,8 +71,8 @@ macro_rules! impl_flat_key_map {
                 value.ext.suffix()
             }
 
-            fn forward(value: &Self::Dom, version: u32) -> Self::Img {
-                $forward(value, version)
+            fn forward(value: &Self::Dom, ver: u32) -> Self::Img {
+                $forward(value, ver)
             }
 
             fn reverse(value: &Self::Img) -> ObjDeptRest<(Self::Dom, u32)> {

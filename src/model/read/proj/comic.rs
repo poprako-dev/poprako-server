@@ -14,11 +14,11 @@ use crate::model::read::proj::workset::WorksetInfo;
 /// A comicrecord as stored in the database.
 ///
 /// Each comic belongs to exactly one workset. Cover uploads follow a multi-step
-/// flow: a key is reserved via
-/// [`ReserveComicCover`], the client uploads to that key, then
+/// flow: a key is allocated via
+/// [`AllocComicCoverInstr`], the client uploads to that key, then
 /// the upload is confirmed via [`MarkComicCoverUploaded`].
 ///
-/// [`ReserveComicCover`]: crate::part::repo::oper::comic::ReserveComicCover
+/// [`AllocComicCoverInstr`]: crate::data::instr::comic::AllocComicCoverInstr
 /// [`MarkComicCoverUploaded`]: crate::part::repo::oper::comic::MarkComicCoverUploaded
 #[derive(Clone)]
 pub struct ComicInfo {

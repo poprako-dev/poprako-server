@@ -3,7 +3,7 @@
 // Page upload availability tests.
 mod mark_uploaded;
 // Batch page-manifest reservation tests.
-mod reserve;
+mod alloc;
 // Validation guard tests for page operations.
 mod validation;
 // Batch page-image presentation tests.

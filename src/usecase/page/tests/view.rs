@@ -34,10 +34,10 @@ fn page_image(
     ObjMeta {
         key: ObjKey {
             id: id.into(),
-            version,
+            ver: version,
             image: format!("page/chapter_test/{}-{}.{}", id, version, ext),
         },
-        is_available: uploaded,
+        is_avail: uploaded,
         hash: vec![hash; 32],
         ext: ext.into(),
     }
@@ -58,7 +58,7 @@ async fn page_views_keep_each_image_url_with_its_metadata_snapshot() {
     page_images.insert(
         "page-uploaded".into(),
         MockObjRecord {
-            version: uploaded_meta.key.version,
+            version: uploaded_meta.key.ver,
             meta: Some(uploaded_meta),
         },
     );
@@ -66,7 +66,7 @@ async fn page_views_keep_each_image_url_with_its_metadata_snapshot() {
     page_images.insert(
         "page-pending".into(),
         MockObjRecord {
-            version: pending_meta.key.version,
+            version: pending_meta.key.ver,
             meta: Some(pending_meta),
         },
     );

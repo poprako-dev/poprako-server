@@ -78,13 +78,13 @@ fn token(user_id: &str) -> UserToken {
 fn seed_user_avatar(mock: &Mock, user_id: &str, version: u32) {
     let key = ObjKey {
         id: user_id.into(),
-        version,
+        ver: version,
         image: format!("user_avatar/{}-{}.png", user_id, version),
     };
 
     let meta = ObjMeta {
         key,
-        is_available: false,
+        is_avail: false,
         hash: vec![0; 32],
         ext: "png".into(),
     };
@@ -195,7 +195,7 @@ async fn mark_avatar_uploaded_optimistically_exposes_current_generation() {
             (&mock,),
             token("user-1"),
             "user-1".into(),
-            MarkUserAvatarUploadedInstr { image_version: 3 },
+            MarkUserAvatarUploadedInstr { image_ver: 3 },
         )
         .await
         .unwrap();
@@ -208,7 +208,7 @@ async fn mark_avatar_uploaded_optimistically_exposes_current_generation() {
         .as_ref()
         .unwrap();
 
-    assert!(avatar_meta.is_available);
+    assert!(avatar_meta.is_avail);
 }
 
 #[tokio::test]
@@ -222,7 +222,7 @@ async fn mark_avatar_uploaded_rejects_stale_generation_without_mutation() {
         (&mock,),
         token("user-1"),
         "user-1".into(),
-        MarkUserAvatarUploadedInstr { image_version: 2 },
+        MarkUserAvatarUploadedInstr { image_ver: 2 },
     )
     .await
     .err()
@@ -237,7 +237,7 @@ async fn mark_avatar_uploaded_rejects_stale_generation_without_mutation() {
         .as_ref()
         .unwrap();
 
-    assert!(!avatar_meta.is_available);
+    assert!(!avatar_meta.is_avail);
 }
 
 #[tokio::test]
@@ -251,7 +251,7 @@ async fn mark_avatar_uploaded_rejects_non_owner_without_mutation() {
         (&mock,),
         token("user-2"),
         "user-1".into(),
-        MarkUserAvatarUploadedInstr { image_version: 3 },
+        MarkUserAvatarUploadedInstr { image_ver: 3 },
     )
     .await
     .err()
@@ -266,7 +266,7 @@ async fn mark_avatar_uploaded_rejects_non_owner_without_mutation() {
         .as_ref()
         .unwrap();
 
-    assert!(!avatar_meta.is_available);
+    assert!(!avatar_meta.is_avail);
 }
 
 #[tokio::test]

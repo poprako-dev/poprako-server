@@ -30,16 +30,16 @@ fn reject_role(message_key: &str, event: &'static str) -> BaseRest<()> {
     })
 }
 
-// Verify that assignment evidence permits reserving page images.
-fn check_reserve_role(assignment_info: &AssignmentInfo) -> BaseRest<()> {
+// Verify that assignment evidence permits allocating page images.
+fn check_alloc_role(assignment_info: &AssignmentInfo) -> BaseRest<()> {
     //
     if !assignment_info
         .roles
         .has_any_role(&[RoleField::RAW_PROVIDER, RoleField::REVIEWER])
     {
         return reject_role(
-            "error-page-reserve-role-required",
-            "page_reservation_role_missing",
+            "error-page-alloc-role-required",
+            "page_alloc_role_missing",
         );
     }
 
@@ -92,11 +92,11 @@ pub enum PageListAccess<'a> {
 pub struct PagePermComplex;
 
 impl PagePermComplex {
-    /// Verify the caller may reserve page images for the chapter.
-    pub fn ensure_user_can_reserve(
+    /// Verify the caller may allocate page images for the chapter.
+    pub fn ensure_user_can_alloc(
         assignment_info: &AssignmentInfo,
     ) -> BaseRest<()> {
-        check_reserve_role(assignment_info)
+        check_alloc_role(assignment_info)
     }
 
     /// Verify the caller may list pages under a chapter.

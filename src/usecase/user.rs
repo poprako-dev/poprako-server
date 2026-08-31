@@ -12,7 +12,7 @@ mod tests;
 use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
-use poprako_obj_dept::key::ObjGeneration;
+use poprako_obj_dept::key::ObjGen;
 use poprako_obj_dept::model::slot::ObjSlotSpec;
 use poprako_obj_dept::oper::{GenObjSlot, MarkObjUploaded};
 use poprako_obj_dept::{ObjDept, ObjDeptView};
@@ -22,10 +22,10 @@ use crate::complex::image::ImageComplex;
 use crate::complex::user::UserComplex;
 use crate::config::image::ImageConfig;
 use crate::data::instr::user::{
-    MarkUserAvatarUploadedInstr, ReserveUserAvatarInstr, UpdateUserInfoInstr,
+    AllocUserAvatarInstr, MarkUserAvatarUploadedInstr, UpdateUserInfoInstr,
     UpdateUserPasswordInstr,
 };
-use crate::data::val::user::ReserveUserAvatarVal;
+use crate::data::val::user::AllocUserAvatarVal;
 use crate::data::view::image::ImageUploadSlotView;
 use crate::data::view::user::UserInfoView;
 use crate::model::shared::user::UserToken;
@@ -249,11 +249,11 @@ where
     accept(())
 }
 
-/// Reserves a new avatar upload slot for a user.
+/// Allocates a new avatar upload slot for a user.
 ///
-/// Transactional flow (same pattern as [`team::reserve_avatar`]):
+/// Transactional flow (same pattern as [`team::alloc_avatar`]):
 ///
-/// 1. Calls [`ReserveUserAvatar`] — generates an object key, increments
+/// 1. Calls [`AllocUserAvatarInstr`] — generates an object key, increments
 ///    the version, and returns any previous avatar key.
 /// 2. If replacing, defers an image-delete payload.
 /// 3. Defers an image upload-check payload with a 15-minute delay.
@@ -266,15 +266,15 @@ where
 /// * `C` — Context anchor.
 /// * `R: UserRepo<C>` — User storage.
 /// * `P: Prom<C>` — Prom enqueuer.
-/// * `O: ObjDept` — Reserves the avatar object and its signed upload URL.
+/// * `O: ObjDept` — Allocates the avatar object and its signed upload URL.
 ///
-/// [`team::reserve_avatar`]: super::team::reserve_avatar
+/// [`team::alloc_avatar`]: super::team::alloc_avatar
 #[instrument(level = "info", skip(nucl, repo, obj_dept, image_config))]
-pub async fn reserve_avatar<N, C, R, O>(
+pub async fn alloc_avatar<N, C, R, O>(
     (nucl, repo, obj_dept, image_config): (&N, &R, &O, &ImageConfig),
     token: UserToken,
-    instr: ReserveUserAvatarInstr,
-) -> BaseRest<ReserveUserAvatarVal>
+    instr: AllocUserAvatarInstr,
+) -> BaseRest<AllocUserAvatarVal>
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError> + Sync,
@@ -314,11 +314,11 @@ where
 
     let slot = Some(ImageUploadSlotView {
         put_url: obj_slot.url.to_string(),
-        image_version: obj_slot.key.version,
+        image_ver: obj_slot.key.ver,
         headers: obj_slot.headers,
     });
 
-    accept(ReserveUserAvatarVal { slot })
+    accept(AllocUserAvatarVal { slot })
 }
 
 /// Optimistically marks the requested current avatar generation as uploaded.
@@ -344,9 +344,9 @@ where
     // SAFETY: This is an optimistic exact-generation transition. It does not
     // synchronously prove PUT success, object presence, or content integrity;
     // the delayed actor may reset this generation after a failed HEAD check.
-    let avatar_key = ObjGeneration {
+    let avatar_key = ObjGen {
         id,
-        version: instr.image_version,
+        ver: instr.image_ver,
     };
 
     let marked = MarkObjUploaded::<UserAvatar>::new(&avatar_key)

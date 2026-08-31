@@ -26,7 +26,7 @@ pub enum ObjKeyState {
     Unavailable,
 
     /// The current version is known to be remotely present.
-    Available,
+    Avail,
 
     /// The task is newer than the persisted watermark.
     Future,
@@ -35,13 +35,13 @@ pub enum ObjKeyState {
 /// Returns whether a Check task must reconcile remote presence.
 #[must_use]
 pub const fn requires_presence_reconciliation(state: ObjKeyState) -> bool {
-    matches!(state, ObjKeyState::Unavailable | ObjKeyState::Available)
+    matches!(state, ObjKeyState::Unavailable | ObjKeyState::Avail)
 }
 
 /// Returns whether a failed presence CAS observed the same active generation.
 #[must_use]
 pub const fn presence_cas_conflict_requires_retry(state: ObjKeyState) -> bool {
-    matches!(state, ObjKeyState::Unavailable | ObjKeyState::Available)
+    matches!(state, ObjKeyState::Unavailable | ObjKeyState::Avail)
 }
 
 /// Classifies a task version against the latest object row.
@@ -49,23 +49,20 @@ pub const fn presence_cas_conflict_requires_retry(state: ObjKeyState) -> bool {
 /// # Errors
 ///
 /// Returns an error when persisted object state is invalid.
-pub fn classify(
-    version: u32,
-    row: Option<&ObjRdbRow>,
-) -> ObjDeptRest<ObjKeyState> {
+pub fn classify(ver: u32, row: Option<&ObjRdbRow>) -> ObjDeptRest<ObjKeyState> {
     //
     let Some(row) = row else {
         return Ok(ObjKeyState::Missing);
     };
 
-    let watermark = u32::try_from(row.version).map_err(|_| {
+    let watermark = u32::try_from(row.ver).map_err(|_| {
         //
         ObjDeptError::Unrecoverable {
-            message: "object version is outside u32".into(),
+            message: "object ver is outside u32".into(),
         }
     })?;
 
-    match version.cmp(&watermark) {
+    match ver.cmp(&watermark) {
         //
         Ordering::Less => Ok(ObjKeyState::Stale),
 
@@ -82,7 +79,7 @@ pub fn classify(
                 }
 
                 (Some(_), Some(true), Some(_), Some(_)) => {
-                    Ok(ObjKeyState::Available)
+                    Ok(ObjKeyState::Avail)
                 }
 
                 _ => Err(ObjDeptError::Unrecoverable {
@@ -111,7 +108,7 @@ macro_rules! handle_obj_task {
             <$obj as ::poprako_obj_dept::key::KeyMap>::reverse(physical_key)?;
         let task_key_is_consistent =
             <$obj as ::poprako_obj_dept::key::KeyMap>::id(&dom) == key.id
-                && decoded_version == key.version
+                && decoded_version == key.ver
                 && <$obj as ::poprako_obj_dept::key::KeyMap>::forward(
                     &dom,
                     decoded_version,
@@ -146,7 +143,7 @@ macro_rules! handle_obj_task {
             _ => ($obj_mod::load(&mut conn, &key.id, false).await?, None),
         };
         let state = ::poprako_obj_dept::actor::rdb_impl::classify(
-            key.version,
+            key.ver,
             row.as_ref(),
         )?;
 
@@ -158,7 +155,7 @@ macro_rules! handle_obj_task {
         if active_key
             .as_ref()
             .is_some_and(|active_key| {
-                active_key.version == key.version
+                active_key.ver == key.ver
                     && active_key.image != key.image
             })
         {
@@ -225,7 +222,7 @@ macro_rules! handle_obj_task {
                         $obj_mod::mark_uploaded_if_revision(
                             &mut conn,
                             &key.id,
-                            key.version,
+                            key.ver,
                             initial_revision,
                         )
                             .await?
@@ -234,7 +231,7 @@ macro_rules! handle_obj_task {
                         $obj_mod::mark_unuploaded_if_revision(
                             &mut conn,
                             &key.id,
-                            key.version,
+                            key.ver,
                             initial_revision,
                         )
                             .await?
@@ -247,7 +244,7 @@ macro_rules! handle_obj_task {
                             .await?;
 
                         Some(::poprako_obj_dept::actor::rdb_impl::classify(
-                            key.version,
+                            key.ver,
                             row.as_ref(),
                         )?)
                     }
@@ -340,7 +337,7 @@ macro_rules! handle_obj_task {
             (
                 ::poprako_obj_dept::model::task::DELETE,
                 ::poprako_obj_dept::actor::rdb_impl::ObjKeyState::Unavailable
-                | ::poprako_obj_dept::actor::rdb_impl::ObjKeyState::Available
+                | ::poprako_obj_dept::actor::rdb_impl::ObjKeyState::Avail
                 | ::poprako_obj_dept::actor::rdb_impl::ObjKeyState::Future,
             ) => Ok(::poprako_obj_dept::model::task::ObjTaskAction::Operator {
                 message: "delete task targets current object".into(),

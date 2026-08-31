@@ -13,20 +13,20 @@ use utoipa::ToSchema;
 use crate::data::view::image::ImageUploadSlotView;
 use crate::value::image::{ImageExt, ImageHash};
 
-/// Return value from successful chapter page reservations.
+/// Return value from successful chapter page allocations.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
-pub struct ReserveChapterPagesVal {
-    /// Reserved pages with upload targets.
-    pub pages: Vec<ReservedPageVal>,
+pub struct AllocChapterPagesVal {
+    /// Allocated pages with upload targets.
+    pub pages: Vec<AllocatedPageVal>,
 }
 
-/// One reserved page upload target.
+/// One allocated page upload target.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
-pub struct ReservedPageVal {
+pub struct AllocatedPageVal {
     //
-    /// Reserved page identifier.
+    /// Allocated page identifier.
     pub page_id: String,
 
     /// Ordinal position within the chapter.

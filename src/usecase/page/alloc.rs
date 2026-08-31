@@ -1,4 +1,4 @@
-//! Chapter page-manifest and page-image reservation.
+//! Chapter page-manifest and page-image allocation.
 
 /// Manifest validation rules.
 pub mod validation;
@@ -21,10 +21,8 @@ use crate::complex::chapter::ChapterComplex;
 use crate::complex::image::ImageComplex;
 use crate::complex::page::{PageComplex, PagePermComplex};
 use crate::config::image::ImageConfig;
-use crate::data::instr::page::{
-    ReserveChapterPagesInstr, ReservePageImageInstr,
-};
-use crate::data::val::page::{ReserveChapterPagesVal, ReservedPageVal};
+use crate::data::instr::page::{AllocChapterPagesInstr, AllocPageImageInstr};
+use crate::data::val::page::{AllocChapterPagesVal, AllocatedPageVal};
 use crate::data::view::image::ImageUploadSlotView;
 use crate::model::read::proj::page::PageInfo;
 use crate::model::shared::user::UserToken;
@@ -53,8 +51,8 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 use crate::value::image::{ImageExt, ImageHash, ImageKind, PageImageKey};
 
-// One page and its resolved object reservation.
-struct PageReservation {
+// One page and its resolved object allocation.
+struct PageAlloc {
     //
     // Stable page identifier.
     page_id: String,
@@ -68,13 +66,13 @@ struct PageReservation {
     obj_slot: Option<ObjSlot>,
 }
 
-/// Reserves the authoritative page manifest and its required image uploads.
+/// Allocates the authoritative page manifest and its required image uploads.
 #[instrument(level = "info", skip(nucl, repo, prom, obj_dept, image_config))]
-pub async fn reserve_chapter_pages<N, C, R, P, O>(
+pub async fn alloc_chapter_pages<N, C, R, P, O>(
     (nucl, repo, prom, obj_dept, image_config): (&N, &R, &P, &O, &ImageConfig),
     token: UserToken,
-    instr: ReserveChapterPagesInstr,
-) -> BaseRest<ReserveChapterPagesVal>
+    instr: AllocChapterPagesInstr,
+) -> BaseRest<AllocChapterPagesVal>
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError> + Sync,
@@ -88,7 +86,7 @@ where
     P: Prom<C> + Send + Sync,
     O: ObjDept<PageImage, C> + Send + Sync,
 {
-    let ReserveChapterPagesInstr { chapter_id, pages } = instr;
+    let AllocChapterPagesInstr { chapter_id, pages } = instr;
 
     let page_specs = pages
         .into_iter()
@@ -102,9 +100,9 @@ where
         &token.user_id,
     )?;
 
-    ensure_reserve_perm::<C, R>(repo, &token, &chapter_id).await?;
+    ensure_alloc_perm::<C, R>(repo, &token, &chapter_id).await?;
 
-    let reservations = nucl
+    let allocs = nucl
         .coord(async move |context| {
             //
             apply_manifest(
@@ -118,22 +116,22 @@ where
         })
         .await?;
 
-    let pages = reservations
+    let pages = allocs
         .into_iter()
-        .map(reservation_val)
+        .map(alloc_val)
         .collect::<BaseRest<Vec<_>>>()?;
 
-    accept(ReserveChapterPagesVal { pages })
+    accept(AllocChapterPagesVal { pages })
 }
 
-/// Reserves a replacement image generation for one page.
+/// Allocates a replacement image generation for one page.
 #[instrument(level = "info", skip(nucl, repo, prom, obj_dept, image_config))]
-pub async fn reserve_image<N, C, R, P, O>(
+pub async fn alloc_image<N, C, R, P, O>(
     (nucl, repo, prom, obj_dept, image_config): (&N, &R, &P, &O, &ImageConfig),
     token: UserToken,
     id: String,
-    instr: ReservePageImageInstr,
-) -> BaseRest<ReservedPageVal>
+    instr: AllocPageImageInstr,
+) -> BaseRest<AllocatedPageVal>
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError> + Sync,
@@ -150,7 +148,7 @@ where
 
     let page_info = GetPageInfo { id: &id }.run_on(repo).await?;
 
-    ensure_reserve_perm::<C, R>(repo, &token, &page_info.chapter_id).await?;
+    ensure_alloc_perm::<C, R>(repo, &token, &page_info.chapter_id).await?;
 
     let page_id = id.clone();
 
@@ -213,7 +211,7 @@ where
         })
         .await?;
 
-    reservation_val(PageReservation {
+    alloc_val(PageAlloc {
         page_id,
         index: page_index,
         image_hash,
@@ -233,7 +231,7 @@ async fn apply_manifest<C, R, P, O>(
     chapter_id: &str,
     page_specs: &[PageImageSpec],
     page_count: usize,
-) -> BaseRest<Vec<PageReservation>>
+) -> BaseRest<Vec<PageAlloc>>
 where
     C: Context + Send,
     R: ChapterRepo<C> + ComicRepo<C> + PageRepo<C> + Send + Sync,
@@ -360,7 +358,7 @@ where
         .await
         .map_err(BaseError::from)?;
 
-    let page_reservations = manifest_entries
+    let page_allocs = manifest_entries
         .iter()
         .zip(page_specs)
         .map(|(manifest_entry, page_spec)| {
@@ -379,7 +377,7 @@ where
                 None => None,
             };
 
-            accept(PageReservation {
+            accept(PageAlloc {
                 page_id: page_info.id.clone(),
                 index: page_info.index,
                 image_hash: page_spec.image_hash.clone(),
@@ -436,30 +434,30 @@ where
     .step_on(repo, context)
     .await?;
 
-    accept(page_reservations)
+    accept(page_allocs)
 }
 
-// Converts one internal reservation into its response view.
-fn reservation_val(reservation: PageReservation) -> BaseRest<ReservedPageVal> {
+// Converts one internal allocation into its response view.
+fn alloc_val(alloc: PageAlloc) -> BaseRest<AllocatedPageVal> {
     //
-    let slot = reservation.obj_slot.map(|obj_slot| ImageUploadSlotView {
+    let slot = alloc.obj_slot.map(|obj_slot| ImageUploadSlotView {
         put_url: obj_slot.url.to_string(),
-        image_version: obj_slot.key.version,
+        image_ver: obj_slot.key.ver,
         headers: obj_slot.headers,
     });
 
-    let index = u32::try_from(reservation.index).map_err(|_| {
+    let index = u32::try_from(alloc.index).map_err(|_| {
         //
         BaseError::Unrecoverable {
             message: "page index is out of range".into(),
         }
     })?;
 
-    accept(ReservedPageVal {
-        page_id: reservation.page_id,
+    accept(AllocatedPageVal {
+        page_id: alloc.page_id,
         index,
-        image_hash: reservation.image_hash,
-        ext: reservation.ext,
+        image_hash: alloc.image_hash,
+        ext: alloc.ext,
         slot,
     })
 }
@@ -515,7 +513,7 @@ fn ensure_retained_obj(
     let same_hash = obj_meta.hash.as_slice() == page_spec.image_hash.as_bytes();
 
     match (
-        obj_meta.is_available,
+        obj_meta.is_avail,
         same_hash,
         obj_meta.ext == page_spec.ext.suffix(),
     ) {
@@ -566,7 +564,7 @@ fn obj_slot_result_missing() -> BaseError {
 }
 
 // Validates the caller and current chapter state.
-async fn ensure_reserve_perm<C, R>(
+async fn ensure_alloc_perm<C, R>(
     repo: &R,
     token: &UserToken,
     chapter_id: &str,
@@ -586,9 +584,9 @@ where
         //
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
-            message: trl("error-page-reserve-role-required"),
+            message: trl("error-page-alloc-role-required"),
         });
     };
 
-    PagePermComplex::ensure_user_can_reserve(&assignment_info)
+    PagePermComplex::ensure_user_can_alloc(&assignment_info)
 }

@@ -187,7 +187,7 @@ export async function reserveTeamAvatar(
 ): Promise<ReserveImageVal> {
     return reserveAndUploadImage(
         api,
-        `/api/v1/teams/${teamId}/avatar/reserve`,
+        `/api/v1/teams/${teamId}/avatar/alloc`,
         `poprako-team-avatar-${teamId}-${ext}`,
         ext,
     );
@@ -246,7 +246,7 @@ export async function reserveUserAvatar(
 ): Promise<ReserveImageVal> {
     return reserveAndUploadImage(
         api,
-        `/api/v1/users/${userId}/avatar/reserve`,
+        `/api/v1/users/${userId}/avatar/alloc`,
         `poprako-user-avatar-${userId}-${ext}`,
         ext,
     );
@@ -476,7 +476,7 @@ export async function reserveComicCover(
 ): Promise<ReserveImageVal> {
     return reserveAndUploadImage(
         api,
-        `/api/v1/comics/${comicId}/cover/reserve`,
+        `/api/v1/comics/${comicId}/cover/alloc`,
         `poprako-comic-cover-${comicId}-${ext}`,
         ext,
     );
@@ -637,7 +637,7 @@ export async function reserveChapterPages(
 ): Promise<ReserveChapterPagesVal> {
     const reserved = expectSuccessData(
         await api.post<SuccessBody<ReserveChapterPagesVal>>(
-            `/api/v1/chapters/${chapterId}/pages/reserve`,
+            `/api/v1/chapters/${chapterId}/pages/alloc`,
             {
                 chapter_id: chapterId,
                 pages,
@@ -668,7 +668,7 @@ export async function reservePageImage(
     const imageHash = createHash("sha256").update(imageBytes).digest("base64");
 
     const reserved = expectSuccessData(
-        await api.post<SuccessBody<ReservedPageVal>>(`/api/v1/pages/${pageId}/image/reserve`, {
+        await api.post<SuccessBody<ReservedPageVal>>(`/api/v1/pages/${pageId}/image/alloc`, {
             image_hash: imageHash,
             new_byte_len: imageBytes.byteLength,
             ext,

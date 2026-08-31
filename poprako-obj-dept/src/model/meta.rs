@@ -10,7 +10,7 @@ pub struct ObjMeta {
     ///
     /// A client upload mark enables availability optimistically. The object
     /// actor may revoke it later when its presence check fails.
-    pub is_available: bool,
+    pub is_avail: bool,
     /// Opaque content hash.
     pub hash: Vec<u8>,
     /// Validated object suffix.

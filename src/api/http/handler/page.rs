@@ -1,4 +1,4 @@
-//! Page handlers: list, delete, batch reserve, and single image upload flow.
+//! Page handlers: list, delete, batch allocation, and single image upload flow.
 
 use axum::Json;
 use axum::extract::{Extension, Path, State};
@@ -15,10 +15,10 @@ use crate::api::http::result::{
 };
 use crate::api::http::state::AppHarn;
 use crate::data::instr::page::{
-    ListPageInfosInstr, MarkPageImageUploadedInstr, ReserveChapterPagesInstr,
-    ReservePageImageInstr,
+    AllocChapterPagesInstr, AllocPageImageInstr, ListPageInfosInstr,
+    MarkPageImageUploadedInstr,
 };
-use crate::data::val::page::{ReserveChapterPagesVal, ReservedPageVal};
+use crate::data::val::page::{AllocChapterPagesVal, AllocatedPageVal};
 use crate::data::view::page::PageInfoView;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
@@ -112,31 +112,31 @@ pub async fn delete(
     no_content()
 }
 
-/// `POST /api/v1/chapters/{chapter_id}/pages/reserve` — reserve all page images.
+/// `POST /api/v1/chapters/{chapter_id}/pages/alloc` — allocate all page images.
 #[cfg_attr(feature = "swagger", utoipa::path(
     post,
-    path = "/api/v1/chapters/{chapter_id}/pages/reserve",
+    path = "/api/v1/chapters/{chapter_id}/pages/alloc",
     tag = "pages",
     params(("chapter_id" = String, Path, description = "Chapter ID")),
-    request_body = ReserveChapterPagesInstr,
+    request_body = AllocChapterPagesInstr,
     responses(
-        (status = 200, description = "Page upload slots reserved", body = HttpBody<ReserveChapterPagesVal>),
+        (status = 200, description = "Page upload slots allocated", body = HttpBody<AllocChapterPagesVal>),
         (status = 422, description = "Path id does not match body chapter id"),
-        (status = 403, description = "No perm to reserve pages in this chapter"),
+        (status = 403, description = "No perm to allocate pages in this chapter"),
         (status = 422, description = "Invalid authoritative manifest, duplicate page identity, image metadata, or published chapter"),
     ),
 ))]
 #[instrument(level = "info", skip_all)]
-pub async fn reserve_chapter_pages(
+pub async fn alloc_chapter_pages(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(instr): Json<ReserveChapterPagesInstr>,
-) -> HttpResult<ReserveChapterPagesVal> {
+    Json(instr): Json<AllocChapterPagesInstr>,
+) -> HttpResult<AllocChapterPagesVal> {
     //
     ensure_path_matches_body_id(&chapter_id, &instr.chapter_id)?;
 
-    usecase::page::reserve::reserve_chapter_pages::<
+    usecase::page::alloc::alloc_chapter_pages::<
         _,
         RdbContext<ReptRead>,
         HybRepo,
@@ -157,34 +157,28 @@ pub async fn reserve_chapter_pages(
     .accept(StatusCode::OK)
 }
 
-/// `POST /api/v1/pages/{page_id}/image/reserve` — reserve a replacement page image.
+/// `POST /api/v1/pages/{page_id}/image/alloc` — allocate a replacement page image.
 #[cfg_attr(feature = "swagger", utoipa::path(
     post,
-    path = "/api/v1/pages/{page_id}/image/reserve",
+    path = "/api/v1/pages/{page_id}/image/alloc",
     tag = "pages",
     params(("page_id" = String, Path, description = "Page ID")),
-    request_body = ReservePageImageInstr,
+    request_body = AllocPageImageInstr,
     responses(
-        (status = 200, description = "Page image upload URL reserved", body = HttpBody<ReservedPageVal>),
+        (status = 200, description = "Page image upload URL allocated", body = HttpBody<AllocatedPageVal>),
         (status = 403, description = "No perm to modify this page's image"),
         (status = 422, description = "Page not found, conflicting image metadata, or published chapter"),
     ),
 ))]
 #[instrument(level = "info", skip_all)]
-pub async fn reserve_image(
+pub async fn alloc_image(
     State(harn): State<AppHarn>,
     Path(page_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(instr): Json<ReservePageImageInstr>,
-) -> HttpResult<ReservedPageVal> {
+    Json(instr): Json<AllocPageImageInstr>,
+) -> HttpResult<AllocatedPageVal> {
     //
-    usecase::page::reserve::reserve_image::<
-        _,
-        RdbContext<ReptRead>,
-        HybRepo,
-        _,
-        _,
-    >(
+    usecase::page::alloc::alloc_image::<_, RdbContext<ReptRead>, HybRepo, _, _>(
         (
             harn.nucl().rept_read(),
             harn.repo(),

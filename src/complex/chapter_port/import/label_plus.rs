@@ -237,14 +237,14 @@ where
     I: Iterator<Item = &'a str>,
 {
     //
-    let Some(version_line) = lines.next() else {
+    let Some(ver_line) = lines.next() else {
         //
         return Err(invalid_label_plus_content(
             "LabelPlus version line is missing",
         ));
     };
 
-    if !version_line
+    if !ver_line
         .chars()
         .next()
         .is_some_and(|character| character.is_ascii_digit())

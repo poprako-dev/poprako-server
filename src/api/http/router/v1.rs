@@ -29,10 +29,7 @@ pub fn v1_user_router() -> Router<AppHarn> {
                 .delete(user::delete),
         )
         .route("/users/{user_id}/password", put(user::update_password))
-        .route(
-            "/users/{user_id}/avatar/reserve",
-            post(user::reserve_avatar),
-        )
+        .route("/users/{user_id}/avatar/alloc", post(user::alloc_avatar))
         .route(
             "/users/{user_id}/avatar/mark-uploaded",
             post(user::mark_avatar_uploaded),
@@ -50,10 +47,7 @@ pub fn v1_team_router() -> Router<AppHarn> {
                 .put(team::update_info)
                 .delete(team::delete),
         )
-        .route(
-            "/teams/{team_id}/avatar/reserve",
-            post(team::reserve_avatar),
-        )
+        .route("/teams/{team_id}/avatar/alloc", post(team::alloc_avatar))
         .route(
             "/teams/{team_id}/avatar/mark-uploaded",
             post(team::mark_avatar_uploaded),
@@ -137,10 +131,7 @@ pub fn v1_comic_router() -> Router<AppHarn> {
                 .put(comic::update_info)
                 .delete(comic::delete),
         )
-        .route(
-            "/comics/{comic_id}/cover/reserve",
-            post(comic::reserve_cover),
-        )
+        .route("/comics/{comic_id}/cover/alloc", post(comic::alloc_cover))
         .route(
             "/comics/{comic_id}/cover/mark-uploaded",
             post(comic::mark_cover_uploaded),
@@ -208,11 +199,11 @@ pub fn v1_page_router() -> Router<AppHarn> {
             get(page::list_infos).delete(page::delete),
         )
         .route(
-            "/chapters/{chapter_id}/pages/reserve",
-            post(page::reserve_chapter_pages),
+            "/chapters/{chapter_id}/pages/alloc",
+            post(page::alloc_chapter_pages),
         )
         .route("/pages/{page_id}", get(page::get_info))
-        .route("/pages/{page_id}/image/reserve", post(page::reserve_image))
+        .route("/pages/{page_id}/image/alloc", post(page::alloc_image))
         .route(
             "/pages/{page_id}/image/mark-uploaded",
             post(page::mark_image_uploaded),

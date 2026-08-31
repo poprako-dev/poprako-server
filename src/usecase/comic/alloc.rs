@@ -8,8 +8,8 @@ use poprako_obj_dept::oper::GenObjSlot;
 use crate::complex::comic::{ComicComplex, ComicPermComplex};
 use crate::complex::image::ImageComplex;
 use crate::config::image::ImageConfig;
-use crate::data::instr::comic::ReserveComicCoverInstr;
-use crate::data::val::comic::ReserveComicCoverVal;
+use crate::data::instr::comic::AllocComicCoverInstr;
+use crate::data::val::comic::AllocComicCoverVal;
 use crate::data::view::image::ImageUploadSlotView;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
@@ -23,14 +23,14 @@ use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
 use crate::value::image::{ComicCoverKey, ImageKind};
 
-/// Reserves a new comic cover upload slot.
+/// Allocates a new comic cover upload slot.
 #[instrument(level = "info", skip(nucl, repo, obj_dept, image_config))]
-pub async fn reserve_cover<N, C, R, O>(
+pub async fn alloc_cover<N, C, R, O>(
     (nucl, repo, obj_dept, image_config): (&N, &R, &O, &ImageConfig),
     token: UserToken,
     id: String,
-    instr: ReserveComicCoverInstr,
-) -> BaseRest<ReserveComicCoverVal>
+    instr: AllocComicCoverInstr,
+) -> BaseRest<AllocComicCoverVal>
 where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError> + Sync,
@@ -52,7 +52,7 @@ where
     )
     .await?;
 
-    ComicPermComplex::ensure_user_can_reserve_cover(&member_info)?;
+    ComicPermComplex::ensure_user_can_alloc_cover(&member_info)?;
 
     let obj_slot = nucl
         .coord(async move |context| {
@@ -85,9 +85,9 @@ where
 
     let slot = Some(ImageUploadSlotView {
         put_url: obj_slot.url.to_string(),
-        image_version: obj_slot.key.version,
+        image_ver: obj_slot.key.ver,
         headers: obj_slot.headers,
     });
 
-    accept(ReserveComicCoverVal { slot })
+    accept(AllocComicCoverVal { slot })
 }

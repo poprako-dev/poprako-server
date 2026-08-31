@@ -77,13 +77,13 @@ fn token(user_id: &str) -> UserToken {
 fn seed_team_avatar(mock: &Mock, version: u32) {
     let key = ObjKey {
         id: "team-1".into(),
-        version,
+        ver: version,
         image: format!("team_avatar/team-1-{}.png", version),
     };
 
     let meta = ObjMeta {
         key,
-        is_available: false,
+        is_avail: false,
         hash: vec![0; 32],
         ext: "png".into(),
     };
@@ -111,9 +111,7 @@ async fn mark_team_avatar(
         (mock, mock),
         token("user-1"),
         "team-1".into(),
-        MarkTeamAvatarUploadedInstr {
-            image_version: version,
-        },
+        MarkTeamAvatarUploadedInstr { image_ver: version },
     )
     .await
 }
@@ -424,7 +422,7 @@ async fn mark_avatar_uploaded_marks_current_generation_idempotently() {
             .meta
             .as_ref()
             .unwrap()
-            .is_available
+            .is_avail
     );
 }
 
@@ -445,6 +443,6 @@ async fn mark_avatar_uploaded_rejects_stale_generation() {
             .meta
             .as_ref()
             .unwrap()
-            .is_available
+            .is_avail
     );
 }

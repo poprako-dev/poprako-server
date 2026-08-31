@@ -262,7 +262,7 @@ fn cleanup_operations_retain_their_input_ids() {
 fn task() -> ObjPromTask {
     let key = crate::key::ObjKey {
         id: "page-1".into(),
-        version: 7,
+        ver: 7,
         image: "page/page-1-7.png".into(),
     };
 
@@ -271,9 +271,9 @@ fn task() -> ObjPromTask {
         topic: "page_image".into(),
         oper: CHECK.into(),
         obj_id: key.id,
-        version: i64::from(key.version),
+        ver: i64::from(key.ver),
         image: key.image,
-        generation: 2,
+        gen_no: 2,
         retried_count: 1,
         lease: 11,
     }
@@ -294,7 +294,7 @@ fn task_envelope_rejects_invalid_identity_and_counters() {
 
     let mut negative_generation = task();
 
-    negative_generation.generation = -1;
+    negative_generation.gen_no = -1;
 
     assert!(validate_task(&negative_generation).is_err());
 
@@ -316,7 +316,7 @@ fn task_envelope_rejects_invalid_identity_and_counters() {
 fn unavailable_and_available_generations_require_presence_reconciliation() {
     assert!(requires_presence_reconciliation(ObjKeyState::Unavailable,));
 
-    assert!(requires_presence_reconciliation(ObjKeyState::Available));
+    assert!(requires_presence_reconciliation(ObjKeyState::Avail));
 
     assert!(!requires_presence_reconciliation(ObjKeyState::Retired));
 }
@@ -324,7 +324,7 @@ fn unavailable_and_available_generations_require_presence_reconciliation() {
 #[cfg(feature = "rdb_impl")]
 #[test]
 fn concurrent_mark_after_absent_head_retries_presence_reconciliation() {
-    assert!(presence_cas_conflict_requires_retry(ObjKeyState::Available,));
+    assert!(presence_cas_conflict_requires_retry(ObjKeyState::Avail,));
 }
 
 #[cfg(feature = "rdb_impl")]
@@ -338,7 +338,7 @@ fn newer_generation_after_head_does_not_retry_old_presence_update() {
 fn upload_evidence_classification_preserves_active_metadata()
 -> crate::rest::ObjDeptRest<()> {
     let unavailable = crate::rdb_impl::ObjRdbRow {
-        version: 4,
+        ver: 4,
         key: Some("page/page-1-4.png".into()),
         f_is_uploaded: Some(false),
         hash: Some(vec![7; 32]),
@@ -351,7 +351,7 @@ fn upload_evidence_classification_preserves_active_metadata()
 
     assert_eq!(classify(4, Some(&unavailable))?, ObjKeyState::Unavailable,);
 
-    assert_eq!(classify(4, Some(&available))?, ObjKeyState::Available);
+    assert_eq!(classify(4, Some(&available))?, ObjKeyState::Avail);
 
     assert_eq!(unavailable.hash, available.hash);
 

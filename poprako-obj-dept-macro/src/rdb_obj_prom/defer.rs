@@ -23,11 +23,11 @@ pub fn expand_module(table: &Path) -> TokenStream {
             #[diesel(column_name = f_obj_id)]
             obj_id: String,
             #[diesel(column_name = f_version)]
-            version: i64,
+            ver: i64,
             #[diesel(column_name = f_key)]
             image: String,
             #[diesel(column_name = f_generation)]
-            generation: i64,
+            gen_no: i64,
             #[diesel(column_name = f_status)]
             status: String,
         }
@@ -44,11 +44,11 @@ pub fn expand_module(table: &Path) -> TokenStream {
             #[diesel(column_name = f_obj_id)]
             obj_id: &'a str,
             #[diesel(column_name = f_version)]
-            version: i64,
+            ver: i64,
             #[diesel(column_name = f_key)]
             image: &'a str,
             #[diesel(column_name = f_generation)]
-            generation: i64,
+            gen_no: i64,
             #[diesel(column_name = f_status)]
             status: &'a str,
             #[diesel(column_name = f_visible_at)]
@@ -105,9 +105,9 @@ pub fn expand_module(table: &Path) -> TokenStream {
                     topic,
                     oper: task.oper,
                     obj_id: &task.key.id,
-                    version: i64::from(task.key.version),
+                    ver: i64::from(task.key.ver),
                     image: &task.key.image,
-                    generation: ORDINARY_GENERATION,
+                    gen_no: ORDINARY_GENERATION,
                     status: PENDING,
                     visible_at: task.visible_at,
                 })
@@ -135,9 +135,9 @@ pub fn expand_module(table: &Path) -> TokenStream {
                         topic,
                         oper,
                         obj_id,
-                        version,
+                        ver,
                         image,
-                        generation,
+                        gen_no: gen_value,
                         status,
                     } = row;
 
@@ -147,9 +147,9 @@ pub fn expand_module(table: &Path) -> TokenStream {
                             topic,
                             oper,
                             obj_id,
-                            version,
+                            ver,
                             image,
-                            generation,
+                            gen_value,
                             status,
                         ),
                     )
@@ -176,18 +176,18 @@ pub fn expand_module(table: &Path) -> TokenStream {
                     row_topic,
                     row_oper,
                     row_obj_id,
-                    row_version,
+                    row_ver,
                     row_image,
-                    row_generation,
+                    row_gen,
                     row_status,
                 ) = row;
 
                 let is_same_identity = row_topic == topic
                     && row_oper == task.oper
                     && row_obj_id == &task.key.id
-                    && *row_version == i64::from(task.key.version)
+                    && *row_ver == i64::from(task.key.ver)
                     && row_image == &task.key.image
-                    && *row_generation == ORDINARY_GENERATION;
+                    && *row_gen == ORDINARY_GENERATION;
 
                 if !is_same_identity {
                     //

@@ -172,7 +172,7 @@ where
                 //
                 obj_metas
                     .get(&page_info.id)
-                    .is_some_and(|obj_meta| obj_meta.is_available)
+                    .is_some_and(|obj_meta| obj_meta.is_avail)
             });
 
             if !are_images_uploaded {
