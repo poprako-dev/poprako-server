@@ -7468,6 +7468,13 @@
                   }
                 ]
               },
+              "image_optimized_url": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Download URL for the optimized image, if available."
+              },
               "image_thumbnail_url": {
                 "type": [
                   "string",
@@ -8530,6 +8537,13 @@
                       "description": "Content hash of the page image, if one exists."
                     }
                   ]
+                },
+                "image_optimized_url": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Download URL for the optimized image, if available."
                 },
                 "image_thumbnail_url": {
                   "type": [
@@ -9847,6 +9861,13 @@
                 "description": "Content hash of the page image, if one exists."
               }
             ]
+          },
+          "image_optimized_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Download URL for the optimized image, if available."
           },
           "image_thumbnail_url": {
             "type": [

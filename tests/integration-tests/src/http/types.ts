@@ -217,6 +217,7 @@ export interface PageInfoView {
     chapter_id: string;
     index: number;
     image_url?: string;
+    image_optimized_url?: string;
     image_thumbnail_url?: string;
     image_hash?: string;
     ext?: ImageExtension;

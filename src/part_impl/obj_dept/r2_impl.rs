@@ -20,8 +20,8 @@ use tracing::instrument;
 use url::Url;
 
 use poprako_obj_dept::model::slot::ObjPoolSlot;
-use poprako_obj_dept::model::url::ObjUrls;
-use poprako_obj_dept::pool::{ObjPool, ObjPoolView, ObjUrlProfile};
+use poprako_obj_dept::model::url::{ObjUrlSpec, ObjUrls};
+use poprako_obj_dept::pool::{ObjPool, ObjPoolView, ensure_url_spec};
 use poprako_obj_dept::rest::{ObjDeptError, ObjDeptRest};
 
 // Expiration duration for presigned upload URLs (10 minutes).
@@ -114,9 +114,9 @@ impl ObjPoolView for R2ObjPool {
     async fn gen_urls(
         &self,
         key: &str,
-        profile: ObjUrlProfile,
+        spec: ObjUrlSpec,
     ) -> ObjDeptRest<ObjUrls> {
-        build_obj_urls(&self.domain, key, profile)
+        build_obj_urls(&self.domain, key, spec)
     }
 
     #[instrument(level = "info", skip_all)]
@@ -309,32 +309,44 @@ fn build_public_url(domain: &str, path: &str) -> ObjDeptRest<Url> {
     parse_public_url(&format!("https://{}/{}", domain, path))
 }
 
+// Builds one Cloudflare image-transformation URL.
+fn build_image_url(domain: &str, key: &str, width: u16) -> ObjDeptRest<Url> {
+    //
+    let path = format!(
+        "cdn-cgi/image/width={},fit=scale-down,quality=80,format=auto,metadata=none/{}",
+        width, key,
+    );
+
+    build_public_url(domain, &path)
+}
+
 // Builds object URLs without initializing or contacting the R2 SDK client.
 fn build_obj_urls(
     domain: &str,
     key: &str,
-    profile: ObjUrlProfile,
+    spec: ObjUrlSpec,
 ) -> ObjDeptRest<ObjUrls> {
     //
-    let origin_url = build_public_url(domain, key)?;
+    ensure_url_spec(spec)?;
 
-    let thumbnail_url = match profile {
-        //
-        ObjUrlProfile::OriginOnly => None,
+    let origin_url = spec
+        .includes_origin()
+        .then(|| build_public_url(domain, key))
+        .transpose()?;
 
-        ObjUrlProfile::ImageThumbnail => {
-            //
-            let thumbnail_path = format!(
-                "cdn-cgi/image/width=300,fit=scale-down,quality=80,format=auto,metadata=none/{}",
-                key,
-            );
+    let optimized_url = spec
+        .includes_optimized()
+        .then(|| build_image_url(domain, key, 1080))
+        .transpose()?;
 
-            Some(build_public_url(domain, &thumbnail_path)?)
-        }
-    };
+    let thumbnail_url = spec
+        .includes_thumbnail()
+        .then(|| build_image_url(domain, key, 300))
+        .transpose()?;
 
     Ok(ObjUrls {
         origin_url,
+        optimized_url,
         thumbnail_url,
     })
 }

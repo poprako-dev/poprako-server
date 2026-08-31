@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use poprako_orchestra::{Context, OperRun as _};
 
 use poprako_obj_dept::ObjDeptView;
-use poprako_obj_dept::model::url::ObjUrls;
+use poprako_obj_dept::model::url::{ObjUrlSpec, ObjUrls};
 use poprako_obj_dept::oper::{GenObjUrls, ListObjMetas};
 
 use crate::data::view::team::TeamInfoView;
@@ -38,7 +38,8 @@ pub fn team_info_view_from_urls(
     //
     TeamInfoView::from_model(
         model,
-        urls.map(|urls| urls.origin_url.to_string()),
+        urls.and_then(|urls| urls.origin_url.as_ref())
+            .map(ToString::to_string),
         urls.and_then(|urls| urls.thumbnail_url.as_ref())
             .map(ToString::to_string),
     )
@@ -97,7 +98,9 @@ where
         .await
         .map_err(BaseError::from)?;
 
-    let avatar_urls = GenObjUrls::<TeamAvatar>::new(&obj_metas)
+    let obj_url_spec = ObjUrlSpec::default().with_origin().with_thumbnail();
+
+    let avatar_urls = GenObjUrls::<TeamAvatar>::new(&obj_metas, obj_url_spec)
         .run_on(obj_dept)
         .await
         .map_err(BaseError::from)?;

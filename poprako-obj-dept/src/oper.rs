@@ -6,7 +6,7 @@ use poprako_orchestra::Oper;
 use crate::key::{KeyMap, ObjGen};
 use crate::model::meta::ObjMeta;
 use crate::model::slot::{ObjSlot, ObjSlotSpec};
-use crate::model::url::ObjUrls;
+use crate::model::url::{ObjUrlSpec, ObjUrls};
 
 /// Reads current object metadata for a collection of business objects.
 #[derive(Oper)]
@@ -48,6 +48,8 @@ where
     //
     /// Metadata versions whose physical keys will be resolved.
     pub metas: &'a HashMap<String, ObjMeta>,
+    /// Read-URL renditions selected for this operation.
+    pub spec: ObjUrlSpec,
     /// Compile-time object marker selected for this operation.
     #[doc(hidden)]
     _m: PhantomData<fn() -> K>,
@@ -59,10 +61,14 @@ where
 {
     /// Creates a read-URL request for the supplied object metadata.
     #[must_use]
-    pub const fn new(metas: &'a HashMap<String, ObjMeta>) -> Self {
+    pub const fn new(
+        metas: &'a HashMap<String, ObjMeta>,
+        spec: ObjUrlSpec,
+    ) -> Self {
         //
         Self {
             metas,
+            spec,
             _m: PhantomData,
         }
     }

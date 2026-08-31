@@ -120,22 +120,18 @@ objs_def! {
     PageImage {
         table: t_page_image,
         topic: "page_image",
-        url_profile: ImageThumbnail,
     },
     UserAvatar {
         table: t_user_avatar,
         topic: "user_avatar",
-        url_profile: ImageThumbnail,
     },
     TeamAvatar {
         table: t_team_avatar,
         topic: "team_avatar",
-        url_profile: ImageThumbnail,
     },
     ComicCover {
         table: t_comic_cover,
         topic: "comic_cover",
-        url_profile: ImageThumbnail,
     },
 }
 
@@ -270,8 +266,8 @@ impl_obj_dept! {
 // Expands test adapters from the object manifest.
 #[cfg(test)]
 macro_rules! implement_mock_obj_dept_from_manifest {
-    ($(($marker:ident, $module:ident, $topic:literal, $url_profile:ident),)*) => {
-        $(implement_mock_obj_dept!($marker, $topic, $url_profile);)*
+    ($(($marker:ident, $module:ident, $topic:literal),)*) => {
+        $(implement_mock_obj_dept!($marker, $topic);)*
     };
 }
 

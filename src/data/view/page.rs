@@ -28,9 +28,12 @@ pub struct PageInfoView {
     /// Ordinal position within the chapter.
     pub index: usize,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
     /// Presigned download URL for the full image, if uploaded.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub image_url: Option<String>,
+    /// Download URL for the optimized image, if available.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub image_optimized_url: Option<String>,
     /// Presigned download URL for the thumbnail image, if available.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub image_thumbnail_url: Option<String>,
@@ -60,6 +63,7 @@ impl PageInfoView {
         model: PageInfo,
         obj_meta: Option<&ObjMeta>,
         image_url: Option<String>,
+        image_optimized_url: Option<String>,
         image_thumbnail_url: Option<String>,
     ) -> Self {
         //
@@ -77,6 +81,7 @@ impl PageInfoView {
             chapter_id: model.chapter_id,
             index: model.index,
             image_url,
+            image_optimized_url,
             image_thumbnail_url,
             image_hash,
             ext,

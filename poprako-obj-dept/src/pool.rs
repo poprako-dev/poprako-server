@@ -7,19 +7,8 @@ use futures_util::future::try_join_all;
 
 use crate::model::meta::ObjMeta;
 use crate::model::slot::ObjPoolSlot;
-use crate::model::url::ObjUrls;
-use crate::rest::ObjDeptRest;
-
-/// Static read-URL renditions requested by one object kind.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ObjUrlProfile {
-    //
-    /// Exposes only the original object URL.
-    OriginOnly,
-
-    /// Exposes the original URL and an image-thumbnail URL when supported.
-    ImageThumbnail,
-}
+use crate::model::url::{ObjUrlSpec, ObjUrls};
+use crate::rest::{ObjDeptError, ObjDeptRest};
 
 /// Read-only physical object operations.
 pub trait ObjPoolView {
@@ -27,7 +16,7 @@ pub trait ObjPoolView {
     fn gen_urls(
         &self,
         key: &str,
-        profile: ObjUrlProfile,
+        spec: ObjUrlSpec,
     ) -> impl Future<Output = ObjDeptRest<ObjUrls>> + Send;
 
     /// Checks whether one physical key exists.
@@ -48,11 +37,25 @@ pub trait ObjPool: ObjPoolView {
     fn del(&self, key: &str) -> impl Future<Output = ObjDeptRest<()>> + Send;
 }
 
+/// Rejects an object URL specification that selects no rendition.
+#[doc(hidden)]
+pub fn ensure_url_spec(spec: ObjUrlSpec) -> ObjDeptRest<()> {
+    //
+    if spec.is_empty() {
+        //
+        return Err(ObjDeptError::Invalid {
+            message: "at least one object URL must be selected".into(),
+        });
+    }
+
+    Ok(())
+}
+
 /// Resolves uploaded metadata through a bounded number of pool futures.
 #[doc(hidden)]
 pub async fn gen_urls_bounded<P, S>(
     pool: &P,
-    profile: ObjUrlProfile,
+    spec: ObjUrlSpec,
     metas: &HashMap<String, ObjMeta, S>,
 ) -> ObjDeptRest<HashMap<String, ObjUrls>>
 where
@@ -61,6 +64,8 @@ where
 {
     // Maximum pool requests resolved concurrently in one batch.
     const CONCURRENCY: usize = 20;
+
+    ensure_url_spec(spec)?;
 
     let mut uploaded = metas
         .iter()
@@ -75,7 +80,7 @@ where
         //
         let futures = chunk.iter().map(|(id, meta)| async move {
             //
-            let obj_urls = pool.gen_urls(&meta.key.image, profile).await?;
+            let obj_urls = pool.gen_urls(&meta.key.image, spec).await?;
 
             Ok(((*id).clone(), obj_urls))
         });
