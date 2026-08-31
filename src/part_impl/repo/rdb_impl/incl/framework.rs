@@ -25,6 +25,8 @@ use diesel::prelude::{
 use diesel_async::RunQueryDsl as _;
 use tracing::instrument;
 
+use poprako_rdb_core::RdbConn;
+
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::proj::team::TeamInfo;
@@ -39,7 +41,6 @@ use crate::part_impl::repo::rdb_impl::schema::{
     t_chapter, t_comic, t_team, t_user, t_workset,
 };
 use crate::result::{BaseRest, accept};
-use crate::shared::RdbConn;
 use crate::shared::result::diesel;
 
 // ── BatchByIds trait ────────────────────────────────────────────────────────
@@ -49,10 +50,10 @@ use crate::shared::result::diesel;
 /// Shared across every entity repo that needs eager-loading of this table's data.
 pub trait BatchByIds {
     /// The Diesel row type (Queryable + Selectable).
-    type Row: Send;
+    type Row;
 
     /// The domain info type produced from each row.
-    type Info: Clone + Send;
+    type Info;
 
     /// Execute `SELECT * FROM table WHERE f_id IN (...)`.
     fn load(
@@ -75,7 +76,7 @@ pub trait Incl {
     type Owner;
 
     /// The related entity being loaded.
-    type Related: Clone;
+    type Related;
 
     /// Which [`BatchByIds`] to use for the database query.
     type Query: BatchByIds<Info = Self::Related>;
@@ -102,6 +103,7 @@ pub async fn populate<I>(
 ) -> BaseRest<()>
 where
     I: Incl,
+    I::Related: Clone,
 {
     //
     let mut key_counts = HashMap::new();

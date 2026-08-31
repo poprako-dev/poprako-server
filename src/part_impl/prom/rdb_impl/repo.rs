@@ -1,7 +1,7 @@
 //! Repository for prom task handling and `t_local_message` lifecycle operations.
 //!
 //! These operation types and [`Step`] implementations are used exclusively
-//! by the background handler. They are NOT part of the public [`Prom`]
+//! by the background actor. They are NOT part of the public [`Prom`]
 //! port trait — only producer-side defer operations are exposed through the
 //! port system.
 //!
@@ -23,32 +23,6 @@ use crate::part_impl::repo::rdb_impl::schema::t_local_message;
 use crate::result::{BaseError, BaseRest, accept};
 use crate::shared::RdbContext;
 use crate::shared::result::diesel;
-
-// ── Handle ──────────────────────────────────────────────────────────────────
-
-/// Repository used by the prom background handler.
-///
-/// Owns the application repository used by topic handlers while also providing
-/// polling, claiming, completion, failure, retry, and recovery operations for
-/// records in `t_local_message`.
-///
-/// [`RdbPromHandler`]: super::handler::RdbPromHandler
-pub struct RdbPromRepo<R> {
-    /// Delegate application repository used by topic handlers.
-    repo: R,
-}
-
-impl<R> RdbPromRepo<R> {
-    /// Builds a new prom repository wrapping the given application repo.
-    pub const fn new(repo: R) -> Self {
-        Self { repo }
-    }
-
-    /// Returns the application repository used by topic handlers.
-    pub const fn inner(&self) -> &R {
-        &self.repo
-    }
-}
 
 // ── Operations ──────────────────────────────────────────────────────────────
 
@@ -143,6 +117,8 @@ pub struct RetryMessage<'a> {
     error: &'a str,
     /// Timestamp after which the retry becomes visible for processing.
     visible_at: &'a OffsetDateTime,
+    /// Amount consumed from the failure retry budget.
+    retry_delta: i64,
 }
 
 impl<'a> RetryMessage<'a> {
@@ -152,6 +128,7 @@ impl<'a> RetryMessage<'a> {
         lease: i64,
         err_msg: &'a str,
         visible_at: &'a OffsetDateTime,
+        retry_delta: i64,
     ) -> Self {
         //
         Self {
@@ -159,6 +136,7 @@ impl<'a> RetryMessage<'a> {
             lease,
             error: err_msg,
             visible_at,
+            retry_delta,
         }
     }
 }
@@ -206,10 +184,24 @@ impl<'a> PurgeCompleted<'a> {
 
 // ── Step impls ──────────────────────────────────────────────────────────────
 
-impl<R, L> Step<PollPending, RdbContext<L>> for RdbPromRepo<R>
+/// Queue repository used by the prom background actor.
+///
+/// Provides polling, claiming, completion, failure, retry, and recovery
+/// operations for records in `t_local_message`.
+///
+/// [`RdbPromActor`]: super::actor::base::RdbPromActor
+pub struct RdbPromRepo;
+
+impl RdbPromRepo {
+    /// Builds the local-message queue repository.
+    pub const fn new() -> Self {
+        Self
+    }
+}
+
+impl<L> Step<PollPending, RdbContext<L>> for RdbPromRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
-    R: Sync,
 {
     // Internal type alias for `Error`.
     type Level = ReptRead;
@@ -273,10 +265,9 @@ where
     }
 }
 
-impl<'a, R, L> Step<ClaimPending<'a>, RdbContext<L>> for RdbPromRepo<R>
+impl<'a, L> Step<ClaimPending<'a>, RdbContext<L>> for RdbPromRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
-    R: Sync,
 {
     // Internal type alias for `Error`.
     type Level = ReptRead;
@@ -319,10 +310,9 @@ where
     }
 }
 
-impl<'a, R, L> Step<CompleteMessage<'a>, RdbContext<L>> for RdbPromRepo<R>
+impl<'a, L> Step<CompleteMessage<'a>, RdbContext<L>> for RdbPromRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
-    R: Sync,
 {
     // Internal type alias for `Error`.
     type Level = ReptRead;
@@ -365,10 +355,9 @@ where
     }
 }
 
-impl<'a, R, L> Step<FailMessage<'a>, RdbContext<L>> for RdbPromRepo<R>
+impl<'a, L> Step<FailMessage<'a>, RdbContext<L>> for RdbPromRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
-    R: Sync,
 {
     // Internal type alias for `Error`.
     type Level = ReptRead;
@@ -411,10 +400,9 @@ where
     }
 }
 
-impl<'a, R, L> Step<RetryMessage<'a>, RdbContext<L>> for RdbPromRepo<R>
+impl<'a, L> Step<RetryMessage<'a>, RdbContext<L>> for RdbPromRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
-    R: Sync,
 {
     // Internal type alias for `Error`.
     type Level = ReptRead;
@@ -448,7 +436,7 @@ where
             t_local_message::f_status.eq(LocalMessageStatus::Pending.as_str()),
             t_local_message::f_last_error.eq(Some(oper.error)),
             t_local_message::f_retried_count
-                .eq(t_local_message::f_retried_count + 1),
+                .eq(t_local_message::f_retried_count + oper.retry_delta),
             t_local_message::f_visible_at.eq(*oper.visible_at),
             t_local_message::f_updated_at.eq(OffsetDateTime::now_utc()),
         ))
@@ -460,10 +448,9 @@ where
     }
 }
 
-impl<'a, R, L> Step<ResetStuck<'a>, RdbContext<L>> for RdbPromRepo<R>
+impl<'a, L> Step<ResetStuck<'a>, RdbContext<L>> for RdbPromRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
-    R: Sync,
 {
     // Internal type alias for `Error`.
     type Level = ReptRead;
@@ -526,10 +513,9 @@ where
     }
 }
 
-impl<'a, R, L> Step<PurgeCompleted<'a>, RdbContext<L>> for RdbPromRepo<R>
+impl<'a, L> Step<PurgeCompleted<'a>, RdbContext<L>> for RdbPromRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
-    R: Sync,
 {
     // Internal type alias for `Error`.
     type Level = ReptRead;

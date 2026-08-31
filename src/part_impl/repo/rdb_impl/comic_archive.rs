@@ -20,6 +20,7 @@ use poprako_orchestra::{AtLeast, Level, Run, Step};
 use time::OffsetDateTime;
 use tracing::instrument;
 
+use poprako_rdb_core::RdbConn;
 use poprako_util::i18n::trl;
 
 use crate::part::nucl::ReptRead;
@@ -53,7 +54,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_user::dsl::{f_id as user_id, t_u
 use crate::part_impl::repo::rdb_impl::schema::t_workset::dsl::{f_id as workset_id, t_workset};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::result::diesel;
-use crate::shared::{RdbConn, RdbContext};
+use crate::shared::RdbContext;
 
 // Standardize chain-corruption failures for unit graph validation.
 fn corrupt_unit_chain_err() -> BaseError {

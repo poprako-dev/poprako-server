@@ -20,6 +20,11 @@ impl UserComplex {
     }
 
     /// Hashes a plaintext password on Tokio's blocking pool and returns its Argon2id-encoded value.
+    ///
+    /// # Errors
+    ///
+    /// Returns an unrecoverable error when the blocking task cannot complete
+    /// or Argon2id fails to produce a password hash.
     pub async fn hash_password(password: &str) -> BaseRest<String> {
         //
         let password = password.to_owned();
@@ -74,16 +79,6 @@ impl UserComplex {
     #[cfg(test)]
     pub fn hash_password_for_test(password: &str) -> BaseRest<String> {
         hash_password_sync(password)
-    }
-
-    /// Constructs the object storage key for a user's avatar image from the user ID, version counter, and file extension.
-    #[must_use]
-    pub fn gen_avatar_key(
-        id: &str,
-        avatar_version: u32,
-        file_ext: &str,
-    ) -> String {
-        format!("user_avatar/{}-{}.{}", id, avatar_version, file_ext)
     }
 }
 

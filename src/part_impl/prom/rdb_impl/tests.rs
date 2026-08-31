@@ -10,8 +10,6 @@ async fn prom_rdb_impls_use_testcontainer() {
 
     let shared = test_rdb.core();
 
-    handler::tests::image_payloads_from_rdb_dispatch(shared.clone()).await;
-
     repo::tests::poll_pending_selects_one_visible_message_per_idle_topic(
         shared.clone(),
     )
@@ -21,6 +19,8 @@ async fn prom_rdb_impls_use_testcontainer() {
         shared.clone(),
     )
     .await;
+
+    repo::tests::wait_message_preserves_retry_budget(shared.clone()).await;
 
     repo::tests::stale_attempt_finalization_preserves_newer_lease(
         shared.clone(),

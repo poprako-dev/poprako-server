@@ -2,6 +2,8 @@
 
 use poprako_orchestra::{Nucl, Run as _, Step as _};
 
+use poprako_rdb_core::RdbCore;
+
 use crate::model::read::spec::chapter::ChapterListSpec;
 use crate::model::write::chapter::ChapterStageRepl;
 use crate::part::nucl::ReptRead;
@@ -13,8 +15,9 @@ use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::result::accept;
-use crate::shared::RdbCore;
-use crate::value::chapter::{ChapterInclOpt, Stage, StageMask, StagePhase};
+use crate::value::chapter::ChapterInclOpt;
+use crate::value::chapter::mask::StageMask;
+use crate::value::chapter::stage::{Stage, StagePhase};
 
 const PREFIX: &str = "rdb-test-chapter-domain-";
 

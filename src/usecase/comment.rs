@@ -1,5 +1,8 @@
 //! Comment use cases — list and create team board comments.
 
+/// Comment presentation assembly.
+pub mod view;
+
 #[cfg(test)]
 // Unit tests that validate comment lifecycle and visibility constraints.
 mod tests;
@@ -7,6 +10,7 @@ mod tests;
 use poprako_orchestra::{Context, OperRun as _};
 use tracing::instrument;
 
+use poprako_obj_dept::ObjDeptView;
 use poprako_util::i18n::trl;
 
 use crate::complex::comment::{CommentComplex, CommentPermComplex};
@@ -16,25 +20,25 @@ use crate::data::view::comment::CommentInfoView;
 use crate::model::read::spec::comment::CommentListSpec;
 use crate::model::shared::user::UserToken;
 use crate::model::write::comment::CommentEntry;
-use crate::part::image::ImagePool;
+use crate::part::obj_dept::UserAvatar;
 use crate::part::repo::comment::CommentRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::comment::{CreateComment, ListCommentInfos};
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::usecase::internal::util::collect_bounded;
+use crate::usecase::comment::view::comment_info_views;
 
 /// Lists comments under a team.
-#[instrument(level = "info", skip(repo, image_pool))]
-pub async fn list_infos<C, R, I>(
-    (repo, image_pool): (&R, &I),
+#[instrument(level = "info", skip(repo, obj_dept))]
+pub async fn list_infos<C, R, O>(
+    (repo, obj_dept): (&R, &O),
     token: UserToken,
     instr: ListCommentInfosInstr,
 ) -> BaseRest<Vec<CommentInfoView>>
 where
     C: Context,
     R: CommentRepo<C> + MemberRepo<C> + Sync,
-    I: ImagePool + Sync,
+    O: ObjDeptView<UserAvatar, C> + Sync,
 {
     let comment_list_spec = Into::<CommentListSpec>::into(instr);
 
@@ -61,11 +65,7 @@ where
     .run_on(repo)
     .await?;
 
-    let comment_info_vals =
-        collect_bounded(comment_infos.into_iter().map(|comment_info| {
-            CommentInfoView::from_model(image_pool, comment_info)
-        }))
-        .await?;
+    let comment_info_vals = comment_info_views(obj_dept, comment_infos).await?;
 
     accept(comment_info_vals)
 }

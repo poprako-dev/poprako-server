@@ -1,23 +1,4 @@
-#![recursion_limit = "256"]
-#![deny(unsafe_code)]
-#![deny(clippy::correctness)]
-#![deny(clippy::suspicious)]
-#![deny(clippy::complexity)]
-#![deny(clippy::perf)]
-#![deny(clippy::unwrap_used)]
-#![deny(clippy::expect_used)]
-#![deny(clippy::panic)]
-#![deny(clippy::todo)]
-#![deny(clippy::unimplemented)]
-#![deny(clippy::dbg_macro)]
-#![deny(clippy::print_stdout)]
-#![deny(clippy::print_stderr)]
-#![deny(clippy::exit)]
-#![deny(clippy::indexing_slicing)]
-#![deny(clippy::mod_module_files)]
-#![warn(clippy::style)]
-#![warn(clippy::pedantic)]
-#![warn(clippy::nursery)]
+#![recursion_limit = "1024"]
 
 use std::net::ToSocketAddrs;
 use std::num::NonZeroUsize;
@@ -26,15 +7,14 @@ use std::sync::Arc;
 use anyhow::Context as _;
 
 use poprako_server::{
-    AppConfig, AsyncEffectDevelop, Harn, HybNucl, HybRepo, JwtAuth,
-    R2ImagePool, RdbContext, RdbCore, RdbNucl, RdbProm, ReptRead, Sched,
-    Serial,
+    AppConfig, AsyncEffectDevelop, Harn, HybNucl, HybRepo, JwtAuth, RdbContext,
+    RdbCore, RdbNucl, ReptRead, Serial, new_obj_dept, new_prom,
 };
 
 /// Application entry point.
 ///
 /// Parses CLI flags, loads configuration, initializes runtime dependencies
-/// (database pool, authentication, image pool, effect dispatcher), wires them
+/// (database pool, authentication, object department, effect dispatcher), wires them
 /// into an application harness, and launches the HTTP server. Pass `--swagger`
 /// to print the `OpenAPI` spec to stdout instead of launching the server.
 #[tokio::main]
@@ -72,23 +52,26 @@ async fn main() -> anyhow::Result<()> {
 
     let repo = HybRepo::new(core.clone());
 
-    let (auth, image_pool) = (JwtAuth::from_env()?, R2ImagePool::from_env()?);
+    let auth = JwtAuth::from_env()?;
+
+    let obj_dept = new_obj_dept(core.clone())?;
 
     let develop = AsyncEffectDevelop::new::<RdbContext<ReptRead>, _>(
         Arc::new(HybRepo::new(core.clone())),
         NonZeroUsize::new(1024).context("buf_size cannot be 0")?,
     );
 
-    let (prom, sched) = (
-        RdbProm::new(core.clone(), image_pool.clone(), develop.clone()),
-        Sched::new(core.clone()),
-    );
+    let prom = new_prom(core.clone(), obj_dept.view(), develop.clone());
 
-    let harn = Harn::new(config, nucl, repo, prom, auth, image_pool, develop);
+    let harn = Harn::new(config, (nucl, repo, obj_dept, prom, auth, develop));
 
     let serve_rest = poprako_server::serve(harn.clone(), http_addr).await;
 
-    tokio::join!(harn.prom().close(), harn.develop().close(), sched.close());
+    tokio::join!(
+        harn.obj_dept().close(),
+        harn.prom().close(),
+        harn.develop().close(),
+    );
 
     serve_rest
 }

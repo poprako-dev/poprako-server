@@ -2,13 +2,14 @@
 
 use super::*;
 
+use poprako_rdb_core::RdbCore;
+
 use crate::model::write::workset::WorksetRepl;
 use crate::part::repo::oper::workset::{
     GetWorksetInfo, ListWorksetInfos, UpdateWorkset,
 };
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::test_shared;
-use crate::shared::RdbCore;
 
 const PREFIX: &str = "rdb-test-workset-domain-";
 

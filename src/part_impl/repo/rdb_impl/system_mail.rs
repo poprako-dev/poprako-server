@@ -13,6 +13,7 @@ use diesel_async::RunQueryDsl as _;
 use poprako_orchestra::Run;
 use tracing::instrument;
 
+use poprako_rdb_core::RdbConn;
 use poprako_util::i18n::trl;
 
 use crate::model::read::proj::system_mail::SystemMailInfo;
@@ -29,7 +30,6 @@ use crate::part_impl::repo::rdb_impl::schema::t_system_mail::dsl::{
     f_created_at, f_id, f_read, f_receiver_id, t_system_mail,
 };
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::shared::RdbConn;
 use crate::shared::result::diesel;
 
 // ── Free functions ──────────────────────────────────────────────────────────

@@ -21,15 +21,6 @@ pub struct PageEntry {
     pub chapter_id: String,
     /// Zero-based ordinal position for this page within the chapter.
     pub index: usize,
-
-    /// Object-storage key reserved for the page image.
-    pub image_key: Option<String>,
-    /// Starting version counter for the image lifecycle.
-    pub image_version: u32,
-    /// Content-addressable hash of the initial image file.
-    pub image_hash: ImageHash,
-    /// File format extension of the initial page image.
-    pub image_ext: ImageExt,
 }
 
 /// One page-image identity supplied to manifest planning.
@@ -45,49 +36,13 @@ pub struct PageImageSpec {
     pub ext: ImageExt,
 }
 
-/// Image reservation result for a page.
-#[cfg_attr(test, derive(Clone))]
-pub struct PageImageReservation {
+/// Final persisted identity and position for one page-manifest item.
+pub struct PageManifestEntry {
     //
-    /// Newly generated object-storage key for the image upload slot.
-    pub object_key: String,
-    /// Previous image key that should be cleaned up from storage, if any.
-    pub prev_object_key: Option<String>,
-    /// The new version number that must match on upload confirmation.
-    pub image_version: u32,
-}
-
-/// A page image upload state replacement.
-pub struct PageImageRepl {
-    //
-    /// The page identifier.
+    /// The unique identifier of the retained or newly created page.
     pub id: String,
-
-    /// The image version being confirmed.
-    pub image_version: u32,
-    /// The object-storage key, when the image has an object identity.
-    pub image_key: Option<String>,
-    /// Whether the image upload has completed.
-    pub is_image_uploaded: bool,
-}
-
-/// Persisted manifest state for one retained or newly created page.
-/// TODO: why is this necessary?
-pub struct PageManifestRepl {
-    //
-    /// The unique identifier of the page whose manifest is being updated.
-    pub id: String,
-    /// Updated ordinal position of the page within the chapter.
+    /// Foreign key of the parent chapter for this manifest item.
+    pub chapter_id: String,
+    /// Final ordinal position of the page within the chapter.
     pub index: usize,
-
-    /// Updated object-storage key for the page image.
-    pub image_key: Option<String>,
-    /// Whether the image upload has been confirmed for this page.
-    pub is_image_uploaded: bool,
-    /// Updated version counter for the image lifecycle.
-    pub image_version: u32,
-    /// Updated content hash of the page image file.
-    pub image_hash: ImageHash,
-    /// Updated file format extension of the page image.
-    pub image_ext: ImageExt,
 }

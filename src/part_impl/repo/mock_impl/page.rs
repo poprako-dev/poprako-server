@@ -4,7 +4,7 @@
 mod orchestra;
 
 use crate::model::read::proj::page::PageInfo;
-use crate::model::write::page::PageEntry;
+use crate::model::write::page::{PageEntry, PageManifestEntry};
 use crate::part_impl::repo::mock_impl::{MockState, expected, now};
 use crate::result::BaseRest;
 
@@ -62,11 +62,23 @@ fn page_from_entry(entry: &PageEntry) -> PageInfo {
         id: entry.id.clone(),
         chapter_id: entry.chapter_id.clone(),
         index: entry.index,
-        image_key: entry.image_key.clone(),
-        is_image_uploaded: Some(false),
-        image_version: Some(entry.image_version),
-        image_hash: Some(entry.image_hash.clone()),
-        image_ext: Some(entry.image_ext),
+        total_unit_count: 0,
+        translated_unit_count: 0,
+        proofread_unit_count: 0,
+        created_at: time,
+        updated_at: time,
+    }
+}
+
+// Builds a new page projection for a final manifest entry.
+fn page_from_manifest_entry(entry: &PageManifestEntry) -> PageInfo {
+    //
+    let time = now();
+
+    PageInfo {
+        id: entry.id.clone(),
+        chapter_id: entry.chapter_id.clone(),
+        index: entry.index,
         total_unit_count: 0,
         translated_unit_count: 0,
         proofread_unit_count: 0,

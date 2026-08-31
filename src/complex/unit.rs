@@ -1,7 +1,7 @@
 //! Domain rules and perm checks for page Units.
 
-// perm gates for Unit reads and edit fields.
-mod perm;
+/// Perm gates for Unit reads and edit fields.
+pub mod perm;
 
 #[cfg(test)]
 mod tests;
@@ -15,10 +15,8 @@ use crate::model::shared::unit::{UnitRevision, UnitTranslation};
 use crate::model::write::unit::{UnitEdit, UnitTransform};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::{Patch, next_snowflake_id};
-use crate::value::chapter::Stage;
+use crate::value::chapter::stage::Stage;
 use crate::value::unit::{MAX_UNIT_EDIT_COUNT, UnitTextPart};
-
-pub use crate::complex::unit::perm::{UnitListAccess, UnitPermComplex};
 
 // Build the client-visible error for an invalid Unit transform.
 fn invalid_unit_transform(unit_id: &str, reason: &'static str) -> BaseError {

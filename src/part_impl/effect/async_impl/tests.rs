@@ -13,13 +13,15 @@ use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::proj::team::TeamInfo;
 use crate::model::read::proj::workset::WorksetInfo;
+use crate::part::effect::EffectEvent as _;
 use crate::part::effect::event::Event;
 use crate::part::effect::event::chapter::{
     ChapterPublishedEvent, ChapterWorkflowCompletedEvent,
 };
 use crate::part::effect::event::user::UserSignedUpEvent;
 use crate::part_impl::repo::mock_impl::Mock;
-use crate::value::chapter::{Stage, StageMask};
+use crate::value::chapter::mask::StageMask;
+use crate::value::chapter::stage::Stage;
 use crate::value::role::{RoleField, RoleMask};
 
 const BUF_SIZE: NonZeroUsize = match NonZeroUsize::new(8) {
@@ -38,11 +40,6 @@ fn team_info() -> TeamInfo {
         id: "team-1".to_string(),
         name: "Team One".to_string(),
         description: "Team description".to_string(),
-        avatar_key: None,
-        is_avatar_uploaded: None,
-        avatar_version: None,
-        avatar_hash: None,
-        avatar_ext: None,
         created_at: time,
         updated_at: time,
     }
@@ -81,11 +78,6 @@ fn comic_info() -> ComicInfo {
         title: "Comic One".to_string(),
         author: "Author One".to_string(),
         description: None,
-        cover_key: None,
-        is_cover_uploaded: None,
-        cover_version: None,
-        cover_hash: None,
-        cover_ext: None,
         chapter_count: 1,
         creator_id: "creator-user".to_string(),
         workset: None,

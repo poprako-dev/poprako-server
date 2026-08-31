@@ -3,10 +3,8 @@
 //! Request instructions live under [`instr`], direct non-`Info` response values
 //! under [`val`], and response views under [`view`]. Every direct projection
 //! of a model `*Info` is an `*InfoView`, including list elements. Timestamps
-//! are converted to Unix milliseconds, and image keys are resolved through
-//! [`ImagePool`].
-//!
-//! [`ImagePool`]: crate::part::image::ImagePool
+//! are converted to Unix milliseconds, and object URLs are resolved through
+//! `ObjDept` operation capabilities.
 
 /// Request instruction DTOs grouped by domain.
 pub mod instr;

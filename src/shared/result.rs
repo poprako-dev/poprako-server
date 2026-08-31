@@ -4,59 +4,10 @@
 mod tests;
 
 use diesel::result::{DatabaseErrorKind, Error as DieselError};
-use diesel_async::pooled_connection::deadpool::{BuildError, PoolError};
 
 use poprako_util::i18n::trl;
 
-use crate::result::{BaseError, BaseRest, ExpectedVariant};
-
-/// Converts a persisted signed version into the application's unsigned type.
-pub fn version(value: i64) -> BaseRest<u32> {
-    //
-    u32::try_from(value).map_err(|err| BaseError::Unrecoverable {
-        message: format!("invalid persisted version {}: {}", value, err),
-    })
-}
-
-/// Converts and increments a persisted version without overflowing.
-pub fn next_version(value: i64) -> BaseRest<u32> {
-    //
-    let current_version = version(value)?;
-
-    current_version
-        .checked_add(1)
-        .ok_or_else(|| BaseError::Unrecoverable {
-            message: "persisted version cannot be incremented".into(),
-        })
-}
-
-/// Converts a pool build error into an unrecoverable `RegularError`.
-pub fn pool_build(source: BuildError) -> BaseError {
-    //
-    tracing::error!(
-        operation = "build_database_pool",
-        sdk_err = ?source,
-        "database pool SDK error",
-    );
-
-    BaseError::Unrecoverable {
-        message: format!("failed to build pool: {}", source),
-    }
-}
-
-/// Converts a pool checkout error into an unrecoverable `RegularError`.
-pub fn pool_get(source: &PoolError) -> BaseError {
-    //
-    tracing::error!(
-        operation = "get_database_connection",
-        sdk_err = ?source,
-        "database pool SDK error",
-    );
-
-    BaseError::Unrecoverable {
-        message: format!("failed to get conn: {}", source),
-    }
-}
+use crate::result::{BaseError, ExpectedVariant};
 
 /// Converts a Diesel error into the appropriate `RegularError` variant.
 ///

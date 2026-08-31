@@ -1,6 +1,5 @@
 //! View DTOs for the chapter domain.
 
-use futures::future::OptionFuture;
 use serde::Serialize;
 
 #[cfg(feature = "swagger")]
@@ -11,9 +10,7 @@ use poprako_util::time::ToUnixMilli as _;
 use crate::data::view::comic::ComicInfoView;
 use crate::data::view::user::UserInfoView;
 use crate::model::read::proj::chapter::ChapterInfo;
-use crate::part::image::ImagePool;
-use crate::result::{BaseRest, accept};
-use crate::value::chapter::StageMask;
+use crate::value::chapter::mask::StageMask;
 
 /// Presentation-ready chapter information.
 ///
@@ -73,27 +70,16 @@ pub struct ChapterInfoView {
 impl ChapterInfoView {
     /// Converts a chapter model into a presentation-ready value,
     /// resolving included creator avatar when present.
-    pub async fn from_model<P>(
-        image_pool: &P,
+    pub fn from_model(
         model: ChapterInfo,
-        fallback_cover_key: Option<&str>,
-    ) -> BaseRest<Self>
-    where
-        P: ImagePool + Sync,
-    {
-        accept(Self {
+        comic: Option<ComicInfoView>,
+        creator: Option<UserInfoView>,
+    ) -> Self {
+        //
+        Self {
             id: model.id,
             comic_id: model.comic_id,
-            comic: OptionFuture::from(model.comic.map(|comic_info| {
-                //
-                ComicInfoView::from_model(
-                    image_pool,
-                    comic_info,
-                    fallback_cover_key,
-                )
-            }))
-            .await
-            .transpose()?,
+            comic,
             is_pinned: model.is_pinned,
             index: model.index,
             subtitle: model.subtitle,
@@ -103,14 +89,10 @@ impl ChapterInfoView {
             proofread_unit_count: model.proofread_unit_count,
             stages: model.stages,
             creator_id: model.creator_id,
-            creator: OptionFuture::from(model.creator.map(|user_info| {
-                UserInfoView::from_model(image_pool, user_info)
-            }))
-            .await
-            .transpose()?,
+            creator,
             created_at: model.created_at.to_unix_milli(),
             updated_at: model.updated_at.to_unix_milli(),
-        })
+        }
     }
 }
 

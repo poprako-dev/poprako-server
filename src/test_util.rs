@@ -7,11 +7,7 @@ use time::OffsetDateTime;
 use poprako_util::i18n::trl;
 
 use crate::ImageConfig;
-use crate::part::prom::payload::TaskPayload;
-use crate::part::prom::payload::image::ImagePayload;
-use crate::part_impl::prom::mock_impl::MockPromRecord;
 use crate::result::{BaseError, ExpectedVariant};
-use crate::value::image::ImageKind;
 
 /// Image limits matching the default runtime configuration.
 pub const IMAGE_CONFIG: ImageConfig = ImageConfig {
@@ -63,56 +59,6 @@ pub fn assert_expected_message(
     );
 
     assert_eq!(actual, trl(trl_key));
-}
-
-/// Counts exact image upload-check prom records.
-pub fn count_image_check_records(
-    records: &[MockPromRecord],
-    image_kind: ImageKind,
-    resource_id: &str,
-    object_key: &str,
-    image_version: u32,
-) -> usize {
-    records
-        .iter()
-        .filter(|record| {
-            matches!(
-                record.payload(),
-                TaskPayload::Image {
-                    payload: ImagePayload::CheckUpload {
-                        image_kind: actual_image_kind,
-                        resource_id: actual_resource_id,
-                        object_key: actual_object_key,
-                        version: actual_version,
-                        ..
-                    },
-                } if actual_image_kind == image_kind
-                    && actual_resource_id == resource_id
-                    && actual_object_key == object_key
-                    && actual_version == image_version
-            )
-        })
-        .count()
-}
-
-/// Asserts that exactly one matching image upload-check prom record exists.
-pub fn assert_one_image_check_record(
-    records: &[MockPromRecord],
-    image_kind: ImageKind,
-    resource_id: &str,
-    object_key: &str,
-    image_version: u32,
-) {
-    assert_eq!(
-        count_image_check_records(
-            records,
-            image_kind,
-            resource_id,
-            object_key,
-            image_version
-        ),
-        1
-    );
 }
 
 /// Returns the current time in UTC. Convenience wrapper for tests.

@@ -8,15 +8,15 @@ use crate::value::image::{ImageExt, ImageHash};
 #[test]
 fn reserved_page_serializes_absent_slot_as_null() {
     //
-    let reserved_page_val = ReservedPageVal {
+    let allocated_page_val = AllocatedPageVal {
         page_id: "page-1".into(),
         index: 0,
-        image_hash: ImageHash::new([0; 32]),
+        image_hash: ImageHash::default(),
         ext: ImageExt::Png,
         slot: None,
     };
 
-    let value = serde_json::to_value(reserved_page_val).unwrap();
+    let value = serde_json::to_value(allocated_page_val).unwrap();
 
     assert!(value.get("slot").unwrap().is_null());
 }
@@ -29,19 +29,19 @@ fn reserved_page_serializes_required_slot_headers() {
         ("content-length".into(), "4096".into()),
     ]);
 
-    let reserved_page_val = ReservedPageVal {
+    let allocated_page_val = AllocatedPageVal {
         page_id: "page-1".into(),
         index: 0,
-        image_hash: ImageHash::new([0; 32]),
+        image_hash: ImageHash::default(),
         ext: ImageExt::Png,
         slot: Some(ImageUploadSlotView {
             put_url: "https://upload.example/page-1".into(),
-            image_version: 1,
+            image_ver: 1,
             headers,
         }),
     };
 
-    let value = serde_json::to_value(reserved_page_val).unwrap();
+    let value = serde_json::to_value(allocated_page_val).unwrap();
 
     let upload_headers = value.get("slot").unwrap().get("headers").unwrap();
 

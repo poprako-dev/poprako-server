@@ -1,9 +1,9 @@
 //! Application configuration loaded from a TOML file at startup.
 
-// HTTP server configuration.
-mod http;
-// Image upload configuration.
-mod image;
+/// HTTP server configuration.
+pub mod http;
+/// Image upload configuration.
+pub mod image;
 
 #[cfg(test)]
 mod tests;
@@ -11,8 +11,8 @@ mod tests;
 use anyhow::Context as _;
 use serde::Deserialize;
 
-pub use crate::config::http::HttpConfig;
-pub use crate::config::image::ImageConfig;
+use crate::config::http::HttpConfig;
+use crate::config::image::ImageConfig;
 
 // Runtime configuration file loaded from the current working directory.
 const DEFAULT_FILE_NAME: &str = "app_config.toml";

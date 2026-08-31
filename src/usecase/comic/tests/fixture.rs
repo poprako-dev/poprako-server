@@ -7,9 +7,7 @@ use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::proj::member::MemberInfo;
-use crate::model::read::proj::page::PageInfo;
 use crate::model::shared::user::UserToken;
-use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
 pub fn comic(id: &str, workset_id: &str, index: usize) -> ComicInfo {
@@ -23,11 +21,6 @@ pub fn comic(id: &str, workset_id: &str, index: usize) -> ComicInfo {
         title: format!("comic-{}", index),
         author: "author".into(),
         description: None,
-        cover_key: None,
-        is_cover_uploaded: None,
-        cover_version: None,
-        cover_hash: None,
-        cover_ext: None,
         chapter_count: 0,
         creator_id: "user-1".into(),
         workset: None,
@@ -55,21 +48,6 @@ pub fn comics_with_opposed_activity(
             ..comic("comic-1", "workset-1", 1)
         },
     ]
-}
-
-pub fn comic_with_uploaded_cover(
-    id: &str,
-    workset_id: &str,
-    cover_key: &str,
-) -> ComicInfo {
-    ComicInfo {
-        cover_key: Some(cover_key.into()),
-        is_cover_uploaded: Some(true),
-        cover_version: Some(1),
-        cover_hash: Some(ImageHash::default()),
-        cover_ext: Some(ImageExt::Png),
-        ..comic(id, workset_id, 0)
-    }
 }
 
 pub fn chapter(id: &str, comic_id: &str, stage_mask: StageMask) -> ChapterInfo {
@@ -106,33 +84,6 @@ pub fn assignment(id: &str, chapter_id: &str, user_id: &str) -> AssignmentInfo {
         user: None,
         chapter: None,
         roles: RoleMask::from(RoleField::TRANSLATOR),
-        created_at: time,
-        updated_at: time,
-    }
-}
-
-pub fn page(
-    id: &str,
-    chapter_id: &str,
-    index: usize,
-    image_key: Option<&str>,
-    image_uploaded: bool,
-) -> PageInfo {
-    //
-    let time = OffsetDateTime::now_utc();
-
-    PageInfo {
-        id: id.into(),
-        chapter_id: chapter_id.into(),
-        index,
-        image_key: image_key.map(Into::into),
-        is_image_uploaded: Some(image_uploaded),
-        image_version: Some(1),
-        image_hash: Some(ImageHash::new([0u8; 32])),
-        image_ext: Some(ImageExt::Png),
-        total_unit_count: 0,
-        translated_unit_count: 0,
-        proofread_unit_count: 0,
         created_at: time,
         updated_at: time,
     }

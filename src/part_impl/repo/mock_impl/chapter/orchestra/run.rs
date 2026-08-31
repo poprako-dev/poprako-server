@@ -12,7 +12,7 @@ use crate::part_impl::repo::mock_impl::chapter::orchestra::{
 };
 use crate::part_impl::repo::mock_impl::{Mock, now};
 use crate::result::{BaseError, BaseRest, accept};
-use crate::value::chapter::{Stage, StagePhase};
+use crate::value::chapter::stage::{Stage, StagePhase};
 
 impl<'a> Run<ListChapterInfos<'a>> for Mock {
     // Internal type alias for `Error`.
@@ -176,14 +176,7 @@ impl<'a> Run<CompleteChapterRawProvide<'a>> for Mock {
             .filter(|page_info| page_info.chapter_id == oper.id)
             .count();
 
-        let all_pages_uploaded = page_count > 0
-            && state.pages.iter().all(|page_info| {
-                //
-                page_info.chapter_id != oper.id
-                    || page_info.is_image_uploaded.unwrap_or(false)
-            });
-
-        if !all_pages_uploaded {
+        if page_count == 0 {
             return accept(false);
         }
 

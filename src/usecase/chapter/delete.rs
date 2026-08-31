@@ -3,15 +3,14 @@
 use poprako_orchestra::{AtLeast, Context, Nucl, OperStep as _};
 use tracing::instrument;
 
-use crate::complex::chapter::ChapterPermComplex;
-use crate::complex::image::ImageComplex;
+use poprako_obj_dept::ObjDept;
+use poprako_obj_dept::oper::DeleteObjs;
+
+use crate::complex::chapter::perm::ChapterPermComplex;
 use crate::model::shared::user::UserToken;
 use crate::model::write::chapter::ChapterPatch;
 use crate::part::nucl::Serial;
-use crate::part::prom::Prom;
-use crate::part::prom::oper::DeferBatch;
-use crate::part::prom::payload::{TaskPayload, image};
-use crate::part::prom::task::Task;
+use crate::part::obj_dept::PageImage;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::chapter::ChapterRepo;
@@ -37,9 +36,9 @@ use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
 
 /// Deletes one chapter and its descendant core records.
-#[instrument(level = "info", skip(nucl, repo, prom))]
-pub async fn delete<N, C, R, P>(
-    (nucl, repo, prom): (&N, &R, &P),
+#[instrument(level = "info", skip(nucl, repo, obj_dept))]
+pub async fn delete<N, C, R, O>(
+    (nucl, repo, obj_dept): (&N, &R, &O),
     token: UserToken,
     id: String,
 ) -> BaseRest<()>
@@ -58,7 +57,7 @@ where
         + UnitRepo<C>
         + Send
         + Sync,
-    P: Prom<C> + Send + Sync,
+    O: ObjDept<PageImage, C> + Send + Sync,
 {
     let member_info = MemberLoader::load_info_from_chapter(
         repo,
@@ -71,7 +70,7 @@ where
     ChapterPermComplex::ensure_user_can_delete(&member_info)?;
 
     nucl.coord(async move |context| {
-        delete_cascade(repo, prom, context, &id).await
+        delete_cascade(repo, obj_dept, context, &id).await
     })
     .await?;
 
@@ -79,9 +78,9 @@ where
 }
 
 /// Deletes a chapter subtree inside an existing transaction context.
-pub async fn delete_cascade<C, R, P>(
+pub async fn delete_cascade<C, R, O>(
     repo: &R,
-    prom: &P,
+    obj_dept: &O,
     context: &mut C,
     id: &str,
 ) -> BaseRest<()>
@@ -94,13 +93,13 @@ where
         + ChapterWorkflowRecordRepo<C>
         + ComicRepo<C>
         + Sync,
-    P: Prom<C> + Sync,
+    O: ObjDept<PageImage, C> + Sync,
 {
     let chapter_info = GetChapterInfoExcluded { id, incls: &[] }
         .step_on(repo, context)
         .await?;
 
-    defer_page_image_deletes(repo, prom, context, &chapter_info.id).await?;
+    remove_page_objs(repo, obj_dept, context, &chapter_info.id).await?;
 
     DeleteAssignmentInvitations::Chapter {
         chapter_id: &chapter_info.id,
@@ -153,26 +152,29 @@ where
 }
 
 // Load page image keys and enqueue their deletion inside the transaction.
-async fn defer_page_image_deletes<C, R, P>(
+async fn remove_page_objs<C, R, O>(
     repo: &R,
-    prom: &P,
+    obj_dept: &O,
     context: &mut C,
     chapter_id: &str,
 ) -> BaseRest<()>
 where
     C: Context,
     R: PageRepo<C> + Sync,
-    P: Prom<C> + Sync,
+    O: ObjDept<PageImage, C> + Sync,
 {
     let page_infos =
         ListPageInfos { chapter_id }.step_on(repo, context).await?;
 
-    let object_keys = page_infos
+    let page_ids = page_infos
         .into_iter()
-        .filter_map(|page_info| page_info.image_key)
-        .collect();
+        .map(|page_info| page_info.id)
+        .collect::<Vec<_>>();
 
-    defer_image_deletes(prom, context, object_keys).await
+    DeleteObjs::<PageImage>::new(&page_ids)
+        .step_on(obj_dept, context)
+        .await
+        .map_err(BaseError::from)
 }
 
 // Pin the newest remaining chapter after deleting the pinned chapter.
@@ -211,43 +213,6 @@ where
     }
     .step_on(repo, context)
     .await?;
-
-    accept(())
-}
-
-// Enqueue object-storage image deletions inside the transaction.
-async fn defer_image_deletes<C, P>(
-    prom: &P,
-    context: &mut C,
-    object_keys: Vec<String>,
-) -> BaseRest<()>
-where
-    C: Context,
-    P: Prom<C> + Sync,
-{
-    let delete_ids = object_keys
-        .iter()
-        .map(|_| ImageComplex::gen_delete_id())
-        .collect::<Vec<_>>();
-
-    let payloads = object_keys
-        .into_iter()
-        .map(|object_key| TaskPayload::Image {
-            payload: image::ImagePayload::Delete { object_key },
-        })
-        .collect::<Vec<_>>();
-
-    let tasks = delete_ids
-        .iter()
-        .zip(payloads.iter())
-        .map(|(id, payload)| Task {
-            id,
-            payload,
-            delay: None,
-        })
-        .collect::<Vec<Task<'_, String, TaskPayload>>>();
-
-    DeferBatch::new(&tasks).step_on(prom, context).await?;
 
     accept(())
 }

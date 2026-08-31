@@ -37,7 +37,7 @@ import tree_sitter
 import tree_sitter_rust
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
-from production_source import production_source
+from production_source import production_files, production_source
 
 
 ROOT = Path(__file__).parents[2]
@@ -214,7 +214,7 @@ def main() -> int:
     if args.self_test:
         return self_test()
 
-    paths = sorted((root / "src").rglob("*.rs"))
+    paths = production_files(root)
     errors = [error for path in paths for error in check_file(path, root)]
 
     if errors:

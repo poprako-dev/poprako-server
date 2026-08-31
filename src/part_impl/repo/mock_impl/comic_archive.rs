@@ -358,16 +358,6 @@ fn commit(
         .find(|comic_info| comic_info.id == comic_archive_entry.source_comic_id)
         .ok_or_else(|| expected("error-comic-not-found"))?;
 
-    comic_info.cover_key = None;
-
-    comic_info.is_cover_uploaded = None;
-
-    comic_info.cover_version = None;
-
-    comic_info.cover_hash = None;
-
-    comic_info.cover_ext = None;
-
     comic_info.archived_at = Some(archived_at);
 
     comic_info.updated_at = archived_at;

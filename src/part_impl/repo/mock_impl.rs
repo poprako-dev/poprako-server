@@ -50,10 +50,11 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
-use poprako_orchestra::nucl::Error as NuclError;
-use poprako_orchestra::{Nucl, Run as _, Step as _};
 use time::OffsetDateTime;
 
+use poprako_obj_dept::key::ObjKey;
+use poprako_obj_dept::model::meta::ObjMeta;
+use poprako_obj_dept::model::task::ObjTask;
 use poprako_util::i18n::trl;
 
 use crate::model::read::proj::announcement::AnnouncementInfo;
@@ -74,17 +75,10 @@ use crate::model::read::proj::termbase::TermbaseInfo;
 use crate::model::read::proj::unit::UnitInfo;
 use crate::model::read::proj::user::{UserCredential, UserInfo};
 use crate::model::read::proj::workset::WorksetInfo;
-use crate::model::write::member::MemberEntry;
 use crate::part::effect::event::Event;
 use crate::part::nucl::Serial;
-use crate::part::prom::oper::Defer;
-use crate::part::prom::payload::{TaskPayload, image};
-use crate::part::prom::task::Task;
-use crate::part::repo::oper::member::CreateMember;
-use crate::part::repo::oper::user::GetUserInfo;
 use crate::part_impl::prom::mock_impl::MockPromRecord;
 use crate::result::{BaseError, ExpectedVariant};
-use crate::value::role::{RoleField, RoleMask};
 
 /// In-memory state holding all mock repository records.
 #[cfg_attr(test, derive(Clone, Default))]
@@ -128,10 +122,12 @@ pub struct MockState {
     pub system_mails: Vec<SystemMailInfo>,
     /// Mock storage for archived comic records.
     pub comic_archives: Vec<ComicArchiveRecord>,
+    /// Mock object state grouped by static object topic.
+    pub objs: HashMap<&'static str, HashMap<String, MockObjRecord>>,
+    /// Mock durable object work bound in coordinated state.
+    pub obj_tasks: Vec<(&'static str, ObjTask)>,
     /// Mock storage for deferred prom action records.
     pub prom_records: Vec<MockPromRecord>,
-    /// Mock storage for keys of images deleted from object storage.
-    pub deleted_image_keys: Vec<String>,
 }
 
 #[cfg_attr(test, derive(Clone))]
@@ -176,10 +172,12 @@ pub struct MockSnapshot {
     pub system_mails: Vec<SystemMailInfo>,
     /// Snapshot of archived comic records at the capture time.
     pub comic_archives: Vec<ComicArchiveRecord>,
+    /// Snapshot of object state grouped by static object topic.
+    pub objs: HashMap<&'static str, HashMap<String, MockObjRecord>>,
+    /// Snapshot of durable object work.
+    pub obj_tasks: Vec<(&'static str, ObjTask)>,
     /// Snapshot of deferred prom action records at the capture time.
     pub prom_records: Vec<MockPromRecord>,
-    /// Snapshot of deleted image keys at the capture time.
-    pub deleted_image_keys: Vec<String>,
 }
 
 impl From<MockState> for MockSnapshot {
@@ -206,10 +204,20 @@ impl From<MockState> for MockSnapshot {
             units: state.units,
             system_mails: state.system_mails,
             comic_archives: state.comic_archives,
+            objs: state.objs,
+            obj_tasks: state.obj_tasks,
             prom_records: state.prom_records,
-            deleted_image_keys: state.deleted_image_keys,
         }
     }
+}
+
+/// One mock object row with a retained generation watermark.
+#[derive(Clone)]
+pub struct MockObjRecord {
+    /// Latest allocated generation.
+    pub version: u32,
+    /// Active object metadata, or none after detach.
+    pub meta: Option<ObjMeta>,
 }
 
 /// The transactional context passed to [`Nucl::coord`] calls,
@@ -234,22 +242,12 @@ pub struct MockFlags {
     //
     /// Simulates a token authentication failure.
     pub token_failure: bool,
-    /// Simulates an image retrieval failure from object storage.
-    pub image_get_failure: bool,
-    /// Simulates an image upload failure to object storage.
-    pub image_put_failure: bool,
-
-    /// Simulates a failure in head-object metadata retrieval.
-    pub image_head_failure: bool,
-    /// Simulates the head-object reporting the object as absent.
-    pub image_head_absent: bool,
-
-    /// Simulates a failure in object deletion from storage.
-    pub image_delete_failure: bool,
     /// Simulates a failure in archive persistence within a transaction.
     pub archive_commit_failure: bool,
     /// Simulates a failure in team creation within a transaction.
     pub create_team_failure: bool,
+    /// Disables thumbnail URL capability in the object-pool mock.
+    pub obj_thumbnail_disabled: bool,
 }
 
 /// The top-level mock repository and [`Nucl`] implementation.
@@ -364,6 +362,34 @@ impl Mock {
         self.state.lock().unwrap().pages.push(page);
     }
 
+    /// Seed one verified page-image object for read-projection tests.
+    pub fn seed_page_image_obj(&self, id: &str, ext: &str) {
+        let meta = ObjMeta {
+            key: ObjKey {
+                id: id.to_owned(),
+                ver: 1,
+                image: format!("page/chapter_test/{}-1.{}", id, ext),
+            },
+            is_avail: true,
+            hash: vec![0; 32],
+            ext: ext.to_owned(),
+        };
+
+        self.state
+            .lock()
+            .unwrap()
+            .objs
+            .entry("page_image")
+            .or_default()
+            .insert(
+                id.to_owned(),
+                MockObjRecord {
+                    version: 1,
+                    meta: Some(meta),
+                },
+            );
+    }
+
     /// Seed a unit directly into the mock state.
     pub fn seed_unit(&self, unit: UnitInfo) {
         self.state.lock().unwrap().units.push(unit);
@@ -387,30 +413,6 @@ impl Mock {
         self
     }
 
-    /// Enable image retrieval failures for subsequent opers.
-    pub fn with_image_get_failure(self) -> Self {
-        //
-        self.flags.lock().unwrap().image_get_failure = true;
-
-        self
-    }
-
-    /// Enable image storage failures for subsequent opers.
-    pub fn with_image_put_failure(self) -> Self {
-        //
-        self.flags.lock().unwrap().image_put_failure = true;
-
-        self
-    }
-
-    /// Report objects as absent for subsequent head-object opers.
-    pub fn with_image_head_absent(self) -> Self {
-        //
-        self.flags.lock().unwrap().image_head_absent = true;
-
-        self
-    }
-
     /// Fail archive persistence before a transaction can commit.
     pub fn with_archive_commit_failure(self) -> Self {
         //
@@ -423,6 +425,13 @@ impl Mock {
     pub fn with_create_team_failure(self) -> Self {
         //
         self.flags.lock().unwrap().create_team_failure = true;
+
+        self
+    }
+
+    /// Disable thumbnail URLs for subsequent object read operations.
+    pub fn with_obj_thumbnail_disabled(self) -> Self {
+        self.flags.lock().unwrap().obj_thumbnail_disabled = true;
 
         self
     }

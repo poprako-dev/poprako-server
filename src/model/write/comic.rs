@@ -47,20 +47,3 @@ pub struct ComicRepl {
     /// Updated synopsis or editorial notes.
     pub description: Option<String>,
 }
-
-/// The result of reserving a new comic cover upload slot.
-#[cfg_attr(test, derive(Clone))]
-pub struct ComicCoverReservation {
-    //
-    /// Newly generated object-storage key for the cover upload.
-    pub object_key: String,
-
-    /// Previous cover key to clean up after a successful replacement.
-    pub prev_object_key: Option<String>,
-
-    /// Version that must match when the upload is confirmed.
-    pub cover_version: u32,
-
-    /// Whether a new upload is required.
-    pub is_upload_required: bool,
-}

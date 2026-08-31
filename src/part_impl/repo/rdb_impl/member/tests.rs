@@ -9,6 +9,8 @@ use std::time::Duration;
 use poprako_orchestra::{Nucl as _, OperStep as _, Step as _};
 use tokio::sync::{Semaphore, mpsc};
 
+use poprako_rdb_core::RdbCore;
+
 use crate::complex::member::MemberComplex;
 use crate::model::read::spec::member::MemberListSpec;
 use crate::model::write::member::{MemberEntry, MemberRoleRepl};
@@ -22,7 +24,6 @@ use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::result::BaseError;
-use crate::shared::RdbCore;
 use crate::value::member::MemberInclOpt;
 use crate::value::role::{RoleField, RoleMask};
 

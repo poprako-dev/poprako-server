@@ -4,7 +4,8 @@ members = [
     "poprako-util",
     "poprako-swagger",
     "poprako-obj-dept",
-    "poprako-rdb-impl",
+    "poprako-obj-dept-macro",
+    "poprako-rdb-core",
 ]
 default-members = ["."]
 resolver = "3"
@@ -26,33 +27,6 @@ toml = "1.1.4"
 unic-langid = "0.9.6"
 utoipa = "5.5.0"
 
-[workspace.lints.clippy]
-correctness = { level = "deny", priority = -1 }
-suspicious = { level = "deny", priority = -1 }
-complexity = { level = "deny", priority = -1 }
-perf = { level = "deny", priority = -1 }
-unwrap_used = "deny"
-expect_used = "deny"
-panic = "deny"
-unreachable = "deny"
-todo = "deny"
-unimplemented = "deny"
-dbg_macro = "deny"
-print_stdout = "deny"
-print_stderr = "deny"
-exit = "deny"
-indexing_slicing = "deny"
-string_slice = "deny"
-mod_module_files = "deny"
-style = { level = "warn", priority = -1 }
-pedantic = { level = "warn", priority = -1 }
-nursery = { level = "warn", priority = -1 }
-future_not_send = "allow"
-unnecessary_wraps = "allow"
-# Clippy's lint enforces the opposite policy; no-inline-format is the hard
-# error checker run by scripts/ci-check.sh.
-uninlined_format_args = "allow"
-
 [package]
 name = "poprako-server"
 version.workspace = true
@@ -64,9 +38,6 @@ repository.workspace = true
 keywords = ["manga", "translation", "backend", "axum", "diesel"]
 categories = ["web-programming", "asynchronous"]
 publish.workspace = true
-
-[lints]
-workspace = true
 
 [features]
 benchmark = []
@@ -105,6 +76,8 @@ base62 = "2.2.4"
 base64 = "0.22"
 k-snowflake = "2.1.1"
 poprako-util = { path = "poprako-util" }
+poprako-obj-dept = { path = "poprako-obj-dept", features = ["rdb_impl"] }
+poprako-rdb-core = { path = "poprako-rdb-core" }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json.workspace = true
 time = { workspace = true, features = ["serde"] }

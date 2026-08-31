@@ -1,5 +1,5 @@
 //! Chapter domain events.
-use crate::value::chapter::Stage;
+use crate::value::chapter::stage::Stage;
 
 /// Event emitted when a chapter reaches publish completion.
 ///

@@ -13,10 +13,10 @@ use crate::model::read::proj::workset::WorksetInfo;
 use crate::model::shared::unit::UnitCoord;
 use crate::model::shared::user::UserToken;
 use crate::part_impl::repo::mock_impl::Mock;
-use crate::value::chapter::{Stage, StageMask, StagePhase};
+use crate::value::chapter::mask::StageMask;
+use crate::value::chapter::stage::{Stage, StagePhase};
 use crate::value::chapter_port::ExportFormatSpec;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
-use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
 fn token(user_id: &str) -> UserToken {
@@ -36,11 +36,6 @@ fn comic(id: &str) -> ComicInfo {
         title: "Pop Comic".into(),
         author: "author".into(),
         description: None,
-        cover_key: None,
-        is_cover_uploaded: None,
-        cover_version: None,
-        cover_hash: None,
-        cover_ext: None,
         chapter_count: 1,
         creator_id: "user-1".into(),
         workset: None,
@@ -112,12 +107,7 @@ fn assignment(
     }
 }
 
-fn page(
-    id: &str,
-    index: usize,
-    image_key: Option<&str>,
-    image_uploaded: bool,
-) -> PageInfo {
+fn page(id: &str, index: usize, _image_uploaded: bool) -> PageInfo {
     //
     let time = OffsetDateTime::now_utc();
 
@@ -125,11 +115,6 @@ fn page(
         id: id.into(),
         chapter_id: "chapter-1".into(),
         index,
-        image_key: image_key.map(Into::into),
-        is_image_uploaded: Some(image_uploaded),
-        image_version: Some(1),
-        image_hash: Some(ImageHash::new([0u8; 32])),
-        image_ext: Some(ImageExt::Png),
         total_unit_count: 1,
         translated_unit_count: 1,
         proofread_unit_count: 0,
@@ -176,9 +161,13 @@ fn seed_scope(mock: &Mock) {
 
     mock.seed_chapter(chapter("chapter-1"));
 
-    mock.seed_page(page("page-1", 0, Some("one.png"), true));
+    mock.seed_page(page("page-1", 0, true));
 
-    mock.seed_page(page("page-2", 1, Some("two.png"), false));
+    mock.seed_page_image_obj("page-1", "png");
+
+    mock.seed_page(page("page-2", 1, false));
+
+    mock.seed_page_image_obj("page-2", "png");
 
     mock.seed_assignment(assignment(
         "chapter-1",
@@ -205,7 +194,7 @@ async fn export_returns_both_formats_and_records_one_export() {
     ));
 
     let exported = export(
-        (&mock, &mock),
+        (&mock, &mock, &mock),
         token("user-1"),
         "chapter-1".into(),
         ExportFormatSpec::BOTH,

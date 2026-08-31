@@ -8,7 +8,7 @@ pub trait InclOpt: Eq {
     /// Returns the dependency-ordered path required to populate this option.
     fn path(self) -> &'static [Self]
     where
-        Self: Sized + 'static;
+        Self: Sized;
 }
 
 /// Expands requested incl opts into a dependency-ordered, de-duplicated plan.

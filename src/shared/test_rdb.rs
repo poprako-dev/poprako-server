@@ -4,7 +4,7 @@ use testcontainers_modules::postgres::Postgres;
 use testcontainers_modules::testcontainers::runners::AsyncRunner as _;
 use testcontainers_modules::testcontainers::{ContainerAsync, ImageExt as _};
 
-use crate::shared::RdbCore;
+use poprako_rdb_core::RdbCore;
 
 const MIGRATIONS: EmbeddedMigrations =
     diesel_migrations::embed_migrations!("migrations");

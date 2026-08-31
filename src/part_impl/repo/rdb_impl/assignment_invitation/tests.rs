@@ -2,6 +2,8 @@
 
 use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 
+use poprako_rdb_core::RdbCore;
+
 use crate::model::read::spec::assignment_invitation::AssignmentInvitationListSpec;
 use crate::model::write::assignment_invitation::AssignmentInvitationEntry;
 use crate::part::nucl::ReptRead;
@@ -13,7 +15,6 @@ use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::result::BaseError;
-use crate::shared::RdbCore;
 use crate::value::role::{RoleField, RoleMask};
 
 const PREFIX: &str = "rdb-test-assignment-invitation-domain-";

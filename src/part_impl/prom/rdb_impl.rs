@@ -1,16 +1,12 @@
 //! Diesel-backed prom (promise) adapter.
 //!
-//! [`RdbProm`] is both the transactional handle for enqueuing deferred actions
-//! into `t_local_message` and the owner of the
-//! background consumer task that polls, dispatches, and completes those
-//! records — mirroring the self-contained lifecycle of [`AsyncEffectDevelop`].
-//!
-//! [`AsyncEffectDevelop`]: crate::part_impl::effect::async_impl::AsyncEffectDevelop
+//! [`RdbProm`] writes deferred actions through the caller's transaction and
+//! owns the background queue-consumer lifecycle.
 
 // Internal organization of the `entity` module.
 mod entity;
-// Internal organization of the `handler` module.
-mod handler;
+// Internal organization of the `actor` module.
+mod actor;
 // Internal organization of the `repo` module.
 mod repo;
 
@@ -29,89 +25,43 @@ use tokio::sync::watch;
 use tokio_util::sync::CancellationToken;
 use tracing::instrument;
 
+use poprako_rdb_core::RdbCore;
+
 use crate::part::effect::Develop;
-use crate::part::image::ImageManager;
 use crate::part::nucl::ReptRead;
 use crate::part::prom::oper::{Defer, DeferBatch};
 use crate::part::prom::payload::TaskPayload;
-use crate::part_impl::nucl::rdb_impl::RdbNucl;
+use crate::part_impl::prom::rdb_impl::actor::base::{ObjView, RdbPromActor};
 use crate::part_impl::prom::rdb_impl::entity::LocalMessageEntryRow;
-use crate::part_impl::prom::rdb_impl::repo::RdbPromRepo;
-use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::schema::t_local_message;
 use crate::result::{BaseError, BaseRest, accept};
+use crate::shared::RdbContext;
 use crate::shared::result::diesel;
-use crate::shared::{RdbContext, RdbCore};
 
-// ── Handle type ────────────────────────────────────────────────────────────
-
-/// RDBMS-backed prom adapter for enqueuing and consuming deferred actions.
+/// RDB-backed prom adapter for transactional deferral and queue processing.
 ///
-/// Implements [`Prom<C>`] for transactional task deferral.
-/// The constructor spawns a background worker that polls `t_local_message` and
-/// dispatches completed records by topic.
-///
-/// Call [`close`](RdbProm::close) before dropping to finish in-flight work
-/// gracefully. Pending records remain durable for the next worker start.
+/// Call [`close`](RdbProm::close) to stop polling and drain claimed work before
+/// shutdown. Pending records remain durable for the next process start.
 pub struct RdbProm {
     //
-    // Internal state field `token`.
-    /// Cancellation token to signal graceful shutdown of the prom processor.
+    /// Shared relational database core used to construct the queue consumer.
+    core: RdbCore,
+    /// Cancellation signal for the queue supervisor.
     token: CancellationToken,
-    /// Watch receiver that signals when background processing drains.
+    /// Completion signal set after every worker drains.
     done: watch::Receiver<bool>,
 }
 
 impl RdbProm {
-    /// Creates the prom adapter and launches its background consumer task.
-    ///
-    /// The supervisor polls `t_local_message` and routes each topic to one of four
-    /// serial worker tasks. Different topics can run concurrently, while messages
-    /// from one topic never execute concurrently in this process.
-    pub fn new<I, D>(core: RdbCore, image_pool: I, develop: D) -> Self
-    where
-        I: ImageManager + Send + Sync + 'static,
-        D: Develop + Send + Sync + 'static,
-    {
-        let token = CancellationToken::new();
-
-        let (done_send, done) = watch::channel(false);
-
-        let (nucl, repo) = (
-            RdbNucl::new(core.clone()),
-            RdbPromRepo::new(HybRepo::new(core)),
-        );
-
-        let handler = handler::RdbPromHandler::new(
-            nucl,
-            repo,
-            image_pool,
-            develop,
-            token.clone(),
-        );
-
-        tokio::spawn(async move {
-            //
-            // Internal implementation detail.
-            handler.run().await;
-
-            done_send.send_replace(true);
-        });
-
-        Self { token, done }
-    }
-
-    /// Signals the background worker to stop and waits for in-flight work
-    /// to complete.
+    /// Stops polling and waits for all claimed work to finish.
     #[instrument(level = "info", skip_all)]
     pub async fn close(&self) {
         //
-        // Internal implementation detail.
         self.token.cancel();
 
         let mut done = self.done.clone();
 
-        if let Err(error) = done.wait_for(|done| *done).await {
+        if let Err(error) = done.wait_for(|is_done| *is_done).await {
             //
             tracing::error!(
                 err = %error,
@@ -122,7 +72,7 @@ impl RdbProm {
 }
 
 impl Drop for RdbProm {
-    // Internal implementation of `drop`.
+    // Cancels polling when the owner is dropped without an explicit close.
     fn drop(&mut self) {
         self.token.cancel();
     }
@@ -201,4 +151,34 @@ where
 
         accept(())
     }
+}
+
+/// Starts the queue consumer with its statically typed business dependencies.
+#[must_use]
+pub fn new<V, D>(core: RdbCore, obj_view: V, develop: D) -> RdbProm
+where
+    V: ObjView + Send + Sync + 'static,
+    D: Develop + Send + Sync + 'static,
+{
+    let token = CancellationToken::new();
+
+    let (done_send, done) = watch::channel(false);
+
+    let rdb_prom = RdbProm { core, token, done };
+
+    let actor = RdbPromActor::new(
+        rdb_prom.core.clone(),
+        obj_view,
+        develop,
+        rdb_prom.token.clone(),
+    );
+
+    tokio::spawn(async move {
+        //
+        actor.run().await;
+
+        done_send.send_replace(true);
+    });
+
+    rdb_prom
 }

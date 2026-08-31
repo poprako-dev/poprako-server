@@ -2,6 +2,8 @@
 
 use super::*;
 
+use poprako_rdb_core::RdbCore;
+
 use crate::model::read::spec::system_mail::SystemMailListSpec;
 use crate::model::write::system_mail::SystemMailEntry;
 use crate::part::repo::oper::system_mail::{
@@ -9,7 +11,6 @@ use crate::part::repo::oper::system_mail::{
 };
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::test_shared;
-use crate::shared::RdbCore;
 
 const PREFIX: &str = "rdb-test-system-mail-domain-";
 

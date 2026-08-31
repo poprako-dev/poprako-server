@@ -14,7 +14,7 @@ import tree_sitter_rust
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
 
-from production_source import production_source
+from production_source import production_files, production_source
 
 
 ROOT = Path(__file__).parents[2]
@@ -166,6 +166,21 @@ def lib_crate_name(root: Path) -> str:
     return manifest["package"]["name"].replace("-", "_")
 
 
+def external_crate_roots(root: Path) -> set[str]:
+    with (root / "Cargo.toml").open("rb") as cargo_file:
+        manifest = tomllib.load(cargo_file)
+
+    return {
+        dependency.replace("-", "_")
+        for section_name in (
+            "dependencies",
+            "dev-dependencies",
+            "build-dependencies",
+        )
+        for dependency in manifest.get(section_name, {})
+    }
+
+
 def self_aliases(source: bytes, tree: tree_sitter.Tree) -> set[str]:
     aliases: set[str] = set()
 
@@ -205,7 +220,7 @@ def check(root: Path) -> list[str]:
     root = root.resolve()
     violations: list[str] = []
 
-    for path in sorted((root / "src").rglob("*.rs")):
+    for path in production_files(root):
         source = production_source(path, root)
         tree = PARSER.parse(source)
 
@@ -215,6 +230,7 @@ def check(root: Path) -> list[str]:
             )
 
         roots = local_roots(path, root, source, tree)
+        roots.difference_update(external_crate_roots(root))
 
         for declaration in descendants(tree.root_node, "use_declaration"):
             argument = declaration.child_by_field_name("argument")

@@ -19,7 +19,7 @@ import tree_sitter
 import tree_sitter_rust
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
-from production_source import production_source
+from production_source import production_files, production_source
 
 
 DEFAULT_ROOT = Path(__file__).parents[2]
@@ -48,7 +48,7 @@ def rust_files(root: Path) -> list[Path]:
     return sorted(
         path
         for role in ROLES
-        for path in (root / "src" / LAYER / role).glob("*.rs")
+        for path in production_files(root, f"src/{LAYER}/{role}")
     )
 
 
@@ -62,12 +62,12 @@ def domain_names(root: Path) -> set[str]:
     modules = {
         path.stem
         for layer in ("model",)
-        for path in (root / "src" / layer).glob("*.rs")
+        for path in production_files(root, f"src/{layer}")
     }
     modules.update(
         path.stem
         for role in ROLES
-        for path in (root / "src" / LAYER / role).glob("*.rs")
+        for path in production_files(root, f"src/{LAYER}/{role}")
     )
 
     return {pascal_name(module) for module in modules}

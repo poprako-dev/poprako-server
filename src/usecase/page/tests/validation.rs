@@ -1,4 +1,4 @@
-use super::super::reserve::validation::validate_page_count;
+use super::super::alloc::validation::validate_page_count;
 
 use crate::complex::image::ImageComplex;
 use crate::test_util::IMAGE_CONFIG;

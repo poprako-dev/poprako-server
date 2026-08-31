@@ -4,7 +4,7 @@ use poprako_orchestra::{Context, OperRun as _};
 
 use poprako_util::i18n::trl;
 
-use crate::complex::unit::UnitListAccess;
+use crate::complex::unit::perm::UnitListAccess;
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::read::proj::member::MemberInfo;
 use crate::part::repo::assignment::AssignmentRepo;

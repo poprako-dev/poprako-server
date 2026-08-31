@@ -3,10 +3,12 @@
 use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
+use poprako_obj_dept::ObjDept;
+use poprako_obj_dept::oper::ClearObjs;
 use poprako_util::i18n::trl;
 
-use crate::complex::chapter::{ChapterComplex, ChapterPermComplex};
-use crate::complex::image::ImageComplex;
+use crate::complex::chapter::ChapterComplex;
+use crate::complex::chapter::perm::ChapterPermComplex;
 use crate::data::instr::chapter::UpdateChapterStageInstr;
 use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::model::shared::user::UserToken;
@@ -17,10 +19,7 @@ use crate::part::effect::event::chapter::{
 };
 use crate::part::effect::{Develop, EffectEvent as _};
 use crate::part::nucl::ReptRead;
-use crate::part::prom::Prom;
-use crate::part::prom::oper::DeferBatch;
-use crate::part::prom::payload::{TaskPayload, image};
-use crate::part::prom::task::Task;
+use crate::part::obj_dept::PageImage;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
@@ -33,18 +32,18 @@ use crate::part::repo::oper::chapter::{
 };
 use crate::part::repo::oper::chapter_workflow_record::CreateChapterWorkflowRecords;
 use crate::part::repo::oper::comic::TouchComicLastActive;
-use crate::part::repo::oper::page::ClearPageImagesForPublish;
+use crate::part::repo::oper::page::ListPageInfos;
 use crate::part::repo::page::PageRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::value::chapter::{Stage, StageOper, StagePhase};
+use crate::value::chapter::stage::{Stage, StageOper, StagePhase};
 use crate::value::chapter_workflow_record::{
     ChapterWorkflowRecordOrigin, ChapterWorkflowRecordPayload,
 };
 
 /// Updates one chapter workflow stage and records the real phase transition.
-#[instrument(level = "info", skip(nucl, repo, prom, develop))]
-pub async fn update_stage<N, C, R, P, D>(
-    (nucl, repo, prom, develop): (&N, &R, &P, &D),
+#[instrument(level = "info", skip(nucl, repo, obj_dept, develop))]
+pub async fn update_stage<N, C, R, O, D>(
+    (nucl, repo, obj_dept, develop): (&N, &R, &O, &D),
     token: UserToken,
     instr: UpdateChapterStageInstr,
 ) -> BaseRest<()>
@@ -59,7 +58,7 @@ where
         + PageRepo<C>
         + Send
         + Sync,
-    P: Prom<C> + Send + Sync,
+    O: ObjDept<PageImage, C> + Send + Sync,
     D: Develop + Send + Sync,
 {
     let stage = Stage::from(instr.stage);
@@ -134,7 +133,7 @@ where
                 {
                     clean_uploaded_images(
                         repo,
-                        prom,
+                        obj_dept,
                         context,
                         &chapter_info.id,
                     )
@@ -217,46 +216,29 @@ where
 }
 
 // Clear uploaded page images and enqueue their object-storage deletions.
-async fn clean_uploaded_images<C, R, P>(
+async fn clean_uploaded_images<C, R, O>(
     repo: &R,
-    prom: &P,
+    obj_dept: &O,
     context: &mut C,
     chapter_id: &str,
 ) -> BaseRest<()>
 where
     C: Context,
     R: PageRepo<C> + Sync,
-    P: Prom<C> + Sync,
+    O: ObjDept<PageImage, C> + Sync,
 {
-    let object_keys = ClearPageImagesForPublish { chapter_id }
-        .step_on(repo, context)
-        .await?;
+    let page_infos =
+        ListPageInfos { chapter_id }.step_on(repo, context).await?;
 
-    let delete_ids = object_keys
-        .iter()
-        .map(|_| ImageComplex::gen_delete_id())
-        .collect::<Vec<_>>();
-
-    let payloads = object_keys
+    let page_ids = page_infos
         .into_iter()
-        .map(|object_key| TaskPayload::Image {
-            payload: image::ImagePayload::Delete { object_key },
-        })
+        .map(|page_info| page_info.id)
         .collect::<Vec<_>>();
 
-    let tasks = delete_ids
-        .iter()
-        .zip(payloads.iter())
-        .map(|(id, payload)| Task {
-            id,
-            payload,
-            delay: None,
-        })
-        .collect::<Vec<_>>();
-
-    DeferBatch::new(&tasks).step_on(prom, context).await?;
-
-    accept(())
+    ClearObjs::<PageImage>::new(&page_ids)
+        .step_on(obj_dept, context)
+        .await
+        .map_err(BaseError::from)
 }
 
 // Develops workflow completion and publication events after commit.

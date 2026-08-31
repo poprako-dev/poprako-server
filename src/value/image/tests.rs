@@ -10,7 +10,7 @@ fn image_hash_round_trips_canonical_base64() {
 
     assert_eq!(image_hash.to_base64(), encoded);
 
-    assert_eq!(image_hash.bytes(), [0; 32]);
+    assert_eq!(image_hash.as_bytes(), &[0; 32]);
 }
 
 #[test]

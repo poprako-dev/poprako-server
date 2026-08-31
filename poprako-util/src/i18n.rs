@@ -1,3 +1,6 @@
+#[cfg(test)]
+mod tests;
+
 use std::borrow::Cow;
 use std::collections::hash_map::{HashMap, RandomState};
 use std::sync::LazyLock;
@@ -10,9 +13,11 @@ static_loader! {
     static LOCALES = {
         locales: "locales",
         fallback_language: "zh-CN",
+        customise: |bundle| bundle.set_use_isolating(false),
     };
 }
 
+// Caches the process-wide Fluent language selection.
 static LANGUAGE: LazyLock<LanguageIdentifier> = LazyLock::new(|| {
     //
     let lang =
@@ -21,6 +26,7 @@ static LANGUAGE: LazyLock<LanguageIdentifier> = LazyLock::new(|| {
     lang.parse().unwrap_or_else(|_| langid!("zh-CN"))
 });
 
+/// Looks up a Fluent message for the current language.
 pub fn trl(key: &str) -> String {
     LOCALES.lookup(&LANGUAGE, key)
 }

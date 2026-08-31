@@ -4,6 +4,8 @@
 pub mod delete;
 /// Chapter workflow stage mutation use case.
 pub mod stage;
+/// Chapter presentation assembly.
+pub mod view;
 /// Immutable workflow record listing use case.
 pub mod workflow_record;
 
@@ -13,10 +15,12 @@ mod tests;
 use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
+use poprako_obj_dept::ObjDeptView;
 use poprako_util::i18n::trl;
 
 use crate::complex::assignment::AssignmentComplex;
-use crate::complex::chapter::{ChapterComplex, ChapterPermComplex};
+use crate::complex::chapter::ChapterComplex;
+use crate::complex::chapter::perm::ChapterPermComplex;
 use crate::complex::comic::ComicComplex;
 use crate::data::instr::chapter::{
     CreateChapterInstr, ListChapterInfosInstr, UpdateChapterInfoInstr,
@@ -28,8 +32,8 @@ use crate::model::shared::user::UserToken;
 use crate::model::write::assignment::AssignmentEntry;
 use crate::model::write::chapter::{ChapterEntry, ChapterPatch};
 use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
-use crate::part::image::ImagePool;
 use crate::part::nucl::ReptRead;
+use crate::part::obj_dept::{ComicCover, TeamAvatar, UserAvatar};
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
@@ -51,22 +55,25 @@ use crate::part::repo::oper::comic::{
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::usecase::chapter::view::chapter_info_views;
 use crate::usecase::internal::member::MemberLoader;
-use crate::usecase::internal::page::PageLoader;
-use crate::usecase::internal::util::{LoadMode, collect_bounded};
+use crate::usecase::internal::util::LoadMode;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 
 /// Lists chapters under one comic.
-#[instrument(level = "info", skip(repo, image_pool))]
-pub async fn list_infos<C, R, I>(
-    (repo, image_pool): (&R, &I),
+#[instrument(level = "info", skip(repo, obj_dept))]
+pub async fn list_infos<C, R, O>(
+    (repo, obj_dept): (&R, &O),
     token: UserToken,
     instr: ListChapterInfosInstr,
 ) -> BaseRest<Vec<ChapterInfoView>>
 where
     C: Context,
     R: ChapterRepo<C> + MemberRepo<C> + TeamRepo<C> + PageRepo<C> + Sync,
-    I: ImagePool + Sync,
+    O: ObjDeptView<ComicCover, C>
+        + ObjDeptView<TeamAvatar, C>
+        + ObjDeptView<UserAvatar, C>
+        + Sync,
 {
     let member_info = MemberLoader::load_info_from_comic(
         repo,
@@ -87,34 +94,7 @@ where
 
     let chapter_infos = ListChapterInfos { spec: &spec }.run_on(repo).await?;
 
-    let comic_ids = chapter_infos
-        .iter()
-        .filter_map(|chapter_info| chapter_info.comic.as_ref())
-        .map(|comic_info| comic_info.id.clone())
-        .collect::<Vec<_>>();
-
-    let first_page_infos =
-        PageLoader::load_infos_from_comics(repo, &comic_ids).await?;
-
-    let fallback_cover_keys =
-        ComicComplex::resolve_fallback_cover_keys(first_page_infos);
-
-    let chapter_info_vals =
-        collect_bounded(chapter_infos.into_iter().map(|chapter_info| {
-            //
-            let fallback_cover_key = chapter_info
-                .comic
-                .as_ref()
-                .and_then(|comic_info| fallback_cover_keys.get(&comic_info.id))
-                .map(String::as_str);
-
-            ChapterInfoView::from_model(
-                image_pool,
-                chapter_info,
-                fallback_cover_key,
-            )
-        }))
-        .await?;
+    let chapter_info_vals = chapter_info_views(obj_dept, chapter_infos).await?;
 
     accept(chapter_info_vals)
 }

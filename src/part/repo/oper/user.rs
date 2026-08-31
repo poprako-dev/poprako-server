@@ -1,11 +1,7 @@
 use poprako_orchestra::Oper;
 
 use crate::model::read::proj::user::{UserCredential, UserInfo};
-use crate::model::write::user::{
-    UserAvatarRepl, UserAvatarReservation, UserCredsRepl, UserEntry,
-    UserInfoRepl,
-};
-use crate::value::image::{ImageExt, ImageHash};
+use crate::model::write::user::{UserCredsRepl, UserEntry, UserInfoRepl};
 
 /// Creates a user.
 #[derive(Oper)]
@@ -62,12 +58,6 @@ pub enum UpdateUser<'a> {
         repl: &'a UserInfoRepl,
     },
 
-    /// Marks a user avatar as uploaded.
-    MarkAvatarUploaded {
-        /// The replacement payload.
-        repl: &'a UserAvatarRepl,
-    },
-
     /// Touches the last-active timestamp.
     TouchLastActive {
         /// The unique user identifier.
@@ -79,21 +69,6 @@ pub enum UpdateUser<'a> {
         /// The replacement payload.
         repl: &'a UserCredsRepl,
     },
-}
-
-/// Reserves a user avatar slot for an upload.
-#[derive(Oper)]
-#[oper(output = UserAvatarReservation)]
-pub struct ReserveUserAvatar<'a> {
-    //
-    /// The user id.
-    pub id: &'a str,
-
-    /// The image hash for deduplication.
-    pub image_hash: &'a ImageHash,
-
-    /// The image file extension.
-    pub image_ext: ImageExt,
 }
 
 /// Looks up a user by identifier, matching deleted rows as well.

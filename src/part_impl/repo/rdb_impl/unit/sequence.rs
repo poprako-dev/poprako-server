@@ -12,13 +12,14 @@ use diesel_async::RunQueryDsl as _;
 use time::OffsetDateTime;
 use tracing::instrument;
 
+use poprako_rdb_core::RdbConn;
+
 use crate::model::read::proj::unit::{UnitInfo, UnitOrder};
 use crate::part_impl::repo::rdb_impl::entity::unit::UnitInfoRow;
 use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{
     f_hidden_at, f_id, f_next_id, f_page_id, t_unit,
 };
 use crate::result::{BaseError, BaseRest, accept};
-use crate::shared::RdbConn;
 use crate::shared::result::diesel;
 
 /// Returns an unrecoverable error for a corrupt Unit chain.

@@ -12,6 +12,7 @@ use diesel_async::RunQueryDsl as _;
 use poprako_orchestra::Run;
 use tracing::instrument;
 
+use poprako_rdb_core::RdbConn;
 use poprako_util::i18n::trl;
 
 use crate::model::read::proj::announcement::AnnouncementInfo;
@@ -30,7 +31,6 @@ use crate::part_impl::repo::rdb_impl::schema::t_announcement::dsl::{
     f_content, f_created_at, f_id, f_team_id, f_title, t_announcement,
 };
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::shared::RdbConn;
 use crate::shared::result::diesel;
 
 // Loads an announcement row by identifier.

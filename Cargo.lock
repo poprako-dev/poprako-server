@@ -2759,7 +2759,27 @@ checksum = "5dcdc93847ad24990939cce6e1804361e903efcb5f99daa5abd87943a9d6d7ba"
 name = "poprako-obj-dept"
 version = "0.1.0"
 dependencies = [
+ "diesel",
+ "diesel-async",
+ "futures-util",
+ "poprako-obj-dept-macro",
+ "poprako-orchestra",
+ "poprako-rdb-core",
+ "serde",
+ "time",
+ "tokio",
+ "tokio-util",
+ "tracing",
  "url",
+]
+
+[[package]]
+name = "poprako-obj-dept-macro"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.118",
 ]
 
 [[package]]
@@ -2784,8 +2804,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "poprako-rdb-impl"
+name = "poprako-rdb-core"
 version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "diesel-async",
+ "poprako-orchestra",
+]
 
 [[package]]
 name = "poprako-server"
@@ -2815,7 +2840,9 @@ dependencies = [
  "k-snowflake",
  "metrics",
  "metrics-exporter-prometheus",
+ "poprako-obj-dept",
  "poprako-orchestra",
+ "poprako-rdb-core",
  "poprako-util",
  "serde",
  "serde_json",

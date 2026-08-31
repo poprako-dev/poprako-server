@@ -72,6 +72,9 @@ allow_public_fields = [
     "part_impl::repo::rdb_impl::entity",
     "part_impl::prom::rdb_impl::entity",
     "part_impl::prom::rdb_impl::handler",
+    "key",
+    "oper",
+    "rdb_impl",
 ]
 exclude_files = ["src/part_impl/repo/rdb_impl/schema.rs"]
 
@@ -154,6 +157,41 @@ message = "'previous' is forbidden — use 'prev' instead"
 word = "replacement"
 code = "FBD012"
 message = "'replacement' is forbidden — use 'repl' instead"
+
+[[forbidden-identifiers.words]]
+word = "outcome"
+code = "FBD013"
+message = "'outcome' is forbidden"
+
+[[forbidden-identifiers.words]]
+word = "generation"
+code = "FBD014"
+message = "'generation' is forbidden - use 'gen_no' instead"
+contexts = ["function", "let", "parameter", "const", "static", "enum_variant", "type", "field", "macro_field"]
+
+[[forbidden-identifiers.words]]
+word = "version"
+code = "FBD015"
+message = "'version' is forbidden - use 'ver' instead"
+contexts = ["function", "let", "parameter", "const", "static", "enum_variant", "type", "field", "macro_field"]
+
+[[forbidden-identifiers.words]]
+word = "reserve"
+code = "FBD016"
+message = "'reserve' is forbidden - use 'alloc' instead"
+contexts = ["module", "function", "let", "parameter", "const", "static", "enum_variant", "type", "field", "macro_field"]
+
+[[forbidden-identifiers.words]]
+word = "reservation"
+code = "FBD017"
+message = "'reservation' is forbidden - use 'alloc' instead"
+contexts = ["module", "function", "let", "parameter", "const", "static", "enum_variant", "type", "field", "macro_field"]
+
+[[forbidden-identifiers.words]]
+word = "available"
+code = "FBD018"
+message = "'available' is forbidden - use 'avail' instead"
+contexts = ["module", "function", "let", "parameter", "const", "static", "enum_variant", "type", "field", "macro_field"]
 
 [trait-use-anonymous]
 # The trait lists replace the packaged defaults entirely.

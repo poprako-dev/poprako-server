@@ -4,7 +4,12 @@ set -eu
 project_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 cd "$project_root"
 
-for rust_file in $(find src poprako-util/src poprako-swagger/src -type f -name '*.rs' | LC_ALL=C sort); do
+for rust_file in $(find . \
+    -path './.git' -prune -o \
+    -path './target' -prune -o \
+    -path './linters-extra/.venv' -prune -o \
+    -path '*/src/*' -type f -name '*.rs' -print \
+    | LC_ALL=C sort); do
     max_lines=600
 
     line_count=$(wc -l < "$rust_file")

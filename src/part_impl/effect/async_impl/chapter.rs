@@ -1,4 +1,4 @@
-//! Chapter event handlers for async side effects.
+//! Chapter event actors for async side effects.
 
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -21,7 +21,8 @@ use crate::part::repo::oper::assignment::ListAssignmentInfos;
 use crate::part::repo::oper::chapter::GetChapterInfo;
 use crate::part::repo::oper::system_mail::SendSystemMails;
 use crate::part::repo::system_mail::SystemMailRepo;
-use crate::value::chapter::{ChapterInclOpt, Stage};
+use crate::value::chapter::ChapterInclOpt;
+use crate::value::chapter::stage::Stage;
 use crate::value::role::RoleField;
 
 // Default include options for loading chapter data with its comic, workset, and team relations.

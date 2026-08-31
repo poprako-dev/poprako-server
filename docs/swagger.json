@@ -882,13 +882,13 @@
         }
       }
     },
-    "/api/v1/chapters/{chapter_id}/pages/reserve": {
+    "/api/v1/chapters/{chapter_id}/pages/alloc": {
       "post": {
         "tags": [
           "pages"
         ],
-        "summary": "`POST /api/v1/chapters/{chapter_id}/pages/reserve` — reserve all page images.",
-        "operationId": "reserve_chapter_pages",
+        "summary": "`POST /api/v1/chapters/{chapter_id}/pages/alloc` — allocate all page images.",
+        "operationId": "alloc_chapter_pages",
         "parameters": [
           {
             "name": "chapter_id",
@@ -904,7 +904,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ReserveChapterPagesInstr"
+                "$ref": "#/components/schemas/AllocChapterPagesInstr"
               }
             }
           },
@@ -912,17 +912,17 @@
         },
         "responses": {
           "200": {
-            "description": "Page upload slots reserved",
+            "description": "Page upload slots allocated",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ReserveChapterPagesVal"
+                  "$ref": "#/components/schemas/HttpBody_AllocChapterPagesVal"
                 }
               }
             }
           },
           "403": {
-            "description": "No perm to reserve pages in this chapter"
+            "description": "No perm to allocate pages in this chapter"
           },
           "422": {
             "description": "Invalid authoritative manifest, duplicate page identity, image metadata, or published chapter"
@@ -1558,6 +1558,54 @@
         }
       }
     },
+    "/api/v1/comics/{comic_id}/cover/alloc": {
+      "post": {
+        "tags": [
+          "comics"
+        ],
+        "summary": "`POST /api/v1/comics/{comic_id}/cover/alloc` — allocate a cover upload slot.",
+        "operationId": "alloc_cover",
+        "parameters": [
+          {
+            "name": "comic_id",
+            "in": "path",
+            "description": "Comic ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AllocComicCoverInstr"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Cover upload URL allocated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpBody_AllocComicCoverVal"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No perm to modify this comic's cover"
+          },
+          "404": {
+            "description": "Comic not found"
+          }
+        }
+      }
+    },
     "/api/v1/comics/{comic_id}/cover/mark-uploaded": {
       "post": {
         "tags": [
@@ -1589,54 +1637,6 @@
         "responses": {
           "204": {
             "description": "Cover upload confirmed"
-          },
-          "403": {
-            "description": "No perm to modify this comic's cover"
-          },
-          "404": {
-            "description": "Comic not found"
-          }
-        }
-      }
-    },
-    "/api/v1/comics/{comic_id}/cover/reserve": {
-      "post": {
-        "tags": [
-          "comics"
-        ],
-        "summary": "`POST /api/v1/comics/{comic_id}/cover/reserve` — reserve a cover upload slot.",
-        "operationId": "reserve_cover",
-        "parameters": [
-          {
-            "name": "comic_id",
-            "in": "path",
-            "description": "Comic ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ReserveComicCoverInstr"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Cover upload URL reserved",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ReserveComicCoverVal"
-                }
-              }
-            }
           },
           "403": {
             "description": "No perm to modify this comic's cover"
@@ -2286,6 +2286,54 @@
         }
       }
     },
+    "/api/v1/pages/{page_id}/image/alloc": {
+      "post": {
+        "tags": [
+          "pages"
+        ],
+        "summary": "`POST /api/v1/pages/{page_id}/image/alloc` — allocate a replacement page image.",
+        "operationId": "alloc_image",
+        "parameters": [
+          {
+            "name": "page_id",
+            "in": "path",
+            "description": "Page ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AllocPageImageInstr"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Page image upload URL allocated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpBody_AllocatedPageVal"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No perm to modify this page's image"
+          },
+          "422": {
+            "description": "Page not found, conflicting image metadata, or published chapter"
+          }
+        }
+      }
+    },
     "/api/v1/pages/{page_id}/image/mark-uploaded": {
       "post": {
         "tags": [
@@ -2323,54 +2371,6 @@
           },
           "422": {
             "description": "Page, image identity, storage object, or published chapter is invalid"
-          }
-        }
-      }
-    },
-    "/api/v1/pages/{page_id}/image/reserve": {
-      "post": {
-        "tags": [
-          "pages"
-        ],
-        "summary": "`POST /api/v1/pages/{page_id}/image/reserve` — reserve a replacement page image.",
-        "operationId": "reserve_image",
-        "parameters": [
-          {
-            "name": "page_id",
-            "in": "path",
-            "description": "Page ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ReservePageImageInstr"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Page image upload URL reserved",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ReservedPageVal"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "No perm to modify this page's image"
-          },
-          "422": {
-            "description": "Page not found, conflicting image metadata, or published chapter"
           }
         }
       }
@@ -2819,6 +2819,54 @@
         }
       }
     },
+    "/api/v1/teams/{team_id}/avatar/alloc": {
+      "post": {
+        "tags": [
+          "teams"
+        ],
+        "summary": "`POST /api/v1/teams/{team_id}/avatar/alloc` — allocate a team avatar upload slot.",
+        "operationId": "alloc_avatar",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AllocTeamAvatarInstr"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Avatar upload URL allocated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpBody_AllocTeamAvatarVal"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No perm to modify this team's avatar"
+          },
+          "404": {
+            "description": "Team not found"
+          }
+        }
+      }
+    },
     "/api/v1/teams/{team_id}/avatar/mark-uploaded": {
       "post": {
         "tags": [
@@ -2850,54 +2898,6 @@
         "responses": {
           "204": {
             "description": "Avatar upload confirmed"
-          },
-          "403": {
-            "description": "No perm to modify this team's avatar"
-          },
-          "404": {
-            "description": "Team not found"
-          }
-        }
-      }
-    },
-    "/api/v1/teams/{team_id}/avatar/reserve": {
-      "post": {
-        "tags": [
-          "teams"
-        ],
-        "summary": "`POST /api/v1/teams/{team_id}/avatar/reserve` — reserve a team avatar upload slot.",
-        "operationId": "reserve_avatar",
-        "parameters": [
-          {
-            "name": "team_id",
-            "in": "path",
-            "description": "Team ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ReserveTeamAvatarInstr"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Avatar upload URL reserved",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ReserveTeamAvatarVal"
-                }
-              }
-            }
           },
           "403": {
             "description": "No perm to modify this team's avatar"
@@ -3936,6 +3936,51 @@
         }
       }
     },
+    "/api/v1/users/{user_id}/avatar/alloc": {
+      "post": {
+        "tags": [
+          "users"
+        ],
+        "summary": "`POST /api/v1/users/{user_id}/avatar/alloc` — allocate an avatar upload slot.",
+        "operationId": "alloc_avatar",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "description": "Target user ID (must match authenticated user)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AllocUserAvatarInstr"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Avatar upload URL allocated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpBody_AllocUserAvatarVal"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Cannot modify another user's avatar"
+          }
+        }
+      }
+    },
     "/api/v1/users/{user_id}/avatar/mark-uploaded": {
       "post": {
         "tags": [
@@ -3970,51 +4015,6 @@
           },
           "403": {
             "description": "Cannot confirm another user's avatar"
-          }
-        }
-      }
-    },
-    "/api/v1/users/{user_id}/avatar/reserve": {
-      "post": {
-        "tags": [
-          "users"
-        ],
-        "summary": "`POST /api/v1/users/{user_id}/avatar/reserve` — reserve an avatar upload slot.",
-        "operationId": "reserve_avatar",
-        "parameters": [
-          {
-            "name": "user_id",
-            "in": "path",
-            "description": "Target user ID (must match authenticated user)",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ReserveUserAvatarInstr"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Avatar upload URL reserved",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ReserveUserAvatarVal"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Cannot modify another user's avatar"
           }
         }
       }
@@ -4329,6 +4329,235 @@
   },
   "components": {
     "schemas": {
+      "AllocChapterPagesInstr": {
+        "type": "object",
+        "description": "Input parameters for reserving all page images of a chapter.",
+        "required": [
+          "chapter_id",
+          "pages"
+        ],
+        "properties": {
+          "chapter_id": {
+            "type": "string",
+            "description": "Target chapter identifier."
+          },
+          "pages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PageImageInstr"
+            },
+            "description": "Page images to allocate for the chapter."
+          }
+        }
+      },
+      "AllocChapterPagesVal": {
+        "type": "object",
+        "description": "Return value from successful chapter page allocations.",
+        "required": [
+          "pages"
+        ],
+        "properties": {
+          "pages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AllocatedPageVal"
+            },
+            "description": "Allocated pages with upload targets."
+          }
+        }
+      },
+      "AllocComicCoverInstr": {
+        "type": "object",
+        "description": "Request to allocate a comic cover upload.",
+        "required": [
+          "image_hash",
+          "new_byte_len",
+          "ext"
+        ],
+        "properties": {
+          "ext": {
+            "$ref": "#/components/schemas/ImageExt",
+            "description": "Cover file format."
+          },
+          "image_hash": {
+            "$ref": "#/components/schemas/ImageHash",
+            "description": "SHA-256 identity of the exact cover bytes."
+          },
+          "new_byte_len": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Upload size used for validation and PUT signing.",
+            "minimum": 0
+          }
+        }
+      },
+      "AllocComicCoverVal": {
+        "type": "object",
+        "description": "Comic cover upload allocation response.",
+        "properties": {
+          "slot": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ImageUploadSlotView",
+                "description": "Upload capability, absent when this cover is already uploaded."
+              }
+            ]
+          }
+        }
+      },
+      "AllocPageImageInstr": {
+        "type": "object",
+        "description": "Input parameters for reserving one page image.",
+        "required": [
+          "image_hash",
+          "new_byte_len",
+          "ext"
+        ],
+        "properties": {
+          "ext": {
+            "$ref": "#/components/schemas/ImageExt",
+            "description": "File format."
+          },
+          "image_hash": {
+            "$ref": "#/components/schemas/ImageHash",
+            "description": "Content hash of the page image to allocate."
+          },
+          "new_byte_len": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Size of the page image in bytes.",
+            "minimum": 0
+          }
+        }
+      },
+      "AllocTeamAvatarInstr": {
+        "type": "object",
+        "description": "Request to allocate a team avatar upload.",
+        "required": [
+          "image_hash",
+          "new_byte_len",
+          "ext"
+        ],
+        "properties": {
+          "ext": {
+            "$ref": "#/components/schemas/ImageExt",
+            "description": "Avatar file format."
+          },
+          "image_hash": {
+            "$ref": "#/components/schemas/ImageHash",
+            "description": "SHA-256 identity of the exact avatar bytes."
+          },
+          "new_byte_len": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Upload size used for validation and PUT signing.",
+            "minimum": 0
+          }
+        }
+      },
+      "AllocTeamAvatarVal": {
+        "type": "object",
+        "description": "Team avatar upload allocation response.",
+        "properties": {
+          "slot": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ImageUploadSlotView",
+                "description": "Upload capability, absent when this avatar is already uploaded."
+              }
+            ]
+          }
+        }
+      },
+      "AllocUserAvatarInstr": {
+        "type": "object",
+        "description": "Request to allocate a user avatar upload.",
+        "required": [
+          "image_hash",
+          "new_byte_len",
+          "ext"
+        ],
+        "properties": {
+          "ext": {
+            "$ref": "#/components/schemas/ImageExt",
+            "description": "Avatar file format."
+          },
+          "image_hash": {
+            "$ref": "#/components/schemas/ImageHash",
+            "description": "SHA-256 identity of the exact avatar bytes."
+          },
+          "new_byte_len": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Upload size used for validation and PUT signing.",
+            "minimum": 0
+          }
+        }
+      },
+      "AllocUserAvatarVal": {
+        "type": "object",
+        "description": "User avatar upload allocation response.",
+        "properties": {
+          "slot": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ImageUploadSlotView",
+                "description": "Upload capability, absent when this avatar is already uploaded."
+              }
+            ]
+          }
+        }
+      },
+      "AllocatedPageVal": {
+        "type": "object",
+        "description": "One allocated page upload target.",
+        "required": [
+          "page_id",
+          "index",
+          "image_hash",
+          "ext"
+        ],
+        "properties": {
+          "ext": {
+            "$ref": "#/components/schemas/ImageExt",
+            "description": "File format."
+          },
+          "image_hash": {
+            "$ref": "#/components/schemas/ImageHash",
+            "description": "Content hash of the page image."
+          },
+          "index": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Ordinal position within the chapter.",
+            "minimum": 0
+          },
+          "page_id": {
+            "type": "string",
+            "description": "Allocated page identifier."
+          },
+          "slot": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ImageUploadSlotView",
+                "description": "Presigned upload slot, if a new image must be uploaded."
+              }
+            ]
+          }
+        }
+      },
       "AnnouncementInclOpt": {
         "type": "string",
         "description": "Incl opts for announcement info queries.\n\nEach opt embeds additional related data into the returned\n`AnnouncementInfoView`.",
@@ -5106,7 +5335,7 @@
       },
       "ComicInfoView": {
         "type": "object",
-        "description": "Presentation-ready comic information.\n\nMirrors [`ComicInfo`] but converts timestamps to Unix milliseconds and\nresolves the cover key to a signed download URL via [`ImagePool`] when\nthe cover has been uploaded.\n\nConstruct via [`ComicInfoView::from_model`] — the conversion requires\nan [`ImagePool`] instance for URL signing.\n\n[`ComicInfo`]: crate::model::read::proj::comic::ComicInfo",
+        "description": "Presentation-ready comic information.\n\nMirrors [`ComicInfo`], converts timestamps to Unix milliseconds, and\naccepts object URLs already resolved by the use-case layer.\n\n[`ComicInfo`]: crate::model::read::proj::comic::ComicInfo",
         "required": [
           "id",
           "workset_id",
@@ -5143,7 +5372,7 @@
               "string",
               "null"
             ],
-            "description": "Resolved signed download URL for the cover thumbnail, or [`None`] if\nno cover has been uploaded."
+            "description": "Resolved signed download URL for the cover thumbnail, when available."
           },
           "cover_url": {
             "type": [
@@ -5829,6 +6058,199 @@
           }
         }
       },
+      "HttpBody_AllocChapterPagesVal": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Application-level success code, 0 for normal success.",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "Return value from successful chapter page allocations.",
+            "required": [
+              "pages"
+            ],
+            "properties": {
+              "pages": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AllocatedPageVal"
+                },
+                "description": "Allocated pages with upload targets."
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_AllocComicCoverVal": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Application-level success code, 0 for normal success.",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "Comic cover upload allocation response.",
+            "properties": {
+              "slot": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ImageUploadSlotView",
+                    "description": "Upload capability, absent when this cover is already uploaded."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_AllocTeamAvatarVal": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Application-level success code, 0 for normal success.",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "Team avatar upload allocation response.",
+            "properties": {
+              "slot": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ImageUploadSlotView",
+                    "description": "Upload capability, absent when this avatar is already uploaded."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_AllocUserAvatarVal": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Application-level success code, 0 for normal success.",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "User avatar upload allocation response.",
+            "properties": {
+              "slot": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ImageUploadSlotView",
+                    "description": "Upload capability, absent when this avatar is already uploaded."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_AllocatedPageVal": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Application-level success code, 0 for normal success.",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "One allocated page upload target.",
+            "required": [
+              "page_id",
+              "index",
+              "image_hash",
+              "ext"
+            ],
+            "properties": {
+              "ext": {
+                "$ref": "#/components/schemas/ImageExt",
+                "description": "File format."
+              },
+              "image_hash": {
+                "$ref": "#/components/schemas/ImageHash",
+                "description": "Content hash of the page image."
+              },
+              "index": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Ordinal position within the chapter.",
+                "minimum": 0
+              },
+              "page_id": {
+                "type": "string",
+                "description": "Allocated page identifier."
+              },
+              "slot": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ImageUploadSlotView",
+                    "description": "Presigned upload slot, if a new image must be uploaded."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
       "HttpBody_ArchiveComicVal": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
@@ -6074,7 +6496,7 @@
           },
           "data": {
             "type": "object",
-            "description": "Presentation-ready comic information.\n\nMirrors [`ComicInfo`] but converts timestamps to Unix milliseconds and\nresolves the cover key to a signed download URL via [`ImagePool`] when\nthe cover has been uploaded.\n\nConstruct via [`ComicInfoView::from_model`] — the conversion requires\nan [`ImagePool`] instance for URL signing.\n\n[`ComicInfo`]: crate::model::read::proj::comic::ComicInfo",
+            "description": "Presentation-ready comic information.\n\nMirrors [`ComicInfo`], converts timestamps to Unix milliseconds, and\naccepts object URLs already resolved by the use-case layer.\n\n[`ComicInfo`]: crate::model::read::proj::comic::ComicInfo",
             "required": [
               "id",
               "workset_id",
@@ -6111,7 +6533,7 @@
                   "string",
                   "null"
                 ],
-                "description": "Resolved signed download URL for the cover thumbnail, or [`None`] if\nno cover has been uploaded."
+                "description": "Resolved signed download URL for the cover thumbnail, when available."
               },
               "cover_url": {
                 "type": [
@@ -7051,7 +7473,7 @@
                   "string",
                   "null"
                 ],
-                "description": "Presigned download URL for the thumbnail, if uploaded."
+                "description": "Presigned download URL for the thumbnail image, if available."
               },
               "image_url": {
                 "type": [
@@ -7124,199 +7546,6 @@
           }
         }
       },
-      "HttpBody_ReserveChapterPagesVal": {
-        "type": "object",
-        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
-        "required": [
-          "code",
-          "data"
-        ],
-        "properties": {
-          "code": {
-            "type": "integer",
-            "format": "int32",
-            "description": "Application-level success code, 0 for normal success.",
-            "example": 0,
-            "minimum": 0
-          },
-          "data": {
-            "type": "object",
-            "description": "Return value from successful chapter page reservations.",
-            "required": [
-              "pages"
-            ],
-            "properties": {
-              "pages": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/ReservedPageVal"
-                },
-                "description": "Reserved pages with upload targets."
-              }
-            }
-          }
-        }
-      },
-      "HttpBody_ReserveComicCoverVal": {
-        "type": "object",
-        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
-        "required": [
-          "code",
-          "data"
-        ],
-        "properties": {
-          "code": {
-            "type": "integer",
-            "format": "int32",
-            "description": "Application-level success code, 0 for normal success.",
-            "example": 0,
-            "minimum": 0
-          },
-          "data": {
-            "type": "object",
-            "description": "Comic cover upload reservation response.",
-            "properties": {
-              "slot": {
-                "oneOf": [
-                  {
-                    "type": "null"
-                  },
-                  {
-                    "$ref": "#/components/schemas/ImageUploadSlotView",
-                    "description": "Upload capability, absent when this cover is already uploaded."
-                  }
-                ]
-              }
-            }
-          }
-        }
-      },
-      "HttpBody_ReserveTeamAvatarVal": {
-        "type": "object",
-        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
-        "required": [
-          "code",
-          "data"
-        ],
-        "properties": {
-          "code": {
-            "type": "integer",
-            "format": "int32",
-            "description": "Application-level success code, 0 for normal success.",
-            "example": 0,
-            "minimum": 0
-          },
-          "data": {
-            "type": "object",
-            "description": "Team avatar upload reservation response.",
-            "properties": {
-              "slot": {
-                "oneOf": [
-                  {
-                    "type": "null"
-                  },
-                  {
-                    "$ref": "#/components/schemas/ImageUploadSlotView",
-                    "description": "Upload capability, absent when this avatar is already uploaded."
-                  }
-                ]
-              }
-            }
-          }
-        }
-      },
-      "HttpBody_ReserveUserAvatarVal": {
-        "type": "object",
-        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
-        "required": [
-          "code",
-          "data"
-        ],
-        "properties": {
-          "code": {
-            "type": "integer",
-            "format": "int32",
-            "description": "Application-level success code, 0 for normal success.",
-            "example": 0,
-            "minimum": 0
-          },
-          "data": {
-            "type": "object",
-            "description": "User avatar upload reservation response.",
-            "properties": {
-              "slot": {
-                "oneOf": [
-                  {
-                    "type": "null"
-                  },
-                  {
-                    "$ref": "#/components/schemas/ImageUploadSlotView",
-                    "description": "Upload capability, absent when this avatar is already uploaded."
-                  }
-                ]
-              }
-            }
-          }
-        }
-      },
-      "HttpBody_ReservedPageVal": {
-        "type": "object",
-        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
-        "required": [
-          "code",
-          "data"
-        ],
-        "properties": {
-          "code": {
-            "type": "integer",
-            "format": "int32",
-            "description": "Application-level success code, 0 for normal success.",
-            "example": 0,
-            "minimum": 0
-          },
-          "data": {
-            "type": "object",
-            "description": "One reserved page upload target.",
-            "required": [
-              "page_id",
-              "index",
-              "image_hash",
-              "ext"
-            ],
-            "properties": {
-              "ext": {
-                "$ref": "#/components/schemas/ImageExt",
-                "description": "File format."
-              },
-              "image_hash": {
-                "$ref": "#/components/schemas/ImageHash",
-                "description": "Content hash of the page image."
-              },
-              "index": {
-                "type": "integer",
-                "format": "int32",
-                "description": "Ordinal position within the chapter.",
-                "minimum": 0
-              },
-              "page_id": {
-                "type": "string",
-                "description": "Reserved page identifier."
-              },
-              "slot": {
-                "oneOf": [
-                  {
-                    "type": "null"
-                  },
-                  {
-                    "$ref": "#/components/schemas/ImageUploadSlotView",
-                    "description": "Presigned upload slot, if a new image must be uploaded."
-                  }
-                ]
-              }
-            }
-          }
-        }
-      },
       "HttpBody_TeamInfoView": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
@@ -7334,7 +7563,7 @@
           },
           "data": {
             "type": "object",
-            "description": "Presentation-ready team profile information.\n\nConverts the raw [`TeamInfo`] timestamps to Unix milliseconds and\nresolves the avatar key to a signed download URL via [`ImagePool`] when\nthe avatar has been uploaded.",
+            "description": "Presentation-ready team profile information.\n\nConverts raw [`TeamInfo`] timestamps to Unix milliseconds and accepts an\navatar origin and thumbnail URLs already resolved by the use-case layer.",
             "required": [
               "id",
               "name",
@@ -7348,7 +7577,7 @@
                   "string",
                   "null"
                 ],
-                "description": "Signed avatar thumbnail download URL, when one has been uploaded."
+                "description": "Signed avatar-thumbnail download URL, when available."
               },
               "avatar_url": {
                 "type": [
@@ -7551,7 +7780,7 @@
           },
           "data": {
             "type": "object",
-            "description": "Presentation-ready user profile information.\n\nConverts the raw [`UserInfo`] timestamps to Unix milliseconds and\nresolves the avatar key to a signed download URL via [`ImagePool`] when\nthe avatar has been uploaded.",
+            "description": "Presentation-ready user profile information.\n\nConverts raw [`UserInfo`] timestamps to Unix milliseconds and accepts an\navatar origin and thumbnail URLs already resolved by the use-case layer.",
             "required": [
               "id",
               "nickname",
@@ -7567,7 +7796,7 @@
                   "string",
                   "null"
                 ],
-                "description": "Resolved signed download URL for the avatar thumbnail, or [`None`] if\nno avatar has been uploaded."
+                "description": "Resolved signed download URL for the avatar thumbnail, when available."
               },
               "avatar_url": {
                 "type": [
@@ -8307,7 +8536,7 @@
                     "string",
                     "null"
                   ],
-                  "description": "Presigned download URL for the thumbnail, if uploaded."
+                  "description": "Presigned download URL for the thumbnail image, if available."
                 },
                 "image_url": {
                   "type": [
@@ -8442,7 +8671,7 @@
             "type": "array",
             "items": {
               "type": "object",
-              "description": "Presentation-ready team profile information.\n\nConverts the raw [`TeamInfo`] timestamps to Unix milliseconds and\nresolves the avatar key to a signed download URL via [`ImagePool`] when\nthe avatar has been uploaded.",
+              "description": "Presentation-ready team profile information.\n\nConverts raw [`TeamInfo`] timestamps to Unix milliseconds and accepts an\navatar origin and thumbnail URLs already resolved by the use-case layer.",
               "required": [
                 "id",
                 "name",
@@ -8456,7 +8685,7 @@
                     "string",
                     "null"
                   ],
-                  "description": "Signed avatar thumbnail download URL, when one has been uploaded."
+                  "description": "Signed avatar-thumbnail download URL, when available."
                 },
                 "avatar_url": {
                   "type": [
@@ -9247,7 +9476,7 @@
       },
       "MarkComicCoverUploadedInstr": {
         "type": "object",
-        "description": "Request to confirm one reserved comic cover version.",
+        "description": "Request to confirm one allocated comic cover version.",
         "required": [
           "image_version"
         ],
@@ -9270,7 +9499,7 @@
           "image_version": {
             "type": "integer",
             "format": "int32",
-            "description": "Image version from the reservation, used as an idempotency guard.",
+            "description": "Image version from the allocation, used as an idempotency guard.",
             "minimum": 0
           }
         }
@@ -9293,7 +9522,7 @@
       },
       "MarkTeamAvatarUploadedInstr": {
         "type": "object",
-        "description": "Request to confirm one reserved team avatar version.",
+        "description": "Request to confirm one allocated team avatar version.",
         "required": [
           "image_version"
         ],
@@ -9308,7 +9537,7 @@
       },
       "MarkUserAvatarUploadedInstr": {
         "type": "object",
-        "description": "Request to confirm one reserved user avatar version.",
+        "description": "Request to confirm one allocated user avatar version.",
         "required": [
           "image_version"
         ],
@@ -9624,7 +9853,7 @@
               "string",
               "null"
             ],
-            "description": "Presigned download URL for the thumbnail, if uploaded."
+            "description": "Presigned download URL for the thumbnail image, if available."
           },
           "image_url": {
             "type": [
@@ -9733,235 +9962,6 @@
           }
         }
       },
-      "ReserveChapterPagesInstr": {
-        "type": "object",
-        "description": "Input parameters for reserving all page images of a chapter.",
-        "required": [
-          "chapter_id",
-          "pages"
-        ],
-        "properties": {
-          "chapter_id": {
-            "type": "string",
-            "description": "Target chapter identifier."
-          },
-          "pages": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PageImageInstr"
-            },
-            "description": "Page images to reserve for the chapter."
-          }
-        }
-      },
-      "ReserveChapterPagesVal": {
-        "type": "object",
-        "description": "Return value from successful chapter page reservations.",
-        "required": [
-          "pages"
-        ],
-        "properties": {
-          "pages": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ReservedPageVal"
-            },
-            "description": "Reserved pages with upload targets."
-          }
-        }
-      },
-      "ReserveComicCoverInstr": {
-        "type": "object",
-        "description": "Request to reserve a comic cover upload.",
-        "required": [
-          "image_hash",
-          "new_byte_len",
-          "ext"
-        ],
-        "properties": {
-          "ext": {
-            "$ref": "#/components/schemas/ImageExt",
-            "description": "Cover file format."
-          },
-          "image_hash": {
-            "$ref": "#/components/schemas/ImageHash",
-            "description": "SHA-256 identity of the exact cover bytes."
-          },
-          "new_byte_len": {
-            "type": "integer",
-            "format": "int64",
-            "description": "Upload size used for validation and PUT signing.",
-            "minimum": 0
-          }
-        }
-      },
-      "ReserveComicCoverVal": {
-        "type": "object",
-        "description": "Comic cover upload reservation response.",
-        "properties": {
-          "slot": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/ImageUploadSlotView",
-                "description": "Upload capability, absent when this cover is already uploaded."
-              }
-            ]
-          }
-        }
-      },
-      "ReservePageImageInstr": {
-        "type": "object",
-        "description": "Input parameters for reserving one page image.",
-        "required": [
-          "image_hash",
-          "new_byte_len",
-          "ext"
-        ],
-        "properties": {
-          "ext": {
-            "$ref": "#/components/schemas/ImageExt",
-            "description": "File format."
-          },
-          "image_hash": {
-            "$ref": "#/components/schemas/ImageHash",
-            "description": "Content hash of the page image to reserve."
-          },
-          "new_byte_len": {
-            "type": "integer",
-            "format": "int64",
-            "description": "Size of the page image in bytes.",
-            "minimum": 0
-          }
-        }
-      },
-      "ReserveTeamAvatarInstr": {
-        "type": "object",
-        "description": "Request to reserve a team avatar upload.",
-        "required": [
-          "image_hash",
-          "new_byte_len",
-          "ext"
-        ],
-        "properties": {
-          "ext": {
-            "$ref": "#/components/schemas/ImageExt",
-            "description": "Avatar file format."
-          },
-          "image_hash": {
-            "$ref": "#/components/schemas/ImageHash",
-            "description": "SHA-256 identity of the exact avatar bytes."
-          },
-          "new_byte_len": {
-            "type": "integer",
-            "format": "int64",
-            "description": "Upload size used for validation and PUT signing.",
-            "minimum": 0
-          }
-        }
-      },
-      "ReserveTeamAvatarVal": {
-        "type": "object",
-        "description": "Team avatar upload reservation response.",
-        "properties": {
-          "slot": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/ImageUploadSlotView",
-                "description": "Upload capability, absent when this avatar is already uploaded."
-              }
-            ]
-          }
-        }
-      },
-      "ReserveUserAvatarInstr": {
-        "type": "object",
-        "description": "Request to reserve a user avatar upload.",
-        "required": [
-          "image_hash",
-          "new_byte_len",
-          "ext"
-        ],
-        "properties": {
-          "ext": {
-            "$ref": "#/components/schemas/ImageExt",
-            "description": "Avatar file format."
-          },
-          "image_hash": {
-            "$ref": "#/components/schemas/ImageHash",
-            "description": "SHA-256 identity of the exact avatar bytes."
-          },
-          "new_byte_len": {
-            "type": "integer",
-            "format": "int64",
-            "description": "Upload size used for validation and PUT signing.",
-            "minimum": 0
-          }
-        }
-      },
-      "ReserveUserAvatarVal": {
-        "type": "object",
-        "description": "User avatar upload reservation response.",
-        "properties": {
-          "slot": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/ImageUploadSlotView",
-                "description": "Upload capability, absent when this avatar is already uploaded."
-              }
-            ]
-          }
-        }
-      },
-      "ReservedPageVal": {
-        "type": "object",
-        "description": "One reserved page upload target.",
-        "required": [
-          "page_id",
-          "index",
-          "image_hash",
-          "ext"
-        ],
-        "properties": {
-          "ext": {
-            "$ref": "#/components/schemas/ImageExt",
-            "description": "File format."
-          },
-          "image_hash": {
-            "$ref": "#/components/schemas/ImageHash",
-            "description": "Content hash of the page image."
-          },
-          "index": {
-            "type": "integer",
-            "format": "int32",
-            "description": "Ordinal position within the chapter.",
-            "minimum": 0
-          },
-          "page_id": {
-            "type": "string",
-            "description": "Reserved page identifier."
-          },
-          "slot": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/ImageUploadSlotView",
-                "description": "Presigned upload slot, if a new image must be uploaded."
-              }
-            ]
-          }
-        }
-      },
       "RoleField": {
         "type": "integer",
         "format": "int32",
@@ -10018,7 +10018,7 @@
       },
       "TeamInfoView": {
         "type": "object",
-        "description": "Presentation-ready team profile information.\n\nConverts the raw [`TeamInfo`] timestamps to Unix milliseconds and\nresolves the avatar key to a signed download URL via [`ImagePool`] when\nthe avatar has been uploaded.",
+        "description": "Presentation-ready team profile information.\n\nConverts raw [`TeamInfo`] timestamps to Unix milliseconds and accepts an\navatar origin and thumbnail URLs already resolved by the use-case layer.",
         "required": [
           "id",
           "name",
@@ -10032,7 +10032,7 @@
               "string",
               "null"
             ],
-            "description": "Signed avatar thumbnail download URL, when one has been uploaded."
+            "description": "Signed avatar-thumbnail download URL, when available."
           },
           "avatar_url": {
             "type": [
@@ -10739,7 +10739,7 @@
       },
       "UpdateComicInfoInstr": {
         "type": "object",
-        "description": "Input parameters for updating a comic's title, author, and description.\n\nCover updates are handled by dedicated endpoints.\n\n[`reserve_cover`]: crate::usecase::comic::reserve_cover",
+        "description": "Input parameters for updating a comic's title, author, and description.\n\nCover updates are handled by dedicated endpoints.\n\n[`alloc_cover`]: crate::usecase::comic::alloc_cover",
         "required": [
           "id",
           "title",
@@ -10952,7 +10952,7 @@
       },
       "UserInfoView": {
         "type": "object",
-        "description": "Presentation-ready user profile information.\n\nConverts the raw [`UserInfo`] timestamps to Unix milliseconds and\nresolves the avatar key to a signed download URL via [`ImagePool`] when\nthe avatar has been uploaded.",
+        "description": "Presentation-ready user profile information.\n\nConverts raw [`UserInfo`] timestamps to Unix milliseconds and accepts an\navatar origin and thumbnail URLs already resolved by the use-case layer.",
         "required": [
           "id",
           "nickname",
@@ -10968,7 +10968,7 @@
               "string",
               "null"
             ],
-            "description": "Resolved signed download URL for the avatar thumbnail, or [`None`] if\nno avatar has been uploaded."
+            "description": "Resolved signed download URL for the avatar thumbnail, when available."
           },
           "avatar_url": {
             "type": [

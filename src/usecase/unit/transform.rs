@@ -8,7 +8,8 @@ use tracing::instrument;
 use poprako_util::i18n::trl;
 
 use crate::complex::chapter::ChapterComplex;
-use crate::complex::unit::{UnitComplex, UnitPermComplex};
+use crate::complex::unit::UnitComplex;
+use crate::complex::unit::perm::UnitPermComplex;
 use crate::data::instr::unit::{
     TransformChapterUnitsInstr, into_unit_transforms,
 };

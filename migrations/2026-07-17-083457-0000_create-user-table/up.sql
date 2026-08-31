@@ -6,13 +6,6 @@ CREATE TABLE IF NOT EXISTS "t_user" (
 
     "f_is_sadmin" BOOLEAN NOT NULL DEFAULT FALSE,
 
-    "f_avatar_key" TEXT,
-    "f_avatar_source" TEXT,
-    "f_avatar_uploaded" BOOLEAN,
-    "f_avatar_version" BIGINT,
-    "f_avatar_hash" BYTEA,
-    "f_avatar_extension" TEXT,
-
     "f_password_hash" TEXT NOT NULL,
 
     "f_last_active_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),

@@ -21,8 +21,8 @@ use crate::result::BaseError;
 /// # Delivery contract
 ///
 /// Delivery is at least once. A failed task may be delayed and consumed after
-/// later tasks from the same topic, so producers and handlers must not rely on
-/// `DeferBatch` order for correctness. Handlers must be idempotent and guard
+/// later tasks from the same topic, so producers and actors must not rely on
+/// `DeferBatch` order for correctness. Actors must be idempotent and guard
 /// state changes with the complete resource identity. Image confirmation, for
 /// example, compares the resource id, monotonically increasing version, and
 /// object key before marking an upload complete. Generated object keys must not

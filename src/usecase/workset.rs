@@ -7,6 +7,7 @@ pub mod tests;
 use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
+use poprako_obj_dept::ObjDept;
 use poprako_util::i18n::trl;
 
 use crate::complex::workset::{WorksetComplex, WorksetPermComplex};
@@ -19,7 +20,7 @@ use crate::model::read::spec::comic::ComicListSpec;
 use crate::model::shared::user::UserToken;
 use crate::model::write::workset::{WorksetEntry, WorksetRepl};
 use crate::part::nucl::{ReptRead, Serial};
-use crate::part::prom::Prom;
+use crate::part::obj_dept::{ComicCover, PageImage};
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::chapter::ChapterRepo;
@@ -205,9 +206,9 @@ where
 }
 
 /// Deletes a workset and its child data.
-#[instrument(level = "info", skip(nucl, repo, prom))]
-pub async fn delete<N, C, R, P>(
-    (nucl, repo, prom): (&N, &R, &P),
+#[instrument(level = "info", skip(nucl, repo, obj_dept))]
+pub async fn delete<N, C, R, O>(
+    (nucl, repo, obj_dept): (&N, &R, &O),
     token: UserToken,
     id: String,
 ) -> BaseRest<()>
@@ -229,7 +230,7 @@ where
         + TermRepo<C>
         + Send
         + Sync,
-    P: Prom<C> + Send + Sync,
+    O: ObjDept<ComicCover, C> + ObjDept<PageImage, C> + Send + Sync,
 {
     let member_info = MemberLoader::load_info_from_workset(
         repo,
@@ -242,7 +243,7 @@ where
     WorksetPermComplex::ensure_user_can_delete(&member_info)?;
 
     nucl.coord(async move |context| {
-        delete_cascade(repo, prom, context, &id).await
+        delete_cascade(repo, obj_dept, context, &id).await
     })
     .await?;
 
@@ -250,9 +251,9 @@ where
 }
 
 /// Deletes a workset subtree inside an existing transaction context.
-pub async fn delete_cascade<C, R, P>(
+pub async fn delete_cascade<C, R, O>(
     repo: &R,
-    prom: &P,
+    obj_dept: &O,
     context: &mut C,
     id: &str,
 ) -> BaseRest<()>
@@ -269,7 +270,7 @@ where
         + TermbaseRepo<C>
         + TermRepo<C>
         + Sync,
-    P: Prom<C> + Sync,
+    O: ObjDept<ComicCover, C> + ObjDept<PageImage, C> + Sync,
 {
     // Bound each cascade page while repeatedly deleting from offset zero.
     const PAGE_SIZE: u32 = 50;
@@ -298,7 +299,9 @@ where
         }
 
         for comic_info in comic_infos {
-            delete_comic_cascade(repo, prom, context, &comic_info.id).await?;
+            //
+            delete_comic_cascade(repo, obj_dept, context, &comic_info.id)
+                .await?;
         }
     }
 

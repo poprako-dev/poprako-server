@@ -1,20 +1,20 @@
-// page_roundtrip_uses_testcontainer(SetPageUnitCounters, ReservePageImage, ListPageInfos)(positive): page repo persists, returns the replaced image key, and updates page counters in an isolated PostgreSQL container.
+// page_roundtrip_uses_testcontainer(SetPageUnitCounters, ListPageInfos)(positive): page repo persists and updates page counters in an isolated PostgreSQL container.
 
 use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 
+use poprako_rdb_core::RdbCore;
+
 use crate::model::read::proj::unit::UnitCountMetrics;
-use crate::model::write::page::PageEntry;
+use crate::model::write::page::{PageEntry, PageManifestEntry};
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::page::{
-    CreatePages, GetPageInfo, ListFirstPageInfos, ListPageInfos,
-    ReservePageImage, SetPageUnitCounters,
+    ApplyPageManifest, CreatePages, ListFirstPageInfos, ListPageInfos,
+    SetPageUnitCounters, ShiftPageIndexesTemporary,
 };
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::result::BaseError;
-use crate::shared::RdbCore;
-use crate::value::image::ImageExt;
 
 const PREFIX: &str = "rdb-test-page-domain-";
 
@@ -65,27 +65,83 @@ pub async fn page_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     assert_eq!(page_infos[0].total_unit_count, 2);
 
+    assert_eq!(page_infos[0].translated_unit_count, 1);
+
+    assert_eq!(page_infos[0].proofread_unit_count, 1);
+
+    let retained_created_at = page_infos[0].created_at;
+
     let second_page_entry = PageEntry {
         id: format!("{}page-later", PREFIX),
         chapter_id: page_fixture.chapter_entry.id.clone(),
         index: 1,
-        image_key: Some("page/previous.png".into()),
-        image_version: 1,
-        image_hash: Default::default(),
-        image_ext: ImageExt::Jpg,
     };
 
-    let second_page_id = second_page_entry.id.clone();
+    let new_page_info = nucl
+        .coord(async |context| {
+            //
+            let page_infos = repo
+                .step(
+                    context,
+                    &CreatePages {
+                        entries: std::slice::from_ref(&second_page_entry),
+                    },
+                )
+                .await?;
+
+            page_infos.into_iter().next().ok_or_else(|| {
+                BaseError::Unrecoverable {
+                    message: "page creation returned no row".into(),
+                }
+            })
+        })
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(new_page_info.total_unit_count, 0);
+
+    assert_eq!(new_page_info.translated_unit_count, 0);
+
+    assert_eq!(new_page_info.proofread_unit_count, 0);
+
+    let new_created_at = new_page_info.created_at;
+
+    assert!(new_created_at <= time::OffsetDateTime::now_utc());
+
+    let manifest_entries = vec![
+        PageManifestEntry {
+            id: second_page_entry.id.clone(),
+            chapter_id: page_fixture.chapter_entry.id.clone(),
+            index: 0,
+        },
+        PageManifestEntry {
+            id: page_fixture.page_entry.id.clone(),
+            chapter_id: page_fixture.chapter_entry.id.clone(),
+            index: 1,
+        },
+    ];
 
     nucl.coord(async |context| {
         //
         repo.step(
             context,
-            &CreatePages {
-                entries: &[second_page_entry],
+            &ShiftPageIndexesTemporary {
+                chapter_id: &page_fixture.chapter_entry.id,
             },
         )
         .await?;
+
+        let page_infos = repo
+            .step(
+                context,
+                &ApplyPageManifest {
+                    entries: &manifest_entries,
+                },
+            )
+            .await?;
+
+        assert_eq!(page_infos.len(), 2);
 
         Ok::<(), BaseError>(())
     })
@@ -93,42 +149,33 @@ pub async fn page_roundtrip_uses_testcontainer(shared: RdbCore) {
     .ok()
     .unwrap();
 
-    let image_reservation = nucl
-        .coord(async |context| {
-            repo.step(
-                context,
-                &ReservePageImage {
-                    id: &second_page_id,
-                    file_ext: "jpg",
-                },
-            )
-            .await
+    let reordered_page_infos = repo
+        .run(&ListPageInfos {
+            chapter_id: &page_fixture.chapter_entry.id,
         })
         .await
         .ok()
         .unwrap();
 
-    assert_eq!(
-        image_reservation.prev_object_key,
-        Some("page/previous.png".into())
-    );
+    assert_eq!(reordered_page_infos[0].id, second_page_entry.id);
 
-    assert_eq!(image_reservation.image_version, 2);
+    assert_eq!(reordered_page_infos[0].total_unit_count, 0);
 
-    let replaced_page_info = repo
-        .run(&GetPageInfo {
-            id: &second_page_id,
-        })
-        .await
-        .ok()
-        .unwrap();
+    assert_eq!(reordered_page_infos[0].translated_unit_count, 0);
 
-    assert_eq!(
-        replaced_page_info.image_key,
-        Some(image_reservation.object_key)
-    );
+    assert_eq!(reordered_page_infos[0].proofread_unit_count, 0);
 
-    assert!(replaced_page_info.is_image_uploaded != Some(true));
+    assert_eq!(reordered_page_infos[0].created_at, new_created_at);
+
+    assert_eq!(reordered_page_infos[1].id, page_fixture.page_entry.id);
+
+    assert_eq!(reordered_page_infos[1].total_unit_count, 2);
+
+    assert_eq!(reordered_page_infos[1].translated_unit_count, 1);
+
+    assert_eq!(reordered_page_infos[1].proofread_unit_count, 1);
+
+    assert_eq!(reordered_page_infos[1].created_at, retained_created_at);
 
     let chapter_ids = vec![page_fixture.chapter_entry.id.clone()];
 
@@ -145,7 +192,75 @@ pub async fn page_roundtrip_uses_testcontainer(shared: RdbCore) {
         .find(|page_info| page_info.chapter_id == page_fixture.chapter_entry.id)
         .expect("first page info for the chapter");
 
-    assert_eq!(first_page_info.id, page_fixture.page_entry.id);
+    assert_eq!(first_page_info.id, second_page_entry.id);
+
+    let rollback_entries = vec![
+        PageManifestEntry {
+            id: page_fixture.page_entry.id.clone(),
+            chapter_id: page_fixture.chapter_entry.id.clone(),
+            index: 0,
+        },
+        PageManifestEntry {
+            id: second_page_entry.id.clone(),
+            chapter_id: page_fixture.chapter_entry.id.clone(),
+            index: 1,
+        },
+    ];
+
+    let rollback_result = nucl
+        .coord(async |context| {
+            //
+            repo.step(
+                context,
+                &ShiftPageIndexesTemporary {
+                    chapter_id: &page_fixture.chapter_entry.id,
+                },
+            )
+            .await?;
+
+            repo.step(
+                context,
+                &ApplyPageManifest {
+                    entries: &rollback_entries,
+                },
+            )
+            .await?;
+
+            Err::<(), BaseError>(BaseError::Unrecoverable {
+                message: "force page-manifest rollback".into(),
+            })
+        })
+        .await;
+
+    assert!(rollback_result.is_err());
+
+    let rolled_back_page_infos = repo
+        .run(&ListPageInfos {
+            chapter_id: &page_fixture.chapter_entry.id,
+        })
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(rolled_back_page_infos[0].id, second_page_entry.id);
+
+    assert_eq!(rolled_back_page_infos[0].created_at, new_created_at);
+
+    assert_eq!(rolled_back_page_infos[0].total_unit_count, 0);
+
+    assert_eq!(rolled_back_page_infos[0].translated_unit_count, 0);
+
+    assert_eq!(rolled_back_page_infos[0].proofread_unit_count, 0);
+
+    assert_eq!(rolled_back_page_infos[1].id, page_fixture.page_entry.id);
+
+    assert_eq!(rolled_back_page_infos[1].created_at, retained_created_at);
+
+    assert_eq!(rolled_back_page_infos[1].total_unit_count, 2);
+
+    assert_eq!(rolled_back_page_infos[1].translated_unit_count, 1);
+
+    assert_eq!(rolled_back_page_infos[1].proofread_unit_count, 1);
 
     test_shared::cleanup(&shared, PREFIX).await.ok().unwrap();
 

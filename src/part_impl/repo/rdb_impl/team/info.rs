@@ -8,26 +8,22 @@ use diesel_async::RunQueryDsl as _;
 use time::OffsetDateTime;
 use tracing::instrument;
 
+use poprako_rdb_core::RdbConn;
 use poprako_util::i18n::trl;
 
-use crate::complex::team::TeamComplex;
 use crate::model::read::proj::team::TeamInfo;
 use crate::model::read::spec::team::TeamListSpec;
-use crate::model::write::team::{TeamAvatarReservation, TeamEntry, TeamRepl};
+use crate::model::write::team::{TeamEntry, TeamRepl};
 use crate::part_impl::repo::rdb_impl::entity::team::{
     TeamAspectRow, TeamEntryRow, TeamInfoRow,
 };
 use crate::part_impl::repo::rdb_impl::numeric::usize_from_i32;
 use crate::part_impl::repo::rdb_impl::schema::t_member;
 use crate::part_impl::repo::rdb_impl::schema::t_team::dsl::{
-    f_avatar_extension, f_avatar_hash, f_avatar_key, f_avatar_uploaded,
-    f_avatar_version, f_created_at, f_id, f_updated_at, f_workset_next_index,
-    t_team,
+    f_created_at, f_id, f_workset_next_index, t_team,
 };
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::shared::RdbConn;
-use crate::shared::result::{diesel, next_version};
-use crate::value::image::{ImageExt, ImageHash};
+use crate::shared::result::diesel;
 
 /// Delete a team row by primary key.
 pub async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
@@ -198,176 +194,6 @@ pub async fn get_info_excluded(
     };
 
     row.try_into()
-}
-
-// Validate version/hash preconditions and mark avatar upload state.
-/// Mark the team avatar as uploaded.
-#[instrument(level = "info", skip_all)]
-pub async fn mark_avatar_uploaded(
-    conn: &mut RdbConn,
-    id: &str,
-    version: u32,
-    avatar_key: Option<&str>,
-    avatar_uploaded: bool,
-) -> BaseRest<()> {
-    //
-    let now = OffsetDateTime::now_utc();
-
-    let affected = match avatar_key {
-        //
-        Some(avatar_key) => {
-            //
-            diesel::update(
-                t_team
-                    .filter(f_id.eq(id))
-                    .filter(f_avatar_version.eq(i64::from(version)))
-                    .filter(f_avatar_key.eq(avatar_key)),
-            )
-            .set((f_avatar_uploaded.eq(avatar_uploaded), f_updated_at.eq(now)))
-            .execute(conn)
-            .await
-        }
-
-        None => {
-            //
-            diesel::update(
-                t_team
-                    .filter(f_id.eq(id))
-                    .filter(f_avatar_version.eq(i64::from(version))),
-            )
-            .set((f_avatar_uploaded.eq(avatar_uploaded), f_updated_at.eq(now)))
-            .execute(conn)
-            .await
-        }
-    }
-    .map_err(diesel)?;
-
-    if affected == 0 {
-        //
-        let message = trl("error-avatar-version-mismatch");
-
-        tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
-            err_message = %message,
-            team_id = %id,
-            image_version = version,
-            avatar_key = ?avatar_key,
-            operation = "mark team avatar uploaded",
-            "expected team avatar version error",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message,
-        });
-    }
-
-    accept(())
-}
-
-// Allocate a new avatar reservation version, returning object keys and cleanup metadata.
-/// Reserve an avatar key and version atomically.
-#[instrument(level = "info", skip_all)]
-pub async fn reserve_avatar(
-    conn: &mut RdbConn,
-    id: &str,
-    image_hash: &ImageHash,
-    image_ext: ImageExt,
-) -> BaseRest<TeamAvatarReservation> {
-    //
-    let now = OffsetDateTime::now_utc();
-
-    let (prev_key, uploaded, raw_version, stored_hash, stored_ext) = t_team
-        .filter(f_id.eq(id))
-        .select((
-            f_avatar_key,
-            f_avatar_uploaded,
-            f_avatar_version,
-            f_avatar_hash,
-            f_avatar_extension,
-        ))
-        .for_update()
-        .get_result::<(
-            Option<String>,
-            Option<bool>,
-            Option<i64>,
-            Option<Vec<u8>>,
-            Option<String>,
-        )>(conn)
-        .await
-        .map_err(diesel)?;
-
-    let same_hash = prev_key.is_some()
-        && stored_hash.as_deref() == Some(image_hash.as_bytes());
-
-    if same_hash && stored_ext.as_deref() != Some(image_ext.suffix()) {
-        //
-        let message = trl("error-image-extension-mismatch");
-
-        tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
-            err_message = %message,
-            team_id = %id,
-            image_version = raw_version,
-            stored_extension = ?stored_ext,
-            requested_extension = %image_ext.suffix(),
-            operation = "reserve team avatar",
-            "expected team avatar error",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message,
-        });
-    }
-
-    if same_hash {
-        //
-        let object_key = prev_key.ok_or_else(|| BaseError::Unrecoverable {
-            message: "[reserve_avatar] pending avatar key is missing".into(),
-        })?;
-
-        return accept(TeamAvatarReservation {
-            object_key,
-            prev_object_key: None,
-            avatar_version: u32::try_from(raw_version.ok_or_else(|| {
-                //
-                BaseError::Unrecoverable {
-                    message: "[reserve_avatar] avatar version is missing"
-                        .into(),
-                }
-            })?)
-            .map_err(|_| BaseError::Unrecoverable {
-                message: "[reserve_avatar] avatar version is invalid".into(),
-            })?,
-            is_upload_required: !uploaded.unwrap_or(false),
-        });
-    }
-
-    let version = next_version(raw_version.unwrap_or(0))?;
-
-    let object_key =
-        TeamComplex::gen_avatar_key(id, version, image_ext.suffix());
-
-    diesel::update(t_team.filter(f_id.eq(id)))
-        .set((
-            f_avatar_key.eq(Some(&object_key)),
-            f_avatar_uploaded.eq(false),
-            f_avatar_version.eq(i64::from(version)),
-            f_avatar_hash.eq(image_hash.as_bytes().to_vec()),
-            f_avatar_extension.eq(image_ext.suffix()),
-            f_updated_at.eq(now),
-        ))
-        .execute(conn)
-        .await
-        .map_err(diesel)?;
-
-    accept(TeamAvatarReservation {
-        object_key,
-        prev_object_key: prev_key,
-        avatar_version: version,
-        is_upload_required: true,
-    })
 }
 
 // Lock a team row to serialize concurrent writes in the current transaction.

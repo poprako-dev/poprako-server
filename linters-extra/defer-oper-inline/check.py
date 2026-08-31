@@ -19,7 +19,7 @@ import tree_sitter
 import tree_sitter_rust
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
-from production_source import production_source
+from production_source import production_files, production_source
 
 
 ROOT = Path(__file__).parents[2]
@@ -82,7 +82,7 @@ def is_step_on_receiver(node: tree_sitter.Node, source: bytes) -> bool:
 def check_root(root: Path) -> list[str]:
     errors: list[str] = []
 
-    for path in sorted((root / "src").rglob("*.rs")):
+    for path in production_files(root):
         source = production_source(path, root)
         tree = PARSER.parse(source)
 

@@ -2,10 +2,7 @@ use poprako_orchestra::Oper;
 
 use crate::model::read::proj::team::TeamInfo;
 use crate::model::read::spec::team::TeamListSpec;
-use crate::model::write::team::{
-    TeamAvatarRepl, TeamAvatarReservation, TeamEntry, TeamRepl,
-};
-use crate::value::image::{ImageExt, ImageHash};
+use crate::model::write::team::{TeamEntry, TeamRepl};
 
 /// Creates a team.
 #[derive(Oper)]
@@ -63,27 +60,6 @@ pub enum UpdateTeam<'a> {
         /// The replacement payload.
         repl: &'a TeamRepl,
     },
-
-    /// Marks a team avatar as uploaded.
-    MarkAvatarUploaded {
-        /// The replacement payload.
-        repl: &'a TeamAvatarRepl,
-    },
-}
-
-/// Reserves a team avatar slot for an upload.
-#[derive(Oper)]
-#[oper(output = TeamAvatarReservation)]
-pub struct ReserveTeamAvatar<'a> {
-    //
-    /// The team id.
-    pub id: &'a str,
-
-    /// The image hash for deduplication.
-    pub image_hash: &'a ImageHash,
-
-    /// The image file extension.
-    pub image_ext: ImageExt,
 }
 
 /// Looks up a team by identifier, matching deleted rows as well.

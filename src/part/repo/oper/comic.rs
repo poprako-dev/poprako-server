@@ -2,11 +2,8 @@ use poprako_orchestra::Oper;
 
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::spec::comic::ComicListSpec;
-use crate::model::write::comic::{
-    ComicCoverReservation, ComicEntry, ComicRepl,
-};
+use crate::model::write::comic::{ComicEntry, ComicRepl};
 use crate::value::comic::ComicInclOpt;
-use crate::value::image::{ImageExt, ImageHash};
 
 /// Creates a new comic with the given entry.
 #[derive(Oper)]
@@ -60,34 +57,6 @@ pub struct ListComicInfosExcluded<'a> {
 pub struct UpdateComic<'a> {
     /// The update payload.
     pub update: &'a ComicRepl,
-}
-
-/// Reserves a cover image slot for a comic.
-#[derive(Oper)]
-#[oper(output = ComicCoverReservation)]
-pub struct ReserveComicCover<'a> {
-    //
-    /// The comic ID.
-    pub id: &'a str,
-    /// The hash of the uploaded cover image.
-    pub image_hash: &'a ImageHash,
-    /// The file extension of the cover image.
-    pub image_ext: ImageExt,
-}
-
-/// Marks a comic's cover as uploaded or updates its upload state.
-#[derive(Oper)]
-#[oper(output = ())]
-pub struct MarkComicCoverUploaded<'a> {
-    //
-    /// The comic ID.
-    pub id: &'a str,
-    /// The cover version to mark.
-    pub cover_version: u32,
-    /// Optional S3 key for the uploaded cover.
-    pub cover_key: Option<&'a str>,
-    /// Whether the cover is uploaded.
-    pub cover_uploaded: bool,
 }
 
 /// Deletes a comic by ID.

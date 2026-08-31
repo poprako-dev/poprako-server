@@ -3,7 +3,7 @@ use super::{
     seed_scope, token, update_stage,
 };
 
-use crate::value::chapter::{StageOper, StagePhase};
+use crate::value::chapter::stage::{StageOper, StagePhase};
 use crate::value::role::RoleField;
 
 #[tokio::test]

@@ -1,13 +1,14 @@
 //! RDB-backed chapter repository step implementations.
 
 use diesel::prelude::{
-    BoolExpressionMethods as _, ExpressionMethods as _, OptionalExtension as _,
-    QueryDsl as _, SelectableHelper as _,
+    ExpressionMethods as _, OptionalExtension as _, QueryDsl as _,
+    SelectableHelper as _,
 };
 use diesel_async::RunQueryDsl as _;
 use time::OffsetDateTime;
 use tracing::instrument;
 
+use poprako_rdb_core::RdbConn;
 use poprako_util::i18n::trl;
 
 use crate::model::read::proj::chapter::ChapterInfo;
@@ -27,11 +28,10 @@ use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::{
     f_translating_at, f_typeset_at, f_typesetting_at, f_updated_at,
     f_uploaded_at, t_chapter,
 };
-use crate::part_impl::repo::rdb_impl::schema::t_page;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::shared::RdbConn;
 use crate::shared::result::diesel;
-use crate::value::chapter::{ChapterInclOpt, Stage};
+use crate::value::chapter::ChapterInclOpt;
+use crate::value::chapter::stage::Stage;
 
 /// Queries a single chapter row by ID and populates its includes.
 #[instrument(level = "info", skip_all)]
@@ -377,19 +377,11 @@ pub async fn complete_raw_provide(
     //
     let now = OffsetDateTime::now_utc();
 
-    let incomplete_pages =
-        t_page::table.filter(t_page::f_chapter_id.eq(id)).filter(
-            t_page::f_image_uploaded
-                .is_null()
-                .or(t_page::f_image_uploaded.eq(false)),
-        );
-
     let updated_count = diesel::update(
         t_chapter
             .filter(f_id.eq(id))
             .filter(f_uploaded_at.is_null())
-            .filter(f_page_count.gt(0))
-            .filter(diesel::dsl::not(diesel::dsl::exists(incomplete_pages))),
+            .filter(f_page_count.gt(0)),
     )
     .set((f_uploaded_at.eq(now), f_updated_at.eq(now)))
     .execute(conn)

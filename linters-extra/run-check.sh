@@ -7,6 +7,7 @@ set -eu
 #   2. the PopRaKo-specific checkers versioned in this directory.
 
 export UV_CACHE_DIR="${UV_CACHE_DIR:-$PWD/.uv-cache}"
+export PYTHONPATH="$PWD/linters${PYTHONPATH:+:$PYTHONPATH}"
 
 UV_SYNC=false
 if [ ! -f linters-extra/.venv/bin/python ]; then
@@ -22,6 +23,22 @@ if $UV_SYNC || [ ! -f linters-extra/.venv/.sync-stamp ]; then
 fi
 
 FAILED=false
+
+rust_project_roots() {
+    find . \
+        -path './.git' -prune -o \
+        -path './target' -prune -o \
+        -path './linters-extra/.venv' -prune -o \
+        -type f -name Cargo.toml -print \
+        | LC_ALL=C sort \
+        | while IFS= read -r manifest_path; do
+            crate_root=${manifest_path%/Cargo.toml}
+
+            if [ -d "$crate_root/src" ]; then
+                printf '%s\n' "$crate_root"
+            fi
+        done
+}
 
 echo "━━━ rust-style-lint: shared checkers (linters/ submodule) ━━━"
 
@@ -46,19 +63,23 @@ for f in linters-extra/*/check.py; do
     passed=true
 
     case $name in
-        direct-struct-import)
-            for layer in model data; do
-                uv run --python linters-extra/.venv/bin/python python3 "$f" --layer "$layer" || passed=false
-            done
-            ;;
         defer-oper-inline|oper-inline)
             uv run --python linters-extra/.venv/bin/python python3 "$f" --self-test || passed=false
-            uv run --python linters-extra/.venv/bin/python python3 "$f" || passed=false
-            ;;
-        *)
-            uv run --python linters-extra/.venv/bin/python python3 "$f" || passed=false
             ;;
     esac
+
+    for crate_root in $(rust_project_roots); do
+        case $name in
+            direct-struct-import)
+                for layer in model data; do
+                    uv run --python linters-extra/.venv/bin/python python3 "$f" --root "$crate_root" --layer "$layer" || passed=false
+                done
+                ;;
+            *)
+                uv run --python linters-extra/.venv/bin/python python3 "$f" --root "$crate_root" || passed=false
+                ;;
+        esac
+    done
 
     if $passed; then
         echo "✓ $name passed"

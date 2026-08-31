@@ -10,7 +10,8 @@ use crate::part_impl::repo::rdb_impl::numeric::{
 };
 use crate::part_impl::repo::rdb_impl::schema::t_chapter;
 use crate::result::BaseError;
-use crate::value::chapter::{Stage, StageMask, StagePhase};
+use crate::value::chapter::mask::StageMask;
+use crate::value::chapter::stage::{Stage, StagePhase};
 
 /// Raw database row for the `t_chapter` table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]

@@ -9,10 +9,10 @@ use utoipa::{IntoParams, ToSchema};
 
 use crate::value::image::{ImageExt, ImageHash};
 
-/// Request to reserve a team avatar upload.
+/// Request to allocate a team avatar upload.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
-pub struct ReserveTeamAvatarInstr {
+pub struct AllocTeamAvatarInstr {
     //
     /// SHA-256 identity of the exact avatar bytes.
     pub image_hash: ImageHash,
@@ -22,12 +22,13 @@ pub struct ReserveTeamAvatarInstr {
     pub ext: ImageExt,
 }
 
-/// Request to confirm one reserved team avatar version.
+/// Request to confirm one allocated team avatar version.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct MarkTeamAvatarUploadedInstr {
     /// Version returned in the avatar upload slot.
-    pub image_version: u32,
+    #[serde(rename = "image_version")]
+    pub image_ver: u32,
 }
 
 /// Input parameters for creating a new team.

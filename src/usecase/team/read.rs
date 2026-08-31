@@ -3,6 +3,7 @@
 use poprako_orchestra::{Context, OperRun as _};
 use tracing::instrument;
 
+use poprako_obj_dept::ObjDeptView;
 use poprako_util::i18n::trl;
 
 use crate::complex::team::TeamPermComplex;
@@ -10,13 +11,13 @@ use crate::data::instr::team::ListTeamInfosInstr;
 use crate::data::view::team::TeamInfoView;
 use crate::model::read::spec::team::TeamListSpec;
 use crate::model::shared::user::UserToken;
-use crate::part::image::ImagePool;
+use crate::part::obj_dept::TeamAvatar;
 use crate::part::repo::oper::team::{GetTeamInfo, ListTeamInfos};
 use crate::part::repo::oper::user::GetUserInfo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::usecase::internal::util::collect_bounded;
+use crate::usecase::team::view::{team_info_view, team_info_views};
 
 /// Fetches a team by ID with avatar URL resolution.
 ///
@@ -26,36 +27,34 @@ use crate::usecase::internal::util::collect_bounded;
 ///
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C>` — Team storage.
-/// * `I: ImagePool` — Resolves the avatar signed URL.
-#[instrument(level = "info", skip(repo, image_pool))]
-pub async fn get_info<C, R, I>(
-    (repo, image_pool): (&R, &I),
+/// * `O` — Resolves the avatar signed URL through `ObjDept`.
+#[instrument(level = "info", skip(repo, obj_dept))]
+pub async fn get_info<C, R, O>(
+    (repo, obj_dept): (&R, &O),
     id: String,
 ) -> BaseRest<TeamInfoView>
 where
     C: Context,
     R: TeamRepo<C>,
-    I: ImagePool + Sync,
+    O: ObjDeptView<TeamAvatar, C> + Sync,
 {
-    TeamInfoView::from_model(
-        image_pool,
-        GetTeamInfo::Id { id: &id }.run_on(repo).await?,
-    )
-    .await
+    let team_info = GetTeamInfo::Id { id: &id }.run_on(repo).await?;
+
+    team_info_view(obj_dept, team_info).await
 }
 
 /// Lists teams with pagination.
 ///
-/// Non-transactional read. Each team's avatar URL is resolved individually.
+/// Non-transactional read. Avatar URLs are resolved in one object batch.
 ///
 /// # Type Parameters
 ///
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C>` — Team storage.
-/// * `I: ImagePool` — Resolves avatar signed URLs.
-#[instrument(level = "info", skip(repo, image_pool))]
-pub async fn list_infos<C, R, I>(
-    (repo, image_pool): (&R, &I),
+/// * `O` — Resolves avatar signed URLs through `ObjDept`.
+#[instrument(level = "info", skip(repo, obj_dept))]
+pub async fn list_infos<C, R, O>(
+    (repo, obj_dept): (&R, &O),
     token: UserToken,
     // FIXME: use try_into()?
     instr: ListTeamInfosInstr,
@@ -63,7 +62,7 @@ pub async fn list_infos<C, R, I>(
 where
     C: Context,
     R: TeamRepo<C> + UserRepo<C> + Sync,
-    I: ImagePool + Sync,
+    O: ObjDeptView<TeamAvatar, C> + Sync,
 {
     if let Some(affected_user_id) = instr.user_id.as_deref()
         && affected_user_id != token.user_id
@@ -105,12 +104,7 @@ where
     .run_on(repo)
     .await?;
 
-    let team_info_vals = collect_bounded(
-        team_infos
-            .into_iter()
-            .map(|team_info| TeamInfoView::from_model(image_pool, team_info)),
-    )
-    .await?;
+    let team_info_vals = team_info_views(obj_dept, team_infos).await?;
 
     accept(team_info_vals)
 }

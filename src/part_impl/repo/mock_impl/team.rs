@@ -8,14 +8,12 @@ use std::cmp::Reverse;
 use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
-use crate::complex::team::TeamComplex;
 use crate::model::read::proj::team::TeamInfo;
-use crate::model::write::team::{TeamAvatarReservation, TeamEntry};
+use crate::model::write::team::TeamEntry;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::team::{
     AllocTeamWorksetIndex, CreateTeam, DeleteTeam, GetTeamInfo,
-    GetTeamInfoExcluded, ListTeamInfos, LockTeam, ReserveTeamAvatar,
-    UpdateTeam,
+    GetTeamInfoExcluded, ListTeamInfos, LockTeam, UpdateTeam,
 };
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
@@ -37,11 +35,6 @@ fn create_team(state: &mut MockState, entry: &TeamEntry) -> BaseRest<TeamInfo> {
         id: entry.id.clone(),
         name: entry.name.clone(),
         description: entry.description.clone(),
-        avatar_key: None,
-        is_avatar_uploaded: None,
-        avatar_version: None,
-        avatar_hash: None,
-        avatar_ext: None,
         created_at: time,
         updated_at: time,
     };
@@ -112,133 +105,21 @@ fn update_team(state: &mut MockState, oper: &UpdateTeam<'_>) -> BaseRest<()> {
     //
     // Internal implementation detail.
     // Internal implementation detail.
-    let id = match oper {
-        //
-        UpdateTeam::Info { repl } => repl.id.as_str(),
-
-        UpdateTeam::MarkAvatarUploaded { repl } => repl.id.as_str(),
-    };
+    let UpdateTeam::Info { repl } = oper;
 
     let team_info = state
         .teams
         .iter_mut()
-        .find(|team_info| team_info.id == id)
+        .find(|team_info| team_info.id == repl.id)
         .ok_or_else(|| expected("error-team-not-found"))?;
 
-    match oper {
-        //
-        // Internal implementation detail.
-        // Internal implementation detail.
-        UpdateTeam::Info { repl } => {
-            //
-            // Internal implementation detail.
-            // Internal implementation detail.
-            team_info.name = repl.name.clone();
+    team_info.name = repl.name.clone();
 
-            team_info.description = repl.description.clone();
-        }
-
-        UpdateTeam::MarkAvatarUploaded { repl } => {
-            //
-            // Internal implementation detail.
-            // Internal implementation detail.
-            if team_info.avatar_version != Some(repl.avatar_version)
-                || repl.avatar_key.as_deref().is_some_and(|avatar_key| {
-                    team_info.avatar_key.as_deref() != Some(avatar_key)
-                })
-            {
-                return Err(expected("error-stale-avatar-upload"));
-            }
-
-            team_info.is_avatar_uploaded = Some(repl.is_avatar_uploaded);
-        }
-    }
+    team_info.description = repl.description.clone();
 
     team_info.updated_at = now();
 
     accept(())
-}
-
-// Internal implementation of `reserve_team_avatar`.
-fn reserve_team_avatar(
-    state: &mut MockState,
-    oper: &ReserveTeamAvatar<'_>,
-) -> BaseRest<TeamAvatarReservation> {
-    //
-    // Internal implementation detail.
-    // Internal implementation detail.
-    let team_info = state
-        .teams
-        .iter_mut()
-        .find(|team_info| team_info.id == oper.id)
-        .ok_or_else(|| expected("error-team-not-found"))?;
-
-    let same_hash = team_info.avatar_key.is_some()
-        && team_info.avatar_hash.as_ref() == Some(oper.image_hash);
-
-    if same_hash && team_info.avatar_ext != Some(oper.image_ext) {
-        return Err(expected("error-image-extension-mismatch"));
-    }
-
-    if same_hash {
-        //
-        // Internal implementation detail.
-        // Internal implementation detail.
-        let object_key = team_info.avatar_key.clone().ok_or_else(|| {
-            //
-            BaseError::Unrecoverable {
-                message: "[reserve_team_avatar] avatar key is missing".into(),
-            }
-        })?;
-
-        return accept(TeamAvatarReservation {
-            object_key,
-            prev_object_key: None,
-            avatar_version: team_info.avatar_version.ok_or_else(|| {
-                //
-                BaseError::Unrecoverable {
-                    message: "[reserve_team_avatar] avatar version is missing"
-                        .into(),
-                }
-            })?,
-            is_upload_required: team_info.is_avatar_uploaded != Some(true),
-        });
-    }
-
-    let avatar_version = team_info
-        .avatar_version
-        .unwrap_or(0)
-        .checked_add(1)
-        .ok_or_else(|| BaseError::Unrecoverable {
-        message: "[reserve_team_avatar] avatar version overflow".into(),
-    })?;
-
-    let object_key = TeamComplex::gen_avatar_key(
-        oper.id,
-        avatar_version,
-        oper.image_ext.suffix(),
-    );
-
-    let prev_object_key = team_info.avatar_key.clone();
-
-    team_info.avatar_key = Some(object_key.clone());
-
-    team_info.is_avatar_uploaded = Some(false);
-
-    team_info.avatar_version = Some(avatar_version);
-
-    team_info.avatar_hash = Some(oper.image_hash.clone());
-
-    team_info.avatar_ext = Some(oper.image_ext);
-
-    team_info.updated_at = now();
-
-    accept(TeamAvatarReservation {
-        object_key,
-        prev_object_key,
-        avatar_version,
-        is_upload_required: true,
-    })
 }
 
 // Internal implementation of `delete_team`.
@@ -425,24 +306,6 @@ impl<'a> Step<UpdateTeam<'a>, MockContext> for Mock {
         oper: &UpdateTeam<'a>,
     ) -> BaseRest<()> {
         update_team(&mut context.state, oper)
-    }
-}
-
-impl<'a> Step<ReserveTeamAvatar<'a>, MockContext> for Mock {
-    // Internal type alias for `Error`.
-    type Level = ReptRead;
-
-    // Defines the adapter error exposed by this operation.
-    type Error = BaseError;
-
-    #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
-    async fn step(
-        &self,
-        context: &mut MockContext,
-        oper: &ReserveTeamAvatar<'a>,
-    ) -> BaseRest<TeamAvatarReservation> {
-        reserve_team_avatar(&mut context.state, oper)
     }
 }
 

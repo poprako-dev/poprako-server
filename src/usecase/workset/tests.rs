@@ -13,26 +13,18 @@
 
 use super::*;
 
-use poprako_orchestra::Step as _;
 use time::OffsetDateTime;
 
 use crate::data::instr::workset::{
     CreateWorksetInstr, ListWorksetInfosInstr, UpdateWorksetInfoInstr,
 };
-use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::proj::member::MemberInfo;
 use crate::model::read::proj::workset::WorksetInfo;
 use crate::model::shared::user::UserToken;
-use crate::part::prom::oper::Defer;
-use crate::part::prom::payload::{TaskPayload, image};
-use crate::part::prom::task::Task;
-use crate::part::repo::oper::workset::DeleteWorkset;
-use crate::part_impl::prom::mock_impl::MockPromRecord;
 use crate::part_impl::repo::mock_impl::Mock;
-use crate::result::{ExpectedVariant, accept};
+use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
 use crate::test_util::fixture::team;
-use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
 fn workset(id: &str, team_id: &str, index: usize) -> WorksetInfo {
@@ -93,54 +85,6 @@ fn admin_member(user_id: &str, team_id: &str) -> MemberInfo {
         team: None,
         roles: RoleMask::from(RoleField::ADMIN),
     }
-}
-
-fn comic_with_uploaded_cover(
-    id: &str,
-    workset_id: &str,
-    cover_key: &str,
-) -> ComicInfo {
-    //
-    // Build a comic fixture with pre-uploaded cover metadata for delete assertions.
-    let time = OffsetDateTime::now_utc();
-
-    ComicInfo {
-        id: id.into(),
-        workset_id: workset_id.into(),
-        index: 0,
-        title: "comic".into(),
-        author: "author".into(),
-        description: None,
-        cover_key: Some(cover_key.into()),
-        is_cover_uploaded: Some(true),
-        cover_version: Some(1),
-        cover_hash: Some(ImageHash::default()),
-        cover_ext: Some(ImageExt::Png),
-        chapter_count: 0,
-        creator_id: "user-1".into(),
-        workset: None,
-        team: None,
-        creator: None,
-        last_active_at: time,
-        archived_at: None,
-        created_at: time,
-        updated_at: time,
-    }
-}
-
-fn count_delete_records(records: &[MockPromRecord], object_key: &str) -> usize {
-    records
-        .iter()
-        .filter(|record| {
-            matches!(
-                record.payload(),
-                TaskPayload::Image {
-                    payload: image::ImagePayload::Delete { object_key: key },
-                }
-                    if key == object_key
-            )
-        })
-        .count()
 }
 
 #[tokio::test]
@@ -322,150 +266,4 @@ async fn update_info_propagates_missing_workset() {
     .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Args);
-}
-
-#[tokio::test]
-async fn delete_removes_workset_and_enqueues_child_cover_deletes() {
-    //
-    let mock = Mock::new();
-
-    mock.seed_workset(workset_with_comic_count("workset-1", "team-1", 0, 2));
-
-    mock.seed_member(admin_member("user-1", "team-1"));
-
-    mock.seed_comic(comic_with_uploaded_cover(
-        "comic-1",
-        "workset-1",
-        "cover-1.png",
-    ));
-
-    mock.seed_comic(comic_with_uploaded_cover(
-        "comic-2",
-        "workset-1",
-        "cover-2.png",
-    ));
-
-    delete((&mock, &mock, &mock), token("user-1"), "workset-1".into())
-        .await
-        .unwrap();
-
-    let snapshot = mock.snapshot();
-
-    assert!(snapshot.worksets.is_empty());
-
-    assert!(snapshot.comics.is_empty());
-
-    assert_eq!(
-        count_delete_records(&snapshot.prom_records, "cover-1.png"),
-        1
-    );
-
-    assert_eq!(
-        count_delete_records(&snapshot.prom_records, "cover-2.png"),
-        1
-    );
-}
-
-#[tokio::test]
-async fn delete_enqueues_cover_deletes_across_multiple_comic_batches() {
-    //
-    let mock = Mock::new();
-
-    mock.seed_workset(workset_with_comic_count("workset-1", "team-1", 0, 51));
-
-    mock.seed_member(admin_member("user-1", "team-1"));
-
-    for comic_index in 0..=50 {
-        //
-        let comic_id = format!("comic-{}", comic_index);
-
-        let cover_key = format!("cover-{}.png", comic_index);
-
-        mock.seed_comic(comic_with_uploaded_cover(
-            &comic_id,
-            "workset-1",
-            &cover_key,
-        ));
-    }
-
-    delete((&mock, &mock, &mock), token("user-1"), "workset-1".into())
-        .await
-        .unwrap();
-
-    let snapshot = mock.snapshot();
-
-    assert!(snapshot.worksets.is_empty());
-
-    assert!(snapshot.comics.is_empty());
-
-    assert_eq!(snapshot.prom_records.len(), 51);
-}
-
-#[tokio::test]
-async fn delete_rolls_back_missing_workset() {
-    //
-    let mock = Mock::new();
-
-    mock.seed_workset(workset("workset-1", "team-1", 0));
-
-    mock.seed_member(admin_member("user-1", "team-1"));
-
-    let err = delete((&mock, &mock, &mock), token("user-1"), "missing".into())
-        .await
-        .err()
-        .unwrap();
-
-    let snapshot = mock.snapshot();
-
-    assert_expected_variant(err, ExpectedVariant::Args);
-
-    assert_eq!(snapshot.worksets.len(), 1);
-
-    assert!(snapshot.prom_records.is_empty());
-}
-
-#[tokio::test]
-async fn delete_does_not_create_prom_records_when_called_directly() {
-    //
-    let mock = Mock::new();
-
-    mock.seed_workset(workset("workset-1", "team-1", 0));
-
-    mock.coord(async |context| {
-        //
-        let id = "prom-1".to_string();
-
-        let payload = TaskPayload::Image {
-            payload: image::ImagePayload::Delete {
-                object_key: "existing.png".to_string(),
-            },
-        };
-
-        let task = Task {
-            id: &id,
-            payload: &payload,
-            delay: None,
-        };
-
-        mock.step(context, &Defer::new(task)).await?;
-
-        mock.step(context, &DeleteWorkset { id: "workset-1" })
-            .await?;
-
-        accept(())
-    })
-    .await
-    .ok()
-    .unwrap();
-
-    let snapshot = mock.snapshot();
-
-    assert_eq!(
-        count_delete_records(&snapshot.prom_records, "existing.png"),
-        1
-    );
-
-    assert_eq!(snapshot.prom_records.len(), 1);
-
-    assert!(snapshot.worksets.is_empty());
 }

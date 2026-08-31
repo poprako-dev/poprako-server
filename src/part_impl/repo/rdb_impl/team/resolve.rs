@@ -5,6 +5,7 @@ use diesel_async::RunQueryDsl as _;
 use poprako_orchestra::{AtLeast, Level, Run, Step};
 use tracing::instrument;
 
+use poprako_rdb_core::RdbConn;
 use poprako_util::i18n::trl;
 
 use crate::part::nucl::ReptRead;
@@ -12,8 +13,8 @@ use crate::part::repo::oper::team::ResolveTeamId;
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::schema::{t_chapter, t_comic, t_workset};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::shared::RdbContext;
 use crate::shared::result::diesel;
-use crate::shared::{RdbConn, RdbContext};
 
 // Build the client-visible error for an unresolvable comic or chapter.
 fn missing_resource(oper: &ResolveTeamId<'_>) -> BaseError {

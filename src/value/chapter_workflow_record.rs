@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
-use crate::value::chapter::{Stage, StagePhase};
+use crate::value::chapter::stage::{Stage, StagePhase};
 use crate::value::chapter_port::{ExportFormatSpec, TranslationFormat};
 use crate::value::role::RoleMask;
 

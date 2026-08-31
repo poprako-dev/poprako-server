@@ -10,7 +10,8 @@ use serde::Deserialize;
 #[cfg(feature = "swagger")]
 use utoipa::{IntoParams, ToSchema};
 
-use crate::value::chapter::{ChapterInclOpt, Stage, StageOper};
+use crate::value::chapter::ChapterInclOpt;
+use crate::value::chapter::stage::{Stage, StageOper};
 use crate::value::role::RoleMask;
 
 /// Input parameters for creating a new chapter.

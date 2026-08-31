@@ -16,6 +16,9 @@ RUN apk add --no-cache \
 COPY Cargo.toml Cargo.lock ./
 COPY poprako-util ./poprako-util
 COPY poprako-swagger ./poprako-swagger
+COPY poprako-obj-dept ./poprako-obj-dept
+COPY poprako-obj-dept-macro ./poprako-obj-dept-macro
+COPY poprako-rdb-core ./poprako-rdb-core
 COPY benches ./benches
 
 RUN mkdir -p src && \

@@ -3,7 +3,6 @@ use std::fmt::Write as _;
 
 use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::unit::UnitInfo;
-use crate::value::image::ImageExt;
 
 /// Chapter export formatting rules.
 pub struct ChapterExportComplex;
@@ -13,6 +12,7 @@ impl ChapterExportComplex {
     pub fn make_label_plus(
         pages: &[PageInfo],
         units_by_page_id: &HashMap<String, Vec<UnitInfo>>,
+        ext_by_page_id: &HashMap<String, String>,
     ) -> String {
         //
         let mut output = String::new();
@@ -31,7 +31,12 @@ impl ChapterExportComplex {
 
         for page_info in pages {
             //
-            let image_name = label_plus_image_name(page_info);
+            let image_name = label_plus_image_name(
+                page_info,
+                ext_by_page_id
+                    .get(&page_info.id)
+                    .map_or("jpg", String::as_str),
+            );
 
             // FIXME: why ignore? and similar ones.
             write!(output, "\n\n>>>>>>>>[{}]<<<<<<<<\n", image_name).unwrap_or_else(|error| {
@@ -83,13 +88,8 @@ impl ChapterExportComplex {
 
 // Build a LabelPlus image filename from a page's stored index and image
 // file extension (defaults to `jpg` when the image key has no extension).
-fn label_plus_image_name(page_info: &PageInfo) -> String {
-    //
-    format!(
-        "{:03}.{}",
-        page_info.index,
-        page_info.image_ext.unwrap_or(ImageExt::Jpg).suffix(),
-    )
+fn label_plus_image_name(page_info: &PageInfo, ext: &str) -> String {
+    format!("{:03}.{}", page_info.index, ext)
 }
 
 // Return the proofread text if non-empty, falling back to translated text

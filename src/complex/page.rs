@@ -1,8 +1,5 @@
 //! Pure rules for page entities.
 
-/// Pure chapter-page manifest matching.
-pub mod manifest;
-
 use poprako_util::i18n::trl;
 
 use crate::complex::util::{
@@ -33,16 +30,16 @@ fn reject_role(message_key: &str, event: &'static str) -> BaseRest<()> {
     })
 }
 
-// Verify that assignment evidence permits reserving page images.
-fn check_reserve_role(assignment_info: &AssignmentInfo) -> BaseRest<()> {
+// Verify that assignment evidence permits allocating page images.
+fn check_alloc_role(assignment_info: &AssignmentInfo) -> BaseRest<()> {
     //
     if !assignment_info
         .roles
         .has_any_role(&[RoleField::RAW_PROVIDER, RoleField::REVIEWER])
     {
         return reject_role(
-            "error-page-reserve-role-required",
-            "page_reservation_role_missing",
+            "error-page-alloc-role-required",
+            "page_alloc_role_missing",
         );
     }
 
@@ -73,20 +70,6 @@ impl PageComplex {
     pub fn gen_id() -> String {
         next_snowflake_id()
     }
-
-    /// Construct the object-storage key for a page image.
-    pub fn gen_image_key(
-        chapter_id: &str,
-        page_id: &str,
-        image_version: u32,
-        file_ext: &str,
-    ) -> String {
-        //
-        format!(
-            "page/chapter_{}/{}-{}.{}",
-            chapter_id, page_id, image_version, file_ext,
-        )
-    }
 }
 
 /// Evidence that grants page-list access.
@@ -109,11 +92,11 @@ pub enum PageListAccess<'a> {
 pub struct PagePermComplex;
 
 impl PagePermComplex {
-    /// Verify the caller may reserve page images for the chapter.
-    pub fn ensure_user_can_reserve(
+    /// Verify the caller may allocate page images for the chapter.
+    pub fn ensure_user_can_alloc(
         assignment_info: &AssignmentInfo,
     ) -> BaseRest<()> {
-        check_reserve_role(assignment_info)
+        check_alloc_role(assignment_info)
     }
 
     /// Verify the caller may list pages under a chapter.

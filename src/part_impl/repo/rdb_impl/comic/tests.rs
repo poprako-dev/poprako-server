@@ -2,6 +2,8 @@
 
 use poprako_orchestra::Run as _;
 
+use poprako_rdb_core::RdbCore;
+
 use crate::model::read::spec::comic::ComicListSpec;
 use crate::model::write::comic::ComicRepl;
 use crate::part::repo::oper::comic::{
@@ -9,7 +11,6 @@ use crate::part::repo::oper::comic::{
 };
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::test_shared;
-use crate::shared::RdbCore;
 use crate::value::comic::ComicInclOpt;
 
 const PREFIX: &str = "rdb-test-comic-domain-";

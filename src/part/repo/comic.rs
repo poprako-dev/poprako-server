@@ -3,8 +3,7 @@ use poprako_orchestra::drive;
 use crate::part::repo::oper::comic::{
     AllocComicChapterIndex, CreateComic, DeleteComic, GetComicInfo,
     GetComicInfoExcluded, ListComicInfos, ListComicInfosExcluded,
-    MarkComicCoverUploaded, ReserveComicCover, TouchComicLastActive,
-    UpdateComic, UpdateComicChapterCount,
+    TouchComicLastActive, UpdateComic, UpdateComicChapterCount,
 };
 use crate::result::BaseError;
 
@@ -19,7 +18,6 @@ use crate::result::BaseError;
         for<'a, 'b> GetComicInfo<'a, 'b>,
         for<'a> ListComicInfos<'a>,
         for<'a> UpdateComic<'a>,
-        for<'a> MarkComicCoverUploaded<'a>,
     ),
     step(
         for<'a, 'b> GetComicInfo<'a, 'b>,
@@ -27,8 +25,6 @@ use crate::result::BaseError;
         for<'a, 'b> GetComicInfoExcluded<'a, 'b>,
         for<'a> ListComicInfosExcluded<'a>,
         for<'a> CreateComic<'a>,
-        for<'a> ReserveComicCover<'a>,
-        for<'a> MarkComicCoverUploaded<'a>,
         for<'a> DeleteComic<'a>,
         for<'a> AllocComicChapterIndex<'a>,
         for<'a> UpdateComicChapterCount<'a>,

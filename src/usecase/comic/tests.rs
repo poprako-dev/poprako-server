@@ -1,4 +1,3 @@
-mod cover;
 mod fixture;
 mod list;
 mod preset_assignment;
@@ -32,19 +31,71 @@ mod preset_assignment;
 use super::*;
 
 use fixture::*;
+use poprako_obj_dept::key::ObjKey;
+use poprako_obj_dept::model::meta::ObjMeta;
 use time::OffsetDateTime;
 
-use crate::data::instr::comic::{ListComicInfosInstr, UpdateComicInfoInstr};
+use crate::data::instr::comic::{
+    ListComicInfosInstr, MarkComicCoverUploadedInstr, UpdateComicInfoInstr,
+};
 use crate::model::read::proj::comic::ComicInfo;
-use crate::part_impl::repo::mock_impl::Mock;
+use crate::part_impl::repo::mock_impl::{Mock, MockContext, MockObjRecord};
 use crate::result::ExpectedVariant;
+use crate::test_util::assert_expected_variant;
 use crate::test_util::fixture::{invalid_credential, user, workset};
-use crate::test_util::{IMAGE_CONFIG, assert_expected_variant};
 use crate::usecase::comic::list::list_infos;
-use crate::usecase::comic::reserve::reserve_cover;
-use crate::value::chapter::{Stage, StageMask, StagePhase};
+use crate::value::chapter::mask::StageMask;
+use crate::value::chapter::stage::{Stage, StagePhase};
 use crate::value::comic::ComicWithOpt;
 use crate::value::role::{RoleField, RoleMask};
+
+fn seed_comic_cover_scope(mock: &Mock, version: u32) {
+    mock.seed_workset(workset("workset-1", "team-1"));
+
+    mock.seed_comic(comic("comic-1", "workset-1", 0));
+
+    mock.seed_member(admin_member("user-1", "team-1"));
+
+    let key = ObjKey {
+        id: "comic-1".into(),
+        ver: version,
+        image: format!("comic_cover/comic-1-{}.png", version),
+    };
+
+    let meta = ObjMeta {
+        key,
+        is_avail: false,
+        hash: vec![0; 32],
+        ext: "png".into(),
+    };
+
+    mock.state
+        .lock()
+        .unwrap()
+        .objs
+        .entry("comic_cover")
+        .or_default()
+        .insert(
+            "comic-1".into(),
+            MockObjRecord {
+                version,
+                meta: Some(meta),
+            },
+        );
+}
+
+async fn mark_comic_cover(
+    mock: &Mock,
+    version: u32,
+) -> crate::result::BaseRest<()> {
+    cover::mark_uploaded::<MockContext, _, _>(
+        (mock, mock),
+        token("user-1"),
+        "comic-1".into(),
+        MarkComicCoverUploadedInstr { image_ver: version },
+    )
+    .await
+}
 
 #[tokio::test]
 async fn create_allocates_index_and_updates_count() {
@@ -134,150 +185,40 @@ async fn create_rolls_back_missing_workset() {
 }
 
 #[tokio::test]
-async fn get_info_returns_uploaded_cover_url() {
-    //
+async fn mark_cover_uploaded_marks_current_generation_idempotently() {
     let mock = Mock::new();
 
-    mock.seed_workset(workset("workset-1", "team-1"));
+    seed_comic_cover_scope(&mock, 3);
 
-    mock.seed_member(admin_member("user-1", "team-1"));
+    mark_comic_cover(&mock, 3).await.unwrap();
 
-    mock.seed_comic(comic_with_uploaded_cover(
-        "comic-1",
-        "workset-1",
-        "cover.png",
-    ));
+    mark_comic_cover(&mock, 3).await.unwrap();
 
-    mock.seed_chapter(chapter(
-        "chapter-1",
-        "comic-1",
-        StageMask::try_from(0u32).ok().unwrap(),
-    ));
-
-    mock.seed_page(page("page-1", "chapter-1", 0, Some("fallback.png"), true));
-
-    let found =
-        get_info((&mock, &mock), token("user-1"), "comic-1".into()).await;
-
-    assert!(found.is_ok());
-
-    let found = found.ok().unwrap();
-
-    assert_eq!(found.id, "comic-1");
-
-    assert_eq!(
-        found.cover_url,
-        Some("https://test.local/get/cover.png".into())
-    );
-
-    assert_eq!(
-        found.cover_thumbnail_url,
-        Some("https://test.local/cdn-cgi/image/width=300,fit=scale-down,quality=80,format=auto,metadata=none/cover.png".into())
+    assert!(
+        mock.snapshot().objs["comic_cover"]["comic-1"]
+            .meta
+            .as_ref()
+            .unwrap()
+            .is_avail
     );
 }
 
 #[tokio::test]
-async fn get_info_falls_back_to_uploaded_first_pinned_page() {
-    //
+async fn mark_cover_uploaded_rejects_stale_generation() {
     let mock = Mock::new();
 
-    mock.seed_workset(workset("workset-1", "team-1"));
+    seed_comic_cover_scope(&mock, 3);
 
-    mock.seed_member(admin_member("user-1", "team-1"));
+    let err = mark_comic_cover(&mock, 2).await.err().unwrap();
 
-    mock.seed_comic(comic("comic-1", "workset-1", 0));
-
-    mock.seed_chapter(chapter(
-        "chapter-1",
-        "comic-1",
-        StageMask::try_from(0u32).ok().unwrap(),
-    ));
-
-    mock.seed_page(page("page-later", "chapter-1", 1, Some("later.png"), true));
-
-    mock.seed_page(page("page-first", "chapter-1", 0, Some("first.png"), true));
-
-    let found = get_info((&mock, &mock), token("user-1"), "comic-1".into())
-        .await
-        .ok()
-        .unwrap();
-
-    assert_eq!(
-        found.cover_url,
-        Some("https://test.local/get/first.png".into())
-    );
-
-    assert_eq!(
-        found.cover_thumbnail_url,
-        Some("https://test.local/cdn-cgi/image/width=300,fit=scale-down,quality=80,format=auto,metadata=none/first.png".into())
-    );
-}
-
-#[tokio::test]
-async fn list_infos_omits_fallback_without_usable_first_pinned_page() {
-    //
-    let mock = Mock::new();
-
-    mock.seed_workset(workset("workset-1", "team-1"));
-
-    mock.seed_member(admin_member("user-1", "team-1"));
-
-    mock.seed_comic(comic("no-chapter", "workset-1", 0));
-
-    mock.seed_comic(comic("no-page", "workset-1", 1));
-
-    mock.seed_comic(comic("not-uploaded", "workset-1", 2));
-
-    mock.seed_chapter(chapter(
-        "chapter-no-page",
-        "no-page",
-        StageMask::try_from(0u32).ok().unwrap(),
-    ));
-
-    mock.seed_chapter(chapter(
-        "chapter-not-uploaded",
-        "not-uploaded",
-        StageMask::try_from(0u32).ok().unwrap(),
-    ));
-
-    mock.seed_page(page(
-        "page-not-uploaded",
-        "chapter-not-uploaded",
-        0,
-        Some("pending.png"),
-        false,
-    ));
-
-    let found = list_infos(
-        (&mock, &mock),
-        token("user-1"),
-        ListComicInfosInstr {
-            workset_id: "workset-1".into(),
-            fuzzy_title: None,
-            stages: None,
-            status: None,
-            incl_opt: Vec::new(),
-            with_opt: Vec::new(),
-            offset: 0,
-            limit: 10,
-        },
-    )
-    .await
-    .ok()
-    .unwrap();
+    assert_expected_variant(err, ExpectedVariant::Args);
 
     assert!(
-        found
-            .comics
-            .iter()
-            .all(|comic_info| comic_info.cover_url.is_none())
-    );
-
-    assert!(
-        found
-            .comics
-            .iter()
-            .all(|comic_info| comic_info.cover_thumbnail_url.is_none())
+        !mock.snapshot().objs["comic_cover"]["comic-1"]
+            .meta
+            .as_ref()
+            .unwrap()
+            .is_avail
     );
 }
 

@@ -6,8 +6,9 @@ export interface UserInfoView {
     nickname: string;
     qid: string;
     is_sadmin: boolean;
-    avatar_url: string | null;
-    avatar_thumbnail_url: string | null;
+    avatar_url?: string;
+    avatar_thumbnail_url?: string;
+    last_active_at: number;
     created_at: number;
     updated_at: number;
 }
@@ -16,8 +17,8 @@ export interface TeamInfoView {
     id: string;
     name: string;
     description: string;
-    avatar_url: string | null;
-    avatar_thumbnail_url: string | null;
+    avatar_url?: string;
+    avatar_thumbnail_url?: string;
     created_at: number;
     updated_at: number;
 }
@@ -40,8 +41,8 @@ export interface ComicInfoView {
     title: string;
     author: string;
     description: string | null;
-    cover_url: string | null;
-    cover_thumbnail_url: string | null;
+    cover_url?: string;
+    cover_thumbnail_url?: string;
     chapter_count: number;
     creator_id: string;
     workset: WorksetInfoView | null;

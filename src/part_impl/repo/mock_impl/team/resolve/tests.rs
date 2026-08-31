@@ -11,7 +11,7 @@ use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::proj::workset::WorksetInfo;
 use crate::result::ExpectedVariant;
-use crate::value::chapter::StageMask;
+use crate::value::chapter::mask::StageMask;
 
 fn seed_scope(mock: &Mock) {
     //
@@ -35,11 +35,6 @@ fn seed_scope(mock: &Mock) {
         title: "comic".into(),
         author: "author".into(),
         description: None,
-        cover_key: None,
-        is_cover_uploaded: None,
-        cover_version: None,
-        cover_hash: None,
-        cover_ext: None,
         chapter_count: 1,
         creator_id: "user-1".into(),
         workset: None,

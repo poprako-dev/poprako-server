@@ -33,7 +33,8 @@ use crate::part::prom::payload::invitation::InvitationPayload;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::{assert_expected_variant, now};
-use crate::value::chapter::{Stage, StageMask, StagePhase};
+use crate::value::chapter::mask::StageMask;
+use crate::value::chapter::stage::{Stage, StagePhase};
 use crate::value::role::{RoleField, RoleMask};
 
 // Build a token fixture for invitation test requests.
@@ -63,11 +64,6 @@ fn user(id: &str, qid: &str, nickname: &str) -> UserInfo {
         id: id.into(),
         qid: qid.into(),
         nickname: nickname.into(),
-        avatar_key: None,
-        is_avatar_uploaded: None,
-        avatar_version: None,
-        avatar_hash: None,
-        avatar_ext: None,
         is_sadmin: false,
         last_active_at: time,
         created_at: time,
@@ -85,11 +81,6 @@ fn team(id: &str) -> TeamInfo {
         id: id.into(),
         name: id.into(),
         description: "description".into(),
-        avatar_key: None,
-        is_avatar_uploaded: None,
-        avatar_version: None,
-        avatar_hash: None,
-        avatar_ext: None,
         created_at: time,
         updated_at: time,
     }
@@ -126,11 +117,6 @@ fn comic(id: &str, workset_id: &str) -> ComicInfo {
         title: id.into(),
         author: "author".into(),
         description: None,
-        cover_key: None,
-        is_cover_uploaded: None,
-        cover_version: None,
-        cover_hash: None,
-        cover_ext: None,
         chapter_count: 1,
         creator_id: "creator-user".into(),
         workset: None,

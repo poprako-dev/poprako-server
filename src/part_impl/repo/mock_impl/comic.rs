@@ -9,9 +9,9 @@ use crate::model::read::proj::team::TeamInfo;
 use crate::model::read::proj::user::UserInfo;
 use crate::model::read::proj::workset::WorksetInfo;
 use crate::model::read::spec::comic::ComicListSpec;
-use crate::part_impl::repo::mock_impl::{MockState, expected, now};
+use crate::part_impl::repo::mock_impl::{MockState, expected};
 use crate::result::{BaseRest, accept};
-use crate::value::chapter::StageMask;
+use crate::value::chapter::mask::StageMask;
 use crate::value::comic::{ComicInclOpt, ComicStatus};
 use crate::value::incl::expand_incl_opts;
 use crate::value::index::user_index_to_stored_index;
@@ -191,36 +191,6 @@ fn comic_matches_status(
 
         None => true,
     }
-}
-
-// Validate optimistic fields and toggle comic cover uploaded flag.
-fn mark_comic_cover_uploaded(
-    state: &mut MockState,
-    id: &str,
-    cover_version: u32,
-    cover_key: Option<&str>,
-    cover_uploaded: bool,
-) -> BaseRest<()> {
-    //
-    let comic = state
-        .comics
-        .iter_mut()
-        .find(|comic| comic.id == id)
-        .ok_or_else(|| expected("error-comic-not-found"))?;
-
-    if comic.cover_version != Some(cover_version)
-        || cover_key.is_some_and(|cover_key| {
-            comic.cover_key.as_deref() != Some(cover_key)
-        })
-    {
-        return Err(expected("error-stale-cover-upload"));
-    }
-
-    comic.is_cover_uploaded = Some(cover_uploaded);
-
-    comic.updated_at = now();
-
-    accept(())
 }
 
 // Load one comic and hydrate include fields.

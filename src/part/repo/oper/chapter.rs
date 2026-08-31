@@ -6,7 +6,8 @@ use crate::model::read::spec::chapter::ChapterListSpec;
 use crate::model::write::chapter::{
     ChapterEntry, ChapterPatch, ChapterStageRepl,
 };
-use crate::value::chapter::{ChapterInclOpt, Stage};
+use crate::value::chapter::ChapterInclOpt;
+use crate::value::chapter::stage::Stage;
 
 /// Creates a chapter.
 #[derive(Oper)]

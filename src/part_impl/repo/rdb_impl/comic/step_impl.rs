@@ -7,14 +7,13 @@ use diesel_async::RunQueryDsl as _;
 use time::OffsetDateTime;
 use tracing::instrument;
 
+use poprako_rdb_core::RdbConn;
 use poprako_util::i18n::trl;
 
 use crate::complex::comic::ComicComplex;
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::spec::comic::ComicListSpec;
-use crate::model::write::comic::{
-    ComicCoverReservation, ComicEntry, ComicRepl,
-};
+use crate::model::write::comic::{ComicEntry, ComicRepl};
 use crate::part_impl::repo::rdb_impl::comic::stage_filter::list_matching_stage_comic_ids;
 use crate::part_impl::repo::rdb_impl::entity::comic::{
     ComicAspectRow, ComicEntryRow, ComicInfoRow,
@@ -23,15 +22,11 @@ use crate::part_impl::repo::rdb_impl::incl;
 use crate::part_impl::repo::rdb_impl::numeric::usize_from_i32;
 use crate::part_impl::repo::rdb_impl::schema::t_comic::dsl::{
     f_archived_at, f_chapter_count, f_chapter_next_index, f_composed_title,
-    f_cover_extension, f_cover_hash, f_cover_key, f_cover_uploaded,
-    f_cover_version, f_id, f_index, f_last_active_at, f_updated_at,
-    f_workset_id, t_comic,
+    f_id, f_index, f_last_active_at, f_workset_id, t_comic,
 };
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::shared::RdbConn;
-use crate::shared::result::{diesel, next_version};
+use crate::shared::result::diesel;
 use crate::value::comic::{ComicInclOpt, ComicStatus};
-use crate::value::image::{ImageExt, ImageHash};
 use crate::value::index::user_index_to_stored_index;
 
 /// Queries a single comic row by ID and populates its includes.
@@ -176,72 +171,6 @@ pub async fn update_info(
         .execute(conn)
         .await
         .map_err(diesel)?;
-
-    accept(())
-}
-
-/// Marks a comic's cover as uploaded, checking for version match.
-#[instrument(level = "info", skip_all)]
-pub async fn mark_cover_uploaded(
-    conn: &mut RdbConn,
-    id: &str,
-    version: u32,
-    cover_key: Option<&str>,
-    cover_uploaded: bool,
-) -> BaseRest<()> {
-    //
-    let now = OffsetDateTime::now_utc();
-
-    let affected = match cover_key {
-        //
-        Some(cover_key) => {
-            //
-            diesel::update(
-                t_comic
-                    .filter(f_id.eq(id))
-                    .filter(f_cover_version.eq(i64::from(version)))
-                    .filter(f_cover_key.eq(cover_key)),
-            )
-            .set((f_cover_uploaded.eq(cover_uploaded), f_updated_at.eq(now)))
-            .execute(conn)
-            .await
-        }
-
-        None => {
-            //
-            diesel::update(
-                t_comic
-                    .filter(f_id.eq(id))
-                    .filter(f_cover_version.eq(i64::from(version))),
-            )
-            .set((f_cover_uploaded.eq(cover_uploaded), f_updated_at.eq(now)))
-            .execute(conn)
-            .await
-        }
-    }
-    .map_err(diesel)?;
-
-    if affected == 0 {
-        //
-        let err_message = trl("error-cover-version-mismatch");
-
-        tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
-            err_message = %err_message,
-            comic_id = %id,
-            version,
-            cover_key_present = cover_key.is_some(),
-            cover_uploaded,
-            affected,
-            stage = "mark_cover_uploaded",
-            "expected error: cover version mismatch",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message: err_message,
-        });
-    }
 
     accept(())
 }
@@ -410,110 +339,6 @@ pub async fn list_infos_excluded(
         .await?;
 
     accept(comic_infos)
-}
-
-/// Reserves a cover image key for a comic, incrementing the cover version.
-#[instrument(level = "info", skip_all)]
-pub async fn reserve_cover(
-    conn: &mut RdbConn,
-    id: &str,
-    image_hash: &ImageHash,
-    image_ext: ImageExt,
-) -> BaseRest<ComicCoverReservation> {
-    //
-    let now = OffsetDateTime::now_utc();
-
-    let (prev_key, uploaded, raw_version, stored_hash, stored_ext) = t_comic
-        .filter(f_id.eq(id))
-        .select((
-            f_cover_key,
-            f_cover_uploaded,
-            f_cover_version,
-            f_cover_hash,
-            f_cover_extension,
-        ))
-        .for_update()
-        .get_result::<(
-            Option<String>,
-            Option<bool>,
-            Option<i64>,
-            Option<Vec<u8>>,
-            Option<String>,
-        )>(conn)
-        .await
-        .map_err(diesel)?;
-
-    let same_hash = prev_key.is_some()
-        && stored_hash.as_deref() == Some(image_hash.as_bytes());
-
-    if same_hash && stored_ext.as_deref() != Some(image_ext.suffix()) {
-        //
-        let err_message = trl("error-image-extension-mismatch");
-
-        tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
-            err_message = %err_message,
-            comic_id = %id,
-            image_version = raw_version,
-            cover_key_present = prev_key.is_some(),
-            stored_extension = ?stored_ext,
-            requested_extension = %image_ext.suffix(),
-            stage = "reserve_cover",
-            "expected error: invalid image extension",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message: err_message,
-        });
-    }
-
-    if same_hash {
-        //
-        let object_key = prev_key.ok_or_else(|| BaseError::Unrecoverable {
-            message: "[reserve_cover] pending cover key is missing".into(),
-        })?;
-
-        return accept(ComicCoverReservation {
-            object_key,
-            prev_object_key: None,
-            cover_version: u32::try_from(raw_version.ok_or_else(|| {
-                //
-                BaseError::Unrecoverable {
-                    message: "[reserve_cover] cover version is missing".into(),
-                }
-            })?)
-            .map_err(|_| BaseError::Unrecoverable {
-                message: "[reserve_cover] cover version is invalid".into(),
-            })?,
-            is_upload_required: !uploaded.unwrap_or(false),
-        });
-    }
-
-    let cover_version = next_version(raw_version.unwrap_or(0))?;
-
-    let object_key =
-        ComicComplex::gen_cover_key(id, cover_version, image_ext.suffix());
-
-    diesel::update(t_comic.filter(f_id.eq(id)))
-        .set((
-            f_cover_key.eq(Some(&object_key)),
-            f_cover_uploaded.eq(false),
-            f_cover_version.eq(i64::from(cover_version)),
-            f_cover_hash.eq(image_hash.as_bytes().to_vec()),
-            f_cover_extension.eq(image_ext.suffix()),
-            f_updated_at.eq(now),
-        ))
-        .execute(conn)
-        .await
-        .map_err(diesel)?;
-
-    accept(ComicCoverReservation {
-        object_key,
-        prev_object_key: prev_key,
-        cover_version,
-        is_upload_required: true,
-    })
 }
 
 /// Deletes a single comic row by ID.

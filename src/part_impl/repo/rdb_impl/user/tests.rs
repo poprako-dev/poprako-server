@@ -2,12 +2,13 @@
 
 use poprako_orchestra::Run;
 
+use poprako_rdb_core::RdbCore;
+
 use crate::part::repo::oper::user::{
     FindUserInfo, GetUserCredential, GetUserInfo,
 };
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::test_shared;
-use crate::shared::RdbCore;
 
 const PREFIX: &str = "rdb-test-user-domain-";
 

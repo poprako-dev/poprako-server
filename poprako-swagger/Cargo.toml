@@ -8,9 +8,6 @@ license.workspace = true
 repository.workspace = true
 publish.workspace = true
 
-[lints]
-workspace = true
-
 [dependencies]
 anyhow.workspace = true
 poprako-server = { path = "..", features = ["swagger"] }

@@ -1,4 +1,38 @@
 #![recursion_limit = "256"]
+#![deny(unsafe_code)]
+#![deny(clippy::correctness)]
+#![deny(clippy::suspicious)]
+#![deny(clippy::complexity)]
+#![deny(clippy::perf)]
+#![deny(clippy::unwrap_used)]
+#![deny(clippy::expect_used)]
+#![deny(clippy::panic)]
+#![deny(clippy::unreachable)]
+#![deny(clippy::todo)]
+#![deny(clippy::unimplemented)]
+#![deny(clippy::dbg_macro)]
+#![deny(clippy::print_stdout)]
+#![deny(clippy::print_stderr)]
+#![deny(clippy::exit)]
+#![deny(clippy::indexing_slicing)]
+#![deny(clippy::string_slice)]
+#![deny(clippy::mod_module_files)]
+#![warn(clippy::style)]
+#![warn(clippy::pedantic)]
+#![warn(clippy::nursery)]
+#![allow(clippy::future_not_send)]
+#![allow(clippy::unnecessary_wraps)]
+#![allow(clippy::uninlined_format_args)]
+#![cfg_attr(
+    test,
+    allow(
+        clippy::all,
+        clippy::pedantic,
+        clippy::nursery,
+        clippy::cargo,
+        clippy::restriction
+    )
+)]
 
 //! Crate root: explicit public re-exports and internal module organization for
 //! the `PopRaKo` application core.
@@ -11,8 +45,6 @@ mod complex;
 mod config;
 // Inbound request and outbound response DTOs for the HTTP API layer.
 mod data;
-// Fixed production extras outside the port-implementation tree.
-mod extra;
 // Application harness wiring all ports together for production and test use.
 mod harn;
 // Tracing-subscriber initialisation shared across binaries.
@@ -26,7 +58,7 @@ mod part;
 mod part_impl;
 // Root error and result types used across all layers.
 mod result;
-// Shared RDB infrastructure used by port implementations and production extras.
+// Shared RDB infrastructure used by port implementations.
 mod shared;
 
 #[cfg(test)]
@@ -46,20 +78,26 @@ mod value;
 #[doc(hidden)]
 pub mod benchmark;
 
+pub use poprako_rdb_core::RdbCore;
+
 #[cfg(feature = "swagger")]
 pub use crate::api::http::openapi::ApiDoc;
 
+#[cfg(feature = "benchmark")]
+pub use crate::complex::user::UserComplex;
+
 pub use crate::api::http::server::serve;
 pub use crate::api::http::state::AppHarn;
-pub use crate::config::{AppConfig, HttpConfig, ImageConfig};
-pub use crate::extra::sched::Sched;
-pub use crate::harn::{Harn, HybNucl};
+pub use crate::config::AppConfig;
+pub use crate::config::http::HttpConfig;
+pub use crate::config::image::ImageConfig;
+pub use crate::harn::Harn;
 pub use crate::log::init_log;
 pub use crate::part::nucl::{ReptRead, Serial};
 pub use crate::part_impl::auth::jwt_impl::JwtAuth;
 pub use crate::part_impl::effect::async_impl::AsyncEffectDevelop;
-pub use crate::part_impl::image::r2_impl::R2ImagePool;
-pub use crate::part_impl::nucl::rdb_impl::RdbNucl;
-pub use crate::part_impl::prom::rdb_impl::RdbProm;
+pub use crate::part_impl::nucl::rdb_impl::{HybNucl, RdbNucl};
+pub use crate::part_impl::obj_dept::{NormObjDept, new_obj_dept};
+pub use crate::part_impl::prom::rdb_impl::{RdbProm, new as new_prom};
 pub use crate::part_impl::repo::HybRepo;
-pub use crate::shared::{RdbContext, RdbCore};
+pub use crate::shared::RdbContext;

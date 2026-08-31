@@ -29,7 +29,6 @@ use crate::data::view::chapter::ChapterInfoView;
 use crate::data::view::chapter_workflow_record::ChapterWorkflowRecordInfoView;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::{ReptRead, Serial};
-use crate::part_impl::prom::rdb_impl::RdbProm;
 use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
 use crate::usecase;
@@ -127,7 +126,7 @@ pub async fn list_infos(
     };
 
     usecase::chapter::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
-        (harn.repo(), harn.image_pool()),
+        (harn.repo(), harn.obj_dept()),
         user_token,
         instr,
     )
@@ -316,13 +315,13 @@ pub async fn advance_stage(
         _,
         RdbContext<ReptRead>,
         HybRepo,
-        RdbProm,
+        _,
         _,
     >(
         (
             harn.nucl().rept_read(),
             harn.repo(),
-            harn.prom(),
+            harn.obj_dept(),
             harn.develop(),
         ),
         user_token,
@@ -352,13 +351,8 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::chapter::delete::delete::<
-        _,
-        RdbContext<Serial>,
-        HybRepo,
-        RdbProm,
-    >(
-        (harn.nucl().serial(), harn.repo(), harn.prom()),
+    usecase::chapter::delete::delete::<_, RdbContext<Serial>, HybRepo, _>(
+        (harn.nucl().serial(), harn.repo(), harn.obj_dept()),
         user_token,
         chapter_id,
     )

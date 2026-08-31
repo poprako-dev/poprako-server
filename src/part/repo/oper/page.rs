@@ -2,9 +2,7 @@ use poprako_orchestra::Oper;
 
 use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::unit::UnitCountMetrics;
-use crate::model::write::page::{
-    PageEntry, PageImageRepl, PageImageReservation, PageManifestRepl,
-};
+use crate::model::write::page::{PageEntry, PageManifestEntry};
 
 /// Retrieves a single page's info by ID.
 #[derive(Oper)]
@@ -62,47 +60,12 @@ pub struct ShiftPageIndexesTemporary<'a> {
     pub chapter_id: &'a str,
 }
 
-/// Updates one retained page to its final manifest identity and position.
+/// Applies the complete final page manifest in one typed batch upsert.
 #[derive(Oper)]
-#[oper(output = PageInfo)]
-pub struct UpdatePageManifest<'a> {
-    /// The manifest update payload.
-    pub update: &'a PageManifestRepl,
-}
-
-/// Invalidates all page image keys after chapter publication.
-#[derive(Oper)]
-#[oper(output = Vec<String>)]
-pub struct ClearPageImagesForPublish<'a> {
-    /// The chapter ID whose images to clear.
-    pub chapter_id: &'a str,
-}
-
-/// Reserves an image slot for a page.
-#[derive(Oper)]
-#[oper(output = PageImageReservation)]
-pub struct ReservePageImage<'a> {
-    //
-    /// The page ID.
-    pub id: &'a str,
-    /// The file extension for the image.
-    pub file_ext: &'a str,
-}
-
-/// Marks a page image as uploaded.
-#[derive(Oper)]
-#[oper(output = ())]
-pub struct MarkPageImageUploaded<'a> {
-    /// The replacement payload.
-    pub repl: &'a PageImageRepl,
-}
-
-/// Sets one page image's verified upload state for its current identity.
-#[derive(Oper)]
-#[oper(output = ())]
-pub struct SetPageImageUploaded<'a> {
-    /// The replacement payload.
-    pub repl: &'a PageImageRepl,
+#[oper(output = Vec<PageInfo>)]
+pub struct ApplyPageManifest<'a> {
+    /// Final manifest entries in request order.
+    pub entries: &'a [PageManifestEntry],
 }
 
 /// Sets the unit counters for a page.

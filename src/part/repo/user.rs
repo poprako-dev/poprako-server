@@ -4,7 +4,7 @@ use poprako_orchestra::drive;
 
 use crate::part::repo::oper::user::{
     CreateUser, DeleteUser, FindUserInfo, GetUserCredential, GetUserInfo,
-    GetUserInfoExcluded, ReserveUserAvatar, UpdateUser,
+    GetUserInfoExcluded, UpdateUser,
 };
 use crate::result::BaseError;
 
@@ -25,7 +25,6 @@ use crate::result::BaseError;
         for<'a> CreateUser<'a>,
         for<'a> FindUserInfo<'a>,
         for<'a> UpdateUser<'a>,
-        for<'a> ReserveUserAvatar<'a>,
         for<'a> GetUserInfoExcluded<'a>,
         for<'a> DeleteUser<'a>,
     ),

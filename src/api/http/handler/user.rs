@@ -17,14 +17,13 @@ use crate::api::http::result::{
 };
 use crate::api::http::state::AppHarn;
 use crate::data::instr::user::{
-    MarkUserAvatarUploadedInstr, ReserveUserAvatarInstr, UpdateUserInfoInstr,
+    AllocUserAvatarInstr, MarkUserAvatarUploadedInstr, UpdateUserInfoInstr,
     UpdateUserPasswordInstr,
 };
-use crate::data::val::user::ReserveUserAvatarVal;
+use crate::data::val::user::AllocUserAvatarVal;
 use crate::data::view::user::UserInfoView;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::{ReptRead, Serial};
-use crate::part_impl::prom::rdb_impl::RdbProm;
 use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
 use crate::usecase;
@@ -48,7 +47,7 @@ pub async fn get_my_info(
     let id = user_token.user_id.clone();
 
     usecase::user::get_info::<RdbContext<ReptRead>, HybRepo, _, _>(
-        (harn.repo(), harn.image_pool(), harn.develop()),
+        (harn.repo(), harn.obj_dept(), harn.develop()),
         user_token,
         id,
     )
@@ -76,7 +75,7 @@ pub async fn get_info(
 ) -> HttpResult<UserInfoView> {
     //
     usecase::user::get_info::<RdbContext<ReptRead>, HybRepo, _, _>(
-        (harn.repo(), harn.image_pool(), harn.develop()),
+        (harn.repo(), harn.obj_dept(), harn.develop()),
         token,
         user_id,
     )
@@ -170,8 +169,8 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::user::delete::delete::<_, RdbContext<Serial>, HybRepo, RdbProm>(
-        (harn.nucl().serial(), harn.repo(), harn.prom()),
+    usecase::user::delete::delete::<_, RdbContext<Serial>, HybRepo, _>(
+        (harn.nucl().serial(), harn.repo(), harn.obj_dept()),
         user_token,
         user_id,
     )
@@ -180,40 +179,33 @@ pub async fn delete(
     no_content()
 }
 
-/// `POST /api/v1/users/{user_id}/avatar/reserve` — reserve an avatar upload slot.
+/// `POST /api/v1/users/{user_id}/avatar/alloc` — allocate an avatar upload slot.
 #[cfg_attr(feature = "swagger", utoipa::path(
     post,
-    path = "/api/v1/users/{user_id}/avatar/reserve",
+    path = "/api/v1/users/{user_id}/avatar/alloc",
     tag = "users",
     params(("user_id" = String, Path, description = "Target user ID (must match authenticated user)")),
-    request_body = ReserveUserAvatarInstr,
+    request_body = AllocUserAvatarInstr,
     responses(
-        (status = 200, description = "Avatar upload URL reserved", body = HttpBody<ReserveUserAvatarVal>),
+        (status = 200, description = "Avatar upload URL allocated", body = HttpBody<AllocUserAvatarVal>),
         (status = 403, description = "Cannot modify another user's avatar"),
     ),
 ))]
 #[instrument(level = "info", skip_all)]
-pub async fn reserve_avatar(
+pub async fn alloc_avatar(
     State(harn): State<AppHarn>,
     Path(user_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(instr): Json<ReserveUserAvatarInstr>,
-) -> HttpResult<ReserveUserAvatarVal> {
+    Json(instr): Json<AllocUserAvatarInstr>,
+) -> HttpResult<AllocUserAvatarVal> {
     //
     ensure_current_user(&user_id, &user_token)?;
 
-    usecase::user::reserve_avatar::<
-        _,
-        RdbContext<ReptRead>,
-        HybRepo,
-        RdbProm,
-        _,
-    >(
+    usecase::user::alloc_avatar::<_, RdbContext<ReptRead>, HybRepo, _>(
         (
             harn.nucl().rept_read(),
             harn.repo(),
-            harn.prom(),
-            harn.image_pool(),
+            harn.obj_dept(),
             &harn.config().image,
         ),
         user_token,
@@ -243,8 +235,8 @@ pub async fn mark_avatar_uploaded(
     Json(instr): Json<MarkUserAvatarUploadedInstr>,
 ) -> HttpNoContent {
     //
-    usecase::user::mark_avatar_uploaded::<_, RdbContext<ReptRead>, HybRepo, _>(
-        (harn.nucl().rept_read(), harn.repo(), harn.image_pool()),
+    usecase::user::mark_avatar_uploaded::<RdbContext, _>(
+        (harn.obj_dept(),),
         user_token,
         user_id,
         instr,

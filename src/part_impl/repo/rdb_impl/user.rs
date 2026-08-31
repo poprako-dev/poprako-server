@@ -2,8 +2,6 @@
 
 // Account creation, credentials, activity, and deletion.
 mod account;
-// Avatar reservation and upload state.
-mod avatar;
 // Profile reads, locks, and updates.
 mod info;
 
@@ -15,19 +13,15 @@ use poprako_orchestra::{AtLeast, Level, Run, Step};
 use tracing::instrument;
 
 use crate::model::read::proj::user::{UserCredential, UserInfo};
-use crate::model::write::user::UserAvatarReservation;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::user::{
     CreateUser, DeleteUser, FindUserInfo, GetUserCredential, GetUserInfo,
-    GetUserInfoExcluded, ReserveUserAvatar, UpdateUser,
+    GetUserInfoExcluded, UpdateUser,
 };
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::user::account::{
     create, delete, get_credential_by_qid, touch_last_active,
     update_password_hash,
-};
-use crate::part_impl::repo::rdb_impl::user::avatar::{
-    mark_avatar_uploaded, reserve_avatar,
 };
 use crate::part_impl::repo::rdb_impl::user::info::{
     find_info_by_qid, get_info_by_id, get_info_by_id_excluded, update_info,
@@ -117,18 +111,6 @@ impl Run<UpdateUser<'_>> for HybRepo {
                 submit_query!(self.core, update_info, repl)
             }
 
-            UpdateUser::MarkAvatarUploaded { repl } => {
-                //
-                submit_query!(
-                    self.core,
-                    mark_avatar_uploaded,
-                    &repl.id,
-                    repl.avatar_version,
-                    repl.avatar_key.as_deref(),
-                    repl.is_avatar_uploaded
-                )
-            }
-
             UpdateUser::PasswordHash { repl } => {
                 submit_query!(self.core, update_password_hash, repl)
             }
@@ -208,18 +190,6 @@ where
                 update_info(context.conn(), repl).await
             }
 
-            UpdateUser::MarkAvatarUploaded { repl } => {
-                //
-                mark_avatar_uploaded(
-                    context.conn(),
-                    &repl.id,
-                    repl.avatar_version,
-                    repl.avatar_key.as_deref(),
-                    repl.is_avatar_uploaded,
-                )
-                .await
-            }
-
             UpdateUser::TouchLastActive { id } => {
                 touch_last_active(context.conn(), id).await
             }
@@ -228,29 +198,6 @@ where
                 update_password_hash(context.conn(), repl).await
             }
         }
-    }
-}
-
-impl<L> Step<ReserveUserAvatar<'_>, RdbContext<L>> for HybRepo
-where
-    L: Level + Send + AtLeast<ReptRead>,
-{
-    // Keep transaction-scoped reservation on one repository error type.
-    type Level = ReptRead;
-
-    // Defines the adapter error exposed by this operation.
-    type Error = BaseError;
-
-    // Reserve avatar key/version atomically inside the current transaction.
-    #[instrument(level = "info", skip_all)]
-    async fn step(
-        &self,
-        context: &mut RdbContext<L>,
-        oper: &ReserveUserAvatar<'_>,
-    ) -> BaseRest<UserAvatarReservation> {
-        //
-        reserve_avatar(context.conn(), oper.id, oper.image_hash, oper.image_ext)
-            .await
     }
 }
 

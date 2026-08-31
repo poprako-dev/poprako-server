@@ -173,7 +173,7 @@ pub async fn join(
         HybRepo,
         _,
     >(
-        (harn.nucl().rept_read(), harn.repo(), harn.image_pool()),
+        (harn.nucl().rept_read(), harn.repo(), harn.obj_dept()),
         user_token,
         instr,
     )

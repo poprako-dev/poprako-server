@@ -108,7 +108,7 @@ pub async fn list_infos(
     };
 
     usecase::announcement::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
-        (harn.repo(), harn.image_pool()),
+        (harn.repo(), harn.obj_dept()),
         user_token,
         instr,
     )

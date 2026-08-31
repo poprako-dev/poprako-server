@@ -18,13 +18,11 @@ use crate::model::read::proj::user::{UserCredential, UserInfo};
 use crate::model::read::proj::workset::WorksetInfo;
 use crate::model::shared::unit::UnitCoord;
 use crate::model::shared::user::UserToken;
-use crate::part::prom::payload::TaskPayload;
-use crate::part::prom::payload::image::ImagePayload;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
-use crate::value::chapter::{Stage, StageMask, StagePhase};
-use crate::value::image::{ImageExt, ImageHash};
+use crate::value::chapter::mask::StageMask;
+use crate::value::chapter::stage::{Stage, StagePhase};
 use crate::value::role::{RoleField, RoleMask};
 
 fn seed_archive_scope(mock: &Mock, member_roles: RoleMask) {
@@ -41,11 +39,6 @@ fn seed_archive_scope(mock: &Mock, member_roles: RoleMask) {
             id: "user-1".into(),
             qid: "qid-user-1".into(),
             nickname: "archiver".into(),
-            avatar_key: Some("avatars/user-1.png".into()),
-            is_avatar_uploaded: Some(true),
-            avatar_version: Some(3),
-            avatar_hash: Some(ImageHash::default()),
-            avatar_ext: Some(ImageExt::Png),
             is_sadmin: false,
             last_active_at: archived_at,
             created_at: archived_at,
@@ -86,11 +79,6 @@ fn seed_archive_scope(mock: &Mock, member_roles: RoleMask) {
         title: "comic title".into(),
         author: "comic author".into(),
         description: Some("comic description".into()),
-        cover_key: Some("covers/reserved.png".into()),
-        is_cover_uploaded: Some(false),
-        cover_version: Some(5),
-        cover_hash: Some(ImageHash::default()),
-        cover_ext: Some(ImageExt::Png),
         chapter_count: 1,
         creator_id: "user-1".into(),
         workset: None,
@@ -147,11 +135,6 @@ fn seed_archive_scope(mock: &Mock, member_roles: RoleMask) {
         id: "page-1".into(),
         chapter_id: "chapter-1".into(),
         index: 0,
-        image_key: Some("pages/reserved.png".into()),
-        is_image_uploaded: Some(false),
-        image_version: Some(4),
-        image_hash: Some(ImageHash::new([0u8; 32])),
-        image_ext: Some(ImageExt::Webp),
         total_unit_count: 1,
         translated_unit_count: 1,
         proofread_unit_count: 1,
@@ -183,122 +166,6 @@ fn token() -> UserToken {
     UserToken {
         user_id: "user-1".into(),
     }
-}
-
-#[tokio::test]
-async fn archive_retains_comic_marker_queues_images_and_deletes_children() {
-    //
-    let mock = Mock::new();
-
-    seed_archive_scope(&mock, RoleMask::from(RoleField::ADMIN));
-
-    let archive_comic_val =
-        archive((&mock, &mock, &mock), token(), "comic-1".into())
-            .await
-            .unwrap();
-
-    let snapshot = mock.snapshot();
-
-    assert_ne!(archive_comic_val.archived_id, "comic-1");
-
-    assert_eq!(snapshot.comics.len(), 1);
-
-    assert_eq!(snapshot.comics[0].id, "comic-1");
-
-    assert!(snapshot.comics[0].archived_at.is_some());
-
-    assert_eq!(snapshot.comics[0].cover_key, None);
-
-    assert_eq!(snapshot.comics[0].is_cover_uploaded, None);
-
-    assert!(snapshot.chapters.is_empty());
-
-    assert!(snapshot.assignments.is_empty());
-
-    assert!(snapshot.assignment_invitations.is_empty());
-
-    assert!(snapshot.pages.is_empty());
-
-    assert!(snapshot.units.is_empty());
-
-    assert_eq!(snapshot.worksets[0].comic_count, 7);
-
-    assert_eq!(snapshot.comic_archives.len(), 1);
-
-    assert_eq!(snapshot.comic_archives[0].team_id, "team-1");
-
-    assert_eq!(snapshot.comic_archives[0].source_comic_id, "comic-1");
-
-    assert_eq!(snapshot.comic_archives[0].archiver_id, "user-1");
-
-    let archived_comic_payload: serde_json::Value =
-        serde_json::from_str(&snapshot.comic_archives[0].archived_payload)
-            .unwrap();
-
-    assert_eq!(archived_comic_payload["source_comic_id"], "comic-1");
-
-    assert_eq!(archived_comic_payload["workset"]["id"], "workset-1");
-
-    assert_eq!(
-        archived_comic_payload["chapters"].as_array().unwrap().len(),
-        1
-    );
-
-    assert_eq!(
-        archived_comic_payload["chapters"][0]["source_chapter_id"],
-        "chapter-1"
-    );
-
-    assert_eq!(
-        archived_comic_payload["chapters"][0]["assignments"]
-            .as_array()
-            .unwrap()
-            .len(),
-        1
-    );
-
-    assert_eq!(
-        archived_comic_payload["chapters"][0]["assignments"][0]["user"]["nickname"],
-        "archiver"
-    );
-
-    assert_eq!(
-        archived_comic_payload["chapters"][0]["pages"]
-            .as_array()
-            .unwrap()
-            .len(),
-        1
-    );
-
-    assert_eq!(
-        archived_comic_payload["chapters"][0]["pages"][0]["source_page_id"],
-        "page-1"
-    );
-
-    assert_eq!(
-        archived_comic_payload["chapters"][0]["pages"][0]["units"][0]["source_unit_id"],
-        "unit-1"
-    );
-
-    let mut deleted_image_keys = snapshot
-        .prom_records
-        .iter()
-        .filter_map(|prom_record| match prom_record.payload() {
-            //
-            TaskPayload::Image {
-                payload: ImagePayload::Delete { object_key },
-            } => Some(object_key),
-
-            _ => None,
-        })
-        .collect::<Vec<_>>();
-
-    deleted_image_keys.sort();
-
-    assert_eq!(
-        deleted_image_keys,
-        vec!["covers/reserved.png", "pages/reserved.png"]
-    );
 }
 
 #[tokio::test]

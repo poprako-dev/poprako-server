@@ -10,6 +10,7 @@ pub trait ToUnixMilli {
 }
 
 impl ToUnixMilli for OffsetDateTime {
+    // Converts this timestamp with millisecond precision.
     fn to_unix_milli(&self) -> i64 {
         self.unix_timestamp() * 1000 + i64::from(self.nanosecond() / 1_000_000)
     }

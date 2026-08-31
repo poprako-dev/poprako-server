@@ -2,8 +2,6 @@
 
 use time::OffsetDateTime;
 
-use crate::value::image::{ImageExt, ImageHash};
-
 /// A userprofile record as stored in the database.
 ///
 /// Carries raw [`OffsetDateTime`] timestamps; convert to [`UserInfoView`] for
@@ -21,17 +19,6 @@ pub struct UserInfo {
     pub qid: String,
     /// Display name shown throughout the application.
     pub nickname: String,
-
-    /// Object-storage key for the uploaded avatar image, absent when no avatar is set.
-    pub avatar_key: Option<String>,
-    /// Whether the reserved avatar upload has been completed, if an avatar exists.
-    pub is_avatar_uploaded: Option<bool>,
-    /// Monotonically increasing version number for cache-busting the avatar URL.
-    pub avatar_version: Option<u32>,
-    /// SHA-256 identity of the reserved avatar content.
-    pub avatar_hash: Option<ImageHash>,
-    /// File format persisted with the avatar identity.
-    pub avatar_ext: Option<ImageExt>,
 
     /// Whether this user has super-administrator privileges.
     pub is_sadmin: bool,

@@ -1,8 +1,9 @@
 //! Team row locking and workset-index allocation boundary.
 
+use poprako_rdb_core::RdbConn;
+
 use crate::part_impl::repo::rdb_impl::team::info;
 use crate::result::BaseRest;
-use crate::shared::RdbConn;
 
 /// Lock a team row for coordinated mutation.
 pub async fn lock_team(conn: &mut RdbConn, id: &str) -> BaseRest<()> {

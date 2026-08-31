@@ -10,13 +10,12 @@ use diesel::{AsChangeset, Insertable, Queryable, Selectable};
 use time::OffsetDateTime;
 
 use crate::model::read::proj::page::PageInfo;
-use crate::model::write::page::PageEntry;
+use crate::model::write::page::{PageEntry, PageManifestEntry};
 use crate::part_impl::repo::rdb_impl::numeric::{
     i32_from_usize, usize_from_i32,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_page;
 use crate::result::BaseError;
-use crate::value::image::{ImageExt, ImageHash};
 
 /// Raw database row for the `t_page` table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
@@ -27,12 +26,6 @@ pub struct PageInfoRow {
 
     pub f_chapter_id: String,
     pub f_index: i32,
-
-    pub f_image_key: Option<String>,
-    pub f_image_uploaded: Option<bool>,
-    pub f_image_version: Option<i64>,
-    pub f_image_hash: Option<Vec<u8>>,
-    pub f_image_extension: Option<String>,
 
     pub f_total_unit_count: i32,
     pub f_translated_unit_count: i32,
@@ -48,85 +41,10 @@ impl TryFrom<PageInfoRow> for PageInfo {
 
     fn try_from(row: PageInfoRow) -> Result<Self, Self::Error> {
         //
-        let (
-            image_key,
-            is_image_uploaded,
-            image_version,
-            image_hash,
-            image_ext,
-        ) = match (
-            row.f_image_key,
-            row.f_image_uploaded,
-            row.f_image_version,
-            row.f_image_hash,
-            row.f_image_extension,
-        ) {
-            //
-            (None, None, None, None, None) => (None, None, None, None, None),
-
-            (
-                Some(image_key),
-                Some(is_image_uploaded),
-                Some(image_version),
-                Some(image_hash),
-                Some(image_ext),
-            ) => {
-                //
-                let image_version =
-                    u32::try_from(image_version).map_err(|_| {
-                        //
-                        BaseError::Unrecoverable {
-                        message:
-                            "[PageInfoRow] f_image_version must be non-negative"
-                                .into(),
-                    }
-                    })?;
-
-                let image_hash = image_hash.try_into().map_err(|_| {
-                    //
-                    BaseError::Unrecoverable {
-                        message:
-                            "[PageInfoRow] f_image_hash must contain 32 bytes"
-                                .into(),
-                    }
-                })?;
-
-                let image_ext =
-                    ImageExt::parse(&image_ext).ok_or_else(|| {
-                        //
-                        BaseError::Unrecoverable {
-                        message:
-                            "[PageInfoRow] f_image_extension must be supported"
-                                .into(),
-                    }
-                    })?;
-
-                (
-                    Some(image_key),
-                    Some(is_image_uploaded),
-                    Some(image_version),
-                    Some(ImageHash::new(image_hash)),
-                    Some(image_ext),
-                )
-            }
-
-            _ => {
-                //
-                return Err(BaseError::Unrecoverable {
-                        message: "[PageInfoRow] image fields must be all null or all present".into(),
-                    });
-            }
-        };
-
         Ok(Self {
             id: row.f_id,
             chapter_id: row.f_chapter_id,
             index: usize_from_i32(row.f_index, "t_page.f_index")?,
-            image_key,
-            is_image_uploaded,
-            image_version,
-            image_hash,
-            image_ext,
             total_unit_count: usize_from_i32(
                 row.f_total_unit_count,
                 "t_page.f_total_unit_count",
@@ -155,12 +73,6 @@ pub struct PageEntryRow<'a> {
     pub f_chapter_id: &'a str,
     pub f_index: i32,
 
-    pub f_image_key: Option<&'a str>,
-    pub f_image_uploaded: Option<bool>,
-    pub f_image_version: i64,
-    pub f_image_hash: Vec<u8>,
-    pub f_image_extension: &'a str,
-
     pub f_created_at: OffsetDateTime,
     pub f_updated_at: OffsetDateTime,
 }
@@ -173,24 +85,27 @@ impl<'a> TryFrom<&'a PageEntry> for PageEntryRow<'a> {
         //
         let now = OffsetDateTime::now_utc();
 
-        let image_key = entry.image_key.as_deref().ok_or_else(|| {
-            //
-            BaseError::Unrecoverable {
-                message:
-                    "[PageEntryRow] image key is required for page creation"
-                        .into(),
-            }
-        })?;
+        Ok(Self {
+            f_id: &entry.id,
+            f_chapter_id: &entry.chapter_id,
+            f_index: i32_from_usize(entry.index, "t_page.f_index")?,
+            f_created_at: now,
+            f_updated_at: now,
+        })
+    }
+}
+
+impl<'a> TryFrom<&'a PageManifestEntry> for PageEntryRow<'a> {
+    type Error = BaseError;
+
+    fn try_from(entry: &'a PageManifestEntry) -> Result<Self, Self::Error> {
+        //
+        let now = OffsetDateTime::now_utc();
 
         Ok(Self {
             f_id: &entry.id,
             f_chapter_id: &entry.chapter_id,
             f_index: i32_from_usize(entry.index, "t_page.f_index")?,
-            f_image_key: Some(image_key),
-            f_image_uploaded: Some(false),
-            f_image_version: i64::from(entry.image_version),
-            f_image_hash: entry.image_hash.bytes().to_vec(),
-            f_image_extension: entry.image_ext.suffix(),
             f_created_at: now,
             f_updated_at: now,
         })
@@ -200,15 +115,9 @@ impl<'a> TryFrom<&'a PageEntry> for PageEntryRow<'a> {
 /// Aspect struct for updating specific fields of a page record identified by id.
 #[derive(AsChangeset)]
 #[diesel(table_name = t_page)]
-pub struct PageAspectRow<'a> {
+pub struct PageAspectRow {
     //
     pub f_index: Option<i32>,
-    pub f_image_key: Option<Option<&'a str>>,
-    pub f_image_uploaded: Option<bool>,
-    pub f_image_version: Option<i64>,
-    pub f_image_hash: Option<&'a [u8]>,
-    pub f_image_extension: Option<&'a str>,
-
     pub f_total_unit_count: Option<i32>,
     pub f_translated_unit_count: Option<i32>,
     pub f_proofread_unit_count: Option<i32>,
@@ -216,16 +125,11 @@ pub struct PageAspectRow<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
-impl<'a> PageAspectRow<'a> {
+impl PageAspectRow {
     pub const fn new(updated_at: OffsetDateTime) -> Self {
         //
         Self {
             f_index: None,
-            f_image_key: None,
-            f_image_uploaded: None,
-            f_image_version: None,
-            f_image_hash: None,
-            f_image_extension: None,
             f_total_unit_count: None,
             f_translated_unit_count: None,
             f_proofread_unit_count: None,
@@ -236,27 +140,6 @@ impl<'a> PageAspectRow<'a> {
     pub const fn index(mut self, val: i32) -> Self {
         //
         self.f_index = Some(val);
-
-        self
-    }
-
-    pub const fn image_key(mut self, val: Option<&'a str>) -> Self {
-        //
-        self.f_image_key = Some(val);
-
-        self
-    }
-
-    pub const fn image_uploaded(mut self, val: bool) -> Self {
-        //
-        self.f_image_uploaded = Some(val);
-
-        self
-    }
-
-    pub fn image_version(mut self, val: u32) -> Self {
-        //
-        self.f_image_version = Some(i64::from(val));
 
         self
     }

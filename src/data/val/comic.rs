@@ -4,9 +4,6 @@
 //! presentation-ready values for the comic aggregate.
 //!
 //! Timestamps are converted to Unix milliseconds for JSON serialisation.
-//! Cover URLs are resolved from object-storage keys via [`ImagePool`].
-//!
-//! [`ImagePool`]: crate::part::image::ImagePool
 
 use serde::Serialize;
 
@@ -15,10 +12,10 @@ use utoipa::ToSchema;
 
 use crate::data::view::image::ImageUploadSlotView;
 
-/// Comic cover upload reservation response.
+/// Comic cover upload allocation response.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
-pub struct ReserveComicCoverVal {
+pub struct AllocComicCoverVal {
     /// Upload capability, absent when this cover is already uploaded.
     pub slot: Option<ImageUploadSlotView>,
 }

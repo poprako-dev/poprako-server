@@ -11,7 +11,7 @@ use utoipa::ToSchema;
 use poprako_util::time::ToUnixMilli as _;
 
 use crate::model::read::proj::chapter_workflow_record::ChapterWorkflowRecordInfo;
-use crate::value::chapter::{Stage, StagePhase};
+use crate::value::chapter::stage::{Stage, StagePhase};
 use crate::value::chapter_port::{ExportFormatSpec, TranslationFormat};
 use crate::value::chapter_workflow_record::{
     ChapterWorkflowRecordOrigin, ChapterWorkflowRecordPayload,

@@ -1,8 +1,7 @@
 //! Chapter workflow stages, phases, and transition rules.
 
-// Stage-phase bitmask helpers.
-mod mask;
-
+/// Stage-phase bitmask helpers.
+pub mod mask;
 /// Workflow stage, phase, and transition rules.
 pub mod stage;
 
@@ -16,9 +15,6 @@ use serde::Deserialize;
 use utoipa::ToSchema;
 
 use crate::value::incl::InclOpt;
-
-pub use crate::value::chapter::mask::StageMask;
-pub use crate::value::chapter::stage::{Stage, StageOper, StagePhase};
 
 /// Incl opts for chapter info queries.
 ///

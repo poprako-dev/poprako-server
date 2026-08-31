@@ -6,6 +6,7 @@ use diesel::prelude::{ExpressionMethods as _, QueryDsl as _};
 use diesel_async::RunQueryDsl as _;
 use tracing::instrument;
 
+use poprako_rdb_core::RdbConn;
 use poprako_util::i18n::trl;
 
 use crate::model::read::proj::unit::{UnitCountMetrics, UnitInfo, UnitOrder};
@@ -18,7 +19,6 @@ use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{
 };
 use crate::part_impl::repo::rdb_impl::unit::sequence::list_infos;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::shared::RdbConn;
 use crate::shared::result::diesel;
 use crate::util::Patch;
 use crate::value::unit::MAX_PAGE_UNIT_COUNT;

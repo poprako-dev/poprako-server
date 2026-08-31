@@ -6,9 +6,9 @@
 //! Convert to [`ChapterInfoView`] for presentation.
 //!
 //! [`ChapterInfoView`]: crate::data::view::chapter::ChapterInfoView
-//! [`StagePhase`]: crate::value::chapter::StagePhase
+//! [`StagePhase`]: crate::value::chapter::stage::StagePhase
 
-use crate::value::chapter::StageMask;
+use crate::value::chapter::mask::StageMask;
 
 /// The data needed to insert a new chapter row.
 ///

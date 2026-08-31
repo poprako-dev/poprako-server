@@ -18,6 +18,6 @@ cargo fmt --all --check
 sh scripts/check-rust-lines.sh
 sh scripts/test-deployment-scripts.sh
 cargo check --workspace --all-targets --all-features
+# Lint every workspace member, target, and enabled feature.
+cargo clippy --workspace --all-targets --all-features -- -D warnings
 sh linters-extra/run-check.sh
-# Lint production library and binary targets; tests and benchmarks are compile-checked above.
-cargo clippy --workspace --features rdb,prom_impl,repo_impl,swagger --lib --bins -- -D warnings

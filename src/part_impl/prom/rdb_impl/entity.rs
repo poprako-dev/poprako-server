@@ -77,7 +77,7 @@ impl<'a> LocalMessageEntryRow<'a> {
         now: OffsetDateTime,
     ) -> BaseRest<Self> {
         //
-        let f_payload =
+        let payload =
             serde_json::to_value(task.payload).map_err(|err_serde| {
                 //
                 tracing::error!(
@@ -100,7 +100,7 @@ impl<'a> LocalMessageEntryRow<'a> {
                     .to_string(),
             })?;
 
-        let f_visible_at =
+        let visible_at =
             now.checked_add(delay)
                 .ok_or_else(|| BaseError::Unrecoverable {
                     message:
@@ -112,8 +112,8 @@ impl<'a> LocalMessageEntryRow<'a> {
             f_id: task.id.as_ref(),
             f_topic: task.payload.topic(),
             f_status: LocalMessageStatus::Pending,
-            f_payload,
-            f_visible_at,
+            f_payload: payload,
+            f_visible_at: visible_at,
             f_created_at: now,
             f_updated_at: now,
         })

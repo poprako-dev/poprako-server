@@ -1,13 +1,12 @@
 //! Async background dispatcher for side-effect events.
 
-// Chapter event handlers.
+// Chapter event actors.
 mod chapter;
 // Event dispatch logic.
 mod dispatch;
-// Background event handler runner.
-// TODO: refactor to Actor
-mod handler;
-// User event handlers.
+// Background event actor runner.
+mod actor;
+// User event actors.
 mod user;
 
 #[cfg(test)]
@@ -24,8 +23,8 @@ use tokio::sync::watch;
 use tokio_util::sync::CancellationToken;
 use tracing::instrument;
 
+use crate::part::effect::Develop;
 use crate::part::effect::event::Event;
-use crate::part::effect::{Develop, EffectEvent};
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::system_mail::SystemMailRepo;
@@ -34,8 +33,8 @@ use crate::part::repo::user::UserRepo;
 
 /// Async side-effect dispatcher backed by a bounded channel.
 ///
-/// Spawns a background handler on construction that drains the queue and
-/// dispatches each event to the appropriate domain handler. Use
+/// Spawns a background actor on construction that drains the queue and
+/// dispatches each event to the appropriate domain actor. Use
 /// [`close`](AsyncEffectDevelop::close) before dropping to drain pending
 /// events gracefully.
 pub struct AsyncEffectDevelop {
@@ -69,13 +68,12 @@ impl AsyncEffectDevelop {
 
         let (done_send, done) = watch::channel(false);
 
-        let handler =
-            handler::EffectHandler::<R>::new(repo, recv, token.clone());
+        let actor = actor::EffectActor::<R>::new(repo, recv, token.clone());
 
         tokio::spawn(async move {
             //
             // Internal implementation detail.
-            handler.run().await;
+            actor.run().await;
 
             done_send.send_replace(true);
         });
@@ -117,15 +115,13 @@ impl Clone for AsyncEffectDevelop {
 impl Develop for AsyncEffectDevelop {
     // Internal implementation of `develop`.
     #[instrument(level = "info", skip_all)]
-    async fn develop<I>(&self, iter: I)
-    where
-        I: EffectEvent + Send,
-    {
+    async fn develop(&self, events: Vec<Event>) {
+        //
         if self.token.is_cancelled() {
             return;
         }
 
-        for event in iter.into_iter() {
+        for event in events {
             //
             if let Err(e) = self.send.try_send(event) {
                 //

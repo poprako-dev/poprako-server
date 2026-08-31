@@ -15,14 +15,13 @@ use crate::api::http::result::{
 };
 use crate::api::http::state::AppHarn;
 use crate::data::instr::team::{
-    CreateTeamInstr, ListTeamInfosInstr, MarkTeamAvatarUploadedInstr,
-    ReserveTeamAvatarInstr, UpdateTeamInfoInstr,
+    AllocTeamAvatarInstr, CreateTeamInstr, ListTeamInfosInstr,
+    MarkTeamAvatarUploadedInstr, UpdateTeamInfoInstr,
 };
-use crate::data::val::team::ReserveTeamAvatarVal;
+use crate::data::val::team::AllocTeamAvatarVal;
 use crate::data::view::team::TeamInfoView;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::{ReptRead, Serial};
-use crate::part_impl::prom::rdb_impl::RdbProm;
 use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
 use crate::usecase;
@@ -47,7 +46,7 @@ pub async fn create(
 ) -> HttpResult<TeamInfoView> {
     //
     usecase::team::create::<_, RdbContext<ReptRead>, HybRepo, _>(
-        (harn.nucl().rept_read(), harn.repo(), harn.image_pool()),
+        (harn.nucl().rept_read(), harn.repo(), harn.obj_dept()),
         user_token,
         instr,
     )
@@ -76,7 +75,7 @@ pub async fn list_infos(
 ) -> HttpResult<Vec<TeamInfoView>> {
     //
     usecase::team::read::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
-        (harn.repo(), harn.image_pool()),
+        (harn.repo(), harn.obj_dept()),
         user_token,
         instr,
     )
@@ -159,7 +158,7 @@ pub async fn get_info(
 ) -> HttpResult<TeamInfoView> {
     //
     usecase::team::read::get_info::<RdbContext<ReptRead>, HybRepo, _>(
-        (harn.repo(), harn.image_pool()),
+        (harn.repo(), harn.obj_dept()),
         team_id,
     )
     .await?
@@ -200,39 +199,32 @@ pub async fn update_info(
     no_content()
 }
 
-/// `POST /api/v1/teams/{team_id}/avatar/reserve` — reserve a team avatar upload slot.
+/// `POST /api/v1/teams/{team_id}/avatar/alloc` — allocate a team avatar upload slot.
 #[cfg_attr(feature = "swagger", utoipa::path(
     post,
-    path = "/api/v1/teams/{team_id}/avatar/reserve",
+    path = "/api/v1/teams/{team_id}/avatar/alloc",
     tag = "teams",
     params(("team_id" = String, Path, description = "Team ID")),
-    request_body = ReserveTeamAvatarInstr,
+    request_body = AllocTeamAvatarInstr,
     responses(
-        (status = 200, description = "Avatar upload URL reserved", body = HttpBody<ReserveTeamAvatarVal>),
+        (status = 200, description = "Avatar upload URL allocated", body = HttpBody<AllocTeamAvatarVal>),
         (status = 403, description = "No perm to modify this team's avatar"),
         (status = 404, description = "Team not found"),
     ),
 ))]
 #[instrument(level = "info", skip_all)]
-pub async fn reserve_avatar(
+pub async fn alloc_avatar(
     State(harn): State<AppHarn>,
     Path(team_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(instr): Json<ReserveTeamAvatarInstr>,
-) -> HttpResult<ReserveTeamAvatarVal> {
+    Json(instr): Json<AllocTeamAvatarInstr>,
+) -> HttpResult<AllocTeamAvatarVal> {
     //
-    usecase::team::reserve_avatar::<
-        _,
-        RdbContext<ReptRead>,
-        HybRepo,
-        RdbProm,
-        _,
-    >(
+    usecase::team::alloc_avatar::<_, RdbContext<ReptRead>, HybRepo, _>(
         (
             harn.nucl().rept_read(),
             harn.repo(),
-            harn.prom(),
-            harn.image_pool(),
+            harn.obj_dept(),
             &harn.config().image,
         ),
         user_token,
@@ -264,8 +256,8 @@ pub async fn mark_avatar_uploaded(
     Json(instr): Json<MarkTeamAvatarUploadedInstr>,
 ) -> HttpNoContent {
     //
-    usecase::team::mark_avatar_uploaded::<_, RdbContext<ReptRead>, HybRepo, _>(
-        (harn.nucl().rept_read(), harn.repo(), harn.image_pool()),
+    usecase::team::mark_avatar_uploaded::<RdbContext<ReptRead>, HybRepo, _>(
+        (harn.repo(), harn.obj_dept()),
         user_token,
         team_id,
         instr,
@@ -294,8 +286,8 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::team::delete::delete::<_, RdbContext<Serial>, HybRepo, RdbProm>(
-        (harn.nucl().serial(), harn.repo(), harn.prom()),
+    usecase::team::delete::delete::<_, RdbContext<Serial>, HybRepo, _>(
+        (harn.nucl().serial(), harn.repo(), harn.obj_dept()),
         user_token,
         team_id,
     )

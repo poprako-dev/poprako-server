@@ -107,7 +107,7 @@ pub async fn list_infos(
 ) -> HttpResult<Vec<MemberInfoView>> {
     //
     usecase::member::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
-        (harn.repo(), harn.image_pool()),
+        (harn.repo(), harn.obj_dept()),
         user_token,
         instr,
     )
@@ -144,7 +144,7 @@ pub async fn list_my_infos(
     };
 
     usecase::member::list_infos::<RdbContext<ReptRead>, HybRepo, _>(
-        (harn.repo(), harn.image_pool()),
+        (harn.repo(), harn.obj_dept()),
         user_token,
         instr,
     )
@@ -237,7 +237,7 @@ pub async fn join(
 ) -> HttpResult<MemberInfoView> {
     //
     usecase::member::join_team::<_, RdbContext<ReptRead>, HybRepo, _>(
-        (harn.nucl().rept_read(), harn.repo(), harn.image_pool()),
+        (harn.nucl().rept_read(), harn.repo(), harn.obj_dept()),
         user_token,
         instr,
     )

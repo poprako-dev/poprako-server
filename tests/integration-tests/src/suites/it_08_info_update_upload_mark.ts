@@ -82,7 +82,14 @@ export async function runIt08Module(ctx: RunCtx): Promise<void> {
 
     const teamAfterAvatar = await getTeam(ctx.sadmin, teamId);
 
-    assert.ok(teamAfterAvatar.avatar_url, "team avatar_url must be non-null after mark");
+    assert.ok(
+        teamAfterAvatar.avatar_url,
+        "team avatar_url must be available after mark",
+    );
+    assert.ok(
+        teamAfterAvatar.avatar_thumbnail_url,
+        "team avatar_thumbnail_url must be available after mark",
+    );
 
     // stale avatar version -> 422/2
     expectError(
@@ -95,7 +102,7 @@ export async function runIt08Module(ctx: RunCtx): Promise<void> {
 
     // user avatar: self only. Runtime configuration limits the upload size.
     const oversizedAvatarError = expectError(
-        await trans01.api.post<ErrorBody>(`/api/v1/users/${trans01.userId}/avatar/reserve`, {
+        await trans01.api.post<ErrorBody>(`/api/v1/users/${trans01.userId}/avatar/alloc`, {
             image_hash: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAE=",
             new_byte_len: 1024 * 1024 + 1,
             ext: "png",
@@ -116,11 +123,18 @@ export async function runIt08Module(ctx: RunCtx): Promise<void> {
 
     const trans01AfterAvatar = await getUserInfo(ctx.sadmin, trans01.userId);
 
-    assert.ok(trans01AfterAvatar.avatar_url, "trans_01 avatar_url non-null after mark");
+    assert.ok(
+        trans01AfterAvatar.avatar_url,
+        "trans_01 avatar_url must be available after mark",
+    );
+    assert.ok(
+        trans01AfterAvatar.avatar_thumbnail_url,
+        "trans_01 avatar_thumbnail_url must be available after mark",
+    );
 
     // non-owner reserve trans_01's avatar -> 403/4 (trans_02 tries)
     expectError(
-        await trans02.api.post<ErrorBody>(`/api/v1/users/${trans01.userId}/avatar/reserve`, {
+        await trans02.api.post<ErrorBody>(`/api/v1/users/${trans01.userId}/avatar/alloc`, {
             image_hash: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
             new_byte_len: 1,
             ext: "png",
@@ -141,11 +155,18 @@ export async function runIt08Module(ctx: RunCtx): Promise<void> {
 
     const comicAfterCover = await getComic(ctx.sadmin, xingchenId);
 
-    assert.ok(comicAfterCover.cover_url, "comic cover_url non-null after mark");
+    assert.ok(
+        comicAfterCover.cover_url,
+        "comic cover_url must be available after mark",
+    );
+    assert.ok(
+        comicAfterCover.cover_thumbnail_url,
+        "comic cover_thumbnail_url must be available after mark",
+    );
 
     // non-admin (trans_01) reserve comic cover -> 403/4
     expectError(
-        await trans01.api.post<ErrorBody>(`/api/v1/comics/${xingchenId}/cover/reserve`, {
+        await trans01.api.post<ErrorBody>(`/api/v1/comics/${xingchenId}/cover/alloc`, {
             image_hash: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
             new_byte_len: 1,
             ext: "png",
@@ -156,7 +177,7 @@ export async function runIt08Module(ctx: RunCtx): Promise<void> {
 
     // non-existent team avatar reserve -> 403/4 (perm check for non-existing team returns perm error)
     expectError(
-        await ctx.sadmin.post<ErrorBody>("/api/v1/teams/team-does-not-exist/avatar/reserve", {
+        await ctx.sadmin.post<ErrorBody>("/api/v1/teams/team-does-not-exist/avatar/alloc", {
             image_hash: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
             new_byte_len: 1,
             ext: "png",

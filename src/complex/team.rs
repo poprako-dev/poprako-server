@@ -18,15 +18,6 @@ impl TeamComplex {
     pub fn gen_id() -> String {
         next_snowflake_id()
     }
-
-    /// Generate the object-storage key for a team avatar image.
-    pub fn gen_avatar_key(
-        id: &str,
-        avatar_version: u32,
-        file_ext: &str,
-    ) -> String {
-        format!("team_avatar/{}-{}.{}", id, avatar_version, file_ext)
-    }
 }
 
 /// Pure permission rules for team entities.
@@ -54,8 +45,8 @@ impl TeamPermComplex {
         check_user_is_team_admin(member_info)
     }
 
-    /// Verify the caller may reserve a team avatar.
-    pub fn ensure_user_can_reserve_avatar(
+    /// Verify the caller may allocate a team avatar.
+    pub fn ensure_user_can_alloc_avatar(
         member_info: &MemberInfo,
     ) -> BaseRest<()> {
         check_user_is_team_admin(member_info)

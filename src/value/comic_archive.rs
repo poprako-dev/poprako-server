@@ -1,7 +1,7 @@
 //! Calendar-month values used by comic archive export.
 
-// Archived chapter workflow-record payload values.
-mod workflow_record;
+/// Archived chapter workflow-record payload values.
+pub mod workflow_record;
 
 #[cfg(test)]
 mod tests;
@@ -15,8 +15,7 @@ use poprako_util::i18n::{trl, trl_kv};
 
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordKind;
-
-pub use crate::value::comic_archive::workflow_record::ArchivedChapterWorkflowRecordDetail;
+use crate::value::comic_archive::workflow_record::ArchivedChapterWorkflowRecordDetail;
 
 /// Maximum number of month slots accepted by one export request.
 pub const MAX_EXPORT_MONTHS: usize = 12;
@@ -157,12 +156,6 @@ pub struct ArchivedUserPayload {
     pub qid: String,
     /// Display nickname chosen by the user.
     pub nickname: String,
-    /// Optional storage key for the user's avatar image.
-    pub avatar_key: Option<String>,
-    /// Whether the avatar has been uploaded to object storage.
-    pub avatar_uploaded: Option<bool>,
-    /// Version counter incremented each time the avatar is replaced.
-    pub avatar_version: Option<u32>,
     /// Whether the user has super-administrator privileges.
     pub is_sadmin: bool,
     /// Unix timestamp of the user's most recent activity.

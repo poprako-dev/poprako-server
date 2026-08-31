@@ -1,15 +1,17 @@
 //! View DTOs for the page domain.
 
+#[cfg(test)]
+mod tests;
+
 use serde::Serialize;
 
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
+use poprako_obj_dept::model::meta::ObjMeta;
 use poprako_util::time::ToUnixMilli as _;
 
 use crate::model::read::proj::page::PageInfo;
-use crate::part::image::ImagePool;
-use crate::result::{BaseRest, accept};
 use crate::value::image::{ImageExt, ImageHash};
 
 /// Presentation-ready page information.
@@ -28,10 +30,9 @@ pub struct PageInfoView {
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Presigned download URL for the full image, if uploaded.
     pub image_url: Option<String>,
+    /// Presigned download URL for the thumbnail image, if available.
     #[serde(skip_serializing_if = "Option::is_none")]
-    /// Presigned download URL for the thumbnail, if uploaded.
     pub image_thumbnail_url: Option<String>,
-
     /// Content hash of the page image, if one exists.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub image_hash: Option<ImageHash>,
@@ -53,39 +54,36 @@ pub struct PageInfoView {
 }
 
 impl PageInfoView {
-    /// Materialize page image URLs when uploaded, then render API payload fields.
     /// Converts a [`PageInfo`] into a presentation-ready value.
-    pub async fn from_model<P>(
-        image_pool: &P,
+    pub fn from_model(
         model: PageInfo,
-    ) -> BaseRest<Self>
-    where
-        P: ImagePool + Sync,
-    {
-        let (image_url, image_thumbnail_url) =
-            match (model.is_image_uploaded, &model.image_key) {
-                //
-                (Some(true), Some(key)) => (
-                    image_pool.gen_download_url(key).await.ok(),
-                    image_pool.gen_thumbnail_download_url(key).await.ok(),
-                ),
+        obj_meta: Option<&ObjMeta>,
+        image_url: Option<String>,
+        image_thumbnail_url: Option<String>,
+    ) -> Self {
+        //
+        let image_hash = obj_meta.and_then(|meta| {
+            //
+            let bytes = <[u8; 32]>::try_from(meta.hash.as_slice()).ok()?;
 
-                _ => (None, None),
-            };
+            Some(ImageHash::new(bytes))
+        });
 
-        accept(Self {
+        let ext = obj_meta.and_then(|meta| ImageExt::parse(&meta.ext));
+
+        Self {
             id: model.id,
             chapter_id: model.chapter_id,
             index: model.index,
-            image_url: image_url.map(Into::into),
-            image_thumbnail_url: image_thumbnail_url.map(Into::into),
-            image_hash: model.image_hash,
-            ext: model.image_ext,
+            image_url,
+            image_thumbnail_url,
+            image_hash,
+            ext,
             total_unit_count: model.total_unit_count,
             translated_unit_count: model.translated_unit_count,
             proofread_unit_count: model.proofread_unit_count,
             created_at: model.created_at.to_unix_milli(),
             updated_at: model.updated_at.to_unix_milli(),
-        })
+        }
     }
 }

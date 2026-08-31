@@ -147,8 +147,9 @@ async fn export_payload(
         _,
         RdbContext<ReptRead>,
         HybRepo,
+        _,
     >(
-        (harn.nucl().rept_read(), harn.repo()),
+        (harn.nucl().rept_read(), harn.repo(), harn.obj_dept()),
         user_token,
         chapter_id,
         formats,

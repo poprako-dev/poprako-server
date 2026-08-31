@@ -1,14 +1,13 @@
 use poprako_orchestra::{AtLeast, Context, Nucl, OperStep as _};
 use tracing::instrument;
 
-use crate::complex::image::ImageComplex;
+use poprako_obj_dept::ObjDept;
+use poprako_obj_dept::oper::DeleteObjs;
+
 use crate::complex::page::PagePermComplex;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
-use crate::part::prom::Prom;
-use crate::part::prom::oper::DeferBatch;
-use crate::part::prom::payload::{TaskPayload, image};
-use crate::part::prom::task::Task;
+use crate::part::obj_dept::PageImage;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
@@ -24,9 +23,9 @@ use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
 
 /// Deletes all pages under one chapter.
-#[instrument(level = "info", skip(nucl, repo, prom))]
-pub async fn delete<N, C, R, P>(
-    (nucl, repo, prom): (&N, &R, &P),
+#[instrument(level = "info", skip(nucl, repo, obj_dept))]
+pub async fn delete<N, C, R, O>(
+    (nucl, repo, obj_dept): (&N, &R, &O),
     token: UserToken,
     chapter_id: String,
 ) -> BaseRest<()>
@@ -41,7 +40,7 @@ where
         + MemberRepo<C>
         + Send
         + Sync,
-    P: Prom<C> + Send + Sync,
+    O: ObjDept<PageImage, C> + Send + Sync,
 {
     let member_info = MemberLoader::load_info_from_chapter(
         repo,
@@ -68,33 +67,15 @@ where
         .step_on(repo, context)
         .await?;
 
-        let (mut delete_ids, mut delete_payloads) = (Vec::new(), Vec::new());
+        let page_ids = page_infos
+            .into_iter()
+            .map(|page_info| page_info.id)
+            .collect::<Vec<_>>();
 
-        for page_info in page_infos {
-            //
-            if let Some(object_key) = page_info.image_key {
-                //
-                delete_ids.push(ImageComplex::gen_delete_id());
-
-                delete_payloads.push(TaskPayload::Image {
-                    payload: image::ImagePayload::Delete { object_key },
-                });
-            }
-        }
-
-        let delete_tasks = delete_ids
-            .iter()
-            .zip(delete_payloads.iter())
-            .map(|(id, payload)| Task {
-                id,
-                payload,
-                delay: None,
-            })
-            .collect::<Vec<Task<'_, String, TaskPayload>>>();
-
-        DeferBatch::new(&delete_tasks)
-            .step_on(prom, context)
-            .await?;
+        DeleteObjs::<PageImage>::new(&page_ids)
+            .step_on(obj_dept, context)
+            .await
+            .map_err(BaseError::from)?;
 
         DeletePages::Chapter {
             chapter_id: &chapter_info.id,

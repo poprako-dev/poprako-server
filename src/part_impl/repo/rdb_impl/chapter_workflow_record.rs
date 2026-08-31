@@ -11,6 +11,8 @@ use diesel_async::RunQueryDsl as _;
 use poprako_orchestra::{AtLeast, Level, Run, Step};
 use tracing::instrument;
 
+use poprako_rdb_core::RdbConn;
+
 use crate::part::nucl::ReptRead;
 use crate::model::read::proj::chapter_workflow_record::ChapterWorkflowRecordInfo;
 use crate::model::read::spec::chapter_workflow_record::ChapterWorkflowRecordListSpec;
@@ -21,7 +23,7 @@ use crate::part_impl::repo::rdb_impl::entity::chapter_workflow_record::{ChapterW
 use crate::part_impl::repo::rdb_impl::schema::t_chapter_workflow_record::dsl::{f_chapter_id, f_created_at, f_id, t_chapter_workflow_record};
 use crate::result::{BaseError, BaseRest, accept};
 use crate::shared::result::diesel;
-use crate::shared::{RdbConn, RdbContext};
+use crate::shared::RdbContext;
 
 // Deletes every active workflow record belonging to one chapter.
 #[instrument(level = "info", skip_all)]

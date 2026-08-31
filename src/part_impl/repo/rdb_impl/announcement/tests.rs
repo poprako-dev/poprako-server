@@ -3,6 +3,8 @@
 
 use super::*;
 
+use poprako_rdb_core::RdbCore;
+
 use crate::model::read::spec::announcement::AnnouncementListSpec;
 use crate::model::write::announcement::{AnnouncementEntry, AnnouncementRepl};
 use crate::part::repo::oper::announcement::{
@@ -12,7 +14,6 @@ use crate::part::repo::oper::announcement::{
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::result::ExpectedVariant;
-use crate::shared::RdbCore;
 use crate::test_util::assert_expected_variant;
 use crate::value::announcement::AnnouncementInclOpt;
 

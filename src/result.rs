@@ -2,6 +2,9 @@
 
 use std::result::Result;
 
+use poprako_obj_dept::rest::ObjDeptError;
+use poprako_rdb_core::RdbError;
+
 /// Categorizes an expected application error by its origin domain.
 #[derive(Clone, Copy, Debug)]
 pub enum ExpectedVariant {
@@ -49,4 +52,46 @@ pub type BaseRest<T> = Result<T, BaseError>;
 /// Wraps a value in `Ok(...)` — the simplest use-case return.
 pub const fn accept<T>(v: T) -> BaseRest<T> {
     Ok(v)
+}
+
+impl From<RdbError> for BaseError {
+    // Convert a traced RDB infrastructure failure into the application error surface.
+    fn from(source: RdbError) -> Self {
+        //
+        tracing::error!(
+            operation = "access_database_pool",
+            sdk_err = ?source,
+            "RDB pool SDK error",
+        );
+
+        Self::Unrecoverable {
+            message: source.to_string(),
+        }
+    }
+}
+
+impl From<ObjDeptError> for BaseError {
+    // Preserve the object-department error classification at the application boundary.
+    fn from(source: ObjDeptError) -> Self {
+        //
+        match source {
+            //
+            ObjDeptError::Invalid { message } => {
+                //
+                Self::Expected {
+                    variant: ExpectedVariant::Args,
+                    message,
+                }
+            }
+
+            ObjDeptError::Conflict { message }
+            | ObjDeptError::Retryable { message } => {
+                Self::Retryable { message }
+            }
+
+            ObjDeptError::Unrecoverable { message } => {
+                Self::Unrecoverable { message }
+            }
+        }
+    }
 }

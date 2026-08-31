@@ -3,7 +3,7 @@
 use poprako_orchestra::{Context, OperRun as _};
 use tracing::instrument;
 
-use crate::complex::chapter::ChapterPermComplex;
+use crate::complex::chapter::perm::ChapterPermComplex;
 use crate::data::instr::chapter::ListChapterWorkflowRecordInfosInstr;
 use crate::data::view::chapter_workflow_record::ChapterWorkflowRecordInfoView;
 use crate::model::read::spec::chapter_workflow_record::ChapterWorkflowRecordListSpec;

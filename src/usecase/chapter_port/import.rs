@@ -8,9 +8,8 @@ use tracing::instrument;
 use poprako_util::i18n::trl;
 
 use crate::complex::chapter::ChapterComplex;
-use crate::complex::chapter_port::{
-    ChapterImportComplex, ChapterPortPermComplex,
-};
+use crate::complex::chapter_port::import::ChapterImportComplex;
+use crate::complex::chapter_port::perm::ChapterPortPermComplex;
 use crate::complex::unit::UnitComplex;
 use crate::data::instr::chapter_port::ImportChapterTranslationInstr;
 use crate::data::val::chapter_port::ImportChapterTranslationVal;
@@ -39,7 +38,7 @@ use crate::part::repo::page::PageRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::stage::start_pending_stages;
-use crate::value::chapter::Stage;
+use crate::value::chapter::stage::Stage;
 use crate::value::chapter_port::TranslationFormat;
 use crate::value::chapter_workflow_record::{
     ChapterWorkflowRecordOrigin, ChapterWorkflowRecordPayload,
