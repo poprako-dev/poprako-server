@@ -4,10 +4,10 @@ use poprako_orchestra::{Nucl as _, OperRun as _, OperStep as _};
 
 use poprako_obj_dept::key::{KeyMap, ObjGen};
 use poprako_obj_dept::model::slot::ObjSlotSpec;
+use poprako_obj_dept::model::url::ObjUrlSpec;
 use poprako_obj_dept::oper::{
     ClearObjs, DeleteObjs, GenObjUrls, MarkObjUploaded,
 };
-use poprako_obj_dept::pool::ObjUrlProfile;
 
 use crate::part::obj_dept::{ComicCover, PageImage, TeamAvatar, UserAvatar};
 use crate::value::image::{
@@ -67,7 +67,7 @@ fn key_maps_preserve_the_business_physical_key_contract() {
 }
 
 #[test]
-fn origin_only_profile_omits_thumbnail() {
+fn origin_only_spec_omits_image_renditions() {
     let meta = ObjMeta {
         key: ObjKey {
             id: String::from("page-1"),
@@ -79,15 +79,19 @@ fn origin_only_profile_omits_thumbnail() {
         ext: String::from("png"),
     };
 
-    let urls = gen_urls(Some(&meta), ObjUrlProfile::OriginOnly, true)
-        .unwrap()
-        .unwrap();
+    let obj_url_spec = ObjUrlSpec::default().with_origin();
+
+    let urls = gen_urls(Some(&meta), obj_url_spec, true).unwrap().unwrap();
+
+    assert!(urls.origin_url.is_some());
+
+    assert!(urls.optimized_url.is_none());
 
     assert!(urls.thumbnail_url.is_none());
 }
 
 #[test]
-fn image_thumbnail_profile_generates_thumbnail() {
+fn selected_image_renditions_are_generated() {
     let meta = ObjMeta {
         key: ObjKey {
             id: String::from("page-1"),
@@ -99,11 +103,29 @@ fn image_thumbnail_profile_generates_thumbnail() {
         ext: String::from("png"),
     };
 
-    let urls = gen_urls(Some(&meta), ObjUrlProfile::ImageThumbnail, true)
-        .unwrap()
-        .unwrap();
+    let obj_url_spec = ObjUrlSpec::default().with_optimized().with_thumbnail();
+
+    let urls = gen_urls(Some(&meta), obj_url_spec, true).unwrap().unwrap();
+
+    assert!(urls.origin_url.is_none());
+
+    assert!(urls.optimized_url.is_some());
 
     assert!(urls.thumbnail_url.is_some());
+}
+
+#[tokio::test]
+async fn mock_operation_rejects_empty_url_spec_without_metadata() {
+    let mock = Mock::new();
+
+    let metas = HashMap::new();
+
+    let error = GenObjUrls::<PageImage>::new(&metas, ObjUrlSpec::default())
+        .run_on(&mock)
+        .await
+        .unwrap_err();
+
+    assert!(matches!(error, ObjDeptError::Invalid { .. }));
 }
 
 #[tokio::test]
@@ -121,7 +143,12 @@ async fn mock_operation_can_disable_thumbnails() {
     };
     let metas = HashMap::from([(String::from("page-1"), meta)]);
 
-    let urls = GenObjUrls::<PageImage>::new(&metas)
+    let obj_url_spec = ObjUrlSpec::default()
+        .with_origin()
+        .with_optimized()
+        .with_thumbnail();
+
+    let urls = GenObjUrls::<PageImage>::new(&metas, obj_url_spec)
         .run_on(&mock)
         .await
         .unwrap();
@@ -130,6 +157,14 @@ async fn mock_operation_can_disable_thumbnails() {
         urls.get("page-1"),
         Some(ObjUrls {
             thumbnail_url: None,
+            ..
+        }),
+    ));
+
+    assert!(matches!(
+        urls.get("page-1"),
+        Some(ObjUrls {
+            optimized_url: Some(_),
             ..
         }),
     ));

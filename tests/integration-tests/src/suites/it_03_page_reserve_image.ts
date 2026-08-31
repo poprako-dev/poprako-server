@@ -205,6 +205,10 @@ export async function runIt03Module(ctx: RunCtx): Promise<void> {
             `page ${page.id} image_url must be available after mark`,
         );
         assert.ok(
+            page.image_optimized_url,
+            `page ${page.id} image_optimized_url must be available after mark`,
+        );
+        assert.ok(
             page.image_thumbnail_url,
             `page ${page.id} image_thumbnail_url must be available after mark`,
         );

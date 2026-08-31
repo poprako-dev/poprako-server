@@ -18,12 +18,10 @@ fn object_manifest_rejects_every_duplicate_identity() {
         PageImage {
             table: t_page_image,
             topic: "page_image",
-            url_profile: ImageThumbnail,
         },
         PageImage {
             table: t_page_image_2,
             topic: "page_image_2",
-            url_profile: ImageThumbnail,
         },
     });
 
@@ -31,12 +29,10 @@ fn object_manifest_rejects_every_duplicate_identity() {
         PageImage {
             table: t_page_image,
             topic: "page_image",
-            url_profile: ImageThumbnail,
         },
         ComicCover {
             table: t_page_image,
             topic: "comic_cover",
-            url_profile: ImageThumbnail,
         },
     });
 
@@ -44,12 +40,10 @@ fn object_manifest_rejects_every_duplicate_identity() {
         PageImage {
             table: t_page_image,
             topic: "page_image",
-            url_profile: ImageThumbnail,
         },
         ComicCover {
             table: t_comic_cover,
             topic: "page_image",
-            url_profile: ImageThumbnail,
         },
     });
 
@@ -67,32 +61,24 @@ fn generated_names_are_readable_and_read_views_cover_every_marker()
         PageImage {
             table: t_page_image,
             topic: "page_image",
-            url_profile: ImageThumbnail,
         },
         FontFile {
             table: t_font_file,
             topic: "font_file",
-            url_profile: OriginOnly,
         },
     })?
     .to_string();
     let implementations = impl_obj_dept::expand_items(quote! {
         dept: NormObjDept,
         view: NormObjView;
-        (PageImage, page_image_rdb_impl, "page_image", ImageThumbnail),
-        (FontFile, font_file_rdb_impl, "font_file", OriginOnly),
+        (PageImage, page_image_rdb_impl, "page_image"),
+        (FontFile, font_file_rdb_impl, "font_file"),
     })?
     .to_string();
 
     assert!(manifest.contains("page_image_rdb_impl"));
 
     assert!(manifest.contains("font_file_rdb_impl"));
-
-    assert!(manifest.contains("URL_PROFILE"));
-
-    assert!(manifest.contains("ImageThumbnail"));
-
-    assert!(manifest.contains("OriginOnly"));
 
     assert!(manifest.contains("for_each_obj"));
 
@@ -103,8 +89,6 @@ fn generated_names_are_readable_and_read_views_cover_every_marker()
     assert!(implementations.contains("PageImage"));
 
     assert!(implementations.contains("FontFile"));
-
-    assert!(implementations.contains("URL_PROFILE"));
 
     assert!(!implementations.contains("__"));
 

@@ -91,9 +91,10 @@ pub fn expand(dept: &Ident, view: &Ident, entry: &ObjEntry) -> TokenStream {
                     ::poprako_obj_dept::model::url::ObjUrls,
                 >,
             > {
+                //
                 ::poprako_obj_dept::pool::gen_urls_bounded(
                     self.pool(),
-                    #obj_module::URL_PROFILE,
+                    oper.spec,
                     oper.metas,
                 )
                 .await
@@ -172,9 +173,10 @@ pub fn expand(dept: &Ident, view: &Ident, entry: &ObjEntry) -> TokenStream {
                     ::poprako_obj_dept::model::url::ObjUrls,
                 >,
             > {
+                //
                 ::poprako_obj_dept::pool::gen_urls_bounded(
                     self.pool(),
-                    #obj_module::URL_PROFILE,
+                    oper.spec,
                     oper.metas,
                 )
                 .await

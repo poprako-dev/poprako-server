@@ -9,7 +9,7 @@ use poprako_orchestra::{Context, OperRun as _, Run};
 
 use poprako_obj_dept::ObjDeptView;
 use poprako_obj_dept::key::KeyMap;
-use poprako_obj_dept::model::url::ObjUrls;
+use poprako_obj_dept::model::url::{ObjUrlSpec, ObjUrls};
 use poprako_obj_dept::oper::{GenObjUrls, ListObjMetas};
 
 use crate::data::view::assignment::AssignmentInfoView;
@@ -327,7 +327,7 @@ fn resolved_obj_urls(
     };
 
     (
-        Some(urls.origin_url.to_string()),
+        urls.origin_url.as_ref().map(ToString::to_string),
         urls.thumbnail_url.as_ref().map(ToString::to_string),
     )
 }
@@ -351,7 +351,9 @@ where
         .await
         .map_err(BaseError::from)?;
 
-    let obj_urls = GenObjUrls::<K>::new(&obj_metas)
+    let obj_url_spec = ObjUrlSpec::default().with_origin().with_thumbnail();
+
+    let obj_urls = GenObjUrls::<K>::new(&obj_metas, obj_url_spec)
         .run_on(obj_dept)
         .await
         .map_err(BaseError::from)?;

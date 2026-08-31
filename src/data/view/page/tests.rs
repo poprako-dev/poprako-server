@@ -7,6 +7,7 @@ fn page_info_view_omits_absent_image_urls() {
         chapter_id: "chapter-1".into(),
         index: 0,
         image_url: None,
+        image_optimized_url: None,
         image_thumbnail_url: None,
         image_hash: None,
         ext: None,
@@ -24,5 +25,6 @@ fn page_info_view_omits_absent_image_urls() {
     };
 
     assert!(!object.contains_key("image_url"));
+    assert!(!object.contains_key("image_optimized_url"));
     assert!(!object.contains_key("image_thumbnail_url"));
 }

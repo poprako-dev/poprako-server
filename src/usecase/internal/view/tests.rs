@@ -158,7 +158,8 @@ macro_rules! impl_obj_view {
                         (
                             id.clone(),
                             ObjUrls {
-                                origin_url,
+                                origin_url: Some(origin_url),
+                                optimized_url: None,
                                 thumbnail_url: Some(thumbnail_url),
                             },
                         )

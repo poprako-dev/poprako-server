@@ -6,7 +6,7 @@ use poprako_orchestra::{Context, OperRun as _};
 
 use poprako_obj_dept::ObjDeptView;
 use poprako_obj_dept::model::meta::ObjMeta;
-use poprako_obj_dept::model::url::ObjUrls;
+use poprako_obj_dept::model::url::{ObjUrlSpec, ObjUrls};
 use poprako_obj_dept::oper::{GenObjUrls, ListObjMetas};
 
 use crate::data::view::page::PageInfoView;
@@ -24,7 +24,7 @@ struct PageImageData {
     image_urls: HashMap<String, ObjUrls>,
 }
 
-/// Resolves one page model with its image metadata and origin/thumbnail URLs.
+/// Resolves one page model with its image metadata and selected image URLs.
 pub async fn page_info_view<C, O>(
     obj_dept: &O,
     model: PageInfo,
@@ -44,7 +44,12 @@ where
     accept(PageInfoView::from_model(
         model,
         obj_meta,
-        image_urls.map(|urls| urls.origin_url.to_string()),
+        image_urls
+            .and_then(|urls| urls.origin_url.as_ref())
+            .map(ToString::to_string),
+        image_urls
+            .and_then(|urls| urls.optimized_url.as_ref())
+            .map(ToString::to_string),
         image_urls
             .and_then(|urls| urls.thumbnail_url.as_ref())
             .map(ToString::to_string),
@@ -79,7 +84,12 @@ where
                 PageInfoView::from_model(
                     model,
                     obj_meta,
-                    image_urls.map(|urls| urls.origin_url.to_string()),
+                    image_urls
+                        .and_then(|urls| urls.origin_url.as_ref())
+                        .map(ToString::to_string),
+                    image_urls
+                        .and_then(|urls| urls.optimized_url.as_ref())
+                        .map(ToString::to_string),
                     image_urls
                         .and_then(|urls| urls.thumbnail_url.as_ref())
                         .map(ToString::to_string),
@@ -117,7 +127,12 @@ where
         .await
         .map_err(BaseError::from)?;
 
-    let image_urls = GenObjUrls::<PageImage>::new(&obj_metas)
+    let obj_url_spec = ObjUrlSpec::default()
+        .with_origin()
+        .with_optimized()
+        .with_thumbnail();
+
+    let image_urls = GenObjUrls::<PageImage>::new(&obj_metas, obj_url_spec)
         .run_on(obj_dept)
         .await
         .map_err(BaseError::from)?;

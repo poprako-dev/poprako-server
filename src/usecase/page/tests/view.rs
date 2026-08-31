@@ -97,6 +97,13 @@ async fn page_views_keep_each_image_url_with_its_metadata_snapshot() {
     );
 
     assert_eq!(
+        uploaded_view.image_optimized_url.as_deref(),
+        Some(
+            "https://obj.test/optimized/page/chapter_test/page-uploaded-7.png"
+        )
+    );
+
+    assert_eq!(
         uploaded_view.image_thumbnail_url.as_deref(),
         Some(
             "https://obj.test/thumbnail/page/chapter_test/page-uploaded-7.png"
@@ -111,6 +118,8 @@ async fn page_views_keep_each_image_url_with_its_metadata_snapshot() {
 
     assert_eq!(pending_view.image_url, None);
 
+    assert_eq!(pending_view.image_optimized_url, None);
+
     assert_eq!(pending_view.image_thumbnail_url, None);
 
     assert_eq!(pending_view.image_hash, Some(ImageHash::new([4; 32])));
@@ -120,6 +129,8 @@ async fn page_views_keep_each_image_url_with_its_metadata_snapshot() {
     let missing_view = &page_views[2];
 
     assert_eq!(missing_view.image_url, None);
+
+    assert_eq!(missing_view.image_optimized_url, None);
 
     assert_eq!(missing_view.image_thumbnail_url, None);
 
@@ -157,11 +168,16 @@ async fn list_infos_sorts_pages_and_resolves_only_available_image_urls() {
     assert_eq!(pages.len(), 2);
     assert_eq!(pages[0].id, "page-1");
     assert_eq!(pages[0].image_url, None);
+    assert_eq!(pages[0].image_optimized_url, None);
     assert_eq!(pages[0].image_thumbnail_url, None);
     assert_eq!(pages[1].id, "page-2");
     assert_eq!(
         pages[1].image_url.as_deref(),
         Some("https://obj.test/page/chapter_chapter-1/page-2-2.png")
+    );
+    assert_eq!(
+        pages[1].image_optimized_url.as_deref(),
+        Some("https://obj.test/optimized/page/chapter_chapter-1/page-2-2.png")
     );
     assert_eq!(
         pages[1].image_thumbnail_url.as_deref(),
@@ -213,6 +229,10 @@ async fn get_info_resolves_available_image_metadata_and_urls() {
     assert_eq!(
         found.image_url.as_deref(),
         Some("https://obj.test/page/chapter_chapter-1/page-1-7.png")
+    );
+    assert_eq!(
+        found.image_optimized_url.as_deref(),
+        Some("https://obj.test/optimized/page/chapter_chapter-1/page-1-7.png")
     );
     assert_eq!(
         found.image_thumbnail_url.as_deref(),

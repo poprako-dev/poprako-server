@@ -19,9 +19,6 @@ struct ObjInput {
 
     // Stores the object task topic.
     topic: LitStr,
-
-    // Selects the object URL generation profile.
-    url_profile: Ident,
 }
 
 impl Parse for ObjInput {
@@ -44,23 +41,6 @@ impl Parse for ObjInput {
 
         let topic = content.parse()?;
 
-        content.parse::<Token![,]>()?;
-
-        parse_field(&content, "url_profile")?;
-
-        let url_profile = content.parse::<Ident>()?;
-
-        if !matches!(
-            url_profile.to_string().as_str(),
-            "OriginOnly" | "ImageThumbnail"
-        ) {
-            //
-            return Err(syn::Error::new(
-                url_profile.span(),
-                "expected `OriginOnly` or `ImageThumbnail`",
-            ));
-        }
-
         if content.peek(Token![,]) {
             content.parse::<Token![,]>()?;
         }
@@ -73,7 +53,6 @@ impl Parse for ObjInput {
             marker,
             table,
             topic,
-            url_profile,
         })
     }
 }
@@ -125,9 +104,7 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
 
         let topic = &obj.topic;
 
-        let url_profile = &obj.url_profile;
-
-        quote!((#marker, #module, #topic, #url_profile),)
+        quote!((#marker, #module, #topic),)
     });
 
     Ok(quote! {
@@ -249,8 +226,6 @@ fn expand_obj(obj: &ObjInput) -> TokenStream {
 
     let topic = &obj.topic;
 
-    let url_profile = &obj.url_profile;
-
     let module = marker_module(&obj.marker);
 
     let rdb_entry = rdb_entry::expand(table);
@@ -260,8 +235,6 @@ fn expand_obj(obj: &ObjInput) -> TokenStream {
             use super::#table;
 
             pub const TOPIC: &str = #topic;
-            pub const URL_PROFILE: ::poprako_obj_dept::pool::ObjUrlProfile =
-                ::poprako_obj_dept::pool::ObjUrlProfile::#url_profile;
 
             #rdb_entry
         }

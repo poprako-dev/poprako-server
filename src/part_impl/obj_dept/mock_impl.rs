@@ -12,18 +12,20 @@ use poprako_obj_dept::key::{KeyMap, ObjKey};
 use poprako_obj_dept::model::meta::ObjMeta;
 use poprako_obj_dept::model::slot::ObjSlot;
 use poprako_obj_dept::model::task::ObjTask;
-use poprako_obj_dept::model::url::ObjUrls;
+use poprako_obj_dept::model::url::{ObjUrlSpec, ObjUrls};
 use poprako_obj_dept::oper::{GenObjSlot, GenObjSlots};
-use poprako_obj_dept::pool::ObjUrlProfile;
+use poprako_obj_dept::pool::ensure_url_spec;
 use poprako_obj_dept::rest::{ObjDeptError, ObjDeptRest};
 
 use crate::part_impl::repo::mock_impl::{Mock, MockObjRecord};
 
 pub fn gen_urls(
     meta: Option<&ObjMeta>,
-    profile: ObjUrlProfile,
+    spec: ObjUrlSpec,
     thumbnail_enabled: bool,
 ) -> ObjDeptRest<Option<ObjUrls>> {
+    ensure_url_spec(spec)?;
+
     let Some(meta) = meta else {
         return Ok(None);
     };
@@ -34,27 +36,35 @@ pub fn gen_urls(
 
     let key = &meta.key.image;
 
-    let origin_url =
-        Url::parse(&format!("https://obj.test/{}", key)).map_err(|source| {
-            ObjDeptError::Unrecoverable {
-                message: source.to_string(),
-            }
-        })?;
-    let thumbnail_url = match (profile, thumbnail_enabled) {
-        (ObjUrlProfile::ImageThumbnail, true) => Some(
-            Url::parse(&format!("https://obj.test/thumbnail/{}", key))
-                .map_err(|source| ObjDeptError::Unrecoverable {
-                    message: source.to_string(),
-                })?,
-        ),
-        (ObjUrlProfile::OriginOnly | ObjUrlProfile::ImageThumbnail, false)
-        | (ObjUrlProfile::OriginOnly, true) => None,
+    let origin_url = match spec.includes_origin() {
+        true => Some(parse_mock_url(key)?),
+        false => None,
+    };
+
+    let optimized_url = match spec.includes_optimized() {
+        true => Some(parse_mock_url(&format!("optimized/{}", key))?),
+        false => None,
+    };
+
+    let thumbnail_url = match (spec.includes_thumbnail(), thumbnail_enabled) {
+        (true, true) => Some(parse_mock_url(&format!("thumbnail/{}", key))?),
+        (true, false) | (false, _) => None,
     };
 
     Ok(Some(ObjUrls {
         origin_url,
+        optimized_url,
         thumbnail_url,
     }))
+}
+
+// Parses one deterministic object URL for tests.
+fn parse_mock_url(path: &str) -> ObjDeptRest<Url> {
+    Url::parse(&format!("https://obj.test/{}", path)).map_err(|source| {
+        ObjDeptError::Unrecoverable {
+            message: source.to_string(),
+        }
+    })
 }
 
 pub fn gen_slot<K>(
@@ -209,7 +219,7 @@ pub fn delete_objs(
 
 #[macro_export]
 macro_rules! implement_mock_obj_dept {
-    ($obj:ty, $topic:literal, $url_profile:ident) => {
+    ($obj:ty, $topic:literal) => {
         impl<'a>
             ::poprako_orchestra::Run<
                 ::poprako_obj_dept::oper::MarkObjUploaded<'a, $obj>,
@@ -328,6 +338,8 @@ macro_rules! implement_mock_obj_dept {
                     ::poprako_obj_dept::model::url::ObjUrls,
                 >,
             > {
+                ::poprako_obj_dept::pool::ensure_url_spec(oper.spec)?;
+
                 let mut urls = ::std::collections::HashMap::new();
                 let thumbnail_enabled =
                     !self.flags.lock().unwrap().obj_thumbnail_disabled;
@@ -336,7 +348,7 @@ macro_rules! implement_mock_obj_dept {
                     let Some(url) =
                         $crate::part_impl::obj_dept::mock_impl::gen_urls(
                             Some(obj_meta),
-                            ::poprako_obj_dept::pool::ObjUrlProfile::$url_profile,
+                            oper.spec,
                             thumbnail_enabled,
                         )?
                     else {
