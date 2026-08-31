@@ -3,20 +3,23 @@ use std::collections::BTreeMap;
 use time::OffsetDateTime;
 use url::Url;
 
-use crate::key::ObjKey;
+use crate::key::{KeyMap, ObjKey};
 
 /// Input required to allocate one object version.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct ObjSlotSpec<'a> {
-    //
-    /// Stable business-object identifier.
-    pub id: &'a str,
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ObjSlotSpec<'a, B>
+where
+    B: KeyMap,
+{
+    /// Typed business identity from which the physical key is derived.
+    pub dom: B::Dom,
+
     /// Opaque content hash.
     pub hash: &'a [u8],
-    /// Validated object suffix.
-    pub ext: &'a str,
+
     /// Media type signed into the upload capability.
     pub content_type: &'a str,
+
     /// Exact signed byte length.
     pub byte_len: u64,
 }

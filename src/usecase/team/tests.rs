@@ -78,6 +78,7 @@ fn seed_team_avatar(mock: &Mock, version: u32) {
     let key = ObjKey {
         id: "team-1".into(),
         version,
+        image: format!("team_avatar/team-1-{}.png", version),
     };
 
     let meta = ObjMeta {

@@ -5,6 +5,7 @@ use crate::actor::rdb_impl::{
     ObjKeyState, classify, presence_cas_conflict_requires_retry,
     requires_presence_reconciliation,
 };
+use crate::key::KeyMap;
 use crate::model::meta::ObjMeta;
 use crate::model::slot::ObjSlot;
 use crate::model::task::{CHECK, ObjPromTask, obj_task_id, validate_task};
@@ -17,6 +18,61 @@ use crate::rest::ObjDeptError;
 use crate::{ObjDept, ObjDeptView};
 
 struct PageImage;
+
+struct PageImageKey {
+    id: String,
+    ext: String,
+}
+
+impl KeyMap for PageImage {
+    type Dom = PageImageKey;
+    type Img = String;
+
+    fn id(value: &Self::Dom) -> &str {
+        &value.id
+    }
+
+    fn ext(value: &Self::Dom) -> &str {
+        &value.ext
+    }
+
+    fn forward(value: &Self::Dom, version: u32) -> Self::Img {
+        format!("page/{}-{version}.{}", value.id, value.ext)
+    }
+
+    fn reverse(
+        value: &Self::Img,
+    ) -> crate::rest::ObjDeptRest<(Self::Dom, u32)> {
+        let filename = value.strip_prefix("page/").ok_or_else(|| {
+            ObjDeptError::Invalid {
+                message: "invalid test key".into(),
+            }
+        })?;
+
+        let stem = filename.strip_suffix(".png").ok_or_else(|| {
+            ObjDeptError::Invalid {
+                message: "invalid test key".into(),
+            }
+        })?;
+
+        let (id, version) =
+            stem.rsplit_once('-').ok_or_else(|| ObjDeptError::Invalid {
+                message: "invalid test key".into(),
+            })?;
+
+        let version = version.parse().map_err(|_| ObjDeptError::Invalid {
+            message: "invalid test key".into(),
+        })?;
+
+        Ok((
+            PageImageKey {
+                id: id.into(),
+                ext: "png".into(),
+            },
+            version,
+        ))
+    }
+}
 
 struct TestLevel;
 
@@ -207,6 +263,7 @@ fn task() -> ObjPromTask {
     let key = crate::key::ObjKey {
         id: "page-1".into(),
         version: 7,
+        image: "page/page-1-7.png".into(),
     };
 
     ObjPromTask {
@@ -215,6 +272,7 @@ fn task() -> ObjPromTask {
         oper: CHECK.into(),
         obj_id: key.id,
         version: i64::from(key.version),
+        image: key.image,
         generation: 2,
         retried_count: 1,
         lease: 11,
@@ -281,6 +339,7 @@ fn upload_evidence_classification_preserves_active_metadata()
 -> crate::rest::ObjDeptRest<()> {
     let unavailable = crate::rdb_impl::ObjRdbRow {
         version: 4,
+        key: Some("page/page-1-4.png".into()),
         f_is_uploaded: Some(false),
         hash: Some(vec![7; 32]),
         ext: Some(String::from("png")),

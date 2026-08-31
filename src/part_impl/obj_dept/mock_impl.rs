@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use time::{Duration, OffsetDateTime};
 use url::Url;
 
-use poprako_obj_dept::key::ObjKey;
+use poprako_obj_dept::key::{KeyMap, ObjKey};
 use poprako_obj_dept::model::meta::ObjMeta;
 use poprako_obj_dept::model::slot::ObjSlot;
 use poprako_obj_dept::model::task::ObjTask;
@@ -20,7 +20,6 @@ use poprako_obj_dept::rest::{ObjDeptError, ObjDeptRest};
 use crate::part_impl::repo::mock_impl::{Mock, MockObjRecord};
 
 pub fn gen_urls(
-    namespace: &str,
     meta: Option<&ObjMeta>,
     profile: ObjUrlProfile,
     thumbnail_enabled: bool,
@@ -33,7 +32,7 @@ pub fn gen_urls(
         return Ok(None);
     }
 
-    let key = meta.key.encode(namespace);
+    let key = &meta.key.image;
 
     let origin_url =
         Url::parse(&format!("https://obj.test/{}", key)).map_err(|source| {
@@ -58,14 +57,18 @@ pub fn gen_urls(
     }))
 }
 
-pub fn gen_slot(
+pub fn gen_slot<B>(
     objs: &mut HashMap<String, MockObjRecord>,
     tasks: &mut Vec<(&'static str, ObjTask)>,
     topic: &'static str,
-    namespace: &str,
-    oper: &GenObjSlot<'_, impl Sized>,
-) -> ObjDeptRest<ObjSlot> {
-    let version = objs.get(oper.spec.id).map_or(Ok(1), |previous| {
+    oper: &GenObjSlot<'_, B>,
+) -> ObjDeptRest<ObjSlot>
+where
+    B: KeyMap<Img = String>,
+{
+    let id = B::id(&oper.spec.dom);
+
+    let version = objs.get(id).map_or(Ok(1), |previous| {
         previous.version.checked_add(1).ok_or_else(|| {
             ObjDeptError::Unrecoverable {
                 message: "object version overflow".into(),
@@ -74,19 +77,20 @@ pub fn gen_slot(
     })?;
 
     let key = ObjKey {
-        id: oper.spec.id.to_owned(),
+        id: id.to_owned(),
         version,
+        image: B::forward(&oper.spec.dom, version),
     };
 
     let meta = ObjMeta {
         key: key.clone(),
         is_available: false,
         hash: oper.spec.hash.to_vec(),
-        ext: oper.spec.ext.to_owned(),
+        ext: B::ext(&oper.spec.dom).to_owned(),
     };
 
     let previous = objs.insert(
-        oper.spec.id.to_owned(),
+        id.to_owned(),
         MockObjRecord {
             version,
             meta: Some(meta),
@@ -101,12 +105,10 @@ pub fn gen_slot(
 
     tasks.push((topic, ObjTask::Check { key: key.clone() }));
 
-    let physical_key = key.encode(namespace);
-
-    let url = Url::parse(&format!("https://obj.test/write/{}", physical_key))
+    let url = Url::parse(&format!("https://obj.test/write/{}", key.image))
         .map_err(|source| ObjDeptError::Unrecoverable {
-        message: source.to_string(),
-    })?;
+            message: source.to_string(),
+        })?;
 
     Ok(ObjSlot {
         key,
@@ -116,14 +118,20 @@ pub fn gen_slot(
     })
 }
 
-pub fn gen_slots(
+pub fn gen_slots<B>(
     objs: &mut HashMap<String, MockObjRecord>,
     tasks: &mut Vec<(&'static str, ObjTask)>,
     topic: &'static str,
-    namespace: &str,
-    oper: &GenObjSlots<'_, impl Sized>,
-) -> ObjDeptRest<HashMap<String, ObjSlot>> {
-    let mut ids = oper.specs.iter().map(|spec| spec.id).collect::<Vec<_>>();
+    oper: &GenObjSlots<'_, B>,
+) -> ObjDeptRest<HashMap<String, ObjSlot>>
+where
+    B: KeyMap<Img = String>,
+{
+    let mut ids = oper
+        .specs
+        .iter()
+        .map(|spec| B::id(&spec.dom))
+        .collect::<Vec<_>>();
 
     ids.sort_unstable();
 
@@ -136,10 +144,10 @@ pub fn gen_slots(
     oper.specs
         .iter()
         .map(|spec| {
-            let single_oper = GenObjSlot::<()>::new(spec);
-            let slot = gen_slot(objs, tasks, topic, namespace, &single_oper)?;
+            let single_oper = GenObjSlot::<B>::new(spec);
+            let slot = gen_slot(objs, tasks, topic, &single_oper)?;
 
-            Ok((spec.id.to_owned(), slot))
+            Ok((B::id(&spec.dom).to_owned(), slot))
         })
         .collect()
 }
@@ -180,7 +188,7 @@ pub fn delete_objs(
 
 #[macro_export]
 macro_rules! implement_mock_obj_dept {
-    ($obj:ty, $topic:literal, $namespace:literal, $url_profile:ident) => {
+    ($obj:ty, $topic:literal, $url_profile:ident) => {
         impl<'a>
             ::poprako_orchestra::Run<
                 ::poprako_obj_dept::oper::MarkObjUploaded<'a, $obj>,
@@ -306,7 +314,6 @@ macro_rules! implement_mock_obj_dept {
                 for (id, obj_meta) in oper.metas {
                     let Some(url) =
                         $crate::part_impl::obj_dept::mock_impl::gen_urls(
-                            $namespace,
                             Some(obj_meta),
                             ::poprako_obj_dept::pool::ObjUrlProfile::$url_profile,
                             thumbnail_enabled,
@@ -350,7 +357,7 @@ macro_rules! implement_mock_obj_dept {
                 let objs = objs.entry($topic).or_default();
 
                 $crate::part_impl::obj_dept::mock_impl::gen_slots(
-                    objs, obj_tasks, $topic, $namespace, oper,
+                    objs, obj_tasks, $topic, oper,
                 )
             }
         }
@@ -380,7 +387,7 @@ macro_rules! implement_mock_obj_dept {
                 let objs = objs.entry($topic).or_default();
 
                 $crate::part_impl::obj_dept::mock_impl::gen_slot(
-                    objs, obj_tasks, $topic, $namespace, oper,
+                    objs, obj_tasks, $topic, oper,
                 )
             }
         }

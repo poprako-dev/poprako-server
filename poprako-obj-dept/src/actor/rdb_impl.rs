@@ -71,18 +71,25 @@ pub fn classify(
 
         Ordering::Greater => Ok(ObjKeyState::Future),
 
-        Ordering::Equal => match (&row.f_is_uploaded, &row.hash, &row.ext) {
+        Ordering::Equal => {
             //
-            (None, None, None) => Ok(ObjKeyState::Retired),
+            match (&row.key, &row.f_is_uploaded, &row.hash, &row.ext) {
+                //
+                (None, None, None, None) => Ok(ObjKeyState::Retired),
 
-            (Some(false), Some(_), Some(_)) => Ok(ObjKeyState::Unavailable),
+                (Some(_), Some(false), Some(_), Some(_)) => {
+                    Ok(ObjKeyState::Unavailable)
+                }
 
-            (Some(true), Some(_), Some(_)) => Ok(ObjKeyState::Available),
+                (Some(_), Some(true), Some(_), Some(_)) => {
+                    Ok(ObjKeyState::Available)
+                }
 
-            _ => Err(ObjDeptError::Unrecoverable {
-                message: "invalid object row".into(),
-            }),
-        },
+                _ => Err(ObjDeptError::Unrecoverable {
+                    message: "invalid object row".into(),
+                }),
+            }
+        }
     }
 }
 
@@ -91,14 +98,33 @@ pub fn classify(
 #[macro_export]
 // Expands the typed RDB object handler selected by manifest dispatch.
 macro_rules! handle_obj_task {
-    ($core:expr, $pool:expr, $task:expr, $obj_mod:ident $(,)?) => {{
+    ($core:expr, $pool:expr, $task:expr, $obj:ty, $obj_mod:ident $(,)?) => {{
         use ::poprako_obj_dept::pool::ObjPool as _;
 
         let core = $core;
         let pool = $pool;
         let task = $task;
         let key = task.key()?;
-        let physical_key = key.encode($obj_mod::NAMESPACE);
+        let physical_key = &key.image;
+
+        let (dom, decoded_version) =
+            <$obj as ::poprako_obj_dept::key::KeyMap>::reverse(physical_key)?;
+        let task_key_is_consistent =
+            <$obj as ::poprako_obj_dept::key::KeyMap>::id(&dom) == key.id
+                && decoded_version == key.version
+                && <$obj as ::poprako_obj_dept::key::KeyMap>::forward(
+                    &dom,
+                    decoded_version,
+                ) == *physical_key;
+
+        if !task_key_is_consistent {
+            return Ok(
+                ::poprako_obj_dept::model::task::ObjTaskAction::Operator {
+                    message: "object task key is inconsistent".into(),
+                },
+            );
+        }
+
         let mut conn = core
             .get()
             .await
@@ -123,6 +149,26 @@ macro_rules! handle_obj_task {
             key.version,
             row.as_ref(),
         )?;
+
+        let active_key = ::poprako_obj_dept::rdb_impl::active_key::<$obj>(
+            &key.id,
+            row.as_ref(),
+        )?;
+
+        if active_key
+            .as_ref()
+            .is_some_and(|active_key| {
+                active_key.version == key.version
+                    && active_key.image != key.image
+            })
+        {
+            return Ok(
+                ::poprako_obj_dept::model::task::ObjTaskAction::Operator {
+                    message: "object task key differs from current generation"
+                        .into(),
+                },
+            );
+        }
 
         drop(conn);
 

@@ -30,6 +30,53 @@ pub enum ImageKind {
     PageImage,
 }
 
+/// Business identity required to locate one page image.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PageImageKey {
+    //
+    /// Owning chapter identifier encoded into the physical key.
+    pub chapter_id: String,
+
+    /// Stable page identifier used by the object table.
+    pub page_id: String,
+
+    /// Validated image suffix.
+    pub ext: ImageExt,
+}
+
+/// Business identity required to locate one user avatar.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UserAvatarKey {
+    //
+    /// Stable user identifier used by the object table.
+    pub user_id: String,
+
+    /// Validated image suffix.
+    pub ext: ImageExt,
+}
+
+/// Business identity required to locate one team avatar.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TeamAvatarKey {
+    //
+    /// Stable team identifier used by the object table.
+    pub team_id: String,
+
+    /// Validated image suffix.
+    pub ext: ImageExt,
+}
+
+/// Business identity required to locate one comic cover.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ComicCoverKey {
+    //
+    /// Stable comic identifier used by the object table.
+    pub comic_id: String,
+
+    /// Validated image suffix.
+    pub ext: ImageExt,
+}
+
 /// SHA-256 content hash encoded as canonical padded RFC 4648 Base64.
 #[derive(Debug, Clone, Default, Eq, PartialEq, Hash)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]

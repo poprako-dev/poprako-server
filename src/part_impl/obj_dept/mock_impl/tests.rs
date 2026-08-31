@@ -2,13 +2,69 @@ use super::*;
 
 use poprako_orchestra::{Nucl as _, OperRun as _, OperStep as _};
 
+use poprako_obj_dept::key::{KeyMap, ObjGeneration};
 use poprako_obj_dept::model::slot::ObjSlotSpec;
 use poprako_obj_dept::oper::{
     ClearObjs, DeleteObjs, GenObjUrls, MarkObjUploaded,
 };
 use poprako_obj_dept::pool::ObjUrlProfile;
 
-use crate::part::obj_dept::PageImage;
+use crate::part::obj_dept::{ComicCover, PageImage, TeamAvatar, UserAvatar};
+use crate::value::image::{
+    ComicCoverKey, ImageExt, PageImageKey, TeamAvatarKey, UserAvatarKey,
+};
+
+fn page_dom(page_id: &str) -> PageImageKey {
+    PageImageKey {
+        chapter_id: "chapter-1".into(),
+        page_id: page_id.into(),
+        ext: ImageExt::Png,
+    }
+}
+
+#[test]
+fn key_maps_preserve_the_business_physical_key_contract() {
+    let page_key = PageImage::forward(&page_dom("page-1"), 7);
+
+    let user_key = UserAvatar::forward(
+        &UserAvatarKey {
+            user_id: "user-1".into(),
+            ext: ImageExt::Jpg,
+        },
+        8,
+    );
+
+    let team_key = TeamAvatar::forward(
+        &TeamAvatarKey {
+            team_id: "team-1".into(),
+            ext: ImageExt::Webp,
+        },
+        9,
+    );
+
+    let comic_key = ComicCover::forward(
+        &ComicCoverKey {
+            comic_id: "comic-1".into(),
+            ext: ImageExt::Avif,
+        },
+        10,
+    );
+
+    assert_eq!(page_key, "page/chapter_chapter-1/page-1-7.png");
+
+    assert_eq!(user_key, "user_avatar/user-1-8.jpg");
+
+    assert_eq!(team_key, "team_avatar/team-1-9.webp");
+
+    assert_eq!(comic_key, "comic_cover/comic-1-10.avif");
+
+    assert_eq!(
+        PageImage::forward(&PageImage::reverse(&page_key).unwrap().0, 7),
+        page_key
+    );
+
+    assert!(PageImage::reverse(&"page_image/page-1/7".into()).is_err());
+}
 
 #[test]
 fn origin_only_profile_omits_thumbnail() {
@@ -16,16 +72,16 @@ fn origin_only_profile_omits_thumbnail() {
         key: ObjKey {
             id: String::from("page-1"),
             version: 1,
+            image: "page/chapter_chapter-1/page-1-1.png".into(),
         },
         is_available: true,
         hash: vec![1; 32],
         ext: String::from("png"),
     };
 
-    let urls =
-        gen_urls("font_file", Some(&meta), ObjUrlProfile::OriginOnly, true)
-            .unwrap()
-            .unwrap();
+    let urls = gen_urls(Some(&meta), ObjUrlProfile::OriginOnly, true)
+        .unwrap()
+        .unwrap();
 
     assert!(urls.thumbnail_url.is_none());
 }
@@ -36,20 +92,16 @@ fn image_thumbnail_profile_generates_thumbnail() {
         key: ObjKey {
             id: String::from("page-1"),
             version: 1,
+            image: "page/chapter_chapter-1/page-1-1.png".into(),
         },
         is_available: true,
         hash: vec![1; 32],
         ext: String::from("png"),
     };
 
-    let urls = gen_urls(
-        "page_image",
-        Some(&meta),
-        ObjUrlProfile::ImageThumbnail,
-        true,
-    )
-    .unwrap()
-    .unwrap();
+    let urls = gen_urls(Some(&meta), ObjUrlProfile::ImageThumbnail, true)
+        .unwrap()
+        .unwrap();
 
     assert!(urls.thumbnail_url.is_some());
 }
@@ -61,6 +113,7 @@ async fn mock_operation_can_disable_thumbnails() {
         key: ObjKey {
             id: String::from("page-1"),
             version: 1,
+            image: "page/chapter_chapter-1/page-1-1.png".into(),
         },
         is_available: true,
         hash: vec![1; 32],
@@ -88,6 +141,7 @@ async fn upload_mark_is_exact_current_and_idempotent() {
     let key = ObjKey {
         id: String::from("page-1"),
         version: 4,
+        image: "page/chapter_chapter-1/page-1-4.png".into(),
     };
     let meta = ObjMeta {
         key: key.clone(),
@@ -110,23 +164,28 @@ async fn upload_mark_is_exact_current_and_idempotent() {
             },
         );
 
-    let first = MarkObjUploaded::<PageImage>::new(&key)
+    let generation = ObjGeneration {
+        id: key.id.clone(),
+        version: key.version,
+    };
+
+    let first = MarkObjUploaded::<PageImage>::new(&generation)
         .run_on(&mock)
         .await
         .unwrap();
-    let second = MarkObjUploaded::<PageImage>::new(&key)
+    let second = MarkObjUploaded::<PageImage>::new(&generation)
         .run_on(&mock)
         .await
         .unwrap();
-    let stale_key = ObjKey {
+    let stale_key = ObjGeneration {
+        id: key.id.clone(),
         version: 3,
-        ..key.clone()
     };
     let stale = MarkObjUploaded::<PageImage>::new(&stale_key)
         .run_on(&mock)
         .await
         .unwrap();
-    let missing_key = ObjKey {
+    let missing_key = ObjGeneration {
         id: String::from("missing"),
         version: 1,
     };
@@ -172,7 +231,7 @@ async fn upload_mark_is_exact_current_and_idempotent() {
 
     assert!(detached_prepared);
 
-    let detached = MarkObjUploaded::<PageImage>::new(&key)
+    let detached = MarkObjUploaded::<PageImage>::new(&generation)
         .run_on(&mock)
         .await
         .unwrap();
@@ -189,9 +248,8 @@ async fn slot_and_delete_defer_check_and_delete_debt() {
     mock.coord(async move |context| {
         //
         let obj_spec = ObjSlotSpec {
-            id: "page-1",
+            dom: page_dom("page-1"),
             hash: &[1; 32],
-            ext: "png",
             content_type: "image/png",
             byte_len: 1024,
         };
@@ -235,9 +293,8 @@ async fn clear_allows_replacement_without_reusing_a_generation() {
     let replacement = mock
         .coord(async move |context| {
             let obj_spec = ObjSlotSpec {
-                id: "page-1",
+                dom: page_dom("page-1"),
                 hash: &[1; 32],
-                ext: "png",
                 content_type: "image/png",
                 byte_len: 1024,
             };
@@ -271,16 +328,14 @@ async fn batch_slots_reject_duplicate_ids_before_mutation() {
         .coord(async move |context| {
             let specs = [
                 ObjSlotSpec {
-                    id: "page-1",
+                    dom: page_dom("page-1"),
                     hash: &[1; 32],
-                    ext: "png",
                     content_type: "image/png",
                     byte_len: 1024,
                 },
                 ObjSlotSpec {
-                    id: "page-1",
+                    dom: page_dom("page-1"),
                     hash: &[2; 32],
-                    ext: "png",
                     content_type: "image/png",
                     byte_len: 2048,
                 },

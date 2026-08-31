@@ -9,7 +9,10 @@ use poprako_util::i18n::trl_kv;
 
 use crate::config::image::ImageConfig;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::value::image::ImageKind;
+use crate::value::image::{
+    ComicCoverKey, ImageExt, ImageKind, PageImageKey, TeamAvatarKey,
+    UserAvatarKey,
+};
 
 /// Domain opers for image lifecycle management: generates unique identifiers for scheduled image deletion and integrity check tasks.
 pub struct ImageComplex;
@@ -17,6 +20,80 @@ pub struct ImageComplex;
 impl ImageComplex {
     // Number of bytes in one mebibyte.
     const BYTES_PER_MIB: u64 = 1024 * 1024;
+
+    /// Builds the canonical page-image physical key.
+    pub fn page_key(value: &PageImageKey, version: u32) -> String {
+        //
+        format!(
+            "page/chapter_{}/{}-{}.{}",
+            value.chapter_id,
+            value.page_id,
+            version,
+            value.ext.suffix(),
+        )
+    }
+
+    /// Parses one canonical page-image physical key.
+    pub fn parse_page_key(value: &str) -> Option<(PageImageKey, u32)> {
+        //
+        let path = value.strip_prefix("page/chapter_")?;
+
+        let (chapter_id, filename) = path.split_once('/')?;
+
+        let (stem, ext) = filename.rsplit_once('.')?;
+
+        let (page_id, version) = stem.rsplit_once('-')?;
+
+        let image_key = PageImageKey {
+            chapter_id: chapter_id.to_owned(),
+            page_id: page_id.to_owned(),
+            ext: ImageExt::parse(ext)?,
+        };
+
+        let version = version.parse().ok()?;
+
+        (Self::page_key(&image_key, version) == value)
+            .then_some((image_key, version))
+    }
+
+    /// Builds the canonical user-avatar physical key.
+    pub fn user_avatar_key(value: &UserAvatarKey, version: u32) -> String {
+        Self::flat_key("user_avatar", &value.user_id, version, value.ext)
+    }
+
+    /// Parses one canonical user-avatar physical key.
+    pub fn parse_user_avatar_key(value: &str) -> Option<(UserAvatarKey, u32)> {
+        //
+        let (id, ext, version) = Self::parse_flat_key("user_avatar", value)?;
+
+        Some((UserAvatarKey { user_id: id, ext }, version))
+    }
+
+    /// Builds the canonical team-avatar physical key.
+    pub fn team_avatar_key(value: &TeamAvatarKey, version: u32) -> String {
+        Self::flat_key("team_avatar", &value.team_id, version, value.ext)
+    }
+
+    /// Parses one canonical team-avatar physical key.
+    pub fn parse_team_avatar_key(value: &str) -> Option<(TeamAvatarKey, u32)> {
+        //
+        let (id, ext, version) = Self::parse_flat_key("team_avatar", value)?;
+
+        Some((TeamAvatarKey { team_id: id, ext }, version))
+    }
+
+    /// Builds the canonical comic-cover physical key.
+    pub fn comic_cover_key(value: &ComicCoverKey, version: u32) -> String {
+        Self::flat_key("comic_cover", &value.comic_id, version, value.ext)
+    }
+
+    /// Parses one canonical comic-cover physical key.
+    pub fn parse_comic_cover_key(value: &str) -> Option<(ComicCoverKey, u32)> {
+        //
+        let (id, ext, version) = Self::parse_flat_key("comic_cover", value)?;
+
+        Some((ComicCoverKey { comic_id: id, ext }, version))
+    }
 
     /// Validates the content length against the per-kind upper bound.
     ///
@@ -71,5 +148,33 @@ impl ImageComplex {
             variant: ExpectedVariant::Args,
             message: err_message,
         }
+    }
+
+    // Builds one canonical non-page physical key.
+    fn flat_key(prefix: &str, id: &str, version: u32, ext: ImageExt) -> String {
+        format!("{}/{}-{}.{}", prefix, id, version, ext.suffix())
+    }
+
+    // Parses one canonical non-page physical key.
+    fn parse_flat_key(
+        prefix: &str,
+        value: &str,
+    ) -> Option<(String, ImageExt, u32)> {
+        //
+        let filename = value.strip_prefix(prefix)?.strip_prefix('/')?;
+
+        let (stem, ext) = filename.rsplit_once('.')?;
+
+        let (id, version) = stem.rsplit_once('-')?;
+
+        let ext = ImageExt::parse(ext)?;
+
+        let version = version.parse().ok()?;
+
+        (Self::flat_key(prefix, id, version, ext) == value).then_some((
+            id.to_owned(),
+            ext,
+            version,
+        ))
     }
 }

@@ -115,6 +115,8 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
                 obj_id: String,
                 #[diesel(column_name = f_version)]
                 version: i64,
+                #[diesel(column_name = f_key)]
+                image: String,
                 #[diesel(column_name = f_generation)]
                 generation: i64,
                 #[diesel(column_name = f_status)]
@@ -147,6 +149,8 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
                 obj_id: String,
                 #[diesel(column_name = f_version)]
                 version: i64,
+                #[diesel(column_name = f_key)]
+                image: String,
                 #[diesel(column_name = f_generation)]
                 generation: i64,
                 #[diesel(column_name = f_retried_count)]
@@ -165,6 +169,7 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
                         oper: row.oper,
                         obj_id: row.obj_id,
                         version: row.version,
+                        image: row.image,
                         generation: row.generation,
                         retried_count: row.retried_count,
                         lease: row.lease,
@@ -373,6 +378,7 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
                     oper,
                     obj_id,
                     version,
+                    image,
                     generation,
                     status,
                     visible_at,
@@ -389,6 +395,7 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
                     oper,
                     obj_id,
                     version,
+                    image,
                     generation,
                     status,
                     visible_at,

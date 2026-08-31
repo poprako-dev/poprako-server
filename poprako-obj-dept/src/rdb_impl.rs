@@ -4,7 +4,7 @@ use diesel::result::{DatabaseErrorKind, Error as DieselError};
 
 use poprako_rdb_core::RdbError;
 
-use crate::key::ObjKey;
+use crate::key::{KeyMap, ObjKey};
 use crate::model::meta::ObjMeta;
 use crate::rest::{ObjDeptError, ObjDeptRest};
 
@@ -14,6 +14,8 @@ pub struct ObjRdbRow {
     //
     /// Stored generation watermark.
     pub version: i64,
+    /// Complete physical key, or none for a detached row.
+    pub key: Option<String>,
     /// Current upload evidence, or none for a detached row.
     pub f_is_uploaded: Option<bool>,
     /// Current content hash, or none for a detached row.
@@ -30,6 +32,8 @@ pub struct ObjRdbWrite<'a> {
     pub id: &'a str,
     /// Newly allocated generation.
     pub version: u32,
+    /// Complete immutable physical object key.
+    pub key: &'a str,
     /// Validated content hash.
     pub hash: &'a [u8],
     /// Validated object suffix.
@@ -41,7 +45,10 @@ pub struct ObjRdbWrite<'a> {
 /// # Errors
 ///
 /// Returns an unrecoverable error when the row is inconsistent or out of range.
-pub fn decode_row(id: &str, row: ObjRdbRow) -> ObjDeptRest<Option<ObjMeta>> {
+pub fn decode_row<B>(id: &str, row: ObjRdbRow) -> ObjDeptRest<Option<ObjMeta>>
+where
+    B: KeyMap<Img = String>,
+{
     //
     let version = u32::try_from(row.version).map_err(|_| {
         //
@@ -50,16 +57,20 @@ pub fn decode_row(id: &str, row: ObjRdbRow) -> ObjDeptRest<Option<ObjMeta>> {
         }
     })?;
 
-    match (row.f_is_uploaded, row.hash, row.ext) {
+    match (row.key, row.f_is_uploaded, row.hash, row.ext) {
         //
-        (None, None, None) => Ok(None),
+        (None, None, None, None) => Ok(None),
 
-        (Some(is_available), Some(hash), Some(ext)) => {
+        (Some(key), Some(is_available), Some(hash), Some(ext)) => {
+            //
+            validate_key::<B>(id, version, &ext, &key)?;
+
             //
             Ok(Some(ObjMeta {
                 key: ObjKey {
                     id: id.to_owned(),
                     version,
+                    image: key,
                 },
                 is_available,
                 hash,
@@ -84,9 +95,10 @@ pub fn next_version(id: &str, row: Option<&ObjRdbRow>) -> ObjDeptRest<u32> {
         //
         Some(row) => {
             //
-            match (&row.f_is_uploaded, &row.hash, &row.ext) {
+            match (&row.key, &row.f_is_uploaded, &row.hash, &row.ext) {
                 //
-                (None, None, None) | (Some(_), Some(_), Some(_)) => {}
+                (None, None, None, None)
+                | (Some(_), Some(_), Some(_), Some(_)) => {}
 
                 _ => {
                     //
@@ -119,18 +131,21 @@ pub fn next_version(id: &str, row: Option<&ObjRdbRow>) -> ObjDeptRest<u32> {
 /// # Errors
 ///
 /// Returns an unrecoverable error when the row is inconsistent or out of range.
-pub fn active_key(
+pub fn active_key<B>(
     id: &str,
     row: Option<&ObjRdbRow>,
-) -> ObjDeptRest<Option<ObjKey>> {
+) -> ObjDeptRest<Option<ObjKey>>
+where
+    B: KeyMap<Img = String>,
+{
     //
     let Some(row) = row else {
         return Ok(None);
     };
 
-    match (&row.f_is_uploaded, &row.hash, &row.ext) {
+    match (&row.key, &row.f_is_uploaded, &row.hash, &row.ext) {
         //
-        (Some(_), Some(_), Some(_)) => {
+        (Some(key), Some(_), Some(_), Some(ext)) => {
             //
             let version = u32::try_from(row.version).map_err(|_| {
                 //
@@ -139,13 +154,16 @@ pub fn active_key(
                 }
             })?;
 
+            validate_key::<B>(id, version, ext, key)?;
+
             Ok(Some(ObjKey {
                 id: id.to_owned(),
                 version,
+                image: key.clone(),
             }))
         }
 
-        (None, None, None) => Ok(None),
+        (None, None, None, None) => Ok(None),
 
         _ => Err(ObjDeptError::Unrecoverable {
             message: format!("invalid object row: {}", id),
@@ -198,4 +216,37 @@ pub fn rdb_err(source: RdbError) -> ObjDeptError {
     };
 
     ObjDeptError::Retryable { message }
+}
+
+// Validates a stored physical key against its relational metadata.
+fn validate_key<B>(
+    id: &str,
+    version: u32,
+    ext: &str,
+    key: &str,
+) -> ObjDeptRest<()>
+where
+    B: KeyMap<Img = String>,
+{
+    //
+    let image = key.to_owned();
+
+    let (dom, decoded_version) =
+        B::reverse(&image).map_err(|_| ObjDeptError::Unrecoverable {
+            message: format!("invalid object key: {}", id),
+        })?;
+
+    let is_consistent = B::id(&dom) == id
+        && B::ext(&dom) == ext
+        && decoded_version == version
+        && B::forward(&dom, decoded_version) == image;
+
+    match () {
+        //
+        () if is_consistent => Ok(()),
+
+        () => Err(ObjDeptError::Unrecoverable {
+            message: format!("inconsistent object key: {}", id),
+        }),
+    }
 }

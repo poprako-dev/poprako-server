@@ -4,7 +4,7 @@ use poprako_orchestra::{Context, OperRun as _};
 use tracing::instrument;
 
 use poprako_obj_dept::ObjDept;
-use poprako_obj_dept::key::ObjKey;
+use poprako_obj_dept::key::ObjGeneration;
 use poprako_obj_dept::oper::MarkObjUploaded;
 use poprako_util::i18n::trl;
 
@@ -45,7 +45,7 @@ where
     // SAFETY: This is an optimistic exact-generation transition. It does not
     // synchronously prove PUT success, object presence, or content integrity;
     // the delayed actor may reset this generation after a failed HEAD check.
-    let cover_key = ObjKey {
+    let cover_key = ObjGeneration {
         id,
         version: instr.image_version,
     };

@@ -59,6 +59,7 @@ fn seed_comic_cover_scope(mock: &Mock, version: u32) {
     let key = ObjKey {
         id: "comic-1".into(),
         version,
+        image: format!("comic_cover/comic-1-{}.png", version),
     };
 
     let meta = ObjMeta {

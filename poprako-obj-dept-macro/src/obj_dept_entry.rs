@@ -13,9 +13,6 @@ pub struct ObjEntry {
     /// Stores the object task topic.
     topic: LitStr,
 
-    /// Retains the manifest namespace for future macro expansion.
-    _namespace: LitStr,
-
     /// Retains the manifest URL profile for future macro expansion.
     _url_profile: Ident,
 }
@@ -57,17 +54,12 @@ impl Parse for ObjEntry {
 
         content.parse::<Token![,]>()?;
 
-        let namespace = content.parse()?;
-
-        content.parse::<Token![,]>()?;
-
         let url_profile = content.parse()?;
 
         Ok(Self {
             marker,
             module,
             topic,
-            _namespace: namespace,
             _url_profile: url_profile,
         })
     }

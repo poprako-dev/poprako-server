@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 
 use poprako_orchestra::Oper;
 
-use crate::key::ObjKey;
+use crate::key::{KeyMap, ObjGeneration};
 use crate::model::meta::ObjMeta;
 use crate::model::slot::{ObjSlot, ObjSlotSpec};
 use crate::model::url::ObjUrls;
@@ -11,7 +11,10 @@ use crate::model::url::ObjUrls;
 /// Reads current object metadata for a collection of business objects.
 #[derive(Oper)]
 #[oper(output = HashMap<String, ObjMeta>)]
-pub struct ListObjMetas<'a, B> {
+pub struct ListObjMetas<'a, B>
+where
+    B: KeyMap,
+{
     //
     /// Stable business-object identifiers.
     pub ids: &'a [String],
@@ -20,7 +23,10 @@ pub struct ListObjMetas<'a, B> {
     _m: PhantomData<fn() -> B>,
 }
 
-impl<'a, B> ListObjMetas<'a, B> {
+impl<'a, B> ListObjMetas<'a, B>
+where
+    B: KeyMap,
+{
     /// Creates a metadata lookup for the supplied business-object identifiers.
     #[must_use]
     pub const fn new(ids: &'a [String]) -> Self {
@@ -35,7 +41,10 @@ impl<'a, B> ListObjMetas<'a, B> {
 /// Generates read URLs for the supplied metadata versions.
 #[derive(Oper)]
 #[oper(output = HashMap<String, ObjUrls>)]
-pub struct GenObjUrls<'a, B> {
+pub struct GenObjUrls<'a, B>
+where
+    B: KeyMap,
+{
     //
     /// Metadata versions whose physical keys will be resolved.
     pub metas: &'a HashMap<String, ObjMeta>,
@@ -44,7 +53,10 @@ pub struct GenObjUrls<'a, B> {
     _m: PhantomData<fn() -> B>,
 }
 
-impl<'a, B> GenObjUrls<'a, B> {
+impl<'a, B> GenObjUrls<'a, B>
+where
+    B: KeyMap,
+{
     /// Creates a read-URL request for the supplied object metadata.
     #[must_use]
     pub const fn new(metas: &'a HashMap<String, ObjMeta>) -> Self {
@@ -59,19 +71,25 @@ impl<'a, B> GenObjUrls<'a, B> {
 /// Generates a new generation and its locally signed write capability.
 #[derive(Oper)]
 #[oper(output = ObjSlot)]
-pub struct GenObjSlot<'a, B> {
+pub struct GenObjSlot<'a, B>
+where
+    B: KeyMap,
+{
     //
     /// Business-planned object and write requirements.
-    pub spec: &'a ObjSlotSpec<'a>,
+    pub spec: &'a ObjSlotSpec<'a, B>,
     /// Compile-time object marker selected for this operation.
     #[doc(hidden)]
     _m: PhantomData<fn() -> B>,
 }
 
-impl<'a, B> GenObjSlot<'a, B> {
+impl<'a, B> GenObjSlot<'a, B>
+where
+    B: KeyMap,
+{
     /// Creates a reservation for one business object.
     #[must_use]
-    pub const fn new(spec: &'a ObjSlotSpec<'a>) -> Self {
+    pub const fn new(spec: &'a ObjSlotSpec<'a, B>) -> Self {
         //
         Self {
             spec,
@@ -83,19 +101,25 @@ impl<'a, B> GenObjSlot<'a, B> {
 /// Generates new generations and locally signed write capabilities in bulk.
 #[derive(Oper)]
 #[oper(output = HashMap<String, ObjSlot>)]
-pub struct GenObjSlots<'a, B> {
+pub struct GenObjSlots<'a, B>
+where
+    B: KeyMap,
+{
     //
     /// Business-planned objects and their write requirements.
-    pub specs: &'a [ObjSlotSpec<'a>],
+    pub specs: &'a [ObjSlotSpec<'a, B>],
     /// Compile-time object marker selected for this operation.
     #[doc(hidden)]
     _m: PhantomData<fn() -> B>,
 }
 
-impl<'a, B> GenObjSlots<'a, B> {
+impl<'a, B> GenObjSlots<'a, B>
+where
+    B: KeyMap,
+{
     /// Creates a bulk reservation for the supplied business objects.
     #[must_use]
-    pub const fn new(specs: &'a [ObjSlotSpec<'a>]) -> Self {
+    pub const fn new(specs: &'a [ObjSlotSpec<'a, B>]) -> Self {
         //
         Self {
             specs,
@@ -107,19 +131,25 @@ impl<'a, B> GenObjSlots<'a, B> {
 /// Optimistically marks one exact current object generation as uploaded.
 #[derive(Oper)]
 #[oper(output = bool)]
-pub struct MarkObjUploaded<'a, B> {
+pub struct MarkObjUploaded<'a, B>
+where
+    B: KeyMap,
+{
     //
     /// Exact logical object generation declared uploaded by the client.
-    pub key: &'a ObjKey,
+    pub key: &'a ObjGeneration,
     /// Compile-time object marker selected for this operation.
     #[doc(hidden)]
     _m: PhantomData<fn() -> B>,
 }
 
-impl<'a, B> MarkObjUploaded<'a, B> {
+impl<'a, B> MarkObjUploaded<'a, B>
+where
+    B: KeyMap,
+{
     /// Creates an upload declaration for one exact object generation.
     #[must_use]
-    pub const fn new(key: &'a ObjKey) -> Self {
+    pub const fn new(key: &'a ObjGeneration) -> Self {
         //
         Self {
             key,
@@ -131,7 +161,10 @@ impl<'a, B> MarkObjUploaded<'a, B> {
 /// Clears current objects while their owning business entities remain active.
 #[derive(Oper)]
 #[oper(output = ())]
-pub struct ClearObjs<'a, B> {
+pub struct ClearObjs<'a, B>
+where
+    B: KeyMap,
+{
     //
     /// Business-object identifiers whose current files are cleared.
     pub ids: &'a [String],
@@ -140,7 +173,10 @@ pub struct ClearObjs<'a, B> {
     _m: PhantomData<fn() -> B>,
 }
 
-impl<'a, B> ClearObjs<'a, B> {
+impl<'a, B> ClearObjs<'a, B>
+where
+    B: KeyMap,
+{
     /// Creates a request to clear current files for active business entities.
     #[must_use]
     pub const fn new(ids: &'a [String]) -> Self {
@@ -157,7 +193,10 @@ impl<'a, B> ClearObjs<'a, B> {
 /// Each supplied business identifier must never be reused for this object kind.
 #[derive(Oper)]
 #[oper(output = ())]
-pub struct DeleteObjs<'a, B> {
+pub struct DeleteObjs<'a, B>
+where
+    B: KeyMap,
+{
     //
     /// Permanently retired business-object identifiers.
     pub ids: &'a [String],
@@ -166,7 +205,10 @@ pub struct DeleteObjs<'a, B> {
     _m: PhantomData<fn() -> B>,
 }
 
-impl<'a, B> DeleteObjs<'a, B> {
+impl<'a, B> DeleteObjs<'a, B>
+where
+    B: KeyMap,
+{
     /// Creates a request to delete objects for ended business entities.
     #[must_use]
     pub const fn new(ids: &'a [String]) -> Self {

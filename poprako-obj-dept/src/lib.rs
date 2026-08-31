@@ -46,6 +46,7 @@ mod tests;
 
 use poprako_orchestra::drive;
 
+use crate::key::KeyMap;
 use crate::oper::{
     ClearObjs, DeleteObjs, GenObjSlot, GenObjSlots, GenObjUrls, ListObjMetas,
     MarkObjUploaded,
@@ -71,7 +72,11 @@ extern crate self as poprako_obj_dept;
     ),
     step(for<'a> ListObjMetas<'a, B>),
 )]
-pub trait ObjDeptView<B, C> {}
+pub trait ObjDeptView<B, C>
+where
+    B: KeyMap,
+{
+}
 
 /// Writable object operations for one compile-time marker.
 #[drive(
@@ -90,4 +95,8 @@ pub trait ObjDeptView<B, C> {}
         for<'a> DeleteObjs<'a, B>,
     ),
 )]
-pub trait ObjDept<B, C> {}
+pub trait ObjDept<B, C>
+where
+    B: KeyMap,
+{
+}

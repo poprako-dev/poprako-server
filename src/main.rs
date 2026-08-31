@@ -1,3 +1,5 @@
+#![recursion_limit = "1024"]
+
 use std::net::ToSocketAddrs;
 use std::num::NonZeroUsize;
 use std::sync::Arc;

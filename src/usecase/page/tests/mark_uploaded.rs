@@ -41,6 +41,7 @@ fn seed_scope(mock: &Mock) {
     let key = ObjKey {
         id: "page-1".into(),
         version: 3,
+        image: "page/chapter_chapter-1/page-1-3.png".into(),
     };
 
     let meta = ObjMeta {

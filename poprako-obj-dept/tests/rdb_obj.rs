@@ -7,6 +7,7 @@ diesel::table! {
     t_page_image (f_id) {
         f_id -> Text,
         f_version -> BigInt,
+        f_key -> Nullable<Text>,
         f_is_uploaded -> Nullable<Bool>,
         f_hash -> Nullable<Binary>,
         f_ext -> Nullable<Text>,
@@ -21,7 +22,6 @@ objs_def! {
     PageImage {
         table: t_page_image,
         topic: "page_image",
-        namespace: "page_image",
         url_profile: ImageThumbnail,
     },
 }
@@ -31,8 +31,6 @@ fn expands_direct_typed_object() {
     let _marker = PageImage;
 
     assert_eq!(page_image_rdb_impl::TOPIC, "page_image");
-
-    assert_eq!(page_image_rdb_impl::NAMESPACE, "page_image");
 
     assert_eq!(
         page_image_rdb_impl::URL_PROFILE,

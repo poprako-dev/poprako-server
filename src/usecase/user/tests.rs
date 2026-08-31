@@ -79,6 +79,7 @@ fn seed_user_avatar(mock: &Mock, user_id: &str, version: u32) {
     let key = ObjKey {
         id: user_id.into(),
         version,
+        image: format!("user_avatar/{}-{}.png", user_id, version),
     };
 
     let meta = ObjMeta {

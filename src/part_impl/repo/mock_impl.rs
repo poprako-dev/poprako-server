@@ -368,6 +368,7 @@ impl Mock {
             key: ObjKey {
                 id: id.to_owned(),
                 version: 1,
+                image: format!("page/chapter_test/{}-1.{}", id, ext),
             },
             is_available: true,
             hash: vec![0; 32],

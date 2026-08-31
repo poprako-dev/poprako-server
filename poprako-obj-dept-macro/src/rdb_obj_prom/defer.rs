@@ -24,6 +24,8 @@ pub fn expand_module(table: &Path) -> TokenStream {
             obj_id: String,
             #[diesel(column_name = f_version)]
             version: i64,
+            #[diesel(column_name = f_key)]
+            image: String,
             #[diesel(column_name = f_generation)]
             generation: i64,
             #[diesel(column_name = f_status)]
@@ -43,6 +45,8 @@ pub fn expand_module(table: &Path) -> TokenStream {
             obj_id: &'a str,
             #[diesel(column_name = f_version)]
             version: i64,
+            #[diesel(column_name = f_key)]
+            image: &'a str,
             #[diesel(column_name = f_generation)]
             generation: i64,
             #[diesel(column_name = f_status)]
@@ -102,6 +106,7 @@ pub fn expand_module(table: &Path) -> TokenStream {
                     oper: task.oper,
                     obj_id: &task.key.id,
                     version: i64::from(task.key.version),
+                    image: &task.key.image,
                     generation: ORDINARY_GENERATION,
                     status: PENDING,
                     visible_at: task.visible_at,
@@ -131,13 +136,22 @@ pub fn expand_module(table: &Path) -> TokenStream {
                         oper,
                         obj_id,
                         version,
+                        image,
                         generation,
                         status,
                     } = row;
 
                     (
                         id,
-                        (topic, oper, obj_id, version, generation, status),
+                        (
+                            topic,
+                            oper,
+                            obj_id,
+                            version,
+                            image,
+                            generation,
+                            status,
+                        ),
                     )
                 })
                 .collect::<HashMap<_, _>>();
@@ -158,12 +172,21 @@ pub fn expand_module(table: &Path) -> TokenStream {
                     });
                 };
 
-                let (row_topic, row_oper, row_obj_id, row_version, row_generation, row_status) = row;
+                let (
+                    row_topic,
+                    row_oper,
+                    row_obj_id,
+                    row_version,
+                    row_image,
+                    row_generation,
+                    row_status,
+                ) = row;
 
                 let is_same_identity = row_topic == topic
                     && row_oper == task.oper
                     && row_obj_id == &task.key.id
                     && *row_version == i64::from(task.key.version)
+                    && row_image == &task.key.image
                     && *row_generation == ORDINARY_GENERATION;
 
                 if !is_same_identity {

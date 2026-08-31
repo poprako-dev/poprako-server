@@ -40,7 +40,7 @@ pub fn expand(dept: &Ident, view: &Ident, entry: &ObjEntry) -> TokenStream {
 
                 let rows = #obj_module::load_many(&mut conn, oper.ids).await?;
 
-                #obj_module::decode_many(rows)
+                #obj_module::decode_many::<#obj>(rows)
             }
         }
 
@@ -69,7 +69,7 @@ pub fn expand(dept: &Ident, view: &Ident, entry: &ObjEntry) -> TokenStream {
                 let rows = #obj_module::load_many(context.conn(), oper.ids)
                     .await?;
 
-                #obj_module::decode_many(rows)
+                #obj_module::decode_many::<#obj>(rows)
             }
         }
 
@@ -93,7 +93,6 @@ pub fn expand(dept: &Ident, view: &Ident, entry: &ObjEntry) -> TokenStream {
             > {
                 ::poprako_obj_dept::pool::gen_urls_bounded(
                     self.pool(),
-                    #obj_module::NAMESPACE,
                     #obj_module::URL_PROFILE,
                     oper.metas,
                 )
@@ -124,7 +123,7 @@ pub fn expand(dept: &Ident, view: &Ident, entry: &ObjEntry) -> TokenStream {
 
                 let rows = #obj_module::load_many(&mut conn, oper.ids).await?;
 
-                #obj_module::decode_many(rows)
+                #obj_module::decode_many::<#obj>(rows)
             }
         }
 
@@ -152,7 +151,7 @@ pub fn expand(dept: &Ident, view: &Ident, entry: &ObjEntry) -> TokenStream {
                 let rows = #obj_module::load_many(context.conn(), oper.ids)
                     .await?;
 
-                #obj_module::decode_many(rows)
+                #obj_module::decode_many::<#obj>(rows)
             }
         }
 
@@ -175,7 +174,6 @@ pub fn expand(dept: &Ident, view: &Ident, entry: &ObjEntry) -> TokenStream {
             > {
                 ::poprako_obj_dept::pool::gen_urls_bounded(
                     self.pool(),
-                    #obj_module::NAMESPACE,
                     #obj_module::URL_PROFILE,
                     oper.metas,
                 )

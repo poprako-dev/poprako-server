@@ -16,7 +16,7 @@ mod tests;
 use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
-use poprako_obj_dept::key::ObjKey;
+use poprako_obj_dept::key::ObjGeneration;
 use poprako_obj_dept::model::slot::ObjSlotSpec;
 use poprako_obj_dept::oper::{GenObjSlot, MarkObjUploaded};
 use poprako_obj_dept::{ObjDept, ObjDeptView};
@@ -48,7 +48,7 @@ use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::team::view::team_info_view;
-use crate::value::image::ImageKind;
+use crate::value::image::{ImageKind, TeamAvatarKey};
 use crate::value::role::{RoleField, RoleMask};
 
 /// Creates a new team.
@@ -225,9 +225,11 @@ where
                 .await?;
 
             let obj_spec = ObjSlotSpec {
-                id: &id,
+                dom: TeamAvatarKey {
+                    team_id: id.clone(),
+                    ext: instr.ext,
+                },
                 hash: instr.image_hash.as_bytes(),
-                ext: instr.ext.suffix(),
                 content_type: instr.ext.content_type(),
                 byte_len: instr.new_byte_len,
             };
@@ -281,7 +283,7 @@ where
     // SAFETY: This is an optimistic exact-generation transition. It does not
     // synchronously prove PUT success, object presence, or content integrity;
     // the delayed actor may reset this generation after a failed HEAD check.
-    let avatar_key = ObjKey {
+    let avatar_key = ObjGeneration {
         id,
         version: instr.image_version,
     };

@@ -2759,7 +2759,6 @@ checksum = "5dcdc93847ad24990939cce6e1804361e903efcb5f99daa5abd87943a9d6d7ba"
 name = "poprako-obj-dept"
 version = "0.1.0"
 dependencies = [
- "base64",
  "diesel",
  "diesel-async",
  "futures-util",

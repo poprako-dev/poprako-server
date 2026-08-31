@@ -8,6 +8,7 @@ use std::collections::{HashMap, HashSet};
 use poprako_orchestra::{Context, OperRun as _};
 
 use poprako_obj_dept::ObjDeptView;
+use poprako_obj_dept::key::KeyMap;
 use poprako_obj_dept::model::url::ObjUrls;
 use poprako_obj_dept::oper::{GenObjUrls, ListObjMetas};
 
@@ -255,6 +256,7 @@ async fn load_obj_urls<C, O, B>(
 ) -> BaseRest<HashMap<String, ObjUrls>>
 where
     C: Context,
+    B: KeyMap,
     O: ObjDeptView<B, C> + Sync,
 {
     if ids.is_empty() {

@@ -20,9 +20,6 @@ struct ObjInput {
     // Stores the object task topic.
     topic: LitStr,
 
-    // Stores the object-key namespace.
-    namespace: LitStr,
-
     // Selects the object URL generation profile.
     url_profile: Ident,
 }
@@ -46,12 +43,6 @@ impl Parse for ObjInput {
         parse_field(&content, "topic")?;
 
         let topic = content.parse()?;
-
-        content.parse::<Token![,]>()?;
-
-        parse_field(&content, "namespace")?;
-
-        let namespace = content.parse()?;
 
         content.parse::<Token![,]>()?;
 
@@ -82,7 +73,6 @@ impl Parse for ObjInput {
             marker,
             table,
             topic,
-            namespace,
             url_profile,
         })
     }
@@ -135,11 +125,9 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
 
         let topic = &obj.topic;
 
-        let namespace = &obj.namespace;
-
         let url_profile = &obj.url_profile;
 
-        quote!((#marker, #module, #topic, #namespace, #url_profile),)
+        quote!((#marker, #module, #topic, #url_profile),)
     });
 
     Ok(quote! {
@@ -174,8 +162,6 @@ fn validate_unique(objs: &[ObjInput]) -> Result<()> {
 
     let mut topics = HashSet::new();
 
-    let mut namespaces = HashSet::new();
-
     for obj in objs {
         //
         validate_value(
@@ -195,13 +181,6 @@ fn validate_unique(objs: &[ObjInput]) -> Result<()> {
         )?;
 
         validate_value(&mut topics, obj.topic.value(), &obj.marker, "topic")?;
-
-        validate_value(
-            &mut namespaces,
-            obj.namespace.value(),
-            &obj.marker,
-            "namespace",
-        )?;
     }
 
     Ok(())
@@ -270,8 +249,6 @@ fn expand_obj(obj: &ObjInput) -> TokenStream {
 
     let topic = &obj.topic;
 
-    let namespace = &obj.namespace;
-
     let url_profile = &obj.url_profile;
 
     let module = marker_module(&obj.marker);
@@ -283,7 +260,6 @@ fn expand_obj(obj: &ObjInput) -> TokenStream {
             use super::#table;
 
             pub const TOPIC: &str = #topic;
-            pub const NAMESPACE: &str = #namespace;
             pub const URL_PROFILE: ::poprako_obj_dept::pool::ObjUrlProfile =
                 ::poprako_obj_dept::pool::ObjUrlProfile::#url_profile;
 

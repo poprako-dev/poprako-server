@@ -51,7 +51,7 @@ use crate::part::repo::oper::page::{
 use crate::part::repo::page::PageRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
-use crate::value::image::{ImageExt, ImageHash, ImageKind};
+use crate::value::image::{ImageExt, ImageHash, ImageKind, PageImageKey};
 
 // One page and its resolved object reservation.
 struct PageReservation {
@@ -177,9 +177,12 @@ where
                 .await?;
 
             let obj_spec = ObjSlotSpec {
-                id: &id,
+                dom: PageImageKey {
+                    chapter_id: page_info.chapter_id.clone(),
+                    page_id: id.clone(),
+                    ext: instr.ext,
+                },
                 hash: instr.image_hash.as_bytes(),
-                ext: instr.ext.suffix(),
                 content_type: instr.ext.content_type(),
                 byte_len: instr.new_byte_len,
             };
@@ -340,9 +343,12 @@ where
             let byte_len = page_spec.new_byte_len?;
 
             Some(ObjSlotSpec {
-                id: &manifest_entry.id,
+                dom: PageImageKey {
+                    chapter_id: chapter_info.id.clone(),
+                    page_id: manifest_entry.id.clone(),
+                    ext: page_spec.ext,
+                },
                 hash: page_spec.image_hash.as_bytes(),
-                ext: page_spec.ext.suffix(),
                 content_type: page_spec.ext.content_type(),
                 byte_len,
             })

@@ -18,13 +18,11 @@ fn object_manifest_rejects_every_duplicate_identity() {
         PageImage {
             table: t_page_image,
             topic: "page_image",
-            namespace: "page_image",
             url_profile: ImageThumbnail,
         },
         PageImage {
             table: t_page_image_2,
             topic: "page_image_2",
-            namespace: "page_image_2",
             url_profile: ImageThumbnail,
         },
     });
@@ -33,13 +31,11 @@ fn object_manifest_rejects_every_duplicate_identity() {
         PageImage {
             table: t_page_image,
             topic: "page_image",
-            namespace: "page_image",
             url_profile: ImageThumbnail,
         },
         ComicCover {
             table: t_page_image,
             topic: "comic_cover",
-            namespace: "comic_cover",
             url_profile: ImageThumbnail,
         },
     });
@@ -48,28 +44,11 @@ fn object_manifest_rejects_every_duplicate_identity() {
         PageImage {
             table: t_page_image,
             topic: "page_image",
-            namespace: "page_image",
             url_profile: ImageThumbnail,
         },
         ComicCover {
             table: t_comic_cover,
             topic: "page_image",
-            namespace: "comic_cover",
-            url_profile: ImageThumbnail,
-        },
-    });
-
-    let duplicate_namespace = expand_err(quote! {
-        PageImage {
-            table: t_page_image,
-            topic: "page_image",
-            namespace: "page_image",
-            url_profile: ImageThumbnail,
-        },
-        ComicCover {
-            table: t_comic_cover,
-            topic: "comic_cover",
-            namespace: "page_image",
             url_profile: ImageThumbnail,
         },
     });
@@ -79,8 +58,6 @@ fn object_manifest_rejects_every_duplicate_identity() {
     assert_eq!(duplicate_table, "duplicate object table");
 
     assert_eq!(duplicate_topic, "duplicate object topic");
-
-    assert_eq!(duplicate_namespace, "duplicate object namespace");
 }
 
 #[test]
@@ -90,13 +67,11 @@ fn generated_names_are_readable_and_read_views_cover_every_marker()
         PageImage {
             table: t_page_image,
             topic: "page_image",
-            namespace: "page_image",
             url_profile: ImageThumbnail,
         },
         FontFile {
             table: t_font_file,
             topic: "font_file",
-            namespace: "font_file",
             url_profile: OriginOnly,
         },
     })?
@@ -104,8 +79,8 @@ fn generated_names_are_readable_and_read_views_cover_every_marker()
     let implementations = impl_obj_dept::expand_items(quote! {
         dept: NormObjDept,
         view: NormObjView;
-        (PageImage, page_image_rdb_impl, "page_image", "page_image", ImageThumbnail),
-        (FontFile, font_file_rdb_impl, "font_file", "font_file", OriginOnly),
+        (PageImage, page_image_rdb_impl, "page_image", ImageThumbnail),
+        (FontFile, font_file_rdb_impl, "font_file", OriginOnly),
     })?
     .to_string();
 

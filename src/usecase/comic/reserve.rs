@@ -21,7 +21,7 @@ use crate::part::repo::team::TeamRepo;
 use crate::result::{BaseError, BaseRest, accept};
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
-use crate::value::image::ImageKind;
+use crate::value::image::{ComicCoverKey, ImageKind};
 
 /// Reserves a new comic cover upload slot.
 #[instrument(level = "info", skip(nucl, repo, obj_dept, image_config))]
@@ -67,9 +67,11 @@ where
             ComicComplex::ensure_comic_writable(&comic_info)?;
 
             let obj_spec = ObjSlotSpec {
-                id: &id,
+                dom: ComicCoverKey {
+                    comic_id: id.clone(),
+                    ext: instr.ext,
+                },
                 hash: instr.image_hash.as_bytes(),
-                ext: instr.ext.suffix(),
                 content_type: instr.ext.content_type(),
                 byte_len: instr.new_byte_len,
             };

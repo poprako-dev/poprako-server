@@ -114,6 +114,7 @@ diesel::table! {
     t_comic_cover (f_id) {
         f_id -> Text,
         f_version -> Int8,
+        f_key -> Nullable<Text>,
         f_is_uploaded -> Nullable<Bool>,
         f_hash -> Nullable<Bytea>,
         f_ext -> Nullable<Text>,
@@ -189,6 +190,7 @@ diesel::table! {
         f_oper -> Text,
         f_obj_id -> Text,
         f_version -> Int8,
+        f_key -> Text,
         f_generation -> Int8,
         f_status -> Text,
         f_visible_at -> Timestamptz,
@@ -217,6 +219,7 @@ diesel::table! {
     t_page_image (f_id) {
         f_id -> Text,
         f_version -> Int8,
+        f_key -> Nullable<Text>,
         f_is_uploaded -> Nullable<Bool>,
         f_hash -> Nullable<Bytea>,
         f_ext -> Nullable<Text>,
@@ -251,6 +254,7 @@ diesel::table! {
     t_team_avatar (f_id) {
         f_id -> Text,
         f_version -> Int8,
+        f_key -> Nullable<Text>,
         f_is_uploaded -> Nullable<Bool>,
         f_hash -> Nullable<Bytea>,
         f_ext -> Nullable<Text>,
@@ -322,6 +326,7 @@ diesel::table! {
     t_user_avatar (f_id) {
         f_id -> Text,
         f_version -> Int8,
+        f_key -> Nullable<Text>,
         f_is_uploaded -> Nullable<Bool>,
         f_hash -> Nullable<Bytea>,
         f_ext -> Nullable<Text>,

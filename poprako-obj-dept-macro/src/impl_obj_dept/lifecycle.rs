@@ -106,9 +106,16 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
 
                 let mut specs = oper.specs.iter().collect::<Vec<_>>();
 
-                specs.sort_unstable_by_key(|spec| spec.id);
+                specs.sort_unstable_by_key(|spec| {
+                    <#obj as ::poprako_obj_dept::key::KeyMap>::id(&spec.dom)
+                });
 
-                if specs.windows(2).any(|pair| pair[0].id == pair[1].id) {
+                if specs.windows(2).any(|pair| {
+                    <#obj as ::poprako_obj_dept::key::KeyMap>::id(&pair[0].dom)
+                        == <#obj as ::poprako_obj_dept::key::KeyMap>::id(
+                            &pair[1].dom,
+                        )
+                }) {
                     //
                     return Err(
                         ::poprako_obj_dept::rest::ObjDeptError::Invalid {
@@ -119,7 +126,10 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
 
                 let ids = specs
                     .iter()
-                    .map(|spec| spec.id.to_owned())
+                    .map(|spec| {
+                        <#obj as ::poprako_obj_dept::key::KeyMap>::id(&spec.dom)
+                            .to_owned()
+                    })
                     .collect::<Vec<_>>();
 
                 let rows =
@@ -143,22 +153,31 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
 
                 for spec in &specs {
                     //
-                    let previous = previous_rows.remove(spec.id);
+                    let id =
+                        <#obj as ::poprako_obj_dept::key::KeyMap>::id(&spec.dom);
+
+                    let previous = previous_rows.remove(id);
 
                     let version = ::poprako_obj_dept::rdb_impl::next_version(
-                        spec.id,
+                        id,
                         previous.as_ref(),
                     )?;
 
                     let previous_key =
-                        ::poprako_obj_dept::rdb_impl::active_key(
-                            spec.id,
+                        ::poprako_obj_dept::rdb_impl::active_key::<#obj>(
+                            id,
                             previous.as_ref(),
-                    )?;
+                        )?;
+
+                    let image = <#obj as ::poprako_obj_dept::key::KeyMap>::forward(
+                        &spec.dom,
+                        version,
+                    );
 
                     let key = ::poprako_obj_dept::key::ObjKey {
-                        id: spec.id.to_owned(),
+                        id: id.to_owned(),
                         version,
+                        image,
                     };
 
                     planned.push((key, previous_key));
@@ -168,20 +187,20 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                 let mut pool_slots = ::std::collections::HashMap::new();
 
                 for chunk in paired.chunks(POOL_CONCURRENCY) {
+                    //
                     let pool_futures = chunk.iter().map(
                         |(spec, (key, _))| async move {
-                            let physical_key =
-                                key.encode(#obj_module::NAMESPACE);
+                            //
                             let pool_slot = self
                                 .pool()
                                 .gen_slot(
-                                    &physical_key,
+                                    &key.image,
                                     spec.content_type,
                                     spec.byte_len,
                                 )
                                 .await?;
 
-                            Ok((spec.id, pool_slot))
+                            Ok((key.id.clone(), pool_slot))
                         },
                     );
 
@@ -192,10 +211,15 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                     .zip(&planned)
                     .map(|(spec, (key, _))| {
                         ::poprako_obj_dept::rdb_impl::ObjRdbWrite {
-                            id: spec.id,
+                            id: <#obj as ::poprako_obj_dept::key::KeyMap>::id(
+                                &spec.dom,
+                            ),
                             version: key.version,
+                            key: &key.image,
                             hash: spec.hash,
-                            ext: spec.ext,
+                            ext: <#obj as ::poprako_obj_dept::key::KeyMap>::ext(
+                                &spec.dom,
+                            ),
                         }
                     })
                     .collect::<Vec<_>>();
@@ -286,12 +310,17 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
             > {
                 use ::poprako_orchestra::Step as _;
 
-                let specs = [*oper.spec];
                 let batch_oper =
-                    ::poprako_obj_dept::oper::GenObjSlots::<#obj>::new(&specs);
+                    ::poprako_obj_dept::oper::GenObjSlots::<#obj>::new(
+                        ::std::slice::from_ref(oper.spec),
+                    );
                 let mut slots = self.step(context, &batch_oper).await?;
 
-                slots.remove(oper.spec.id).ok_or_else(|| {
+                let id = <#obj as ::poprako_obj_dept::key::KeyMap>::id(
+                    &oper.spec.dom,
+                );
+
+                slots.remove(id).ok_or_else(|| {
                     ::poprako_obj_dept::rest::ObjDeptError::Unrecoverable {
                         message: "generated object slot is missing".into(),
                     }
@@ -351,7 +380,7 @@ fn cleanup_step(
                 let delete_keys = rows
                     .into_iter()
                     .map(|entry| {
-                        ::poprako_obj_dept::rdb_impl::active_key(
+                        ::poprako_obj_dept::rdb_impl::active_key::<#obj>(
                             &entry.id,
                             Some(&entry.row),
                         )

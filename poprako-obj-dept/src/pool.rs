@@ -52,7 +52,6 @@ pub trait ObjPool: ObjPoolView {
 #[doc(hidden)]
 pub async fn gen_urls_bounded<P, S>(
     pool: &P,
-    namespace: &str,
     profile: ObjUrlProfile,
     metas: &HashMap<String, ObjMeta, S>,
 ) -> ObjDeptRest<HashMap<String, ObjUrls>>
@@ -76,9 +75,7 @@ where
         //
         let futures = chunk.iter().map(|(id, meta)| async move {
             //
-            let key = meta.key.encode(namespace);
-
-            let obj_urls = pool.gen_urls(&key, profile).await?;
+            let obj_urls = pool.gen_urls(&meta.key.image, profile).await?;
 
             Ok(((*id).clone(), obj_urls))
         });

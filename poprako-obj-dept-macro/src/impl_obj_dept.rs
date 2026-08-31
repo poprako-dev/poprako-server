@@ -126,6 +126,8 @@ pub fn expand_items(input: TokenStream) -> Result<TokenStream> {
 
     let dispatch_arms = entries.iter().map(|entry| {
         //
+        let obj = entry.marker();
+
         let module = entry.module();
 
         let topic = entry.topic();
@@ -135,6 +137,7 @@ pub fn expand_items(input: TokenStream) -> Result<TokenStream> {
                 core,
                 pool,
                 task,
+                #obj,
                 #module,
             ),
         }

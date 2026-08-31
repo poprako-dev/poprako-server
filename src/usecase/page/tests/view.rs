@@ -35,6 +35,7 @@ fn page_image(
         key: ObjKey {
             id: id.into(),
             version,
+            image: format!("page/chapter_test/{}-{}.{}", id, version, ext),
         },
         is_available: uploaded,
         hash: vec![hash; 32],
@@ -86,12 +87,14 @@ async fn page_views_keep_each_image_url_with_its_metadata_snapshot() {
 
     assert_eq!(
         uploaded_view.image_url.as_deref(),
-        Some("https://obj.test/page_image/cGFnZS11cGxvYWRlZA/7")
+        Some("https://obj.test/page/chapter_test/page-uploaded-7.png")
     );
 
     assert_eq!(
         uploaded_view.image_thumbnail_url.as_deref(),
-        Some("https://obj.test/thumbnail/page_image/cGFnZS11cGxvYWRlZA/7")
+        Some(
+            "https://obj.test/thumbnail/page/chapter_test/page-uploaded-7.png"
+        )
     );
 
     assert_eq!(uploaded_view.image_hash, Some(ImageHash::new([7; 32])));

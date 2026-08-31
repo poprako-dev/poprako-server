@@ -17,13 +17,15 @@ pub fn obj_task_id(
 ) -> String {
     //
     format!(
-        "{}:{}:{}:{}:{}:{}:{}",
+        "{}:{}:{}:{}:{}:{}:{}:{}:{}",
         topic.len(),
         topic,
         oper,
         key.id.len(),
         key.id,
         key.version,
+        key.image.len(),
+        key.image,
         generation,
     )
 }
@@ -68,6 +70,8 @@ pub struct ObjPromTask {
     pub obj_id: String,
     /// Persisted object version.
     pub version: i64,
+    /// Persisted complete physical object key.
+    pub image: String,
     /// Obligation generation.
     pub generation: i64,
     /// Completed retry count.
@@ -94,6 +98,7 @@ impl ObjPromTask {
         Ok(ObjKey {
             id: self.obj_id.clone(),
             version,
+            image: self.image.clone(),
         })
     }
 }

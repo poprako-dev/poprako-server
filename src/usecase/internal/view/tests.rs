@@ -91,6 +91,7 @@ macro_rules! impl_obj_view {
                                 key: ObjKey {
                                     id: id.clone(),
                                     version: 1,
+                                    image: format!("test/{}-1.png", id),
                                 },
                                 is_available: true,
                                 hash: vec![1; 32],

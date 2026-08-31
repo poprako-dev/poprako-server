@@ -18,6 +18,8 @@ pub fn expand(table: &Path) -> TokenStream {
             id: String,
             #[diesel(column_name = f_version)]
             version: i64,
+            #[diesel(column_name = f_key)]
+            key: Option<String>,
             #[diesel(column_name = f_is_uploaded)]
             f_is_uploaded: Option<bool>,
             #[diesel(column_name = f_hash)]
@@ -36,6 +38,8 @@ pub fn expand(table: &Path) -> TokenStream {
         struct ObjStateRow {
             #[diesel(column_name = f_version)]
             version: i64,
+            #[diesel(column_name = f_key)]
+            key: Option<String>,
             #[diesel(column_name = f_is_uploaded)]
             f_is_uploaded: Option<bool>,
             #[diesel(column_name = f_hash)]
@@ -50,6 +54,8 @@ pub fn expand(table: &Path) -> TokenStream {
         struct ObjPresenceStateRow {
             #[diesel(column_name = f_version)]
             version: i64,
+            #[diesel(column_name = f_key)]
+            key: Option<String>,
             #[diesel(column_name = f_is_uploaded)]
             f_is_uploaded: Option<bool>,
             #[diesel(column_name = f_hash)]
@@ -66,6 +72,7 @@ pub fn expand(table: &Path) -> TokenStream {
                 //
                 Self {
                     version: row.version,
+                    key: row.key,
                     f_is_uploaded: row.f_is_uploaded,
                     hash: row.hash,
                     ext: row.ext,
@@ -81,6 +88,8 @@ pub fn expand(table: &Path) -> TokenStream {
             id: String,
             #[diesel(column_name = f_version)]
             version: i64,
+            #[diesel(column_name = f_key)]
+            key: Option<String>,
             #[diesel(column_name = f_is_uploaded)]
             f_is_uploaded: Option<bool>,
             #[diesel(column_name = f_hash)]
@@ -102,6 +111,7 @@ pub fn expand(table: &Path) -> TokenStream {
                     id: row.id,
                     row: ::poprako_obj_dept::rdb_impl::ObjRdbRow {
                         version: row.version,
+                        key: row.key,
                         f_is_uploaded: row.f_is_uploaded,
                         hash: row.hash,
                         ext: row.ext,
@@ -110,14 +120,17 @@ pub fn expand(table: &Path) -> TokenStream {
             }
         }
 
-        pub fn decode_many(
+        pub fn decode_many<B>(
             rows: Vec<ObjRdbEntry>,
         ) -> ::poprako_obj_dept::rest::ObjDeptRest<
             ::std::collections::HashMap<
                 String,
                 ::poprako_obj_dept::model::meta::ObjMeta,
             >,
-        > {
+        >
+        where
+            B: ::poprako_obj_dept::key::KeyMap<Img = String>,
+        {
             //
             let mut obj_metas = ::std::collections::HashMap::new();
 
@@ -126,7 +139,10 @@ pub fn expand(table: &Path) -> TokenStream {
                 let id = row_entry.id;
 
                 let Some(obj_meta) =
-                    ::poprako_obj_dept::rdb_impl::decode_row(&id, row_entry.row)?
+                    ::poprako_obj_dept::rdb_impl::decode_row::<B>(
+                        &id,
+                        row_entry.row,
+                    )?
                 else {
                     continue;
                 };
@@ -153,6 +169,8 @@ pub fn expand(table: &Path) -> TokenStream {
             id: &'a str,
             #[diesel(column_name = f_version)]
             version: i64,
+            #[diesel(column_name = f_key)]
+            key: &'a str,
             #[diesel(column_name = f_is_uploaded)]
             f_is_uploaded: bool,
             #[diesel(column_name = f_hash)]
@@ -224,6 +242,7 @@ pub fn expand(table: &Path) -> TokenStream {
             Ok(row.map(|row| {
                 let state = ::poprako_obj_dept::rdb_impl::ObjRdbRow {
                     version: row.version,
+                    key: row.key,
                     f_is_uploaded: row.f_is_uploaded,
                     hash: row.hash,
                     ext: row.ext,
@@ -322,6 +341,7 @@ pub fn expand(table: &Path) -> TokenStream {
                 .map(|write| ObjWriteRow {
                     id: write.id,
                     version: i64::from(write.version),
+                    key: write.key,
                     f_is_uploaded: false,
                     hash: write.hash,
                     ext: write.ext,
@@ -334,6 +354,7 @@ pub fn expand(table: &Path) -> TokenStream {
                 .do_update()
                 .set((
                     #table::f_version.eq(excluded(#table::f_version)),
+                    #table::f_key.eq(excluded(#table::f_key)),
                     #table::f_is_uploaded.eq(false),
                     #table::f_hash.eq(excluded(#table::f_hash)),
                     #table::f_ext.eq(excluded(#table::f_ext)),
@@ -367,6 +388,7 @@ pub fn expand(table: &Path) -> TokenStream {
             ::diesel::update(#table::table.filter(#table::f_id.eq_any(ids)))
                 .set((
                     #table::f_is_uploaded.eq(None::<bool>),
+                    #table::f_key.eq(None::<String>),
                     #table::f_hash.eq(None::<Vec<u8>>),
                     #table::f_ext.eq(None::<String>),
                     #table::f_updated_at.eq(::time::OffsetDateTime::now_utc()),
@@ -436,6 +458,7 @@ pub fn expand(table: &Path) -> TokenStream {
                 #table::table
                     .filter(#table::f_id.eq(id))
                     .filter(#table::f_version.eq(i64::from(version)))
+                    .filter(#table::f_key.is_not_null())
                     .filter(#table::f_is_uploaded.is_not_null())
                     .filter(#table::f_hash.is_not_null())
                     .filter(#table::f_ext.is_not_null()),
@@ -464,6 +487,7 @@ pub fn expand(table: &Path) -> TokenStream {
                     .filter(#table::f_id.eq(id))
                     .filter(#table::f_version.eq(i64::from(version)))
                     .filter(#table::f_updated_at.eq(revision))
+                    .filter(#table::f_key.is_not_null())
                     .filter(#table::f_is_uploaded.is_not_null())
                     .filter(#table::f_hash.is_not_null())
                     .filter(#table::f_ext.is_not_null()),

@@ -163,6 +163,16 @@ word = "outcome"
 code = "FBD013"
 message = "'outcome' is forbidden"
 
+[[forbidden-identifiers.words]]
+word = "generation"
+code = "FBD014"
+message = "'generation' is forbidden - use 'gen' instead"
+
+[[forbidden-identifiers.words]]
+word = "version"
+code = "FBD015"
+message = "'version' is forbidden - use 'ver' instead"
+
 [trait-use-anonymous]
 # The trait lists replace the packaged defaults entirely.
 external_traits = [
