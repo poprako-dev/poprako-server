@@ -60,6 +60,7 @@ impl ToSql<Text, Pg> for LocalMessageStatus {
 pub struct LocalMessageEntryRow<'a> {
     //
     pub f_id: &'a str,
+
     pub f_topic: &'a str,
     pub f_status: LocalMessageStatus,
 
@@ -125,8 +126,10 @@ impl<'a> LocalMessageEntryRow<'a> {
 pub struct LocalMessageRow {
     //
     pub f_id: String,
+
     pub f_topic: String,
     pub f_payload: serde_json::Value,
+
     pub f_retried_count: i64,
     pub f_lease: i64,
 }

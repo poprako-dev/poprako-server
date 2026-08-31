@@ -62,40 +62,60 @@ pub fn gen_slot<K>(
     tasks: &mut Vec<(&'static str, ObjTask)>,
     topic: &'static str,
     oper: &GenObjSlot<'_, K>,
-) -> ObjDeptRest<ObjSlot>
+) -> ObjDeptRest<Option<ObjSlot>>
 where
     K: KeyMap<Img = String>,
 {
     let id = K::id(&oper.spec.dom);
 
-    let ver = objs.get(id).map_or(Ok(1), |previous| {
-        previous.version.checked_add(1).ok_or_else(|| {
-            ObjDeptError::Unrecoverable {
-                message: "object ver overflow".into(),
-            }
-        })
-    })?;
+    let matching_meta = objs
+        .get(id)
+        .and_then(|record| record.meta.as_ref())
+        .filter(|meta| {
+            meta.hash == oper.spec.hash && meta.ext == K::ext(&oper.spec.dom)
+        });
 
-    let key = ObjKey {
-        id: id.to_owned(),
-        ver,
-        image: K::forward(&oper.spec.dom, ver),
+    if matching_meta.is_some_and(|meta| meta.is_avail) {
+        return Ok(None);
+    }
+
+    let reused_key = matching_meta.map(|meta| meta.key.clone());
+
+    let (key, previous) = match reused_key {
+        Some(key) => (key, None),
+        None => {
+            let ver = objs.get(id).map_or(Ok(1), |previous| {
+                previous.version.checked_add(1).ok_or_else(|| {
+                    ObjDeptError::Unrecoverable {
+                        message: "object ver overflow".into(),
+                    }
+                })
+            })?;
+
+            let key = ObjKey {
+                id: id.to_owned(),
+                ver,
+                image: K::forward(&oper.spec.dom, ver),
+            };
+
+            let meta = ObjMeta {
+                key: key.clone(),
+                is_avail: false,
+                hash: oper.spec.hash.to_vec(),
+                ext: K::ext(&oper.spec.dom).to_owned(),
+            };
+
+            let previous = objs.insert(
+                id.to_owned(),
+                MockObjRecord {
+                    version: ver,
+                    meta: Some(meta),
+                },
+            );
+
+            (key, previous)
+        }
     };
-
-    let meta = ObjMeta {
-        key: key.clone(),
-        is_avail: false,
-        hash: oper.spec.hash.to_vec(),
-        ext: K::ext(&oper.spec.dom).to_owned(),
-    };
-
-    let previous = objs.insert(
-        id.to_owned(),
-        MockObjRecord {
-            version: ver,
-            meta: Some(meta),
-        },
-    );
 
     if let Some(previous_key) =
         previous.and_then(|record| record.meta.map(|meta| meta.key))
@@ -110,12 +130,12 @@ where
             message: source.to_string(),
         })?;
 
-    Ok(ObjSlot {
+    Ok(Some(ObjSlot {
         key,
         url,
         headers: Default::default(),
         expires_at: OffsetDateTime::now_utc() + Duration::minutes(5),
-    })
+    }))
 }
 
 pub fn gen_slots<K>(
@@ -147,8 +167,9 @@ where
             let single_oper = GenObjSlot::<K>::new(spec);
             let slot = gen_slot(objs, tasks, topic, &single_oper)?;
 
-            Ok((K::id(&spec.dom).to_owned(), slot))
+            Ok(slot.map(|slot| (K::id(&spec.dom).to_owned(), slot)))
         })
+        .filter_map(|result| result.transpose())
         .collect()
 }
 
@@ -376,7 +397,7 @@ macro_rules! implement_mock_obj_dept {
                 context: &mut $crate::part_impl::repo::mock_impl::MockContext,
                 oper: &::poprako_obj_dept::oper::GenObjSlot<'a, $obj>,
             ) -> ::poprako_obj_dept::rest::ObjDeptRest<
-                ::poprako_obj_dept::model::slot::ObjSlot,
+                Option<::poprako_obj_dept::model::slot::ObjSlot>,
             > {
                 let $crate::part_impl::repo::mock_impl::MockState {
                     objs,

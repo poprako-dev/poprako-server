@@ -25,12 +25,15 @@ pub struct ChapterWorkflowRecordInfoView {
     //
     /// Unique workflow record identifier.
     pub id: String,
+
     /// Chapter that owns this record.
     pub chapter_id: String,
     /// User that caused the record, absent for system work.
     pub actor_user_id: Option<String>,
+
     /// Strongly typed, language-neutral event data for client-side rendering.
     pub event: ChapterWorkflowRecordEventView,
+
     /// Record creation time in Unix milliseconds.
     pub created_at: i64,
 }

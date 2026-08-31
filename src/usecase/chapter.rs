@@ -33,7 +33,7 @@ use crate::model::write::assignment::AssignmentEntry;
 use crate::model::write::chapter::{ChapterEntry, ChapterPatch};
 use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::part::nucl::ReptRead;
-use crate::part::obj_dept::{ComicCover, TeamAvatar, UserAvatar};
+use crate::part::obj_dept::{ComicCover, PageImage, TeamAvatar, UserAvatar};
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
@@ -71,6 +71,7 @@ where
     C: Context,
     R: ChapterRepo<C> + MemberRepo<C> + TeamRepo<C> + PageRepo<C> + Sync,
     O: ObjDeptView<ComicCover, C>
+        + ObjDeptView<PageImage, C>
         + ObjDeptView<TeamAvatar, C>
         + ObjDeptView<UserAvatar, C>
         + Sync,
@@ -94,7 +95,8 @@ where
 
     let chapter_infos = ListChapterInfos { spec: &spec }.run_on(repo).await?;
 
-    let chapter_info_vals = chapter_info_views(obj_dept, chapter_infos).await?;
+    let chapter_info_vals =
+        chapter_info_views(repo, obj_dept, chapter_infos).await?;
 
     accept(chapter_info_vals)
 }

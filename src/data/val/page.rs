@@ -31,6 +31,7 @@ pub struct AllocatedPageVal {
 
     /// Ordinal position within the chapter.
     pub index: u32,
+
     /// Content hash of the page image.
     pub image_hash: ImageHash,
     /// File format.

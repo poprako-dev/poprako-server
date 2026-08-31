@@ -24,6 +24,7 @@ pub struct PageInfoView {
 
     /// Owning chapter identifier.
     pub chapter_id: String,
+
     /// Ordinal position within the chapter.
     pub index: usize,
 

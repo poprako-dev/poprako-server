@@ -140,7 +140,7 @@ impl<'a> Step<GenObjSlot<'a, PageImage>, TestContext> for TestDept {
         &self,
         _context: &mut TestContext,
         _oper: &GenObjSlot<'a, PageImage>,
-    ) -> Result<ObjSlot, Self::Error> {
+    ) -> Result<Option<ObjSlot>, Self::Error> {
         //
         Err(ObjDeptError::Unrecoverable {
             message: "compile-only slot".into(),
@@ -221,7 +221,7 @@ fn operations_keep_marker_in_their_type_identity() {
         std::collections::HashMap<String, ObjUrls>,
     >();
 
-    require_oper_output::<GenObjSlot<'static, PageImage>, ObjSlot>();
+    require_oper_output::<GenObjSlot<'static, PageImage>, Option<ObjSlot>>();
 
     require_oper_output::<MarkObjUploaded<'static, PageImage>, bool>();
 

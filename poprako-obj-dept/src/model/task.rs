@@ -61,16 +61,19 @@ pub struct ObjPromTask {
     //
     /// Stable task identifier.
     pub id: String,
+
     /// Static object topic.
     pub topic: String,
     /// Persisted operation discriminator.
     pub oper: String,
+
     /// Persisted object identifier.
     pub obj_id: String,
     /// Persisted object version.
     pub ver: i64,
     /// Persisted complete physical object key.
     pub image: String,
+
     /// Obligation generation.
     pub gen_no: i64,
     /// Completed retry count.

@@ -15,24 +15,14 @@ fn gen_download_url_uses_custom_domain() {
     );
 }
 
-#[tokio::test]
-async fn gen_urls_includes_cloudflare_thumbnail_transform() {
-    let config = Config::builder()
-        .behavior_version(BehaviorVersion::latest())
-        .region(Region::new("auto"))
-        .credentials_provider(Credentials::new("a", "b", None, None, "test"))
-        .build();
-
-    let pool = R2ObjPool::new(
-        Client::from_conf(config),
-        String::from("bucket"),
-        String::from("https://images.example.test"),
-    );
-
-    let urls = pool
-        .gen_urls("page_image/page-1/1.png", ObjUrlProfile::ImageThumbnail)
-        .await
-        .unwrap();
+#[test]
+fn gen_urls_includes_cloudflare_thumbnail_transform() {
+    let urls = build_obj_urls(
+        "https://images.example.test",
+        "page_image/page-1/1.png",
+        ObjUrlProfile::ImageThumbnail,
+    )
+    .unwrap();
 
     assert_eq!(
         urls.origin_url.as_str(),
@@ -47,24 +37,14 @@ async fn gen_urls_includes_cloudflare_thumbnail_transform() {
     );
 }
 
-#[tokio::test]
-async fn origin_only_profile_omits_image_thumbnail() {
-    let config = Config::builder()
-        .behavior_version(BehaviorVersion::latest())
-        .region(Region::new("auto"))
-        .credentials_provider(Credentials::new("a", "b", None, None, "test"))
-        .build();
-
-    let pool = R2ObjPool::new(
-        Client::from_conf(config),
-        String::from("bucket"),
-        String::from("https://objects.example.test"),
-    );
-
-    let urls = pool
-        .gen_urls("font_file/font-1/1", ObjUrlProfile::OriginOnly)
-        .await
-        .unwrap();
+#[test]
+fn origin_only_profile_omits_image_thumbnail() {
+    let urls = build_obj_urls(
+        "https://objects.example.test",
+        "font_file/font-1/1",
+        ObjUrlProfile::OriginOnly,
+    )
+    .unwrap();
 
     assert_eq!(
         urls.origin_url.as_str(),

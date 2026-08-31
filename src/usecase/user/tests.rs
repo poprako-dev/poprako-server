@@ -7,6 +7,8 @@
 //! [`Mock`]: crate::part_impl::repo::mock_impl::Mock
 
 // Delete flow coverage, including avatar cleanup and related records.
+mod delete;
+mod extra;
 
 // get_info(get_info)(positive): a user reading itself should receive info and emit UserActive.
 // get_info(get_info)(positive): reading another user should not emit UserActive.

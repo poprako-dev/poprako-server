@@ -116,28 +116,7 @@ impl ObjPoolView for R2ObjPool {
         key: &str,
         profile: ObjUrlProfile,
     ) -> ObjDeptRest<ObjUrls> {
-        //
-        let origin_url = build_public_url(&self.domain, key)?;
-
-        let thumbnail_url = match profile {
-            //
-            ObjUrlProfile::OriginOnly => None,
-
-            ObjUrlProfile::ImageThumbnail => {
-                //
-                let thumbnail_path = format!(
-                    "cdn-cgi/image/width=300,fit=scale-down,quality=80,format=auto,metadata=none/{}",
-                    key,
-                );
-
-                Some(build_public_url(&self.domain, &thumbnail_path)?)
-            }
-        };
-
-        Ok(ObjUrls {
-            origin_url,
-            thumbnail_url,
-        })
+        build_obj_urls(&self.domain, key, profile)
     }
 
     #[instrument(level = "info", skip_all)]
@@ -328,4 +307,34 @@ fn build_public_url(domain: &str, path: &str) -> ObjDeptRest<Url> {
     }
 
     parse_public_url(&format!("https://{}/{}", domain, path))
+}
+
+// Builds object URLs without initializing or contacting the R2 SDK client.
+fn build_obj_urls(
+    domain: &str,
+    key: &str,
+    profile: ObjUrlProfile,
+) -> ObjDeptRest<ObjUrls> {
+    //
+    let origin_url = build_public_url(domain, key)?;
+
+    let thumbnail_url = match profile {
+        //
+        ObjUrlProfile::OriginOnly => None,
+
+        ObjUrlProfile::ImageThumbnail => {
+            //
+            let thumbnail_path = format!(
+                "cdn-cgi/image/width=300,fit=scale-down,quality=80,format=auto,metadata=none/{}",
+                key,
+            );
+
+            Some(build_public_url(domain, &thumbnail_path)?)
+        }
+    };
+
+    Ok(ObjUrls {
+        origin_url,
+        thumbnail_url,
+    })
 }

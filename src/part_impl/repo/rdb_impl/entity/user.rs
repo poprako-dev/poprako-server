@@ -15,6 +15,7 @@ use crate::result::{BaseError, BaseRest, accept};
 pub struct UserInfoRow {
     //
     pub f_id: String,
+
     pub f_nickname: String,
     pub f_qid: String,
 
@@ -45,6 +46,7 @@ pub struct UserCredsRow {
 pub struct UserEntryRow<'a> {
     //
     pub f_id: &'a str,
+
     pub f_nickname: &'a str,
     pub f_qid: &'a str,
 

@@ -14,6 +14,7 @@ pub struct ObjRdbRow {
     //
     /// Stored generation watermark.
     pub ver: i64,
+
     /// Complete physical key, or none for a detached row.
     pub key: Option<String>,
     /// Current upload evidence, or none for a detached row.
@@ -30,6 +31,7 @@ pub struct ObjRdbWrite<'a> {
     //
     /// Stable business-object identifier.
     pub id: &'a str,
+
     /// Newly allocated generation.
     pub ver: u32,
     /// Complete immutable physical object key.

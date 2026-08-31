@@ -30,6 +30,7 @@ pub struct TermbaseImport {
     pub name: String,
     /// Optional description for the imported terminology base.
     pub description: Option<String>,
+
     /// Portable terminology entries included in the document.
     pub terms: Vec<TermImport>,
 }

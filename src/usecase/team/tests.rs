@@ -7,6 +7,7 @@
 //! [`Mock`]: crate::part_impl::repo::mock_impl::Mock
 
 // Team avatar reservation, upload check, and cleanup behavior.
+mod avatar;
 
 // create(create)(positive): creating a team should persist it and return team info.
 // create(create)(positive): creating a team should make creator an admin member.

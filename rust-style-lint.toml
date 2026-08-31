@@ -193,6 +193,12 @@ code = "FBD018"
 message = "'available' is forbidden - use 'avail' instead"
 contexts = ["module", "function", "let", "parameter", "const", "static", "enum_variant", "type", "field", "macro_field"]
 
+[[forbidden-identifiers.words]]
+word = "candidate"
+code = "FBD019"
+message = "'candidate' is forbidden - use 'cand' instead"
+contexts = ["module", "function", "let", "parameter", "const", "static", "enum_variant", "type", "field", "macro_field"]
+
 [trait-use-anonymous]
 # The trait lists replace the packaged defaults entirely.
 external_traits = [

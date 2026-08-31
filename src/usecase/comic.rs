@@ -211,6 +211,7 @@ where
         + PageRepo<C>
         + Sync,
     O: ObjDeptView<ComicCover, C>
+        + ObjDeptView<PageImage, C>
         + ObjDeptView<TeamAvatar, C>
         + ObjDeptView<UserAvatar, C>
         + Sync,
@@ -232,7 +233,7 @@ where
     .run_on(repo)
     .await?;
 
-    comic_info_view(obj_dept, comic_info).await
+    comic_info_view(repo, obj_dept, comic_info).await
 }
 
 /// Updates a comic's title, author, and description.

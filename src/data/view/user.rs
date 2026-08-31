@@ -35,6 +35,7 @@ pub struct UserInfoView {
     /// Resolved signed download URL for the avatar thumbnail, when available.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub avatar_thumbnail_url: Option<String>,
+
     /// Whether this user has super-admin privileges.
     pub is_sadmin: bool,
     /// Timestamp of the user's most recent activity, in milliseconds since Unix epoch.
