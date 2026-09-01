@@ -4,12 +4,12 @@ use tracing::instrument;
 use crate::model::read::proj::unit::{UnitCountMetrics, UnitInfo, UnitOrder};
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::unit::{
-    ApplyUnitEdits, ListUnitInfos, ListUnitInfosByIds, ListUnitInfosByPageIds,
-    ListUnitOrders,
+    ApplyUnitEdits, ListEdittedDiffPageIds, ListUnitInfos, ListUnitInfosByIds,
+    ListUnitInfosByPageIds, ListUnitOrders,
 };
 use crate::part_impl::repo::mock_impl::unit::{
-    apply_edits, list_infos, list_infos_by_ids, list_infos_by_page_ids,
-    list_orders,
+    apply_edits, list_editted_diff_page_ids, list_infos, list_infos_by_ids,
+    list_infos_by_page_ids, list_orders,
 };
 use crate::part_impl::repo::mock_impl::{Mock, MockContext};
 use crate::result::{BaseError, BaseRest, accept};
@@ -48,6 +48,23 @@ impl Run<ListUnitInfosByPageIds<'_>> for Mock {
         let state = self.state.lock().unwrap();
 
         list_infos_by_page_ids(&state, oper.page_ids)
+    }
+}
+
+impl Run<ListEdittedDiffPageIds<'_>> for Mock {
+    // Defines the adapter error exposed by this operation.
+    type Error = BaseError;
+
+    #[instrument(level = "info", skip_all)]
+    // Lists matching Page IDs in stable Chapter Page order.
+    async fn run(
+        &self,
+        oper: &ListEdittedDiffPageIds<'_>,
+    ) -> BaseRest<Vec<String>> {
+        //
+        let state = self.state.lock().unwrap();
+
+        accept(list_editted_diff_page_ids(&state, oper.chapter_id))
     }
 }
 

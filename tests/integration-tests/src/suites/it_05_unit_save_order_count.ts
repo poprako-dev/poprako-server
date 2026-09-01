@@ -17,6 +17,7 @@ import {
     exportTranslations,
     getChapter,
     importTranslations,
+    listEdittedDiffPageIds,
     newBubbleUnit,
     newPageManifest,
     reserveChapterPages,
@@ -36,6 +37,7 @@ export async function runIt05Module(ctx: RunCtx): Promise<void> {
     const mainChapterId = ctx.main.chapterId;
     const p0Id = ctx.main.pageIds[0]!;
     const trans01 = ctx.users.get("trans_01")!;
+    const proof02 = ctx.users.get("proof_02")!;
 
     // ---------- F1. create 5 bubble units on p0 ----------
 
@@ -109,6 +111,27 @@ export async function runIt05Module(ctx: RunCtx): Promise<void> {
             },
         },
     ]);
+
+    await savePageUnits(proof02.api, p0Id, [
+        {
+            edit: "patch",
+            id: p0UnitIds[0]!,
+            revision: {
+                type: "assign",
+                value: {
+                    is_proofread: false,
+                    proofread_text: "alpha reviewed",
+                },
+            },
+        },
+    ]);
+
+    const edittedDiffPages = await listEdittedDiffPageIds(
+        proof02.api,
+        mainChapterId,
+    );
+
+    assert.deepEqual(edittedDiffPages.page_ids, [p0Id]);
 
     const searchMatches = await searchChapterUnits(
         trans01.api,

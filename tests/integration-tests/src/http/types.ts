@@ -381,6 +381,10 @@ export interface ListPageUnitInfosVal {
     proofread_unit_count: number;
 }
 
+export interface ListEdittedDiffPageIdsVal {
+    page_ids: string[];
+}
+
 export interface LoginVal {
     user_id: string;
     token: string;

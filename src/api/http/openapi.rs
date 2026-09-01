@@ -76,7 +76,7 @@ use crate::data::val::team::AllocTeamAvatarVal;
 use crate::data::val::term::CreateTermVal;
 use crate::data::val::termbase::CreateTermbaseVal;
 use crate::data::val::termbase_port::{ExportTermbaseVal, ImportTermbaseVal};
-use crate::data::val::unit::ListPageUnitInfosVal;
+use crate::data::val::unit::{ListEdittedDiffPageIdsVal, ListPageUnitInfosVal};
 use crate::data::val::user::AllocUserAvatarVal;
 use crate::data::val::workset::CreateWorksetVal;
 use crate::data::view::announcement::AnnouncementInfoView;
@@ -173,6 +173,7 @@ use crate::value::unit::UnitTextPart;
         handler::page::alloc_image,
         handler::page::mark_image_uploaded,
         handler::unit::list_infos,
+        handler::unit::list_editted_diff_page_ids,
         handler::unit::search_infos,
         handler::unit::save_infos,
         handler::unit::transform,
@@ -279,6 +280,7 @@ use crate::value::unit::UnitTextPart;
         MarkPageImageUploadedInstr,
         UnitInfoView,
         ListPageUnitInfosVal,
+        ListEdittedDiffPageIdsVal,
         UnitEditInstr,
         UnitCoordInstr,
         UnitTranslationInstr,

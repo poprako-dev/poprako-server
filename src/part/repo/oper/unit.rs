@@ -27,6 +27,14 @@ pub struct ListUnitInfosByIds<'a> {
     pub ids: &'a [String],
 }
 
+/// Lists Page IDs containing visible proofread text diffs.
+#[derive(Oper)]
+#[oper(output = Vec<String>)]
+pub struct ListEdittedDiffPageIds<'a> {
+    /// Chapter whose Pages should be checked.
+    pub chapter_id: &'a str,
+}
+
 /// Lists unit orders for a page.
 #[derive(Oper)]
 #[oper(output = Vec<UnitOrder>)]

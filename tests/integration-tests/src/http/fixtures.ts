@@ -24,6 +24,7 @@ import type {
     CreateComicVal,
     IdVal,
     ListPageUnitInfosVal,
+    ListEdittedDiffPageIdsVal,
     LoginVal,
     MemberInfoView,
     MemberInvitationInfoView,
@@ -860,6 +861,18 @@ export async function savePageUnits(
 export async function listPageUnits(api: ApiClient, pageId: string): Promise<ListPageUnitInfosVal> {
     return expectSuccessData(
         await api.get<SuccessBody<ListPageUnitInfosVal>>(`/api/v1/pages/${pageId}/units?offset=0&limit=100`),
+        200,
+    );
+}
+
+export async function listEdittedDiffPageIds(
+    api: ApiClient,
+    chapterId: string,
+): Promise<ListEdittedDiffPageIdsVal> {
+    return expectSuccessData(
+        await api.get<SuccessBody<ListEdittedDiffPageIdsVal>>(
+            `/api/v1/chapters/${chapterId}/pages/editted-diffs`,
+        ),
         200,
     );
 }

@@ -18,10 +18,11 @@ use crate::complex::chapter::ChapterComplex;
 use crate::complex::unit::UnitComplex;
 use crate::complex::unit::perm::UnitPermComplex;
 use crate::data::instr::unit::{
-    ListPageUnitInfosInstr, SavePageUnitEditsInstr,
-    SearchChapterUnitInfosInstr, UnitEditInstr, into_unit_edits,
+    ListEdittedDiffPageIdsInstr, ListPageUnitInfosInstr,
+    SavePageUnitEditsInstr, SearchChapterUnitInfosInstr, UnitEditInstr,
+    into_unit_edits,
 };
-use crate::data::val::unit::ListPageUnitInfosVal;
+use crate::data::val::unit::{ListEdittedDiffPageIdsVal, ListPageUnitInfosVal};
 use crate::data::view::unit::UnitInfoView;
 use crate::model::read::proj::unit::UnitCountMetrics;
 use crate::model::shared::user::UserToken;
@@ -40,7 +41,7 @@ use crate::part::repo::oper::page::{
     GetPageInfo, GetPageInfoExcluded, ListPageInfos, SetPageUnitCounters,
 };
 use crate::part::repo::oper::unit::{
-    ApplyUnitEdits, ListUnitInfos, ListUnitOrders,
+    ApplyUnitEdits, ListEdittedDiffPageIds, ListUnitInfos, ListUnitOrders,
 };
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
@@ -129,6 +130,39 @@ where
     };
 
     accept(ListPageUnitInfosVal::from_parts(unit_infos, counters))
+}
+
+/// Lists Chapter Page IDs containing visible proofread text diffs.
+#[instrument(
+    level = "info",
+    skip(repo, token),
+    fields(chapter_id = %instr.chapter_id),
+)]
+pub async fn list_editted_diff_page_ids<C, R>(
+    (repo,): (&R,),
+    token: UserToken,
+    instr: ListEdittedDiffPageIdsInstr,
+) -> BaseRest<ListEdittedDiffPageIdsVal>
+where
+    C: Context,
+    R: UnitRepo<C> + TeamRepo<C> + MemberRepo<C> + AssignmentRepo<C> + Sync,
+{
+    let access_info = UnitAccessLoader::load_access_info_from_chapter::<C, R>(
+        repo,
+        &token.user_id,
+        &instr.chapter_id,
+    )
+    .await?;
+
+    UnitPermComplex::ensure_user_can_list_infos(&access_info.as_access())?;
+
+    let page_ids = ListEdittedDiffPageIds {
+        chapter_id: &instr.chapter_id,
+    }
+    .run_on(repo)
+    .await?;
+
+    accept(ListEdittedDiffPageIdsVal { page_ids })
 }
 
 #[instrument(

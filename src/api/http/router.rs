@@ -11,6 +11,7 @@ mod v1;
 use axum::Router;
 use axum::middleware::{from_fn, from_fn_with_state};
 use axum::routing::get;
+use tower_http::compression::CompressionLayer;
 
 use crate::api::http::handler::health;
 use crate::api::http::middleware::auth::authorize;
@@ -61,7 +62,8 @@ pub fn new(harn: AppHarn) -> Router<AppHarn> {
         .layer(trace_request())
         .layer(set_request_id())
         .layer(from_fn(record_response_metric))
-        .layer(cors());
+        .layer(cors())
+        .layer(CompressionLayer::new());
 
     // Swagger UI — debug builds only
     #[cfg(feature = "swagger")]
