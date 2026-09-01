@@ -17,7 +17,7 @@ use poprako_rdb_core::RdbConn;
 use crate::model::read::proj::unit::{UnitInfo, UnitOrder};
 use crate::part_impl::repo::rdb_impl::entity::unit::UnitInfoRow;
 use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{
-    f_hidden_at, f_id, f_next_id, f_page_id, t_unit,
+    f_hidden_at, f_id as unit_id, f_next_id as unit_next_id, f_page_id, t_unit,
 };
 use crate::result::{BaseError, BaseRest, accept};
 use crate::shared::result::diesel;
@@ -253,7 +253,7 @@ pub async fn list_infos_by_ids(
 ) -> BaseRest<Vec<UnitInfo>> {
     //
     let rows = t_unit
-        .filter(f_id.eq_any(ids))
+        .filter(unit_id.eq_any(ids))
         .select(UnitInfoRow::as_select())
         .load::<UnitInfoRow>(conn)
         .await
@@ -271,7 +271,7 @@ pub async fn list_orders_for_update(
     //
     let rows = t_unit
         .filter(f_page_id.eq(page_id))
-        .select((f_id, f_next_id, f_hidden_at))
+        .select((unit_id, unit_next_id, f_hidden_at))
         .for_update()
         .load::<(String, Option<String>, Option<OffsetDateTime>)>(conn)
         .await

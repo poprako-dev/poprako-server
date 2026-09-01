@@ -41,7 +41,7 @@ use crate::value::chapter_workflow_record::{
 };
 
 /// Updates one chapter workflow stage and records the real phase transition.
-#[instrument(level = "info", skip(nucl, repo, obj_dept, develop))]
+#[instrument(level = "info", skip(nucl, repo, obj_dept, develop, token), fields(actor_user_id = %token.user_id))]
 pub async fn update_stage<N, C, R, O, D>(
     (nucl, repo, obj_dept, develop): (&N, &R, &O, &D),
     token: UserToken,

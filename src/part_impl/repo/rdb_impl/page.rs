@@ -14,15 +14,16 @@ use crate::model::read::proj::page::PageInfo;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::page::{
     ApplyPageManifest, CreatePages, DeletePages, GetPageInfo,
-    GetPageInfoExcluded, ListFirstPageInfos, ListPageInfos,
-    ListPageInfosExcluded, SetPageUnitCounters, ShiftPageIndexesTemporary,
+    GetPageInfoExcluded, ListEdittedDiffPageIds, ListFirstPageInfos,
+    ListPageInfos, ListPageInfosExcluded, SetPageUnitCounters,
+    ShiftPageIndexesTemporary,
 };
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::page::step_impl::{
     apply_manifest, create_batch, delete_by_chapter_id, delete_by_ids,
-    get_info_by_id, get_info_excluded, list_first_infos_by_chapter_ids,
-    list_infos, list_infos_excluded, set_unit_counters,
-    shift_indexes_temporary,
+    get_info_by_id, get_info_excluded, list_editted_diff_page_ids,
+    list_first_infos_by_chapter_ids, list_infos, list_infos_excluded,
+    set_unit_counters, shift_indexes_temporary,
 };
 use crate::result::{BaseError, BaseRest};
 use crate::shared::RdbContext;
@@ -68,6 +69,20 @@ impl Run<ListFirstPageInfos<'_>> for HybRepo {
             list_first_infos_by_chapter_ids,
             oper.chapter_ids
         )
+    }
+}
+
+impl Run<ListEdittedDiffPageIds<'_>> for HybRepo {
+    // Error type for the Chapter proofread-diff Page query.
+    type Error = BaseError;
+
+    #[instrument(level = "info", skip_all)]
+    // Lists matching Page IDs in stable Chapter Page order.
+    async fn run(
+        &self,
+        oper: &ListEdittedDiffPageIds<'_>,
+    ) -> BaseRest<Vec<String>> {
+        submit_query!(self.core, list_editted_diff_page_ids, oper.chapter_id)
     }
 }
 

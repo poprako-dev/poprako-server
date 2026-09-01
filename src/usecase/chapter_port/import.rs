@@ -47,7 +47,7 @@ use crate::value::role::RoleField;
 use crate::value::unit::UnitEditPerm;
 
 /// Imports chapter translation content through the Unit edit pipeline.
-#[instrument(level = "info", skip(nucl, repo))]
+#[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
 pub async fn import<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,

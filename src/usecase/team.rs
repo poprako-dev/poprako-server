@@ -60,7 +60,7 @@ use crate::value::role::{RoleField, RoleMask};
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C>` — Team storage.
 /// * `O` — Resolves the avatar signed URL through `ObjDept`.
-#[instrument(level = "info", skip(nucl, repo, obj_dept))]
+#[instrument(level = "info", skip(nucl, repo, obj_dept, token), fields(actor_user_id = %token.user_id))]
 pub async fn create<N, C, R, O>(
     (nucl, repo, obj_dept): (&N, &R, &O),
     token: UserToken,
@@ -124,7 +124,7 @@ where
 ///
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C>` — Team storage.
-#[instrument(level = "info", skip(repo))]
+#[instrument(level = "info", skip(repo, token), fields(actor_user_id = %token.user_id))]
 pub async fn update_info<C, R>(
     (repo,): (&R,),
     token: UserToken,
@@ -180,7 +180,11 @@ where
 /// * `R: TeamRepo<C>` — Team storage.
 /// * `P: Prom<C>` — Prom enqueuer for deferred image opers.
 /// * `O: ObjDept` — Allocates the avatar object and its signed upload URL.
-#[instrument(level = "info", skip(nucl, repo, obj_dept, image_config, token))]
+#[instrument(
+    level = "info",
+    skip(nucl, repo, obj_dept, image_config, token),
+    fields(actor_user_id = %token.user_id),
+)]
 pub async fn alloc_avatar<N, C, R, O>(
     (nucl, repo, obj_dept, image_config): (&N, &R, &O, &ImageConfig),
     token: UserToken,
@@ -251,7 +255,7 @@ where
 }
 
 /// Optimistically marks the requested current avatar generation as uploaded.
-#[instrument(level = "info", skip(repo, obj_dept))]
+#[instrument(level = "info", skip(repo, obj_dept, token), fields(actor_user_id = %token.user_id))]
 pub async fn mark_avatar_uploaded<C, R, O>(
     (repo, obj_dept): (&R, &O),
     token: UserToken,

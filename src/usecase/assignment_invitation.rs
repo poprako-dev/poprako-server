@@ -49,7 +49,7 @@ use crate::util::next_snowflake_id;
 use crate::value::role::{RoleField, RoleMask};
 
 /// Lists assignment invitations under one chapter.
-#[instrument(level = "info", skip(repo))]
+#[instrument(level = "info", skip(repo, token), fields(actor_user_id = %token.user_id))]
 pub async fn list_infos<C, R>(
     (repo,): (&R,),
     token: UserToken,
@@ -83,7 +83,7 @@ where
 }
 
 /// Creates a pending assignment invitation.
-#[instrument(level = "info", skip(nucl, repo, prom))]
+#[instrument(level = "info", skip(nucl, repo, prom, token), fields(actor_user_id = %token.user_id))]
 pub async fn create<N, C, R, P>(
     (nucl, repo, prom): (&N, &R, &P),
     token: UserToken,
@@ -199,7 +199,7 @@ where
 }
 
 /// Deletes an assignment invitation.
-#[instrument(level = "info", skip(nucl, repo))]
+#[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
 pub async fn delete<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,

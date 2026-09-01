@@ -30,7 +30,7 @@ use crate::result::{BaseRest, accept};
 /// * `R: SystemMailRepo` — System mail storage.
 ///
 /// [`ListSystemMailInfosInstr`]: ListSystemMailInfosInstr
-#[instrument(level = "info", skip(repo))]
+#[instrument(level = "info", skip(repo, token), fields(actor_user_id = %token.user_id))]
 pub async fn list_infos<R>(
     (repo,): (&R,),
     token: UserToken,
@@ -75,7 +75,7 @@ where
 /// # Type Parameters
 ///
 /// * `R: SystemMailRepo` — System mail storage.
-#[instrument(level = "info", skip(repo))]
+#[instrument(level = "info", skip(repo, token), fields(actor_user_id = %token.user_id))]
 pub async fn mark_read<R>(
     (repo,): (&R,),
     token: UserToken,

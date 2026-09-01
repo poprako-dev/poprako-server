@@ -45,7 +45,7 @@ use crate::usecase::member::view::{member_info_view, member_info_views};
 ///
 /// The caller must be a team admin. The target user and team are locked in
 /// the transaction before inserting the membership.
-#[instrument(level = "info", skip(nucl, repo))]
+#[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
 pub async fn create<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
@@ -139,8 +139,11 @@ where
 /// Joins the current user to a team with a pending invitation code.
 #[instrument(
     level = "info",
-    skip(nucl, repo, obj_dept, instr),
-    fields(code = "[REDACTED]")
+    skip(nucl, repo, obj_dept, token, instr),
+    fields(
+        actor_user_id = %token.user_id,
+        code = "[REDACTED]",
+    )
 )]
 pub async fn join_team<N, C, R, O>(
     (nucl, repo, obj_dept): (&N, &R, &O),
@@ -246,7 +249,7 @@ where
 /// Lists members under one team.
 ///
 /// The caller must already be a member of the target team.
-#[instrument(level = "info", skip(repo, obj_dept))]
+#[instrument(level = "info", skip(repo, obj_dept, token), fields(actor_user_id = %token.user_id))]
 pub async fn list_infos<C, R, O>(
     (repo, obj_dept): (&R, &O),
     token: UserToken,
@@ -293,7 +296,7 @@ where
 /// Updates one member's roles.
 ///
 /// The caller must be a team admin of the target member's team.
-#[instrument(level = "info", skip(nucl, repo))]
+#[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
 pub async fn update_roles<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
@@ -387,7 +390,7 @@ where
 /// Deletes one member.
 ///
 /// The caller must be a team admin of the target member's team.
-#[instrument(level = "info", skip(nucl, repo))]
+#[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
 pub async fn delete<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,

@@ -71,7 +71,9 @@ use crate::data::val::comic_list::ListComicInfosVal;
 use crate::data::val::comment::CreateCommentVal;
 use crate::data::val::member::CreateMemberVal;
 use crate::data::val::member_invitation::CreateMemberInvitationVal;
-use crate::data::val::page::{AllocChapterPagesVal, AllocatedPageVal};
+use crate::data::val::page::{
+    AllocChapterPagesVal, AllocatedPageVal, ListEdittedDiffPageIdsVal,
+};
 use crate::data::val::team::AllocTeamAvatarVal;
 use crate::data::val::term::CreateTermVal;
 use crate::data::val::termbase::CreateTermbaseVal;
@@ -167,6 +169,7 @@ use crate::value::unit::UnitTextPart;
         handler::chapter_port::export,
         handler::chapter_port::export_download,
         handler::page::list_infos,
+        handler::page::list_editted_diff_page_ids,
         handler::page::get_info,
         handler::page::delete,
         handler::page::alloc_chapter_pages,
@@ -279,6 +282,7 @@ use crate::value::unit::UnitTextPart;
         MarkPageImageUploadedInstr,
         UnitInfoView,
         ListPageUnitInfosVal,
+        ListEdittedDiffPageIdsVal,
         UnitEditInstr,
         UnitCoordInstr,
         UnitTranslationInstr,

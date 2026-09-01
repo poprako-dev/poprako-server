@@ -15,10 +15,12 @@ use crate::api::http::result::{
 };
 use crate::api::http::state::AppHarn;
 use crate::data::instr::page::{
-    AllocChapterPagesInstr, AllocPageImageInstr, ListPageInfosInstr,
-    MarkPageImageUploadedInstr,
+    AllocChapterPagesInstr, AllocPageImageInstr, ListEdittedDiffPageIdsInstr,
+    ListPageInfosInstr, MarkPageImageUploadedInstr,
 };
-use crate::data::val::page::{AllocChapterPagesVal, AllocatedPageVal};
+use crate::data::val::page::{
+    AllocChapterPagesVal, AllocatedPageVal, ListEdittedDiffPageIdsVal,
+};
 use crate::data::view::page::PageInfoView;
 use crate::model::shared::user::UserToken;
 use crate::part::nucl::ReptRead;
@@ -52,6 +54,35 @@ pub async fn list_infos(
         user_token,
         instr,
     )
+    .await?
+    .accept(StatusCode::OK)
+}
+
+/// `GET /api/v1/chapters/{chapter_id}/pages/editted-diffs` — list Pages with Unit text diffs.
+#[cfg_attr(feature = "swagger", utoipa::path(
+    get,
+    path = "/api/v1/chapters/{chapter_id}/pages/editted-diffs",
+    tag = "pages",
+    params(("chapter_id" = String, Path, description = "Chapter ID")),
+    responses(
+        (status = 200, description = "Matching Page IDs listed in Page order", body = HttpBody<ListEdittedDiffPageIdsVal>),
+        (status = 403, description = "No perm to list Pages in this Chapter"),
+        (status = 422, description = "Chapter not found"),
+    ),
+))]
+#[instrument(level = "info", skip_all)]
+pub async fn list_editted_diff_page_ids(
+    State(harn): State<AppHarn>,
+    Path(chapter_id): Path<String>,
+    Extension(user_token): Extension<UserToken>,
+) -> HttpResult<ListEdittedDiffPageIdsVal> {
+    //
+    let instr = ListEdittedDiffPageIdsInstr { chapter_id };
+
+    usecase::page::list::list_editted_diff_page_ids::<
+        RdbContext<ReptRead>,
+        HybRepo,
+    >((harn.repo(),), user_token, instr)
     .await?
     .accept(StatusCode::OK)
 }

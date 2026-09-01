@@ -930,6 +930,44 @@
         }
       }
     },
+    "/api/v1/chapters/{chapter_id}/pages/editted-diffs": {
+      "get": {
+        "tags": [
+          "pages"
+        ],
+        "summary": "`GET /api/v1/chapters/{chapter_id}/pages/editted-diffs` — list Pages with Unit text diffs.",
+        "operationId": "list_editted_diff_page_ids",
+        "parameters": [
+          {
+            "name": "chapter_id",
+            "in": "path",
+            "description": "Chapter ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Matching Page IDs listed in Page order",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpBody_ListEdittedDiffPageIdsVal"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No perm to list Pages in this Chapter"
+          },
+          "422": {
+            "description": "Chapter not found"
+          }
+        }
+      }
+    },
     "/api/v1/chapters/{chapter_id}/stage/advance": {
       "post": {
         "tags": [
@@ -7114,6 +7152,39 @@
           }
         }
       },
+      "HttpBody_ListEdittedDiffPageIdsVal": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Application-level success code, 0 for normal success.",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "Return value for listing Pages with proofread text diffs.",
+            "required": [
+              "page_ids"
+            ],
+            "properties": {
+              "page_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Matching Page IDs in Chapter Page order."
+              }
+            }
+          }
+        }
+      },
       "HttpBody_ListPageUnitInfosVal": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
@@ -9415,6 +9486,22 @@
               ]
             },
             "description": "Pinned chapter for each comic, positionally aligned with `comics`.\n`None` when the comic has no pinned chapter."
+          }
+        }
+      },
+      "ListEdittedDiffPageIdsVal": {
+        "type": "object",
+        "description": "Return value for listing Pages with proofread text diffs.",
+        "required": [
+          "page_ids"
+        ],
+        "properties": {
+          "page_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Matching Page IDs in Chapter Page order."
           }
         }
       },

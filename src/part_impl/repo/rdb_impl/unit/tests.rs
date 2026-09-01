@@ -6,8 +6,10 @@ use poprako_rdb_core::RdbCore;
 
 use crate::model::read::proj::unit::UnitOrder;
 use crate::model::shared::unit::{UnitCoord, UnitRevision, UnitTranslation};
+use crate::model::write::page::PageEntry;
 use crate::model::write::unit::UnitEdit;
 use crate::part::nucl::ReptRead;
+use crate::part::repo::oper::page::{CreatePages, ListEdittedDiffPageIds};
 use crate::part::repo::oper::unit::{
     ApplyUnitEdits, ListUnitInfos, ListUnitInfosByIds, ListUnitInfosByPageIds,
     ListUnitOrders,
@@ -238,6 +240,169 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
     .await
     .unwrap();
 
+    let equal_page_id = format!("{}equal-page", PREFIX);
+
+    let missing_translation_page_id =
+        format!("{}missing-translation-page", PREFIX);
+
+    let additional_pages = [
+        PageEntry {
+            id: equal_page_id.clone(),
+            chapter_id: page_fixture.chapter_entry.id.clone(),
+            index: 1,
+        },
+        PageEntry {
+            id: missing_translation_page_id.clone(),
+            chapter_id: page_fixture.chapter_entry.id.clone(),
+            index: 2,
+        },
+    ];
+
+    nucl.coord(async |context| {
+        repo.step(
+            context,
+            &CreatePages {
+                entries: &additional_pages,
+            },
+        )
+        .await?;
+
+        accept(())
+    })
+    .await
+    .unwrap();
+
+    let hidden_diff_id = format!("{}hidden-diff", PREFIX);
+
+    let excluded_edits = [
+        create_text_edit(
+            &format!("{}equal", PREFIX),
+            &page_fixture.chapter_entry.creator_id,
+            Some("same"),
+            Some("same"),
+            true,
+        ),
+        create_text_edit(
+            &format!("{}empty", PREFIX),
+            &page_fixture.chapter_entry.creator_id,
+            None,
+            Some(""),
+            true,
+        ),
+        create_text_edit(
+            &format!("{}ascii-whitespace", PREFIX),
+            &page_fixture.chapter_entry.creator_id,
+            None,
+            Some(" \t\r\n"),
+            true,
+        ),
+        create_text_edit(
+            &format!("{}unicode-whitespace", PREFIX),
+            &page_fixture.chapter_entry.creator_id,
+            None,
+            Some("\u{3000}"),
+            true,
+        ),
+        create_text_edit(
+            &format!("{}missing-proofread", PREFIX),
+            &page_fixture.chapter_entry.creator_id,
+            Some("translated"),
+            None,
+            true,
+        ),
+        create_text_edit(
+            &hidden_diff_id,
+            &page_fixture.chapter_entry.creator_id,
+            Some("translated"),
+            Some("hidden proofread"),
+            true,
+        ),
+    ];
+
+    nucl.coord(async |context| {
+        repo.step(
+            context,
+            &ApplyUnitEdits {
+                page_id: &equal_page_id,
+                orders: &[],
+                edits: &excluded_edits,
+            },
+        )
+        .await?;
+
+        accept(())
+    })
+    .await
+    .unwrap();
+
+    nucl.coord(async |context| {
+        let orders = repo
+            .step(
+                context,
+                &ListUnitOrders {
+                    page_id: &equal_page_id,
+                },
+            )
+            .await?;
+
+        let delete_hidden_diff = [UnitEdit::Delete {
+            id: hidden_diff_id.clone(),
+        }];
+
+        repo.step(
+            context,
+            &ApplyUnitEdits {
+                page_id: &equal_page_id,
+                orders: &orders,
+                edits: &delete_hidden_diff,
+            },
+        )
+        .await?;
+
+        accept(())
+    })
+    .await
+    .unwrap();
+
+    let missing_translation_edit = [create_text_edit(
+        &format!("{}missing-translation", PREFIX),
+        &page_fixture.chapter_entry.creator_id,
+        None,
+        Some("proofread"),
+        false,
+    )];
+
+    nucl.coord(async |context| {
+        repo.step(
+            context,
+            &ApplyUnitEdits {
+                page_id: &missing_translation_page_id,
+                orders: &[],
+                edits: &missing_translation_edit,
+            },
+        )
+        .await?;
+
+        accept(())
+    })
+    .await
+    .unwrap();
+
+    let diff_page_ids = repo
+        .run(&ListEdittedDiffPageIds {
+            chapter_id: &page_fixture.chapter_entry.id,
+        })
+        .await
+        .unwrap();
+
+    assert_eq!(
+        diff_page_ids,
+        [
+            page_fixture.page_entry.id.clone(),
+            missing_translation_page_id,
+        ]
+    );
+
     test_shared::cleanup(&shared, PREFIX).await.unwrap();
 
     test_shared::assert_no_leftovers(&shared, PREFIX)
@@ -259,5 +424,32 @@ fn create_edit(id: &str, user_id: &str, text: &str) -> UnitEdit {
             last_translator_id: user_id.to_string(),
         }),
         revision: None,
+    }
+}
+
+fn create_text_edit(
+    id: &str,
+    user_id: &str,
+    translated_text: Option<&str>,
+    proofread_text: Option<&str>,
+    is_proofread: bool,
+) -> UnitEdit {
+    UnitEdit::Create {
+        id: id.to_string(),
+        next_id: None,
+        is_bubble: true,
+        coord: UnitCoord {
+            x_coord: 1.0,
+            y_coord: 2.0,
+        },
+        translation: translated_text.map(|translated_text| UnitTranslation {
+            translated_text: translated_text.to_string(),
+            last_translator_id: user_id.to_string(),
+        }),
+        revision: Some(UnitRevision {
+            is_proofread,
+            proofread_text: proofread_text.map(str::to_string),
+            last_proofreader_id: user_id.to_string(),
+        }),
     }
 }

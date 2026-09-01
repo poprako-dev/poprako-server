@@ -55,7 +55,7 @@ use crate::util::next_snowflake_id;
 const EXPIRY_DELAY: Duration = Duration::from_hours(120);
 
 /// Creates a pending invitation for a team.
-#[instrument(level = "info", skip(nucl, repo, prom))]
+#[instrument(level = "info", skip(nucl, repo, prom, token), fields(actor_user_id = %token.user_id))]
 pub async fn create<N, C, R, P>(
     (nucl, repo, prom): (&N, &R, &P),
     token: UserToken,
@@ -188,7 +188,7 @@ where
 }
 
 /// Lists invitations for a team.
-#[instrument(level = "info", skip(repo, obj_dept))]
+#[instrument(level = "info", skip(repo, obj_dept, token), fields(actor_user_id = %token.user_id))]
 pub async fn list_infos<C, R, O>(
     (repo, obj_dept): (&R, &O),
     token: UserToken,
@@ -247,7 +247,7 @@ where
 }
 
 /// Updates the roles of an invitation.
-#[instrument(level = "info", skip(nucl, repo))]
+#[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
 pub async fn update_roles<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
@@ -292,7 +292,7 @@ where
 }
 
 /// Deletes an invitation.
-#[instrument(level = "info", skip(nucl, repo))]
+#[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
 pub async fn delete<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,

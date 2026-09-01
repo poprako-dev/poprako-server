@@ -19,7 +19,7 @@ use crate::complex::unit::UnitComplex;
 use crate::complex::unit::perm::UnitPermComplex;
 use crate::data::instr::unit::{
     ListPageUnitInfosInstr, SavePageUnitEditsInstr,
-    SearchChapterUnitInfosInstr, into_unit_edits,
+    SearchChapterUnitInfosInstr, UnitEditInstr, into_unit_edits,
 };
 use crate::data::val::unit::ListPageUnitInfosVal;
 use crate::data::view::unit::UnitInfoView;
@@ -55,8 +55,42 @@ use crate::value::unit::{MAX_UNIT_SEARCH_MATCH_COUNT, UnitEditPerm};
 // Search pages in bounded concurrent batches.
 const SEARCH_PAGE_BATCH_SIZE: usize = 20;
 
+// Fixed-size diagnostics for a potentially large Unit edit request.
+#[derive(Debug, Default)]
+struct UnitEditLogSummary {
+    //
+    // Number of create operations.
+    creates: usize,
+    // Number of patch operations.
+    patches: usize,
+    // Number of delete operations.
+    deletes: usize,
+}
+
+impl UnitEditLogSummary {
+    // Builds fixed-size diagnostics without retaining edit payloads.
+    fn from_edits(edits: &[UnitEditInstr]) -> Self {
+        //
+        let mut summary = Self::default();
+
+        for edit in edits {
+            //
+            match edit {
+                //
+                UnitEditInstr::Create { .. } => summary.creates += 1,
+
+                UnitEditInstr::Patch { .. } => summary.patches += 1,
+
+                UnitEditInstr::Delete { .. } => summary.deletes += 1,
+            }
+        }
+
+        summary
+    }
+}
+
 /// Lists visible Units for one Page in final linked-list order.
-#[instrument(level = "info", skip(repo))]
+#[instrument(level = "info", skip(repo, token), fields(actor_user_id = %token.user_id))]
 pub async fn list_infos<C, R>(
     (repo,): (&R,),
     token: UserToken,
@@ -99,8 +133,12 @@ where
 
 #[instrument(
     level = "info",
-    skip(repo, token, instr),
-    fields(chapter_id = %instr.chapter_id, part = ?instr.part),
+    skip(repo, token),
+    fields(
+        actor_user_id = %token.user_id,
+        chapter_id = %instr.chapter_id,
+        part = ?instr.part,
+    ),
 )]
 /// Searches one Unit text field across all visible Units in a Chapter.
 pub async fn search_infos<C, R>(
@@ -208,7 +246,16 @@ where
 }
 
 /// Saves one authorized batch of Unit edits without returning a payload.
-#[instrument(level = "info", skip(nucl, repo))]
+#[instrument(
+    level = "info",
+    skip(nucl, repo, token, instr),
+    fields(
+        actor_user_id = %token.user_id,
+        page_id = %instr.page_id,
+        edit_count = instr.edits.len(),
+        edit_kinds = ?UnitEditLogSummary::from_edits(&instr.edits),
+    ),
+)]
 pub async fn save_edits<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
