@@ -410,43 +410,6 @@ fn list_infos_by_page_ids(
     accept(unit_infos)
 }
 
-// List Chapter Page IDs containing at least one visible text diff.
-fn list_editted_diff_page_ids(
-    state: &MockState,
-    chapter_id: &str,
-) -> Vec<String> {
-    //
-    let mut page_infos = state
-        .pages
-        .iter()
-        .filter(|page_info| page_info.chapter_id == chapter_id)
-        .collect::<Vec<_>>();
-
-    page_infos.sort_by_key(|page_info| page_info.index);
-
-    page_infos
-        .into_iter()
-        .filter(|page_info| {
-            //
-            // Stop checking this Page after its first matching Unit.
-            state.units.iter().any(|unit_info| {
-                //
-                unit_info.page_id == page_info.id
-                    && unit_info.hidden_at.is_none()
-                    && unit_info.proofread_text.as_deref().is_some_and(
-                        |proofread_text| {
-                            //
-                            !proofread_text.trim().is_empty()
-                                && Some(proofread_text)
-                                    != unit_info.translated_text.as_deref()
-                        },
-                    )
-            })
-        })
-        .map(|page_info| page_info.id.clone())
-        .collect()
-}
-
 // List every requested persisted Unit that currently exists.
 fn list_infos_by_ids(state: &MockState, ids: &[String]) -> Vec<UnitInfo> {
     //

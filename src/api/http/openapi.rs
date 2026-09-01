@@ -71,12 +71,14 @@ use crate::data::val::comic_list::ListComicInfosVal;
 use crate::data::val::comment::CreateCommentVal;
 use crate::data::val::member::CreateMemberVal;
 use crate::data::val::member_invitation::CreateMemberInvitationVal;
-use crate::data::val::page::{AllocChapterPagesVal, AllocatedPageVal};
+use crate::data::val::page::{
+    AllocChapterPagesVal, AllocatedPageVal, ListEdittedDiffPageIdsVal,
+};
 use crate::data::val::team::AllocTeamAvatarVal;
 use crate::data::val::term::CreateTermVal;
 use crate::data::val::termbase::CreateTermbaseVal;
 use crate::data::val::termbase_port::{ExportTermbaseVal, ImportTermbaseVal};
-use crate::data::val::unit::{ListEdittedDiffPageIdsVal, ListPageUnitInfosVal};
+use crate::data::val::unit::ListPageUnitInfosVal;
 use crate::data::val::user::AllocUserAvatarVal;
 use crate::data::val::workset::CreateWorksetVal;
 use crate::data::view::announcement::AnnouncementInfoView;
@@ -167,13 +169,13 @@ use crate::value::unit::UnitTextPart;
         handler::chapter_port::export,
         handler::chapter_port::export_download,
         handler::page::list_infos,
+        handler::page::list_editted_diff_page_ids,
         handler::page::get_info,
         handler::page::delete,
         handler::page::alloc_chapter_pages,
         handler::page::alloc_image,
         handler::page::mark_image_uploaded,
         handler::unit::list_infos,
-        handler::unit::list_editted_diff_page_ids,
         handler::unit::search_infos,
         handler::unit::save_infos,
         handler::unit::transform,

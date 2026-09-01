@@ -13,6 +13,14 @@ use utoipa::ToSchema;
 use crate::data::view::image::ImageUploadSlotView;
 use crate::value::image::{ImageExt, ImageHash};
 
+/// Return value for listing Pages with proofread text diffs.
+#[derive(Debug, Serialize)]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
+pub struct ListEdittedDiffPageIdsVal {
+    /// Matching Page IDs in Chapter Page order.
+    pub page_ids: Vec<String>,
+}
+
 /// Return value from successful chapter page allocations.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]

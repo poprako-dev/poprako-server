@@ -31,13 +31,6 @@ pub struct ListPageUnitInfosInstr {
     pub page_id: String,
 }
 
-/// Input parameters for listing Pages with proofread text diffs.
-#[derive(Debug)]
-pub struct ListEdittedDiffPageIdsInstr {
-    /// Chapter whose Pages are checked for Unit text diffs.
-    pub chapter_id: String,
-}
-
 /// Input parameters for searching visible Units under one Chapter.
 #[derive(Debug)]
 pub struct SearchChapterUnitInfosInstr {

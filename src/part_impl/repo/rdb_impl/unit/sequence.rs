@@ -5,11 +5,9 @@ mod tests;
 
 use std::collections::HashMap;
 
-use diesel::PgExpressionMethods as _;
 use diesel::prelude::{
     ExpressionMethods as _, QueryDsl as _, SelectableHelper as _,
 };
-use diesel::sql_types::Bool;
 use diesel_async::RunQueryDsl as _;
 use time::OffsetDateTime;
 use tracing::instrument;
@@ -18,13 +16,8 @@ use poprako_rdb_core::RdbConn;
 
 use crate::model::read::proj::unit::{UnitInfo, UnitOrder};
 use crate::part_impl::repo::rdb_impl::entity::unit::UnitInfoRow;
-use crate::part_impl::repo::rdb_impl::schema::t_page::dsl::{
-    f_chapter_id as page_chapter_id, f_id as page_row_id,
-    f_index as page_index, t_page,
-};
 use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{
-    f_hidden_at, f_id as unit_id, f_next_id as unit_next_id, f_page_id,
-    f_proofread_text, f_translated_text, t_unit,
+    f_hidden_at, f_id as unit_id, f_next_id as unit_next_id, f_page_id, t_unit,
 };
 use crate::result::{BaseError, BaseRest, accept};
 use crate::shared::result::diesel;
@@ -250,36 +243,6 @@ pub async fn list_infos_by_page_ids(
     }
 
     accept(unit_infos)
-}
-
-/// Lists Chapter Page IDs containing at least one visible text diff.
-#[instrument(level = "info", skip_all)]
-pub async fn list_editted_diff_page_ids(
-    conn: &mut RdbConn,
-    chapter_id: &str,
-) -> BaseRest<Vec<String>> {
-    // Keep the Unit check correlated so PostgreSQL can stop after one match
-    // for each Page.
-    let has_editted_diff = diesel::dsl::exists(
-        t_unit
-            .filter(f_page_id.eq(page_row_id))
-            .filter(f_hidden_at.is_null())
-            .filter(diesel::dsl::sql::<Bool>(
-                r#""t_unit"."f_proofread_text" !~ '^\s*$'"#,
-            ))
-            .filter(f_proofread_text.is_distinct_from(f_translated_text)),
-    );
-
-    let page_ids = t_page
-        .filter(page_chapter_id.eq(chapter_id))
-        .filter(has_editted_diff)
-        .select(page_row_id)
-        .order(page_index.asc())
-        .load::<String>(conn)
-        .await
-        .map_err(diesel)?;
-
-    accept(page_ids)
 }
 
 /// Lists every requested persisted Unit that currently exists.

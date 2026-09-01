@@ -5,8 +5,6 @@
 
 // Unit search tests with dedicated high-cardinality fixtures.
 mod search;
-// Proofread-diff Page ID query tests.
-mod editted_diff;
 
 use super::transform::transform;
 use super::*;

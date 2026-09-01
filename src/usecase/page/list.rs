@@ -7,7 +7,10 @@ use poprako_obj_dept::ObjDeptView;
 use poprako_util::i18n::trl;
 
 use crate::complex::page::{PageListAccess, PagePermComplex};
-use crate::data::instr::page::ListPageInfosInstr;
+use crate::data::instr::page::{
+    ListEdittedDiffPageIdsInstr, ListPageInfosInstr,
+};
+use crate::data::val::page::ListEdittedDiffPageIdsVal;
 use crate::data::view::page::PageInfoView;
 use crate::model::shared::user::UserToken;
 use crate::part::obj_dept::PageImage;
@@ -15,11 +18,13 @@ use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part::repo::oper::page::{GetPageInfo, ListPageInfos};
+use crate::part::repo::oper::page::{
+    GetPageInfo, ListEdittedDiffPageIds, ListPageInfos,
+};
 use crate::part::repo::oper::team::ResolveTeamId;
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
-use crate::result::{BaseError, BaseRest, ExpectedVariant};
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::page::view::{page_info_view, page_info_views};
 
 /// Lists pages under one chapter.
@@ -43,6 +48,32 @@ where
     .await?;
 
     page_info_views(obj_dept, page_infos).await
+}
+
+/// Lists Chapter Page IDs containing visible proofread text diffs.
+#[instrument(
+    level = "info",
+    skip(repo, token),
+    fields(chapter_id = %instr.chapter_id),
+)]
+pub async fn list_editted_diff_page_ids<C, R>(
+    (repo,): (&R,),
+    token: UserToken,
+    instr: ListEdittedDiffPageIdsInstr,
+) -> BaseRest<ListEdittedDiffPageIdsVal>
+where
+    C: Context,
+    R: PageRepo<C> + TeamRepo<C> + MemberRepo<C> + AssignmentRepo<C> + Sync,
+{
+    ensure_user_can_list_infos::<C, R>(repo, &token, &instr.chapter_id).await?;
+
+    let page_ids = ListEdittedDiffPageIds {
+        chapter_id: &instr.chapter_id,
+    }
+    .run_on(repo)
+    .await?;
+
+    accept(ListEdittedDiffPageIdsVal { page_ids })
 }
 
 /// Fetches one page by ID.

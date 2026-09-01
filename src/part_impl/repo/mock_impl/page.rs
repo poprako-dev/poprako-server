@@ -26,6 +26,35 @@ fn list_infos(state: &MockState, chapter_id: &str) -> Vec<PageInfo> {
     page_infos
 }
 
+// List Chapter Page IDs containing at least one visible text diff.
+fn list_editted_diff_page_ids(
+    state: &MockState,
+    chapter_id: &str,
+) -> Vec<String> {
+    //
+    list_infos(state, chapter_id)
+        .into_iter()
+        .filter(|page_info| {
+            //
+            // Stop checking this Page after its first matching Unit.
+            state.units.iter().any(|unit_info| {
+                //
+                unit_info.page_id == page_info.id
+                    && unit_info.hidden_at.is_none()
+                    && unit_info.proofread_text.as_deref().is_some_and(
+                        |proofread_text| {
+                            //
+                            !proofread_text.trim().is_empty()
+                                && Some(proofread_text)
+                                    != unit_info.translated_text.as_deref()
+                        },
+                    )
+            })
+        })
+        .map(|page_info| page_info.id)
+        .collect()
+}
+
 // Read detailed info by page primary key.
 fn get_page_by_id(state: &MockState, id: &str) -> BaseRest<PageInfo> {
     //

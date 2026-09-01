@@ -933,7 +933,7 @@
     "/api/v1/chapters/{chapter_id}/pages/editted-diffs": {
       "get": {
         "tags": [
-          "units"
+          "pages"
         ],
         "summary": "`GET /api/v1/chapters/{chapter_id}/pages/editted-diffs` — list Pages with Unit text diffs.",
         "operationId": "list_editted_diff_page_ids",
@@ -960,7 +960,7 @@
             }
           },
           "403": {
-            "description": "No perm to list Units in this Chapter"
+            "description": "No perm to list Pages in this Chapter"
           },
           "422": {
             "description": "Chapter not found"

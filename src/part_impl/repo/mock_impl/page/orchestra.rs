@@ -7,12 +7,13 @@ use crate::model::read::proj::page::PageInfo;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::page::{
     ApplyPageManifest, CreatePages, DeletePages, GetPageInfo,
-    GetPageInfoExcluded, ListFirstPageInfos, ListPageInfos,
-    ListPageInfosExcluded, SetPageUnitCounters, ShiftPageIndexesTemporary,
+    GetPageInfoExcluded, ListEdittedDiffPageIds, ListFirstPageInfos,
+    ListPageInfos, ListPageInfosExcluded, SetPageUnitCounters,
+    ShiftPageIndexesTemporary,
 };
 use crate::part_impl::repo::mock_impl::page::{
-    get_page_by_id, list_first_pages, list_infos, page_from_entry,
-    page_from_manifest_entry,
+    get_page_by_id, list_editted_diff_page_ids, list_first_pages, list_infos,
+    page_from_entry, page_from_manifest_entry,
 };
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, expected, now, unrecoverable,
@@ -65,6 +66,23 @@ impl<'a> Run<ListFirstPageInfos<'a>> for Mock {
         let state = self.state.lock().unwrap();
 
         accept(list_first_pages(&state, oper.chapter_ids))
+    }
+}
+
+impl Run<ListEdittedDiffPageIds<'_>> for Mock {
+    // Defines the adapter error exposed by this operation.
+    type Error = BaseError;
+
+    #[instrument(level = "info", skip_all)]
+    // Lists matching Page IDs in stable Chapter Page order.
+    async fn run(
+        &self,
+        oper: &ListEdittedDiffPageIds<'_>,
+    ) -> BaseRest<Vec<String>> {
+        //
+        let state = self.state.lock().unwrap();
+
+        accept(list_editted_diff_page_ids(&state, oper.chapter_id))
     }
 }
 

@@ -1,9 +1,12 @@
 //! RDB-backed page repository step implementations.
 
+use diesel::PgExpressionMethods as _;
+use diesel::expression::functions::declare_sql_function;
 use diesel::prelude::{
     ExpressionMethods as _, OptionalExtension as _, QueryDsl as _,
     SelectableHelper as _,
 };
+use diesel::sql_types::{Nullable, Text};
 use diesel::upsert::excluded;
 use diesel_async::RunQueryDsl as _;
 use time::OffsetDateTime;
@@ -23,10 +26,22 @@ use crate::part_impl::repo::rdb_impl::schema::t_page::dsl::{
     f_chapter_id, f_id, f_index, f_updated_at, t_page,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{
-    f_page_id as unit_f_page_id, t_unit,
+    f_hidden_at as unit_hidden_at, f_page_id as unit_page_id,
+    f_proofread_text as unit_proofread_text,
+    f_translated_text as unit_translated_text, t_unit,
 };
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::result::diesel;
+
+#[declare_sql_function]
+extern "SQL" {
+    /// `PostgreSQL` text trim with an explicit character set.
+    // PostgreSQL text trim with an explicit character set.
+    fn btrim(string: Nullable<Text>, characters: Text) -> Nullable<Text>;
+}
+
+// `char::is_whitespace` code points accepted by Unit text semantics.
+const UNIT_TEXT_WHITESPACE: &str = "\u{0009}\u{000A}\u{000B}\u{000C}\u{000D}\u{0020}\u{0085}\u{00A0}\u{1680}\u{2000}\u{2001}\u{2002}\u{2003}\u{2004}\u{2005}\u{2006}\u{2007}\u{2008}\u{2009}\u{200A}\u{2028}\u{2029}\u{202F}\u{205F}\u{3000}";
 
 /// Load a single page info by ID.
 #[instrument(level = "info", skip_all)]
@@ -115,6 +130,34 @@ pub async fn list_infos(
         .map_err(diesel)?;
 
     rows.into_iter().map(TryInto::try_into).collect()
+}
+
+/// Lists Chapter Page IDs containing at least one visible text diff.
+#[instrument(level = "info", skip_all)]
+pub async fn list_editted_diff_page_ids(
+    conn: &mut RdbConn,
+    chapter_id: &str,
+) -> BaseRest<Vec<String>> {
+    // Keep the Unit check correlated so PostgreSQL can stop after one match
+    // for each Page.
+    let has_editted_diff = diesel::dsl::exists(
+        t_unit
+            .filter(unit_page_id.eq(f_id))
+            .filter(unit_hidden_at.is_null())
+            .filter(btrim(unit_proofread_text, UNIT_TEXT_WHITESPACE).ne(""))
+            .filter(unit_proofread_text.is_distinct_from(unit_translated_text)),
+    );
+
+    let page_ids = t_page
+        .filter(f_chapter_id.eq(chapter_id))
+        .filter(has_editted_diff)
+        .select(f_id)
+        .order(f_index.asc())
+        .load::<String>(conn)
+        .await
+        .map_err(diesel)?;
+
+    accept(page_ids)
 }
 
 /// Lists page infos while retaining row locks for a manifest transaction.
@@ -287,7 +330,7 @@ pub async fn delete_by_chapter_id(
 
     if !page_ids.is_empty() {
         //
-        diesel::delete(t_unit.filter(unit_f_page_id.eq_any(&page_ids)))
+        diesel::delete(t_unit.filter(unit_page_id.eq_any(&page_ids)))
             .execute(conn)
             .await
             .map_err(diesel)?;
@@ -309,7 +352,7 @@ pub async fn delete_by_ids(conn: &mut RdbConn, ids: &[String]) -> BaseRest<()> {
         return accept(());
     }
 
-    diesel::delete(t_unit.filter(unit_f_page_id.eq_any(ids)))
+    diesel::delete(t_unit.filter(unit_page_id.eq_any(ids)))
         .execute(conn)
         .await
         .map_err(diesel)?;

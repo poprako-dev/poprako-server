@@ -195,6 +195,10 @@ pub fn v1_page_router() -> Router<AppHarn> {
     //
     Router::new()
         .route(
+            "/chapters/{chapter_id}/pages/editted-diffs",
+            get(page::list_editted_diff_page_ids),
+        )
+        .route(
             "/chapters/{chapter_id}/pages",
             get(page::list_infos).delete(page::delete),
         )
@@ -214,10 +218,6 @@ pub fn v1_page_router() -> Router<AppHarn> {
 pub fn v1_unit_router() -> Router<AppHarn> {
     //
     Router::new()
-        .route(
-            "/chapters/{chapter_id}/pages/editted-diffs",
-            get(unit::list_editted_diff_page_ids),
-        )
         .route(
             "/chapters/{chapter_id}/units/search",
             get(unit::search_infos),

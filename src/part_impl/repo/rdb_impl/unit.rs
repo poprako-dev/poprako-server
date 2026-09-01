@@ -15,14 +15,14 @@ use tracing::instrument;
 use crate::model::read::proj::unit::{UnitCountMetrics, UnitInfo, UnitOrder};
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::unit::{
-    ApplyUnitEdits, ListEdittedDiffPageIds, ListUnitInfos, ListUnitInfosByIds,
-    ListUnitInfosByPageIds, ListUnitOrders,
+    ApplyUnitEdits, ListUnitInfos, ListUnitInfosByIds, ListUnitInfosByPageIds,
+    ListUnitOrders,
 };
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::unit::edit::apply_edits;
 use crate::part_impl::repo::rdb_impl::unit::sequence::{
-    list_editted_diff_page_ids, list_infos, list_infos_by_ids,
-    list_infos_by_page_ids, list_orders_for_update,
+    list_infos, list_infos_by_ids, list_infos_by_page_ids,
+    list_orders_for_update,
 };
 use crate::result::{BaseError, BaseRest};
 use crate::shared::RdbContext;
@@ -51,20 +51,6 @@ impl Run<ListUnitInfosByPageIds<'_>> for HybRepo {
         oper: &ListUnitInfosByPageIds<'_>,
     ) -> BaseRest<Vec<UnitInfo>> {
         submit_query!(self.core, list_infos_by_page_ids, oper.page_ids)
-    }
-}
-
-impl Run<ListEdittedDiffPageIds<'_>> for HybRepo {
-    // Error type for the Chapter proofread-diff Page query.
-    type Error = BaseError;
-
-    #[instrument(level = "info", skip_all)]
-    // Lists matching Page IDs in stable Chapter Page order.
-    async fn run(
-        &self,
-        oper: &ListEdittedDiffPageIds<'_>,
-    ) -> BaseRest<Vec<String>> {
-        submit_query!(self.core, list_editted_diff_page_ids, oper.chapter_id)
     }
 }
 

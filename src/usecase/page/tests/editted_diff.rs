@@ -1,9 +1,11 @@
 use super::*;
 
-use crate::data::instr::unit::ListEdittedDiffPageIdsInstr;
-use crate::model::read::proj::member::MemberInfo;
+use crate::data::instr::page::ListEdittedDiffPageIdsInstr;
 use crate::model::read::proj::unit::UnitInfo;
 use crate::model::shared::unit::UnitCoord;
+use crate::result::{BaseError, ExpectedVariant};
+use crate::usecase::page::list::list_editted_diff_page_ids;
+use crate::value::role::RoleField;
 
 #[tokio::test]
 async fn list_page_ids_filters_diffs_and_preserves_page_order() {
@@ -64,7 +66,7 @@ async fn list_page_ids_filters_diffs_and_preserves_page_order() {
     ));
 
     let val =
-        list_editted_diff_page_ids((&mock,), token("translator-1"), instr())
+        list_editted_diff_page_ids((&mock,), page_token("user-1"), instr())
             .await
             .unwrap();
 
@@ -73,7 +75,7 @@ async fn list_page_ids_filters_diffs_and_preserves_page_order() {
 
 #[tokio::test]
 async fn list_page_ids_returns_empty_when_no_visible_diff_exists() {
-    let mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
+    let mock = read_scope();
 
     mock.seed_unit(unit_info(
         "unit-1",
@@ -85,7 +87,7 @@ async fn list_page_ids_returns_empty_when_no_visible_diff_exists() {
     ));
 
     let val =
-        list_editted_diff_page_ids((&mock,), token("translator-1"), instr())
+        list_editted_diff_page_ids((&mock,), page_token("user-1"), instr())
             .await
             .unwrap();
 
@@ -94,36 +96,27 @@ async fn list_page_ids_returns_empty_when_no_visible_diff_exists() {
 
 #[tokio::test]
 async fn list_page_ids_accepts_team_member_without_chapter_assignment() {
-    let mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
+    let mock = read_scope();
 
-    mock.seed_member(MemberInfo {
-        id: "member-1".to_string(),
+    mock.seed_member(page_member(
+        "member-1",
+        RoleMask::from(RoleField::TRANSLATOR),
+    ));
 
-        user_id: "member-1".to_string(),
-        user_nickname: "member".to_string(),
-        user_last_active_at: OffsetDateTime::now_utc(),
-
-        team_id: "team-1".to_string(),
-
-        user: None,
-        team: None,
-
-        roles: RoleMask::from(RoleField::TRANSLATOR),
-    });
-
-    let val = list_editted_diff_page_ids((&mock,), token("member-1"), instr())
-        .await
-        .unwrap();
+    let val =
+        list_editted_diff_page_ids((&mock,), page_token("member-1"), instr())
+            .await
+            .unwrap();
 
     assert!(val.page_ids.is_empty());
 }
 
 #[tokio::test]
 async fn list_page_ids_rejects_user_without_chapter_access() {
-    let mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
+    let mock = read_scope();
 
     let error =
-        list_editted_diff_page_ids((&mock,), token("outsider"), instr())
+        list_editted_diff_page_ids((&mock,), page_token("outsider"), instr())
             .await
             .unwrap_err();
 
@@ -136,31 +129,35 @@ async fn list_page_ids_rejects_user_without_chapter_access() {
     ));
 }
 
+// Build one authorized Page read scope.
+fn read_scope() -> Mock {
+    let mock = Mock::new();
+
+    seed_page_scope(&mock, 1);
+
+    mock.seed_page(page_model("page-1", 0));
+
+    mock.seed_assignment(page_assignment(
+        "user-1",
+        RoleMask::from(RoleField::TRANSLATOR),
+    ));
+
+    mock
+}
+
 // Build a Chapter scope whose Pages are deliberately seeded out of order.
 fn diff_scope() -> Mock {
-    let mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
-
-    let mut page_1 = page();
-
-    page_1.index = 2;
-
-    let mut page_2 = page();
-
-    page_2.id = "page-2".to_string();
-
-    page_2.index = 1;
-
-    let mut page_3 = page();
-
-    page_3.id = "page-3".to_string();
-
-    page_3.index = 0;
+    let mock = read_scope();
 
     let mut state = mock.state.lock().unwrap();
 
     state.pages.clear();
 
-    state.pages.extend([page_1, page_2, page_3]);
+    state.pages.extend([
+        page_model("page-1", 2),
+        page_model("page-2", 1),
+        page_model("page-3", 0),
+    ]);
 
     drop(state);
 

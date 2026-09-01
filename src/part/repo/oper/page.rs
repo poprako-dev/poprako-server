@@ -20,6 +20,14 @@ pub struct ListPageInfos<'a> {
     pub chapter_id: &'a str,
 }
 
+/// Lists Page IDs containing visible proofread text diffs.
+#[derive(Oper)]
+#[oper(output = Vec<String>)]
+pub struct ListEdittedDiffPageIds<'a> {
+    /// Chapter whose Pages should be checked.
+    pub chapter_id: &'a str,
+}
+
 /// Finds the lowest-index page for each requested chapter.
 #[derive(Oper)]
 #[oper(output = Vec<PageInfo>)]

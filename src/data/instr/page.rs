@@ -79,3 +79,10 @@ pub struct ListPageInfosInstr {
     /// Chapter whose pages to list.
     pub chapter_id: String,
 }
+
+/// Input parameters for listing Pages with proofread text diffs.
+#[derive(Debug)]
+pub struct ListEdittedDiffPageIdsInstr {
+    /// Chapter whose Pages are checked for Unit text diffs.
+    pub chapter_id: String,
+}

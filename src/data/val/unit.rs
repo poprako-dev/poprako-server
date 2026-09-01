@@ -49,11 +49,3 @@ impl ListPageUnitInfosVal {
         }
     }
 }
-
-/// Return value for listing Pages with proofread text diffs.
-#[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
-pub struct ListEdittedDiffPageIdsVal {
-    /// Matching Page IDs in Chapter Page order.
-    pub page_ids: Vec<String>,
-}
