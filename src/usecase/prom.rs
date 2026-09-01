@@ -52,7 +52,7 @@ pub enum PromTaskAction {
 }
 
 /// Handles one deferred chapter workflow task.
-#[instrument(level = "info", skip_all)]
+#[instrument(level = "info", skip(nucl, repo, obj_view, develop))]
 pub async fn handle_chapter<N, R, V, D>(
     (nucl, repo, obj_view, develop): (&N, &R, &V, &D),
     task: &ChapterPayload,
@@ -88,7 +88,7 @@ where
 }
 
 /// Handles one deferred invitation task without an outer transaction.
-#[instrument(level = "info", skip_all)]
+#[instrument(level = "info", skip(repo))]
 pub async fn handle_invitation<R>(
     (repo,): (&R,),
     task: &InvitationPayload,

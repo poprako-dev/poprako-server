@@ -34,7 +34,7 @@ use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 use crate::value::role::RoleField;
 
 /// Updates assignment roles.
-#[instrument(level = "info", skip(nucl, repo))]
+#[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
 pub async fn update_roles<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,

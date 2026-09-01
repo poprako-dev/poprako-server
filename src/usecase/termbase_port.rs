@@ -38,7 +38,7 @@ use crate::usecase::internal::util::LoadMode;
 use crate::value::termbase::TermbaseScope;
 
 /// Exports one terminology base as a native portable document.
-#[instrument(level = "info", skip(nucl, repo))]
+#[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
 pub async fn export<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
@@ -88,7 +88,11 @@ where
 }
 
 /// Imports a native portable document into a team or comic scope.
-#[instrument(level = "info", skip(nucl, repo, scope, instr))]
+#[instrument(
+    level = "info",
+    skip(nucl, repo, token),
+    fields(actor_user_id = %token.user_id),
+)]
 pub async fn import<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,

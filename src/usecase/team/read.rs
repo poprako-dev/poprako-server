@@ -52,7 +52,7 @@ where
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C>` — Team storage.
 /// * `O` — Resolves avatar signed URLs through `ObjDept`.
-#[instrument(level = "info", skip(repo, obj_dept))]
+#[instrument(level = "info", skip(repo, obj_dept, token), fields(actor_user_id = %token.user_id))]
 pub async fn list_infos<C, R, O>(
     (repo, obj_dept): (&R, &O),
     token: UserToken,

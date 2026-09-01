@@ -54,7 +54,7 @@ use crate::value::chapter_workflow_record::{
 };
 
 /// Exports one chapter in every selected translation format.
-#[instrument(level = "info", skip(nucl, repo, obj_dept))]
+#[instrument(level = "info", skip(nucl, repo, obj_dept, token), fields(actor_user_id = %token.user_id))]
 pub async fn export<N, C, R, O>(
     (nucl, repo, obj_dept): (&N, &R, &O),
     token: UserToken,

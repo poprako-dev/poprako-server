@@ -56,7 +56,7 @@ use crate::usecase::internal::util::LoadMode;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 
 /// Lists assignments by chapter or owner user.
-#[instrument(level = "info", skip(repo, obj_dept))]
+#[instrument(level = "info", skip(repo, obj_dept, token), fields(actor_user_id = %token.user_id))]
 pub async fn list_infos<C, R, O>(
     (repo, obj_dept): (&R, &O),
     token: UserToken,
@@ -94,7 +94,7 @@ where
 }
 
 /// Joins a chapter assignment with requested roles.
-#[instrument(level = "info", skip(nucl, repo))]
+#[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
 pub async fn join<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
@@ -232,7 +232,7 @@ where
 }
 
 /// Deletes one assignment by identifier.
-#[instrument(level = "info", skip(nucl, repo))]
+#[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
 pub async fn delete<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,

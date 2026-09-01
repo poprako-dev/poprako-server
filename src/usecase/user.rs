@@ -58,7 +58,7 @@ use crate::value::image::{ImageKind, UserAvatarKey};
 /// * `R: UserRepo<C>` — User storage.
 /// * `O` — Resolves the avatar signed URL through `ObjDept`.
 /// * `D: EffectDevelop` — Processes the activity event (only for self-reads).
-#[instrument(level = "info", skip(repo, obj_dept, develop))]
+#[instrument(level = "info", skip(repo, obj_dept, develop, token), fields(actor_user_id = %token.user_id))]
 pub async fn get_info<C, R, O, D>(
     (repo, obj_dept, develop): (&R, &O, &D),
     token: UserToken,
@@ -102,7 +102,7 @@ where
 /// * `N: Nucl<Context = C>` — Transaction coordinator.
 /// * `C` — Context anchor.
 /// * `R: UserRepo<C> + MemberRepo<C>` — User and member storage.
-#[instrument(level = "info", skip(nucl, repo))]
+#[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
 pub async fn update_info<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
@@ -164,8 +164,12 @@ where
 /// Replaces a user's password after verifying their current password.
 #[instrument(
     level = "info",
-    skip(nucl, repo, instr),
-    fields(current_password = "[REDACTED]", new_password = "[REDACTED]",)
+    skip(nucl, repo, token, instr),
+    fields(
+        actor_user_id = %token.user_id,
+        current_password = "[REDACTED]",
+        new_password = "[REDACTED]",
+    )
 )]
 pub async fn update_password<N, C, R>(
     (nucl, repo): (&N, &R),
@@ -269,7 +273,7 @@ where
 /// * `O: ObjDept` — Allocates the avatar object and its signed upload URL.
 ///
 /// [`team::alloc_avatar`]: super::team::alloc_avatar
-#[instrument(level = "info", skip(nucl, repo, obj_dept, image_config))]
+#[instrument(level = "info", skip(nucl, repo, obj_dept, image_config, token), fields(actor_user_id = %token.user_id))]
 pub async fn alloc_avatar<N, C, R, O>(
     (nucl, repo, obj_dept, image_config): (&N, &R, &O, &ImageConfig),
     token: UserToken,
@@ -322,7 +326,7 @@ where
 }
 
 /// Optimistically marks the requested current avatar generation as uploaded.
-#[instrument(level = "info", skip(obj_dept))]
+#[instrument(level = "info", skip(obj_dept, token), fields(actor_user_id = %token.user_id))]
 pub async fn mark_avatar_uploaded<C, O>(
     (obj_dept,): (&O,),
     token: UserToken,

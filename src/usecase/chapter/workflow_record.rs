@@ -17,7 +17,7 @@ use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
 
 /// Lists a chapter's immutable activity records in reverse chronological order.
-#[instrument(level = "info", skip(repo))]
+#[instrument(level = "info", skip(repo, token), fields(actor_user_id = %token.user_id))]
 pub async fn list_workflow_record_infos<C, R>(
     (repo,): (&R,),
     token: UserToken,

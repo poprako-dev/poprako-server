@@ -18,7 +18,7 @@ use crate::part::repo::oper::online_user::{ListOnlineUserIds, MarkOnlineUser};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
 /// Marks the authenticated user online in one team for ten minutes.
-#[instrument(level = "info", skip(repo))]
+#[instrument(level = "info", skip(repo, token), fields(actor_user_id = %token.user_id))]
 pub async fn mark_self_online<C, R>(
     (repo,): (&R,),
     token: UserToken,
@@ -56,7 +56,7 @@ where
 }
 
 /// Lists active user identifiers for one team in ascending order.
-#[instrument(level = "info", skip(repo))]
+#[instrument(level = "info", skip(repo, token), fields(actor_user_id = %token.user_id))]
 pub async fn list_online_user_ids<C, R>(
     (repo,): (&R,),
     token: UserToken,

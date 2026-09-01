@@ -24,7 +24,7 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 /// * `R: UserRepo<C> + MemberRepo<C>` — User and member storage.
 /// * `P: Prom<C>` — Prom enqueuer for deferred avatar deletion.
 /// Deletes a user account and all associated instr.
-#[instrument(level = "info", skip(nucl, repo, obj_dept))]
+#[instrument(level = "info", skip(nucl, repo, obj_dept, token), fields(actor_user_id = %token.user_id))]
 ///
 /// Transactional cascade:
 ///

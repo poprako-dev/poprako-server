@@ -67,7 +67,7 @@ struct PageAlloc {
 }
 
 /// Allocates the authoritative page manifest and its required image uploads.
-#[instrument(level = "info", skip(nucl, repo, prom, obj_dept, image_config))]
+#[instrument(level = "info", skip(nucl, repo, prom, obj_dept, image_config, token), fields(actor_user_id = %token.user_id))]
 pub async fn alloc_chapter_pages<N, C, R, P, O>(
     (nucl, repo, prom, obj_dept, image_config): (&N, &R, &P, &O, &ImageConfig),
     token: UserToken,
@@ -125,7 +125,7 @@ where
 }
 
 /// Allocates a replacement image generation for one page.
-#[instrument(level = "info", skip(nucl, repo, prom, obj_dept, image_config))]
+#[instrument(level = "info", skip(nucl, repo, prom, obj_dept, image_config, token), fields(actor_user_id = %token.user_id))]
 pub async fn alloc_image<N, C, R, P, O>(
     (nucl, repo, prom, obj_dept, image_config): (&N, &R, &P, &O, &ImageConfig),
     token: UserToken,

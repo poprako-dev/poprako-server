@@ -68,7 +68,7 @@ use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 use crate::value::role::RoleMask;
 
 /// Creates a comic with its first chapter and creator assignment.
-#[instrument(level = "info", skip(nucl, repo))]
+#[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
 pub async fn create<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
@@ -196,7 +196,7 @@ where
 }
 
 /// Fetches a comic by ID with cover URL resolution.
-#[instrument(level = "info", skip(repo, obj_dept))]
+#[instrument(level = "info", skip(repo, obj_dept, token), fields(actor_user_id = %token.user_id))]
 pub async fn get_info<C, R, O>(
     (repo, obj_dept): (&R, &O),
     token: UserToken,
@@ -237,7 +237,7 @@ where
 }
 
 /// Updates a comic's title, author, and description.
-#[instrument(level = "info", skip(repo))]
+#[instrument(level = "info", skip(repo, token), fields(actor_user_id = %token.user_id))]
 pub async fn update_info<C, R>(
     (repo,): (&R,),
     token: UserToken,
@@ -283,7 +283,7 @@ where
 }
 
 /// Deletes a comic and updates the parent workset counter.
-#[instrument(level = "info", skip(nucl, repo, obj_dept))]
+#[instrument(level = "info", skip(nucl, repo, obj_dept, token), fields(actor_user_id = %token.user_id))]
 pub async fn delete<N, C, R, O>(
     (nucl, repo, obj_dept): (&N, &R, &O),
     token: UserToken,

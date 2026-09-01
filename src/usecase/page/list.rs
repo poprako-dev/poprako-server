@@ -23,7 +23,7 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant};
 use crate::usecase::page::view::{page_info_view, page_info_views};
 
 /// Lists pages under one chapter.
-#[instrument(level = "info", skip(repo, obj_dept))]
+#[instrument(level = "info", skip(repo, obj_dept, token), fields(actor_user_id = %token.user_id))]
 pub async fn list_infos<C, R, O>(
     (repo, obj_dept): (&R, &O),
     token: UserToken,
@@ -46,7 +46,7 @@ where
 }
 
 /// Fetches one page by ID.
-#[instrument(level = "info", skip(repo, obj_dept))]
+#[instrument(level = "info", skip(repo, obj_dept, token), fields(actor_user_id = %token.user_id))]
 pub async fn get_info<C, R, O>(
     (repo, obj_dept): (&R, &O),
     token: UserToken,

@@ -24,7 +24,7 @@ use crate::usecase::internal::util::LoadMode;
 use crate::value::image::{ComicCoverKey, ImageKind};
 
 /// Allocates a new comic cover upload slot.
-#[instrument(level = "info", skip(nucl, repo, obj_dept, image_config))]
+#[instrument(level = "info", skip(nucl, repo, obj_dept, image_config, token), fields(actor_user_id = %token.user_id))]
 pub async fn alloc_cover<N, C, R, O>(
     (nucl, repo, obj_dept, image_config): (&N, &R, &O, &ImageConfig),
     token: UserToken,

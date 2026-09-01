@@ -23,7 +23,7 @@ use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
 
 /// Deletes all pages under one chapter.
-#[instrument(level = "info", skip(nucl, repo, obj_dept))]
+#[instrument(level = "info", skip(nucl, repo, obj_dept, token), fields(actor_user_id = %token.user_id))]
 pub async fn delete<N, C, R, O>(
     (nucl, repo, obj_dept): (&N, &R, &O),
     token: UserToken,

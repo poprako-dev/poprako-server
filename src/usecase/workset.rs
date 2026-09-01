@@ -47,7 +47,7 @@ use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
 
 /// Creates a new workset inside a team.
-#[instrument(level = "info", skip(nucl, repo))]
+#[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
 pub async fn create<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
@@ -105,7 +105,7 @@ where
 }
 
 /// Fetches a workset by ID.
-#[instrument(level = "info", skip(repo))]
+#[instrument(level = "info", skip(repo, token), fields(actor_user_id = %token.user_id))]
 pub async fn get_info<C, R>(
     (repo,): (&R,),
     token: UserToken,
@@ -131,7 +131,7 @@ where
 }
 
 /// Lists worksets for a team.
-#[instrument(level = "info", skip(repo))]
+#[instrument(level = "info", skip(repo, token), fields(actor_user_id = %token.user_id))]
 pub async fn list_infos<C, R>(
     (repo,): (&R,),
     token: UserToken,
@@ -170,7 +170,7 @@ where
 }
 
 /// Updates a workset's name and description.
-#[instrument(level = "info", skip(repo))]
+#[instrument(level = "info", skip(repo, token), fields(actor_user_id = %token.user_id))]
 pub async fn update_info<C, R>(
     (repo,): (&R,),
     token: UserToken,
@@ -206,7 +206,7 @@ where
 }
 
 /// Deletes a workset and its child data.
-#[instrument(level = "info", skip(nucl, repo, obj_dept))]
+#[instrument(level = "info", skip(nucl, repo, obj_dept, token), fields(actor_user_id = %token.user_id))]
 pub async fn delete<N, C, R, O>(
     (nucl, repo, obj_dept): (&N, &R, &O),
     token: UserToken,
