@@ -4,7 +4,7 @@
 
 import assert from "node:assert/strict";
 
-import { grantChapterWorkerRoles } from "../db/seed.js";
+import { grantChapterWorkerRoles, withDatabaseClient } from "../db/seed.js";
 import { expectError, expectStatus } from "../http/assertions.js";
 import type { ErrorBody } from "../http/apiClient.js";
 import {
@@ -261,6 +261,20 @@ export async function runIt05Module(ctx: RunCtx): Promise<void> {
 
     await grantChapterWorkerRoles(f10Chapter.id, ctx.ids.defaultUserId);
 
+    await withDatabaseClient(async (client) => {
+        await client.query(
+            `
+              UPDATE "t_assignment"
+              SET
+                "f_assigned_proofreader_at" = NOW(),
+                "f_updated_at" = NOW()
+              WHERE "f_chapter_id" = $1
+                AND "f_user_id" = $2
+            `,
+            [f10Chapter.id, ctx.ids.defaultUserId],
+        );
+    });
+
     const f10Reserve = await reserveChapterPages(
         ctx.sadmin,
         f10Chapter.id,
@@ -307,7 +321,9 @@ export async function runIt05Module(ctx: RunCtx): Promise<void> {
         JSON.stringify(mainExport),
     );
 
-    assert.equal(imported.imported_page_count, mainExport.pages.length);
+    const populatedPageCount = mainExport.pages.filter((page) => page.units.length > 0).length;
+
+    assert.equal(imported.imported_page_count, populatedPageCount);
     assert.equal(
         imported.imported_unit_count,
         mainExport.pages.reduce((count, page) => count + page.units.length, 0),

@@ -17,13 +17,20 @@ Runtime query plans must still be verified against representative data with
 
 ## Priority findings
 
-### P0: Chapter import and Unit edits issue excessive row-level writes
+### Resolved: Chapter import Create/Delete writes are batched
 
-A Chapter import supports up to 200 Pages with up to 100 Units per Page. The
-import loops over every Page, while `ApplyUnitEdits` persists creates, hides,
-content changes, and successor changes one Unit at a time. Replacing a full
-Chapter can therefore approach or exceed 40,000 individual row writes, before
-count reloads and ordering updates are included.
+`ApplyUnitEdits` now inserts all created Units for a Page in one statement and
+hides its exact deleted ID set in one statement. Created rows carry their final
+successor when inserted, so only changed persisted predecessors need a later
+update. Overwrite import also reuses the locked Unit order after marking its
+visible entries hidden instead of loading the same order again.
+
+Unit-order locking is keyset-chunked at 512 minimal projection rows per query.
+The complete chain is still reconstructed and validated in Rust, preserving
+the existing corrupt-chain behavior without returning a whole Page history in
+one database result. Post-write counter calculation now selects only the three
+required fields from visible Units; the Unicode-aware text rule remains in the
+Rust model instead of being reimplemented in SQL.
 
 Evidence:
 
@@ -32,11 +39,12 @@ Evidence:
 - [`src/value/chapter_port.rs`](../src/value/chapter_port.rs#L7)
 - [`src/value/unit.rs`](../src/value/unit.rs#L6)
 
-Action: add a purpose-built, typed bulk replacement operation for grouped
-hide, insert, reorder, and counter calculation. Preserve request-order
-semantics, linked-list validation, affected-row checks, and whole-import
-atomicity. Do not reduce the business import limits merely to avoid fixing the
-write path.
+Remaining bounded work: heterogeneous `Save` edits and changed existing
+successors remain single-row updates. Each public edit batch is capped at 100,
+while a Chapter import creates no heterogeneous saves and changes at most one
+existing predecessor per imported Page. Page counter writes also remain one
+per changed Page. Further batching requires representative query measurements
+before adding more complex typed SQL.
 
 ### P0: Chapter Unit search is an N+1 query path
 

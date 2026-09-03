@@ -245,6 +245,8 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
     let missing_translation_page_id =
         format!("{}missing-translation-page", PREFIX);
 
+    let chunked_order_page_id = format!("{}chunked-order-page", PREFIX);
+
     let additional_pages = [
         PageEntry {
             id: equal_page_id.clone(),
@@ -256,6 +258,11 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
             chapter_id: page_fixture.chapter_entry.id.clone(),
             index: 2,
         },
+        PageEntry {
+            id: chunked_order_page_id.clone(),
+            chapter_id: page_fixture.chapter_entry.id.clone(),
+            index: 3,
+        },
     ];
 
     nucl.coord(async |context| {
@@ -266,6 +273,99 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
             },
         )
         .await?;
+
+        accept(())
+    })
+    .await
+    .unwrap();
+
+    for batch_index in 0..6 {
+        //
+        let batch_edits = (0..100)
+            .map(|unit_index| {
+                //
+                let unit_id = format!(
+                    "{}chunked-{}-{}",
+                    PREFIX, batch_index, unit_index,
+                );
+
+                create_edit(
+                    &unit_id,
+                    &page_fixture.chapter_entry.creator_id,
+                    "chunked",
+                )
+            })
+            .collect::<Vec<_>>();
+
+        nucl.coord(async |context| {
+            //
+            let orders = repo
+                .step(
+                    context,
+                    &ListUnitOrders {
+                        page_id: &chunked_order_page_id,
+                    },
+                )
+                .await?;
+
+            repo.step(
+                context,
+                &ApplyUnitEdits {
+                    page_id: &chunked_order_page_id,
+                    orders: &orders,
+                    edits: &batch_edits,
+                },
+            )
+            .await?;
+
+            let orders = repo
+                .step(
+                    context,
+                    &ListUnitOrders {
+                        page_id: &chunked_order_page_id,
+                    },
+                )
+                .await?;
+
+            let delete_edits = batch_edits
+                .iter()
+                .filter_map(|edit| match edit {
+                    UnitEdit::Create { id, .. } => {
+                        Some(UnitEdit::Delete { id: id.clone() })
+                    }
+
+                    UnitEdit::Save { .. } | UnitEdit::Delete { .. } => None,
+                })
+                .collect::<Vec<_>>();
+
+            repo.step(
+                context,
+                &ApplyUnitEdits {
+                    page_id: &chunked_order_page_id,
+                    orders: &orders,
+                    edits: &delete_edits,
+                },
+            )
+            .await?;
+
+            accept(())
+        })
+        .await
+        .unwrap();
+    }
+
+    nucl.coord(async |context| {
+        //
+        let orders = repo
+            .step(
+                context,
+                &ListUnitOrders {
+                    page_id: &chunked_order_page_id,
+                },
+            )
+            .await?;
+
+        assert_eq!(orders.len(), 600);
 
         accept(())
     })

@@ -22,6 +22,9 @@ use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{
 use crate::result::{BaseError, BaseRest, accept};
 use crate::shared::result::diesel;
 
+// Number of rows loaded per locked Unit-order query.
+const UNIT_ORDER_QUERY_CHUNK_SIZE: i64 = 512;
+
 /// Returns an unrecoverable error for a corrupt Unit chain.
 pub fn corrupt_unit_chain_err() -> BaseError {
     //
@@ -269,13 +272,51 @@ pub async fn list_orders_for_update(
     page_id: &str,
 ) -> BaseRest<Vec<UnitOrder>> {
     //
-    let rows = t_unit
-        .filter(f_page_id.eq(page_id))
-        .select((unit_id, unit_next_id, f_hidden_at))
-        .for_update()
-        .load::<(String, Option<String>, Option<OffsetDateTime>)>(conn)
-        .await
-        .map_err(diesel)?;
+    let mut rows = Vec::new();
+
+    let mut after_id = None::<String>;
+
+    loop {
+        //
+        let chunk =
+            match after_id.as_deref() {
+                //
+                Some(after_id) => t_unit
+                    .filter(f_page_id.eq(page_id))
+                    .filter(unit_id.gt(after_id))
+                    .select((unit_id, unit_next_id, f_hidden_at))
+                    .order(unit_id.asc())
+                    .limit(UNIT_ORDER_QUERY_CHUNK_SIZE)
+                    .for_update()
+                    .load::<(String, Option<String>, Option<OffsetDateTime>)>(
+                        conn,
+                    )
+                    .await,
+
+                None => t_unit
+                    .filter(f_page_id.eq(page_id))
+                    .select((unit_id, unit_next_id, f_hidden_at))
+                    .order(unit_id.asc())
+                    .limit(UNIT_ORDER_QUERY_CHUNK_SIZE)
+                    .for_update()
+                    .load::<(String, Option<String>, Option<OffsetDateTime>)>(
+                        conn,
+                    )
+                    .await,
+            }
+            .map_err(diesel)?;
+
+        let chunk_is_full = i64::try_from(chunk.len())
+            .is_ok_and(|chunk_len| chunk_len == UNIT_ORDER_QUERY_CHUNK_SIZE);
+
+        after_id = chunk.last().map(|(id, _, _)| id.clone());
+
+        rows.extend(chunk);
+
+        if !chunk_is_full {
+            break;
+        }
+    }
 
     let mut orders = rows
         .into_iter()

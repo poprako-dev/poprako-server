@@ -9,15 +9,17 @@ use tracing::instrument;
 use poprako_rdb_core::RdbConn;
 use poprako_util::i18n::trl;
 
-use crate::model::read::proj::unit::{UnitCountMetrics, UnitInfo, UnitOrder};
+use crate::model::read::proj::unit::{
+    UnitCountMetrics, UnitOrder, has_unit_text,
+};
 use crate::model::write::unit::UnitEdit;
 use crate::part_impl::repo::rdb_impl::entity::unit::{
     UnitAspectRow, UnitEntryRow,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{
-    f_id, f_page_id, t_unit,
+    f_hidden_at, f_id, f_is_proofread, f_page_id, f_proofread_text,
+    f_translated_text, t_unit,
 };
-use crate::part_impl::repo::rdb_impl::unit::sequence::list_infos;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::result::diesel;
 use crate::util::Patch;
@@ -231,28 +233,6 @@ pub fn apply_order_edits<'a>(
     accept(ordered_ids)
 }
 
-/// Computes visible Unit counters from the ordered Unit info list.
-pub fn count_infos(unit_infos: &[UnitInfo]) -> UnitCountMetrics {
-    //
-    unit_infos
-        .iter()
-        .filter(|unit_info| unit_info.hidden_at.is_none())
-        .fold(UnitCountMetrics::default(), |mut counters, unit_info| {
-            //
-            counters.total += 1;
-
-            if unit_info.is_translated() {
-                counters.translated += 1;
-            }
-
-            if unit_info.is_proofread {
-                counters.proofread += 1;
-            }
-
-            counters
-        })
-}
-
 /// Applies normalized Unit edits and returns the latest visible counters.
 #[instrument(level = "info", skip_all)]
 pub async fn apply_edits(
@@ -264,13 +244,11 @@ pub async fn apply_edits(
     //
     let ordered_ids = apply_order_edits(orders, edits)?;
 
-    apply_edit_rows(conn, page_id, edits).await?;
+    apply_edit_rows(conn, page_id, edits, &ordered_ids).await?;
 
-    apply_order_rows(conn, page_id, orders, &ordered_ids).await?;
+    apply_order_rows(conn, page_id, orders, edits, &ordered_ids).await?;
 
-    let unit_infos = list_infos(conn, page_id).await?;
-
-    accept(count_infos(&unit_infos))
+    count_visible_units(conn, page_id).await
 }
 
 // Persist Unit creation, deletion, and content changes in request order.
@@ -278,93 +256,57 @@ async fn apply_edit_rows(
     conn: &mut RdbConn,
     page_id: &str,
     edits: &[UnitEdit],
+    ordered_ids: &[&str],
 ) -> BaseRest<()> {
     //
+    let delete_ids = edits
+        .iter()
+        .filter_map(|edit| match edit {
+            //
+            UnitEdit::Delete { id } => Some(id.as_str()),
+
+            UnitEdit::Create { .. } | UnitEdit::Save { .. } => None,
+        })
+        .collect::<Vec<_>>();
+
+    apply_delete_rows(conn, page_id, &delete_ids).await?;
+
+    let create_entries = edits
+        .iter()
+        .filter_map(|edit| {
+            //
+            let id = match edit {
+                //
+                UnitEdit::Create { id, .. } => Some(id),
+
+                UnitEdit::Save { .. } | UnitEdit::Delete { .. } => None,
+            }?;
+
+            let next_id = ordered_ids
+                .iter()
+                .position(|ordered_id| *ordered_id == id)
+                .and_then(|index| ordered_ids.get(index + 1))
+                .copied();
+
+            UnitEntryRow::from_edit(page_id, edit, next_id)
+        })
+        .collect::<Vec<_>>();
+
+    apply_create_rows(conn, page_id, &create_entries).await?;
+
     for edit in edits {
         //
-        let (id, operation, affected) = match edit {
+        if let UnitEdit::Save { id, .. } = edit {
             //
-            UnitEdit::Create { id, .. } => {
-                //
-                let Some(entry) = UnitEntryRow::from_edit(page_id, edit) else {
-                    //
-                    let err_message = trl("error-invalid-unit-oper");
+            let affected = diesel::update(
+                t_unit.filter(f_page_id.eq(page_id)).filter(f_id.eq(id)),
+            )
+            .set(UnitAspectRow::new().apply_edit(edit))
+            .execute(conn)
+            .await
+            .map_err(diesel)?;
 
-                    tracing::warn!(
-                        error_variant = ?ExpectedVariant::Args,
-                        err_message = %err_message,
-                        page_id = %page_id,
-                        unit_id = %id,
-                        operation = "create",
-                        stage = "apply_edits",
-                        "expected error: invalid unit operation",
-                    );
-
-                    return Err(BaseError::Expected {
-                        variant: ExpectedVariant::Args,
-                        message: err_message,
-                    });
-                };
-
-                diesel::insert_into(t_unit)
-                    .values(entry)
-                    .execute(conn)
-                    .await
-                    .map_err(diesel)?;
-
-                (id, "create", None)
-            }
-
-            UnitEdit::Delete { id } => {
-                //
-                let affected = diesel::update(
-                    t_unit.filter(f_page_id.eq(page_id)).filter(f_id.eq(id)),
-                )
-                .set(UnitAspectRow::new().hide())
-                .execute(conn)
-                .await
-                .map_err(diesel)?;
-
-                (id, "delete", Some(affected))
-            }
-
-            UnitEdit::Save { id, .. } => {
-                //
-                let affected = diesel::update(
-                    t_unit.filter(f_page_id.eq(page_id)).filter(f_id.eq(id)),
-                )
-                .set(UnitAspectRow::new().apply_edit(edit))
-                .execute(conn)
-                .await
-                .map_err(diesel)?;
-
-                (id, "save", Some(affected))
-            }
-        };
-
-        let Some(affected) = affected else {
-            continue;
-        };
-
-        if affected != 1 {
-            //
-            let err_message = trl("error-invalid-unit-oper");
-
-            tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
-                err_message = %err_message,
-                page_id = %page_id,
-                unit_id = %id,
-                operation,
-                affected,
-                stage = "apply_edits",
-                "expected error: invalid unit operation",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message: err_message,
-            });
+            ensure_affected(page_id, id, "save", affected, 1)?;
         }
     }
 
@@ -376,11 +318,26 @@ async fn apply_order_rows(
     conn: &mut RdbConn,
     page_id: &str,
     orders: &[UnitOrder],
+    edits: &[UnitEdit],
     ordered_ids: &[&str],
 ) -> BaseRest<()> {
     //
+    let created_ids = edits
+        .iter()
+        .filter_map(|edit| match edit {
+            //
+            UnitEdit::Create { id, .. } => Some(id.as_str()),
+
+            UnitEdit::Save { .. } | UnitEdit::Delete { .. } => None,
+        })
+        .collect::<HashSet<_>>();
+
     for (index, id) in ordered_ids.iter().enumerate() {
         //
+        if created_ids.contains(id) {
+            continue;
+        }
+
         let next_id = ordered_ids.get(index + 1).copied();
 
         let unchanged = orders
@@ -400,29 +357,122 @@ async fn apply_order_rows(
         .await
         .map_err(diesel)?;
 
-        if affected != 1 {
-            //
-            let err_message = trl("error-invalid-unit-oper");
-
-            tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
-                err_message = %err_message,
-                page_id = %page_id,
-                unit_id = %id,
-                index,
-                next_unit_id = ?next_id,
-                operation = "reorder",
-                affected,
-                stage = "apply_edits",
-                "expected error: invalid unit operation",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message: err_message,
-            });
-        }
+        ensure_affected(page_id, id, "reorder", affected, 1)?;
     }
 
     accept(())
+}
+
+// Loads only the visible Unit fields required to compute Page counters.
+async fn count_visible_units(
+    conn: &mut RdbConn,
+    page_id: &str,
+) -> BaseRest<UnitCountMetrics> {
+    //
+    let count_fields = t_unit
+        .filter(f_page_id.eq(page_id))
+        .filter(f_hidden_at.is_null())
+        .select((f_translated_text, f_proofread_text, f_is_proofread))
+        .load::<(Option<String>, Option<String>, bool)>(conn)
+        .await
+        .map_err(diesel)?;
+
+    let counters = count_fields.into_iter().fold(
+        UnitCountMetrics::default(),
+        |mut counters, (translated_text, proofread_text, is_proofread)| {
+            //
+            counters.total += 1;
+
+            if has_unit_text(translated_text.as_deref())
+                || has_unit_text(proofread_text.as_deref())
+            {
+                counters.translated += 1;
+            }
+
+            if is_proofread {
+                counters.proofread += 1;
+            }
+
+            counters
+        },
+    );
+
+    accept(counters)
+}
+
+// Hide an exact Unit ID set in one statement.
+async fn apply_delete_rows(
+    conn: &mut RdbConn,
+    page_id: &str,
+    ids: &[&str],
+) -> BaseRest<()> {
+    //
+    if ids.is_empty() {
+        return accept(());
+    }
+
+    let affected = diesel::update(
+        t_unit
+            .filter(f_page_id.eq(page_id))
+            .filter(f_id.eq_any(ids)),
+    )
+    .set(UnitAspectRow::new().hide())
+    .execute(conn)
+    .await
+    .map_err(diesel)?;
+
+    ensure_affected(page_id, "batch", "delete", affected, ids.len())
+}
+
+// Insert an exact Unit row set in one statement.
+async fn apply_create_rows(
+    conn: &mut RdbConn,
+    page_id: &str,
+    entries: &[UnitEntryRow<'_>],
+) -> BaseRest<()> {
+    //
+    if entries.is_empty() {
+        return accept(());
+    }
+
+    let affected = diesel::insert_into(t_unit)
+        .values(entries)
+        .execute(conn)
+        .await
+        .map_err(diesel)?;
+
+    ensure_affected(page_id, "batch", "create", affected, entries.len())
+}
+
+// Reject a mutation whose affected row count differs from its exact input.
+fn ensure_affected(
+    page_id: &str,
+    unit_id: &str,
+    operation: &str,
+    affected: usize,
+    expected: usize,
+) -> BaseRest<()> {
+    //
+    if affected == expected {
+        return accept(());
+    }
+
+    let err_message = trl("error-invalid-unit-oper");
+
+    tracing::warn!(
+        error_variant = ?ExpectedVariant::Args,
+        err_message = %err_message,
+        page_id,
+        unit_id,
+        operation,
+        affected,
+        expected,
+        stage = "apply_edits",
+        "expected error: invalid unit operation",
+    );
+
+    Err(BaseError::Expected {
+        variant: ExpectedVariant::Args,
+        message: err_message,
+    })
 }

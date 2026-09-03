@@ -401,11 +401,15 @@ where
             )
             .await?;
 
-            ListUnitOrders {
-                page_id: &page_scope.id,
-            }
-            .step_on(repo, context)
-            .await?
+            orders
+                .into_iter()
+                .map(|mut order| {
+                    //
+                    order.is_hidden = true;
+
+                    order
+                })
+                .collect()
         }
 
         ChapterTranslationImportMode::Keep

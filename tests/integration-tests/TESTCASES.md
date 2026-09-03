@@ -35,7 +35,7 @@ the seed-only state in its `finally` block. Every current module exports
 | it_02 | `it_02_workset_comic_chapter_index.ts` | Workset, comic, chapter indexes, dedicated pinning, profile updates, and positionally aligned comic/pinned-chapter list payloads. |
 | it_03 | `it_03_page_reserve_image.ts` | Authoritative hash-plus-extension manifests, optional `new_byte_len` retention, required upload lengths, duplicate-ID and count validation, object uploads, optimistic exact-generation mark semantics with immediate origin/optimized/thumbnail URLs, comic-cover fallback to the pinned chapter's first uploaded page across direct/list/nested responses, replacement, deletion, and page rebuilds. |
 | it_04 | `it_04_assignment_invitation.ts` | Assignment joins, invitations, role updates, self role removal, deletion, and comic-cover fallback in deeply nested owner-assignment responses. |
-| it_05 | `it_05_unit_save_order_count.ts` | Unit v2 create/next ordering and counters; chapter-scoped non-empty single-character text search, stable ordering, and the 100-match limit; proofread-diff Page ID listing; non-cascading literal transform; atomic combined translation exports; required import modes, PopRaKo overwrite round trips, and keep-mode preservation. |
+| it_05 | `it_05_unit_save_order_count.ts` | Unit v2 create/next ordering and counters; chapter-scoped non-empty single-character text search, stable ordering, and the 100-match limit; proofread-diff Page ID listing; non-cascading literal transform; atomic combined translation exports; required import modes, permission-aware PopRaKo overwrite round trips with changed-page counts, and keep-mode preservation. |
 | it_06 | `it_06_unit_concurrency.ts` | Serializable same-Page writes with client-side 409/code 8 retries, same-anchor inserts, tombstone delete/Patch commit order, and linked-list completeness. |
 | it_07 | `it_07_workflow_sysmail.ts` | Snake_case-body workflow transitions, strongly typed immutable activity events without repository storage JSON or rendered text, pagination, and deferred system mail. |
 | it_08 | `it_08_info_update_upload_mark.ts` | Resource updates, runtime avatar-size validation, avatar/cover PUTs before optimistic exact-generation mark requests, immediate origin/thumbnail URLs, idempotent repeated allocations for identical available content, stale upload rejection, announcement create/update/delete, comments, and profiles. |
@@ -46,7 +46,8 @@ the seed-only state in its `finally` block. Every current module exports
 
 ## Shared fixtures and invariants
 
-- `src/db/seed.ts` owns reset, cleanup, and seed-only assertions.
+- `src/db/seed.ts` owns reset, cleanup (including object metadata and durable
+  object tasks), and seed-only assertions.
 - `src/http/fixtures.ts` owns reusable API operations, deterministic SHA-256
   image requests, and direct page/avatar/cover PUT uploads using every signed
   response header before mark-uploaded confirmation.
