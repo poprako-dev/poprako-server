@@ -97,7 +97,11 @@ where
                 page_scopes.len(),
             )?;
 
-            let page_import_results = import_pages(
+            let (
+                final_page_counters,
+                imported_page_count,
+                imported_unit_count,
+            ) = import_pages(
                 repo,
                 context,
                 &page_scopes,
@@ -107,9 +111,6 @@ where
                 mode,
             )
             .await?;
-
-            let (final_page_counters, imported_page_count, imported_unit_count) =
-                page_import_results;
 
             let chapter_counters = final_page_counters.iter().copied().fold(
                 UnitCountMetrics::default(),

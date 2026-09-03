@@ -2,6 +2,7 @@ use poprako_orchestra::Oper;
 
 use crate::model::read::proj::unit::{UnitCountMetrics, UnitInfo, UnitOrder};
 use crate::model::write::unit::UnitEdit;
+use crate::value::unit::UnitTextPart;
 
 /// Lists unit infos for a page.
 #[derive(Oper)]
@@ -24,6 +25,31 @@ pub struct ListUnitInfosByPageIds<'a> {
 #[oper(output = Vec<UnitInfo>)]
 pub struct ListUnitInfosByIds<'a> {
     /// Permanent Unit IDs to retrieve.
+    pub ids: &'a [String],
+}
+
+/// Searches visible Unit IDs within one Chapter.
+#[derive(Oper)]
+#[oper(output = Vec<String>)]
+pub struct SearchChapterUnitIds<'a> {
+    //
+    /// Chapter whose Units should be searched.
+    pub chapter_id: &'a str,
+
+    /// Unit text field selected for matching.
+    pub part: UnitTextPart,
+    /// Normalized literal phrase to find.
+    pub phrase: &'a str,
+
+    /// Maximum candidate rows to fetch for overflow detection.
+    pub fetch_count: usize,
+}
+
+/// Loads selected Unit infos in Chapter Page and linked-list order.
+#[derive(Oper)]
+#[oper(output = Vec<UnitInfo>)]
+pub struct ListUnitInfosInChapterOrder<'a> {
+    /// Permanent Unit IDs to retrieve and order.
     pub ids: &'a [String],
 }
 

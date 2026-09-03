@@ -25,7 +25,7 @@ use crate::data::val::unit::ListPageUnitInfosVal;
 use crate::data::view::unit::UnitInfoView;
 use crate::model::read::proj::unit::UnitCountMetrics;
 use crate::model::shared::user::UserToken;
-use crate::part::nucl::Serial;
+use crate::part::nucl::{ReptRead, Serial};
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
@@ -37,10 +37,11 @@ use crate::part::repo::oper::chapter::{
 };
 use crate::part::repo::oper::comic::TouchComicLastActive;
 use crate::part::repo::oper::page::{
-    GetPageInfo, GetPageInfoExcluded, ListPageInfos, SetPageUnitCounters,
+    GetPageInfo, GetPageInfoExcluded, SetPageUnitCounters,
 };
 use crate::part::repo::oper::unit::{
-    ApplyUnitEdits, ListUnitInfos, ListUnitOrders,
+    ApplyUnitEdits, ListUnitInfos, ListUnitInfosInChapterOrder, ListUnitOrders,
+    SearchChapterUnitIds,
 };
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
@@ -51,9 +52,6 @@ use crate::usecase::stage::start_pending_stages;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordOrigin;
 use crate::value::role::RoleField;
 use crate::value::unit::{MAX_UNIT_SEARCH_MATCH_COUNT, UnitEditPerm};
-
-// Search pages in bounded concurrent batches.
-const SEARCH_PAGE_BATCH_SIZE: usize = 20;
 
 // Fixed-size diagnostics for a potentially large Unit edit request.
 #[derive(Debug, Default)]
@@ -133,7 +131,7 @@ where
 
 #[instrument(
     level = "info",
-    skip(repo, token),
+    skip(nucl, repo, token),
     fields(
         actor_user_id = %token.user_id,
         chapter_id = %instr.chapter_id,
@@ -141,19 +139,16 @@ where
     ),
 )]
 /// Searches one Unit text field across all visible Units in a Chapter.
-pub async fn search_infos<C, R>(
-    (repo,): (&R,),
+pub async fn search_infos<N, C, R>(
+    (nucl, repo): (&N, &R),
     token: UserToken,
     instr: SearchChapterUnitInfosInstr,
 ) -> BaseRest<Vec<UnitInfoView>>
 where
-    C: Context,
-    R: PageRepo<C>
-        + UnitRepo<C>
-        + TeamRepo<C>
-        + MemberRepo<C>
-        + AssignmentRepo<C>
-        + Sync,
+    C: Context + Send,
+    N: Nucl<Context = C, Error = BaseError> + Sync,
+    C::Level: AtLeast<ReptRead>,
+    R: UnitRepo<C> + TeamRepo<C> + MemberRepo<C> + AssignmentRepo<C> + Sync,
 {
     let SearchChapterUnitInfosInstr {
         chapter_id,
@@ -172,75 +167,53 @@ where
 
     UnitPermComplex::ensure_user_can_list_infos(&access_info.as_access())?;
 
-    let page_infos = ListPageInfos {
-        chapter_id: &chapter_id,
+    if phrase.contains('\0') {
+        return accept(Vec::new());
     }
-    .run_on(repo)
-    .await?;
 
-    let mut found_infos = Vec::new();
-
-    let mut remaining_page_infos = page_infos.iter();
-
-    while let Some(first_page_info) = remaining_page_infos.next() {
-        //
-        let page_batch = std::iter::once(first_page_info).chain(
-            remaining_page_infos
-                .by_ref()
-                .take(SEARCH_PAGE_BATCH_SIZE.saturating_sub(1)),
-        );
-
-        let batch_unit_infos = futures_util::future::try_join_all(
-            page_batch.map(|page_info| async move {
-                //
-                ListUnitInfos {
-                    page_id: &page_info.id,
-                }
-                .run_on(repo)
-                .await
-            }),
-        )
-        .await?;
-
-        for unit_infos in batch_unit_infos {
+    let found_infos = nucl
+        .coord(async move |context| {
             //
-            for unit_info in unit_infos
-                .into_iter()
-                .filter(|unit_info| unit_info.hidden_at.is_none())
-            {
-                //
-                if !UnitComplex::text_part_contains(&unit_info, part, &phrase) {
-                    continue;
-                }
-
-                found_infos.push(UnitInfoView::from(unit_info));
-
-                if found_infos.len() > MAX_UNIT_SEARCH_MATCH_COUNT {
-                    //
-                    let args = HashMap::from([(
-                        "match_limit".into(),
-                        MAX_UNIT_SEARCH_MATCH_COUNT.into(),
-                    )]);
-
-                    let err_message =
-                        trl_kv("error-unit-search-too-many-matches", &args);
-
-                    tracing::warn!(
-                        err_variant = ?ExpectedVariant::Args,
-                        err_message = %err_message,
-                        match_count = found_infos.len(),
-                        match_limit = MAX_UNIT_SEARCH_MATCH_COUNT,
-                        "expected error: too many Unit search matches",
-                    );
-
-                    return Err(BaseError::Expected {
-                        variant: ExpectedVariant::Args,
-                        message: err_message,
-                    });
-                }
+            let search_ids = SearchChapterUnitIds {
+                chapter_id: &chapter_id,
+                part,
+                phrase: &phrase,
+                fetch_count: MAX_UNIT_SEARCH_MATCH_COUNT + 1,
             }
-        }
-    }
+            .step_on(repo, context)
+            .await?;
+
+            if search_ids.len() > MAX_UNIT_SEARCH_MATCH_COUNT {
+                //
+                let args = HashMap::from([(
+                    "match_limit".into(),
+                    MAX_UNIT_SEARCH_MATCH_COUNT.into(),
+                )]);
+
+                let err_message =
+                    trl_kv("error-unit-search-too-many-matches", &args);
+
+                tracing::warn!(
+                    err_variant = ?ExpectedVariant::Args,
+                    err_message = %err_message,
+                    match_count = search_ids.len(),
+                    match_limit = MAX_UNIT_SEARCH_MATCH_COUNT,
+                    "expected error: too many Unit search matches",
+                );
+
+                return Err(BaseError::Expected {
+                    variant: ExpectedVariant::Args,
+                    message: err_message,
+                });
+            }
+
+            let unit_infos = ListUnitInfosInChapterOrder { ids: &search_ids }
+                .step_on(repo, context)
+                .await?;
+
+            accept(unit_infos.into_iter().map(UnitInfoView::from).collect())
+        })
+        .await?;
 
     accept(found_infos)
 }

@@ -155,25 +155,11 @@ fn normalize_orders_create_prior_to_save_for_the_same_unit() {
 }
 
 #[test]
-fn search_phrase_trims_unicode_accepts_one_character_and_selects_text_part() {
+fn search_phrase_trims_unicode_and_accepts_one_character() {
     //
     let phrase = UnitComplex::normalize_search_phrase(" 译文甲 ").unwrap();
 
     assert_eq!(phrase, "译文甲");
-
-    let unit_info = unit("译文甲正文", "校对正文");
-
-    assert!(UnitComplex::text_part_contains(
-        &unit_info,
-        UnitTextPart::TranslatedText,
-        &phrase,
-    ));
-
-    assert!(!UnitComplex::text_part_contains(
-        &unit_info,
-        UnitTextPart::ProofreadText,
-        &phrase,
-    ));
 
     assert_eq!(UnitComplex::normalize_search_phrase(" 日 ").unwrap(), "日");
 

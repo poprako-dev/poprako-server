@@ -4,7 +4,7 @@ use poprako_orchestra::drive;
 
 use crate::part::repo::oper::unit::{
     ApplyUnitEdits, ListUnitInfos, ListUnitInfosByIds, ListUnitInfosByPageIds,
-    ListUnitOrders,
+    ListUnitInfosInChapterOrder, ListUnitOrders, SearchChapterUnitIds,
 };
 use crate::result::BaseError;
 
@@ -18,7 +18,9 @@ use crate::result::BaseError;
     ),
     step(
         for<'a> ListUnitInfosByIds<'a>,
+        for<'a> ListUnitInfosInChapterOrder<'a>,
         for<'a> ListUnitOrders<'a>,
+        for<'a> SearchChapterUnitIds<'a>,
         for<'a> ApplyUnitEdits<'a>,
     ),
 )]

@@ -142,6 +142,133 @@ export async function runIt05Module(ctx: RunCtx): Promise<void> {
 
     assert.deepEqual(searchMatches.map((unit) => unit.id), [p0UnitIds[0]]);
 
+    await savePageUnits(trans01.api, p0Id, [
+        {
+            edit: "patch",
+            id: p0UnitIds[0]!,
+            translation: {
+                type: "assign",
+                value: { translated_text: "Case %_\\ literal" },
+            },
+        },
+    ]);
+
+    const literalMatches = await searchChapterUnits(
+        trans01.api,
+        mainChapterId,
+        "translated_text",
+        "%_\\",
+    );
+
+    assert.deepEqual(literalMatches.map((unit) => unit.id), [p0UnitIds[0]]);
+
+    assert.deepEqual(
+        await searchChapterUnits(
+            trans01.api,
+            mainChapterId,
+            "translated_text",
+            "case",
+        ),
+        [],
+        "search remains case-sensitive",
+    );
+
+    assert.deepEqual(
+        await searchChapterUnits(
+            trans01.api,
+            mainChapterId,
+            "translated_text",
+            "reviewed",
+        ),
+        [],
+        "search only examines the requested text field",
+    );
+
+    const proofreadMatches = await searchChapterUnits(
+        proof02.api,
+        mainChapterId,
+        "proofread_text",
+        "reviewed",
+    );
+
+    assert.deepEqual(proofreadMatches.map((unit) => unit.id), [p0UnitIds[0]]);
+
+    assert.deepEqual(
+        await searchChapterUnits(
+            trans01.api,
+            mainChapterId,
+            "translated_text",
+            "\0",
+        ),
+        [],
+        "PostgreSQL-incompatible NUL is a literal non-match",
+    );
+
+    const insertedUnitId = f2Save.unit_infos[1]!.id;
+
+    await savePageUnits(trans01.api, p0Id, [
+        {
+            edit: "patch",
+            id: p0UnitIds[0]!,
+            translation: {
+                type: "assign",
+                value: { translated_text: "visible-order-marker" },
+            },
+        },
+        {
+            edit: "patch",
+            id: insertedUnitId,
+            translation: {
+                type: "assign",
+                value: { translated_text: "visible-order-marker" },
+            },
+        },
+        {
+            edit: "patch",
+            id: p0UnitIds[1]!,
+            translation: {
+                type: "assign",
+                value: { translated_text: "visible-order-marker" },
+            },
+        },
+    ]);
+
+    await savePageUnits(trans01.api, p0Id, [
+        { edit: "delete", id: insertedUnitId },
+    ]);
+
+    const visibleOrderMatches = await searchChapterUnits(
+        trans01.api,
+        mainChapterId,
+        "translated_text",
+        "visible-order-marker",
+    );
+
+    assert.deepEqual(
+        visibleOrderMatches.map((unit) => unit.id),
+        [p0UnitIds[0], p0UnitIds[1]],
+        "hidden chain nodes are excluded without changing visible order",
+    );
+
+    await savePageUnits(trans01.api, p0Id, [
+        {
+            edit: "patch",
+            id: insertedUnitId,
+            translation: {
+                type: "assign",
+                value: { translated_text: "restored" },
+            },
+        },
+        {
+            edit: "patch",
+            id: p0UnitIds[0]!,
+            translation: {
+                type: "assign",
+                value: { translated_text: "alpha beta" },
+            },
+        },
+    ]);
+
     await transformChapterUnits(trans01.api, mainChapterId, "translated_text", [
         {
             unit_id: p0UnitIds[0]!,

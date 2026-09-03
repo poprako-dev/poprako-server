@@ -46,70 +46,41 @@ existing predecessor per imported Page. Page counter writes also remain one
 per changed Page. Further batching requires representative query measurements
 before adding more complex typed SQL.
 
-### P0: Chapter Unit search is an N+1 query path
+### Resolved: Chapter Unit search no longer fans out by Page
 
-Search first loads every Page and then issues one Unit query per Page, with 20
-queries started concurrently per batch. At the Chapter limit this is one Page
-query plus as many as 200 Unit queries, and can transfer about 20,000 complete
-Unit rows before Rust filters visibility and text and enforces the 100-match
-limit.
+Search now uses a bounded, typed three-stage read instead of introducing a
+search-specific god object:
+
+1. PostgreSQL applies Chapter scope, visibility, selected-field literal
+   matching, and `LIMIT 101`, returning Unit IDs only.
+2. For 1--100 matches, the existing `UnitInfo` projection is loaded for those
+   IDs. This deliberately reuses the established domain projection rather than
+   creating another wide `SearchInfo` type.
+3. Only the matching Pages' `(page_id, id, next_id)` links are loaded. The
+   existing chain validator derives Unit rank, and results are sorted by Page
+   index and chain order.
+
+The overflow path executes one Unit query; a successful non-empty search
+executes three, independent of Chapter Page count. The former 20-query
+concurrency fan-out and worst-case 201 Unit/Page queries are gone. All three
+reads share a short repeatable-read transaction; phrase validation and
+authorization remain outside it. NUL remains an authorized empty result
+because PostgreSQL text cannot contain or bind it.
+
+No migration or speculative index was added. Single-character matching is a
+business requirement, so representative `EXPLAIN (ANALYZE, BUFFERS)` evidence
+is still required before considering a partial visible-Unit index.
+
+Verified behavior includes both text fields, literal `%`, `_`, and backslash,
+case sensitivity, Unicode trimming, hidden chain nodes, stable Page/Unit order,
+NUL, and the exact 100/101 boundary.
 
 Evidence:
 
-- [`src/usecase/unit.rs`](../src/usecase/unit.rs#L175)
-
-Repair research, reviewed 2026-09-03:
-
-- Do not force this into one SQL statement. Result order is defined by Page
-  index and the Unit `f_next_id` linked list, including hidden nodes that join
-  two visible nodes. Diesel 2.3 has no typed recursive-CTE builder in the
-  current dependency set. Raw `sql_query` would weaken compile-time query
-  checking, while adding a second persisted order would create dual-source
-  consistency and write-amplification risks.
-- Add one transaction-scoped `SearchChapterUnitInfos` repository operation.
-  Within a short repeatable-read snapshot, its first typed query joins Page and
-  Unit, scopes by Chapter, requires `f_hidden_at IS NULL`, applies PostgreSQL
-  `strpos(selected_text, phrase) > 0`, and uses `LIMIT 101`. It should select
-  `(page_index, UnitSearchInfoRow)`: the purpose-specific Unit projection holds
-  only fields needed by `UnitInfoView`, while Page index remains adapter-only.
-- Zero matches return immediately. At 101 matches the use case preserves the
-  existing Args error and returns no partial data. For 1--100 matches, a second
-  typed query loads only `(page_id, id, next_id)` for the distinct matching
-  Pages. The adapter validates those complete chains, derives Unit ranks, and
-  sorts candidates by `(page_index, unit_rank)` before returning them.
-- Keep phrase normalization and authorization in the use case. Run only the
-  two Unit reads inside repeatable read; they need one coherent snapshot but no
-  row locks. A phrase containing a zero byte must return an authorized empty
-  result without binding it as PostgreSQL `text`, because stored PostgreSQL text
-  cannot contain that byte.
-
-Expected result: the search-specific data path falls from one Page query plus
-up to 200 Unit queries to one or two Unit queries. It transfers at most 101
-response projections plus minimal link rows for at most 100 matching Pages,
-and it removes the 20-connection fan-out. Including the unchanged access
-checks, the normal request uses four SQL data statements for a Team member or
-five for a Chapter-only assignee.
-
-This preserves all valid-data business behavior: Unicode-trimmed non-empty
-phrases, literal and case-sensitive matching, selected-field-only matching,
-hidden-row exclusion, Page/Unit order, exactly-100 success, 101-match failure,
-and the existing response shape. One internal behavior needs an explicit test:
-a corrupt chain on an unrelated nonmatching Page would no longer poison the
-search. If that diagnostic behavior is considered part of the contract, the
-second query must load minimal links for every Chapter Page instead.
-
-Do not add a text-search index initially. Single-character searches are a
-supported business case, and a trigram index does not remove that scan. The
-existing Page-Chapter and Unit-Page indexes provide the join path. Compare
-`EXPLAIN (ANALYZE, BUFFERS)` on 200-by-100 and tombstone-heavy fixtures first;
-only then consider a partial visible-Unit index on `f_page_id`.
-
-Implementation verification must cover both text parts, literal `%`, `_`, and
-backslash characters, case sensitivity, a hidden node between visible nodes,
-reordered Units, 0/100/101 matches, authorization, the zero-byte case, and the
-chosen unrelated-corruption behavior. Add RDB query tests for the typed
-projection and order reconstruction; the existing HTTP test already protects
-the 100/101 public boundary.
+- [`src/usecase/unit.rs`](../src/usecase/unit.rs#L142)
+- [`src/part_impl/repo/rdb_impl/unit/sequence.rs`](../src/part_impl/repo/rdb_impl/unit/sequence.rs#L227)
+- [`src/usecase/unit/tests/search.rs`](../src/usecase/unit/tests/search.rs#L1)
+- [`tests/integration-tests/src/suites/it_05_unit_save_order_count.ts`](../tests/integration-tests/src/suites/it_05_unit_save_order_count.ts#L102)
 
 ### P0: Hierarchical deletion composes single-entity deletion paths
 

@@ -101,8 +101,8 @@ pub async fn search_infos(
         phrase: query.phrase,
     };
 
-    usecase::unit::search_infos::<RdbContext<ReptRead>, HybRepo>(
-        (harn.repo(),),
+    usecase::unit::search_infos::<_, RdbContext<ReptRead>, HybRepo>(
+        (harn.nucl().rept_read(), harn.repo()),
         user_token,
         instr,
     )

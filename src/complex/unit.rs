@@ -156,23 +156,6 @@ impl UnitComplex {
         accept(phrase)
     }
 
-    /// Reports whether the selected Unit text part contains a literal phrase.
-    pub fn text_part_contains(
-        unit_info: &UnitInfo,
-        part: UnitTextPart,
-        phrase: &str,
-    ) -> bool {
-        //
-        let text = match part {
-            //
-            UnitTextPart::TranslatedText => &unit_info.translated_text,
-
-            UnitTextPart::ProofreadText => &unit_info.proofread_text,
-        };
-
-        text.as_ref().is_some_and(|text| text.contains(phrase))
-    }
-
     /// Builds one content-only edit from non-overlapping literal transforms.
     pub fn build_transform_edit(
         unit_info: &UnitInfo,

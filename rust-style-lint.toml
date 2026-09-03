@@ -12,6 +12,7 @@ spacing-style = true
 use-style = true
 generic-where = true
 no-type-hint = true
+no-redundant-destructure = true
 item-layout = true
 doc-comment-coverage = true
 forbidden-identifiers = true
