@@ -13,10 +13,11 @@ use crate::complex::chapter_port::perm::ChapterPortPermComplex;
 use crate::complex::unit::UnitComplex;
 use crate::data::instr::chapter_port::ImportChapterTranslationInstr;
 use crate::data::val::chapter_port::ImportChapterTranslationVal;
-use crate::model::page_port::PageTranslationImport;
+use crate::model::artifact::translation_import::{
+    PageTranslationImport, UnitTranslationImport,
+};
 use crate::model::read::proj::unit::{UnitCountMetrics, UnitOrder};
 use crate::model::shared::user::UserToken;
-use crate::model::unit_port::UnitTranslationImport;
 use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::model::write::unit::UnitEdit;
 use crate::part::nucl::ReptRead;
@@ -67,7 +68,7 @@ where
         + Send
         + Sync,
 {
-    let (edit_perm, format, label_plus, imported_pages, stages) =
+    let (edit_perm, format, imported_pages, stages) =
         prepare_import(repo, &token, &instr, &chapter_id).await?;
 
     let val = nucl
@@ -114,7 +115,6 @@ where
                     imported_page,
                     &token.user_id,
                     edit_perm,
-                    label_plus,
                 )
                 .await?;
 
@@ -200,7 +200,6 @@ async fn prepare_import<C, R>(
 ) -> BaseRest<(
     UnitEditPerm,
     TranslationFormat,
-    bool,
     Vec<PageTranslationImport>,
     Vec<Stage>,
 )>
@@ -246,8 +245,6 @@ where
 
     let format = TranslationFormat::from(instr.format);
 
-    let label_plus = matches!(format, TranslationFormat::LabelPlus);
-
     let imported_pages = match format {
         //
         TranslationFormat::LabelPlus => {
@@ -261,7 +258,7 @@ where
 
     let stages = import_stages(edit_perm);
 
-    accept((edit_perm, format, label_plus, imported_pages, stages))
+    accept((edit_perm, format, imported_pages, stages))
 }
 
 // Replaces all visible units on one page with imported units.
@@ -272,7 +269,6 @@ async fn replace_page_units<C, R>(
     imported_page: &PageTranslationImport,
     user_id: &str,
     edit_perm: UnitEditPerm,
-    label_plus: bool,
 ) -> BaseRest<UnitCountMetrics>
 where
     C: Context,
@@ -328,7 +324,7 @@ where
         repo,
         context,
         (&page_info.id, &orders, imported_page),
-        (user_id, edit_perm, label_plus),
+        (user_id, edit_perm),
     )
     .await?;
 
@@ -367,7 +363,7 @@ async fn apply_imported_units<C, R>(
         &[UnitOrder],
         &PageTranslationImport,
     ),
-    (user_id, edit_perm, label_plus): (&str, UnitEditPerm, bool),
+    (user_id, edit_perm): (&str, UnitEditPerm),
 ) -> BaseRest<UnitCountMetrics>
 where
     C: Context,
@@ -377,8 +373,7 @@ where
         return accept(UnitCountMetrics::default());
     };
 
-    let edits =
-        build_page_edits(&imported_page.units, user_id, edit_perm, label_plus);
+    let edits = build_page_edits(&imported_page.units, user_id, edit_perm);
 
     let base_ids = orders
         .iter()
@@ -403,7 +398,6 @@ fn build_page_edits(
     imported_units: &[UnitTranslationImport],
     user_id: &str,
     edit_perm: UnitEditPerm,
-    label_plus: bool,
 ) -> Vec<UnitEdit> {
     //
     imported_units
@@ -416,7 +410,6 @@ fn build_page_edits(
                 user_id,
                 edit_perm.can_translate,
                 edit_perm.can_proofread,
-                label_plus,
             )
         })
         .collect()

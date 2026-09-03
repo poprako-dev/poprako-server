@@ -11,6 +11,8 @@ artifacts without an active maintainer or regeneration path.
 - `organization-transfer-readiness.md` tracks the repository and deployment
   work required before and immediately after transfer to the official
   organization.
+- `diesel-usage-audit.md` tracks active production query-shape, transaction,
+  locking, pagination, and database-concurrency findings.
 - `unit-save-api.md` defines the public page-unit save contract.
 - `unit-search-transform-api.md` defines Chapter Unit text preview and batch
   transform contracts.

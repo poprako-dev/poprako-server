@@ -11,9 +11,10 @@ use poprako_util::i18n::{trl, trl_kv};
 
 use crate::complex::chapter_port::import::label_plus::parse_label_plus;
 use crate::data::view::chapter_port::ChapterTranslationPortView;
-use crate::model::page_port::PageTranslationImport;
+use crate::model::artifact::translation_import::{
+    PageTranslationImport, UnitTranslationImport, UnitTranslationImportSource,
+};
 use crate::model::shared::unit::{UnitCoord, UnitRevision, UnitTranslation};
-use crate::model::unit_port::UnitTranslationImport;
 use crate::model::write::unit::UnitEdit;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::value::chapter_port::MAX_CHAPTER_IMPORT_PAGE_COUNT;
@@ -125,14 +126,15 @@ fn convert_poprako_document(
                 x_coord: unit.x_coord,
                 y_coord: unit.y_coord,
                 is_bubble: unit.is_bubble,
-                main_text: None,
-                translated_text: normalize_optional_poprako_text(
-                    unit.translated_text,
-                ),
-                proofread_text: normalize_optional_poprako_text(
-                    unit.proofread_text,
-                ),
-                is_proofread: unit.is_proofread,
+                source: UnitTranslationImportSource::PopRaKo {
+                    translated_text: normalize_optional_poprako_text(
+                        unit.translated_text,
+                    ),
+                    proofread_text: normalize_optional_poprako_text(
+                        unit.proofread_text,
+                    ),
+                    is_proofread: unit.is_proofread,
+                },
             });
         }
 
@@ -164,17 +166,19 @@ fn build_translation(
     parsed_unit: &UnitTranslationImport,
     user_id: &str,
     can_translate: bool,
-    label_plus: bool,
 ) -> Option<UnitTranslation> {
     //
     if !can_translate {
         return None;
     }
 
-    let translated_text = if label_plus {
-        parsed_unit.main_text.clone()
-    } else {
-        parsed_unit.translated_text.clone()
+    let translated_text = match &parsed_unit.source {
+        //
+        UnitTranslationImportSource::LabelPlus { text } => text.clone(),
+
+        UnitTranslationImportSource::PopRaKo {
+            translated_text, ..
+        } => translated_text.clone(),
     };
 
     translated_text.map(|translated_text| UnitTranslation {
@@ -188,21 +192,25 @@ fn build_revision(
     parsed_unit: &UnitTranslationImport,
     user_id: &str,
     can_proofread: bool,
-    label_plus: bool,
 ) -> Option<UnitRevision> {
     //
     if !can_proofread {
         return None;
     }
 
-    let proofread_text = if label_plus {
-        parsed_unit.main_text.clone()
-    } else {
-        parsed_unit.proofread_text.clone()
-    };
+    let (proofread_text, is_proofread) = match &parsed_unit.source {
+        //
+        UnitTranslationImportSource::LabelPlus { text } => {
+            (text.clone(), text.is_some())
+        }
 
-    let is_proofread =
-        label_plus && proofread_text.is_some() || parsed_unit.is_proofread;
+        //
+        UnitTranslationImportSource::PopRaKo {
+            proofread_text,
+            is_proofread,
+            ..
+        } => (proofread_text.clone(), *is_proofread),
+    };
 
     if proofread_text.is_none() && !is_proofread {
         return None;
@@ -260,12 +268,11 @@ fn build_unit_create(
     user_id: &str,
     can_translate: bool,
     can_proofread: bool,
-    label_plus: bool,
 ) -> UnitEdit {
     //
     let (translation, revision) = (
-        build_translation(parsed_unit, user_id, can_translate, label_plus),
-        build_revision(parsed_unit, user_id, can_proofread, label_plus),
+        build_translation(parsed_unit, user_id, can_translate),
+        build_revision(parsed_unit, user_id, can_proofread),
     );
 
     UnitEdit::Create {
@@ -333,7 +340,6 @@ impl ChapterImportComplex {
         user_id: &str,
         can_translate: bool,
         can_proofread: bool,
-        label_plus: bool,
     ) -> UnitEdit {
         //
         build_unit_create(
@@ -342,7 +348,6 @@ impl ChapterImportComplex {
             user_id,
             can_translate,
             can_proofread,
-            label_plus,
         )
     }
 }
