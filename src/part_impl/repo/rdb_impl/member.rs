@@ -13,14 +13,14 @@ use tracing::instrument;
 use crate::model::read::proj::member::MemberInfo;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::member::{
-    CreateMember, DeleteMember, FindMemberInfo, GetMemberInfo, ListMemberInfos,
-    ListMemberInfosExcluded, UpdateMember,
+    CreateMember, DeleteMember, DeleteUserMemberships, FindMemberInfo,
+    GetMemberInfo, ListMemberInfos, LockTeamMemberInfos, UpdateMember,
 };
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::member::step_impl::{
-    create, delete, find_info_by_user_id_and_team_id, get_info_by_id,
-    list_infos, list_infos_by_team_id_excluded, list_infos_by_user_id,
-    list_infos_by_user_id_excluded, update_role, update_user_nickname,
+    create, delete, delete_user_memberships, find_info_by_user_id_and_team_id,
+    get_info_by_id, list_infos, list_infos_by_team_id_excluded,
+    list_infos_by_user_id, update_role, update_user_nickname,
 };
 use crate::result::{BaseError, BaseRest};
 use crate::shared::RdbContext;
@@ -251,7 +251,7 @@ where
     }
 }
 
-impl<L> Step<ListMemberInfosExcluded<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<LockTeamMemberInfos<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -268,19 +268,9 @@ where
     async fn step(
         &self,
         context: &mut RdbContext<L>,
-        oper: &ListMemberInfosExcluded<'_>,
+        oper: &LockTeamMemberInfos<'_>,
     ) -> BaseRest<Vec<MemberInfo>> {
-        //
-        match oper {
-            //
-            ListMemberInfosExcluded::User { user_id } => {
-                list_infos_by_user_id_excluded(context.conn(), user_id).await
-            }
-
-            ListMemberInfosExcluded::Team { team_id } => {
-                list_infos_by_team_id_excluded(context.conn(), team_id).await
-            }
-        }
+        list_infos_by_team_id_excluded(context.conn(), oper.team_id).await
     }
 }
 
@@ -302,5 +292,26 @@ where
         oper: &DeleteMember<'_>,
     ) -> BaseRest<()> {
         delete(context.conn(), oper.id).await
+    }
+}
+
+impl<L> Step<DeleteUserMemberships<'_>, RdbContext<L>> for HybRepo
+where
+    L: Level + Send + AtLeast<ReptRead>,
+{
+    // Required Orchestra execution level.
+    type Level = ReptRead;
+
+    // Shared repository error type.
+    type Error = BaseError;
+
+    // Execute the repository operation.
+    #[instrument(level = "info", skip_all)]
+    async fn step(
+        &self,
+        context: &mut RdbContext<L>,
+        oper: &DeleteUserMemberships<'_>,
+    ) -> BaseRest<()> {
+        delete_user_memberships(context.conn(), oper.user_id).await
     }
 }

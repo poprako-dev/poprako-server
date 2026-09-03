@@ -22,6 +22,8 @@ pub mod member_invitation;
 pub mod online_user;
 /// Page repository operations.
 pub mod page;
+/// Hierarchical subtree deletion operations.
+pub mod subtree_delete;
 /// System mail repository operations.
 pub mod system_mail;
 /// Team repository operations.

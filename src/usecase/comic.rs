@@ -15,8 +15,8 @@ pub mod tests;
 use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
-use poprako_obj_dept::oper::DeleteObjs;
-use poprako_obj_dept::{ObjDept, ObjDeptView};
+use poprako_obj_dept::ObjDeptView;
+use poprako_util::i18n::trl;
 
 use crate::complex::assignment::AssignmentComplex;
 use crate::complex::chapter::ChapterComplex;
@@ -24,6 +24,7 @@ use crate::complex::comic::{ComicComplex, ComicPermComplex};
 use crate::data::instr::comic::{CreateComicInstr, UpdateComicInfoInstr};
 use crate::data::val::comic::CreateComicVal;
 use crate::data::view::comic::ComicInfoView;
+use crate::model::read::proj::subtree_delete::SubtreeDeleteScope;
 use crate::model::shared::user::UserToken;
 use crate::model::write::assignment::AssignmentEntry;
 use crate::model::write::chapter::ChapterEntry;
@@ -32,38 +33,32 @@ use crate::model::write::comic::{ComicEntry, ComicRepl};
 use crate::part::nucl::{ReptRead, Serial};
 use crate::part::obj_dept::{ComicCover, PageImage, TeamAvatar, UserAvatar};
 use crate::part::repo::assignment::AssignmentRepo;
-use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
 use crate::part::repo::comic::ComicRepo;
-use crate::part::repo::comic_archive::ComicArchiveRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::CreateAssignment;
-use crate::part::repo::oper::chapter::{
-    CreateChapter, ListChapterInfosExcluded, UnpinOtherChapters,
-};
+use crate::part::repo::oper::chapter::{CreateChapter, UnpinOtherChapters};
 use crate::part::repo::oper::chapter_workflow_record::CreateChapterWorkflowRecords;
 use crate::part::repo::oper::comic::{
-    AllocComicChapterIndex, CreateComic, DeleteComic, GetComicInfo,
-    GetComicInfoExcluded, TouchComicLastActive, UpdateComic,
-    UpdateComicChapterCount,
+    AllocComicChapterIndex, CreateComic, GetComicInfo, TouchComicLastActive,
+    UpdateComic, UpdateComicChapterCount,
 };
-use crate::part::repo::oper::comic_archive::DeleteComicArchives;
+use crate::part::repo::oper::member::FindMemberInfo;
+use crate::part::repo::oper::subtree_delete::{
+    LockSubtreeDeleteScope, MarkSubtree, SubtreeRoot,
+};
 use crate::part::repo::oper::workset::{
     AllocWorksetComicIndex, UpdateWorksetComicCount,
 };
 use crate::part::repo::page::PageRepo;
+use crate::part::repo::subtree_delete::SubtreeRepo;
 use crate::part::repo::team::TeamRepo;
-use crate::part::repo::term::TermRepo;
-use crate::part::repo::termbase::TermbaseRepo;
-use crate::part::repo::unit::UnitRepo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::{BaseError, BaseRest, accept};
-use crate::usecase::chapter::delete::delete_cascade as delete_chapter_cascade;
+use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::comic::view::comic_info_view;
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
-use crate::usecase::termbase::delete_comic_cascade;
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 use crate::value::role::RoleMask;
 
@@ -283,9 +278,9 @@ where
 }
 
 /// Deletes a comic and updates the parent workset counter.
-#[instrument(level = "info", skip(nucl, repo, obj_dept, token), fields(actor_user_id = %token.user_id))]
-pub async fn delete<N, C, R, O>(
-    (nucl, repo, obj_dept): (&N, &R, &O),
+#[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
+pub async fn delete<N, C, R>(
+    (nucl, repo): (&N, &R),
     token: UserToken,
     id: String,
 ) -> BaseRest<()>
@@ -293,102 +288,66 @@ where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<Serial>,
-    R: ComicRepo<C>
-        + ComicArchiveRepo<C>
-        + WorksetRepo<C>
-        + MemberRepo<C>
-        + TeamRepo<C>
-        + ChapterRepo<C>
-        + ChapterWorkflowRecordRepo<C>
-        + PageRepo<C>
-        + AssignmentInvitationRepo<C>
-        + AssignmentRepo<C>
-        + UnitRepo<C>
-        + TermbaseRepo<C>
-        + TermRepo<C>
-        + Send
-        + Sync,
-    O: ObjDept<ComicCover, C> + ObjDept<PageImage, C> + Send + Sync,
+    R: SubtreeRepo<C> + WorksetRepo<C> + MemberRepo<C> + Send + Sync,
 {
-    let member_info = MemberLoader::load_info_from_comic(
-        repo,
-        LoadMode::Run,
-        &token.user_id,
-        &id,
-    )
-    .await?;
-
-    ComicPermComplex::ensure_user_can_delete(&member_info)?;
-
-    nucl.coord(async move |context| {
-        delete_cascade(repo, obj_dept, context, &id).await
-    })
-    .await?;
-
-    accept(())
-}
-
-/// Deletes a comic subtree inside an existing transaction context.
-pub async fn delete_cascade<C, R, O>(
-    repo: &R,
-    obj_dept: &O,
-    context: &mut C,
-    id: &str,
-) -> BaseRest<()>
-where
-    C: Context,
-    R: ComicRepo<C>
-        + ComicArchiveRepo<C>
-        + WorksetRepo<C>
-        + ChapterRepo<C>
-        + ChapterWorkflowRecordRepo<C>
-        + PageRepo<C>
-        + AssignmentInvitationRepo<C>
-        + AssignmentRepo<C>
-        + TermbaseRepo<C>
-        + TermRepo<C>
-        + Sync,
-    O: ObjDept<ComicCover, C> + ObjDept<PageImage, C> + Sync,
-{
-    let comic_info = GetComicInfoExcluded { id, incls: &[] }
-        .step_on(repo, context)
-        .await?;
-
-    delete_comic_cascade(repo, context, &comic_info.id).await?;
-
-    let chapter_infos = ListChapterInfosExcluded {
-        comic_id: &comic_info.id,
-    }
-    .step_on(repo, context)
-    .await?;
-
-    for chapter_info in chapter_infos {
-        //
-        delete_chapter_cascade(repo, obj_dept, context, &chapter_info.id)
+    let () = nucl
+        .coord(async move |context| {
+            //
+            let delete_scope = LockSubtreeDeleteScope {
+                root: SubtreeRoot::Comic { id: &id },
+            }
+            .step_on(repo, context)
             .await?;
-    }
 
-    DeleteObjs::<ComicCover>::new(std::slice::from_ref(&comic_info.id))
-        .step_on(obj_dept, context)
-        .await
-        .map_err(BaseError::from)?;
+            let member_info = FindMemberInfo::UserTeam {
+                user_id: &token.user_id,
+                team_id: delete_scope.team_id(),
+            }
+            .step_on(repo, context)
+            .await?;
 
-    DeleteComicArchives {
-        source_comic_id: &comic_info.id,
-    }
-    .step_on(repo, context)
-    .await?;
+            let Some(member_info) = member_info else {
+                //
+                let err_message = trl("error-team-member-required");
 
-    DeleteComic { id: &comic_info.id }
-        .step_on(repo, context)
+                tracing::warn!(
+                    err_variant = ?ExpectedVariant::Perm,
+                    err_message = %err_message,
+                    "expected error: team membership required",
+                );
+
+                return Err(BaseError::Expected {
+                    variant: ExpectedVariant::Perm,
+                    message: err_message,
+                });
+            };
+
+            ComicPermComplex::ensure_user_can_delete(&member_info)?;
+
+            MarkSubtree {
+                scope: &delete_scope,
+            }
+            .step_on(repo, context)
+            .await?;
+
+            let SubtreeDeleteScope::Comic { workset_id, .. } = delete_scope
+            else {
+                //
+                return Err(BaseError::Unrecoverable {
+                    message: "comic deletion returned a different scope".into(),
+                });
+            };
+
+            UpdateWorksetComicCount {
+                id: &workset_id,
+                delta: -1,
+            }
+            .step_on(repo, context)
+            .await?;
+
+            accept(())
+        })
         .await?;
-
-    UpdateWorksetComicCount {
-        id: &comic_info.workset_id,
-        delta: -1,
-    }
-    .step_on(repo, context)
-    .await?;
 
     accept(())
 }

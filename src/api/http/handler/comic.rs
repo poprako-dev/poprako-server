@@ -355,8 +355,8 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::comic::delete::<_, RdbContext<Serial>, HybRepo, _>(
-        (harn.nucl().serial(), harn.repo(), harn.obj_dept()),
+    usecase::comic::delete::<_, RdbContext<Serial>, HybRepo>(
+        (harn.nucl().serial(), harn.repo()),
         user_token,
         comic_id,
     )

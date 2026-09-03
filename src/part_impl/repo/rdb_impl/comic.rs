@@ -13,15 +13,13 @@ use tracing::instrument;
 use crate::model::read::proj::comic::ComicInfo;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::comic::{
-    AllocComicChapterIndex, CreateComic, DeleteComic, GetComicInfo,
-    GetComicInfoExcluded, ListComicInfos, ListComicInfosExcluded,
-    TouchComicLastActive, UpdateComic, UpdateComicChapterCount,
+    AllocComicChapterIndex, CreateComic, GetComicInfo, GetComicInfoExcluded,
+    ListComicInfos, TouchComicLastActive, UpdateComic, UpdateComicChapterCount,
 };
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::comic::step_impl::{
-    create, delete, get_info_by_id, get_info_excluded, incr_chapter_next_index,
-    list_infos, list_infos_excluded, touch_last_active, update_chapter_count,
-    update_info,
+    create, get_info_by_id, get_info_excluded, incr_chapter_next_index,
+    list_infos, touch_last_active, update_chapter_count, update_info,
 };
 use crate::result::{BaseError, BaseRest};
 use crate::shared::RdbContext;
@@ -125,27 +123,6 @@ where
     }
 }
 
-impl<L> Step<ListComicInfosExcluded<'_>, RdbContext<L>> for HybRepo
-where
-    L: Level + Send + AtLeast<ReptRead>,
-{
-    // Resolves a filtered excluded-comic list inside a transaction.
-    type Level = ReptRead;
-
-    // Defines the adapter error exposed by this operation.
-    type Error = BaseError;
-
-    // Applies excluded-list spec within transaction scope.
-    #[instrument(level = "info", skip_all)]
-    async fn step(
-        &self,
-        context: &mut RdbContext<L>,
-        oper: &ListComicInfosExcluded<'_>,
-    ) -> BaseRest<Vec<ComicInfo>> {
-        list_infos_excluded(context.conn(), oper.spec).await
-    }
-}
-
 impl<L> Step<CreateComic<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
@@ -164,27 +141,6 @@ where
         oper: &CreateComic<'_>,
     ) -> BaseRest<ComicInfo> {
         create(context.conn(), oper.entry).await
-    }
-}
-
-impl<L> Step<DeleteComic<'_>, RdbContext<L>> for HybRepo
-where
-    L: Level + Send + AtLeast<ReptRead>,
-{
-    // Deletes one comic inside an active transaction context.
-    type Level = ReptRead;
-
-    // Defines the adapter error exposed by this operation.
-    type Error = BaseError;
-
-    // Removes the comic record identified by id and returns after completion.
-    #[instrument(level = "info", skip_all)]
-    async fn step(
-        &self,
-        context: &mut RdbContext<L>,
-        oper: &DeleteComic<'_>,
-    ) -> BaseRest<()> {
-        delete(context.conn(), oper.id).await
     }
 }
 

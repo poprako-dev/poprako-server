@@ -45,6 +45,8 @@ mod complex;
 mod config;
 // Inbound request and outbound response DTOs for the HTTP API layer.
 mod data;
+// Long-lived production background jobs.
+mod extra;
 // Application harness wiring all ports together for production and test use.
 mod harn;
 // Tracing-subscriber initialisation shared across binaries.
@@ -91,6 +93,7 @@ pub use crate::api::http::state::AppHarn;
 pub use crate::config::AppConfig;
 pub use crate::config::http::HttpConfig;
 pub use crate::config::image::ImageConfig;
+pub use crate::extra::sched::Sched;
 pub use crate::harn::Harn;
 pub use crate::log::init_log;
 pub use crate::part::nucl::{ReptRead, Serial};

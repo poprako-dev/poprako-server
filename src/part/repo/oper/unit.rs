@@ -17,7 +17,7 @@ pub struct ListUnitInfos<'a> {
 #[oper(output = Vec<UnitInfo>)]
 pub struct ListUnitInfosByPageIds<'a> {
     /// The page ids whose Units should be retrieved.
-    pub page_ids: &'a [String],
+    pub page_ids: &'a [&'a str],
 }
 
 /// Lists requested Unit infos that currently exist.
@@ -25,7 +25,7 @@ pub struct ListUnitInfosByPageIds<'a> {
 #[oper(output = Vec<UnitInfo>)]
 pub struct ListUnitInfosByIds<'a> {
     /// Permanent Unit IDs to retrieve.
-    pub ids: &'a [String],
+    pub ids: &'a [&'a str],
 }
 
 /// Searches visible Unit IDs within one Chapter.
@@ -50,7 +50,7 @@ pub struct SearchChapterUnitIds<'a> {
 #[oper(output = Vec<UnitInfo>)]
 pub struct ListUnitInfosInChapterOrder<'a> {
     /// Permanent Unit IDs to retrieve and order.
-    pub ids: &'a [String],
+    pub ids: &'a [&'a str],
 }
 
 /// Lists unit orders for a page.

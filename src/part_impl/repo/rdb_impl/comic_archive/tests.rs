@@ -23,7 +23,7 @@ use crate::part_impl::repo::rdb_impl::schema::{
     t_chapter, t_comic, t_comic_archive, t_page, t_workset,
 };
 use crate::part_impl::repo::rdb_impl::test_shared;
-use crate::result::BaseError;
+use crate::result::{BaseError, ExpectedVariant};
 use crate::value::chapter_workflow_record::ChapterWorkflowRecordPayload;
 
 const PREFIX: &str = "rdb-test-comic-archive-domain-";
@@ -239,4 +239,119 @@ pub async fn comic_archive_roundtrip_uses_testcontainer(shared: RdbCore) {
         .await
         .ok()
         .unwrap();
+}
+
+/// Verifies tombstoned comics reject both snapshot loading and archive commit.
+pub async fn tombstoned_comic_rejects_archive(shared: RdbCore) {
+    test_shared::reset(&shared, PREFIX).await;
+
+    let page_fixture = test_shared::seed_page(&shared, PREFIX).await;
+
+    let repo = HybRepo::new(shared.clone());
+
+    let nucl = RdbNucl::<ReptRead>::new(shared.clone());
+
+    let source_comic_id = page_fixture.chapter_entry.comic_id.clone();
+
+    let archiver_id = page_fixture.chapter_entry.creator_id.clone();
+
+    let comic_archive_snapshot = nucl
+        .coord(async |context| {
+            repo.step(
+                context,
+                &GetComicArchiveSnapshotExcluded {
+                    comic_id: &source_comic_id,
+                },
+            )
+            .await
+        })
+        .await
+        .unwrap();
+
+    let comic_archive_entry = ComicArchiveComplex::prepare_entry(
+        comic_archive_snapshot,
+        archiver_id,
+        OffsetDateTime::now_utc(),
+    )
+    .await
+    .unwrap();
+
+    let mut conn = shared.get().await.unwrap();
+
+    diesel::update(t_comic::table.filter(t_comic::f_id.eq(&source_comic_id)))
+        .set(t_comic::f_deleted_at.eq(Some(OffsetDateTime::now_utc())))
+        .execute(&mut conn)
+        .await
+        .unwrap();
+
+    drop(conn);
+
+    let snapshot_error = nucl
+        .coord(async |context| {
+            repo.step(
+                context,
+                &GetComicArchiveSnapshotExcluded {
+                    comic_id: &source_comic_id,
+                },
+            )
+            .await
+        })
+        .await
+        .map_err(BaseError::from)
+        .err()
+        .unwrap();
+
+    assert!(matches!(
+        snapshot_error,
+        BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            ..
+        }
+    ));
+
+    let commit_error = nucl
+        .coord(async |context| {
+            repo.step(
+                context,
+                &CommitComicArchive {
+                    entry: &comic_archive_entry,
+                },
+            )
+            .await
+        })
+        .await
+        .map_err(BaseError::from)
+        .err()
+        .unwrap();
+
+    assert!(matches!(
+        commit_error,
+        BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            ..
+        }
+    ));
+
+    let mut conn = shared.get().await.unwrap();
+
+    let archive_count = t_comic_archive::table
+        .filter(t_comic_archive::f_id.eq(&comic_archive_entry.record.id))
+        .count()
+        .get_result::<i64>(&mut conn)
+        .await
+        .unwrap();
+
+    let chapter_count = t_chapter::table
+        .filter(t_chapter::f_id.eq(&page_fixture.chapter_entry.id))
+        .count()
+        .get_result::<i64>(&mut conn)
+        .await
+        .unwrap();
+
+    assert_eq!(archive_count, 0);
+    assert_eq!(chapter_count, 1);
+
+    drop(conn);
+
+    test_shared::cleanup(&shared, PREFIX).await.unwrap();
 }

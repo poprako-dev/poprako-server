@@ -257,7 +257,7 @@ pub async fn search_chapter_ids(
 /// Lists selected Units in Chapter Page and linked-list order.
 pub async fn list_infos_in_chapter_order(
     conn: &mut RdbConn,
-    ids: &[String],
+    ids: &[&str],
 ) -> BaseRest<Vec<UnitInfo>> {
     //
     if ids.is_empty() {
@@ -347,7 +347,7 @@ pub async fn list_infos(
 /// Lists Units for multiple Pages with one query and validates each linked list.
 pub async fn list_infos_by_page_ids(
     conn: &mut RdbConn,
-    page_ids: &[String],
+    page_ids: &[&str],
 ) -> BaseRest<Vec<UnitInfo>> {
     //
     let rows = t_unit
@@ -374,7 +374,7 @@ pub async fn list_infos_by_page_ids(
     for page_id in page_ids {
         //
         let mut page_unit_infos =
-            unit_infos_by_page_id.remove(page_id).unwrap_or_default();
+            unit_infos_by_page_id.remove(*page_id).unwrap_or_default();
 
         order_units(
             &mut page_unit_infos,
@@ -392,7 +392,7 @@ pub async fn list_infos_by_page_ids(
 #[instrument(level = "info", skip_all)]
 pub async fn list_infos_by_ids(
     conn: &mut RdbConn,
-    ids: &[String],
+    ids: &[&str],
 ) -> BaseRest<Vec<UnitInfo>> {
     //
     let rows = t_unit

@@ -43,28 +43,12 @@ pub struct GetComicInfoExcluded<'a, 'b> {
     pub incls: &'b [ComicInclOpt],
 }
 
-/// Lists comics matching the given spec with excluded fields omitted.
-#[derive(Oper)]
-#[oper(output = Vec<ComicInfo>)]
-pub struct ListComicInfosExcluded<'a> {
-    /// The filter and pagination specification.
-    pub spec: &'a ComicListSpec,
-}
-
 /// Updates an existing comic's fields.
 #[derive(Oper)]
 #[oper(output = ())]
 pub struct UpdateComic<'a> {
     /// The update payload.
     pub update: &'a ComicRepl,
-}
-
-/// Deletes a comic by ID.
-#[derive(Oper)]
-#[oper(output = ())]
-pub struct DeleteComic<'a> {
-    /// The comic ID to delete.
-    pub id: &'a str,
 }
 
 /// Allocates a new chapter index for a comic.

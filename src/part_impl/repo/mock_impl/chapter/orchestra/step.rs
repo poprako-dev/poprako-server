@@ -5,10 +5,9 @@ use crate::model::read::proj::chapter::ChapterInfo;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::chapter::{
     AdjustChapterUnitCounters, CompleteChapterRawProvide, CreateChapter,
-    DeleteChapter, FindPinnedChapterInfo, GetChapterInfo,
-    GetChapterInfoExcluded, ListChapterInfosExcluded, LockChapters,
-    ResetChapterRawProvide, SetChapterPageCounters, StartChapterStage,
-    UnpinOtherChapters, UpdateChapter, UpdateChapterStage,
+    FindPinnedChapterInfo, GetChapterInfo, GetChapterInfoExcluded,
+    ListChapterInfosExcluded, LockChapters, SetChapterPageCounters,
+    StartChapterStage, UnpinOtherChapters, UpdateChapter, UpdateChapterStage,
 };
 use crate::part_impl::repo::mock_impl::chapter::orchestra::find_pinned_chapter_info;
 use crate::part_impl::repo::mock_impl::chapter::{
@@ -34,6 +33,10 @@ impl<'a> Step<CompleteChapterRawProvide<'a>, MockContext> for Mock {
         oper: &CompleteChapterRawProvide<'a>,
     ) -> BaseRest<bool> {
         //
+        if context.state.deleted_chapter_ids.contains(oper.id) {
+            return accept(false);
+        }
+
         // Internal implementation detail.
         // Internal implementation detail.
         let Some(chapter_index) = context
@@ -90,6 +93,10 @@ impl<'a> Step<StartChapterStage<'a>, MockContext> for Mock {
         oper: &StartChapterStage<'a>,
     ) -> BaseRest<bool> {
         //
+        if context.state.deleted_chapter_ids.contains(oper.id) {
+            return accept(false);
+        }
+
         let Some(chapter_info) = context
             .state
             .chapters
@@ -120,40 +127,6 @@ impl<'a> Step<StartChapterStage<'a>, MockContext> for Mock {
         chapter_info.updated_at = now();
 
         accept(true)
-    }
-}
-
-impl<'a> Step<ResetChapterRawProvide<'a>, MockContext> for Mock {
-    // Internal type alias for `Error`.
-    type Level = ReptRead;
-
-    // Defines the adapter error exposed by this operation.
-    type Error = BaseError;
-
-    #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
-    async fn step(
-        &self,
-        context: &mut MockContext,
-        oper: &ResetChapterRawProvide<'a>,
-    ) -> BaseRest<()> {
-        //
-        // Internal implementation detail.
-        // Internal implementation detail.
-        let chapter_info = context
-            .state
-            .chapters
-            .iter_mut()
-            .find(|chapter_info| chapter_info.id == oper.id)
-            .ok_or_else(|| expected("error-chapter-not-found"))?;
-
-        chapter_info.stages = chapter_info
-            .stages
-            .try_set_phase(Stage::RawProvide, StagePhase::Pending)?;
-
-        chapter_info.updated_at = now();
-
-        accept(())
     }
 }
 
@@ -285,6 +258,10 @@ impl<'a> Step<UpdateChapter<'a>, MockContext> for Mock {
         oper: &UpdateChapter<'a>,
     ) -> BaseRest<()> {
         //
+        if context.state.deleted_chapter_ids.contains(&oper.update.id) {
+            return Err(expected("error-chapter-not-found"));
+        }
+
         // Internal implementation detail.
         // Internal implementation detail.
         let chapter_info = context
@@ -323,6 +300,10 @@ impl<'a> Step<UpdateChapterStage<'a>, MockContext> for Mock {
         oper: &UpdateChapterStage<'a>,
     ) -> BaseRest<()> {
         //
+        if context.state.deleted_chapter_ids.contains(&oper.update.id) {
+            return Err(expected("error-chapter-not-found"));
+        }
+
         // Internal implementation detail.
         // Internal implementation detail.
         let chapter_info = context
@@ -355,6 +336,10 @@ impl<'a> Step<SetChapterPageCounters<'a>, MockContext> for Mock {
         oper: &SetChapterPageCounters<'a>,
     ) -> BaseRest<()> {
         //
+        if context.state.deleted_chapter_ids.contains(oper.id) {
+            return Err(expected("error-chapter-not-found"));
+        }
+
         // Internal implementation detail.
         // Internal implementation detail.
         let chapter_info = context
@@ -393,6 +378,10 @@ impl<'a> Step<AdjustChapterUnitCounters<'a>, MockContext> for Mock {
         oper: &AdjustChapterUnitCounters<'a>,
     ) -> BaseRest<()> {
         //
+        if context.state.deleted_chapter_ids.contains(oper.id) {
+            return Err(expected("error-chapter-not-found"));
+        }
+
         // Internal implementation detail.
         // Internal implementation detail.
         let chapter_info = context
@@ -442,6 +431,10 @@ impl<'a> Step<UnpinOtherChapters<'a>, MockContext> for Mock {
         // Internal implementation detail.
         for chapter_info in &mut context.state.chapters {
             //
+            if context.state.deleted_chapter_ids.contains(&chapter_info.id) {
+                continue;
+            }
+
             if chapter_info.comic_id != oper.comic_id {
                 continue;
             }
@@ -454,58 +447,6 @@ impl<'a> Step<UnpinOtherChapters<'a>, MockContext> for Mock {
 
             chapter_info.updated_at = now();
         }
-
-        accept(())
-    }
-}
-
-impl<'a> Step<DeleteChapter<'a>, MockContext> for Mock {
-    // Internal type alias for `Error`.
-    type Level = ReptRead;
-
-    // Defines the adapter error exposed by this operation.
-    type Error = BaseError;
-
-    #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
-    async fn step(
-        &self,
-        context: &mut MockContext,
-        oper: &DeleteChapter<'a>,
-    ) -> BaseRest<()> {
-        //
-        // Internal implementation detail.
-        // Internal implementation detail.
-        let position = context
-            .state
-            .chapters
-            .iter()
-            .position(|chapter_info| chapter_info.id == oper.id)
-            .ok_or_else(|| expected("error-chapter-not-found"))?;
-
-        context.state.chapters.remove(position);
-
-        context
-            .state
-            .pages
-            .retain(|page_info| page_info.chapter_id != oper.id);
-
-        let page_ids = context
-            .state
-            .pages
-            .iter()
-            .map(|page_info| page_info.id.clone())
-            .collect::<Vec<_>>();
-
-        context
-            .state
-            .units
-            .retain(|unit_info| page_ids.contains(&unit_info.page_id));
-
-        context
-            .state
-            .assignments
-            .retain(|assignment_info| assignment_info.chapter_id != oper.id);
 
         accept(())
     }

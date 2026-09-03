@@ -18,7 +18,7 @@ use crate::model::write::termbase::{
     TermbaseEntry, TermbaseImport, TermbaseRepl,
 };
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::util::next_snowflake_id;
+use crate::util::{next_snowflake_id, trim_owned};
 use crate::value::termbase::TERMBASE_TERM_LIMIT;
 
 // Build a case-insensitive key after applying persisted uniqueness trimming.
@@ -27,9 +27,9 @@ fn normalized_key(value: &str) -> String {
 }
 
 // Trim a termbase name and reject empty values.
-fn normalize_name(name: &str) -> BaseRest<String> {
+fn normalize_name(name: String) -> BaseRest<String> {
     //
-    let name = name.trim().to_string();
+    let name = trim_owned(name);
 
     if name.is_empty() {
         //
@@ -56,7 +56,7 @@ fn normalize_optional(value: Option<String>) -> Option<String> {
     //
     value.and_then(|value| {
         //
-        let value = value.trim().to_string();
+        let value = trim_owned(value);
 
         if value.is_empty() { None } else { Some(value) }
     })
@@ -124,7 +124,7 @@ impl TermbaseComplex {
     pub fn build_entry(
         team_id: Option<String>,
         comic_id: Option<String>,
-        name: &str,
+        name: String,
         description: Option<String>,
         creator_id: String,
     ) -> BaseRest<TermbaseEntry> {
@@ -182,7 +182,7 @@ impl TermbaseComplex {
         for term_import in termbase_import.terms {
             //
             let term_import = TermComplex::build_import(
-                &term_import.source,
+                term_import.source,
                 term_import.targets,
                 term_import.comment,
             )?;
@@ -208,7 +208,7 @@ impl TermbaseComplex {
         }
 
         let (name, description) = (
-            normalize_name(&termbase_import.name)?,
+            normalize_name(termbase_import.name)?,
             normalize_optional(termbase_import.description),
         );
 
@@ -329,7 +329,7 @@ impl TermbaseComplex {
     /// Build a validated terminology-base profile replacement.
     pub fn build_update(
         id: String,
-        name: &str,
+        name: String,
         description: Option<String>,
     ) -> BaseRest<TermbaseRepl> {
         //

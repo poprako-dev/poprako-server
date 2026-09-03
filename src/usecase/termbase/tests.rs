@@ -6,7 +6,6 @@
 // list_comic_infos(list_comic_infos)(negative): comic list rejects a user outside the owning team before querying termbases.
 // list_comic_infos(list_comic_infos)(positive): fuzzy name does not search descriptions.
 // delete(delete)(positive): deleting a termbase removes all child terms.
-// delete_team_cascade(delete_team_cascade)(positive): team cascade removes direct termbases and their terms.
 
 use super::*;
 
@@ -394,49 +393,4 @@ async fn delete_removes_child_terms() {
     assert!(snapshot.termbases.is_empty());
 
     assert!(snapshot.terms.is_empty());
-}
-
-#[tokio::test]
-async fn delete_team_cascade_removes_direct_termbases_and_terms() {
-    //
-    let mock = Mock::new();
-
-    mock.seed_termbase(termbase(
-        "termbase-team",
-        Some("team-1"),
-        None,
-        "Team Glossary",
-        None,
-    ));
-
-    mock.seed_termbase(termbase(
-        "termbase-other",
-        Some("team-2"),
-        None,
-        "Other Glossary",
-        None,
-    ));
-
-    mock.seed_term(term("term-team", "termbase-team"));
-
-    mock.seed_term(term("term-other", "termbase-other"));
-
-    let repo = &mock;
-
-    mock.coord(async |context| {
-        delete_team_cascade(repo, context, "team-1").await
-    })
-    .await
-    .ok()
-    .unwrap();
-
-    let snapshot = mock.snapshot();
-
-    assert_eq!(snapshot.termbases.len(), 1);
-
-    assert_eq!(snapshot.termbases[0].id, "termbase-other");
-
-    assert_eq!(snapshot.terms.len(), 1);
-
-    assert_eq!(snapshot.terms[0].id, "term-other");
 }

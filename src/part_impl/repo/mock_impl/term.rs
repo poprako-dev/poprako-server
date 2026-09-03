@@ -8,8 +8,8 @@ use tracing::instrument;
 use crate::model::read::proj::term::TermInfo;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::term::{
-    CreateTerm, DeleteTerm, DeleteTerms, GetTermInfo, GetTermInfoExcluded,
-    ListTermInfos, LockTerm, UpdateTerm, UpsertTerms,
+    CreateTerm, DeleteTerm, DeleteTerms, GetTermInfo, ListTermInfos, LockTerm,
+    UpdateTerm, UpsertTerms,
 };
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
@@ -243,24 +243,6 @@ impl<'a> Step<ListTermInfos<'a>, MockContext> for Mock {
         };
 
         accept(term_infos)
-    }
-}
-
-impl<'a> Step<GetTermInfoExcluded<'a>, MockContext> for Mock {
-    // Internal type alias for `Error`.
-    type Level = ReptRead;
-
-    // Defines the adapter error exposed by this operation.
-    type Error = BaseError;
-
-    #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
-    async fn step(
-        &self,
-        context: &mut MockContext,
-        oper: &GetTermInfoExcluded<'a>,
-    ) -> BaseRest<TermInfo> {
-        get_info(&context.state, oper.id)
     }
 }
 

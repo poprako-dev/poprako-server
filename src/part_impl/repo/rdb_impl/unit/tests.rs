@@ -6,10 +6,12 @@ use poprako_rdb_core::RdbCore;
 
 use crate::model::read::proj::unit::UnitOrder;
 use crate::model::shared::unit::{UnitCoord, UnitRevision, UnitTranslation};
-use crate::model::write::page::PageEntry;
+use crate::model::write::page::PageManifestEntry;
 use crate::model::write::unit::UnitEdit;
 use crate::part::nucl::ReptRead;
-use crate::part::repo::oper::page::{CreatePages, ListEdittedDiffPageIds};
+use crate::part::repo::oper::page::{
+    ApplyPageManifest, ListEdittedDiffPageIds,
+};
 use crate::part::repo::oper::unit::{
     ApplyUnitEdits, ListUnitInfos, ListUnitInfosByIds, ListUnitInfosByPageIds,
     ListUnitOrders,
@@ -203,9 +205,10 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
         vec![second_id.as_str(), first_id.as_str()]
     );
 
+    let missing_page_id = format!("{}missing-page", PREFIX);
     let page_ids = [
-        page_fixture.page_entry.id.clone(),
-        format!("{}missing-page", PREFIX),
+        page_fixture.page_entry.id.as_str(),
+        missing_page_id.as_str(),
     ];
 
     let batch_unit_infos = repo
@@ -225,7 +228,7 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     nucl.coord(async |context| {
         //
-        let ids = [first_id.clone(), "missing-unit".to_string()];
+        let ids = [first_id.as_str(), "missing-unit"];
 
         let selected = repo
             .step(context, &ListUnitInfosByIds { ids: &ids })
@@ -248,17 +251,17 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
     let chunked_order_page_id = format!("{}chunked-order-page", PREFIX);
 
     let additional_pages = [
-        PageEntry {
+        PageManifestEntry {
             id: equal_page_id.clone(),
             chapter_id: page_fixture.chapter_entry.id.clone(),
             index: 1,
         },
-        PageEntry {
+        PageManifestEntry {
             id: missing_translation_page_id.clone(),
             chapter_id: page_fixture.chapter_entry.id.clone(),
             index: 2,
         },
-        PageEntry {
+        PageManifestEntry {
             id: chunked_order_page_id.clone(),
             chapter_id: page_fixture.chapter_entry.id.clone(),
             index: 3,
@@ -268,7 +271,7 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
     nucl.coord(async |context| {
         repo.step(
             context,
-            &CreatePages {
+            &ApplyPageManifest {
                 entries: &additional_pages,
             },
         )

@@ -44,9 +44,17 @@ async fn repo_rdb_impls_use_testcontainer() {
     )
     .await;
 
+    comic_archive::tests::tombstoned_comic_rejects_archive(shared.clone())
+        .await;
+
     comment::tests::comment_roundtrip_uses_testcontainer(shared.clone()).await;
 
     member::tests::member_roundtrip_uses_testcontainer(shared.clone()).await;
+
+    member::tests::user_cleanup_includes_tombstoned_team_memberships(
+        shared.clone(),
+    )
+    .await;
 
     member::tests::concurrent_admin_role_removals_are_serialized(
         shared.clone(),
@@ -61,6 +69,11 @@ async fn repo_rdb_impls_use_testcontainer() {
     page::tests::page_roundtrip_uses_testcontainer(shared.clone()).await;
 
     system_mail::tests::system_mail_roundtrip_uses_testcontainer(
+        shared.clone(),
+    )
+    .await;
+
+    subtree_delete::tests::workset_subtree_delete_uses_mark_and_sweep(
         shared.clone(),
     )
     .await;

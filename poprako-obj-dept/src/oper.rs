@@ -17,7 +17,7 @@ where
 {
     //
     /// Stable business-object identifiers.
-    pub ids: &'a [String],
+    pub ids: &'a [&'a str],
     /// Compile-time object marker selected for this operation.
     #[doc(hidden)]
     _m: PhantomData<fn() -> K>,
@@ -29,7 +29,7 @@ where
 {
     /// Creates a metadata lookup for the supplied business-object identifiers.
     #[must_use]
-    pub const fn new(ids: &'a [String]) -> Self {
+    pub const fn new(ids: &'a [&'a str]) -> Self {
         //
         Self {
             ids,

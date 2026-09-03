@@ -88,26 +88,29 @@ where
     .run_on(repo)
     .await?;
 
-    let mut exports = months
-        .iter()
-        .map(|month| (month.label.clone(), Vec::new()))
-        .collect::<BTreeMap<_, _>>();
+    let mut payloads_by_month =
+        (0..months.len()).map(|_| Vec::new()).collect::<Vec<_>>();
 
     for (created_at, archived_payload) in records {
         //
-        let month = months
+        let Some((_, payloads)) = months
             .iter()
-            .find(|month| created_at >= month.start && created_at < month.end);
-
-        let Some(month) = month else {
+            .zip(payloads_by_month.iter_mut())
+            .find(|(month, _)| {
+                created_at >= month.start && created_at < month.end
+            })
+        else {
             continue;
         };
 
-        exports
-            .entry(month.label.clone())
-            .or_default()
-            .push(archived_payload);
+        payloads.push(archived_payload);
     }
+
+    let exports = months
+        .into_iter()
+        .zip(payloads_by_month)
+        .map(|(month, payloads)| (month.label, payloads))
+        .collect::<BTreeMap<_, _>>();
 
     accept(ExportComicArchivesVal(exports))
 }
@@ -164,7 +167,7 @@ where
             .await?;
 
             ClearObjs::<ComicCover>::new(std::slice::from_ref(
-                &comic_archive_entry.source_comic_id,
+                &comic_archive_entry.record.source_comic_id,
             ))
             .step_on(obj_dept, context)
             .await

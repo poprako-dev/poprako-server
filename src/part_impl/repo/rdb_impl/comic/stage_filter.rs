@@ -6,8 +6,8 @@ use diesel_async::RunQueryDsl as _;
 use poprako_rdb_core::RdbConn;
 
 use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::{
-    f_comic_id as chapter_comic_id, f_is_pinned as chapter_is_pinned,
-    f_proofread_at as chapter_proofread_at,
+    f_comic_id as chapter_comic_id, f_deleted_at as chapter_deleted_at,
+    f_is_pinned as chapter_is_pinned, f_proofread_at as chapter_proofread_at,
     f_proofreading_at as chapter_proofreading_at,
     f_published_at as chapter_published_at,
     f_reviewed_at as chapter_reviewed_at,
@@ -39,6 +39,7 @@ pub async fn list_matching_stage_comic_ids(
     }
 
     let mut query = t_chapter
+        .filter(chapter_deleted_at.is_null())
         .filter(chapter_is_pinned.eq(true))
         .select(chapter_comic_id)
         .distinct()

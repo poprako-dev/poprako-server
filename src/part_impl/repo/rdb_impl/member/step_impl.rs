@@ -26,10 +26,20 @@ use crate::part_impl::repo::rdb_impl::schema::t_member::dsl::{
     f_assigned_typesetter_at, f_id, f_team_id, f_user_id,
     f_user_last_active_at, f_user_nickname, t_member,
 };
+use crate::part_impl::repo::rdb_impl::schema::t_team;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::result::diesel;
 use crate::value::member::MemberInclOpt;
 use crate::value::role::{RoleField, RoleMask};
+
+// Select active team identifiers for member queries.
+macro_rules! active_team_ids {
+    () => {
+        t_team::table
+            .filter(t_team::f_deleted_at.is_null())
+            .select(t_team::f_id)
+    };
+}
 
 // ── Free functions ──────────────────────────────────────────────────────────
 
@@ -44,6 +54,7 @@ pub async fn find_info_by_user_id_and_team_id(
     let row = t_member
         .filter(f_user_id.eq(user_id))
         .filter(f_team_id.eq(team_id))
+        .filter(f_team_id.eq_any(active_team_ids!()))
         .select(MemberInfoRow::as_select())
         .get_result::<MemberInfoRow>(conn)
         .await
@@ -74,6 +85,7 @@ pub async fn list_infos(
                 //
                 let mut query = t_member
                     .filter(f_team_id.eq(team_id.as_str()))
+                    .filter(f_team_id.eq_any(active_team_ids!()))
                     .select(MemberInfoRow::as_select())
                     .into_boxed();
 
@@ -142,6 +154,7 @@ pub async fn list_infos(
                 ..
             } => t_member
                 .filter(f_user_id.eq(owner_id.as_str()))
+                .filter(f_team_id.eq_any(active_team_ids!()))
                 .select(MemberInfoRow::as_select())
                 .order_by((f_user_last_active_at.desc(), f_id.asc()))
                 .offset(i64::from(*offset))
@@ -172,6 +185,7 @@ pub async fn get_info_by_id(
     //
     let row = t_member
         .filter(f_id.eq(id))
+        .filter(f_team_id.eq_any(active_team_ids!()))
         .select(MemberInfoRow::as_select())
         .get_result::<MemberInfoRow>(conn)
         .await
@@ -241,31 +255,17 @@ pub async fn update_user_nickname(
 
     let aspect = MemberAspectRow::new(now).user_nickname(nickname);
 
-    diesel::update(t_member.filter(f_user_id.eq(user_id)))
-        .set(&aspect)
-        .execute(conn)
-        .await
-        .map_err(diesel)?;
+    diesel::update(
+        t_member
+            .filter(f_user_id.eq(user_id))
+            .filter(f_team_id.eq_any(active_team_ids!())),
+    )
+    .set(&aspect)
+    .execute(conn)
+    .await
+    .map_err(diesel)?;
 
     accept(())
-}
-
-/// Query all member infos for a user, locking the rows for update.
-#[instrument(level = "info", skip_all)]
-pub async fn list_infos_by_user_id_excluded(
-    conn: &mut RdbConn,
-    user_id: &str,
-) -> BaseRest<Vec<MemberInfo>> {
-    //
-    let rows = t_member
-        .filter(f_user_id.eq(user_id))
-        .select(MemberInfoRow::as_select())
-        .for_update()
-        .load::<MemberInfoRow>(conn)
-        .await
-        .map_err(diesel)?;
-
-    accept(rows.into_iter().map(Into::into).collect())
 }
 
 /// Query all member infos for a team, locking the rows for update.
@@ -277,6 +277,7 @@ pub async fn list_infos_by_team_id_excluded(
     //
     let rows = t_member
         .filter(f_team_id.eq(team_id))
+        .filter(f_team_id.eq_any(active_team_ids!()))
         .select(MemberInfoRow::as_select())
         .for_update()
         .load::<MemberInfoRow>(conn)
@@ -295,6 +296,7 @@ pub async fn list_infos_by_user_id(
     //
     let rows = t_member
         .filter(f_user_id.eq(user_id))
+        .filter(f_team_id.eq_any(active_team_ids!()))
         .select(MemberInfoRow::as_select())
         .load::<MemberInfoRow>(conn)
         .await
@@ -314,11 +316,15 @@ pub async fn update_role(
 
     let aspect = aspect_from_role_update(update, now);
 
-    diesel::update(t_member.filter(f_id.eq(update.id.as_str())))
-        .set(&aspect)
-        .execute(conn)
-        .await
-        .map_err(diesel)?;
+    diesel::update(
+        t_member
+            .filter(f_id.eq(update.id.as_str()))
+            .filter(f_team_id.eq_any(active_team_ids!())),
+    )
+    .set(&aspect)
+    .execute(conn)
+    .await
+    .map_err(diesel)?;
 
     accept(())
 }
@@ -327,7 +333,26 @@ pub async fn update_role(
 #[instrument(level = "info", skip_all)]
 pub async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
-    diesel::delete(t_member.filter(f_id.eq(id)))
+    diesel::delete(
+        t_member
+            .filter(f_id.eq(id))
+            .filter(f_team_id.eq_any(active_team_ids!())),
+    )
+    .execute(conn)
+    .await
+    .map_err(diesel)?;
+
+    accept(())
+}
+
+/// Delete every membership for a user, including rows under tombstoned teams.
+#[instrument(level = "info", skip_all)]
+pub async fn delete_user_memberships(
+    conn: &mut RdbConn,
+    user_id: &str,
+) -> BaseRest<()> {
+    //
+    diesel::delete(t_member.filter(f_user_id.eq(user_id)))
         .execute(conn)
         .await
         .map_err(diesel)?;

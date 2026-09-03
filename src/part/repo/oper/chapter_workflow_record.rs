@@ -21,19 +21,3 @@ pub struct CreateChapterWorkflowRecords<'a> {
     /// Entries to persist together.
     pub entries: &'a [ChapterWorkflowRecordEntry],
 }
-
-/// Locks and lists a chapter's workflow records in archive order.
-#[derive(Oper)]
-#[oper(output = Vec<ChapterWorkflowRecordInfo>)]
-pub struct ListChapterWorkflowRecordInfosExcluded<'a> {
-    /// Chapter whose records are locked and loaded.
-    pub chapter_id: &'a str,
-}
-
-/// Deletes all active workflow records for a chapter.
-#[derive(Oper)]
-#[oper(output = ())]
-pub struct DeleteChapterWorkflowRecords<'a> {
-    /// Chapter whose records are deleted.
-    pub chapter_id: &'a str,
-}

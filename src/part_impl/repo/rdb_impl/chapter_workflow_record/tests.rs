@@ -9,8 +9,7 @@ use crate::model::read::spec::chapter_workflow_record::ChapterWorkflowRecordList
 use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::chapter_workflow_record::{
-    CreateChapterWorkflowRecords, DeleteChapterWorkflowRecords,
-    ListChapterWorkflowRecordInfos,
+    CreateChapterWorkflowRecords, ListChapterWorkflowRecordInfos,
 };
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::HybRepo;
@@ -101,29 +100,6 @@ pub async fn chapter_workflow_record_roundtrip_uses_testcontainer(
             ..
         }
     ));
-
-    nucl.coord(async |context| {
-        repo.step(
-            context,
-            &DeleteChapterWorkflowRecords {
-                chapter_id: &chapter_fixture.chapter_entry.id,
-            },
-        )
-        .await?;
-
-        Ok::<(), BaseError>(())
-    })
-    .await
-    .ok()
-    .unwrap();
-
-    let remaining_record_infos = repo
-        .run(&ListChapterWorkflowRecordInfos { spec: &list_spec })
-        .await
-        .ok()
-        .unwrap();
-
-    assert!(remaining_record_infos.is_empty());
 
     test_shared::cleanup(&shared, PREFIX).await.ok().unwrap();
 

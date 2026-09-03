@@ -14,7 +14,7 @@ use crate::model::read::proj::unit::UnitInfo;
 use crate::model::shared::unit::{UnitRevision, UnitTranslation};
 use crate::model::write::unit::{UnitEdit, UnitTransform};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::util::{Patch, next_snowflake_id};
+use crate::util::{Patch, next_snowflake_id, trim_owned};
 use crate::value::chapter::stage::Stage;
 use crate::value::unit::{MAX_UNIT_EDIT_COUNT, UnitTextPart};
 
@@ -133,9 +133,9 @@ pub struct UnitComplex;
 
 impl UnitComplex {
     /// Trims and validates a Unit search phrase.
-    pub fn normalize_search_phrase(phrase: &str) -> BaseRest<String> {
+    pub fn normalize_search_phrase(phrase: String) -> BaseRest<String> {
         //
-        let phrase = phrase.trim().to_string();
+        let phrase = trim_owned(phrase);
 
         if phrase.is_empty() {
             //

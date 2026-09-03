@@ -17,11 +17,12 @@ use poprako_util::i18n::trl;
 
 use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::unit::UnitCountMetrics;
-use crate::model::write::page::{PageEntry, PageManifestEntry};
+use crate::model::write::page::PageManifestEntry;
 use crate::part_impl::repo::rdb_impl::entity::page::{
     PageAspectRow, PageEntryRow, PageInfoRow,
 };
 use crate::part_impl::repo::rdb_impl::numeric::i32_from_usize;
+use crate::part_impl::repo::rdb_impl::schema::t_chapter;
 use crate::part_impl::repo::rdb_impl::schema::t_page::dsl::{
     f_chapter_id, f_id, f_index, f_updated_at, t_page,
 };
@@ -52,6 +53,13 @@ pub async fn get_info_by_id(
     //
     let row = t_page
         .filter(f_id.eq(id))
+        .filter(
+            f_chapter_id.eq_any(
+                t_chapter::table
+                    .filter(t_chapter::f_deleted_at.is_null())
+                    .select(t_chapter::f_id),
+            ),
+        )
         .select(PageInfoRow::as_select())
         .get_result::<PageInfoRow>(conn)
         .await
@@ -87,6 +95,13 @@ pub async fn get_info_excluded(
     //
     let row = t_page
         .filter(f_id.eq(id))
+        .filter(
+            f_chapter_id.eq_any(
+                t_chapter::table
+                    .filter(t_chapter::f_deleted_at.is_null())
+                    .select(t_chapter::f_id),
+            ),
+        )
         .select(PageInfoRow::as_select())
         .for_update()
         .get_result::<PageInfoRow>(conn)
@@ -244,7 +259,7 @@ pub async fn apply_manifest(
 #[instrument(level = "info", skip_all)]
 pub async fn list_first_infos_by_chapter_ids(
     conn: &mut RdbConn,
-    chapter_ids: &[String],
+    chapter_ids: &[&str],
 ) -> BaseRest<Vec<PageInfo>> {
     //
     let rows = t_page
@@ -253,28 +268,6 @@ pub async fn list_first_infos_by_chapter_ids(
         .distinct_on(f_chapter_id)
         .order_by((f_chapter_id.asc(), f_index.asc()))
         .load::<PageInfoRow>(conn)
-        .await
-        .map_err(diesel)?;
-
-    rows.into_iter().map(TryInto::try_into).collect()
-}
-
-/// Batch-insert pages from a slice of `model_entries` and return the created infos.
-#[instrument(level = "info", skip_all)]
-pub async fn create_batch(
-    conn: &mut RdbConn,
-    model_entries: &[PageEntry],
-) -> BaseRest<Vec<PageInfo>> {
-    //
-    let entries = model_entries
-        .iter()
-        .map(PageEntryRow::try_from)
-        .collect::<BaseRest<Vec<PageEntryRow>>>()?;
-
-    let rows = diesel::insert_into(t_page)
-        .values(&entries)
-        .returning(PageInfoRow::as_returning())
-        .get_results::<PageInfoRow>(conn)
         .await
         .map_err(diesel)?;
 

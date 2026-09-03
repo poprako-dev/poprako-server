@@ -13,15 +13,14 @@ use tracing::instrument;
 use crate::model::read::proj::page::PageInfo;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::page::{
-    ApplyPageManifest, CreatePages, DeletePages, GetPageInfo,
-    GetPageInfoExcluded, ListEdittedDiffPageIds, ListFirstPageInfos,
-    ListPageInfos, ListPageInfosExcluded, SetPageUnitCounters,
-    ShiftPageIndexesTemporary,
+    ApplyPageManifest, DeletePages, GetPageInfo, GetPageInfoExcluded,
+    ListEdittedDiffPageIds, ListFirstPageInfos, ListPageInfos,
+    ListPageInfosExcluded, SetPageUnitCounters, ShiftPageIndexesTemporary,
 };
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::page::step_impl::{
-    apply_manifest, create_batch, delete_by_chapter_id, delete_by_ids,
-    get_info_by_id, get_info_excluded, list_editted_diff_page_ids,
+    apply_manifest, delete_by_chapter_id, delete_by_ids, get_info_by_id,
+    get_info_excluded, list_editted_diff_page_ids,
     list_first_infos_by_chapter_ids, list_infos, list_infos_excluded,
     set_unit_counters, shift_indexes_temporary,
 };
@@ -146,26 +145,6 @@ where
         oper: &ListPageInfosExcluded<'_>,
     ) -> BaseRest<Vec<PageInfo>> {
         list_infos_excluded(context.conn(), oper.chapter_id).await
-    }
-}
-
-impl<L> Step<CreatePages<'_>, RdbContext<L>> for HybRepo
-where
-    L: Level + Send + AtLeast<ReptRead>,
-{
-    // Preserve base error behavior for batch page creation inside transaction.
-    type Level = ReptRead;
-
-    // Defines the adapter error exposed by this operation.
-    type Error = BaseError;
-    #[instrument(level = "info", skip_all)]
-    // Insert multiple new page entries and return their canonicalized infos.
-    async fn step(
-        &self,
-        context: &mut RdbContext<L>,
-        oper: &CreatePages<'_>,
-    ) -> BaseRest<Vec<PageInfo>> {
-        create_batch(context.conn(), oper.entries).await
     }
 }
 

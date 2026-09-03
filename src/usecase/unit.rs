@@ -156,7 +156,7 @@ where
         phrase,
     } = instr;
 
-    let phrase = UnitComplex::normalize_search_phrase(&phrase)?;
+    let phrase = UnitComplex::normalize_search_phrase(phrase)?;
 
     let access_info = UnitAccessLoader::load_access_info_from_chapter::<C, R>(
         repo,
@@ -207,9 +207,14 @@ where
                 });
             }
 
-            let unit_infos = ListUnitInfosInChapterOrder { ids: &search_ids }
-                .step_on(repo, context)
-                .await?;
+            let search_id_refs =
+                search_ids.iter().map(String::as_str).collect::<Vec<_>>();
+
+            let unit_infos = ListUnitInfosInChapterOrder {
+                ids: &search_id_refs,
+            }
+            .step_on(repo, context)
+            .await?;
 
             accept(unit_infos.into_iter().map(UnitInfoView::from).collect())
         })

@@ -164,3 +164,28 @@ async fn non_raw_provider_cannot_mark_page_image_uploaded() {
             .is_avail
     );
 }
+
+#[tokio::test]
+async fn tombstoned_chapter_cannot_mark_page_image_uploaded() {
+    let mock = Mock::new();
+
+    seed_scope(&mock);
+
+    mock.state
+        .lock()
+        .unwrap()
+        .deleted_chapter_ids
+        .insert("chapter-1".into());
+
+    let error = mark(&mock, 3).await.err().unwrap();
+
+    assert_expected_variant(error, ExpectedVariant::Args);
+
+    assert!(
+        !mock.snapshot().objs["page_image"]["page-1"]
+            .meta
+            .as_ref()
+            .unwrap()
+            .is_avail
+    );
+}

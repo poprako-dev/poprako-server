@@ -58,6 +58,10 @@ impl<'a> Run<UpdateComic<'a>> for Mock {
         //
         let mut state = self.state.lock().unwrap();
 
+        if state.deleted_comic_ids.contains(&oper.update.id) {
+            return Err(expected("error-comic-not-found"));
+        }
+
         let comic = state
             .comics
             .iter_mut()

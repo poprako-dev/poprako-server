@@ -28,7 +28,9 @@ pub fn get_chapter_by_id(
     let mut chapter_info = state
         .chapters
         .iter()
-        .find(|chapter_info| chapter_info.id == id)
+        .find(|chapter_info| {
+            chapter_info.id == id && !state.deleted_chapter_ids.contains(id)
+        })
         .cloned()
         .ok_or_else(|| expected("error-chapter-not-found"))?;
 
@@ -44,6 +46,9 @@ pub fn list_infos(state: &MockState, comic_id: &str) -> Vec<ChapterInfo> {
         .chapters
         .iter()
         .filter(|chapter_info| chapter_info.comic_id == comic_id)
+        .filter(|chapter_info| {
+            !state.deleted_chapter_ids.contains(&chapter_info.id)
+        })
         .cloned()
         .collect::<Vec<_>>();
 

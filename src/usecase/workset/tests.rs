@@ -6,31 +6,30 @@
 // list_infos(list_infos)(positive): empty contents should return an empty list after membership.
 // update_info(update_info)(positive): existing workset should update name and description.
 // update_info(update_info)(negative): missing workset should propagate an argument error.
-// delete(delete)(positive): deleting a workset with covered comics should enqueue cover deletions.
-// delete(delete)(positive): deleting more than one comic batch should enqueue every cover deletion.
-// delete(delete)(positive): direct repo delete should not create prom records.
+// delete(delete)(positive): deleting a workset should tombstone its whole hierarchy atomically.
+// delete(delete)(positive): marking a large workset should not create object tasks eagerly.
 // delete(delete)(negative): missing workset should rollback state.
 
 use super::*;
 
 use poprako_obj_dept::key::ObjKey;
 use poprako_obj_dept::model::meta::ObjMeta;
-use poprako_obj_dept::model::task::ObjTask;
-use poprako_orchestra::{Nucl as _, OperStep as _};
 use time::OffsetDateTime;
 
 use crate::data::instr::workset::{
     CreateWorksetInstr, ListWorksetInfosInstr, UpdateWorksetInfoInstr,
 };
+use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::proj::member::MemberInfo;
 use crate::model::read::proj::workset::WorksetInfo;
 use crate::model::shared::user::UserToken;
-use crate::part::repo::oper::workset::DeleteWorkset;
 use crate::part_impl::repo::mock_impl::{Mock, MockObjRecord};
-use crate::result::{ExpectedVariant, accept};
+use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
 use crate::test_util::fixture::team;
+use crate::usecase::subtree_delete::sweep_once;
+use crate::value::chapter::mask::StageMask;
 use crate::value::role::{RoleField, RoleMask};
 
 fn workset(id: &str, team_id: &str, index: usize) -> WorksetInfo {
@@ -115,6 +114,28 @@ fn comic(id: &str, workset_id: &str, index: usize) -> ComicInfo {
     }
 }
 
+fn chapter(id: &str, comic_id: &str) -> ChapterInfo {
+    let time = OffsetDateTime::now_utc();
+
+    ChapterInfo {
+        id: id.into(),
+        comic_id: comic_id.into(),
+        comic: None,
+        is_pinned: false,
+        index: 0,
+        subtitle: "chapter".into(),
+        page_count: 0,
+        total_unit_count: 0,
+        translated_unit_count: 0,
+        proofread_unit_count: 0,
+        stages: StageMask::try_from(0u32).unwrap(),
+        creator_id: "user-1".into(),
+        creator: None,
+        created_at: time,
+        updated_at: time,
+    }
+}
+
 fn seed_comic_cover(mock: &Mock, comic_id: &str) -> ObjKey {
     let key = ObjKey {
         id: comic_id.into(),
@@ -144,19 +165,6 @@ fn seed_comic_cover(mock: &Mock, comic_id: &str) -> ObjKey {
         );
 
     key
-}
-
-fn count_delete_tasks(
-    tasks: &[(&'static str, ObjTask)],
-    expected_key: &ObjKey,
-) -> usize {
-    tasks
-        .iter()
-        .filter(|(topic, task)| {
-            *topic == "comic_cover"
-                && matches!(task, ObjTask::Delete { key } if key == expected_key)
-        })
-        .count()
 }
 
 #[tokio::test]
@@ -341,7 +349,65 @@ async fn update_info_propagates_missing_workset() {
 }
 
 #[tokio::test]
-async fn delete_removes_workset_and_enqueues_child_cover_deletes() {
+async fn delete_marks_workset_hierarchy_without_eager_object_deletes() {
+    let mock = Mock::new();
+
+    mock.seed_workset(workset_with_comic_count("workset-1", "team-1", 0, 2));
+    mock.seed_member(admin_member("user-1", "team-1"));
+    mock.seed_comic(comic("comic-1", "workset-1", 0));
+    mock.seed_comic(comic("comic-2", "workset-1", 1));
+    mock.seed_chapter(chapter("chapter-1", "comic-1"));
+
+    seed_comic_cover(&mock, "comic-1");
+    seed_comic_cover(&mock, "comic-2");
+
+    delete((&mock, &mock), token("user-1"), "workset-1".into())
+        .await
+        .unwrap();
+
+    let snapshot = mock.snapshot();
+
+    assert_eq!(snapshot.worksets.len(), 1);
+    assert_eq!(snapshot.comics.len(), 2);
+    assert!(snapshot.deleted_workset_ids.contains("workset-1"));
+    assert!(snapshot.deleted_comic_ids.contains("comic-1"));
+    assert!(snapshot.deleted_comic_ids.contains("comic-2"));
+    assert!(snapshot.deleted_chapter_ids.contains("chapter-1"));
+    assert_eq!(snapshot.objs["comic_cover"].len(), 2);
+    assert!(snapshot.obj_tasks.is_empty());
+}
+
+#[tokio::test]
+async fn delete_marks_large_workset_without_eager_object_work() {
+    let mock = Mock::new();
+
+    mock.seed_workset(workset_with_comic_count("workset-1", "team-1", 0, 513));
+    mock.seed_member(admin_member("user-1", "team-1"));
+
+    for comic_index in 0..=512 {
+        let comic_id = format!("comic-{comic_index}");
+
+        mock.seed_comic(comic(&comic_id, "workset-1", comic_index));
+
+        seed_comic_cover(&mock, &comic_id);
+    }
+
+    delete((&mock, &mock), token("user-1"), "workset-1".into())
+        .await
+        .unwrap();
+
+    let snapshot = mock.snapshot();
+
+    assert_eq!(snapshot.worksets.len(), 1);
+    assert_eq!(snapshot.comics.len(), 513);
+    assert!(snapshot.deleted_workset_ids.contains("workset-1"));
+    assert_eq!(snapshot.deleted_comic_ids.len(), 513);
+    assert_eq!(snapshot.objs["comic_cover"].len(), 513);
+    assert!(snapshot.obj_tasks.is_empty());
+}
+
+#[tokio::test]
+async fn background_sweep_deletes_comics_before_workset() {
     let mock = Mock::new();
 
     mock.seed_workset(workset_with_comic_count("workset-1", "team-1", 0, 2));
@@ -349,54 +415,30 @@ async fn delete_removes_workset_and_enqueues_child_cover_deletes() {
     mock.seed_comic(comic("comic-1", "workset-1", 0));
     mock.seed_comic(comic("comic-2", "workset-1", 1));
 
-    let first_key = seed_comic_cover(&mock, "comic-1");
-    let second_key = seed_comic_cover(&mock, "comic-2");
+    seed_comic_cover(&mock, "comic-1");
+    seed_comic_cover(&mock, "comic-2");
 
-    delete((&mock, &mock, &mock), token("user-1"), "workset-1".into())
+    delete((&mock, &mock), token("user-1"), "workset-1".into())
         .await
         .unwrap();
+
+    assert!(sweep_once((&mock, &mock, &mock)).await.unwrap());
+    assert!(sweep_once((&mock, &mock, &mock)).await.unwrap());
+
+    let before_parent_sweep = mock.snapshot();
+
+    assert!(before_parent_sweep.comics.is_empty());
+    assert_eq!(before_parent_sweep.worksets.len(), 1);
+    assert_eq!(before_parent_sweep.obj_tasks.len(), 2);
+
+    assert!(sweep_once((&mock, &mock, &mock)).await.unwrap());
+    assert!(!sweep_once((&mock, &mock, &mock)).await.unwrap());
 
     let snapshot = mock.snapshot();
 
     assert!(snapshot.worksets.is_empty());
-    assert!(snapshot.comics.is_empty());
-    assert!(snapshot.objs["comic_cover"].is_empty());
-    assert_eq!(snapshot.obj_tasks.len(), 2);
-    assert_eq!(count_delete_tasks(&snapshot.obj_tasks, &first_key), 1);
-    assert_eq!(count_delete_tasks(&snapshot.obj_tasks, &second_key), 1);
-}
-
-#[tokio::test]
-async fn delete_enqueues_cover_deletes_across_multiple_comic_batches() {
-    let mock = Mock::new();
-
-    mock.seed_workset(workset_with_comic_count("workset-1", "team-1", 0, 51));
-    mock.seed_member(admin_member("user-1", "team-1"));
-
-    let mut cover_keys = Vec::new();
-
-    for comic_index in 0..=50 {
-        let comic_id = format!("comic-{comic_index}");
-
-        mock.seed_comic(comic(&comic_id, "workset-1", comic_index));
-
-        cover_keys.push(seed_comic_cover(&mock, &comic_id));
-    }
-
-    delete((&mock, &mock, &mock), token("user-1"), "workset-1".into())
-        .await
-        .unwrap();
-
-    let snapshot = mock.snapshot();
-
-    assert!(snapshot.worksets.is_empty());
-    assert!(snapshot.comics.is_empty());
-    assert!(snapshot.objs["comic_cover"].is_empty());
-    assert_eq!(snapshot.obj_tasks.len(), 51);
-
-    for cover_key in cover_keys {
-        assert_eq!(count_delete_tasks(&snapshot.obj_tasks, &cover_key), 1);
-    }
+    assert!(snapshot.deleted_workset_ids.is_empty());
+    assert!(snapshot.deleted_comic_ids.is_empty());
 }
 
 #[tokio::test]
@@ -409,7 +451,7 @@ async fn delete_rolls_back_missing_workset() {
 
     let cover_key = seed_comic_cover(&mock, "comic-1");
 
-    let err = delete((&mock, &mock, &mock), token("user-1"), "missing".into())
+    let err = delete((&mock, &mock), token("user-1"), "missing".into())
         .await
         .err()
         .unwrap();
@@ -426,38 +468,6 @@ async fn delete_rolls_back_missing_workset() {
             .unwrap()
             .key,
         cover_key
-    );
-    assert!(snapshot.obj_tasks.is_empty());
-}
-
-#[tokio::test]
-async fn direct_repo_delete_does_not_mutate_obj_dept_state() {
-    let mock = Mock::new();
-
-    mock.seed_workset(workset("workset-1", "team-1", 0));
-
-    let unrelated_key = seed_comic_cover(&mock, "comic-1");
-
-    mock.coord(async |context| {
-        DeleteWorkset { id: "workset-1" }
-            .step_on(&mock, context)
-            .await?;
-
-        accept(())
-    })
-    .await
-    .unwrap();
-
-    let snapshot = mock.snapshot();
-
-    assert!(snapshot.worksets.is_empty());
-    assert_eq!(
-        snapshot.objs["comic_cover"]["comic-1"]
-            .meta
-            .as_ref()
-            .unwrap()
-            .key,
-        unrelated_key
     );
     assert!(snapshot.obj_tasks.is_empty());
 }

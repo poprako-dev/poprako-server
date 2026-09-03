@@ -80,6 +80,35 @@ async fn delete_removes_user_credentials_members_and_enqueues_avatar_delete() {
 }
 
 #[tokio::test]
+async fn delete_removes_memberships_from_tombstoned_teams() {
+    let mock = Mock::new();
+
+    seed_user_with_avatar(&mock, true);
+
+    mock.seed_member(member("member-1", "user-1", "Nick", "team-1"));
+
+    mock.state
+        .lock()
+        .unwrap()
+        .deleted_team_ids
+        .insert("team-1".into());
+
+    crate::usecase::user::delete::delete::<_, MockContext, _, _>(
+        (&mock, &mock, &mock),
+        token("user-1"),
+        "user-1".into(),
+    )
+    .await
+    .unwrap();
+
+    let snapshot = mock.snapshot();
+
+    assert!(snapshot.users.is_empty());
+    assert!(snapshot.credentials.is_empty());
+    assert!(snapshot.members.is_empty());
+}
+
+#[tokio::test]
 async fn delete_rejects_last_admin_membership_and_rolls_back_every_team() {
     //
     let mock = Mock::new();

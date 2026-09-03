@@ -2,7 +2,7 @@ use poprako_orchestra::Oper;
 
 use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::unit::UnitCountMetrics;
-use crate::model::write::page::{PageEntry, PageManifestEntry};
+use crate::model::write::page::PageManifestEntry;
 
 /// Retrieves a single page's info by ID.
 #[derive(Oper)]
@@ -33,15 +33,7 @@ pub struct ListEdittedDiffPageIds<'a> {
 #[oper(output = Vec<PageInfo>)]
 pub struct ListFirstPageInfos<'a> {
     /// The chapter IDs to query.
-    pub chapter_ids: &'a [String],
-}
-
-/// Creates multiple pages from the given entries.
-#[derive(Oper)]
-#[oper(output = Vec<PageInfo>)]
-pub struct CreatePages<'a> {
-    /// The page entries to insert.
-    pub entries: &'a [PageEntry],
+    pub chapter_ids: &'a [&'a str],
 }
 
 /// Retrieves a single page's info by ID with excluded fields omitted.

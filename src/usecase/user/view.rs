@@ -22,8 +22,9 @@ where
     C: Context,
     O: ObjDeptView<UserAvatar, C> + Sync,
 {
-    let avatar_urls =
-        avatar_urls::<C, O>(obj_dept, std::slice::from_ref(&model.id)).await?;
+    let user_ids = [model.id.as_str()];
+
+    let avatar_urls = avatar_urls::<C, O>(obj_dept, &user_ids).await?;
 
     let urls = avatar_urls.get(&model.id);
 
@@ -48,7 +49,7 @@ pub fn user_info_view_from_urls(
 /// Resolves current avatar URLs from one metadata query for the supplied user IDs.
 pub async fn avatar_urls<C, O>(
     obj_dept: &O,
-    user_ids: &[String],
+    user_ids: &[&str],
 ) -> BaseRest<HashMap<String, ObjUrls>>
 where
     C: Context,

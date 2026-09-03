@@ -82,14 +82,6 @@ pub struct LockTeam<'a> {
     pub id: &'a str,
 }
 
-/// Deletes a team.
-#[derive(Oper)]
-#[oper(output = ())]
-pub struct DeleteTeam<'a> {
-    /// The team id.
-    pub id: &'a str,
-}
-
 /// Allocates a sequential index for a new workset under this team.
 #[derive(Oper)]
 #[oper(output = usize)]

@@ -82,13 +82,13 @@ fn search_chapter_ids(
 // Loads selected Unit infos in stable Chapter Page and linked-list order.
 fn list_infos_in_chapter_order(
     state: &MockState,
-    ids: &[String],
+    ids: &[&str],
 ) -> BaseRest<Vec<UnitInfo>> {
     //
     let page_ids = state
         .units
         .iter()
-        .filter(|unit_info| ids.contains(&unit_info.id))
+        .filter(|unit_info| ids.contains(&unit_info.id.as_str()))
         .map(|unit_info| unit_info.page_id.as_str())
         .collect::<HashSet<_>>();
 
@@ -108,7 +108,9 @@ fn list_infos_in_chapter_order(
             list_infos(state, &page_info.id)?
                 .into_iter()
                 .filter(|unit_info| {
-                    unit_info.hidden_at.is_none() && ids.contains(&unit_info.id)
+                    //
+                    unit_info.hidden_at.is_none()
+                        && ids.contains(&unit_info.id.as_str())
                 }),
         );
     }

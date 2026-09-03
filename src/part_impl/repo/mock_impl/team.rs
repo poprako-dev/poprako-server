@@ -12,8 +12,8 @@ use crate::model::read::proj::team::TeamInfo;
 use crate::model::write::team::TeamEntry;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::team::{
-    AllocTeamWorksetIndex, CreateTeam, DeleteTeam, GetTeamInfo,
-    GetTeamInfoExcluded, ListTeamInfos, LockTeam, UpdateTeam,
+    AllocTeamWorksetIndex, CreateTeam, GetTeamInfo, GetTeamInfoExcluded,
+    ListTeamInfos, LockTeam, UpdateTeam,
 };
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
@@ -50,7 +50,9 @@ fn get_team_info(state: &MockState, id: &str) -> BaseRest<TeamInfo> {
     state
         .teams
         .iter()
-        .find(|team_info| team_info.id == id)
+        .find(|team_info| {
+            team_info.id == id && !state.deleted_team_ids.contains(id)
+        })
         .cloned()
         .ok_or_else(|| expected("error-team-not-found"))
 }
@@ -70,16 +72,22 @@ fn list_team_infos(
             .iter()
             .filter(|team_info| {
                 //
-                state.members.iter().any(|member_info| {
-                    //
-                    member_info.user_id == user_id
-                        && member_info.team_id == team_info.id
-                })
+                !state.deleted_team_ids.contains(&team_info.id)
+                    && state.members.iter().any(|member_info| {
+                        //
+                        member_info.user_id == user_id
+                            && member_info.team_id == team_info.id
+                    })
             })
             .cloned()
-            .collect(),
+            .collect::<Vec<_>>(),
 
-        None => state.teams.clone(),
+        None => state
+            .teams
+            .iter()
+            .filter(|team_info| !state.deleted_team_ids.contains(&team_info.id))
+            .cloned()
+            .collect::<Vec<_>>(),
     };
 
     team_infos.sort_by_key(|team_info| Reverse(team_info.created_at));
@@ -107,6 +115,10 @@ fn update_team(state: &mut MockState, oper: &UpdateTeam<'_>) -> BaseRest<()> {
     // Internal implementation detail.
     let UpdateTeam::Info { repl } = oper;
 
+    if state.deleted_team_ids.contains(&repl.id) {
+        return Err(expected("error-team-not-found"));
+    }
+
     let team_info = state
         .teams
         .iter_mut()
@@ -118,77 +130,6 @@ fn update_team(state: &mut MockState, oper: &UpdateTeam<'_>) -> BaseRest<()> {
     team_info.description = repl.description.clone();
 
     team_info.updated_at = now();
-
-    accept(())
-}
-
-// Internal implementation of `delete_team`.
-fn delete_team(state: &mut MockState, id: &str) -> BaseRest<()> {
-    //
-    // Internal implementation detail.
-    // Internal implementation detail.
-    let position = state
-        .teams
-        .iter()
-        .position(|team_info| team_info.id == id)
-        .ok_or_else(|| expected("error-team-not-found"))?;
-
-    let deleted_team_id = state.teams[position].id.clone();
-
-    let deleted_workset_ids = state
-        .worksets
-        .iter()
-        .filter(|workset_info| workset_info.team_id == deleted_team_id)
-        .map(|workset_info| workset_info.id.clone())
-        .collect::<Vec<_>>();
-
-    let deleted_comic_ids = state
-        .comics
-        .iter()
-        .filter(|comic_info| {
-            deleted_workset_ids.contains(&comic_info.workset_id)
-        })
-        .map(|comic_info| comic_info.id.clone())
-        .collect::<Vec<_>>();
-
-    let deleted_chapter_ids = state
-        .chapters
-        .iter()
-        .filter(|chapter_info| {
-            deleted_comic_ids.contains(&chapter_info.comic_id)
-        })
-        .map(|chapter_info| chapter_info.id.clone())
-        .collect::<Vec<_>>();
-
-    state.teams.remove(position);
-
-    state
-        .worksets
-        .retain(|workset_info| workset_info.team_id != deleted_team_id);
-
-    state
-        .members
-        .retain(|member_info| member_info.team_id != deleted_team_id);
-
-    state.member_invitations.retain(|member_invitation_info| {
-        member_invitation_info.team_id != deleted_team_id
-    });
-
-    state.comics.retain(|comic_info| {
-        !deleted_workset_ids.contains(&comic_info.workset_id)
-    });
-
-    state.chapters.retain(|chapter_info| {
-        !deleted_comic_ids.contains(&chapter_info.comic_id)
-    });
-
-    state.pages.retain(|page_info| {
-        !deleted_chapter_ids.contains(&page_info.chapter_id)
-    });
-
-    state.assignments.retain(|assignment_info| {
-        !deleted_chapter_ids.contains(&assignment_info.chapter_id)
-    });
 
     accept(())
 }
@@ -353,24 +294,6 @@ impl<'a> Step<LockTeam<'a>, MockContext> for Mock {
     }
 }
 
-impl<'a> Step<DeleteTeam<'a>, MockContext> for Mock {
-    // Internal type alias for `Error`.
-    type Level = ReptRead;
-
-    // Defines the adapter error exposed by this operation.
-    type Error = BaseError;
-
-    #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
-    async fn step(
-        &self,
-        context: &mut MockContext,
-        oper: &DeleteTeam<'a>,
-    ) -> BaseRest<()> {
-        delete_team(&mut context.state, oper.id)
-    }
-}
-
 impl<'a> Step<AllocTeamWorksetIndex<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
     type Level = ReptRead;
@@ -389,6 +312,10 @@ impl<'a> Step<AllocTeamWorksetIndex<'a>, MockContext> for Mock {
         // Internal implementation detail.
         // Internal implementation detail.
         // verify the team exists
+        if context.state.deleted_team_ids.contains(oper.id) {
+            return Err(expected("error-team-not-found"));
+        }
+
         context
             .state
             .teams

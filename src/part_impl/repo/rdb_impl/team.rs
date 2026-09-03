@@ -17,15 +17,15 @@ use tracing::instrument;
 use crate::model::read::proj::team::TeamInfo;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::team::{
-    AllocTeamWorksetIndex, CreateTeam, DeleteTeam, GetTeamInfo,
-    GetTeamInfoExcluded, ListTeamInfos, LockTeam, UpdateTeam,
+    AllocTeamWorksetIndex, CreateTeam, GetTeamInfo, GetTeamInfoExcluded,
+    ListTeamInfos, LockTeam, UpdateTeam,
 };
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::team::coordination::{
     increment_workset_next_index, lock_team,
 };
 use crate::part_impl::repo::rdb_impl::team::info::{
-    create, delete, get_info_by_id, get_info_excluded, list_infos, update_info,
+    create, get_info_by_id, get_info_excluded, list_infos, update_info,
 };
 use crate::result::{BaseError, BaseRest};
 use crate::shared::RdbContext;
@@ -192,27 +192,6 @@ where
         oper: &LockTeam<'_>,
     ) -> BaseRest<()> {
         lock_team(context.conn(), oper.id).await
-    }
-}
-
-impl<L> Step<DeleteTeam<'_>, RdbContext<L>> for HybRepo
-where
-    L: Level + Send + AtLeast<ReptRead>,
-{
-    // Use the common base error for hard delete operations in transactions.
-    type Level = ReptRead;
-
-    // Defines the adapter error exposed by this operation.
-    type Error = BaseError;
-
-    #[instrument(level = "info", skip_all)]
-    // Remove a team row after the caller has coordinated any dependent effects.
-    async fn step(
-        &self,
-        context: &mut RdbContext<L>,
-        oper: &DeleteTeam<'_>,
-    ) -> BaseRest<()> {
-        delete(context.conn(), oper.id).await
     }
 }
 

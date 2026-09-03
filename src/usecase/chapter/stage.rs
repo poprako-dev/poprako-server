@@ -3,8 +3,8 @@
 use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
-use poprako_obj_dept::ObjDept;
-use poprako_obj_dept::oper::ClearObjs;
+use poprako_obj_dept::oper::{ClearObjs, ListObjMetas};
+use poprako_obj_dept::{ObjDept, ObjDeptView};
 use poprako_util::i18n::trl;
 
 use crate::complex::chapter::ChapterComplex;
@@ -28,7 +28,7 @@ use crate::part::repo::oper::assignment::{
     FindAssignmentInfo, ListAssignmentInfos,
 };
 use crate::part::repo::oper::chapter::{
-    GetChapterInfoExcluded, UpdateChapterStage,
+    CompleteChapterRawProvide, GetChapterInfoExcluded, UpdateChapterStage,
 };
 use crate::part::repo::oper::chapter_workflow_record::CreateChapterWorkflowRecords;
 use crate::part::repo::oper::comic::TouchComicLastActive;
@@ -39,6 +39,121 @@ use crate::value::chapter::stage::{Stage, StageOper, StagePhase};
 use crate::value::chapter_workflow_record::{
     ChapterWorkflowRecordOrigin, ChapterWorkflowRecordPayload,
 };
+
+/// Outcome of checking whether raw provisioning can advance.
+pub enum RawProvideAdvance {
+    //
+    /// One or more page objects are not available yet.
+    Pending,
+
+    /// The chapter already required no transition.
+    Unchanged,
+
+    /// Raw provisioning advanced and emitted its completion event.
+    Advanced,
+}
+
+/// Advances raw provisioning after every current page object is available.
+#[instrument(level = "info", skip(nucl, repo, obj_view, develop))]
+pub async fn try_advance_raw_provide<C, N, R, V, D>(
+    (nucl, repo, obj_view, develop): (&N, &R, &V, &D),
+    chapter_id: &str,
+    actor_user_id: Option<String>,
+) -> BaseRest<RawProvideAdvance>
+where
+    C: Context,
+    N: Nucl<Context = C, Error = BaseError> + Sync,
+    R: ChapterRepo<C>
+        + ChapterWorkflowRecordRepo<C>
+        + PageRepo<C>
+        + Send
+        + Sync,
+    V: ObjDeptView<PageImage, C> + Sync,
+    D: Develop + Sync,
+{
+    let is_advanced = nucl
+        .coord(async move |context| {
+            //
+            GetChapterInfoExcluded {
+                id: chapter_id,
+                incls: &[],
+            }
+            .step_on(repo, context)
+            .await?;
+
+            let page_infos =
+                ListPageInfos { chapter_id }.step_on(repo, context).await?;
+
+            let page_ids = page_infos
+                .iter()
+                .map(|page_info| page_info.id.as_str())
+                .collect::<Vec<_>>();
+
+            let obj_metas = ListObjMetas::<PageImage>::new(&page_ids)
+                .step_on(obj_view, context)
+                .await
+                .map_err(BaseError::from)?;
+
+            let are_images_uploaded = page_infos.iter().all(|page_info| {
+                //
+                obj_metas
+                    .get(&page_info.id)
+                    .is_some_and(|obj_meta| obj_meta.is_avail)
+            });
+
+            if !are_images_uploaded {
+                return accept(None);
+            }
+
+            let is_advanced = CompleteChapterRawProvide { id: chapter_id }
+                .step_on(repo, context)
+                .await?;
+
+            if is_advanced {
+                //
+                let workflow_record_entry = ChapterWorkflowRecordEntry::new(
+                    chapter_id,
+                    actor_user_id,
+                    ChapterWorkflowRecordPayload::StageTransitioned {
+                        stage: Stage::RawProvide,
+                        previous_phase: StagePhase::Pending,
+                        next_phase: StagePhase::Completed,
+                        origin: ChapterWorkflowRecordOrigin::RawProvideCheck,
+                    },
+                );
+
+                CreateChapterWorkflowRecords {
+                    entries: std::slice::from_ref(&workflow_record_entry),
+                }
+                .step_on(repo, context)
+                .await?;
+            }
+
+            accept(Some(is_advanced))
+        })
+        .await?;
+
+    match is_advanced {
+        //
+        Some(true) => {
+            //
+            Event::ChapterWorkflowCompleted {
+                payload: ChapterWorkflowCompletedEvent {
+                    chapter_id: chapter_id.to_string(),
+                    completed_stage: Stage::RawProvide,
+                },
+            }
+            .develop_on(develop)
+            .await;
+
+            accept(RawProvideAdvance::Advanced)
+        }
+
+        Some(false) => accept(RawProvideAdvance::Unchanged),
+
+        None => accept(RawProvideAdvance::Pending),
+    }
+}
 
 /// Updates one chapter workflow stage and records the real phase transition.
 #[instrument(level = "info", skip(nucl, repo, obj_dept, develop, token), fields(actor_user_id = %token.user_id))]

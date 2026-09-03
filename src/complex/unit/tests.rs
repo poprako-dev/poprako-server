@@ -157,16 +157,21 @@ fn normalize_orders_create_prior_to_save_for_the_same_unit() {
 #[test]
 fn search_phrase_trims_unicode_and_accepts_one_character() {
     //
-    let phrase = UnitComplex::normalize_search_phrase(" 译文甲 ").unwrap();
+    let phrase =
+        UnitComplex::normalize_search_phrase(" 译文甲 ".into()).unwrap();
 
     assert_eq!(phrase, "译文甲");
 
-    assert_eq!(UnitComplex::normalize_search_phrase(" 日 ").unwrap(), "日");
+    assert_eq!(
+        UnitComplex::normalize_search_phrase(" 日 ".into()).unwrap(),
+        "日",
+    );
 
-    assert_args(UnitComplex::normalize_search_phrase("").unwrap_err());
+    assert_args(UnitComplex::normalize_search_phrase("".into()).unwrap_err());
 
     assert_args(
-        UnitComplex::normalize_search_phrase(" \u{2003}\n ").unwrap_err(),
+        UnitComplex::normalize_search_phrase(" \u{2003}\n ".into())
+            .unwrap_err(),
     );
 }
 

@@ -12,3 +12,7 @@ CREATE INDEX IF NOT EXISTS "idx_comic_composed_title_trgm"
 
 CREATE INDEX IF NOT EXISTS "idx_comic_workset_last_active"
     ON "t_comic" ("f_workset_id", "f_last_active_at" DESC, "f_index" ASC);
+
+CREATE INDEX IF NOT EXISTS "i_comic_pending_sweep"
+    ON "t_comic" ("f_deleted_at", "f_id")
+    WHERE "f_deleted_at" IS NOT NULL;

@@ -22,12 +22,31 @@ use crate::part_impl::repo::rdb_impl::incl;
 use crate::part_impl::repo::rdb_impl::numeric::usize_from_i32;
 use crate::part_impl::repo::rdb_impl::schema::t_comic::dsl::{
     f_archived_at, f_chapter_count, f_chapter_next_index, f_composed_title,
-    f_id, f_index, f_last_active_at, f_workset_id, t_comic,
+    f_deleted_at, f_id, f_index, f_last_active_at, f_workset_id, t_comic,
 };
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::result::diesel;
 use crate::value::comic::{ComicInclOpt, ComicStatus};
 use crate::value::index::user_index_to_stored_index;
+
+/// Build the expected error for a missing comic.
+pub fn missing_comic(id: &str, operation: &str) -> BaseError {
+    //
+    let err_message = trl("error-comic-not-found");
+
+    tracing::warn!(
+        err_variant = ?ExpectedVariant::Args,
+        err_message = %err_message,
+        comic_id = %id,
+        operation,
+        "expected error: comic not found",
+    );
+
+    BaseError::Expected {
+        variant: ExpectedVariant::Args,
+        message: err_message,
+    }
+}
 
 /// Queries a single comic row by ID and populates its includes.
 #[instrument(level = "info", skip_all)]
@@ -39,6 +58,7 @@ pub async fn get_info_by_id(
     //
     let row = t_comic
         .filter(f_id.eq(id))
+        .filter(f_deleted_at.is_null())
         .select(ComicInfoRow::as_select())
         .get_result::<ComicInfoRow>(conn)
         .await
@@ -92,6 +112,7 @@ pub async fn list_infos(
 
     let mut query = t_comic
         .filter(f_workset_id.eq(spec.workset_id.as_str()))
+        .filter(f_deleted_at.is_null())
         .select(ComicInfoRow::as_select())
         .into_boxed();
 
@@ -166,11 +187,19 @@ pub async fn update_info(
         .description(update.description.as_deref())
         .composed_title(composed_title);
 
-    diesel::update(t_comic.filter(f_id.eq(update.id.as_str())))
-        .set(&aspect)
-        .execute(conn)
-        .await
-        .map_err(diesel)?;
+    let updated_count = diesel::update(
+        t_comic
+            .filter(f_id.eq(update.id.as_str()))
+            .filter(f_deleted_at.is_null()),
+    )
+    .set(&aspect)
+    .execute(conn)
+    .await
+    .map_err(diesel)?;
+
+    if updated_count == 0 {
+        return Err(missing_comic(&update.id, "update comic info"));
+    }
 
     accept(())
 }
@@ -204,6 +233,7 @@ pub async fn get_info_excluded(
     //
     let row = t_comic
         .filter(f_id.eq(id))
+        .filter(f_deleted_at.is_null())
         .select(ComicInfoRow::as_select())
         .for_update()
         .get_result::<ComicInfoRow>(conn)
@@ -240,119 +270,6 @@ pub async fn get_info_excluded(
     accept(comic_info)
 }
 
-/// Lists and locks the comic rows selected by a list spec.
-#[instrument(level = "info", skip_all)]
-pub async fn list_infos_excluded(
-    conn: &mut RdbConn,
-    spec: &ComicListSpec,
-) -> BaseRest<Vec<ComicInfo>> {
-    // Builds the paginated, locked row query for the list spec.
-    macro_rules! load_rows {
-        ($query:expr) => {
-            $query
-                .select(ComicInfoRow::as_select())
-                .order_by((f_last_active_at.desc(), f_index.asc()))
-                .offset(i64::from(spec.offset))
-                .limit(i64::from(spec.limit))
-                .for_update()
-                .load::<ComicInfoRow>(conn)
-                .await
-                .map_err(diesel)?
-        };
-    }
-
-    let stage_comic_ids = match spec.stages {
-        //
-        Some(stage_mask) => {
-            list_matching_stage_comic_ids(conn, stage_mask).await?
-        }
-
-        None => None,
-    };
-
-    let rows = match (spec.fuzzy_title.as_deref(), stage_comic_ids) {
-        //
-        (None, None) => load_rows!(
-            t_comic.filter(f_workset_id.eq(spec.workset_id.as_str()))
-        ),
-
-        (None, Some(comic_ids)) => load_rows!(
-            t_comic
-                .filter(f_workset_id.eq(spec.workset_id.as_str()))
-                .filter(f_id.eq_any(comic_ids))
-        ),
-
-        (Some(fuzzy_title), stage_comic_ids) => {
-            //
-            let escaped = escape_ilike_pattern(fuzzy_title);
-
-            let pattern = format!("%{}%", escaped);
-
-            match (
-                stored_index_from_numeric_fuzzy(fuzzy_title),
-                stage_comic_ids,
-            ) {
-                //
-                (Some(index), None) => load_rows!(
-                    t_comic
-                        .filter(f_workset_id.eq(spec.workset_id.as_str()),)
-                        .filter(
-                            f_composed_title
-                                .ilike(pattern)
-                                .or(f_index.eq(index)),
-                        )
-                ),
-
-                (Some(index), Some(comic_ids)) => load_rows!(
-                    t_comic
-                        .filter(f_workset_id.eq(spec.workset_id.as_str()),)
-                        .filter(
-                            f_composed_title
-                                .ilike(pattern)
-                                .or(f_index.eq(index)),
-                        )
-                        .filter(f_id.eq_any(comic_ids))
-                ),
-
-                (None, None) => load_rows!(
-                    t_comic
-                        .filter(f_workset_id.eq(spec.workset_id.as_str()),)
-                        .filter(f_composed_title.ilike(pattern))
-                ),
-
-                (None, Some(comic_ids)) => load_rows!(
-                    t_comic
-                        .filter(f_workset_id.eq(spec.workset_id.as_str()),)
-                        .filter(f_composed_title.ilike(pattern))
-                        .filter(f_id.eq_any(comic_ids))
-                ),
-            }
-        }
-    };
-
-    let mut comic_infos = rows
-        .into_iter()
-        .map(TryInto::try_into)
-        .collect::<BaseRest<Vec<_>>>()?;
-
-    incl::comic::populate_comic_incls(conn, &mut comic_infos, &spec.incl_opt)
-        .await?;
-
-    accept(comic_infos)
-}
-
-/// Deletes a single comic row by ID.
-#[instrument(level = "info", skip_all)]
-pub async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
-    //
-    diesel::delete(t_comic.filter(f_id.eq(id)))
-        .execute(conn)
-        .await
-        .map_err(diesel)?;
-
-    accept(())
-}
-
 /// Atomically increments and returns the previous `chapter_next_index` value.
 #[instrument(level = "info", skip_all)]
 pub async fn incr_chapter_next_index(
@@ -360,12 +277,19 @@ pub async fn incr_chapter_next_index(
     id: &str,
 ) -> BaseRest<usize> {
     //
-    let prev = diesel::update(t_comic.filter(f_id.eq(id)))
-        .set(f_chapter_next_index.eq(f_chapter_next_index + 1))
-        .returning(f_chapter_next_index - 1)
-        .get_result::<i32>(conn)
-        .await
-        .map_err(diesel)?;
+    let prev = diesel::update(
+        t_comic.filter(f_id.eq(id)).filter(f_deleted_at.is_null()),
+    )
+    .set(f_chapter_next_index.eq(f_chapter_next_index + 1))
+    .returning(f_chapter_next_index - 1)
+    .get_result::<i32>(conn)
+    .await
+    .optional()
+    .map_err(diesel)?;
+
+    let Some(prev) = prev else {
+        return Err(missing_comic(id, "allocate comic chapter index"));
+    };
 
     accept(usize_from_i32(prev, "t_comic.f_chapter_next_index")?)
 }
@@ -378,11 +302,17 @@ pub async fn update_chapter_count(
     delta: i32,
 ) -> BaseRest<()> {
     //
-    diesel::update(t_comic.filter(f_id.eq(id)))
-        .set(f_chapter_count.eq(f_chapter_count + delta))
-        .execute(conn)
-        .await
-        .map_err(diesel)?;
+    let updated_count = diesel::update(
+        t_comic.filter(f_id.eq(id)).filter(f_deleted_at.is_null()),
+    )
+    .set(f_chapter_count.eq(f_chapter_count + delta))
+    .execute(conn)
+    .await
+    .map_err(diesel)?;
+
+    if updated_count == 0 {
+        return Err(missing_comic(id, "update comic chapter count"));
+    }
 
     accept(())
 }
@@ -395,11 +325,17 @@ pub async fn touch_last_active(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
 
     let aspect = ComicAspectRow::new(now).last_active_at(now);
 
-    diesel::update(t_comic.filter(f_id.eq(id)))
-        .set(&aspect)
-        .execute(conn)
-        .await
-        .map_err(diesel)?;
+    let updated_count = diesel::update(
+        t_comic.filter(f_id.eq(id)).filter(f_deleted_at.is_null()),
+    )
+    .set(&aspect)
+    .execute(conn)
+    .await
+    .map_err(diesel)?;
+
+    if updated_count == 0 {
+        return Err(missing_comic(id, "touch comic last active"));
+    }
 
     accept(())
 }

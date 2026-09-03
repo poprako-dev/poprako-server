@@ -374,6 +374,50 @@ async fn archive_rejects_non_admin_without_writing_or_deleting() {
 }
 
 #[tokio::test]
+async fn archive_rejects_tombstoned_comic_without_writing_or_deleting() {
+    let mock = Mock::new();
+
+    seed_archive_scope(&mock, RoleMask::from(RoleField::ADMIN));
+
+    let (cover_key, page_key) = seed_archive_objs(&mock);
+
+    mock.state
+        .lock()
+        .unwrap()
+        .deleted_comic_ids
+        .insert("comic-1".into());
+
+    let archive_result =
+        archive((&mock, &mock, &mock), token(), "comic-1".into()).await;
+
+    assert_expected_variant(archive_result.unwrap_err(), ExpectedVariant::Args);
+
+    let snapshot = mock.snapshot();
+
+    assert!(snapshot.comic_archives.is_empty());
+    assert_eq!(snapshot.chapters.len(), 1);
+    assert_eq!(snapshot.pages.len(), 1);
+
+    assert_eq!(
+        snapshot.objs["comic_cover"]["comic-1"]
+            .meta
+            .as_ref()
+            .unwrap()
+            .key,
+        cover_key
+    );
+    assert_eq!(
+        snapshot.objs["page_image"]["page-1"]
+            .meta
+            .as_ref()
+            .unwrap()
+            .key,
+        page_key
+    );
+    assert!(snapshot.obj_tasks.is_empty());
+}
+
+#[tokio::test]
 async fn archive_rolls_back_when_archive_persistence_fails() {
     //
     let mock = Mock::new().with_archive_commit_failure();

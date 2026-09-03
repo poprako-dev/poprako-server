@@ -4,7 +4,7 @@
 mod orchestra;
 
 use crate::model::read::proj::page::PageInfo;
-use crate::model::write::page::{PageEntry, PageManifestEntry};
+use crate::model::write::page::PageManifestEntry;
 use crate::part_impl::repo::mock_impl::{MockState, expected, now};
 use crate::result::BaseRest;
 
@@ -61,16 +61,17 @@ fn get_page_by_id(state: &MockState, id: &str) -> BaseRest<PageInfo> {
     state
         .pages
         .iter()
-        .find(|page_info| page_info.id == id)
+        .find(|page_info| {
+            //
+            page_info.id == id
+                && !state.deleted_chapter_ids.contains(&page_info.chapter_id)
+        })
         .cloned()
         .ok_or_else(|| expected("error-page-not-found"))
 }
 
 // Internal implementation of `list_first_pages`.
-fn list_first_pages(
-    state: &MockState,
-    chapter_ids: &[String],
-) -> Vec<PageInfo> {
+fn list_first_pages(state: &MockState, chapter_ids: &[&str]) -> Vec<PageInfo> {
     //
     chapter_ids
         .iter()
@@ -78,25 +79,6 @@ fn list_first_pages(
             list_infos(state, chapter_id).into_iter().next()
         })
         .collect()
-}
-
-// Internal implementation of `page_from_entry`.
-fn page_from_entry(entry: &PageEntry) -> PageInfo {
-    //
-    // Internal implementation detail.
-    // Internal implementation detail.
-    let time = now();
-
-    PageInfo {
-        id: entry.id.clone(),
-        chapter_id: entry.chapter_id.clone(),
-        index: entry.index,
-        total_unit_count: 0,
-        translated_unit_count: 0,
-        proofread_unit_count: 0,
-        created_at: time,
-        updated_at: time,
-    }
 }
 
 // Builds a new page projection for a final manifest entry.

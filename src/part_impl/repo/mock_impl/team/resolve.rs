@@ -19,7 +19,11 @@ fn resolve_comic_team_id(state: &MockState, id: &str) -> BaseRest<String> {
     let comic_info = state
         .comics
         .iter()
-        .find(|comic_info| comic_info.id == id)
+        .find(|comic_info| {
+            //
+            comic_info.id == id
+                && !state.deleted_comic_ids.contains(&comic_info.id)
+        })
         .ok_or_else(|| expected("error-comic-not-found"))?;
 
     let workset_info = state
@@ -42,7 +46,11 @@ fn resolve_chapter_team_id(state: &MockState, id: &str) -> BaseRest<String> {
     let chapter_info = state
         .chapters
         .iter()
-        .find(|chapter_info| chapter_info.id == id)
+        .find(|chapter_info| {
+            //
+            chapter_info.id == id
+                && !state.deleted_chapter_ids.contains(&chapter_info.id)
+        })
         .ok_or_else(|| expected("error-chapter-not-found"))?;
 
     let comic_info = state

@@ -398,7 +398,7 @@ fn count_infos(unit_infos: &[UnitInfo]) -> UnitCountMetrics {
 // List units for multiple pages while preserving page and linked-list order.
 fn list_infos_by_page_ids(
     state: &MockState,
-    page_ids: &[String],
+    page_ids: &[&str],
 ) -> BaseRest<Vec<UnitInfo>> {
     //
     let mut unit_infos = Vec::new();
@@ -411,12 +411,12 @@ fn list_infos_by_page_ids(
 }
 
 // List every requested persisted Unit that currently exists.
-fn list_infos_by_ids(state: &MockState, ids: &[String]) -> Vec<UnitInfo> {
+fn list_infos_by_ids(state: &MockState, ids: &[&str]) -> Vec<UnitInfo> {
     //
     state
         .units
         .iter()
-        .filter(|unit_info| ids.contains(&unit_info.id))
+        .filter(|unit_info| ids.contains(&unit_info.id.as_str()))
         .cloned()
         .collect()
 }

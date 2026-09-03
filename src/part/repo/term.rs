@@ -1,8 +1,8 @@
 use poprako_orchestra::drive;
 
 use crate::part::repo::oper::term::{
-    CreateTerm, DeleteTerm, DeleteTerms, GetTermInfo, GetTermInfoExcluded,
-    ListTermInfos, LockTerm, UpdateTerm, UpsertTerms,
+    CreateTerm, DeleteTerm, DeleteTerms, GetTermInfo, ListTermInfos, LockTerm,
+    UpdateTerm, UpsertTerms,
 };
 use crate::result::BaseError;
 
@@ -19,7 +19,6 @@ use crate::result::BaseError;
     ),
     step(
         for<'a> CreateTerm<'a>,
-        for<'a> GetTermInfoExcluded<'a>,
         for<'a> ListTermInfos<'a>,
         for<'a> LockTerm<'a>,
         for<'a> UpdateTerm<'a>,

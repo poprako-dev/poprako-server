@@ -34,36 +34,12 @@ pub struct ListWorksetInfos<'a> {
     pub limit: u32,
 }
 
-/// Looks up a workset by identifier, matching deleted rows as well.
-#[derive(Oper)]
-#[oper(output = WorksetInfo)]
-pub struct GetWorksetInfoExcluded<'a> {
-    /// The workset id.
-    pub id: &'a str,
-}
-
-/// Lists workset infos for a team, matching deleted rows as well.
-#[derive(Oper)]
-#[oper(output = Vec<WorksetInfo>)]
-pub struct ListWorksetInfosExcluded<'a> {
-    /// The team id.
-    pub team_id: &'a str,
-}
-
 /// Updates a workset.
 #[derive(Oper)]
 #[oper(output = ())]
 pub struct UpdateWorkset<'a> {
     /// The update payload for the workset.
     pub update: &'a WorksetRepl,
-}
-
-/// Deletes a workset.
-#[derive(Oper)]
-#[oper(output = ())]
-pub struct DeleteWorkset<'a> {
-    /// The workset id.
-    pub id: &'a str,
 }
 
 /// Allocates a sequential index for a new comic under this workset.

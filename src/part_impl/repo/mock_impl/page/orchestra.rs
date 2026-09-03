@@ -6,14 +6,13 @@ use tracing::instrument;
 use crate::model::read::proj::page::PageInfo;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::page::{
-    ApplyPageManifest, CreatePages, DeletePages, GetPageInfo,
-    GetPageInfoExcluded, ListEdittedDiffPageIds, ListFirstPageInfos,
-    ListPageInfos, ListPageInfosExcluded, SetPageUnitCounters,
-    ShiftPageIndexesTemporary,
+    ApplyPageManifest, DeletePages, GetPageInfo, GetPageInfoExcluded,
+    ListEdittedDiffPageIds, ListFirstPageInfos, ListPageInfos,
+    ListPageInfosExcluded, SetPageUnitCounters, ShiftPageIndexesTemporary,
 };
 use crate::part_impl::repo::mock_impl::page::{
     get_page_by_id, list_editted_diff_page_ids, list_first_pages, list_infos,
-    page_from_entry, page_from_manifest_entry,
+    page_from_manifest_entry,
 };
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, expected, now, unrecoverable,
@@ -135,41 +134,6 @@ impl<'a> Step<ListPageInfosExcluded<'a>, MockContext> for Mock {
         oper: &ListPageInfosExcluded<'a>,
     ) -> BaseRest<Vec<PageInfo>> {
         accept(list_infos(&context.state, oper.chapter_id))
-    }
-}
-
-impl<'a> Step<CreatePages<'a>, MockContext> for Mock {
-    // Internal type alias for `Error`.
-    type Level = ReptRead;
-
-    // Defines the adapter error exposed by this operation.
-    type Error = BaseError;
-    #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
-    async fn step(
-        &self,
-        context: &mut MockContext,
-        oper: &CreatePages<'a>,
-    ) -> BaseRest<Vec<PageInfo>> {
-        //
-        // Internal implementation detail.
-        if oper.entries.iter().any(|page_entry| {
-            //
-            context
-                .state
-                .pages
-                .iter()
-                .any(|page_info| page_info.id == page_entry.id)
-        }) {
-            return Err(expected("error-already-exists"));
-        }
-
-        let infos =
-            oper.entries.iter().map(page_from_entry).collect::<Vec<_>>();
-
-        context.state.pages.extend(infos.clone());
-
-        accept(infos)
     }
 }
 

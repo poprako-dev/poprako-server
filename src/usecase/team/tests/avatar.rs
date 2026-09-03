@@ -4,6 +4,7 @@ use poprako_obj_dept::model::task::ObjTask;
 
 use crate::data::instr::team::AllocTeamAvatarInstr;
 use crate::test_util::IMAGE_CONFIG;
+use crate::usecase::subtree_delete::sweep_once;
 use crate::value::image::{ImageExt, ImageHash};
 
 fn alloc_instr(hash_byte: u8, ext: ImageExt) -> AllocTeamAvatarInstr {
@@ -205,15 +206,15 @@ async fn mark_avatar_uploaded_rejects_old_allocation_replay() {
 }
 
 #[tokio::test]
-async fn delete_removes_team_avatar_and_enqueues_delete() {
+async fn delete_marks_team_without_eager_avatar_delete() {
     let mock = Mock::new();
 
     seed_alloc_scope(&mock);
     seed_team_avatar(&mock, 2);
     mark_seeded_avatar_available(&mock);
 
-    delete::delete::<_, MockContext, _, _>(
-        (&mock, &mock, &mock),
+    delete::delete::<_, MockContext, _>(
+        (&mock, &mock),
         token("user-1"),
         "team-1".into(),
     )
@@ -222,29 +223,34 @@ async fn delete_removes_team_avatar_and_enqueues_delete() {
 
     let snapshot = mock.snapshot();
 
-    assert!(snapshot.teams.is_empty());
-    assert!(snapshot.objs["team_avatar"].is_empty());
-    assert!(snapshot.obj_tasks.iter().any(|(_, task)| {
-        matches!(task, ObjTask::Delete { key } if key.id == "team-1")
-    }));
+    assert_eq!(snapshot.teams.len(), 1);
+    assert!(snapshot.deleted_team_ids.contains("team-1"));
+    assert!(snapshot.objs["team_avatar"].contains_key("team-1"));
+    assert!(snapshot.obj_tasks.is_empty());
 }
 
 #[tokio::test]
-async fn delete_pending_team_avatar_still_enqueues_exact_delete() {
+async fn sweep_eligible_team_enqueues_exact_avatar_delete() {
     let mock = Mock::new();
 
     seed_alloc_scope(&mock);
     seed_team_avatar(&mock, 2);
 
-    delete::delete::<_, MockContext, _, _>(
-        (&mock, &mock, &mock),
+    delete::delete::<_, MockContext, _>(
+        (&mock, &mock),
         token("user-1"),
         "team-1".into(),
     )
     .await
     .unwrap();
 
-    assert!(mock.snapshot().obj_tasks.iter().any(|(_, task)| {
+    assert!(sweep_once((&mock, &mock, &mock)).await.unwrap());
+
+    let snapshot = mock.snapshot();
+
+    assert!(snapshot.teams.is_empty());
+    assert!(snapshot.deleted_team_ids.is_empty());
+    assert!(snapshot.obj_tasks.iter().any(|(_, task)| {
         matches!(task, ObjTask::Delete { key } if key.id == "team-1" && key.ver == 2)
     }));
 }
@@ -256,8 +262,8 @@ async fn delete_missing_team_rolls_back_avatar_debt() {
     mock.seed_member(member("member-1", "user-1", "team-1"));
     seed_team_avatar(&mock, 2);
 
-    let err = delete::delete::<_, MockContext, _, _>(
-        (&mock, &mock, &mock),
+    let err = delete::delete::<_, MockContext, _>(
+        (&mock, &mock),
         token("user-1"),
         "team-1".into(),
     )

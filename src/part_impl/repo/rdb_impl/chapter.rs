@@ -14,19 +14,18 @@ use crate::model::read::proj::chapter::ChapterInfo;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::chapter::{
     AdjustChapterUnitCounters, CompleteChapterRawProvide, CreateChapter,
-    DeleteChapter, FindPinnedChapterInfo, GetChapterInfo,
-    GetChapterInfoExcluded, ListChapterInfos, ListChapterInfosExcluded,
-    ListPinnedChapterInfos, LockChapters, ResetChapterRawProvide,
-    SetChapterPageCounters, StartChapterStage, UnpinOtherChapters,
-    UpdateChapter, UpdateChapterStage,
+    FindPinnedChapterInfo, GetChapterInfo, GetChapterInfoExcluded,
+    ListChapterInfos, ListChapterInfosExcluded, ListPinnedChapterInfos,
+    LockChapters, SetChapterPageCounters, StartChapterStage,
+    UnpinOtherChapters, UpdateChapter, UpdateChapterStage,
 };
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::chapter::step_impl::{
-    adjust_unit_counters, complete_raw_provide, create, delete,
+    adjust_unit_counters, complete_raw_provide, create,
     find_pinned_info_by_comic_id, get_info_by_id, get_info_excluded,
     list_infos, list_infos_excluded, list_pinned_infos_by_comic_ids,
-    lock_chapters, reset_raw_provide, set_page_counters, start_stage,
-    unpin_others, update_info, update_stage,
+    lock_chapters, set_page_counters, start_stage, unpin_others, update_info,
+    update_stage,
 };
 use crate::part_impl::repo::rdb_impl::numeric::i32_from_usize;
 use crate::result::{BaseError, BaseRest};
@@ -165,27 +164,6 @@ where
         oper: &CompleteChapterRawProvide<'_>,
     ) -> BaseRest<bool> {
         complete_raw_provide(context.conn(), oper.id).await
-    }
-}
-
-impl<L> Step<ResetChapterRawProvide<'_>, RdbContext<L>> for HybRepo
-where
-    L: Level + Send + AtLeast<ReptRead>,
-{
-    // Preserve unified error typing for resetting raw-provide state in transaction scope.
-    type Level = ReptRead;
-
-    // Defines the adapter error exposed by this operation.
-    type Error = BaseError;
-
-    #[instrument(level = "info", skip_all)]
-    // Reset chapter raw provide flags when downstream callers need a clean retry state.
-    async fn step(
-        &self,
-        context: &mut RdbContext<L>,
-        oper: &ResetChapterRawProvide<'_>,
-    ) -> BaseRest<()> {
-        reset_raw_provide(context.conn(), oper.id).await
     }
 }
 
@@ -437,26 +415,5 @@ where
         oper: &UnpinOtherChapters<'_>,
     ) -> BaseRest<()> {
         unpin_others(context.conn(), oper.comic_id, oper.excluded_id).await
-    }
-}
-
-impl<L> Step<DeleteChapter<'_>, RdbContext<L>> for HybRepo
-where
-    L: Level + Send + AtLeast<ReptRead>,
-{
-    // Preserve consistent error reporting for chapter deletion operations.
-    type Level = ReptRead;
-
-    // Defines the adapter error exposed by this operation.
-    type Error = BaseError;
-
-    #[instrument(level = "info", skip_all)]
-    // Remove chapter row and rely on transaction caller to coordinate dependent effects.
-    async fn step(
-        &self,
-        context: &mut RdbContext<L>,
-        oper: &DeleteChapter<'_>,
-    ) -> BaseRest<()> {
-        delete(context.conn(), oper.id).await
     }
 }

@@ -16,7 +16,7 @@ impl PageLoader {
     /// this loader only resolves the domain relationship used by cover fallback.
     pub async fn load_ids_from_comics<R>(
         repo: &R,
-        comic_ids: &[String],
+        comic_ids: &[&str],
     ) -> BaseRest<HashMap<String, String>>
     where
         R: for<'a> Run<ListPinnedChapterInfos<'a>, Error = BaseError>
@@ -37,8 +37,10 @@ impl PageLoader {
             })
             .collect::<HashMap<_, _>>();
 
-        let chapter_ids =
-            comic_ids_by_chapter_id.keys().cloned().collect::<Vec<_>>();
+        let chapter_ids = comic_ids_by_chapter_id
+            .keys()
+            .map(String::as_str)
+            .collect::<Vec<_>>();
 
         let page_infos = ListFirstPageInfos {
             chapter_ids: &chapter_ids,

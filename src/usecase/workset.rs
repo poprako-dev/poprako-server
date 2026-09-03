@@ -7,7 +7,6 @@ pub mod tests;
 use poprako_orchestra::{AtLeast, Context, Nucl, OperRun as _, OperStep as _};
 use tracing::instrument;
 
-use poprako_obj_dept::ObjDept;
 use poprako_util::i18n::trl;
 
 use crate::complex::workset::{WorksetComplex, WorksetPermComplex};
@@ -16,33 +15,22 @@ use crate::data::instr::workset::{
 };
 use crate::data::val::workset::CreateWorksetVal;
 use crate::data::view::workset::WorksetInfoView;
-use crate::model::read::spec::comic::ComicListSpec;
 use crate::model::shared::user::UserToken;
 use crate::model::write::workset::{WorksetEntry, WorksetRepl};
 use crate::part::nucl::{ReptRead, Serial};
-use crate::part::obj_dept::{ComicCover, PageImage};
-use crate::part::repo::assignment::AssignmentRepo;
-use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
-use crate::part::repo::chapter::ChapterRepo;
-use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
-use crate::part::repo::comic::ComicRepo;
-use crate::part::repo::comic_archive::ComicArchiveRepo;
 use crate::part::repo::member::MemberRepo;
-use crate::part::repo::oper::comic::ListComicInfosExcluded;
 use crate::part::repo::oper::member::FindMemberInfo;
+use crate::part::repo::oper::subtree_delete::{
+    LockSubtreeDeleteScope, MarkSubtree, SubtreeRoot,
+};
 use crate::part::repo::oper::team::AllocTeamWorksetIndex;
 use crate::part::repo::oper::workset::{
-    CreateWorkset, DeleteWorkset, GetWorksetInfo, GetWorksetInfoExcluded,
-    ListWorksetInfos, UpdateWorkset,
+    CreateWorkset, GetWorksetInfo, ListWorksetInfos, UpdateWorkset,
 };
-use crate::part::repo::page::PageRepo;
+use crate::part::repo::subtree_delete::SubtreeRepo;
 use crate::part::repo::team::TeamRepo;
-use crate::part::repo::term::TermRepo;
-use crate::part::repo::termbase::TermbaseRepo;
-use crate::part::repo::unit::UnitRepo;
 use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::usecase::comic::delete_cascade as delete_comic_cascade;
 use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
 
@@ -206,9 +194,9 @@ where
 }
 
 /// Deletes a workset and its child data.
-#[instrument(level = "info", skip(nucl, repo, obj_dept, token), fields(actor_user_id = %token.user_id))]
-pub async fn delete<N, C, R, O>(
-    (nucl, repo, obj_dept): (&N, &R, &O),
+#[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
+pub async fn delete<N, C, R>(
+    (nucl, repo): (&N, &R),
     token: UserToken,
     id: String,
 ) -> BaseRest<()>
@@ -216,100 +204,51 @@ where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<Serial>,
-    R: WorksetRepo<C>
-        + ComicRepo<C>
-        + ComicArchiveRepo<C>
-        + MemberRepo<C>
-        + ChapterRepo<C>
-        + ChapterWorkflowRecordRepo<C>
-        + PageRepo<C>
-        + AssignmentInvitationRepo<C>
-        + AssignmentRepo<C>
-        + UnitRepo<C>
-        + TermbaseRepo<C>
-        + TermRepo<C>
-        + Send
-        + Sync,
-    O: ObjDept<ComicCover, C> + ObjDept<PageImage, C> + Send + Sync,
+    R: SubtreeRepo<C> + MemberRepo<C> + Send + Sync,
 {
-    let member_info = MemberLoader::load_info_from_workset(
-        repo,
-        LoadMode::Run,
-        &token.user_id,
-        &id,
-    )
-    .await?;
-
-    WorksetPermComplex::ensure_user_can_delete(&member_info)?;
-
-    nucl.coord(async move |context| {
-        delete_cascade(repo, obj_dept, context, &id).await
-    })
-    .await?;
-
-    accept(())
-}
-
-/// Deletes a workset subtree inside an existing transaction context.
-pub async fn delete_cascade<C, R, O>(
-    repo: &R,
-    obj_dept: &O,
-    context: &mut C,
-    id: &str,
-) -> BaseRest<()>
-where
-    C: Context,
-    R: WorksetRepo<C>
-        + ComicRepo<C>
-        + ComicArchiveRepo<C>
-        + ChapterRepo<C>
-        + ChapterWorkflowRecordRepo<C>
-        + PageRepo<C>
-        + AssignmentInvitationRepo<C>
-        + AssignmentRepo<C>
-        + TermbaseRepo<C>
-        + TermRepo<C>
-        + Sync,
-    O: ObjDept<ComicCover, C> + ObjDept<PageImage, C> + Sync,
-{
-    // Bound each cascade page while repeatedly deleting from offset zero.
-    const PAGE_SIZE: u32 = 50;
-
-    let workset_info =
-        GetWorksetInfoExcluded { id }.step_on(repo, context).await?;
-
-    loop {
-        //
-        let list_spec = ComicListSpec {
-            workset_id: workset_info.id.clone(),
-            fuzzy_title: None,
-            stages: None,
-            status: None,
-            incl_opt: Vec::new(),
-            offset: 0,
-            limit: PAGE_SIZE,
-        };
-
-        let comic_infos = ListComicInfosExcluded { spec: &list_spec }
+    let () = nucl
+        .coord(async move |context| {
+            //
+            let delete_scope = LockSubtreeDeleteScope {
+                root: SubtreeRoot::Workset { id: &id },
+            }
             .step_on(repo, context)
             .await?;
 
-        if comic_infos.is_empty() {
-            break;
-        }
+            let member_info = FindMemberInfo::UserTeam {
+                user_id: &token.user_id,
+                team_id: delete_scope.team_id(),
+            }
+            .step_on(repo, context)
+            .await?;
 
-        for comic_info in comic_infos {
-            //
-            delete_comic_cascade(repo, obj_dept, context, &comic_info.id)
-                .await?;
-        }
-    }
+            let Some(member_info) = member_info else {
+                //
+                let err_message = trl("error-team-member-required");
 
-    DeleteWorkset {
-        id: &workset_info.id,
-    }
-    .step_on(repo, context)
-    .await?;
+                tracing::warn!(
+                    err_variant = ?ExpectedVariant::Perm,
+                    err_message = %err_message,
+                    "expected error: team membership required",
+                );
+
+                return Err(BaseError::Expected {
+                    variant: ExpectedVariant::Perm,
+                    message: err_message,
+                });
+            };
+
+            WorksetPermComplex::ensure_user_can_delete(&member_info)?;
+
+            MarkSubtree {
+                scope: &delete_scope,
+            }
+            .step_on(repo, context)
+            .await?;
+
+            accept(())
+        })
+        .await?;
 
     accept(())
 }

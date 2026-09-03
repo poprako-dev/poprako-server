@@ -1,5 +1,8 @@
 //! Application-neutral `PostgreSQL` pool and Orchestra context.
 
+#[cfg(test)]
+mod tests;
+
 use std::marker::PhantomData;
 use std::sync::Arc;
 
@@ -8,6 +11,10 @@ use diesel_async::AsyncPgConnection;
 use diesel_async::pooled_connection::AsyncDieselConnectionManager;
 use diesel_async::pooled_connection::deadpool::{BuildError, Object, Pool};
 use poprako_orchestra::{Context, Level};
+
+// Keep the shared database pool within the production host's memory and CPU
+// budget.
+const RDB_POOL_MAX_SIZE: usize = 4;
 
 // Concrete pool type shared by RDB contexts.
 type RdbPool = Pool<AsyncPgConnection>;
@@ -96,6 +103,7 @@ impl RdbCore {
         );
 
         let pool = Pool::builder(manager)
+            .max_size(RDB_POOL_MAX_SIZE)
             .build()
             .map_err(|source| RdbError::PoolBuild { source })?;
 

@@ -10,8 +10,8 @@ use crate::model::read::spec::member::MemberListSpec;
 use crate::model::write::member::MemberEntry;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::member::{
-    CreateMember, DeleteMember, FindMemberInfo, GetMemberInfo, ListMemberInfos,
-    ListMemberInfosExcluded, UpdateMember,
+    CreateMember, DeleteMember, DeleteUserMemberships, FindMemberInfo,
+    GetMemberInfo, ListMemberInfos, LockTeamMemberInfos, UpdateMember,
 };
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
@@ -35,7 +35,9 @@ fn find_team(state: &MockState, team_id: &str) -> Option<TeamInfo> {
     state
         .teams
         .iter()
-        .find(|team_info| team_info.id == team_id)
+        .find(|team_info| {
+            team_info.id == team_id && !state.deleted_team_ids.contains(team_id)
+        })
         .cloned()
 }
 
@@ -45,7 +47,9 @@ fn get_member_by_id(state: &MockState, id: &str) -> BaseRest<MemberInfo> {
     state
         .members
         .iter()
-        .find(|member| member.id == id)
+        .find(|member| {
+            member.id == id && !state.deleted_team_ids.contains(&member.team_id)
+        })
         .cloned()
         .ok_or_else(|| expected("error-member-not-found"))
 }
@@ -90,6 +94,10 @@ fn create_member(
     //
     // Internal implementation detail.
     // Internal implementation detail.
+    if state.deleted_team_ids.contains(&entry.team_id) {
+        return Err(expected("error-team-not-found"));
+    }
+
     if state.members.iter().any(|member| member.id == entry.id) {
         return Err(expected("error-already-exists"));
     }
@@ -123,6 +131,10 @@ fn find_member_by_user_id_and_team_id(
     team_id: &str,
 ) -> Option<MemberInfo> {
     //
+    if state.deleted_team_ids.contains(team_id) {
+        return None;
+    }
+
     state
         .members
         .iter()
@@ -202,6 +214,9 @@ fn list_member_infos(
                 .members
                 .iter()
                 .filter(|member_info| member_info.user_id == *owner_id)
+                .filter(|member_info| {
+                    !state.deleted_team_ids.contains(&member_info.team_id)
+                })
                 .cloned()
                 .collect::<Vec<_>>(),
         ),
@@ -221,6 +236,9 @@ fn list_member_infos(
                 .members
                 .iter()
                 .filter(|member_info| member_info.team_id == *team_id)
+                .filter(|member_info| {
+                    !state.deleted_team_ids.contains(&member_info.team_id)
+                })
                 .filter(|member_info| {
                     //
                     fuzzy_nickname.as_ref().is_none_or(|keyword| {
@@ -285,6 +303,9 @@ fn list_member_infos_by_user(
         .members
         .iter()
         .filter(|member_info| member_info.user_id == user_id)
+        .filter(|member_info| {
+            !state.deleted_team_ids.contains(&member_info.team_id)
+        })
         .cloned()
         .collect()
 }
@@ -497,7 +518,7 @@ impl<'a, 'b> Step<GetMemberInfo<'a, 'b>, MockContext> for Mock {
     }
 }
 
-impl<'a> Step<ListMemberInfosExcluded<'a>, MockContext> for Mock {
+impl<'a> Step<LockTeamMemberInfos<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
     type Level = ReptRead;
 
@@ -509,27 +530,18 @@ impl<'a> Step<ListMemberInfosExcluded<'a>, MockContext> for Mock {
     async fn step(
         &self,
         context: &mut MockContext,
-        oper: &ListMemberInfosExcluded<'a>,
+        oper: &LockTeamMemberInfos<'a>,
     ) -> BaseRest<Vec<MemberInfo>> {
         //
-        match oper {
-            //
-            // Internal implementation detail.
-            // Internal implementation detail.
-            ListMemberInfosExcluded::User { user_id } => {
-                accept(list_member_infos_by_user(&context.state, user_id))
-            }
-
-            ListMemberInfosExcluded::Team { team_id } => accept(
-                context
-                    .state
-                    .members
-                    .iter()
-                    .filter(|member_info| member_info.team_id == *team_id)
-                    .cloned()
-                    .collect(),
-            ),
-        }
+        accept(
+            context
+                .state
+                .members
+                .iter()
+                .filter(|member_info| member_info.team_id == oper.team_id)
+                .cloned()
+                .collect(),
+        )
     }
 }
 
@@ -558,6 +570,30 @@ impl<'a> Step<DeleteMember<'a>, MockContext> for Mock {
             .ok_or_else(|| expected("error-member-not-found"))?;
 
         context.state.members.remove(position);
+
+        accept(())
+    }
+}
+
+impl<'a> Step<DeleteUserMemberships<'a>, MockContext> for Mock {
+    // Required Orchestra execution level.
+    type Level = ReptRead;
+
+    // Shared repository error type.
+    type Error = BaseError;
+
+    // Execute the repository operation.
+    #[instrument(level = "info", skip_all)]
+    async fn step(
+        &self,
+        context: &mut MockContext,
+        oper: &DeleteUserMemberships<'a>,
+    ) -> BaseRest<()> {
+        //
+        context
+            .state
+            .members
+            .retain(|member_info| member_info.user_id != oper.user_id);
 
         accept(())
     }

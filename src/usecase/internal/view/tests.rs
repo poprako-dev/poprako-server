@@ -92,7 +92,10 @@ macro_rules! impl_obj_view {
                 &self,
                 oper: &ListObjMetas<'a, $marker>,
             ) -> Result<HashMap<String, ObjMeta>, Self::Error> {
-                self.record($list_operation, oper.ids.to_vec());
+                self.record(
+                    $list_operation,
+                    oper.ids.iter().map(|id| (*id).to_owned()).collect(),
+                );
 
                 if self.fails($list_operation) {
                     return Err(ObjDeptError::Unrecoverable {
@@ -103,13 +106,14 @@ macro_rules! impl_obj_view {
                 Ok(oper
                     .ids
                     .iter()
+                    .copied()
                     .filter(|id| !self.is_omitted($list_operation, id))
                     .map(|id| {
                         (
-                            id.clone(),
+                            id.to_owned(),
                             ObjMeta {
                                 key: ObjKey {
-                                    id: id.clone(),
+                                    id: id.to_owned(),
                                     ver: 1,
                                     image: format!("test/{}-1.png", id),
                                 },
@@ -199,7 +203,7 @@ impl<'a> Run<ListPinnedChapterInfos<'a>> for TestRepo {
     ) -> Result<Vec<ChapterInfo>, Self::Error> {
         let chapter_info = fallback_chapter_info();
 
-        match oper.comic_ids.contains(&chapter_info.comic_id) {
+        match oper.comic_ids.contains(&chapter_info.comic_id.as_str()) {
             true => accept(vec![chapter_info]),
             false => accept(Vec::new()),
         }
@@ -215,7 +219,7 @@ impl<'a> Run<ListFirstPageInfos<'a>> for TestRepo {
     ) -> Result<Vec<PageInfo>, Self::Error> {
         let page_info = fallback_page_info();
 
-        match oper.chapter_ids.contains(&page_info.chapter_id) {
+        match oper.chapter_ids.contains(&page_info.chapter_id.as_str()) {
             true => accept(vec![page_info]),
             false => accept(Vec::new()),
         }
@@ -300,7 +304,7 @@ async fn nested_repeated_models_load_once_per_object_marker() {
 
     ids.collect_assignments([&assignment_info, &assignment_info]);
 
-    let snapshot = ObjViewSnapshot::load::<TestContext, _>(&obj_dept, ids)
+    let snapshot = ObjViewSnapshot::load::<TestContext, _>(&obj_dept, &ids)
         .await
         .unwrap();
 
@@ -362,7 +366,9 @@ async fn nested_repeated_models_load_once_per_object_marker() {
 async fn empty_snapshot_performs_no_object_operations() {
     let obj_dept = TestObjDept::default();
 
-    ObjViewSnapshot::load::<TestContext, _>(&obj_dept, ObjViewIds::default())
+    let ids = ObjViewIds::default();
+
+    ObjViewSnapshot::load::<TestContext, _>(&obj_dept, &ids)
         .await
         .unwrap();
 
@@ -377,7 +383,7 @@ async fn partial_snapshot_skips_absent_markers() {
 
     ids.user_avatars.insert("user-1".into());
 
-    ObjViewSnapshot::load::<TestContext, _>(&obj_dept, ids)
+    ObjViewSnapshot::load::<TestContext, _>(&obj_dept, &ids)
         .await
         .unwrap();
 
@@ -395,13 +401,9 @@ async fn multi_id_snapshot_deduplicates_and_sorts_each_batch() {
 
     let mut ids = ObjViewIds::default();
 
-    ids.user_avatars.extend([
-        "user-z".into(),
-        "user-a".into(),
-        "user-z".into(),
-    ]);
+    ids.user_avatars.extend(["user-z", "user-a", "user-z"]);
 
-    ObjViewSnapshot::load::<TestContext, _>(&obj_dept, ids)
+    ObjViewSnapshot::load::<TestContext, _>(&obj_dept, &ids)
         .await
         .unwrap();
 
@@ -421,7 +423,7 @@ async fn metadata_error_is_propagated_without_url_generation() {
 
     ids.user_avatars.insert("user-1".into());
 
-    let result = ObjViewSnapshot::load::<TestContext, _>(&obj_dept, ids).await;
+    let result = ObjViewSnapshot::load::<TestContext, _>(&obj_dept, &ids).await;
 
     assert!(result.is_err());
     assert!(obj_dept.calls("user-urls").is_empty());
@@ -437,7 +439,7 @@ async fn url_error_is_propagated_after_metadata_load() {
 
     ids.user_avatars.insert("user-1".into());
 
-    let result = ObjViewSnapshot::load::<TestContext, _>(&obj_dept, ids).await;
+    let result = ObjViewSnapshot::load::<TestContext, _>(&obj_dept, &ids).await;
 
     assert!(result.is_err());
     assert_eq!(obj_dept.calls("user-list").len(), 1);

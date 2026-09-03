@@ -1,4 +1,4 @@
-//! Event dispatcher for async side-effect actors.
+//! Event delivery dispatcher for the asynchronous effect actor.
 
 use poprako_orchestra::Context;
 use tracing::instrument;
@@ -9,10 +9,9 @@ use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::system_mail::SystemMailRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
-use crate::part_impl::effect::async_impl::{chapter, user};
+use crate::usecase::{system_mail, user};
 
-/// Dispatches a domain event to its side-effect actor.
-/// FIXME: why put it here?
+/// Routes a delivered event to domain-oriented application use cases.
 #[instrument(level = "info", skip_all)]
 pub async fn dispatch<C, R>(repo: &R, event: Event)
 where
@@ -27,22 +26,53 @@ where
     match event {
         //
         Event::UserActive { payload } => {
-            user::touch_last_active(repo, payload).await;
+            //
+            if user::touch_last_active::<C, R>((repo,), &payload.user_id)
+                .await
+                .is_err()
+            {
+                tracing::warn!(
+                    user_id = %payload.user_id,
+                    "failed to update last-active timestamp",
+                );
+            }
         }
 
         Event::UserSignedUp { payload } => {
-            user::notify_invitor(repo, payload).await;
+            //
+            system_mail::invitation::notify_invitor::<C, R>(
+                repo,
+                &payload.invitor_id,
+                &payload.invitee_qid,
+                &payload.team_id,
+            )
+            .await;
         }
 
         Event::ChapterPublished { payload } => {
-            chapter::notify_reviewers_on_publish(repo, payload).await;
+            //
+            system_mail::chapter::notify_reviewers_on_publish::<C, R>(
+                repo,
+                &payload.chapter_id,
+            )
+            .await;
         }
 
         Event::ChapterWorkflowCompleted { payload } => {
             //
-            chapter::notify_next_phase(repo, &payload).await;
+            system_mail::chapter::notify_next_phase::<C, R>(
+                repo,
+                &payload.chapter_id,
+                payload.completed_stage,
+            )
+            .await;
 
-            chapter::notify_reviewers_on_progress(repo, payload).await;
+            system_mail::chapter::notify_reviewers_on_progress::<C, R>(
+                repo,
+                &payload.chapter_id,
+                payload.completed_stage,
+            )
+            .await;
         }
     }
 }

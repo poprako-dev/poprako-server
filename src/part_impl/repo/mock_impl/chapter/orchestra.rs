@@ -52,7 +52,10 @@ fn find_pinned_chapter_info(
         .chapters
         .iter()
         .find(|chapter_info| {
-            chapter_info.comic_id == comic_id && chapter_info.is_pinned
+            //
+            chapter_info.comic_id == comic_id
+                && chapter_info.is_pinned
+                && !state.deleted_chapter_ids.contains(&chapter_info.id)
         })
         .cloned();
 
@@ -66,7 +69,7 @@ fn find_pinned_chapter_info(
 // Internal implementation of `list_pinned_chapter_infos`.
 fn list_pinned_chapter_infos(
     state: &MockState,
-    comic_ids: &[String],
+    comic_ids: &[&str],
 ) -> Vec<ChapterInfo> {
     //
     // Internal implementation detail.
@@ -79,7 +82,10 @@ fn list_pinned_chapter_infos(
                 .chapters
                 .iter()
                 .find(|chapter_info| {
-                    chapter_info.comic_id == *comic_id && chapter_info.is_pinned
+                    //
+                    chapter_info.comic_id == *comic_id
+                        && chapter_info.is_pinned
+                        && !state.deleted_chapter_ids.contains(&chapter_info.id)
                 })
                 .cloned()
         })

@@ -20,8 +20,8 @@ use crate::model::read::proj::term::TermInfo;
 use crate::model::write::term::{TermEntry, TermRepl};
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::term::{
-    CreateTerm, DeleteTerm, DeleteTerms, GetTermInfo, GetTermInfoExcluded,
-    ListTermInfos, LockTerm, UpdateTerm, UpsertTerms,
+    CreateTerm, DeleteTerm, DeleteTerms, GetTermInfo, ListTermInfos, LockTerm,
+    UpdateTerm, UpsertTerms,
 };
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::entity::term::{
@@ -143,27 +143,6 @@ where
                 list_all_infos(context.conn(), termbase_id).await
             }
         }
-    }
-}
-
-impl<L> Step<GetTermInfoExcluded<'_>, RdbContext<L>> for HybRepo
-where
-    L: Level + Send + AtLeast<ReptRead>,
-{
-    // Read a term for exclusive use inside an active transaction context.
-    type Level = ReptRead;
-
-    // Defines the adapter error exposed by this operation.
-    type Error = BaseError;
-
-    // Resolve one term with `FOR UPDATE` semantics for downstream mutation.
-    #[instrument(level = "info", skip_all)]
-    async fn step(
-        &self,
-        context: &mut RdbContext<L>,
-        oper: &GetTermInfoExcluded<'_>,
-    ) -> BaseRest<TermInfo> {
-        get_info_excluded(context.conn(), oper.id).await
     }
 }
 
@@ -429,41 +408,6 @@ async fn lock_term(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     };
 
     accept(())
-}
-
-// Load one term row by id in a lock-compatible path and convert it to response info.
-#[instrument(level = "info", skip_all)]
-async fn get_info_excluded(conn: &mut RdbConn, id: &str) -> BaseRest<TermInfo> {
-    //
-    // Use `for_update()` to prevent concurrent updates while resolving this term.
-    let row = t_term
-        .filter(f_id.eq(id))
-        .select(TermInfoRow::as_select())
-        .for_update()
-        .get_result::<TermInfoRow>(conn)
-        .await
-        .optional()
-        .map_err(diesel)?;
-
-    let Some(row) = row else {
-        //
-        let message = trl("error-term-not-found");
-
-        tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
-            err_message = %message,
-            term_id = %id,
-            operation = "get locked term info",
-            "expected term error",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message,
-        });
-    };
-
-    accept(row.into())
 }
 
 // Build a filtered query for term listing and execute a paged query.

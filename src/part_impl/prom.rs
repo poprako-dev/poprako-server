@@ -1,3 +1,6 @@
+// Maps delivered tasks to domain use cases.
+mod dispatch;
+
 /// Mock prom adapter for tests.
 #[cfg(test)]
 pub mod mock_impl;

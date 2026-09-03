@@ -46,6 +46,23 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::user::view::user_info_view;
 use crate::value::image::{ImageKind, UserAvatarKey};
 
+/// Updates one user's last-active timestamp.
+#[instrument(level = "info", skip(repo))]
+pub async fn touch_last_active<C, R>(
+    (repo,): (&R,),
+    user_id: &str,
+) -> BaseRest<()>
+where
+    C: Context,
+    R: UserRepo<C>,
+{
+    UpdateUser::TouchLastActive { id: user_id }
+        .run_on(repo)
+        .await?;
+
+    accept(())
+}
+
 /// Fetches a user's profile with avatar URL resolution.
 ///
 /// Non-transactional read. When the requesting user (identified by `token`)

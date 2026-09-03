@@ -27,7 +27,7 @@ mod view;
 // mark_cover_uploaded(mark_cover_uploaded)(positive): repeated matching version confirmation should remain successful.
 // mark_cover_uploaded(mark_cover_uploaded)(negative): stale version should leave cover unuploaded.
 // mark_cover_uploaded(mark_cover_uploaded)(negative): old reservation replay should fail without marking current cover uploaded.
-// delete(delete)(positive): deleting a comic should remove it, decrement workset count, and enqueue cover deletion.
+// delete(delete)(positive): deleting a comic should mark it, decrement the active count, then sweep it.
 // delete(delete)(negative): missing comic should rollback state.
 
 use super::*;

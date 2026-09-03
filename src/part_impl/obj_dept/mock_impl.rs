@@ -275,13 +275,14 @@ macro_rules! implement_mock_obj_dept {
                 Ok(oper
                     .ids
                     .iter()
+                    .copied()
                     .filter_map(|id| {
                         state
                             .objs
                             .get($topic)
                             .and_then(|objs| objs.get(id))
                             .and_then(|record| record.meta.clone())
-                            .map(|obj_meta| (id.clone(), obj_meta))
+                            .map(|obj_meta| (id.to_owned(), obj_meta))
                     })
                     .collect())
             }
@@ -309,6 +310,7 @@ macro_rules! implement_mock_obj_dept {
                 Ok(oper
                     .ids
                     .iter()
+                    .copied()
                     .filter_map(|id| {
                         context
                             .state
@@ -316,7 +318,7 @@ macro_rules! implement_mock_obj_dept {
                             .get($topic)
                             .and_then(|objs| objs.get(id))
                             .and_then(|record| record.meta.clone())
-                            .map(|obj_meta| (id.clone(), obj_meta))
+                            .map(|obj_meta| (id.to_owned(), obj_meta))
                     })
                     .collect())
             }

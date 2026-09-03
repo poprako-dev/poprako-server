@@ -4,9 +4,8 @@ use tracing::instrument;
 use crate::model::read::proj::comic::ComicInfo;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::comic::{
-    AllocComicChapterIndex, CreateComic, DeleteComic, GetComicInfo,
-    GetComicInfoExcluded, ListComicInfos, ListComicInfosExcluded,
-    TouchComicLastActive, UpdateComicChapterCount,
+    AllocComicChapterIndex, CreateComic, GetComicInfo, GetComicInfoExcluded,
+    ListComicInfos, TouchComicLastActive, UpdateComicChapterCount,
 };
 use crate::part_impl::repo::mock_impl::comic::{
     get_comic_info, list_comic_infos,
@@ -101,24 +100,6 @@ impl<'a, 'b> Step<GetComicInfoExcluded<'a, 'b>, MockContext> for Mock {
     }
 }
 
-impl<'a> Step<ListComicInfosExcluded<'a>, MockContext> for Mock {
-    // Use base errors for transaction list operation.
-    type Level = ReptRead;
-
-    // Defines the adapter error exposed by this operation.
-    type Error = BaseError;
-
-    #[instrument(level = "info", skip_all)]
-    // Return list built by shared helper for excluded projection.
-    async fn step(
-        &self,
-        context: &mut MockContext,
-        oper: &ListComicInfosExcluded<'a>,
-    ) -> Result<Vec<ComicInfo>, Self::Error> {
-        accept(list_comic_infos(&context.state, oper.spec))
-    }
-}
-
 impl<'a> Step<ListComicInfos<'a>, MockContext> for Mock {
     // Use base errors for transaction list operation.
     type Level = ReptRead;
@@ -134,63 +115,6 @@ impl<'a> Step<ListComicInfos<'a>, MockContext> for Mock {
         oper: &ListComicInfos<'a>,
     ) -> Result<Vec<ComicInfo>, Self::Error> {
         accept(list_comic_infos(&context.state, oper.spec))
-    }
-}
-
-impl<'a> Step<DeleteComic<'a>, MockContext> for Mock {
-    // Use base errors for mocked deletion operations.
-    type Level = ReptRead;
-
-    // Defines the adapter error exposed by this operation.
-    type Error = BaseError;
-
-    #[instrument(level = "info", skip_all)]
-    // Remove comic and cascade related in-memory entities.
-    async fn step(
-        &self,
-        context: &mut MockContext,
-        oper: &DeleteComic<'a>,
-    ) -> Result<(), Self::Error> {
-        //
-        let pos = context
-            .state
-            .comics
-            .iter()
-            .position(|comic| comic.id == oper.id)
-            .ok_or_else(|| expected("error-comic-not-found"))?;
-
-        let deleted_comic_id = context.state.comics[pos].id.clone();
-
-        let deleted_chapter_ids = context
-            .state
-            .chapters
-            .iter()
-            .filter(|chapter_info| chapter_info.comic_id == deleted_comic_id)
-            .map(|chapter_info| chapter_info.id.clone())
-            .collect::<Vec<_>>();
-
-        context.state.comics.remove(pos);
-
-        context
-            .state
-            .chapters
-            .retain(|chapter_info| chapter_info.comic_id != deleted_comic_id);
-
-        context.state.pages.retain(|page_info| {
-            //
-            !deleted_chapter_ids
-                .iter()
-                .any(|chapter_id| chapter_id == &page_info.chapter_id)
-        });
-
-        context.state.assignments.retain(|assignment_info| {
-            //
-            !deleted_chapter_ids
-                .iter()
-                .any(|chapter_id| chapter_id == &assignment_info.chapter_id)
-        });
-
-        accept(())
     }
 }
 
@@ -210,6 +134,10 @@ impl<'a> Step<AllocComicChapterIndex<'a>, MockContext> for Mock {
     ) -> Result<usize, Self::Error> {
         //
         // Validate comic exists before computing chapter count.
+        if context.state.deleted_comic_ids.contains(oper.id) {
+            return Err(expected("error-comic-not-found"));
+        }
+
         context
             .state
             .comics
@@ -244,6 +172,10 @@ impl<'a> Step<UpdateComicChapterCount<'a>, MockContext> for Mock {
     ) -> Result<(), Self::Error> {
         //
         // Locate comic row and apply chapter count delta.
+        if context.state.deleted_comic_ids.contains(oper.id) {
+            return Err(expected("error-comic-not-found"));
+        }
+
         let comic = context
             .state
             .comics
@@ -275,6 +207,10 @@ impl<'a> Step<TouchComicLastActive<'a>, MockContext> for Mock {
     ) -> Result<(), Self::Error> {
         //
         // Update both heartbeat and updated timestamps.
+        if context.state.deleted_comic_ids.contains(oper.id) {
+            return Err(expected("error-comic-not-found"));
+        }
+
         let comic = context
             .state
             .comics

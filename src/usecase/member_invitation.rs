@@ -41,9 +41,11 @@ use crate::part::repo::member_invitation::MemberInvitationRepo;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::member_invitation::{
     CreateMemberInvitation, DeleteMemberInvitation, ListMemberInvitationInfos,
-    UpdateMemberInvitation,
+    PurgeExpiredMemberInvitation, UpdateMemberInvitation,
 };
+use crate::part::repo::oper::team::LockTeam;
 use crate::part::repo::oper::user::FindUserInfo;
+use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::usecase::internal::member::MemberLoader;
@@ -53,6 +55,23 @@ use crate::util::next_snowflake_id;
 
 // Default invitation validity window for member invite tokens.
 const EXPIRY_DELAY: Duration = Duration::from_hours(120);
+
+/// Removes one member invitation when it has expired.
+#[instrument(level = "info", skip(repo))]
+pub async fn purge_expired<C, R>(
+    (repo,): (&R,),
+    invitation_id: &str,
+) -> BaseRest<()>
+where
+    C: Context,
+    R: MemberInvitationRepo<C>,
+{
+    PurgeExpiredMemberInvitation { id: invitation_id }
+        .run_on(repo)
+        .await?;
+
+    accept(())
+}
 
 /// Creates a pending invitation for a team.
 #[instrument(level = "info", skip(nucl, repo, prom, token), fields(actor_user_id = %token.user_id))]
@@ -65,7 +84,12 @@ where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError> + Sync,
     C::Level: AtLeast<ReptRead>,
-    R: MemberInvitationRepo<C> + MemberRepo<C> + UserRepo<C> + Send + Sync,
+    R: MemberInvitationRepo<C>
+        + MemberRepo<C>
+        + TeamRepo<C>
+        + UserRepo<C>
+        + Send
+        + Sync,
     P: Prom<C> + Send + Sync,
 {
     let roles = instr.roles;
@@ -100,6 +124,10 @@ where
     let (member_invitation_id, code) = nucl
         .coord(async move |context| {
             //
+
+            LockTeam { id: &instr.team_id }
+                .step_on(repo, context)
+                .await?;
 
             let invitee_user_info = FindUserInfo::Qid {
                 qid: &instr.invitee_qid,

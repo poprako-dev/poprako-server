@@ -65,7 +65,7 @@ pub enum ListAssignmentInfos<'a, 'b> {
     /// Lists by a set of chapters.
     Chapters {
         /// Chapter identifiers.
-        chapter_ids: &'a [String],
+        chapter_ids: &'a [&'a str],
         /// Assignment inclusion options.
         incls: &'b [AssignmentInclOpt],
     },

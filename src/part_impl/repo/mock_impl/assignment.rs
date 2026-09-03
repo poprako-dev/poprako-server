@@ -104,7 +104,7 @@ fn list_infos(
                 .assignments
                 .iter()
                 .filter(|assignment_info| {
-                    chapter_ids.contains(&assignment_info.chapter_id)
+                    chapter_ids.contains(&assignment_info.chapter_id.as_str())
                 })
                 .cloned()
                 .collect::<Vec<_>>(),

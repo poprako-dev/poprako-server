@@ -255,7 +255,7 @@ where
 
     let existing_page_ids = existing_page_infos
         .iter()
-        .map(|page_info| page_info.id.clone())
+        .map(|page_info| page_info.id.as_str())
         .collect::<Vec<_>>();
 
     let existing_obj_metas = ListObjMetas::<PageImage>::new(&existing_page_ids)
@@ -363,7 +363,7 @@ where
         .iter()
         .zip(page_specs)
         .filter(|(_, page_spec)| page_spec.new_byte_len.is_none())
-        .map(|(manifest_entry, _)| manifest_entry.id.clone())
+        .map(|(manifest_entry, _)| manifest_entry.id.as_str())
         .collect::<Vec<_>>();
 
     let retained_obj_metas = ListObjMetas::<PageImage>::new(&retained_page_ids)

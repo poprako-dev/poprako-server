@@ -43,14 +43,6 @@ pub enum ListTermInfos<'a> {
     },
 }
 
-/// Looks up a term by identifier, matching deleted rows as well.
-#[derive(Oper)]
-#[oper(output = TermInfo)]
-pub struct GetTermInfoExcluded<'a> {
-    /// The term id.
-    pub id: &'a str,
-}
-
 /// Locks a term row.
 #[derive(Oper)]
 #[oper(output = ())]

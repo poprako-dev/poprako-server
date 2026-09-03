@@ -164,14 +164,14 @@ where
 
     let unit_transforms = into_unit_transforms(units)?;
 
-    let unit_ids = unit_transforms
-        .iter()
-        .map(|unit_transform| unit_transform.unit_id.clone())
-        .collect::<Vec<_>>();
-
     let () = nucl
         .coord(async move |context| {
             //
+            let unit_ids = unit_transforms
+                .iter()
+                .map(|unit_transform| unit_transform.unit_id.as_str())
+                .collect::<Vec<_>>();
+
             let transform_scope = load_transform_scope(
                 repo,
                 context,
@@ -236,7 +236,7 @@ async fn load_transform_scope<C, R>(
     chapter_id: &str,
     user_id: &str,
     part: UnitTextPart,
-    unit_ids: &[String],
+    unit_ids: &[&str],
 ) -> BaseRest<TransformScope>
 where
     C: Context + Send,

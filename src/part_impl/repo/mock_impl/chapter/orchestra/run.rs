@@ -107,6 +107,10 @@ impl<'a> Run<StartChapterStage<'a>> for Mock {
         // Internal implementation detail.
         let mut state = self.state.lock().unwrap();
 
+        if state.deleted_chapter_ids.contains(oper.id) {
+            return accept(false);
+        }
+
         let Some(chapter_info) = state
             .chapters
             .iter_mut()
@@ -154,6 +158,10 @@ impl<'a> Run<CompleteChapterRawProvide<'a>> for Mock {
         // Internal implementation detail.
         // Internal implementation detail.
         let mut state = self.state.lock().unwrap();
+
+        if state.deleted_chapter_ids.contains(oper.id) {
+            return accept(false);
+        }
 
         let Some(chapter_index) = state
             .chapters

@@ -22,26 +22,26 @@ pub const MAX_EXPORT_MONTHS: usize = 12;
 
 /// Complete immutable comic payload serialized once when archiving.
 #[derive(Serialize)]
-pub struct ArchivedComicPayload {
+pub struct ArchivedComicPayload<'a> {
     //
     /// Original database identifier of the comic before archiving.
-    pub source_comic_id: String,
+    pub source_comic_id: &'a str,
     /// Workset the comic belonged to at archiving time.
-    pub workset: ArchivedWorksetPayload,
+    pub workset: ArchivedWorksetPayload<'a>,
     /// Display ordering index of the comic within its workset.
     pub index: usize,
     /// Title of the comic as displayed to users.
-    pub title: String,
+    pub title: &'a str,
     /// Author name associated with the comic.
-    pub author: String,
+    pub author: &'a str,
     /// Optional longer description of the comic's content.
-    pub description: Option<String>,
+    pub description: Option<&'a str>,
     /// Total number of chapters archived with this comic.
     pub chapter_count: usize,
     /// The next sequential index assigned to a new chapter at archiving time.
     pub chapter_next_index: usize,
     /// Identifier of the user who created this comic.
-    pub creator_id: String,
+    pub creator_id: &'a str,
     /// Unix timestamp of the most recent activity on this comic.
     pub last_active_at: i64,
     /// Unix timestamp of when the comic was created.
@@ -49,23 +49,23 @@ pub struct ArchivedComicPayload {
     /// Unix timestamp of when the comic was last modified.
     pub updated_at: i64,
     /// Archived payloads for every chapter in this comic.
-    pub chapters: Vec<ArchivedChapterPayload>,
+    pub chapters: Vec<ArchivedChapterPayload<'a>>,
 }
 
 /// Immutable workset payload serialized into an archive entry.
 #[derive(Serialize)]
-pub struct ArchivedWorksetPayload {
+pub struct ArchivedWorksetPayload<'a> {
     //
     /// Original database identifier of the workset.
-    pub id: String,
+    pub id: &'a str,
     /// Identifier of the team that owns this workset.
-    pub team_id: String,
+    pub team_id: &'a str,
     /// Display ordering index of the workset within the team.
     pub index: usize,
     /// Human-readable name of the workset.
-    pub name: String,
+    pub name: &'a str,
     /// Optional description of the workset's purpose or scope.
-    pub description: Option<String>,
+    pub description: Option<&'a str>,
     /// Number of comics the workset contained at archiving time.
     pub comic_count: usize,
     /// The next sequential index assigned to a new comic at archiving time.
@@ -78,16 +78,16 @@ pub struct ArchivedWorksetPayload {
 
 /// Immutable chapter payload serialized into an archive entry.
 #[derive(Serialize)]
-pub struct ArchivedChapterPayload {
+pub struct ArchivedChapterPayload<'a> {
     //
     /// Original database identifier of the chapter before archiving.
-    pub source_chapter_id: String,
+    pub source_chapter_id: &'a str,
     /// Whether the chapter was pinned at the top of its comic.
     pub is_pinned: bool,
     /// Display ordering index of the chapter within its comic.
     pub index: usize,
     /// Subtitle or volume label displayed for this chapter.
-    pub subtitle: String,
+    pub subtitle: &'a str,
     /// Total number of pages in this chapter at archiving time.
     pub page_count: usize,
     /// Total number of translation units across all pages.
@@ -99,43 +99,43 @@ pub struct ArchivedChapterPayload {
     /// Bitmask of workflow stages this chapter has entered.
     pub stages: u32,
     /// Identifier of the user who created this chapter.
-    pub creator_id: String,
+    pub creator_id: &'a str,
     /// Unix timestamp of when the chapter was created.
     pub created_at: i64,
     /// Unix timestamp of when the chapter was last modified.
     pub updated_at: i64,
     /// Archived payloads for all assignments on this chapter.
-    pub assignments: Vec<ArchivedAssignmentPayload>,
+    pub assignments: Vec<ArchivedAssignmentPayload<'a>>,
     /// Immutable workflow records without language-specific rendered text.
-    pub workflow_records: Vec<ArchivedChapterWorkflowRecordPayload>,
+    pub workflow_records: Vec<ArchivedChapterWorkflowRecordPayload<'a>>,
     /// Archived payloads for all pages in this chapter.
-    pub pages: Vec<ArchivedPagePayload>,
+    pub pages: Vec<ArchivedPagePayload<'a>>,
 }
 
 /// Immutable workflow record payload retained inside an archived chapter.
 #[derive(Serialize)]
-pub struct ArchivedChapterWorkflowRecordPayload {
+pub struct ArchivedChapterWorkflowRecordPayload<'a> {
     //
     /// Original workflow record identifier.
-    pub id: String,
+    pub id: &'a str,
     /// User that caused the record, absent for system work.
-    pub actor_user_id: Option<String>,
+    pub actor_user_id: Option<&'a str>,
     /// Stable event kind.
     pub kind: ChapterWorkflowRecordKind,
     /// Structured, language-neutral details.
-    pub payload: ArchivedChapterWorkflowRecordDetail,
+    pub payload: ArchivedChapterWorkflowRecordDetail<'a>,
     /// Unix timestamp of record creation.
     pub created_at: i64,
 }
 
 /// Immutable assignment payload serialized into an archive entry.
 #[derive(Serialize)]
-pub struct ArchivedAssignmentPayload {
+pub struct ArchivedAssignmentPayload<'a> {
     //
     /// Original database identifier of the assignment before archiving.
-    pub source_assignment_id: String,
+    pub source_assignment_id: &'a str,
     /// Identifier of the user assigned to this chapter.
-    pub user_id: String,
+    pub user_id: &'a str,
     /// Bitmask of assigned role perms.
     pub roles: u32,
     /// Unix timestamp of when the assignment was created.
@@ -143,19 +143,19 @@ pub struct ArchivedAssignmentPayload {
     /// Unix timestamp of when the assignment was last modified.
     pub updated_at: i64,
     /// Archived payload for the user assigned to this role.
-    pub user: ArchivedUserPayload,
+    pub user: ArchivedUserPayload<'a>,
 }
 
 /// Immutable user payload serialized into an archive entry.
 #[derive(Serialize)]
-pub struct ArchivedUserPayload {
+pub struct ArchivedUserPayload<'a> {
     //
     /// Original database identifier of the user.
-    pub id: String,
+    pub id: &'a str,
     /// Qualified user identifier used for login and display.
-    pub qid: String,
+    pub qid: &'a str,
     /// Display nickname chosen by the user.
-    pub nickname: String,
+    pub nickname: &'a str,
     /// Whether the user has super-administrator privileges.
     pub is_sadmin: bool,
     /// Unix timestamp of the user's most recent activity.
@@ -168,10 +168,10 @@ pub struct ArchivedUserPayload {
 
 /// Immutable page payload serialized into an archive entry.
 #[derive(Serialize)]
-pub struct ArchivedPagePayload {
+pub struct ArchivedPagePayload<'a> {
     //
     /// Original database identifier of the page before archiving.
-    pub source_page_id: String,
+    pub source_page_id: &'a str,
     /// Display ordering index of the page within its chapter.
     pub index: usize,
     /// Total number of translation units on this page.
@@ -185,15 +185,15 @@ pub struct ArchivedPagePayload {
     /// Unix timestamp of when the page was last modified.
     pub updated_at: i64,
     /// Archived payloads for all translation units on this page.
-    pub units: Vec<ArchivedUnitPayload>,
+    pub units: Vec<ArchivedUnitPayload<'a>>,
 }
 
 /// Immutable unit payload serialized into an archive entry.
 #[derive(Serialize)]
-pub struct ArchivedUnitPayload {
+pub struct ArchivedUnitPayload<'a> {
     //
     /// Original database identifier of the unit before archiving.
-    pub source_unit_id: String,
+    pub source_unit_id: &'a str,
     /// Display ordering index of the unit within its page.
     pub index: usize,
     /// Whether this unit is a speech bubble (true) or narration box.
@@ -205,13 +205,13 @@ pub struct ArchivedUnitPayload {
     /// Vertical coordinate of the unit's bounding box on the page.
     pub y_coord: f64,
     /// Final translated text, or None if not yet translated.
-    pub translated_text: Option<String>,
+    pub translated_text: Option<&'a str>,
     /// Identifier of the user who last edited the translation, or None.
-    pub last_translator_id: Option<String>,
+    pub last_translator_id: Option<&'a str>,
     /// Proofread revision of the translated text, or None.
-    pub proofread_text: Option<String>,
+    pub proofread_text: Option<&'a str>,
     /// Identifier of the user who last edited the proofread text, or None.
-    pub last_proofreader_id: Option<String>,
+    pub last_proofreader_id: Option<&'a str>,
     /// Unix timestamp of when the unit was created.
     pub created_at: i64,
     /// Unix timestamp of when the unit was last modified.
@@ -264,11 +264,9 @@ impl ComicArchiveMonth {
 
         let mut unique_labels = HashSet::with_capacity(labels.len());
 
-        let mut months = Vec::with_capacity(labels.len());
-
-        for label in labels {
+        for label in &labels {
             //
-            if !unique_labels.insert(label.clone()) {
+            if !unique_labels.insert(label.as_str()) {
                 //
                 let err_message = trl("error-duplicate-comic-archive-month");
 
@@ -284,6 +282,12 @@ impl ComicArchiveMonth {
                     message: err_message,
                 });
             }
+        }
+
+        let mut months = Vec::with_capacity(labels.len());
+
+        for label in labels {
+            //
 
             let (year, month) = parse_label(&label)?;
 

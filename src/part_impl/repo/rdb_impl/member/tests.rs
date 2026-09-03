@@ -6,6 +6,8 @@ use super::*;
 use std::sync::Arc;
 use std::time::Duration;
 
+use diesel::prelude::{ExpressionMethods as _, QueryDsl as _};
+use diesel_async::RunQueryDsl as _;
 use poprako_orchestra::{Nucl as _, OperStep as _, Step as _};
 use tokio::sync::{Semaphore, mpsc};
 
@@ -17,11 +19,13 @@ use crate::model::write::member::{MemberEntry, MemberRoleRepl};
 use crate::model::write::user::UserEntry;
 use crate::part::nucl::{ReptRead, Serial};
 use crate::part::repo::oper::member::{
-    CreateMember, GetMemberInfo, ListMemberInfos, UpdateMember,
+    CreateMember, DeleteUserMemberships, GetMemberInfo, ListMemberInfos,
+    UpdateMember,
 };
-use crate::part::repo::oper::user::{GetUserInfo, UpdateUser};
+use crate::part::repo::oper::user::{DeleteUser, GetUserInfo, UpdateUser};
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::HybRepo;
+use crate::part_impl::repo::rdb_impl::schema::{t_member, t_team, t_user};
 use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::result::BaseError;
 use crate::value::member::MemberInclOpt;
@@ -161,6 +165,94 @@ pub async fn member_roundtrip_uses_testcontainer(shared: RdbCore) {
         .await
         .ok()
         .unwrap();
+}
+
+/// Verifies user cleanup removes memberships hidden by a team tombstone.
+pub async fn user_cleanup_includes_tombstoned_team_memberships(
+    shared: RdbCore,
+) {
+    test_shared::reset(&shared, PREFIX).await;
+
+    let team_fixture = test_shared::seed_user_and_team(&shared, PREFIX).await;
+
+    let member_entry = MemberEntry {
+        id: format!("{}tombstoned-member", PREFIX),
+        user_id: team_fixture.user_entry.id.clone(),
+        user_nickname: team_fixture.user_entry.nickname.clone(),
+        team_id: team_fixture.team_entry.id.clone(),
+        roles: RoleMask::from(RoleField::ADMIN),
+    };
+
+    let repo = HybRepo::new(shared.clone());
+
+    let nucl = RdbNucl::<Serial>::new(shared.clone());
+
+    nucl.coord(async |context| {
+        repo.step(
+            context,
+            &CreateMember {
+                entry: &member_entry,
+            },
+        )
+        .await?;
+
+        Ok::<(), BaseError>(())
+    })
+    .await
+    .unwrap();
+
+    let mut conn = shared.get().await.unwrap();
+
+    diesel::update(
+        t_team::table.filter(t_team::f_id.eq(&team_fixture.team_entry.id)),
+    )
+    .set(t_team::f_deleted_at.eq(Some(time::OffsetDateTime::now_utc())))
+    .execute(&mut conn)
+    .await
+    .unwrap();
+
+    drop(conn);
+
+    nucl.coord(async |context| {
+        DeleteUserMemberships {
+            user_id: &team_fixture.user_entry.id,
+        }
+        .step_on(&repo, context)
+        .await?;
+
+        DeleteUser {
+            id: &team_fixture.user_entry.id,
+        }
+        .step_on(&repo, context)
+        .await?;
+
+        Ok::<(), BaseError>(())
+    })
+    .await
+    .unwrap();
+
+    let mut conn = shared.get().await.unwrap();
+
+    let member_count = t_member::table
+        .filter(t_member::f_id.eq(&member_entry.id))
+        .count()
+        .get_result::<i64>(&mut conn)
+        .await
+        .unwrap();
+
+    let user_count = t_user::table
+        .filter(t_user::f_id.eq(&team_fixture.user_entry.id))
+        .count()
+        .get_result::<i64>(&mut conn)
+        .await
+        .unwrap();
+
+    assert_eq!(member_count, 0);
+    assert_eq!(user_count, 0);
+
+    drop(conn);
+
+    test_shared::cleanup(&shared, PREFIX).await.unwrap();
 }
 
 /// Verifies concurrent admin removals preserve one team administrator.

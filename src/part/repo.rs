@@ -50,6 +50,8 @@ pub mod online_user;
 pub mod oper;
 /// Page repository port.
 pub mod page;
+/// Hierarchical subtree deletion repository port.
+pub mod subtree_delete;
 /// System mail repository port.
 pub mod system_mail;
 /// Team repository port.

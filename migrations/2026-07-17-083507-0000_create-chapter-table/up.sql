@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS "t_chapter" (
 
     "f_creator_id"                 TEXT        NOT NULL REFERENCES "t_user" ("f_id") ON DELETE RESTRICT,
 
+    "f_deleted_at"                 TIMESTAMPTZ,
     "f_created_at"                 TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     "f_updated_at"                 TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

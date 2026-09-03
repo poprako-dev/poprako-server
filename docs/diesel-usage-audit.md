@@ -82,26 +82,51 @@ Evidence:
 - [`src/usecase/unit/tests/search.rs`](../src/usecase/unit/tests/search.rs#L1)
 - [`tests/integration-tests/src/suites/it_05_unit_save_order_count.ts`](../tests/integration-tests/src/suites/it_05_unit_save_order_count.ts#L102)
 
-### P0: Hierarchical deletion composes single-entity deletion paths
+### Resolved P0: Hierarchical deletion
 
-Team, Workset, Comic, Chapter, and Termbase cascades list descendants and then
-invoke their single-entity deletion routines one by one. This repeats reads and
-locks already performed by the parent cascade. Child deletion also updates
-aggregate counters and timestamps on ancestors that will be deleted in the
-same transaction.
+Team, Workset, and Comic deletion now atomically marks the selected hierarchy
+with one timestamp. Marked Team, Workset, Comic, and Chapter rows are excluded
+from normal reads and guarded mutations immediately. Direct Chapter deletion
+remains synchronous because Chapter is the cleanup unit and its Page count is
+frozen while deletion is in progress.
+
+Two scheduler workers repeatedly claim eligible rows with `FOR UPDATE SKIP
+LOCKED`. Claims are dependency ordered: Chapter, then childless Comic, then
+childless Workset, then childless Team. Each transaction deletes only one
+claimed level and its direct dependants. Object deletion tasks are inserted in
+the same transaction before the relational rows disappear, so a rollback leaves
+the target available for a later sweep. Prom itself keeps its existing unordered
+semantics.
+
+The shared RDB pool is capped at four connections for the 2C2G production host;
+the deletion scheduler uses two workers. Permanent-failure quarantine remains a
+focused FIXME. No ordered task table or application-side copy of an entire
+hierarchy was introduced.
+
+The repository contract and every production execution boundary were also
+audited in reverse: all declared domain `Oper`s have direct use-case consumers,
+and no HTTP, scheduler, effect, or Prom business handler executes one outside
+`src/usecase`. Thirteen obsolete operations and their RDB/mock implementations
+were removed. Domain-event and deferred-task business orchestration now lives in
+business-domain use cases; their actors only provide queueing, dispatch, and
+retry lifecycles. This caller-independent boundary is codified in
+[`usecase-boundaries`](../.agents/skills/usecase-boundaries/SKILL.md).
+
+Tombstone follow-up guards cover adjacent lifecycle paths: user deletion
+batch-removes memberships even when their teams are already hidden; archive
+snapshot and commit both require an active Comic; and normal Page identity
+reads reject Pages whose Chapter is tombstoned, preventing late upload
+confirmation.
 
 Evidence:
 
-- [`src/usecase/team/delete.rs`](../src/usecase/team/delete.rs#L135)
-- [`src/usecase/workset.rs`](../src/usecase/workset.rs#L275)
-- [`src/usecase/comic.rs`](../src/usecase/comic.rs#L353)
-- [`src/usecase/chapter/delete.rs`](../src/usecase/chapter/delete.rs#L81)
-- [`src/usecase/termbase.rs`](../src/usecase/termbase.rs#L369)
-
-Action: introduce typed subtree-deletion operations that delete each dependent
-table in batches and omit writes to doomed ancestors. Preserve archive rules,
-object-deletion tasks, foreign-key ordering, permissions, and all observable
-business effects; database `ON DELETE CASCADE` is not a sufficient replacement.
+- [`src/part_impl/repo/rdb_impl/subtree_delete.rs`](../src/part_impl/repo/rdb_impl/subtree_delete.rs)
+- [`src/part_impl/repo/rdb_impl/subtree_delete/mark.rs`](../src/part_impl/repo/rdb_impl/subtree_delete/mark.rs)
+- [`src/part_impl/repo/rdb_impl/subtree_delete/sweep.rs`](../src/part_impl/repo/rdb_impl/subtree_delete/sweep.rs)
+- [`src/usecase/subtree_delete.rs`](../src/usecase/subtree_delete.rs)
+- [`src/usecase/internal/subtree_delete.rs`](../src/usecase/internal/subtree_delete.rs)
+- [`src/extra/sched/subtree_delete.rs`](../src/extra/sched/subtree_delete.rs)
+- [`src/part_impl/repo/rdb_impl/subtree_delete/tests.rs`](../src/part_impl/repo/rdb_impl/subtree_delete/tests.rs)
 
 ### P0: Public list size is unbounded and archive export materializes payloads
 
@@ -139,22 +164,22 @@ Evidence:
 Action: express the stage condition as a typed, correlated `EXISTS` predicate
 inside the scoped Comic query.
 
-### P1: Database and request concurrency limits are not coordinated
+### P1: Request concurrency is not coordinated with the database pool
 
-The RDB pool uses builder defaults: it has no explicit application capacity or
-acquisition timeout. HTTP has a global request-rate limit but no in-flight
-request limit, timeout, or load shedding. The Unit search fan-out can therefore
-consume the shared pool while other requests and background actors wait.
+The RDB pool is now explicitly capped at four connections for the 2C2G
+production host. HTTP still has a global request-rate limit but no in-flight
+request limit, timeout, or load shedding, so request concurrency can still
+occupy all four connections while background actors wait.
 
 Evidence:
 
 - [`poprako-rdb-core/src/rdb.rs`](../poprako-rdb-core/src/rdb.rs#L92)
 - [`src/api/http/middleware/rate_limit.rs`](../src/api/http/middleware/rate_limit.rs#L15)
 
-Action: configure pool capacity and acquisition timeout from deployment
-settings, bound in-flight HTTP work relative to that capacity, and reserve
-capacity for background consumers. Keep serialization failures as retryable
-conflicts; do not weaken transaction isolation to avoid contention.
+Action: add an acquisition timeout, bound in-flight HTTP database work below
+the four-connection capacity, and reserve capacity for background consumers.
+Keep serialization failures as retryable conflicts; do not weaken transaction
+isolation to avoid contention.
 
 ### P1: Object-task polling performs continuous maintenance writes
 

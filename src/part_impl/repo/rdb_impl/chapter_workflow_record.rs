@@ -17,27 +17,13 @@ use crate::part::nucl::ReptRead;
 use crate::model::read::proj::chapter_workflow_record::ChapterWorkflowRecordInfo;
 use crate::model::read::spec::chapter_workflow_record::ChapterWorkflowRecordListSpec;
 use crate::model::write::chapter_workflow_record::ChapterWorkflowRecordEntry;
-use crate::part::repo::oper::chapter_workflow_record::{CreateChapterWorkflowRecords, DeleteChapterWorkflowRecords, ListChapterWorkflowRecordInfos, ListChapterWorkflowRecordInfosExcluded};
+use crate::part::repo::oper::chapter_workflow_record::{CreateChapterWorkflowRecords, ListChapterWorkflowRecordInfos};
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::entity::chapter_workflow_record::{ChapterWorkflowRecordEntryRow, ChapterWorkflowRecordInfoRow};
 use crate::part_impl::repo::rdb_impl::schema::t_chapter_workflow_record::dsl::{f_chapter_id, f_created_at, f_id, t_chapter_workflow_record};
 use crate::result::{BaseError, BaseRest, accept};
 use crate::shared::result::diesel;
 use crate::shared::RdbContext;
-
-// Deletes every active workflow record belonging to one chapter.
-#[instrument(level = "info", skip_all)]
-async fn delete(conn: &mut RdbConn, chapter_id: &str) -> BaseRest<()> {
-    //
-    diesel::delete(
-        t_chapter_workflow_record.filter(f_chapter_id.eq(chapter_id)),
-    )
-    .execute(conn)
-    .await
-    .map_err(diesel)?;
-
-    accept(())
-}
 
 // Lists one reverse-chronological page of immutable workflow records.
 #[instrument(level = "info", skip_all)]
@@ -52,25 +38,6 @@ async fn list_infos(
         .offset(i64::from(spec.offset))
         .limit(i64::from(spec.limit))
         .select(ChapterWorkflowRecordInfoRow::as_select())
-        .load::<ChapterWorkflowRecordInfoRow>(conn)
-        .await
-        .map_err(diesel)?;
-
-    rows.into_iter().map(TryInto::try_into).collect()
-}
-
-// Locks and lists records in archive-order, oldest first.
-#[instrument(level = "info", skip_all)]
-async fn list_infos_excluded(
-    conn: &mut RdbConn,
-    chapter_id: &str,
-) -> BaseRest<Vec<ChapterWorkflowRecordInfo>> {
-    //
-    let rows = t_chapter_workflow_record
-        .filter(f_chapter_id.eq(chapter_id))
-        .order_by((f_created_at.asc(), f_id.asc()))
-        .select(ChapterWorkflowRecordInfoRow::as_select())
-        .for_update()
         .load::<ChapterWorkflowRecordInfoRow>(conn)
         .await
         .map_err(diesel)?;
@@ -135,48 +102,5 @@ where
         oper: &CreateChapterWorkflowRecords<'_>,
     ) -> BaseRest<()> {
         create(context.conn(), oper.entries).await
-    }
-}
-
-impl<L> Step<ListChapterWorkflowRecordInfosExcluded<'_>, RdbContext<L>>
-    for HybRepo
-where
-    L: Level + Send + AtLeast<ReptRead>,
-{
-    // Declares the transaction isolation level required for locked reads.
-    type Level = ReptRead;
-
-    // Defines the adapter error exposed by this operation.
-    type Error = BaseError;
-
-    #[instrument(level = "info", skip_all)]
-    // Locks and reads records in archive order inside the transaction.
-    async fn step(
-        &self,
-        context: &mut RdbContext<L>,
-        oper: &ListChapterWorkflowRecordInfosExcluded<'_>,
-    ) -> BaseRest<Vec<ChapterWorkflowRecordInfo>> {
-        list_infos_excluded(context.conn(), oper.chapter_id).await
-    }
-}
-
-impl<L> Step<DeleteChapterWorkflowRecords<'_>, RdbContext<L>> for HybRepo
-where
-    L: Level + Send + AtLeast<ReptRead>,
-{
-    // Declares the transaction isolation level required for deletion.
-    type Level = ReptRead;
-
-    // Defines the adapter error exposed by this operation.
-    type Error = BaseError;
-
-    #[instrument(level = "info", skip_all)]
-    // Deletes a chapter's active records inside the caller-owned transaction.
-    async fn step(
-        &self,
-        context: &mut RdbContext<L>,
-        oper: &DeleteChapterWorkflowRecords<'_>,
-    ) -> BaseRest<()> {
-        delete(context.conn(), oper.chapter_id).await
     }
 }

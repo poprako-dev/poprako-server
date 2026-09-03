@@ -79,7 +79,7 @@ pub struct FindPinnedChapterInfo<'a, 'b> {
 #[oper(output = Vec<ChapterInfo>)]
 pub struct ListPinnedChapterInfos<'a> {
     /// Comic identifiers.
-    pub comic_ids: &'a [String],
+    pub comic_ids: &'a [&'a str],
 }
 
 /// Updates a chapter's fields.
@@ -115,14 +115,6 @@ pub struct StartChapterStage<'a> {
 #[derive(Oper)]
 #[oper(output = bool)]
 pub struct CompleteChapterRawProvide<'a> {
-    /// Chapter identifier.
-    pub id: &'a str,
-}
-
-/// Clears raw-provision completion without changing any other stage.
-#[derive(Oper)]
-#[oper(output = ())]
-pub struct ResetChapterRawProvide<'a> {
     /// Chapter identifier.
     pub id: &'a str,
 }
@@ -164,12 +156,4 @@ pub struct UnpinOtherChapters<'a> {
     pub comic_id: &'a str,
     /// Chapter identifier to exclude from unpinning.
     pub excluded_id: &'a str,
-}
-
-/// Deletes a chapter.
-#[derive(Oper)]
-#[oper(output = ())]
-pub struct DeleteChapter<'a> {
-    /// Chapter identifier.
-    pub id: &'a str,
 }

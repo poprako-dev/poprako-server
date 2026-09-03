@@ -2,11 +2,10 @@ use poprako_orchestra::drive;
 
 use crate::part::repo::oper::chapter::{
     AdjustChapterUnitCounters, CompleteChapterRawProvide, CreateChapter,
-    DeleteChapter, FindPinnedChapterInfo, GetChapterInfo,
-    GetChapterInfoExcluded, ListChapterInfos, ListChapterInfosExcluded,
-    ListPinnedChapterInfos, LockChapters, ResetChapterRawProvide,
-    SetChapterPageCounters, StartChapterStage, UnpinOtherChapters,
-    UpdateChapter, UpdateChapterStage,
+    FindPinnedChapterInfo, GetChapterInfo, GetChapterInfoExcluded,
+    ListChapterInfos, ListChapterInfosExcluded, ListPinnedChapterInfos,
+    LockChapters, SetChapterPageCounters, StartChapterStage,
+    UnpinOtherChapters, UpdateChapter, UpdateChapterStage,
 };
 use crate::result::BaseError;
 
@@ -36,11 +35,9 @@ use crate::result::BaseError;
         for<'a> UpdateChapterStage<'a>,
         for<'a> StartChapterStage<'a>,
         for<'a> CompleteChapterRawProvide<'a>,
-        for<'a> ResetChapterRawProvide<'a>,
         for<'a> SetChapterPageCounters<'a>,
         for<'a> AdjustChapterUnitCounters<'a>,
         for<'a> UnpinOtherChapters<'a>,
-        for<'a> DeleteChapter<'a>,
     ),
 )]
 pub trait ChapterRepo<C> {}

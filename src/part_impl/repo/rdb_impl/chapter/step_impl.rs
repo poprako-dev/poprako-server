@@ -22,8 +22,8 @@ use crate::part_impl::repo::rdb_impl::entity::chapter::{
 };
 use crate::part_impl::repo::rdb_impl::incl;
 use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::{
-    f_comic_id, f_id, f_index, f_is_pinned, f_page_count, f_proofread_at,
-    f_proofread_unit_count, f_proofreading_at, f_published_at,
+    f_comic_id, f_deleted_at, f_id, f_index, f_is_pinned, f_page_count,
+    f_proofread_at, f_proofread_unit_count, f_proofreading_at, f_published_at,
     f_total_unit_count, f_translated_at, f_translated_unit_count,
     f_translating_at, f_typeset_at, f_typesetting_at, f_updated_at,
     f_uploaded_at, t_chapter,
@@ -32,6 +32,25 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::result::diesel;
 use crate::value::chapter::ChapterInclOpt;
 use crate::value::chapter::stage::Stage;
+
+/// Build the expected error for a missing chapter.
+pub fn missing_chapter(id: &str, operation: &str) -> BaseError {
+    //
+    let err_message = trl("error-chapter-not-found");
+
+    tracing::warn!(
+        err_variant = ?ExpectedVariant::Args,
+        err_message = %err_message,
+        chapter_id = %id,
+        operation,
+        "expected error: chapter not found",
+    );
+
+    BaseError::Expected {
+        variant: ExpectedVariant::Args,
+        message: err_message,
+    }
+}
 
 /// Queries a single chapter row by ID and populates its includes.
 #[instrument(level = "info", skip_all)]
@@ -43,6 +62,7 @@ pub async fn get_info_by_id(
     //
     let row = t_chapter
         .filter(f_id.eq(id))
+        .filter(f_deleted_at.is_null())
         .select(ChapterInfoRow::as_select())
         .get_result::<ChapterInfoRow>(conn)
         .await
@@ -88,6 +108,7 @@ pub async fn get_info_excluded(
     //
     let row = t_chapter
         .filter(f_id.eq(id))
+        .filter(f_deleted_at.is_null())
         .select(ChapterInfoRow::as_select())
         .for_update()
         .get_result::<ChapterInfoRow>(conn)
@@ -133,6 +154,7 @@ pub async fn list_infos(
     //
     let rows = t_chapter
         .filter(f_comic_id.eq(spec.comic_id.as_str()))
+        .filter(f_deleted_at.is_null())
         .select(ChapterInfoRow::as_select())
         .order_by(f_index.desc())
         .offset(i64::from(spec.offset))
@@ -158,6 +180,7 @@ pub async fn list_infos_excluded(
     //
     let rows = t_chapter
         .filter(f_comic_id.eq(comic_id))
+        .filter(f_deleted_at.is_null())
         .select(ChapterInfoRow::as_select())
         .order_by(f_index.desc())
         .for_update()
@@ -174,6 +197,7 @@ pub async fn lock_chapters(conn: &mut RdbConn, comic_id: &str) -> BaseRest<()> {
     //
     let _ = t_chapter
         .filter(f_comic_id.eq(comic_id))
+        .filter(f_deleted_at.is_null())
         .select(f_id)
         .for_update()
         .load::<String>(conn)
@@ -193,6 +217,7 @@ pub async fn find_pinned_info_by_comic_id(
     //
     let row = t_chapter
         .filter(f_comic_id.eq(comic_id))
+        .filter(f_deleted_at.is_null())
         .filter(f_is_pinned.eq(true))
         .select(ChapterInfoRow::as_select())
         .get_result::<ChapterInfoRow>(conn)
@@ -220,7 +245,7 @@ pub async fn find_pinned_info_by_comic_id(
 #[instrument(level = "info", skip_all)]
 pub async fn list_pinned_infos_by_comic_ids(
     conn: &mut RdbConn,
-    comic_ids: &[String],
+    comic_ids: &[&str],
 ) -> BaseRest<Vec<ChapterInfo>> {
     //
     if comic_ids.is_empty() {
@@ -229,6 +254,7 @@ pub async fn list_pinned_infos_by_comic_ids(
 
     let rows = t_chapter
         .filter(f_comic_id.eq_any(comic_ids))
+        .filter(f_deleted_at.is_null())
         .filter(f_is_pinned.eq(true))
         .select(ChapterInfoRow::as_select())
         .load::<ChapterInfoRow>(conn)
@@ -276,11 +302,19 @@ pub async fn update_info(
         aspect = aspect.pinned(pin);
     }
 
-    diesel::update(t_chapter.filter(f_id.eq(update.id.as_str())))
-        .set(&aspect)
-        .execute(conn)
-        .await
-        .map_err(diesel)?;
+    let updated_count = diesel::update(
+        t_chapter
+            .filter(f_id.eq(update.id.as_str()))
+            .filter(f_deleted_at.is_null()),
+    )
+    .set(&aspect)
+    .execute(conn)
+    .await
+    .map_err(diesel)?;
+
+    if updated_count == 0 {
+        return Err(missing_chapter(&update.id, "update chapter info"));
+    }
 
     accept(())
 }
@@ -296,11 +330,19 @@ pub async fn update_stage(
 
     let aspect = ChapterAspectRow::new(now).stages(update.stages, now);
 
-    diesel::update(t_chapter.filter(f_id.eq(update.id.as_str())))
-        .set(&aspect)
-        .execute(conn)
-        .await
-        .map_err(diesel)?;
+    let updated_count = diesel::update(
+        t_chapter
+            .filter(f_id.eq(update.id.as_str()))
+            .filter(f_deleted_at.is_null()),
+    )
+    .set(&aspect)
+    .execute(conn)
+    .await
+    .map_err(diesel)?;
+
+    if updated_count == 0 {
+        return Err(missing_chapter(&update.id, "update chapter stage"));
+    }
 
     accept(())
 }
@@ -320,6 +362,7 @@ pub async fn start_stage(
         Stage::Translate => diesel::update(
             t_chapter
                 .filter(f_id.eq(id))
+                .filter(f_deleted_at.is_null())
                 .filter(f_published_at.is_null())
                 .filter(f_translating_at.is_null())
                 .filter(f_translated_at.is_null()),
@@ -332,6 +375,7 @@ pub async fn start_stage(
         Stage::Proofread => diesel::update(
             t_chapter
                 .filter(f_id.eq(id))
+                .filter(f_deleted_at.is_null())
                 .filter(f_published_at.is_null())
                 .filter(f_proofreading_at.is_null())
                 .filter(f_proofread_at.is_null()),
@@ -344,6 +388,7 @@ pub async fn start_stage(
         Stage::TypesetRedraw => diesel::update(
             t_chapter
                 .filter(f_id.eq(id))
+                .filter(f_deleted_at.is_null())
                 .filter(f_published_at.is_null())
                 .filter(f_typesetting_at.is_null())
                 .filter(f_typeset_at.is_null()),
@@ -380,6 +425,7 @@ pub async fn complete_raw_provide(
     let updated_count = diesel::update(
         t_chapter
             .filter(f_id.eq(id))
+            .filter(f_deleted_at.is_null())
             .filter(f_uploaded_at.is_null())
             .filter(f_page_count.gt(0)),
     )
@@ -389,24 +435,6 @@ pub async fn complete_raw_provide(
     .map_err(diesel)?;
 
     accept(updated_count > 0)
-}
-
-/// Clears raw-provision completion while preserving every other stage.
-#[instrument(level = "info", skip_all)]
-pub async fn reset_raw_provide(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
-    //
-    let now = OffsetDateTime::now_utc();
-
-    diesel::update(t_chapter.filter(f_id.eq(id)))
-        .set((
-            f_uploaded_at.eq(None::<OffsetDateTime>),
-            f_updated_at.eq(now),
-        ))
-        .execute(conn)
-        .await
-        .map_err(diesel)?;
-
-    accept(())
 }
 
 /// Sets the page and unit counters on a chapter row.
@@ -428,11 +456,17 @@ pub async fn set_page_counters(
         .translated_unit_count(translated_unit_count)
         .proofread_unit_count(proofread_unit_count);
 
-    diesel::update(t_chapter.filter(f_id.eq(id)))
-        .set(&aspect)
-        .execute(conn)
-        .await
-        .map_err(diesel)?;
+    let updated_count = diesel::update(
+        t_chapter.filter(f_id.eq(id)).filter(f_deleted_at.is_null()),
+    )
+    .set(&aspect)
+    .execute(conn)
+    .await
+    .map_err(diesel)?;
+
+    if updated_count == 0 {
+        return Err(missing_chapter(id, "set chapter page counters"));
+    }
 
     accept(())
 }
@@ -447,17 +481,22 @@ pub async fn adjust_unit_counters(
     //
     let now = OffsetDateTime::now_utc();
 
-    diesel::update(t_chapter.filter(f_id.eq(id)))
-        .set((
-            f_total_unit_count.eq(f_total_unit_count + delta.total),
-            f_translated_unit_count
-                .eq(f_translated_unit_count + delta.translated),
-            f_proofread_unit_count.eq(f_proofread_unit_count + delta.proofread),
-            f_updated_at.eq(now),
-        ))
-        .execute(conn)
-        .await
-        .map_err(diesel)?;
+    let updated_count = diesel::update(
+        t_chapter.filter(f_id.eq(id)).filter(f_deleted_at.is_null()),
+    )
+    .set((
+        f_total_unit_count.eq(f_total_unit_count + delta.total),
+        f_translated_unit_count.eq(f_translated_unit_count + delta.translated),
+        f_proofread_unit_count.eq(f_proofread_unit_count + delta.proofread),
+        f_updated_at.eq(now),
+    ))
+    .execute(conn)
+    .await
+    .map_err(diesel)?;
+
+    if updated_count == 0 {
+        return Err(missing_chapter(id, "adjust chapter unit counters"));
+    }
 
     accept(())
 }
@@ -475,24 +514,13 @@ pub async fn unpin_others(
     diesel::update(
         t_chapter
             .filter(f_comic_id.eq(comic_id))
+            .filter(f_deleted_at.is_null())
             .filter(f_id.ne(excluded_id)),
     )
     .set((f_is_pinned.eq(false), f_updated_at.eq(now)))
     .execute(conn)
     .await
     .map_err(diesel)?;
-
-    accept(())
-}
-
-/// Deletes a single chapter row by ID.
-#[instrument(level = "info", skip_all)]
-pub async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
-    //
-    diesel::delete(t_chapter.filter(f_id.eq(id)))
-        .execute(conn)
-        .await
-        .map_err(diesel)?;
 
     accept(())
 }
