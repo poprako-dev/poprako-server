@@ -4937,6 +4937,14 @@
           "poprako"
         ]
       },
+      "ChapterTranslationImportModeInstr": {
+        "type": "string",
+        "description": "Page-content strategy selected by a chapter translation import request.",
+        "enum": [
+          "keep",
+          "overwrite"
+        ]
+      },
       "ChapterTranslationPortView": {
         "type": "object",
         "description": "JSON document exchanged by the `PopRaKo` translation port.",
@@ -5192,12 +5200,12 @@
                   },
                   "imported_page_count": {
                     "type": "integer",
-                    "description": "Number of imported pages.",
+                    "description": "Number of pages whose visible Unit content changed.",
                     "minimum": 0
                   },
                   "imported_unit_count": {
                     "type": "integer",
-                    "description": "Number of imported units.",
+                    "description": "Number of Units created from the imported source.",
                     "minimum": 0
                   }
                 }
@@ -7034,12 +7042,12 @@
             "properties": {
               "imported_page_count": {
                 "type": "integer",
-                "description": "Number of pages that were imported.",
+                "description": "Number of pages whose visible Unit content changed.",
                 "minimum": 0
               },
               "imported_unit_count": {
                 "type": "integer",
-                "description": "Number of translation units that were imported.",
+                "description": "Number of Units created from the imported source.",
                 "minimum": 0
               }
             }
@@ -9284,6 +9292,7 @@
         "description": "Request body for importing chapter translations.",
         "required": [
           "format",
+          "mode",
           "content"
         ],
         "properties": {
@@ -9294,6 +9303,10 @@
           "format": {
             "$ref": "#/components/schemas/ChapterTranslationFormatInstr",
             "description": "The translation format (e.g., JSON, SRT)."
+          },
+          "mode": {
+            "$ref": "#/components/schemas/ChapterTranslationImportModeInstr",
+            "description": "Page-content strategy used while applying the imported source."
           }
         }
       },
@@ -9307,12 +9320,12 @@
         "properties": {
           "imported_page_count": {
             "type": "integer",
-            "description": "Number of pages that were imported.",
+            "description": "Number of pages whose visible Unit content changed.",
             "minimum": 0
           },
           "imported_unit_count": {
             "type": "integer",
-            "description": "Number of translation units that were imported.",
+            "description": "Number of Units created from the imported source.",
             "minimum": 0
           }
         }

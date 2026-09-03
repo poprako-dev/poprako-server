@@ -274,6 +274,16 @@ export async function runIt05Module(ctx: RunCtx): Promise<void> {
         await ctx.sadmin.post<ErrorBody>(`/api/v1/chapters/${f10Chapter.id}/translations/import`, {
             content: "garbage-content",
             format: "label-plus",
+            mode: "overwrite",
+        }),
+        422,
+    );
+
+    // Mode is required even when the source content is otherwise valid.
+    expectStatus(
+        await ctx.sadmin.post<ErrorBody>(`/api/v1/chapters/${f10Chapter.id}/translations/import`, {
+            content: JSON.stringify(mainExport),
+            format: "poprako",
         }),
         422,
     );
@@ -283,6 +293,7 @@ export async function runIt05Module(ctx: RunCtx): Promise<void> {
         await ctx.sadmin.post<ErrorBody>(`/api/v1/chapters/${f10Chapter.id}/translations/import`, {
             content: "garbage-content",
             format: "label_plus",
+            mode: "overwrite",
         }),
         422,
         2,
@@ -292,6 +303,7 @@ export async function runIt05Module(ctx: RunCtx): Promise<void> {
         ctx.sadmin,
         f10Chapter.id,
         "poprako",
+        "overwrite",
         JSON.stringify(mainExport),
     );
 
@@ -330,6 +342,7 @@ export async function runIt05Module(ctx: RunCtx): Promise<void> {
         ctx.sadmin,
         f10Chapter.id,
         "poprako",
+        "overwrite",
         JSON.stringify(mainExport),
     );
 
@@ -338,6 +351,27 @@ export async function runIt05Module(ctx: RunCtx): Promise<void> {
         repeatedExport.pages.map((page) => page.units.length),
         importedExport.pages.map((page) => page.units.length),
     );
+
+    const keepSource = JSON.parse(JSON.stringify(mainExport)) as typeof mainExport;
+    const keepSourcePage = keepSource.pages.find((page) => page.units.length > 0);
+
+    assert.ok(keepSourcePage, "export fixture must contain a populated page");
+
+    keepSourcePage.units[0]!.translated_text = "keep must not replace this text";
+
+    const beforeKeepExport = await exportPoprako(ctx.sadmin, f10Chapter.id);
+    const kept = await importTranslations(
+        ctx.sadmin,
+        f10Chapter.id,
+        "poprako",
+        "keep",
+        JSON.stringify(keepSource),
+    );
+    const afterKeepExport = await exportPoprako(ctx.sadmin, f10Chapter.id);
+
+    assert.equal(kept.imported_page_count, 0);
+    assert.equal(kept.imported_unit_count, 0);
+    assert.deepEqual(afterKeepExport, beforeKeepExport);
 
     // cleanup F10 aux chapter
     expectStatus(await ctx.sadmin.delete<null>(`/api/v1/chapters/${f10Chapter.id}`), 204);

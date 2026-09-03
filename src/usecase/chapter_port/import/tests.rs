@@ -18,7 +18,9 @@ use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
 use crate::value::chapter::mask::StageMask;
-use crate::value::chapter_port::TranslationFormat;
+use crate::value::chapter_port::{
+    ChapterTranslationImportMode, TranslationFormat,
+};
 use crate::value::role::{RoleField, RoleMask};
 
 // LabelPlus fixture content used for chapter import integration tests.
@@ -37,6 +39,20 @@ const LABEL_PLUS_WITH_EMPTY_PAGE: &str = concat!(
     "----------------[1]----------------[0.1,0.2,1]\n",
     "new text\n",
     ">>>>>>>>[001.jpg]<<<<<<<<\n",
+);
+
+// Small LabelPlus fixture containing one empty page followed by one populated page.
+const LABEL_PLUS_WITH_POPULATED_SECOND_PAGE: &str = concat!(
+    "1,0\n",
+    "-\n",
+    "框内\n",
+    "框外\n",
+    "-\n",
+    "note\n",
+    ">>>>>>>>[000.jpg]<<<<<<<<\n",
+    ">>>>>>>>[001.jpg]<<<<<<<<\n",
+    "----------------[1]----------------[0.1,0.2,1]\n",
+    "new second-page text\n",
 );
 
 // Build a token fixture for chapter import authorization.
@@ -236,6 +252,7 @@ async fn import_label_plus_material_updates_units_and_counters() {
         token("user-1"),
         ImportChapterTranslationInstr {
             format: TranslationFormat::LabelPlus.into(),
+            mode: ChapterTranslationImportMode::Overwrite.into(),
             content: LABEL_PLUS_MATERIAL.into(),
         },
         "chapter-1".into(),
@@ -294,6 +311,7 @@ async fn import_label_plus_material_updates_units_and_counters() {
         token("user-1"),
         ImportChapterTranslationInstr {
             format: TranslationFormat::LabelPlus.into(),
+            mode: ChapterTranslationImportMode::Overwrite.into(),
             content: LABEL_PLUS_MATERIAL.into(),
         },
         "chapter-1".into(),
@@ -339,6 +357,7 @@ async fn import_rejects_page_count_mismatch_without_mutation() {
         token("user-1"),
         ImportChapterTranslationInstr {
             format: TranslationFormat::LabelPlus.into(),
+            mode: ChapterTranslationImportMode::Overwrite.into(),
             content: LABEL_PLUS_MATERIAL.into(),
         },
         "chapter-1".into(),
@@ -373,6 +392,7 @@ async fn import_replaces_units_and_clears_empty_pages() {
         token("user-1"),
         ImportChapterTranslationInstr {
             format: TranslationFormat::LabelPlus.into(),
+            mode: ChapterTranslationImportMode::Overwrite.into(),
             content: LABEL_PLUS_WITH_EMPTY_PAGE.into(),
         },
         "chapter-1".into(),
@@ -396,10 +416,115 @@ async fn import_replaces_units_and_clears_empty_pages() {
         })
         .count();
 
+    assert_eq!(imported.imported_page_count, 2);
     assert_eq!(imported.imported_unit_count, 1);
     assert_eq!(visible_page_one.len(), 1);
     assert_eq!(visible_page_one[0].proofread_text, Some("new text".into()));
     assert_eq!(visible_page_two, 0);
     assert_eq!(snapshot.chapters[0].total_unit_count, 1);
     assert_eq!(snapshot.chapters[0].proofread_unit_count, 1);
+}
+
+#[tokio::test]
+async fn import_keep_preserves_visible_page_units() {
+    let mock = Mock::new();
+
+    seed_base(&mock, 2, 2, 0);
+    mock.seed_page(page("page-1", 0, 1, 0));
+    mock.seed_page(page("page-2", 1, 1, 0));
+    mock.seed_unit(unit("unit-a", "page-1", 0, "old page one"));
+    mock.seed_unit(unit("unit-b", "page-2", 0, "old page two"));
+
+    let imported = import(
+        (&mock, &mock),
+        token("user-1"),
+        ImportChapterTranslationInstr {
+            format: TranslationFormat::LabelPlus.into(),
+            mode: ChapterTranslationImportMode::Keep.into(),
+            content: LABEL_PLUS_WITH_EMPTY_PAGE.into(),
+        },
+        "chapter-1".into(),
+    )
+    .await
+    .expect("keep import should preserve populated pages");
+
+    let snapshot = mock.snapshot();
+    let visible_units = snapshot
+        .units
+        .iter()
+        .filter(|unit_info| unit_info.hidden_at.is_none())
+        .collect::<Vec<_>>();
+
+    assert_eq!(imported.imported_page_count, 0);
+    assert_eq!(imported.imported_unit_count, 0);
+    assert_eq!(visible_units.len(), 2);
+    assert_eq!(
+        visible_units[0].translated_text,
+        Some("old page one".into())
+    );
+    assert_eq!(
+        visible_units[1].translated_text,
+        Some("old page two".into())
+    );
+    assert_eq!(snapshot.chapters[0].total_unit_count, 2);
+
+    assert!(matches!(
+        snapshot.chapter_workflow_records[0].payload,
+        ChapterWorkflowRecordPayload::TranslationImported {
+            imported_page_count: 0,
+            imported_unit_count: 0,
+            ..
+        }
+    ));
+}
+
+#[tokio::test]
+async fn import_keep_reuses_page_with_only_hidden_units() {
+    let mock = Mock::new();
+
+    seed_base(&mock, 2, 0, 0);
+    mock.seed_page(page("page-1", 0, 0, 0));
+    mock.seed_page(page("page-2", 1, 0, 0));
+
+    let mut hidden_unit = unit("unit-hidden", "page-2", 0, "historical");
+    hidden_unit.hidden_at = Some(OffsetDateTime::now_utc());
+    mock.seed_unit(hidden_unit);
+
+    let imported = import(
+        (&mock, &mock),
+        token("user-1"),
+        ImportChapterTranslationInstr {
+            format: TranslationFormat::LabelPlus.into(),
+            mode: ChapterTranslationImportMode::Keep.into(),
+            content: LABEL_PLUS_WITH_POPULATED_SECOND_PAGE.into(),
+        },
+        "chapter-1".into(),
+    )
+    .await
+    .expect("keep import should reuse pages with only hidden Units");
+
+    let snapshot = mock.snapshot();
+    let visible_page_two = snapshot
+        .units
+        .iter()
+        .filter(|unit_info| {
+            unit_info.page_id == "page-2" && unit_info.hidden_at.is_none()
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(imported.imported_page_count, 1);
+    assert_eq!(imported.imported_unit_count, 1);
+    assert_eq!(visible_page_two.len(), 1);
+    assert_eq!(
+        visible_page_two[0].proofread_text,
+        Some("new second-page text".into())
+    );
+    assert_eq!(snapshot.chapters[0].total_unit_count, 1);
+    assert!(
+        snapshot
+            .units
+            .iter()
+            .any(|unit_info| unit_info.id == "unit-hidden"
+                && unit_info.hidden_at.is_some())
+    );
 }
