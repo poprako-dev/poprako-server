@@ -203,7 +203,9 @@ fn get_comic_info(
     let mut comic_info = state
         .comics
         .iter()
-        .find(|comic_info| comic_info.id == id)
+        .find(|comic_info| {
+            comic_info.id == id && !state.deleted_comic_ids.contains(id)
+        })
         .cloned()
         .ok_or_else(|| expected("error-comic-not-found"))?;
 
@@ -219,6 +221,7 @@ fn list_comic_infos(state: &MockState, spec: &ComicListSpec) -> Vec<ComicInfo> {
         .comics
         .iter()
         .filter(|comic_info| comic_info.workset_id == spec.workset_id)
+        .filter(|comic_info| !state.deleted_comic_ids.contains(&comic_info.id))
         .filter(|comic_info| {
             //
             spec.fuzzy_title
@@ -246,7 +249,7 @@ fn list_comic_infos(state: &MockState, spec: &ComicListSpec) -> Vec<ComicInfo> {
 
     let offset = spec.offset as usize;
 
-    let limit = spec.limit as usize;
+    let limit = spec.limit.get() as usize;
 
     if offset >= comic_infos.len() {
         Vec::new()

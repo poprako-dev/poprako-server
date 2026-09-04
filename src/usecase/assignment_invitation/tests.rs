@@ -226,7 +226,7 @@ fn list_data() -> ListAssignmentInvitationInfosInstr {
         chapter_id: "chapter-1".into(),
         is_pending: Some(true),
         offset: 0,
-        limit: 10,
+        limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     }
 }
 

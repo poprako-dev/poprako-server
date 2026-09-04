@@ -1,4 +1,4 @@
-//! Chapter event actors for async side effects.
+//! Chapter-event application handlers.
 
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -12,9 +12,6 @@ use poprako_util::i18n::{trl, trl_kv};
 use crate::complex::system_mail::SystemMailComplex;
 use crate::model::read::proj::chapter::ChapterInfo;
 use crate::model::write::system_mail::SystemMailEntry;
-use crate::part::effect::event::chapter::{
-    ChapterPublishedEvent, ChapterWorkflowCompletedEvent,
-};
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::oper::assignment::ListAssignmentInfos;
@@ -35,18 +32,19 @@ const TITLE_LIMIT: usize = 15;
 #[instrument(level = "info", skip_all)]
 pub async fn notify_next_phase<C, R>(
     repo: &R,
-    event: &ChapterWorkflowCompletedEvent,
+    chapter_id: &str,
+    completed_stage: Stage,
 ) where
     C: Context,
     R: AssignmentRepo<C> + ChapterRepo<C> + SystemMailRepo + Sync,
 {
     let Some((receiver_role, workflow_label)) =
-        next_phase_config(event.completed_stage)
+        next_phase_config(completed_stage)
     else {
         return;
     };
 
-    let Some(chapter_info) = load_chapter(repo, &event.chapter_id).await else {
+    let Some(chapter_info) = load_chapter(repo, chapter_id).await else {
         return;
     };
 
@@ -58,37 +56,34 @@ pub async fn notify_next_phase<C, R>(
     )
     .await;
 
-    send_batch(repo, &event.chapter_id, system_mail_entries).await;
+    send_batch(repo, chapter_id, system_mail_entries).await;
 }
 
 /// Notifies reviewer assignees after workflow progress, except typesetting completion.
 #[instrument(level = "info", skip_all)]
 pub async fn notify_reviewers_on_progress<C, R>(
     repo: &R,
-    event: ChapterWorkflowCompletedEvent,
+    chapter_id: &str,
+    completed_stage: Stage,
 ) where
     C: Context,
     R: AssignmentRepo<C> + ChapterRepo<C> + SystemMailRepo + Sync,
 {
-    let Some(workflow_label) = reviewer_progress_label(event.completed_stage)
-    else {
+    let Some(workflow_label) = reviewer_progress_label(completed_stage) else {
         return;
     };
 
-    notify_reviewers(repo, &event.chapter_id, workflow_label).await;
+    notify_reviewers(repo, chapter_id, workflow_label).await;
 }
 
 /// Notifies reviewer assignees when a chapter is published.
 #[instrument(level = "info", skip_all)]
-pub async fn notify_reviewers_on_publish<C, R>(
-    repo: &R,
-    event: ChapterPublishedEvent,
-) where
+pub async fn notify_reviewers_on_publish<C, R>(repo: &R, chapter_id: &str)
+where
     C: Context,
     R: AssignmentRepo<C> + ChapterRepo<C> + SystemMailRepo + Sync,
 {
-    notify_reviewers(repo, &event.chapter_id, trl("mail-workflow-publish"))
-        .await;
+    notify_reviewers(repo, chapter_id, trl("mail-workflow-publish")).await;
 }
 
 // Returns the next-phase role and workflow label for a completed stage.
@@ -142,7 +137,7 @@ where
         // Internal implementation detail.
         tracing::warn!(
             chapter_id = %chapter_id,
-            "[AsyncEffectDevelop::load_chapter] failed to look up chapter for notification",
+            "failed to look up chapter for notification",
         );
 
         return None;
@@ -177,7 +172,7 @@ where
         // Internal implementation detail.
         tracing::warn!(
             chapter_id = %chapter_info.id,
-            "[AsyncEffectDevelop::build_assignment_mails] failed to list chapter assignments",
+            "failed to list chapter assignments",
         );
 
         return Vec::new();
@@ -188,7 +183,7 @@ where
         // Internal implementation detail.
         tracing::warn!(
             chapter_id = %chapter_info.id,
-            "[AsyncEffectDevelop::build_assignment_mails] missing chapter include chain",
+            "chapter notification is missing its required include chain",
         );
 
         return Vec::new();
@@ -233,7 +228,7 @@ async fn send_batch<R>(
     {
         tracing::warn!(
             chapter_id = %chapter_id,
-            "[AsyncEffectDevelop::send_batch] failed to send chapter notification mails",
+            "failed to send chapter notification mails",
         );
     }
 }

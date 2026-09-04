@@ -5,7 +5,7 @@ mod orchestra;
 
 use std::cmp::Reverse;
 
-use crate::model::read::proj::chapter::ChapterInfo;
+use crate::model::read::proj::chapter::{ChapterInfo, ChapterUnitEditScope};
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::proj::team::TeamInfo;
 use crate::model::read::proj::user::UserInfo;
@@ -28,13 +28,39 @@ pub fn get_chapter_by_id(
     let mut chapter_info = state
         .chapters
         .iter()
-        .find(|chapter_info| chapter_info.id == id)
+        .find(|chapter_info| {
+            chapter_info.id == id && !state.deleted_chapter_ids.contains(id)
+        })
         .cloned()
         .ok_or_else(|| expected("error-chapter-not-found"))?;
 
     apply_chapter_incls(state, &mut chapter_info, incl_opt);
 
     accept(chapter_info)
+}
+
+/// Resolves the minimal Unit edit scope through its owning Page.
+pub fn get_unit_edit_scope_by_page_id(
+    state: &MockState,
+    page_id: &str,
+) -> BaseRest<ChapterUnitEditScope> {
+    //
+    let page_info = state
+        .pages
+        .iter()
+        .find(|page_info| page_info.id == page_id)
+        .ok_or_else(|| expected("error-page-not-found"))?;
+
+    let chapter_info = get_chapter_by_id(state, &page_info.chapter_id, &[])?;
+
+    accept(ChapterUnitEditScope {
+        id: chapter_info.id,
+        comic_id: chapter_info.comic_id,
+        is_published: chapter_info.stages.has_phase(
+            crate::value::chapter::stage::Stage::Publish,
+            crate::value::chapter::stage::StagePhase::Completed,
+        ),
+    })
 }
 
 /// Returns chapters for a comic from the mock state, sorted by index descending.
@@ -44,6 +70,9 @@ pub fn list_infos(state: &MockState, comic_id: &str) -> Vec<ChapterInfo> {
         .chapters
         .iter()
         .filter(|chapter_info| chapter_info.comic_id == comic_id)
+        .filter(|chapter_info| {
+            !state.deleted_chapter_ids.contains(&chapter_info.id)
+        })
         .cloned()
         .collect::<Vec<_>>();
 

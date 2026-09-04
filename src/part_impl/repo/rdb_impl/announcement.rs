@@ -78,7 +78,7 @@ async fn list_infos(
         .select(AnnouncementInfoRow::as_select())
         .order_by(f_created_at.desc())
         .offset(i64::from(spec.offset))
-        .limit(i64::from(spec.limit))
+        .limit(i64::from(spec.limit.get()))
         .load::<AnnouncementInfoRow>(conn)
         .await
         .map_err(diesel)?;
@@ -156,7 +156,7 @@ impl Run<ListAnnouncementInfos<'_>> for HybRepo {
         &self,
         oper: &ListAnnouncementInfos<'_>,
     ) -> BaseRest<Vec<AnnouncementInfo>> {
-        submit_query!(self.core, list_infos, oper.spec)
+        submit_query!(self.rdb_core, list_infos, oper.spec)
     }
 }
 
@@ -170,7 +170,7 @@ impl Run<CreateAnnouncement<'_>> for HybRepo {
         &self,
         oper: &CreateAnnouncement<'_>,
     ) -> BaseRest<AnnouncementInfo> {
-        submit_query!(self.core, create, oper.entry)
+        submit_query!(self.rdb_core, create, oper.entry)
     }
 }
 
@@ -184,7 +184,7 @@ impl Run<GetAnnouncementInfo<'_>> for HybRepo {
         &self,
         oper: &GetAnnouncementInfo<'_>,
     ) -> BaseRest<AnnouncementInfo> {
-        submit_query!(self.core, get_info, oper.id)
+        submit_query!(self.rdb_core, get_info, oper.id)
     }
 }
 
@@ -195,7 +195,7 @@ impl Run<UpdateAnnouncement<'_>> for HybRepo {
     // Updates an announcement independently.
     #[instrument(level = "info", skip_all)]
     async fn run(&self, oper: &UpdateAnnouncement<'_>) -> BaseRest<()> {
-        submit_query!(self.core, update_info, oper.update)
+        submit_query!(self.rdb_core, update_info, oper.update)
     }
 }
 
@@ -206,6 +206,6 @@ impl Run<DeleteAnnouncement<'_>> for HybRepo {
     // Deletes an announcement independently.
     #[instrument(level = "info", skip_all)]
     async fn run(&self, oper: &DeleteAnnouncement<'_>) -> BaseRest<()> {
-        submit_query!(self.core, delete_announcement, oper.id)
+        submit_query!(self.rdb_core, delete_announcement, oper.id)
     }
 }

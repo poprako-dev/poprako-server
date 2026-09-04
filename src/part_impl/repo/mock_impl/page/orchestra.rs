@@ -3,17 +3,17 @@ use std::collections::HashSet;
 use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
-use crate::model::read::proj::page::PageInfo;
+use crate::model::read::proj::page::{PageInfo, PageUnitScope};
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::page::{
-    ApplyPageManifest, CreatePages, DeletePages, GetPageInfo,
-    GetPageInfoExcluded, ListEdittedDiffPageIds, ListFirstPageInfos,
-    ListPageInfos, ListPageInfosExcluded, SetPageUnitCounters,
-    ShiftPageIndexesTemporary,
+    ApplyPageManifest, DeletePages, GetPageInfo, GetPageInfoExcluded,
+    GetPageUnitScope, GetPageUnitScopeExcluded, ListEdittedDiffPageIds,
+    ListFirstPageInfos, ListPageInfos, ListPageInfosExcluded,
+    SetPageUnitCountMetrics, ShiftPageIndexesTemporary,
 };
 use crate::part_impl::repo::mock_impl::page::{
-    get_page_by_id, list_editted_diff_page_ids, list_first_pages, list_infos,
-    page_from_entry, page_from_manifest_entry,
+    get_page_by_id, get_page_unit_scope, list_bounded_infos,
+    list_editted_diff_page_ids, list_first_pages, page_from_manifest_entry,
 };
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, expected, now, unrecoverable,
@@ -35,6 +35,26 @@ impl<'a> Run<GetPageInfo<'a>> for Mock {
     }
 }
 
+impl Run<GetPageUnitScope<'_>> for Mock {
+    // Defines the adapter error exposed by this operation.
+    type Error = BaseError;
+
+    #[instrument(level = "info", skip_all)]
+    // Loads the minimal Page scope needed by Unit operations.
+    async fn run(
+        &self,
+        oper: &GetPageUnitScope<'_>,
+    ) -> BaseRest<PageUnitScope> {
+        //
+        let state = self
+            .state
+            .lock()
+            .map_err(|_| unrecoverable("mock state lock is poisoned"))?;
+
+        get_page_unit_scope(&state, oper.id)
+    }
+}
+
 impl<'a> Run<ListPageInfos<'a>> for Mock {
     // Internal type alias for `Error`.
     // Defines the adapter error exposed by this operation.
@@ -46,7 +66,7 @@ impl<'a> Run<ListPageInfos<'a>> for Mock {
         // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
-        accept(list_infos(&state, oper.chapter_id))
+        list_bounded_infos(&state, oper.chapter_id)
     }
 }
 
@@ -82,7 +102,7 @@ impl Run<ListEdittedDiffPageIds<'_>> for Mock {
         //
         let state = self.state.lock().unwrap();
 
-        accept(list_editted_diff_page_ids(&state, oper.chapter_id))
+        list_editted_diff_page_ids(&state, oper.chapter_id)
     }
 }
 
@@ -103,6 +123,24 @@ impl<'a> Step<GetPageInfo<'a>, MockContext> for Mock {
     }
 }
 
+impl Step<GetPageUnitScope<'_>, MockContext> for Mock {
+    // Declares the transaction isolation level required for this read.
+    type Level = ReptRead;
+
+    // Defines the adapter error exposed by this operation.
+    type Error = BaseError;
+
+    #[instrument(level = "info", skip_all)]
+    // Loads the minimal Page scope from transaction-local state.
+    async fn step(
+        &self,
+        context: &mut MockContext,
+        oper: &GetPageUnitScope<'_>,
+    ) -> BaseRest<PageUnitScope> {
+        get_page_unit_scope(&context.state, oper.id)
+    }
+}
+
 impl<'a> Step<ListPageInfos<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
     type Level = ReptRead;
@@ -116,7 +154,7 @@ impl<'a> Step<ListPageInfos<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &ListPageInfos<'a>,
     ) -> BaseRest<Vec<PageInfo>> {
-        accept(list_infos(&context.state, oper.chapter_id))
+        list_bounded_infos(&context.state, oper.chapter_id)
     }
 }
 
@@ -134,42 +172,7 @@ impl<'a> Step<ListPageInfosExcluded<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &ListPageInfosExcluded<'a>,
     ) -> BaseRest<Vec<PageInfo>> {
-        accept(list_infos(&context.state, oper.chapter_id))
-    }
-}
-
-impl<'a> Step<CreatePages<'a>, MockContext> for Mock {
-    // Internal type alias for `Error`.
-    type Level = ReptRead;
-
-    // Defines the adapter error exposed by this operation.
-    type Error = BaseError;
-    #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
-    async fn step(
-        &self,
-        context: &mut MockContext,
-        oper: &CreatePages<'a>,
-    ) -> BaseRest<Vec<PageInfo>> {
-        //
-        // Internal implementation detail.
-        if oper.entries.iter().any(|page_entry| {
-            //
-            context
-                .state
-                .pages
-                .iter()
-                .any(|page_info| page_info.id == page_entry.id)
-        }) {
-            return Err(expected("error-already-exists"));
-        }
-
-        let infos =
-            oper.entries.iter().map(page_from_entry).collect::<Vec<_>>();
-
-        context.state.pages.extend(infos.clone());
-
-        accept(infos)
+        list_bounded_infos(&context.state, oper.chapter_id)
     }
 }
 
@@ -190,7 +193,25 @@ impl<'a> Step<GetPageInfoExcluded<'a>, MockContext> for Mock {
     }
 }
 
-impl<'a> Step<SetPageUnitCounters<'a>, MockContext> for Mock {
+impl Step<GetPageUnitScopeExcluded<'_>, MockContext> for Mock {
+    // Declares the transaction isolation level required for this locked read.
+    type Level = ReptRead;
+
+    // Defines the adapter error exposed by this operation.
+    type Error = BaseError;
+
+    #[instrument(level = "info", skip_all)]
+    // Loads the minimal Page scope used by Unit edits.
+    async fn step(
+        &self,
+        context: &mut MockContext,
+        oper: &GetPageUnitScopeExcluded<'_>,
+    ) -> BaseRest<PageUnitScope> {
+        get_page_unit_scope(&context.state, oper.id)
+    }
+}
+
+impl<'a> Step<SetPageUnitCountMetrics<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
     type Level = ReptRead;
 
@@ -201,7 +222,7 @@ impl<'a> Step<SetPageUnitCounters<'a>, MockContext> for Mock {
     async fn step(
         &self,
         context: &mut MockContext,
-        oper: &SetPageUnitCounters<'a>,
+        oper: &SetPageUnitCountMetrics<'a>,
     ) -> BaseRest<()> {
         //
         // Internal implementation detail.
@@ -212,11 +233,11 @@ impl<'a> Step<SetPageUnitCounters<'a>, MockContext> for Mock {
             .find(|info| info.id == oper.id)
             .ok_or_else(|| expected("error-page-not-found"))?;
 
-        page_info.total_unit_count = oper.counters.total;
+        page_info.total_unit_count = oper.count_metrics.total;
 
-        page_info.translated_unit_count = oper.counters.translated;
+        page_info.translated_unit_count = oper.count_metrics.translated;
 
-        page_info.proofread_unit_count = oper.counters.proofread;
+        page_info.proofread_unit_count = oper.count_metrics.proofread;
 
         page_info.updated_at = now();
 

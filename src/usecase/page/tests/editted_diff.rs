@@ -5,6 +5,7 @@ use crate::model::read::proj::unit::UnitInfo;
 use crate::model::shared::unit::UnitCoord;
 use crate::result::{BaseError, ExpectedVariant};
 use crate::usecase::page::list::list_editted_diff_page_ids;
+use crate::value::page::MAX_CHAPTER_PAGE_COUNT;
 use crate::value::role::RoleField;
 
 #[tokio::test]
@@ -127,6 +128,29 @@ async fn list_page_ids_rejects_user_without_chapter_access() {
             ..
         }
     ));
+}
+
+#[tokio::test]
+async fn list_page_ids_rejects_excess_pages_even_without_matching_diffs() {
+    let mock = Mock::new();
+
+    seed_page_scope(&mock, MAX_CHAPTER_PAGE_COUNT + 1);
+
+    mock.seed_assignment(page_assignment(
+        "user-1",
+        RoleMask::from(RoleField::TRANSLATOR),
+    ));
+
+    for index in 0..=MAX_CHAPTER_PAGE_COUNT {
+        mock.seed_page(page_model(&format!("page-{index:03}"), index));
+    }
+
+    let error =
+        list_editted_diff_page_ids((&mock,), page_token("user-1"), instr())
+            .await
+            .unwrap_err();
+
+    assert!(matches!(error, BaseError::Unrecoverable { .. }));
 }
 
 // Build one authorized Page read scope.

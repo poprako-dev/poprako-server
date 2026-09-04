@@ -29,8 +29,8 @@ mod avatar;
 // mark_avatar_uploaded(mark_avatar_uploaded)(positive): repeated matching version confirmation should remain successful.
 // mark_avatar_uploaded(mark_avatar_uploaded)(negative): stale version should leave avatar unuploaded.
 // mark_avatar_uploaded(mark_avatar_uploaded)(negative): old reservation replay should fail without marking current avatar uploaded.
-// delete(delete)(positive): delete should remove team, worksets, descendant comics, and enqueue uploaded avatar deletion.
-// delete(delete)(positive): deleting a team without uploaded avatar should not enqueue prom records.
+// delete(delete)(positive): delete should mark a team invisible before background cleanup.
+// delete(delete)(positive): sweeping an eligible team should enqueue its avatar deletion.
 // delete(delete)(negative): missing team should rollback state.
 
 use super::*;
@@ -150,7 +150,7 @@ fn list_instr(
     ListTeamInfosInstr {
         user_id: user_id.map(Into::into),
         offset,
-        limit,
+        limit: crate::value::pagination::PubListLimit::new(limit).unwrap(),
     }
 }
 

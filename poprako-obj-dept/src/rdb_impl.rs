@@ -197,26 +197,23 @@ pub fn diesel_err(source: DieselError) -> ObjDeptError {
 }
 
 /// Maps and traces an RDB pool failure.
+#[must_use]
 pub fn rdb_err(source: RdbError) -> ObjDeptError {
     //
-    tracing::error!(
-        operation = "get_obj_dept_rdb_conn",
-        sdk_err = ?source,
-        "RDB pool error",
-    );
-
-    let message = match source {
+    match source {
         //
-        RdbError::PoolBuild { source } => {
-            format!("failed to build RDB pool: {}", source)
-        }
+        RdbError::PoolBuild { source } => ObjDeptError::Retryable {
+            message: format!("failed to build RDB pool: {}", source),
+        },
 
-        RdbError::PoolGet { message } => {
-            format!("failed to acquire RDB connection: {}", message)
-        }
-    };
+        RdbError::PoolGet { message } => ObjDeptError::Retryable {
+            message: format!("failed to acquire RDB connection: {}", message),
+        },
 
-    ObjDeptError::Retryable { message }
+        RdbError::PoolWaitTimeout => ObjDeptError::Unavailable {
+            message: "timed out waiting for an RDB connection".into(),
+        },
+    }
 }
 
 // Validates a stored physical key against its relational metadata.

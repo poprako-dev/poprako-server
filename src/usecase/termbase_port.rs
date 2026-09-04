@@ -146,7 +146,7 @@ where
                 let termbase_entry = TermbaseComplex::build_entry(
                     team_id,
                     comic_id,
-                    &termbase_import.name,
+                    termbase_import.name.clone(),
                     termbase_import.description.clone(),
                     token.user_id.clone(),
                 )?;
@@ -349,6 +349,7 @@ where
     );
 
     UpsertTerms {
+        termbase_id: &termbase_info.id,
         entries: &term_upsert_plan.entries,
         updates: &term_upsert_plan.updates,
     }

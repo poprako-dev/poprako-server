@@ -52,7 +52,7 @@ fn list_unread_instr(offset: u32, limit: u32) -> ListSystemMailInfosInstr {
     ListSystemMailInfosInstr {
         is_read: Some(false),
         offset,
-        limit,
+        limit: crate::value::pagination::PubListLimit::new(limit).unwrap(),
     }
 }
 

@@ -17,11 +17,11 @@ use crate::part::effect::Develop;
 use crate::part::obj_dept::PageImage;
 use crate::part::prom::payload::TaskPayload;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
+use crate::part_impl::prom::dispatch;
 use crate::part_impl::prom::rdb_impl::repo::RdbPromRepo;
 use crate::part_impl::prom::task_flow::TaskFlow;
 use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
-use crate::usecase::prom::{PromTaskAction, handle_chapter, handle_invitation};
 
 /// Read-only object capabilities available to the general prom actor.
 pub trait ObjView: ObjDeptView<PageImage, RdbContext> {}
@@ -153,33 +153,10 @@ where
 
         let task_repo = self.task_repo();
 
-        let action = match task {
-            //
-            TaskPayload::Chapter { payload } => {
-                //
-                handle_chapter(
-                    (&nucl, &task_repo, self.obj_view(), self.develop()),
-                    &payload,
-                )
-                .await
-            }
-
-            TaskPayload::Invitation { payload } => {
-                handle_invitation((&task_repo,), &payload).await
-            }
-        };
-
-        match action {
-            //
-            PromTaskAction::Complete => TaskFlow::Complete,
-
-            PromTaskAction::Retry { message } => TaskFlow::Retry {
-                err_message: message,
-            },
-
-            PromTaskAction::Wait { message } => TaskFlow::Wait {
-                err_message: message,
-            },
-        }
+        dispatch::dispatch::<RdbContext, _, _, _, _>(
+            (&nucl, &task_repo, self.obj_view(), self.develop()),
+            task,
+        )
+        .await
     }
 }

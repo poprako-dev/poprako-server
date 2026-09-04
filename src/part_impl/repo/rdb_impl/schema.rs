@@ -66,6 +66,7 @@ diesel::table! {
         f_creator_id -> Text,
         f_created_at -> Timestamptz,
         f_updated_at -> Timestamptz,
+        f_deleted_at -> Nullable<Timestamptz>,
     }
 }
 
@@ -96,6 +97,7 @@ diesel::table! {
         f_archived_at -> Nullable<Timestamptz>,
         f_created_at -> Timestamptz,
         f_updated_at -> Timestamptz,
+        f_deleted_at -> Nullable<Timestamptz>,
     }
 }
 
@@ -247,6 +249,7 @@ diesel::table! {
         f_workset_next_index -> Int4,
         f_created_at -> Timestamptz,
         f_updated_at -> Timestamptz,
+        f_deleted_at -> Nullable<Timestamptz>,
     }
 }
 
@@ -346,6 +349,7 @@ diesel::table! {
         f_comic_next_index -> Int4,
         f_created_at -> Timestamptz,
         f_updated_at -> Timestamptz,
+        f_deleted_at -> Nullable<Timestamptz>,
     }
 }
 

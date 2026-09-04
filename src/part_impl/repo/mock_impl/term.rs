@@ -8,8 +8,8 @@ use tracing::instrument;
 use crate::model::read::proj::term::TermInfo;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::term::{
-    CreateTerm, DeleteTerm, DeleteTerms, GetTermInfo, GetTermInfoExcluded,
-    ListTermInfos, LockTerm, UpdateTerm, UpsertTerms,
+    CreateTerm, DeleteTerm, DeleteTerms, GetTermInfo, ListTermInfos, LockTerm,
+    UpdateTerm, UpsertTerms,
 };
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
@@ -140,9 +140,13 @@ impl<'a> Run<ListTermInfos<'a>> for Mock {
                 fuzzy_source,
                 offset,
                 limit,
-            } => {
-                list_infos(&state, termbase_id, *fuzzy_source, *offset, *limit)
-            }
+            } => list_infos(
+                &state,
+                termbase_id,
+                *fuzzy_source,
+                *offset,
+                limit.get(),
+            ),
 
             ListTermInfos::Termbase { termbase_id } => {
                 list_all_infos(&state, termbase_id)
@@ -234,7 +238,7 @@ impl<'a> Step<ListTermInfos<'a>, MockContext> for Mock {
                 termbase_id,
                 *fuzzy_source,
                 *offset,
-                *limit,
+                limit.get(),
             ),
 
             ListTermInfos::Termbase { termbase_id } => {
@@ -243,24 +247,6 @@ impl<'a> Step<ListTermInfos<'a>, MockContext> for Mock {
         };
 
         accept(term_infos)
-    }
-}
-
-impl<'a> Step<GetTermInfoExcluded<'a>, MockContext> for Mock {
-    // Internal type alias for `Error`.
-    type Level = ReptRead;
-
-    // Defines the adapter error exposed by this operation.
-    type Error = BaseError;
-
-    #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
-    async fn step(
-        &self,
-        context: &mut MockContext,
-        oper: &GetTermInfoExcluded<'a>,
-    ) -> BaseRest<TermInfo> {
-        get_info(&context.state, oper.id)
     }
 }
 
@@ -349,6 +335,38 @@ impl<'a> Step<UpsertTerms<'a>, MockContext> for Mock {
         oper: &UpsertTerms<'a>,
     ) -> BaseRest<()> {
         //
+        let entries_in_scope = oper
+            .entries
+            .iter()
+            .all(|entry| entry.termbase_id == oper.termbase_id);
+
+        let updates_in_scope = oper.updates.iter().all(|update| {
+            //
+            context.state.terms.iter().any(|term_info| {
+                //
+                term_info.id == update.id
+                    && term_info.termbase_id == oper.termbase_id
+            })
+        });
+
+        let mut ids = std::collections::HashSet::with_capacity(
+            oper.entries.len().saturating_add(oper.updates.len()),
+        );
+
+        let ids_unique = oper
+            .entries
+            .iter()
+            .map(|entry| entry.id.as_str())
+            .chain(oper.updates.iter().map(|update| update.id.as_str()))
+            .all(|id| ids.insert(id));
+
+        if !(entries_in_scope && updates_in_scope && ids_unique) {
+            //
+            return Err(BaseError::Unrecoverable {
+                message: "invalid Term upsert scope or duplicate id".into(),
+            });
+        }
+
         for entry in oper.entries {
             //
             if source_conflicts(

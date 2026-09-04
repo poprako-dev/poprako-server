@@ -244,11 +244,18 @@ export async function cleanupToSeed(): Promise<void> {
       await client.query(`DELETE FROM "t_comic_archive"`);
       await client.query(`DELETE FROM "t_workset"`);
 
-      // 4. Memberships and invitations (depend on team + user).
+      // 4. Object metadata and durable tasks have no FKs to business rows.
+      await client.query(`DELETE FROM "t_obj_prom_task"`);
+      await client.query(`DELETE FROM "t_page_image"`);
+      await client.query(`DELETE FROM "t_user_avatar"`);
+      await client.query(`DELETE FROM "t_team_avatar"`);
+      await client.query(`DELETE FROM "t_comic_cover"`);
+
+      // 5. Memberships and invitations (depend on team + user).
       await client.query(`DELETE FROM "t_member" WHERE "f_id" != $1`, [DEFAULT_MEMBER_ID]);
       await client.query(`DELETE FROM "t_member_invitation"`);
 
-      // 5. Finally, non-seed users and teams.
+      // 6. Finally, non-seed users and teams.
       await client.query(`DELETE FROM "t_user" WHERE "f_id" != $1`, [DEFAULT_USER_ID]);
       await client.query(`DELETE FROM "t_team" WHERE "f_id" != $1`, [DEFAULT_TEAM_ID]);
 

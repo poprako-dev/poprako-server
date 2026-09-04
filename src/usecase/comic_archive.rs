@@ -37,6 +37,10 @@ use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
 use crate::value::comic_archive::ComicArchiveMonth;
 
+// TODO: Generate this complete JSON export through a bounded temporary
+// artifact and let the HTTP adapter stream it after database access ends.
+// Preserve every selected month and payload; resource pressure must fail the
+// export rather than truncate it.
 /// Exports selected retained UTC month slots for one team.
 #[instrument(level = "info", skip(repo, token), fields(actor_user_id = %token.user_id))]
 pub async fn export<C, R>(
@@ -88,26 +92,29 @@ where
     .run_on(repo)
     .await?;
 
-    let mut exports = months
-        .iter()
-        .map(|month| (month.label.clone(), Vec::new()))
-        .collect::<BTreeMap<_, _>>();
+    let mut payloads_by_month =
+        (0..months.len()).map(|_| Vec::new()).collect::<Vec<_>>();
 
     for (created_at, archived_payload) in records {
         //
-        let month = months
+        let Some((_, payloads)) = months
             .iter()
-            .find(|month| created_at >= month.start && created_at < month.end);
-
-        let Some(month) = month else {
+            .zip(payloads_by_month.iter_mut())
+            .find(|(month, _)| {
+                created_at >= month.start && created_at < month.end
+            })
+        else {
             continue;
         };
 
-        exports
-            .entry(month.label.clone())
-            .or_default()
-            .push(archived_payload);
+        payloads.push(archived_payload);
     }
+
+    let exports = months
+        .into_iter()
+        .zip(payloads_by_month)
+        .map(|(month, payloads)| (month.label, payloads))
+        .collect::<BTreeMap<_, _>>();
 
     accept(ExportComicArchivesVal(exports))
 }
@@ -164,7 +171,7 @@ where
             .await?;
 
             ClearObjs::<ComicCover>::new(std::slice::from_ref(
-                &comic_archive_entry.source_comic_id,
+                &comic_archive_entry.record.source_comic_id,
             ))
             .step_on(obj_dept, context)
             .await
@@ -191,5 +198,3 @@ where
 
     accept(archive_comic_val)
 }
-
-// TODO: export

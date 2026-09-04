@@ -3,6 +3,7 @@ use diesel::prelude::{
     BoolExpressionMethods as _, ExpressionMethods as _, OptionalExtension as _,
     QueryDsl as _, SelectableHelper as _,
 };
+use diesel::sql_types::Bool;
 use diesel_async::RunQueryDsl as _;
 use time::OffsetDateTime;
 use tracing::instrument;
@@ -14,20 +15,56 @@ use crate::complex::comic::ComicComplex;
 use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::spec::comic::ComicListSpec;
 use crate::model::write::comic::{ComicEntry, ComicRepl};
-use crate::part_impl::repo::rdb_impl::comic::stage_filter::list_matching_stage_comic_ids;
+use crate::part_impl::repo::rdb_impl::comic::stage_filter::{
+    StageFilter, stage_filter,
+};
 use crate::part_impl::repo::rdb_impl::entity::comic::{
     ComicAspectRow, ComicEntryRow, ComicInfoRow,
 };
 use crate::part_impl::repo::rdb_impl::incl;
 use crate::part_impl::repo::rdb_impl::numeric::usize_from_i32;
+use crate::part_impl::repo::rdb_impl::schema::t_chapter;
 use crate::part_impl::repo::rdb_impl::schema::t_comic::dsl::{
     f_archived_at, f_chapter_count, f_chapter_next_index, f_composed_title,
-    f_id, f_index, f_last_active_at, f_workset_id, t_comic,
+    f_deleted_at, f_id, f_index, f_last_active_at, f_workset_id, t_comic,
 };
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::result::diesel;
+use crate::value::chapter::stage::{Stage, StagePhase};
 use crate::value::comic::{ComicInclOpt, ComicStatus};
 use crate::value::index::user_index_to_stored_index;
+
+// Converts a Rust boolean into a typed Diesel SQL boolean expression.
+trait BoolSql {
+    /// Converts this boolean into a typed SQL expression.
+    fn sql_bool(self) -> diesel::dsl::AsExprOf<bool, Bool>;
+}
+
+impl BoolSql for bool {
+    // Converts this boolean into a typed SQL expression.
+    fn sql_bool(self) -> diesel::dsl::AsExprOf<bool, Bool> {
+        diesel::expression::AsExpression::<Bool>::as_expression(self)
+    }
+}
+
+/// Build the expected error for a missing comic.
+pub fn missing_comic(id: &str, operation: &str) -> BaseError {
+    //
+    let err_message = trl("error-comic-not-found");
+
+    tracing::warn!(
+        err_variant = ?ExpectedVariant::Args,
+        err_message = %err_message,
+        comic_id = %id,
+        operation,
+        "expected error: comic not found",
+    );
+
+    BaseError::Expected {
+        variant: ExpectedVariant::Args,
+        message: err_message,
+    }
+}
 
 /// Queries a single comic row by ID and populates its includes.
 #[instrument(level = "info", skip_all)]
@@ -39,6 +76,7 @@ pub async fn get_info_by_id(
     //
     let row = t_comic
         .filter(f_id.eq(id))
+        .filter(f_deleted_at.is_null())
         .select(ComicInfoRow::as_select())
         .get_result::<ComicInfoRow>(conn)
         .await
@@ -76,22 +114,15 @@ pub async fn get_info_by_id(
 
 /// Queries comic rows filtered by workset, optional fuzzy title, and stages.
 #[instrument(level = "info", skip_all)]
+#[expect(clippy::too_many_lines, reason = "builds the typed Comic list query")]
 pub async fn list_infos(
     conn: &mut RdbConn,
     spec: &ComicListSpec,
 ) -> BaseRest<Vec<ComicInfo>> {
     //
-    let stage_comic_ids = match spec.stages {
-        //
-        Some(stage_mask) => {
-            list_matching_stage_comic_ids(conn, stage_mask).await?
-        }
-
-        None => None,
-    };
-
     let mut query = t_comic
         .filter(f_workset_id.eq(spec.workset_id.as_str()))
+        .filter(f_deleted_at.is_null())
         .select(ComicInfoRow::as_select())
         .into_boxed();
 
@@ -121,14 +152,128 @@ pub async fn list_infos(
         };
     }
 
-    if let Some(comic_ids) = stage_comic_ids {
-        query = query.filter(f_id.eq_any(comic_ids));
+    if let Some(stage_mask) = spec.stages {
+        //
+        let stage_filter = stage_filter(stage_mask);
+
+        match stage_filter {
+            //
+            StageFilter::None => {}
+
+            StageFilter::Impossible => return accept(Vec::new()),
+
+            StageFilter::Mask { mask: stage_mask } => {
+                //
+                let raw_matches = stage_mask
+                    .ignores_stage(Stage::RawProvide)
+                    .sql_bool()
+                    .or((stage_mask.get_phase(Stage::RawProvide)
+                        == StagePhase::Pending)
+                        .sql_bool()
+                        .and(t_chapter::f_uploaded_at.is_null()))
+                    .or((stage_mask.get_phase(Stage::RawProvide)
+                        == StagePhase::Completed)
+                        .sql_bool()
+                        .and(t_chapter::f_uploaded_at.is_not_null()));
+
+                let translate_matches = stage_mask
+                    .ignores_stage(Stage::Translate)
+                    .sql_bool()
+                    .or((stage_mask.get_phase(Stage::Translate)
+                        == StagePhase::Pending)
+                        .sql_bool()
+                        .and(t_chapter::f_translating_at.is_null())
+                        .and(t_chapter::f_translated_at.is_null()))
+                    .or((stage_mask.get_phase(Stage::Translate)
+                        == StagePhase::Active)
+                        .sql_bool()
+                        .and(t_chapter::f_translating_at.is_not_null())
+                        .and(t_chapter::f_translated_at.is_null()))
+                    .or((stage_mask.get_phase(Stage::Translate)
+                        == StagePhase::Completed)
+                        .sql_bool()
+                        .and(t_chapter::f_translated_at.is_not_null()));
+
+                let proofread_matches = stage_mask
+                    .ignores_stage(Stage::Proofread)
+                    .sql_bool()
+                    .or((stage_mask.get_phase(Stage::Proofread)
+                        == StagePhase::Pending)
+                        .sql_bool()
+                        .and(t_chapter::f_proofreading_at.is_null())
+                        .and(t_chapter::f_proofread_at.is_null()))
+                    .or((stage_mask.get_phase(Stage::Proofread)
+                        == StagePhase::Active)
+                        .sql_bool()
+                        .and(t_chapter::f_proofreading_at.is_not_null())
+                        .and(t_chapter::f_proofread_at.is_null()))
+                    .or((stage_mask.get_phase(Stage::Proofread)
+                        == StagePhase::Completed)
+                        .sql_bool()
+                        .and(t_chapter::f_proofread_at.is_not_null()));
+
+                let typeset_matches = stage_mask
+                    .ignores_stage(Stage::TypesetRedraw)
+                    .sql_bool()
+                    .or((stage_mask.get_phase(Stage::TypesetRedraw)
+                        == StagePhase::Pending)
+                        .sql_bool()
+                        .and(t_chapter::f_typesetting_at.is_null())
+                        .and(t_chapter::f_typeset_at.is_null()))
+                    .or((stage_mask.get_phase(Stage::TypesetRedraw)
+                        == StagePhase::Active)
+                        .sql_bool()
+                        .and(t_chapter::f_typesetting_at.is_not_null())
+                        .and(t_chapter::f_typeset_at.is_null()))
+                    .or((stage_mask.get_phase(Stage::TypesetRedraw)
+                        == StagePhase::Completed)
+                        .sql_bool()
+                        .and(t_chapter::f_typeset_at.is_not_null()));
+
+                let review_matches = stage_mask
+                    .ignores_stage(Stage::Review)
+                    .sql_bool()
+                    .or((stage_mask.get_phase(Stage::Review)
+                        == StagePhase::Pending)
+                        .sql_bool()
+                        .and(t_chapter::f_reviewed_at.is_null()))
+                    .or((stage_mask.get_phase(Stage::Review)
+                        == StagePhase::Completed)
+                        .sql_bool()
+                        .and(t_chapter::f_reviewed_at.is_not_null()));
+
+                let publish_matches = stage_mask
+                    .ignores_stage(Stage::Publish)
+                    .sql_bool()
+                    .or((stage_mask.get_phase(Stage::Publish)
+                        == StagePhase::Pending)
+                        .sql_bool()
+                        .and(t_chapter::f_published_at.is_null()))
+                    .or((stage_mask.get_phase(Stage::Publish)
+                        == StagePhase::Completed)
+                        .sql_bool()
+                        .and(t_chapter::f_published_at.is_not_null()));
+
+                let matching_chapter = t_chapter::table
+                    .filter(t_chapter::f_comic_id.eq(f_id))
+                    .filter(t_chapter::f_is_pinned.eq(true))
+                    .filter(t_chapter::f_deleted_at.is_null())
+                    .filter(raw_matches)
+                    .filter(translate_matches)
+                    .filter(proofread_matches)
+                    .filter(typeset_matches)
+                    .filter(review_matches)
+                    .filter(publish_matches);
+
+                query = query.filter(diesel::dsl::exists(matching_chapter));
+            }
+        }
     }
 
     let rows = query
         .order_by((f_last_active_at.desc(), f_index.asc()))
         .offset(i64::from(spec.offset))
-        .limit(i64::from(spec.limit))
+        .limit(i64::from(spec.limit.get()))
         .load::<ComicInfoRow>(conn)
         .await
         .map_err(diesel)?;
@@ -166,11 +311,19 @@ pub async fn update_info(
         .description(update.description.as_deref())
         .composed_title(composed_title);
 
-    diesel::update(t_comic.filter(f_id.eq(update.id.as_str())))
-        .set(&aspect)
-        .execute(conn)
-        .await
-        .map_err(diesel)?;
+    let updated_count = diesel::update(
+        t_comic
+            .filter(f_id.eq(update.id.as_str()))
+            .filter(f_deleted_at.is_null()),
+    )
+    .set(&aspect)
+    .execute(conn)
+    .await
+    .map_err(diesel)?;
+
+    if updated_count == 0 {
+        return Err(missing_comic(&update.id, "update comic info"));
+    }
 
     accept(())
 }
@@ -204,6 +357,7 @@ pub async fn get_info_excluded(
     //
     let row = t_comic
         .filter(f_id.eq(id))
+        .filter(f_deleted_at.is_null())
         .select(ComicInfoRow::as_select())
         .for_update()
         .get_result::<ComicInfoRow>(conn)
@@ -240,119 +394,6 @@ pub async fn get_info_excluded(
     accept(comic_info)
 }
 
-/// Lists and locks the comic rows selected by a list spec.
-#[instrument(level = "info", skip_all)]
-pub async fn list_infos_excluded(
-    conn: &mut RdbConn,
-    spec: &ComicListSpec,
-) -> BaseRest<Vec<ComicInfo>> {
-    // Builds the paginated, locked row query for the list spec.
-    macro_rules! load_rows {
-        ($query:expr) => {
-            $query
-                .select(ComicInfoRow::as_select())
-                .order_by((f_last_active_at.desc(), f_index.asc()))
-                .offset(i64::from(spec.offset))
-                .limit(i64::from(spec.limit))
-                .for_update()
-                .load::<ComicInfoRow>(conn)
-                .await
-                .map_err(diesel)?
-        };
-    }
-
-    let stage_comic_ids = match spec.stages {
-        //
-        Some(stage_mask) => {
-            list_matching_stage_comic_ids(conn, stage_mask).await?
-        }
-
-        None => None,
-    };
-
-    let rows = match (spec.fuzzy_title.as_deref(), stage_comic_ids) {
-        //
-        (None, None) => load_rows!(
-            t_comic.filter(f_workset_id.eq(spec.workset_id.as_str()))
-        ),
-
-        (None, Some(comic_ids)) => load_rows!(
-            t_comic
-                .filter(f_workset_id.eq(spec.workset_id.as_str()))
-                .filter(f_id.eq_any(comic_ids))
-        ),
-
-        (Some(fuzzy_title), stage_comic_ids) => {
-            //
-            let escaped = escape_ilike_pattern(fuzzy_title);
-
-            let pattern = format!("%{}%", escaped);
-
-            match (
-                stored_index_from_numeric_fuzzy(fuzzy_title),
-                stage_comic_ids,
-            ) {
-                //
-                (Some(index), None) => load_rows!(
-                    t_comic
-                        .filter(f_workset_id.eq(spec.workset_id.as_str()),)
-                        .filter(
-                            f_composed_title
-                                .ilike(pattern)
-                                .or(f_index.eq(index)),
-                        )
-                ),
-
-                (Some(index), Some(comic_ids)) => load_rows!(
-                    t_comic
-                        .filter(f_workset_id.eq(spec.workset_id.as_str()),)
-                        .filter(
-                            f_composed_title
-                                .ilike(pattern)
-                                .or(f_index.eq(index)),
-                        )
-                        .filter(f_id.eq_any(comic_ids))
-                ),
-
-                (None, None) => load_rows!(
-                    t_comic
-                        .filter(f_workset_id.eq(spec.workset_id.as_str()),)
-                        .filter(f_composed_title.ilike(pattern))
-                ),
-
-                (None, Some(comic_ids)) => load_rows!(
-                    t_comic
-                        .filter(f_workset_id.eq(spec.workset_id.as_str()),)
-                        .filter(f_composed_title.ilike(pattern))
-                        .filter(f_id.eq_any(comic_ids))
-                ),
-            }
-        }
-    };
-
-    let mut comic_infos = rows
-        .into_iter()
-        .map(TryInto::try_into)
-        .collect::<BaseRest<Vec<_>>>()?;
-
-    incl::comic::populate_comic_incls(conn, &mut comic_infos, &spec.incl_opt)
-        .await?;
-
-    accept(comic_infos)
-}
-
-/// Deletes a single comic row by ID.
-#[instrument(level = "info", skip_all)]
-pub async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
-    //
-    diesel::delete(t_comic.filter(f_id.eq(id)))
-        .execute(conn)
-        .await
-        .map_err(diesel)?;
-
-    accept(())
-}
-
 /// Atomically increments and returns the previous `chapter_next_index` value.
 #[instrument(level = "info", skip_all)]
 pub async fn incr_chapter_next_index(
@@ -360,12 +401,19 @@ pub async fn incr_chapter_next_index(
     id: &str,
 ) -> BaseRest<usize> {
     //
-    let prev = diesel::update(t_comic.filter(f_id.eq(id)))
-        .set(f_chapter_next_index.eq(f_chapter_next_index + 1))
-        .returning(f_chapter_next_index - 1)
-        .get_result::<i32>(conn)
-        .await
-        .map_err(diesel)?;
+    let prev = diesel::update(
+        t_comic.filter(f_id.eq(id)).filter(f_deleted_at.is_null()),
+    )
+    .set(f_chapter_next_index.eq(f_chapter_next_index + 1))
+    .returning(f_chapter_next_index - 1)
+    .get_result::<i32>(conn)
+    .await
+    .optional()
+    .map_err(diesel)?;
+
+    let Some(prev) = prev else {
+        return Err(missing_comic(id, "allocate comic chapter index"));
+    };
 
     accept(usize_from_i32(prev, "t_comic.f_chapter_next_index")?)
 }
@@ -378,11 +426,17 @@ pub async fn update_chapter_count(
     delta: i32,
 ) -> BaseRest<()> {
     //
-    diesel::update(t_comic.filter(f_id.eq(id)))
-        .set(f_chapter_count.eq(f_chapter_count + delta))
-        .execute(conn)
-        .await
-        .map_err(diesel)?;
+    let updated_count = diesel::update(
+        t_comic.filter(f_id.eq(id)).filter(f_deleted_at.is_null()),
+    )
+    .set(f_chapter_count.eq(f_chapter_count + delta))
+    .execute(conn)
+    .await
+    .map_err(diesel)?;
+
+    if updated_count == 0 {
+        return Err(missing_comic(id, "update comic chapter count"));
+    }
 
     accept(())
 }
@@ -395,11 +449,17 @@ pub async fn touch_last_active(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
 
     let aspect = ComicAspectRow::new(now).last_active_at(now);
 
-    diesel::update(t_comic.filter(f_id.eq(id)))
-        .set(&aspect)
-        .execute(conn)
-        .await
-        .map_err(diesel)?;
+    let updated_count = diesel::update(
+        t_comic.filter(f_id.eq(id)).filter(f_deleted_at.is_null()),
+    )
+    .set(&aspect)
+    .execute(conn)
+    .await
+    .map_err(diesel)?;
+
+    if updated_count == 0 {
+        return Err(missing_comic(id, "touch comic last active"));
+    }
 
     accept(())
 }

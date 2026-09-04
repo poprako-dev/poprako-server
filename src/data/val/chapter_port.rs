@@ -25,8 +25,8 @@ pub struct ExportChapterTranslationsVal {
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ImportChapterTranslationVal {
     //
-    /// Number of pages that were imported.
+    /// Number of pages whose visible Unit content changed.
     pub imported_page_count: usize,
-    /// Number of translation units that were imported.
+    /// Number of Units created from the imported source.
     pub imported_unit_count: usize,
 }

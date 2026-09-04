@@ -1,8 +1,6 @@
 //! Mock deferred-task recording and on-demand processing.
 
-mod chapter;
 mod defer;
-mod invitation;
 mod json;
 
 #[cfg(test)]
@@ -11,8 +9,11 @@ mod tests;
 use time::OffsetDateTime;
 
 use crate::part::prom::payload::TaskPayload;
+use crate::part_impl::prom::dispatch;
+use crate::part_impl::prom::task_flow::TaskFlow;
 use crate::part_impl::repo::mock_impl::Mock;
-use crate::result::{BaseRest, accept};
+use crate::part_impl::repo::mock_impl::MockContext;
+use crate::result::{BaseError, BaseRest, accept};
 
 /// One deferred action recorded by the mock transaction context.
 #[cfg_attr(test, derive(Clone))]
@@ -45,13 +46,20 @@ pub async fn process_pending(mock: &Mock) -> BaseRest<()> {
     let snapshot = mock.snapshot();
 
     for record in &snapshot.prom_records {
-        match record.payload() {
-            TaskPayload::Chapter { payload } => {
-                chapter::process(mock, &payload).await?;
-            }
+        let flow = dispatch::dispatch::<MockContext, _, _, _, _>(
+            (mock, mock, mock, mock),
+            record.payload(),
+        )
+        .await;
 
-            TaskPayload::Invitation { payload } => {
-                invitation::process(mock, &payload).await?;
+        match flow {
+            TaskFlow::Complete | TaskFlow::Wait { .. } => {}
+
+            TaskFlow::Retry { err_message }
+            | TaskFlow::Dead { err_message } => {
+                return Err(BaseError::Unrecoverable {
+                    message: err_message,
+                });
             }
         }
     }

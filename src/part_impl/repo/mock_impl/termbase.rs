@@ -93,7 +93,7 @@ fn list_infos(
                 .collect::<Vec<_>>(),
             fuzzy_name,
             *offset,
-            *limit,
+            limit.get(),
         ),
 
         TermbaseListSpec::Comic {
@@ -143,7 +143,7 @@ fn list_infos(
                     .collect::<Vec<_>>(),
                 fuzzy_name,
                 *offset,
-                *limit,
+                limit.get(),
             )
         }
     };

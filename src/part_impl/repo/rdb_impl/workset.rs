@@ -20,8 +20,7 @@ use crate::model::read::proj::workset::WorksetInfo;
 use crate::model::write::workset::{WorksetEntry, WorksetRepl};
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::workset::{
-    AllocWorksetComicIndex, CreateWorkset, DeleteWorkset, GetWorksetInfo,
-    GetWorksetInfoExcluded, ListWorksetInfos, ListWorksetInfosExcluded,
+    AllocWorksetComicIndex, CreateWorkset, GetWorksetInfo, ListWorksetInfos,
     UpdateWorkset, UpdateWorksetComicCount,
 };
 use crate::part_impl::repo::HybRepo;
@@ -30,23 +29,30 @@ use crate::part_impl::repo::rdb_impl::entity::workset::{
 };
 use crate::part_impl::repo::rdb_impl::numeric::usize_from_i32;
 use crate::part_impl::repo::rdb_impl::schema::t_workset::dsl::{
-    f_comic_count, f_comic_next_index, f_id, f_index, f_team_id, t_workset,
+    f_comic_count, f_comic_next_index, f_deleted_at, f_id, f_index, f_team_id,
+    t_workset,
 };
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::RdbContext;
 use crate::shared::result::diesel;
 
-// Remove one workset row by id.
-#[instrument(level = "info", skip_all)]
-async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
+/// Build the expected error for a missing workset.
+pub fn missing_workset(id: &str, operation: &str) -> BaseError {
     //
-    // Hard-delete the row; no additional business side-effects in this layer.
-    diesel::delete(t_workset.filter(f_id.eq(id)))
-        .execute(conn)
-        .await
-        .map_err(diesel)?;
+    let message = trl("error-workset-not-found");
 
-    accept(())
+    tracing::warn!(
+        err_variant = ?ExpectedVariant::Args,
+        err_message = %message,
+        workset_id = %id,
+        operation,
+        "expected workset error",
+    );
+
+    BaseError::Expected {
+        variant: ExpectedVariant::Args,
+        message,
+    }
 }
 
 // Load one workset by id and return a rich info view.
@@ -56,6 +62,7 @@ async fn get_info(conn: &mut RdbConn, id: &str) -> BaseRest<WorksetInfo> {
     // Fetch the row by primary key and map missing rows to `error-workset-not-found`.
     let row = t_workset
         .filter(f_id.eq(id))
+        .filter(f_deleted_at.is_null())
         .select(WorksetInfoRow::as_select())
         .get_result::<WorksetInfoRow>(conn)
         .await
@@ -93,10 +100,11 @@ async fn list_infos(
     // Apply pagination and team filter so consumers can page team worksets.
     let query = t_workset
         .filter(f_team_id.eq(oper.team_id))
+        .filter(f_deleted_at.is_null())
         .select(WorksetInfoRow::as_select())
         .order_by(f_index.asc())
         .offset(i64::from(oper.offset))
-        .limit(i64::from(oper.limit))
+        .limit(i64::from(oper.limit.get()))
         .into_boxed();
 
     let rows = query.load::<WorksetInfoRow>(conn).await.map_err(diesel)?;
@@ -115,70 +123,21 @@ async fn update_info(conn: &mut RdbConn, update: &WorksetRepl) -> BaseRest<()> {
         .name(&update.name)
         .description(update.description.as_deref());
 
-    diesel::update(t_workset.filter(f_id.eq(&update.id)))
-        .set(&aspect)
-        .execute(conn)
-        .await
-        .map_err(diesel)?;
+    let updated_count = diesel::update(
+        t_workset
+            .filter(f_id.eq(&update.id))
+            .filter(f_deleted_at.is_null()),
+    )
+    .set(&aspect)
+    .execute(conn)
+    .await
+    .map_err(diesel)?;
+
+    if updated_count == 0 {
+        return Err(missing_workset(&update.id, "update workset info"));
+    }
 
     accept(())
-}
-
-// List worksets for team-level operations while excluding other readers.
-#[instrument(level = "info", skip_all)]
-async fn list_infos_excluded(
-    conn: &mut RdbConn,
-    team_id: &str,
-) -> BaseRest<Vec<WorksetInfo>> {
-    //
-    // Lock rows selected by team to support follow-up serial updates.
-    let rows = t_workset
-        .filter(f_team_id.eq(team_id))
-        .select(WorksetInfoRow::as_select())
-        .for_update()
-        .load::<WorksetInfoRow>(conn)
-        .await
-        .map_err(diesel)?;
-
-    rows.into_iter().map(WorksetInfo::try_from).collect()
-}
-
-// Load one workset with row lock for mutation flows.
-#[instrument(level = "info", skip_all)]
-async fn get_info_excluded(
-    conn: &mut RdbConn,
-    id: &str,
-) -> BaseRest<WorksetInfo> {
-    //
-    // Return `error-workset-not-found` when locked read sees no row.
-    let row = t_workset
-        .filter(f_id.eq(id))
-        .select(WorksetInfoRow::as_select())
-        .for_update()
-        .get_result::<WorksetInfoRow>(conn)
-        .await
-        .optional()
-        .map_err(diesel)?;
-
-    let Some(row) = row else {
-        //
-        let message = trl("error-workset-not-found");
-
-        tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
-            err_message = %message,
-            workset_id = %id,
-            operation = "lock workset info",
-            "expected workset error",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message,
-        });
-    };
-
-    accept(WorksetInfo::try_from(row)?)
 }
 
 // Insert a new workset and return its public info record.
@@ -206,12 +165,19 @@ async fn create(
 async fn alloc_comic_index(conn: &mut RdbConn, id: &str) -> BaseRest<usize> {
     //
     // Increment and return previous next-index value in a single statement.
-    let index = diesel::update(t_workset.filter(f_id.eq(id)))
-        .set(f_comic_next_index.eq(f_comic_next_index + 1))
-        .returning(f_comic_next_index - 1)
-        .get_result::<i32>(conn)
-        .await
-        .map_err(diesel)?;
+    let index = diesel::update(
+        t_workset.filter(f_id.eq(id)).filter(f_deleted_at.is_null()),
+    )
+    .set(f_comic_next_index.eq(f_comic_next_index + 1))
+    .returning(f_comic_next_index - 1)
+    .get_result::<i32>(conn)
+    .await
+    .optional()
+    .map_err(diesel)?;
+
+    let Some(index) = index else {
+        return Err(missing_workset(id, "allocate workset comic index"));
+    };
 
     accept(usize_from_i32(index, "t_workset.f_comic_next_index")?)
 }
@@ -225,11 +191,17 @@ async fn update_comic_count(
 ) -> BaseRest<()> {
     //
     // Keep a monotonic counter aligned with comic membership updates.
-    diesel::update(t_workset.filter(f_id.eq(id)))
-        .set(f_comic_count.eq(f_comic_count + delta))
-        .execute(conn)
-        .await
-        .map_err(diesel)?;
+    let updated_count = diesel::update(
+        t_workset.filter(f_id.eq(id)).filter(f_deleted_at.is_null()),
+    )
+    .set(f_comic_count.eq(f_comic_count + delta))
+    .execute(conn)
+    .await
+    .map_err(diesel)?;
+
+    if updated_count == 0 {
+        return Err(missing_workset(id, "update workset comic count"));
+    }
 
     accept(())
 }
@@ -242,7 +214,7 @@ impl Run<GetWorksetInfo<'_>> for HybRepo {
     // Map `GetWorksetInfo` lookup to one repository query helper.
     #[instrument(level = "info", skip_all)]
     async fn run(&self, oper: &GetWorksetInfo<'_>) -> BaseRest<WorksetInfo> {
-        submit_query!(self.core, get_info, oper.id)
+        submit_query!(self.rdb_core, get_info, oper.id)
     }
 }
 
@@ -257,7 +229,7 @@ impl Run<ListWorksetInfos<'_>> for HybRepo {
         &self,
         oper: &ListWorksetInfos<'_>,
     ) -> BaseRest<Vec<WorksetInfo>> {
-        submit_query!(self.core, list_infos, oper)
+        submit_query!(self.rdb_core, list_infos, oper)
     }
 }
 
@@ -269,7 +241,7 @@ impl Run<UpdateWorkset<'_>> for HybRepo {
     // Route update DTO directly into update helper.
     #[instrument(level = "info", skip_all)]
     async fn run(&self, oper: &UpdateWorkset<'_>) -> BaseRest<()> {
-        submit_query!(self.core, update_info, oper.update)
+        submit_query!(self.rdb_core, update_info, oper.update)
     }
 }
 
@@ -315,48 +287,6 @@ where
     }
 }
 
-impl<L> Step<GetWorksetInfoExcluded<'_>, RdbContext<L>> for HybRepo
-where
-    L: Level + Send + AtLeast<ReptRead>,
-{
-    // Use BaseError for transactional context operations.
-    type Level = ReptRead;
-
-    // Defines the adapter error exposed by this operation.
-    type Error = BaseError;
-
-    // Resolve locked workset row for mutation chains.
-    #[instrument(level = "info", skip_all)]
-    async fn step(
-        &self,
-        context: &mut RdbContext<L>,
-        oper: &GetWorksetInfoExcluded<'_>,
-    ) -> BaseRest<WorksetInfo> {
-        get_info_excluded(context.conn(), oper.id).await
-    }
-}
-
-impl<L> Step<ListWorksetInfosExcluded<'_>, RdbContext<L>> for HybRepo
-where
-    L: Level + Send + AtLeast<ReptRead>,
-{
-    // Use BaseError for transactional context operations.
-    type Level = ReptRead;
-
-    // Defines the adapter error exposed by this operation.
-    type Error = BaseError;
-
-    // List rows locked by team id to coordinate dependent writes.
-    #[instrument(level = "info", skip_all)]
-    async fn step(
-        &self,
-        context: &mut RdbContext<L>,
-        oper: &ListWorksetInfosExcluded<'_>,
-    ) -> BaseRest<Vec<WorksetInfo>> {
-        list_infos_excluded(context.conn(), oper.team_id).await
-    }
-}
-
 impl<L> Step<CreateWorkset<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
@@ -375,27 +305,6 @@ where
         oper: &CreateWorkset<'_>,
     ) -> BaseRest<WorksetInfo> {
         create(context.conn(), oper.entry).await
-    }
-}
-
-impl<L> Step<DeleteWorkset<'_>, RdbContext<L>> for HybRepo
-where
-    L: Level + Send + AtLeast<ReptRead>,
-{
-    // Use BaseError for transactional context operations.
-    type Level = ReptRead;
-
-    // Defines the adapter error exposed by this operation.
-    type Error = BaseError;
-
-    // Delete workset row as part of the current transaction.
-    #[instrument(level = "info", skip_all)]
-    async fn step(
-        &self,
-        context: &mut RdbContext<L>,
-        oper: &DeleteWorkset<'_>,
-    ) -> BaseRest<()> {
-        delete(context.conn(), oper.id).await
     }
 }
 

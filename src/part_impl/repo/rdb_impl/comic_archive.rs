@@ -33,7 +33,7 @@ use crate::model::read::proj::page::PageInfo;
 use crate::model::read::proj::unit::UnitInfo;
 use crate::model::read::proj::user::UserInfo;
 use crate::model::read::proj::workset::WorksetInfo;
-use crate::part::repo::oper::comic_archive::{CommitComicArchive, DeleteComicArchives, GetComicArchiveSnapshotExcluded, ListComicArchivePayloads};
+use crate::part::repo::oper::comic_archive::{CommitComicArchive, GetComicArchiveSnapshotExcluded, ListComicArchivePayloads};
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::entity::assignment::AssignmentInfoRow;
 use crate::part_impl::repo::rdb_impl::entity::chapter::ChapterInfoRow;
@@ -47,7 +47,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_assignment::dsl::{f_chapter_id a
 use crate::part_impl::repo::rdb_impl::schema::t_assignment_invitation::dsl::{f_chapter_id as invitation_chapter_id, f_id as invitation_id, t_assignment_invitation};
 use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::{f_comic_id as chapter_comic_id, f_id as chapter_id, t_chapter};
 use crate::part_impl::repo::rdb_impl::schema::t_chapter_workflow_record::dsl::{f_chapter_id as workflow_record_chapter_id, f_created_at as workflow_record_created_at, f_id as workflow_record_id, t_chapter_workflow_record};
-use crate::part_impl::repo::rdb_impl::schema::t_comic::dsl::{f_id as comic_id, t_comic};
+use crate::part_impl::repo::rdb_impl::schema::t_comic::dsl::{f_deleted_at as comic_deleted_at, f_id as comic_id, t_comic};
 use crate::part_impl::repo::rdb_impl::schema::t_page::dsl::{f_chapter_id as page_chapter_id, f_id as page_id, f_index as page_index, t_page};
 use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{f_page_id as unit_page_id, t_unit};
 use crate::part_impl::repo::rdb_impl::schema::t_user::dsl::{f_id as user_id, t_user};
@@ -145,6 +145,7 @@ async fn load_archive_root(
     //
     let comic_row = t_comic
         .filter(comic_id.eq(source_comic_id))
+        .filter(comic_deleted_at.is_null())
         .select(ComicInfoRow::as_select())
         .for_update()
         .get_result::<ComicInfoRow>(conn)
@@ -533,7 +534,7 @@ impl Run<ListComicArchivePayloads<'_>> for HybRepo {
     ) -> BaseRest<Vec<(OffsetDateTime, String)>> {
         //
         submit_query!(
-            self.core,
+            self.rdb_core,
             payload::list_payloads,
             oper.team_id,
             oper.months
@@ -559,38 +560,5 @@ where
         oper: &CommitComicArchive<'_>,
     ) -> BaseRest<()> {
         commit::commit(context.conn(), oper.entry).await
-    }
-}
-
-impl<L> Step<DeleteComicArchives<'_>, RdbContext<L>> for HybRepo
-where
-    L: Level + Send + AtLeast<ReptRead>,
-{
-    // Use base errors for comic-archive cleanup during hard deletion.
-    type Level = ReptRead;
-
-    // Defines the adapter error exposed by this operation.
-    type Error = BaseError;
-
-    #[instrument(level = "info", skip_all)]
-    // Delete every archive record associated with a source comic.
-    async fn step(
-        &self,
-        context: &mut RdbContext<L>,
-        oper: &DeleteComicArchives<'_>,
-    ) -> BaseRest<()> {
-        //
-        use crate::part_impl::repo::rdb_impl::schema::t_comic_archive::dsl::{
-            f_source_comic_id, t_comic_archive,
-        };
-
-        diesel::delete(
-            t_comic_archive.filter(f_source_comic_id.eq(oper.source_comic_id)),
-        )
-        .execute(context.conn())
-        .await
-        .map_err(diesel)?;
-
-        accept(())
     }
 }

@@ -1,14 +1,30 @@
 use poprako_orchestra::Oper;
 
-use crate::model::read::proj::page::PageInfo;
+use crate::model::read::proj::page::{PageInfo, PageUnitScope};
 use crate::model::read::proj::unit::UnitCountMetrics;
-use crate::model::write::page::{PageEntry, PageManifestEntry};
+use crate::model::write::page::PageManifestEntry;
 
 /// Retrieves a single page's info by ID.
 #[derive(Oper)]
 #[oper(output = PageInfo)]
 pub struct GetPageInfo<'a> {
     /// The page ID.
+    pub id: &'a str,
+}
+
+/// Retrieves the minimal Page scope needed by Unit operations.
+#[derive(Oper)]
+#[oper(output = PageUnitScope)]
+pub struct GetPageUnitScope<'a> {
+    /// The Page ID.
+    pub id: &'a str,
+}
+
+/// Locks and retrieves the minimal Page scope needed by Unit edits.
+#[derive(Oper)]
+#[oper(output = PageUnitScope)]
+pub struct GetPageUnitScopeExcluded<'a> {
+    /// The Page ID.
     pub id: &'a str,
 }
 
@@ -33,15 +49,7 @@ pub struct ListEdittedDiffPageIds<'a> {
 #[oper(output = Vec<PageInfo>)]
 pub struct ListFirstPageInfos<'a> {
     /// The chapter IDs to query.
-    pub chapter_ids: &'a [String],
-}
-
-/// Creates multiple pages from the given entries.
-#[derive(Oper)]
-#[oper(output = Vec<PageInfo>)]
-pub struct CreatePages<'a> {
-    /// The page entries to insert.
-    pub entries: &'a [PageEntry],
+    pub chapter_ids: &'a [&'a str],
 }
 
 /// Retrieves a single page's info by ID with excluded fields omitted.
@@ -79,12 +87,12 @@ pub struct ApplyPageManifest<'a> {
 /// Sets the unit counters for a page.
 #[derive(Oper)]
 #[oper(output = ())]
-pub struct SetPageUnitCounters<'a> {
+pub struct SetPageUnitCountMetrics<'a> {
     //
     /// The page ID.
     pub id: &'a str,
     /// The unit counters to set.
-    pub counters: UnitCountMetrics,
+    pub count_metrics: UnitCountMetrics,
 }
 
 /// Deletes pages by chapter or by a list of IDs.

@@ -1,6 +1,7 @@
 //! Domain models for team membership.
 
 use crate::value::member::MemberInclOpt;
+use crate::value::pagination::PubListLimit;
 use crate::value::role::RoleField;
 
 /// Filtering and pagination parameters for listing memberships.
@@ -15,7 +16,7 @@ pub enum MemberListSpec {
         /// Number of records to skip for pagination.
         offset: u32,
         /// Maximum number of records to return.
-        limit: u32,
+        limit: PubListLimit,
     },
 
     /// List members of a specific team, optionally narrowed by role or nickname.
@@ -31,7 +32,7 @@ pub enum MemberListSpec {
         /// Number of records to skip for pagination.
         offset: u32,
         /// Maximum number of records to return.
-        limit: u32,
+        limit: PubListLimit,
     },
 }
 

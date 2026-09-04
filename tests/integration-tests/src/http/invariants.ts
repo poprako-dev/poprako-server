@@ -392,7 +392,7 @@ export function assertMemberListWellFormed(members: MemberInfoView[]): void {
 }
 
 // Convenience: verify page counters are mutually consistent with the chapter.
-export async function assertChapterPageCountersConsistent(
+export async function assertChapterPageCountMetricsConsistent(
     api: ApiClient,
     chapterId: string,
 ): Promise<void> {

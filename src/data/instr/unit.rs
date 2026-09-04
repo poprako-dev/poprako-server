@@ -107,17 +107,17 @@ impl UnitTransformInstr {
 
         let mut origins = HashSet::with_capacity(self.transforms.len());
 
+        for transform in &self.transforms {
+            //
+            if !origins.insert(transform.origin.as_str()) {
+                return Err(invalid_unit_transform("duplicate_origin"));
+            }
+        }
+
         let transforms = self
             .transforms
             .into_iter()
-            .map(|transform| {
-                //
-                if !origins.insert(transform.origin.clone()) {
-                    return Err(invalid_unit_transform("duplicate_origin"));
-                }
-
-                transform.into_model()
-            })
+            .map(UnitTextTransformInstr::into_model)
             .collect::<BaseRest<Vec<_>>>()?;
 
         accept(UnitTransform {
@@ -169,16 +169,16 @@ pub fn into_unit_transforms(
 
     let mut unit_ids = HashSet::with_capacity(units.len());
 
+    for unit in &units {
+        //
+        if !unit_ids.insert(unit.unit_id.as_str()) {
+            return Err(invalid_unit_transform("duplicate_unit_id"));
+        }
+    }
+
     units
         .into_iter()
-        .map(|unit| {
-            //
-            if !unit_ids.insert(unit.unit_id.clone()) {
-                return Err(invalid_unit_transform("duplicate_unit_id"));
-            }
-
-            unit.into_model()
-        })
+        .map(UnitTransformInstr::into_model)
         .collect()
 }
 

@@ -7,8 +7,7 @@ use crate::model::read::proj::workset::WorksetInfo;
 use crate::model::write::workset::WorksetRepl;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::workset::{
-    AllocWorksetComicIndex, CreateWorkset, DeleteWorkset, GetWorksetInfo,
-    GetWorksetInfoExcluded, ListWorksetInfos, ListWorksetInfosExcluded,
+    AllocWorksetComicIndex, CreateWorkset, GetWorksetInfo, ListWorksetInfos,
     UpdateWorkset, UpdateWorksetComicCount,
 };
 use crate::part_impl::repo::mock_impl::nucl::apply_signed_delta;
@@ -23,7 +22,9 @@ fn get_workset_info(state: &MockState, id: &str) -> BaseRest<WorksetInfo> {
     state
         .worksets
         .iter()
-        .find(|workset_info| workset_info.id == id)
+        .find(|workset_info| {
+            workset_info.id == id && !state.deleted_workset_ids.contains(id)
+        })
         .cloned()
         .ok_or_else(|| expected("error-workset-not-found"))
 }
@@ -40,6 +41,9 @@ fn list_workset_infos(
         .worksets
         .iter()
         .filter(|workset_info| workset_info.team_id == oper.team_id)
+        .filter(|workset_info| {
+            !state.deleted_workset_ids.contains(&workset_info.id)
+        })
         .cloned()
         .collect::<Vec<_>>();
 
@@ -47,7 +51,7 @@ fn list_workset_infos(
 
     let offset = oper.offset as usize;
 
-    let limit = oper.limit as usize;
+    let limit = oper.limit.get() as usize;
 
     if offset >= workset_infos.len() {
         Vec::new()
@@ -66,6 +70,10 @@ fn update_workset(state: &mut MockState, update: &WorksetRepl) -> BaseRest<()> {
     //
     // Internal implementation detail.
     // Internal implementation detail.
+    if state.deleted_workset_ids.contains(&update.id) {
+        return Err(expected("error-workset-not-found"));
+    }
+
     let workset_info = state
         .worksets
         .iter_mut()
@@ -171,51 +179,6 @@ impl<'a> Step<ListWorksetInfos<'a>, MockContext> for Mock {
     }
 }
 
-impl<'a> Step<GetWorksetInfoExcluded<'a>, MockContext> for Mock {
-    // Internal type alias for `Error`.
-    type Level = ReptRead;
-
-    // Defines the adapter error exposed by this operation.
-    type Error = BaseError;
-
-    #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
-    async fn step(
-        &self,
-        context: &mut MockContext,
-        oper: &GetWorksetInfoExcluded<'a>,
-    ) -> BaseRest<WorksetInfo> {
-        get_workset_info(&context.state, oper.id)
-    }
-}
-
-impl<'a> Step<ListWorksetInfosExcluded<'a>, MockContext> for Mock {
-    // Internal type alias for `Error`.
-    type Level = ReptRead;
-
-    // Defines the adapter error exposed by this operation.
-    type Error = BaseError;
-
-    #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
-    async fn step(
-        &self,
-        context: &mut MockContext,
-        oper: &ListWorksetInfosExcluded<'a>,
-    ) -> BaseRest<Vec<WorksetInfo>> {
-        //
-        accept(
-            context
-                .state
-                .worksets
-                .iter()
-                .filter(|workset_info| workset_info.team_id == oper.team_id)
-                .cloned()
-                .collect(),
-        )
-    }
-}
-
 impl<'a> Step<CreateWorkset<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
     type Level = ReptRead;
@@ -261,73 +224,6 @@ impl<'a> Step<CreateWorkset<'a>, MockContext> for Mock {
     }
 }
 
-impl<'a> Step<DeleteWorkset<'a>, MockContext> for Mock {
-    // Internal type alias for `Error`.
-    type Level = ReptRead;
-
-    // Defines the adapter error exposed by this operation.
-    type Error = BaseError;
-
-    #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
-    async fn step(
-        &self,
-        context: &mut MockContext,
-        oper: &DeleteWorkset<'a>,
-    ) -> BaseRest<()> {
-        //
-        // Internal implementation detail.
-        // Internal implementation detail.
-        let position = context
-            .state
-            .worksets
-            .iter()
-            .position(|workset_info| workset_info.id == oper.id)
-            .ok_or_else(|| expected("error-workset-not-found"))?;
-
-        let deleted_workset_id = context.state.worksets[position].id.clone();
-
-        let deleted_comic_ids = context
-            .state
-            .comics
-            .iter()
-            .filter(|comic_info| comic_info.workset_id == deleted_workset_id)
-            .map(|comic_info| comic_info.id.clone())
-            .collect::<Vec<_>>();
-
-        let deleted_chapter_ids = context
-            .state
-            .chapters
-            .iter()
-            .filter(|chapter_info| {
-                deleted_comic_ids.contains(&chapter_info.comic_id)
-            })
-            .map(|chapter_info| chapter_info.id.clone())
-            .collect::<Vec<_>>();
-
-        context.state.worksets.remove(position);
-
-        context
-            .state
-            .comics
-            .retain(|comic_info| comic_info.workset_id != deleted_workset_id);
-
-        context.state.chapters.retain(|chapter_info| {
-            !deleted_comic_ids.contains(&chapter_info.comic_id)
-        });
-
-        context.state.pages.retain(|page_info| {
-            !deleted_chapter_ids.contains(&page_info.chapter_id)
-        });
-
-        context.state.assignments.retain(|assignment_info| {
-            !deleted_chapter_ids.contains(&assignment_info.chapter_id)
-        });
-
-        accept(())
-    }
-}
-
 impl<'a> Step<AllocWorksetComicIndex<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
     type Level = ReptRead;
@@ -346,6 +242,10 @@ impl<'a> Step<AllocWorksetComicIndex<'a>, MockContext> for Mock {
         // Internal implementation detail.
         // Internal implementation detail.
         // verify the workset exists
+        if context.state.deleted_workset_ids.contains(oper.id) {
+            return Err(expected("error-workset-not-found"));
+        }
+
         context
             .state
             .worksets
@@ -381,6 +281,10 @@ impl<'a> Step<UpdateWorksetComicCount<'a>, MockContext> for Mock {
         //
         // Internal implementation detail.
         // Internal implementation detail.
+        if context.state.deleted_workset_ids.contains(oper.id) {
+            return Err(expected("error-workset-not-found"));
+        }
+
         let workset_info = context
             .state
             .worksets

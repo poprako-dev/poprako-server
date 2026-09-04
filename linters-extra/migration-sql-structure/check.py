@@ -15,6 +15,8 @@ ROOT = Path(__file__).parents[2]
 EXEMPT_MIGRATIONS = {
     "00000000000000_diesel_initial_setup",
     "2026-07-17-083438-0000_enable-features",
+    # The hierarchy tombstone migration alters four existing tables atomically.
+    "2026-09-03-000000-0000_add-subtree-deletion-marks",
 }
 CREATE_KIND = re.compile(r"create-(?P<table>[a-z0-9-]+)-table$")
 INDEX_KIND = re.compile(r"index-(?P<table>[a-z0-9-]+)-table$")

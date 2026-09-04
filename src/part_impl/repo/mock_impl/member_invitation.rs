@@ -79,7 +79,7 @@ fn list_member_invitation_infos(
 
     let offset = spec.offset as usize;
 
-    let limit = spec.limit as usize;
+    let limit = spec.limit.get() as usize;
 
     if offset >= member_invitation_infos.len() {
         Vec::new()

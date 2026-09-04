@@ -62,8 +62,8 @@ pub mod member;
 pub mod member_invitation;
 /// Page management use cases.
 pub mod page;
-/// Deferred local-message business use cases.
-pub mod prom;
+/// Background relational garbage-collection orchestration.
+pub mod subtree_delete;
 /// System mail use cases.
 pub mod system_mail;
 /// Team management use cases.

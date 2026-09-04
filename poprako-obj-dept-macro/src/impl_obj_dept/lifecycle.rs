@@ -128,7 +128,6 @@ pub fn expand(dept: &Ident, entry: &ObjEntry) -> TokenStream {
                     .iter()
                     .map(|spec| {
                         <#obj as ::poprako_obj_dept::key::KeyMap>::id(&spec.dom)
-                            .to_owned()
                     })
                     .collect::<Vec<_>>();
 
@@ -406,7 +405,11 @@ fn cleanup_step(
             ) -> ::poprako_obj_dept::rest::ObjDeptRest<()> {
                 use ::poprako_obj_dept::prom::ObjPromDefer as _;
 
-                let mut ids = oper.ids.to_vec();
+                let mut ids = oper
+                    .ids
+                    .iter()
+                    .map(String::as_str)
+                    .collect::<Vec<_>>();
 
                 ids.sort_unstable();
                 ids.dedup();

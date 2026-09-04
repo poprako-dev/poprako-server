@@ -29,7 +29,7 @@ use crate::part::repo::member::MemberRepo;
 use crate::part::repo::member_invitation::MemberInvitationRepo;
 use crate::part::repo::oper::member::{
     CreateMember, DeleteMember, FindMemberInfo, GetMemberInfo, ListMemberInfos,
-    ListMemberInfosExcluded, UpdateMember,
+    LockTeamMemberInfos, UpdateMember,
 };
 use crate::part::repo::oper::member_invitation::{
     GetMemberInvitationInfoExcluded, UpdateMemberInvitation,
@@ -154,7 +154,12 @@ where
     C: Context + Send,
     N: Nucl<Context = C, Error = BaseError>,
     C::Level: AtLeast<ReptRead>,
-    R: MemberRepo<C> + MemberInvitationRepo<C> + UserRepo<C> + Send + Sync,
+    R: MemberRepo<C>
+        + MemberInvitationRepo<C>
+        + TeamRepo<C>
+        + UserRepo<C>
+        + Send
+        + Sync,
     O: ObjDeptView<UserAvatar, C> + ObjDeptView<TeamAvatar, C> + Sync,
 {
     let current_user_id = token.user_id;
@@ -173,6 +178,12 @@ where
                 GetMemberInvitationInfoExcluded::Code { code: &instr.code }
                     .step_on(repo, context)
                     .await?;
+
+            LockTeam {
+                id: &member_invitation_info.team_id,
+            }
+            .step_on(repo, context)
+            .await?;
 
             if member_invitation_info.invitee_qid != current_user_info.qid {
                 //
@@ -337,7 +348,7 @@ where
                 &caller_member_info,
             )?;
 
-            let member_infos = ListMemberInfosExcluded::Team {
+            let member_infos = LockTeamMemberInfos {
                 team_id: &member_info.team_id,
             }
             .step_on(repo, context)
@@ -429,7 +440,7 @@ where
 
             MemberPermComplex::ensure_user_can_delete(&caller_member_info)?;
 
-            let member_infos = ListMemberInfosExcluded::Team {
+            let member_infos = LockTeamMemberInfos {
                 team_id: &member_info.team_id,
             }
             .step_on(repo, context)

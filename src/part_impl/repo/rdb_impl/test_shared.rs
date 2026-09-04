@@ -1,33 +1,33 @@
+mod cleanup;
+
 pub mod form;
 
-use diesel::prelude::*;
-use diesel_async::RunQueryDsl;
 use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 
 use poprako_rdb_core::RdbCore;
 
 use crate::model::write::chapter::ChapterEntry;
 use crate::model::write::comic::ComicEntry;
-use crate::model::write::page::PageEntry;
+use crate::model::write::page::{PageEntry, PageManifestEntry};
 use crate::model::write::team::TeamEntry;
 use crate::model::write::user::UserEntry;
 use crate::model::write::workset::WorksetEntry;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::chapter::CreateChapter;
 use crate::part::repo::oper::comic::CreateComic;
-use crate::part::repo::oper::page::CreatePages;
+use crate::part::repo::oper::page::ApplyPageManifest;
 use crate::part::repo::oper::team::CreateTeam;
 use crate::part::repo::oper::user::CreateUser;
 use crate::part::repo::oper::workset::CreateWorkset;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::HybRepo;
-use crate::part_impl::repo::rdb_impl::schema;
 use crate::part_impl::repo::rdb_impl::test_shared::form::{
     chapter_entry, comic_entry, page_entry, team_entry, user_entry,
     workset_entry,
 };
-use crate::result::{BaseError, BaseRest, accept};
-use crate::shared::result::diesel as diesel_error;
+use crate::result::BaseError;
+
+pub use cleanup::{assert_no_leftovers, cleanup};
 
 pub struct UserFixture {
     pub user_entry: UserEntry,
@@ -78,313 +78,6 @@ pub async fn reset(shared: &RdbCore, prefix: &str) {
     cleanup(shared, prefix).await.unwrap();
 
     assert_no_leftovers(shared, prefix).await.unwrap();
-}
-
-pub async fn cleanup(shared: &RdbCore, prefix: &str) -> BaseRest<()> {
-    //
-    let mut conn = shared.get().await?;
-
-    let id_pattern = format!("{}%", prefix);
-
-    diesel::delete(
-        schema::t_comment::table
-            .filter(schema::t_comment::f_id.like(&id_pattern)),
-    )
-    .execute(&mut conn)
-    .await
-    .map_err(diesel_error)?;
-
-    diesel::delete(
-        schema::t_announcement::table
-            .filter(schema::t_announcement::f_id.like(&id_pattern)),
-    )
-    .execute(&mut conn)
-    .await
-    .map_err(diesel_error)?;
-
-    diesel::delete(
-        schema::t_assignment_invitation::table
-            .filter(schema::t_assignment_invitation::f_id.like(&id_pattern)),
-    )
-    .execute(&mut conn)
-    .await
-    .map_err(diesel_error)?;
-
-    diesel::delete(
-        schema::t_assignment::table
-            .filter(schema::t_assignment::f_id.like(&id_pattern)),
-    )
-    .execute(&mut conn)
-    .await
-    .map_err(diesel_error)?;
-
-    diesel::delete(
-        schema::t_unit::table.filter(schema::t_unit::f_id.like(&id_pattern)),
-    )
-    .execute(&mut conn)
-    .await
-    .map_err(diesel_error)?;
-
-    diesel::delete(
-        schema::t_page::table.filter(schema::t_page::f_id.like(&id_pattern)),
-    )
-    .execute(&mut conn)
-    .await
-    .map_err(diesel_error)?;
-
-    diesel::delete(schema::t_chapter_workflow_record::table.filter(
-        schema::t_chapter_workflow_record::f_chapter_id.like(&id_pattern),
-    ))
-    .execute(&mut conn)
-    .await
-    .map_err(diesel_error)?;
-
-    diesel::delete(
-        schema::t_chapter::table
-            .filter(schema::t_chapter::f_id.like(&id_pattern)),
-    )
-    .execute(&mut conn)
-    .await
-    .map_err(diesel_error)?;
-
-    diesel::delete(
-        schema::t_term::table.filter(schema::t_term::f_id.like(&id_pattern)),
-    )
-    .execute(&mut conn)
-    .await
-    .map_err(diesel_error)?;
-
-    diesel::delete(
-        schema::t_termbase::table
-            .filter(schema::t_termbase::f_id.like(&id_pattern)),
-    )
-    .execute(&mut conn)
-    .await
-    .map_err(diesel_error)?;
-
-    diesel::delete(
-        schema::t_comic::table.filter(schema::t_comic::f_id.like(&id_pattern)),
-    )
-    .execute(&mut conn)
-    .await
-    .map_err(diesel_error)?;
-
-    diesel::delete(
-        schema::t_workset::table
-            .filter(schema::t_workset::f_id.like(&id_pattern)),
-    )
-    .execute(&mut conn)
-    .await
-    .map_err(diesel_error)?;
-
-    diesel::delete(
-        schema::t_member_invitation::table
-            .filter(schema::t_member_invitation::f_id.like(&id_pattern)),
-    )
-    .execute(&mut conn)
-    .await
-    .map_err(diesel_error)?;
-
-    diesel::delete(
-        schema::t_member::table
-            .filter(schema::t_member::f_id.like(&id_pattern)),
-    )
-    .execute(&mut conn)
-    .await
-    .map_err(diesel_error)?;
-
-    diesel::delete(
-        schema::t_system_mail::table
-            .filter(schema::t_system_mail::f_id.like(&id_pattern)),
-    )
-    .execute(&mut conn)
-    .await
-    .map_err(diesel_error)?;
-
-    diesel::delete(
-        schema::t_local_message::table
-            .filter(schema::t_local_message::f_id.like(&id_pattern)),
-    )
-    .execute(&mut conn)
-    .await
-    .map_err(diesel_error)?;
-
-    diesel::delete(
-        schema::t_team::table.filter(schema::t_team::f_id.like(&id_pattern)),
-    )
-    .execute(&mut conn)
-    .await
-    .map_err(diesel_error)?;
-
-    diesel::delete(
-        schema::t_user::table.filter(schema::t_user::f_id.like(&id_pattern)),
-    )
-    .execute(&mut conn)
-    .await
-    .map_err(diesel_error)?;
-
-    accept(())
-}
-
-pub async fn assert_no_leftovers(
-    shared: &RdbCore,
-    prefix: &str,
-) -> BaseRest<()> {
-    //
-    let mut conn = shared.get().await?;
-
-    let id_pattern = format!("{}%", prefix);
-
-    let announcement_count: i64 = schema::t_announcement::table
-        .filter(schema::t_announcement::f_id.like(&id_pattern))
-        .count()
-        .get_result(&mut conn)
-        .await
-        .map_err(diesel_error)?;
-
-    let assignment_count: i64 = schema::t_assignment::table
-        .filter(schema::t_assignment::f_id.like(&id_pattern))
-        .count()
-        .get_result(&mut conn)
-        .await
-        .map_err(diesel_error)?;
-
-    let assignment_invitation_count: i64 =
-        schema::t_assignment_invitation::table
-            .filter(schema::t_assignment_invitation::f_id.like(&id_pattern))
-            .count()
-            .get_result(&mut conn)
-            .await
-            .map_err(diesel_error)?;
-
-    let chapter_count: i64 = schema::t_chapter::table
-        .filter(schema::t_chapter::f_id.like(&id_pattern))
-        .count()
-        .get_result(&mut conn)
-        .await
-        .map_err(diesel_error)?;
-
-    let chapter_workflow_record_count: i64 =
-        schema::t_chapter_workflow_record::table
-            .filter(
-                schema::t_chapter_workflow_record::f_chapter_id
-                    .like(&id_pattern),
-            )
-            .count()
-            .get_result(&mut conn)
-            .await
-            .map_err(diesel_error)?;
-
-    let comic_count: i64 = schema::t_comic::table
-        .filter(schema::t_comic::f_id.like(&id_pattern))
-        .count()
-        .get_result(&mut conn)
-        .await
-        .map_err(diesel_error)?;
-
-    let comment_count: i64 = schema::t_comment::table
-        .filter(schema::t_comment::f_id.like(&id_pattern))
-        .count()
-        .get_result(&mut conn)
-        .await
-        .map_err(diesel_error)?;
-
-    let local_message_count: i64 = schema::t_local_message::table
-        .filter(schema::t_local_message::f_id.like(&id_pattern))
-        .count()
-        .get_result(&mut conn)
-        .await
-        .map_err(diesel_error)?;
-
-    let member_count: i64 = schema::t_member::table
-        .filter(schema::t_member::f_id.like(&id_pattern))
-        .count()
-        .get_result(&mut conn)
-        .await
-        .map_err(diesel_error)?;
-
-    let member_invitation_count: i64 = schema::t_member_invitation::table
-        .filter(schema::t_member_invitation::f_id.like(&id_pattern))
-        .count()
-        .get_result(&mut conn)
-        .await
-        .map_err(diesel_error)?;
-
-    let page_count: i64 = schema::t_page::table
-        .filter(schema::t_page::f_id.like(&id_pattern))
-        .count()
-        .get_result(&mut conn)
-        .await
-        .map_err(diesel_error)?;
-
-    let system_mail_count: i64 = schema::t_system_mail::table
-        .filter(schema::t_system_mail::f_id.like(&id_pattern))
-        .count()
-        .get_result(&mut conn)
-        .await
-        .map_err(diesel_error)?;
-
-    let team_count: i64 = schema::t_team::table
-        .filter(schema::t_team::f_id.like(&id_pattern))
-        .count()
-        .get_result(&mut conn)
-        .await
-        .map_err(diesel_error)?;
-
-    let unit_count: i64 = schema::t_unit::table
-        .filter(schema::t_unit::f_id.like(&id_pattern))
-        .count()
-        .get_result(&mut conn)
-        .await
-        .map_err(diesel_error)?;
-
-    let user_count: i64 = schema::t_user::table
-        .filter(schema::t_user::f_id.like(&id_pattern))
-        .count()
-        .get_result(&mut conn)
-        .await
-        .map_err(diesel_error)?;
-
-    let workset_count: i64 = schema::t_workset::table
-        .filter(schema::t_workset::f_id.like(&id_pattern))
-        .count()
-        .get_result(&mut conn)
-        .await
-        .map_err(diesel_error)?;
-
-    assert_eq!(announcement_count, 0);
-
-    assert_eq!(assignment_count, 0);
-
-    assert_eq!(assignment_invitation_count, 0);
-
-    assert_eq!(chapter_count, 0);
-
-    assert_eq!(chapter_workflow_record_count, 0);
-
-    assert_eq!(comic_count, 0);
-
-    assert_eq!(comment_count, 0);
-
-    assert_eq!(local_message_count, 0);
-
-    assert_eq!(member_count, 0);
-
-    assert_eq!(member_invitation_count, 0);
-
-    assert_eq!(page_count, 0);
-
-    assert_eq!(system_mail_count, 0);
-
-    assert_eq!(team_count, 0);
-
-    assert_eq!(unit_count, 0);
-
-    assert_eq!(user_count, 0);
-
-    assert_eq!(workset_count, 0);
-
-    accept(())
 }
 
 pub async fn create_user(shared: &RdbCore, user_entry: &UserEntry) {
@@ -575,12 +268,18 @@ pub async fn seed_page(shared: &RdbCore, prefix: &str) -> PageFixture {
 
     let page_entry = page_entry(prefix, &chapter_fixture.chapter_entry);
 
+    let page_manifest_entry = PageManifestEntry {
+        id: page_entry.id.clone(),
+        chapter_id: page_entry.chapter_id.clone(),
+        index: page_entry.index,
+    };
+
     nucl.coord(async |context| {
         //
         repo.step(
             context,
-            &CreatePages {
-                entries: std::slice::from_ref(&page_entry),
+            &ApplyPageManifest {
+                entries: std::slice::from_ref(&page_manifest_entry),
             },
         )
         .await?;

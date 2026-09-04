@@ -1,41 +1,25 @@
 // unit_roundtrip_uses_testcontainer(UnitRepo)(positive): batch apply creates, hides, restores, orders, and counts Units.
 
+mod regression;
+
 use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 
 use poprako_rdb_core::RdbCore;
 
 use crate::model::read::proj::unit::UnitOrder;
 use crate::model::shared::unit::{UnitCoord, UnitRevision, UnitTranslation};
-use crate::model::write::page::PageEntry;
 use crate::model::write::unit::UnitEdit;
 use crate::part::nucl::ReptRead;
-use crate::part::repo::oper::page::{CreatePages, ListEdittedDiffPageIds};
 use crate::part::repo::oper::unit::{
-    ApplyUnitEdits, ListUnitInfos, ListUnitInfosByIds, ListUnitInfosByPageIds,
-    ListUnitOrders,
+    ApplyUnitEdits, ListUnitInfosByIds, ListUnitInfosByPageIds, ListUnitOrders,
 };
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::test_shared;
-use crate::part_impl::repo::rdb_impl::unit::edit::move_order;
-use crate::result::accept;
+use crate::result::{BaseError, accept};
 use crate::util::Patch;
 
 const PREFIX: &str = "rdb-test-unit-domain-";
-
-#[test]
-fn move_order_preserves_relative_order_around_the_moved_unit() {
-    //
-    let mut ordered_ids = vec!["a", "b", "c", "d"];
-
-    move_order(&mut ordered_ids, "d", Some("b")).unwrap();
-
-    assert_eq!(ordered_ids, vec!["a", "d", "b", "c"]);
-
-    move_order(&mut ordered_ids, "d", None).unwrap();
-
-    assert_eq!(ordered_ids, vec!["a", "b", "c", "d"]);
-}
 
 /// Verifies Unit v2 persistence through the real transaction adapter.
 pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
@@ -57,6 +41,21 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
     let create_edits = [
         create_edit(&first_id, &creator_id, "translated"),
         create_edit(&second_id, &creator_id, "second"),
+        UnitEdit::Save {
+            id: first_id.clone(),
+            next_id: Patch::Assign {
+                value: second_id.clone(),
+            },
+            is_bubble: None,
+            coord: None,
+            translation: Patch::Assign {
+                value: UnitTranslation {
+                    translated_text: "saved after create".to_string(),
+                    last_translator_id: creator_id.clone(),
+                },
+            },
+            revision: Patch::Skip,
+        },
     ];
 
     let create_orders = [
@@ -74,7 +73,7 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     nucl.coord(async |context| {
         //
-        let counters = repo
+        let count_metrics = repo
             .step(
                 context,
                 &ApplyUnitEdits {
@@ -85,7 +84,159 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
             )
             .await?;
 
-        assert_eq!(counters.total, 2);
+        assert_eq!(count_metrics.total, 2);
+
+        accept(())
+    })
+    .await
+    .unwrap();
+
+    let missing_id = format!("{}missing", PREFIX);
+
+    let stale_orders = [
+        UnitOrder {
+            id: first_id.clone(),
+            next_id: Some(second_id.clone()),
+            is_hidden: false,
+        },
+        UnitOrder {
+            id: second_id.clone(),
+            next_id: Some(missing_id.clone()),
+            is_hidden: false,
+        },
+        UnitOrder {
+            id: missing_id.clone(),
+            next_id: None,
+            is_hidden: false,
+        },
+    ];
+
+    let rollback_edits = [
+        UnitEdit::Save {
+            id: first_id.clone(),
+            next_id: Patch::Skip,
+            is_bubble: None,
+            coord: None,
+            translation: Patch::Assign {
+                value: UnitTranslation {
+                    translated_text: "must roll back".to_string(),
+                    last_translator_id: creator_id.clone(),
+                },
+            },
+            revision: Patch::Skip,
+        },
+        UnitEdit::Save {
+            id: missing_id,
+            next_id: Patch::Skip,
+            is_bubble: None,
+            coord: None,
+            translation: Patch::Skip,
+            revision: Patch::Skip,
+        },
+    ];
+
+    let rollback_result = nucl
+        .coord(async |context| {
+            repo.step(
+                context,
+                &ApplyUnitEdits {
+                    page_id: &page_fixture.page_entry.id,
+                    orders: &stale_orders,
+                    edits: &rollback_edits,
+                },
+            )
+            .await?;
+
+            accept(())
+        })
+        .await;
+
+    assert!(matches!(
+        rollback_result,
+        Err(poprako_orchestra::nucl::Error::Step(
+            BaseError::Unrecoverable { .. }
+        )),
+    ));
+
+    nucl.coord(async |context| {
+        //
+        let ids = [first_id.as_str()];
+
+        let selected = repo
+            .step(context, &ListUnitInfosByIds { ids: &ids })
+            .await?;
+
+        assert_eq!(
+            selected
+                .first()
+                .and_then(|unit| unit.translated_text.as_deref()),
+            Some("saved after create"),
+        );
+
+        accept(())
+    })
+    .await
+    .unwrap();
+
+    let mixed_patch_edits = [
+        UnitEdit::Save {
+            id: first_id.clone(),
+            next_id: Patch::Assign {
+                value: second_id.clone(),
+            },
+            is_bubble: Some(false),
+            coord: Some(UnitCoord {
+                x_coord: 3.0,
+                y_coord: 4.0,
+            }),
+            translation: Patch::Clear,
+            revision: Patch::Clear,
+        },
+        UnitEdit::Save {
+            id: second_id.clone(),
+            next_id: Patch::Skip,
+            is_bubble: None,
+            coord: None,
+            translation: Patch::Assign {
+                value: UnitTranslation {
+                    translated_text: "\u{3000}".to_string(),
+                    last_translator_id: page_fixture
+                        .chapter_entry
+                        .creator_id
+                        .clone(),
+                },
+            },
+            revision: Patch::Skip,
+        },
+    ];
+
+    nucl.coord(async |context| {
+        //
+        let orders = repo
+            .step(
+                context,
+                &ListUnitOrders {
+                    page_id: &page_fixture.page_entry.id,
+                },
+            )
+            .await?;
+
+        let count_metrics = repo
+            .step(
+                context,
+                &ApplyUnitEdits {
+                    page_id: &page_fixture.page_entry.id,
+                    orders: &orders,
+                    edits: &mixed_patch_edits,
+                },
+            )
+            .await?;
+
+        assert_eq!(count_metrics.total, 2);
+
+        assert_eq!(count_metrics.translated, 0);
+
+        assert_eq!(count_metrics.proofread, 0);
 
         accept(())
     })
@@ -98,7 +249,7 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     nucl.coord(async |context| {
         //
-        let counters = repo
+        let count_metrics = repo
             .step(
                 context,
                 &ApplyUnitEdits {
@@ -109,7 +260,7 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
             )
             .await?;
 
-        assert_eq!(counters.total, 1);
+        assert_eq!(count_metrics.total, 1);
 
         let orders = repo
             .step(
@@ -122,21 +273,12 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
 
         assert_eq!(orders.len(), 2);
 
+        assert!(orders.first().is_some_and(|order| order.is_hidden));
+
         accept(())
     })
     .await
     .unwrap();
-
-    let unit_infos = repo
-        .run(&ListUnitInfos {
-            page_id: &page_fixture.page_entry.id,
-        })
-        .await
-        .unwrap();
-
-    assert_eq!(unit_infos.len(), 2);
-
-    assert!(unit_infos[0].hidden_at.is_some());
 
     let restore_edits = [UnitEdit::Save {
         id: first_id.clone(),
@@ -168,7 +310,7 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     nucl.coord(async |context| {
         //
-        let counters = repo
+        let count_metrics = repo
             .step(
                 context,
                 &ApplyUnitEdits {
@@ -179,33 +321,19 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
             )
             .await?;
 
-        assert_eq!(counters.total, 2);
+        assert_eq!(count_metrics.total, 2);
 
-        assert_eq!(counters.proofread, 1);
+        assert_eq!(count_metrics.proofread, 1);
 
         accept(())
     })
     .await
     .unwrap();
 
-    let unit_infos = repo
-        .run(&ListUnitInfos {
-            page_id: &page_fixture.page_entry.id,
-        })
-        .await
-        .unwrap();
-
-    assert_eq!(
-        unit_infos
-            .iter()
-            .map(|unit_info| unit_info.id.as_str())
-            .collect::<Vec<_>>(),
-        vec![second_id.as_str(), first_id.as_str()]
-    );
-
+    let missing_page_id = format!("{}missing-page", PREFIX);
     let page_ids = [
-        page_fixture.page_entry.id.clone(),
-        format!("{}missing-page", PREFIX),
+        page_fixture.page_entry.id.as_str(),
+        missing_page_id.as_str(),
     ];
 
     let batch_unit_infos = repo
@@ -225,7 +353,7 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     nucl.coord(async |context| {
         //
-        let ids = [first_id.clone(), "missing-unit".to_string()];
+        let ids = [first_id.as_str(), "missing-unit"];
 
         let selected = repo
             .step(context, &ListUnitInfosByIds { ids: &ids })
@@ -233,175 +361,33 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
 
         assert_eq!(selected.len(), 1);
 
-        assert_eq!(selected[0].id, first_id);
+        assert_eq!(
+            selected.first().map(|unit| unit.id.as_str()),
+            Some(first_id.as_str()),
+        );
+
+        assert!(selected.first().is_some_and(|unit| !unit.is_bubble));
+
+        assert_eq!(selected.first().map(|unit| unit.coord.x_coord), Some(3.0));
+
+        assert_eq!(selected.first().map(|unit| unit.coord.y_coord), Some(4.0));
+
+        assert!(
+            selected
+                .first()
+                .is_some_and(|unit| unit.translated_text.is_none()),
+        );
+
+        assert!(selected.first().is_some_and(|unit| {
+            unit.proofread_text.as_deref() == Some("proofread")
+        }),);
 
         accept(())
     })
     .await
     .unwrap();
 
-    let equal_page_id = format!("{}equal-page", PREFIX);
-
-    let missing_translation_page_id =
-        format!("{}missing-translation-page", PREFIX);
-
-    let additional_pages = [
-        PageEntry {
-            id: equal_page_id.clone(),
-            chapter_id: page_fixture.chapter_entry.id.clone(),
-            index: 1,
-        },
-        PageEntry {
-            id: missing_translation_page_id.clone(),
-            chapter_id: page_fixture.chapter_entry.id.clone(),
-            index: 2,
-        },
-    ];
-
-    nucl.coord(async |context| {
-        repo.step(
-            context,
-            &CreatePages {
-                entries: &additional_pages,
-            },
-        )
-        .await?;
-
-        accept(())
-    })
-    .await
-    .unwrap();
-
-    let hidden_diff_id = format!("{}hidden-diff", PREFIX);
-
-    let excluded_edits = [
-        create_text_edit(
-            &format!("{}equal", PREFIX),
-            &page_fixture.chapter_entry.creator_id,
-            Some("same"),
-            Some("same"),
-            true,
-        ),
-        create_text_edit(
-            &format!("{}empty", PREFIX),
-            &page_fixture.chapter_entry.creator_id,
-            None,
-            Some(""),
-            true,
-        ),
-        create_text_edit(
-            &format!("{}ascii-whitespace", PREFIX),
-            &page_fixture.chapter_entry.creator_id,
-            None,
-            Some(" \t\r\n"),
-            true,
-        ),
-        create_text_edit(
-            &format!("{}unicode-whitespace", PREFIX),
-            &page_fixture.chapter_entry.creator_id,
-            None,
-            Some("\u{3000}"),
-            true,
-        ),
-        create_text_edit(
-            &format!("{}missing-proofread", PREFIX),
-            &page_fixture.chapter_entry.creator_id,
-            Some("translated"),
-            None,
-            true,
-        ),
-        create_text_edit(
-            &hidden_diff_id,
-            &page_fixture.chapter_entry.creator_id,
-            Some("translated"),
-            Some("hidden proofread"),
-            true,
-        ),
-    ];
-
-    nucl.coord(async |context| {
-        repo.step(
-            context,
-            &ApplyUnitEdits {
-                page_id: &equal_page_id,
-                orders: &[],
-                edits: &excluded_edits,
-            },
-        )
-        .await?;
-
-        accept(())
-    })
-    .await
-    .unwrap();
-
-    nucl.coord(async |context| {
-        let orders = repo
-            .step(
-                context,
-                &ListUnitOrders {
-                    page_id: &equal_page_id,
-                },
-            )
-            .await?;
-
-        let delete_hidden_diff = [UnitEdit::Delete {
-            id: hidden_diff_id.clone(),
-        }];
-
-        repo.step(
-            context,
-            &ApplyUnitEdits {
-                page_id: &equal_page_id,
-                orders: &orders,
-                edits: &delete_hidden_diff,
-            },
-        )
-        .await?;
-
-        accept(())
-    })
-    .await
-    .unwrap();
-
-    let missing_translation_edit = [create_text_edit(
-        &format!("{}missing-translation", PREFIX),
-        &page_fixture.chapter_entry.creator_id,
-        None,
-        Some("proofread"),
-        false,
-    )];
-
-    nucl.coord(async |context| {
-        repo.step(
-            context,
-            &ApplyUnitEdits {
-                page_id: &missing_translation_page_id,
-                orders: &[],
-                edits: &missing_translation_edit,
-            },
-        )
-        .await?;
-
-        accept(())
-    })
-    .await
-    .unwrap();
-
-    let diff_page_ids = repo
-        .run(&ListEdittedDiffPageIds {
-            chapter_id: &page_fixture.chapter_entry.id,
-        })
-        .await
-        .unwrap();
-
-    assert_eq!(
-        diff_page_ids,
-        [
-            page_fixture.page_entry.id.clone(),
-            missing_translation_page_id,
-        ]
-    );
+    regression::verify_chunking_and_diff(&repo, &nucl, &page_fixture).await;
 
     test_shared::cleanup(&shared, PREFIX).await.unwrap();
 
@@ -424,32 +410,5 @@ fn create_edit(id: &str, user_id: &str, text: &str) -> UnitEdit {
             last_translator_id: user_id.to_string(),
         }),
         revision: None,
-    }
-}
-
-fn create_text_edit(
-    id: &str,
-    user_id: &str,
-    translated_text: Option<&str>,
-    proofread_text: Option<&str>,
-    is_proofread: bool,
-) -> UnitEdit {
-    UnitEdit::Create {
-        id: id.to_string(),
-        next_id: None,
-        is_bubble: true,
-        coord: UnitCoord {
-            x_coord: 1.0,
-            y_coord: 2.0,
-        },
-        translation: translated_text.map(|translated_text| UnitTranslation {
-            translated_text: translated_text.to_string(),
-            last_translator_id: user_id.to_string(),
-        }),
-        revision: Some(UnitRevision {
-            is_proofread,
-            proofread_text: proofread_text.map(str::to_string),
-            last_proofreader_id: user_id.to_string(),
-        }),
     }
 }

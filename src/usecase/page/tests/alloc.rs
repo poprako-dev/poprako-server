@@ -123,7 +123,7 @@ fn seed_scope(mock: &Mock, page_count: usize) {
 }
 
 #[tokio::test]
-async fn mixed_manifest_preserves_order_counters_and_object_obligations() {
+async fn mixed_manifest_preserves_order_counts_and_object_obligations() {
     let mock = Mock::new();
 
     seed_scope(&mock, 3);

@@ -12,7 +12,7 @@ use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::chapter::{
-    GetChapterInfoExcluded, SetChapterPageCounters,
+    GetChapterInfoExcluded, SetChapterPageCountMetrics,
 };
 use crate::part::repo::oper::comic::TouchComicLastActive;
 use crate::part::repo::oper::page::{DeletePages, ListPageInfos};
@@ -83,7 +83,7 @@ where
         .step_on(repo, context)
         .await?;
 
-        SetChapterPageCounters {
+        SetChapterPageCountMetrics {
             id: &chapter_info.id,
             page_count: 0,
             total_unit_count: 0,

@@ -1,8 +1,7 @@
 use poprako_orchestra::drive;
 
 use crate::part::repo::oper::workset::{
-    AllocWorksetComicIndex, CreateWorkset, DeleteWorkset, GetWorksetInfo,
-    GetWorksetInfoExcluded, ListWorksetInfos, ListWorksetInfosExcluded,
+    AllocWorksetComicIndex, CreateWorkset, GetWorksetInfo, ListWorksetInfos,
     UpdateWorkset, UpdateWorksetComicCount,
 };
 use crate::result::BaseError;
@@ -22,10 +21,7 @@ use crate::result::BaseError;
     step(
         for<'a> GetWorksetInfo<'a>,
         for<'a> ListWorksetInfos<'a>,
-        for<'a> GetWorksetInfoExcluded<'a>,
-        for<'a> ListWorksetInfosExcluded<'a>,
         for<'a> CreateWorkset<'a>,
-        for<'a> DeleteWorkset<'a>,
         for<'a> AllocWorksetComicIndex<'a>,
         for<'a> UpdateWorksetComicCount<'a>,
     ),

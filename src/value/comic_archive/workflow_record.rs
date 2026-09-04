@@ -12,7 +12,7 @@ use crate::value::role::RoleMask;
 /// Strongly typed workflow details retained inside an archived chapter.
 #[derive(Serialize)]
 #[serde(untagged)]
-pub enum ArchivedChapterWorkflowRecordDetail {
+pub enum ArchivedChapterWorkflowRecordDetail<'a> {
     //
     /// No details for chapter creation, pinning, or unpinning.
     Empty {},
@@ -20,15 +20,15 @@ pub enum ArchivedChapterWorkflowRecordDetail {
     /// Previous and next chapter subtitles.
     SubtitleUpdated {
         /// Subtitle before the update.
-        previous_subtitle: String,
+        previous_subtitle: &'a str,
         /// Subtitle after the update.
-        next_subtitle: String,
+        next_subtitle: &'a str,
     },
 
     /// Initial assignment details.
     AssignmentCreated {
         /// User receiving the assignment.
-        subject_user_id: String,
+        subject_user_id: &'a str,
         /// Initial assignment roles.
         roles: RoleMask,
     },
@@ -36,7 +36,7 @@ pub enum ArchivedChapterWorkflowRecordDetail {
     /// Assignment role-mask transition.
     AssignmentRolesUpdated {
         /// User whose assignment changed.
-        subject_user_id: String,
+        subject_user_id: &'a str,
         /// Roles before the update.
         previous_roles: RoleMask,
         /// Roles after the update.
@@ -46,7 +46,7 @@ pub enum ArchivedChapterWorkflowRecordDetail {
     /// Assignment details retained before deletion.
     AssignmentDeleted {
         /// User whose assignment was deleted.
-        subject_user_id: String,
+        subject_user_id: &'a str,
         /// Roles before deletion.
         previous_roles: RoleMask,
     },
@@ -55,9 +55,9 @@ pub enum ArchivedChapterWorkflowRecordDetail {
     TranslationImported {
         /// Imported content format.
         format: TranslationFormat,
-        /// Number of imported pages.
+        /// Number of pages whose visible Unit content changed.
         imported_page_count: usize,
-        /// Number of imported units.
+        /// Number of Units created from the imported source.
         imported_unit_count: usize,
     },
 
@@ -80,11 +80,11 @@ pub enum ArchivedChapterWorkflowRecordDetail {
     },
 }
 
-impl From<&ChapterWorkflowRecordPayload>
-    for ArchivedChapterWorkflowRecordDetail
+impl<'a> From<&'a ChapterWorkflowRecordPayload>
+    for ArchivedChapterWorkflowRecordDetail<'a>
 {
     // Converts domain workflow details into the stable archive shape.
-    fn from(payload: &ChapterWorkflowRecordPayload) -> Self {
+    fn from(payload: &'a ChapterWorkflowRecordPayload) -> Self {
         //
         match payload {
             //
@@ -96,15 +96,15 @@ impl From<&ChapterWorkflowRecordPayload>
                 previous_subtitle,
                 next_subtitle,
             } => Self::SubtitleUpdated {
-                previous_subtitle: previous_subtitle.clone(),
-                next_subtitle: next_subtitle.clone(),
+                previous_subtitle,
+                next_subtitle,
             },
 
             ChapterWorkflowRecordPayload::AssignmentCreated {
                 subject_user_id,
                 roles,
             } => Self::AssignmentCreated {
-                subject_user_id: subject_user_id.clone(),
+                subject_user_id,
                 roles: *roles,
             },
 
@@ -113,7 +113,7 @@ impl From<&ChapterWorkflowRecordPayload>
                 previous_roles,
                 next_roles,
             } => Self::AssignmentRolesUpdated {
-                subject_user_id: subject_user_id.clone(),
+                subject_user_id,
                 previous_roles: *previous_roles,
                 next_roles: *next_roles,
             },
@@ -122,7 +122,7 @@ impl From<&ChapterWorkflowRecordPayload>
                 subject_user_id,
                 previous_roles,
             } => Self::AssignmentDeleted {
-                subject_user_id: subject_user_id.clone(),
+                subject_user_id,
                 previous_roles: *previous_roles,
             },
 

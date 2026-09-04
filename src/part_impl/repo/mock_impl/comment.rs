@@ -65,7 +65,7 @@ fn list_comments(
 
     let offset = spec.offset as usize;
 
-    let limit = spec.limit as usize;
+    let limit = spec.limit.get() as usize;
 
     if offset >= comment_infos.len() {
         Vec::new()

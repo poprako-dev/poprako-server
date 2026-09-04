@@ -7,6 +7,7 @@ use super::*;
 use crate::data::view::chapter_port::ChapterTranslationPortView;
 use crate::data::view::page_port::PageTranslationPortView;
 use crate::data::view::unit_port::UnitTranslationPortView;
+use crate::model::artifact::translation_import::UnitTranslationImportSource;
 
 // LabelPlus import fixture used by chapter import parse tests.
 const LABEL_PLUS_MATERIAL: &str =
@@ -32,12 +33,17 @@ fn parse_label_plus_parses_real_material() {
 
     assert_eq!(pages[0].units[0].index, 0);
 
-    assert_eq!(pages[0].units[0].main_text, Some("喂 游斗哥".into()));
+    assert!(matches!(
+        &pages[0].units[0].source,
+        UnitTranslationImportSource::LabelPlus { text }
+            if text.as_deref() == Some("喂 游斗哥")
+    ));
 
-    assert_eq!(
-        pages[8].units[8].main_text,
-        Some("哥哥对次女可爱的\n小心思毫无察觉".into())
-    );
+    assert!(matches!(
+        &pages[8].units[8].source,
+        UnitTranslationImportSource::LabelPlus { text }
+            if text.as_deref() == Some("哥哥对次女可爱的\n小心思毫无察觉")
+    ));
 }
 
 #[test]
@@ -83,6 +89,15 @@ fn parse_poprako_preserves_zero_based_indexes() {
     };
 
     assert_eq!(pages[0].units[0].index, 7);
+
+    assert!(matches!(
+        &pages[0].units[0].source,
+        UnitTranslationImportSource::PopRaKo {
+            translated_text: Some(text),
+            proofread_text: None,
+            is_proofread: false,
+        } if text == "translated"
+    ));
 }
 
 #[test]
@@ -96,7 +111,6 @@ fn build_unit_create_produces_a_complete_create() {
         "unit-new".to_string(),
         "proofreader-1",
         false,
-        true,
         true,
     );
 
@@ -129,7 +143,11 @@ fn parse_label_plus_accepts_bom_crlf_and_structure_trailing_whitespace() {
     let pages = ChapterImportComplex::parse_label_plus(content).unwrap();
 
     assert_eq!(pages.len(), 1);
-    assert_eq!(pages[0].units[0].main_text, Some(" translated  ".into()));
+    assert!(matches!(
+        &pages[0].units[0].source,
+        UnitTranslationImportSource::LabelPlus { text }
+            if text.as_deref() == Some(" translated  ")
+    ));
 }
 
 #[test]
@@ -220,5 +238,11 @@ fn parse_poprako_roundtrips_shared_view_and_sorts_indexes() {
     assert_eq!(pages[0].units[0].index, 0);
     assert_eq!(pages[0].units[1].index, 1);
     assert_eq!(pages[1].page_index, 1);
-    assert_eq!(pages[1].units[0].translated_text, Some("second".into()));
+    assert!(matches!(
+        &pages[1].units[0].source,
+        UnitTranslationImportSource::PopRaKo {
+            translated_text: Some(text),
+            ..
+        } if text == "second"
+    ));
 }

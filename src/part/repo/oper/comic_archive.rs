@@ -32,11 +32,3 @@ pub struct CommitComicArchive<'a> {
     /// The archive entry to insert.
     pub entry: &'a ComicArchiveEntry,
 }
-
-/// Deletes immutable archive records associated with one source comic.
-#[derive(Oper)]
-#[oper(output = ())]
-pub struct DeleteComicArchives<'a> {
-    /// The source comic ID whose archive records must be removed.
-    pub source_comic_id: &'a str,
-}

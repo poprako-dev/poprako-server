@@ -11,6 +11,20 @@ use std::sync::OnceLock;
 
 use serde::{Deserialize, Deserializer};
 
+/// Trims leading and trailing Unicode whitespace without allocating a second String.
+pub fn trim_owned(mut value: String) -> String {
+    //
+    let start = value.len() - value.trim_start().len();
+
+    let end = value.trim_end().len();
+
+    value.truncate(end);
+
+    value.drain(..start.min(end));
+
+    value
+}
+
 /// Generate a unique time-ordered identifier in base62 format.
 ///
 /// A u64 fits in 11 base62 characters (vs 16 hex chars).

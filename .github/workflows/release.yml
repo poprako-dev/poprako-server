@@ -20,12 +20,13 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Run required checks
-        run: |
-          sh scripts/ci-check.sh
-          sh scripts/ci-test.sh
-          sh scripts/ci-openapi-check.sh
-          sh scripts/ci-typecheck.sh
-          sh scripts/ci-audit.sh
+        run: >-
+          sh scripts/ci-parallel.sh
+          "Rust workspace checks" "sh scripts/ci-check.sh"
+          "Rust workspace tests" "sh scripts/ci-test.sh"
+          "OpenAPI specification" "sh scripts/ci-openapi-check.sh"
+          "TypeScript type-check" "sh scripts/ci-typecheck.sh"
+          "Dependency security" "sh scripts/ci-audit.sh"
 
       - name: Build release artifacts
         env:

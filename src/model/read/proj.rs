@@ -20,6 +20,8 @@ pub mod member;
 pub mod member_invitation;
 /// Page read projection.
 pub mod page;
+/// Hierarchical deletion scope projections.
+pub mod subtree_delete;
 /// System mail read projection.
 pub mod system_mail;
 /// Team read projection.

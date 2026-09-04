@@ -23,7 +23,8 @@ use crate::data::instr::chapter::{
     UpdateChapterInfoInstr, UpdateChapterStageInstr,
 };
 use crate::data::instr::chapter_port::{
-    ChapterTranslationFormatInstr, ImportChapterTranslationInstr,
+    ChapterTranslationFormatInstr, ChapterTranslationImportModeInstr,
+    ImportChapterTranslationInstr,
 };
 use crate::data::instr::comic::{
     AllocComicCoverInstr, CreateComicInstr, MarkComicCoverUploadedInstr,
@@ -270,6 +271,7 @@ use crate::value::unit::UnitTextPart;
         PageTranslationPortView,
         UnitTranslationPortView,
         ChapterTranslationFormatInstr,
+        ChapterTranslationImportModeInstr,
         ImportChapterTranslationInstr,
         ImportChapterTranslationVal,
         PageInfoView,

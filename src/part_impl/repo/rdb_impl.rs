@@ -34,6 +34,8 @@ pub mod member_invitation;
 pub mod page;
 /// Diesel-generated schema.
 pub mod schema;
+/// Hierarchical subtree deletion operations.
+pub mod subtree_delete;
 /// System mail repository operations.
 pub mod system_mail;
 /// Team repository operations.

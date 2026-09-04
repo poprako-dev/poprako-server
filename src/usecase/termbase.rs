@@ -28,7 +28,7 @@ use crate::part::repo::oper::team::LockTeam;
 use crate::part::repo::oper::term::DeleteTerms;
 use crate::part::repo::oper::termbase::{
     CreateTermbase, DeleteTermbase, GetTermbaseInfo, GetTermbaseInfoExcluded,
-    ListTermbaseInfos, ListTermbaseInfosExcluded, UpdateTermbase,
+    ListTermbaseInfos, UpdateTermbase,
 };
 use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::team::TeamRepo;
@@ -61,7 +61,7 @@ where
     let termbase_entry = TermbaseComplex::build_entry(
         instr.team_id,
         instr.comic_id,
-        &instr.name,
+        instr.name,
         instr.description,
         token.user_id.clone(),
     )?;
@@ -279,11 +279,8 @@ where
     C::Level: AtLeast<ReptRead>,
     R: TermbaseRepo<C> + TeamRepo<C> + MemberRepo<C> + Send + Sync,
 {
-    let termbase_info_update = TermbaseComplex::build_update(
-        instr.id,
-        &instr.name,
-        instr.description,
-    )?;
+    let termbase_info_update =
+        TermbaseComplex::build_update(instr.id, instr.name, instr.description)?;
 
     nucl.coord(async move |context| {
         //
@@ -390,48 +387,6 @@ where
     }
     .step_on(repo, context)
     .await?;
-
-    accept(())
-}
-
-/// Deletes all terminology bases directly owned by a team.
-pub async fn delete_team_cascade<C, R>(
-    repo: &R,
-    context: &mut C,
-    team_id: &str,
-) -> BaseRest<()>
-where
-    C: Context,
-    R: TermbaseRepo<C> + TermRepo<C> + Sync,
-{
-    let termbase_infos = ListTermbaseInfosExcluded::Team { team_id }
-        .step_on(repo, context)
-        .await?;
-
-    for termbase_info in termbase_infos {
-        delete_cascade(repo, context, &termbase_info.id).await?;
-    }
-
-    accept(())
-}
-
-/// Deletes all terminology bases directly owned by a comic.
-pub async fn delete_comic_cascade<C, R>(
-    repo: &R,
-    context: &mut C,
-    comic_id: &str,
-) -> BaseRest<()>
-where
-    C: Context,
-    R: TermbaseRepo<C> + TermRepo<C> + Sync,
-{
-    let termbase_infos = ListTermbaseInfosExcluded::Comic { comic_id }
-        .step_on(repo, context)
-        .await?;
-
-    for termbase_info in termbase_infos {
-        delete_cascade(repo, context, &termbase_info.id).await?;
-    }
 
     accept(())
 }

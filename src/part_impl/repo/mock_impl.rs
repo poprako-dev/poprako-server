@@ -27,6 +27,8 @@ pub mod member_invitation;
 pub mod online_user;
 /// Mock implementations for page repository operations.
 pub mod page;
+/// Mock hierarchy deletion repository operations.
+pub mod subtree_delete;
 /// Mock implementations for system mail repository operations.
 pub mod system_mail;
 /// Mock implementations for team repository operations.
@@ -46,7 +48,7 @@ pub mod workset;
 #[cfg(test)]
 mod tests;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
@@ -122,6 +124,16 @@ pub struct MockState {
     pub system_mails: Vec<SystemMailInfo>,
     /// Mock storage for archived comic records.
     pub comic_archives: Vec<ComicArchiveRecord>,
+
+    /// Tombstoned Team identifiers pending physical cleanup.
+    pub deleted_team_ids: HashSet<String>,
+    /// Tombstoned Workset identifiers pending physical cleanup.
+    pub deleted_workset_ids: HashSet<String>,
+    /// Tombstoned Comic identifiers pending physical cleanup.
+    pub deleted_comic_ids: HashSet<String>,
+    /// Tombstoned Chapter identifiers pending physical cleanup.
+    pub deleted_chapter_ids: HashSet<String>,
+
     /// Mock object state grouped by static object topic.
     pub objs: HashMap<&'static str, HashMap<String, MockObjRecord>>,
     /// Mock durable object work bound in coordinated state.
@@ -172,6 +184,16 @@ pub struct MockSnapshot {
     pub system_mails: Vec<SystemMailInfo>,
     /// Snapshot of archived comic records at the capture time.
     pub comic_archives: Vec<ComicArchiveRecord>,
+
+    /// Snapshot of tombstoned Team identifiers.
+    pub deleted_team_ids: HashSet<String>,
+    /// Snapshot of tombstoned Workset identifiers.
+    pub deleted_workset_ids: HashSet<String>,
+    /// Snapshot of tombstoned Comic identifiers.
+    pub deleted_comic_ids: HashSet<String>,
+    /// Snapshot of tombstoned Chapter identifiers.
+    pub deleted_chapter_ids: HashSet<String>,
+
     /// Snapshot of object state grouped by static object topic.
     pub objs: HashMap<&'static str, HashMap<String, MockObjRecord>>,
     /// Snapshot of durable object work.
@@ -204,6 +226,10 @@ impl From<MockState> for MockSnapshot {
             units: state.units,
             system_mails: state.system_mails,
             comic_archives: state.comic_archives,
+            deleted_team_ids: state.deleted_team_ids,
+            deleted_workset_ids: state.deleted_workset_ids,
+            deleted_comic_ids: state.deleted_comic_ids,
+            deleted_chapter_ids: state.deleted_chapter_ids,
             objs: state.objs,
             obj_tasks: state.obj_tasks,
             prom_records: state.prom_records,
@@ -230,6 +256,8 @@ pub struct MockContext {
     pub archive_commit_failure: bool,
     /// When true, team creation will fail before transaction commit.
     pub create_team_failure: bool,
+    /// When true, object deletion will fail before transaction commit.
+    pub obj_delete_failure: bool,
 }
 
 impl poprako_orchestra::Context for MockContext {
@@ -246,6 +274,8 @@ pub struct MockFlags {
     pub archive_commit_failure: bool,
     /// Simulates a failure in team creation within a transaction.
     pub create_team_failure: bool,
+    /// Simulates a failure while recording object deletion tasks.
+    pub obj_delete_failure: bool,
     /// Disables thumbnail URL capability in the object-pool mock.
     pub obj_thumbnail_disabled: bool,
 }
@@ -425,6 +455,14 @@ impl Mock {
     pub fn with_create_team_failure(self) -> Self {
         //
         self.flags.lock().unwrap().create_team_failure = true;
+
+        self
+    }
+
+    /// Fail object deletion before a transaction can commit.
+    pub fn with_obj_delete_failure(self) -> Self {
+        //
+        self.flags.lock().unwrap().obj_delete_failure = true;
 
         self
     }

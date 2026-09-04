@@ -11,7 +11,7 @@ use crate::part::nucl::Serial;
 use crate::part::obj_dept::UserAvatar;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::member::{
-    DeleteMember, ListMemberInfos, ListMemberInfosExcluded,
+    DeleteUserMemberships, ListMemberInfos, LockTeamMemberInfos,
 };
 use crate::part::repo::oper::user::{DeleteUser, GetUserInfoExcluded};
 use crate::part::repo::user::UserRepo;
@@ -77,7 +77,7 @@ where
 
         for member_info in &member_infos {
             //
-            let team_member_infos = ListMemberInfosExcluded::Team {
+            let team_member_infos = LockTeamMemberInfos {
                 team_id: &member_info.team_id,
             }
             .step_on(repo, context)
@@ -107,20 +107,16 @@ where
             }
         }
 
-        for member_info in &member_infos {
-            //
-            DeleteMember {
-                id: &member_info.id,
-            }
+        DeleteUserMemberships { user_id: &id }
             .step_on(repo, context)
             .await?;
-        }
 
         DeleteObjs::<UserAvatar>::new(std::slice::from_ref(&id))
             .step_on(obj_dept, context)
             .await
             .map_err(BaseError::from)?;
 
+        // FIXME: Clean up tombstone subtree references before deleting the user.
         DeleteUser { id: &id }.step_on(repo, context).await?;
 
         accept(())

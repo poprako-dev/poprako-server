@@ -1,4 +1,5 @@
 error-internal = Internal server error
+error-unavailable = Service temporarily unavailable
 
 error-already-exists = Resource already exists
 error-concurrent-conflict = The resource changed concurrently; retry the request

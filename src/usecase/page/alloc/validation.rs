@@ -9,12 +9,10 @@ use crate::config::image::ImageConfig;
 use crate::model::write::page::PageImageSpec;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::value::image::ImageKind;
+use crate::value::page::MAX_CHAPTER_PAGE_COUNT;
 
 /// Minimum number of pages accepted by a chapter manifest.
 pub const MIN_CHAPTER_PAGE_COUNT: usize = 1;
-
-/// Maximum number of pages accepted by a chapter manifest.
-pub const MAX_CHAPTER_PAGE_COUNT: usize = 200;
 
 /// Validates image metadata and page-count constraints before page allocation.
 pub fn validate_page_specs(

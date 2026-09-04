@@ -9,6 +9,7 @@ use utoipa::{IntoParams, ToSchema};
 
 use crate::model::read::spec::announcement::AnnouncementListSpec;
 use crate::value::announcement::AnnouncementInclOpt;
+use crate::value::pagination::PubListLimit;
 
 /// Input parameters for listing announcements.
 ///
@@ -30,7 +31,7 @@ pub struct ListAnnouncementInfosInstr {
     /// Pagination offset.
     pub offset: u32,
     /// Maximum number of results per page.
-    pub limit: u32,
+    pub limit: PubListLimit,
 }
 
 impl From<ListAnnouncementInfosInstr> for AnnouncementListSpec {

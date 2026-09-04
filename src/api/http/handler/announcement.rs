@@ -30,6 +30,7 @@ use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
 use crate::usecase;
 use crate::value::announcement::AnnouncementInclOpt;
+use crate::value::pagination::PubListLimit;
 
 /// Query for listing announcements within a team.
 ///
@@ -49,7 +50,7 @@ pub struct AnnouncementListQuery {
     pub offset: u32,
 
     /// Maximum number of items to return.
-    pub limit: u32,
+    pub limit: PubListLimit,
 }
 
 /// `POST /api/v1/announcements` — create a team announcement.

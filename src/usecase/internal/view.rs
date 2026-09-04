@@ -30,21 +30,21 @@ use crate::usecase::internal::page::PageLoader;
 
 /// Deduplicated object identifiers discovered in a complete include graph.
 #[derive(Default)]
-pub struct ObjViewIds {
+pub struct ObjViewIds<'a> {
     //
     /// Comic-cover identifiers by comic.
-    comic_covers: HashSet<String>,
+    comic_covers: HashSet<&'a str>,
 
     /// Team-avatar identifiers by team.
-    team_avatars: HashSet<String>,
+    team_avatars: HashSet<&'a str>,
 
     /// User-avatar identifiers by user.
-    user_avatars: HashSet<String>,
+    user_avatars: HashSet<&'a str>,
 }
 
-impl ObjViewIds {
+impl<'a> ObjViewIds<'a> {
     /// Adds every object identifier reachable from assignment models.
-    pub fn collect_assignments<'a, I>(&mut self, assignment_infos: I)
+    pub fn collect_assignments<I>(&mut self, assignment_infos: I)
     where
         I: IntoIterator<Item = &'a AssignmentInfo>,
     {
@@ -55,7 +55,7 @@ impl ObjViewIds {
     }
 
     /// Adds every object identifier reachable from chapter models.
-    pub fn collect_chapters<'a, I>(&mut self, chapter_infos: I)
+    pub fn collect_chapters<I>(&mut self, chapter_infos: I)
     where
         I: IntoIterator<Item = &'a ChapterInfo>,
     {
@@ -66,7 +66,7 @@ impl ObjViewIds {
     }
 
     /// Adds every object identifier reachable from comic models.
-    pub fn collect_comics<'a, I>(&mut self, comic_infos: I)
+    pub fn collect_comics<I>(&mut self, comic_infos: I)
     where
         I: IntoIterator<Item = &'a ComicInfo>,
     {
@@ -77,7 +77,7 @@ impl ObjViewIds {
     }
 
     // Collects object identifiers reachable from one assignment model.
-    fn collect_assignment(&mut self, assignment_info: &AssignmentInfo) {
+    fn collect_assignment(&mut self, assignment_info: &'a AssignmentInfo) {
         //
         if let Some(user_info) = assignment_info.user.as_ref() {
             self.collect_user(user_info);
@@ -89,7 +89,7 @@ impl ObjViewIds {
     }
 
     // Collects object identifiers reachable from one chapter model.
-    fn collect_chapter(&mut self, chapter_info: &ChapterInfo) {
+    fn collect_chapter(&mut self, chapter_info: &'a ChapterInfo) {
         //
         if let Some(comic_info) = chapter_info.comic.as_ref() {
             self.collect_comic(comic_info);
@@ -101,9 +101,9 @@ impl ObjViewIds {
     }
 
     // Collects object identifiers reachable from one comic model.
-    fn collect_comic(&mut self, comic_info: &ComicInfo) {
+    fn collect_comic(&mut self, comic_info: &'a ComicInfo) {
         //
-        self.comic_covers.insert(comic_info.id.clone());
+        self.comic_covers.insert(&comic_info.id);
 
         if let Some(team_info) = comic_info.team.as_ref() {
             self.collect_team(team_info);
@@ -115,20 +115,20 @@ impl ObjViewIds {
     }
 
     // Collects one user avatar identifier.
-    fn collect_user(&mut self, user_info: &UserInfo) {
-        self.user_avatars.insert(user_info.id.clone());
+    fn collect_user(&mut self, user_info: &'a UserInfo) {
+        self.user_avatars.insert(&user_info.id);
     }
 
     // Collects one team avatar identifier.
-    fn collect_team(&mut self, team_info: &TeamInfo) {
-        self.team_avatars.insert(team_info.id.clone());
+    fn collect_team(&mut self, team_info: &'a TeamInfo) {
+        self.team_avatars.insert(&team_info.id);
     }
 
     // Returns the sorted comic identifiers used for cover fallback lookup.
-    fn comic_ids(&self) -> Vec<String> {
+    fn comic_ids(&self) -> Vec<&str> {
         //
         let mut comic_ids =
-            self.comic_covers.iter().cloned().collect::<Vec<_>>();
+            self.comic_covers.iter().copied().collect::<Vec<_>>();
 
         comic_ids.sort_unstable();
 
@@ -157,7 +157,10 @@ pub struct ObjViewSnapshot {
 
 impl ObjViewSnapshot {
     /// Loads one metadata batch and one URL batch for each non-empty marker.
-    pub async fn load<C, O>(obj_dept: &O, ids: ObjViewIds) -> BaseRest<Self>
+    pub async fn load<C, O>(
+        obj_dept: &O,
+        ids: &ObjViewIds<'_>,
+    ) -> BaseRest<Self>
     where
         C: Context,
         O: ObjDeptView<ComicCover, C>
@@ -166,13 +169,13 @@ impl ObjViewSnapshot {
             + Sync,
     {
         let mut comic_cover_ids =
-            ids.comic_covers.into_iter().collect::<Vec<_>>();
+            ids.comic_covers.iter().copied().collect::<Vec<_>>();
 
         let mut team_avatar_ids =
-            ids.team_avatars.into_iter().collect::<Vec<_>>();
+            ids.team_avatars.iter().copied().collect::<Vec<_>>();
 
         let mut user_avatar_ids =
-            ids.user_avatars.into_iter().collect::<Vec<_>>();
+            ids.user_avatars.iter().copied().collect::<Vec<_>>();
 
         comic_cover_ids.sort_unstable();
 
@@ -199,7 +202,7 @@ impl ObjViewSnapshot {
     pub async fn load_with_comic_fallbacks<C, R, O>(
         repo: &R,
         obj_dept: &O,
-        ids: ObjViewIds,
+        ids: ObjViewIds<'_>,
     ) -> BaseRest<Self>
     where
         C: Context,
@@ -215,12 +218,14 @@ impl ObjViewSnapshot {
         let comic_ids = ids.comic_ids();
 
         let (mut snapshot, comic_fallback_pages) = futures_util::try_join!(
-            Self::load::<C, O>(obj_dept, ids),
+            Self::load::<C, O>(obj_dept, &ids),
             PageLoader::load_ids_from_comics(repo, &comic_ids),
         )?;
 
-        let mut page_ids =
-            comic_fallback_pages.values().cloned().collect::<Vec<_>>();
+        let mut page_ids = comic_fallback_pages
+            .values()
+            .map(String::as_str)
+            .collect::<Vec<_>>();
 
         page_ids.sort_unstable();
 
@@ -335,7 +340,7 @@ fn resolved_obj_urls(
 // Loads URLs for the supplied object marker identifiers.
 async fn load_obj_urls<C, O, K>(
     obj_dept: &O,
-    ids: &[String],
+    ids: &[&str],
 ) -> BaseRest<HashMap<String, ObjUrls>>
 where
     C: Context,

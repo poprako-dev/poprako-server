@@ -27,11 +27,11 @@ use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
 use crate::part::repo::oper::chapter::{
-    AdjustChapterUnitCounters, GetChapterInfoExcluded,
+    AdjustChapterUnitCountDelta, GetChapterInfoExcluded,
 };
 use crate::part::repo::oper::comic::TouchComicLastActive;
 use crate::part::repo::oper::page::{
-    GetPageInfoExcluded, ListPageInfos, SetPageUnitCounters,
+    GetPageInfoExcluded, ListPageInfos, SetPageUnitCountMetrics,
 };
 use crate::part::repo::oper::unit::{
     ApplyUnitEdits, ListUnitInfosByIds, ListUnitOrders,
@@ -69,7 +69,7 @@ pub fn invalid_unit_transform(
 }
 
 /// Adds one page counter delta to a Chapter-level aggregate.
-pub const fn add_counter_delta(
+pub const fn add_count_delta(
     total: &mut UnitCountDelta,
     delta: UnitCountDelta,
 ) {
@@ -164,14 +164,14 @@ where
 
     let unit_transforms = into_unit_transforms(units)?;
 
-    let unit_ids = unit_transforms
-        .iter()
-        .map(|unit_transform| unit_transform.unit_id.clone())
-        .collect::<Vec<_>>();
-
     let () = nucl
         .coord(async move |context| {
             //
+            let unit_ids = unit_transforms
+                .iter()
+                .map(|unit_transform| unit_transform.unit_id.as_str())
+                .collect::<Vec<_>>();
+
             let transform_scope = load_transform_scope(
                 repo,
                 context,
@@ -205,11 +205,11 @@ where
                 )
                 .await?;
 
-                let Some((counter_delta, edits)) = page_transform else {
+                let Some((count_delta, edits)) = page_transform else {
                     continue;
                 };
 
-                add_counter_delta(&mut total_delta, counter_delta);
+                add_count_delta(&mut total_delta, count_delta);
 
                 applied_edits.extend(edits);
             }
@@ -236,7 +236,7 @@ async fn load_transform_scope<C, R>(
     chapter_id: &str,
     user_id: &str,
     part: UnitTextPart,
-    unit_ids: &[String],
+    unit_ids: &[&str],
 ) -> BaseRest<TransformScope>
 where
     C: Context + Send,
@@ -355,7 +355,7 @@ where
 
     let edits = UnitComplex::normalize_edits(&base_ids, edits)?;
 
-    let counters = ApplyUnitEdits {
+    let count_metrics = ApplyUnitEdits {
         page_id: &page_info.id,
         orders: &orders,
         edits: &edits,
@@ -363,22 +363,22 @@ where
     .step_on(repo, context)
     .await?;
 
-    SetPageUnitCounters {
+    SetPageUnitCountMetrics {
         id: &page_info.id,
-        counters,
+        count_metrics,
     }
     .step_on(repo, context)
     .await?;
 
-    let old_counters = UnitCountMetrics {
+    let old_count_metrics = UnitCountMetrics {
         total: page_info.total_unit_count,
         translated: page_info.translated_unit_count,
         proofread: page_info.proofread_unit_count,
     };
 
-    let counter_delta = old_counters.calc_delta(counters)?;
+    let count_delta = old_count_metrics.calc_delta(count_metrics)?;
 
-    accept(Some((counter_delta, edits)))
+    accept(Some((count_delta, edits)))
 }
 
 // Applies Chapter aggregates and workflow effects after Unit edits.
@@ -403,7 +403,7 @@ where
         return accept(());
     }
 
-    AdjustChapterUnitCounters {
+    AdjustChapterUnitCountDelta {
         id: &chapter_info.id,
         delta: total_delta,
     }

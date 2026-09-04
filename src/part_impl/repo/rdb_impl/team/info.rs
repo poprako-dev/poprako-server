@@ -20,20 +20,28 @@ use crate::part_impl::repo::rdb_impl::entity::team::{
 use crate::part_impl::repo::rdb_impl::numeric::usize_from_i32;
 use crate::part_impl::repo::rdb_impl::schema::t_member;
 use crate::part_impl::repo::rdb_impl::schema::t_team::dsl::{
-    f_created_at, f_id, f_workset_next_index, t_team,
+    f_created_at, f_deleted_at, f_id, f_workset_next_index, t_team,
 };
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::result::diesel;
 
-/// Delete a team row by primary key.
-pub async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
+/// Build the expected error for a missing team.
+pub fn missing_team(id: &str, operation: &str) -> BaseError {
     //
-    diesel::delete(t_team.filter(f_id.eq(id)))
-        .execute(conn)
-        .await
-        .map_err(diesel)?;
+    let message = trl("error-team-not-found");
 
-    accept(())
+    tracing::warn!(
+        err_variant = ?ExpectedVariant::Args,
+        err_message = %message,
+        team_id = %id,
+        operation,
+        "expected team error",
+    );
+
+    BaseError::Expected {
+        variant: ExpectedVariant::Args,
+        message,
+    }
 }
 
 // Insert a team entry and return the persisted team info.
@@ -75,6 +83,7 @@ pub async fn get_info_by_id(
     //
     let row = t_team
         .filter(f_id.eq(id))
+        .filter(f_deleted_at.is_null())
         .select(TeamInfoRow::as_select())
         .get_result::<TeamInfoRow>(conn)
         .await
@@ -110,7 +119,7 @@ pub async fn list_infos(
     spec: &TeamListSpec,
 ) -> BaseRest<Vec<TeamInfo>> {
     //
-    let mut query = t_team.into_boxed();
+    let mut query = t_team.filter(f_deleted_at.is_null()).into_boxed();
 
     query = match spec.user_id.as_deref() {
         //
@@ -130,7 +139,7 @@ pub async fn list_infos(
         .select(TeamInfoRow::as_select())
         .order_by(f_created_at.desc())
         .offset(i64::from(spec.offset))
-        .limit(i64::from(spec.limit))
+        .limit(i64::from(spec.limit.get()))
         .load::<TeamInfoRow>(conn)
         .await
         .map_err(diesel)?;
@@ -149,11 +158,19 @@ pub async fn update_info(conn: &mut RdbConn, repl: &TeamRepl) -> BaseRest<()> {
         .name(&repl.name)
         .description(&repl.description);
 
-    diesel::update(t_team.filter(f_id.eq(&repl.id)))
-        .set(&aspect)
-        .execute(conn)
-        .await
-        .map_err(diesel)?;
+    let updated_count = diesel::update(
+        t_team
+            .filter(f_id.eq(&repl.id))
+            .filter(f_deleted_at.is_null()),
+    )
+    .set(&aspect)
+    .execute(conn)
+    .await
+    .map_err(diesel)?;
+
+    if updated_count == 0 {
+        return Err(missing_team(&repl.id, "update team info"));
+    }
 
     accept(())
 }
@@ -168,6 +185,7 @@ pub async fn get_info_excluded(
     //
     let row = t_team
         .filter(f_id.eq(id))
+        .filter(f_deleted_at.is_null())
         .select(TeamInfoRow::as_select())
         .for_update()
         .get_result::<TeamInfoRow>(conn)
@@ -203,6 +221,7 @@ pub async fn lock_team(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     //
     let row = t_team
         .filter(f_id.eq(id))
+        .filter(f_deleted_at.is_null())
         .select(f_id)
         .for_update()
         .get_result::<String>(conn)
@@ -239,12 +258,19 @@ pub async fn increment_workset_next_index(
     id: &str,
 ) -> BaseRest<usize> {
     //
-    let prev = diesel::update(t_team.filter(f_id.eq(id)))
-        .set(f_workset_next_index.eq(f_workset_next_index + 1))
-        .returning(f_workset_next_index - 1)
-        .get_result::<i32>(conn)
-        .await
-        .map_err(diesel)?;
+    let prev = diesel::update(
+        t_team.filter(f_id.eq(id)).filter(f_deleted_at.is_null()),
+    )
+    .set(f_workset_next_index.eq(f_workset_next_index + 1))
+    .returning(f_workset_next_index - 1)
+    .get_result::<i32>(conn)
+    .await
+    .optional()
+    .map_err(diesel)?;
+
+    let Some(prev) = prev else {
+        return Err(missing_team(id, "allocate team workset index"));
+    };
 
     accept(usize_from_i32(prev, "t_team.f_workset_next_index")?)
 }

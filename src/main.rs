@@ -8,7 +8,7 @@ use anyhow::Context as _;
 
 use poprako_server::{
     AppConfig, AsyncEffectDevelop, Harn, HybNucl, HybRepo, JwtAuth, RdbContext,
-    RdbCore, RdbNucl, ReptRead, Serial, new_obj_dept, new_prom,
+    RdbCore, RdbNucl, ReptRead, Sched, Serial, new_obj_dept, new_prom,
 };
 
 /// Application entry point.
@@ -56,6 +56,8 @@ async fn main() -> anyhow::Result<()> {
 
     let obj_dept = new_obj_dept(core.clone())?;
 
+    let sched = Sched::new(core.clone(), obj_dept.clone());
+
     let develop = AsyncEffectDevelop::new::<RdbContext<ReptRead>, _>(
         Arc::new(HybRepo::new(core.clone())),
         NonZeroUsize::new(1024).context("buf_size cannot be 0")?,
@@ -66,6 +68,8 @@ async fn main() -> anyhow::Result<()> {
     let harn = Harn::new(config, (nucl, repo, obj_dept, prom, auth, develop));
 
     let serve_rest = poprako_server::serve(harn.clone(), http_addr).await;
+
+    sched.close().await;
 
     tokio::join!(
         harn.obj_dept().close(),

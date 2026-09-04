@@ -273,7 +273,7 @@ impl Run<FindAssignmentInfo<'_, '_>> for HybRepo {
                 chapter_id,
                 user_id,
             } => submit_query!(
-                self.core,
+                self.rdb_core,
                 get_info_by_chapter_id_and_user_id,
                 chapter_id,
                 user_id
@@ -284,7 +284,7 @@ impl Run<FindAssignmentInfo<'_, '_>> for HybRepo {
                 comic_id,
                 incls,
             } => submit_query!(
-                self.core,
+                self.rdb_core,
                 find_info_by_user_id_and_comic_id,
                 user_id,
                 comic_id,
@@ -305,7 +305,7 @@ impl Run<ListAssignmentInfos<'_, '_>> for HybRepo {
         &self,
         oper: &ListAssignmentInfos<'_, '_>,
     ) -> BaseRest<Vec<AssignmentInfo>> {
-        submit_query!(self.core, list_infos, oper)
+        submit_query!(self.rdb_core, list_infos, oper)
     }
 }
 
@@ -320,7 +320,7 @@ impl Run<GetAssignmentInfo<'_, '_>> for HybRepo {
         &self,
         oper: &GetAssignmentInfo<'_, '_>,
     ) -> BaseRest<AssignmentInfo> {
-        submit_query!(self.core, get_info_by_id, oper.id, oper.incls)
+        submit_query!(self.rdb_core, get_info_by_id, oper.id, oper.incls)
     }
 }
 

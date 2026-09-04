@@ -326,15 +326,19 @@ fn lock_bucket(bucket: &Mutex<MetricBucket>) -> MutexGuard<'_, MetricBucket> {
 }
 
 // Converts total latency microseconds into a millisecond average.
+#[expect(
+    clippy::cast_precision_loss,
+    reason = "Prometheus samples are f64; exact integer precision above the f64 mantissa is immaterial for aggregate latency metrics"
+)]
 fn average_latency_ms(total_latency_micros: u64, total: u64) -> f64 {
     //
     if total == 0 {
         return 0.0;
     }
 
-    let latency = total_latency_micros.to_string().parse().unwrap_or(f64::MAX);
+    let latency = total_latency_micros as f64;
 
-    let total = total.to_string().parse::<f64>().unwrap_or(f64::MAX);
+    let total = total as f64;
 
     latency / total / 1_000.0
 }

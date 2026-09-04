@@ -22,7 +22,7 @@ where
     let user_ids = models
         .iter()
         .filter_map(|model| {
-            model.user.as_ref().map(|user_info| user_info.id.clone())
+            model.user.as_ref().map(|user_info| user_info.id.as_str())
         })
         .collect::<Vec<_>>();
 

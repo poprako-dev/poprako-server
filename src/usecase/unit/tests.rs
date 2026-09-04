@@ -5,6 +5,8 @@
 
 // Unit search tests with dedicated high-cardinality fixtures.
 mod search;
+// Unit list consistency and tombstone-chain tests.
+mod list;
 
 use super::transform::transform;
 use super::*;
@@ -30,7 +32,7 @@ use crate::value::role::{RoleField, RoleMask};
 use crate::value::unit::UnitTextPart;
 
 #[tokio::test]
-async fn create_uses_token_identity_and_updates_counters() {
+async fn create_uses_token_identity_and_updates_counts() {
     //
     let mock = save_scope(RoleMask::from(RoleField::TRANSLATOR));
 
@@ -400,7 +402,7 @@ async fn concurrent_same_anchor_inserts_preserve_all_nodes() {
     second.await.unwrap().unwrap();
 
     let listed = list_infos(
-        (&mock,),
+        (&mock, &mock),
         token("translator-1"),
         ListPageUnitInfosInstr {
             page_id: "page-1".to_string(),

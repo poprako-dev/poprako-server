@@ -71,7 +71,7 @@ pub async fn member_invitation_roundtrip_uses_testcontainer(shared: RdbCore) {
         is_pending: Some(false),
         incl_opt: vec![MemberInvitationInclOpt::Invitor],
         offset: 0,
-        limit: 10,
+        limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     };
 
     let member_invitation_infos = repo

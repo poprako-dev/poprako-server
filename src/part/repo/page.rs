@@ -3,10 +3,10 @@
 use poprako_orchestra::drive;
 
 use crate::part::repo::oper::page::{
-    ApplyPageManifest, CreatePages, DeletePages, GetPageInfo,
-    GetPageInfoExcluded, ListEdittedDiffPageIds, ListFirstPageInfos,
-    ListPageInfos, ListPageInfosExcluded, SetPageUnitCounters,
-    ShiftPageIndexesTemporary,
+    ApplyPageManifest, DeletePages, GetPageInfo, GetPageInfoExcluded,
+    GetPageUnitScope, GetPageUnitScopeExcluded, ListEdittedDiffPageIds,
+    ListFirstPageInfos, ListPageInfos, ListPageInfosExcluded,
+    SetPageUnitCountMetrics, ShiftPageIndexesTemporary,
 };
 use crate::result::BaseError;
 
@@ -16,17 +16,19 @@ use crate::result::BaseError;
     error = BaseError,
     run(
         for<'a> GetPageInfo<'a>,
+        for<'a> GetPageUnitScope<'a>,
         for<'a> ListPageInfos<'a>,
         for<'a> ListFirstPageInfos<'a>,
         for<'a> ListEdittedDiffPageIds<'a>,
     ),
     step(
         for<'a> GetPageInfo<'a>,
+        for<'a> GetPageUnitScope<'a>,
         for<'a> ListPageInfos<'a>,
         for<'a> ListPageInfosExcluded<'a>,
-        for<'a> CreatePages<'a>,
         for<'a> GetPageInfoExcluded<'a>,
-        for<'a> SetPageUnitCounters<'a>,
+        for<'a> GetPageUnitScopeExcluded<'a>,
+        for<'a> SetPageUnitCountMetrics<'a>,
         for<'a> ShiftPageIndexesTemporary<'a>,
         for<'a> ApplyPageManifest<'a>,
         for<'a> DeletePages<'a>,

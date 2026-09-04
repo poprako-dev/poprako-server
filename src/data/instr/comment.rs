@@ -9,6 +9,7 @@ use utoipa::{IntoParams, ToSchema};
 
 use crate::model::read::spec::comment::CommentListSpec;
 use crate::value::comment::CommentInclOpt;
+use crate::value::pagination::PubListLimit;
 
 /// Input parameters for listing comments.
 ///
@@ -30,7 +31,7 @@ pub struct ListCommentInfosInstr {
     /// Pagination offset.
     pub offset: u32,
     /// Maximum number of results per page.
-    pub limit: u32,
+    pub limit: PubListLimit,
 }
 
 impl From<ListCommentInfosInstr> for CommentListSpec {

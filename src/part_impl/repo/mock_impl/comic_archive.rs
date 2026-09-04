@@ -13,7 +13,7 @@ use crate::model::read::proj::unit::UnitInfo;
 use crate::model::write::comic_archive::ComicArchiveEntry;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::comic_archive::{
-    CommitComicArchive, DeleteComicArchives, GetComicArchiveSnapshotExcluded,
+    CommitComicArchive, GetComicArchiveSnapshotExcluded,
     ListComicArchivePayloads,
 };
 use crate::part_impl::repo::mock_impl::{
@@ -146,7 +146,11 @@ fn get_snapshot_excluded(
         .state
         .comics
         .iter()
-        .find(|comic_info| comic_info.id == source_comic_id)
+        .find(|comic_info| {
+            //
+            comic_info.id == source_comic_id
+                && !context.state.deleted_comic_ids.contains(source_comic_id)
+        })
         .cloned()
         .ok_or_else(|| expected("error-comic-not-found"))?;
 
@@ -273,6 +277,14 @@ fn commit(
         ));
     }
 
+    if context
+        .state
+        .deleted_comic_ids
+        .contains(&comic_archive_entry.record.source_comic_id)
+    {
+        return Err(expected("error-comic-not-found"));
+    }
+
     context
         .state
         .comic_archives
@@ -312,7 +324,7 @@ fn commit(
         .filter(|termbase_info| {
             //
             termbase_info.comic_id.as_deref()
-                == Some(comic_archive_entry.source_comic_id.as_str())
+                == Some(comic_archive_entry.record.source_comic_id.as_str())
         })
         .map(|termbase_info| termbase_info.id.clone())
         .collect::<Vec<_>>();
@@ -325,7 +337,7 @@ fn commit(
     context.state.termbases.retain(|termbase_info| {
         //
         termbase_info.comic_id.as_deref()
-            != Some(comic_archive_entry.source_comic_id.as_str())
+            != Some(comic_archive_entry.record.source_comic_id.as_str())
     });
 
     context.state.units.retain(|unit_info| {
@@ -355,7 +367,9 @@ fn commit(
         .state
         .comics
         .iter_mut()
-        .find(|comic_info| comic_info.id == comic_archive_entry.source_comic_id)
+        .find(|comic_info| {
+            comic_info.id == comic_archive_entry.record.source_comic_id
+        })
         .ok_or_else(|| expected("error-comic-not-found"))?;
 
     comic_info.archived_at = Some(archived_at);
@@ -398,28 +412,5 @@ impl<'a> Step<CommitComicArchive<'a>, MockContext> for Mock {
         oper: &CommitComicArchive<'a>,
     ) -> BaseRest<()> {
         commit(context, oper.entry)
-    }
-}
-
-impl<'a> Step<DeleteComicArchives<'a>, MockContext> for Mock {
-    // Internal type alias for `Error`.
-    type Level = ReptRead;
-
-    // Defines the adapter error exposed by this operation.
-    type Error = BaseError;
-
-    #[instrument(level = "info", skip_all)]
-    // Remove archive records attached to a comic being hard-deleted.
-    async fn step(
-        &self,
-        context: &mut MockContext,
-        oper: &DeleteComicArchives<'a>,
-    ) -> BaseRest<()> {
-        //
-        context.state.comic_archives.retain(|comic_archive_record| {
-            comic_archive_record.source_comic_id != oper.source_comic_id
-        });
-
-        accept(())
     }
 }

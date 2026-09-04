@@ -92,7 +92,7 @@ async fn list_infos(
     let rows = query
         .order_by(f_created_at.desc())
         .offset(i64::from(spec.offset))
-        .limit(i64::from(spec.limit))
+        .limit(i64::from(spec.limit.get()))
         .load::<SystemMailInfoRow>(conn)
         .await
         .map_err(diesel)?;
@@ -181,7 +181,7 @@ impl Run<SendSystemMail<'_>> for HybRepo {
     #[instrument(level = "info", skip_all)]
     // Persist one outbound system mail entry in the request-scoped transaction.
     async fn run(&self, oper: &SendSystemMail<'_>) -> BaseRest<()> {
-        submit_query!(self.core, send, oper.entry)
+        submit_query!(self.rdb_core, send, oper.entry)
     }
 }
 
@@ -193,7 +193,7 @@ impl Run<SendSystemMails<'_>> for HybRepo {
     #[instrument(level = "info", skip_all)]
     // Persist multiple outbound system mails in one request scope.
     async fn run(&self, oper: &SendSystemMails<'_>) -> BaseRest<()> {
-        submit_query!(self.core, send_batch, oper.entries)
+        submit_query!(self.rdb_core, send_batch, oper.entries)
     }
 }
 
@@ -208,7 +208,7 @@ impl Run<ListSystemMailInfos<'_>> for HybRepo {
         &self,
         oper: &ListSystemMailInfos<'_>,
     ) -> BaseRest<Vec<SystemMailInfo>> {
-        submit_query!(self.core, list_infos, oper.spec)
+        submit_query!(self.rdb_core, list_infos, oper.spec)
     }
 }
 
@@ -220,6 +220,6 @@ impl Run<MarkSystemMailsRead<'_>> for HybRepo {
     #[instrument(level = "info", skip_all)]
     // Verify receiver ownership then set the target mail as read.
     async fn run(&self, oper: &MarkSystemMailsRead<'_>) -> BaseRest<()> {
-        submit_query!(self.core, mark_read_batch, oper.ids, oper.user_id)
+        submit_query!(self.rdb_core, mark_read_batch, oper.ids, oper.user_id)
     }
 }

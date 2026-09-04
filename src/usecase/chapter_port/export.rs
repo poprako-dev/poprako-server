@@ -101,7 +101,7 @@ where
 
     let page_ids = page_infos
         .iter()
-        .map(|page_info| page_info.id.clone())
+        .map(|page_info| page_info.id.as_str())
         .collect::<Vec<_>>();
 
     let unit_infos = ListUnitInfosByPageIds {
@@ -118,7 +118,7 @@ where
 
     let page_ids = page_infos
         .iter()
-        .map(|page_info| page_info.id.clone())
+        .map(|page_info| page_info.id.as_str())
         .collect::<Vec<_>>();
 
     let obj_metas = ListObjMetas::<PageImage>::new(&page_ids)

@@ -33,6 +33,7 @@ use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
 use crate::usecase;
 use crate::value::chapter::ChapterInclOpt;
+use crate::value::pagination::PubListLimit;
 
 /// Query for listing chapters within a comic.
 ///
@@ -55,7 +56,7 @@ pub struct ChapterListQuery {
     pub offset: u32,
 
     /// Maximum number of items to return.
-    pub limit: u32,
+    pub limit: PubListLimit,
 }
 
 /// Query for listing immutable chapter workflow records.
@@ -67,7 +68,7 @@ pub struct ChapterWorkflowRecordListQuery {
     /// Pagination offset (0-based).
     pub offset: u32,
     /// Maximum number of items to return.
-    pub limit: u32,
+    pub limit: PubListLimit,
 }
 
 /// `POST /api/v1/chapters` — create a chapter under a comic.

@@ -76,16 +76,28 @@ impl ChapterComplex {
     /// Rejects user mutations once a chapter has been published.
     pub fn ensure_chapter_writable(chapter_info: &ChapterInfo) -> BaseRest<()> {
         //
-        if chapter_info
-            .stages
-            .has_phase(Stage::Publish, StagePhase::Completed)
-        {
+        Self::ensure_writable_state(
+            &chapter_info.id,
+            chapter_info
+                .stages
+                .has_phase(Stage::Publish, StagePhase::Completed),
+        )
+    }
+
+    /// Rejects a minimal persisted Chapter scope once it has been published.
+    pub fn ensure_writable_state(
+        chapter_id: &str,
+        is_published: bool,
+    ) -> BaseRest<()> {
+        //
+        if is_published {
+            //
             let err_message = trl("error-chapter-published-frozen");
 
             tracing::warn!(
                 err_variant = ?ExpectedVariant::Args,
                 err_message = %err_message,
-                chapter_id = %chapter_info.id,
+                chapter_id,
                 stage = ?Stage::Publish,
                 stage_phase = ?StagePhase::Completed,
                 "expected error: published chapter is frozen",

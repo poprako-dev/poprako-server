@@ -28,7 +28,7 @@ where
 
     ids.collect_assignments(std::slice::from_ref(&model));
 
-    let snapshot = ObjViewSnapshot::load::<C, O>(obj_dept, ids).await?;
+    let snapshot = ObjViewSnapshot::load::<C, O>(obj_dept, &ids).await?;
 
     accept(snapshot.assignment(model))
 }

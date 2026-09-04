@@ -92,7 +92,11 @@ pub struct UnitEntryRow<'a> {
 }
 
 impl<'a> UnitEntryRow<'a> {
-    pub fn from_edit(page_id: &'a str, edit: &'a UnitEdit) -> Option<Self> {
+    pub fn from_edit(
+        page_id: &'a str,
+        edit: &'a UnitEdit,
+        next_id: Option<&'a str>,
+    ) -> Option<Self> {
         //
         let UnitEdit::Create {
             id,
@@ -130,7 +134,7 @@ impl<'a> UnitEntryRow<'a> {
         Some(Self {
             f_id: id,
             f_page_id: page_id,
-            f_next_id: None,
+            f_next_id: next_id,
             f_hidden_at: None,
             f_is_bubble: *is_bubble,
             f_is_proofread: is_proofread,

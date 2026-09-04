@@ -4,8 +4,16 @@ use serde::{Deserialize, Deserializer, Serialize};
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
-/// Maximum number of pages accepted in one chapter import.
-pub const MAX_CHAPTER_IMPORT_PAGE_COUNT: usize = 200;
+/// Page-content strategy selected for one chapter translation import.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ChapterTranslationImportMode {
+    //
+    /// Preserve pages that already contain visible Units.
+    Keep,
+
+    /// Replace every page with the Units represented by the imported source.
+    Overwrite,
+}
 
 /// Translation format used by a chapter port.
 ///

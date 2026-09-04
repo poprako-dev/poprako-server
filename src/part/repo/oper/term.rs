@@ -2,6 +2,7 @@ use poprako_orchestra::Oper;
 
 use crate::model::read::proj::term::TermInfo;
 use crate::model::write::term::{TermEntry, TermRepl};
+use crate::value::pagination::PubListLimit;
 
 /// Creates a term.
 #[derive(Oper)]
@@ -33,7 +34,7 @@ pub enum ListTermInfos<'a> {
         /// Number of matching terms to skip.
         offset: u32,
         /// Maximum number of matching terms to return.
-        limit: u32,
+        limit: PubListLimit,
     },
 
     /// Lists every term belonging to one terminology base.
@@ -41,14 +42,6 @@ pub enum ListTermInfos<'a> {
         /// The terminology-base identifier.
         termbase_id: &'a str,
     },
-}
-
-/// Looks up a term by identifier, matching deleted rows as well.
-#[derive(Oper)]
-#[oper(output = TermInfo)]
-pub struct GetTermInfoExcluded<'a> {
-    /// The term id.
-    pub id: &'a str,
 }
 
 /// Locks a term row.
@@ -72,6 +65,9 @@ pub struct UpdateTerm<'a> {
 #[oper(output = ())]
 pub struct UpsertTerms<'a> {
     //
+    /// Terminology base that owns every inserted and updated term.
+    pub termbase_id: &'a str,
+
     /// New terminology entries to insert.
     pub entries: &'a [TermEntry],
     /// Existing terminology entries to replace.

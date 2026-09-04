@@ -11,6 +11,9 @@ use crate::result::{BaseRest, accept};
 use crate::shared::result::diesel;
 use crate::value::comic_archive::ComicArchiveMonth;
 
+// TODO: Replace this materialized payload Vec with typed keyset chunks ordered
+// by `(created_at, id)`, and push the exact selected month intervals into the
+// Diesel predicate before rows are written to the export artifact.
 // Load archive payloads by month window and return timestamped serialized blobs.
 /// Lists serialized archive payloads in the requested months.
 #[instrument(level = "info", skip_all)]

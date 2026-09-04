@@ -70,7 +70,7 @@ pub async fn assignment_roundtrip_uses_testcontainer(shared: RdbCore) {
         role: Some(RoleField::TRANSLATOR),
         incl_opt: vec![AssignmentInclOpt::User],
         offset: 0,
-        limit: 10,
+        limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     };
 
     let assignment_infos = repo
@@ -88,7 +88,7 @@ pub async fn assignment_roundtrip_uses_testcontainer(shared: RdbCore) {
         assignee_form.id
     );
 
-    let chapter_ids = vec![chapter_fixture.chapter_entry.id.clone()];
+    let chapter_ids = vec![chapter_fixture.chapter_entry.id.as_str()];
 
     let assignment_infos = repo
         .run(&ListAssignmentInfos::Chapters {

@@ -24,7 +24,7 @@
 import assert from "node:assert/strict";
 
 import {
-    assertChapterPageCountersConsistent,
+    assertChapterPageCountMetricsConsistent,
     assertPageExportInvariant,
     assertPageUnitInvariant,
 } from "../http/invariants.js";
@@ -369,7 +369,7 @@ export async function runIt06Module(ctx: RunCtx): Promise<void> {
 
     // ---------- final ----------
 
-    await assertChapterPageCountersConsistent(ctx.sadmin, mainChapterId);
+    await assertChapterPageCountMetricsConsistent(ctx.sadmin, mainChapterId);
 
     const mainFinal = await getChapter(ctx.sadmin, mainChapterId);
 

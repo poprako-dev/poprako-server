@@ -44,7 +44,7 @@ pub async fn team_roundtrip_uses_testcontainer(shared: RdbCore) {
     let team_info_list_spec = TeamListSpec {
         user_id: None,
         offset: 0,
-        limit: 10,
+        limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     };
 
     let team_infos = repo

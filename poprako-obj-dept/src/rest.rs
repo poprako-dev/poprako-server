@@ -26,6 +26,12 @@ pub enum ObjDeptError {
         message: String,
     },
 
+    /// A temporarily unavailable dependency can be retried later.
+    Unavailable {
+        /// Safe diagnostic for the unavailable dependency.
+        message: String,
+    },
+
     /// Corrupt state or a permanent dependency failure requires intervention.
     Unrecoverable {
         /// Safe diagnostic for the unrecoverable failure.
@@ -42,6 +48,7 @@ impl Display for ObjDeptError {
             Self::Invalid { message }
             | Self::Conflict { message }
             | Self::Retryable { message }
+            | Self::Unavailable { message }
             | Self::Unrecoverable { message } => message,
         };
 

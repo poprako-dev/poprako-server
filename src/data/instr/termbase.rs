@@ -7,6 +7,8 @@ use serde::Deserialize;
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
+use crate::value::pagination::PubListLimit;
+
 /// Input parameters for creating a terminology base.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
@@ -50,7 +52,7 @@ pub struct ListTeamTermbaseInfosInstr {
     /// Pagination offset.
     pub offset: u32,
     /// Maximum number of results per page.
-    pub limit: u32,
+    pub limit: PubListLimit,
 }
 
 /// Input parameters for listing terminology bases visible from a comic.
@@ -66,5 +68,5 @@ pub struct ListComicTermbaseInfosInstr {
     /// Pagination offset.
     pub offset: u32,
     /// Maximum number of results per page.
-    pub limit: u32,
+    pub limit: PubListLimit,
 }

@@ -11,6 +11,7 @@ use poprako_util::i18n::trl;
 use crate::api::http::result::HttpError;
 use crate::model::shared::user::UserToken;
 use crate::result::ExpectedVariant;
+use crate::value::pagination::PubListLimit;
 
 /// Pagination query parameters for nested list endpoints where the parent id
 /// is carried by the path.
@@ -22,7 +23,7 @@ pub struct Pagination {
     /// Zero-based offset for paginated results.
     pub offset: u32,
     /// Maximum number of items to return.
-    pub limit: u32,
+    pub limit: PubListLimit,
 }
 
 /// Ensures a path id matches the body id, returning `422` on mismatch.

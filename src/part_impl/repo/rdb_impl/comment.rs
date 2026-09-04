@@ -40,7 +40,7 @@ async fn list_infos(
         .select(CommentInfoRow::as_select())
         .order_by(f_created_at.desc())
         .offset(i64::from(spec.offset))
-        .limit(i64::from(spec.limit))
+        .limit(i64::from(spec.limit.get()))
         .load::<CommentInfoRow>(conn)
         .await
         .map_err(diesel)?;
@@ -86,7 +86,7 @@ impl Run<ListCommentInfos<'_>> for HybRepo {
         &self,
         oper: &ListCommentInfos<'_>,
     ) -> BaseRest<Vec<CommentInfo>> {
-        submit_query!(self.core, list_infos, oper.spec)
+        submit_query!(self.rdb_core, list_infos, oper.spec)
     }
 }
 
@@ -97,6 +97,6 @@ impl Run<CreateComment<'_>> for HybRepo {
     // Creates a comment independently.
     #[instrument(level = "info", skip_all)]
     async fn run(&self, oper: &CreateComment<'_>) -> BaseRest<CommentInfo> {
-        submit_query!(self.core, create, oper.entry)
+        submit_query!(self.rdb_core, create, oper.entry)
     }
 }

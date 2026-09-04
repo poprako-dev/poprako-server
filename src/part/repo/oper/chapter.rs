@@ -1,6 +1,6 @@
 use poprako_orchestra::Oper;
 
-use crate::model::read::proj::chapter::ChapterInfo;
+use crate::model::read::proj::chapter::{ChapterInfo, ChapterUnitEditScope};
 use crate::model::read::proj::unit::UnitCountDelta;
 use crate::model::read::spec::chapter::ChapterListSpec;
 use crate::model::write::chapter::{
@@ -37,6 +37,14 @@ pub struct GetChapterInfoExcluded<'a, 'b> {
     pub id: &'a str,
     /// Chapter inclusion options.
     pub incls: &'b [ChapterInclOpt],
+}
+
+/// Locks the minimal Chapter edit scope resolved from a Page ID.
+#[derive(Oper)]
+#[oper(output = ChapterUnitEditScope)]
+pub struct GetChapterUnitEditScopeExcluded<'a> {
+    /// Page whose owning Chapter must be locked.
+    pub page_id: &'a str,
 }
 
 /// Lists chapter infos selected by a query specification.
@@ -79,7 +87,7 @@ pub struct FindPinnedChapterInfo<'a, 'b> {
 #[oper(output = Vec<ChapterInfo>)]
 pub struct ListPinnedChapterInfos<'a> {
     /// Comic identifiers.
-    pub comic_ids: &'a [String],
+    pub comic_ids: &'a [&'a str],
 }
 
 /// Updates a chapter's fields.
@@ -119,18 +127,10 @@ pub struct CompleteChapterRawProvide<'a> {
     pub id: &'a str,
 }
 
-/// Clears raw-provision completion without changing any other stage.
-#[derive(Oper)]
-#[oper(output = ())]
-pub struct ResetChapterRawProvide<'a> {
-    /// Chapter identifier.
-    pub id: &'a str,
-}
-
 /// Sets all page and unit counters for a chapter.
 #[derive(Oper)]
 #[oper(output = ())]
-pub struct SetChapterPageCounters<'a> {
+pub struct SetChapterPageCountMetrics<'a> {
     //
     /// Chapter identifier.
     pub id: &'a str,
@@ -147,7 +147,7 @@ pub struct SetChapterPageCounters<'a> {
 /// Adjusts the unit counters for a chapter by a delta.
 #[derive(Oper)]
 #[oper(output = ())]
-pub struct AdjustChapterUnitCounters<'a> {
+pub struct AdjustChapterUnitCountDelta<'a> {
     //
     /// Chapter identifier.
     pub id: &'a str,
@@ -164,12 +164,4 @@ pub struct UnpinOtherChapters<'a> {
     pub comic_id: &'a str,
     /// Chapter identifier to exclude from unpinning.
     pub excluded_id: &'a str,
-}
-
-/// Deletes a chapter.
-#[derive(Oper)]
-#[oper(output = ())]
-pub struct DeleteChapter<'a> {
-    /// Chapter identifier.
-    pub id: &'a str,
 }

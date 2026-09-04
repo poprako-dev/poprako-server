@@ -68,7 +68,7 @@ pub async fn announcement_roundtrip_uses_testcontainer(shared: RdbCore) {
         team_id: team_fixture.team_entry.id.clone(),
         incl_opt: vec![AnnouncementInclOpt::User],
         offset: 0,
-        limit: 10,
+        limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     };
 
     let announcement_infos = repo

@@ -1,6 +1,9 @@
 use poprako_orchestra::{Context, Level, Oper, Run, Step};
 
 #[cfg(feature = "rdb_impl")]
+use poprako_rdb_core::RdbError;
+
+#[cfg(feature = "rdb_impl")]
 use crate::actor::rdb_impl::{
     ObjKeyState, classify, presence_cas_conflict_requires_retry,
     requires_presence_reconciliation,
@@ -285,7 +288,7 @@ fn task_envelope_accepts_consistent_fields() {
 }
 
 #[test]
-fn task_envelope_rejects_invalid_identity_and_counters() {
+fn task_envelope_rejects_invalid_identity_and_counts() {
     let mut wrong_id = task();
 
     wrong_id.id = "wrong".into();
@@ -331,6 +334,14 @@ fn concurrent_mark_after_absent_head_retries_presence_reconciliation() {
 #[test]
 fn newer_generation_after_head_does_not_retry_old_presence_update() {
     assert!(!presence_cas_conflict_requires_retry(ObjKeyState::Stale));
+}
+
+#[cfg(feature = "rdb_impl")]
+#[test]
+fn rdb_pool_wait_timeout_preserves_unavailable_classification() {
+    let error = crate::rdb_impl::rdb_err(RdbError::PoolWaitTimeout);
+
+    assert!(matches!(error, ObjDeptError::Unavailable { .. }));
 }
 
 #[cfg(feature = "rdb_impl")]

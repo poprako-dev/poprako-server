@@ -173,8 +173,8 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::workset::delete::<_, RdbContext<Serial>, HybRepo, _>(
-        (harn.nucl().serial(), harn.repo(), harn.obj_dept()),
+    usecase::workset::delete::<_, RdbContext<Serial>, HybRepo>(
+        (harn.nucl().serial(), harn.repo()),
         user_token,
         workset_id,
     )

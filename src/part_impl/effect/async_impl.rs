@@ -1,13 +1,9 @@
 //! Async background dispatcher for side-effect events.
 
-// Chapter event actors.
-mod chapter;
-// Event dispatch logic.
-mod dispatch;
 // Background event actor runner.
 mod actor;
-// User event actors.
-mod user;
+// Maps delivered events to domain use cases.
+mod dispatch;
 
 #[cfg(test)]
 // Mock and integration tests for async dispatcher behavior.

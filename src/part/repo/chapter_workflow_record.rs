@@ -3,8 +3,7 @@
 use poprako_orchestra::drive;
 
 use crate::part::repo::oper::chapter_workflow_record::{
-    CreateChapterWorkflowRecords, DeleteChapterWorkflowRecords,
-    ListChapterWorkflowRecordInfos, ListChapterWorkflowRecordInfosExcluded,
+    CreateChapterWorkflowRecords, ListChapterWorkflowRecordInfos,
 };
 use crate::result::BaseError;
 
@@ -13,10 +12,6 @@ use crate::result::BaseError;
     context = C,
     error = BaseError,
     run(for<'a> ListChapterWorkflowRecordInfos<'a>),
-    step(
-        for<'a> CreateChapterWorkflowRecords<'a>,
-        for<'a> ListChapterWorkflowRecordInfosExcluded<'a>,
-        for<'a> DeleteChapterWorkflowRecords<'a>,
-    ),
+    step(for<'a> CreateChapterWorkflowRecords<'a>),
 )]
 pub trait ChapterWorkflowRecordRepo<C> {}

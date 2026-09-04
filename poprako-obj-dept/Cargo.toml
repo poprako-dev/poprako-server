@@ -25,6 +25,6 @@ poprako-rdb-core = { path = "../poprako-rdb-core", optional = true }
 serde = { version = "1.0.228", features = ["derive"] }
 time = "0.3.47"
 tracing = "0.1.44"
-tokio = { version = "1.52.1", features = ["macros", "rt", "sync", "time"] }
+tokio = { version = "1.52.1", features = ["macros", "rt", "sync", "test-util", "time"] }
 tokio-util = { version = "0.7.18", features = ["rt"] }
 url = "2.5.8"

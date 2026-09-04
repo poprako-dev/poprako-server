@@ -61,9 +61,14 @@ impl UnitInfo {
     /// Reports whether this Unit has usable translation or revision text.
     pub fn is_translated(&self) -> bool {
         //
-        has_text(self.translated_text.as_deref())
-            || has_text(self.proofread_text.as_deref())
+        has_unit_text(self.translated_text.as_deref())
+            || has_unit_text(self.proofread_text.as_deref())
     }
+}
+
+/// Reports whether an optional Unit text contains non-whitespace content.
+pub fn has_unit_text(text: Option<&str>) -> bool {
+    text.is_some_and(|value| !value.trim().is_empty())
 }
 
 /// Unit counters stored on a Page and its Chapter.
@@ -103,12 +108,6 @@ pub struct UnitCountDelta {
     pub translated: i32,
     /// Visible proofread Unit count change.
     pub proofread: i32,
-}
-
-// Reports whether a text field contains non-whitespace content.
-fn has_text(text: Option<&str>) -> bool {
-    // Ignore purely-whitespace values so counters only count usable content.
-    text.is_some_and(|value| !value.trim().is_empty())
 }
 
 // Convert a unit count into the signed representation used by counter deltas.

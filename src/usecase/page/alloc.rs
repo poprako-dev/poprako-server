@@ -39,7 +39,7 @@ use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
 use crate::part::repo::oper::chapter::{
-    GetChapterInfoExcluded, SetChapterPageCounters,
+    GetChapterInfoExcluded, SetChapterPageCountMetrics,
 };
 use crate::part::repo::oper::comic::TouchComicLastActive;
 use crate::part::repo::oper::page::{
@@ -255,7 +255,7 @@ where
 
     let existing_page_ids = existing_page_infos
         .iter()
-        .map(|page_info| page_info.id.clone())
+        .map(|page_info| page_info.id.as_str())
         .collect::<Vec<_>>();
 
     let existing_obj_metas = ListObjMetas::<PageImage>::new(&existing_page_ids)
@@ -363,7 +363,7 @@ where
         .iter()
         .zip(page_specs)
         .filter(|(_, page_spec)| page_spec.new_byte_len.is_none())
-        .map(|(manifest_entry, _)| manifest_entry.id.clone())
+        .map(|(manifest_entry, _)| manifest_entry.id.as_str())
         .collect::<Vec<_>>();
 
     let retained_obj_metas = ListObjMetas::<PageImage>::new(&retained_page_ids)
@@ -451,9 +451,9 @@ where
     .await?;
 
     let (total_unit_count, translated_unit_count, proofread_unit_count) =
-        page_counters(&existing_page_infos, &retained_ids);
+        page_count_metrics(&existing_page_infos, &retained_ids);
 
-    SetChapterPageCounters {
+    SetChapterPageCountMetrics {
         id: &chapter_info.id,
         page_count,
         total_unit_count,
@@ -551,7 +551,7 @@ fn ensure_retained_obj(
 }
 
 // Sums unit counters retained by the new manifest.
-fn page_counters(
+fn page_count_metrics(
     page_infos: &[PageInfo],
     retained_ids: &HashSet<&str>,
 ) -> (usize, usize, usize) {
@@ -559,12 +559,12 @@ fn page_counters(
     page_infos
         .iter()
         .filter(|page_info| retained_ids.contains(page_info.id.as_str()))
-        .fold((0, 0, 0), |counters, page_info| {
+        .fold((0, 0, 0), |count_metrics, page_info| {
             //
             (
-                counters.0 + page_info.total_unit_count,
-                counters.1 + page_info.translated_unit_count,
-                counters.2 + page_info.proofread_unit_count,
+                count_metrics.0 + page_info.total_unit_count,
+                count_metrics.1 + page_info.translated_unit_count,
+                count_metrics.2 + page_info.proofread_unit_count,
             )
         })
 }

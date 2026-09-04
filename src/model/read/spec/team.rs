@@ -1,5 +1,7 @@
 //! Domain models for team profile storage.
 
+use crate::value::pagination::PubListLimit;
+
 /// Filtering and pagination parameters for listing teams.
 pub struct TeamListSpec {
     //
@@ -9,5 +11,5 @@ pub struct TeamListSpec {
     /// Number of records to skip for pagination.
     pub offset: u32,
     /// Maximum number of records to return in this page.
-    pub limit: u32,
+    pub limit: PubListLimit,
 }

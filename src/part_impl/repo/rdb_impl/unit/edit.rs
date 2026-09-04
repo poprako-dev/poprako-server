@@ -1,257 +1,55 @@
 //! RDB-backed Unit edit application and sequence mutation.
 
-use std::collections::HashSet;
+use std::collections::BTreeMap;
 
+use diesel::expression::functions::declare_sql_function;
+use diesel::expression_methods::NullableExpressionMethods as _;
+use diesel::pg::Pg;
 use diesel::prelude::{ExpressionMethods as _, QueryDsl as _};
+use diesel::sql_types::{Bool, Double, Nullable, Text, Timestamptz};
+use diesel::{
+    AggregateExpressionMethods as _, BoolExpressionMethods as _,
+    BoxableExpression,
+};
 use diesel_async::RunQueryDsl as _;
+use time::OffsetDateTime;
 use tracing::instrument;
 
 use poprako_rdb_core::RdbConn;
-use poprako_util::i18n::trl;
 
-use crate::model::read::proj::unit::{UnitCountMetrics, UnitInfo, UnitOrder};
+use crate::complex::unit::UnitComplex;
+use crate::model::read::proj::unit::{UnitCountMetrics, UnitOrder};
 use crate::model::write::unit::UnitEdit;
 use crate::part_impl::repo::rdb_impl::entity::unit::{
     UnitAspectRow, UnitEntryRow,
 };
+use crate::part_impl::repo::rdb_impl::numeric::usize_from_i64;
+use crate::part_impl::repo::rdb_impl::schema::t_unit;
 use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{
-    f_id, f_page_id, t_unit,
+    f_hidden_at, f_id, f_is_bubble, f_is_proofread, f_last_proofreader_id,
+    f_last_translator_id, f_next_id, f_page_id, f_proofread_text,
+    f_translated_text, f_updated_at, f_x_coord, f_y_coord,
+    t_unit as unit_table,
 };
-use crate::part_impl::repo::rdb_impl::unit::sequence::list_infos;
-use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
+use crate::result::{BaseError, BaseRest, accept};
 use crate::shared::result::diesel;
-use crate::util::Patch;
-use crate::value::unit::MAX_PAGE_UNIT_COUNT;
 
-/// Finds the position of an ID in the ordered list.
-pub fn find_order_pos(ordered_ids: &[&str], id: &str) -> Option<usize> {
-    //
-    ordered_ids
-        .iter()
-        .enumerate()
-        .find_map(|(pos, cand)| (*cand == id).then_some(pos))
+#[declare_sql_function]
+extern "SQL" {
+    /// `PostgreSQL` text trim with an explicit character set.
+    // PostgreSQL text trim with an explicit character set.
+    fn btrim(string: Nullable<Text>, characters: Text) -> Nullable<Text>;
 }
 
-/// Moves an ID to a new position by assigning its requested successor.
-pub fn move_order<'a>(
-    ordered_ids: &mut Vec<&'a str>,
-    id: &'a str,
-    next_id: Option<&str>,
-) -> BaseRest<()> {
-    //
-    let Some(pos) = find_order_pos(ordered_ids, id) else {
-        //
-        let err_message = trl("error-invalid-unit-oper");
+// `char::is_whitespace` code points accepted by Unit text semantics.
+const UNIT_TEXT_WHITESPACE: &str = "\u{0009}\u{000A}\u{000B}\u{000C}\u{000D}\u{0020}\u{0085}\u{00A0}\u{1680}\u{2000}\u{2001}\u{2002}\u{2003}\u{2004}\u{2005}\u{2006}\u{2007}\u{2008}\u{2009}\u{200A}\u{2028}\u{2029}\u{202F}\u{205F}\u{3000}";
 
-        tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
-            err_message = %err_message,
-            unit_id = %id,
-            next_unit_id = ?next_id,
-            order_count = ordered_ids.len(),
-            operation = "move",
-            stage = "move_order",
-            "expected error: invalid unit operation",
-        );
+// A boxed, table-scoped Diesel expression used to build typed CASE trees.
+type UnitExpr<'a, SqlType> =
+    Box<dyn BoxableExpression<t_unit::table, Pg, SqlType = SqlType> + 'a>;
 
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message: err_message,
-        });
-    };
-
-    let next_pos = match next_id {
-        //
-        Some(next_id) => {
-            //
-            let next_pos = ordered_ids.iter().enumerate().find_map(
-                |(cand_pos, cand_id)| {
-                    (cand_pos != pos && *cand_id == next_id).then_some(cand_pos)
-                },
-            );
-
-            let Some(next_pos) = next_pos else {
-                //
-                let err_message = trl("error-invalid-unit-oper");
-
-                tracing::warn!(
-                    error_variant = ?ExpectedVariant::Args,
-                    err_message = %err_message,
-                    unit_id = %id,
-                    next_unit_id = %next_id,
-                    order_count = ordered_ids.len(),
-                    operation = "move",
-                    stage = "move_order",
-                    "expected error: invalid unit operation",
-                );
-
-                return Err(BaseError::Expected {
-                    variant: ExpectedVariant::Args,
-                    message: err_message,
-                });
-            };
-
-            Some(next_pos)
-        }
-
-        None => None,
-    };
-
-    debug_assert!(pos < ordered_ids.len(), "the located Unit must exist");
-
-    let moved_id = ordered_ids.remove(pos);
-
-    debug_assert_eq!(moved_id, id, "the located Unit must match the move ID");
-
-    let insert_pos = next_pos.map_or(ordered_ids.len(), |next_pos| {
-        //
-        debug_assert_ne!(
-            next_pos, pos,
-            "a Unit cannot use itself as its successor"
-        );
-
-        next_pos.saturating_sub(usize::from(next_pos > pos))
-    });
-
-    debug_assert!(
-        insert_pos <= ordered_ids.len(),
-        "the insertion position must remain inside the Unit sequence"
-    );
-
-    ordered_ids.insert(insert_pos, moved_id);
-
-    accept(())
-}
-
-/// Applies normalized Unit edits to produce the final ordered ID list.
-pub fn apply_order_edits<'a>(
-    orders: &'a [UnitOrder],
-    edits: &'a [UnitEdit],
-) -> BaseRest<Vec<&'a str>> {
-    //
-    let mut ordered_ids = orders
-        .iter()
-        .map(|order| order.id.as_str())
-        .collect::<Vec<_>>();
-
-    let mut hidden_ids = orders
-        .iter()
-        .filter(|order| order.is_hidden)
-        .map(|order| order.id.as_str())
-        .collect::<HashSet<_>>();
-
-    for edit in edits {
-        //
-        let UnitEdit::Create { id, .. } = edit else {
-            continue;
-        };
-
-        if find_order_pos(&ordered_ids, id).is_some() {
-            //
-            let err_message = trl("error-invalid-unit-oper");
-
-            tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
-                err_message = %err_message,
-                unit_id = %id,
-                existing_order_count = ordered_ids.len(),
-                operation = "create",
-                stage = "apply_order_edits",
-                "expected error: invalid unit operation",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message: err_message,
-            });
-        }
-
-        ordered_ids.push(id);
-
-        hidden_ids.remove(id.as_str());
-    }
-
-    for edit in edits {
-        //
-        match edit {
-            //
-            UnitEdit::Create { id, next_id, .. } => {
-                move_order(&mut ordered_ids, id, next_id.as_deref())?;
-            }
-
-            UnitEdit::Save { id, next_id, .. } => {
-                //
-                hidden_ids.remove(id.as_str());
-
-                match next_id {
-                    //
-                    Patch::Skip => {}
-
-                    Patch::Clear => {
-                        move_order(&mut ordered_ids, id, None)?;
-                    }
-
-                    Patch::Assign { value: next_id } => {
-                        move_order(&mut ordered_ids, id, Some(next_id))?;
-                    }
-                }
-            }
-
-            UnitEdit::Delete { id } => {
-                hidden_ids.insert(id);
-            }
-        }
-    }
-
-    let visible_count = ordered_ids
-        .iter()
-        .filter(|id| !hidden_ids.contains(**id))
-        .count();
-
-    if visible_count > MAX_PAGE_UNIT_COUNT {
-        //
-        let err_message = trl("error-invalid-unit-oper");
-
-        tracing::warn!(
-            error_variant = ?ExpectedVariant::Args,
-            err_message = %err_message,
-            visible_count,
-            max_visible_count = MAX_PAGE_UNIT_COUNT,
-            operation = "reorder",
-            stage = "apply_order_edits",
-            "expected error: invalid unit operation",
-        );
-
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message: err_message,
-        });
-    }
-
-    accept(ordered_ids)
-}
-
-/// Computes visible Unit counters from the ordered Unit info list.
-pub fn count_infos(unit_infos: &[UnitInfo]) -> UnitCountMetrics {
-    //
-    unit_infos
-        .iter()
-        .filter(|unit_info| unit_info.hidden_at.is_none())
-        .fold(UnitCountMetrics::default(), |mut counters, unit_info| {
-            //
-            counters.total += 1;
-
-            if unit_info.is_translated() {
-                counters.translated += 1;
-            }
-
-            if unit_info.is_proofread {
-                counters.proofread += 1;
-            }
-
-            counters
-        })
-}
+// Existing Unit mutations keyed in deterministic ID order.
+type UnitChanges<'a> = BTreeMap<&'a str, UnitAspectRow<'a>>;
 
 /// Applies normalized Unit edits and returns the latest visible counters.
 #[instrument(level = "info", skip_all)]
@@ -262,167 +60,350 @@ pub async fn apply_edits(
     edits: &[UnitEdit],
 ) -> BaseRest<UnitCountMetrics> {
     //
-    let ordered_ids = apply_order_edits(orders, edits)?;
+    let edit_plan = UnitComplex::plan_edit_sequence(orders, edits)?;
 
-    apply_edit_rows(conn, page_id, edits).await?;
+    let mut create_entries = Vec::new();
 
-    apply_order_rows(conn, page_id, orders, &ordered_ids).await?;
-
-    let unit_infos = list_infos(conn, page_id).await?;
-
-    accept(count_infos(&unit_infos))
-}
-
-// Persist Unit creation, deletion, and content changes in request order.
-async fn apply_edit_rows(
-    conn: &mut RdbConn,
-    page_id: &str,
-    edits: &[UnitEdit],
-) -> BaseRest<()> {
-    //
     for edit in edits {
         //
-        let (id, operation, affected) = match edit {
+        let UnitEdit::Create { id, .. } = edit else {
+            continue;
+        };
+
+        let next_id = edit_plan.next_id(id)?;
+
+        let Some(create_entry) =
+            UnitEntryRow::from_edit(page_id, edit, next_id)
+        else {
+            return Err(invalid_unit_edit_plan_err());
+        };
+
+        create_entries.push(create_entry);
+    }
+
+    apply_create_rows(conn, page_id, &create_entries).await?;
+
+    let mut changes = UnitChanges::new();
+
+    for edit in edits {
+        //
+        let (id, change) = match edit {
             //
-            UnitEdit::Create { id, .. } => {
+            UnitEdit::Save { id, .. } => {
                 //
-                let Some(entry) = UnitEntryRow::from_edit(page_id, edit) else {
-                    //
-                    let err_message = trl("error-invalid-unit-oper");
+                let next_id = edit_plan.next_id(id)?;
 
-                    tracing::warn!(
-                        error_variant = ?ExpectedVariant::Args,
-                        err_message = %err_message,
-                        page_id = %page_id,
-                        unit_id = %id,
-                        operation = "create",
-                        stage = "apply_edits",
-                        "expected error: invalid unit operation",
-                    );
-
-                    return Err(BaseError::Expected {
-                        variant: ExpectedVariant::Args,
-                        message: err_message,
-                    });
-                };
-
-                diesel::insert_into(t_unit)
-                    .values(entry)
-                    .execute(conn)
-                    .await
-                    .map_err(diesel)?;
-
-                (id, "create", None)
+                (
+                    id.as_str(),
+                    UnitAspectRow::new().order(next_id).apply_edit(edit),
+                )
             }
 
             UnitEdit::Delete { id } => {
-                //
-                let affected = diesel::update(
-                    t_unit.filter(f_page_id.eq(page_id)).filter(f_id.eq(id)),
-                )
-                .set(UnitAspectRow::new().hide())
-                .execute(conn)
-                .await
-                .map_err(diesel)?;
-
-                (id, "delete", Some(affected))
+                (id.as_str(), UnitAspectRow::new().hide())
             }
 
-            UnitEdit::Save { id, .. } => {
-                //
-                let affected = diesel::update(
-                    t_unit.filter(f_page_id.eq(page_id)).filter(f_id.eq(id)),
-                )
-                .set(UnitAspectRow::new().apply_edit(edit))
-                .execute(conn)
-                .await
-                .map_err(diesel)?;
-
-                (id, "save", Some(affected))
-            }
+            UnitEdit::Create { .. } => continue,
         };
 
-        let Some(affected) = affected else {
-            continue;
-        };
-
-        if affected != 1 {
-            //
-            let err_message = trl("error-invalid-unit-oper");
-
-            tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
-                err_message = %err_message,
-                page_id = %page_id,
-                unit_id = %id,
-                operation,
-                affected,
-                stage = "apply_edits",
-                "expected error: invalid unit operation",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message: err_message,
-            });
+        if changes.insert(id, change).is_some() {
+            return Err(invalid_unit_edit_plan_err());
         }
     }
 
-    accept(())
-}
-
-// Persist successor changes needed by the final normalized Unit order.
-async fn apply_order_rows(
-    conn: &mut RdbConn,
-    page_id: &str,
-    orders: &[UnitOrder],
-    ordered_ids: &[&str],
-) -> BaseRest<()> {
-    //
-    for (index, id) in ordered_ids.iter().enumerate() {
+    for successor_change in edit_plan.changed_successors() {
         //
-        let next_id = ordered_ids.get(index + 1).copied();
+        if let Some(change) = changes.get_mut(successor_change.id()) {
+            //
+            change.f_next_id = Some(successor_change.next_id());
 
-        let unchanged = orders
-            .iter()
-            .find(|order| order.id == **id)
-            .is_some_and(|order| order.next_id.as_deref() == next_id);
-
-        if unchanged {
             continue;
         }
 
-        let affected = diesel::update(
-            t_unit.filter(f_page_id.eq(page_id)).filter(f_id.eq(*id)),
-        )
-        .set(UnitAspectRow::new().order(next_id))
+        let change = UnitAspectRow::new().order(successor_change.next_id());
+
+        changes.insert(successor_change.id(), change);
+    }
+
+    apply_update_rows(conn, page_id, &changes).await?;
+
+    count_visible_units(conn, page_id).await
+}
+
+// Reports an impossible mismatch between normalized edits and their plan.
+fn invalid_unit_edit_plan_err() -> BaseError {
+    //
+    tracing::error!(
+        "unrecoverable error: normalized Unit edits disagree with edit plan"
+    );
+
+    BaseError::Unrecoverable {
+        message: "normalized Unit edits disagree with edit plan".into(),
+    }
+}
+
+// Insert an exact Unit row set in one statement.
+async fn apply_create_rows(
+    conn: &mut RdbConn,
+    page_id: &str,
+    entries: &[UnitEntryRow<'_>],
+) -> BaseRest<()> {
+    //
+    if entries.is_empty() {
+        return accept(());
+    }
+
+    let affected = diesel::insert_into(unit_table)
+        .values(entries)
         .execute(conn)
         .await
         .map_err(diesel)?;
 
-        if affected != 1 {
-            //
-            let err_message = trl("error-invalid-unit-oper");
+    ensure_affected(page_id, "batch", "create", affected, entries.len())
+}
 
-            tracing::warn!(
-                error_variant = ?ExpectedVariant::Args,
-                err_message = %err_message,
-                page_id = %page_id,
-                unit_id = %id,
-                index,
-                next_unit_id = ?next_id,
-                operation = "reorder",
-                affected,
-                stage = "apply_edits",
-                "expected error: invalid unit operation",
-            );
-
-            return Err(BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message: err_message,
-            });
-        }
+// Applies every existing-row mutation through one typed CASE update.
+async fn apply_update_rows(
+    conn: &mut RdbConn,
+    page_id: &str,
+    changes: &UnitChanges<'_>,
+) -> BaseRest<()> {
+    //
+    if changes.is_empty() {
+        return accept(());
     }
 
-    accept(())
+    let ids = changes.keys().copied().collect::<Vec<_>>();
+
+    let next_id_case =
+        nullable_text_case(changes, Box::new(f_next_id), |change| {
+            change.f_next_id
+        });
+
+    let hidden_at_case =
+        nullable_timestamp_case(changes, Box::new(f_hidden_at), |change| {
+            change.f_hidden_at
+        });
+
+    let is_bubble_case =
+        bool_case(changes, Box::new(f_is_bubble), |change| change.f_is_bubble);
+
+    let is_proofread_case =
+        bool_case(changes, Box::new(f_is_proofread), |change| {
+            change.f_is_proofread
+        });
+
+    let x_coord_case =
+        double_case(changes, Box::new(f_x_coord), |change| change.f_x_coord);
+
+    let y_coord_case =
+        double_case(changes, Box::new(f_y_coord), |change| change.f_y_coord);
+
+    let translated_text_case =
+        nullable_text_case(changes, Box::new(f_translated_text), |change| {
+            change.f_translated_text
+        });
+
+    let translator_id_case =
+        nullable_text_case(changes, Box::new(f_last_translator_id), |change| {
+            change.f_last_translator_id
+        });
+
+    let proofread_text_case =
+        nullable_text_case(changes, Box::new(f_proofread_text), |change| {
+            change.f_proofread_text
+        });
+
+    let proofreader_id_case = nullable_text_case(
+        changes,
+        Box::new(f_last_proofreader_id),
+        |change| change.f_last_proofreader_id,
+    );
+
+    let updated_at = OffsetDateTime::now_utc();
+
+    let affected = diesel::update(
+        unit_table
+            .filter(f_page_id.eq(page_id))
+            .filter(f_id.eq_any(&ids)),
+    )
+    .set((
+        f_next_id.eq(next_id_case),
+        f_hidden_at.eq(hidden_at_case),
+        f_is_bubble.eq(is_bubble_case),
+        f_is_proofread.eq(is_proofread_case),
+        f_x_coord.eq(x_coord_case),
+        f_y_coord.eq(y_coord_case),
+        f_translated_text.eq(translated_text_case),
+        f_last_translator_id.eq(translator_id_case),
+        f_proofread_text.eq(proofread_text_case),
+        f_last_proofreader_id.eq(proofreader_id_case),
+        f_updated_at.eq(updated_at),
+    ))
+    .execute(conn)
+    .await
+    .map_err(diesel)?;
+
+    ensure_affected(page_id, "batch", "update", affected, changes.len())
+}
+
+// Aggregates visible Unit counters inside PostgreSQL.
+async fn count_visible_units(
+    conn: &mut RdbConn,
+    page_id: &str,
+) -> BaseRest<UnitCountMetrics> {
+    //
+    let has_translation = btrim(f_translated_text, UNIT_TEXT_WHITESPACE).ne("");
+
+    let has_revision = btrim(f_proofread_text, UNIT_TEXT_WHITESPACE).ne("");
+
+    let (total, translated, proofread) = unit_table
+        .filter(f_page_id.eq(page_id))
+        .filter(f_hidden_at.is_null())
+        .select((
+            diesel::dsl::count_star(),
+            diesel::dsl::count(f_id).aggregate_filter(
+                has_translation.or(has_revision).assume_not_null(),
+            ),
+            diesel::dsl::count(f_id).aggregate_filter(f_is_proofread),
+        ))
+        .get_result::<(i64, i64, i64)>(conn)
+        .await
+        .map_err(diesel)?;
+
+    accept(UnitCountMetrics {
+        total: usize_from_i64(total, "count visible Units")?,
+        translated: usize_from_i64(
+            translated,
+            "count translated visible Units",
+        )?,
+        proofread: usize_from_i64(proofread, "count proofread visible Units")?,
+    })
+}
+
+// Reject an invariant-breaking affected-row count.
+fn ensure_affected(
+    page_id: &str,
+    unit_id: &str,
+    operation: &str,
+    affected: usize,
+    expected: usize,
+) -> BaseRest<()> {
+    //
+    if affected == expected {
+        return accept(());
+    }
+
+    tracing::error!(
+        page_id,
+        unit_id,
+        operation,
+        affected,
+        expected,
+        stage = "apply_edits",
+        "unrecoverable error: Unit batch affected an unexpected row count",
+    );
+
+    Err(BaseError::Unrecoverable {
+        message: "Unit batch affected an unexpected row count".into(),
+    })
+}
+
+// Builds a typed nullable-text CASE expression for one column.
+fn nullable_text_case<'a, F>(
+    changes: &'a UnitChanges<'a>,
+    mut expr: UnitExpr<'a, Nullable<Text>>,
+    field: F,
+) -> UnitExpr<'a, Nullable<Text>>
+where
+    F: Fn(&UnitAspectRow<'a>) -> Option<Option<&'a str>>,
+{
+    for (id, change) in changes {
+        //
+        let Some(value) = field(change) else {
+            continue;
+        };
+
+        expr = Box::new(
+            diesel::dsl::case_when::<_, _, Nullable<Text>>(f_id.eq(*id), value)
+                .otherwise(expr),
+        );
+    }
+
+    expr
+}
+
+// Builds a typed nullable-timestamp CASE expression for one column.
+fn nullable_timestamp_case<'a, F>(
+    changes: &'a UnitChanges<'a>,
+    mut expr: UnitExpr<'a, Nullable<Timestamptz>>,
+    field: F,
+) -> UnitExpr<'a, Nullable<Timestamptz>>
+where
+    F: Fn(&UnitAspectRow<'a>) -> Option<Option<OffsetDateTime>>,
+{
+    for (id, change) in changes {
+        //
+        let Some(value) = field(change) else {
+            continue;
+        };
+
+        expr = Box::new(
+            diesel::dsl::case_when::<_, _, Nullable<Timestamptz>>(
+                f_id.eq(*id),
+                value,
+            )
+            .otherwise(expr),
+        );
+    }
+
+    expr
+}
+
+// Builds a typed boolean CASE expression for one column.
+fn bool_case<'a, F>(
+    changes: &'a UnitChanges<'a>,
+    mut expr: UnitExpr<'a, Bool>,
+    field: F,
+) -> UnitExpr<'a, Bool>
+where
+    F: Fn(&UnitAspectRow<'a>) -> Option<bool>,
+{
+    for (id, change) in changes {
+        //
+        let Some(value) = field(change) else {
+            continue;
+        };
+
+        expr = Box::new(
+            diesel::dsl::case_when::<_, _, Bool>(f_id.eq(*id), value)
+                .otherwise(expr),
+        );
+    }
+
+    expr
+}
+
+// Builds a typed double-precision CASE expression for one column.
+fn double_case<'a, F>(
+    changes: &'a UnitChanges<'a>,
+    mut expr: UnitExpr<'a, Double>,
+    field: F,
+) -> UnitExpr<'a, Double>
+where
+    F: Fn(&UnitAspectRow<'a>) -> Option<f64>,
+{
+    for (id, change) in changes {
+        //
+        let Some(value) = field(change) else {
+            continue;
+        };
+
+        expr = Box::new(
+            diesel::dsl::case_when::<_, _, Double>(f_id.eq(*id), value)
+                .otherwise(expr),
+        );
+    }
+
+    expr
 }

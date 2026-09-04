@@ -51,7 +51,7 @@ where
 {
     let term_entry = TermComplex::build_entry(
         instr.termbase_id,
-        &instr.source,
+        instr.source,
         instr.targets,
         instr.comment,
         token.user_id.clone(),
@@ -192,7 +192,7 @@ where
 {
     let term_info_update = TermComplex::build_update(
         instr.id,
-        &instr.source,
+        instr.source,
         instr.targets,
         instr.comment,
     )?;

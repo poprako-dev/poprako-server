@@ -57,6 +57,7 @@ async fn resolve_team_id(
         ResolveTeamId::Comic { id } => t_comic::table
             .inner_join(t_workset::table)
             .filter(t_comic::f_id.eq(id))
+            .filter(t_comic::f_deleted_at.is_null())
             .select(t_workset::f_team_id)
             .get_result(conn)
             .await
@@ -66,6 +67,7 @@ async fn resolve_team_id(
         ResolveTeamId::Chapter { id } => t_chapter::table
             .inner_join(t_comic::table.inner_join(t_workset::table))
             .filter(t_chapter::f_id.eq(id))
+            .filter(t_chapter::f_deleted_at.is_null())
             .select(t_workset::f_team_id)
             .get_result(conn)
             .await
@@ -91,7 +93,7 @@ impl Run<ResolveTeamId<'_>> for HybRepo {
         &self,
         oper: &ResolveTeamId<'_>,
     ) -> Result<String, Self::Error> {
-        submit_query!(self.core, resolve_team_id, oper)
+        submit_query!(self.rdb_core, resolve_team_id, oper)
     }
 }
 

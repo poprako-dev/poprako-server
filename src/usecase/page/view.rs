@@ -33,9 +33,9 @@ where
     C: Context,
     O: ObjDeptView<PageImage, C> + Sync,
 {
-    let image_data =
-        load_image_data::<C, O>(obj_dept, std::slice::from_ref(&model.id))
-            .await?;
+    let page_ids = [model.id.as_str()];
+
+    let image_data = load_image_data::<C, O>(obj_dept, &page_ids).await?;
 
     let obj_meta = image_data.obj_metas.get(&model.id);
 
@@ -67,7 +67,7 @@ where
 {
     let page_ids = models
         .iter()
-        .map(|model| model.id.clone())
+        .map(|model| model.id.as_str())
         .collect::<Vec<_>>();
 
     let image_data = load_image_data::<C, O>(obj_dept, &page_ids).await?;
@@ -102,7 +102,7 @@ where
 // Loads one consistent image metadata snapshot and its matching URLs.
 async fn load_image_data<C, O>(
     obj_dept: &O,
-    page_ids: &[String],
+    page_ids: &[&str],
 ) -> BaseRest<PageImageData>
 where
     C: Context,

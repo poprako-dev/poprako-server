@@ -79,22 +79,12 @@ pub enum GetMemberInfo<'a, 'b> {
     },
 }
 
-/// Lists member infos for a user or team with excluded fields omitted.
+/// Locks and lists every member of one active team.
 #[derive(Oper)]
 #[oper(output = Vec<MemberInfo>)]
-pub enum ListMemberInfosExcluded<'a> {
-    //
-    /// Lists memberships for a user with excluded fields omitted.
-    User {
-        /// The user ID.
-        user_id: &'a str,
-    },
-
-    /// Lists members for a team with excluded fields omitted.
-    Team {
-        /// The team ID.
-        team_id: &'a str,
-    },
+pub struct LockTeamMemberInfos<'a> {
+    /// Team whose members must remain locked for the transaction.
+    pub team_id: &'a str,
 }
 
 /// Deletes a member record by ID.
@@ -103,4 +93,12 @@ pub enum ListMemberInfosExcluded<'a> {
 pub struct DeleteMember<'a> {
     /// The member ID to delete.
     pub id: &'a str,
+}
+
+/// Deletes every membership owned by one user, including tombstoned teams.
+#[derive(Oper)]
+#[oper(output = ())]
+pub struct DeleteUserMemberships<'a> {
+    /// User whose memberships must be removed.
+    pub user_id: &'a str,
 }

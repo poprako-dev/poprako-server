@@ -37,6 +37,7 @@ use crate::part::repo::oper::assignment::FindAssignmentInfo;
 use crate::part::repo::oper::assignment_invitation::{
     CreateAssignmentInvitation, DeleteAssignmentInvitations,
     GetAssignmentInvitationInfo, ListAssignmentInvitationInfos,
+    PurgeExpiredAssignmentInvitation,
 };
 use crate::part::repo::oper::chapter::GetChapterInfoExcluded;
 use crate::part::repo::oper::user::FindUserInfo;
@@ -47,6 +48,23 @@ use crate::usecase::assignment_invitation::code::{
 };
 use crate::util::next_snowflake_id;
 use crate::value::role::{RoleField, RoleMask};
+
+/// Removes one assignment invitation when it has expired.
+#[instrument(level = "info", skip(repo))]
+pub async fn purge_expired<C, R>(
+    (repo,): (&R,),
+    invitation_id: &str,
+) -> BaseRest<()>
+where
+    C: Context,
+    R: AssignmentInvitationRepo<C>,
+{
+    PurgeExpiredAssignmentInvitation { id: invitation_id }
+        .run_on(repo)
+        .await?;
+
+    accept(())
+}
 
 /// Lists assignment invitations under one chapter.
 #[instrument(level = "info", skip(repo, token), fields(actor_user_id = %token.user_id))]

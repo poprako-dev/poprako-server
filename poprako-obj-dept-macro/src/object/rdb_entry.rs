@@ -221,7 +221,7 @@ pub fn expand(table: &Path) -> TokenStream {
 
         pub async fn load_many(
             conn: &mut ::poprako_rdb_core::RdbConn,
-            ids: &[String],
+            ids: &[&str],
         ) -> ::poprako_obj_dept::rest::ObjDeptRest<Vec<ObjRdbEntry>> {
             load_many_inner(conn, ids, false).await
         }
@@ -263,14 +263,14 @@ pub fn expand(table: &Path) -> TokenStream {
 
         pub async fn load_many_for_update(
             conn: &mut ::poprako_rdb_core::RdbConn,
-            ids: &[String],
+            ids: &[&str],
         ) -> ::poprako_obj_dept::rest::ObjDeptRest<Vec<ObjRdbEntry>> {
             load_many_inner(conn, ids, true).await
         }
 
         async fn load_many_inner(
             conn: &mut ::poprako_rdb_core::RdbConn,
-            ids: &[String],
+            ids: &[&str],
             lock: bool,
         ) -> ::poprako_obj_dept::rest::ObjDeptRest<Vec<ObjRdbEntry>> {
             use ::diesel::prelude::{ExpressionMethods as _, QueryDsl as _};
@@ -303,7 +303,7 @@ pub fn expand(table: &Path) -> TokenStream {
 
         pub async fn ensure_anchors(
             conn: &mut ::poprako_rdb_core::RdbConn,
-            ids: &[String],
+            ids: &[&str],
         ) -> ::poprako_obj_dept::rest::ObjDeptRest<Vec<ObjRdbEntry>> {
             use ::diesel::prelude::ExpressionMethods as _;
             use ::diesel::SelectableHelper as _;
@@ -385,7 +385,7 @@ pub fn expand(table: &Path) -> TokenStream {
 
         pub async fn detach_many(
             conn: &mut ::poprako_rdb_core::RdbConn,
-            ids: &[String],
+            ids: &[&str],
         ) -> ::poprako_obj_dept::rest::ObjDeptRest<()> {
             use ::diesel::prelude::{ExpressionMethods as _, QueryDsl as _};
             use ::diesel_async::RunQueryDsl as _;
@@ -411,7 +411,7 @@ pub fn expand(table: &Path) -> TokenStream {
 
         pub async fn remove_many(
             conn: &mut ::poprako_rdb_core::RdbConn,
-            ids: &[String],
+            ids: &[&str],
         ) -> ::poprako_obj_dept::rest::ObjDeptRest<()> {
             use ::diesel::prelude::{ExpressionMethods as _, QueryDsl as _};
             use ::diesel_async::RunQueryDsl as _;

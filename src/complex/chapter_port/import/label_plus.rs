@@ -4,10 +4,11 @@ use std::collections::{HashMap, HashSet};
 
 use poprako_util::i18n::{trl, trl_kv};
 
-use crate::model::page_port::PageTranslationImport;
-use crate::model::unit_port::UnitTranslationImport;
+use crate::model::artifact::translation_import::{
+    PageTranslationImport, UnitTranslationImport, UnitTranslationImportSource,
+};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::value::chapter_port::MAX_CHAPTER_IMPORT_PAGE_COUNT;
+use crate::value::page::MAX_CHAPTER_PAGE_COUNT;
 use crate::value::unit::MAX_PAGE_UNIT_COUNT;
 
 /// Normalize `LabelPlus` text while preserving non-empty whitespace and lines.
@@ -189,10 +190,9 @@ pub fn flush_label_plus_unit(
         x_coord: label_plus_unit.x_coord,
         y_coord: label_plus_unit.y_coord,
         is_bubble: label_plus_unit.is_bubble,
-        main_text: normalize_label_plus_text(main_text_lines.join("\n")),
-        translated_text: None,
-        proofread_text: None,
-        is_proofread: false,
+        source: UnitTranslationImportSource::LabelPlus {
+            text: normalize_label_plus_text(main_text_lines.join("\n")),
+        },
     });
 
     main_text_lines.clear();
@@ -393,11 +393,11 @@ pub fn parse_label_plus(content: &str) -> BaseRest<Vec<PageTranslationImport>> {
         });
     }
 
-    if pages.len() > MAX_CHAPTER_IMPORT_PAGE_COUNT {
+    if pages.len() > MAX_CHAPTER_PAGE_COUNT {
         //
         return Err(invalid_label_plus_limit(
             "error-chapter-import-page-count",
-            MAX_CHAPTER_IMPORT_PAGE_COUNT,
+            MAX_CHAPTER_PAGE_COUNT,
             "LabelPlus document has too many pages",
         ));
     }

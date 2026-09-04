@@ -5,7 +5,9 @@ use poprako_obj_dept::model::task::ObjTask;
 use crate::data::instr::comic::AllocComicCoverInstr;
 use crate::test_util::IMAGE_CONFIG;
 use crate::test_util::fixture::workset;
+use crate::usecase::subtree_delete::sweep;
 use crate::value::image::{ImageExt, ImageHash};
+use crate::value::subtree_delete::SubtreeSweepLevel;
 
 fn alloc_instr(hash_byte: u8) -> AllocComicCoverInstr {
     AllocComicCoverInstr {
@@ -156,15 +158,15 @@ async fn mark_cover_uploaded_rejects_old_allocation_replay() {
 }
 
 #[tokio::test]
-async fn delete_removes_comic_updates_count_and_enqueues_cover_delete() {
+async fn delete_marks_comic_then_sweep_removes_cover() {
     let mock = Mock::new();
 
     seed_comic_cover_scope(&mock, 1);
 
     mock.state.lock().unwrap().worksets[0].comic_count = 1;
 
-    delete::<_, MockContext, _, _>(
-        (&mock, &mock, &mock),
+    delete::<_, MockContext, _>(
+        (&mock, &mock),
         token("user-1"),
         "comic-1".into(),
     )
@@ -173,10 +175,22 @@ async fn delete_removes_comic_updates_count_and_enqueues_cover_delete() {
 
     let snapshot = mock.snapshot();
 
-    assert!(snapshot.comics.is_empty());
+    assert_eq!(snapshot.comics.len(), 1);
+    assert!(snapshot.deleted_comic_ids.contains("comic-1"));
     assert_eq!(snapshot.worksets[0].comic_count, 0);
-    assert!(snapshot.objs["comic_cover"].is_empty());
-    assert!(snapshot.obj_tasks.iter().any(|(_, task)| {
+    assert!(snapshot.obj_tasks.is_empty());
+
+    assert!(
+        sweep((&mock, &mock, &mock), SubtreeSweepLevel::Comic,)
+            .await
+            .unwrap()
+    );
+
+    let swept_snapshot = mock.snapshot();
+
+    assert!(swept_snapshot.comics.is_empty());
+    assert!(swept_snapshot.objs["comic_cover"].is_empty());
+    assert!(swept_snapshot.obj_tasks.iter().any(|(_, task)| {
         matches!(task, ObjTask::Delete { key } if key.id == "comic-1")
     }));
 }
@@ -188,8 +202,8 @@ async fn delete_rolls_back_missing_comic() {
     mock.seed_workset(workset("workset-1", "team-1"));
     mock.seed_member(admin_member("user-1", "team-1"));
 
-    let err = delete::<_, MockContext, _, _>(
-        (&mock, &mock, &mock),
+    let err = delete::<_, MockContext, _>(
+        (&mock, &mock),
         token("user-1"),
         "missing".into(),
     )

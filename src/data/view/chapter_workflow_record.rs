@@ -105,9 +105,9 @@ pub enum ChapterWorkflowRecordEventView {
     TranslationImported {
         /// Imported content format.
         format: ChapterWorkflowRecordTranslationFormatView,
-        /// Number of imported pages.
+        /// Number of pages whose visible Unit content changed.
         imported_page_count: usize,
-        /// Number of imported units.
+        /// Number of Units created from the imported source.
         imported_unit_count: usize,
     },
 

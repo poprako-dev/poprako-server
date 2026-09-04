@@ -82,7 +82,7 @@ where
 
     let comic_ids = comic_infos
         .iter()
-        .map(|comic_info| comic_info.id.clone())
+        .map(|comic_info| comic_info.id.as_str())
         .collect::<Vec<_>>();
 
     // NOTE: `with` cannot be executed elegantly by repo layer,
@@ -105,7 +105,7 @@ where
         //
         let chapter_ids = pinned_chapter_infos
             .values()
-            .map(|chapter_info| chapter_info.id.clone())
+            .map(|chapter_info| chapter_info.id.as_str())
             .collect::<Vec<_>>();
 
         let assignment_incls = [AssignmentInclOpt::User];

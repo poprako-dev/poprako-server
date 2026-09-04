@@ -10,20 +10,20 @@ pub mod tests;
 use poprako_orchestra::{AtLeast, Level, Run, Step};
 use tracing::instrument;
 
-use crate::model::read::proj::page::PageInfo;
+use crate::model::read::proj::page::{PageInfo, PageUnitScope};
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::page::{
-    ApplyPageManifest, CreatePages, DeletePages, GetPageInfo,
-    GetPageInfoExcluded, ListEdittedDiffPageIds, ListFirstPageInfos,
-    ListPageInfos, ListPageInfosExcluded, SetPageUnitCounters,
-    ShiftPageIndexesTemporary,
+    ApplyPageManifest, DeletePages, GetPageInfo, GetPageInfoExcluded,
+    GetPageUnitScope, GetPageUnitScopeExcluded, ListEdittedDiffPageIds,
+    ListFirstPageInfos, ListPageInfos, ListPageInfosExcluded,
+    SetPageUnitCountMetrics, ShiftPageIndexesTemporary,
 };
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::page::step_impl::{
-    apply_manifest, create_batch, delete_by_chapter_id, delete_by_ids,
-    get_info_by_id, get_info_excluded, list_editted_diff_page_ids,
-    list_first_infos_by_chapter_ids, list_infos, list_infos_excluded,
-    set_unit_counters, shift_indexes_temporary,
+    apply_manifest, delete_by_chapter_id, delete_by_ids, get_info_by_id,
+    get_info_excluded, get_unit_scope, get_unit_scope_excluded,
+    list_editted_diff_page_ids, list_first_infos_by_chapter_ids, list_infos,
+    list_infos_excluded, set_unit_counts, shift_indexes_temporary,
 };
 use crate::result::{BaseError, BaseRest};
 use crate::shared::RdbContext;
@@ -36,7 +36,21 @@ impl Run<GetPageInfo<'_>> for HybRepo {
     #[instrument(level = "info", skip_all)]
     // Fetch one page by id via shared repository dispatch.
     async fn run(&self, oper: &GetPageInfo<'_>) -> BaseRest<PageInfo> {
-        submit_query!(self.core, get_info_by_id, oper.id)
+        submit_query!(self.rdb_core, get_info_by_id, oper.id)
+    }
+}
+
+impl Run<GetPageUnitScope<'_>> for HybRepo {
+    // Defines the adapter error exposed by this operation.
+    type Error = BaseError;
+
+    #[instrument(level = "info", skip_all)]
+    // Loads the minimal Page scope needed by Unit operations.
+    async fn run(
+        &self,
+        oper: &GetPageUnitScope<'_>,
+    ) -> BaseRest<PageUnitScope> {
+        submit_query!(self.rdb_core, get_unit_scope, oper.id)
     }
 }
 
@@ -48,7 +62,7 @@ impl Run<ListPageInfos<'_>> for HybRepo {
     #[instrument(level = "info", skip_all)]
     // List page infos for a chapter using the chapter id filter.
     async fn run(&self, oper: &ListPageInfos<'_>) -> BaseRest<Vec<PageInfo>> {
-        submit_query!(self.core, list_infos, oper.chapter_id)
+        submit_query!(self.rdb_core, list_infos, oper.chapter_id)
     }
 }
 
@@ -65,7 +79,7 @@ impl Run<ListFirstPageInfos<'_>> for HybRepo {
     ) -> BaseRest<Vec<PageInfo>> {
         //
         submit_query!(
-            self.core,
+            self.rdb_core,
             list_first_infos_by_chapter_ids,
             oper.chapter_ids
         )
@@ -77,12 +91,18 @@ impl Run<ListEdittedDiffPageIds<'_>> for HybRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
+    //
     // Lists matching Page IDs in stable Chapter Page order.
     async fn run(
         &self,
         oper: &ListEdittedDiffPageIds<'_>,
     ) -> BaseRest<Vec<String>> {
-        submit_query!(self.core, list_editted_diff_page_ids, oper.chapter_id)
+        //
+        submit_query!(
+            self.rdb_core,
+            list_editted_diff_page_ids,
+            oper.chapter_id
+        )
     }
 }
 
@@ -104,6 +124,27 @@ where
         oper: &GetPageInfo<'_>,
     ) -> BaseRest<PageInfo> {
         get_info_by_id(context.conn(), oper.id).await
+    }
+}
+
+impl<L> Step<GetPageUnitScope<'_>, RdbContext<L>> for HybRepo
+where
+    L: Level + Send + AtLeast<ReptRead>,
+{
+    // Declares the transaction isolation level required for this read.
+    type Level = ReptRead;
+
+    // Defines the adapter error exposed by this operation.
+    type Error = BaseError;
+
+    #[instrument(level = "info", skip_all)]
+    // Loads the minimal Page scope from the active transaction.
+    async fn step(
+        &self,
+        context: &mut RdbContext<L>,
+        oper: &GetPageUnitScope<'_>,
+    ) -> BaseRest<PageUnitScope> {
+        get_unit_scope(context.conn(), oper.id).await
     }
 }
 
@@ -149,26 +190,6 @@ where
     }
 }
 
-impl<L> Step<CreatePages<'_>, RdbContext<L>> for HybRepo
-where
-    L: Level + Send + AtLeast<ReptRead>,
-{
-    // Preserve base error behavior for batch page creation inside transaction.
-    type Level = ReptRead;
-
-    // Defines the adapter error exposed by this operation.
-    type Error = BaseError;
-    #[instrument(level = "info", skip_all)]
-    // Insert multiple new page entries and return their canonicalized infos.
-    async fn step(
-        &self,
-        context: &mut RdbContext<L>,
-        oper: &CreatePages<'_>,
-    ) -> BaseRest<Vec<PageInfo>> {
-        create_batch(context.conn(), oper.entries).await
-    }
-}
-
 impl<L> Step<GetPageInfoExcluded<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
@@ -189,7 +210,28 @@ where
     }
 }
 
-impl<L> Step<SetPageUnitCounters<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<GetPageUnitScopeExcluded<'_>, RdbContext<L>> for HybRepo
+where
+    L: Level + Send + AtLeast<ReptRead>,
+{
+    // Declares the transaction isolation level required for this locked read.
+    type Level = ReptRead;
+
+    // Defines the adapter error exposed by this operation.
+    type Error = BaseError;
+
+    #[instrument(level = "info", skip_all)]
+    // Locks and loads the minimal Page scope used by Unit edits.
+    async fn step(
+        &self,
+        context: &mut RdbContext<L>,
+        oper: &GetPageUnitScopeExcluded<'_>,
+    ) -> BaseRest<PageUnitScope> {
+        get_unit_scope_excluded(context.conn(), oper.id).await
+    }
+}
+
+impl<L> Step<SetPageUnitCountMetrics<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -203,9 +245,9 @@ where
     async fn step(
         &self,
         context: &mut RdbContext<L>,
-        oper: &SetPageUnitCounters<'_>,
+        oper: &SetPageUnitCountMetrics<'_>,
     ) -> BaseRest<()> {
-        set_unit_counters(context.conn(), oper.id, oper.counters).await
+        set_unit_counts(context.conn(), oper.id, oper.count_metrics).await
     }
 }
 

@@ -17,15 +17,15 @@ use tracing::instrument;
 use crate::model::read::proj::team::TeamInfo;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::team::{
-    AllocTeamWorksetIndex, CreateTeam, DeleteTeam, GetTeamInfo,
-    GetTeamInfoExcluded, ListTeamInfos, LockTeam, UpdateTeam,
+    AllocTeamWorksetIndex, CreateTeam, GetTeamInfo, GetTeamInfoExcluded,
+    ListTeamInfos, LockTeam, UpdateTeam,
 };
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::team::coordination::{
     increment_workset_next_index, lock_team,
 };
 use crate::part_impl::repo::rdb_impl::team::info::{
-    create, delete, get_info_by_id, get_info_excluded, list_infos, update_info,
+    create, get_info_by_id, get_info_excluded, list_infos, update_info,
 };
 use crate::result::{BaseError, BaseRest};
 use crate::shared::RdbContext;
@@ -41,7 +41,7 @@ impl Run<CreateTeam<'_>> for HybRepo {
         &self,
         oper: &CreateTeam<'_>,
     ) -> Result<TeamInfo, Self::Error> {
-        submit_query!(self.core, create, oper.entry)
+        submit_query!(self.rdb_core, create, oper.entry)
     }
 }
 
@@ -60,7 +60,7 @@ impl Run<GetTeamInfo<'_>> for HybRepo {
         match oper {
             //
             GetTeamInfo::Id { id } => {
-                submit_query!(self.core, get_info_by_id, id)
+                submit_query!(self.rdb_core, get_info_by_id, id)
             }
         }
     }
@@ -77,7 +77,7 @@ impl Run<ListTeamInfos<'_>> for HybRepo {
         &self,
         oper: &ListTeamInfos<'_>,
     ) -> Result<Vec<TeamInfo>, Self::Error> {
-        submit_query!(self.core, list_infos, oper.spec)
+        submit_query!(self.rdb_core, list_infos, oper.spec)
     }
 }
 
@@ -93,7 +93,7 @@ impl Run<UpdateTeam<'_>> for HybRepo {
         match oper {
             //
             UpdateTeam::Info { repl } => {
-                submit_query!(self.core, update_info, repl)
+                submit_query!(self.rdb_core, update_info, repl)
             }
         }
     }
@@ -192,27 +192,6 @@ where
         oper: &LockTeam<'_>,
     ) -> BaseRest<()> {
         lock_team(context.conn(), oper.id).await
-    }
-}
-
-impl<L> Step<DeleteTeam<'_>, RdbContext<L>> for HybRepo
-where
-    L: Level + Send + AtLeast<ReptRead>,
-{
-    // Use the common base error for hard delete operations in transactions.
-    type Level = ReptRead;
-
-    // Defines the adapter error exposed by this operation.
-    type Error = BaseError;
-
-    #[instrument(level = "info", skip_all)]
-    // Remove a team row after the caller has coordinated any dependent effects.
-    async fn step(
-        &self,
-        context: &mut RdbContext<L>,
-        oper: &DeleteTeam<'_>,
-    ) -> BaseRest<()> {
-        delete(context.conn(), oper.id).await
     }
 }
 

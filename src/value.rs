@@ -24,8 +24,14 @@ pub mod index;
 pub mod member;
 /// Member invitation value types.
 pub mod member_invitation;
+/// Page-specific values.
+pub mod page;
+/// Bounded ordinary-list pagination values.
+pub mod pagination;
 /// Role and perm value types.
 pub mod role;
+/// Hierarchy tombstone sweep values.
+pub mod subtree_delete;
 /// Terminology-base scope and capacity values.
 pub mod termbase;
 /// Unit-specific values.

@@ -46,7 +46,7 @@ fn list_infos(
             } => (
                 *role,
                 incl_opt.as_slice(),
-                Some((*offset as usize, *limit as usize)),
+                Some((*offset as usize, limit.get() as usize)),
                 state
                     .assignments
                     .iter()
@@ -66,7 +66,7 @@ fn list_infos(
             } => (
                 *role,
                 incl_opt.as_slice(),
-                Some((*offset as usize, *limit as usize)),
+                Some((*offset as usize, limit.get() as usize)),
                 state
                     .assignments
                     .iter()
@@ -104,7 +104,7 @@ fn list_infos(
                 .assignments
                 .iter()
                 .filter(|assignment_info| {
-                    chapter_ids.contains(&assignment_info.chapter_id)
+                    chapter_ids.contains(&assignment_info.chapter_id.as_str())
                 })
                 .cloned()
                 .collect::<Vec<_>>(),

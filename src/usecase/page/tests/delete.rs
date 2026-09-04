@@ -8,7 +8,7 @@ use crate::test_util::assert_expected_variant;
 use crate::value::role::RoleField;
 
 #[tokio::test]
-async fn admin_delete_removes_pages_objects_and_clears_chapter_counters() {
+async fn admin_delete_removes_pages_objects_and_clears_chapter_counts() {
     let mock = Mock::new();
 
     seed_page_scope(&mock, 2);

@@ -223,7 +223,7 @@ async fn list_infos_searches_only_source() {
         termbase_id: "termbase-1".into(),
         fuzzy_source: Some("target".into()),
         offset: 0,
-        limit: 20,
+        limit: crate::value::pagination::PubListLimit::new(20).unwrap(),
     };
 
     let target_infos = list_infos((&mock,), token("user-1"), target_instr)
@@ -236,7 +236,7 @@ async fn list_infos_searches_only_source() {
         termbase_id: "termbase-1".into(),
         fuzzy_source: Some("source".into()),
         offset: 0,
-        limit: 20,
+        limit: crate::value::pagination::PubListLimit::new(20).unwrap(),
     };
 
     let source_infos = list_infos((&mock,), token("user-1"), source_instr)

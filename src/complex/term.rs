@@ -6,12 +6,12 @@ use poprako_util::i18n::trl;
 
 use crate::model::write::term::{TermEntry, TermImport, TermRepl};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::util::next_snowflake_id;
+use crate::util::{next_snowflake_id, trim_owned};
 
 // Trim a term source and reject empty values after normalization.
-fn normalize_source(source: &str) -> BaseRest<String> {
+fn normalize_source(source: String) -> BaseRest<String> {
     //
-    let source = source.trim().to_string();
+    let source = trim_owned(source);
 
     if source.is_empty() {
         //
@@ -60,7 +60,7 @@ fn normalize_targets(targets: Vec<String>) -> BaseRest<Vec<String>> {
 
     for target in targets {
         //
-        let target = target.trim().to_string();
+        let target = trim_owned(target);
 
         if target.is_empty() {
             //
@@ -109,7 +109,7 @@ fn normalize_comment(comment: Option<String>) -> Option<String> {
     //
     comment.and_then(|comment| {
         //
-        let comment = comment.trim().to_string();
+        let comment = trim_owned(comment);
 
         if comment.is_empty() {
             None
@@ -133,7 +133,7 @@ impl TermComplex {
     /// Build a validated terminology entry.
     pub fn build_entry(
         termbase_id: String,
-        source: &str,
+        source: String,
         targets: Vec<String>,
         comment: Option<String>,
         creator_id: String,
@@ -157,7 +157,7 @@ impl TermComplex {
 
     /// Build normalized portable terminology-entry content.
     pub fn build_import(
-        source: &str,
+        source: String,
         targets: Vec<String>,
         comment: Option<String>,
     ) -> BaseRest<TermImport> {
@@ -178,7 +178,7 @@ impl TermComplex {
     /// Build a validated terminology-entry replacement.
     pub fn build_update(
         id: String,
-        source: &str,
+        source: String,
         targets: Vec<String>,
         comment: Option<String>,
     ) -> BaseRest<TermRepl> {

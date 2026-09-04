@@ -69,7 +69,7 @@ fn list_announcements(
 
     let offset = spec.offset as usize;
 
-    let limit = spec.limit as usize;
+    let limit = spec.limit.get() as usize;
 
     if offset >= announcement_infos.len() {
         Vec::new()

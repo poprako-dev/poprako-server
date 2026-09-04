@@ -1193,18 +1193,19 @@ export async function exportLabelPlus(api: ApiClient, chapterId: string): Promis
     return exported.label_plus;
 }
 
-// Import translations into a chapter. `format` is "poprako" or "label_plus".
+// Import translations into a chapter with an explicit page-content strategy.
 // Returns `{ imported_page_count, imported_unit_count }`.
 export async function importTranslations(
     api: ApiClient,
     chapterId: string,
     format: "poprako" | "label_plus",
+    mode: "keep" | "overwrite",
     content: string,
 ): Promise<{ imported_page_count: number; imported_unit_count: number }> {
     return expectSuccessData(
         await api.post<SuccessBody<{ imported_page_count: number; imported_unit_count: number }>>(
             `/api/v1/chapters/${chapterId}/translations/import`,
-            { content, format },
+            { content, format, mode },
         ),
         200,
     );
