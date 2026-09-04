@@ -238,7 +238,7 @@ fn seed_material_pages(mock: &Mock) {
 }
 
 #[tokio::test]
-async fn import_label_plus_material_updates_units_and_counters() {
+async fn import_label_plus_material_updates_units_and_counts() {
     //
     // Verify import applies unit text/proofread content and updates chapter counters.
     let mock = Mock::new();

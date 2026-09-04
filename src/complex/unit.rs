@@ -1,5 +1,8 @@
 //! Domain rules and perm checks for page Units.
 
+// Linear-time linked-sequence planning for Unit edits.
+mod edit;
+
 /// Perm gates for Unit reads and edit fields.
 pub mod perm;
 
@@ -10,7 +13,7 @@ use std::collections::{HashMap, HashSet};
 
 use poprako_util::i18n::{trl, trl_kv};
 
-use crate::model::read::proj::unit::UnitInfo;
+use crate::model::read::proj::unit::{UnitInfo, UnitOrder};
 use crate::model::shared::unit::{UnitRevision, UnitTranslation};
 use crate::model::write::unit::{UnitEdit, UnitTransform};
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
@@ -316,6 +319,14 @@ impl UnitComplex {
         accept(edits)
     }
 
+    /// Plans one normalized Unit edit batch against the persisted chain.
+    pub fn plan_edit_sequence<'a>(
+        orders: &'a [UnitOrder],
+        edits: &'a [UnitEdit],
+    ) -> BaseRest<edit::UnitEditSequencePlan<'a>> {
+        edit::UnitEditSequencePlan::build(orders, edits)
+    }
+
     // Merge adjacent or contradictory edit operations into canonical forms.
     fn compress_edits(edits: &mut Vec<UnitEdit>) {
         //
@@ -383,7 +394,7 @@ impl UnitComplex {
         edits.extend(edit_slots.into_iter().flatten());
     }
 
-    // Validate cross-edit consistency: create/delete/patch order and pointer validity.
+    // Validate cross-edit consistency and pointer validity.
     fn final_validate_edits(
         base_ids: &[&str],
         edits: &[UnitEdit],
@@ -427,7 +438,7 @@ impl UnitComplex {
                 err_message = %err_message,
                 edit_count = edits.len(),
                 base_id_count = base_ids.len(),
-                create_count = create_count,
+                create_count,
                 created_id_count = created_ids.len(),
                 "expected error: unit create edits are inconsistent",
             );
@@ -440,25 +451,25 @@ impl UnitComplex {
         })
     }
 
-    // Merge a prior save edit into a later save edit for the same unit.
+    // Merge a prior save edit into a later save edit for the same Unit.
     fn merge_edits(earlier: &mut UnitEdit, later: &mut UnitEdit) {
         //
         let (
             UnitEdit::Save {
-                id: _,
                 next_id: earlier_next_id,
                 is_bubble: earlier_is_bubble,
                 coord: earlier_coord,
                 translation: earlier_translation,
                 revision: earlier_revision,
+                ..
             },
             UnitEdit::Save {
-                id: _,
                 next_id: later_next_id,
                 is_bubble: later_is_bubble,
                 coord: later_coord,
                 translation: later_translation,
                 revision: later_revision,
+                ..
             },
         ) = (earlier, later)
         else {
@@ -484,41 +495,35 @@ impl UnitComplex {
         edit: &UnitEdit,
     ) -> BaseRest<()> {
         //
-        match edit {
+        let invalid_target = match edit {
             //
             UnitEdit::Delete { id } if !base_ids.contains(id.as_str()) => {
-                //
-                let err_message = trl("error-invalid-unit-oper");
-
-                tracing::warn!(
-                    err_variant = ?ExpectedVariant::Args,
-                    err_message = %err_message,
-                    unit_id = %id,
-                    operation = "delete",
-                    "expected error: unit delete target is invalid",
-                );
-
-                return Err(invalid_unit_oper(err_message));
+                Some((id, "delete"))
             }
 
             UnitEdit::Save { id, .. }
                 if !base_ids.contains(id.as_str())
                     && !created_ids.contains(id.as_str()) =>
             {
-                let err_message = trl("error-invalid-unit-oper");
-
-                tracing::warn!(
-                    err_variant = ?ExpectedVariant::Args,
-                    err_message = %err_message,
-                    unit_id = %id,
-                    operation = "save",
-                    "expected error: unit save target is invalid",
-                );
-
-                return Err(invalid_unit_oper(err_message));
+                Some((id, "save"))
             }
 
-            _ => {}
+            _ => None,
+        };
+
+        if let Some((id, operation)) = invalid_target {
+            //
+            let err_message = trl("error-invalid-unit-oper");
+
+            tracing::warn!(
+                err_variant = ?ExpectedVariant::Args,
+                err_message = %err_message,
+                unit_id = %id,
+                operation,
+                "expected error: unit edit target is invalid",
+            );
+
+            return Err(invalid_unit_oper(err_message));
         }
 
         let Some((id, next_id)) = (match edit {
@@ -544,6 +549,7 @@ impl UnitComplex {
                 && !created_ids.contains(next_id.as_str()))
             || deleted_ids.contains(next_id.as_str())
         {
+            //
             let err_message = trl("error-invalid-unit-oper");
 
             tracing::warn!(

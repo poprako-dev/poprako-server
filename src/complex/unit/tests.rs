@@ -35,6 +35,15 @@ fn create(id: &str, next_id: Option<String>) -> UnitEdit {
     }
 }
 
+// Build one persisted Unit sequence node.
+fn order(id: &str, next_id: Option<&str>, is_hidden: bool) -> UnitOrder {
+    UnitOrder {
+        id: id.to_string(),
+        next_id: next_id.map(str::to_string),
+        is_hidden,
+    }
+}
+
 // Build one visible Unit with both text fields for transform tests.
 fn unit(translated_text: &str, proofread_text: &str) -> UnitInfo {
     //
@@ -151,6 +160,131 @@ fn normalize_orders_create_prior_to_save_for_the_same_unit() {
     assert!(matches!(
         &edits[1],
         UnitEdit::Save { id, .. } if id == "a"
+    ));
+}
+
+#[test]
+fn edit_sequence_plan_combines_create_restore_delete_and_moves() {
+    //
+    let orders = vec![
+        order("a", Some("b"), false),
+        order("b", Some("c"), true),
+        order("c", None, false),
+    ];
+
+    let edits = vec![
+        create("d", Some("b".to_string())),
+        save("b", Patch::Clear),
+        UnitEdit::Delete {
+            id: "c".to_string(),
+        },
+    ];
+
+    let Ok(plan) = UnitComplex::plan_edit_sequence(&orders, &edits) else {
+        assert!(false, "valid Unit edits must produce a sequence plan");
+
+        return;
+    };
+
+    assert_eq!(plan.ordered_ids(), &["a", "d", "c", "b"]);
+
+    assert!(matches!(plan.next_id("d"), Ok(Some("c"))));
+
+    assert_eq!(plan.visible_count(), 3);
+
+    let successor_changes = plan
+        .changed_successors()
+        .iter()
+        .map(|change| (change.id(), change.next_id()))
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        successor_changes,
+        [("a", Some("d")), ("b", None), ("c", Some("b")),],
+    );
+}
+
+#[test]
+fn edit_sequence_plan_handles_a_long_tombstone_chain_linearly() {
+    //
+    let ids = (0..600)
+        .map(|index| format!("unit-{index:03}"))
+        .collect::<Vec<_>>();
+
+    let orders = ids
+        .iter()
+        .enumerate()
+        .map(|(index, id)| UnitOrder {
+            id: id.clone(),
+            next_id: ids.get(index + 1).cloned(),
+            is_hidden: true,
+        })
+        .collect::<Vec<_>>();
+
+    let Some(last_id) = ids.last() else {
+        assert!(false, "the fixture must contain a last Unit");
+
+        return;
+    };
+
+    let Some(first_id) = ids.first() else {
+        assert!(false, "the fixture must contain a first Unit");
+
+        return;
+    };
+
+    let edits = vec![save(
+        last_id,
+        Patch::Assign {
+            value: first_id.clone(),
+        },
+    )];
+
+    let Ok(plan) = UnitComplex::plan_edit_sequence(&orders, &edits) else {
+        assert!(false, "a valid long tombstone chain must remain editable");
+
+        return;
+    };
+
+    assert_eq!(plan.ordered_ids().first(), Some(&last_id.as_str()));
+
+    assert_eq!(plan.visible_count(), 1);
+}
+
+#[test]
+fn edit_sequence_plan_rejects_visible_overflow_and_corrupt_order() {
+    //
+    let ids = (0..100)
+        .map(|index| format!("unit-{index:03}"))
+        .collect::<Vec<_>>();
+
+    let orders = ids
+        .iter()
+        .enumerate()
+        .map(|(index, id)| UnitOrder {
+            id: id.clone(),
+            next_id: ids.get(index + 1).cloned(),
+            is_hidden: false,
+        })
+        .collect::<Vec<_>>();
+
+    let overflow_edits = vec![create("overflow", None)];
+
+    let overflow = UnitComplex::plan_edit_sequence(&orders, &overflow_edits);
+
+    assert!(matches!(
+        overflow,
+        Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            ..
+        }),
+    ));
+
+    let corrupt_orders = vec![order("a", None, false), order("b", None, false)];
+
+    assert!(matches!(
+        UnitComplex::plan_edit_sequence(&corrupt_orders, &[]),
+        Err(BaseError::Unrecoverable { .. }),
     ));
 }
 

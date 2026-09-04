@@ -10,6 +10,22 @@
 
 use time::OffsetDateTime;
 
+use crate::model::read::proj::unit::UnitCountMetrics;
+
+/// Minimal persisted Page scope needed by Unit reads and edits.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PageUnitScope {
+    //
+    /// Permanent Page identifier.
+    pub id: String,
+
+    /// Owning Chapter identifier.
+    pub chapter_id: String,
+
+    /// Denormalized Unit counters stored on this Page.
+    pub count_metrics: UnitCountMetrics,
+}
+
 /// A pagerecord as stored in the database.
 ///
 /// Progress is tracked via three denormalised counters (`total_unit_count`,

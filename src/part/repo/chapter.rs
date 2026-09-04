@@ -1,11 +1,12 @@
 use poprako_orchestra::drive;
 
 use crate::part::repo::oper::chapter::{
-    AdjustChapterUnitCounters, CompleteChapterRawProvide, CreateChapter,
+    AdjustChapterUnitCountDelta, CompleteChapterRawProvide, CreateChapter,
     FindPinnedChapterInfo, GetChapterInfo, GetChapterInfoExcluded,
-    ListChapterInfos, ListChapterInfosExcluded, ListPinnedChapterInfos,
-    LockChapters, SetChapterPageCounters, StartChapterStage,
-    UnpinOtherChapters, UpdateChapter, UpdateChapterStage,
+    GetChapterUnitEditScopeExcluded, ListChapterInfos,
+    ListChapterInfosExcluded, ListPinnedChapterInfos, LockChapters,
+    SetChapterPageCountMetrics, StartChapterStage, UnpinOtherChapters,
+    UpdateChapter, UpdateChapterStage,
 };
 use crate::result::BaseError;
 
@@ -27,6 +28,7 @@ use crate::result::BaseError;
     step(
         for<'a, 'b> GetChapterInfo<'a, 'b>,
         for<'a, 'b> GetChapterInfoExcluded<'a, 'b>,
+        for<'a> GetChapterUnitEditScopeExcluded<'a>,
         for<'a> ListChapterInfosExcluded<'a>,
         for<'a> LockChapters<'a>,
         for<'a, 'b> FindPinnedChapterInfo<'a, 'b>,
@@ -35,8 +37,8 @@ use crate::result::BaseError;
         for<'a> UpdateChapterStage<'a>,
         for<'a> StartChapterStage<'a>,
         for<'a> CompleteChapterRawProvide<'a>,
-        for<'a> SetChapterPageCounters<'a>,
-        for<'a> AdjustChapterUnitCounters<'a>,
+        for<'a> SetChapterPageCountMetrics<'a>,
+        for<'a> AdjustChapterUnitCountDelta<'a>,
         for<'a> UnpinOtherChapters<'a>,
     ),
 )]

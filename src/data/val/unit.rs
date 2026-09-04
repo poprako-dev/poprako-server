@@ -34,7 +34,7 @@ impl ListPageUnitInfosVal {
     /// Converts ordered persisted Units and counters into the response payload.
     pub fn from_parts(
         unit_infos: Vec<UnitInfo>,
-        counters: UnitCountMetrics,
+        count_metrics: UnitCountMetrics,
     ) -> Self {
         //
         Self {
@@ -43,9 +43,9 @@ impl ListPageUnitInfosVal {
                 .filter(|unit_info| unit_info.hidden_at.is_none())
                 .map(UnitInfoView::from)
                 .collect(),
-            total_unit_count: counters.total,
-            translated_unit_count: counters.translated,
-            proofread_unit_count: counters.proofread,
+            total_unit_count: count_metrics.total,
+            translated_unit_count: count_metrics.translated,
+            proofread_unit_count: count_metrics.proofread,
         }
     }
 }

@@ -285,7 +285,7 @@ fn task_envelope_accepts_consistent_fields() {
 }
 
 #[test]
-fn task_envelope_rejects_invalid_identity_and_counters() {
+fn task_envelope_rejects_invalid_identity_and_counts() {
     let mut wrong_id = task();
 
     wrong_id.id = "wrong".into();

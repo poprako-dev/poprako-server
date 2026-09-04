@@ -6,7 +6,7 @@ use tracing::instrument;
 use crate::model::read::proj::unit::{UnitCountMetrics, UnitInfo, UnitOrder};
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::unit::{
-    ApplyUnitEdits, ListUnitInfos, ListUnitInfosByIds, ListUnitInfosByPageIds,
+    ApplyUnitEdits, ListUnitInfosByIds, ListUnitInfosByPageIds,
     ListUnitInfosInChapterOrder, ListUnitOrders, SearchChapterUnitIds,
 };
 use crate::part_impl::repo::mock_impl::unit::{
@@ -116,23 +116,6 @@ fn list_infos_in_chapter_order(
     }
 
     accept(selected_infos)
-}
-
-impl Run<ListUnitInfos<'_>> for Mock {
-    // Internal type alias for `Error`.
-    // Defines the adapter error exposed by this operation.
-    type Error = BaseError;
-
-    #[instrument(level = "info", skip_all)]
-    // Internal implementation of `run`.
-    async fn run(&self, oper: &ListUnitInfos<'_>) -> BaseRest<Vec<UnitInfo>> {
-        //
-        // Internal implementation detail.
-        // Internal implementation detail.
-        let state = self.state.lock().unwrap();
-
-        list_infos(&state, oper.page_id)
-    }
 }
 
 impl Run<ListUnitInfosByPageIds<'_>> for Mock {

@@ -11,14 +11,14 @@ use tracing::instrument;
 use poprako_rdb_core::RdbConn;
 use poprako_util::i18n::trl;
 
-use crate::model::read::proj::chapter::ChapterInfo;
+use crate::model::read::proj::chapter::{ChapterInfo, ChapterUnitEditScope};
 use crate::model::read::proj::unit::UnitCountDelta;
 use crate::model::read::spec::chapter::ChapterListSpec;
 use crate::model::write::chapter::{
     ChapterEntry, ChapterPatch, ChapterStageRepl,
 };
 use crate::part_impl::repo::rdb_impl::entity::chapter::{
-    ChapterAspectRow, ChapterEntryRow, ChapterInfoRow,
+    ChapterAspectRow, ChapterEntryRow, ChapterInfoRow, ChapterUnitEditScopeRow,
 };
 use crate::part_impl::repo::rdb_impl::incl;
 use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::{
@@ -28,6 +28,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::{
     f_translating_at, f_typeset_at, f_typesetting_at, f_updated_at,
     f_uploaded_at, t_chapter,
 };
+use crate::part_impl::repo::rdb_impl::schema::t_page;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::result::diesel;
 use crate::value::chapter::ChapterInclOpt;
@@ -143,6 +144,49 @@ pub async fn get_info_excluded(
     .await?;
 
     accept(info)
+}
+
+/// Locks the minimal Chapter edit scope owning the requested Page.
+#[instrument(level = "info", skip_all)]
+pub async fn get_unit_edit_scope_excluded(
+    conn: &mut RdbConn,
+    page_id: &str,
+) -> BaseRest<ChapterUnitEditScope> {
+    //
+    let row = t_chapter
+        .filter(
+            f_id.eq_any(
+                t_page::table
+                    .filter(t_page::f_id.eq(page_id))
+                    .select(t_page::f_chapter_id),
+            ),
+        )
+        .filter(f_deleted_at.is_null())
+        .select(ChapterUnitEditScopeRow::as_select())
+        .for_update()
+        .get_result::<ChapterUnitEditScopeRow>(conn)
+        .await
+        .optional()
+        .map_err(diesel)?
+        .ok_or_else(|| {
+            //
+            let err_message = trl("error-page-not-found");
+
+            tracing::warn!(
+                err_variant = ?ExpectedVariant::Args,
+                err_message = %err_message,
+                page_id,
+                operation = "get_unit_edit_scope_excluded",
+                "expected error: page not found",
+            );
+
+            BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: err_message,
+            }
+        })?;
+
+    accept(row.into())
 }
 
 /// Queries chapter rows for a given comic, ordered by index descending.
@@ -439,7 +483,7 @@ pub async fn complete_raw_provide(
 
 /// Sets the page and unit counters on a chapter row.
 #[instrument(level = "info", skip_all)]
-pub async fn set_page_counters(
+pub async fn set_page_counts(
     conn: &mut RdbConn,
     id: &str,
     page_count: i32,
@@ -473,7 +517,7 @@ pub async fn set_page_counters(
 
 /// Adjusts a chapter's unit counters by the given delta.
 #[instrument(level = "info", skip_all)]
-pub async fn adjust_unit_counters(
+pub async fn adjust_unit_counts(
     conn: &mut RdbConn,
     id: &str,
     delta: &UnitCountDelta,

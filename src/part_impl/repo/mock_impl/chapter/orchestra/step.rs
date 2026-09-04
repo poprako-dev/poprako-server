@@ -1,17 +1,19 @@
 use poprako_orchestra::Step;
 use tracing::instrument;
 
-use crate::model::read::proj::chapter::ChapterInfo;
+use crate::model::read::proj::chapter::{ChapterInfo, ChapterUnitEditScope};
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::chapter::{
-    AdjustChapterUnitCounters, CompleteChapterRawProvide, CreateChapter,
+    AdjustChapterUnitCountDelta, CompleteChapterRawProvide, CreateChapter,
     FindPinnedChapterInfo, GetChapterInfo, GetChapterInfoExcluded,
-    ListChapterInfosExcluded, LockChapters, SetChapterPageCounters,
-    StartChapterStage, UnpinOtherChapters, UpdateChapter, UpdateChapterStage,
+    GetChapterUnitEditScopeExcluded, ListChapterInfosExcluded, LockChapters,
+    SetChapterPageCountMetrics, StartChapterStage, UnpinOtherChapters,
+    UpdateChapter, UpdateChapterStage,
 };
 use crate::part_impl::repo::mock_impl::chapter::orchestra::find_pinned_chapter_info;
 use crate::part_impl::repo::mock_impl::chapter::{
-    create_chapter, get_chapter_by_id, list_infos,
+    create_chapter, get_chapter_by_id, get_unit_edit_scope_by_page_id,
+    list_infos,
 };
 use crate::part_impl::repo::mock_impl::nucl::apply_signed_delta;
 use crate::part_impl::repo::mock_impl::{Mock, MockContext, expected, now};
@@ -163,6 +165,24 @@ impl<'a, 'b> Step<GetChapterInfoExcluded<'a, 'b>, MockContext> for Mock {
         oper: &GetChapterInfoExcluded<'a, 'b>,
     ) -> BaseRest<ChapterInfo> {
         get_chapter_by_id(&context.state, oper.id, oper.incls)
+    }
+}
+
+impl Step<GetChapterUnitEditScopeExcluded<'_>, MockContext> for Mock {
+    // Declares the transaction isolation level required for this read.
+    type Level = ReptRead;
+
+    // Defines the adapter error exposed by this operation.
+    type Error = BaseError;
+
+    #[instrument(level = "info", skip_all)]
+    // Loads the minimal Chapter scope owning the requested Page.
+    async fn step(
+        &self,
+        context: &mut MockContext,
+        oper: &GetChapterUnitEditScopeExcluded<'_>,
+    ) -> BaseRest<ChapterUnitEditScope> {
+        get_unit_edit_scope_by_page_id(&context.state, oper.page_id)
     }
 }
 
@@ -321,7 +341,7 @@ impl<'a> Step<UpdateChapterStage<'a>, MockContext> for Mock {
     }
 }
 
-impl<'a> Step<SetChapterPageCounters<'a>, MockContext> for Mock {
+impl<'a> Step<SetChapterPageCountMetrics<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
     type Level = ReptRead;
 
@@ -333,7 +353,7 @@ impl<'a> Step<SetChapterPageCounters<'a>, MockContext> for Mock {
     async fn step(
         &self,
         context: &mut MockContext,
-        oper: &SetChapterPageCounters<'a>,
+        oper: &SetChapterPageCountMetrics<'a>,
     ) -> BaseRest<()> {
         //
         if context.state.deleted_chapter_ids.contains(oper.id) {
@@ -363,7 +383,7 @@ impl<'a> Step<SetChapterPageCounters<'a>, MockContext> for Mock {
     }
 }
 
-impl<'a> Step<AdjustChapterUnitCounters<'a>, MockContext> for Mock {
+impl<'a> Step<AdjustChapterUnitCountDelta<'a>, MockContext> for Mock {
     // Internal type alias for `Error`.
     type Level = ReptRead;
 
@@ -375,7 +395,7 @@ impl<'a> Step<AdjustChapterUnitCounters<'a>, MockContext> for Mock {
     async fn step(
         &self,
         context: &mut MockContext,
-        oper: &AdjustChapterUnitCounters<'a>,
+        oper: &AdjustChapterUnitCountDelta<'a>,
     ) -> BaseRest<()> {
         //
         if context.state.deleted_chapter_ids.contains(oper.id) {

@@ -9,7 +9,8 @@
 use diesel::{AsChangeset, Insertable, Queryable, Selectable};
 use time::OffsetDateTime;
 
-use crate::model::read::proj::page::PageInfo;
+use crate::model::read::proj::page::{PageInfo, PageUnitScope};
+use crate::model::read::proj::unit::UnitCountMetrics;
 use crate::model::write::page::{PageEntry, PageManifestEntry};
 use crate::part_impl::repo::rdb_impl::numeric::{
     i32_from_usize, usize_from_i32,
@@ -33,6 +34,46 @@ pub struct PageInfoRow {
 
     pub f_created_at: OffsetDateTime,
     pub f_updated_at: OffsetDateTime,
+}
+
+/// Minimal database row selected for Page-scoped Unit operations.
+#[derive(Queryable, Selectable)]
+#[diesel(table_name = t_page)]
+pub struct PageUnitScopeRow {
+    //
+    pub f_id: String,
+
+    pub f_chapter_id: String,
+
+    pub f_total_unit_count: i32,
+    pub f_translated_unit_count: i32,
+    pub f_proofread_unit_count: i32,
+}
+
+impl TryFrom<PageUnitScopeRow> for PageUnitScope {
+    type Error = BaseError;
+
+    fn try_from(row: PageUnitScopeRow) -> Result<Self, Self::Error> {
+        //
+        Ok(Self {
+            id: row.f_id,
+            chapter_id: row.f_chapter_id,
+            count_metrics: UnitCountMetrics {
+                total: usize_from_i32(
+                    row.f_total_unit_count,
+                    "t_page.f_total_unit_count",
+                )?,
+                translated: usize_from_i32(
+                    row.f_translated_unit_count,
+                    "t_page.f_translated_unit_count",
+                )?,
+                proofread: usize_from_i32(
+                    row.f_proofread_unit_count,
+                    "t_page.f_proofread_unit_count",
+                )?,
+            },
+        })
+    }
 }
 
 impl TryFrom<PageInfoRow> for PageInfo {

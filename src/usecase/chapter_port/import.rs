@@ -28,12 +28,12 @@ use crate::part::repo::chapter_workflow_record::ChapterWorkflowRecordRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
 use crate::part::repo::oper::chapter::{
-    GetChapterInfoExcluded, SetChapterPageCounters,
+    GetChapterInfoExcluded, SetChapterPageCountMetrics,
 };
 use crate::part::repo::oper::chapter_workflow_record::CreateChapterWorkflowRecords;
 use crate::part::repo::oper::comic::TouchComicLastActive;
 use crate::part::repo::oper::page::{
-    ListPageInfosExcluded, SetPageUnitCounters,
+    ListPageInfosExcluded, SetPageUnitCountMetrics,
 };
 use crate::part::repo::oper::unit::{ApplyUnitEdits, ListUnitOrders};
 use crate::part::repo::page::PageRepo;
@@ -98,7 +98,7 @@ where
             )?;
 
             let (
-                final_page_counters,
+                final_page_count_metrics,
                 imported_page_count,
                 imported_unit_count,
             ) = import_pages(
@@ -112,26 +112,28 @@ where
             )
             .await?;
 
-            let chapter_counters = final_page_counters.iter().copied().fold(
-                UnitCountMetrics::default(),
-                |mut counters, page_counters| {
-                    //
-                    counters.total += page_counters.total;
+            let chapter_count_metrics =
+                final_page_count_metrics.iter().copied().fold(
+                    UnitCountMetrics::default(),
+                    |mut count_metrics, page_count_metrics| {
+                        //
+                        count_metrics.total += page_count_metrics.total;
 
-                    counters.translated += page_counters.translated;
+                        count_metrics.translated +=
+                            page_count_metrics.translated;
 
-                    counters.proofread += page_counters.proofread;
+                        count_metrics.proofread += page_count_metrics.proofread;
 
-                    counters
-                },
-            );
+                        count_metrics
+                    },
+                );
 
-            SetChapterPageCounters {
+            SetChapterPageCountMetrics {
                 id: &chapter_info.id,
                 page_count: page_scopes.len(),
-                total_unit_count: chapter_counters.total,
-                translated_unit_count: chapter_counters.translated,
-                proofread_unit_count: chapter_counters.proofread,
+                total_unit_count: chapter_count_metrics.total,
+                translated_unit_count: chapter_count_metrics.translated,
+                proofread_unit_count: chapter_count_metrics.proofread,
             }
             .step_on(repo, context)
             .await?;
@@ -271,7 +273,7 @@ where
 
     let mut imported_unit_count = 0;
 
-    let mut final_page_counters = Vec::with_capacity(page_scopes.len());
+    let mut final_page_count_metrics = Vec::with_capacity(page_scopes.len());
 
     for page_scope in page_scopes {
         //
@@ -294,7 +296,7 @@ where
         )
         .await?;
 
-        final_page_counters.push(page_import_outcome.counters);
+        final_page_count_metrics.push(page_import_outcome.count_metrics);
 
         imported_page_count += page_import_outcome.imported_page_count;
 
@@ -302,7 +304,7 @@ where
     }
 
     accept((
-        final_page_counters,
+        final_page_count_metrics,
         imported_page_count,
         imported_unit_count,
     ))
@@ -329,7 +331,7 @@ fn import_stages(edit_perm: UnitEditPerm) -> Vec<Stage> {
 struct PageImportOutcome {
     //
     // Final visible Unit counters for the page.
-    counters: UnitCountMetrics,
+    count_metrics: UnitCountMetrics,
     // Whether this page's visible content changed through the import.
     imported_page_count: usize,
     // Number of source Units created through the import.
@@ -362,13 +364,13 @@ where
         .map(|order| order.id.clone())
         .collect::<Vec<_>>();
 
-    let current_counters = page_unit_counters(page_scope);
+    let current_count_metrics = page_unit_count_metrics(page_scope);
 
     if (visible_unit_ids.is_empty(), imported_page.units.is_empty())
         == (true, true)
     {
         return accept(PageImportOutcome {
-            counters: current_counters,
+            count_metrics: current_count_metrics,
             imported_page_count: 0,
             imported_unit_count: 0,
         });
@@ -379,7 +381,7 @@ where
         ChapterTranslationImportMode::Keep if !visible_unit_ids.is_empty() => {
             //
             return accept(PageImportOutcome {
-                counters: current_counters,
+                count_metrics: current_count_metrics,
                 imported_page_count: 0,
                 imported_unit_count: 0,
             });
@@ -417,7 +419,7 @@ where
         | ChapterTranslationImportMode::Overwrite => orders,
     };
 
-    let final_counters = apply_imported_units(
+    let final_count_metrics = apply_imported_units(
         repo,
         context,
         (&page_scope.id, &orders, imported_page),
@@ -425,22 +427,22 @@ where
     )
     .await?;
 
-    SetPageUnitCounters {
+    SetPageUnitCountMetrics {
         id: &page_scope.id,
-        counters: final_counters,
+        count_metrics: final_count_metrics,
     }
     .step_on(repo, context)
     .await?;
 
     accept(PageImportOutcome {
-        counters: final_counters,
+        count_metrics: final_count_metrics,
         imported_page_count: 1,
         imported_unit_count: imported_page.units.len(),
     })
 }
 
 // Returns the stored counters for a page whose visible Units are unchanged.
-const fn page_unit_counters(page_info: &PageInfo) -> UnitCountMetrics {
+const fn page_unit_count_metrics(page_info: &PageInfo) -> UnitCountMetrics {
     //
     UnitCountMetrics {
         total: page_info.total_unit_count,
@@ -512,7 +514,7 @@ where
 
     let edits = UnitComplex::normalize_edits(&base_ids, edits)?;
 
-    let final_counters = ApplyUnitEdits {
+    let final_count_metrics = ApplyUnitEdits {
         page_id,
         orders,
         edits: &edits,
@@ -520,7 +522,7 @@ where
     .step_on(repo, context)
     .await?;
 
-    accept(final_counters)
+    accept(final_count_metrics)
 }
 
 // Builds create edits for all imported units on one page.

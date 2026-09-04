@@ -3,7 +3,7 @@
 use diesel::{AsChangeset, Insertable, Queryable, Selectable};
 use time::OffsetDateTime;
 
-use crate::model::read::proj::chapter::ChapterInfo;
+use crate::model::read::proj::chapter::{ChapterInfo, ChapterUnitEditScope};
 use crate::model::write::chapter::ChapterEntry;
 use crate::part_impl::repo::rdb_impl::numeric::{
     i32_from_usize, usize_from_i32,
@@ -45,6 +45,29 @@ pub struct ChapterInfoRow {
 
     pub f_created_at: OffsetDateTime,
     pub f_updated_at: OffsetDateTime,
+}
+
+/// Minimal database row selected while locking a Unit edit's Chapter.
+#[derive(Queryable, Selectable)]
+#[diesel(table_name = t_chapter)]
+pub struct ChapterUnitEditScopeRow {
+    //
+    pub f_id: String,
+
+    pub f_comic_id: String,
+
+    pub f_published_at: Option<OffsetDateTime>,
+}
+
+impl From<ChapterUnitEditScopeRow> for ChapterUnitEditScope {
+    fn from(row: ChapterUnitEditScopeRow) -> Self {
+        //
+        Self {
+            id: row.f_id,
+            comic_id: row.f_comic_id,
+            is_published: row.f_published_at.is_some(),
+        }
+    }
 }
 
 impl TryFrom<ChapterInfoRow> for ChapterInfo {

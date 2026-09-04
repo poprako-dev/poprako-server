@@ -35,9 +35,10 @@ fn apply_edits_soft_deletes_and_restores_a_unit() {
         is_hidden: false,
     }];
 
-    let counters = apply_edits(&mut state, "page-1", &[], &[create]).unwrap();
+    let count_metrics =
+        apply_edits(&mut state, "page-1", &[], &[create]).unwrap();
 
-    assert_eq!(counters.total, 1);
+    assert_eq!(count_metrics.total, 1);
 
     let hidden = apply_edits(
         &mut state,

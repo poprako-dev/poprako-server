@@ -1,4 +1,4 @@
-// page_roundtrip_uses_testcontainer(SetPageUnitCounters, ListPageInfos)(positive): page repo persists and updates page counters in an isolated PostgreSQL container.
+// page_roundtrip_uses_testcontainer(SetPageUnitCountMetrics, ListPageInfos)(positive): page repo persists and updates page counts in an isolated PostgreSQL container.
 
 use diesel::prelude::{ExpressionMethods as _, QueryDsl as _};
 use diesel_async::RunQueryDsl as _;
@@ -11,7 +11,7 @@ use crate::model::write::page::PageManifestEntry;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::page::{
     ApplyPageManifest, GetPageInfo, ListEdittedDiffPageIds, ListFirstPageInfos,
-    ListPageInfos, ListPageInfosExcluded, SetPageUnitCounters,
+    ListPageInfos, ListPageInfosExcluded, SetPageUnitCountMetrics,
     ShiftPageIndexesTemporary,
 };
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
@@ -35,7 +35,7 @@ pub async fn page_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     let nucl = RdbNucl::<ReptRead>::new(shared.clone());
 
-    let unit_counters = UnitCountMetrics {
+    let unit_count_metrics = UnitCountMetrics {
         total: 2,
         translated: 1,
         proofread: 1,
@@ -45,9 +45,9 @@ pub async fn page_roundtrip_uses_testcontainer(shared: RdbCore) {
         //
         repo.step(
             context,
-            &SetPageUnitCounters {
+            &SetPageUnitCountMetrics {
                 id: &page_fixture.page_entry.id,
-                counters: unit_counters,
+                count_metrics: unit_count_metrics,
             },
         )
         .await?;

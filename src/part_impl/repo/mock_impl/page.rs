@@ -3,7 +3,8 @@
 // Internal organization of the `orchestra` module.
 mod orchestra;
 
-use crate::model::read::proj::page::PageInfo;
+use crate::model::read::proj::page::{PageInfo, PageUnitScope};
+use crate::model::read::proj::unit::UnitCountMetrics;
 use crate::model::write::page::PageManifestEntry;
 use crate::part_impl::repo::mock_impl::{
     MockState, expected, now, unrecoverable,
@@ -59,6 +60,21 @@ fn list_bounded_infos(
     accept(page_infos)
 }
 
+// Read detailed info by page primary key.
+fn get_page_by_id(state: &MockState, id: &str) -> BaseRest<PageInfo> {
+    //
+    state
+        .pages
+        .iter()
+        .find(|page_info| {
+            //
+            page_info.id == id
+                && !state.deleted_chapter_ids.contains(&page_info.chapter_id)
+        })
+        .cloned()
+        .ok_or_else(|| expected("error-page-not-found"))
+}
+
 // List Chapter Page IDs containing at least one visible text diff.
 fn list_editted_diff_page_ids(
     state: &MockState,
@@ -90,19 +106,20 @@ fn list_editted_diff_page_ids(
     accept(page_ids)
 }
 
-// Read detailed info by page primary key.
-fn get_page_by_id(state: &MockState, id: &str) -> BaseRest<PageInfo> {
+// Read the minimal Page scope used by Unit operations.
+fn get_page_unit_scope(state: &MockState, id: &str) -> BaseRest<PageUnitScope> {
     //
-    state
-        .pages
-        .iter()
-        .find(|page_info| {
-            //
-            page_info.id == id
-                && !state.deleted_chapter_ids.contains(&page_info.chapter_id)
-        })
-        .cloned()
-        .ok_or_else(|| expected("error-page-not-found"))
+    let page_info = get_page_by_id(state, id)?;
+
+    accept(PageUnitScope {
+        id: page_info.id,
+        chapter_id: page_info.chapter_id,
+        count_metrics: UnitCountMetrics {
+            total: page_info.total_unit_count,
+            translated: page_info.translated_unit_count,
+            proofread: page_info.proofread_unit_count,
+        },
+    })
 }
 
 // Internal implementation of `list_first_pages`.

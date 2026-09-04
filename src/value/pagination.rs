@@ -11,6 +11,11 @@ use serde::de::Error as _;
 /// Maximum number of records returned by one ordinary public list request.
 pub const MAX_PUB_LIST_LIMIT: u32 = 200;
 
+// TODO: Replace legacy offset traversal with a versioned opaque cursor bound
+// to the normalized list scope and filters. Fetch `limit + 1` base rows, add
+// the unique ID as the final ordering key, and hydrate includes only after the
+// returned page has been selected.
+
 // Serde-facing error for a limit outside its compile-time range.
 struct InvalidListLimit<const N: u32> {
     // The rejected raw limit value.

@@ -17,34 +17,57 @@ Runtime query plans must still be verified against representative data with
 
 ## Priority findings
 
-### Resolved: Chapter import Create/Delete writes are batched
+### Resolved: Unit editor reads and writes are bounded
 
-`ApplyUnitEdits` now inserts all created Units for a Page in one statement and
-hides its exact deleted ID set in one statement. Created rows carry their final
-successor when inserted, so only changed persisted predecessors need a later
-update. Overwrite import also reuses the locked Unit order after marking its
-visible entries hidden instead of loading the same order again.
+`ApplyUnitEdits` builds one linear edit plan from the complete persisted Unit
+chain. Creates use at most one typed batch insert; Saves, Deletes, and changed
+persisted successors use at most one typed Diesel `CASE` update. The number of
+write statements therefore no longer grows with the edit count or the number
+of changed successors. Every update remains scoped by both Page and Unit ID,
+and an unexpected affected-row count rejects the complete transaction.
 
-Unit-order locking is keyset-chunked at 512 minimal projection rows per query.
-The complete chain is still reconstructed and validated in Rust, preserving
-the existing corrupt-chain behavior without returning a whole Page history in
-one database result. Post-write counter calculation now selects only the three
-required fields from visible Units; the Unicode-aware text rule remains in the
-Rust model instead of being reimplemented in SQL.
+The complete `(id, next_id, hidden_at)` graph is keyset-chunked at 512 consumed
+rows, using a 513th sentinel to avoid an extra empty query at exact chunk
+boundaries. This bounds each result set; total read and memory cost remains
+`O(history)` because business semantics require every restorable tombstone and
+anchor. Chapter and Page locks serialize every production Unit mutation, so
+the graph read no longer locks all historical tombstones; concrete writes lock
+only changed rows.
+
+Post-write counters are one typed aggregate row. The translated predicate uses
+the explicit Unicode whitespace set shared with Page diff semantics, so the
+business text rule is pushed down without raw SQL or semantic weakening.
+Public Page Unit listing uses a short repeatable-read snapshot: the same
+snapshot supplies Page counters, chunked links, and full fields for only the
+at-most-100 visible Unit IDs. A corrupt chain, a 101st visible Unit, a hydrate
+mismatch, or a counter mismatch is an unrecoverable invariant failure rather
+than a truncated response.
 
 Evidence:
 
-- [`src/usecase/chapter_port/import.rs`](../src/usecase/chapter_port/import.rs#L85)
-- [`src/part_impl/repo/rdb_impl/unit/edit.rs`](../src/part_impl/repo/rdb_impl/unit/edit.rs#L267)
-- [`src/value/chapter_port.rs`](../src/value/chapter_port.rs#L7)
-- [`src/value/unit.rs`](../src/value/unit.rs#L6)
+- [`src/complex/unit/edit.rs`](../src/complex/unit/edit.rs)
+- [`src/part_impl/repo/rdb_impl/unit/edit.rs`](../src/part_impl/repo/rdb_impl/unit/edit.rs)
+- [`src/part_impl/repo/rdb_impl/unit/sequence.rs`](../src/part_impl/repo/rdb_impl/unit/sequence.rs)
+- [`src/usecase/unit.rs`](../src/usecase/unit.rs)
 
-Remaining bounded work: heterogeneous `Save` edits and changed existing
-successors remain single-row updates. Each public edit batch is capped at 100,
-while a Chapter import creates no heterogeneous saves and changes at most one
-existing predecessor per imported Page. Page counter writes also remain one
-per changed Page. Further batching requires representative query measurements
-before adding more complex typed SQL.
+No Unit index is changed without representative
+`EXPLAIN (ANALYZE, BUFFERS)` evidence. The existing Page-only index remains
+until the history keyset query demonstrates an explicit sort or substantial
+cross-Page filtering; that evidence would justify replacing it with
+`(f_page_id, f_id)`. A visible partial index remains a separate measurement.
+
+### P0 pinned: Chapter and Comic lock order is globally inconsistent
+
+Unit and stage paths acquire Chapter before updating Comic activity, while
+some Chapter creation and subtree-deletion paths acquire Comic before Chapter.
+That inverse order can deadlock across otherwise valid transactions. PostgreSQL
+`40P01` currently reaches Diesel as an unknown database error and is therefore
+classified as unrecoverable instead of the public retryable conflict.
+
+This is pinned for a separate cross-domain correction. Moving the Comic lock
+into the Unit transaction prefix would serialize every Chapter save belonging
+to that Comic and is not an acceptable local optimization without a broader
+business and contention review.
 
 ### Resolved: Chapter Unit search no longer fans out by Page
 
@@ -179,13 +202,13 @@ typed 201-row sentinel with `(index, id)` ordering. Edited-diff selects only
 `(id, has_diff)` until the Page-count invariant is proven, then filters the
 response without loading full Page rows.
 
-Unit listing must retain hidden nodes because restoring a hidden Unit at its
-stored position is existing business behavior. Replace the current unbounded
-wide read with a short repeatable-read snapshot: read the complete link graph
-as bounded chunks of minimal `(id, next_id, hidden)` projections, validate and
-order it, then load full fields only for the at most 100 visible IDs. A 101st
+Unit listing is hardened without changing its complete-response contract.
+Hidden nodes remain in the structural graph because restoring one at its
+stored position is existing business behavior. A short repeatable-read
+snapshot now reads the complete link graph in minimal chunks, validates and
+orders it, and loads full fields only for the at-most-100 visible IDs. A 101st
 visible Unit, a counter mismatch, or a corrupt chain is an unrecoverable
-invariant failure; the endpoint must not silently truncate it.
+invariant failure rather than a partial response.
 
 Archive export remains complete. Push the exact selected month intervals into
 one typed SQL predicate, order by `(created_at, id)`, and stream rows into a
@@ -196,6 +219,11 @@ client's transfer time. Limit concurrent export artifact creation separately;
 resource exhaustion is an infrastructure error, not permission to return a
 partial archive.
 
+Opaque cursor pagination and archive streaming are intentionally deferred and
+recorded as actionable TODOs in their shared implementation boundaries. The
+current bounded list limit and complete archive response semantics remain in
+force until those TODOs are implemented.
+
 Implementation order:
 
 1. Add the bounded list value and HTTP extraction tests; then add the cursor
@@ -203,7 +231,7 @@ Implementation order:
 2. Convert all fifteen ordinary list specs and typed Diesel queries; add the ID
    tie-breakers and only add matching indexes after representative
    `EXPLAIN (ANALYZE, BUFFERS)` evidence.
-3. Harden the complete Page and Unit reads without adding pagination to their
+3. Complete: harden the Page and Unit reads without adding pagination to their
    public endpoints.
 4. Replace archive materialization and range filtering with typed interval
    filtering plus the bounded export artifact path.

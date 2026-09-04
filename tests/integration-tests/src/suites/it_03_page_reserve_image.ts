@@ -34,7 +34,7 @@ import { expectError, expectStatus } from "../http/assertions.js";
 import type { ErrorBody } from "../http/apiClient.js";
 import {
     assertChapterInvariant,
-    assertChapterPageCountersConsistent,
+    assertChapterPageCountMetricsConsistent,
 } from "../http/invariants.js";
 import {
     createChapter,
@@ -519,7 +519,7 @@ export async function runIt03Module(ctx: RunCtx): Promise<void> {
     d3Refs.pageIds = d3RebuildReserve.pages.map((c) => c.page_id);
 
     await assertChapterInvariant(ctx.sadmin, d3ChapterId);
-    await assertChapterPageCountersConsistent(ctx.sadmin, d3ChapterId);
+    await assertChapterPageCountMetricsConsistent(ctx.sadmin, d3ChapterId);
 
     // ---------- aux: reserve pages on cascade chapters for it_10 ----------
 

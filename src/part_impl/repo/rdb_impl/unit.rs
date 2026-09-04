@@ -15,29 +15,17 @@ use tracing::instrument;
 use crate::model::read::proj::unit::{UnitCountMetrics, UnitInfo, UnitOrder};
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::unit::{
-    ApplyUnitEdits, ListUnitInfos, ListUnitInfosByIds, ListUnitInfosByPageIds,
+    ApplyUnitEdits, ListUnitInfosByIds, ListUnitInfosByPageIds,
     ListUnitInfosInChapterOrder, ListUnitOrders, SearchChapterUnitIds,
 };
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::unit::edit::apply_edits;
 use crate::part_impl::repo::rdb_impl::unit::sequence::{
-    list_infos, list_infos_by_ids, list_infos_by_page_ids,
-    list_infos_in_chapter_order, list_orders_for_update, search_chapter_ids,
+    list_infos_by_ids, list_infos_by_page_ids, list_infos_in_chapter_order,
+    list_orders, search_chapter_ids,
 };
 use crate::result::{BaseError, BaseRest};
 use crate::shared::RdbContext;
-
-impl Run<ListUnitInfos<'_>> for HybRepo {
-    // Error type for the Run trait impl on unit list query.
-    // Defines the adapter error exposed by this operation.
-    type Error = BaseError;
-
-    // Lists visible Units in verified linked-list order for the given page.
-    #[instrument(level = "info", skip_all)]
-    async fn run(&self, oper: &ListUnitInfos<'_>) -> BaseRest<Vec<UnitInfo>> {
-        submit_query!(self.core, list_infos, oper.page_id)
-    }
-}
 
 impl Run<ListUnitInfosByPageIds<'_>> for HybRepo {
     // Error type for the Run trait impl on the page-id unit list query.
@@ -135,14 +123,14 @@ where
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
-    // Locks and lists the complete Unit chain, including tombstones, within a transaction.
+    // Lists the complete Unit chain, including tombstones, within a transaction.
     #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext<L>,
         oper: &ListUnitOrders<'_>,
     ) -> BaseRest<Vec<UnitOrder>> {
-        list_orders_for_update(context.conn(), oper.page_id).await
+        list_orders(context.conn(), oper.page_id).await
     }
 }
 

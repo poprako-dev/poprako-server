@@ -14,6 +14,20 @@ use crate::model::read::proj::comic::ComicInfo;
 use crate::model::read::proj::user::UserInfo;
 use crate::value::chapter::mask::StageMask;
 
+/// Minimal locked Chapter scope needed while editing Page Units.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ChapterUnitEditScope {
+    //
+    /// Permanent Chapter identifier.
+    pub id: String,
+
+    /// Owning Comic identifier.
+    pub comic_id: String,
+
+    /// Whether publishing has frozen Chapter mutations.
+    pub is_published: bool,
+}
+
 /// A chapterrecord as stored in the database.
 ///
 /// Each chapter belongs to exactly one comic and carries a full snapshot

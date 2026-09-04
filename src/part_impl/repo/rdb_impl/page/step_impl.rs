@@ -15,11 +15,11 @@ use tracing::instrument;
 use poprako_rdb_core::RdbConn;
 use poprako_util::i18n::trl;
 
-use crate::model::read::proj::page::PageInfo;
+use crate::model::read::proj::page::{PageInfo, PageUnitScope};
 use crate::model::read::proj::unit::UnitCountMetrics;
 use crate::model::write::page::PageManifestEntry;
 use crate::part_impl::repo::rdb_impl::entity::page::{
-    PageAspectRow, PageEntryRow, PageInfoRow,
+    PageAspectRow, PageEntryRow, PageInfoRow, PageUnitScopeRow,
 };
 use crate::part_impl::repo::rdb_impl::numeric::i32_from_usize;
 use crate::part_impl::repo::rdb_impl::schema::t_chapter;
@@ -83,6 +83,59 @@ pub async fn get_info_by_id(
                 message: err_message,
             }
         })?;
+
+    row.try_into()
+}
+
+/// Loads the minimal Page scope used by Unit operations.
+#[instrument(level = "info", skip_all)]
+pub async fn get_unit_scope(
+    conn: &mut RdbConn,
+    id: &str,
+) -> BaseRest<PageUnitScope> {
+    //
+    let row = t_page
+        .filter(f_id.eq(id))
+        .filter(
+            f_chapter_id.eq_any(
+                t_chapter::table
+                    .filter(t_chapter::f_deleted_at.is_null())
+                    .select(t_chapter::f_id),
+            ),
+        )
+        .select(PageUnitScopeRow::as_select())
+        .get_result::<PageUnitScopeRow>(conn)
+        .await
+        .optional()
+        .map_err(diesel)?
+        .ok_or_else(|| missing_page(id, "get_unit_scope"))?;
+
+    row.try_into()
+}
+
+/// Locks and loads the minimal Page scope used by Unit edits.
+#[instrument(level = "info", skip_all)]
+pub async fn get_unit_scope_excluded(
+    conn: &mut RdbConn,
+    id: &str,
+) -> BaseRest<PageUnitScope> {
+    //
+    let row = t_page
+        .filter(f_id.eq(id))
+        .filter(
+            f_chapter_id.eq_any(
+                t_chapter::table
+                    .filter(t_chapter::f_deleted_at.is_null())
+                    .select(t_chapter::f_id),
+            ),
+        )
+        .select(PageUnitScopeRow::as_select())
+        .for_update()
+        .get_result::<PageUnitScopeRow>(conn)
+        .await
+        .optional()
+        .map_err(diesel)?
+        .ok_or_else(|| missing_page(id, "get_unit_scope_excluded"))?;
 
     row.try_into()
 }
@@ -297,25 +350,25 @@ pub async fn list_first_infos_by_chapter_ids(
 
 /// Persist unit counters (total, translated, proofread) onto a page row.
 #[instrument(level = "info", skip_all)]
-pub async fn set_unit_counters(
+pub async fn set_unit_counts(
     conn: &mut RdbConn,
     id: &str,
-    counters: UnitCountMetrics,
+    counts: UnitCountMetrics,
 ) -> BaseRest<()> {
     //
     let now = OffsetDateTime::now_utc();
 
     let aspect = PageAspectRow::new(now)
         .total_unit_count(i32_from_usize(
-            counters.total,
+            counts.total,
             "t_page.f_total_unit_count",
         )?)
         .translated_unit_count(i32_from_usize(
-            counters.translated,
+            counts.translated,
             "t_page.f_translated_unit_count",
         )?)
         .proofread_unit_count(i32_from_usize(
-            counters.proofread,
+            counts.proofread,
             "t_page.f_proofread_unit_count",
         )?);
 
@@ -377,6 +430,25 @@ pub async fn delete_by_ids(conn: &mut RdbConn, ids: &[String]) -> BaseRest<()> {
         .map_err(diesel)?;
 
     accept(())
+}
+
+// Builds the expected error used when a Page scope cannot be found.
+fn missing_page(id: &str, operation: &str) -> BaseError {
+    //
+    let err_message = trl("error-page-not-found");
+
+    tracing::warn!(
+        err_variant = ?ExpectedVariant::Args,
+        err_message = %err_message,
+        page_id = %id,
+        operation,
+        "expected error: page not found",
+    );
+
+    BaseError::Expected {
+        variant: ExpectedVariant::Args,
+        message: err_message,
+    }
 }
 
 // Reject a persisted Chapter whose Page count exceeds the business invariant.

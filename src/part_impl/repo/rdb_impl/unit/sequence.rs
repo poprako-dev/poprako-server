@@ -31,8 +31,11 @@ use crate::result::{BaseError, BaseRest, accept};
 use crate::shared::result::diesel;
 use crate::value::unit::UnitTextPart;
 
-// Number of rows loaded per locked Unit-order query.
+// Number of Unit links consumed from one keyset query.
 const UNIT_ORDER_QUERY_CHUNK_SIZE: i64 = 512;
+
+// One extra row proves that another Unit-link chunk exists.
+const UNIT_ORDER_QUERY_SENTINEL_LIMIT: i64 = UNIT_ORDER_QUERY_CHUNK_SIZE + 1;
 
 #[declare_sql_function]
 extern "SQL" {
@@ -186,10 +189,6 @@ where
             return Err(corrupt_unit_chain_err());
         };
 
-        debug_assert!(target_position < units.len());
-
-        debug_assert!(current_position < units.len());
-
         if target_position >= units.len() || current_position >= units.len() {
             return Err(corrupt_unit_chain_err());
         }
@@ -319,31 +318,6 @@ pub async fn list_infos_in_chapter_order(
     )
 }
 
-/// Lists Units in verified linked-list order for one Page.
-pub async fn list_infos(
-    conn: &mut RdbConn,
-    page_id: &str,
-) -> BaseRest<Vec<UnitInfo>> {
-    //
-    let rows = t_unit
-        .filter(f_page_id.eq(page_id))
-        .select(UnitInfoRow::as_select())
-        .load::<UnitInfoRow>(conn)
-        .await
-        .map_err(diesel)?;
-
-    let mut unit_infos =
-        rows.into_iter().map(UnitInfo::from).collect::<Vec<_>>();
-
-    order_units(
-        &mut unit_infos,
-        |unit_info| unit_info.id.as_str(),
-        |unit_info| unit_info.next_id.as_deref(),
-    )?;
-
-    accept(unit_infos)
-}
-
 /// Lists Units for multiple Pages with one query and validates each linked list.
 pub async fn list_infos_by_page_ids(
     conn: &mut RdbConn,
@@ -405,9 +379,9 @@ pub async fn list_infos_by_ids(
     accept(rows.into_iter().map(UnitInfo::from).collect())
 }
 
-/// Locks and lists the complete Unit chain, including tombstones.
+/// Lists the complete Unit chain, including tombstones.
 #[instrument(level = "info", skip_all)]
-pub async fn list_orders_for_update(
+pub async fn list_orders(
     conn: &mut RdbConn,
     page_id: &str,
 ) -> BaseRest<Vec<UnitOrder>> {
@@ -418,7 +392,7 @@ pub async fn list_orders_for_update(
 
     loop {
         //
-        let chunk =
+        let mut chunk =
             match after_id.as_deref() {
                 //
                 Some(after_id) => t_unit
@@ -426,8 +400,7 @@ pub async fn list_orders_for_update(
                     .filter(unit_id.gt(after_id))
                     .select((unit_id, unit_next_id, f_hidden_at))
                     .order(unit_id.asc())
-                    .limit(UNIT_ORDER_QUERY_CHUNK_SIZE)
-                    .for_update()
+                    .limit(UNIT_ORDER_QUERY_SENTINEL_LIMIT)
                     .load::<(String, Option<String>, Option<OffsetDateTime>)>(
                         conn,
                     )
@@ -437,8 +410,7 @@ pub async fn list_orders_for_update(
                     .filter(f_page_id.eq(page_id))
                     .select((unit_id, unit_next_id, f_hidden_at))
                     .order(unit_id.asc())
-                    .limit(UNIT_ORDER_QUERY_CHUNK_SIZE)
-                    .for_update()
+                    .limit(UNIT_ORDER_QUERY_SENTINEL_LIMIT)
                     .load::<(String, Option<String>, Option<OffsetDateTime>)>(
                         conn,
                     )
@@ -446,15 +418,25 @@ pub async fn list_orders_for_update(
             }
             .map_err(diesel)?;
 
-        let chunk_is_full = i64::try_from(chunk.len())
-            .is_ok_and(|chunk_len| chunk_len == UNIT_ORDER_QUERY_CHUNK_SIZE);
+        let has_next_chunk =
+            i64::try_from(chunk.len()).is_ok_and(|chunk_len| {
+                chunk_len == UNIT_ORDER_QUERY_SENTINEL_LIMIT
+            });
+
+        if has_next_chunk {
+            let _ = chunk.pop();
+        }
 
         after_id = chunk.last().map(|(id, _, _)| id.clone());
 
         rows.extend(chunk);
 
-        if !chunk_is_full {
+        if !has_next_chunk {
             break;
+        }
+
+        if after_id.is_none() {
+            return Err(corrupt_unit_chain_err());
         }
     }
 

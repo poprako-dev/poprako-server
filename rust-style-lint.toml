@@ -281,6 +281,42 @@ contexts = [
     "macro_field",
 ]
 
+[[forbidden-identifiers.words]]
+word = "counter"
+code = "FBD021"
+replacement = "count"
+message = "'counter' is forbidden - use 'count' instead"
+contexts = [
+    "module",
+    "function",
+    "let",
+    "parameter",
+    "const",
+    "static",
+    "enum_variant",
+    "type",
+    "field",
+    "macro_field",
+]
+
+[[forbidden-identifiers.words]]
+word = "expression"
+code = "FBD022"
+replacement = "expr"
+message = "'expression' is forbidden - use 'expr' instead"
+contexts = [
+    "module",
+    "function",
+    "let",
+    "parameter",
+    "const",
+    "static",
+    "enum_variant",
+    "type",
+    "field",
+    "macro_field",
+]
+
 [trait-use-anonymous]
 # The trait lists replace the packaged defaults entirely.
 external_traits = [

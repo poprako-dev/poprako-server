@@ -4,14 +4,6 @@ use crate::model::read::proj::unit::{UnitCountMetrics, UnitInfo, UnitOrder};
 use crate::model::write::unit::UnitEdit;
 use crate::value::unit::UnitTextPart;
 
-/// Lists unit infos for a page.
-#[derive(Oper)]
-#[oper(output = Vec<UnitInfo>)]
-pub struct ListUnitInfos<'a> {
-    /// The page id.
-    pub page_id: &'a str,
-}
-
 /// Lists unit infos for multiple pages in each page's linked-list order.
 #[derive(Oper)]
 #[oper(output = Vec<UnitInfo>)]
@@ -62,6 +54,9 @@ pub struct ListUnitOrders<'a> {
 }
 
 /// Applies unit edits (reorder, create, update, delete) for a page.
+///
+/// The caller must hold the owning Chapter row lock and must supply `orders`
+/// from the same transaction snapshot.
 #[derive(Oper)]
 #[oper(output = UnitCountMetrics)]
 pub struct ApplyUnitEdits<'a> {

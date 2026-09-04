@@ -7,8 +7,7 @@ mod orchestra;
 // Internal organization of the `tests` module.
 mod tests;
 
-use std::collections::HashSet;
-
+use crate::complex::unit::UnitComplex;
 use crate::model::read::proj::unit::{UnitCountMetrics, UnitInfo, UnitOrder};
 use crate::model::write::unit::UnitEdit;
 use crate::part_impl::repo::mock_impl::{
@@ -16,16 +15,6 @@ use crate::part_impl::repo::mock_impl::{
 };
 use crate::result::{BaseRest, accept};
 use crate::util::Patch;
-use crate::value::unit::MAX_PAGE_UNIT_COUNT;
-
-// Locate a unit id inside ordered id list, used by move/create/save operations.
-fn find_order_pos(ordered_ids: &[&str], id: &str) -> Option<usize> {
-    //
-    ordered_ids
-        .iter()
-        .enumerate()
-        .find_map(|(pos, cand)| (*cand == id).then_some(pos))
-}
 
 // Reorders linked-list-like unit slices into a deterministic traversal order.
 fn order_units<T, I, N>(
@@ -106,35 +95,6 @@ where
     accept(())
 }
 
-// Move one unit id to a new position based on requested next_id.
-fn move_order<'a>(
-    ordered_ids: &mut Vec<&'a str>,
-    id: &'a str,
-    next_id: Option<&str>,
-) -> BaseRest<()> {
-    //
-    // Return an operation error if caller targets an unknown id.
-    let Some(pos) = find_order_pos(ordered_ids, id) else {
-        return Err(expected("error-invalid-unit-oper"));
-    };
-
-    let id = ordered_ids.remove(pos);
-
-    let pos = match next_id {
-        //
-        // Insert at explicit next-id position.
-        Some(next_id) => find_order_pos(ordered_ids, next_id)
-            .ok_or_else(|| expected("error-invalid-unit-oper"))?,
-
-        // Append to tail when next-id is omitted.
-        None => ordered_ids.len(),
-    };
-
-    ordered_ids.insert(pos, id);
-
-    accept(())
-}
-
 // List units for one page in deterministic next-id order.
 fn list_infos(state: &MockState, page_id: &str) -> BaseRest<Vec<UnitInfo>> {
     //
@@ -155,82 +115,12 @@ fn list_infos(state: &MockState, page_id: &str) -> BaseRest<Vec<UnitInfo>> {
     accept(unit_infos)
 }
 
-// Apply edit instructions into an ordered id list and return new unit traversal order.
-fn apply_order_edits<'a>(
-    orders: &'a [UnitOrder],
-    edits: &'a [UnitEdit],
-) -> BaseRest<Vec<&'a str>> {
-    //
-    // Start with persisted ordering, then apply create/save/delete repositioning rules.
-    let mut ordered_ids = orders
-        .iter()
-        .map(|order| order.id.as_str())
-        .collect::<Vec<_>>();
-
-    let mut hidden_ids = orders
-        .iter()
-        .filter(|order| order.is_hidden)
-        .map(|order| order.id.as_str())
-        .collect::<HashSet<_>>();
-
-    for edit in edits {
-        //
-        match edit {
-            //
-            // Create may append a brand-new id and optionally re-anchor.
-            UnitEdit::Create { id, next_id, .. } => {
-                //
-                if find_order_pos(&ordered_ids, id).is_some() {
-                    return Err(expected("error-invalid-unit-oper"));
-                }
-
-                ordered_ids.push(id);
-
-                hidden_ids.remove(id.as_str());
-
-                move_order(&mut ordered_ids, id, next_id.as_deref())?;
-            }
-
-            // Save can keep visibility and optionally change successor.
-            UnitEdit::Save { id, next_id, .. } => {
-                //
-                hidden_ids.remove(id.as_str());
-
-                match next_id {
-                    //
-                    Patch::Skip => {}
-
-                    Patch::Clear => {
-                        move_order(&mut ordered_ids, id, None)?;
-                    }
-
-                    Patch::Assign { value: next_id } => {
-                        move_order(&mut ordered_ids, id, Some(next_id))?;
-                    }
-                }
-            }
-
-            // Delete marks unit ids as hidden for count/publish checks.
-            UnitEdit::Delete { id } => {
-                hidden_ids.insert(id);
-            }
-        }
-    }
-
-    let visible_count = ordered_ids
-        .iter()
-        .filter(|id| !hidden_ids.contains(**id))
-        .count();
-
-    if visible_count > MAX_PAGE_UNIT_COUNT {
-        return Err(expected("error-invalid-unit-oper"));
-    }
-
-    accept(ordered_ids)
-}
-
 // Build a unit payload for create edits.
-fn unit_from_edit(page_id: &str, edit: &UnitEdit) -> BaseRest<UnitInfo> {
+fn unit_from_edit(
+    page_id: &str,
+    edit: &UnitEdit,
+    next_id: Option<&str>,
+) -> BaseRest<UnitInfo> {
     //
     // Parse creation fields and initialize runtime state with now timestamps.
     let UnitEdit::Create {
@@ -271,7 +161,7 @@ fn unit_from_edit(page_id: &str, edit: &UnitEdit) -> BaseRest<UnitInfo> {
     accept(UnitInfo {
         id: id.clone(),
         page_id: page_id.to_string(),
-        next_id: None,
+        next_id: next_id.map(str::to_string),
         is_bubble: *is_bubble,
         coord: coord.clone(),
         translated_text,
@@ -379,20 +269,23 @@ fn count_infos(unit_infos: &[UnitInfo]) -> UnitCountMetrics {
     unit_infos
         .iter()
         .filter(|unit_info| unit_info.hidden_at.is_none())
-        .fold(UnitCountMetrics::default(), |mut counters, unit_info| {
-            //
-            counters.total += 1;
+        .fold(
+            UnitCountMetrics::default(),
+            |mut count_metrics, unit_info| {
+                //
+                count_metrics.total += 1;
 
-            if unit_info.is_translated() {
-                counters.translated += 1;
-            }
+                if unit_info.is_translated() {
+                    count_metrics.translated += 1;
+                }
 
-            if unit_info.is_proofread {
-                counters.proofread += 1;
-            }
+                if unit_info.is_proofread {
+                    count_metrics.proofread += 1;
+                }
 
-            counters
-        })
+                count_metrics
+            },
+        )
 }
 
 // List units for multiple pages while preserving page and linked-list order.
@@ -453,8 +346,8 @@ fn apply_edits(
     edits: &[UnitEdit],
 ) -> BaseRest<UnitCountMetrics> {
     //
-    // Derive a new order first, then apply each edit with conflict checks.
-    let ordered_ids = apply_order_edits(orders, edits)?;
+    // Derive the final sequence once through the shared pure business planner.
+    let sequence_plan = UnitComplex::plan_edit_sequence(orders, edits)?;
 
     for edit in edits {
         //
@@ -463,7 +356,9 @@ fn apply_edits(
             // Insert new unit or change existing unit state.
             UnitEdit::Create { id, .. } => {
                 //
-                let unit_info = unit_from_edit(page_id, edit)?;
+                let next_id = sequence_plan.next_id(id)?;
+
+                let unit_info = unit_from_edit(page_id, edit, next_id)?;
 
                 if state.units.iter().any(|unit_info| unit_info.id == *id) {
                     return Err(expected("error-unit-duplicate"));
@@ -492,14 +387,11 @@ fn apply_edits(
         }
     }
 
-    for (index, id) in ordered_ids.iter().enumerate() {
+    for successor_change in sequence_plan.changed_successors() {
         //
-        // Write normalized next-id links after all edits are applied.
-        let next_id = ordered_ids.get(index + 1);
+        let unit_info = find_unit_mut(state, page_id, successor_change.id())?;
 
-        let unit_info = find_unit_mut(state, page_id, id)?;
-
-        unit_info.next_id = next_id.map(|next_id| (*next_id).to_string());
+        unit_info.next_id = successor_change.next_id().map(str::to_string);
 
         unit_info.updated_at = now();
     }

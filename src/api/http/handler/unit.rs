@@ -63,8 +63,8 @@ pub async fn list_infos(
     //
     let instr = ListPageUnitInfosInstr { page_id };
 
-    usecase::unit::list_infos::<RdbContext<ReptRead>, HybRepo>(
-        (harn.repo(),),
+    usecase::unit::list_infos::<_, RdbContext<ReptRead>, HybRepo>(
+        (harn.nucl().rept_read(), harn.repo()),
         user_token,
         instr,
     )

@@ -10,22 +10,23 @@ pub mod tests;
 use poprako_orchestra::{AtLeast, Level, Run, Step};
 use tracing::instrument;
 
-use crate::model::read::proj::chapter::ChapterInfo;
+use crate::model::read::proj::chapter::{ChapterInfo, ChapterUnitEditScope};
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::chapter::{
-    AdjustChapterUnitCounters, CompleteChapterRawProvide, CreateChapter,
+    AdjustChapterUnitCountDelta, CompleteChapterRawProvide, CreateChapter,
     FindPinnedChapterInfo, GetChapterInfo, GetChapterInfoExcluded,
-    ListChapterInfos, ListChapterInfosExcluded, ListPinnedChapterInfos,
-    LockChapters, SetChapterPageCounters, StartChapterStage,
-    UnpinOtherChapters, UpdateChapter, UpdateChapterStage,
+    GetChapterUnitEditScopeExcluded, ListChapterInfos,
+    ListChapterInfosExcluded, ListPinnedChapterInfos, LockChapters,
+    SetChapterPageCountMetrics, StartChapterStage, UnpinOtherChapters,
+    UpdateChapter, UpdateChapterStage,
 };
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::chapter::step_impl::{
-    adjust_unit_counters, complete_raw_provide, create,
+    adjust_unit_counts, complete_raw_provide, create,
     find_pinned_info_by_comic_id, get_info_by_id, get_info_excluded,
-    list_infos, list_infos_excluded, list_pinned_infos_by_comic_ids,
-    lock_chapters, set_page_counters, start_stage, unpin_others, update_info,
-    update_stage,
+    get_unit_edit_scope_excluded, list_infos, list_infos_excluded,
+    list_pinned_infos_by_comic_ids, lock_chapters, set_page_counts,
+    start_stage, unpin_others, update_info, update_stage,
 };
 use crate::part_impl::repo::rdb_impl::numeric::i32_from_usize;
 use crate::result::{BaseError, BaseRest};
@@ -209,6 +210,27 @@ where
     }
 }
 
+impl<L> Step<GetChapterUnitEditScopeExcluded<'_>, RdbContext<L>> for HybRepo
+where
+    L: Level + Send + AtLeast<ReptRead>,
+{
+    // Declares the transaction isolation level required for this locked read.
+    type Level = ReptRead;
+
+    // Defines the adapter error exposed by this operation.
+    type Error = BaseError;
+
+    #[instrument(level = "info", skip_all)]
+    // Locks and loads the minimal Chapter scope owning the requested Page.
+    async fn step(
+        &self,
+        context: &mut RdbContext<L>,
+        oper: &GetChapterUnitEditScopeExcluded<'_>,
+    ) -> BaseRest<ChapterUnitEditScope> {
+        get_unit_edit_scope_excluded(context.conn(), oper.page_id).await
+    }
+}
+
 impl<L> Step<ListChapterInfosExcluded<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
@@ -337,7 +359,7 @@ where
     }
 }
 
-impl<L> Step<SetChapterPageCounters<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<SetChapterPageCountMetrics<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -352,10 +374,10 @@ where
     async fn step(
         &self,
         context: &mut RdbContext<L>,
-        oper: &SetChapterPageCounters<'_>,
+        oper: &SetChapterPageCountMetrics<'_>,
     ) -> BaseRest<()> {
         //
-        set_page_counters(
+        set_page_counts(
             context.conn(),
             oper.id,
             i32_from_usize(oper.page_count, "t_chapter.f_page_count")?,
@@ -376,7 +398,7 @@ where
     }
 }
 
-impl<L> Step<AdjustChapterUnitCounters<'_>, RdbContext<L>> for HybRepo
+impl<L> Step<AdjustChapterUnitCountDelta<'_>, RdbContext<L>> for HybRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
@@ -391,9 +413,9 @@ where
     async fn step(
         &self,
         context: &mut RdbContext<L>,
-        oper: &AdjustChapterUnitCounters<'_>,
+        oper: &AdjustChapterUnitCountDelta<'_>,
     ) -> BaseRest<()> {
-        adjust_unit_counters(context.conn(), oper.id, &oper.delta).await
+        adjust_unit_counts(context.conn(), oper.id, &oper.delta).await
     }
 }
 

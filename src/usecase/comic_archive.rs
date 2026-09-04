@@ -37,6 +37,10 @@ use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
 use crate::value::comic_archive::ComicArchiveMonth;
 
+// TODO: Generate this complete JSON export through a bounded temporary
+// artifact and let the HTTP adapter stream it after database access ends.
+// Preserve every selected month and payload; resource pressure must fail the
+// export rather than truncate it.
 /// Exports selected retained UTC month slots for one team.
 #[instrument(level = "info", skip(repo, token), fields(actor_user_id = %token.user_id))]
 pub async fn export<C, R>(
@@ -194,5 +198,3 @@ where
 
     accept(archive_comic_val)
 }
-
-// TODO: export
