@@ -315,7 +315,7 @@ impl Run<GetTermbaseInfo<'_>> for HybRepo {
     // Load one termbase info by id through shared query path.
     #[instrument(level = "info", skip_all)]
     async fn run(&self, oper: &GetTermbaseInfo<'_>) -> BaseRest<TermbaseInfo> {
-        submit_query!(self.core, get_info, oper.id)
+        submit_query!(self.rdb_core, get_info, oper.id)
     }
 }
 
@@ -330,7 +330,7 @@ impl Run<ListTermbaseInfos<'_>> for HybRepo {
         &self,
         oper: &ListTermbaseInfos<'_>,
     ) -> BaseRest<Vec<TermbaseInfo>> {
-        submit_query!(self.core, list_infos, oper.spec)
+        submit_query!(self.rdb_core, list_infos, oper.spec)
     }
 }
 

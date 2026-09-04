@@ -38,7 +38,7 @@ impl Run<ListUnitInfosByPageIds<'_>> for HybRepo {
         &self,
         oper: &ListUnitInfosByPageIds<'_>,
     ) -> BaseRest<Vec<UnitInfo>> {
-        submit_query!(self.core, list_infos_by_page_ids, oper.page_ids)
+        submit_query!(self.rdb_core, list_infos_by_page_ids, oper.page_ids)
     }
 }
 

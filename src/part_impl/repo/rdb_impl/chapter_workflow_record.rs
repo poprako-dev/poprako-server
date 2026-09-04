@@ -80,7 +80,7 @@ impl Run<ListChapterWorkflowRecordInfos<'_>> for HybRepo {
         &self,
         oper: &ListChapterWorkflowRecordInfos<'_>,
     ) -> BaseRest<Vec<ChapterWorkflowRecordInfo>> {
-        submit_query!(self.core, list_infos, oper.spec)
+        submit_query!(self.rdb_core, list_infos, oper.spec)
     }
 }
 

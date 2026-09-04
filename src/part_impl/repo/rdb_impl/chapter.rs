@@ -44,7 +44,7 @@ impl Run<GetChapterInfo<'_, '_>> for HybRepo {
         &self,
         oper: &GetChapterInfo<'_, '_>,
     ) -> BaseRest<ChapterInfo> {
-        submit_query!(self.core, get_info_by_id, oper.id, oper.incls)
+        submit_query!(self.rdb_core, get_info_by_id, oper.id, oper.incls)
     }
 }
 
@@ -59,7 +59,7 @@ impl Run<ListChapterInfos<'_>> for HybRepo {
         &self,
         oper: &ListChapterInfos<'_>,
     ) -> BaseRest<Vec<ChapterInfo>> {
-        submit_query!(self.core, list_infos, oper.spec)
+        submit_query!(self.rdb_core, list_infos, oper.spec)
     }
 }
 
@@ -76,7 +76,7 @@ impl Run<FindPinnedChapterInfo<'_, '_>> for HybRepo {
     ) -> BaseRest<Option<ChapterInfo>> {
         //
         submit_query!(
-            self.core,
+            self.rdb_core,
             find_pinned_info_by_comic_id,
             oper.comic_id,
             oper.incls
@@ -90,12 +90,18 @@ impl Run<ListPinnedChapterInfos<'_>> for HybRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
+    //
     // Collect pinned chapter info for multiple comics.
     async fn run(
         &self,
         oper: &ListPinnedChapterInfos<'_>,
     ) -> BaseRest<Vec<ChapterInfo>> {
-        submit_query!(self.core, list_pinned_infos_by_comic_ids, oper.comic_ids)
+        //
+        submit_query!(
+            self.rdb_core,
+            list_pinned_infos_by_comic_ids,
+            oper.comic_ids
+        )
     }
 }
 
@@ -107,7 +113,7 @@ impl Run<StartChapterStage<'_>> for HybRepo {
     #[instrument(level = "info", skip_all)]
     // Enter a chapter state transition request and return whether any row changed.
     async fn run(&self, oper: &StartChapterStage<'_>) -> BaseRest<bool> {
-        submit_query!(self.core, start_stage, oper.id, oper.stage)
+        submit_query!(self.rdb_core, start_stage, oper.id, oper.stage)
     }
 }
 
@@ -122,7 +128,7 @@ impl Run<CompleteChapterRawProvide<'_>> for HybRepo {
         &self,
         oper: &CompleteChapterRawProvide<'_>,
     ) -> BaseRest<bool> {
-        submit_query!(self.core, complete_raw_provide, oper.id)
+        submit_query!(self.rdb_core, complete_raw_provide, oper.id)
     }
 }
 

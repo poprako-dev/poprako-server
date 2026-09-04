@@ -44,7 +44,7 @@ impl Run<GetUserInfo<'_>> for HybRepo {
         match oper {
             //
             GetUserInfo::Id { id } => {
-                submit_query!(self.core, get_info_by_id, id)
+                submit_query!(self.rdb_core, get_info_by_id, id)
             }
         }
     }
@@ -65,7 +65,7 @@ impl Run<GetUserCredential<'_>> for HybRepo {
         match oper {
             //
             GetUserCredential::Qid { qid } => {
-                submit_query!(self.core, get_credential_by_qid, qid)
+                submit_query!(self.rdb_core, get_credential_by_qid, qid)
             }
         }
     }
@@ -86,7 +86,7 @@ impl Run<FindUserInfo<'_>> for HybRepo {
         match oper {
             //
             FindUserInfo::Qid { qid } => {
-                submit_query!(self.core, find_info_by_qid, qid)
+                submit_query!(self.rdb_core, find_info_by_qid, qid)
             }
         }
     }
@@ -104,15 +104,15 @@ impl Run<UpdateUser<'_>> for HybRepo {
         match oper {
             //
             UpdateUser::TouchLastActive { id } => {
-                submit_query!(self.core, touch_last_active, id)
+                submit_query!(self.rdb_core, touch_last_active, id)
             }
 
             UpdateUser::Info { repl } => {
-                submit_query!(self.core, update_info, repl)
+                submit_query!(self.rdb_core, update_info, repl)
             }
 
             UpdateUser::PasswordHash { repl } => {
-                submit_query!(self.core, update_password_hash, repl)
+                submit_query!(self.rdb_core, update_password_hash, repl)
             }
         }
     }

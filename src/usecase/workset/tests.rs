@@ -12,6 +12,8 @@
 
 use super::*;
 
+mod subtree_delete;
+
 use poprako_obj_dept::key::ObjKey;
 use poprako_obj_dept::model::meta::ObjMeta;
 use time::OffsetDateTime;
@@ -28,9 +30,10 @@ use crate::part_impl::repo::mock_impl::{Mock, MockObjRecord};
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
 use crate::test_util::fixture::team;
-use crate::usecase::subtree_delete::sweep_once;
+use crate::usecase::subtree_delete::sweep;
 use crate::value::chapter::mask::StageMask;
 use crate::value::role::{RoleField, RoleMask};
+use crate::value::subtree_delete::SubtreeSweepLevel;
 
 fn workset(id: &str, team_id: &str, index: usize) -> WorksetInfo {
     //
@@ -422,8 +425,11 @@ async fn background_sweep_deletes_comics_before_workset() {
         .await
         .unwrap();
 
-    assert!(sweep_once((&mock, &mock, &mock)).await.unwrap());
-    assert!(sweep_once((&mock, &mock, &mock)).await.unwrap());
+    assert!(
+        sweep((&mock, &mock, &mock), SubtreeSweepLevel::Comic)
+            .await
+            .unwrap()
+    );
 
     let before_parent_sweep = mock.snapshot();
 
@@ -431,8 +437,16 @@ async fn background_sweep_deletes_comics_before_workset() {
     assert_eq!(before_parent_sweep.worksets.len(), 1);
     assert_eq!(before_parent_sweep.obj_tasks.len(), 2);
 
-    assert!(sweep_once((&mock, &mock, &mock)).await.unwrap());
-    assert!(!sweep_once((&mock, &mock, &mock)).await.unwrap());
+    assert!(
+        sweep((&mock, &mock, &mock), SubtreeSweepLevel::Workset)
+            .await
+            .unwrap()
+    );
+    assert!(
+        !sweep((&mock, &mock, &mock), SubtreeSweepLevel::Workset)
+            .await
+            .unwrap()
+    );
 
     let snapshot = mock.snapshot();
 

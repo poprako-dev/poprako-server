@@ -14,11 +14,13 @@ use crate::part::repo::oper::subtree_delete::{
 };
 use crate::part::repo::subtree_delete::SubtreeRepo;
 use crate::result::{BaseError, BaseRest, accept};
+use crate::value::subtree_delete::SubtreeSweepLevel;
 
-/// Sweeps at most one eligible hierarchy tombstone in one transaction.
+/// Sweeps one eligible hierarchy claim for the requested level.
 #[instrument(level = "info", skip_all)]
-pub async fn sweep_once<N, C, R, O>(
+pub async fn sweep<N, C, R, O>(
     (nucl, repo, obj_dept): (&N, &R, &O),
+    level: SubtreeSweepLevel,
 ) -> BaseRest<bool>
 where
     C: Context + Send,
@@ -34,7 +36,8 @@ where
     let swept = nucl
         .coord(async |context| {
             //
-            let target = ClaimSubtreeSweep.step_on(repo, context).await?;
+            let target =
+                ClaimSubtreeSweep { level }.step_on(repo, context).await?;
 
             let Some(target) = target else {
                 return accept(false);
@@ -54,9 +57,9 @@ where
                         .map_err(BaseError::from)?;
                 }
 
-                SubtreeDeleteSweepTarget::Comic { id } => {
+                SubtreeDeleteSweepTarget::Comics { ids } => {
                     //
-                    DeleteObjs::<ComicCover>::new(std::slice::from_ref(id))
+                    DeleteObjs::<ComicCover>::new(ids)
                         .step_on(obj_dept, context)
                         .await
                         .map_err(BaseError::from)?;
@@ -70,7 +73,7 @@ where
                         .map_err(BaseError::from)?;
                 }
 
-                SubtreeDeleteSweepTarget::Workset { .. } => {}
+                SubtreeDeleteSweepTarget::Worksets { .. } => {}
             }
 
             SweepSubtree { target: &target }

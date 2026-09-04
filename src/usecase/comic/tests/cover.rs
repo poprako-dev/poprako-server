@@ -5,8 +5,9 @@ use poprako_obj_dept::model::task::ObjTask;
 use crate::data::instr::comic::AllocComicCoverInstr;
 use crate::test_util::IMAGE_CONFIG;
 use crate::test_util::fixture::workset;
-use crate::usecase::subtree_delete::sweep_once;
+use crate::usecase::subtree_delete::sweep;
 use crate::value::image::{ImageExt, ImageHash};
+use crate::value::subtree_delete::SubtreeSweepLevel;
 
 fn alloc_instr(hash_byte: u8) -> AllocComicCoverInstr {
     AllocComicCoverInstr {
@@ -179,7 +180,11 @@ async fn delete_marks_comic_then_sweep_removes_cover() {
     assert_eq!(snapshot.worksets[0].comic_count, 0);
     assert!(snapshot.obj_tasks.is_empty());
 
-    assert!(sweep_once((&mock, &mock, &mock)).await.unwrap());
+    assert!(
+        sweep((&mock, &mock, &mock), SubtreeSweepLevel::Comic,)
+            .await
+            .unwrap()
+    );
 
     let swept_snapshot = mock.snapshot();
 

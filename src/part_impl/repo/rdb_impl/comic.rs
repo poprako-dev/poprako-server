@@ -32,7 +32,7 @@ impl Run<GetComicInfo<'_, '_>> for HybRepo {
     // Fetches one comic through `submit_query!` and applies caller-defined includes.
     #[instrument(level = "info", skip_all)]
     async fn run(&self, oper: &GetComicInfo<'_, '_>) -> BaseRest<ComicInfo> {
-        submit_query!(self.core, get_info_by_id, oper.id, oper.incls)
+        submit_query!(self.rdb_core, get_info_by_id, oper.id, oper.incls)
     }
 }
 
@@ -44,7 +44,7 @@ impl Run<ListComicInfos<'_>> for HybRepo {
     // Loads matching comics and returns the list view for the requested spec.
     #[instrument(level = "info", skip_all)]
     async fn run(&self, oper: &ListComicInfos<'_>) -> BaseRest<Vec<ComicInfo>> {
-        submit_query!(self.core, list_infos, oper.spec)
+        submit_query!(self.rdb_core, list_infos, oper.spec)
     }
 }
 
@@ -56,7 +56,7 @@ impl Run<UpdateComic<'_>> for HybRepo {
     // Writes the provided comic updates using the step-level `update_info` flow.
     #[instrument(level = "info", skip_all)]
     async fn run(&self, oper: &UpdateComic<'_>) -> BaseRest<()> {
-        submit_query!(self.core, update_info, oper.update)
+        submit_query!(self.rdb_core, update_info, oper.update)
     }
 }
 

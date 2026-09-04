@@ -256,6 +256,8 @@ pub struct MockContext {
     pub archive_commit_failure: bool,
     /// When true, team creation will fail before transaction commit.
     pub create_team_failure: bool,
+    /// When true, object deletion will fail before transaction commit.
+    pub obj_delete_failure: bool,
 }
 
 impl poprako_orchestra::Context for MockContext {
@@ -272,6 +274,8 @@ pub struct MockFlags {
     pub archive_commit_failure: bool,
     /// Simulates a failure in team creation within a transaction.
     pub create_team_failure: bool,
+    /// Simulates a failure while recording object deletion tasks.
+    pub obj_delete_failure: bool,
     /// Disables thumbnail URL capability in the object-pool mock.
     pub obj_thumbnail_disabled: bool,
 }
@@ -451,6 +455,14 @@ impl Mock {
     pub fn with_create_team_failure(self) -> Self {
         //
         self.flags.lock().unwrap().create_team_failure = true;
+
+        self
+    }
+
+    /// Fail object deletion before a transaction can commit.
+    pub fn with_obj_delete_failure(self) -> Self {
+        //
+        self.flags.lock().unwrap().obj_delete_failure = true;
 
         self
     }

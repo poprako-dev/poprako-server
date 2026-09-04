@@ -36,7 +36,7 @@ impl Run<GetPageInfo<'_>> for HybRepo {
     #[instrument(level = "info", skip_all)]
     // Fetch one page by id via shared repository dispatch.
     async fn run(&self, oper: &GetPageInfo<'_>) -> BaseRest<PageInfo> {
-        submit_query!(self.core, get_info_by_id, oper.id)
+        submit_query!(self.rdb_core, get_info_by_id, oper.id)
     }
 }
 
@@ -50,7 +50,7 @@ impl Run<GetPageUnitScope<'_>> for HybRepo {
         &self,
         oper: &GetPageUnitScope<'_>,
     ) -> BaseRest<PageUnitScope> {
-        submit_query!(self.core, get_unit_scope, oper.id)
+        submit_query!(self.rdb_core, get_unit_scope, oper.id)
     }
 }
 
@@ -62,7 +62,7 @@ impl Run<ListPageInfos<'_>> for HybRepo {
     #[instrument(level = "info", skip_all)]
     // List page infos for a chapter using the chapter id filter.
     async fn run(&self, oper: &ListPageInfos<'_>) -> BaseRest<Vec<PageInfo>> {
-        submit_query!(self.core, list_infos, oper.chapter_id)
+        submit_query!(self.rdb_core, list_infos, oper.chapter_id)
     }
 }
 
@@ -79,7 +79,7 @@ impl Run<ListFirstPageInfos<'_>> for HybRepo {
     ) -> BaseRest<Vec<PageInfo>> {
         //
         submit_query!(
-            self.core,
+            self.rdb_core,
             list_first_infos_by_chapter_ids,
             oper.chapter_ids
         )
@@ -91,12 +91,18 @@ impl Run<ListEdittedDiffPageIds<'_>> for HybRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
+    //
     // Lists matching Page IDs in stable Chapter Page order.
     async fn run(
         &self,
         oper: &ListEdittedDiffPageIds<'_>,
     ) -> BaseRest<Vec<String>> {
-        submit_query!(self.core, list_editted_diff_page_ids, oper.chapter_id)
+        //
+        submit_query!(
+            self.rdb_core,
+            list_editted_diff_page_ids,
+            oper.chapter_id
+        )
     }
 }
 

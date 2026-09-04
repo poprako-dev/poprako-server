@@ -1,5 +1,8 @@
 //! In-memory hierarchy mark-and-sweep operations.
 
+// Claims tombstones and physically removes their direct dependants.
+mod sweep;
+
 use std::collections::HashSet;
 
 use poprako_orchestra::Step;
@@ -99,7 +102,7 @@ pub fn chapter_ids(
 }
 
 /// Collect pages owned by a chapter.
-pub fn page_ids(state: &MockState, chapter_id: &str) -> HashSet<String> {
+pub(super) fn page_ids(state: &MockState, chapter_id: &str) -> HashSet<String> {
     //
     state
         .pages
@@ -254,191 +257,6 @@ pub fn mark_scope(
     accept(())
 }
 
-/// Claim the next eligible tombstone.
-pub fn claim(state: &MockState) -> Option<SubtreeDeleteSweepTarget> {
-    //
-    let mut ids = state
-        .deleted_chapter_ids
-        .iter()
-        .filter(|id| state.chapters.iter().any(|info| info.id == id.as_str()))
-        .cloned()
-        .collect::<Vec<_>>();
-
-    ids.sort_unstable();
-
-    if let Some(id) = ids.into_iter().next() {
-        return Some(SubtreeDeleteSweepTarget::Chapter { id });
-    }
-
-    let mut ids = state
-        .deleted_comic_ids
-        .iter()
-        .filter(|id| {
-            //
-            state.comics.iter().any(|info| info.id == id.as_str())
-                && !state
-                    .chapters
-                    .iter()
-                    .any(|info| info.comic_id == id.as_str())
-        })
-        .cloned()
-        .collect::<Vec<_>>();
-
-    ids.sort_unstable();
-
-    if let Some(id) = ids.into_iter().next() {
-        return Some(SubtreeDeleteSweepTarget::Comic { id });
-    }
-
-    let mut ids = state
-        .deleted_workset_ids
-        .iter()
-        .filter(|id| {
-            //
-            state.worksets.iter().any(|info| info.id == id.as_str())
-                && !state
-                    .comics
-                    .iter()
-                    .any(|info| info.workset_id == id.as_str())
-        })
-        .cloned()
-        .collect::<Vec<_>>();
-
-    ids.sort_unstable();
-
-    if let Some(id) = ids.into_iter().next() {
-        return Some(SubtreeDeleteSweepTarget::Workset { id });
-    }
-
-    let mut ids = state
-        .deleted_team_ids
-        .iter()
-        .filter(|id| {
-            //
-            state.teams.iter().any(|info| info.id == id.as_str())
-                && !state
-                    .worksets
-                    .iter()
-                    .any(|info| info.team_id == id.as_str())
-        })
-        .cloned()
-        .collect::<Vec<_>>();
-
-    ids.sort_unstable();
-
-    ids.into_iter()
-        .next()
-        .map(|id| SubtreeDeleteSweepTarget::Team { id })
-}
-
-/// Delete one claimed chapter and its objects.
-pub fn delete_chapter(state: &mut MockState, chapter_id: &str) {
-    //
-    let page_ids = page_ids(state, chapter_id);
-
-    state
-        .assignment_invitations
-        .retain(|info| info.chapter_id != chapter_id);
-
-    state
-        .assignments
-        .retain(|info| info.chapter_id != chapter_id);
-
-    state
-        .chapter_workflow_records
-        .retain(|info| info.chapter_id != chapter_id);
-
-    state.units.retain(|info| !page_ids.contains(&info.page_id));
-
-    state.pages.retain(|info| !page_ids.contains(&info.id));
-
-    state.chapters.retain(|info| info.id != chapter_id);
-
-    state.deleted_chapter_ids.remove(chapter_id);
-}
-
-/// Delete one claimed comic and its direct dependants.
-pub fn delete_comic(state: &mut MockState, comic_id: &str) {
-    //
-    let termbase_ids = state
-        .termbases
-        .iter()
-        .filter(|info| info.comic_id.as_deref() == Some(comic_id))
-        .map(|info| info.id.clone())
-        .collect::<HashSet<_>>();
-
-    state
-        .terms
-        .retain(|info| !termbase_ids.contains(&info.termbase_id));
-
-    state
-        .termbases
-        .retain(|info| !termbase_ids.contains(&info.id));
-
-    state
-        .comic_archives
-        .retain(|info| info.source_comic_id != comic_id);
-
-    state.comics.retain(|info| info.id != comic_id);
-
-    state.deleted_comic_ids.remove(comic_id);
-}
-
-/// Delete one claimed team and its direct dependants.
-pub fn delete_team(state: &mut MockState, team_id: &str) {
-    //
-    let termbase_ids = state
-        .termbases
-        .iter()
-        .filter(|info| info.team_id.as_deref() == Some(team_id))
-        .map(|info| info.id.clone())
-        .collect::<HashSet<_>>();
-
-    state
-        .terms
-        .retain(|info| !termbase_ids.contains(&info.termbase_id));
-
-    state
-        .termbases
-        .retain(|info| !termbase_ids.contains(&info.id));
-
-    state.comic_archives.retain(|info| info.team_id != team_id);
-
-    state.announcements.retain(|info| info.team_id != team_id);
-
-    state.comments.retain(|info| info.team_id != team_id);
-
-    state
-        .member_invitations
-        .retain(|info| info.team_id != team_id);
-
-    state.members.retain(|info| info.team_id != team_id);
-
-    state.teams.retain(|info| info.id != team_id);
-
-    state.deleted_team_ids.remove(team_id);
-}
-
-/// Delete one claimed target.
-pub fn delete_target(state: &mut MockState, target: &SubtreeDeleteSweepTarget) {
-    //
-    match target {
-        //
-        SubtreeDeleteSweepTarget::Chapter { id } => delete_chapter(state, id),
-
-        SubtreeDeleteSweepTarget::Comic { id } => delete_comic(state, id),
-
-        SubtreeDeleteSweepTarget::Workset { id } => {
-            //
-            state.worksets.retain(|info| info.id != *id);
-
-            state.deleted_workset_ids.remove(id);
-        }
-
-        SubtreeDeleteSweepTarget::Team { id } => delete_team(state, id),
-    }
-}
-
 impl Step<LockSubtreeDeleteScope<'_>, MockContext> for Mock {
     // Required Orchestra execution level.
     type Level = ReptRead;
@@ -484,9 +302,9 @@ impl Step<ClaimSubtreeSweep, MockContext> for Mock {
     async fn step(
         &self,
         context: &mut MockContext,
-        _oper: &ClaimSubtreeSweep,
+        oper: &ClaimSubtreeSweep,
     ) -> BaseRest<Option<SubtreeDeleteSweepTarget>> {
-        accept(claim(&context.state))
+        accept(sweep::claim(&context.state, oper.level))
     }
 }
 
@@ -536,7 +354,7 @@ impl Step<DeleteSubtree<'_>, MockContext> for Mock {
             });
         };
 
-        delete_chapter(&mut context.state, chapter_id);
+        sweep::delete_chapter(&mut context.state, chapter_id);
 
         accept(())
     }
@@ -556,7 +374,7 @@ impl Step<SweepSubtree<'_>, MockContext> for Mock {
         oper: &SweepSubtree<'_>,
     ) -> BaseRest<()> {
         //
-        delete_target(&mut context.state, oper.target);
+        sweep::sweep_target(&mut context.state, oper.target);
 
         accept(())
     }

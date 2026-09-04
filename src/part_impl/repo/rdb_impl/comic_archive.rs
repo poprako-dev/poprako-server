@@ -534,7 +534,7 @@ impl Run<ListComicArchivePayloads<'_>> for HybRepo {
     ) -> BaseRest<Vec<(OffsetDateTime, String)>> {
         //
         submit_query!(
-            self.core,
+            self.rdb_core,
             payload::list_payloads,
             oper.team_id,
             oper.months

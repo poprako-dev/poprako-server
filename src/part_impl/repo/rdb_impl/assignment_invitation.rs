@@ -37,7 +37,7 @@ impl Run<ListAssignmentInvitationInfos<'_>> for HybRepo {
         &self,
         oper: &ListAssignmentInvitationInfos<'_>,
     ) -> BaseRest<Vec<AssignmentInvitationInfo>> {
-        submit_query!(self.core, list_infos, oper.spec)
+        submit_query!(self.rdb_core, list_infos, oper.spec)
     }
 }
 
@@ -55,7 +55,7 @@ impl Run<GetAssignmentInvitationInfo<'_>> for HybRepo {
         match oper {
             //
             GetAssignmentInvitationInfo::Id { id } => {
-                submit_query!(self.core, get_info_by_id, id)
+                submit_query!(self.rdb_core, get_info_by_id, id)
             }
         }
     }
@@ -179,7 +179,7 @@ impl Run<PurgeExpiredAssignmentInvitation<'_>> for HybRepo {
         &self,
         oper: &PurgeExpiredAssignmentInvitation<'_>,
     ) -> BaseRest<()> {
-        submit_query!(self.core, purge_pending, oper.id)
+        submit_query!(self.rdb_core, purge_pending, oper.id)
     }
 }
 

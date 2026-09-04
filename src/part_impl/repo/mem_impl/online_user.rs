@@ -79,7 +79,7 @@ impl Run<MarkOnlineUser<'_>> for HybRepo {
     async fn run(&self, oper: &MarkOnlineUser<'_>) -> BaseRest<()> {
         //
         mark_user_online_at(
-            &self.online_user_deadlines,
+            &self.active_ddls,
             oper.team_id,
             oper.user_id,
             Instant::now(),
@@ -98,7 +98,7 @@ impl Run<ListOnlineUserIds<'_>> for HybRepo {
     async fn run(&self, oper: &ListOnlineUserIds<'_>) -> BaseRest<Vec<String>> {
         //
         let online_user_ids = list_online_user_ids_at(
-            &self.online_user_deadlines,
+            &self.active_ddls,
             oper.team_id,
             Instant::now(),
         );

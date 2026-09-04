@@ -93,7 +93,7 @@ impl Run<ResolveTeamId<'_>> for HybRepo {
         &self,
         oper: &ResolveTeamId<'_>,
     ) -> Result<String, Self::Error> {
-        submit_query!(self.core, resolve_team_id, oper)
+        submit_query!(self.rdb_core, resolve_team_id, oper)
     }
 }
 

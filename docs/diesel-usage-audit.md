@@ -113,12 +113,14 @@ from normal reads and guarded mutations immediately. Direct Chapter deletion
 remains synchronous because Chapter is the cleanup unit and its Page count is
 frozen while deletion is in progress.
 
-Two scheduler workers repeatedly claim eligible rows with `FOR UPDATE SKIP
-LOCKED`. Claims are dependency ordered: Chapter, then childless Comic, then
-childless Workset, then childless Team. Each transaction deletes only one
-claimed level and its direct dependants. Object deletion tasks are inserted in
-the same transaction before the relational rows disappear, so a rollback leaves
-the target available for a later sweep. Prom itself keeps its existing unordered
+Two scheduler workers repeatedly attempt explicit levels with `FOR UPDATE SKIP
+LOCKED`, in the order Chapter, childless Comic, childless Workset, then childless
+Team. A successful level restarts polling from Chapter; an empty or failed level
+falls through to the next one. Chapter and Team claims contain one row, while
+Comic and Workset claims contain at most 64 rows ordered by `(deleted_at, id)`.
+Each claim is one transaction that inserts all object deletion tasks before
+batch-deleting its direct dependants and roots, so a rollback leaves the whole
+claim available for a later sweep. Prom itself keeps its existing unordered
 semantics.
 
 The shared RDB pool is capped at four connections for the 2C2G production host;

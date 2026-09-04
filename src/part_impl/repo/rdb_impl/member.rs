@@ -41,7 +41,7 @@ impl Run<FindMemberInfo<'_>> for HybRepo {
             FindMemberInfo::UserTeam { user_id, team_id } => {
                 //
                 submit_query!(
-                    self.core,
+                    self.rdb_core,
                     find_info_by_user_id_and_team_id,
                     user_id,
                     team_id
@@ -69,11 +69,11 @@ impl Run<ListMemberInfos<'_>> for HybRepo {
         match oper {
             //
             ListMemberInfos::Spec { spec } => {
-                submit_query!(self.core, list_infos, spec)
+                submit_query!(self.rdb_core, list_infos, spec)
             }
 
             ListMemberInfos::User { user_id } => {
-                submit_query!(self.core, list_infos_by_user_id, user_id)
+                submit_query!(self.rdb_core, list_infos_by_user_id, user_id)
             }
         }
     }
@@ -91,7 +91,7 @@ impl Run<GetMemberInfo<'_, '_>> for HybRepo {
         match oper {
             //
             GetMemberInfo::Id { id, incls } => {
-                submit_query!(self.core, get_info_by_id, id, incls)
+                submit_query!(self.rdb_core, get_info_by_id, id, incls)
             }
         }
     }

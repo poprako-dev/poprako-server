@@ -306,7 +306,7 @@ impl Run<ListMemberInvitationInfos<'_>> for HybRepo {
         &self,
         oper: &ListMemberInvitationInfos<'_>,
     ) -> BaseRest<Vec<MemberInvitationInfo>> {
-        submit_query!(self.core, list_infos, oper.spec)
+        submit_query!(self.rdb_core, list_infos, oper.spec)
     }
 }
 
@@ -325,11 +325,11 @@ impl Run<GetMemberInvitationInfo<'_, '_>> for HybRepo {
         match oper {
             //
             GetMemberInvitationInfo::Id { id, incls } => {
-                submit_query!(self.core, get_info_by_id, id, incls)
+                submit_query!(self.rdb_core, get_info_by_id, id, incls)
             }
 
             GetMemberInvitationInfo::Code { code } => {
-                submit_query!(self.core, get_info_by_code, code)
+                submit_query!(self.rdb_core, get_info_by_code, code)
             }
         }
     }
@@ -500,6 +500,6 @@ impl Run<PurgeExpiredMemberInvitation<'_>> for HybRepo {
         &self,
         oper: &PurgeExpiredMemberInvitation<'_>,
     ) -> BaseRest<()> {
-        submit_query!(self.core, purge_pending, oper.id)
+        submit_query!(self.rdb_core, purge_pending, oper.id)
     }
 }

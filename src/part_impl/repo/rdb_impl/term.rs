@@ -43,7 +43,7 @@ impl Run<GetTermInfo<'_>> for HybRepo {
     // Resolve one term info by id through the submit-query entrypoint.
     #[instrument(level = "info", skip_all)]
     async fn run(&self, oper: &GetTermInfo<'_>) -> BaseRest<TermInfo> {
-        submit_query!(self.core, get_info, oper.id)
+        submit_query!(self.rdb_core, get_info, oper.id)
     }
 }
 
@@ -66,7 +66,7 @@ impl Run<ListTermInfos<'_>> for HybRepo {
             } => {
                 //
                 submit_query!(
-                    self.core,
+                    self.rdb_core,
                     list_infos,
                     termbase_id,
                     *fuzzy_source,
@@ -76,7 +76,7 @@ impl Run<ListTermInfos<'_>> for HybRepo {
             }
 
             ListTermInfos::Termbase { termbase_id } => {
-                submit_query!(self.core, list_all_infos, termbase_id)
+                submit_query!(self.rdb_core, list_all_infos, termbase_id)
             }
         }
     }

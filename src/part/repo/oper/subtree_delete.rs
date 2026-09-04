@@ -5,6 +5,7 @@ use poprako_orchestra::Oper;
 use crate::model::read::proj::subtree_delete::{
     SubtreeDeleteScope, SubtreeDeleteSweepTarget,
 };
+use crate::value::subtree_delete::SubtreeSweepLevel;
 
 /// Identifies the root of one hierarchy deletion.
 pub enum SubtreeRoot<'a> {
@@ -50,10 +51,13 @@ pub struct MarkSubtree<'a> {
     pub scope: &'a SubtreeDeleteScope,
 }
 
-/// Claims the next eligible tombstoned row in dependency order.
+/// Claims eligible tombstones from one hierarchy level.
 #[derive(Oper)]
 #[oper(output = Option<SubtreeDeleteSweepTarget>)]
-pub struct ClaimSubtreeSweep;
+pub struct ClaimSubtreeSweep {
+    /// Hierarchy level to claim without falling through to another level.
+    pub level: SubtreeSweepLevel,
+}
 
 /// Lists Page identifiers owned by one chapter.
 #[derive(Oper)]
@@ -71,7 +75,7 @@ pub struct DeleteSubtree<'a> {
     pub scope: &'a SubtreeDeleteScope,
 }
 
-/// Physically deletes one claimed tombstoned row and its direct dependants.
+/// Physically deletes one claimed tombstone batch and its direct dependants.
 #[derive(Oper)]
 #[oper(output = ())]
 pub struct SweepSubtree<'a> {

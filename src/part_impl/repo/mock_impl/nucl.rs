@@ -81,6 +81,7 @@ impl Nucl for Mock {
             state,
             archive_commit_failure: flags.archive_commit_failure,
             create_team_failure: flags.create_team_failure,
+            obj_delete_failure: flags.obj_delete_failure,
         };
 
         match f(&mut context).await {

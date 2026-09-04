@@ -41,7 +41,7 @@ impl Run<CreateTeam<'_>> for HybRepo {
         &self,
         oper: &CreateTeam<'_>,
     ) -> Result<TeamInfo, Self::Error> {
-        submit_query!(self.core, create, oper.entry)
+        submit_query!(self.rdb_core, create, oper.entry)
     }
 }
 
@@ -60,7 +60,7 @@ impl Run<GetTeamInfo<'_>> for HybRepo {
         match oper {
             //
             GetTeamInfo::Id { id } => {
-                submit_query!(self.core, get_info_by_id, id)
+                submit_query!(self.rdb_core, get_info_by_id, id)
             }
         }
     }
@@ -77,7 +77,7 @@ impl Run<ListTeamInfos<'_>> for HybRepo {
         &self,
         oper: &ListTeamInfos<'_>,
     ) -> Result<Vec<TeamInfo>, Self::Error> {
-        submit_query!(self.core, list_infos, oper.spec)
+        submit_query!(self.rdb_core, list_infos, oper.spec)
     }
 }
 
@@ -93,7 +93,7 @@ impl Run<UpdateTeam<'_>> for HybRepo {
         match oper {
             //
             UpdateTeam::Info { repl } => {
-                submit_query!(self.core, update_info, repl)
+                submit_query!(self.rdb_core, update_info, repl)
             }
         }
     }

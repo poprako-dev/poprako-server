@@ -214,7 +214,7 @@ impl Run<GetWorksetInfo<'_>> for HybRepo {
     // Map `GetWorksetInfo` lookup to one repository query helper.
     #[instrument(level = "info", skip_all)]
     async fn run(&self, oper: &GetWorksetInfo<'_>) -> BaseRest<WorksetInfo> {
-        submit_query!(self.core, get_info, oper.id)
+        submit_query!(self.rdb_core, get_info, oper.id)
     }
 }
 
@@ -229,7 +229,7 @@ impl Run<ListWorksetInfos<'_>> for HybRepo {
         &self,
         oper: &ListWorksetInfos<'_>,
     ) -> BaseRest<Vec<WorksetInfo>> {
-        submit_query!(self.core, list_infos, oper)
+        submit_query!(self.rdb_core, list_infos, oper)
     }
 }
 
@@ -241,7 +241,7 @@ impl Run<UpdateWorkset<'_>> for HybRepo {
     // Route update DTO directly into update helper.
     #[instrument(level = "info", skip_all)]
     async fn run(&self, oper: &UpdateWorkset<'_>) -> BaseRest<()> {
-        submit_query!(self.core, update_info, oper.update)
+        submit_query!(self.rdb_core, update_info, oper.update)
     }
 }
 

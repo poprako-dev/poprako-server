@@ -471,6 +471,14 @@ macro_rules! implement_mock_obj_dept {
                 context: &mut $crate::part_impl::repo::mock_impl::MockContext,
                 oper: &::poprako_obj_dept::oper::DeleteObjs<'a, $obj>,
             ) -> ::poprako_obj_dept::rest::ObjDeptRest<()> {
+                if context.obj_delete_failure {
+                    return Err(
+                        ::poprako_obj_dept::rest::ObjDeptError::Unrecoverable {
+                            message: "mock object deletion failed".into(),
+                        },
+                    );
+                }
+
                 let $crate::part_impl::repo::mock_impl::MockState {
                     objs,
                     obj_tasks,

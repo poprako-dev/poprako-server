@@ -58,7 +58,7 @@ impl SubtreeDeleteScope {
     }
 }
 
-/// One tombstoned hierarchy row claimed for physical cleanup.
+/// One tombstoned hierarchy claim selected for physical cleanup.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum SubtreeDeleteSweepTarget {
     //
@@ -69,15 +69,15 @@ pub enum SubtreeDeleteSweepTarget {
     },
 
     /// A comic whose physical chapter rows are already gone.
-    Comic {
-        /// Comic identifier.
-        id: String,
+    Comics {
+        /// Comic identifiers.
+        ids: Vec<String>,
     },
 
     /// A workset whose physical comic rows are already gone.
-    Workset {
-        /// Workset identifier.
-        id: String,
+    Worksets {
+        /// Workset identifiers.
+        ids: Vec<String>,
     },
 
     /// A team whose physical workset rows are already gone.

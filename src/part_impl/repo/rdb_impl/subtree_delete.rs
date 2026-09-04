@@ -80,9 +80,9 @@ where
     async fn step(
         &self,
         context: &mut RdbContext<L>,
-        _oper: &ClaimSubtreeSweep,
+        oper: &ClaimSubtreeSweep,
     ) -> BaseRest<Option<SubtreeDeleteSweepTarget>> {
-        sweep::claim(context.conn()).await
+        sweep::claim(context.conn(), oper.level).await
     }
 }
 
@@ -142,6 +142,6 @@ where
         context: &mut RdbContext<L>,
         oper: &SweepSubtree<'_>,
     ) -> BaseRest<()> {
-        sweep::delete_target(context.conn(), oper.target).await
+        sweep::sweep_target(context.conn(), oper.target).await
     }
 }

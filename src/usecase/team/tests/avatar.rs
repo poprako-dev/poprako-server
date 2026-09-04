@@ -4,8 +4,9 @@ use poprako_obj_dept::model::task::ObjTask;
 
 use crate::data::instr::team::AllocTeamAvatarInstr;
 use crate::test_util::IMAGE_CONFIG;
-use crate::usecase::subtree_delete::sweep_once;
+use crate::usecase::subtree_delete::sweep;
 use crate::value::image::{ImageExt, ImageHash};
+use crate::value::subtree_delete::SubtreeSweepLevel;
 
 fn alloc_instr(hash_byte: u8, ext: ImageExt) -> AllocTeamAvatarInstr {
     AllocTeamAvatarInstr {
@@ -244,7 +245,11 @@ async fn sweep_eligible_team_enqueues_exact_avatar_delete() {
     .await
     .unwrap();
 
-    assert!(sweep_once((&mock, &mock, &mock)).await.unwrap());
+    assert!(
+        sweep((&mock, &mock, &mock), SubtreeSweepLevel::Team)
+            .await
+            .unwrap()
+    );
 
     let snapshot = mock.snapshot();
 
