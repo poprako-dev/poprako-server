@@ -50,7 +50,7 @@ pub async fn system_mail_roundtrip_uses_testcontainer(shared: RdbCore) {
         receiver_id: user_fixture.user_entry.id.clone(),
         is_read: Some(false),
         offset: 0,
-        limit: 10,
+        limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     };
 
     let system_mail_infos = repo
@@ -80,7 +80,7 @@ pub async fn system_mail_roundtrip_uses_testcontainer(shared: RdbCore) {
         receiver_id: user_fixture.user_entry.id.clone(),
         is_read: Some(true),
         offset: 0,
-        limit: 10,
+        limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     };
 
     let read_system_mail_infos = repo

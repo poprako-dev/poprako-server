@@ -249,7 +249,7 @@ fn list_comic_infos(state: &MockState, spec: &ComicListSpec) -> Vec<ComicInfo> {
 
     let offset = spec.offset as usize;
 
-    let limit = spec.limit as usize;
+    let limit = spec.limit.get() as usize;
 
     if offset >= comic_infos.len() {
         Vec::new()

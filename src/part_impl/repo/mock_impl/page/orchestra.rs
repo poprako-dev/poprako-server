@@ -11,8 +11,8 @@ use crate::part::repo::oper::page::{
     ListPageInfosExcluded, SetPageUnitCounters, ShiftPageIndexesTemporary,
 };
 use crate::part_impl::repo::mock_impl::page::{
-    get_page_by_id, list_editted_diff_page_ids, list_first_pages, list_infos,
-    page_from_manifest_entry,
+    get_page_by_id, list_bounded_infos, list_editted_diff_page_ids,
+    list_first_pages, page_from_manifest_entry,
 };
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, expected, now, unrecoverable,
@@ -45,7 +45,7 @@ impl<'a> Run<ListPageInfos<'a>> for Mock {
         // Internal implementation detail.
         let state = self.state.lock().unwrap();
 
-        accept(list_infos(&state, oper.chapter_id))
+        list_bounded_infos(&state, oper.chapter_id)
     }
 }
 
@@ -81,7 +81,7 @@ impl Run<ListEdittedDiffPageIds<'_>> for Mock {
         //
         let state = self.state.lock().unwrap();
 
-        accept(list_editted_diff_page_ids(&state, oper.chapter_id))
+        list_editted_diff_page_ids(&state, oper.chapter_id)
     }
 }
 
@@ -115,7 +115,7 @@ impl<'a> Step<ListPageInfos<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &ListPageInfos<'a>,
     ) -> BaseRest<Vec<PageInfo>> {
-        accept(list_infos(&context.state, oper.chapter_id))
+        list_bounded_infos(&context.state, oper.chapter_id)
     }
 }
 
@@ -133,7 +133,7 @@ impl<'a> Step<ListPageInfosExcluded<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &ListPageInfosExcluded<'a>,
     ) -> BaseRest<Vec<PageInfo>> {
-        accept(list_infos(&context.state, oper.chapter_id))
+        list_bounded_infos(&context.state, oper.chapter_id)
     }
 }
 

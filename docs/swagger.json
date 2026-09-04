@@ -339,9 +339,7 @@
             "description": "Maximum number of results per page.",
             "required": true,
             "schema": {
-              "type": "integer",
-              "format": "int32",
-              "minimum": 0
+              "$ref": "#/components/schemas/ListLimit200"
             }
           }
         ],
@@ -711,9 +709,7 @@
             "description": "Maximum number of items to return.",
             "required": true,
             "schema": {
-              "type": "integer",
-              "format": "int32",
-              "minimum": 0
+              "$ref": "#/components/schemas/ListLimit200"
             }
           }
         ],
@@ -1281,9 +1277,7 @@
             "description": "Maximum number of items to return.",
             "required": true,
             "schema": {
-              "type": "integer",
-              "format": "int32",
-              "minimum": 0
+              "$ref": "#/components/schemas/ListLimit200"
             }
           }
         ],
@@ -1538,9 +1532,7 @@
             "description": "Maximum number of items to return.",
             "required": true,
             "schema": {
-              "type": "integer",
-              "format": "int32",
-              "minimum": 0
+              "$ref": "#/components/schemas/ListLimit200"
             }
           }
         ],
@@ -1728,9 +1720,7 @@
             "description": "Maximum number of records to return.",
             "required": true,
             "schema": {
-              "type": "integer",
-              "format": "int32",
-              "minimum": 0
+              "$ref": "#/components/schemas/ListLimit200"
             }
           }
         ],
@@ -2044,9 +2034,7 @@
             "description": "Maximum number of results per page.",
             "required": true,
             "schema": {
-              "type": "integer",
-              "format": "int32",
-              "minimum": 0
+              "$ref": "#/components/schemas/ListLimit200"
             }
           }
         ],
@@ -2182,9 +2170,7 @@
             "description": "Maximum number of items to return.",
             "required": true,
             "schema": {
-              "type": "integer",
-              "format": "int32",
-              "minimum": 0
+              "$ref": "#/components/schemas/ListLimit200"
             }
           }
         ],
@@ -2532,9 +2518,7 @@
             "description": "Maximum number of results per page.",
             "required": true,
             "schema": {
-              "type": "integer",
-              "format": "int32",
-              "minimum": 0
+              "$ref": "#/components/schemas/ListLimit200"
             }
           }
         ],
@@ -2617,9 +2601,7 @@
             "description": "Maximum number of results per page.",
             "required": true,
             "schema": {
-              "type": "integer",
-              "format": "int32",
-              "minimum": 0
+              "$ref": "#/components/schemas/ListLimit200"
             }
           }
         ],
@@ -2834,9 +2816,7 @@
             "description": "Maximum number of items to return.",
             "required": true,
             "schema": {
-              "type": "integer",
-              "format": "int32",
-              "minimum": 0
+              "$ref": "#/components/schemas/ListLimit200"
             }
           }
         ],
@@ -3043,9 +3023,7 @@
             "description": "Maximum number of items to return.",
             "required": true,
             "schema": {
-              "type": "integer",
-              "format": "int32",
-              "minimum": 0
+              "$ref": "#/components/schemas/ListLimit200"
             }
           }
         ],
@@ -3153,9 +3131,7 @@
             "description": "Maximum number of items to return.",
             "required": true,
             "schema": {
-              "type": "integer",
-              "format": "int32",
-              "minimum": 0
+              "$ref": "#/components/schemas/ListLimit200"
             }
           }
         ],
@@ -3257,9 +3233,7 @@
             "description": "Maximum number of records to return.",
             "required": true,
             "schema": {
-              "type": "integer",
-              "format": "int32",
-              "minimum": 0
+              "$ref": "#/components/schemas/ListLimit200"
             }
           }
         ],
@@ -3381,9 +3355,7 @@
             "description": "Maximum number of items to return.",
             "required": true,
             "schema": {
-              "type": "integer",
-              "format": "int32",
-              "minimum": 0
+              "$ref": "#/components/schemas/ListLimit200"
             }
           }
         ],
@@ -3669,9 +3641,7 @@
             "description": "Maximum number of records to return.",
             "required": true,
             "schema": {
-              "type": "integer",
-              "format": "int32",
-              "minimum": 0
+              "$ref": "#/components/schemas/ListLimit200"
             }
           }
         ],
@@ -4338,9 +4308,7 @@
             "description": "Maximum number of items to return.",
             "required": true,
             "schema": {
-              "type": "integer",
-              "format": "int32",
-              "minimum": 0
+              "$ref": "#/components/schemas/ListLimit200"
             }
           }
         ],

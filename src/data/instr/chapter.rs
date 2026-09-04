@@ -12,6 +12,7 @@ use utoipa::{IntoParams, ToSchema};
 
 use crate::value::chapter::ChapterInclOpt;
 use crate::value::chapter::stage::{Stage, StageOper};
+use crate::value::pagination::PubListLimit;
 use crate::value::role::RoleMask;
 
 /// Input parameters for creating a new chapter.
@@ -57,7 +58,7 @@ pub struct ListChapterInfosInstr {
     /// result set.
     pub offset: u32,
     /// Maximum number of chapters to return.
-    pub limit: u32,
+    pub limit: PubListLimit,
 }
 
 /// Input parameters for listing immutable workflow records under one chapter.
@@ -71,7 +72,7 @@ pub struct ListChapterWorkflowRecordInfosInstr {
     /// Pagination offset: number of records to skip before beginning the result set.
     pub offset: u32,
     /// Maximum number of records to return.
-    pub limit: u32,
+    pub limit: PubListLimit,
 }
 
 /// Input parameters for partially updating a chapter's profile.

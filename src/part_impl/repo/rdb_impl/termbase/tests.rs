@@ -107,7 +107,7 @@ pub async fn termbase_unique_and_query_roundtrip(shared: RdbCore) {
         comic_id: comic_fixture.comic_entry.id.clone(),
         fuzzy_name: None,
         offset: 0,
-        limit: 10,
+        limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     };
 
     let comic_termbases = repo
@@ -142,7 +142,7 @@ pub async fn termbase_unique_and_query_roundtrip(shared: RdbCore) {
         team_id: comic_fixture.team_entry.id.clone(),
         fuzzy_name: Some("%_G".into()),
         offset: 0,
-        limit: 10,
+        limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     };
 
     let listed = repo

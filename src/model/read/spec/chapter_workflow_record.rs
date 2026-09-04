@@ -1,5 +1,7 @@
 //! Query specification for chapter workflow record listings.
 
+use crate::value::pagination::PubListLimit;
+
 /// Pagination and ownership filter for chapter workflow records.
 pub struct ChapterWorkflowRecordListSpec {
     //
@@ -9,5 +11,5 @@ pub struct ChapterWorkflowRecordListSpec {
     /// Number of records to skip.
     pub offset: u32,
     /// Maximum number of records to return.
-    pub limit: u32,
+    pub limit: PubListLimit,
 }

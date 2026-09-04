@@ -1,6 +1,7 @@
 //! Domain models for team board comments.
 
 use crate::value::comment::CommentInclOpt;
+use crate::value::pagination::PubListLimit;
 
 /// Filtering, pagination, and include parameters for listing comments.
 pub struct CommentListSpec {
@@ -13,5 +14,5 @@ pub struct CommentListSpec {
     /// Number of records to skip for pagination.
     pub offset: u32,
     /// Maximum number of records to return.
-    pub limit: u32,
+    pub limit: PubListLimit,
 }

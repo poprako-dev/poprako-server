@@ -261,7 +261,7 @@ async fn list_infos_filters_and_sorts_by_index() {
         ListWorksetInfosInstr {
             team_id: "team-1".into(),
             offset: 0,
-            limit: 10,
+            limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
         },
     )
     .await
@@ -287,7 +287,7 @@ async fn list_infos_returns_empty_for_missing_team_contents() {
         ListWorksetInfosInstr {
             team_id: "missing".into(),
             offset: 0,
-            limit: 10,
+            limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
         },
     )
     .await

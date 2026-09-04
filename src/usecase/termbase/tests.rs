@@ -274,7 +274,7 @@ async fn list_comic_infos_inherits_team_and_excludes_sibling() {
         comic_id: "comic-1".into(),
         fuzzy_name: Some("hero".into()),
         offset: 0,
-        limit: 20,
+        limit: crate::value::pagination::PubListLimit::new(20).unwrap(),
     };
 
     let infos = list_comic_infos((&mock,), token("user-1"), instr)
@@ -313,7 +313,7 @@ async fn list_comic_infos_rejects_non_member() {
         comic_id: "comic-1".into(),
         fuzzy_name: None,
         offset: 0,
-        limit: 20,
+        limit: crate::value::pagination::PubListLimit::new(20).unwrap(),
     };
 
     let error = list_comic_infos((&mock,), token("user-outside"), instr)
@@ -352,7 +352,7 @@ async fn list_comic_infos_does_not_search_description() {
         comic_id: "comic-1".into(),
         fuzzy_name: Some("secret".into()),
         offset: 0,
-        limit: 20,
+        limit: crate::value::pagination::PubListLimit::new(20).unwrap(),
     };
 
     let infos = list_comic_infos((&mock,), token("user-1"), instr)

@@ -4,8 +4,8 @@ This is the active audit record for production Diesel access and the use cases
 that determine its query shape. Update or remove resolved findings so the
 document continues to describe the checked-in implementation.
 
-- Reviewed: 2026-09-03
-- Repository revision: `c9982de6`
+- Reviewed: 2026-09-04
+- Repository revision: `0a9cc927`
 - Scope: 55 production Diesel-related Rust files, approximately 221 query
   execution sites, 56 coordinated transaction paths, and 35 explicit
   `FOR UPDATE` sites
@@ -128,27 +128,98 @@ Evidence:
 - [`src/extra/sched/subtree_delete.rs`](../src/extra/sched/subtree_delete.rs)
 - [`src/part_impl/repo/rdb_impl/subtree_delete/tests.rs`](../src/part_impl/repo/rdb_impl/subtree_delete/tests.rs)
 
-### P0: Public list size is unbounded and archive export materializes payloads
+### P0 plan: Bound ordinary lists without truncating complete aggregates
 
-Fifteen public list inputs expose raw `u32` `offset` and `limit` values without
-a shared maximum. All use offset pagination. Several time-ordered queries lack
-an ID tie-breaker, so equal timestamps can produce unstable pages.
+The fifteen ordinary public lists, Page/Unit editor reads, and archive export
+have different business contracts and must not share one pagination rule.
 
-Archive export limits the request to 12 month labels but does not limit the
-number or byte size of archive JSON rows. Selecting non-contiguous months reads
-the complete range between the first and last month and filters the gaps in
-Rust.
+| Read class | Public contract | Database bound |
+| --- | --- | --- |
+| Ordinary lists | Require `1 <= limit <= 200`; use an opaque cursor for complete traversal | Fetch at most `limit + 1`, then hydrate includes only for the returned IDs |
+| Chapter Pages | Always return the complete ordered manifest | Domain maximum 200 Pages; read at most 201 to detect persisted invariant violations |
+| Page Units | Always return the complete visible edit sequence and counters | Domain maximum 100 visible Units; do not load full tombstone rows |
+| Comic archives | Always export every selected retained payload | Stream one ordered database chunk at a time; never truncate by count or bytes |
+
+The ordinary-list limit is a business rule. Represent it as
+`ListLimit<const N: u32 = 20>`, where `N` is the compile-time maximum, and use
+`ListLimit<200>` for ordinary public lists. Its custom deserializer rejects an
+invalid query during HTTP extraction, so `0` and `201` receive `400 Bad
+Request` before a handler or use case runs. Non-HTTP callers must use the
+checked constructor. Repository operations accept the proven value rather
+than a raw `u32`, and typed Diesel queries unwrap it only at `.limit(...)`.
+
+This bounded-limit foundation is implemented for all existing ordinary list
+inputs, repository specs, RDB adapters, and mock adapters. The OpenAPI schema
+derives its inclusive `1..=N` range from the same const generic.
+
+`limit + offset <= 200` is not the final pagination rule: by itself it would
+make every row after the first 200 unreachable. Use it only for the legacy
+offset compatibility path after cursor pagination is available. The rollout is:
+
+1. Add optional cursor input and optional `next_cursor` response metadata while
+   leaving each existing `data` payload shape unchanged. Preserve the current
+   sort as the primary order and append ID as the final unique order key.
+2. Fetch 201 base rows for a requested limit of 200, remove the sentinel before
+   include/object hydration, and derive a versioned cursor bound to the list
+   scope and normalized filters. Malformed, mismatched, or cursor-plus-offset
+   requests are `422 / Args`.
+3. After callers use cursors, constrain the legacy path to
+   `offset + limit <= 200`; then remove offset in a later API revision. Cursor
+   pages remain able to traverse an arbitrarily long static result set.
+
+Page and Unit endpoints remain intentionally unpaginated. Consolidate the two
+existing Chapter Page limits into one Page-domain constant, separate from the
+ordinary-list limit even though both equal 200. Page list and edited-diff
+queries must return all Pages in index order and treat a 201st row as corrupt
+persisted state, never as a partial response.
+
+Page hardening is implemented: allocation and both import formats share the
+Page-domain maximum; manifest, locked-manifest, and edited-diff reads use a
+typed 201-row sentinel with `(index, id)` ordering. Edited-diff selects only
+`(id, has_diff)` until the Page-count invariant is proven, then filters the
+response without loading full Page rows.
+
+Unit listing must retain hidden nodes because restoring a hidden Unit at its
+stored position is existing business behavior. Replace the current unbounded
+wide read with a short repeatable-read snapshot: read the complete link graph
+as bounded chunks of minimal `(id, next_id, hidden)` projections, validate and
+order it, then load full fields only for the at most 100 visible IDs. A 101st
+visible Unit, a counter mismatch, or a corrupt chain is an unrecoverable
+invariant failure; the endpoint must not silently truncate it.
+
+Archive export remains complete. Push the exact selected month intervals into
+one typed SQL predicate, order by `(created_at, id)`, and stream rows into a
+temporary export artifact with bounded buffering before the HTTP adapter sends
+it. This preserves the current JSON envelope and month grouping without
+holding all payloads in memory or holding a database connection for the
+client's transfer time. Limit concurrent export artifact creation separately;
+resource exhaustion is an infrastructure error, not permission to return a
+partial archive.
+
+Implementation order:
+
+1. Add the bounded list value and HTTP extraction tests; then add the cursor
+   codec and optional response metadata.
+2. Convert all fifteen ordinary list specs and typed Diesel queries; add the ID
+   tie-breakers and only add matching indexes after representative
+   `EXPLAIN (ANALYZE, BUFFERS)` evidence.
+3. Harden the complete Page and Unit reads without adding pagination to their
+   public endpoints.
+4. Replace archive materialization and range filtering with typed interval
+   filtering plus the bounded export artifact path.
+5. Update OpenAPI and the HTTP integration suite. Cover `0/1/200/201`, legacy
+   window overflow, cursor/filter mismatch, duplicate-free static traversal,
+   the exact Page/Unit aggregate limits, non-contiguous archive months, and
+   bounded-memory multi-chunk export.
 
 Evidence:
 
 - [`src/data/instr/comic.rs`](../src/data/instr/comic.rs#L94)
+- [`src/usecase/page/alloc/validation.rs`](../src/usecase/page/alloc/validation.rs#L13)
+- [`src/value/unit.rs`](../src/value/unit.rs#L7)
+- [`src/part_impl/repo/rdb_impl/unit/sequence.rs`](../src/part_impl/repo/rdb_impl/unit/sequence.rs#L323)
 - [`src/part_impl/repo/rdb_impl/comic_archive/payload.rs`](../src/part_impl/repo/rdb_impl/comic_archive/payload.rs#L44)
 - [`src/usecase/comic_archive.rs`](../src/usecase/comic_archive.rs#L79)
-
-Action: establish a shared default and hard maximum for ordinary lists, add a
-unique ordering suffix, and migrate high-volume lists to keyset pagination.
-Archive export must remain complete: stream or chunk it rather than truncate
-it, and push the selected month intervals into the typed SQL predicate.
 
 ### P1: Comic stage filtering materializes global IDs
 

@@ -241,7 +241,7 @@ async fn list_infos_invalid_owner_combination_is_rejected() {
             owner_id: Some("owner-user".into()),
             role: None,
             offset: 0,
-            limit: 10,
+            limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
         },
     )
     .await

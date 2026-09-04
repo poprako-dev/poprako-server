@@ -35,6 +35,7 @@ use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
 use crate::usecase;
 use crate::value::member::MemberInclOpt;
+use crate::value::pagination::PubListLimit;
 
 /// Query for the current-user memberships list endpoint (`/members/me`).
 ///
@@ -54,7 +55,7 @@ pub struct MemberMeListQuery {
     pub offset: u32,
 
     /// Maximum number of items to return.
-    pub limit: u32,
+    pub limit: PubListLimit,
 }
 
 /// `POST /api/v1/members` — create a member under a team.

@@ -46,7 +46,7 @@ fn list_infos(
             } => (
                 *role,
                 incl_opt.as_slice(),
-                Some((*offset as usize, *limit as usize)),
+                Some((*offset as usize, limit.get() as usize)),
                 state
                     .assignments
                     .iter()
@@ -66,7 +66,7 @@ fn list_infos(
             } => (
                 *role,
                 incl_opt.as_slice(),
-                Some((*offset as usize, *limit as usize)),
+                Some((*offset as usize, limit.get() as usize)),
                 state
                     .assignments
                     .iter()

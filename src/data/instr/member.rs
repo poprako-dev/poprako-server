@@ -12,6 +12,7 @@ use poprako_util::i18n::trl;
 use crate::model::read::spec::member::MemberListSpec;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::value::member::MemberInclOpt;
+use crate::value::pagination::PubListLimit;
 use crate::value::role::{RoleField, RoleMask};
 
 /// Input parameters for creating a member.
@@ -75,7 +76,7 @@ pub struct ListMemberInfosInstr {
     /// Pagination offset.
     pub offset: u32,
     /// Maximum number of results per page.
-    pub limit: u32,
+    pub limit: PubListLimit,
 }
 
 impl TryInto<MemberListSpec> for ListMemberInfosInstr {

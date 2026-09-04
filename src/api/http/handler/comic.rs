@@ -36,6 +36,7 @@ use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
 use crate::usecase;
 use crate::value::comic::{ComicInclOpt, ComicStatus, ComicWithOpt};
+use crate::value::pagination::PubListLimit;
 
 /// `GET /api/v1/teams/{team_id}/comic-archives/export` — export archive month slots.
 #[cfg_attr(feature = "swagger", utoipa::path(
@@ -106,7 +107,7 @@ pub struct ComicListQuery {
     pub offset: u32,
 
     /// Maximum number of items to return.
-    pub limit: u32,
+    pub limit: PubListLimit,
 }
 
 /// `POST /api/v1/comics` — create a comic (and its first chapter).

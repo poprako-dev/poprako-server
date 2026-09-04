@@ -10,6 +10,7 @@
 //! [`AssignmentInfoView`]: crate::data::view::chapter::AssignmentInfoView
 
 use crate::value::assignment::AssignmentInclOpt;
+use crate::value::pagination::PubListLimit;
 use crate::value::role::RoleField;
 
 /// Filtering and pagination parameters for listing chapter assignments.
@@ -27,7 +28,7 @@ pub enum AssignmentListSpec {
         /// Number of records to skip for pagination.
         offset: u32,
         /// Maximum number of records to return.
-        limit: u32,
+        limit: PubListLimit,
     },
 
     /// List assignments owned by a specific user, optionally filtered by role.
@@ -42,6 +43,6 @@ pub enum AssignmentListSpec {
         /// Number of records to skip for pagination.
         offset: u32,
         /// Maximum number of records to return.
-        limit: u32,
+        limit: PubListLimit,
     },
 }

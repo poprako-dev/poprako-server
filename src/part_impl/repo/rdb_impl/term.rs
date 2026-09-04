@@ -33,6 +33,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_term::dsl::{
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::RdbContext;
 use crate::shared::result::diesel;
+use crate::value::pagination::PubListLimit;
 
 impl Run<GetTermInfo<'_>> for HybRepo {
     // Map `GetTermInfo` to repository orchestration without ambient transaction.
@@ -417,7 +418,7 @@ async fn list_infos(
     termbase_id: &str,
     fuzzy_source: Option<&str>,
     offset: u32,
-    limit: u32,
+    limit: PubListLimit,
 ) -> BaseRest<Vec<TermInfo>> {
     //
     // Start with a termbase constraint, then apply optional fuzzy source matching.
@@ -438,7 +439,7 @@ async fn list_infos(
     let rows = query
         .order_by(f_updated_at.desc())
         .offset(i64::from(offset))
-        .limit(i64::from(limit))
+        .limit(i64::from(limit.get()))
         .load::<TermInfoRow>(conn)
         .await
         .map_err(diesel)?;

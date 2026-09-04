@@ -32,6 +32,7 @@ use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
 use crate::usecase;
 use crate::value::member_invitation::MemberInvitationInclOpt;
+use crate::value::pagination::PubListLimit;
 
 /// Query for listing invitations within a team.
 ///
@@ -55,7 +56,7 @@ pub struct MemberInvitationListQuery {
     pub offset: u32,
 
     /// Maximum number of items to return.
-    pub limit: u32,
+    pub limit: PubListLimit,
 }
 
 /// `POST /api/v1/member-invitations` — create a pending team invitation.

@@ -78,7 +78,7 @@ pub async fn chapter_workflow_record_roundtrip_uses_testcontainer(
     let list_spec = ChapterWorkflowRecordListSpec {
         chapter_id: chapter_fixture.chapter_entry.id.clone(),
         offset: 0,
-        limit: 2,
+        limit: crate::value::pagination::PubListLimit::new(2).unwrap(),
     };
 
     let latest_record_infos = repo

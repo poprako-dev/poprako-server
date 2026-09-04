@@ -12,6 +12,7 @@ use poprako_util::i18n::trl;
 use crate::model::read::spec::assignment::AssignmentListSpec;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::value::assignment::AssignmentInclOpt;
+use crate::value::pagination::PubListLimit;
 use crate::value::role::{RoleField, RoleMask};
 
 /// Input parameters for listing assignments by chapter or owner user.
@@ -51,7 +52,7 @@ pub struct ListAssignmentInfosInstr {
     /// Pagination offset.
     pub offset: u32,
     /// Maximum number of results per page.
-    pub limit: u32,
+    pub limit: PubListLimit,
 }
 
 impl TryInto<AssignmentListSpec> for ListAssignmentInfosInstr {

@@ -108,7 +108,7 @@ pub async fn member_roundtrip_uses_testcontainer(shared: RdbCore) {
         role: Some(RoleField::ADMIN),
         incl_opt: vec![MemberInclOpt::User],
         offset: 0,
-        limit: 10,
+        limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     };
 
     let member_infos = repo
@@ -377,7 +377,7 @@ pub async fn concurrent_admin_role_removals_are_serialized(shared: RdbCore) {
         role: Some(RoleField::ADMIN),
         incl_opt: Vec::new(),
         offset: 0,
-        limit: 10,
+        limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     };
 
     let admin_member_infos = repo
@@ -419,7 +419,7 @@ async fn remove_admin_role_after_read(
             role: None,
             incl_opt: Vec::new(),
             offset: 0,
-            limit: 10,
+            limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
         };
 
         let member_infos = ListMemberInfos::Spec {

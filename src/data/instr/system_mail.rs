@@ -7,6 +7,8 @@ use serde::Deserialize;
 #[cfg(feature = "swagger")]
 use utoipa::{IntoParams, ToSchema};
 
+use crate::value::pagination::PubListLimit;
+
 /// Input parameters for listing system mails.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
@@ -19,7 +21,7 @@ pub struct ListSystemMailInfosInstr {
     /// Pagination offset.
     pub offset: u32,
     /// Maximum number of results per page.
-    pub limit: u32,
+    pub limit: PubListLimit,
 }
 
 /// Input parameters for marking a batch of system mails as read.

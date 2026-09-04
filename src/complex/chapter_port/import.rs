@@ -17,7 +17,7 @@ use crate::model::artifact::translation_import::{
 use crate::model::shared::unit::{UnitCoord, UnitRevision, UnitTranslation};
 use crate::model::write::unit::UnitEdit;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::value::chapter_port::MAX_CHAPTER_IMPORT_PAGE_COUNT;
+use crate::value::page::MAX_CHAPTER_PAGE_COUNT;
 use crate::value::unit::MAX_PAGE_UNIT_COUNT;
 
 // Construct a localized limit error for PopRaKo input.
@@ -69,11 +69,11 @@ fn convert_poprako_document(
     project: ChapterTranslationPortView,
 ) -> BaseRest<Vec<PageTranslationImport>> {
     //
-    if project.pages.len() > MAX_CHAPTER_IMPORT_PAGE_COUNT {
+    if project.pages.len() > MAX_CHAPTER_PAGE_COUNT {
         //
         return Err(invalid_import_limit(
             "error-chapter-import-page-count",
-            MAX_CHAPTER_IMPORT_PAGE_COUNT,
+            MAX_CHAPTER_PAGE_COUNT,
             "PopRaKo document has too many pages",
         ));
     }

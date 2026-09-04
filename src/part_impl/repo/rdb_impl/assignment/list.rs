@@ -138,7 +138,7 @@ pub async fn list_infos(
             //
             query
                 .offset(i64::from(offset))
-                .limit(i64::from(limit))
+                .limit(i64::from(limit.get()))
                 .load::<AssignmentInfoRow>(conn)
                 .await
         }

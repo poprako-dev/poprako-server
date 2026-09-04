@@ -35,7 +35,7 @@ async fn list_infos_filters_by_lifecycle_status() {
             stages: None,
             status: Some(ComicStatus::Active),
             offset: 0,
-            limit: 10,
+            limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
         },
     )
     .await
@@ -56,7 +56,7 @@ async fn list_infos_filters_by_lifecycle_status() {
             stages: None,
             status: Some(ComicStatus::Archived),
             offset: 0,
-            limit: 10,
+            limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
         },
     )
     .await
@@ -127,7 +127,7 @@ async fn list_infos_includes_users_in_pinned_chapter_assignments() {
             stages: None,
             status: None,
             offset: 0,
-            limit: 10,
+            limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
         },
     )
     .await
@@ -205,7 +205,7 @@ async fn list_infos_rejects_assignments_without_pinned_chapters() {
             stages: None,
             status: None,
             offset: 0,
-            limit: 10,
+            limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
         },
     )
     .await
@@ -253,7 +253,7 @@ async fn list_infos_filters_by_fuzzy_title() {
             stages: None,
             status: None,
             offset: 0,
-            limit: 10,
+            limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
         },
     )
     .await
@@ -275,7 +275,7 @@ async fn list_infos_filters_by_fuzzy_title() {
             stages: None,
             status: None,
             offset: 0,
-            limit: 10,
+            limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
         },
     )
     .await
@@ -297,7 +297,7 @@ async fn list_infos_filters_by_fuzzy_title() {
             stages: None,
             status: None,
             offset: 0,
-            limit: 10,
+            limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
         },
     )
     .await

@@ -130,7 +130,7 @@ fn list_instr(team_id: &str) -> ListMemberInfosInstr {
         role: None,
         incl_opt: Vec::new(),
         offset: 0,
-        limit: 10,
+        limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     }
 }
 
@@ -345,7 +345,7 @@ async fn list_infos_filters_by_role() {
             role: Some(RoleField::REVIEWER),
             incl_opt: Vec::new(),
             offset: 0,
-            limit: 10,
+            limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
         },
     )
     .await;
@@ -412,7 +412,7 @@ async fn list_infos_applies_pagination_after_filtering() {
             role: None,
             incl_opt: Vec::new(),
             offset: 1,
-            limit: 1,
+            limit: crate::value::pagination::PubListLimit::new(1).unwrap(),
         },
     )
     .await;
@@ -475,7 +475,7 @@ async fn list_infos_owner_lists_own_memberships() {
             role: None,
             incl_opt: Vec::new(),
             offset: 0,
-            limit: 10,
+            limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
         },
     )
     .await;
@@ -526,7 +526,7 @@ fn list_infos_rejects_invalid_combination() {
         role: None,
         incl_opt: Vec::new(),
         offset: 0,
-        limit: 10,
+        limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     })
     .err()
     .unwrap();
@@ -544,7 +544,7 @@ fn list_infos_converts_owner_combination_to_mine_spec() {
         role: None,
         incl_opt: Vec::new(),
         offset: 3,
-        limit: 5,
+        limit: crate::value::pagination::PubListLimit::new(5).unwrap(),
     }
     .try_into()
     .ok()
@@ -564,5 +564,5 @@ fn list_infos_converts_owner_combination_to_mine_spec() {
 
     assert_eq!(offset, 3);
 
-    assert_eq!(limit, 5);
+    assert_eq!(limit.get(), 5);
 }

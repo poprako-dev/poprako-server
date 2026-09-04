@@ -8,7 +8,7 @@ use crate::model::artifact::translation_import::{
     PageTranslationImport, UnitTranslationImport, UnitTranslationImportSource,
 };
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
-use crate::value::chapter_port::MAX_CHAPTER_IMPORT_PAGE_COUNT;
+use crate::value::page::MAX_CHAPTER_PAGE_COUNT;
 use crate::value::unit::MAX_PAGE_UNIT_COUNT;
 
 /// Normalize `LabelPlus` text while preserving non-empty whitespace and lines.
@@ -393,11 +393,11 @@ pub fn parse_label_plus(content: &str) -> BaseRest<Vec<PageTranslationImport>> {
         });
     }
 
-    if pages.len() > MAX_CHAPTER_IMPORT_PAGE_COUNT {
+    if pages.len() > MAX_CHAPTER_PAGE_COUNT {
         //
         return Err(invalid_label_plus_limit(
             "error-chapter-import-page-count",
-            MAX_CHAPTER_IMPORT_PAGE_COUNT,
+            MAX_CHAPTER_PAGE_COUNT,
             "LabelPlus document has too many pages",
         ));
     }

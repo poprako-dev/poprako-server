@@ -71,7 +71,7 @@ pub async fn assignment_invitation_roundtrip_uses_testcontainer(
         chapter_id: chapter_fixture.chapter_entry.id.clone(),
         is_pending: Some(false),
         offset: 0,
-        limit: 10,
+        limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     };
 
     let assignment_invitation_infos = repo

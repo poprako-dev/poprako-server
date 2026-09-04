@@ -33,6 +33,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{
 };
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::result::diesel;
+use crate::value::page::{CHAPTER_PAGE_SENTINEL_LIMIT, MAX_CHAPTER_PAGE_COUNT};
 
 #[declare_sql_function]
 extern "SQL" {
@@ -139,10 +140,13 @@ pub async fn list_infos(
     let rows = t_page
         .filter(f_chapter_id.eq(chapter_id))
         .select(PageInfoRow::as_select())
-        .order_by(f_index.asc())
+        .order_by((f_index.asc(), f_id.asc()))
+        .limit(CHAPTER_PAGE_SENTINEL_LIMIT)
         .load::<PageInfoRow>(conn)
         .await
         .map_err(diesel)?;
+
+    let rows = ensure_chapter_page_count(rows, chapter_id, "list_infos")?;
 
     rows.into_iter().map(TryInto::try_into).collect()
 }
@@ -163,14 +167,27 @@ pub async fn list_editted_diff_page_ids(
             .filter(unit_proofread_text.is_distinct_from(unit_translated_text)),
     );
 
-    let page_ids = t_page
+    let page_matches = t_page
         .filter(f_chapter_id.eq(chapter_id))
-        .filter(has_editted_diff)
-        .select(f_id)
-        .order(f_index.asc())
-        .load::<String>(conn)
+        .select((f_id, has_editted_diff))
+        .order_by((f_index.asc(), f_id.asc()))
+        .limit(CHAPTER_PAGE_SENTINEL_LIMIT)
+        .load::<(String, bool)>(conn)
         .await
         .map_err(diesel)?;
+
+    let page_matches = ensure_chapter_page_count(
+        page_matches,
+        chapter_id,
+        "list_editted_diff_page_ids",
+    )?;
+
+    let page_ids = page_matches
+        .into_iter()
+        .filter_map(|(page_id, has_editted_diff)| {
+            has_editted_diff.then_some(page_id)
+        })
+        .collect();
 
     accept(page_ids)
 }
@@ -186,10 +203,14 @@ pub async fn list_infos_excluded(
         .filter(f_chapter_id.eq(chapter_id))
         .select(PageInfoRow::as_select())
         .order_by((f_index.asc(), f_id.asc()))
+        .limit(CHAPTER_PAGE_SENTINEL_LIMIT)
         .for_update()
         .load::<PageInfoRow>(conn)
         .await
         .map_err(diesel)?;
+
+    let rows =
+        ensure_chapter_page_count(rows, chapter_id, "list_infos_excluded")?;
 
     rows.into_iter().map(TryInto::try_into).collect()
 }
@@ -356,4 +377,31 @@ pub async fn delete_by_ids(conn: &mut RdbConn, ids: &[String]) -> BaseRest<()> {
         .map_err(diesel)?;
 
     accept(())
+}
+
+// Reject a persisted Chapter whose Page count exceeds the business invariant.
+fn ensure_chapter_page_count<T>(
+    rows: Vec<T>,
+    chapter_id: &str,
+    operation: &'static str,
+) -> BaseRest<Vec<T>> {
+    //
+    if rows.len() > MAX_CHAPTER_PAGE_COUNT {
+        //
+        tracing::error!(
+            chapter_id = %chapter_id,
+            page_count_lower_bound = rows.len(),
+            max_page_count = MAX_CHAPTER_PAGE_COUNT,
+            operation,
+            "persisted Chapter Page count exceeds the business maximum",
+        );
+
+        return Err(BaseError::Unrecoverable {
+            message:
+                "persisted Chapter Page count exceeds the business maximum"
+                    .into(),
+        });
+    }
+
+    accept(rows)
 }

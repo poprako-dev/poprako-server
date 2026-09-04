@@ -28,6 +28,7 @@ use crate::part::nucl::ReptRead;
 use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
 use crate::usecase;
+use crate::value::pagination::PubListLimit;
 
 /// Query parameters for terms inside one terminology base.
 #[derive(Debug, Deserialize)]
@@ -41,7 +42,7 @@ pub struct TermListQuery {
     /// Number of records to skip for pagination.
     pub offset: u32,
     /// Maximum number of records to return.
-    pub limit: u32,
+    pub limit: PubListLimit,
 }
 
 /// `POST /api/v1/terms` — create a terminology entry.

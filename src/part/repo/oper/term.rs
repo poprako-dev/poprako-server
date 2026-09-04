@@ -2,6 +2,7 @@ use poprako_orchestra::Oper;
 
 use crate::model::read::proj::term::TermInfo;
 use crate::model::write::term::{TermEntry, TermRepl};
+use crate::value::pagination::PubListLimit;
 
 /// Creates a term.
 #[derive(Oper)]
@@ -33,7 +34,7 @@ pub enum ListTermInfos<'a> {
         /// Number of matching terms to skip.
         offset: u32,
         /// Maximum number of matching terms to return.
-        limit: u32,
+        limit: PubListLimit,
     },
 
     /// Lists every term belonging to one terminology base.

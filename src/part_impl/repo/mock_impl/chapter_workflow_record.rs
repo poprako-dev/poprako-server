@@ -63,7 +63,7 @@ impl<'a> Run<ListChapterWorkflowRecordInfos<'a>> for Mock {
             &state,
             &oper.spec.chapter_id,
             oper.spec.offset,
-            oper.spec.limit,
+            oper.spec.limit.get(),
         ))
     }
 }

@@ -158,7 +158,7 @@ pub async fn list_infos(
         .select(ChapterInfoRow::as_select())
         .order_by(f_index.desc())
         .offset(i64::from(spec.offset))
-        .limit(i64::from(spec.limit))
+        .limit(i64::from(spec.limit.get()))
         .load::<ChapterInfoRow>(conn)
         .await
         .map_err(diesel)?;

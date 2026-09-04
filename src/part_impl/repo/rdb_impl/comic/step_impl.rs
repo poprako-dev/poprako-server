@@ -149,7 +149,7 @@ pub async fn list_infos(
     let rows = query
         .order_by((f_last_active_at.desc(), f_index.asc()))
         .offset(i64::from(spec.offset))
-        .limit(i64::from(spec.limit))
+        .limit(i64::from(spec.limit.get()))
         .load::<ComicInfoRow>(conn)
         .await
         .map_err(diesel)?;

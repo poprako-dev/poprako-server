@@ -7,6 +7,7 @@
 
 use crate::value::chapter::mask::StageMask;
 use crate::value::comic::{ComicInclOpt, ComicStatus};
+use crate::value::pagination::PubListLimit;
 
 /// Filtering and pagination parameters for listing comics within a workset.
 pub struct ComicListSpec {
@@ -27,5 +28,5 @@ pub struct ComicListSpec {
     /// Number of records to skip for pagination.
     pub offset: u32,
     /// Maximum number of records to return.
-    pub limit: u32,
+    pub limit: PubListLimit,
 }

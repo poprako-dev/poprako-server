@@ -9,6 +9,7 @@ use serde::Deserialize;
 use utoipa::{IntoParams, ToSchema};
 
 use crate::value::member_invitation::MemberInvitationInclOpt;
+use crate::value::pagination::PubListLimit;
 use crate::value::role::RoleMask;
 
 /// Input parameters for creating a new team invitation.
@@ -56,7 +57,7 @@ pub struct ListMemberInvitationInfosInstr {
     /// Pagination offset.
     pub offset: u32,
     /// Maximum number of results per page.
-    pub limit: u32,
+    pub limit: PubListLimit,
 }
 
 /// Input parameters for updating a pending invitation's roles.

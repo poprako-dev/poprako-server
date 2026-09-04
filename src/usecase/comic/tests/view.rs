@@ -138,7 +138,7 @@ async fn list_infos_omits_fallback_without_usable_first_pinned_page() {
             stages: None,
             status: None,
             offset: 0,
-            limit: 10,
+            limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
         },
     )
     .await

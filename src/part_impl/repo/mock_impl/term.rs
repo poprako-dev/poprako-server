@@ -140,9 +140,13 @@ impl<'a> Run<ListTermInfos<'a>> for Mock {
                 fuzzy_source,
                 offset,
                 limit,
-            } => {
-                list_infos(&state, termbase_id, *fuzzy_source, *offset, *limit)
-            }
+            } => list_infos(
+                &state,
+                termbase_id,
+                *fuzzy_source,
+                *offset,
+                limit.get(),
+            ),
 
             ListTermInfos::Termbase { termbase_id } => {
                 list_all_infos(&state, termbase_id)
@@ -234,7 +238,7 @@ impl<'a> Step<ListTermInfos<'a>, MockContext> for Mock {
                 termbase_id,
                 *fuzzy_source,
                 *offset,
-                *limit,
+                limit.get(),
             ),
 
             ListTermInfos::Termbase { termbase_id } => {

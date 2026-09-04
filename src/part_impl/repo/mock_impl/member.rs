@@ -208,7 +208,7 @@ fn list_member_infos(
             limit,
         } => (
             *offset,
-            *limit,
+            limit.get(),
             incl_opt,
             state
                 .members
@@ -230,7 +230,7 @@ fn list_member_infos(
             limit,
         } => (
             *offset,
-            *limit,
+            limit.get(),
             incl_opt,
             state
                 .members

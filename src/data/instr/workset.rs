@@ -10,6 +10,8 @@ use serde::Deserialize;
 #[cfg(feature = "swagger")]
 use utoipa::{IntoParams, ToSchema};
 
+use crate::value::pagination::PubListLimit;
+
 /// Input parameters for creating a new workset inside a team.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
@@ -52,5 +54,5 @@ pub struct ListWorksetInfosInstr {
     /// Pagination offset.
     pub offset: u32,
     /// Maximum number of results per page.
-    pub limit: u32,
+    pub limit: PubListLimit,
 }

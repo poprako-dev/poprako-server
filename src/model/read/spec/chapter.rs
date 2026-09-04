@@ -9,6 +9,7 @@
 //! [`StagePhase`]: crate::value::chapter::stage::StagePhase
 
 use crate::value::chapter::ChapterInclOpt;
+use crate::value::pagination::PubListLimit;
 
 /// Filtering, pagination, and include parameters for listing chapters.
 pub struct ChapterListSpec {
@@ -22,5 +23,5 @@ pub struct ChapterListSpec {
     /// Number of records to skip for pagination.
     pub offset: u32,
     /// Maximum number of records to return.
-    pub limit: u32,
+    pub limit: PubListLimit,
 }

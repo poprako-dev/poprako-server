@@ -27,7 +27,7 @@ pub async fn workset_roundtrip_uses_testcontainer(shared: RdbCore) {
         .run(&ListWorksetInfos {
             team_id: &workset_fixture.team_entry.id,
             offset: 0,
-            limit: 10,
+            limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
         })
         .await
         .ok()

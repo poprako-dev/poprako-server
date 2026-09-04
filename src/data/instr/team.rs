@@ -8,6 +8,7 @@ use serde::Deserialize;
 use utoipa::{IntoParams, ToSchema};
 
 use crate::value::image::{ImageExt, ImageHash};
+use crate::value::pagination::PubListLimit;
 
 /// Request to allocate a team avatar upload.
 #[derive(Debug, Deserialize)]
@@ -63,7 +64,7 @@ pub struct ListTeamInfosInstr {
     /// Pagination offset.
     pub offset: u32,
     /// Maximum number of results per page.
-    pub limit: u32,
+    pub limit: PubListLimit,
 }
 
 /// Input parameters for updating a team's profile.

@@ -104,7 +104,7 @@ async fn list_infos(
         .select(WorksetInfoRow::as_select())
         .order_by(f_index.asc())
         .offset(i64::from(oper.offset))
-        .limit(i64::from(oper.limit))
+        .limit(i64::from(oper.limit.get()))
         .into_boxed();
 
     let rows = query.load::<WorksetInfoRow>(conn).await.map_err(diesel)?;

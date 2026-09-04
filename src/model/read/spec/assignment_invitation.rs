@@ -1,5 +1,7 @@
 //! Domain models for chapter assignment invitations.
 
+use crate::value::pagination::PubListLimit;
+
 /// Filtering and pagination parameters for listing assignment invitations.
 pub struct AssignmentInvitationListSpec {
     //
@@ -11,5 +13,5 @@ pub struct AssignmentInvitationListSpec {
     /// Number of records to skip for pagination.
     pub offset: u32,
     /// Maximum number of records to return.
-    pub limit: u32,
+    pub limit: PubListLimit,
 }

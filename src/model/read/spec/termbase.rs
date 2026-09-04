@@ -1,5 +1,7 @@
 //! Domain models for team- and comic-scoped terminology bases.
 
+use crate::value::pagination::PubListLimit;
+
 /// Filtering and pagination parameters for terminology-base lists.
 pub enum TermbaseListSpec {
     //
@@ -12,7 +14,7 @@ pub enum TermbaseListSpec {
         /// Number of records to skip for pagination.
         offset: u32,
         /// Maximum number of records to return.
-        limit: u32,
+        limit: PubListLimit,
     },
 
     /// List terminology bases visible from a comic.
@@ -24,6 +26,6 @@ pub enum TermbaseListSpec {
         /// Number of records to skip for pagination.
         offset: u32,
         /// Maximum number of records to return.
-        limit: u32,
+        limit: PubListLimit,
     },
 }

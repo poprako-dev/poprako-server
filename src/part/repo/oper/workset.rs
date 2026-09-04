@@ -2,6 +2,7 @@ use poprako_orchestra::Oper;
 
 use crate::model::read::proj::workset::WorksetInfo;
 use crate::model::write::workset::{WorksetEntry, WorksetRepl};
+use crate::value::pagination::PubListLimit;
 
 /// Creates a workset.
 #[derive(Oper)]
@@ -31,7 +32,7 @@ pub struct ListWorksetInfos<'a> {
     pub offset: u32,
 
     /// The pagination limit.
-    pub limit: u32,
+    pub limit: PubListLimit,
 }
 
 /// Updates a workset.

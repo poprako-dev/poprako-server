@@ -51,7 +51,7 @@ fn list_workset_infos(
 
     let offset = oper.offset as usize;
 
-    let limit = oper.limit as usize;
+    let limit = oper.limit.get() as usize;
 
     if offset >= workset_infos.len() {
         Vec::new()

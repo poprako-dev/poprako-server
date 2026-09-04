@@ -112,7 +112,7 @@ fn list_system_mail_infos(
     system_mail_infos
         .into_iter()
         .skip(oper.spec.offset as usize)
-        .take(oper.spec.limit as usize)
+        .take(oper.spec.limit.get() as usize)
         .collect()
 }
 

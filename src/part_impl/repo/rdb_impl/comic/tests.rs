@@ -32,7 +32,7 @@ pub async fn comic_roundtrip_uses_testcontainer(shared: RdbCore) {
         status: None,
         incl_opt: vec![ComicInclOpt::WorksetTeam],
         offset: 0,
-        limit: 10,
+        limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     };
 
     let comic_infos = repo
@@ -87,7 +87,7 @@ pub async fn comic_roundtrip_uses_testcontainer(shared: RdbCore) {
         status: None,
         incl_opt: Vec::new(),
         offset: 0,
-        limit: 10,
+        limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     };
 
     let comic_infos = repo
@@ -109,7 +109,7 @@ pub async fn comic_roundtrip_uses_testcontainer(shared: RdbCore) {
         status: None,
         incl_opt: Vec::new(),
         offset: 0,
-        limit: 10,
+        limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     };
 
     let comic_infos = repo
@@ -133,7 +133,7 @@ pub async fn comic_roundtrip_uses_testcontainer(shared: RdbCore) {
             status: None,
             incl_opt: Vec::new(),
             offset: 0,
-            limit: 10,
+            limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
         };
 
         let comic_infos = repo
@@ -170,7 +170,7 @@ pub async fn comic_roundtrip_uses_testcontainer(shared: RdbCore) {
             status: None,
             incl_opt: Vec::new(),
             offset: 0,
-            limit: 10,
+            limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
         };
 
         let comic_infos = repo

@@ -29,6 +29,7 @@ use crate::part_impl::prom::rdb_impl::RdbProm;
 use crate::part_impl::repo::HybRepo;
 use crate::shared::RdbContext;
 use crate::usecase;
+use crate::value::pagination::PubListLimit;
 
 /// Query for listing assignment invitations under one chapter.
 ///
@@ -46,7 +47,7 @@ pub struct AssignmentInvitationListQuery {
     pub offset: u32,
 
     /// Maximum number of items to return.
-    pub limit: u32,
+    pub limit: PubListLimit,
 }
 
 /// `POST /api/v1/assignment-invitations` — create a pending assignment invitation.

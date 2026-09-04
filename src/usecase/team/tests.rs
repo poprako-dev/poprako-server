@@ -150,7 +150,7 @@ fn list_instr(
     ListTeamInfosInstr {
         user_id: user_id.map(Into::into),
         offset,
-        limit,
+        limit: crate::value::pagination::PubListLimit::new(limit).unwrap(),
     }
 }
 

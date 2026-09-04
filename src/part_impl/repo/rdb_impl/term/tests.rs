@@ -87,7 +87,7 @@ pub async fn term_array_unique_and_fuzzy_roundtrip(shared: RdbCore) {
             termbase_id: &termbase_entry.id,
             fuzzy_source: Some("%_H"),
             offset: 0,
-            limit: 10,
+            limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
         })
         .await
         .ok()

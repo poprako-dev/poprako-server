@@ -7,6 +7,7 @@ use serde::Deserialize;
 #[cfg(feature = "swagger")]
 use utoipa::{IntoParams, ToSchema};
 
+use crate::value::pagination::PubListLimit;
 use crate::value::role::RoleMask;
 
 /// Input parameters for listing invitations under one chapter.
@@ -27,7 +28,7 @@ pub struct ListAssignmentInvitationInfosInstr {
     /// Pagination offset.
     pub offset: u32,
     /// Maximum number of results per page.
-    pub limit: u32,
+    pub limit: PubListLimit,
 }
 
 /// Input parameters for creating an assignment invitation.

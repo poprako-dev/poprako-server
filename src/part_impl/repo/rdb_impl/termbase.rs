@@ -193,7 +193,7 @@ async fn list_infos(
     let rows = query
         .order_by(f_updated_at.desc())
         .offset(i64::from(*offset))
-        .limit(i64::from(*limit))
+        .limit(i64::from(limit.get()))
         .load::<TermbaseInfoRow>(conn)
         .await
         .map_err(diesel)?;

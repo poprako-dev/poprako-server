@@ -25,7 +25,7 @@ fn list_chapter_infos(
 
     let offset = spec.offset as usize;
 
-    let limit = spec.limit as usize;
+    let limit = spec.limit.get() as usize;
 
     if offset >= chapter_infos.len() {
         Vec::new()

@@ -94,7 +94,7 @@ fn list_team_infos(
 
     let offset = oper.spec.offset as usize;
 
-    let limit = oper.spec.limit as usize;
+    let limit = oper.spec.limit.get() as usize;
 
     if offset >= team_infos.len() {
         Vec::new()

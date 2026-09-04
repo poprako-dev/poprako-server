@@ -67,7 +67,8 @@ fn list_infos(
 
     let offset = oper.spec.offset as usize;
 
-    let end = std::cmp::min(offset + oper.spec.limit as usize, infos.len());
+    let end =
+        std::cmp::min(offset + oper.spec.limit.get() as usize, infos.len());
 
     if offset >= infos.len() {
         Vec::new()

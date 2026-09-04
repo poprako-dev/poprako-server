@@ -141,7 +141,7 @@ pub async fn list_infos(
                 query
                     .order_by((f_user_last_active_at.desc(), f_id.asc()))
                     .offset(i64::from(*offset))
-                    .limit(i64::from(*limit))
+                    .limit(i64::from(limit.get()))
                     .load::<MemberInfoRow>(conn)
                     .await
                     .map_err(diesel)?
@@ -158,7 +158,7 @@ pub async fn list_infos(
                 .select(MemberInfoRow::as_select())
                 .order_by((f_user_last_active_at.desc(), f_id.asc()))
                 .offset(i64::from(*offset))
-                .limit(i64::from(*limit))
+                .limit(i64::from(limit.get()))
                 .load::<MemberInfoRow>(conn)
                 .await
                 .map_err(diesel)?,

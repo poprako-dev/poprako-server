@@ -271,7 +271,7 @@ async fn list_infos_filters_and_sorts_by_last_activity() {
             stages: None,
             status: None,
             offset: 0,
-            limit: 10,
+            limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
         },
     )
     .await;
@@ -319,7 +319,7 @@ async fn list_infos_returns_empty_for_workset_contents() {
             stages: None,
             status: None,
             offset: 0,
-            limit: 10,
+            limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
         },
     )
     .await;
@@ -379,7 +379,7 @@ async fn list_infos_filters_by_pinned_chapter_stages() {
             stages: Some(filter_mask.into()),
             status: None,
             offset: 0,
-            limit: 10,
+            limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
         },
     )
     .await;
@@ -413,7 +413,7 @@ async fn list_infos_rejects_invalid_stages_filter() {
             stages: Some(0b01 << 8),
             status: None,
             offset: 0,
-            limit: 10,
+            limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
         },
     )
     .await
@@ -463,7 +463,7 @@ async fn list_infos_applies_pagination() {
             stages: None,
             status: None,
             offset: 1,
-            limit: 1,
+            limit: crate::value::pagination::PubListLimit::new(1).unwrap(),
         },
     )
     .await;

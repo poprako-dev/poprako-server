@@ -70,7 +70,7 @@ pub async fn assignment_roundtrip_uses_testcontainer(shared: RdbCore) {
         role: Some(RoleField::TRANSLATOR),
         incl_opt: vec![AssignmentInclOpt::User],
         offset: 0,
-        limit: 10,
+        limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     };
 
     let assignment_infos = repo

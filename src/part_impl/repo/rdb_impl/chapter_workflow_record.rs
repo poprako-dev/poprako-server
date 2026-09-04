@@ -36,7 +36,7 @@ async fn list_infos(
         .filter(f_chapter_id.eq(&spec.chapter_id))
         .order_by((f_created_at.desc(), f_id.desc()))
         .offset(i64::from(spec.offset))
-        .limit(i64::from(spec.limit))
+        .limit(i64::from(spec.limit.get()))
         .select(ChapterWorkflowRecordInfoRow::as_select())
         .load::<ChapterWorkflowRecordInfoRow>(conn)
         .await

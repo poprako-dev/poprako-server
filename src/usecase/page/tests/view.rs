@@ -9,10 +9,11 @@ use poprako_obj_dept::model::meta::ObjMeta;
 use crate::data::instr::page::ListPageInfosInstr;
 use crate::model::read::proj::page::PageInfo;
 use crate::part_impl::repo::mock_impl::{Mock, MockObjRecord};
-use crate::result::ExpectedVariant;
+use crate::result::{BaseError, ExpectedVariant};
 use crate::test_util::assert_expected_variant;
 use crate::usecase::page::list::{get_info, list_infos};
 use crate::value::image::{ImageExt, ImageHash};
+use crate::value::page::MAX_CHAPTER_PAGE_COUNT;
 use crate::value::role::RoleField;
 
 fn page(id: &str, index: usize) -> PageInfo {
@@ -186,6 +187,38 @@ async fn list_infos_sorts_pages_and_resolves_only_available_image_urls() {
 }
 
 #[tokio::test]
+async fn list_infos_returns_complete_manifest_at_business_maximum() {
+    let mock = Mock::new();
+
+    seed_page_scope(&mock, MAX_CHAPTER_PAGE_COUNT);
+
+    mock.seed_member(page_member(
+        "user-1",
+        RoleMask::from(RoleField::TRANSLATOR),
+    ));
+
+    for index in (0..MAX_CHAPTER_PAGE_COUNT).rev() {
+        mock.seed_page(page(&format!("page-{index:03}"), index));
+    }
+
+    let pages = list_infos(
+        (&mock, &mock),
+        page_token("user-1"),
+        ListPageInfosInstr {
+            chapter_id: "chapter-1".into(),
+        },
+    )
+    .await
+    .unwrap();
+
+    assert_eq!(pages.len(), MAX_CHAPTER_PAGE_COUNT);
+
+    assert_eq!(pages.first().unwrap().id, "page-000");
+
+    assert_eq!(pages.last().unwrap().id, "page-199");
+}
+
+#[tokio::test]
 async fn list_infos_rejects_non_member_without_assignment() {
     let mock = Mock::new();
 
@@ -203,6 +236,34 @@ async fn list_infos_rejects_non_member_without_assignment() {
     .unwrap();
 
     assert_expected_variant(error, ExpectedVariant::Perm);
+}
+
+#[tokio::test]
+async fn list_infos_rejects_persisted_page_count_above_business_maximum() {
+    let mock = Mock::new();
+
+    seed_page_scope(&mock, MAX_CHAPTER_PAGE_COUNT + 1);
+
+    mock.seed_member(page_member(
+        "user-1",
+        RoleMask::from(RoleField::TRANSLATOR),
+    ));
+
+    for index in 0..=MAX_CHAPTER_PAGE_COUNT {
+        mock.seed_page(page(&format!("page-{index:03}"), index));
+    }
+
+    let error = list_infos(
+        (&mock, &mock),
+        page_token("user-1"),
+        ListPageInfosInstr {
+            chapter_id: "chapter-1".into(),
+        },
+    )
+    .await
+    .unwrap_err();
+
+    assert!(matches!(error, BaseError::Unrecoverable { .. }));
 }
 
 #[tokio::test]

@@ -15,6 +15,7 @@ use crate::result::{BaseError, BaseRest, accept};
 use crate::value::chapter::mask::StageMask;
 use crate::value::comic::{ComicInclOpt, ComicStatus, ComicWithOpt};
 use crate::value::image::{ImageExt, ImageHash};
+use crate::value::pagination::PubListLimit;
 use crate::value::role::RoleMask;
 
 /// Request to allocate a comic cover upload.
@@ -114,7 +115,7 @@ pub struct ListComicInfosInstr {
     /// Pagination offset.
     pub offset: u32,
     /// Maximum number of results per page.
-    pub limit: u32,
+    pub limit: PubListLimit,
 }
 
 impl TryFrom<ListComicInfosInstr> for ComicListSpec {

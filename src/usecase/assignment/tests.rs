@@ -220,7 +220,7 @@ fn list_by_chapter_data(chapter_id: &str) -> ListAssignmentInfosInstr {
         owner_id: None,
         role: None,
         offset: 0,
-        limit: 10,
+        limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     }
 }
 
@@ -232,7 +232,7 @@ fn list_by_user_data(owner_id: &str) -> ListAssignmentInfosInstr {
         owner_id: Some(owner_id.into()),
         role: None,
         offset: 0,
-        limit: 10,
+        limit: crate::value::pagination::PubListLimit::new(10).unwrap(),
     }
 }
 

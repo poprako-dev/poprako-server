@@ -10,14 +10,16 @@ use crate::model::read::proj::unit::UnitCountMetrics;
 use crate::model::write::page::PageManifestEntry;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::page::{
-    ApplyPageManifest, GetPageInfo, ListFirstPageInfos, ListPageInfos,
-    SetPageUnitCounters, ShiftPageIndexesTemporary,
+    ApplyPageManifest, GetPageInfo, ListEdittedDiffPageIds, ListFirstPageInfos,
+    ListPageInfos, ListPageInfosExcluded, SetPageUnitCounters,
+    ShiftPageIndexesTemporary,
 };
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::HybRepo;
 use crate::part_impl::repo::rdb_impl::schema::t_chapter;
 use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::result::{BaseError, ExpectedVariant};
+use crate::value::page::MAX_CHAPTER_PAGE_COUNT;
 
 const PREFIX: &str = "rdb-test-page-domain-";
 
@@ -293,6 +295,66 @@ pub async fn page_roundtrip_uses_testcontainer(shared: RdbCore) {
             ..
         }
     ));
+
+    let overflow_entries = (2..=MAX_CHAPTER_PAGE_COUNT)
+        .map(|index| PageManifestEntry {
+            id: format!("{PREFIX}page-overflow-{index:03}"),
+            chapter_id: page_fixture.chapter_entry.id.clone(),
+            index,
+        })
+        .collect::<Vec<_>>();
+
+    nucl.coord(async |context| {
+        //
+        repo.step(
+            context,
+            &ApplyPageManifest {
+                entries: &overflow_entries,
+            },
+        )
+        .await?;
+
+        Ok::<(), BaseError>(())
+    })
+    .await
+    .unwrap();
+
+    let list_error = repo
+        .run(&ListPageInfos {
+            chapter_id: &page_fixture.chapter_entry.id,
+        })
+        .await
+        .err()
+        .unwrap();
+
+    assert!(matches!(list_error, BaseError::Unrecoverable { .. }));
+
+    let diff_error = repo
+        .run(&ListEdittedDiffPageIds {
+            chapter_id: &page_fixture.chapter_entry.id,
+        })
+        .await
+        .err()
+        .unwrap();
+
+    assert!(matches!(diff_error, BaseError::Unrecoverable { .. }));
+
+    let excluded_error = nucl
+        .coord(async |context| {
+            repo.step(
+                context,
+                &ListPageInfosExcluded {
+                    chapter_id: &page_fixture.chapter_entry.id,
+                },
+            )
+            .await
+        })
+        .await
+        .map_err(BaseError::from)
+        .err()
+        .unwrap();
+
+    assert!(matches!(excluded_error, BaseError::Unrecoverable { .. }));
 
     test_shared::cleanup(&shared, PREFIX).await.ok().unwrap();
 
