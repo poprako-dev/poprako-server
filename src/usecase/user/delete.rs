@@ -116,6 +116,7 @@ where
             .await
             .map_err(BaseError::from)?;
 
+        // FIXME: Clean up tombstone subtree references before deleting the user.
         DeleteUser { id: &id }.step_on(repo, context).await?;
 
         accept(())

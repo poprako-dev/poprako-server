@@ -98,6 +98,10 @@ impl From<ObjDeptError> for BaseError {
                 Self::Retryable { message }
             }
 
+            ObjDeptError::Unavailable { message } => {
+                Self::Unavailable { message }
+            }
+
             ObjDeptError::Unrecoverable { message } => {
                 Self::Unrecoverable { message }
             }

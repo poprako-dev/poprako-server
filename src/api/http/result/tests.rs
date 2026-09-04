@@ -2,6 +2,7 @@
 
 use super::*;
 
+use poprako_obj_dept::rest::ObjDeptError;
 use serde_json::json;
 
 #[test]
@@ -40,6 +41,22 @@ fn unavailable_error_maps_to_service_unavailable() {
     let http_error = HttpError::from(BaseError::Unavailable {
         message: "driver detail".to_string(),
     });
+
+    assert_eq!(http_error.status, StatusCode::SERVICE_UNAVAILABLE);
+    assert_eq!(http_error.code.get(), 9);
+    assert_eq!(
+        http_error.message.as_deref(),
+        Some(trl("error-unavailable").as_str()),
+    );
+}
+
+#[test]
+fn obj_dept_unavailable_error_maps_to_service_unavailable() {
+    let base_error = BaseError::from(ObjDeptError::Unavailable {
+        message: "object database capacity unavailable".to_string(),
+    });
+
+    let http_error = HttpError::from(base_error);
 
     assert_eq!(http_error.status, StatusCode::SERVICE_UNAVAILABLE);
     assert_eq!(http_error.code.get(), 9);

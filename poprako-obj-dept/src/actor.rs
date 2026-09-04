@@ -94,6 +94,7 @@ fn action_from_err(err: ObjDeptError) -> ObjTaskAction {
     match err {
         //
         ObjDeptError::Retryable { message }
+        | ObjDeptError::Unavailable { message }
         | ObjDeptError::Conflict { message } => {
             ObjTaskAction::Retry { message }
         }
