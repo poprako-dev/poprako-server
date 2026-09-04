@@ -63,26 +63,44 @@ where
 
         let repo = HybRepo::new(core);
 
-        loop {
-            //
-            if token.is_cancelled() {
-                break;
-            }
-
-            let swept = sweep(&token, |level| {
+        run(
+            &token,
+            |level| {
                 usecase::subtree_delete::sweep((&nucl, &repo, &obj_dept), level)
-            })
-            .await;
-
-            if !swept && wait(&token).await {
-                break;
-            }
-        }
+            },
+            || wait(&token),
+        )
+        .await;
 
         done_send.send_replace(true);
     });
 
     done_recv
+}
+
+// Runs hierarchy sweep rounds until cancellation or a cancelled retry wait.
+async fn run<F, Fut, W, WaitFut>(
+    token: &CancellationToken,
+    mut sweep_level: F,
+    mut wait_retry: W,
+) where
+    F: FnMut(SubtreeSweepLevel) -> Fut,
+    Fut: Future<Output = BaseRest<bool>>,
+    W: FnMut() -> WaitFut,
+    WaitFut: Future<Output = bool>,
+{
+    loop {
+        //
+        if token.is_cancelled() {
+            break;
+        }
+
+        let swept = sweep(token, &mut sweep_level).await;
+
+        if !swept && wait_retry().await {
+            break;
+        }
+    }
 }
 
 // Poll one hierarchy sweep round in dependency order.
