@@ -335,6 +335,38 @@ impl<'a> Step<UpsertTerms<'a>, MockContext> for Mock {
         oper: &UpsertTerms<'a>,
     ) -> BaseRest<()> {
         //
+        let entries_in_scope = oper
+            .entries
+            .iter()
+            .all(|entry| entry.termbase_id == oper.termbase_id);
+
+        let updates_in_scope = oper.updates.iter().all(|update| {
+            //
+            context.state.terms.iter().any(|term_info| {
+                //
+                term_info.id == update.id
+                    && term_info.termbase_id == oper.termbase_id
+            })
+        });
+
+        let mut ids = std::collections::HashSet::with_capacity(
+            oper.entries.len().saturating_add(oper.updates.len()),
+        );
+
+        let ids_unique = oper
+            .entries
+            .iter()
+            .map(|entry| entry.id.as_str())
+            .chain(oper.updates.iter().map(|update| update.id.as_str()))
+            .all(|id| ids.insert(id));
+
+        if !(entries_in_scope && updates_in_scope && ids_unique) {
+            //
+            return Err(BaseError::Unrecoverable {
+                message: "invalid Term upsert scope or duplicate id".into(),
+            });
+        }
+
         for entry in oper.entries {
             //
             if source_conflicts(

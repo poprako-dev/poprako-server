@@ -1,4 +1,5 @@
 error-internal = 服务器内部错误
+error-unavailable = 服务暂时不可用
 
 error-already-exists = 该记录已存在
 error-concurrent-conflict = 资源已被并发修改，请重试请求

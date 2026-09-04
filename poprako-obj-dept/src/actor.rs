@@ -4,6 +4,9 @@
 /// RDB-backed handler support.
 pub mod rdb_impl;
 
+#[cfg(test)]
+mod tests;
+
 use std::future::Future;
 
 use tokio::sync::watch;
@@ -15,7 +18,7 @@ use crate::rest::{ObjDeptError, ObjDeptRest};
 
 /// Delay between idle polls.
 pub const POLL_INTERVAL: std::time::Duration =
-    std::time::Duration::from_secs(5);
+    std::time::Duration::from_secs(30);
 
 /// Maximum duration of one claimed attempt.
 pub const ATTEMPT_TIMEOUT: std::time::Duration =
@@ -64,7 +67,7 @@ impl ObjActor {
     )]
     pub fn new<P, H, F>(prom: P, handler: H) -> ObjActorDesc
     where
-        P: ObjProm + Send + Sync + 'static,
+        P: ObjProm + Clone + Send + Sync + 'static,
         H: Fn(ObjPromTask) -> F + Send + Sync + 'static,
         F: Future<Output = ObjDeptRest<ObjTaskAction>> + Send + 'static,
     {
@@ -103,7 +106,7 @@ fn action_from_err(err: ObjDeptError) -> ObjTaskAction {
 }
 
 // Persists one actor decision through the durable-task adapter.
-async fn rest<P>(
+async fn persist_action<P>(
     prom: &P,
     task: &ObjPromTask,
     action: &ObjTaskAction,
@@ -168,14 +171,12 @@ where
         );
     }
 
-    rest(prom, task, &action).await
+    persist_action(prom, task, &action).await
 }
 
-// FIXME: Before adding high-volume object topics, redesign this globally
-// serial loop for bounded parallel claim/processing, independent reset
-// maintenance, operator recovery, and completed-task retention.
-// Runs the globally serial durable-task loop.
-async fn run_actor<P, H, F>(prom: P, handler: H, token: CancellationToken)
+// Keeps the actor helper call graph in the repository's required order.
+// Claims immediately, drains visible work, and waits only when no task is available.
+async fn run_claim_loop<P, H, F>(prom: P, handler: H, token: CancellationToken)
 where
     P: ObjProm,
     H: Fn(ObjPromTask) -> F,
@@ -183,30 +184,6 @@ where
 {
     loop {
         //
-        let reset = tokio::select! {
-            () = token.cancelled() => break,
-            reset = tokio::time::timeout(
-                ATTEMPT_TIMEOUT,
-                prom.reset_tasks(),
-            ) => reset,
-        };
-
-        match reset {
-            //
-            Ok(Ok(_)) => {}
-
-            Ok(Err(err)) => tracing::error!(
-                operation = "reset_obj_tasks",
-                sdk_err = ?err,
-                "ObjDept task reset failed",
-            ),
-
-            Err(_) => tracing::error!(
-                operation = "reset_obj_tasks",
-                "ObjDept task reset timed out",
-            ),
-        }
-
         let claimed = tokio::select! {
             () = token.cancelled() => break,
             claimed = tokio::time::timeout(
@@ -289,4 +266,55 @@ where
             ),
         }
     }
+}
+
+// Runs maintenance immediately and then at an independent fixed cadence.
+async fn run_maintenance_loop<P>(prom: P, token: CancellationToken)
+where
+    P: ObjProm,
+{
+    loop {
+        //
+        let reset = tokio::select! {
+            () = token.cancelled() => break,
+            reset = tokio::time::timeout(
+                ATTEMPT_TIMEOUT,
+                prom.reset_tasks(),
+            ) => reset,
+        };
+
+        match reset {
+            //
+            Ok(Ok(_)) => {}
+
+            Ok(Err(err)) => tracing::error!(
+                operation = "reset_obj_tasks",
+                sdk_err = ?err,
+                "ObjDept task reset failed",
+            ),
+
+            Err(_) => tracing::error!(
+                operation = "reset_obj_tasks",
+                "ObjDept task reset timed out",
+            ),
+        }
+
+        if !wait_poll(&token).await {
+            break;
+        }
+    }
+}
+
+// Runs claim and maintenance under one cancellation supervisor.
+async fn run_actor<P, H, F>(prom: P, handler: H, token: CancellationToken)
+where
+    P: ObjProm + Clone,
+    H: Fn(ObjPromTask) -> F,
+    F: Future<Output = ObjDeptRest<ObjTaskAction>>,
+{
+    let claim_loop = run_claim_loop(prom.clone(), handler, token.clone());
+
+    let maintenance_loop = run_maintenance_loop(prom, token);
+
+    tokio::join!(claim_loop, maintenance_loop);
 }

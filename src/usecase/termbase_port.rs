@@ -349,6 +349,7 @@ where
     );
 
     UpsertTerms {
+        termbase_id: &termbase_info.id,
         entries: &term_upsert_plan.entries,
         updates: &term_upsert_plan.updates,
     }

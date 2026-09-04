@@ -25,7 +25,9 @@ publish = false
 
 [workspace.dependencies]
 anyhow = "1.0.102"
+deadpool = { version = "0.13.0", features = ["rt_tokio_1"] }
 fluent-templates = "0.14.0"
+metrics = "0.24.6"
 serde_json = "1.0.149"
 time = "0.3.47"
 toml = "1.1.4"
@@ -80,7 +82,7 @@ futures-util = "0.3.32"
 jsonwebtoken = { version = "10.4.0", default-features = false, features = [
     "aws_lc_rs",
 ] }
-metrics = "0.24.6"
+metrics.workspace = true
 metrics-exporter-prometheus = "0.18.3"
 base62 = "2.2.4"
 base64 = "0.22"

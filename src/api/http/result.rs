@@ -94,6 +94,16 @@ impl HttpError {
             message: Some(trl("error-internal")),
         }
     }
+
+    /// 503 Service Unavailable with a generic localized message.
+    pub fn unavailable() -> Self {
+        //
+        Self {
+            status: StatusCode::SERVICE_UNAVAILABLE,
+            code: nonzero_code(9),
+            message: Some(trl("error-unavailable")),
+        }
+    }
 }
 
 impl std::fmt::Display for HttpError {
@@ -124,6 +134,8 @@ impl From<BaseError> for HttpError {
                 code: nonzero_code(8),
                 message: Some(message),
             },
+
+            BaseError::Unavailable { .. } => Self::unavailable(),
 
             BaseError::Unrecoverable { .. } => Self::internal(),
         }

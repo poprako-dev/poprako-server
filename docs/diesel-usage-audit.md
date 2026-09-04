@@ -251,60 +251,66 @@ Evidence:
 - [`src/part_impl/repo/rdb_impl/comic_archive/payload.rs`](../src/part_impl/repo/rdb_impl/comic_archive/payload.rs#L44)
 - [`src/usecase/comic_archive.rs`](../src/usecase/comic_archive.rs#L79)
 
-### P1: Comic stage filtering materializes global IDs
+### Resolved P1: Comic stage filtering is scoped and correlated
 
-Stage-filtered Comic listing first queries distinct matching Comic IDs from
-pinned Chapters across the whole database. It then sends those IDs back in a
-second query that finally applies the requested Workset scope.
+Stage-filtered Comic listing now keeps the complete pinned, non-deleted Chapter
+predicate in a typed correlated `EXISTS` under the Workset-scoped Comic query.
+It does not materialize global Comic IDs or issue a second filtering query.
+Masks that ignore every stage add no predicate, while an unsupported Active
+phase returns an empty result before database access.
 
 Evidence:
 
 - [`src/part_impl/repo/rdb_impl/comic/stage_filter.rs`](../src/part_impl/repo/rdb_impl/comic/stage_filter.rs#L41)
 - [`src/part_impl/repo/rdb_impl/comic/step_impl.rs`](../src/part_impl/repo/rdb_impl/comic/step_impl.rs#L84)
 
-Action: express the stage condition as a typed, correlated `EXISTS` predicate
-inside the scoped Comic query.
+### Resolved P1: Database pool waiting is bounded
 
-### P1: Request concurrency is not coordinated with the database pool
-
-The RDB pool is now explicitly capped at four connections for the 2C2G
-production host. HTTP still has a global request-rate limit but no in-flight
-request limit, timeout, or load shedding, so request concurrency can still
-occupy all four connections while background actors wait.
+The RDB pool remains capped at four connections and now uses the Tokio runtime
+with a five-second wait timeout. Exhausted requests queue at the pool and map a
+wait timeout to HTTP 503/code 9 without exposing driver details. Connection
+acquisition duration and failures by bounded reason are recorded at the pool
+boundary, which is also the single logging site for pool driver errors.
 
 Evidence:
 
 - [`poprako-rdb-core/src/rdb.rs`](../poprako-rdb-core/src/rdb.rs#L92)
 - [`src/api/http/middleware/rate_limit.rs`](../src/api/http/middleware/rate_limit.rs#L15)
 
-Action: add an acquisition timeout, bound in-flight HTTP database work below
-the four-connection capacity, and reserve capacity for background consumers.
-Keep serialization failures as retryable conflicts; do not weaken transaction
-isolation to avoid contention.
+Residual risk: there is deliberately no HTTP in-flight concurrency limit and
+no reserved connection capacity for background consumers. The five-second
+bound prevents indefinite waiting but does not guarantee background fairness.
+Serialization failures remain retryable conflicts and transaction isolation is
+unchanged.
 
-### P1: Object-task polling performs continuous maintenance writes
+### Resolved P1: Object-task claiming and maintenance poll independently
 
-The globally serial object actor calls `reset_tasks` before every claim.
-`reset_tasks` executes three maintenance updates, and an idle actor then runs a
-claim select every five seconds. This is four SQL statements every five seconds,
-or about 48 statements per minute per application instance, even with no work.
+The object actor now supervises an immediate claim loop and an immediate
+maintenance loop with shared cancellation. Each loop waits 30 seconds after an
+empty cycle, while the claim loop continues immediately when it finds work.
+Maintenance retains its three explicit repair updates, limiting idle
+maintenance to six updates per minute per application instance.
+
+Claiming is one typed `UPDATE ... RETURNING` whose ordered candidate subquery
+uses `FOR UPDATE SKIP LOCKED`. Pending and visibility checks, lease increment
+and overflow quarantine, attempt timeout, and finalization fencing are retained.
 
 Evidence:
 
 - [`poprako-obj-dept/src/actor.rs`](../poprako-obj-dept/src/actor.rs#L174)
 - [`poprako-obj-dept-macro/src/rdb_obj_prom.rs`](../poprako-obj-dept-macro/src/rdb_obj_prom.rs#L187)
 
-Action: run recovery maintenance on an independent, lower-frequency interval
-and claim work atomically with a typed `UPDATE ... RETURNING` operation. Retain
-lease fencing and bounded processing concurrency.
+### Resolved P1: Term import updates are batched and scoped
 
-### P1: Other bounded batches still use repeated single-row operations
+Term import now bulk-inserts new Terms and applies all replacements in one typed
+`CASE` update scoped by both Termbase ID and Term IDs. Duplicate IDs, invalid
+insert scope, and unexpected insert or update affected-row counts are
+unrecoverable invariants that roll back the import transaction.
 
-Term import bulk-inserts new Terms but updates as many as 200 existing Terms
-one by one. User deletion loads and locks the complete roster of every Team the
-user belongs to, then deletes memberships individually. Assignment and Member
-role changes similarly load full collections to evaluate administrator
-retention.
+Administrator-retention work remains deferred P1: User deletion still loads
+and locks the complete roster of every Team the user belongs to, while
+Assignment and Member role changes load full collections to evaluate
+administrator retention.
 
 Evidence:
 
@@ -313,9 +319,9 @@ Evidence:
 - [`src/usecase/assignment/update_roles.rs`](../src/usecase/assignment/update_roles.rs#L58)
 - [`src/usecase/member.rs`](../src/usecase/member.rs#L340)
 
-Action: use typed bulk upsert/delete operations and purpose-specific aggregate
-queries that return only offending Team or Chapter IDs. The invariant that a
-Team or Chapter retains an administrator must remain transactionally safe.
+Deferred action: use purpose-specific aggregate queries that return only
+offending Team or Chapter IDs. The invariant that a Team or Chapter retains an
+administrator must remain transactionally safe.
 
 ## Secondary improvements
 

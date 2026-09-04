@@ -2,6 +2,8 @@
 set -eu
 
 # Local full CI: runs every CI check script exactly like GitHub Actions.
+# Independent checks run concurrently and are joined before this script exits,
+# so a failure never prevents the remaining checks from reporting their result.
 # The migration database is prepared automatically, mirroring the
 # migrations job's `services` block:
 #
@@ -92,20 +94,18 @@ prepare_container_db || prepare_local_db || exit 1
 export CI_MIGRATION_DATABASE=1
 export DATABASE_URL
 
-for script in \
-    scripts/ci-check.sh \
-    scripts/ci-openapi-check.sh \
-    scripts/ci-test.sh \
-    scripts/ci-typecheck.sh \
-    scripts/ci-migration-check.sh \
-    scripts/ci-audit.sh
-do
-    echo "━━━ ci-local: running $script ━━━"
-
-    if ! sh "$script"; then
-        echo "✗ ci-local: $script failed" >&2
-        exit 1
-    fi
-done
+sh scripts/ci-parallel.sh \
+    "Rust checks" \
+    "sh scripts/ci-check.sh" \
+    "OpenAPI specification" \
+    "sh scripts/ci-openapi-check.sh" \
+    "Rust tests" \
+    "sh scripts/ci-test.sh" \
+    "TypeScript type-check" \
+    "sh scripts/ci-typecheck.sh" \
+    "Diesel migrations" \
+    "sh scripts/ci-migration-check.sh" \
+    "Dependency security" \
+    "sh scripts/ci-audit.sh"
 
 echo "✓ ci-local: full CI chain passed"

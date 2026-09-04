@@ -40,14 +40,12 @@ jobs:
           shared-key: ci-all-features
           save-if: ${{ github.ref == 'refs/heads/main' }}
 
-      - name: Check Rust workspace
-        run: sh scripts/ci-check.sh
-
-      - name: Test Rust workspace
-        run: sh scripts/ci-test.sh
-
-      - name: Check OpenAPI specification
-        run: sh scripts/ci-openapi-check.sh
+      - name: Run Rust checks
+        run: >-
+          sh scripts/ci-parallel.sh
+          "Rust workspace checks" "sh scripts/ci-check.sh"
+          "Rust workspace tests" "sh scripts/ci-test.sh"
+          "OpenAPI specification" "sh scripts/ci-openapi-check.sh"
 
   typescript:
     name: TypeScript

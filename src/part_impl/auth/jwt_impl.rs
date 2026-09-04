@@ -94,6 +94,7 @@ impl JwtAuth {
             //
             BaseError::Expected { message, .. }
             | BaseError::Retryable { message }
+            | BaseError::Unavailable { message }
             | BaseError::Unrecoverable { message } => {
                 anyhow::anyhow!("{message}")
             }

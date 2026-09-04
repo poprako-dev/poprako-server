@@ -66,6 +66,11 @@ async fn repo_rdb_impls_use_testcontainer() {
     )
     .await;
 
+    crate::part_impl::obj_dept::tests::concurrent_claim_is_unique_ordered_and_overflow_safe(
+        shared.clone(),
+    )
+    .await;
+
     page::tests::page_roundtrip_uses_testcontainer(shared.clone()).await;
 
     system_mail::tests::system_mail_roundtrip_uses_testcontainer(

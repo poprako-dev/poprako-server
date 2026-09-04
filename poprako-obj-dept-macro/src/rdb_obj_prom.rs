@@ -240,66 +240,68 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
                 core: &RdbCore,
             ) -> ObjDeptRest<Option<ObjPromTask>> {
                 let mut conn = core.get().await.map_err(rdb_err)?;
-                let row = #table::table
-                    .filter(#table::f_status.eq(PENDING))
+                let claim_candidate =
+                    ::diesel::alias!(#table as claim_candidate);
+                let candidate = claim_candidate
+                    .filter(claim_candidate.field(#table::f_status).eq(PENDING))
                     .filter(
-                        #table::f_visible_at
+                        claim_candidate
+                            .field(#table::f_visible_at)
                             .le(::time::OffsetDateTime::now_utc()),
                     )
                     .order_by((
-                        #table::f_visible_at.asc(),
-                        #table::f_created_at.asc(),
-                        #table::f_id.asc(),
+                        claim_candidate.field(#table::f_visible_at).asc(),
+                        claim_candidate.field(#table::f_created_at).asc(),
+                        claim_candidate.field(#table::f_id).asc(),
                     ))
-                    .select(TaskRow::as_select())
-                    .first::<TaskRow>(&mut conn)
-                    .await
-                    .optional()
-                    .map_err(diesel_err)?;
-                let Some(mut row) = row else {
-                    return Ok(None);
-                };
-                let Some(lease) = row.lease.checked_add(1) else {
-                    ::diesel::update(
-                        #table::table
-                            .filter(#table::f_id.eq(&row.id))
-                            .filter(#table::f_status.eq(PENDING))
-                            .filter(#table::f_lease.eq(row.lease)),
-                    )
-                    .set((
-                        #table::f_status.eq(OPERATOR),
-                        #table::f_error.eq(Some("object task lease overflow")),
-                        #table::f_updated_at
-                            .eq(::time::OffsetDateTime::now_utc()),
-                    ))
-                    .execute(&mut conn)
-                    .await
-                    .map_err(diesel_err)?;
-
-                    return Ok(None);
-                };
-                let updated = ::diesel::update(
-                    #table::table
-                        .filter(#table::f_id.eq(&row.id))
-                        .filter(#table::f_status.eq(PENDING))
-                        .filter(#table::f_lease.eq(row.lease)),
+                    .select(claim_candidate.field(#table::f_id))
+                    .for_update()
+                    .skip_locked()
+                    .limit(1);
+                let lease_overflow = #table::f_lease.eq(i64::MAX);
+                let status = ::diesel::dsl::case_when::<
+                    _,
+                    _,
+                    ::diesel::sql_types::Text,
+                >(lease_overflow, OPERATOR)
+                .otherwise(PROCESSING);
+                let lease = ::diesel::dsl::case_when::<
+                    _,
+                    _,
+                    ::diesel::sql_types::BigInt,
+                >(lease_overflow, #table::f_lease)
+                .otherwise(#table::f_lease + 1);
+                let error = ::diesel::dsl::case_when::<
+                    _,
+                    _,
+                    ::diesel::sql_types::Nullable<::diesel::sql_types::Text>,
+                >(lease_overflow, Some("object task lease overflow"))
+                .otherwise(#table::f_error);
+                let row = ::diesel::update(
+                    #table::table.filter(#table::f_id.eq_any(candidate)),
                 )
                 .set((
-                    #table::f_status.eq(PROCESSING),
+                    #table::f_status.eq(status),
                     #table::f_lease.eq(lease),
+                    #table::f_error.eq(error),
                     #table::f_updated_at.eq(::time::OffsetDateTime::now_utc()),
                 ))
-                .execute(&mut conn)
+                .returning((TaskRow::as_returning(), #table::f_status))
+                .get_result::<(TaskRow, String)>(&mut conn)
                 .await
+                .optional()
                 .map_err(diesel_err)?;
-
-                if updated != 1 {
+                let Some((row, status)) = row else {
                     return Ok(None);
+                };
+
+                match status.as_str() {
+                    OPERATOR => Ok(None),
+                    PROCESSING => Ok(Some(row.into())),
+                    _ => Err(ObjDeptError::Unrecoverable {
+                        message: "object task claim returned invalid status".into(),
+                    }),
                 }
-
-                row.lease = lease;
-
-                Ok(Some(row.into()))
             }
 
             pub async fn complete_task(

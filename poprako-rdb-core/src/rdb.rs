@@ -5,16 +5,24 @@ mod tests;
 
 use std::marker::PhantomData;
 use std::sync::Arc;
+use std::time::{Duration, Instant};
 
 use anyhow::Context as _;
+use deadpool::Runtime;
+use deadpool::managed::TimeoutType;
 use diesel_async::AsyncPgConnection;
 use diesel_async::pooled_connection::AsyncDieselConnectionManager;
-use diesel_async::pooled_connection::deadpool::{BuildError, Object, Pool};
+use diesel_async::pooled_connection::deadpool::{
+    BuildError, Object, Pool, PoolError,
+};
 use poprako_orchestra::{Context, Level};
 
 // Keep the shared database pool within the production host's memory and CPU
 // budget.
 const RDB_POOL_MAX_SIZE: usize = 4;
+
+// Bound queueing behind the low-resource connection pool.
+const RDB_POOL_WAIT_TIMEOUT: Duration = Duration::from_secs(5);
 
 // Concrete pool type shared by RDB contexts.
 type RdbPool = Pool<AsyncPgConnection>;
@@ -43,6 +51,9 @@ pub enum RdbError {
         /// Safe diagnostic from the pool implementation.
         message: String,
     },
+
+    /// Waiting for a pooled connection exceeded the configured bound.
+    PoolWaitTimeout,
 }
 
 impl std::fmt::Display for RdbError {
@@ -62,6 +73,10 @@ impl std::fmt::Display for RdbError {
                     "failed to acquire RDB connection: {}",
                     message
                 )
+            }
+
+            Self::PoolWaitTimeout => {
+                write!(formatter, "timed out waiting for an RDB connection")
             }
         }
     }
@@ -104,8 +119,19 @@ impl RdbCore {
 
         let pool = Pool::builder(manager)
             .max_size(RDB_POOL_MAX_SIZE)
+            .runtime(Runtime::Tokio1)
+            .wait_timeout(Some(RDB_POOL_WAIT_TIMEOUT))
             .build()
-            .map_err(|source| RdbError::PoolBuild { source })?;
+            .map_err(|source| {
+                //
+                tracing::error!(
+                    operation = "build_rdb_pool",
+                    sdk_err = ?source,
+                    "RDB pool SDK error",
+                );
+
+                RdbError::PoolBuild { source }
+            })?;
 
         Ok(Self {
             pool: Arc::new(pool),
@@ -119,9 +145,48 @@ impl RdbCore {
     /// Returns an error when the pool cannot supply a connection.
     pub async fn get(&self) -> RdbRest<RdbPooledConn> {
         //
-        self.pool.get().await.map_err(|source| RdbError::PoolGet {
+        let started_at = Instant::now();
+
+        let connection = self.pool.get().await;
+
+        metrics::histogram!("rdb_pool_acquire_duration_seconds")
+            .record(started_at.elapsed().as_secs_f64());
+
+        match connection {
+            //
+            Ok(connection) => Ok(connection),
+
+            Err(source) => Err(pool_get_error(&source)),
+        }
+    }
+}
+
+// Classifies a pool acquisition error and records its bounded reason.
+fn pool_get_error(source: &PoolError) -> RdbError {
+    //
+    let reason = match source {
+        //
+        PoolError::Timeout(TimeoutType::Wait) => "wait_timeout",
+
+        _ => "pool",
+    };
+
+    metrics::counter!("rdb_pool_acquire_failures_total", "reason" => reason)
+        .increment(1);
+
+    tracing::error!(
+        operation = "acquire_rdb_connection",
+        sdk_err = ?source,
+        "RDB pool SDK error",
+    );
+
+    match source {
+        //
+        PoolError::Timeout(TimeoutType::Wait) => RdbError::PoolWaitTimeout,
+
+        _ => RdbError::PoolGet {
             message: source.to_string(),
-        })
+        },
     }
 }
 

@@ -1,0 +1,179 @@
+use std::collections::VecDeque;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::{Arc, Mutex};
+
+use tokio::sync::Notify;
+
+use super::{ObjActor, POLL_INTERVAL};
+use crate::key::ObjKey;
+use crate::model::task::{CHECK, ObjPromTask, ObjTaskAction, obj_task_id};
+use crate::prom::ObjProm;
+use crate::rest::ObjDeptRest;
+
+#[derive(Clone, Default)]
+struct MockProm {
+    inner: Arc<MockPromInner>,
+}
+
+#[derive(Default)]
+struct MockPromInner {
+    tasks: Mutex<VecDeque<ObjPromTask>>,
+    reset_count: AtomicUsize,
+    claim_count: AtomicUsize,
+    complete_count: AtomicUsize,
+}
+
+impl MockProm {
+    fn with_task(task: ObjPromTask) -> Self {
+        let prom = Self::default();
+
+        prom.inner
+            .tasks
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .push_back(task);
+
+        prom
+    }
+}
+
+impl ObjProm for MockProm {
+    async fn reset_tasks(&self) -> ObjDeptRest<usize> {
+        self.inner.reset_count.fetch_add(1, Ordering::SeqCst);
+
+        Ok(0)
+    }
+
+    async fn claim_task(&self) -> ObjDeptRest<Option<ObjPromTask>> {
+        self.inner.claim_count.fetch_add(1, Ordering::SeqCst);
+
+        Ok(self
+            .inner
+            .tasks
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .pop_front())
+    }
+
+    async fn complete_task(&self, _task: &ObjPromTask) -> ObjDeptRest<usize> {
+        self.inner.complete_count.fetch_add(1, Ordering::SeqCst);
+
+        Ok(1)
+    }
+
+    async fn retry_task<'a>(
+        &'a self,
+        _task: &'a ObjPromTask,
+        _message: &'a str,
+    ) -> ObjDeptRest<usize> {
+        Ok(1)
+    }
+
+    async fn mark_task_operator<'a>(
+        &'a self,
+        _task: &'a ObjPromTask,
+        _message: &'a str,
+    ) -> ObjDeptRest<usize> {
+        Ok(1)
+    }
+}
+
+#[tokio::test(start_paused = true)]
+async fn actor_runs_both_loops_immediately_then_waits_thirty_seconds() {
+    let prom = MockProm::with_task(task());
+
+    let actor = ObjActor::new(prom.clone(), |_task| async {
+        Ok(ObjTaskAction::Complete)
+    });
+
+    yield_until_idle().await;
+
+    assert_eq!(prom.inner.reset_count.load(Ordering::SeqCst), 1);
+    assert_eq!(prom.inner.claim_count.load(Ordering::SeqCst), 2);
+    assert_eq!(prom.inner.complete_count.load(Ordering::SeqCst), 1);
+
+    tokio::time::advance(std::time::Duration::from_secs(29)).await;
+
+    yield_until_idle().await;
+
+    assert_eq!(prom.inner.reset_count.load(Ordering::SeqCst), 1);
+    assert_eq!(prom.inner.claim_count.load(Ordering::SeqCst), 2);
+
+    tokio::time::advance(std::time::Duration::from_secs(1)).await;
+
+    yield_until_idle().await;
+
+    assert_eq!(prom.inner.reset_count.load(Ordering::SeqCst), 2);
+    assert_eq!(prom.inner.claim_count.load(Ordering::SeqCst), 3);
+
+    actor.cancel();
+
+    actor.join().await;
+}
+
+#[tokio::test(start_paused = true)]
+async fn maintenance_keeps_its_cadence_while_claimed_work_is_busy() {
+    let prom = MockProm::with_task(task());
+
+    let release = Arc::new(Notify::new());
+
+    let handler_release = release.clone();
+
+    let actor = ObjActor::new(prom.clone(), move |_task| {
+        let release = handler_release.clone();
+
+        async move {
+            release.notified().await;
+
+            Ok(ObjTaskAction::Complete)
+        }
+    });
+
+    yield_until_idle().await;
+
+    assert_eq!(prom.inner.reset_count.load(Ordering::SeqCst), 1);
+    assert_eq!(prom.inner.claim_count.load(Ordering::SeqCst), 1);
+
+    tokio::time::advance(POLL_INTERVAL).await;
+
+    yield_until_idle().await;
+
+    assert_eq!(prom.inner.reset_count.load(Ordering::SeqCst), 2);
+    assert_eq!(prom.inner.claim_count.load(Ordering::SeqCst), 1);
+
+    release.notify_one();
+
+    yield_until_idle().await;
+
+    assert_eq!(prom.inner.complete_count.load(Ordering::SeqCst), 1);
+
+    actor.cancel();
+
+    actor.join().await;
+}
+
+fn task() -> ObjPromTask {
+    let key = ObjKey {
+        id: "page-1".into(),
+        ver: 1,
+        image: "page/page-1-1.png".into(),
+    };
+
+    ObjPromTask {
+        id: obj_task_id("page_image", CHECK, &key, 0),
+        topic: "page_image".into(),
+        oper: CHECK.into(),
+        obj_id: key.id,
+        ver: i64::from(key.ver),
+        image: key.image,
+        gen_no: 0,
+        retried_count: 0,
+        lease: 1,
+    }
+}
+
+async fn yield_until_idle() {
+    for _ in 0..8 {
+        tokio::task::yield_now().await;
+    }
+}

@@ -6,6 +6,9 @@ mod mock_impl;
 // R2 object-storage implementation.
 mod r2_impl;
 
+#[cfg(all(test, feature = "rdb"))]
+pub mod tests;
+
 use poprako_obj_dept::actor::{ObjActor, ObjActorDesc};
 use poprako_obj_dept::key::KeyMap;
 use poprako_obj_dept::pool::{ObjPool, ObjPoolView};

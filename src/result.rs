@@ -39,6 +39,12 @@ pub enum BaseError {
         message: String,
     },
 
+    /// A temporarily unavailable dependency that the caller may try again.
+    Unavailable {
+        /// Generic availability detail retained for non-HTTP callers.
+        message: String,
+    },
+
     /// An unexpected system-level failure — cannot be recovered mid-request.
     Unrecoverable {
         /// Description of the system failure.
@@ -58,14 +64,17 @@ impl From<RdbError> for BaseError {
     // Convert a traced RDB infrastructure failure into the application error surface.
     fn from(source: RdbError) -> Self {
         //
-        tracing::error!(
-            operation = "access_database_pool",
-            sdk_err = ?source,
-            "RDB pool SDK error",
-        );
+        match source {
+            //
+            RdbError::PoolWaitTimeout => Self::Unavailable {
+                message:
+                    "database connection capacity is temporarily unavailable"
+                        .into(),
+            },
 
-        Self::Unrecoverable {
-            message: source.to_string(),
+            source => Self::Unrecoverable {
+                message: source.to_string(),
+            },
         }
     }
 }

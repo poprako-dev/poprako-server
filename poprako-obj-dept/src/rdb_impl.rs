@@ -197,14 +197,9 @@ pub fn diesel_err(source: DieselError) -> ObjDeptError {
 }
 
 /// Maps and traces an RDB pool failure.
+#[must_use]
 pub fn rdb_err(source: RdbError) -> ObjDeptError {
     //
-    tracing::error!(
-        operation = "get_obj_dept_rdb_conn",
-        sdk_err = ?source,
-        "RDB pool error",
-    );
-
     let message = match source {
         //
         RdbError::PoolBuild { source } => {
@@ -213,6 +208,10 @@ pub fn rdb_err(source: RdbError) -> ObjDeptError {
 
         RdbError::PoolGet { message } => {
             format!("failed to acquire RDB connection: {}", message)
+        }
+
+        RdbError::PoolWaitTimeout => {
+            "timed out waiting for an RDB connection".into()
         }
     };
 

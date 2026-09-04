@@ -32,7 +32,7 @@ impl HybRepo {
         //
         Self {
             rdb_core: core,
-            active_ddls: Arc::new(DashMap::new()),
+            active_ddls: Arc::default(),
         }
     }
 }

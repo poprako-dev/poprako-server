@@ -1,5 +1,8 @@
 //! Diesel-backed terminology-entry repository operations.
 
+// Batched terminology import persistence.
+mod upsert;
+
 /// Term RDB integration tests.
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;
@@ -30,6 +33,7 @@ use crate::part_impl::repo::rdb_impl::entity::term::{
 use crate::part_impl::repo::rdb_impl::schema::t_term::dsl::{
     f_comment, f_id, f_source, f_targets, f_termbase_id, f_updated_at, t_term,
 };
+use crate::part_impl::repo::rdb_impl::term::upsert::upsert_terms;
 use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 use crate::shared::RdbContext;
 use crate::shared::result::diesel;
@@ -206,7 +210,14 @@ where
         context: &mut RdbContext<L>,
         oper: &UpsertTerms<'_>,
     ) -> BaseRest<()> {
-        upsert_terms(context.conn(), oper.entries, oper.updates).await
+        //
+        upsert_terms(
+            context.conn(),
+            oper.termbase_id,
+            oper.entries,
+            oper.updates,
+        )
+        .await
     }
 }
 
@@ -265,6 +276,15 @@ async fn delete(conn: &mut RdbConn, id: &str) -> BaseRest<()> {
     accept(())
 }
 
+// Escape wildcard characters before reusing user input in a SQL `ILIKE` pattern.
+fn escape_ilike_pattern(input: &str) -> String {
+    //
+    input
+        .replace('\\', "\\\\")
+        .replace('%', "\\%")
+        .replace('_', "\\_")
+}
+
 // Apply a partial update payload to an existing term row.
 #[instrument(level = "info", skip_all)]
 async fn update_info(conn: &mut RdbConn, update: &TermRepl) -> BaseRest<()> {
@@ -288,15 +308,6 @@ async fn update_info(conn: &mut RdbConn, update: &TermRepl) -> BaseRest<()> {
         .map_err(diesel)?;
 
     accept(())
-}
-
-// Escape wildcard characters before reusing user input in a SQL `ILIKE` pattern.
-fn escape_ilike_pattern(input: &str) -> String {
-    //
-    input
-        .replace('\\', "\\\\")
-        .replace('%', "\\%")
-        .replace('_', "\\_")
 }
 
 // Delete all terms that belong to one termbase.
@@ -348,32 +359,6 @@ async fn list_all_infos(
         .map_err(diesel)?;
 
     accept(rows.into_iter().map(Into::into).collect())
-}
-
-// Apply bounded imported inserts and replacements inside one adapter step.
-#[instrument(level = "info", skip_all)]
-async fn upsert_terms(
-    conn: &mut RdbConn,
-    entries: &[TermEntry],
-    updates: &[TermRepl],
-) -> BaseRest<()> {
-    //
-    if !entries.is_empty() {
-        //
-        let rows = entries.iter().map(TermEntryRow::from).collect::<Vec<_>>();
-
-        diesel::insert_into(t_term)
-            .values(&rows)
-            .execute(conn)
-            .await
-            .map_err(diesel)?;
-    }
-
-    for update in updates {
-        update_info(conn, update).await?;
-    }
-
-    accept(())
 }
 
 // Locks a term row for mutation safety.

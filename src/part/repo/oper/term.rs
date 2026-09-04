@@ -65,6 +65,9 @@ pub struct UpdateTerm<'a> {
 #[oper(output = ())]
 pub struct UpsertTerms<'a> {
     //
+    /// Terminology base that owns every inserted and updated term.
+    pub termbase_id: &'a str,
+
     /// New terminology entries to insert.
     pub entries: &'a [TermEntry],
     /// Existing terminology entries to replace.

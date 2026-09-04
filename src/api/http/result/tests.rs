@@ -34,3 +34,17 @@ fn retryable_error_maps_to_conflict() {
     assert_eq!(http_error.code.get(), 8);
     assert_eq!(http_error.message.as_deref(), Some("retry request"));
 }
+
+#[test]
+fn unavailable_error_maps_to_service_unavailable() {
+    let http_error = HttpError::from(BaseError::Unavailable {
+        message: "driver detail".to_string(),
+    });
+
+    assert_eq!(http_error.status, StatusCode::SERVICE_UNAVAILABLE);
+    assert_eq!(http_error.code.get(), 9);
+    assert_eq!(
+        http_error.message.as_deref(),
+        Some(trl("error-unavailable").as_str()),
+    );
+}
