@@ -14,6 +14,7 @@ pub mod tests;
 use diesel::prelude::{
     BoolExpressionMethods as _, ExpressionMethods as _, QueryDsl as _,
 };
+use diesel::result::{DatabaseErrorKind, Error as DieselError};
 use diesel_async::RunQueryDsl as _;
 use poprako_orchestra::{AtLeast, Level, Oper, Step};
 use time::OffsetDateTime;
@@ -30,35 +31,13 @@ use crate::result::{BaseError, BaseRest, accept};
 use crate::shared::RdbContext;
 use crate::shared::result::diesel;
 
-/// Poll the oldest visible pending record from each topic without processing work.
-/// A delayed retry is excluded before the per-topic selection, allowing later
-/// visible work from the same topic to advance. A processing record blocks only
-/// its own topic so separate application instances cannot consume that topic
-/// concurrently.
+/// Atomically claims the oldest visible pending record from each idle topic.
+/// Returns the persisted attempt data after incrementing its lease. Concurrent
+/// claims skip locked candidates; the processing-topic unique index also fences
+/// competing snapshots that select different records from the same topic.
 #[derive(Oper)]
 #[oper(output = Vec<LocalMessageRow>)]
-pub struct PollPending;
-
-/// Try to claim a record (status Pending → Processing).
-/// Returns `true` if the claim succeeded (i.e. the row was still
-/// Pending), `false` if another worker claimed it first.
-#[derive(Oper)]
-#[oper(output = bool)]
-pub struct ClaimPending<'a> {
-    //
-    // Internal state field `id`.
-    /// ID of the local-message row to claim.
-    id: &'a str,
-    /// Lease observed by the poller.
-    lease: i64,
-}
-
-impl<'a> ClaimPending<'a> {
-    /// Builds an operation that claims the observed message attempt.
-    pub const fn new(id: &'a str, lease: i64) -> Self {
-        Self { id, lease }
-    }
-}
+pub struct ClaimPending;
 
 /// Mark a record as successfully completed.
 #[derive(Oper)]
@@ -143,7 +122,8 @@ impl<'a> RetryMessage<'a> {
     }
 }
 
-/// Reset processing records stuck before a cutoff timestamp.
+/// Reset expired processing attempts, consuming the shared failure retry budget.
+/// The fourth failed attempt becomes dead; waiting does not consume this budget.
 #[derive(Oper)]
 #[oper(output = ())]
 pub struct ResetStuck<'a> {
@@ -184,77 +164,71 @@ impl<'a> PurgeCompleted<'a> {
     }
 }
 
-// Implements poll pending.
-#[instrument(level = "info", skip_all)]
-async fn poll_pending(conn: &mut RdbConn) -> BaseRest<Vec<LocalMessageRow>> {
+// A competing snapshot can claim another row from the same topic.
+fn claim_error(source: DieselError) -> BaseError {
     //
-    let processing_message =
-        diesel::alias!(t_local_message as processing_message);
+    match source {
+        //
+        DieselError::DatabaseError(
+            DatabaseErrorKind::UniqueViolation,
+            information,
+        ) if information.constraint_name()
+            == Some("uidx_local_message_processing_topic") =>
+        {
+            //
+            tracing::warn!(
+                operation = "claim_prom_tasks",
+                database_message = information.message(),
+                constraint = ?information.constraint_name(),
+                "prom topic was claimed by a competing transaction",
+            );
 
-    let processing_topic = processing_message
-        .filter(
-            processing_message
-                .field(t_local_message::f_status)
-                .eq(LocalMessageStatus::Processing.as_str()),
-        )
-        .filter(
-            processing_message
-                .field(t_local_message::f_topic)
-                .eq(t_local_message::f_topic),
-        );
+            BaseError::Retryable {
+                message: "prom topic was claimed concurrently".into(),
+            }
+        }
 
-    let local_message_rows = t_local_message::table
-        .filter(
-            t_local_message::f_status.eq(LocalMessageStatus::Pending.as_str()),
-        )
-        .filter(t_local_message::f_visible_at.le(OffsetDateTime::now_utc()))
-        .filter(diesel::dsl::not(diesel::dsl::exists(processing_topic)))
-        .distinct_on(t_local_message::f_topic)
-        .order_by((
-            t_local_message::f_topic.asc(),
-            t_local_message::f_created_at.asc(),
-            t_local_message::f_id.asc(),
-        ))
-        .select((
-            t_local_message::f_id,
-            t_local_message::f_topic,
-            t_local_message::f_payload,
-            t_local_message::f_retried_count,
-            t_local_message::f_lease,
-        ))
-        .load::<LocalMessageRow>(conn)
-        .await
-        .map_err(diesel)?;
-
-    accept(local_message_rows)
+        source => diesel(source),
+    }
 }
 
-// Implements claim pending.
+// Claims and reads each attempt in one statement, without a stale poll result.
 #[instrument(level = "info", skip_all)]
-async fn claim_pending(
-    conn: &mut RdbConn,
-    id: &str,
-    lease: i64,
-) -> BaseRest<bool> {
+async fn claim_pending(conn: &mut RdbConn) -> BaseRest<Vec<LocalMessageRow>> {
     //
-    let updated = diesel::update(
-        t_local_message::table
-            .filter(t_local_message::f_id.eq(id))
-            .filter(
-                t_local_message::f_status
-                    .eq(LocalMessageStatus::Pending.as_str()),
-            )
-            .filter(t_local_message::f_lease.eq(lease)),
+    let rows = diesel::sql_query(
+        "WITH candidates AS (
+            SELECT DISTINCT ON (pending.f_topic) pending.f_id
+            FROM t_local_message AS pending
+            WHERE pending.f_status = 'local_message_status:pending'
+              AND pending.f_visible_at <= $1
+              AND NOT EXISTS (
+                  SELECT 1 FROM t_local_message AS processing
+                  WHERE processing.f_topic = pending.f_topic
+                    AND processing.f_status = 'local_message_status:processing'
+              )
+            ORDER BY pending.f_topic, pending.f_created_at, pending.f_id
+        ), locked AS (
+            SELECT message.f_id FROM t_local_message AS message
+            JOIN candidates ON candidates.f_id = message.f_id
+            ORDER BY message.f_topic
+            FOR UPDATE OF message SKIP LOCKED
+        )
+        UPDATE t_local_message AS message
+        SET f_status = 'local_message_status:processing',
+            f_lease = message.f_lease + 1,
+            f_updated_at = $1
+        FROM locked
+        WHERE message.f_id = locked.f_id
+        RETURNING message.f_id, message.f_topic, message.f_payload,
+                  message.f_retried_count, message.f_lease",
     )
-    .set((
-        t_local_message::f_status.eq(LocalMessageStatus::Processing.as_str()),
-        t_local_message::f_updated_at.eq(OffsetDateTime::now_utc()),
-    ))
-    .execute(conn)
+    .bind::<diesel::sql_types::Timestamptz, _>(OffsetDateTime::now_utc())
+    .load::<LocalMessageRow>(conn)
     .await
-    .map_err(diesel)?;
+    .map_err(claim_error)?;
 
-    accept(updated > 0)
+    accept(rows)
 }
 
 // Implements complete message.
@@ -364,7 +338,7 @@ async fn reset_stuck(
                     .eq(LocalMessageStatus::Processing.as_str()),
             )
             .filter(t_local_message::f_updated_at.le(*before))
-            .filter(t_local_message::f_lease.ge(3)),
+            .filter(t_local_message::f_retried_count.ge(3)),
     )
     .set((
         t_local_message::f_status.eq(LocalMessageStatus::Dead.as_str()),
@@ -383,10 +357,13 @@ async fn reset_stuck(
                     .eq(LocalMessageStatus::Processing.as_str()),
             )
             .filter(t_local_message::f_updated_at.le(*before))
-            .filter(t_local_message::f_lease.lt(3)),
+            .filter(t_local_message::f_retried_count.lt(3)),
     )
     .set((
         t_local_message::f_status.eq(LocalMessageStatus::Pending.as_str()),
+        t_local_message::f_last_error.eq(Some("processing timeout exceeded")),
+        t_local_message::f_retried_count
+            .eq(t_local_message::f_retried_count + 1),
         t_local_message::f_lease.eq(t_local_message::f_lease + 1),
         t_local_message::f_updated_at.eq(OffsetDateTime::now_utc()),
     ))
@@ -426,7 +403,7 @@ async fn purge_completed(
 
 /// Queue repository used by the prom background actor.
 ///
-/// Provides polling, claiming, completion, failure, retry, and recovery
+/// Provides atomic claiming, completion, failure, retry, and recovery
 /// operations for records in `t_local_message`.
 ///
 /// [`RdbPromActor`]: super::actor::base::RdbPromActor
@@ -441,45 +418,24 @@ impl RdbPromRepo {
     }
 }
 
-impl<L> Step<PollPending, RdbContext<L>> for RdbPromRepo
+impl<L> Step<ClaimPending, RdbContext<L>> for RdbPromRepo
 where
     L: Level + Send + AtLeast<ReptRead>,
 {
-    // Internal type alias for `Error`.
+    // Internal type alias for `Level`.
     type Level = ReptRead;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
-    #[instrument(level = "info", skip_all)]
     // Internal implementation of `step`.
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext<L>,
-        _oper: &PollPending,
+        _oper: &ClaimPending,
     ) -> BaseRest<Vec<LocalMessageRow>> {
-        poll_pending(context.conn()).await
-    }
-}
-
-impl<'a, L> Step<ClaimPending<'a>, RdbContext<L>> for RdbPromRepo
-where
-    L: Level + Send + AtLeast<ReptRead>,
-{
-    // Internal type alias for `Error`.
-    type Level = ReptRead;
-
-    // Defines the adapter error exposed by this operation.
-    type Error = BaseError;
-
-    #[instrument(level = "info", skip_all)]
-    // Internal implementation of `step`.
-    async fn step(
-        &self,
-        context: &mut RdbContext<L>,
-        oper: &ClaimPending<'a>,
-    ) -> BaseRest<bool> {
-        claim_pending(context.conn(), oper.id, oper.lease).await
+        claim_pending(context.conn()).await
     }
 }
 
@@ -493,8 +449,8 @@ where
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
-    #[instrument(level = "info", skip_all)]
     // Internal implementation of `step`.
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext<L>,
@@ -514,8 +470,8 @@ where
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
-    #[instrument(level = "info", skip_all)]
     // Internal implementation of `step`.
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext<L>,
@@ -535,8 +491,8 @@ where
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
-    #[instrument(level = "info", skip_all)]
     // Internal implementation of `step`.
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext<L>,
@@ -565,8 +521,8 @@ where
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
-    #[instrument(level = "info", skip_all)]
     // Internal implementation of `step`.
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext<L>,
@@ -586,8 +542,8 @@ where
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
-    #[instrument(level = "info", skip_all)]
     // Internal implementation of `step`.
+    #[instrument(level = "info", skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext<L>,

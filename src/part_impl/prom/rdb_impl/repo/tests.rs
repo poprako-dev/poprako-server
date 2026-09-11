@@ -1,5 +1,5 @@
 // completed_message_purge_preserves_non_completed_records(PurgeCompleted)(positive): expired completed records are purged while recent completed, pending, and dead records remain.
-// poll_pending_selects_one_visible_message_per_idle_topic(PollPending)(positive): polling is fair across topics and skips topics with processing work.
+// claim_pending_selects_one_visible_message_per_idle_topic(ClaimPending)(positive): polling is fair across topics and skips topics with processing work.
 // retry_message_allows_later_topic_message_to_advance(RetryMessage)(positive): delayed retries are equivalent to re-enqueueing behind visible work.
 // wait_message_preserves_retry_budget(RetryMessage)(positive): waiting for external state returns the task to Pending without incrementing its retry counter.
 // stale_attempt_finalization_preserves_newer_lease(CompleteMessage/RetryMessage/FailMessage)(negative): an expired worker lease cannot finalize a newer processing attempt or overwrite Dead.
@@ -27,9 +27,9 @@ const LEASE_PREFIX: &str = "rdb-test-prom-lease-";
 // Constant definition for `WAIT_PREFIX`.
 const WAIT_PREFIX: &str = "rdb-test-prom-wait-";
 
-/// Verifies polling is fair across topics and skips topics with processing
+/// Verifies claiming is fair across topics and skips topics with processing
 /// work.
-pub async fn poll_pending_selects_one_visible_message_per_idle_topic(
+pub async fn claim_pending_selects_one_visible_message_per_idle_topic(
     shared: RdbCore,
 ) {
     //
@@ -85,7 +85,7 @@ pub async fn poll_pending_selects_one_visible_message_per_idle_topic(
     let mut context =
         RdbContext::<ReptRead>::new(shared.get().await.ok().unwrap());
 
-    let mut rows = repo.step(&mut context, &PollPending).await.ok().unwrap();
+    let mut rows = repo.step(&mut context, &ClaimPending).await.ok().unwrap();
 
     rows.retain(|row| row.f_id.starts_with(POLL_PREFIX));
 
@@ -166,7 +166,7 @@ pub async fn retry_message_allows_later_topic_message_to_advance(
     .ok()
     .unwrap();
 
-    let rows = repo.step(&mut context, &PollPending).await.ok().unwrap();
+    let rows = repo.step(&mut context, &ClaimPending).await.ok().unwrap();
 
     let rows = rows
         .into_iter()
@@ -277,13 +277,13 @@ pub async fn stale_attempt_finalization_preserves_newer_lease(shared: RdbCore) {
     let entries = [
         local_message_entry(
             "rdb-test-prom-lease-complete",
-            "rdb-test-prom-lease-topic",
+            "rdb-test-prom-lease-complete-topic",
             LocalMessageStatus::Processing,
             now,
         ),
         local_message_entry(
             "rdb-test-prom-lease-retry",
-            "rdb-test-prom-lease-topic",
+            "rdb-test-prom-lease-retry-topic",
             LocalMessageStatus::Processing,
             now,
         ),

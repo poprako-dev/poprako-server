@@ -6,8 +6,8 @@ use std::io::Write as _;
 
 use diesel::pg::Pg;
 use diesel::serialize::{IsNull, Output, Result as SerializeResult, ToSql};
-use diesel::sql_types::Text;
-use diesel::{AsExpression, Insertable, Queryable};
+use diesel::sql_types::{BigInt, Jsonb, Text};
+use diesel::{AsExpression, Insertable, Queryable, QueryableByName};
 use time::OffsetDateTime;
 
 use crate::part::prom::payload::TaskPayload;
@@ -121,15 +121,20 @@ impl<'a> LocalMessageEntryRow<'a> {
     }
 }
 
-/// A row read from `t_local_message` during the poll phase.
-#[derive(Debug, Queryable)]
+/// Persisted attempt returned by an atomic queue claim.
+#[derive(Debug, Queryable, QueryableByName)]
 pub struct LocalMessageRow {
     //
+    #[diesel(sql_type = Text)]
     pub f_id: String,
 
+    #[diesel(sql_type = Text)]
     pub f_topic: String,
+    #[diesel(sql_type = Jsonb)]
     pub f_payload: serde_json::Value,
 
+    #[diesel(sql_type = BigInt)]
     pub f_retried_count: i64,
+    #[diesel(sql_type = BigInt)]
     pub f_lease: i64,
 }
