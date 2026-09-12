@@ -1,40 +1,67 @@
 use super::*;
 
-// task_payload_serde(persisted_json)(positive): renamed task types preserve existing queue records.
+// task_payload_serde(current_json)(positive): domain and operation tags round trip with required ownership.
 #[test]
-fn preserves_persisted_tags() {
+fn round_trips_current_contract() {
     //
-    let chapter_task = TaskPayload::Chapter {
-        payload: ChapterPayload::TryAdvanceRawProvideStage {
-            chapter_id: "chapter-1".to_string(),
-            actor_user_id: None,
-        },
-    };
+    let cases = [
+        (
+            TaskPayload::Chapter {
+                payload: ChapterPayload::TryAdvanceRawProvideStage {
+                    chapter_id: "chapter-1".into(),
+                    actor_user_id: "user-1".into(),
+                },
+            },
+            serde_json::json!({
+                "Chapter": { "payload": { "TryAdvanceRawProvideStage": {
+                    "chapter_id": "chapter-1", "actor_user_id": "user-1"
+                } } }
+            }),
+        ),
+        (
+            TaskPayload::Invitation {
+                payload: InvitationPayload::Member {
+                    invitation_id: "invitation-1".into(),
+                },
+            },
+            serde_json::json!({
+                "Invitation": { "payload": { "Member": {
+                    "invitation_id": "invitation-1"
+                } } }
+            }),
+        ),
+    ];
 
-    let chapter_json = serde_json::to_value(&chapter_task).unwrap();
+    for (task, expected) in cases {
+        let encoded = serde_json::to_value(&task).unwrap();
 
-    assert_eq!(
-        chapter_json,
+        assert_eq!(encoded, expected);
+
+        assert_eq!(
+            serde_json::from_value::<TaskPayload>(encoded).unwrap(),
+            task
+        );
+    }
+}
+
+// task_payload_serde(invalid_json)(negative): historical tags and missing ownership are rejected.
+#[test]
+fn rejects_obsolete_or_incomplete_payloads() {
+    //
+    let invalid = [
         serde_json::json!({ "AdvanceRawProvide": { "chapter_id": "chapter-1" } }),
-    );
-
-    let invitation_task = TaskPayload::Invitation {
-        payload: InvitationPayload::Member {
-            invitation_id: "invitation-1".to_string(),
-        },
-    };
-
-    let invitation_json = serde_json::to_value(&invitation_task).unwrap();
-
-    assert_eq!(
-        invitation_json,
         serde_json::json!({
-            "PurgeExpiredInvitation": { "Member": { "invitation_id": "invitation-1" } },
+            "PurgeExpiredInvitation": { "Member": { "invitation_id": "invitation-1" } }
         }),
-    );
+        serde_json::json!({
+            "Chapter": { "payload": { "chapter_id": "chapter-1", "actor_user_id": "user-1" } }
+        }),
+        serde_json::json!({
+            "Chapter": { "payload": { "TryAdvanceRawProvideStage": { "chapter_id": "chapter-1" } } }
+        }),
+    ];
 
-    let decoded_task: TaskPayload =
-        serde_json::from_value(invitation_json).unwrap();
-
-    assert_eq!(decoded_task, invitation_task);
+    for payload in invalid {
+        assert!(serde_json::from_value::<TaskPayload>(payload).is_err());
+    }
 }

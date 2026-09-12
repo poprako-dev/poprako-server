@@ -79,7 +79,7 @@ async fn main() -> anyhow::Result<()> {
 
     let (prom_actor, effect_actor, obj_dept_actor, sched) = (
         RdbPromActor::new(
-            (rept_read_nucl.clone(), prom_repo),
+            (nucl.serial().clone(), prom_repo),
             (
                 rept_read_nucl.clone(),
                 repo.clone(),

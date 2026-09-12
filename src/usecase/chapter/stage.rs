@@ -75,12 +75,20 @@ where
     let is_advanced = nucl
         .coord(async move |context| {
             //
-            GetChapterInfoExcluded {
+            let chapter_info = GetChapterInfoExcluded {
                 id: chapter_id,
                 incls: &[],
             }
             .step_on(repo, context)
             .await?;
+
+            if !chapter_info
+                .stages
+                .has_phase(Stage::RawProvide, StagePhase::Pending)
+                || chapter_info.page_count == 0
+            {
+                return accept(Some(false));
+            }
 
             let page_infos =
                 ListPageInfos { chapter_id }.step_on(repo, context).await?;

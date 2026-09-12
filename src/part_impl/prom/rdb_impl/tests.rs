@@ -1,6 +1,6 @@
 use super::*;
 
-use crate::part::nucl::ReptRead;
+use crate::part::nucl::{ReptRead, Serial};
 
 use crate::part_impl::prom::rdb_impl::actor::base::RdbPromActor;
 use crate::part_impl::prom::rdb_impl::repo::RdbPromRepo;
@@ -130,7 +130,7 @@ async fn writer_and_consumer_lifecycles_are_independent(
     );
 
     let actor = RdbPromActor::new(
-        (nucl.clone(), RdbPromRepo::new()),
+        (RdbNucl::<Serial>::new(shared.clone()), RdbPromRepo::new()),
         (nucl.clone(), repo.clone(), dept.view(), Mock::new()),
     );
 
@@ -225,16 +225,16 @@ async fn atomic_claim_fences_concurrent_attempts_and_preserves_retry_delay(
         .unwrap();
 
     let (nucl, repo) =
-        (RdbNucl::<ReptRead>::new(shared.clone()), RdbPromRepo::new());
+        (RdbNucl::<Serial>::new(shared.clone()), RdbPromRepo::new());
 
     let mut rows = nucl
         .coord(async |context| {
-            let rows = ClaimPending.step_on(&repo, context).await?;
+            let rows = ClaimPending::new(4).step_on(&repo, context).await?;
 
             let competing = tokio::time::timeout(
                 std::time::Duration::from_secs(5),
                 nucl.coord(async |context| {
-                    ClaimPending.step_on(&repo, context).await
+                    ClaimPending::new(4).step_on(&repo, context).await
                 }),
             )
             .await
@@ -265,7 +265,9 @@ async fn atomic_claim_fences_concurrent_attempts_and_preserves_retry_delay(
     .unwrap();
 
     let next = nucl
-        .coord(async |context| ClaimPending.step_on(&repo, context).await)
+        .coord(async |context| {
+            ClaimPending::new(4).step_on(&repo, context).await
+        })
         .await
         .unwrap()
         .pop()
@@ -282,7 +284,9 @@ async fn atomic_claim_fences_concurrent_attempts_and_preserves_retry_delay(
     .unwrap();
 
     let rows = nucl
-        .coord(async |context| ClaimPending.step_on(&repo, context).await)
+        .coord(async |context| {
+            ClaimPending::new(4).step_on(&repo, context).await
+        })
         .await
         .unwrap();
 
@@ -299,7 +303,9 @@ async fn atomic_claim_fences_concurrent_attempts_and_preserves_retry_delay(
     // Waiting advances leases without consuming the failure budget.
     for expected_lease in 2..6 {
         let attempt = nucl
-            .coord(async |context| ClaimPending.step_on(&repo, context).await)
+            .coord(async |context| {
+                ClaimPending::new(4).step_on(&repo, context).await
+            })
             .await
             .unwrap()
             .pop()
@@ -321,7 +327,9 @@ async fn atomic_claim_fences_concurrent_attempts_and_preserves_retry_delay(
     // Recovery consumes the shared failure budget, independently of lease age.
     for expected_retries in 2..=4 {
         let attempt = nucl
-            .coord(async |context| ClaimPending.step_on(&repo, context).await)
+            .coord(async |context| {
+                ClaimPending::new(4).step_on(&repo, context).await
+            })
             .await
             .unwrap()
             .pop()
@@ -375,7 +383,7 @@ async fn atomic_claim_fences_concurrent_attempts_and_preserves_retry_delay(
     test_shared::cleanup(&shared, prefix).await.unwrap();
 }
 
-// competing_snapshots_cannot_process_the_same_topic(ClaimPending)(negative): a repeatable-read snapshot that selects a different record cannot violate topic exclusivity.
+// competing_snapshots_cannot_process_the_same_topic(ClaimPending)(negative): a serializable snapshot that selects a different record cannot violate topic exclusivity.
 async fn competing_snapshots_cannot_process_the_same_topic(
     shared: poprako_rdb_core::RdbCore,
 ) {
@@ -413,7 +421,7 @@ async fn competing_snapshots_cannot_process_the_same_topic(
         .unwrap();
 
     let (nucl, repo) =
-        (RdbNucl::<ReptRead>::new(shared.clone()), RdbPromRepo::new());
+        (RdbNucl::<Serial>::new(shared.clone()), RdbPromRepo::new());
 
     let result = nucl
         .coord(async |context| {
@@ -438,22 +446,20 @@ async fn competing_snapshots_cannot_process_the_same_topic(
 
             let rows = nucl
                 .coord(async |context| {
-                    ClaimPending.step_on(&repo, context).await
+                    ClaimPending::new(4).step_on(&repo, context).await
                 })
                 .await
                 .unwrap();
 
             assert_eq!(rows[0].f_id, entry.f_id);
 
-            ClaimPending.step_on(&repo, context).await
+            ClaimPending::new(4).step_on(&repo, context).await
         })
         .await;
 
     assert!(matches!(
-        result,
-        Err(poprako_orchestra::nucl::Error::Step(
-            BaseError::Retryable { .. }
-        ))
+        result.map_err(BaseError::from),
+        Err(BaseError::Retryable { .. })
     ));
 
     let processing_count = t_local_message::table
@@ -478,7 +484,9 @@ async fn competing_snapshots_cannot_process_the_same_topic(
     .unwrap();
 
     let rows = nucl
-        .coord(async |context| ClaimPending.step_on(&repo, context).await)
+        .coord(async |context| {
+            ClaimPending::new(4).step_on(&repo, context).await
+        })
         .await
         .unwrap();
 
@@ -523,7 +531,7 @@ async fn stale_snapshot_cannot_reclaim_a_delayed_attempt(
         .unwrap();
 
     let (nucl, repo) =
-        (RdbNucl::<ReptRead>::new(shared.clone()), RdbPromRepo::new());
+        (RdbNucl::<Serial>::new(shared.clone()), RdbPromRepo::new());
 
     let result = nucl
         .coord(async |context| {
@@ -535,7 +543,7 @@ async fn stale_snapshot_cannot_reclaim_a_delayed_attempt(
 
             let attempt = nucl
                 .coord(async |context| {
-                    ClaimPending.step_on(&repo, context).await
+                    ClaimPending::new(4).step_on(&repo, context).await
                 })
                 .await
                 .unwrap()
@@ -558,14 +566,16 @@ async fn stale_snapshot_cannot_reclaim_a_delayed_attempt(
             .await
             .unwrap();
 
-            ClaimPending.step_on(&repo, context).await
+            ClaimPending::new(4).step_on(&repo, context).await
         })
         .await;
 
     assert!(result.is_err());
 
     let rows = nucl
-        .coord(async |context| ClaimPending.step_on(&repo, context).await)
+        .coord(async |context| {
+            ClaimPending::new(4).step_on(&repo, context).await
+        })
         .await
         .unwrap();
 

@@ -14,7 +14,6 @@ pub mod tests;
 use diesel::prelude::{
     BoolExpressionMethods as _, ExpressionMethods as _, QueryDsl as _,
 };
-use diesel::result::{DatabaseErrorKind, Error as DieselError};
 use diesel_async::RunQueryDsl as _;
 use poprako_orchestra::{AtLeast, Level, Oper, Step};
 use time::OffsetDateTime;
@@ -22,7 +21,7 @@ use tracing::instrument;
 
 use poprako_rdb_core::RdbConn;
 
-use crate::part::nucl::ReptRead;
+use crate::part::nucl::{ReptRead, Serial};
 use crate::part_impl::prom::rdb_impl::entity::{
     LocalMessageRow, LocalMessageStatus,
 };
@@ -31,13 +30,21 @@ use crate::result::{BaseError, BaseRest, accept};
 use crate::shared::RdbContext;
 use crate::shared::result::diesel;
 
-/// Atomically claims the oldest visible pending record from each idle topic.
-/// Returns the persisted attempt data after incrementing its lease. Concurrent
-/// claims skip locked candidates; the processing-topic unique index also fences
-/// competing snapshots that select different records from the same topic.
+/// Atomically claims at most the available execution capacity, one per topic.
+/// Serializable transactions prevent competing claims for the same topic.
 #[derive(Oper)]
 #[oper(output = Vec<LocalMessageRow>)]
-pub struct ClaimPending;
+pub struct ClaimPending {
+    /// Maximum number of attempts the consumer can start immediately.
+    limit: usize,
+}
+
+impl ClaimPending {
+    /// Reserves no more work than the consumer can execute.
+    pub const fn new(limit: usize) -> Self {
+        Self { limit }
+    }
+}
 
 /// Mark a record as successfully completed.
 #[derive(Oper)]
@@ -164,38 +171,15 @@ impl<'a> PurgeCompleted<'a> {
     }
 }
 
-// A competing snapshot can claim another row from the same topic.
-fn claim_error(source: DieselError) -> BaseError {
-    //
-    match source {
-        //
-        DieselError::DatabaseError(
-            DatabaseErrorKind::UniqueViolation,
-            information,
-        ) if information.constraint_name()
-            == Some("uidx_local_message_processing_topic") =>
-        {
-            //
-            tracing::warn!(
-                operation = "claim_prom_tasks",
-                database_message = information.message(),
-                constraint = ?information.constraint_name(),
-                "prom topic was claimed by a competing transaction",
-            );
-
-            BaseError::Retryable {
-                message: "prom topic was claimed concurrently".into(),
-            }
-        }
-
-        source => diesel(source),
-    }
-}
-
 // Claims and reads each attempt in one statement, without a stale poll result.
 #[instrument(level = "info", skip_all)]
-async fn claim_pending(conn: &mut RdbConn) -> BaseRest<Vec<LocalMessageRow>> {
+async fn claim_pending(
+    conn: &mut RdbConn,
+    limit: usize,
+) -> BaseRest<Vec<LocalMessageRow>> {
     //
+    let limit = i64::try_from(limit).unwrap_or(i64::MAX);
+
     let rows = diesel::sql_query(
         "WITH candidates AS (
             SELECT DISTINCT ON (pending.f_topic) pending.f_id
@@ -211,7 +195,8 @@ async fn claim_pending(conn: &mut RdbConn) -> BaseRest<Vec<LocalMessageRow>> {
         ), locked AS (
             SELECT message.f_id FROM t_local_message AS message
             JOIN candidates ON candidates.f_id = message.f_id
-            ORDER BY message.f_topic
+            ORDER BY message.f_visible_at, message.f_created_at, message.f_id
+            LIMIT $2
             FOR UPDATE OF message SKIP LOCKED
         )
         UPDATE t_local_message AS message
@@ -221,12 +206,13 @@ async fn claim_pending(conn: &mut RdbConn) -> BaseRest<Vec<LocalMessageRow>> {
         FROM locked
         WHERE message.f_id = locked.f_id
         RETURNING message.f_id, message.f_topic, message.f_payload,
-                  message.f_retried_count, message.f_lease",
+                  message.f_retried_count, message.f_lease, message.f_created_at",
     )
     .bind::<diesel::sql_types::Timestamptz, _>(OffsetDateTime::now_utc())
+    .bind::<diesel::sql_types::BigInt, _>(limit)
     .load::<LocalMessageRow>(conn)
     .await
-    .map_err(claim_error)?;
+    .map_err(diesel)?;
 
     accept(rows)
 }
@@ -420,10 +406,10 @@ impl RdbPromRepo {
 
 impl<L> Step<ClaimPending, RdbContext<L>> for RdbPromRepo
 where
-    L: Level + Send + AtLeast<ReptRead>,
+    L: Level + Send + AtLeast<Serial>,
 {
     // Internal type alias for `Level`.
-    type Level = ReptRead;
+    type Level = Serial;
 
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
@@ -433,9 +419,9 @@ where
     async fn step(
         &self,
         context: &mut RdbContext<L>,
-        _oper: &ClaimPending,
+        oper: &ClaimPending,
     ) -> BaseRest<Vec<LocalMessageRow>> {
-        claim_pending(context.conn()).await
+        claim_pending(context.conn(), oper.limit).await
     }
 }
 

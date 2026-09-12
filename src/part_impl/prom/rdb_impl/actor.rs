@@ -1,4 +1,4 @@
-//! Prom-consumer worker that polls, dispatches by topic shard, and executes
+//! Prom-consumer worker that claims within available capacity and executes
 //! deferred actions through statically typed business dependencies.
 
 // Spawns the fixed worker pool and coordinates row dispatch.

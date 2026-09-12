@@ -9,7 +9,7 @@ use std::time::Duration as StdDuration;
 
 use poprako_orchestra::{Nucl as _, OperStep as _};
 use time::{Duration, OffsetDateTime};
-use tokio::sync::{Notify, mpsc};
+use tokio::sync::{Notify, OwnedSemaphorePermit};
 use tokio::task::JoinSet;
 use tokio::time::{Instant, sleep, timeout};
 use tracing::instrument;
@@ -25,7 +25,7 @@ use crate::part::repo::member_invitation::MemberInvitationRepo;
 use crate::part::repo::page::PageRepo;
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::prom::rdb_impl::actor::base::{
-    RdbPromActor, run_worker, shutdown_workers,
+    RdbPromActor, WorkerSlot, run_worker, shutdown_workers,
 };
 use crate::part_impl::prom::rdb_impl::entity::LocalMessageRow;
 use crate::part_impl::prom::rdb_impl::repo::{
@@ -59,15 +59,6 @@ const DEAD_RETENTION: Duration = Duration::days(30);
 
 // Constant definition for `COMPLETED_PURGE_INTERVAL`.
 const COMPLETED_PURGE_INTERVAL: Duration = Duration::hours(1);
-
-// Constant definition for `FNV_OFFSET_BASIS`.
-const FNV_OFFSET_BASIS: u64 = 14_695_981_039_346_656_037;
-
-// Constant definition for `FNV_PRIME`.
-const FNV_PRIME: u64 = 1_099_511_628_211;
-
-// Internal type alias for `WorkerSend`.
-type WorkerSend = mpsc::UnboundedSender<(LocalMessageRow, Instant)>;
 
 // Leaves a safety margin before the database reclaims processing leases.
 const EXECUTION_TIMEOUT: StdDuration = StdDuration::from_mins(14);
@@ -118,13 +109,9 @@ where
 
         tokio::select! {
             //
-            () = actor.token().cancelled() => {
-                //
-            }
+            () = actor.token().cancelled() => {}
 
-            () = actor.run_supervisor(&worker_sends, completed.as_ref()) => {
-                //
-            }
+            () = actor.run_supervisor(&worker_sends, completed.as_ref()) => {}
         }
 
         drop(worker_sends);
@@ -136,14 +123,14 @@ where
     fn spawn_workers(
         self: &Arc<Self>,
         completed: &Arc<Notify>,
-    ) -> (Vec<WorkerSend>, JoinSet<()>) {
+    ) -> (Vec<WorkerSlot<LocalMessageRow>>, JoinSet<()>) {
         //
         let (mut worker_sends, mut worker_handles) =
             (Vec::with_capacity(WORKER_COUNT), JoinSet::new());
 
         for _ in 0..WORKER_COUNT {
             //
-            let (worker_send, worker_recv) = mpsc::unbounded_channel();
+            let (worker_send, worker_recv) = WorkerSlot::channel();
 
             let actor = self.clone();
 
@@ -172,6 +159,9 @@ where
             self.dispatch_payload(&row.f_topic, &row.f_payload).await;
 
         let task_flow = enforce_retry_limit(task_flow, row.f_retried_count);
+
+        let task_flow =
+            task_flow.limit_wait(row.f_created_at, OffsetDateTime::now_utc());
 
         match task_flow {
             //
@@ -395,65 +385,49 @@ where
 
     // Internal implementation of `poll`.
     #[instrument(level = "info", skip_all)]
-    async fn poll(&self) -> BaseRest<Vec<LocalMessageRow>> {
+    async fn poll(&self, limit: usize) -> BaseRest<Vec<LocalMessageRow>> {
         //
         let rows = self
             .prom_nucl()
             .coord(async |context| {
-                ClaimPending.step_on(self.prom_repo(), context).await
+                //
+                ClaimPending::new(limit)
+                    .step_on(self.prom_repo(), context)
+                    .await
             })
             .await?;
 
         Ok(rows)
     }
 
-    // Internal implementation of `dispatch_rows`.
-    fn dispatch_rows(
-        worker_sends: &[WorkerSend],
+    // Assigns claimed tasks only to workers reserved before the claim.
+    fn dispatch_local_messages(
+        reservations: Vec<(&WorkerSlot<LocalMessageRow>, OwnedSemaphorePermit)>,
         rows: Vec<LocalMessageRow>,
         deadline: Instant,
-    ) -> BaseRest<bool> {
+    ) -> bool {
         //
         let mut dispatched = false;
 
-        for row in rows {
+        for ((worker, permit), row) in reservations.into_iter().zip(rows) {
             //
-            let worker_index = topic_worker_index(&row.f_topic)?;
-
-            let Some(worker_send) = worker_sends.get(worker_index) else {
+            if worker.dispatch(row, deadline, permit) {
                 //
-                tracing::error!(
-                    id = %row.f_id,
-                    worker_index,
-                    worker_count = worker_sends.len(),
-                    "internal invariant violated: prom worker is missing",
-                );
+                dispatched = true;
 
                 continue;
-            };
-
-            match worker_send.send((row, deadline)) {
-                //
-                Ok(()) => dispatched = true,
-
-                Err(error) => {
-                    //
-                    tracing::error!(
-                        id = %error.0.0.f_id,
-                        worker_index,
-                        "[RdbPromActor::dispatch_rows] worker channel closed",
-                    );
-                }
             }
+
+            tracing::error!("prom reserved worker channel closed");
         }
 
-        Ok(dispatched)
+        dispatched
     }
 
     // Internal implementation of `run_supervisor`.
     async fn run_supervisor(
         &self,
-        worker_sends: &[WorkerSend],
+        worker_sends: &[WorkerSlot<LocalMessageRow>],
         completed: &Notify,
     ) {
         //
@@ -486,35 +460,30 @@ where
                         schedule_at(now, COMPLETED_PURGE_INTERVAL);
                 }
 
+                let reservations = worker_sends
+                    .iter()
+                    .filter_map(|worker| {
+                        worker.acquire().map(|permit| (worker, permit))
+                    })
+                    .collect::<Vec<_>>();
+
+                if reservations.is_empty() {
+                    return false;
+                }
+
                 let deadline = Instant::now() + EXECUTION_TIMEOUT;
 
-                match self.poll().await {
+                match self.poll(reservations.len()).await {
                     //
-                    Ok(rows) => {
-                        //
-                        match Self::dispatch_rows(worker_sends, rows, deadline)
-                        {
-                            //
-                            Ok(dispatched) => dispatched,
-
-                            Err(error) => {
-                                //
-                                tracing::error!(
-                                    err = ?error,
-                                    "[RdbPromActor::run] worker index calculation failed",
-                                );
-
-                                false
-                            }
-                        }
-                    }
+                    Ok(local_messages) => Self::dispatch_local_messages(
+                        reservations,
+                        local_messages,
+                        deadline,
+                    ),
 
                     Err(error) => {
                         //
-                        tracing::error!(
-                            err = ?error,
-                            "[RdbPromActor::run] poll failed",
-                        );
+                        tracing::error!(err = ?error, "prom claim failed");
 
                         false
                     }
@@ -548,23 +517,6 @@ where
             }
         }
     }
-}
-
-// Internal implementation of `topic_worker_index`.
-fn topic_worker_index(topic: &str) -> BaseRest<usize> {
-    //
-    let hash = topic.bytes().fold(FNV_OFFSET_BASIS, |hash, byte| {
-        (hash ^ u64::from(byte)).wrapping_mul(FNV_PRIME)
-    });
-
-    let worker_count =
-        u64::try_from(WORKER_COUNT).map_err(|_| BaseError::Unrecoverable {
-            message: "worker count exceeds u64 range".into(),
-        })?;
-
-    usize::try_from(hash % worker_count).map_err(|_| BaseError::Unrecoverable {
-        message: "worker index exceeds usize range".into(),
-    })
 }
 
 // Computes the next maintenance deadline without panicking at time bounds.

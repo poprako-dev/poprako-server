@@ -14,7 +14,7 @@ use std::time::Duration;
 
 use futures_util::FutureExt as _;
 use poprako_orchestra::Nucl;
-use tokio::sync::{Notify, mpsc};
+use tokio::sync::{Notify, OwnedSemaphorePermit, Semaphore, mpsc};
 use tokio::task::JoinSet;
 use tokio::time::{Instant, timeout, timeout_at};
 use tokio_util::sync::CancellationToken;
@@ -23,6 +23,7 @@ use tracing::instrument;
 use poprako_obj_dept::ObjDeptView;
 
 use crate::part::effect::Develop;
+use crate::part::nucl::Serial;
 use crate::part::obj_dept::PageImage;
 use crate::part::prom::payload::TaskPayload;
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
@@ -37,10 +38,57 @@ use crate::part_impl::prom::task_flow::TaskFlow;
 use crate::result::BaseError;
 use crate::shared::RdbContext;
 
+/// One worker's queue with capacity reserved through the entire attempt.
+pub struct WorkerSlot<T> {
+    //
+    /// Queue consumed by this worker.
+    work_send: mpsc::UnboundedSender<(T, Instant, OwnedSemaphorePermit)>,
+    /// Single execution slot, held before claiming a persisted task.
+    capacity: Arc<Semaphore>,
+}
+
+impl<T> WorkerSlot<T> {
+    /// Creates one worker slot and its receiving queue.
+    pub fn channel() -> (
+        Self,
+        mpsc::UnboundedReceiver<(T, Instant, OwnedSemaphorePermit)>,
+    ) {
+        //
+        let (work_send, work_recv) = mpsc::unbounded_channel();
+
+        let slot = Self {
+            work_send,
+            capacity: Arc::new(Semaphore::new(1)),
+        };
+
+        (slot, work_recv)
+    }
+
+    /// Acquires an idle worker before queue rows are claimed.
+    pub fn acquire(&self) -> Option<OwnedSemaphorePermit> {
+        //
+        if self.work_send.is_closed() {
+            return None;
+        }
+
+        self.capacity.clone().try_acquire_owned().ok()
+    }
+
+    /// Transfers one claimed task and its reserved capacity to the worker.
+    pub fn dispatch(
+        &self,
+        item: T,
+        deadline: Instant,
+        permit: OwnedSemaphorePermit,
+    ) -> bool {
+        self.work_send.send((item, deadline, permit)).is_ok()
+    }
+}
+
 /// Executes each queued attempt within its claim deadline and isolates panics.
 /// Abandoned attempts remain processing until the persisted lease is reclaimed.
 pub async fn run_worker<T, F, Fut>(
-    mut work_recv: mpsc::UnboundedReceiver<(T, Instant)>,
+    mut work_recv: mpsc::UnboundedReceiver<(T, Instant, OwnedSemaphorePermit)>,
     completed: Arc<Notify>,
     process: F,
 ) where
@@ -48,10 +96,12 @@ pub async fn run_worker<T, F, Fut>(
     Fut: Future<Output = ()>,
 {
     //
-    while let Some((item, deadline)) = work_recv.recv().await {
+    while let Some((item, deadline, permit)) = work_recv.recv().await {
         //
         if deadline <= Instant::now() {
             //
+            drop(permit);
+
             completed.notify_one();
 
             continue;
@@ -80,6 +130,8 @@ pub async fn run_worker<T, F, Fut>(
                 );
             }
         }
+
+        drop(permit);
 
         completed.notify_one();
     }
@@ -153,7 +205,7 @@ impl Drop for RdbPromActorDesc {
 pub struct RdbPromActor<N, R, V, D> {
     //
     /// Queue transaction coordinator.
-    prom_nucl: RdbNucl,
+    prom_nucl: RdbNucl<Serial>,
     /// Queue lifecycle repository.
     prom_repo: RdbPromRepo,
 
@@ -173,7 +225,7 @@ pub struct RdbPromActor<N, R, V, D> {
 impl<N, R, V, D> RdbPromActor<N, R, V, D> {
     /// Constructs a consumer without starting any background work.
     pub fn new(
-        (prom_nucl, prom_repo): (RdbNucl, RdbPromRepo),
+        (prom_nucl, prom_repo): (RdbNucl<Serial>, RdbPromRepo),
         (nucl, repo, obj_dept_view, develop): (N, R, V, D),
     ) -> Self {
         //
@@ -189,7 +241,7 @@ impl<N, R, V, D> RdbPromActor<N, R, V, D> {
     }
 
     /// Returns the injected queue transaction coordinator.
-    pub const fn prom_nucl(&self) -> &RdbNucl {
+    pub const fn prom_nucl(&self) -> &RdbNucl<Serial> {
         &self.prom_nucl
     }
 
@@ -248,13 +300,14 @@ where
             }
         };
 
-        if task.topic() != topic {
+        let expected_topic = task.topic();
+
+        if topic != expected_topic {
             //
             return TaskFlow::Dead {
                 err_message: format!(
                     "prom topic {} does not match payload topic {}",
-                    topic,
-                    task.topic()
+                    topic, expected_topic
                 ),
             };
         }

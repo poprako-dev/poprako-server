@@ -51,7 +51,7 @@ where
                 let rest = try_advance_raw_provide(
                     (nucl, repo, obj_dept_view, develop),
                     &chapter_id,
-                    actor_user_id,
+                    Some(actor_user_id),
                 )
                 .await;
 

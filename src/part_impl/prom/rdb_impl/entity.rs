@@ -6,7 +6,7 @@ use std::io::Write as _;
 
 use diesel::pg::Pg;
 use diesel::serialize::{IsNull, Output, Result as SerializeResult, ToSql};
-use diesel::sql_types::{BigInt, Jsonb, Text};
+use diesel::sql_types::{BigInt, Jsonb, Text, Timestamptz};
 use diesel::{AsExpression, Insertable, Queryable, QueryableByName};
 use time::OffsetDateTime;
 
@@ -137,4 +137,8 @@ pub struct LocalMessageRow {
     pub f_retried_count: i64,
     #[diesel(sql_type = BigInt)]
     pub f_lease: i64,
+
+    /// Time this task was created.
+    #[diesel(sql_type = Timestamptz)]
+    pub f_created_at: OffsetDateTime,
 }

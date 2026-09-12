@@ -17,24 +17,21 @@ use crate::part::prom::payload::invitation::InvitationPayload;
 pub enum TaskPayload {
     //
     /// Advance raw provision after every chapter page is uploaded.
-    #[serde(rename = "AdvanceRawProvide")]
     Chapter {
         /// Chapter-domain task payload.
-        #[serde(flatten)]
         payload: ChapterPayload,
     },
 
     /// Purge an invitation when it is still pending at its expiry time.
-    #[serde(rename = "PurgeExpiredInvitation")]
     Invitation {
         /// Invitation-domain task payload.
-        #[serde(flatten)]
         payload: InvitationPayload,
     },
 }
 
 impl TaskPayload {
-    /// Returns the routing topic string (e.g. `"image"`) for this payload.
+    /// Returns the task category used as its consumption topic.
+    /// Tasks in one topic run serially; different topics may run concurrently.
     pub const fn topic(&self) -> &'static str {
         //
         match self {

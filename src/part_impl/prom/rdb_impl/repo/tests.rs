@@ -12,11 +12,13 @@ use time::Duration;
 
 use poprako_rdb_core::RdbCore;
 
-use crate::part::nucl::ReptRead;
+use crate::part::nucl::{ReptRead, Serial};
+use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::prom::rdb_impl::entity::LocalMessageEntryRow;
 use crate::part_impl::prom::rdb_impl::test_shared;
 use crate::part_impl::repo::rdb_impl::schema::t_local_message;
 use crate::shared::RdbContext;
+use poprako_orchestra::{Nucl as _, OperStep as _};
 
 // Constant definition for `PREFIX`.
 const PREFIX: &str = "rdb-test-prom-purge-";
@@ -82,10 +84,12 @@ pub async fn claim_pending_selects_one_visible_message_per_idle_topic(
 
     let repo = RdbPromRepo::new();
 
-    let mut context =
-        RdbContext::<ReptRead>::new(shared.get().await.ok().unwrap());
-
-    let mut rows = repo.step(&mut context, &ClaimPending).await.ok().unwrap();
+    let mut rows = RdbNucl::<Serial>::new(shared.clone())
+        .coord(async |context| {
+            ClaimPending::new(4).step_on(&repo, context).await
+        })
+        .await
+        .unwrap();
 
     rows.retain(|row| row.f_id.starts_with(POLL_PREFIX));
 
@@ -166,7 +170,12 @@ pub async fn retry_message_allows_later_topic_message_to_advance(
     .ok()
     .unwrap();
 
-    let rows = repo.step(&mut context, &ClaimPending).await.ok().unwrap();
+    let rows = RdbNucl::<Serial>::new(shared.clone())
+        .coord(async |context| {
+            ClaimPending::new(4).step_on(&repo, context).await
+        })
+        .await
+        .unwrap();
 
     let rows = rows
         .into_iter()
