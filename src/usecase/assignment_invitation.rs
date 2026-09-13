@@ -188,12 +188,12 @@ where
             .step_on(repo, context)
             .await?;
 
-            let purge_event = InvitationPayload::Assignment {
+            let invitation_payload = InvitationPayload::PurgeExpiredAssignmentInvitation {
                 invitation_id: assignment_invitation_info.id.clone(),
             };
 
             let (purge_payload, purge_task_id) =
-                (TaskPayload::Invitation { payload: purge_event }, next_snowflake_id());
+                (TaskPayload::Invitation { payload: invitation_payload }, next_snowflake_id());
 
             let purge_task = Task {
                 id: &purge_task_id,

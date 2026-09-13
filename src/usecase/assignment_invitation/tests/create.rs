@@ -47,7 +47,7 @@ async fn create_reviewer_creates_pending_invitation() {
     assert_eq!(
         snapshot.prom_records[0].payload(),
         TaskPayload::Invitation {
-            payload: InvitationPayload::Assignment {
+            payload: InvitationPayload::PurgeExpiredAssignmentInvitation {
                 invitation_id: val.id,
             },
         }

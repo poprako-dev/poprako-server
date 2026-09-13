@@ -20,12 +20,24 @@ fn round_trips_current_contract() {
         ),
         (
             TaskPayload::Invitation {
-                payload: InvitationPayload::Member {
+                payload: InvitationPayload::PurgeExpiredMemberInvitation {
                     invitation_id: "invitation-1".into(),
                 },
             },
             serde_json::json!({
-                "Invitation": { "payload": { "Member": {
+                "Invitation": { "payload": { "PurgeExpiredMemberInvitation": {
+                    "invitation_id": "invitation-1"
+                } } }
+            }),
+        ),
+        (
+            TaskPayload::Invitation {
+                payload: InvitationPayload::PurgeExpiredAssignmentInvitation {
+                    invitation_id: "invitation-1".into(),
+                },
+            },
+            serde_json::json!({
+                "Invitation": { "payload": { "PurgeExpiredAssignmentInvitation": {
                     "invitation_id": "invitation-1"
                 } } }
             }),
@@ -58,6 +70,12 @@ fn rejects_obsolete_or_incomplete_payloads() {
         }),
         serde_json::json!({
             "Chapter": { "payload": { "TryAdvanceRawProvideStage": { "chapter_id": "chapter-1" } } }
+        }),
+        serde_json::json!({
+            "Invitation": { "payload": { "Member": { "invitation_id": "invitation-1" } } }
+        }),
+        serde_json::json!({
+            "Invitation": { "payload": { "Assignment": { "invitation_id": "invitation-1" } } }
         }),
     ];
 

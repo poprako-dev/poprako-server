@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::part::prom::topic::Topic;
+
 /// Deferred chapter task payload.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ChapterPayload {
@@ -11,4 +13,14 @@ pub enum ChapterPayload {
         /// User that scheduled the check.
         actor_user_id: String,
     },
+}
+
+impl ChapterPayload {
+    /// Selects an existing queue for this chapter operation.
+    pub const fn topic(&self) -> Topic {
+        //
+        match self {
+            Self::TryAdvanceRawProvideStage { .. } => Topic::Chapter,
+        }
+    }
 }

@@ -111,7 +111,7 @@ impl<'a> LocalMessageEntryRow<'a> {
 
         accept(Self {
             f_id: task.id.as_ref(),
-            f_topic: task.payload.topic(),
+            f_topic: task.payload.topic().as_str(),
             f_status: LocalMessageStatus::Pending,
             f_payload: payload,
             f_visible_at: visible_at,

@@ -300,7 +300,7 @@ where
             }
         };
 
-        let expected_topic = task.topic();
+        let expected_topic = task.topic().as_str();
 
         if topic != expected_topic {
             //

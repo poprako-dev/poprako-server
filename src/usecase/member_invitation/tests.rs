@@ -169,7 +169,7 @@ async fn create_admin_creates_pending_invitation() {
     assert_eq!(
         snapshot.prom_records[0].payload(),
         TaskPayload::Invitation {
-            payload: InvitationPayload::Member {
+            payload: InvitationPayload::PurgeExpiredMemberInvitation {
                 invitation_id: created.id,
             },
         }

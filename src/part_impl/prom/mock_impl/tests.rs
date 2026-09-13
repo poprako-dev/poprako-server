@@ -100,7 +100,7 @@ async fn defer_records_non_object_payload() {
         let id = String::from("prom-invitation-1");
 
         let payload = TaskPayload::Invitation {
-            payload: InvitationPayload::Member {
+            payload: InvitationPayload::PurgeExpiredMemberInvitation {
                 invitation_id: String::from("invitation-1"),
             },
         };

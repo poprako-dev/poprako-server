@@ -6,6 +6,8 @@ pub mod oper;
 pub mod payload;
 /// Deferred-action task data.
 pub mod task;
+/// Fixed consumption queues.
+pub mod topic;
 
 use poprako_orchestra::drive;
 
@@ -20,9 +22,9 @@ use crate::result::BaseError;
 ///
 /// # Delivery contract
 ///
-/// Delivery is at least once. Topics serialize work by task category;
-/// different topics can execute concurrently. Delayed retries
-/// may follow newer work, so actors must remain idempotent.
+/// Delivery is at least once. Multiple payload kinds can share a topic.
+/// Tasks in one topic run serially; different topics can execute concurrently.
+/// Delayed retries may follow newer work, so actors must remain idempotent.
 ///
 /// Each task is retained independently, including tasks sharing a topic.
 /// Batch order is not guaranteed.

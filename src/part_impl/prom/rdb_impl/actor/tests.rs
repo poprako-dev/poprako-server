@@ -96,7 +96,7 @@ async fn dispatch_uses_injected_repo() {
     );
 
     let payload = TaskPayload::Invitation {
-        payload: InvitationPayload::Member {
+        payload: InvitationPayload::PurgeExpiredMemberInvitation {
             invitation_id: "invitation".into(),
         },
     };
@@ -118,7 +118,7 @@ async fn dispatch_uses_injected_repo() {
 
     let flow = actor
         .dispatch_payload(
-            payload.topic(),
+            payload.topic().as_str(),
             &serde_json::to_value(&payload).unwrap(),
         )
         .await;
@@ -217,8 +217,8 @@ async fn persisted_task(
         .unwrap()
 }
 
-// task_categories_define_concurrency(ClaimPending)(positive): different chapters share one topic while invitations can run alongside them.
-async fn task_categories_define_concurrency(core: &RdbCore) {
+// fixed_topics_control_concurrency(ClaimPending)(positive): different payload kinds share one serial queue while another topic runs concurrently.
+async fn fixed_topics_control_concurrency(core: &RdbCore) {
     use crate::part::prom::payload::invitation::InvitationPayload;
 
     let nucl = RdbNucl::<Serial>::new(core.clone());
@@ -234,25 +234,34 @@ async fn task_categories_define_concurrency(core: &RdbCore) {
         .await;
     }
 
-    let id = "category-invitation".to_owned();
-
-    let payload = TaskPayload::Invitation {
-        payload: InvitationPayload::Member {
+    let invitations = [
+        InvitationPayload::PurgeExpiredMemberInvitation {
             invitation_id: "invitation".into(),
         },
-    };
+        InvitationPayload::PurgeExpiredAssignmentInvitation {
+            invitation_id: "invitation".into(),
+        },
+    ];
 
-    let task = Task {
-        id: &id,
-        payload: &payload,
-        delay: None,
-    };
+    for (index, invitation_payload) in invitations.into_iter().enumerate() {
+        let id = format!("category-invitation-{index}");
 
-    nucl.coord(async |context| {
-        Defer::new(task).step_on(&RdbProm::new(), context).await
-    })
-    .await
-    .unwrap();
+        let payload = TaskPayload::Invitation {
+            payload: invitation_payload,
+        };
+
+        let task = Task {
+            id: &id,
+            payload: &payload,
+            delay: None,
+        };
+
+        nucl.coord(async |context| {
+            Defer::new(task).step_on(&RdbProm::new(), context).await
+        })
+        .await
+        .unwrap();
+    }
 
     assert!(claim_tasks(&nucl, 0).await.is_empty());
 
@@ -260,13 +269,15 @@ async fn task_categories_define_concurrency(core: &RdbCore) {
 
     assert_eq!(first.len(), 1);
 
-    assert_eq!(first[0].f_topic, "advance_raw_provide");
+    assert_eq!(first[0].f_topic, "chapter");
 
     let second = claim_tasks(&nucl, 4).await;
 
     assert_eq!(second.len(), 1);
 
-    assert_eq!(second[0].f_topic, "purge_expired_invitation");
+    assert_eq!(second[0].f_topic, "invitation");
+
+    assert_eq!(second[0].f_id, "category-invitation-0");
 
     assert!(claim_tasks(&nucl, 4).await.is_empty());
 
@@ -280,7 +291,19 @@ async fn task_categories_define_concurrency(core: &RdbCore) {
 
     complete_task(&nucl, &next[0]).await;
 
+    assert!(claim_tasks(&nucl, 4).await.is_empty());
+
     complete_task(&nucl, &second[0]).await;
+
+    let next = claim_tasks(&nucl, 4).await;
+
+    assert_eq!(next.len(), 1);
+
+    assert_eq!(next[0].f_id, "category-invitation-1");
+
+    assert_eq!(next[0].f_topic, "invitation");
+
+    complete_task(&nucl, &next[0]).await;
 }
 
 // same_topic_requests_remain_independent(Defer/RetryMessage/ResetStuck)(positive): later tasks never replace or complete an earlier attempt.
@@ -423,7 +446,7 @@ async fn topic_claim_and_independent_requests_use_testcontainer() {
 
     let core = test_rdb.core();
 
-    task_categories_define_concurrency(&core).await;
+    fixed_topics_control_concurrency(&core).await;
 
     same_topic_requests_remain_independent(&core).await;
 

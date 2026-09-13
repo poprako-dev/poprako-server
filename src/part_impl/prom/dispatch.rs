@@ -63,7 +63,9 @@ where
             //
             let rest = match payload {
                 //
-                InvitationPayload::Assignment { invitation_id } => {
+                InvitationPayload::PurgeExpiredAssignmentInvitation {
+                    invitation_id,
+                } => {
                     //
                     assignment_invitation::purge_expired::<C, R>(
                         (repo,),
@@ -72,7 +74,9 @@ where
                     .await
                 }
 
-                InvitationPayload::Member { invitation_id } => {
+                InvitationPayload::PurgeExpiredMemberInvitation {
+                    invitation_id,
+                } => {
                     //
                     member_invitation::purge_expired::<C, R>(
                         (repo,),

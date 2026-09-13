@@ -71,7 +71,7 @@ async fn writer_and_consumer_lifecycles_are_independent(
     let writer = RdbProm::new();
 
     let payload = TaskPayload::Invitation {
-        payload: InvitationPayload::Member {
+        payload: InvitationPayload::PurgeExpiredMemberInvitation {
             invitation_id: "nonexistent".into(),
         },
     };
