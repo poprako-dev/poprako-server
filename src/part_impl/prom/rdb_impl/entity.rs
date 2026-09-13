@@ -6,9 +6,10 @@ use std::io::Write as _;
 
 use diesel::pg::Pg;
 use diesel::serialize::{IsNull, Output, Result as SerializeResult, ToSql};
-use diesel::sql_types::Text;
-use diesel::{AsExpression, Insertable, Queryable};
+use diesel::sql_types::{BigInt, Jsonb, Text, Timestamptz, Uuid as SqlUuid};
+use diesel::{AsExpression, Insertable, Queryable, QueryableByName};
 use time::OffsetDateTime;
+use uuid::Uuid;
 
 use crate::part::prom::payload::TaskPayload;
 use crate::part::prom::task::Task;
@@ -24,8 +25,6 @@ pub enum LocalMessageStatus {
 
     Processing,
 
-    Completed,
-
     Dead,
 }
 
@@ -37,8 +36,6 @@ impl LocalMessageStatus {
             Self::Pending => "local_message_status:pending",
 
             Self::Processing => "local_message_status:processing",
-
-            Self::Completed => "local_message_status:completed",
 
             Self::Dead => "local_message_status:dead",
         }
@@ -63,6 +60,7 @@ pub struct LocalMessageEntryRow<'a> {
 
     pub f_topic: &'a str,
     pub f_status: LocalMessageStatus,
+    pub f_claim_token: Option<Uuid>,
 
     pub f_payload: serde_json::Value,
 
@@ -111,8 +109,9 @@ impl<'a> LocalMessageEntryRow<'a> {
 
         accept(Self {
             f_id: task.id.as_ref(),
-            f_topic: task.payload.topic(),
+            f_topic: task.payload.topic().as_str(),
             f_status: LocalMessageStatus::Pending,
+            f_claim_token: None,
             f_payload: payload,
             f_visible_at: visible_at,
             f_created_at: now,
@@ -121,15 +120,24 @@ impl<'a> LocalMessageEntryRow<'a> {
     }
 }
 
-/// A row read from `t_local_message` during the poll phase.
-#[derive(Debug, Queryable)]
+/// Persisted attempt returned by an atomic queue claim.
+#[derive(Debug, Queryable, QueryableByName)]
 pub struct LocalMessageRow {
     //
+    #[diesel(sql_type = Text)]
     pub f_id: String,
 
+    #[diesel(sql_type = Text)]
     pub f_topic: String,
+    #[diesel(sql_type = Jsonb)]
     pub f_payload: serde_json::Value,
 
+    #[diesel(sql_type = BigInt)]
     pub f_retried_count: i64,
-    pub f_lease: i64,
+    #[diesel(sql_type = SqlUuid)]
+    pub f_claim_token: Uuid,
+
+    /// Time this task was created.
+    #[diesel(sql_type = Timestamptz)]
+    pub f_created_at: OffsetDateTime,
 }

@@ -57,14 +57,7 @@ impl<'a> Step<CompleteChapterRawProvide<'a>, MockContext> for Mock {
             return accept(false);
         }
 
-        let page_count = context
-            .state
-            .pages
-            .iter()
-            .filter(|page_info| page_info.chapter_id == oper.id)
-            .count();
-
-        if page_count == 0 {
+        if context.state.chapters[chapter_index].page_count <= 0 {
             return accept(false);
         }
 

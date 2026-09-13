@@ -60,6 +60,9 @@ pub use poprako_obj_dept_macro::{
 #[cfg(feature = "rdb_impl")]
 pub use poprako_rdb_core::{RdbContext, RdbCore};
 
+/// UUID execution credentials shared with generated adapters.
+pub use uuid::Uuid;
+
 extern crate self as poprako_obj_dept;
 
 /// Read-only object operations for one compile-time marker.

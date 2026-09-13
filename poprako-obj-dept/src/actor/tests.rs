@@ -1,3 +1,5 @@
+use uuid::Uuid;
+
 use std::collections::VecDeque;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
@@ -192,7 +194,7 @@ fn task() -> ObjDeptPromTask {
         image: key.image,
         gen_no: 0,
         retried_count: 0,
-        lease: 1,
+        claim_token: Uuid::from_u128(1),
     }
 }
 

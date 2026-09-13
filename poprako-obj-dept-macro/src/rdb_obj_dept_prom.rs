@@ -83,10 +83,11 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
         mod #module {
             use super::#table;
 
-            use ::diesel::prelude::{ExpressionMethods as _, QueryDsl as _};
+            use ::diesel::prelude::{ExpressionMethods as _, NullableExpressionMethods as _, QueryDsl as _};
             use ::diesel::{OptionalExtension as _, SelectableHelper as _};
             use ::diesel_async::RunQueryDsl as _;
 
+            use ::poprako_obj_dept::Uuid;
             use ::poprako_obj_dept::key::ObjKey;
             use ::poprako_obj_dept::model::task::ObjDeptPromTask;
             use ::poprako_obj_dept::rdb_impl::{diesel_err, rdb_err};
@@ -95,7 +96,6 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
 
             const PENDING: &str = "obj_prom_status:pending";
             const PROCESSING: &str = "obj_prom_status:processing";
-            const COMPLETED: &str = "obj_prom_status:completed";
             const OPERATOR: &str = "obj_prom_status:operator";
             const ORDINARY_GENERATION: i64 = 0;
             const RETRY_DELAY: ::time::Duration =
@@ -132,8 +132,8 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
                 visible_at: ::time::OffsetDateTime,
                 #[diesel(column_name = f_retried_count)]
                 retried_count: i64,
-                #[diesel(column_name = f_lease)]
-                lease: i64,
+                #[diesel(column_name = f_claim_token)]
+                claim_token: Option<Uuid>,
                 #[diesel(column_name = f_error)]
                 error: Option<String>,
 
@@ -166,15 +166,26 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
                 gen_no: i64,
                 #[diesel(column_name = f_retried_count)]
                 retried_count: i64,
-                #[diesel(column_name = f_lease)]
-                lease: i64,
+                #[diesel(column_name = f_claim_token)]
+                claim_token: Option<Uuid>,
             }
 
-            impl From<TaskRow> for ObjDeptPromTask {
+            impl TryFrom<TaskRow> for ObjDeptPromTask {
                 //
-                fn from(row: TaskRow) -> Self {
+                type Error = ObjDeptError;
+
+                fn try_from(row: TaskRow) -> ObjDeptRest<Self> {
                     //
-                    Self {
+                    let Some(claim_token) = row.claim_token else {
+                        //
+                        ::tracing::error!(task_id = row.id, "claimed object task has no execution credential");
+
+                        return Err(ObjDeptError::Unrecoverable {
+                            message: "claimed object task has no execution credential".into(),
+                        });
+                    };
+
+                    Ok(Self {
                         id: row.id,
                         topic: row.topic,
                         oper: row.oper,
@@ -183,8 +194,8 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
                         image: row.image,
                         gen_no: row.gen_no,
                         retried_count: row.retried_count,
-                        lease: row.lease,
-                    }
+                        claim_token,
+                    })
                 }
             }
 
@@ -196,26 +207,12 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
                     #table::table
                         .filter(#table::f_status.ne(PENDING))
                         .filter(#table::f_status.ne(PROCESSING))
-                        .filter(#table::f_status.ne(COMPLETED))
                         .filter(#table::f_status.ne(OPERATOR)),
                 )
                 .set((
                     #table::f_status.eq(OPERATOR),
+                    #table::f_claim_token.eq(None::<Uuid>),
                     #table::f_error.eq(Some("invalid object task status")),
-                    #table::f_updated_at.eq(now),
-                ))
-                .execute(&mut conn)
-                .await
-                .map_err(diesel_err)?;
-                let overflow = ::diesel::update(
-                    #table::table
-                        .filter(#table::f_status.eq(PROCESSING))
-                        .filter(#table::f_updated_at.le(before))
-                        .filter(#table::f_lease.eq(i64::MAX)),
-                )
-                .set((
-                    #table::f_status.eq(OPERATOR),
-                    #table::f_error.eq(Some("object task lease overflow")),
                     #table::f_updated_at.eq(now),
                 ))
                 .execute(&mut conn)
@@ -224,12 +221,11 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
                 let reset = ::diesel::update(
                     #table::table
                         .filter(#table::f_status.eq(PROCESSING))
-                        .filter(#table::f_updated_at.le(before))
-                        .filter(#table::f_lease.lt(i64::MAX)),
+                        .filter(#table::f_updated_at.le(before)),
                 )
                 .set((
                     #table::f_status.eq(PENDING),
-                    #table::f_lease.eq(#table::f_lease + 1),
+                    #table::f_claim_token.eq(None::<Uuid>),
                     #table::f_visible_at.eq(now),
                     #table::f_updated_at.eq(now),
                 ))
@@ -237,7 +233,11 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
                 .await
                 .map_err(diesel_err)?;
 
-                Ok(invalid + overflow + reset)
+                Ok(invalid + reset)
+            }
+
+            ::diesel::define_sql_function! {
+                fn gen_random_uuid() -> ::diesel::sql_types::Uuid;
             }
 
             pub async fn claim_task(
@@ -262,50 +262,20 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
                     .for_update()
                     .skip_locked()
                     .limit(1);
-                let lease_overflow = #table::f_lease.eq(i64::MAX);
-                let status = ::diesel::dsl::case_when::<
-                    _,
-                    _,
-                    ::diesel::sql_types::Text,
-                >(lease_overflow, OPERATOR)
-                .otherwise(PROCESSING);
-                let lease = ::diesel::dsl::case_when::<
-                    _,
-                    _,
-                    ::diesel::sql_types::BigInt,
-                >(lease_overflow, #table::f_lease)
-                .otherwise(#table::f_lease + 1);
-                let error = ::diesel::dsl::case_when::<
-                    _,
-                    _,
-                    ::diesel::sql_types::Nullable<::diesel::sql_types::Text>,
-                >(lease_overflow, Some("object task lease overflow"))
-                .otherwise(#table::f_error);
                 let row = ::diesel::update(
                     #table::table.filter(#table::f_id.eq_any(candidate)),
                 )
                 .set((
-                    #table::f_status.eq(status),
-                    #table::f_lease.eq(lease),
-                    #table::f_error.eq(error),
+                    #table::f_status.eq(PROCESSING),
+                    #table::f_claim_token.eq(gen_random_uuid().nullable()),
                     #table::f_updated_at.eq(::time::OffsetDateTime::now_utc()),
                 ))
-                .returning((TaskRow::as_returning(), #table::f_status))
-                .get_result::<(TaskRow, String)>(&mut conn)
+                .returning(TaskRow::as_returning())
+                .get_result::<TaskRow>(&mut conn)
                 .await
                 .optional()
                 .map_err(diesel_err)?;
-                let Some((row, status)) = row else {
-                    return Ok(None);
-                };
-
-                match status.as_str() {
-                    OPERATOR => Ok(None),
-                    PROCESSING => Ok(Some(row.into())),
-                    _ => Err(ObjDeptError::Unrecoverable {
-                        message: "object task claim returned invalid status".into(),
-                    }),
-                }
+                row.map(ObjDeptPromTask::try_from).transpose()
             }
 
             pub async fn complete_task(
@@ -314,17 +284,12 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
             ) -> ObjDeptRest<usize> {
                 let mut conn = core.get().await.map_err(rdb_err)?;
 
-                ::diesel::update(
+                ::diesel::delete(
                     #table::table
                         .filter(#table::f_id.eq(&task.id))
                         .filter(#table::f_status.eq(PROCESSING))
-                        .filter(#table::f_lease.eq(task.lease)),
+                        .filter(#table::f_claim_token.eq(task.claim_token)),
                 )
-                .set((
-                    #table::f_status.eq(COMPLETED),
-                    #table::f_error.eq(None::<String>),
-                    #table::f_updated_at.eq(::time::OffsetDateTime::now_utc()),
-                ))
                 .execute(&mut conn)
                 .await
                 .map_err(diesel_err)
@@ -341,10 +306,11 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
                     #table::table
                         .filter(#table::f_id.eq(&task.id))
                         .filter(#table::f_status.eq(PROCESSING))
-                        .filter(#table::f_lease.eq(task.lease)),
+                        .filter(#table::f_claim_token.eq(task.claim_token)),
                 )
                 .set((
                     #table::f_status.eq(PENDING),
+                    #table::f_claim_token.eq(None::<Uuid>),
                     #table::f_retried_count
                         .eq(task.retried_count.saturating_add(1)),
                     #table::f_visible_at.eq(
@@ -369,10 +335,11 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
                     #table::table
                         .filter(#table::f_id.eq(&task.id))
                         .filter(#table::f_status.eq(PROCESSING))
-                        .filter(#table::f_lease.eq(task.lease)),
+                        .filter(#table::f_claim_token.eq(task.claim_token)),
                 )
                 .set((
                     #table::f_status.eq(OPERATOR),
+                    #table::f_claim_token.eq(None::<Uuid>),
                     #table::f_error.eq(Some(message)),
                     #table::f_updated_at.eq(::time::OffsetDateTime::now_utc()),
                 ))
@@ -396,7 +363,7 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
                     status,
                     visible_at,
                     retried_count,
-                    lease,
+                    claim_token,
                     error,
                     created_at,
                     updated_at,
@@ -413,7 +380,7 @@ pub fn expand(input: TokenStream) -> Result<TokenStream> {
                     status,
                     visible_at,
                     retried_count,
-                    lease,
+                    claim_token,
                     error,
                     created_at,
                     updated_at,

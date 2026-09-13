@@ -186,13 +186,14 @@ where
             .step_on(repo, context)
             .await?;
 
-            let purge_event = InvitationPayload::Member {
-                invitation_id: member_invitation_info.id.clone(),
-            };
+            let invitation_payload =
+                InvitationPayload::PurgeExpiredMemberInvitation {
+                    invitation_id: member_invitation_info.id.clone(),
+                };
 
             let (purge_payload, purge_task_id) = (
                 TaskPayload::Invitation {
-                    payload: purge_event,
+                    payload: invitation_payload,
                 },
                 next_snowflake_id(),
             );

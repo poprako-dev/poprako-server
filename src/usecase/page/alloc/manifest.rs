@@ -298,7 +298,7 @@ where
     let advance_payload = TaskPayload::Chapter {
         payload: ChapterPayload::TryAdvanceRawProvideStage {
             chapter_id: chapter_info.id.clone(),
-            actor_user_id: Some(user_id.to_owned()),
+            actor_user_id: user_id.to_owned(),
         },
     };
 

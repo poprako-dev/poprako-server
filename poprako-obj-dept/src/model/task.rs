@@ -1,3 +1,5 @@
+use uuid::Uuid;
+
 use crate::key::ObjKey;
 use crate::rest::{ObjDeptError, ObjDeptRest};
 
@@ -41,11 +43,11 @@ pub fn validate_task(task: &ObjDeptPromTask) -> ObjDeptRest<()> {
 
     let is_nonnegative = task.gen_no >= 0 && task.retried_count >= 0;
 
-    let has_valid_lease = task.lease > 0;
+    let has_valid_token = !task.claim_token.is_nil();
 
     let expected_id = obj_task_id(&task.topic, &task.oper, &key, task.gen_no);
 
-    match (is_nonnegative, has_valid_lease, task.id == expected_id) {
+    match (is_nonnegative, has_valid_token, task.id == expected_id) {
         //
         (true, true, true) => Ok(()),
 
@@ -55,7 +57,7 @@ pub fn validate_task(task: &ObjDeptPromTask) -> ObjDeptRest<()> {
     }
 }
 
-/// One raw durable task owned by an exact lease.
+/// One raw durable task owned by an exact UUID execution credential.
 #[derive(Debug, Clone)]
 pub struct ObjDeptPromTask {
     //
@@ -78,8 +80,8 @@ pub struct ObjDeptPromTask {
     pub gen_no: i64,
     /// Completed retry count.
     pub retried_count: i64,
-    /// Exact fencing lease.
-    pub lease: i64,
+    /// Exact execution credential.
+    pub claim_token: Uuid,
 }
 
 impl ObjDeptPromTask {

@@ -18,20 +18,20 @@ pub trait ObjDeptProm {
         &self,
     ) -> impl Future<Output = ObjDeptRest<Option<ObjDeptPromTask>>> + Send;
 
-    /// Completes one exact fenced task.
+    /// Deletes a successful task owned by the exact execution credential.
     fn complete_task(
         &self,
         task: &ObjDeptPromTask,
     ) -> impl Future<Output = ObjDeptRest<usize>> + Send;
 
-    /// Returns one exact fenced task to pending.
+    /// Returns a task owned by the exact execution credential to pending.
     fn retry_task<'a>(
         &'a self,
         task: &'a ObjDeptPromTask,
         message: &'a str,
     ) -> impl Future<Output = ObjDeptRest<usize>> + Send;
 
-    /// Marks one exact fenced task for operator repair.
+    /// Marks a task owned by the exact execution credential for operator repair.
     fn mark_task_operator<'a>(
         &'a self,
         task: &'a ObjDeptPromTask,

@@ -103,8 +103,8 @@ sh scripts/ci-parallel.sh \
     "sh scripts/ci-test.sh" \
     "TypeScript type-check" \
     "sh scripts/ci-typecheck.sh" \
-    "Diesel migrations" \
-    "sh scripts/ci-migration-check.sh" \
+    "Manual Prom upgrade and Diesel migrations" \
+    "sh scripts/test-prom-upgrade.sh" \
     "Dependency security" \
     "sh scripts/ci-audit.sh"
 

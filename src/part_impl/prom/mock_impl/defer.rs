@@ -29,11 +29,13 @@ impl<'a> Step<Defer<'a, String, TaskPayload, ()>, MockContext> for Mock {
         let payload_json = serde_json::to_string(oper.task.payload)
             .map_err(serialize_payload_err)?;
 
+        let now = OffsetDateTime::now_utc();
+
         context.state.prom_records.push(MockPromRecord {
             id: oper.task.id.clone(),
             payload_json,
-            visible_at: OffsetDateTime::now_utc()
-                + oper.task.delay.unwrap_or_default(),
+            visible_at: now + oper.task.delay.unwrap_or_default(),
+            created_at: now,
         });
 
         accept(())

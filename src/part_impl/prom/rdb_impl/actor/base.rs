@@ -7,13 +7,23 @@
 //! [`actor`]: crate::part_impl::prom::rdb_impl::actor
 //! [`pool`]: crate::part_impl::prom::rdb_impl::actor::pool
 
+use std::future::Future;
+use std::panic::AssertUnwindSafe;
+use std::sync::Arc;
+use std::time::Duration;
+
+use futures_util::FutureExt as _;
 use poprako_orchestra::Nucl;
+use tokio::sync::{Notify, OwnedSemaphorePermit, Semaphore, mpsc};
+use tokio::task::JoinSet;
+use tokio::time::{Instant, timeout, timeout_at};
 use tokio_util::sync::CancellationToken;
 use tracing::instrument;
 
 use poprako_obj_dept::ObjDeptView;
 
 use crate::part::effect::Develop;
+use crate::part::nucl::Serial;
 use crate::part::obj_dept::PageImage;
 use crate::part::prom::payload::TaskPayload;
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
@@ -28,12 +38,142 @@ use crate::part_impl::prom::task_flow::TaskFlow;
 use crate::result::BaseError;
 use crate::shared::RdbContext;
 
+/// One worker's queue with capacity reserved through the entire attempt.
+pub struct WorkerSlot<T> {
+    //
+    /// Queue consumed by this worker.
+    work_send: mpsc::UnboundedSender<(T, Instant, OwnedSemaphorePermit)>,
+    /// Single execution slot, held before claiming a persisted task.
+    capacity: Arc<Semaphore>,
+}
+
+impl<T> WorkerSlot<T> {
+    /// Creates one worker slot and its receiving queue.
+    pub fn channel() -> (
+        Self,
+        mpsc::UnboundedReceiver<(T, Instant, OwnedSemaphorePermit)>,
+    ) {
+        //
+        let (work_send, work_recv) = mpsc::unbounded_channel();
+
+        let slot = Self {
+            work_send,
+            capacity: Arc::new(Semaphore::new(1)),
+        };
+
+        (slot, work_recv)
+    }
+
+    /// Acquires an idle worker before queue rows are claimed.
+    pub fn acquire(&self) -> Option<OwnedSemaphorePermit> {
+        //
+        if self.work_send.is_closed() {
+            return None;
+        }
+
+        self.capacity.clone().try_acquire_owned().ok()
+    }
+
+    /// Transfers one claimed task and its reserved capacity to the worker.
+    pub fn dispatch(
+        &self,
+        item: T,
+        deadline: Instant,
+        permit: OwnedSemaphorePermit,
+    ) -> bool {
+        self.work_send.send((item, deadline, permit)).is_ok()
+    }
+}
+
+/// Executes each queued attempt within its claim deadline and isolates panics.
+/// Abandoned attempts remain processing until the timed-out attempt is reclaimed.
+pub async fn run_worker<T, F, Fut>(
+    mut work_recv: mpsc::UnboundedReceiver<(T, Instant, OwnedSemaphorePermit)>,
+    completed: Arc<Notify>,
+    process: F,
+) where
+    F: Fn(T) -> Fut,
+    Fut: Future<Output = ()>,
+{
+    //
+    while let Some((item, deadline, permit)) = work_recv.recv().await {
+        //
+        if deadline <= Instant::now() {
+            //
+            drop(permit);
+
+            completed.notify_one();
+
+            continue;
+        }
+
+        let attempt =
+            AssertUnwindSafe(async { process(item).await }).catch_unwind();
+
+        match timeout_at(deadline, attempt).await {
+            //
+            Ok(Ok(())) => {
+                //
+            }
+
+            Ok(Err(_)) => {
+                //
+                tracing::error!(
+                    "prom attempt panicked; timeout recovery will retry it"
+                );
+            }
+
+            Err(_) => {
+                //
+                tracing::warn!(
+                    "prom attempt deadline elapsed; timeout recovery will retry it"
+                );
+            }
+        }
+
+        drop(permit);
+
+        completed.notify_one();
+    }
+}
+
+/// Drains workers within one shared deadline, then aborts unfinished workers.
+/// Allows one further second for cooperative cancellation to finish.
+pub async fn shutdown_workers(mut workers: JoinSet<()>, grace: Duration) {
+    //
+    let drain = async {
+        //
+        while let Some(result) = workers.join_next().await {
+            //
+            if let Err(error) = result {
+                tracing::error!(err = ?error, "prom worker task failed");
+            }
+        }
+    };
+
+    if timeout(grace, drain).await.is_err() {
+        //
+        tracing::warn!("prom worker shutdown deadline elapsed");
+
+        workers.abort_all();
+
+        if timeout(Duration::from_secs(1), workers.shutdown())
+            .await
+            .is_err()
+        {
+            tracing::error!(
+                "prom aborted workers did not stop within deadline"
+            );
+        }
+    }
+}
+
 /// Owns cancellation and completion of one background supervisor.
 pub struct RdbPromActorDesc {
     //
     /// Cancellation signal for the supervisor.
     token: CancellationToken,
-    /// Task whose completion includes its worker shutdown.
+    /// Supervisor task that drains workers with a grace period, then aborts.
     task: tokio::task::JoinHandle<()>,
 }
 
@@ -43,7 +183,9 @@ impl RdbPromActorDesc {
         self.token.cancel();
     }
 
-    /// Waits for completion and reports a supervisor panic or cancellation.
+    /// Waits for the supervisor's bounded shutdown and reports join failures.
+    /// Workers that exceed the grace period are aborted; non-yielding code
+    /// cannot be forcibly stopped by the async runtime.
     ///
     /// # Errors
     /// Returns the supervisor task's join error.
@@ -63,7 +205,7 @@ impl Drop for RdbPromActorDesc {
 pub struct RdbPromActor<N, R, V, D> {
     //
     /// Queue transaction coordinator.
-    prom_nucl: RdbNucl,
+    prom_nucl: RdbNucl<Serial>,
     /// Queue lifecycle repository.
     prom_repo: RdbPromRepo,
 
@@ -83,7 +225,7 @@ pub struct RdbPromActor<N, R, V, D> {
 impl<N, R, V, D> RdbPromActor<N, R, V, D> {
     /// Constructs a consumer without starting any background work.
     pub fn new(
-        (prom_nucl, prom_repo): (RdbNucl, RdbPromRepo),
+        (prom_nucl, prom_repo): (RdbNucl<Serial>, RdbPromRepo),
         (nucl, repo, obj_dept_view, develop): (N, R, V, D),
     ) -> Self {
         //
@@ -99,7 +241,7 @@ impl<N, R, V, D> RdbPromActor<N, R, V, D> {
     }
 
     /// Returns the injected queue transaction coordinator.
-    pub const fn prom_nucl(&self) -> &RdbNucl {
+    pub const fn prom_nucl(&self) -> &RdbNucl<Serial> {
         &self.prom_nucl
     }
 
@@ -158,13 +300,14 @@ where
             }
         };
 
-        if task.topic() != topic {
+        let expected_topic = task.topic().as_str();
+
+        if topic != expected_topic {
             //
             return TaskFlow::Dead {
                 err_message: format!(
                     "prom topic {} does not match payload topic {}",
-                    topic,
-                    task.topic()
+                    topic, expected_topic
                 ),
             };
         }

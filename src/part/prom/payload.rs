@@ -11,37 +11,35 @@ use serde::{Deserialize, Serialize};
 
 use crate::part::prom::payload::chapter::ChapterPayload;
 use crate::part::prom::payload::invitation::InvitationPayload;
+use crate::part::prom::topic::Topic;
 
 /// One deferred task, grouped by its domain.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum TaskPayload {
     //
-    /// Advance raw provision after every chapter page is uploaded.
-    #[serde(rename = "AdvanceRawProvide")]
+    /// Chapter-domain tasks.
     Chapter {
         /// Chapter-domain task payload.
-        #[serde(flatten)]
         payload: ChapterPayload,
     },
 
-    /// Purge an invitation when it is still pending at its expiry time.
-    #[serde(rename = "PurgeExpiredInvitation")]
+    /// Invitation-domain tasks.
     Invitation {
         /// Invitation-domain task payload.
-        #[serde(flatten)]
         payload: InvitationPayload,
     },
 }
 
 impl TaskPayload {
-    /// Returns the routing topic string (e.g. `"image"`) for this payload.
-    pub const fn topic(&self) -> &'static str {
+    /// Selects an existing consumption queue for this task.
+    /// Tasks in one topic run serially; different topics may run concurrently.
+    pub const fn topic(&self) -> Topic {
         //
         match self {
             //
-            Self::Chapter { .. } => "advance_raw_provide",
+            Self::Chapter { payload } => payload.topic(),
 
-            Self::Invitation { .. } => "purge_expired_invitation",
+            Self::Invitation { payload } => payload.topic(),
         }
     }
 }

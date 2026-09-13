@@ -51,7 +51,7 @@ where
                 let rest = try_advance_raw_provide(
                     (nucl, repo, obj_dept_view, develop),
                     &chapter_id,
-                    actor_user_id,
+                    Some(actor_user_id),
                 )
                 .await;
 
@@ -63,7 +63,9 @@ where
             //
             let rest = match payload {
                 //
-                InvitationPayload::Assignment { invitation_id } => {
+                InvitationPayload::PurgeExpiredAssignmentInvitation {
+                    invitation_id,
+                } => {
                     //
                     assignment_invitation::purge_expired::<C, R>(
                         (repo,),
@@ -72,7 +74,9 @@ where
                     .await
                 }
 
-                InvitationPayload::Member { invitation_id } => {
+                InvitationPayload::PurgeExpiredMemberInvitation {
+                    invitation_id,
+                } => {
                     //
                     member_invitation::purge_expired::<C, R>(
                         (repo,),

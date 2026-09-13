@@ -6,6 +6,8 @@ pub mod oper;
 pub mod payload;
 /// Deferred-action task data.
 pub mod task;
+/// Fixed consumption queues.
+pub mod topic;
 
 use poprako_orchestra::drive;
 
@@ -20,13 +22,15 @@ use crate::result::BaseError;
 ///
 /// # Delivery contract
 ///
-/// Delivery is at least once. A failed task may be delayed and consumed after
-/// later tasks from the same topic, so producers and actors must not rely on
-/// `DeferBatch` order for correctness. Actors must be idempotent and guard
-/// state changes with the complete resource identity. Image confirmation, for
-/// example, compares the resource id, monotonically increasing version, and
-/// object key before marking an upload complete. Generated object keys must not
-/// be reused by later resource versions.
+/// Delivery is at least once. Multiple payload kinds can share a topic.
+/// Tasks in one topic run serially; different topics can execute concurrently.
+/// Delayed retries may follow newer work. Use-case idempotence is not assumed:
+/// each task kind needs a verified replay and recovery contract covering
+/// business commits, side effects, and failed acknowledgements. Use cases own
+/// their business transactions; queue acknowledgement is a separate operation.
+///
+/// Each task is retained independently, including tasks sharing a topic.
+/// Batch order is not guaranteed.
 #[drive(
     context = C,
     error = BaseError,

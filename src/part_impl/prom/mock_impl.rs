@@ -21,6 +21,7 @@ pub struct MockPromRecord {
     pub(super) id: String,
     pub(super) payload_json: String,
     pub(super) visible_at: OffsetDateTime,
+    pub(super) created_at: OffsetDateTime,
 }
 
 impl MockPromRecord {
@@ -50,7 +51,8 @@ pub async fn process_pending(mock: &Mock) -> BaseRest<()> {
             (mock, mock, mock, mock),
             record.payload(),
         )
-        .await;
+        .await
+        .limit_wait(record.created_at, OffsetDateTime::now_utc());
 
         match flow {
             TaskFlow::Complete | TaskFlow::Wait { .. } => {}

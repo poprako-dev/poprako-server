@@ -180,8 +180,8 @@ where
 
             Ok(Ok(0)) => tracing::warn!(
                 task_id = task.id,
-                lease = task.lease,
-                "ObjDept task lost its lease",
+                claim_token = %task.claim_token,
+                "ObjDept task lost its execution credential",
             ),
 
             Ok(Ok(updated_count)) => tracing::error!(

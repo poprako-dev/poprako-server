@@ -1,3 +1,5 @@
+use uuid::Uuid;
+
 use poprako_orchestra::{Context, Level, Oper, Run, Step};
 
 #[cfg(feature = "rdb_impl")]
@@ -291,7 +293,7 @@ fn task() -> ObjDeptPromTask {
         image: key.image,
         gen_no: 2,
         retried_count: 1,
-        lease: 11,
+        claim_token: Uuid::from_u128(11),
     }
 }
 
@@ -320,11 +322,11 @@ fn task_envelope_rejects_invalid_identity_and_counts() {
 
     assert!(validate_task(&negative_retried_count).is_err());
 
-    let mut zero_lease = task();
+    let mut nil_token = task();
 
-    zero_lease.lease = 0;
+    nil_token.claim_token = Uuid::nil();
 
-    assert!(validate_task(&zero_lease).is_err());
+    assert!(validate_task(&nil_token).is_err());
 }
 
 #[cfg(feature = "rdb_impl")]
