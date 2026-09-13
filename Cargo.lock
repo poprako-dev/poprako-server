@@ -1207,6 +1207,7 @@ dependencies = [
  "pq-sys",
  "serde_json",
  "time",
+ "uuid",
 ]
 
 [[package]]
@@ -2804,6 +2805,7 @@ dependencies = [
  "tokio-util",
  "tracing",
  "url",
+ "uuid",
 ]
 
 [[package]]
@@ -2896,6 +2898,7 @@ dependencies = [
  "url",
  "utoipa",
  "utoipa-swagger-ui",
+ "uuid",
 ]
 
 [[package]]

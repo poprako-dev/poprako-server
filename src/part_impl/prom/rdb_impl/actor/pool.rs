@@ -13,6 +13,7 @@ use tokio::sync::{Notify, OwnedSemaphorePermit};
 use tokio::task::JoinSet;
 use tokio::time::{Instant, sleep, timeout};
 use tracing::instrument;
+use uuid::Uuid;
 
 use poprako_obj_dept::ObjDeptView;
 
@@ -29,7 +30,7 @@ use crate::part_impl::prom::rdb_impl::actor::base::{
 };
 use crate::part_impl::prom::rdb_impl::entity::LocalMessageRow;
 use crate::part_impl::prom::rdb_impl::repo::{
-    ClaimPending, CompleteMessage, FailMessage, PurgeCompleted, ResetStuck,
+    ClaimPending, CompleteMessage, FailMessage, PurgeDead, ResetStuck,
     RetryMessage,
 };
 use crate::part_impl::prom::task_flow::TaskFlow;
@@ -51,16 +52,13 @@ const RETRY_DELAY: Duration = Duration::minutes(5);
 // Constant definition for `PROCESSING_TIMEOUT`.
 const PROCESSING_TIMEOUT: Duration = Duration::minutes(15);
 
-// Constant definition for `COMPLETED_RETENTION`.
-const COMPLETED_RETENTION: Duration = Duration::days(7);
-
 // Constant definition for `DEAD_RETENTION`.
 const DEAD_RETENTION: Duration = Duration::days(30);
 
-// Constant definition for `COMPLETED_PURGE_INTERVAL`.
-const COMPLETED_PURGE_INTERVAL: Duration = Duration::hours(1);
+// Constant definition for `DEAD_PURGE_INTERVAL`.
+const DEAD_PURGE_INTERVAL: Duration = Duration::hours(1);
 
-// Leaves a safety margin before the database reclaims processing leases.
+// Leaves a safety margin before the database reclaims processing attempts.
 const EXECUTION_TIMEOUT: StdDuration = StdDuration::from_mins(14);
 
 // Bounds graceful shutdown across the entire pool.
@@ -167,7 +165,8 @@ where
             //
             TaskFlow::Complete => {
                 //
-                if let Err(error) = self.complete(&row.f_id, row.f_lease).await
+                if let Err(error) =
+                    self.complete(&row.f_id, row.f_claim_token).await
                 {
                     tracing::error!(
                         id = %row.f_id,
@@ -195,7 +194,7 @@ where
                 );
 
                 if let Err(mark_error) =
-                    self.fail(&row.f_id, row.f_lease, &error).await
+                    self.fail(&row.f_id, row.f_claim_token, &error).await
                 {
                     tracing::error!(
                         id = %row.f_id,
@@ -210,12 +209,12 @@ where
 
     // Internal implementation of `complete`.
     #[instrument(level = "info", skip_all)]
-    async fn complete(&self, id: &str, lease: i64) -> BaseRest<()> {
+    async fn complete(&self, id: &str, claim_token: Uuid) -> BaseRest<()> {
         //
         self.prom_nucl()
             .coord(async |context| {
                 //
-                CompleteMessage::new(id, lease)
+                CompleteMessage::new(id, claim_token)
                     .step_on(self.prom_repo(), context)
                     .await
             })
@@ -247,7 +246,7 @@ where
                     //
                     RetryMessage::new(
                         &row.f_id,
-                        row.f_lease,
+                        row.f_claim_token,
                         message,
                         &visible_at,
                         retry_delta,
@@ -274,12 +273,17 @@ where
 
     // Internal implementation of `fail`.
     #[instrument(level = "info", skip_all)]
-    async fn fail(&self, id: &str, lease: i64, message: &str) -> BaseRest<()> {
+    async fn fail(
+        &self,
+        id: &str,
+        claim_token: Uuid,
+        message: &str,
+    ) -> BaseRest<()> {
         //
         self.prom_nucl()
             .coord(async |context| {
                 //
-                FailMessage::new(id, lease, message)
+                FailMessage::new(id, claim_token, message)
                     .step_on(self.prom_repo(), context)
                     .await
             })
@@ -312,18 +316,10 @@ where
         Ok(())
     }
 
-    // Internal implementation of `purge_completed`.
+    // Internal implementation of `purge_dead`.
     #[instrument(level = "info", skip_all)]
-    async fn purge_completed(&self) -> BaseRest<usize> {
+    async fn purge_dead(&self) -> BaseRest<usize> {
         //
-        let completed_before = OffsetDateTime::now_utc()
-            .checked_sub(COMPLETED_RETENTION)
-            .ok_or_else(|| BaseError::Unrecoverable {
-                message:
-                    "prom completion cutoff is outside the supported range"
-                        .into(),
-            })?;
-
         let dead_before = OffsetDateTime::now_utc()
             .checked_sub(DEAD_RETENTION)
             .ok_or_else(|| BaseError::Unrecoverable {
@@ -336,7 +332,7 @@ where
             .prom_nucl()
             .coord(async |context| {
                 //
-                PurgeCompleted::new(&completed_before, &dead_before)
+                PurgeDead::new(&dead_before)
                     .step_on(self.prom_repo(), context)
                     .await
             })
@@ -357,10 +353,10 @@ where
         }
     }
 
-    // Internal implementation of `log_purge_completed`.
-    async fn log_purge_completed(&self) {
+    // Internal implementation of `log_purge_dead`.
+    async fn log_purge_dead(&self) {
         //
-        match self.purge_completed().await {
+        match self.purge_dead().await {
             //
             Ok(purged_count) => {
                 //
@@ -368,7 +364,7 @@ where
                     //
                     tracing::info!(
                         purged_count,
-                        "[RdbPromActor::run] purged expired completed messages",
+                        "[RdbPromActor::run] purged expired dead messages",
                     );
                 }
             }
@@ -377,7 +373,7 @@ where
                 //
                 tracing::error!(
                     err = ?error,
-                    "[RdbPromActor::run] purge completed failed",
+                    "[RdbPromActor::run] purge dead failed",
                 );
             }
         }
@@ -431,7 +427,7 @@ where
         completed: &Notify,
     ) {
         //
-        let (mut next_stuck_reset_at, mut next_completed_purge_at) =
+        let (mut next_stuck_reset_at, mut next_dead_purge_at) =
             (OffsetDateTime::now_utc(), OffsetDateTime::now_utc());
 
         loop {
@@ -452,12 +448,11 @@ where
                         schedule_at(now, STUCK_RESET_INTERVAL);
                 }
 
-                if now >= next_completed_purge_at {
+                if now >= next_dead_purge_at {
                     //
-                    self.log_purge_completed().await;
+                    self.log_purge_dead().await;
 
-                    next_completed_purge_at =
-                        schedule_at(now, COMPLETED_PURGE_INTERVAL);
+                    next_dead_purge_at = schedule_at(now, DEAD_PURGE_INTERVAL);
                 }
 
                 let reservations = worker_sends

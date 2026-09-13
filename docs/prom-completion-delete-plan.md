@@ -1,6 +1,6 @@
 # Prom 成功即删除与 UUID 执行凭据修改计划
 
-状态：待实施。2026-09-13。
+状态：已实施并通过验证。2026-09-13。
 
 ## 目标和范围
 
@@ -34,14 +34,11 @@ PostgreSQL 18 提供 UUID v4 生成函数，见 [UUID Functions](https://www.pos
 
 ### 1. 数据迁移与类型支持
 
-- 新增迁移，为 `t_local_message`、`t_obj_prom_task` 引入 nullable UUID 列，移除 `f_lease`，添加状态与 token 一致性约束。
-- 首次升级删除两张表已有的 `completed` 历史记录。
-- 首次升级将旧 `processing` 任务转回 `pending`，清空 token，使其由新 actor 重新领取；保留 payload、对象身份、诊断和重试次数，按原可见时间及消费规则继续处理。
-- 通用 `dead`、ObjDept `operator` 和原有 `pending` 任务保留。未知状态不能伪造为成功或无条件删除；迁移及约束须与现有异常状态处理相容。
-- 生产脚本会反复执行全部 `up.sql`：用旧 `f_lease` 列是否存在等结构条件保护首次转换；重放不能重置已经使用 UUID 的 `processing` 任务。
-- `down.sql` 恢复旧列及结构，并使存量任务能被旧协议重新领取；明确删除的成功历史无法由回滚恢复。
-- 在已授权的 disposable CI 数据库上实施与验证。通过指向该数据库的 `DATABASE_URL` 执行 `just mgr-schema`；禁止手改生成的 `schema.rs`。
-- 迁移和应用协议同步切换；上线步骤须通过 Actions 停止旧 actor 后迁移、再启动新版本，不能混跑旧 lease worker 与新 token worker。本计划不执行发布。
+- 按用户最新指示，直接修改两张任务表的现有建表 SQL，将 `f_lease` 替换为 nullable UUID `f_claim_token`，添加状态与 token 一致性约束。
+- 修改现有 ObjDept 超时索引 SQL，移除已经删除的 `f_lease` 索引字段。
+- 不新增增量迁移或独立升级脚本。现有数据库需要回滚并重新运行基线，`CREATE TABLE IF NOT EXISTS` 不会升级旧表。
+- 本次只在已授权的 `db_poprako_ci` 上运行 `just mgr-run` → `just mgr-reset` → `just mgr-run`，然后执行 `just mgr-schema`；禁止手改生成 schema。
+- 回滚会删除对应表及其数据，不能用于未经确认的非 disposable 数据库；本次不操作开发业务库或生产库。
 
 ### 2. ObjDept Prom
 
@@ -87,7 +84,7 @@ PostgreSQL 18 提供 UUID v4 生成函数，见 [UUID Functions](https://www.pos
 6. **失败策略**：Wait 不耗预算、Retry 和超时预算正确、Dead 清理继续生效、ObjDept operator 不被普通 defer 覆盖。
 7. **去重及事务**：pending/processing 重复 defer 仍去重；完成后可重新 defer；批量任务身份冲突仍报错；事务回滚不留下任务。
 8. **对象业务回归**：同一不可用版本重新申请上传后，已完成的旧 Check 不再阻止新的 Check；旧版本不得影响新版本，watermark 行为保持。
-9. **迁移升级及重放**：用旧结构及各状态样本验证首次转换；重放全部 up SQL 两次后，新的 processing token、状态和重试次数保持不变；完成 apply → revert-all → apply。
+9. **基线重建及重放**：通过 just 完成 apply → revert-all → apply；重复运行基线 SQL 时，新 processing token、状态和重试次数保持不变。
 
 ## 验证命令和审查
 
@@ -107,6 +104,16 @@ sh scripts/ci-test.sh
 
 ObjDept 的服务端 RDB 测试当前由 `part_impl::repo::rdb_impl::tests` 调用；实施后检查入口，确保新场景实际运行。默认 `cargo test --workspace` 不足以证明 feature-gated RDB 测试已执行。
 
-专用 CI 数据库准备后，使用 `CI_MIGRATION_DATABASE=1` 和明确指向 `db_poprako_ci` 的 `DATABASE_URL` 运行 `sh scripts/ci-migration-check.sh`。该脚本覆盖迁移重放与完整 apply → revert-all → apply；另外加入带旧任务数据和新 processing token 的迁移断言。
+专用 CI 数据库的回滚和运行必须使用 just 配方。不能用直接 Diesel 调用或 CI 脚本代替用户指定的 `just mgr-reset` / `just mgr-run`。基线 SQL 重放属于额外验证，不能代替上述完整回滚重建。
 
 最终审查逐项核对所有终结路径是否使用 token、成功记录是否还有写入路径、历史迁移是否能安全重放，以及工作区已有修改是否完整保留。本计划不创建 commit；后续若要求提交，必须通过完整 pre-commit CI 链，不绕过 hooks。
+
+
+## 实施记录
+
+- 两套队列已经用 UUID claim token 替换数值 lease；成功确认直接删除，重试、失败和超时回收清空 token。
+- ObjDept 重复入队通过冲突行锁保护身份查询，真实 PostgreSQL 测试验证事务提交前完成操作等待、提交后可完成删除。
+- 现有两张建表 SQL 和 ObjDept 超时索引已直接修改；CI 数据库已通过 `just mgr-run` → `just mgr-reset` → `just mgr-run`，并通过 `just mgr-schema` 生成 schema。
+- schema 重建同时反映了原基线中四张表的 `f_deleted_at` 字段顺序；没有手工编辑生成文件或修改这些表的 SQL。
+- 全工作区 `cargo test --workspace --all-features` 已通过 534 个测试，包含 feature-gated PostgreSQL 测试；覆盖范围包含计划中的分 crate 和过滤测试。
+- 最终 `just fmt-check`、`just check`、`just clippy` 和完整 `sh linters-extra/run-check.sh` 全部通过；未修改 linter、未提交或部署。

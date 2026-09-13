@@ -1,3 +1,5 @@
+use uuid::Uuid;
+
 use diesel::prelude::{
     ExpressionMethods as _, QueryDsl as _, TextExpressionMethods as _,
 };
@@ -6,21 +8,27 @@ use time::{Duration, OffsetDateTime};
 
 use poprako_rdb_core::RdbCore;
 
-use super::rdb_obj_dept_prom_rdb_impl::claim_task;
+use super::rdb_obj_dept_prom_rdb_impl::{
+    claim_task, complete_task, mark_task_operator, reset_tasks, retry_task,
+};
+use crate::part::nucl::ReptRead;
+use crate::part_impl::nucl::rdb_impl::RdbNucl;
+use crate::part_impl::obj_dept::RdbObjDeptProm;
 use crate::part_impl::repo::rdb_impl::schema::t_obj_prom_task;
+use poprako_obj_dept::key::ObjKey;
+use poprako_obj_dept::prom::ObjDeptPromDefer as _;
+use poprako_orchestra::Nucl as _;
 
 const PREFIX: &str = "rdb-test-obj-claim-";
 const PENDING: &str = "obj_prom_status:pending";
 const OPERATOR: &str = "obj_prom_status:operator";
 
-pub async fn concurrent_claim_is_unique_ordered_and_overflow_safe(
-    shared: RdbCore,
-) {
+pub async fn concurrent_claim_is_unique_ordered_and_fenced(shared: RdbCore) {
     cleanup(&shared).await;
 
     let now = OffsetDateTime::now_utc();
 
-    insert_task(&shared, "oldest", now - Duration::seconds(2), 0).await;
+    insert_task(&shared, "oldest", now - Duration::seconds(2)).await;
 
     let first_core = shared.clone();
     let second_core = shared.clone();
@@ -45,42 +53,26 @@ pub async fn concurrent_claim_is_unique_ordered_and_overflow_safe(
     };
 
     assert!(claimed_task.id.ends_with("oldest"));
-    assert_eq!(claimed_task.lease, 1);
+    assert!(!claimed_task.claim_token.is_nil());
 
-    insert_task(&shared, "later", now, 4).await;
+    insert_task(&shared, "later", now).await;
 
     let later_task = claim_task(&shared).await.unwrap().unwrap();
 
     assert!(later_task.id.ends_with("later"));
-    assert_eq!(later_task.lease, 5);
-
-    insert_task(&shared, "overflow", now, i64::MAX).await;
-
-    assert!(claim_task(&shared).await.unwrap().is_none());
-
-    let mut conn = shared.get().await.unwrap();
-
-    let overflow_status = t_obj_prom_task::table
-        .filter(t_obj_prom_task::f_id.eq(format!("{}overflow", PREFIX)))
-        .select((t_obj_prom_task::f_status, t_obj_prom_task::f_error))
-        .first::<(String, Option<String>)>(&mut conn)
-        .await
-        .unwrap();
-
-    assert_eq!(overflow_status.0, OPERATOR);
-    assert_eq!(
-        overflow_status.1.as_deref(),
-        Some("object task lease overflow")
-    );
+    assert_ne!(later_task.claim_token, claimed_task.claim_token);
 
     cleanup(&shared).await;
+
+    completed_tasks_can_be_recreated(&shared).await;
+
+    repeated_defer_locks_completion(&shared).await;
 }
 
 async fn insert_task(
     shared: &RdbCore,
     suffix: &str,
     created_at: OffsetDateTime,
-    lease: i64,
 ) {
     let mut conn = shared.get().await.unwrap();
 
@@ -96,7 +88,7 @@ async fn insert_task(
             t_obj_prom_task::f_status.eq(PENDING),
             t_obj_prom_task::f_visible_at.eq(created_at),
             t_obj_prom_task::f_retried_count.eq(0_i64),
-            t_obj_prom_task::f_lease.eq(lease),
+            t_obj_prom_task::f_claim_token.eq(None::<Uuid>),
             t_obj_prom_task::f_error.eq(None::<String>),
             t_obj_prom_task::f_created_at.eq(created_at),
             t_obj_prom_task::f_updated_at.eq(created_at),
@@ -125,6 +117,216 @@ async fn cleanup(shared: &RdbCore) {
         .unwrap();
 
     assert_eq!(remaining, 0);
+}
+
+// completed_tasks_can_be_recreated(ObjDeptProm)(negative): stale execution credentials cannot mutate a recreated task or a reclaimed attempt.
+async fn completed_tasks_can_be_recreated(shared: &RdbCore) {
+    let prom = RdbObjDeptProm::new(shared.clone());
+
+    let nucl = RdbNucl::<ReptRead>::new(shared.clone());
+
+    let key = ObjKey {
+        id: format!("{}object", PREFIX),
+        ver: 1,
+        image: "test/object/1.png".into(),
+    };
+
+    let expires_at = OffsetDateTime::now_utc() - Duration::minutes(2);
+
+    nucl.coord(async |context| {
+        prom.defer_check(context, "page_image", &key, expires_at)
+            .await
+    })
+    .await
+    .unwrap();
+
+    let old = claim_task(shared).await.unwrap().unwrap();
+
+    // Repeated defer must retain the currently executing credential.
+    nucl.coord(async |context| {
+        prom.defer_check(context, "page_image", &key, expires_at)
+            .await
+    })
+    .await
+    .unwrap();
+
+    assert_eq!(complete_task(shared, &old).await.unwrap(), 1);
+
+    assert_eq!(complete_task(shared, &old).await.unwrap(), 0);
+
+    nucl.coord(async |context| {
+        prom.defer_check(context, "page_image", &key, expires_at)
+            .await
+    })
+    .await
+    .unwrap();
+
+    let current = claim_task(shared).await.unwrap().unwrap();
+
+    assert_eq!(old.id, current.id);
+
+    assert_ne!(old.claim_token, current.claim_token);
+
+    assert_eq!(complete_task(shared, &old).await.unwrap(), 0);
+
+    assert_eq!(retry_task(shared, &old, "stale").await.unwrap(), 0);
+
+    assert_eq!(mark_task_operator(shared, &old, "stale").await.unwrap(), 0);
+
+    let mut conn = shared.get().await.unwrap();
+
+    let stored = t_obj_prom_task::table
+        .filter(t_obj_prom_task::f_id.eq(&current.id))
+        .select((
+            t_obj_prom_task::f_status,
+            t_obj_prom_task::f_claim_token,
+            t_obj_prom_task::f_error,
+        ))
+        .first::<(String, Option<Uuid>, Option<String>)>(&mut conn)
+        .await
+        .unwrap();
+
+    assert_eq!(
+        stored,
+        (
+            "obj_prom_status:processing".into(),
+            Some(current.claim_token),
+            None
+        )
+    );
+
+    diesel::update(
+        t_obj_prom_task::table.filter(t_obj_prom_task::f_id.eq(&current.id)),
+    )
+    .set(
+        t_obj_prom_task::f_updated_at
+            .eq(OffsetDateTime::now_utc() - Duration::minutes(4)),
+    )
+    .execute(&mut conn)
+    .await
+    .unwrap();
+
+    assert_eq!(reset_tasks(shared).await.unwrap(), 1);
+
+    assert_eq!(complete_task(shared, &current).await.unwrap(), 0);
+
+    let reclaimed = claim_task(shared).await.unwrap().unwrap();
+
+    assert_ne!(reclaimed.claim_token, current.claim_token);
+
+    assert_eq!(retry_task(shared, &current, "stale").await.unwrap(), 0);
+
+    assert_eq!(
+        mark_task_operator(shared, &current, "stale").await.unwrap(),
+        0
+    );
+
+    assert_eq!(complete_task(shared, &reclaimed).await.unwrap(), 1);
+
+    assert_eq!(
+        t_obj_prom_task::table
+            .filter(t_obj_prom_task::f_obj_id.eq(&key.id))
+            .count()
+            .get_result::<i64>(&mut conn)
+            .await
+            .unwrap(),
+        0
+    );
+
+    nucl.coord(async |context| {
+        prom.defer_check(context, "page_image", &key, expires_at)
+            .await
+    })
+    .await
+    .unwrap();
+
+    let failed = claim_task(shared).await.unwrap().unwrap();
+
+    assert_eq!(
+        mark_task_operator(shared, &failed, "repair").await.unwrap(),
+        1
+    );
+
+    assert!(
+        nucl.coord(async |context| prom
+            .defer_check(context, "page_image", &key, expires_at)
+            .await)
+            .await
+            .is_err()
+    );
+
+    let stored = t_obj_prom_task::table
+        .filter(t_obj_prom_task::f_id.eq(&failed.id))
+        .select((t_obj_prom_task::f_status, t_obj_prom_task::f_claim_token))
+        .first::<(String, Option<Uuid>)>(&mut conn)
+        .await
+        .unwrap();
+
+    assert_eq!(stored, (OPERATOR.into(), None));
+
+    diesel::delete(
+        t_obj_prom_task::table.filter(t_obj_prom_task::f_id.eq(&failed.id)),
+    )
+    .execute(&mut conn)
+    .await
+    .unwrap();
+}
+
+// repeated_defer_locks_completion(ObjDeptPromDefer)(positive): conflicting defer retains the task until identity validation and the caller transaction finish.
+async fn repeated_defer_locks_completion(shared: &RdbCore) {
+    let prom = RdbObjDeptProm::new(shared.clone());
+
+    let nucl = RdbNucl::<ReptRead>::new(shared.clone());
+
+    let key = ObjKey {
+        id: format!("{}locked", PREFIX),
+        ver: 1,
+        image: "test/locked/1.png".into(),
+    };
+
+    let expires_at = OffsetDateTime::now_utc() - Duration::minutes(2);
+
+    nucl.coord(async |context| {
+        prom.defer_check(context, "page_image", &key, expires_at)
+            .await
+    })
+    .await
+    .unwrap();
+
+    let task = claim_task(shared).await.unwrap().unwrap();
+
+    let completion = nucl
+        .coord(async |context| {
+            prom.defer_check(context, "page_image", &key, expires_at)
+                .await?;
+
+            let core = shared.clone();
+
+            let mut completion =
+                tokio::spawn(async move { complete_task(&core, &task).await });
+
+            assert!(
+                tokio::time::timeout(
+                    std::time::Duration::from_millis(50),
+                    &mut completion
+                )
+                .await
+                .is_err()
+            );
+
+            Ok::<_, poprako_obj_dept::rest::ObjDeptError>(completion)
+        })
+        .await
+        .unwrap();
+
+    assert_eq!(
+        tokio::time::timeout(std::time::Duration::from_secs(5), completion)
+            .await
+            .unwrap()
+            .unwrap()
+            .unwrap(),
+        1
+    );
 }
 
 // A deterministic pool keeps RDB lifecycle tests independent of remote storage.

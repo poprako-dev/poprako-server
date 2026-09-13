@@ -124,7 +124,9 @@ pub fn expand_module(table: &Path) -> TokenStream {
 
             ::diesel::insert_into(#table::table)
                 .values(&rows)
-                .on_conflict_do_nothing()
+                .on_conflict(#table::f_id)
+                .do_update()
+                .set(#table::f_id.eq(::diesel::upsert::excluded(#table::f_id)))
                 .execute(conn)
                 .await
                 .map_err(diesel_err)?;
@@ -207,7 +209,7 @@ pub fn expand_module(table: &Path) -> TokenStream {
 
                 match row_status.as_str() {
                     //
-                    PENDING | PROCESSING | COMPLETED => {}
+                    PENDING | PROCESSING => {}
 
                     OPERATOR => {
                         //

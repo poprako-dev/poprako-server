@@ -16,7 +16,7 @@ rdb_impl = [
 ]
 
 [dependencies]
-diesel = { version = "2.3.7", features = ["postgres", "time"], optional = true }
+diesel = { version = "2.3.7", features = ["postgres", "time", "uuid"], optional = true }
 diesel-async = { version = "0.9.0", features = ["postgres"], optional = true }
 futures-util = "0.3.32"
 poprako-orchestra = { version = "0.6.0", features = ["macro"] }
@@ -28,3 +28,4 @@ tracing = "0.1.44"
 tokio = { version = "1.52.1", features = ["macros", "rt", "sync", "test-util", "time"] }
 tokio-util = { version = "0.7.18", features = ["rt"] }
 url = "2.5.8"
+uuid.workspace = true

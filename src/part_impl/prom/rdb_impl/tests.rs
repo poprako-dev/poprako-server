@@ -1,3 +1,5 @@
+use uuid::Uuid;
+
 use super::*;
 
 use crate::part::nucl::{ReptRead, Serial};
@@ -27,15 +29,13 @@ async fn prom_rdb_impls_use_testcontainer() {
 
     repo::tests::wait_message_preserves_retry_budget(shared.clone()).await;
 
-    repo::tests::stale_attempt_finalization_preserves_newer_lease(
+    repo::tests::stale_attempt_finalization_preserves_recreated_task(
         shared.clone(),
     )
     .await;
 
-    repo::tests::completed_message_purge_preserves_non_completed_records(
-        shared.clone(),
-    )
-    .await;
+    repo::tests::dead_message_purge_preserves_pending_records(shared.clone())
+        .await;
 
     atomic_claim_fences_concurrent_attempts_and_preserves_retry_delay(
         shared.clone(),
@@ -152,11 +152,12 @@ async fn writer_and_consumer_lifecycles_are_independent(
             let status = t_local_message::table
                 .filter(t_local_message::f_id.eq(&committed_id))
                 .select(t_local_message::f_status)
-                .first::<String>(&mut conn)
+                .count()
+                .get_result::<i64>(&mut conn)
                 .await
                 .unwrap();
 
-            if status == "local_message_status:completed" {
+            if status == 0 {
                 break;
             }
 
@@ -165,8 +166,6 @@ async fn writer_and_consumer_lifecycles_are_independent(
     })
     .await
     .unwrap();
-
-    actor.cancel();
 
     actor.cancel();
 
@@ -186,7 +185,7 @@ async fn writer_and_consumer_lifecycles_are_independent(
         .unwrap();
 }
 
-// atomic_claim_fences_concurrent_attempts_and_preserves_retry_delay(ClaimPending)(positive): locked work is skipped, retry visibility is honored, and each attempt gets fresh counters and a new lease.
+// atomic_claim_fences_concurrent_attempts_and_preserves_retry_delay(ClaimPending)(positive): locked work is skipped, retry visibility is honored, and each attempt gets fresh counters and a new claim_token.
 async fn atomic_claim_fences_concurrent_attempts_and_preserves_retry_delay(
     shared: poprako_rdb_core::RdbCore,
 ) {
@@ -212,6 +211,7 @@ async fn atomic_claim_fences_concurrent_attempts_and_preserves_retry_delay(
             f_id: id,
             f_topic: "rdb-test-prom-atomic-topic",
             f_status: LocalMessageStatus::Pending,
+            f_claim_token: None,
             f_payload: serde_json::json!({}),
             f_visible_at: now,
             f_created_at: now,
@@ -252,12 +252,12 @@ async fn atomic_claim_fences_concurrent_attempts_and_preserves_retry_delay(
 
     assert_eq!(first.f_id, "rdb-test-prom-atomic-first");
 
-    assert_eq!(first.f_lease, 1);
+    assert!(!first.f_claim_token.is_nil());
 
     let later = now + Duration::minutes(5);
 
     nucl.coord(async |context| {
-        RetryMessage::new(&first.f_id, first.f_lease, "retry", &later, 1)
+        RetryMessage::new(&first.f_id, first.f_claim_token, "retry", &later, 1)
             .step_on(&repo, context)
             .await
     })
@@ -276,7 +276,7 @@ async fn atomic_claim_fences_concurrent_attempts_and_preserves_retry_delay(
     assert_eq!(next.f_id, "rdb-test-prom-atomic-next");
 
     nucl.coord(async |context| {
-        CompleteMessage::new(&next.f_id, next.f_lease)
+        CompleteMessage::new(&next.f_id, next.f_claim_token)
             .step_on(&repo, context)
             .await
     })
@@ -300,8 +300,10 @@ async fn atomic_claim_fences_concurrent_attempts_and_preserves_retry_delay(
     .await
     .unwrap();
 
-    // Waiting advances leases without consuming the failure budget.
-    for expected_lease in 2..6 {
+    // Waiting rotates execution credentials without consuming the failure budget.
+    let mut tokens = std::collections::HashSet::from([first.f_claim_token]);
+
+    for _ in 0..4 {
         let attempt = nucl
             .coord(async |context| {
                 ClaimPending::new(4).step_on(&repo, context).await
@@ -311,20 +313,26 @@ async fn atomic_claim_fences_concurrent_attempts_and_preserves_retry_delay(
             .pop()
             .unwrap();
 
-        assert_eq!(attempt.f_lease, expected_lease);
+        assert!(tokens.insert(attempt.f_claim_token));
 
         assert_eq!(attempt.f_retried_count, 1);
 
         nucl.coord(async |context| {
-            RetryMessage::new(&attempt.f_id, attempt.f_lease, "wait", &now, 0)
-                .step_on(&repo, context)
-                .await
+            RetryMessage::new(
+                &attempt.f_id,
+                attempt.f_claim_token,
+                "wait",
+                &now,
+                0,
+            )
+            .step_on(&repo, context)
+            .await
         })
         .await
         .unwrap();
     }
 
-    // Recovery consumes the shared failure budget, independently of lease age.
+    // Recovery consumes the shared failure budget, independently of claim_token age.
     for expected_retries in 2..=4 {
         let attempt = nucl
             .coord(async |context| {
@@ -353,7 +361,7 @@ async fn atomic_claim_fences_concurrent_attempts_and_preserves_retry_delay(
         .unwrap();
 
         nucl.coord(async |context| {
-            CompleteMessage::new(&attempt.f_id, attempt.f_lease)
+            CompleteMessage::new(&attempt.f_id, attempt.f_claim_token)
                 .step_on(&repo, context)
                 .await
         })
@@ -406,6 +414,7 @@ async fn competing_snapshots_cannot_process_the_same_topic(
         f_id: "rdb-test-prom-snapshot-next",
         f_topic: "rdb-test-prom-snapshot-topic",
         f_status: LocalMessageStatus::Pending,
+        f_claim_token: None,
         f_payload: serde_json::json!({}),
         f_visible_at: now,
         f_created_at: now,
@@ -462,21 +471,21 @@ async fn competing_snapshots_cannot_process_the_same_topic(
         Err(BaseError::Retryable { .. })
     ));
 
-    let processing_count = t_local_message::table
+    let processing_tokens = t_local_message::table
         .filter(t_local_message::f_topic.eq(entry.f_topic))
         .filter(
             t_local_message::f_status
                 .eq(LocalMessageStatus::Processing.as_str()),
         )
-        .count()
-        .get_result::<i64>(&mut conn)
+        .select(t_local_message::f_claim_token)
+        .load::<Option<Uuid>>(&mut conn)
         .await
         .unwrap();
 
-    assert_eq!(processing_count, 1);
+    assert_eq!(processing_tokens.len(), 1);
 
     nucl.coord(async |context| {
-        CompleteMessage::new(entry.f_id, 1)
+        CompleteMessage::new(entry.f_id, processing_tokens[0].unwrap())
             .step_on(&repo, context)
             .await
     })
@@ -516,6 +525,7 @@ async fn stale_snapshot_cannot_reclaim_a_delayed_attempt(
         f_id: "rdb-test-prom-stale-attempt",
         f_topic: "rdb-test-prom-stale-topic",
         f_status: LocalMessageStatus::Pending,
+        f_claim_token: None,
         f_payload: serde_json::json!({}),
         f_visible_at: now,
         f_created_at: now,
@@ -555,7 +565,7 @@ async fn stale_snapshot_cannot_reclaim_a_delayed_attempt(
             nucl.coord(async |context| {
                 RetryMessage::new(
                     &attempt.f_id,
-                    attempt.f_lease,
+                    attempt.f_claim_token,
                     "wait",
                     &later,
                     0,

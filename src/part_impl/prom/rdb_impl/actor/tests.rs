@@ -1,3 +1,5 @@
+use uuid::Uuid;
+
 use diesel::{ExpressionMethods as _, QueryDsl as _};
 use diesel_async::RunQueryDsl as _;
 use poprako_orchestra::{Nucl as _, OperStep as _};
@@ -177,10 +179,10 @@ async fn claim_tasks(
     .unwrap()
 }
 
-// Acknowledges only the supplied attempt lease.
+// Acknowledges only the supplied attempt claim_token.
 async fn complete_task(nucl: &RdbNucl<Serial>, row: &LocalMessageRow) {
     nucl.coord(async |context| {
-        CompleteMessage::new(&row.f_id, row.f_lease)
+        CompleteMessage::new(&row.f_id, row.f_claim_token)
             .step_on(&RdbPromRepo::new(), context)
             .await
     })
@@ -198,7 +200,7 @@ async fn persisted_task(
     OffsetDateTime,
     OffsetDateTime,
     i64,
-    i64,
+    Option<Uuid>,
 ) {
     let mut conn = core.get().await.unwrap();
 
@@ -210,7 +212,7 @@ async fn persisted_task(
             t_local_message::f_created_at,
             t_local_message::f_visible_at,
             t_local_message::f_retried_count,
-            t_local_message::f_lease,
+            t_local_message::f_claim_token,
         ))
         .first(&mut conn)
         .await
@@ -337,7 +339,7 @@ async fn same_topic_requests_remain_independent(core: &RdbCore) {
             _ => {
                 RetryMessage::new(
                     &first.f_id,
-                    first.f_lease,
+                    first.f_claim_token,
                     action,
                     &OffsetDateTime::now_utc(),
                     i64::from(action == "retry"),

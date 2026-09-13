@@ -9,6 +9,5 @@ CREATE INDEX IF NOT EXISTS "i_obj_prom_task_poll"
 CREATE INDEX IF NOT EXISTS "i_obj_prom_task_stuck"
     ON "t_obj_prom_task" (
         "f_status",
-        "f_updated_at",
-        "f_lease"
+        "f_updated_at"
     );

@@ -9,8 +9,11 @@ CREATE TABLE IF NOT EXISTS "t_obj_prom_task" (
     "f_status"                     TEXT        NOT NULL,
     "f_visible_at"                 TIMESTAMPTZ NOT NULL,
     "f_retried_count"              BIGINT      NOT NULL DEFAULT 0,
-    "f_lease"                      BIGINT      NOT NULL DEFAULT 0,
+    "f_claim_token"                 UUID,
     "f_error"                      TEXT,
     "f_created_at"                 TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    "f_updated_at"                 TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    "f_updated_at"                 TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT "ck_obj_prom_task_claim_token" CHECK (
+        ("f_status" = 'obj_prom_status:processing') = ("f_claim_token" IS NOT NULL)
+    )
 );

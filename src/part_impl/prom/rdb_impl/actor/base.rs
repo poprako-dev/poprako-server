@@ -86,7 +86,7 @@ impl<T> WorkerSlot<T> {
 }
 
 /// Executes each queued attempt within its claim deadline and isolates panics.
-/// Abandoned attempts remain processing until the persisted lease is reclaimed.
+/// Abandoned attempts remain processing until the timed-out attempt is reclaimed.
 pub async fn run_worker<T, F, Fut>(
     mut work_recv: mpsc::UnboundedReceiver<(T, Instant, OwnedSemaphorePermit)>,
     completed: Arc<Notify>,
@@ -119,14 +119,14 @@ pub async fn run_worker<T, F, Fut>(
             Ok(Err(_)) => {
                 //
                 tracing::error!(
-                    "prom attempt panicked; lease recovery will retry it"
+                    "prom attempt panicked; timeout recovery will retry it"
                 );
             }
 
             Err(_) => {
                 //
                 tracing::warn!(
-                    "prom attempt deadline elapsed; lease recovery will retry it"
+                    "prom attempt deadline elapsed; timeout recovery will retry it"
                 );
             }
         }
