@@ -2,7 +2,7 @@
 set -eu
 
 project_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-python3 "$project_root/scripts/test-production-cache.py"
+uv run --no-project python "$project_root/scripts/test-production-cache.py"
 
 test_root=$(mktemp -d)
 fake_bin="${test_root}/bin"
