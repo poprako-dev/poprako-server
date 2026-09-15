@@ -14,7 +14,8 @@ use crate::part::prom::payload::invitation::InvitationPayload;
 use crate::part::prom::topic::Topic;
 
 /// One deferred task, grouped by its domain.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(test, derive(Debug))]
 pub enum TaskPayload {
     //
     /// Chapter-domain tasks.

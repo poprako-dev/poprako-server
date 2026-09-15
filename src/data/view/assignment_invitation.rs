@@ -11,7 +11,7 @@ use crate::model::read::proj::assignment_invitation::AssignmentInvitationInfo;
 use crate::value::role::RoleMask;
 
 /// Presentation-ready assignment invitation information.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct AssignmentInvitationInfoView {
     //

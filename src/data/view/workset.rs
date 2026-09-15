@@ -14,7 +14,7 @@ use crate::model::read::proj::workset::WorksetInfo;
 /// Mirrors [`WorksetInfo`] with timestamps converted to Unix milliseconds.
 ///
 /// [`WorksetInfo`]: crate::model::read::proj::workset::WorksetInfo
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct WorksetInfoView {
     //

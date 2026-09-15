@@ -32,7 +32,7 @@ use crate::usecase;
 use crate::value::pagination::PubListLimit;
 
 /// Query parameters for terminology-base lists.
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct TermbaseListQuery {

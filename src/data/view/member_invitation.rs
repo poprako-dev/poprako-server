@@ -15,7 +15,7 @@ use crate::value::role::RoleMask;
 /// model carries no timestamps).
 ///
 /// [`MemberInvitationInfo`]: crate::model::read::proj::member_invitation::MemberInvitationInfo
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct MemberInvitationInfoView {
     //

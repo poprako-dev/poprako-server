@@ -27,7 +27,7 @@ const SECONDS_PER_BUCKET: u64 = 60;
 static METRIC_WINDOW: LazyLock<MetricWindow> = LazyLock::new(MetricWindow::new);
 
 /// Aggregate metrics for the current time window.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct MetricTotal {
     //
@@ -64,7 +64,7 @@ impl MetricTotal {
 }
 
 /// Aggregate metrics for one minute in the recent sliding window.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct MetricMinute {
     //

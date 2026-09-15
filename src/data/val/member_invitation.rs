@@ -12,7 +12,7 @@ use utoipa::ToSchema;
 ///
 /// The `code` is a short opaque token the invitee presents during
 /// registration to claim the invitation.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateMemberInvitationVal {
     //

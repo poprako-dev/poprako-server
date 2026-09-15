@@ -165,11 +165,12 @@ where
 
 #[instrument(
     level = "info",
-    skip(nucl, repo, token),
+    skip(nucl, repo, token, instr),
     fields(
         actor_user_id = %token.user_id,
         chapter_id = %instr.chapter_id,
         part = ?instr.part,
+        phrase_bytes = instr.phrase.len(),
     ),
 )]
 /// Searches one Unit text field across all visible Units in a Chapter.

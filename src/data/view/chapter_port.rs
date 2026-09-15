@@ -10,7 +10,7 @@ use utoipa::ToSchema;
 use crate::data::view::page_port::PageTranslationPortView;
 
 /// JSON document exchanged by the `PopRaKo` translation port.
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Clone, Deserialize, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ChapterTranslationPortView {
     //
@@ -32,7 +32,7 @@ pub struct ChapterTranslationPortView {
 }
 
 /// A direct artwork upload capability.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ChapterArtworkUploadSlotView {
     //

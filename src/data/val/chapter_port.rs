@@ -13,7 +13,7 @@ use crate::data::view::chapter_port::{
 use crate::value::artwork::ArtworkHash;
 
 /// Translation documents generated together by one chapter export.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ExportChapterTranslationsVal {
     //
@@ -26,7 +26,7 @@ pub struct ExportChapterTranslationsVal {
 }
 
 /// One exported Page's original filename mapping.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ChapterPageRawIdentVal {
     //
@@ -37,7 +37,7 @@ pub struct ChapterPageRawIdentVal {
 }
 
 /// Summary returned after importing chapter translations.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ImportChapterTranslationVal {
     //
@@ -48,7 +48,7 @@ pub struct ImportChapterTranslationVal {
 }
 
 /// Chapter artwork allocation result, including the version on a deduplication hit.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct AllocChapterArtworkVal {
     //
@@ -60,7 +60,7 @@ pub struct AllocChapterArtworkVal {
 }
 
 /// Current available artwork and its direct object-storage download address.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ExportChapterArtworkVal {
     //

@@ -15,8 +15,9 @@ use crate::model::read::proj::page::PageInfo;
 use crate::value::image::{ImageExt, ImageHash};
 
 /// Presentation-ready page information.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[cfg_attr(test, derive(Debug))]
 pub struct PageInfoView {
     //
     /// Unique page identifier.

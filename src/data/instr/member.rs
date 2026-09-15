@@ -30,7 +30,7 @@ pub struct CreateMemberInstr {
 }
 
 /// Input parameters for joining a team through a member invitation.
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct JoinTeamInstr {
     /// Invitation code to join the team.

@@ -203,7 +203,7 @@ impl TokenAuth for JwtAuth {
 }
 
 /// Internal JWT claim structure used for token signing.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 // Holds JWT standard + app-specific claim fields emitted by the signer.
 struct SignClaims<'a> {
     //
@@ -225,7 +225,7 @@ struct SignClaims<'a> {
 }
 
 /// Decoded JWT token claims containing user identification.
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 // Exposes the user identifier after verifying a token.
 struct TokenClaims {
     // User primary key recovered from the payload.

@@ -10,7 +10,7 @@ use serde::Serialize;
 use utoipa::ToSchema;
 
 /// Presigned capability for one pending image upload.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ImageUploadSlotView {
     //

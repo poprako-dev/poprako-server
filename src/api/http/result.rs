@@ -36,7 +36,7 @@ use poprako_util::i18n::trl;
 use crate::result::{BaseError, ExpectedVariant};
 
 /// Business-level error envelope returned by all failing endpoints.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct HttpError {
     //
@@ -154,7 +154,7 @@ impl IntoResponse for HttpError {
 /// Serializes as the standard JSON success envelope. HTTP metadata such as
 /// status code, extra headers, and `Set-Cookie` values are not part of the JSON
 /// body.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct HttpBody<T> {
     //

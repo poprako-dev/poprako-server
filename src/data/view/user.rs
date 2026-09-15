@@ -16,7 +16,7 @@ use crate::model::read::proj::user::UserInfo;
 ///
 /// Converts raw [`UserInfo`] timestamps to Unix milliseconds and accepts an
 /// avatar origin and thumbnail URLs already resolved by the use-case layer.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UserInfoView {
     //

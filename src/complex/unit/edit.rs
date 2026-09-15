@@ -14,7 +14,7 @@ use crate::value::unit::MAX_PAGE_UNIT_COUNT;
 type UnitSequenceState<'a> = (Vec<&'a str>, HashMap<&'a str, Option<&'a str>>);
 
 /// One persisted Unit successor changed by an edit sequence.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct UnitSuccessorChange<'a> {
     //
     /// Permanent Unit ID.
@@ -37,7 +37,6 @@ impl<'a> UnitSuccessorChange<'a> {
 }
 
 /// Final linked-list state produced from normalized Unit edits.
-#[derive(Debug)]
 pub struct UnitEditSequencePlan<'a> {
     //
     /// Unit IDs in final traversal order, retained only for tests.

@@ -5,7 +5,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 use utoipa::ToSchema;
 
 /// Page-content strategy selected for one chapter translation import.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum ChapterTranslationImportMode {
     //
     /// Preserve pages that already contain visible Units.
@@ -18,8 +18,9 @@ pub enum ChapterTranslationImportMode {
 /// Translation format used by a chapter port.
 ///
 /// Determines the tooling and schema for the chapter's translation files.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[cfg_attr(test, derive(Debug))]
 pub enum TranslationFormat {
     //
     /// `LabelPlus` translation format.

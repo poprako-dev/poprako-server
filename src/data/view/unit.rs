@@ -16,8 +16,9 @@ use poprako_util::time::ToUnixMilli as _;
 use crate::model::read::proj::unit::UnitInfo;
 
 /// Presentation-ready visible Unit information.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[cfg_attr(test, derive(Debug))]
 pub struct UnitInfoView {
     //
     /// Permanent Unit ID.

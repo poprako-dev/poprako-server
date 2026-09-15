@@ -21,7 +21,7 @@ use crate::model::read::proj::comic::ComicInfo;
 /// accepts object URLs already resolved by the use-case layer.
 ///
 /// [`ComicInfo`]: crate::model::read::proj::comic::ComicInfo
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ComicInfoView {
     //

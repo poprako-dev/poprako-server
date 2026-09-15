@@ -123,7 +123,8 @@ async fn mock_operation_rejects_empty_url_spec_without_metadata() {
     let error = GenObjUrls::<PageImage>::new(&metas, ObjUrlSpec::default())
         .run_on(&mock)
         .await
-        .unwrap_err();
+        .err()
+        .expect("URL generation must reject an empty URL spec");
 
     assert!(matches!(error, ObjDeptError::Invalid { .. }));
 }

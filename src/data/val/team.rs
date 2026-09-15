@@ -10,7 +10,7 @@ use utoipa::ToSchema;
 use crate::data::view::image::ImageUploadSlotView;
 
 /// Team avatar upload allocation response.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct AllocTeamAvatarVal {
     /// Upload capability, absent when this avatar is already uploaded.

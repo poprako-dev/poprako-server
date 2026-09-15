@@ -8,7 +8,7 @@ use serde::Serialize;
 use utoipa::ToSchema;
 
 /// Return value from a successful registration.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct RegisterAuthVal {
     //
@@ -19,7 +19,7 @@ pub struct RegisterAuthVal {
 }
 
 /// Return value from a successful login.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct LoginAuthVal {
     //

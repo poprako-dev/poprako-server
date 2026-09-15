@@ -39,7 +39,7 @@ use crate::value::pagination::PubListLimit;
 /// `incl` embeds related rows into each item.
 ///
 /// Example: `?is_pending=true&incl=invitor&offset=0&limit=20`.
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct MemberInvitationListQuery {

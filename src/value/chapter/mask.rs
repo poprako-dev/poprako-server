@@ -23,7 +23,7 @@ use crate::value::chapter::stage::{
 /// | TypesetRedraw | 6–7 | `StagePhaseField` |
 /// | Review | 8–9 | `StagePhaseField` |
 /// | Publish | 10–11 | `StagePhaseField` |
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct StageMask(u32);
 

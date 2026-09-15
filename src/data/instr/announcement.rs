@@ -48,7 +48,7 @@ impl From<ListAnnouncementInfosInstr> for AnnouncementListSpec {
 }
 
 /// Input parameters for creating an announcement.
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateAnnouncementInstr {
     //
@@ -62,7 +62,7 @@ pub struct CreateAnnouncementInstr {
 }
 
 /// Input parameters for replacing an announcement's editable fields.
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateAnnouncementInfoInstr {
     //

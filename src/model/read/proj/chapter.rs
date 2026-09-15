@@ -15,7 +15,7 @@ use crate::model::read::proj::user::UserInfo;
 use crate::value::chapter::mask::StageMask;
 
 /// Minimal locked Chapter scope needed while editing Page Units.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct ChapterUnitEditScope {
     //
     /// Permanent Chapter identifier.

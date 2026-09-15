@@ -4,7 +4,7 @@ use anyhow::bail;
 use serde::Deserialize;
 
 /// Runtime MiB limit for a chapter's artwork file.
-#[derive(Clone, Copy, Debug, Deserialize)]
+#[derive(Clone, Copy, Deserialize)]
 #[serde(default)]
 pub struct ArtworkConfig {
     /// Maximum size of one direct upload, in MiB.

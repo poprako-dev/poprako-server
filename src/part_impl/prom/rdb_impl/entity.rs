@@ -121,7 +121,7 @@ impl<'a> LocalMessageEntryRow<'a> {
 }
 
 /// Persisted attempt returned by an atomic queue claim.
-#[derive(Debug, Queryable, QueryableByName)]
+#[derive(Queryable, QueryableByName)]
 pub struct LocalMessageRow {
     //
     #[diesel(sql_type = Text)]

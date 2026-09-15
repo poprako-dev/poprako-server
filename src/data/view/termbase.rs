@@ -10,8 +10,9 @@ use poprako_util::time::ToUnixMilli as _;
 use crate::model::read::proj::termbase::TermbaseInfo;
 
 /// Presentation-ready terminology-base information.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[cfg_attr(test, derive(Debug))]
 pub struct TermbaseInfoView {
     //
     /// Unique terminology-base identifier.

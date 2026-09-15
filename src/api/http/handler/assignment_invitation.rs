@@ -34,7 +34,7 @@ use crate::value::pagination::PubListLimit;
 /// Query for listing assignment invitations under one chapter.
 ///
 /// Example: `?is_pending=true&offset=0&limit=20`.
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct AssignmentInvitationListQuery {

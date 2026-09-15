@@ -45,7 +45,7 @@ pub struct CreateAssignmentInvitationInstr {
 }
 
 /// Input parameters for joining an assignment through an invitation code.
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct JoinAssignmentInvitationInstr {
     /// Secret invitation code to join with.

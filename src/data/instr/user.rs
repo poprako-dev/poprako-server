@@ -46,7 +46,7 @@ pub struct UpdateUserInfoInstr {
 }
 
 /// Input parameters for replacing the authenticated user's password.
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateUserPasswordInstr {
     //

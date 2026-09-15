@@ -15,7 +15,7 @@ use crate::value::pagination::PubListLimit;
 
 /// Pagination query parameters for nested list endpoints where the parent id
 /// is carried by the path.
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct Pagination {

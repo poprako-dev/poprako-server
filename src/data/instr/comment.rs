@@ -48,7 +48,7 @@ impl From<ListCommentInfosInstr> for CommentListSpec {
 }
 
 /// Input parameters for creating a comment.
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateCommentInstr {
     //

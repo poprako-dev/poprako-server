@@ -16,8 +16,9 @@ use crate::value::image::{ImageExt, ImageHash};
 
 /// Visible Unit text statistics for a Page with revision differences.
 /// Counts are independent of revision approval and cover all visible Units.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[cfg_attr(test, derive(Debug))]
 pub struct PageUnitDiffStatsVal {
     //
     /// Permanent Page identifier.
@@ -48,7 +49,7 @@ impl From<PageUnitDiffStats> for PageUnitDiffStatsVal {
 }
 
 /// Return value from successful chapter page allocations.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct AllocChapterPagesVal {
     /// Allocated pages with upload targets.
@@ -56,7 +57,7 @@ pub struct AllocChapterPagesVal {
 }
 
 /// One allocated page upload target.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct AllocatedPageVal {
     //

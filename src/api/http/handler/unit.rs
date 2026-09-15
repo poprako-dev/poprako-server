@@ -30,7 +30,7 @@ use crate::usecase;
 use crate::value::unit::UnitTextPart;
 
 /// Query parameters for Chapter Unit text searches.
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 #[serde(deny_unknown_fields)]

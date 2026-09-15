@@ -1,7 +1,7 @@
 use crate::key::ObjKey;
 
 /// Latest metadata for one business object.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct ObjMeta {
     //
     /// Current logical object key.

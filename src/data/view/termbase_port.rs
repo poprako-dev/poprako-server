@@ -8,7 +8,7 @@ use utoipa::ToSchema;
 use crate::model::read::proj::term::TermInfo;
 
 /// Portable terminology-entry content without persistence metadata.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct TermbaseTermView {
     //

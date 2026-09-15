@@ -31,7 +31,7 @@ pub enum ImageKind {
 }
 
 /// Business identity required to locate one page image.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct PageImageKey {
     //
     /// Owning chapter identifier encoded into the physical key.
@@ -45,7 +45,7 @@ pub struct PageImageKey {
 }
 
 /// Business identity required to locate one user avatar.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct UserAvatarKey {
     //
     /// Stable user identifier used by the object table.
@@ -56,7 +56,7 @@ pub struct UserAvatarKey {
 }
 
 /// Business identity required to locate one team avatar.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct TeamAvatarKey {
     //
     /// Stable team identifier used by the object table.
@@ -67,7 +67,7 @@ pub struct TeamAvatarKey {
 }
 
 /// Business identity required to locate one comic cover.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct ComicCoverKey {
     //
     /// Stable comic identifier used by the object table.

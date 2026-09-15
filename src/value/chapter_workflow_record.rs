@@ -81,9 +81,10 @@ impl ChapterWorkflowRecordKind {
 }
 
 /// Source operation that caused an automatic workflow-stage transition.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(rename_all = "kebab-case")]
+#[cfg_attr(test, derive(Debug))]
 pub enum ChapterWorkflowRecordOrigin {
     //
     /// A user explicitly advanced or reverted a stage.
@@ -106,9 +107,10 @@ pub enum ChapterWorkflowRecordOrigin {
 }
 
 /// Typed, immutable details attached to a workflow record.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(tag = "type", rename_all = "kebab-case", deny_unknown_fields)]
+#[cfg_attr(test, derive(Debug))]
 pub enum ChapterWorkflowRecordPayload {
     //
     /// No additional details are needed for chapter creation.

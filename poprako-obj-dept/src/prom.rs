@@ -76,7 +76,7 @@ pub trait ObjDeptPromDefer<C> {
 }
 
 /// One Check task requested by a batch object lifecycle operation.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct ObjDeptPromCheck {
     //
     /// Logical object generation to verify.

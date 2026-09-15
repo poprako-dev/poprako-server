@@ -8,7 +8,7 @@ use serde::Serialize;
 use utoipa::ToSchema;
 
 /// Return value from a successful chapter creation.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateChapterVal {
     /// Unique identifier of the newly created chapter.

@@ -59,7 +59,8 @@ impl SubtreeDeleteScope {
 }
 
 /// One tombstoned hierarchy claim selected for physical cleanup.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Eq, PartialEq)]
+#[cfg_attr(test, derive(Debug))]
 pub enum SubtreeDeleteSweepTarget {
     //
     /// A chapter and all of its page-owned records.

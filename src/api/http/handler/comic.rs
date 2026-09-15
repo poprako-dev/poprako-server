@@ -78,7 +78,7 @@ pub async fn export_archives(
 /// `incl` embeds related rows into each item; `with` populates derived rows
 /// in the parallel list payload.
 /// Dotted `incl` values implicitly pull in their parent segments.
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ComicListQuery {

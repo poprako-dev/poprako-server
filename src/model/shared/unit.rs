@@ -1,7 +1,8 @@
 //! Value groups shared by Unit read and write models.
 
 /// Page-relative Unit coordinates.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
+#[cfg_attr(test, derive(Debug))]
 pub struct UnitCoord {
     //
     /// Horizontal page-relative coordinate.
@@ -11,7 +12,8 @@ pub struct UnitCoord {
 }
 
 /// Translation content together with its server-derived editor.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
+#[cfg_attr(test, derive(Debug))]
 pub struct UnitTranslation {
     //
     /// Current translated text.
@@ -21,7 +23,8 @@ pub struct UnitTranslation {
 }
 
 /// Revision content and approval state together with its server-derived editor.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
+#[cfg_attr(test, derive(Debug))]
 pub struct UnitRevision {
     //
     /// Whether the revision is approved.

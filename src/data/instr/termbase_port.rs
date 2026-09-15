@@ -9,7 +9,7 @@ use crate::model::write::term::TermImport;
 use crate::model::write::termbase::TermbaseImport;
 
 /// One portable terminology entry supplied by an import request.
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ImportTermInstr {
     //
@@ -34,7 +34,7 @@ impl From<ImportTermInstr> for TermImport {
 }
 
 /// Native terminology-base document supplied to an import endpoint.
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ImportTermbaseInstr {
     //

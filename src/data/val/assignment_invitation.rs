@@ -8,7 +8,7 @@ use serde::Serialize;
 use utoipa::ToSchema;
 
 /// Return value from creating an assignment invitation.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateAssignmentInvitationVal {
     //

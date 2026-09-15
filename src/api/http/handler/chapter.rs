@@ -41,7 +41,7 @@ use crate::value::pagination::PubListLimit;
 /// in their parent segments.
 ///
 /// Example: `?incl=comic.workset.team&incl=creator&offset=0&limit=20`.
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ChapterListQuery {
@@ -60,7 +60,7 @@ pub struct ChapterListQuery {
 }
 
 /// Query for listing immutable chapter workflow records.
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ChapterWorkflowRecordListQuery {

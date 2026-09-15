@@ -11,7 +11,7 @@ use crate::data::view::user::UserInfoView;
 use crate::model::read::proj::announcement::AnnouncementInfo;
 
 /// Presentation-ready team announcement information.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct AnnouncementInfoView {
     //

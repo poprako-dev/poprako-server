@@ -13,7 +13,6 @@ use time::OffsetDateTime;
 use crate::model::read::proj::unit::UnitCountMetrics;
 
 /// Current visible Unit text statistics for one Page.
-#[derive(Debug)]
 pub struct PageUnitDiffStats {
     //
     /// Permanent Page identifier.
@@ -30,7 +29,7 @@ pub struct PageUnitDiffStats {
 }
 
 /// Minimal persisted Page scope needed by Unit reads and edits.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct PageUnitScope {
     //
     /// Permanent Page identifier.
@@ -79,7 +78,8 @@ pub struct PageInfo {
 }
 
 /// One page's optional source filename record.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
+#[cfg_attr(test, derive(Debug))]
 pub struct PageRawIdentInfo {
     //
     /// Stable page identifier.
