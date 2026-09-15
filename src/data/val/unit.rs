@@ -15,10 +15,9 @@ use crate::data::view::unit::UnitInfoView;
 use crate::model::read::proj::unit::{UnitCountMetrics, UnitInfo};
 
 /// Return value for listing visible Units under one Page.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ListPageUnitInfosVal {
-    //
     /// Visible Units in final linked-list order.
     pub unit_infos: Vec<UnitInfoView>,
 

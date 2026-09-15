@@ -31,7 +31,6 @@ use crate::usecase::internal::page::{PageLoader, PinnedChapterSnapshot};
 /// Deduplicated object identifiers discovered in a complete include graph.
 #[derive(Default)]
 pub struct ObjViewIds<'a> {
-    //
     /// Comic-cover identifiers by comic.
     comic_covers: HashSet<&'a str>,
 
@@ -138,7 +137,6 @@ impl<'a> ObjViewIds<'a> {
 
 /// Object URLs loaded once for every marker present in a request include graph.
 pub struct ObjViewSnapshot {
-    //
     /// Comic-cover URLs by comic identifier.
     comic_covers: HashMap<String, ObjUrls>,
 

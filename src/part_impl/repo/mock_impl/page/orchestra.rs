@@ -3,17 +3,19 @@ use std::collections::HashSet;
 use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
-use crate::model::read::proj::page::{PageInfo, PageUnitScope};
+use crate::model::read::proj::page::{
+    PageInfo, PageUnitDiffStats, PageUnitScope,
+};
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::page::{
     ApplyPageManifest, DeletePages, GetPageInfo, GetPageInfoExcluded,
-    GetPageUnitScope, GetPageUnitScopeExcluded, ListEdittedDiffPageIds,
-    ListFirstPageInfos, ListPageInfos, ListPageInfosExcluded,
+    GetPageUnitScope, GetPageUnitScopeExcluded, ListFirstPageInfos,
+    ListPageInfos, ListPageInfosExcluded, ListPageUnitDiffStats,
     SetPageUnitCountMetrics, ShiftPageIndexesTemporary,
 };
 use crate::part_impl::repo::mock_impl::page::{
-    get_page_by_id, get_page_unit_scope, list_bounded_infos,
-    list_editted_diff_page_ids, list_first_pages, page_from_manifest_entry,
+    get_page_by_id, get_page_unit_scope, list_bounded_infos, list_first_pages,
+    list_unit_diff_stats, page_from_manifest_entry,
 };
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, expected, now, unrecoverable,
@@ -89,20 +91,20 @@ impl<'a> Run<ListFirstPageInfos<'a>> for Mock {
     }
 }
 
-impl Run<ListEdittedDiffPageIds<'_>> for Mock {
+impl Run<ListPageUnitDiffStats<'_>> for Mock {
     // Defines the adapter error exposed by this operation.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
-    // Lists matching Page IDs in stable Chapter Page order.
+    // Lists matching Page text statistics in stable Chapter Page order.
     async fn run(
         &self,
-        oper: &ListEdittedDiffPageIds<'_>,
-    ) -> BaseRest<Vec<String>> {
+        oper: &ListPageUnitDiffStats<'_>,
+    ) -> BaseRest<Vec<PageUnitDiffStats>> {
         //
         let state = self.state.lock().unwrap();
 
-        list_editted_diff_page_ids(&state, oper.chapter_id)
+        list_unit_diff_stats(&state, oper.chapter_id)
     }
 }
 

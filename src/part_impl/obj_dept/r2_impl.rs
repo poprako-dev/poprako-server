@@ -30,7 +30,6 @@ const PUT_SIGNED_EXPIRATION: Duration = Duration::from_mins(10);
 /// Cloudflare R2-backed physical object pool.
 #[derive(Clone)]
 pub struct R2ObjDeptPool {
-    //
     // Internal state field `client`.
     /// HTTP client configured for Cloudflare R2 API requests.
     client: Client,

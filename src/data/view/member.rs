@@ -13,10 +13,9 @@ use crate::model::read::proj::member::MemberInfo;
 use crate::value::role::RoleMask;
 
 /// Presentation-ready membership information.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct MemberInfoView {
-    //
     /// Unique member identifier.
     pub id: String,
 

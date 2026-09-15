@@ -24,7 +24,6 @@ pub struct ListUnitInfosByIds<'a> {
 #[derive(Oper)]
 #[oper(output = Vec<String>)]
 pub struct SearchChapterUnitIds<'a> {
-    //
     /// Chapter whose Units should be searched.
     pub chapter_id: &'a str,
 
@@ -60,7 +59,6 @@ pub struct ListUnitOrders<'a> {
 #[derive(Oper)]
 #[oper(output = UnitCountMetrics)]
 pub struct ApplyUnitEdits<'a> {
-    //
     /// The page id.
     pub page_id: &'a str,
 

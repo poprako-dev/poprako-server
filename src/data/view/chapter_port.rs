@@ -10,10 +10,9 @@ use utoipa::ToSchema;
 use crate::data::view::page_port::PageTranslationPortView;
 
 /// JSON document exchanged by the `PopRaKo` translation port.
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Clone, Deserialize, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ChapterTranslationPortView {
-    //
     /// Chapter identifier from the exporting chapter.
     pub chapter_id: String,
     /// Ordinal index of the chapter within its comic.
@@ -32,10 +31,9 @@ pub struct ChapterTranslationPortView {
 }
 
 /// A direct artwork upload capability.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ChapterArtworkUploadSlotView {
-    //
     /// Presigned PUT URL.
     pub put_url: String,
     /// Headers bound into the upload signature.

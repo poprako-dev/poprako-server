@@ -9,10 +9,9 @@ use utoipa::ToSchema;
 ///
 /// Converts the raw [`SystemMailInfo`] timestamp to Unix milliseconds
 /// and omits the internal `receiver_id` field.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct SystemMailInfoView {
-    //
     /// Unique identifier.
     pub id: String,
 

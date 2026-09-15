@@ -34,7 +34,6 @@ impl EffectRecv {
 
 /// Owns cancellation and completion of one background supervisor.
 pub struct EffectActorDesc {
-    //
     /// Cancellation signal for the supervisor.
     token: CancellationToken,
     /// Task whose completion includes its worker shutdown.
@@ -66,7 +65,6 @@ impl Drop for EffectActorDesc {
 /// Background event consumer that receives events from the channel and
 /// dispatches them to the appropriate domain actor.
 pub struct EffectActor<R> {
-    //
     /// Shared repository access for event processing.
     repo: R,
     /// Channel receiver that yields queued events.

@@ -15,7 +15,6 @@ pub struct ListObjMetas<'a, K>
 where
     K: KeyMap,
 {
-    //
     /// Stable business-object identifiers.
     pub ids: &'a [&'a str],
     /// Compile-time object marker selected for this operation.
@@ -45,7 +44,6 @@ pub struct GenObjUrls<'a, K>
 where
     K: KeyMap,
 {
-    //
     /// Metadata versions whose physical keys will be resolved.
     pub metas: &'a HashMap<String, ObjMeta>,
     /// Read-URL renditions selected for this operation.
@@ -81,7 +79,6 @@ pub struct GenObjSlot<'a, K>
 where
     K: KeyMap,
 {
-    //
     /// Business-planned object and write requirements.
     pub spec: &'a ObjSlotSpec<'a, K>,
     /// Compile-time object marker selected for this operation.
@@ -111,7 +108,6 @@ pub struct GenObjSlots<'a, K>
 where
     K: KeyMap,
 {
-    //
     /// Business-planned objects and their write requirements.
     pub specs: &'a [ObjSlotSpec<'a, K>],
     /// Compile-time object marker selected for this operation.
@@ -141,7 +137,6 @@ pub struct MarkObjUploaded<'a, K>
 where
     K: KeyMap,
 {
-    //
     /// Exact logical object generation declared uploaded by the client.
     pub key: &'a ObjGen,
     /// Compile-time object marker selected for this operation.
@@ -171,7 +166,6 @@ pub struct ClearObjs<'a, K>
 where
     K: KeyMap,
 {
-    //
     /// Business-object identifiers whose current files are cleared.
     pub ids: &'a [String],
     /// Compile-time object marker selected for this operation.
@@ -203,7 +197,6 @@ pub struct DeleteObjs<'a, K>
 where
     K: KeyMap,
 {
-    //
     /// Permanently retired business-object identifiers.
     pub ids: &'a [String],
     /// Compile-time object marker selected for this operation.

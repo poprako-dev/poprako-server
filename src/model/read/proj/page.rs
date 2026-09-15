@@ -12,10 +12,24 @@ use time::OffsetDateTime;
 
 use crate::model::read::proj::unit::UnitCountMetrics;
 
+/// Current visible Unit text statistics for one Page.
+pub struct PageUnitDiffStats {
+    /// Permanent Page identifier.
+    pub page_id: String,
+    /// Zero-based position in the Chapter.
+    pub index: usize,
+
+    /// Units with non-whitespace translation text.
+    pub translated_unit_count: usize,
+    /// Units with non-whitespace translation and revision texts that differ exactly.
+    pub editted_unit_count: usize,
+    /// Units with non-whitespace revision text and absent or whitespace-only translation.
+    pub proofreader_append_unit_count: usize,
+}
+
 /// Minimal persisted Page scope needed by Unit reads and edits.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct PageUnitScope {
-    //
     /// Permanent Page identifier.
     pub id: String,
 
@@ -39,7 +53,6 @@ pub struct PageUnitScope {
 /// [`ChapterInfo`]: crate::model::read::proj::chapter::ChapterInfo
 #[cfg_attr(test, derive(Clone))]
 pub struct PageInfo {
-    //
     /// The unique identifier for this page record.
     pub id: String,
 
@@ -62,9 +75,9 @@ pub struct PageInfo {
 }
 
 /// One page's optional source filename record.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
+#[cfg_attr(test, derive(Debug))]
 pub struct PageRawIdentInfo {
-    //
     /// Stable page identifier.
     pub page_id: String,
     /// Complete original image filename.

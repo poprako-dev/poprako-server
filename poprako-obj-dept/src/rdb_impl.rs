@@ -9,9 +9,8 @@ use crate::model::meta::ObjMeta;
 use crate::rest::{ObjDeptError, ObjDeptRest};
 
 /// Standardized latest object row decoded from a concrete Diesel table.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct ObjRdbRow {
-    //
     /// Stored generation watermark.
     pub ver: i64,
 
@@ -26,9 +25,8 @@ pub struct ObjRdbRow {
 }
 
 /// Next active object values written by `GenObjSlot`.
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub struct ObjRdbWrite<'a> {
-    //
     /// Stable business-object identifier.
     pub id: &'a str,
 

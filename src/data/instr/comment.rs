@@ -20,7 +20,6 @@ use crate::value::pagination::PubListLimit;
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ListCommentInfosInstr {
-    //
     /// Parent team whose comments to list.
     pub team_id: String,
 
@@ -48,10 +47,9 @@ impl From<ListCommentInfosInstr> for CommentListSpec {
 }
 
 /// Input parameters for creating a comment.
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateCommentInstr {
-    //
     /// Target team identifier.
     pub team_id: String,
     /// Comment body text.

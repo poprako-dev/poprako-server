@@ -74,7 +74,6 @@ impl AssignmentComplex {
 
 /// Evidence that grants access to a chapter assignment list.
 pub enum AssignmentListAccess<'a> {
-    //
     /// Access through team membership.
     Member {
         /// Team membership used to establish access.
@@ -90,7 +89,6 @@ pub enum AssignmentListAccess<'a> {
 
 /// Evidence that grants access to a user assignment list.
 pub enum UserAssignmentListAccess<'a> {
-    //
     /// The caller owns the requested list.
     Owner,
 
@@ -103,7 +101,6 @@ pub enum UserAssignmentListAccess<'a> {
 
 /// Evidence that grants an assignment-role update.
 pub enum AssignmentRoleUpdateAccess<'a> {
-    //
     /// The caller is a chapter admin.
     Admin {
         /// Chapter assignment used to verify admin status.
@@ -119,7 +116,6 @@ pub enum AssignmentRoleUpdateAccess<'a> {
 
 /// Evidence that grants assignment deletion.
 pub enum AssignmentDeleteAccess<'a> {
-    //
     /// The caller owns the assignment.
     Owner,
 

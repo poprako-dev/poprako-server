@@ -11,7 +11,7 @@ use serde::Serialize;
 use utoipa::ToSchema;
 
 /// Return value from a successful workset creation.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateWorksetVal {
     /// Identifier of the newly created workset.

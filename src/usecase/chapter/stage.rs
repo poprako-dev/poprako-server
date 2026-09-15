@@ -43,7 +43,6 @@ use crate::value::chapter_workflow_record::{
 
 /// Outcome of checking whether raw provisioning can advance.
 pub enum RawProvideAdvance {
-    //
     /// One or more page objects are not available yet.
     Pending,
 

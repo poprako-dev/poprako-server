@@ -6,9 +6,8 @@ use serde::Deserialize;
 use crate::value::image::ImageKind;
 
 /// Runtime MiB limits for uploaded images.
-#[derive(Clone, Copy, Debug, Deserialize)]
+#[derive(Clone, Copy, Deserialize)]
 pub struct ImageConfig {
-    //
     /// Maximum MiB length for a user avatar upload.
     pub user_avatar_limit: u64,
 

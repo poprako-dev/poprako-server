@@ -24,7 +24,6 @@ use crate::result::BaseError;
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_page)]
 pub struct PageInfoRow {
-    //
     pub f_id: String,
 
     pub f_chapter_id: String,
@@ -42,7 +41,6 @@ pub struct PageInfoRow {
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_page)]
 pub struct PageUnitScopeRow {
-    //
     pub f_id: String,
 
     pub f_chapter_id: String,
@@ -110,7 +108,6 @@ impl TryFrom<PageInfoRow> for PageInfo {
 #[derive(Insertable)]
 #[diesel(table_name = t_page)]
 pub struct PageEntryRow<'a> {
-    //
     pub f_id: &'a str,
 
     pub f_chapter_id: &'a str,
@@ -159,7 +156,6 @@ impl<'a> TryFrom<&'a PageManifestEntry> for PageEntryRow<'a> {
 #[derive(AsChangeset)]
 #[diesel(table_name = t_page)]
 pub struct PageAspectRow {
-    //
     pub f_index: Option<i32>,
     pub f_total_unit_count: Option<i32>,
     pub f_translated_unit_count: Option<i32>,
@@ -213,7 +209,6 @@ impl PageAspectRow {
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_page_raw_ident)]
 pub struct PageRawIdentInfoRow {
-    //
     /// Owning page identifier.
     pub f_page_id: String,
     /// Complete source filename.
@@ -242,7 +237,6 @@ impl From<PageRawIdentInfoRow> for PageRawIdentInfo {
 #[derive(Insertable)]
 #[diesel(table_name = t_page_raw_ident)]
 pub struct PageRawIdentEntryRow<'a> {
-    //
     /// Owning page identifier.
     pub f_page_id: &'a str,
     /// Complete source filename.

@@ -13,7 +13,6 @@ use crate::obj_dept_entry::ObjEntry;
 
 // Stores the total-department manifest arguments.
 struct DeptInput {
-    //
     // Identifies the total object department type.
     dept: Ident,
 
@@ -49,7 +48,6 @@ impl Parse for DeptInput {
 
 // Stores all arguments needed to expand department items.
 struct ItemsInput {
-    //
     // Identifies the total object department type.
     dept: Ident,
 

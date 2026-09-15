@@ -77,7 +77,8 @@ fn empty_url_spec_is_invalid() {
         "font_file/font-1/1",
         ObjUrlSpec::default(),
     )
-    .unwrap_err();
+    .err()
+    .expect("URL generation must reject an empty URL spec");
 
     assert!(matches!(error, ObjDeptError::Invalid { .. }));
 }

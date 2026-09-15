@@ -14,7 +14,6 @@ use crate::value::image::{ImageExt, ImageHash};
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct AllocChapterPagesInstr {
-    //
     /// Target chapter identifier.
     pub chapter_id: String,
     /// Page images to allocate for the chapter.
@@ -25,7 +24,6 @@ pub struct AllocChapterPagesInstr {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct PageImageInstr {
-    //
     /// Complete original filename. Omission or null replaces it with no name.
     #[serde(default)]
     pub raw_ident: Option<String>,
@@ -61,7 +59,6 @@ impl From<PageImageInstr> for PageImageSpec {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct AllocPageImageInstr {
-    //
     /// Complete original filename. Omission or null replaces it with no name.
     #[serde(default)]
     pub raw_ident: Option<String>,
@@ -91,9 +88,9 @@ pub struct ListPageInfosInstr {
     pub chapter_id: String,
 }
 
-/// Input parameters for listing Pages with proofread text diffs.
+/// Input parameters for listing Page Unit text statistics.
 #[derive(Debug)]
-pub struct ListEdittedDiffPageIdsInstr {
+pub struct ListPageUnitDiffStatsInstr {
     /// Chapter whose Pages are checked for Unit text diffs.
     pub chapter_id: String,
 }

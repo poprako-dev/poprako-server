@@ -13,7 +13,6 @@ use crate::value::role::{RoleField, RoleMask};
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_assignment)]
 pub struct AssignmentInfoRow {
-    //
     pub f_id: String,
 
     pub f_chapter_id: String,
@@ -91,7 +90,6 @@ impl TryFrom<AssignmentInfoRow> for AssignmentInfo {
 #[derive(Insertable)]
 #[diesel(table_name = t_assignment)]
 pub struct AssignmentEntryRow<'a> {
-    //
     pub f_id: &'a str,
 
     pub f_chapter_id: &'a str,
@@ -141,7 +139,6 @@ impl<'a> AssignmentEntryRow<'a> {
 #[derive(AsChangeset)]
 #[diesel(table_name = t_assignment)]
 pub struct AssignmentAspectRow {
-    //
     pub f_assigned_raw_provider_at: Option<Option<OffsetDateTime>>,
     pub f_assigned_translator_at: Option<Option<OffsetDateTime>>,
     pub f_assigned_proofreader_at: Option<Option<OffsetDateTime>>,
@@ -198,7 +195,6 @@ impl AssignmentAspectRow {
 /// Timestamps for each role on an assignment, used to build the role-timestamp
 /// mapping for `AssignmentAspectRow` or `AssignmentEntry`.
 pub struct AssignmentRoleTimestamps {
-    //
     pub f_raw_provider: Option<OffsetDateTime>,
     pub f_translator: Option<OffsetDateTime>,
     pub f_proofreader: Option<OffsetDateTime>,

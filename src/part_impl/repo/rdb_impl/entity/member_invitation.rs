@@ -16,7 +16,6 @@ use crate::value::role::RoleMask;
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_member_invitation)]
 pub struct MemberInvitationInfoRow {
-    //
     pub f_id: String,
 
     pub f_inviter_id: String,
@@ -62,7 +61,6 @@ impl TryFrom<MemberInvitationInfoRow> for MemberInvitationInfo {
 #[derive(Insertable)]
 #[diesel(table_name = t_member_invitation)]
 pub struct MemberInvitationEntryRow<'a> {
-    //
     pub f_id: &'a str,
 
     pub f_inviter_id: &'a str,
@@ -102,7 +100,6 @@ impl<'a> From<&'a MemberInvitationEntry> for MemberInvitationEntryRow<'a> {
 #[derive(AsChangeset)]
 #[diesel(table_name = t_member_invitation)]
 pub struct MemberInvitationAspectRow {
-    //
     pub f_pending: Option<bool>,
     pub f_role_mask: Option<i64>,
 

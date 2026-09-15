@@ -13,7 +13,6 @@
 /// [`ComicComplex::gen_id`]: crate::complex::comic::ComicComplex::gen_id
 #[cfg_attr(test, derive(Clone))]
 pub struct ComicEntry {
-    //
     /// Unique identifier for the new comic.
     pub id: String,
 
@@ -36,7 +35,6 @@ pub struct ComicEntry {
 /// Mutable profile (non-cover, non-counter) fields for a comic.
 #[cfg_attr(test, derive(Clone))]
 pub struct ComicRepl {
-    //
     /// Identifies which comic record to update.
     pub id: String,
 

@@ -16,10 +16,9 @@ use crate::data::view::comic::ComicInfoView;
 /// `pinned_chapters` and `pinned_chapter_assignments` are positionally aligned
 /// with `comics`. Their entries are populated only when the corresponding
 /// `with` options are requested.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ListComicInfosVal {
-    //
     /// Comic information for the listed comics.
     pub comics: Vec<ComicInfoView>,
 

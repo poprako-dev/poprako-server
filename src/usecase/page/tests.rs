@@ -26,8 +26,8 @@ mod image_alloc;
 mod manifest_lifecycle;
 // Page deletion tests.
 mod delete;
-// Proofread-diff Page ID query tests.
-mod editted_diff;
+// Page Unit text statistics tests.
+mod unit_diff_stats;
 // Validation guard tests for page operations.
 mod validation;
 // Batch page-image presentation tests.

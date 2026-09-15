@@ -13,10 +13,9 @@ use crate::data::view::chapter_port::{
 use crate::value::artwork::ArtworkHash;
 
 /// Translation documents generated together by one chapter export.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ExportChapterTranslationsVal {
-    //
     /// `LabelPlus` text, absent when that format was not selected.
     pub label_plus: Option<String>,
     /// Native `PopRaKo` document, absent when that format was not selected.
@@ -26,10 +25,9 @@ pub struct ExportChapterTranslationsVal {
 }
 
 /// One exported Page's original filename mapping.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ChapterPageRawIdentVal {
-    //
     /// Stable Page identifier.
     pub page_id: String,
     /// Complete original image filename.
@@ -37,10 +35,9 @@ pub struct ChapterPageRawIdentVal {
 }
 
 /// Summary returned after importing chapter translations.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ImportChapterTranslationVal {
-    //
     /// Number of pages whose visible Unit content changed.
     pub imported_page_count: usize,
     /// Number of Units created from the imported source.
@@ -48,10 +45,9 @@ pub struct ImportChapterTranslationVal {
 }
 
 /// Chapter artwork allocation result, including the version on a deduplication hit.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct AllocChapterArtworkVal {
-    //
     /// Current artwork generation to confirm.
     #[serde(rename = "artwork_version")]
     pub artwork_ver: u32,
@@ -60,10 +56,9 @@ pub struct AllocChapterArtworkVal {
 }
 
 /// Current available artwork and its direct object-storage download address.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ExportChapterArtworkVal {
-    //
     /// Current available object generation.
     #[serde(rename = "artwork_version")]
     pub artwork_ver: u32,

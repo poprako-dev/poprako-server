@@ -90,8 +90,8 @@ where
 /// Imports a native portable document into a team or comic scope.
 #[instrument(
     level = "info",
-    skip(nucl, repo, token),
-    fields(actor_user_id = %token.user_id),
+    skip(nucl, repo, token, instr),
+    fields(actor_user_id = %token.user_id, term_count = instr.terms.len()),
 )]
 pub async fn import<N, C, R>(
     (nucl, repo): (&N, &R),

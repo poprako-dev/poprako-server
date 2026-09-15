@@ -3,9 +3,9 @@ use serde::{Deserialize, Serialize};
 use crate::part::prom::topic::Topic;
 
 /// Deferred invitation task payload.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(test, derive(Debug))]
 pub enum InvitationPayload {
-    //
     /// Purge a pending assignment invitation.
     PurgeExpiredAssignmentInvitation {
         /// ID of the invitation record to purge.

@@ -1053,13 +1053,13 @@
         }
       }
     },
-    "/api/v1/chapters/{chapter_id}/pages/editted-diffs": {
+    "/api/v1/chapters/{chapter_id}/pages/unit-diff-stats": {
       "get": {
         "tags": [
           "pages"
         ],
-        "summary": "`GET /api/v1/chapters/{chapter_id}/pages/editted-diffs` — list Pages with Unit text diffs.",
-        "operationId": "list_editted_diff_page_ids",
+        "summary": "`GET /api/v1/chapters/{chapter_id}/pages/unit-diff-stats` — list Unit text statistics for Pages with revision differences.",
+        "operationId": "list_unit_diff_stats",
         "parameters": [
           {
             "name": "chapter_id",
@@ -1073,11 +1073,11 @@
         ],
         "responses": {
           "200": {
-            "description": "Matching Page IDs listed in Page order",
+            "description": "Visible Unit text counts for Pages with edits or revision-only additions, in original Page order",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ListEdittedDiffPageIdsVal"
+                  "$ref": "#/components/schemas/HttpBody_Vec_PageUnitDiffStatsVal"
                 }
               }
             }
@@ -7539,39 +7539,6 @@
           }
         }
       },
-      "HttpBody_ListEdittedDiffPageIdsVal": {
-        "type": "object",
-        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
-        "required": [
-          "code",
-          "data"
-        ],
-        "properties": {
-          "code": {
-            "type": "integer",
-            "format": "int32",
-            "description": "Application-level success code, 0 for normal success.",
-            "example": 0,
-            "minimum": 0
-          },
-          "data": {
-            "type": "object",
-            "description": "Return value for listing Pages with proofread text diffs.",
-            "required": [
-              "page_ids"
-            ],
-            "properties": {
-              "page_ids": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                },
-                "description": "Matching Page IDs in Chapter Page order."
-              }
-            }
-          }
-        }
-      },
       "HttpBody_ListPageUnitInfosVal": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
@@ -9047,6 +9014,63 @@
           }
         }
       },
+      "HttpBody_Vec_PageUnitDiffStatsVal": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Application-level success code, 0 for normal success.",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "Visible Unit text statistics for a Page with revision differences.\nCounts are independent of revision approval and cover all visible Units.",
+              "required": [
+                "page_id",
+                "index",
+                "translated_unit_count",
+                "editted_unit_count",
+                "proofreader_append_unit_count"
+              ],
+              "properties": {
+                "editted_unit_count": {
+                  "type": "integer",
+                  "description": "Units with non-whitespace translation and revision texts that differ exactly.",
+                  "minimum": 0
+                },
+                "index": {
+                  "type": "integer",
+                  "description": "Original zero-based Chapter position, preserved after filtering.",
+                  "minimum": 0
+                },
+                "page_id": {
+                  "type": "string",
+                  "description": "Permanent Page identifier."
+                },
+                "proofreader_append_unit_count": {
+                  "type": "integer",
+                  "description": "Units with non-whitespace revision text and absent or whitespace-only translation.",
+                  "minimum": 0
+                },
+                "translated_unit_count": {
+                  "type": "integer",
+                  "description": "Units with non-whitespace translation text; revision-only Units are excluded.",
+                  "minimum": 0
+                }
+              }
+            }
+          }
+        }
+      },
       "HttpBody_Vec_String": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
@@ -9881,22 +9905,6 @@
           }
         }
       },
-      "ListEdittedDiffPageIdsVal": {
-        "type": "object",
-        "description": "Return value for listing Pages with proofread text diffs.",
-        "required": [
-          "page_ids"
-        ],
-        "properties": {
-          "page_ids": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "Matching Page IDs in Chapter Page order."
-          }
-        }
-      },
       "ListPageUnitInfosVal": {
         "type": "object",
         "description": "Return value for listing visible Units under one Page.",
@@ -10435,6 +10443,43 @@
               "$ref": "#/components/schemas/UnitTranslationPortView"
             },
             "description": "Units belonging to this page."
+          }
+        }
+      },
+      "PageUnitDiffStatsVal": {
+        "type": "object",
+        "description": "Visible Unit text statistics for a Page with revision differences.\nCounts are independent of revision approval and cover all visible Units.",
+        "required": [
+          "page_id",
+          "index",
+          "translated_unit_count",
+          "editted_unit_count",
+          "proofreader_append_unit_count"
+        ],
+        "properties": {
+          "editted_unit_count": {
+            "type": "integer",
+            "description": "Units with non-whitespace translation and revision texts that differ exactly.",
+            "minimum": 0
+          },
+          "index": {
+            "type": "integer",
+            "description": "Original zero-based Chapter position, preserved after filtering.",
+            "minimum": 0
+          },
+          "page_id": {
+            "type": "string",
+            "description": "Permanent Page identifier."
+          },
+          "proofreader_append_unit_count": {
+            "type": "integer",
+            "description": "Units with non-whitespace revision text and absent or whitespace-only translation.",
+            "minimum": 0
+          },
+          "translated_unit_count": {
+            "type": "integer",
+            "description": "Units with non-whitespace translation text; revision-only Units are excluded.",
+            "minimum": 0
           }
         }
       },

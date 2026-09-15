@@ -7,7 +7,6 @@ use crate::value::role::RoleMask;
 /// An invitation record for joining a chapter assignment.
 #[cfg_attr(test, derive(Clone))]
 pub struct AssignmentInvitationInfo {
-    //
     /// Unique identifier for the invitation record.
     pub id: String,
 

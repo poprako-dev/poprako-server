@@ -10,7 +10,6 @@ use syn::{Ident, LitStr, Path, Result, Token, braced};
 
 // Stores one parsed object manifest declaration.
 struct ObjInput {
-    //
     // Identifies the object marker type.
     marker: Ident,
 

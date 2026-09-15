@@ -58,9 +58,8 @@ pub fn validate_task(task: &ObjDeptPromTask) -> ObjDeptRest<()> {
 }
 
 /// One raw durable task owned by an exact UUID execution credential.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct ObjDeptPromTask {
-    //
     /// Stable task identifier.
     pub id: String,
 
@@ -109,7 +108,6 @@ impl ObjDeptPromTask {
 
 /// Mechanical task action returned by a typed object handler.
 pub enum ObjTaskAction {
-    //
     /// The obligation completed.
     Complete,
 
@@ -127,9 +125,8 @@ pub enum ObjTaskAction {
 }
 
 /// Durable work recorded by test adapters.
-#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum ObjTask {
-    //
     /// Checks remote visibility for one object version.
     Check {
         /// Object version to check.

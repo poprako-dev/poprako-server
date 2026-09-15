@@ -8,8 +8,9 @@ use serde::Serialize;
 use utoipa::ToSchema;
 
 /// Return value from creating a terminology base.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[cfg_attr(test, derive(Debug))]
 pub struct CreateTermbaseVal {
     /// Identifier of the newly created terminology base.
     pub id: String,

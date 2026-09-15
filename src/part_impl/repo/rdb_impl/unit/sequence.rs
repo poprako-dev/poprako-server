@@ -49,7 +49,6 @@ extern "SQL" {
 
 // One selected Unit with its adapter-only Page order.
 struct RankedUnitInfo {
-    //
     // Adapter-only Page order.
     page_index: usize,
 
@@ -59,7 +58,6 @@ struct RankedUnitInfo {
 
 // Minimal persisted link needed to reconstruct one Unit chain.
 struct UnitLink {
-    //
     // Permanent Unit identifier.
     id: String,
 

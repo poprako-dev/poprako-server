@@ -13,10 +13,9 @@ use crate::model::read::proj::assignment::AssignmentInfo;
 use crate::value::role::RoleMask;
 
 /// Presentation-ready chapter assignment information.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct AssignmentInfoView {
-    //
     /// Unique identifier of the assignment.
     pub id: String,
 

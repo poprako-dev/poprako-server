@@ -10,10 +10,9 @@ use crate::model::read::proj::term::TermInfo;
 use crate::model::read::proj::termbase::TermbaseInfo;
 
 /// Native portable terminology-base export document.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ExportTermbaseVal {
-    //
     /// Display name of the exported terminology base.
     pub name: String,
     /// Optional terminology-base description.
@@ -38,10 +37,10 @@ impl ExportTermbaseVal {
 }
 
 /// Result of importing one native terminology-base document.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[cfg_attr(test, derive(Debug))]
 pub struct ImportTermbaseVal {
-    //
     /// Identifier of the created or merged terminology base.
     pub id: String,
     /// Whether this import created a new terminology base.

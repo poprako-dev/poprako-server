@@ -5,7 +5,6 @@ use crate::value::pagination::PubListLimit;
 
 /// Filtering, pagination, and include parameters for listing invitations.
 pub struct MemberInvitationListSpec {
-    //
     /// The team whose invitations should be listed.
     pub team_id: String,
     /// Optional pending-state filter.

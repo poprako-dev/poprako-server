@@ -4,7 +4,6 @@ use crate::value::pagination::PubListLimit;
 
 /// Filtering and pagination parameters for listing teams.
 pub struct TeamListSpec {
-    //
     /// Optional user whose team memberships scope the listing.
     pub user_id: Option<String>,
 

@@ -4,7 +4,6 @@ use poprako_orchestra::Oper;
 #[derive(Oper)]
 #[oper(output = ())]
 pub struct MarkUserOnline<'a> {
-    //
     /// The team identifier.
     pub team_id: &'a str,
 

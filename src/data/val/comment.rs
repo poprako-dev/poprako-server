@@ -8,7 +8,7 @@ use serde::Serialize;
 use utoipa::ToSchema;
 
 /// Return value from creating a comment.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateCommentVal {
     /// Identifier of the newly created comment.

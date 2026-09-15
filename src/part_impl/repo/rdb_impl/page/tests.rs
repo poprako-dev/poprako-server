@@ -10,8 +10,8 @@ use crate::model::read::proj::unit::UnitCountMetrics;
 use crate::model::write::page::PageManifestEntry;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::page::{
-    ApplyPageManifest, GetPageInfo, ListEdittedDiffPageIds, ListFirstPageInfos,
-    ListPageInfos, ListPageInfosExcluded, SetPageUnitCountMetrics,
+    ApplyPageManifest, GetPageInfo, ListFirstPageInfos, ListPageInfos,
+    ListPageInfosExcluded, ListPageUnitDiffStats, SetPageUnitCountMetrics,
     ShiftPageIndexesTemporary,
 };
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
@@ -330,7 +330,7 @@ pub async fn page_roundtrip_uses_testcontainer(shared: RdbCore) {
     assert!(matches!(list_error, BaseError::Unrecoverable { .. }));
 
     let diff_error = repo
-        .run(&ListEdittedDiffPageIds {
+        .run(&ListPageUnitDiffStats {
             chapter_id: &page_fixture.chapter_entry.id,
         })
         .await

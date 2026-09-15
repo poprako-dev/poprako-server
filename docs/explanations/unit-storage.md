@@ -28,6 +28,20 @@ Page 响应同时返回：
   visible Unit 数；
 - `proofread_unit_count`：`is_proofread` 为真的 visible Unit 数。
 
+`GET /api/v1/chapters/{chapter_id}/pages/unit-diff-stats` 返回有校对修改或
+新增的 Page，成功响应的 `data` 直接为统计数组。每项包含 `page_id`、原始
+零基页序 `index`，以及基于该页全部 visible Unit 文本计算的三个计数：
+
+- `translated_unit_count`：翻译文本非空白；
+- `editted_unit_count`：翻译与校对文本均非空白，且原始文本不同；
+- `proofreader_append_unit_count`：翻译文本缺失或仅空白，校对文本非空白。
+
+此处 translated 只统计翻译文本，与普通 Page 进度计数的口径不同。
+校对新增不计入 translated 或 editted，`is_proofread` 不影响统计。
+非空判断采用 Unicode whitespace trim，文本比较保留大小写和空白差异。
+仅保留 editted 或 append 大于零的页面，按原始 `index`、`page_id` 排序；
+没有匹配页面时返回空数组。原 `editted-diffs` 路径已由此接口替换。
+
 导出、LabelPlus 与 Comic archive 使用同一有序 visible 列表。外部格式
 需要 `unit_index` 时，仅在输出阶段通过 `enumerate` 临时生成。
 

@@ -35,37 +35,8 @@ use crate::value::image::{
     ComicCoverKey, PageImageKey, TeamAvatarKey, UserAvatarKey,
 };
 
-impl KeyMap for PageImage {
-    // Business identity used by page-image keys.
-    type Dom = PageImageKey;
-    // Complete page-image storage key.
-    type Img = String;
-
-    // Returns the page identifier persisted in the object table.
-    fn id(value: &Self::Dom) -> &str {
-        &value.page_id
-    }
-
-    // Returns the validated image extension.
-    fn ext(value: &Self::Dom) -> &str {
-        value.ext.suffix()
-    }
-
-    // Builds the canonical page-image key.
-    fn forward(value: &Self::Dom, ver: u32) -> Self::Img {
-        ImageComplex::page_key(value, ver)
-    }
-
-    // Parses the canonical page-image key.
-    fn reverse(value: &Self::Img) -> ObjDeptRest<(Self::Dom, u32)> {
-        //
-        ImageComplex::parse_page_key(value)
-            .ok_or_else(|| invalid_key("page image"))
-    }
-}
-
-// Implements a flat-key mapping for a non-page image kind.
-macro_rules! impl_flat_key_map {
+// Implements image-key mapping with kind-specific builders and parsers.
+macro_rules! impl_image_key_map {
     ($marker:ty, $dom:ty, $id:ident, $kind:literal, $forward:path, $reverse:path) => {
         impl KeyMap for $marker {
             type Dom = $dom;
@@ -90,7 +61,16 @@ macro_rules! impl_flat_key_map {
     };
 }
 
-impl_flat_key_map!(
+impl_image_key_map!(
+    PageImage,
+    PageImageKey,
+    page_id,
+    "page image",
+    ImageComplex::page_key,
+    ImageComplex::parse_page_key
+);
+
+impl_image_key_map!(
     UserAvatar,
     UserAvatarKey,
     user_id,
@@ -99,7 +79,7 @@ impl_flat_key_map!(
     ImageComplex::parse_user_avatar_key
 );
 
-impl_flat_key_map!(
+impl_image_key_map!(
     TeamAvatar,
     TeamAvatarKey,
     team_id,
@@ -108,7 +88,7 @@ impl_flat_key_map!(
     ImageComplex::parse_team_avatar_key
 );
 
-impl_flat_key_map!(
+impl_image_key_map!(
     ComicCover,
     ComicCoverKey,
     comic_id,
@@ -149,7 +129,6 @@ objs_def! {
 
 /// Total object department composed from storage and durable-task adapters.
 pub struct NormObjDept<P = R2ObjDeptPool, M = RdbObjDeptProm> {
-    //
     /// Shared relational database core.
     core: RdbCore,
     /// Physical object-storage adapter.
@@ -219,7 +198,6 @@ where
 /// Read-only projection of object metadata and physical storage.
 #[derive(Clone)]
 pub struct NormObjDeptView<P> {
-    //
     /// Shared relational database core.
     core: RdbCore,
     /// Physical object-storage adapter.

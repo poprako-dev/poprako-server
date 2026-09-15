@@ -1,9 +1,7 @@
 //! Internal normalized payloads for chapter translation import.
 
 /// Format-specific source state for one imported unit.
-#[derive(Debug)]
 pub enum UnitTranslationImportSource {
-    //
     /// `LabelPlus` stores one text payload without workflow-stage metadata.
     LabelPlus {
         /// Imported `LabelPlus` text.
@@ -22,9 +20,7 @@ pub enum UnitTranslationImportSource {
 }
 
 /// One parsed import page.
-#[derive(Debug)]
 pub struct PageTranslationImport {
-    //
     /// Zero-based page index in the imported document.
     pub page_index: usize,
 
@@ -33,9 +29,7 @@ pub struct PageTranslationImport {
 }
 
 /// One parsed import unit.
-#[derive(Debug)]
 pub struct UnitTranslationImport {
-    //
     /// Import ordering index within the page.
     pub index: usize,
 

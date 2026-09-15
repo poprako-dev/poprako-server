@@ -5,7 +5,6 @@ pub const WAIT_TIMEOUT: Duration = Duration::hours(1);
 
 /// Outcome of a local-message task invocation.
 pub enum TaskFlow {
-    //
     /// Task completed successfully; delete its persisted queue record.
     Complete,
 

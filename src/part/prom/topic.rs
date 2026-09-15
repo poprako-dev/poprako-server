@@ -1,8 +1,7 @@
 /// Fixed consumption queues shared by deferred tasks.
 /// Payload variants select a queue independently of their operation names.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Topic {
-    //
     /// Serial queue for chapter work.
     Chapter,
 

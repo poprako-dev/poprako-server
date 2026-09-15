@@ -31,7 +31,7 @@ use crate::usecase;
 use crate::value::termbase::TermbaseScope;
 
 /// Query controls for terminology-base import.
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ImportTermbaseQuery {

@@ -207,8 +207,8 @@ pub fn v1_page_router() -> Router<AppHarn> {
     //
     Router::new()
         .route(
-            "/chapters/{chapter_id}/pages/editted-diffs",
-            get(page::list_editted_diff_page_ids),
+            "/chapters/{chapter_id}/pages/unit-diff-stats",
+            get(page::list_unit_diff_stats),
         )
         .route(
             "/chapters/{chapter_id}/pages",

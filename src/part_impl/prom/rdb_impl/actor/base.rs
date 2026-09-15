@@ -40,7 +40,6 @@ use crate::shared::RdbContext;
 
 /// One worker's queue with capacity reserved through the entire attempt.
 pub struct WorkerSlot<T> {
-    //
     /// Queue consumed by this worker.
     work_send: mpsc::UnboundedSender<(T, Instant, OwnedSemaphorePermit)>,
     /// Single execution slot, held before claiming a persisted task.
@@ -170,7 +169,6 @@ pub async fn shutdown_workers(mut workers: JoinSet<()>, grace: Duration) {
 
 /// Owns cancellation and completion of one background supervisor.
 pub struct RdbPromActorDesc {
-    //
     /// Cancellation signal for the supervisor.
     token: CancellationToken,
     /// Supervisor task that drains workers with a grace period, then aborts.
@@ -203,7 +201,6 @@ impl Drop for RdbPromActorDesc {
 
 /// Persisted-task consumer with explicitly injected queue and business ports.
 pub struct RdbPromActor<N, R, V, D> {
-    //
     /// Queue transaction coordinator.
     prom_nucl: RdbNucl<Serial>,
     /// Queue lifecycle repository.

@@ -31,11 +31,10 @@ use crate::value::pagination::PubListLimit;
 /// `incl` embeds related rows into each item.
 ///
 /// Example: `?incl=user&offset=0&limit=20`.
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct CommentListQuery {
-    //
     /// Related rows to embed. Repeatable. Values: `user`.
     #[serde(default, rename = "incl")]
     pub incl_opt: Vec<CommentInclOpt>,

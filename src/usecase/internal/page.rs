@@ -12,7 +12,6 @@ use crate::result::{BaseError, BaseRest};
 /// The queried range records that a missing map entry means no pinned chapter
 /// exists, rather than that the comic has not been queried yet.
 pub struct PinnedChapterSnapshot {
-    //
     /// Comic identifiers included in the pinned-chapter query.
     queried_comic_ids: HashSet<String>,
 

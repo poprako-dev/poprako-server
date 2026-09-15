@@ -5,9 +5,8 @@ use serde::{Deserialize, Deserializer, Serialize};
 use utoipa::ToSchema;
 
 /// Page-content strategy selected for one chapter translation import.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum ChapterTranslationImportMode {
-    //
     /// Preserve pages that already contain visible Units.
     Keep,
 
@@ -18,10 +17,10 @@ pub enum ChapterTranslationImportMode {
 /// Translation format used by a chapter port.
 ///
 /// Determines the tooling and schema for the chapter's translation files.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[cfg_attr(test, derive(Debug))]
 pub enum TranslationFormat {
-    //
     /// `LabelPlus` translation format.
     #[serde(rename = "label-plus")]
     LabelPlus,
@@ -35,7 +34,6 @@ pub enum TranslationFormat {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ExportFormatSpec {
-    //
     /// Whether to generate `LabelPlus` text.
     label_plus: bool,
     /// Whether to generate the native `PopRaKo` document.
@@ -81,7 +79,6 @@ impl<'de> Deserialize<'de> for ExportFormatSpec {
         // Capture the serialized format flags before validating their combination.
         #[derive(Deserialize)]
         struct Fields {
-            //
             // Whether to generate LabelPlus output.
             label_plus: bool,
 

@@ -24,7 +24,6 @@ pub struct GetTeamInfo<'a> {
 #[derive(Oper)]
 #[oper(output = String)]
 pub enum ResolveTeamId<'a> {
-    //
     /// Resolve from a comic identifier.
     Comic {
         /// The comic identifier.

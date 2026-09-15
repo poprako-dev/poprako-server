@@ -1,9 +1,8 @@
 use url::Url;
 
 /// Selects the read URLs generated for one object operation.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Default, PartialEq, Eq)]
 pub struct ObjUrlSpec {
-    //
     /// Whether to generate the original object URL.
     origin: bool,
     /// Whether to generate the optimized image URL.
@@ -66,9 +65,8 @@ impl ObjUrlSpec {
 }
 
 /// Read URLs generated for one physical object generation.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct ObjUrls {
-    //
     /// Optional URL for the original object.
     pub origin_url: Option<Url>,
     /// Optional URL for a storage-provided optimized rendition.

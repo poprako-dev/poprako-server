@@ -19,8 +19,6 @@ const SUBTREE_DELETE_SWEEP_WORKERS: usize = 2;
 
 /// Owns cancellation and completion of one background supervisor.
 pub struct SchedDesc {
-    //
-    //
     /// Cancellation signal for the supervisor.
     token: CancellationToken,
     /// Task whose completion includes its worker shutdown.
@@ -51,8 +49,6 @@ impl Drop for SchedDesc {
 
 /// Periodic jobs with explicitly injected business ports.
 pub struct Sched<N, R, O> {
-    //
-    //
     /// Transaction coordinator.
     nucl: N,
     /// Shared business repository.

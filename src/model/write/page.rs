@@ -13,7 +13,6 @@ use crate::value::image::{ImageExt, ImageHash};
 /// The data needed to insert one page row.
 #[cfg_attr(test, derive(Clone))]
 pub struct PageEntry {
-    //
     /// The unique identifier for the new page record.
     pub id: String,
 
@@ -25,7 +24,6 @@ pub struct PageEntry {
 
 /// One page-image identity supplied to manifest planning.
 pub struct PageImageSpec {
-    //
     /// Complete original image filename, or no original identifier.
     pub raw_ident: Option<String>,
 
@@ -42,7 +40,6 @@ pub struct PageImageSpec {
 
 /// Final persisted identity and position for one page-manifest item.
 pub struct PageManifestEntry {
-    //
     /// The unique identifier of the retained or newly created page.
     pub id: String,
     /// Foreign key of the parent chapter for this manifest item.

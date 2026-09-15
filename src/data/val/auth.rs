@@ -8,10 +8,9 @@ use serde::Serialize;
 use utoipa::ToSchema;
 
 /// Return value from a successful registration.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct RegisterAuthVal {
-    //
     /// Unique user identifier.
     pub user_id: String,
     /// Authentication token.
@@ -19,10 +18,9 @@ pub struct RegisterAuthVal {
 }
 
 /// Return value from a successful login.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct LoginAuthVal {
-    //
     /// Unique user identifier.
     pub user_id: String,
     /// Authentication token.

@@ -10,15 +10,16 @@ use serde::Serialize;
 use utoipa::ToSchema;
 
 /// Value returned after a comic has been archived atomically.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
+#[cfg_attr(test, derive(Debug))]
 pub struct ArchiveComicVal {
     /// Identifier of the archived comic.
     pub archived_id: String,
 }
 
 /// JSON archive payloads grouped by their UTC `YYYY-MM` month slot.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(transparent)]
 pub struct ExportComicArchivesVal(pub BTreeMap<String, Vec<String>>);

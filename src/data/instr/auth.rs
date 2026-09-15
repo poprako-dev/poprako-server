@@ -8,10 +8,9 @@ use serde::Deserialize;
 use utoipa::ToSchema;
 
 /// Input parameters for user registration.
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct RegisterAuthInstr {
-    //
     /// Unique user identifier for authentication.
     pub qid: String,
     /// Display name for the user.
@@ -25,10 +24,9 @@ pub struct RegisterAuthInstr {
 }
 
 /// Input parameters for user login.
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct LoginAuthInstr {
-    //
     /// Unique user identifier for authentication.
     pub qid: String,
     /// User password.

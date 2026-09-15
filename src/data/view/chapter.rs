@@ -20,10 +20,9 @@ use crate::value::chapter::mask::StageMask;
 /// Construct via [`From<ChapterInfo>`] — the conversion is infallible.
 ///
 /// [`ChapterInfo`]: crate::model::read::proj::chapter::ChapterInfo
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ChapterInfoView {
-    //
     /// Unique chapter identifier.
     pub id: String,
 

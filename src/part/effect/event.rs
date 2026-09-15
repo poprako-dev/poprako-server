@@ -16,7 +16,6 @@ use crate::part::effect::event::user::UserSignedUpEvent;
 ///
 /// [`EffectDevelop`]: crate::part::effect::EffectDevelop
 pub enum Event {
-    //
     /// Emitted when a new user signs up via an invitation.
     UserSignedUp {
         /// Signup event details.

@@ -4,7 +4,6 @@ use crate::value::pagination::PubListLimit;
 
 /// Filtering and pagination parameters for listing a user's system mail.
 pub struct SystemMailListSpec {
-    //
     /// The user whose mail inbox is being queried.
     pub receiver_id: String,
     /// Optional read-status filter.

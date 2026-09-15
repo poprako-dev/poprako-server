@@ -6,9 +6,7 @@ use crate::model::shared::unit::{UnitCoord, UnitRevision, UnitTranslation};
 use crate::model::write::page::PageManifestEntry;
 use crate::model::write::unit::UnitEdit;
 use crate::part::nucl::ReptRead;
-use crate::part::repo::oper::page::{
-    ApplyPageManifest, ListEdittedDiffPageIds,
-};
+use crate::part::repo::oper::page::{ApplyPageManifest, ListPageUnitDiffStats};
 use crate::part::repo::oper::unit::{ApplyUnitEdits, ListUnitOrders};
 use crate::part_impl::nucl::rdb_impl::RdbNucl;
 use crate::part_impl::repo::HybRepo;
@@ -16,6 +14,14 @@ use crate::part_impl::repo::rdb_impl::test_shared::PageFixture;
 use crate::result::accept;
 
 use super::{PREFIX, create_edit};
+
+#[tokio::test]
+#[serial_test::serial(repo_rdb)]
+async fn unit_diff_stats_use_testcontainer() {
+    let test_rdb = crate::shared::test_rdb::start().await;
+
+    super::unit_roundtrip_uses_testcontainer(test_rdb.core()).await;
+}
 
 pub(super) async fn verify_chunking_and_diff(
     repo: &HybRepo,
@@ -29,7 +35,19 @@ pub(super) async fn verify_chunking_and_diff(
 
     let chunked_order_page_id = format!("{}chunked-order-page", PREFIX);
 
+    let matrix_page_id = format!("{}matrix-page", PREFIX);
+
     let additional_pages = [
+        PageManifestEntry {
+            id: matrix_page_id.clone(),
+            chapter_id: page_fixture.chapter_entry.id.clone(),
+            index: 4,
+        },
+        PageManifestEntry {
+            id: format!("{}empty-page", PREFIX),
+            chapter_id: page_fixture.chapter_entry.id.clone(),
+            index: 5,
+        },
         PageManifestEntry {
             id: equal_page_id.clone(),
             chapter_id: page_fixture.chapter_entry.id.clone(),
@@ -282,18 +300,105 @@ pub(super) async fn verify_chunking_and_diff(
     .await
     .unwrap();
 
-    let diff_page_ids = repo
-        .run(&ListEdittedDiffPageIds {
+    let text_cases = [
+        (Some("translated"), None),
+        (Some("same"), Some("same")),
+        (Some("translated"), Some("revised")),
+        (Some("A"), Some("a")),
+        (Some("text"), Some(" text ")),
+        (Some("translated"), Some("")),
+        (Some("translated"), Some(" \t\u{3000}")),
+        (None, Some("appended")),
+        (Some(""), Some("appended")),
+        (Some(" \t\r\n"), Some("appended")),
+        (Some("\u{0085}\u{00a0}\u{3000}"), Some("appended")),
+        (None, None),
+        (Some(" "), Some("\u{3000}")),
+    ];
+
+    let mut matrix_edits = Vec::new();
+
+    let mut hidden_edits = Vec::new();
+
+    for (index, (translation, revision)) in text_cases.into_iter().enumerate() {
+        matrix_edits.push(create_text_edit(
+            &format!("{}matrix-{index}", PREFIX),
+            &page_fixture.chapter_entry.creator_id,
+            translation,
+            revision,
+            index % 2 == 0,
+        ));
+
+        let hidden_id = format!("{}matrix-hidden-{index}", PREFIX);
+
+        matrix_edits.push(create_text_edit(
+            &hidden_id,
+            &page_fixture.chapter_entry.creator_id,
+            translation,
+            revision,
+            index % 2 != 0,
+        ));
+
+        hidden_edits.push(UnitEdit::Delete { id: hidden_id });
+    }
+
+    nucl.coord(async |context| {
+        repo.step(
+            context,
+            &ApplyUnitEdits {
+                page_id: &matrix_page_id,
+                orders: &[],
+                edits: &matrix_edits,
+            },
+        )
+        .await?;
+
+        let orders = repo
+            .step(
+                context,
+                &ListUnitOrders {
+                    page_id: &matrix_page_id,
+                },
+            )
+            .await?;
+
+        repo.step(
+            context,
+            &ApplyUnitEdits {
+                page_id: &matrix_page_id,
+                orders: &orders,
+                edits: &hidden_edits,
+            },
+        )
+        .await?;
+
+        accept(())
+    })
+    .await
+    .unwrap();
+
+    let page_unit_diff_stats = repo
+        .run(&ListPageUnitDiffStats {
             chapter_id: &page_fixture.chapter_entry.id,
         })
         .await
         .unwrap();
 
     assert_eq!(
-        diff_page_ids,
+        page_unit_diff_stats
+            .iter()
+            .map(|stats| (
+                stats.page_id.as_str(),
+                stats.index,
+                stats.translated_unit_count,
+                stats.editted_unit_count,
+                stats.proofreader_append_unit_count,
+            ))
+            .collect::<Vec<_>>(),
         [
-            page_fixture.page_entry.id.clone(),
-            missing_translation_page_id,
+            (page_fixture.page_entry.id.as_str(), 0, 0, 0, 1),
+            (missing_translation_page_id.as_str(), 2, 0, 0, 1),
+            (matrix_page_id.as_str(), 4, 7, 3, 4),
         ]
     );
 }

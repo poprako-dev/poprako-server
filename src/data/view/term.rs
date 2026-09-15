@@ -10,10 +10,9 @@ use poprako_util::time::ToUnixMilli as _;
 use crate::model::read::proj::term::TermInfo;
 
 /// Presentation-ready terminology-entry information.
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct TermInfoView {
-    //
     /// Unique identifier of the terminology entry.
     pub id: String,
 

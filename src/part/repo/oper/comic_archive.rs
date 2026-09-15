@@ -9,7 +9,6 @@ use crate::value::comic_archive::ComicArchiveMonth;
 #[derive(Oper)]
 #[oper(output = Vec<(OffsetDateTime, String)>)]
 pub struct ListComicArchivePayloads<'a> {
-    //
     /// The team ID.
     pub team_id: &'a str,
 

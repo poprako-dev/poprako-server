@@ -32,7 +32,7 @@ use crate::usecase::internal::member::MemberLoader;
 use crate::usecase::internal::util::LoadMode;
 
 /// Creates a terminology entry inside a terminology base.
-#[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
+#[instrument(level = "info", skip(nucl, repo, token, instr), fields(actor_user_id = %token.user_id, termbase_id = %instr.termbase_id, target_count = instr.targets.len()))]
 pub async fn create<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
@@ -132,7 +132,7 @@ where
 }
 
 /// Lists terminology entries inside one terminology base.
-#[instrument(level = "info", skip(repo, token), fields(actor_user_id = %token.user_id))]
+#[instrument(level = "info", skip(repo, token, instr), fields(actor_user_id = %token.user_id, termbase_id = %instr.termbase_id, offset = instr.offset, limit = ?instr.limit, has_source_filter = instr.fuzzy_source.is_some()))]
 pub async fn list_infos<C, R>(
     (repo,): (&R,),
     token: UserToken,
@@ -173,7 +173,7 @@ where
 }
 
 /// Replaces a terminology entry's source, targets, and comment.
-#[instrument(level = "info", skip(nucl, repo, token), fields(actor_user_id = %token.user_id))]
+#[instrument(level = "info", skip(nucl, repo, token, instr), fields(actor_user_id = %token.user_id, term_id = %instr.id, target_count = instr.targets.len()))]
 pub async fn update_info<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,

@@ -3,7 +3,6 @@
 /// The data needed to create a new team.
 #[cfg_attr(test, derive(Clone))]
 pub struct TeamEntry {
-    //
     /// The unique identifier for the new team.
     pub id: String,
 
@@ -15,7 +14,6 @@ pub struct TeamEntry {
 
 /// Mutable team profile fields updated together.
 pub struct TeamRepl {
-    //
     /// The team identifier.
     pub id: String,
 
