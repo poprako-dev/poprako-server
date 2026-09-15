@@ -6,7 +6,6 @@ use crate::part::prom::topic::Topic;
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(test, derive(Debug))]
 pub enum InvitationPayload {
-    //
     /// Purge a pending assignment invitation.
     PurgeExpiredAssignmentInvitation {
         /// ID of the invitation record to purge.

@@ -17,7 +17,6 @@ pub struct CreateComic<'a> {
 #[derive(Oper)]
 #[oper(output = ComicInfo)]
 pub struct GetComicInfo<'a, 'b> {
-    //
     /// The comic ID.
     pub id: &'a str,
     /// Which relations to include in the response.
@@ -36,7 +35,6 @@ pub struct ListComicInfos<'a> {
 #[derive(Oper)]
 #[oper(output = ComicInfo)]
 pub struct GetComicInfoExcluded<'a, 'b> {
-    //
     /// The comic ID.
     pub id: &'a str,
     /// Which relations to exclude from the response.
@@ -63,7 +61,6 @@ pub struct AllocComicChapterIndex<'a> {
 #[derive(Oper)]
 #[oper(output = ())]
 pub struct UpdateComicChapterCount<'a> {
-    //
     /// The comic ID.
     pub id: &'a str,
     /// The delta to apply (positive or negative).

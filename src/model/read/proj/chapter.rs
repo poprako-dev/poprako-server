@@ -17,7 +17,6 @@ use crate::value::chapter::mask::StageMask;
 /// Minimal locked Chapter scope needed while editing Page Units.
 #[derive(Clone, PartialEq, Eq)]
 pub struct ChapterUnitEditScope {
-    //
     /// Permanent Chapter identifier.
     pub id: String,
 
@@ -44,7 +43,6 @@ pub struct ChapterUnitEditScope {
 /// [`StagePhase`] values independently.
 #[derive(Clone)]
 pub struct ChapterInfo {
-    //
     /// Unique identifier for the chapter.
     pub id: String,
     /// Foreign key to the parent comic this chapter belongs to.

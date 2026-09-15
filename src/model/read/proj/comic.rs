@@ -22,7 +22,6 @@ use crate::model::read::proj::workset::WorksetInfo;
 /// [`MarkComicCoverUploaded`]: crate::part::repo::oper::comic::MarkComicCoverUploaded
 #[derive(Clone)]
 pub struct ComicInfo {
-    //
     /// Unique identifier for the comic record.
     pub id: String,
 

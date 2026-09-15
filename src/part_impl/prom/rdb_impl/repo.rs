@@ -49,7 +49,6 @@ impl ClaimPending {
 #[derive(Oper)]
 #[oper(output = ())]
 pub struct CompleteMessage<'a> {
-    //
     // Internal state field `id`.
     /// ID of the local-message row to mark complete.
     id: &'a str,
@@ -69,7 +68,6 @@ impl<'a> CompleteMessage<'a> {
 #[derive(Oper)]
 #[oper(output = ())]
 pub struct FailMessage<'a> {
-    //
     // Internal state field `id`.
     /// ID of the local-message row to mark as failed.
     id: &'a str,
@@ -97,7 +95,6 @@ impl<'a> FailMessage<'a> {
 #[derive(Oper)]
 #[oper(output = ())]
 pub struct RetryMessage<'a> {
-    //
     // Internal state field `id`.
     /// ID of the local-message row to retry.
     id: &'a str,

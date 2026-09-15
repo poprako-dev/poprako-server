@@ -13,7 +13,6 @@ use crate::result::{BaseError, BaseRest, ExpectedVariant, accept};
 
 /// Business fields used to match an existing page to an incoming image.
 pub struct PageManifestCand<'a> {
-    //
     /// Stable page identity.
     pub id: &'a str,
 
@@ -41,7 +40,6 @@ pub struct ManifestMatch {
 
 /// Stable matching result for an authoritative page manifest.
 pub struct ManifestPlan {
-    //
     /// Ordered match results aligned with the requested manifest.
     pub matches: Vec<ManifestMatch>,
     /// Existing page indexes not consumed by the requested manifest.

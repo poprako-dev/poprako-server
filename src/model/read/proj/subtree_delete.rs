@@ -3,7 +3,6 @@
 /// A locked hierarchy root with the ancestry needed for permission checks and
 /// surviving-parent updates.
 pub enum SubtreeDeleteScope {
-    //
     /// A team root.
     Team {
         /// Team identifier.
@@ -62,7 +61,6 @@ impl SubtreeDeleteScope {
 #[derive(Clone, Eq, PartialEq)]
 #[cfg_attr(test, derive(Debug))]
 pub enum SubtreeDeleteSweepTarget {
-    //
     /// A chapter and all of its page-owned records.
     Chapter {
         /// Chapter identifier.

@@ -16,7 +16,6 @@ use crate::result::{BaseError, BaseRest, accept};
 
 // Image metadata and URLs resolved from one object-version snapshot.
 struct PageImageData {
-    //
     // Metadata by page identifier.
     obj_metas: HashMap<String, ObjMeta>,
 

@@ -58,7 +58,6 @@ use crate::value::unit::{
 // Fixed-size diagnostics for a potentially large Unit edit request.
 #[derive(Debug, Default)]
 struct UnitEditLogSummary {
-    //
     // Number of create operations.
     creates: usize,
     // Number of patch operations.

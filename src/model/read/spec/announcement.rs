@@ -5,7 +5,6 @@ use crate::value::pagination::PubListLimit;
 
 /// Filtering, pagination, and include parameters for listing announcements.
 pub struct AnnouncementListSpec {
-    //
     /// Scopes the listing to announcements within this team.
     pub team_id: String,
     /// Flags controlling which optional associations (such as user data) are

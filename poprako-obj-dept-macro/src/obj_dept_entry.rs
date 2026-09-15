@@ -3,7 +3,6 @@ use syn::{Ident, LitStr, Result, Token, parenthesized};
 
 /// Describes one object marker in a total department manifest.
 pub struct ObjEntry {
-    //
     /// Identifies the object marker type.
     marker: Ident,
 

@@ -339,7 +339,6 @@ fn import_stages(edit_perm: UnitEditPerm) -> Vec<Stage> {
 
 // Captures the page-level results of one import application decision.
 struct PageImportOutcome {
-    //
     // Final visible Unit counters for the page.
     count_metrics: UnitCountMetrics,
     // Whether this page's visible content changed through the import.

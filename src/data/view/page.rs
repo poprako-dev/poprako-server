@@ -19,7 +19,6 @@ use crate::value::image::{ImageExt, ImageHash};
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[cfg_attr(test, derive(Debug))]
 pub struct PageInfoView {
-    //
     /// Unique page identifier.
     pub id: String,
 

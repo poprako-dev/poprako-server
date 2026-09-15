@@ -13,7 +13,6 @@ pub const REMOTE_TIMEOUT: std::time::Duration =
 #[derive(Clone, Copy, PartialEq, Eq)]
 #[cfg_attr(test, derive(Debug))]
 pub enum ObjKeyState {
-    //
     /// No row remains.
     Missing,
 

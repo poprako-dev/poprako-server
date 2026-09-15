@@ -14,7 +14,6 @@ use crate::value::image::{ImageExt, ImageHash};
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct AllocChapterPagesInstr {
-    //
     /// Target chapter identifier.
     pub chapter_id: String,
     /// Page images to allocate for the chapter.
@@ -25,7 +24,6 @@ pub struct AllocChapterPagesInstr {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct PageImageInstr {
-    //
     /// Complete original filename. Omission or null replaces it with no name.
     #[serde(default)]
     pub raw_ident: Option<String>,
@@ -61,7 +59,6 @@ impl From<PageImageInstr> for PageImageSpec {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct AllocPageImageInstr {
-    //
     /// Complete original filename. Omission or null replaces it with no name.
     #[serde(default)]
     pub raw_ident: Option<String>,

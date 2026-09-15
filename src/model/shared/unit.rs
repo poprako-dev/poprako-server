@@ -4,7 +4,6 @@
 #[derive(Clone, PartialEq)]
 #[cfg_attr(test, derive(Debug))]
 pub struct UnitCoord {
-    //
     /// Horizontal page-relative coordinate.
     pub x_coord: f64,
     /// Vertical page-relative coordinate.
@@ -15,7 +14,6 @@ pub struct UnitCoord {
 #[derive(Clone, PartialEq, Eq)]
 #[cfg_attr(test, derive(Debug))]
 pub struct UnitTranslation {
-    //
     /// Current translated text.
     pub translated_text: String,
     /// ID of the translator assigning this content.
@@ -26,7 +24,6 @@ pub struct UnitTranslation {
 #[derive(Clone, PartialEq, Eq)]
 #[cfg_attr(test, derive(Debug))]
 pub struct UnitRevision {
-    //
     /// Whether the revision is approved.
     pub is_proofread: bool,
     /// Current proofread text.

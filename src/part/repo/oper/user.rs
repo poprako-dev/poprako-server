@@ -39,7 +39,6 @@ pub struct FindUserInfo<'a> {
 #[derive(Oper)]
 #[oper(output = ())]
 pub enum UpdateUser<'a> {
-    //
     /// Updates user metadata fields.
     Info {
         /// The replacement payload.

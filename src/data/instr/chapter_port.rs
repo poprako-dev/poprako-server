@@ -20,7 +20,6 @@ use crate::value::chapter_port::{
 #[derive(Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ExportChapterTranslationInstr {
-    //
     /// Use complete original filenames for `LabelPlus` references when present.
     #[serde(default)]
     #[cfg_attr(feature = "swagger", schema(default = false))]
@@ -79,7 +78,6 @@ where
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum ChapterTranslationFormatInstr {
-    //
     /// `LabelPlus` translation format.
     LabelPlus,
 
@@ -119,7 +117,6 @@ impl From<TranslationFormat> for ChapterTranslationFormatInstr {
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum ChapterTranslationImportModeInstr {
-    //
     /// Preserve pages that already contain visible Units.
     Keep,
 
@@ -157,7 +154,6 @@ impl From<ChapterTranslationImportMode> for ChapterTranslationImportModeInstr {
 #[derive(Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ImportChapterTranslationInstr {
-    //
     /// The translation format (e.g., JSON, SRT).
     pub format: ChapterTranslationFormatInstr,
 
@@ -172,7 +168,6 @@ pub struct ImportChapterTranslationInstr {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct AllocChapterArtworkInstr {
-    //
     /// Canonical Base64 SHA-256 identity of the exact uploaded bytes.
     pub artwork_hash: ArtworkHash,
     /// Exact upload length, also bound into the PUT signature.

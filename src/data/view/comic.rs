@@ -24,7 +24,6 @@ use crate::model::read::proj::comic::ComicInfo;
 #[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ComicInfoView {
-    //
     /// Unique comic identifier.
     pub id: String,
 

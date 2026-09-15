@@ -22,7 +22,6 @@ use crate::value::role::RoleMask;
 #[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ChapterWorkflowRecordInfoView {
-    //
     /// Unique workflow record identifier.
     pub id: String,
 
@@ -57,7 +56,6 @@ impl From<ChapterWorkflowRecordInfo> for ChapterWorkflowRecordInfoView {
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(tag = "kind", content = "data", rename_all = "snake_case")]
 pub enum ChapterWorkflowRecordEventView {
-    //
     /// A chapter and its initial creator assignment were created.
     ChapterCreated,
 
@@ -142,7 +140,6 @@ pub enum ChapterWorkflowRecordEventView {
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum ChapterWorkflowRecordTranslationFormatView {
-    //
     /// `LabelPlus` translation format.
     LabelPlus,
 
@@ -169,7 +166,6 @@ impl From<TranslationFormat> for ChapterWorkflowRecordTranslationFormatView {
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum ChapterWorkflowRecordStageView {
-    //
     /// Raw-provision stage.
     RawProvide,
 
@@ -215,7 +211,6 @@ impl From<Stage> for ChapterWorkflowRecordStageView {
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum ChapterWorkflowRecordStagePhaseView {
-    //
     /// The stage has not started.
     Pending,
 
@@ -246,7 +241,6 @@ impl From<StagePhase> for ChapterWorkflowRecordStagePhaseView {
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum ChapterWorkflowRecordOriginView {
-    //
     /// Explicit stage operation.
     Manual,
 

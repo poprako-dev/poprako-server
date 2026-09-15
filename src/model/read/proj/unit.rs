@@ -8,7 +8,6 @@ use crate::result::{BaseError, BaseRest};
 /// One Unit node in the complete persisted page chain.
 #[derive(Clone, PartialEq, Eq)]
 pub struct UnitOrder {
-    //
     /// Permanent Unit ID.
     pub id: String,
     /// Permanent ID of the following Unit.
@@ -21,7 +20,6 @@ pub struct UnitOrder {
 /// A persisted page Unit.
 #[derive(Clone)]
 pub struct UnitInfo {
-    //
     /// Permanent Unit ID.
     pub id: String,
 
@@ -74,7 +72,6 @@ pub fn has_unit_text(text: Option<&str>) -> bool {
 /// Unit counters stored on a Page and its Chapter.
 #[derive(Clone, Copy, Default, PartialEq, Eq)]
 pub struct UnitCountMetrics {
-    //
     /// Number of visible Units.
     pub total: usize,
     /// Number of visible translated Units.
@@ -101,7 +98,6 @@ impl UnitCountMetrics {
 /// Counter change applied to a Chapter after one Page mutation.
 #[derive(Clone, Copy, Default, PartialEq, Eq)]
 pub struct UnitCountDelta {
-    //
     /// Visible Unit count change.
     pub total: i32,
     /// Visible translated Unit count change.

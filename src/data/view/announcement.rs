@@ -14,7 +14,6 @@ use crate::model::read::proj::announcement::AnnouncementInfo;
 #[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct AnnouncementInfoView {
-    //
     /// Unique identifier.
     pub id: String,
 

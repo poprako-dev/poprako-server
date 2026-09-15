@@ -5,7 +5,6 @@ use crate::value::chapter::stage::{Stage, StagePhase};
 
 /// Normalized stage-filter state.
 pub enum StageFilter {
-    //
     /// The mask ignores every stage and therefore adds no predicate.
     None,
 

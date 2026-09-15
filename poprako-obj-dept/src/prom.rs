@@ -78,7 +78,6 @@ pub trait ObjDeptPromDefer<C> {
 /// One Check task requested by a batch object lifecycle operation.
 #[derive(Clone, PartialEq, Eq)]
 pub struct ObjDeptPromCheck {
-    //
     /// Logical object generation to verify.
     key: ObjKey,
     /// Time after which absence is treated as a failed upload.

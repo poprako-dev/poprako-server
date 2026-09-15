@@ -41,7 +41,6 @@ use crate::value::pagination::PubListLimit;
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct AnnouncementListQuery {
-    //
     /// Related rows to embed. Repeatable. Values: `user`.
     #[serde(default, rename = "incl")]
     pub incl_opt: Vec<AnnouncementInclOpt>,

@@ -16,7 +16,6 @@ use utoipa::ToSchema;
 /// Image-owning resource discriminator.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ImageKind {
-    //
     /// Avatar image for a user.
     UserAvatar,
 
@@ -33,7 +32,6 @@ pub enum ImageKind {
 /// Business identity required to locate one page image.
 #[derive(Clone, PartialEq, Eq)]
 pub struct PageImageKey {
-    //
     /// Owning chapter identifier encoded into the physical key.
     pub chapter_id: String,
 
@@ -47,7 +45,6 @@ pub struct PageImageKey {
 /// Business identity required to locate one user avatar.
 #[derive(Clone, PartialEq, Eq)]
 pub struct UserAvatarKey {
-    //
     /// Stable user identifier used by the object table.
     pub user_id: String,
 
@@ -58,7 +55,6 @@ pub struct UserAvatarKey {
 /// Business identity required to locate one team avatar.
 #[derive(Clone, PartialEq, Eq)]
 pub struct TeamAvatarKey {
-    //
     /// Stable team identifier used by the object table.
     pub team_id: String,
 
@@ -69,7 +65,6 @@ pub struct TeamAvatarKey {
 /// Business identity required to locate one comic cover.
 #[derive(Clone, PartialEq, Eq)]
 pub struct ComicCoverKey {
-    //
     /// Stable comic identifier used by the object table.
     pub comic_id: String,
 
@@ -151,7 +146,6 @@ impl<'de> Deserialize<'de> for ImageHash {
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(rename_all = "lowercase")]
 pub enum ImageExt {
-    //
     /// The JPEG image format.
     Jpg,
 

@@ -20,7 +20,6 @@ use crate::result::{BaseError, BaseRest, accept};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, AsExpression)]
 #[diesel(sql_type = Text)]
 pub enum LocalMessageStatus {
-    //
     Pending,
 
     Processing,
@@ -55,7 +54,6 @@ impl ToSql<Text, Pg> for LocalMessageStatus {
 #[derive(Insertable)]
 #[diesel(table_name = t_local_message)]
 pub struct LocalMessageEntryRow<'a> {
-    //
     pub f_id: &'a str,
 
     pub f_topic: &'a str,
@@ -123,7 +121,6 @@ impl<'a> LocalMessageEntryRow<'a> {
 /// Persisted attempt returned by an atomic queue claim.
 #[derive(Queryable, QueryableByName)]
 pub struct LocalMessageRow {
-    //
     #[diesel(sql_type = Text)]
     pub f_id: String,
 

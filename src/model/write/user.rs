@@ -3,7 +3,6 @@
 /// The data needed to insert a new user row.
 #[cfg_attr(test, derive(Clone))]
 pub struct UserEntry {
-    //
     /// Server-assigned unique user identifier.
     pub id: String,
 
@@ -18,7 +17,6 @@ pub struct UserEntry {
 
 /// Mutable user profile fields updated together.
 pub struct UserInfoRepl {
-    //
     /// The user identifier.
     pub id: String,
 
@@ -30,7 +28,6 @@ pub struct UserInfoRepl {
 
 /// A user's credential fields updated together.
 pub struct UserCredsRepl {
-    //
     /// The user identifier.
     pub id: String,
 

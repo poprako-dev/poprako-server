@@ -19,7 +19,6 @@ use crate::model::read::proj::team::TeamInfo;
 #[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct TeamInfoView {
-    //
     /// Unique team identifier.
     pub id: String,
 

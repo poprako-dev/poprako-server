@@ -52,6 +52,8 @@ use crate::oper::{
     MarkObjUploaded,
 };
 use crate::rest::ObjDeptError;
+/// UUID execution credentials shared with generated adapters.
+pub use uuid::Uuid;
 
 #[cfg(feature = "rdb_impl")]
 pub use poprako_obj_dept_macro::{
@@ -59,9 +61,6 @@ pub use poprako_obj_dept_macro::{
 };
 #[cfg(feature = "rdb_impl")]
 pub use poprako_rdb_core::{RdbContext, RdbCore};
-
-/// UUID execution credentials shared with generated adapters.
-pub use uuid::Uuid;
 
 extern crate self as poprako_obj_dept;
 

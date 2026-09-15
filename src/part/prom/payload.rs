@@ -17,7 +17,6 @@ use crate::part::prom::topic::Topic;
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(test, derive(Debug))]
 pub enum TaskPayload {
-    //
     /// Chapter-domain tasks.
     Chapter {
         /// Chapter-domain task payload.

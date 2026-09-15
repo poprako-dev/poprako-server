@@ -30,7 +30,6 @@ impl ArtworkHash {
 #[derive(Clone, PartialEq, Eq)]
 #[cfg_attr(test, derive(Debug))]
 pub struct ChapterArtworkKey {
-    //
     /// Stable chapter identifier.
     pub chapter_id: String,
 

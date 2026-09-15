@@ -13,7 +13,6 @@ use crate::value::image::{ImageExt, ImageHash};
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct AllocUserAvatarInstr {
-    //
     /// SHA-256 identity of the exact avatar bytes.
     pub image_hash: ImageHash,
     /// Upload size used for validation and PUT signing.
@@ -35,7 +34,6 @@ pub struct MarkUserAvatarUploadedInstr {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateUserInfoInstr {
-    //
     /// User identifier to update.
     pub id: String,
 
@@ -49,7 +47,6 @@ pub struct UpdateUserInfoInstr {
 #[derive(Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateUserPasswordInstr {
-    //
     /// Current password for verification before change.
     pub current_password: String,
     /// Desired new password.

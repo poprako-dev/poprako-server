@@ -3,7 +3,6 @@
 /// One hierarchy level eligible for tombstone sweeping.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum SubtreeSweepLevel {
-    //
     /// Sweep one Chapter.
     Chapter,
 

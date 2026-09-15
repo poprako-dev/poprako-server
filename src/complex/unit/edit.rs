@@ -16,7 +16,6 @@ type UnitSequenceState<'a> = (Vec<&'a str>, HashMap<&'a str, Option<&'a str>>);
 /// One persisted Unit successor changed by an edit sequence.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct UnitSuccessorChange<'a> {
-    //
     /// Permanent Unit ID.
     id: &'a str,
 
@@ -38,7 +37,6 @@ impl<'a> UnitSuccessorChange<'a> {
 
 /// Final linked-list state produced from normalized Unit edits.
 pub struct UnitEditSequencePlan<'a> {
-    //
     /// Unit IDs in final traversal order, retained only for tests.
     #[cfg(test)]
     ordered_ids: Vec<&'a str>,
@@ -180,7 +178,6 @@ impl<'a> UnitEditSequencePlan<'a> {
 // One mutable node in the linked Unit sequence.
 #[derive(Clone, Copy)]
 struct SequenceNode<'a> {
-    //
     // Predecessor Unit ID, or none for the head.
     prev_id: Option<&'a str>,
 
@@ -190,7 +187,6 @@ struct SequenceNode<'a> {
 
 // Mutable linked sequence used while applying one normalized edit batch.
 struct UnitSequence<'a> {
-    //
     // Sequence nodes keyed by Unit ID.
     nodes: HashMap<&'a str, SequenceNode<'a>>,
 

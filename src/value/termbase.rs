@@ -6,7 +6,6 @@ pub const TERMBASE_TERM_LIMIT: usize = 200;
 /// Target ownership scope selected for a terminology-base import.
 #[derive(Debug)]
 pub enum TermbaseScope {
-    //
     /// Import into a team-owned terminology base.
     Team {
         /// Team owning the selected terminology base.

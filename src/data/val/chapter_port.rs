@@ -16,7 +16,6 @@ use crate::value::artwork::ArtworkHash;
 #[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ExportChapterTranslationsVal {
-    //
     /// `LabelPlus` text, absent when that format was not selected.
     pub label_plus: Option<String>,
     /// Native `PopRaKo` document, absent when that format was not selected.
@@ -29,7 +28,6 @@ pub struct ExportChapterTranslationsVal {
 #[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ChapterPageRawIdentVal {
-    //
     /// Stable Page identifier.
     pub page_id: String,
     /// Complete original image filename.
@@ -40,7 +38,6 @@ pub struct ChapterPageRawIdentVal {
 #[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ImportChapterTranslationVal {
-    //
     /// Number of pages whose visible Unit content changed.
     pub imported_page_count: usize,
     /// Number of Units created from the imported source.
@@ -51,7 +48,6 @@ pub struct ImportChapterTranslationVal {
 #[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct AllocChapterArtworkVal {
-    //
     /// Current artwork generation to confirm.
     #[serde(rename = "artwork_version")]
     pub artwork_ver: u32,
@@ -63,7 +59,6 @@ pub struct AllocChapterArtworkVal {
 #[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ExportChapterArtworkVal {
-    //
     /// Current available object generation.
     #[serde(rename = "artwork_version")]
     pub artwork_ver: u32,

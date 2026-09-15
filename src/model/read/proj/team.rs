@@ -10,7 +10,6 @@ use time::OffsetDateTime;
 /// [`TeamInfoView`]: crate::data::view::team::TeamInfoView
 #[derive(Clone)]
 pub struct TeamInfo {
-    //
     /// The unique identifier for this team.
     pub id: String,
 

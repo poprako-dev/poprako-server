@@ -10,7 +10,6 @@ use crate::value::role::RoleField;
 #[derive(Oper)]
 #[oper(output = Option<AssignmentInfo>)]
 pub enum FindAssignmentInfo<'a, 'b> {
-    //
     /// Finds by chapter and user.
     ChapterUser {
         /// Chapter identifier.
@@ -34,7 +33,6 @@ pub enum FindAssignmentInfo<'a, 'b> {
 #[derive(Oper)]
 #[oper(output = AssignmentInfo)]
 pub struct GetAssignmentInfo<'a, 'b> {
-    //
     /// Assignment identifier.
     pub id: &'a str,
     /// Assignment inclusion options.
@@ -45,7 +43,6 @@ pub struct GetAssignmentInfo<'a, 'b> {
 #[derive(Oper)]
 #[oper(output = Vec<AssignmentInfo>)]
 pub enum ListAssignmentInfos<'a, 'b> {
-    //
     /// Lists by a query specification.
     Spec {
         /// Query specification for filtering assignments.
@@ -99,7 +96,6 @@ pub struct UpdateAssignmentRoles<'a> {
 #[derive(Oper)]
 #[oper(output = ())]
 pub enum DeleteAssignments<'a> {
-    //
     /// Deletes by assignment identifier.
     Id {
         /// Assignment identifier.

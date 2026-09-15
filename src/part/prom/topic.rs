@@ -2,7 +2,6 @@
 /// Payload variants select a queue independently of their operation names.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Topic {
-    //
     /// Serial queue for chapter work.
     Chapter,
 

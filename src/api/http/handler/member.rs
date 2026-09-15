@@ -47,7 +47,6 @@ use crate::value::pagination::PubListLimit;
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 #[cfg_attr(test, derive(Debug))]
 pub struct MemberMeListQuery {
-    //
     /// Related rows to embed. Repeatable. Values: `user`, `team`.
     #[serde(default, rename = "incl")]
     pub incl_opt: Vec<MemberInclOpt>,

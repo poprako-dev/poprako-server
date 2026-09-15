@@ -20,7 +20,6 @@ use crate::value::image::{ImageExt, ImageHash};
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[cfg_attr(test, derive(Debug))]
 pub struct PageUnitDiffStatsVal {
-    //
     /// Permanent Page identifier.
     pub page_id: String,
     /// Original zero-based Chapter position, preserved after filtering.
@@ -60,7 +59,6 @@ pub struct AllocChapterPagesVal {
 #[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct AllocatedPageVal {
-    //
     /// Allocated page identifier.
     pub page_id: String,
 

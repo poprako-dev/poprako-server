@@ -13,7 +13,6 @@ use crate::data::view::page_port::PageTranslationPortView;
 #[derive(Clone, Deserialize, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ChapterTranslationPortView {
-    //
     /// Chapter identifier from the exporting chapter.
     pub chapter_id: String,
     /// Ordinal index of the chapter within its comic.
@@ -35,7 +34,6 @@ pub struct ChapterTranslationPortView {
 #[derive(Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ChapterArtworkUploadSlotView {
-    //
     /// Presigned PUT URL.
     pub put_url: String,
     /// Headers bound into the upload signature.

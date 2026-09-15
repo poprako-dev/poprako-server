@@ -40,7 +40,6 @@ pub struct GetTermbaseInfoExcluded<'a> {
 #[derive(Oper)]
 #[oper(output = Vec<TermbaseInfo>)]
 pub enum ListTermbaseInfosExcluded<'a> {
-    //
     /// Fetch all termbases for a team.
     Team {
         /// The team identifier.
@@ -66,7 +65,6 @@ pub struct UpdateTermbase<'a> {
 #[derive(Oper)]
 #[oper(output = ())]
 pub struct UpdateTermbaseTermCount<'a> {
-    //
     /// The termbase id.
     pub id: &'a str,
 

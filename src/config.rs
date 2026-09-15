@@ -23,7 +23,6 @@ const DEFAULT_FILE_NAME: &str = "app_config.toml";
 /// Runtime application configuration.
 #[derive(Deserialize)]
 pub struct AppConfig {
-    //
     /// HTTP server configuration.
     pub http: HttpConfig,
 

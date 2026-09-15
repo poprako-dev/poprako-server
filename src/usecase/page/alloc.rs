@@ -226,7 +226,6 @@ where
 
 // Converts one internal allocation into a response view.
 struct PageAlloc {
-    //
     // Stable page identifier.
     page_id: String,
     // Final page position.

@@ -3,7 +3,6 @@ use crate::key::ObjKey;
 /// Latest metadata for one business object.
 #[derive(Clone, PartialEq, Eq)]
 pub struct ObjMeta {
-    //
     /// Current logical object key.
     pub key: ObjKey,
     /// Whether reads may expose the object.

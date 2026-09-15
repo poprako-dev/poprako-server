@@ -9,7 +9,6 @@ use crate::value::subtree_delete::SubtreeSweepLevel;
 
 /// Identifies the root of one hierarchy deletion.
 pub enum SubtreeRoot<'a> {
-    //
     /// Delete one team hierarchy.
     Team {
         /// Team identifier.

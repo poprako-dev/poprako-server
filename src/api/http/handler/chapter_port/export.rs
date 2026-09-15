@@ -17,7 +17,6 @@ use crate::value::chapter_port::ExportFormatSpec;
 
 /// Internal payload carrying serialised export content and response metadata.
 pub struct TranslationExportPayload {
-    //
     // MIME type of the HTTP response body.
     /// MIME type of the HTTP response body.
     content_type: &'static str,

@@ -24,7 +24,6 @@ use crate::value::incl::InclOpt;
 #[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub enum ChapterInclOpt {
-    //
     /// Embed the parent comic (`comic`).
     #[serde(rename = "comic")]
     Comic,

@@ -30,7 +30,6 @@ pub trait KeyMap {
 /// Persisted identity of one exact object generation.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct ObjKey {
-    //
     /// Stable object-table identifier.
     pub id: String,
 
@@ -44,7 +43,6 @@ pub struct ObjKey {
 /// Client-addressable logical object generation.
 #[derive(Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct ObjGen {
-    //
     /// Stable object-table identifier.
     pub id: String,
 

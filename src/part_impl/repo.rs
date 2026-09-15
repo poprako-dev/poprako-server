@@ -19,7 +19,6 @@ use poprako_rdb_core::RdbCore;
 /// Hybrid repository handle backed by `PostgreSQL` and process-local memory.
 #[derive(Clone)]
 pub struct HybRepo {
-    //
     /// Shared database connection pool.
     rdb_core: RdbCore,
     /// Team-partitioned online-user lease deadlines.

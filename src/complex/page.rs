@@ -107,7 +107,6 @@ impl PageComplex {
 
 /// Evidence that grants page-list access.
 pub enum PageListAccess<'a> {
-    //
     /// Access through team membership.
     Member {
         /// Team membership used to establish access.

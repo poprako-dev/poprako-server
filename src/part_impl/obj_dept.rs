@@ -149,7 +149,6 @@ objs_def! {
 
 /// Total object department composed from storage and durable-task adapters.
 pub struct NormObjDept<P = R2ObjDeptPool, M = RdbObjDeptProm> {
-    //
     /// Shared relational database core.
     core: RdbCore,
     /// Physical object-storage adapter.
@@ -219,7 +218,6 @@ where
 /// Read-only projection of object metadata and physical storage.
 #[derive(Clone)]
 pub struct NormObjDeptView<P> {
-    //
     /// Shared relational database core.
     core: RdbCore,
     /// Physical object-storage adapter.
