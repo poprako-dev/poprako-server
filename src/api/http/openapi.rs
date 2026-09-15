@@ -73,7 +73,7 @@ use crate::data::val::comment::CreateCommentVal;
 use crate::data::val::member::CreateMemberVal;
 use crate::data::val::member_invitation::CreateMemberInvitationVal;
 use crate::data::val::page::{
-    AllocChapterPagesVal, AllocatedPageVal, ListEdittedDiffPageIdsVal,
+    AllocChapterPagesVal, AllocatedPageVal, PageUnitDiffStatsVal,
 };
 use crate::data::val::team::AllocTeamAvatarVal;
 use crate::data::val::term::CreateTermVal;
@@ -173,7 +173,7 @@ use crate::value::unit::UnitTextPart;
         handler::chapter_port::export_translation,
         handler::chapter_port::export_translation_download,
         handler::page::list_infos,
-        handler::page::list_editted_diff_page_ids,
+        handler::page::list_unit_diff_stats,
         handler::page::get_info,
         handler::page::delete,
         handler::page::alloc_chapter_pages,
@@ -287,7 +287,7 @@ use crate::value::unit::UnitTextPart;
         MarkPageImageUploadedInstr,
         UnitInfoView,
         ListPageUnitInfosVal,
-        ListEdittedDiffPageIdsVal,
+        PageUnitDiffStatsVal,
         UnitEditInstr,
         UnitCoordInstr,
         UnitTranslationInstr,

@@ -12,6 +12,23 @@ use time::OffsetDateTime;
 
 use crate::model::read::proj::unit::UnitCountMetrics;
 
+/// Current visible Unit text statistics for one Page.
+#[derive(Debug)]
+pub struct PageUnitDiffStats {
+    //
+    /// Permanent Page identifier.
+    pub page_id: String,
+    /// Zero-based position in the Chapter.
+    pub index: usize,
+
+    /// Units with non-whitespace translation text.
+    pub translated_unit_count: usize,
+    /// Units with non-whitespace translation and revision texts that differ exactly.
+    pub editted_unit_count: usize,
+    /// Units with non-whitespace revision text and absent or whitespace-only translation.
+    pub proofreader_append_unit_count: usize,
+}
+
 /// Minimal persisted Page scope needed by Unit reads and edits.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PageUnitScope {

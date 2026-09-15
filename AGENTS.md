@@ -8,6 +8,18 @@ defines the workspace; `src/lib.rs` defines the server module graph;
 
 - Preserve user-authored changes; never overwrite unrelated work.
 - Never modify linters unless the user explicitly requests it.
+- **Type-safe SQL is mandatory.** All Rust database queries in every
+  workspace crate, including tests, must use Diesel's type-safe query DSL
+  and typed schema expressions. This applies to joins, subqueries,
+  aggregations, filtering, and result projections.
+- **Never introduce raw SQL or bypass SQL type checking.** Do not use
+  `diesel::sql_query`, `diesel::dsl::sql`, `sql::<...>`, SQL string fragments,
+  or string-based query execution through another driver or wrapper.
+  Parameter binding, `QueryableByName`, and manually declared SQL result
+  types do not make raw SQL type-safe and do not satisfy this rule.
+- Query complexity, convenience, performance goals, and existing raw SQL
+  elsewhere are never grounds to bypass this requirement. Resolve the
+  query through typed Diesel expressions; never silently substitute raw SQL.
 - Never hand-edit generated `schema.rs` or `docs/swagger.json`. Locally,
   regenerate schema only with `just mgr-schema`; see the fullchain skill for
   migrations and `docs/AGENTS.md` for OpenAPI generation.
@@ -29,6 +41,7 @@ defines the workspace; `src/lib.rs` defines the server module graph;
 - CI/CD must invoke checked-in POSIX `sh` scripts directly and must not
   require `just`. Agents must prefer the local `just` recipes below for Rust
   formatting and validation; local schema regeneration requires `just`.
+- NEVER EDIT `schema.rs`!!!!!!
 
 ## Work and validation
 

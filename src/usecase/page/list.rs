@@ -8,9 +8,9 @@ use poprako_util::i18n::trl;
 
 use crate::complex::page::{PageListAccess, PagePermComplex};
 use crate::data::instr::page::{
-    ListEdittedDiffPageIdsInstr, ListPageInfosInstr,
+    ListPageInfosInstr, ListPageUnitDiffStatsInstr,
 };
-use crate::data::val::page::ListEdittedDiffPageIdsVal;
+use crate::data::val::page::PageUnitDiffStatsVal;
 use crate::data::view::page::PageInfoView;
 use crate::model::shared::user::UserToken;
 use crate::part::obj_dept::PageImage;
@@ -19,7 +19,7 @@ use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::page::{
-    GetPageInfo, ListEdittedDiffPageIds, ListPageInfos,
+    GetPageInfo, ListPageInfos, ListPageUnitDiffStats,
 };
 use crate::part::repo::oper::team::ResolveTeamId;
 use crate::part::repo::page::PageRepo;
@@ -50,30 +50,30 @@ where
     page_info_views(obj_dept, page_infos).await
 }
 
-/// Lists Chapter Page IDs containing visible proofread text diffs.
+/// Lists Unit text statistics for Pages containing visible revision differences.
 #[instrument(
     level = "info",
     skip(repo, token),
     fields(chapter_id = %instr.chapter_id),
 )]
-pub async fn list_editted_diff_page_ids<C, R>(
+pub async fn list_unit_diff_stats<C, R>(
     (repo,): (&R,),
     token: UserToken,
-    instr: ListEdittedDiffPageIdsInstr,
-) -> BaseRest<ListEdittedDiffPageIdsVal>
+    instr: ListPageUnitDiffStatsInstr,
+) -> BaseRest<Vec<PageUnitDiffStatsVal>>
 where
     C: Context,
     R: PageRepo<C> + TeamRepo<C> + MemberRepo<C> + AssignmentRepo<C> + Sync,
 {
     ensure_user_can_list_infos::<C, R>(repo, &token, &instr.chapter_id).await?;
 
-    let page_ids = ListEdittedDiffPageIds {
+    let page_unit_diff_stats = ListPageUnitDiffStats {
         chapter_id: &instr.chapter_id,
     }
     .run_on(repo)
     .await?;
 
-    accept(ListEdittedDiffPageIdsVal { page_ids })
+    accept(page_unit_diff_stats.into_iter().map(Into::into).collect())
 }
 
 /// Fetches one page by ID.

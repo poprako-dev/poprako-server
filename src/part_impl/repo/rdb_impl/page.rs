@@ -19,15 +19,15 @@ use tracing::instrument;
 use poprako_rdb_core::{RdbConn, RdbCore};
 
 use crate::model::read::proj::page::{
-    PageInfo, PageRawIdentInfo, PageUnitScope,
+    PageInfo, PageRawIdentInfo, PageUnitDiffStats, PageUnitScope,
 };
 use crate::model::write::page::PageRawIdentsRepl;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::page::{
     ApplyPageManifest, DeletePages, GetPageInfo, GetPageInfoExcluded,
-    GetPageUnitScope, GetPageUnitScopeExcluded, ListEdittedDiffPageIds,
-    ListFirstPageInfos, ListPageInfos, ListPageInfosExcluded,
-    ListPageRawIdentInfos, SetPageUnitCountMetrics, ShiftPageIndexesTemporary,
+    GetPageUnitScope, GetPageUnitScopeExcluded, ListFirstPageInfos,
+    ListPageInfos, ListPageInfosExcluded, ListPageRawIdentInfos,
+    ListPageUnitDiffStats, SetPageUnitCountMetrics, ShiftPageIndexesTemporary,
     UpdatePageRawIdents,
 };
 use crate::part_impl::repo::HybRepo;
@@ -37,8 +37,8 @@ use crate::part_impl::repo::rdb_impl::entity::page::{
 use crate::part_impl::repo::rdb_impl::page::step_impl::{
     apply_manifest, delete_by_chapter_id, delete_by_ids, get_info_by_id,
     get_info_excluded, get_unit_scope, get_unit_scope_excluded,
-    list_editted_diff_page_ids, list_first_infos_by_chapter_ids, list_infos,
-    list_infos_excluded, set_unit_counts, shift_indexes_temporary,
+    list_first_infos_by_chapter_ids, list_infos, list_infos_excluded,
+    list_unit_diff_stats, set_unit_counts, shift_indexes_temporary,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_page_raw_ident;
 use crate::result::{BaseError, BaseRest, accept};
@@ -182,23 +182,18 @@ impl Run<ListFirstPageInfos<'_>> for HybRepo {
     }
 }
 
-impl Run<ListEdittedDiffPageIds<'_>> for HybRepo {
+impl Run<ListPageUnitDiffStats<'_>> for HybRepo {
     // Error type for the Chapter proofread-diff Page query.
     type Error = BaseError;
 
     #[instrument(level = "info", skip_all)]
     //
-    // Lists matching Page IDs in stable Chapter Page order.
+    // Lists matching Page text statistics in stable Chapter Page order.
     async fn run(
         &self,
-        oper: &ListEdittedDiffPageIds<'_>,
-    ) -> BaseRest<Vec<String>> {
-        //
-        submit_query!(
-            self.rdb_core,
-            list_editted_diff_page_ids,
-            oper.chapter_id
-        )
+        oper: &ListPageUnitDiffStats<'_>,
+    ) -> BaseRest<Vec<PageUnitDiffStats>> {
+        submit_query!(self.rdb_core, list_unit_diff_stats, oper.chapter_id)
     }
 }
 

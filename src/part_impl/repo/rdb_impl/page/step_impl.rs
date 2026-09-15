@@ -1,9 +1,11 @@
 //! RDB-backed page repository step implementations.
 
 use diesel::PgExpressionMethods as _;
+use diesel::dsl::{case_when, count};
 use diesel::expression::functions::declare_sql_function;
 use diesel::prelude::{
-    ExpressionMethods as _, OptionalExtension as _, QueryDsl as _,
+    BoolExpressionMethods as _, ExpressionMethods as _, JoinOnDsl as _,
+    NullableExpressionMethods as _, OptionalExtension as _, QueryDsl as _,
     SelectableHelper as _,
 };
 use diesel::sql_types::{Nullable, Text};
@@ -15,13 +17,17 @@ use tracing::instrument;
 use poprako_rdb_core::RdbConn;
 use poprako_util::i18n::trl;
 
-use crate::model::read::proj::page::{PageInfo, PageUnitScope};
+use crate::model::read::proj::page::{
+    PageInfo, PageUnitDiffStats, PageUnitScope,
+};
 use crate::model::read::proj::unit::UnitCountMetrics;
 use crate::model::write::page::PageManifestEntry;
 use crate::part_impl::repo::rdb_impl::entity::page::{
     PageAspectRow, PageEntryRow, PageInfoRow, PageUnitScopeRow,
 };
-use crate::part_impl::repo::rdb_impl::numeric::i32_from_usize;
+use crate::part_impl::repo::rdb_impl::numeric::{
+    i32_from_usize, usize_from_i32, usize_from_i64,
+};
 use crate::part_impl::repo::rdb_impl::schema::t_chapter;
 use crate::part_impl::repo::rdb_impl::schema::t_page::dsl::{
     f_chapter_id, f_id, f_index, f_updated_at, t_page,
@@ -204,45 +210,83 @@ pub async fn list_infos(
     rows.into_iter().map(TryInto::try_into).collect()
 }
 
-/// Lists Chapter Page IDs containing at least one visible text diff.
+/// Lists text statistics for Chapter Pages with visible revision differences.
 #[instrument(level = "info", skip_all)]
-pub async fn list_editted_diff_page_ids(
+pub async fn list_unit_diff_stats(
     conn: &mut RdbConn,
     chapter_id: &str,
-) -> BaseRest<Vec<String>> {
-    // Keep the Unit check correlated so PostgreSQL can stop after one match
-    // for each Page.
-    let has_editted_diff = diesel::dsl::exists(
-        t_unit
-            .filter(unit_page_id.eq(f_id))
-            .filter(unit_hidden_at.is_null())
-            .filter(btrim(unit_proofread_text, UNIT_TEXT_WHITESPACE).ne(""))
-            .filter(unit_proofread_text.is_distinct_from(unit_translated_text)),
-    );
+) -> BaseRest<Vec<PageUnitDiffStats>> {
+    //
+    let has_translation =
+        btrim(unit_translated_text, UNIT_TEXT_WHITESPACE).ne("");
 
-    let page_matches = t_page
+    let has_revision = btrim(unit_proofread_text, UNIT_TEXT_WHITESPACE).ne("");
+
+    let has_edit = has_translation
+        .and(has_revision)
+        .and(unit_proofread_text.is_distinct_from(unit_translated_text));
+
+    let has_append = unit_translated_text
+        .is_null()
+        .or(btrim(unit_translated_text, UNIT_TEXT_WHITESPACE).eq(""))
+        .and(has_revision);
+
+    // Retain zero-diff Pages until the complete Chapter count is checked.
+    let rows = t_page
         .filter(f_chapter_id.eq(chapter_id))
-        .select((f_id, has_editted_diff))
+        .left_join(
+            t_unit.on(unit_page_id.eq(f_id).and(unit_hidden_at.is_null())),
+        )
+        .group_by((f_id, f_index))
+        .select((
+            f_id,
+            f_index,
+            count(case_when(has_translation, unit_page_id).nullable()),
+            count(case_when(has_edit, unit_page_id).nullable()),
+            count(case_when(has_append, unit_page_id).nullable()),
+        ))
         .order_by((f_index.asc(), f_id.asc()))
         .limit(CHAPTER_PAGE_SENTINEL_LIMIT)
-        .load::<(String, bool)>(conn)
+        .load::<(String, i32, i64, i64, i64)>(conn)
         .await
         .map_err(diesel)?;
 
-    let page_matches = ensure_chapter_page_count(
-        page_matches,
-        chapter_id,
-        "list_editted_diff_page_ids",
-    )?;
+    let rows =
+        ensure_chapter_page_count(rows, chapter_id, "list_unit_diff_stats")?;
 
-    let page_ids = page_matches
+    let page_unit_diff_stats = rows
         .into_iter()
-        .filter_map(|(page_id, has_editted_diff)| {
-            has_editted_diff.then_some(page_id)
+        .map(|(page_id, index, translated, editted, appended)| {
+            //
+            accept(PageUnitDiffStats {
+                page_id,
+                index: usize_from_i32(index, "t_page.f_index")?,
+                translated_unit_count: usize_from_i64(
+                    translated,
+                    "unit_diff_stats.translated_unit_count",
+                )?,
+                editted_unit_count: usize_from_i64(
+                    editted,
+                    "unit_diff_stats.editted_unit_count",
+                )?,
+                proofreader_append_unit_count: usize_from_i64(
+                    appended,
+                    "unit_diff_stats.proofreader_append_unit_count",
+                )?,
+            })
         })
-        .collect();
+        .collect::<BaseRest<Vec<_>>>()?;
 
-    accept(page_ids)
+    accept(
+        page_unit_diff_stats
+            .into_iter()
+            .filter(|stats| {
+                //
+                stats.editted_unit_count > 0
+                    || stats.proofreader_append_unit_count > 0
+            })
+            .collect(),
+    )
 }
 
 /// Lists page infos while retaining row locks for a manifest transaction.

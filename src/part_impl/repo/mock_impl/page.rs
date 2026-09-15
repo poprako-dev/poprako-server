@@ -6,9 +6,9 @@ mod orchestra;
 use poprako_orchestra::{Run, Step};
 
 use crate::model::read::proj::page::{
-    PageInfo, PageRawIdentInfo, PageUnitScope,
+    PageInfo, PageRawIdentInfo, PageUnitDiffStats, PageUnitScope,
 };
-use crate::model::read::proj::unit::UnitCountMetrics;
+use crate::model::read::proj::unit::{UnitCountMetrics, has_unit_text};
 use crate::model::write::page::PageManifestEntry;
 use crate::part::nucl::ReptRead;
 use crate::part::repo::oper::page::{
@@ -83,35 +83,59 @@ fn get_page_by_id(state: &MockState, id: &str) -> BaseRest<PageInfo> {
         .ok_or_else(|| expected("error-page-not-found"))
 }
 
-// List Chapter Page IDs containing at least one visible text diff.
-fn list_editted_diff_page_ids(
+// Count all visible Units, then retain Pages with revision differences.
+fn list_unit_diff_stats(
     state: &MockState,
     chapter_id: &str,
-) -> BaseRest<Vec<String>> {
+) -> BaseRest<Vec<PageUnitDiffStats>> {
     //
-    let page_ids = list_bounded_infos(state, chapter_id)?
+    let page_unit_diff_stats = list_bounded_infos(state, chapter_id)?
         .into_iter()
-        .filter(|page_info| {
+        .map(|page_info| {
             //
-            // Stop checking this Page after its first matching Unit.
-            state.units.iter().any(|unit_info| {
+            let mut stats = PageUnitDiffStats {
+                page_id: page_info.id,
+                index: page_info.index,
+                translated_unit_count: 0,
+                editted_unit_count: 0,
+                proofreader_append_unit_count: 0,
+            };
+
+            for unit_info in state.units.iter().filter(|unit_info| {
                 //
-                unit_info.page_id == page_info.id
+                unit_info.page_id == stats.page_id
                     && unit_info.hidden_at.is_none()
-                    && unit_info.proofread_text.as_deref().is_some_and(
-                        |proofread_text| {
-                            //
-                            !proofread_text.trim().is_empty()
-                                && Some(proofread_text)
-                                    != unit_info.translated_text.as_deref()
-                        },
-                    )
-            })
+            }) {
+                //
+                let has_translation =
+                    has_unit_text(unit_info.translated_text.as_deref());
+
+                let has_revision =
+                    has_unit_text(unit_info.proofread_text.as_deref());
+
+                stats.translated_unit_count += usize::from(has_translation);
+
+                stats.editted_unit_count += usize::from(
+                    has_translation
+                        && has_revision
+                        && unit_info.translated_text
+                            != unit_info.proofread_text,
+                );
+
+                stats.proofreader_append_unit_count +=
+                    usize::from(!has_translation && has_revision);
+            }
+
+            stats
         })
-        .map(|page_info| page_info.id)
+        .filter(|stats| {
+            //
+            stats.editted_unit_count > 0
+                || stats.proofreader_append_unit_count > 0
+        })
         .collect();
 
-    accept(page_ids)
+    accept(page_unit_diff_stats)
 }
 
 // Read the minimal Page scope used by Unit operations.

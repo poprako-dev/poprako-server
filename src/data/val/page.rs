@@ -11,14 +11,40 @@ use serde::Serialize;
 use utoipa::ToSchema;
 
 use crate::data::view::image::ImageUploadSlotView;
+use crate::model::read::proj::page::PageUnitDiffStats;
 use crate::value::image::{ImageExt, ImageHash};
 
-/// Return value for listing Pages with proofread text diffs.
+/// Visible Unit text statistics for a Page with revision differences.
+/// Counts are independent of revision approval and cover all visible Units.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
-pub struct ListEdittedDiffPageIdsVal {
-    /// Matching Page IDs in Chapter Page order.
-    pub page_ids: Vec<String>,
+pub struct PageUnitDiffStatsVal {
+    //
+    /// Permanent Page identifier.
+    pub page_id: String,
+    /// Original zero-based Chapter position, preserved after filtering.
+    pub index: usize,
+
+    /// Units with non-whitespace translation text; revision-only Units are excluded.
+    pub translated_unit_count: usize,
+    /// Units with non-whitespace translation and revision texts that differ exactly.
+    pub editted_unit_count: usize,
+    /// Units with non-whitespace revision text and absent or whitespace-only translation.
+    pub proofreader_append_unit_count: usize,
+}
+
+impl From<PageUnitDiffStats> for PageUnitDiffStatsVal {
+    // Converts the read projection into the serialized response value.
+    fn from(model: PageUnitDiffStats) -> Self {
+        //
+        Self {
+            page_id: model.page_id,
+            index: model.index,
+            translated_unit_count: model.translated_unit_count,
+            editted_unit_count: model.editted_unit_count,
+            proofreader_append_unit_count: model.proofreader_append_unit_count,
+        }
+    }
 }
 
 /// Return value from successful chapter page allocations.

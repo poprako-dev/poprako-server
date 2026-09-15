@@ -389,8 +389,12 @@ export interface ListPageUnitInfosVal {
     proofread_unit_count: number;
 }
 
-export interface ListEdittedDiffPageIdsVal {
-    page_ids: string[];
+export interface PageUnitDiffStatsVal {
+    page_id: string;
+    index: number;
+    translated_unit_count: number;
+    editted_unit_count: number;
+    proofreader_append_unit_count: number;
 }
 
 export interface LoginVal {

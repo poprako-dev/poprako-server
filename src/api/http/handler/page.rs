@@ -15,11 +15,11 @@ use crate::api::http::result::{
 };
 use crate::api::http::state::AppHarn;
 use crate::data::instr::page::{
-    AllocChapterPagesInstr, AllocPageImageInstr, ListEdittedDiffPageIdsInstr,
-    ListPageInfosInstr, MarkPageImageUploadedInstr,
+    AllocChapterPagesInstr, AllocPageImageInstr, ListPageInfosInstr,
+    ListPageUnitDiffStatsInstr, MarkPageImageUploadedInstr,
 };
 use crate::data::val::page::{
-    AllocChapterPagesVal, AllocatedPageVal, ListEdittedDiffPageIdsVal,
+    AllocChapterPagesVal, AllocatedPageVal, PageUnitDiffStatsVal,
 };
 use crate::data::view::page::PageInfoView;
 use crate::model::shared::user::UserToken;
@@ -58,31 +58,32 @@ pub async fn list_infos(
     .accept(StatusCode::OK)
 }
 
-/// `GET /api/v1/chapters/{chapter_id}/pages/editted-diffs` — list Pages with Unit text diffs.
+/// `GET /api/v1/chapters/{chapter_id}/pages/unit-diff-stats` — list Unit text statistics for Pages with revision differences.
 #[cfg_attr(feature = "swagger", utoipa::path(
     get,
-    path = "/api/v1/chapters/{chapter_id}/pages/editted-diffs",
+    path = "/api/v1/chapters/{chapter_id}/pages/unit-diff-stats",
     tag = "pages",
     params(("chapter_id" = String, Path, description = "Chapter ID")),
     responses(
-        (status = 200, description = "Matching Page IDs listed in Page order", body = HttpBody<ListEdittedDiffPageIdsVal>),
+        (status = 200, description = "Visible Unit text counts for Pages with edits or revision-only additions, in original Page order", body = HttpBody<Vec<PageUnitDiffStatsVal>>),
         (status = 403, description = "No perm to list Pages in this Chapter"),
         (status = 422, description = "Chapter not found"),
     ),
 ))]
 #[instrument(level = "info", skip_all)]
-pub async fn list_editted_diff_page_ids(
+pub async fn list_unit_diff_stats(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-) -> HttpResult<ListEdittedDiffPageIdsVal> {
+) -> HttpResult<Vec<PageUnitDiffStatsVal>> {
     //
-    let instr = ListEdittedDiffPageIdsInstr { chapter_id };
+    let instr = ListPageUnitDiffStatsInstr { chapter_id };
 
-    usecase::page::list::list_editted_diff_page_ids::<
-        RdbContext<ReptRead>,
-        HybRepo,
-    >((harn.repo(),), user_token, instr)
+    usecase::page::list::list_unit_diff_stats::<RdbContext<ReptRead>, HybRepo>(
+        (harn.repo(),),
+        user_token,
+        instr,
+    )
     .await?
     .accept(StatusCode::OK)
 }

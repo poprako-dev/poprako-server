@@ -20,13 +20,13 @@ import type {
     IdVal,
     ImageExtension,
     ListComicInfosVal,
-    ListEdittedDiffPageIdsVal,
     ListPageUnitInfosVal,
     LoginVal,
     MemberInfoView,
     MemberInvitationInfoView,
     PageImageInput,
     PageInfoView,
+    PageUnitDiffStatsVal,
     ReserveChapterPagesVal,
     ReservedPageVal,
     ReserveImageVal,
@@ -854,13 +854,13 @@ export async function listPageUnits(api: ApiClient, pageId: string): Promise<Lis
     );
 }
 
-export async function listEdittedDiffPageIds(
+export async function listPageUnitDiffStats(
     api: ApiClient,
     chapterId: string,
-): Promise<ListEdittedDiffPageIdsVal> {
+): Promise<PageUnitDiffStatsVal[]> {
     return expectSuccessData(
-        await api.get<SuccessBody<ListEdittedDiffPageIdsVal>>(
-            `/api/v1/chapters/${chapterId}/pages/editted-diffs`,
+        await api.get<SuccessBody<PageUnitDiffStatsVal[]>>(
+            `/api/v1/chapters/${chapterId}/pages/unit-diff-stats`,
         ),
         200,
     );

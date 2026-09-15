@@ -1,7 +1,7 @@
 use poprako_orchestra::Oper;
 
 use crate::model::read::proj::page::{
-    PageInfo, PageRawIdentInfo, PageUnitScope,
+    PageInfo, PageRawIdentInfo, PageUnitDiffStats, PageUnitScope,
 };
 use crate::model::read::proj::unit::UnitCountMetrics;
 use crate::model::write::page::{PageManifestEntry, PageRawIdentsRepl};
@@ -38,10 +38,10 @@ pub struct ListPageInfos<'a> {
     pub chapter_id: &'a str,
 }
 
-/// Lists Page IDs containing visible proofread text diffs.
+/// Lists Unit text statistics for Pages containing visible revision differences.
 #[derive(Oper)]
-#[oper(output = Vec<String>)]
-pub struct ListEdittedDiffPageIds<'a> {
+#[oper(output = Vec<PageUnitDiffStats>)]
+pub struct ListPageUnitDiffStats<'a> {
     /// Chapter whose Pages should be checked.
     pub chapter_id: &'a str,
 }

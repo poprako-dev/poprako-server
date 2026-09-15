@@ -14,7 +14,7 @@ import {
     exportTranslations,
     getChapter,
     importTranslations,
-    listEdittedDiffPageIds,
+    listPageUnitDiffStats,
     newBubbleUnit,
     newPageManifest,
     reserveChapterPages,
@@ -122,12 +122,42 @@ export async function runIt05Module(ctx: RunCtx): Promise<void> {
         },
     ]);
 
-    const edittedDiffPages = await listEdittedDiffPageIds(
+    const unitDiffStats = await listPageUnitDiffStats(
         proof02.api,
         mainChapterId,
     );
 
-    assert.assertEquals(edittedDiffPages.page_ids, [p0Id]);
+    assert.assertEquals(unitDiffStats, [{
+        page_id: p0Id,
+        index: 0,
+        translated_unit_count: 1,
+        editted_unit_count: 1,
+        proofreader_append_unit_count: 0,
+    }]);
+
+    await savePageUnits(proof02.api, p0Id, [{
+        edit: "patch",
+        id: p0UnitIds[1]!,
+        revision: {
+            type: "assign",
+            value: { is_proofread: false, proofread_text: "revision only" },
+        },
+    }]);
+
+    const appendedStats = await listPageUnitDiffStats(proof02.api, mainChapterId);
+
+    assert.assertEquals(appendedStats, [{ ...unitDiffStats[0]!, proofreader_append_unit_count: 1 }]);
+
+    await savePageUnits(proof02.api, p0Id, [{
+        edit: "patch",
+        id: p0UnitIds[1]!,
+        revision: { type: "clear" },
+    }]);
+
+    expectStatus(
+        await proof02.api.get(`/api/v1/chapters/${mainChapterId}/pages/editted-diffs`),
+        404,
+    );
 
     const searchMatches = await searchChapterUnits(
         trans01.api,
